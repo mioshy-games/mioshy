@@ -1,0 +1,85 @@
+{
+  "metadata": {
+    "title": "Mioshy — Couples games",
+    "description": "A playful platform for couples — interactive games in the browser"
+  },
+  "nav": {
+    "home": "Home",
+    "products": "Games",
+    "dashboard": "Dashboard",
+    "auth": "Sign in",
+    "play": "Start playing"
+  },
+  "home": {
+    "badge": "Online couples games",
+    "headline": "Get closer. Laugh more. Stay playful.",
+    "sub": "Beautiful games for mobile and desktop — no install. Jump in instantly.",
+    "ctaPrimary": "Start playing",
+    "ctaSecondary": "Browse games",
+    "cardTodTitle": "Truth or Dare",
+    "cardTodDesc": "Spin the wheel and reveal questions and dares that spark connection.",
+    "cardSoon": "Coming soon",
+    "cardSoonDesc": "More couple games on the way."
+  },
+  "products": {
+    "title": "Choose a game",
+    "subtitle": "One live game today — more arriving soon.",
+    "todName": "Truth or Dare",
+    "todBlurb": "A lucky wheel with prompts and dares for couples.",
+    "open": "Open"
+  },
+  "game": {
+    "pageTitle": "Truth or Dare",
+    "truth": "Truth",
+    "dare": "Dare",
+    "spin": "Spin the wheel",
+    "spinning": "Spinning…",
+    "next": "Spin again",
+    "resultTruth": "Truth prompt",
+    "resultDare": "Dare task",
+    "spinSoundOn": "Spin sound: on",
+    "spinSoundOff": "Spin sound: off",
+    "back": "Back"
+  },
+  "paywall": {
+    "title": "You’ve reached the free limit",
+    "subtitle": "Your first three spins are free. Continue with full access.",
+    "single": "Single game",
+    "singlePrice": "₪37",
+    "singleDesc": "Full access to the selected game",
+    "monthly": "Monthly",
+    "monthlyPrice": "₪87",
+    "monthlyDesc": "All games, monthly updates",
+    "yearly": "Yearly",
+    "yearlyPrice": "₪570",
+    "yearlyDesc": "Best value for couples who play often",
+    "cta": "Continue (coming soon)",
+    "placeholder": "Payments will be enabled later — this is UI only.",
+    "back": "Back to games"
+  },
+  "auth": {
+    "title": "Sign in",
+    "subtitle": "Sign in to save progress (when Supabase is configured).",
+    "email": "Email",
+    "password": "Password",
+    "signIn": "Sign in",
+    "signUp": "Create account",
+    "toggleToSignUp": "No account? Sign up",
+    "toggleToSignIn": "Have an account? Sign in",
+    "missingEnv": "Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to enable auth.",
+    "success": "Signed in successfully."
+  },
+  "dashboard": {
+    "title": "Content admin",
+    "subtitle": "Preview UI — server persistence comes later.",
+    "listTitle": "Questions",
+    "type": "Type",
+    "empty": "No questions yet.",
+    "addTitle": "Add a question",
+    "questionHe": "Hebrew text",
+    "questionEn": "English text",
+    "addTruth": "Save as truth",
+    "addDare": "Save as dare",
+    "note": "Data is kept in this browser session only (demo)."
+  }
+}
