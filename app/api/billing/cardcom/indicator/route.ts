@@ -11,10 +11,9 @@
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
-import { NextResponse }              from "next/server"
 import { pullLowProfileIndicator, extractToken, normalizeExpiry } from "@/lib/cardcom"
 import { encryptToken, tokenHashSha256 }  from "@/lib/tokenCrypto"
-import { addPlanPeriod, GRACE_PERIOD_DAYS } from "@/lib/billing"
+import { addPlanPeriod, type Plan } from "@/lib/billing"
 import { createBillingDocument }     from "@/lib/uxellent-api"
 import { createAdminClient }         from "@/lib/supabase-admin"
 
@@ -106,7 +105,7 @@ export async function GET(req: Request) {
 
   const userId = session.user_id
   const now    = new Date()
-  const periodEnd = addPlanPeriod(now, session.plan as any)
+  const periodEnd = addPlanPeriod(now, session.plan as Plan)
 
   // ── Store encrypted token ───────────────────────────────────────────────────
   let paymentMethodId: string | null = null

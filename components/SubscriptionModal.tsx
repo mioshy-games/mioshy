@@ -123,7 +123,6 @@ export function SubscriptionModal({
   locked,
   userId,
   onRequireAuth,
-  onSubscribed,
   mode,
   onLeadSaved,
 }: {
@@ -132,7 +131,7 @@ export function SubscriptionModal({
   locked: boolean;
   userId: string | null;
   onRequireAuth: () => Promise<string | null>;
-  onSubscribed: () => void;
+  onSubscribed?: () => void;
   mode: "lead" | "paywall";
   onLeadSaved?: (leadId: string) => void;
 }) {

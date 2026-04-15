@@ -471,6 +471,7 @@ export function GameForm({
   const slicesForCategories = useWatch({ control, name: "wheel.slices" }) as
     | Array<{ question_type?: string }>
     | undefined;
+  const bgType = useWatch({ control, name: "bg_type" }) as string | undefined;
   const categoryOptions = useMemo(
     () =>
       Array.from(
@@ -715,7 +716,7 @@ export function GameForm({
                     render={({ field }) => (
                       <div className="flex items-center gap-2">
                         {/* Color picker — visible only when type = color */}
-                        {useWatch({ control, name: "bg_type" }) === "color" && (
+                        {bgType === "color" && (
                           <input
                             type="color"
                             value={field.value?.startsWith("#") ? field.value.slice(0, 7) : "#1a0a2e"}

@@ -22,9 +22,9 @@ export function parseCardcomResponse(raw: string): Record<string, string> {
     try { return JSON.parse(text) } catch { /* fall through */ }
   }
   const result: Record<string, string> = {}
-  for (const [k, v] of new URLSearchParams(text.replace(/^\?/, ""))) {
+  new URLSearchParams(text.replace(/^\?/, "")).forEach((v, k) => {
     result[k] = v
-  }
+  })
   return result
 }
 

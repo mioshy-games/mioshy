@@ -12,7 +12,7 @@ export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
 import { NextResponse }        from "next/server"
-import { createClient }        from "@/lib/supabase/server"
+import { createServerSupabaseClient } from "@/lib/supabase/server"
 import { createAdminClient }   from "@/lib/supabase-admin"
 import { openLowProfile }      from "@/lib/cardcom"
 import { getPlanPrice }        from "@/lib/billing"
@@ -21,7 +21,7 @@ const BASE_URL = (process.env.PUBLIC_BASE_URL ?? "https://mioshy.com").replace(/
 
 export async function POST(req: Request) {
   // ── Auth ────────────────────────────────────────────────────────────────────
-  const supabase     = await createClient()
+  const supabase     = await createServerSupabaseClient()
   const { data: auth } = await supabase.auth.getUser()
   if (!auth?.user) {
     return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 })

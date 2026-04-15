@@ -176,7 +176,7 @@ export function QuestionPopup({
               <motion.button
                 type="button"
                 onClick={onClose}
-                whileHover={{ scale: 1.03, brightness: 1.1 }}
+                whileHover={{ scale: 1.03, filter: "brightness(1.1)" }}
                 whileTap={{ scale: 0.97 }}
                 className="w-full rounded-2xl py-4 text-base font-bold text-white shadow-lg transition-all sm:text-lg"
                 style={{

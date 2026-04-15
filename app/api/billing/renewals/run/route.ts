@@ -51,7 +51,7 @@ export async function POST(req: Request) {
 
     try {
       // ── Validate payment method ─────────────────────────────────────────────
-      const pm = (sub as any).customer_payment_methods
+      const pm = (sub as unknown as { customer_payment_methods: { id: string; token_enc: string; expiry_mmyy: string | null; status: string } | null }).customer_payment_methods
       if (!pm || pm.status !== "active") {
         throw new Error("No active payment method")
       }

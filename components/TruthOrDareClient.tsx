@@ -1,11 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { motion } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/navigation";
 import { GameLayout } from "./GameLayout";
-import { QuestionCard } from "./QuestionCard";
 import { Wheel, type WheelApi } from "./Wheel";
 import { type Question, type QuestionType } from "@/lib/game-engine";
 import type { GameRow, QuestionRow, WheelConfigRow } from "@/lib/types/database";
