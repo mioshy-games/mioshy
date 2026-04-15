@@ -45,7 +45,7 @@ import { Badge } from "@/components/ui/badge";
 import { LocalizedFieldRow } from "@/components/dashboard/LocalizedFieldRow";
 
 const emptyQuestion: QuestionFormValues = {
-  type: "truth",
+  type: "",
   level: "light",
   text_he: "",
   text_en: "",
@@ -61,12 +61,14 @@ type QuestionsTableProps = {
   gameId: string | null;
   initialQuestions: QuestionTableRow[];
   mode?: "embedded" | "global";
+  categoryOptions?: string[];
 };
 
 export function QuestionsTable({
   gameId,
   initialQuestions,
   mode = "embedded",
+  categoryOptions = [],
 }: QuestionsTableProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -89,7 +91,10 @@ export function QuestionsTable({
   function openCreate() {
     setEditingId(null);
     setEditingRow(null);
-    reset(emptyQuestion);
+    reset({
+      ...emptyQuestion,
+      type: categoryOptions[0] ?? "",
+    });
     setOpen(true);
   }
 
@@ -252,19 +257,30 @@ export function QuestionsTable({
             >
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
-                  <Label>Type</Label>
+                  <Label>Category</Label>
+                  {mode === "embedded" && categoryOptions.length === 0 ? (
+                    <p className="text-muted-foreground text-xs">
+                      Please define wheel categories first.
+                    </p>
+                  ) : null}
                   <Controller
                     control={control}
                     name="type"
                     render={({ field }) => (
-                      <Select value={field.value} onValueChange={field.onChange}>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        disabled={mode === "embedded" && categoryOptions.length === 0}
+                      >
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="truth">Truth</SelectItem>
-                          <SelectItem value="dare">Dare</SelectItem>
-                          <SelectItem value="custom">Custom</SelectItem>
+                          {(mode === "embedded" ? categoryOptions : [""]).filter(Boolean).map((c) => (
+                            <SelectItem key={c} value={c}>
+                              {c}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     )}

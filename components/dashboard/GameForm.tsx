@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type MutableRefObject } from "react";
+import { useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -10,6 +10,7 @@ import {
   useFormContext,
   useWatch,
 } from "react-hook-form";
+import type { Resolver } from "react-hook-form";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { saveGame } from "@/app/dashboard/actions/save-game";
@@ -27,6 +28,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { LocalizedFieldRow } from "@/components/dashboard/LocalizedFieldRow";
 import { SliceEditor } from "@/components/dashboard/SliceEditor";
 import { WheelPreview } from "@/components/dashboard/WheelPreview";
@@ -63,6 +71,18 @@ function WheelPreviewSection() {
   const border = useWatch({ control, name: "wheel.border_color" }) as
     | string
     | undefined;
+  const dividerEnabled = useWatch({ control, name: "wheel.divider_enabled" }) as
+    | boolean
+    | undefined;
+  const dividerColor = useWatch({ control, name: "wheel.divider_color" }) as
+    | string
+    | undefined;
+  const dividerWidth = useWatch({ control, name: "wheel.divider_width" }) as
+    | number
+    | undefined;
+  const markerConfig = useWatch({ control, name: "wheel.marker_config" }) as
+    | Record<string, unknown>
+    | undefined;
 
   return (
     <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
@@ -75,6 +95,22 @@ function WheelPreviewSection() {
           <div className="space-y-1.5">
             <Label>Border color</Label>
             <ColorField name="wheel.border_color" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Slice divider</Label>
+            <DividerSwitch />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Divider color</Label>
+            <ColorField name="wheel.divider_color" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Divider width</Label>
+            <DividerWidthField />
+          </div>
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label>Markers</Label>
+            <MarkerEditor />
           </div>
           <div className="space-y-1.5">
             <Label>Inner circle</Label>
@@ -109,7 +145,17 @@ function WheelPreviewSection() {
           innerCircleColor={innerColor ?? "#fafafa"}
           innerCircleBorderColor={innerBorder ?? "#e5e5e5"}
           labelLang={labelLang}
+          dividerEnabled={dividerEnabled ?? true}
+          dividerColor={dividerColor ?? "#ffffff"}
+          dividerWidth={dividerWidth ?? 2}
+          markerConfig={markerConfig ?? {}}
         />
+        <p className="text-muted-foreground text-center text-xs">
+          Divider: {dividerEnabled ? "On" : "Off"} ·{" "}
+          <span className="font-mono">
+            {dividerColor ?? "#ffffff"} / {dividerWidth ?? 2}px
+          </span>
+        </p>
       </div>
     </div>
   );
@@ -133,6 +179,233 @@ function InnerCircleSwitch() {
   );
 }
 
+function DividerSwitch() {
+  const { control } = useFormContext<GameFormValues>();
+  return (
+    <Controller
+      control={control}
+      name="wheel.divider_enabled"
+      render={({ field }) => (
+        <div className="flex h-10 items-center gap-2">
+          <Switch checked={field.value} onCheckedChange={field.onChange} />
+          <span className="text-muted-foreground text-sm">
+            {field.value ? "On" : "Off"}
+          </span>
+        </div>
+      )}
+    />
+  );
+}
+
+function DividerWidthField() {
+  const { control } = useFormContext<GameFormValues>();
+  return (
+    <Controller
+      control={control}
+      name="wheel.divider_width"
+      render={({ field }) => (
+        <Input
+          type="number"
+          min={1}
+          max={10}
+          inputMode="numeric"
+          className="font-mono text-sm"
+          value={field.value}
+          onChange={(e) => field.onChange(Number(e.target.value))}
+        />
+      )}
+    />
+  );
+}
+
+function MarkerEditor() {
+  const { control } = useFormContext<GameFormValues>();
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      <Controller
+        control={control}
+        name="wheel.marker_config.marker_type"
+        render={({ field }) => (
+          <div className="space-y-1.5">
+            <Label className="text-muted-foreground text-xs">Type</Label>
+            <Select
+              value={String(field.value)}
+              onValueChange={(v) => field.onChange(v)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                <SelectItem value="circle">Circle</SelectItem>
+                <SelectItem value="svg_icon">SVG icon</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+      />
+
+      <Controller
+        control={control}
+        name="wheel.marker_config.marker_color"
+        render={({ field }) => (
+          <div className="space-y-1.5">
+            <Label className="text-muted-foreground text-xs">Color</Label>
+            <div className="flex gap-2">
+              <input
+                type="color"
+                className="border-input h-10 w-14 shrink-0 cursor-pointer rounded-md border p-1"
+                value={field.value || "#ffffff"}
+                onChange={(e) => field.onChange(e.target.value)}
+                aria-label="Pick marker color"
+              />
+              <Input
+                className="font-mono text-sm"
+                value={field.value}
+                onChange={field.onChange}
+              />
+            </div>
+          </div>
+        )}
+      />
+
+      <Controller
+        control={control}
+        name="wheel.marker_config.marker_size"
+        render={({ field }) => (
+          <div className="space-y-1.5">
+            <Label className="text-muted-foreground text-xs">Size (px)</Label>
+            <Input
+              type="number"
+              min={2}
+              max={64}
+              inputMode="numeric"
+              className="font-mono text-sm"
+              value={field.value ?? 14}
+              onChange={(e) => field.onChange(Number(e.target.value))}
+            />
+          </div>
+        )}
+      />
+
+      <Controller
+        control={control}
+        name="wheel.marker_config.marker_count"
+        render={({ field }) => (
+          <div className="space-y-1.5">
+            <Label className="text-muted-foreground text-xs">Count</Label>
+            <Input
+              type="number"
+              min={0}
+              max={64}
+              inputMode="numeric"
+              className="font-mono text-sm"
+              value={field.value ?? 0}
+              onChange={(e) => field.onChange(Number(e.target.value))}
+            />
+          </div>
+        )}
+      />
+
+      <Controller
+        control={control}
+        name="wheel.marker_config.marker_position"
+        render={({ field }) => (
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label className="text-muted-foreground text-xs">
+              Position (% radius): {Math.round((field.value ?? 100) * 10) / 10}
+            </Label>
+            <input
+              type="range"
+              min={0}
+              max={120}
+              step={1}
+              value={field.value ?? 100}
+              onChange={(e) => field.onChange(Number(e.target.value))}
+              className="w-full"
+            />
+          </div>
+        )}
+      />
+
+      <Controller
+        control={control}
+        name="wheel.marker_config.svg_path_d"
+        render={({ field }) => (
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label className="text-muted-foreground text-xs">
+              SVG path (d)
+            </Label>
+            <Input
+              className="font-mono text-xs"
+              value={field.value ?? ""}
+              onChange={field.onChange}
+              placeholder="M10 20L..."
+            />
+          </div>
+        )}
+      />
+
+      {/* ── Wheel size ─────────────────────────────────────────────────── */}
+      <Controller
+        control={control}
+        name="wheel.marker_config.wheel_size_rem"
+        render={({ field }) => {
+          const val = typeof field.value === "number" ? field.value : 22;
+          return (
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label className="text-muted-foreground text-xs">
+                Wheel size — {val} rem ({Math.round(val * 16)}px)
+              </Label>
+              <input
+                type="range"
+                min={14}
+                max={36}
+                step={0.5}
+                value={val}
+                onChange={(e) => field.onChange(Number(e.target.value))}
+                className="w-full accent-fuchsia-500"
+              />
+              <p className="text-muted-foreground text-[11px]">
+                Only affects wheel diameter — all other settings stay unchanged. Default: 22 rem.
+              </p>
+            </div>
+          );
+        }}
+      />
+
+      {/* ── Label position (radial fraction) ───────────────────────────── */}
+      <Controller
+        control={control}
+        name="wheel.marker_config.label_radius_fraction"
+        render={({ field }) => {
+          const val = typeof field.value === "number" ? field.value : 0.72;
+          const pct = Math.round(val * 100);
+          return (
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label className="text-muted-foreground text-xs">
+                Text position in slice — {pct}% from centre
+              </Label>
+              <input
+                type="range"
+                min={0.4}
+                max={0.92}
+                step={0.01}
+                value={val}
+                onChange={(e) => field.onChange(Number(e.target.value))}
+                className="w-full accent-fuchsia-500"
+              />
+              <p className="text-muted-foreground text-[11px]">
+                Higher % = text closer to outer rim. Default: 72%.
+              </p>
+            </div>
+          );
+        }}
+      />
+    </div>
+  );
+}
+
 function ColorField({
   name,
 }: {
@@ -140,7 +413,8 @@ function ColorField({
     | "wheel.pointer_color"
     | "wheel.border_color"
     | "wheel.inner_circle_color"
-    | "wheel.inner_circle_border_color";
+    | "wheel.inner_circle_border_color"
+    | "wheel.divider_color";
 }) {
   const { control } = useFormContext<GameFormValues>();
   return (
@@ -178,9 +452,10 @@ export function GameForm({
   const router = useRouter();
   const slugTouched = useRef(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadingBg, setUploadingBg] = useState(false);
 
   const methods = useForm<GameFormValues>({
-    resolver: zodResolver(gameFormSchema),
+    resolver: zodResolver(gameFormSchema) as unknown as Resolver<GameFormValues>,
     defaultValues,
     mode: "onBlur",
   });
@@ -192,6 +467,21 @@ export function GameForm({
     reset,
     setValue,
   } = methods;
+
+  const slicesForCategories = useWatch({ control, name: "wheel.slices" }) as
+    | Array<{ question_type?: string }>
+    | undefined;
+  const categoryOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          (slicesForCategories ?? [])
+            .map((s) => String(s.question_type ?? "").trim())
+            .filter(Boolean),
+        ),
+      ),
+    [slicesForCategories],
+  );
 
   useEffect(() => {
     reset(defaultValues);
@@ -227,6 +517,30 @@ export function GameForm({
       toast.success("Thumbnail uploaded");
     } finally {
       setUploading(false);
+    }
+  }
+
+  async function onUploadBackground(file: File) {
+    setUploadingBg(true);
+    try {
+      const supabase = createBrowserSupabaseClient();
+      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const path = `${crypto.randomUUID()}.${ext}`;
+      const { error } = await supabase.storage
+        .from("backgrounds")
+        .upload(path, file, { upsert: true, cacheControl: "3600" });
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("backgrounds").getPublicUrl(path);
+      setValue("bg_type", "image", { shouldDirty: true });
+      setValue("bg_value", publicUrl, { shouldDirty: true });
+      toast.success("Background uploaded");
+    } finally {
+      setUploadingBg(false);
     }
   }
 
@@ -313,6 +627,25 @@ export function GameForm({
                 />
               </div>
             </div>
+
+            <div className="space-y-1.5">
+              <Label>Player mode</Label>
+              <Controller
+                control={control}
+                name="player_mode"
+                render={({ field }) => (
+                  <div className="flex h-10 items-center gap-2">
+                    <Switch checked={field.value} onCheckedChange={field.onChange} />
+                    <span className="text-muted-foreground text-sm">
+                      {field.value ? "On" : "Off"}
+                    </span>
+                  </div>
+                )}
+              />
+              <p className="text-muted-foreground text-xs">
+                When enabled, the wheel will be built from player names (entered before the game starts).
+              </p>
+            </div>
             <div className="space-y-2">
               <Label>Thumbnail</Label>
               <div className="flex flex-wrap items-center gap-3">
@@ -346,6 +679,78 @@ export function GameForm({
                   )
                 }
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Background</Label>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label className="text-muted-foreground text-xs">Type</Label>
+                  <Controller
+                    control={control}
+                    name="bg_type"
+                    render={({ field }) => (
+                      <Select
+                        value={field.value}
+                        onValueChange={(v) =>
+                          field.onChange(v as "color" | "image")
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="color">Color</SelectItem>
+                          <SelectItem value="image">Image</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-muted-foreground text-xs">Value</Label>
+                  <Controller
+                    control={control}
+                    name="bg_value"
+                    render={({ field }) => (
+                      <div className="flex items-center gap-2">
+                        {/* Color picker — visible only when type = color */}
+                        {useWatch({ control, name: "bg_type" }) === "color" && (
+                          <input
+                            type="color"
+                            value={field.value?.startsWith("#") ? field.value.slice(0, 7) : "#1a0a2e"}
+                            onChange={(e) => field.onChange(e.target.value)}
+                            className="h-9 w-10 cursor-pointer rounded border border-input bg-transparent p-0.5"
+                            title="Pick glow colour"
+                          />
+                        )}
+                        <Input className="font-mono text-sm" {...field} />
+                      </div>
+                    )}
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <Input
+                  type="file"
+                  accept="image/*"
+                  className="max-w-xs"
+                  disabled={uploadingBg}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) void onUploadBackground(f);
+                    e.target.value = "";
+                  }}
+                />
+                {uploadingBg ? (
+                  <Loader2 className="text-muted-foreground size-4 animate-spin" />
+                ) : null}
+              </div>
+              <p className="text-muted-foreground text-xs">
+                For images, upload to the <code className="text-xs">backgrounds</code>{" "}
+                bucket. For colors, use a hex like <code className="text-xs">#0b0b0f</code>.
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -387,6 +792,7 @@ export function GameForm({
             <QuestionsTable
               gameId={gameId}
               initialQuestions={initialQuestions}
+              categoryOptions={categoryOptions}
             />
           </CardContent>
         </Card>

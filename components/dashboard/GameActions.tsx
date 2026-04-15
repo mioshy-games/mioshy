@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
@@ -12,9 +12,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { MoreHorizontal, Pencil } from "lucide-react";
-import { toggleGameActive } from "@/app/dashboard/actions/games";
+import { deleteGame, toggleGameActive } from "@/app/dashboard/actions/games";
 
 export function GameActions({
   gameId,
@@ -26,6 +33,7 @@ export function GameActions({
   const router = useRouter();
   const [active, setActive] = useState(isActive);
   const [loading, setLoading] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   async function onToggle(checked: boolean) {
     setLoading(true);
@@ -58,6 +66,19 @@ export function GameActions({
     } finally {
       setLoading(false);
     }
+  }
+
+  async function confirmDelete() {
+    setLoading(true);
+    const res = await deleteGame(gameId);
+    setLoading(false);
+    setDeleteOpen(false);
+    if (!res.ok) {
+      toast.error(res.error);
+      return;
+    }
+    toast.success("Game deleted");
+    router.refresh();
   }
 
   return (
@@ -94,8 +115,43 @@ export function GameActions({
           <DropdownMenuItem onSelect={() => void duplicate()}>
             Duplicate game
           </DropdownMenuItem>
+          <DropdownMenuItem
+            className="text-destructive focus:text-destructive"
+            onSelect={() => setDeleteOpen(true)}
+          >
+            Delete game
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete game?</DialogTitle>
+          </DialogHeader>
+          <p className="text-muted-foreground text-sm">
+            This removes the game, its wheel config, and all questions. This
+            cannot be undone.
+          </p>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDeleteOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={loading}
+              onClick={() => void confirmDelete()}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

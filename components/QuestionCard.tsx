@@ -8,6 +8,7 @@ type QuestionCardProps = {
   text: string;
   labelTruth: string;
   labelDare: string;
+  labelCustom?: string;
 };
 
 export function QuestionCard({
@@ -15,8 +16,10 @@ export function QuestionCard({
   text,
   labelTruth,
   labelDare,
+  labelCustom,
 }: QuestionCardProps) {
   const isTruth = type === "truth";
+  const isCustom = type === "custom";
   return (
     <motion.div
       initial={{ opacity: 0, y: 16, scale: 0.96 }}
@@ -26,10 +29,10 @@ export function QuestionCard({
     >
       <p
         className={`mb-3 text-center text-xs font-semibold uppercase tracking-widest ${
-          isTruth ? "text-cyan-200" : "text-fuchsia-200"
+          isTruth ? "text-cyan-200" : isCustom ? "text-amber-200" : "text-fuchsia-200"
         }`}
       >
-        {isTruth ? labelTruth : labelDare}
+        {isTruth ? labelTruth : isCustom ? (labelCustom ?? "Custom") : labelDare}
       </p>
       <p className="text-center text-lg font-medium leading-relaxed text-white sm:text-xl">
         {text}

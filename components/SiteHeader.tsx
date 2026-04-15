@@ -2,7 +2,6 @@
 
 import { useTranslations } from "next-intl";
 import { Link } from "@/navigation";
-import { LocaleSwitcher } from "./LocaleSwitcher";
 
 export function SiteHeader() {
   const t = useTranslations("nav");
@@ -21,6 +20,12 @@ export function SiteHeader() {
             {t("products")}
           </Link>
           <Link
+            href="/articles"
+            className="text-sm font-medium text-white/90 hover:text-white"
+          >
+            {t("articles")}
+          </Link>
+          <Link
             href="/dashboard"
             className="hidden text-sm font-medium text-white/90 hover:text-white sm:inline"
           >
@@ -32,7 +37,6 @@ export function SiteHeader() {
           >
             {t("auth")}
           </Link>
-          <LocaleSwitcher />
         </nav>
       </div>
     </header>

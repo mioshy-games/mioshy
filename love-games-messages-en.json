@@ -1,0 +1,114 @@
+{
+  "LoveGames": {
+    "meta": {
+      "title": "Love Games for Couples – Fun & Intimate Games | Mioshy",
+      "description": "Discover the best love games for couples: truth or dare, would you rather, spin the wheel, and more. Free couples games to spice up date night.",
+      "og_title": "Love Games for Couples | Mioshy",
+      "og_description": "Fun, intimate, and free couples games to play tonight. Truth or dare, spin the wheel, would you rather — and much more.",
+      "og_image_alt": "Love Games for Couples – Mioshy",
+      "breadcrumb": "Love Games"
+    },
+    "hero": {
+      "badge": "Free Couples Games",
+      "h1": "Love Games for Couples",
+      "subtitle": "From steamy truth or dare to playful would you rather — discover fun couples games that bring you closer, laugh harder, and connect deeper.",
+      "cta_primary": "Play Now — It's Free",
+      "cta_secondary": "Browse Free Games"
+    },
+    "stats": {
+      "couples": {
+        "value": "500K+",
+        "label": "Couples Played"
+      },
+      "active_users": {
+        "value": "1M+",
+        "label": "Active Players"
+      },
+      "rating": {
+        "value": "4.9★",
+        "label": "Average Rating"
+      },
+      "avg_session": {
+        "value": "45 min",
+        "label": "Avg. Session"
+      }
+    },
+    "about": {
+      "h2": "What Are Love Games for Couples?",
+      "p1": "Love games are interactive games designed to help couples connect, communicate, and have fun together — whether it's your first date or your twentieth anniversary. From lighthearted icebreakers to deeper intimacy-building questions, the right game can transform an ordinary evening.",
+      "p2": "At Mioshy, we've built a collection of free couples games that cover every mood: playful, romantic, adventurous, and everything in between. No app download needed — just pick a game and start playing.",
+      "pull_quote": "\"The couples who play together, stay together.\" — And it starts with one question."
+    },
+    "features": {
+      "h2": "Choose Your Game",
+      "subtitle": "Three popular formats, infinite fun.",
+      "play_now": "Play now",
+      "items": {
+        "truth_dare": {
+          "emoji": "🎯",
+          "title": "Truth or Dare",
+          "description": "Juicy questions and daring challenges for couples. From sweet to spicy — you set the level.",
+          "href": "couples-truth-or-dare"
+        },
+        "would_you_rather": {
+          "emoji": "⚖️",
+          "title": "Would You Rather",
+          "description": "Impossible dilemmas that reveal what you really value — and spark the best conversations.",
+          "href": "would-you-rather-couples"
+        },
+        "spin_wheel": {
+          "emoji": "🎡",
+          "title": "Spin the Wheel",
+          "description": "Let fate decide your next dare. Spin and see what challenge awaits you both.",
+          "href": "spin-the-wheel-couples"
+        }
+      }
+    },
+    "articles": {
+      "h2": "Couples Game Guides & Ideas",
+      "subtitle": "Tips, ideas, and expert guides to make your next game night unforgettable.",
+      "read_more": "Read more",
+      "min_read": "min read",
+      "see_all": "See all articles"
+    },
+    "explore": {
+      "h2": "Explore More Games"
+    },
+    "links": {
+      "all_games":     "All Games",
+      "free_games":    "Free Couples Games",
+      "couples_games": "Couples Games",
+      "adults_only":   "Adults Only"
+    },
+    "faq": {
+      "h2": "Frequently Asked Questions",
+      "items": [
+        {
+          "q": "What are love games for couples?",
+          "a": "Love games are interactive games — like truth or dare, would you rather, or spin the wheel — designed to help couples connect, communicate, and have fun together. They range from light and playful to deep and intimate."
+        },
+        {
+          "q": "Are the games on Mioshy free?",
+          "a": "Yes! All core couples games on Mioshy are completely free. No account needed, no app download — just open and play."
+        },
+        {
+          "q": "Can we play these games on a virtual date night?",
+          "a": "Absolutely. All Mioshy games work perfectly over video call — just share your screen and take turns. Great for long-distance couples."
+        },
+        {
+          "q": "Are there spicy or adults-only versions?",
+          "a": "Yes. We have dedicated adults-only game modes for couples who want to turn up the heat. They are clearly marked and separate from our standard games."
+        },
+        {
+          "q": "How long does a typical couples game session last?",
+          "a": "Most couples play for 30–60 minutes, but you can go as long as you like — there are hundreds of questions and challenges in each game."
+        }
+      ]
+    },
+    "cta": {
+      "h2": "Ready to Play?",
+      "subtitle": "Pick a game, press play, and let the fun begin. It's completely free.",
+      "button": "Start Playing Now"
+    }
+  }
+}

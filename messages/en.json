@@ -6,6 +6,7 @@
   "nav": {
     "home": "Home",
     "products": "Games",
+    "articles": "Articles",
     "dashboard": "Dashboard",
     "auth": "Sign in",
     "play": "Start playing"
@@ -21,22 +22,138 @@
     "cardSoon": "Coming soon",
     "cardSoonDesc": "More couple games on the way."
   },
+  "marketingHome": {
+    "hero": {
+      "trustBadge": "20+ years of couples expertise",
+      "headlineEn": "Ask Deep. Dare More.",
+      "headlineHe": "תשאלו עמוק. תעיזו יותר.",
+      "subEn": "Couples games that heat up what already exists.",
+      "subHe": "משחקי זוגות שמחממים את מה שכבר קיים.",
+      "ctaPrimary": "Play free now",
+      "ctaSecondary": "Explore games",
+      "tagline": "Where Real Couples Play",
+      "founded": "Founded 2001 • Itzik Berlav"
+    },
+    "socialProof": {
+      "joining": "Join {count} couples already playing",
+      "rating": "{value} stars • {count} reviews",
+      "quotes": {
+        "0": "It got us talking — and laughing — within minutes.",
+        "1": "Bold, intimate, and surprisingly classy.",
+        "2": "The wheel makes it effortless to keep the heat going."
+      }
+    },
+    "forWho": {
+      "title": "This is for you if…",
+      "cards": {
+        "renew": "You want something new",
+        "renewDesc": "Fresh prompts that feel grown-up, not childish.",
+        "therapy": "You’re in a therapeutic process",
+        "therapyDesc": "A safe structure to practice closeness and honesty.",
+        "flirt": "You want flirtation & play",
+        "flirtDesc": "Turn tension into teasing — with confidence.",
+        "deepen": "You want to deepen the bond",
+        "deepenDesc": "Go past small talk. Stay connected."
+      }
+    },
+    "games": {
+      "title": "Our games",
+      "subtitle": "Active games updated by our admin — no installs, just play.",
+      "playNow": "Play now",
+      "comingSoonTitle": "More games coming soon",
+      "comingSoonDesc": "New experiences are being crafted — darker, deeper, better."
+    },
+    "how": {
+      "title": "How it works",
+      "subtitle": "Minimal steps. Maximum spark.",
+      "step1": { "title": "Choose a game", "desc": "Pick the vibe you want tonight." },
+      "step2": { "title": "Spin the wheel", "desc": "Let fate choose the next move." },
+      "step3": { "title": "Do it 😉", "desc": "Go for it — no overthinking." }
+    },
+    "expert": {
+      "title": "Our expert",
+      "name": "Itzik Berlav",
+      "titleLine": "Certified couples therapist | Coaching couples since 2001",
+      "bio": "Mioshy is built on real relationship work: clear structure, emotional intelligence, and a bold playful edge. It’s designed to ignite intimacy without turning it into a joke.",
+      "credibility": "Hundreds of couples improved their intimate life with our method."
+    },
+    "pricing": {
+      "title": "Memberships",
+      "subtitle": "Unlimited access. Cancel anytime — no drama.",
+      "popular": "Most popular",
+      "cancelAnytime": "Cancel anytime",
+      "features": {
+        "f1": "Unlimited spins",
+        "f2": "Access to all games",
+        "f3": "New content regularly"
+      },
+      "plans": {
+        "weekly": { "name": "Weekly", "price": "$3/week" },
+        "monthly": { "name": "Monthly", "price": "$9/month" },
+        "annual": { "name": "Annual", "price": "$123/year" }
+      },
+      "cta": "Start now"
+    },
+    "articles": {
+      "title": "Tips & articles for couples",
+      "readMore": "Read more",
+      "all": "All articles",
+      "cards": {
+        "0": { "title": "How to ask deeper questions", "excerpt": "A simple way to move from “How was your day?” to real connection." },
+        "1": { "title": "Flirt like grown-ups", "excerpt": "Playful doesn’t mean childish. Here’s how to keep it premium." },
+        "2": { "title": "The intimacy reset", "excerpt": "Three minutes that shift the whole night — without pressure." }
+      }
+    },
+    "faq": {
+      "title": "FAQ",
+      "items": {
+        "0": { "q": "Is it suitable for every couple?", "a": "Yes — from new couples to long-term partners. You choose the pace and the vibe." },
+        "1": { "q": "How does the subscription work?", "a": "Choose a plan and get access to all games with unlimited spins." },
+        "2": { "q": "Can I cancel anytime?", "a": "Yes. Cancel anytime from your account — no questions asked." },
+        "3": { "q": "Are the games in Hebrew?", "a": "Yes. Full Hebrew and English support." },
+        "4": { "q": "What’s the difference between plans?", "a": "Only the billing period changes. Access stays premium on every plan." },
+        "5": { "q": "Is there a group mode?", "a": "Not yet — it’s planned. For now, Mioshy is designed for couples." }
+      }
+    },
+    "footer": {
+      "tagline": "Where Real Couples Play",
+      "linksTitle": "Links",
+      "socialTitle": "Social",
+      "noteTitle": "Tone",
+      "note": "Bold. Hot. Professional. Built for real couples — not for kids.",
+      "links": {
+        "games": "Games",
+        "pricing": "Pricing",
+        "articles": "Articles",
+        "account": "Account",
+        "cancel": "Cancel subscription"
+      },
+      "copyright": "© 2025 Mioshy | All rights reserved",
+      "brandLine": "Dark • Premium • Real"
+    }
+  },
   "products": {
     "title": "Choose a game",
     "subtitle": "One live game today — more arriving soon.",
     "todName": "Truth or Dare",
     "todBlurb": "A lucky wheel with prompts and dares for couples.",
+    "snakesName": "Snakes & Ladders",
+    "snakesBlurb": "Multiplayer (up to 8). Coin flips, questions, and challenges in real time.",
     "open": "Open"
   },
   "game": {
     "pageTitle": "Truth or Dare",
     "truth": "Truth",
     "dare": "Dare",
+    "custom": "Custom",
     "spin": "Spin the wheel",
     "spinning": "Spinning…",
     "next": "Spin again",
+    "closePopup": "Close",
+    "spinAgain": "Spin again 🎯",
     "resultTruth": "Truth prompt",
     "resultDare": "Dare task",
+    "resultCustom": "Custom prompt",
     "spinSoundOn": "Spin sound: on",
     "spinSoundOff": "Spin sound: off",
     "back": "Back"
@@ -67,7 +184,9 @@
     "toggleToSignUp": "No account? Sign up",
     "toggleToSignIn": "Have an account? Sign in",
     "missingEnv": "Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to enable auth.",
-    "success": "Signed in successfully."
+    "success": "Signed in successfully.",
+    "confirmEmail": "Check your email to confirm your account before signing in.",
+    "signedInNonAdmin": "You are signed in. This account is not an admin — redirecting home."
   },
   "dashboard": {
     "title": "Content admin",
@@ -81,5 +200,78 @@
     "addTruth": "Save as truth",
     "addDare": "Save as dare",
     "note": "Data is kept in this browser session only (demo)."
+  },
+  "pricing": {
+    "title": "Pricing",
+    "subtitle": "Subscribe for unlimited spins and access to all games.",
+    "recommended": "Recommended",
+    "feature1": "Unlimited spins",
+    "feature2": "New games added regularly",
+    "feature3": "Cancel anytime",
+    "cta": "Continue (Stripe coming soon)",
+    "disclaimer": "Payments are not enabled yet — this is UI only.",
+    "account": "Account"
+  },
+  "account": {
+    "title": "Your account",
+    "subtitle": "Manage your subscription and see your details.",
+    "email": "Email",
+    "plan": "Plan",
+    "renewal": "Renewal",
+    "noPlan": "No active subscription",
+    "noRenewal": "—",
+    "cancel": "Cancel subscription",
+    "invoices": "Invoices",
+    "invoicesPlaceholder": "Invoices will appear here once payments are enabled.",
+    "plans": {
+      "weekly": "Weekly",
+      "monthly": "Monthly",
+      "annual": "Annual"
+    }
+  },
+  "gameLobby": {
+    "title": "Game lobby",
+    "subtitle": "Pick a game and create a room to play with friends.",
+    "createRoom": "Create room",
+    "joinRoom": "Join room",
+    "roomCode": "Room code"
+  },
+  "gameRoom": {
+    "title": "Game room:",
+    "subtitle": "Share the code and join. The host can start when everyone is ready.",
+    "players": "Players",
+    "host": "Host",
+    "actions": "Actions",
+    "start": "Start game",
+    "startHint": "Need at least 2 players. The room will route based on game type.",
+    "loading": "Loading…"
+  },
+  "snakesGame": {
+    "title": "Snakes & Ladders — room",
+    "loading": "Loading…",
+    "leave": "Leave",
+    "configNamed": "Config: {name}",
+    "configActive": "Active config",
+    "players": "Players",
+    "action": "Action",
+    "waiting": "Waiting for your turn…",
+    "log": "Log",
+    "turnOf": "{name}'s turn"
+  },
+  "articlesPage": {
+    "title": "Tips & Articles",
+    "subtitle": "Straight talk, practical intimacy, and playful ideas for tonight.",
+    "readMore": "Read more",
+    "empty": "No articles yet — check back soon.",
+    "untitled": "Untitled"
+  },
+  "articlePage": {
+    "back": "All articles",
+    "related": "Related articles",
+    "read": "Read",
+    "untitled": "Untitled",
+    "fallbackNotice": "This article is only available in {language}.",
+    "langHebrew": "Hebrew",
+    "langEnglish": "English"
   }
 }

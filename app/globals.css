@@ -1,11 +1,15 @@
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
+@import "@uiw/react-md-editor/markdown-editor.css";
+@import "@uiw/react-markdown-preview/markdown.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 body {
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 18px;
+  background: #0d0a14;
+  color: #f9fafb;
 }
 
 @layer utilities {
@@ -15,10 +19,50 @@ body {
 }
 
 @layer base {
-  .theme {
-    --font-heading: var(--font-sans);
-    --font-sans: var(--font-sans);
+  :root {
+    --font-body: var(--font-body-latin);
+    --font-heading: var(--font-heading-latin);
+    --mio-bg: #0d0a14;
+    --mio-surface-a: #120d1a;
+    --mio-surface-b: #0f0a18;
+    --mio-purple: #e879f9;
+    --mio-rose: #fb7185;
+    --mio-card: rgba(139, 92, 246, 0.08);
+    --mio-card-border: rgba(139, 92, 246, 0.20);
   }
+
+  [dir="rtl"] {
+    --font-body: var(--font-body-hebrew);
+    --font-heading: var(--font-heading-hebrew);
+  }
+
+  .font-heading {
+    font-family: var(--font-heading), system-ui, sans-serif;
+  }
+
+  .noise-overlay {
+    position: relative;
+  }
+  .noise-overlay::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    opacity: 0.035;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 256px 256px;
+    z-index: 1;
+  }
+
+  @keyframes cta-glow {
+    0%, 100% { box-shadow: 0 0 20px 4px rgba(232, 121, 249, 0.25), 0 0 60px 8px rgba(251, 113, 133, 0.10); }
+    50% { box-shadow: 0 0 30px 8px rgba(232, 121, 249, 0.40), 0 0 80px 16px rgba(251, 113, 133, 0.20); }
+  }
+  .cta-glow {
+    animation: cta-glow 2.5s ease-in-out infinite;
+  }
+
   :root {
     --background: oklch(1 0 0);
     --foreground: oklch(0.145 0 0);

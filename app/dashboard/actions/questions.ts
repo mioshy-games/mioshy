@@ -16,6 +16,34 @@ export async function upsertQuestion(
   const v = parsed.data;
   const { supabase } = await requireAdmin();
 
+  // Enforce category consistency: question.type must match a wheel category for this game.
+  const { data: wheel } = await supabase
+    .from("wheel_configs")
+    .select("slices")
+    .eq("game_id", gameId)
+    .maybeSingle();
+
+  const categories = Array.from(
+    new Set(
+      (wheel?.slices as Array<{ question_type?: string }> | null | undefined)
+        ?.map((s) => String(s.question_type ?? "").trim())
+        .filter(Boolean) ?? [],
+    ),
+  );
+
+  if (categories.length === 0) {
+    return {
+      ok: false as const,
+      error: "Please define wheel categories first",
+    };
+  }
+  if (!categories.includes(String(v.type))) {
+    return {
+      ok: false as const,
+      error: "Invalid category: please pick one of the wheel categories",
+    };
+  }
+
   const payload = {
     game_id: gameId,
     type: v.type,

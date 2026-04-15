@@ -2,26 +2,59 @@
 
 import { FormEvent, useState } from "react";
 import { useTranslations } from "next-intl";
-import { createClient, isSupabaseConfigured } from "@/lib/supabase";
+import { useRouter } from "@/navigation";
+import { createBrowserSupabaseClient } from "@/lib/supabase/client";
+import { isSupabaseConfigured } from "@/lib/supabase";
 
 export function AuthForm() {
   const t = useTranslations("auth");
+  const router = useRouter();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [message, setMessage] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<{
+    text: string;
+    tone: "error" | "info";
+  } | null>(null);
   const [loading, setLoading] = useState(false);
 
   const configured = isSupabaseConfigured();
 
-  async function onSubmit(e: FormEvent) {
-    e.preventDefault();
-    setMessage(null);
-    const supabase = createClient();
-    if (!supabase) {
-      setMessage(t("missingEnv"));
+  async function redirectAfterAuthenticatedSession(supabase: ReturnType<
+    typeof createBrowserSupabaseClient
+  >) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      setFeedback({ text: t("confirmEmail"), tone: "info" });
       return;
     }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (profile?.role === "admin") {
+      window.location.assign("/dashboard");
+      return;
+    }
+
+    setFeedback({ text: t("signedInNonAdmin"), tone: "info" });
+    router.push("/");
+    router.refresh();
+  }
+
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    setFeedback(null);
+    if (!configured) {
+      setFeedback({ text: t("missingEnv"), tone: "error" });
+      return;
+    }
+    const supabase = createBrowserSupabaseClient();
     setLoading(true);
     try {
       if (mode === "signin") {
@@ -30,14 +63,27 @@ export function AuthForm() {
           password,
         });
         if (error) throw error;
-        setMessage("OK");
-      } else {
-        const { error } = await supabase.auth.signUp({ email, password });
-        if (error) throw error;
-        setMessage("OK");
+        await redirectAfterAuthenticatedSession(supabase);
+        return;
       }
+
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+      if (error) throw error;
+
+      if (!data.session) {
+        setFeedback({ text: t("confirmEmail"), tone: "info" });
+        return;
+      }
+
+      await redirectAfterAuthenticatedSession(supabase);
     } catch (err: unknown) {
-      setMessage(err instanceof Error ? err.message : "Error");
+      setFeedback({
+        text: err instanceof Error ? err.message : "Error",
+        tone: "error",
+      });
     } finally {
       setLoading(false);
     }
@@ -111,11 +157,16 @@ export function AuthForm() {
         {mode === "signin" ? t("toggleToSignUp") : t("toggleToSignIn")}
       </button>
 
-      {message && message !== "OK" ? (
-        <p className="mt-4 text-center text-sm text-rose-200">{message}</p>
-      ) : null}
-      {message === "OK" ? (
-        <p className="mt-4 text-center text-sm text-emerald-200">{t("success")}</p>
+      {feedback ? (
+        <p
+          className={
+            feedback.tone === "info"
+              ? "mt-4 text-center text-sm text-amber-100"
+              : "mt-4 text-center text-sm text-rose-200"
+          }
+        >
+          {feedback.text}
+        </p>
       ) : null}
     </div>
   );

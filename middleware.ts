@@ -1,31 +1,39 @@
 import createIntlMiddleware from "next-intl/middleware";
 import { type NextRequest, NextResponse } from "next/server";
-import { createSupabaseMiddlewareClient } from "@/lib/supabase/middleware";
+import { copyAuthCookiesToResponse, updateSession } from "@/lib/supabase/middleware";
 import { routing } from "./i18n/routing";
 
 const intlMiddleware = createIntlMiddleware(routing);
 
 export async function middleware(request: NextRequest) {
+  const { supabase, response: supabaseResponse, user } =
+    await updateSession(request);
+
   if (request.nextUrl.pathname.startsWith("/dashboard")) {
-    const { supabase, response } = createSupabaseMiddlewareClient(request);
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
     if (!user) {
-      return NextResponse.redirect(new URL("/", request.url));
+      const redirect = NextResponse.redirect(new URL("/", request.url));
+      copyAuthCookiesToResponse(supabaseResponse, redirect);
+      return redirect;
     }
+
     const { data: profile } = await supabase
       .from("profiles")
       .select("role")
       .eq("id", user.id)
       .maybeSingle();
+
     if (profile?.role !== "admin") {
-      return NextResponse.redirect(new URL("/", request.url));
+      const redirect = NextResponse.redirect(new URL("/", request.url));
+      copyAuthCookiesToResponse(supabaseResponse, redirect);
+      return redirect;
     }
-    return response;
+
+    return supabaseResponse;
   }
 
-  return intlMiddleware(request);
+  const intlResponse = intlMiddleware(request);
+  copyAuthCookiesToResponse(supabaseResponse, intlResponse);
+  return intlResponse;
 }
 
 export const config = {

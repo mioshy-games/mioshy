@@ -6,6 +6,9 @@ import {
   LayoutDashboard,
   Gamepad2,
   MessageSquareText,
+  BookOpenText,
+  Users,
+  CreditCard,
   Settings,
   Menu,
 } from "lucide-react";
@@ -22,7 +25,11 @@ import {
 const links = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/games", label: "Games", icon: Gamepad2 },
+  { href: "/dashboard/snakes", label: "Snakes", icon: Gamepad2 },
   { href: "/dashboard/questions", label: "Questions", icon: MessageSquareText },
+  { href: "/dashboard/articles", label: "Articles", icon: BookOpenText },
+  { href: "/dashboard/leads", label: "Leads", icon: Users },
+  { href: "/dashboard/subscriptions", label: "Subscriptions", icon: CreditCard },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 

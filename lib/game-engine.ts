@@ -1,4 +1,4 @@
-export type QuestionType = "truth" | "dare";
+export type QuestionType = string;
 
 export type Question = {
   id: string;
@@ -9,7 +9,7 @@ export type Question = {
 
 export type WheelOption = {
   type: QuestionType;
-  labelKey: "truth" | "dare";
+  labelKey: string;
 };
 
 const FREE_SPINS = 3;
