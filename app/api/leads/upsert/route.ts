@@ -18,12 +18,17 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}))
   const {
     email,
-    name          = null,
-    language      = "he",
+    full_name        = null,
+    name             = null,
+    language         = "he",
     device_id,
-    country_code  = null,
-    country_name  = null,
+    country_code     = null,
+    country_name     = null,
     vat_rate_percent = 0,
+    marketing_consent  = false,
+    terms_accepted     = false,
+    terms_accepted_at  = null,
+    user_id            = null,
   } = body
 
   // ── Validate ────────────────────────────────────────────────────────────────
@@ -39,18 +44,27 @@ export async function POST(req: Request) {
 
   const admin = await createAdminClient()
 
+  const resolvedName = typeof full_name === "string" && full_name.trim()
+    ? full_name.trim()
+    : typeof name === "string" && name.trim() ? name.trim() : null
+
   // ── Try to insert; on duplicate, fetch existing ─────────────────────────────
   const { data: inserted, error: insertErr } = await admin
     .from("leads")
     .insert({
-      email:            email.trim().toLowerCase(),
-      name:             typeof name === "string" && name.trim() ? name.trim() : null,
+      email:             email.trim().toLowerCase(),
+      full_name:         resolvedName,
+      name:              resolvedName,
       language,
       device_id,
-      status:           "new",
-      country_code:     country_code || null,
-      country_name:     country_name || null,
-      vat_rate_percent: typeof vat_rate_percent === "number" ? vat_rate_percent : 0,
+      status:            "new",
+      country_code:      country_code || null,
+      country_name:      country_name || null,
+      vat_rate_percent:  typeof vat_rate_percent === "number" ? vat_rate_percent : 0,
+      marketing_consent: !!marketing_consent,
+      terms_accepted:    !!terms_accepted,
+      terms_accepted_at: terms_accepted && terms_accepted_at ? terms_accepted_at : null,
+      user_id:           user_id || null,
     })
     .select("id")
     .maybeSingle()

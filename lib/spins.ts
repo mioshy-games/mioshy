@@ -80,4 +80,30 @@ export function lockGuestUntilTomorrow() {
   window.localStorage.setItem(GUEST_LOCK_KEY, String(tomorrow.getTime()));
 }
 
+// ── 10-minute rate limit (kicks in after 6 spins for non-subscribers) ─────────
+
+const RATE_LIMIT_KEY = "mioshy:rate_limit_until_v1";
+const RATE_LIMIT_MS  = 10 * 60 * 1000; // 10 minutes
+
+/** Returns the timestamp (ms) until which the user is rate-limited, or null if not limited. */
+export function getRateLimitUntilMs(): number | null {
+  if (typeof window === "undefined") return null;
+  const raw = window.localStorage.getItem(RATE_LIMIT_KEY);
+  const n   = raw ? Number(raw) : NaN;
+  if (!Number.isFinite(n)) return null;
+  return n > Date.now() ? n : null;
+}
+
+/** Set a 10-minute cooldown starting now. */
+export function setSpinRateLimit() {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(RATE_LIMIT_KEY, String(Date.now() + RATE_LIMIT_MS));
+}
+
+/** Clear rate limit (e.g. after subscribing). */
+export function clearSpinRateLimit() {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(RATE_LIMIT_KEY);
+}
+
 

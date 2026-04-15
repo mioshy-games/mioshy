@@ -13,6 +13,9 @@ import {
   getAndMaybeResetUserSpins,
   getGuestSpins,
   getGuestLockUntilMs,
+  getRateLimitUntilMs,
+  setSpinRateLimit,
+  clearSpinRateLimit,
   incrementUserSpins,
   lockGuestUntilTomorrow,
   setGuestSpins,
@@ -52,6 +55,8 @@ export function TruthOrDareClient({
   const [subOpen, setSubOpen] = useState(false);
   const [subLocked, setSubLocked] = useState(false);
   const [leadCaptured, setLeadCaptured] = useState(false);
+  const [rateLimitMs, setRateLimitMs] = useState<number | null>(null);
+  const [rateLimitSecs, setRateLimitSecs] = useState(0);
   const authWaiterRef = useRef<{
     resolve: (uid: string | null) => void;
   } | null>(null);
@@ -91,28 +96,60 @@ export function TruthOrDareClient({
     [locale],
   );
 
+  // ── Rate-limit countdown ticker ────────────────────────────────────────────
+  useEffect(() => {
+    if (!rateLimitMs) return;
+    const tick = () => {
+      const remaining = Math.ceil((rateLimitMs - Date.now()) / 1000);
+      if (remaining <= 0) {
+        setRateLimitMs(null);
+        setRateLimitSecs(0);
+      } else {
+        setRateLimitSecs(remaining);
+      }
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [rateLimitMs]);
+
   const handleSpinClick = () => {
     if (!authReady) return;
+
+    // Subscribers spin freely
     if (subscribed) {
       wheelRef.current?.spin();
       return;
     }
 
+    // ── Guest (not logged in) ────────────────────────────────────────────────
     if (!userId) {
-      const used = getGuestSpins();
+      const used        = getGuestSpins();
       const lockedUntil = getGuestLockUntilMs();
+
+      // Legacy day-lock (dismissed lead gate)
       if (lockedUntil && lockedUntil > Date.now()) {
-        setSubLocked(true);
+        setSubLocked(false);
         setSubOpen(true);
         return;
       }
+
+      // After 6 spins → 10-min rate limit (not hard block)
       if (used >= 6) {
-        setSubLocked(true);
-        setSubOpen(true);
+        const rl = getRateLimitUntilMs();
+        if (rl) {
+          setRateLimitMs(rl);
+          setSubLocked(false);
+          setSubOpen(true);   // show plans, but user can close
+          return;
+        }
+        // 10 min passed — allow spin
+        wheelRef.current?.spin();
         return;
       }
+
+      // Spins 4-6: require lead capture first
       if (used >= 3) {
-        // lead gate: save lead details to continue to spins 4-6
         const existingLead =
           typeof window !== "undefined"
             ? window.localStorage.getItem("mioshy:lead_id_v1")
@@ -122,14 +159,32 @@ export function TruthOrDareClient({
           setSubOpen(true);
           return;
         }
+        // Lead captured — allow spin
+        wheelRef.current?.spin();
+        return;
+      }
+
+      // Spins 1-3: free
+      wheelRef.current?.spin();
+      return;
+    }
+
+    // ── Logged-in non-subscriber ─────────────────────────────────────────────
+    if (completedSpins >= 6) {
+      const rl = getRateLimitUntilMs();
+      if (rl) {
+        setRateLimitMs(rl);
+        setSubLocked(false);
+        setSubOpen(true);
         return;
       }
       wheelRef.current?.spin();
       return;
     }
 
+    // Logged-in free user: first 3 spins free, then show paywall
     if (completedSpins >= 3) {
-      setSubLocked(true);
+      setSubLocked(false);
       setSubOpen(true);
       return;
     }
@@ -269,8 +324,11 @@ export function TruthOrDareClient({
           const next = getGuestSpins() + 1;
           setGuestSpins(next);
           if (next >= 6) {
-            setSubLocked(true);
-            setSubOpen(true);
+            // Set 10-min rate limit after 6th spin
+            setSpinRateLimit();
+            setRateLimitMs(getRateLimitUntilMs());
+            setSubLocked(false);
+            setSubOpen(true);   // show plans, but user can close
           } else if (next >= 3) {
             const existingLead =
               typeof window !== "undefined"
@@ -282,9 +340,15 @@ export function TruthOrDareClient({
             }
           }
         } else {
-          void incrementUserSpins(createBrowserSupabaseClient(), userId, completedSpins + 1);
-          if (completedSpins + 1 >= 3) {
-            setSubLocked(true);
+          const nextSpins = completedSpins + 1;
+          void incrementUserSpins(createBrowserSupabaseClient(), userId, nextSpins);
+          if (nextSpins >= 6) {
+            setSpinRateLimit();
+            setRateLimitMs(getRateLimitUntilMs());
+            setSubLocked(false);
+            setSubOpen(true);
+          } else if (nextSpins >= 3) {
+            setSubLocked(false);
             setSubOpen(true);
           }
         }
@@ -398,7 +462,7 @@ export function TruthOrDareClient({
             ref={wheelRef}
             options={options}
             onSettled={handleSettled}
-            disabled={!authReady || (!subscribed && ((userId ? completedSpins >= 3 : getGuestSpins() >= 6)))}
+            disabled={!authReady || !!rateLimitMs}
             isSpinSoundEnabled={spinSoundOn}
             pointerColor={wheel.pointer_color}
             borderColor={wheel.border_color}
@@ -431,8 +495,17 @@ export function TruthOrDareClient({
             className="min-h-[44px] w-full rounded-full bg-gradient-to-r from-fuchsia-500 to-rose-500 px-6 py-3 text-base font-semibold text-white shadow-lg shadow-fuchsia-900/40 transition hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 sm:text-lg"
             style={{ fontFamily: "var(--font-heading-hebrew), var(--font-heading-latin), system-ui" }}
           >
-            {t("spin")}
+            {rateLimitMs
+              ? `${Math.floor(rateLimitSecs / 60)}:${String(rateLimitSecs % 60).padStart(2, "0")}`
+              : t("spin")}
           </button>
+          {rateLimitMs && !subOpen && (
+            <p className="text-center text-xs text-white/60">
+              {locale === "he"
+                ? "הסיבוב הבא יהיה זמין בעוד כמה דקות — או שדרג למנוי ללא הגבלה"
+                : "Next spin available soon — or subscribe for unlimited play"}
+            </p>
+          )}
         </div>
       </div>
 
@@ -518,11 +591,20 @@ export function TruthOrDareClient({
           setSubscribed(true);
           setSubLocked(false);
           setSubOpen(false);
+          setRateLimitMs(null);
+          clearSpinRateLimit();
         }}
         mode={userId || getGuestSpins() >= 6 ? "paywall" : "lead"}
-        onLeadSaved={() => {
+        onLeadSaved={(_, newUserId) => {
           setLeadCaptured(true);
           setSubOpen(false);
+          // If registration created a new user, promote to logged-in state
+          if (newUserId && !userId) {
+            setUserId(newUserId);
+            // Carry over guest spins (3) to the new account
+            void incrementUserSpins(createBrowserSupabaseClient(), newUserId, 3);
+            setCompletedSpins(3);
+          }
         }}
       />
     </GameLayout>
