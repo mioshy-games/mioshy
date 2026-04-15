@@ -62,11 +62,19 @@ export async function POST(req: Request) {
   // Duplicate key (code 23505) or any other insert error → look up existing lead
   if (insertErr) {
     const isDuplicate =
-      (insertErr as any).code === "23505" ||
+      (insertErr as unknown as { code?: string }).code === "23505" ||
       String(insertErr.message).includes("duplicate") ||
       String(insertErr.message).includes("unique")
 
     if (!isDuplicate) {
+      // Surface a human-readable message for check constraint failures
+      const isCheckViolation =
+        (insertErr as unknown as { code?: string }).code === "23514" ||
+        String(insertErr.message).includes("violates check constraint")
+      if (isCheckViolation) {
+        console.error("[leads/upsert] check constraint error", insertErr.message)
+        return NextResponse.json({ success: false, message: "אימייל לא תקין" }, { status: 400 })
+      }
       console.error("[leads/upsert] unexpected insert error", insertErr)
       return NextResponse.json({ success: false, message: insertErr.message }, { status: 500 })
     }
