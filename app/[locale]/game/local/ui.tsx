@@ -59,7 +59,6 @@ export function LocalGameClient() {
     createRoom: storeCreateRoom,
     addPlayer: storeAddPlayer,
     removePlayer: storeRemovePlayer,
-    patchPlayer: storePatchPlayer,
     startGame: storeStartGame,
     players: storePlayers,
     room: storeRoom,

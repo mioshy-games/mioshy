@@ -32,27 +32,24 @@ export function SnakesLaddersSVG({
   const uid = useId().replace(/:/g, "");
   const size = config.boardSize || 100;
 
-  const snakes = config.snakes ?? [];
-  const ladders = config.ladders ?? [];
-
   const snakePaths = useMemo(
     () =>
-      snakes.map((s) => {
+      (config.snakes ?? []).map((s) => {
         const from = cellToBoardPercent(s.from, size);
         const to = cellToBoardPercent(s.to, size);
         return { item: s, from, to };
       }),
-    [snakes, size],
+    [config.snakes, size],
   );
 
   const ladderPaths = useMemo(
     () =>
-      ladders.map((l) => {
+      (config.ladders ?? []).map((l) => {
         const from = cellToBoardPercent(l.from, size);
         const to = cellToBoardPercent(l.to, size);
         return { item: l, from, to };
       }),
-    [ladders, size],
+    [config.ladders, size],
   );
 
   return (
