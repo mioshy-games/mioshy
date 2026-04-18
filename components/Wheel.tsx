@@ -48,6 +48,52 @@ export type WheelProps = {
    * Default: 0.72 (sits in the outer third of each slice).
    */
   labelRadiusFraction?: number;
+  /**
+   * Spin animation duration in seconds. Default: 3.8
+   * Driven by GameSettings.motion.spinSpeed (1–10 mapped to 6s–1.5s).
+   */
+  spinDuration?: number;
+  /**
+   * Framer Motion easing for the spin. Default: cubic-bezier ease-out.
+   * Accepts a named easing or a cubic-bezier array.
+   */
+  spinEasing?: string | number[];
+  /**
+   * Outer ring around the wheel (from GameSettings.border).
+   * Separate from the existing borderColor ring (which is actually a box-shadow).
+   */
+  outerBorder?: {
+    enabled: boolean;
+    width: number;
+    color: string;
+    style: "solid" | "dashed" | "none";
+    /**
+     * Gap from wheel edge in px (0–50).
+     * Legacy string values ("attached"=0, "near"=8, "far"=20) still accepted.
+     */
+    distance: number | "attached" | "near" | "far";
+  };
+  centerShadow?: {
+    enabled: boolean;
+    color: string;
+    opacity: number; // 0-1
+    blur: number; // px
+    offsetX: number;
+    offsetY: number;
+  };
+  dividerShadow?: {
+    enabled: boolean;
+    color: string;
+    opacity: number; // 0-1
+    blur: number; // px
+  };
+  labelFontSizePx?: number;
+  labelOutline?: {
+    enabled: boolean;
+    color: string;
+    opacity: number; // 0-1
+    width: number; // px
+  };
 };
 
 export type WheelApi = {
@@ -74,6 +120,13 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
     forbiddenType = null,
     wheelSizeRem = 22,
     labelRadiusFraction = 0.72,
+    spinDuration = 3.8,
+    spinEasing = [0.12, 0.8, 0.12, 1],
+    outerBorder,
+    centerShadow,
+    dividerShadow,
+    labelFontSizePx = 12,
+    labelOutline = { enabled: true, color: "#000000", opacity: 0.25, width: 2 },
   },
   ref,
 ) {
@@ -92,7 +145,9 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
   const segRad = (Math.PI * 2) / n;
   const cx = 150;
   const cy = 150;
-  const r = 140;
+  const r = 140;   // used for label / marker / divider positions (unchanged)
+  const rEdge = 150; // = SVG half-width → segments fill to the rounded-full container edge,
+                     //   eliminating the dark gap that appears between r=140 and the clip circle
 
   type MarkerCfg = {
     marker_type?: "none" | "circle" | "svg_icon";
@@ -115,10 +170,12 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
   }
 
   function wedgePath(startRad: number, endRad: number) {
-    const a0 = polar(startRad, r);
-    const a1 = polar(endRad, r);
+    // Paths use rEdge (=150) so segments fill the full rounded-full container,
+    // removing the empty ring that appeared between r=140 and the clip circle.
+    const a0 = polar(startRad, rEdge);
+    const a1 = polar(endRad, rEdge);
     const large = endRad - startRad > Math.PI ? 1 : 0;
-    return `M ${cx} ${cy} L ${a0.x} ${a0.y} A ${r} ${r} 0 ${large} 1 ${a1.x} ${a1.y} Z`;
+    return `M ${cx} ${cy} L ${a0.x} ${a0.y} A ${rEdge} ${rEdge} 0 ${large} 1 ${a1.x} ${a1.y} Z`;
   }
 
   const markerAngles = useMemo(() => {
@@ -170,8 +227,9 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
 
     setSpinning(true);
     animate(rotation, targetRot, {
-      duration: 3.8,
-      ease: [0.12, 0.8, 0.12, 1],
+      duration: spinDuration,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ease: spinEasing as any,
       onComplete: () => {
         if (playAudio) {
           stopSpinSound();
@@ -195,9 +253,49 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
     isSpinSoundEnabled,
     forbiddenType,
     indexAtPointer,
+    spinDuration,
+    spinEasing,
   ]);
 
   useImperativeHandle(ref, () => ({ spin }), [spin]);
+
+  // ── Single controllable border ring ──────────────────────────────────────
+  // We render ONE border only:
+  //   • If outerBorder (from GameSettings) is provided → use it exclusively
+  //   • Otherwise → fall back to the legacy borderColor prop via box-shadow
+  //
+  // The border ring is an absolutely-positioned sibling div so dashed/solid
+  // both work, and the wheel's rounded-full overflow-hidden is unaffected.
+  //
+  // Pointer is rendered inside the wheel container (never negative top)
+  // so it doesn't overflow the wheel wrapper.
+
+  const hasCustomBorder = outerBorder?.enabled && outerBorder.style !== "none";
+  const hasOuterBorderProp = outerBorder !== undefined;
+
+  /** Resolve gap: accepts both numeric px and legacy string presets */
+  function resolveGap(d: number | "attached" | "near" | "far" | undefined): number {
+    if (d === undefined) return 0;
+    if (typeof d === "number") return d;
+    return { attached: 0, near: 8, far: 20 }[d] ?? 0;
+  }
+
+  const borderGapPx = hasCustomBorder ? resolveGap(outerBorder!.distance) : 0;
+  const borderWidthPx = hasCustomBorder ? outerBorder!.width : 0;
+
+  // ── Pointer position ────────────────────────────────────────────────────
+  // The pointer is a ▼ triangle: base at `top`, tip 22 px below.
+  //
+  // • No border  → base sits just inside the wheel rim (original feel, +4 px).
+  // • With border → base snaps to the outer edge of the border ring so the
+  //   pointer visually "attaches" to the ring.  We also clamp the tip to be
+  //   at most -2 px (i.e. always enters the wheel area) even when the gap is
+  //   very large.
+  //
+  //   clamped = max(-(22 - 2), -(gap + width))  →  tip ≥ 2 px inside wheel
+  const pointerTopPx = hasCustomBorder
+    ? Math.max(-(22 - 2), -(borderGapPx + borderWidthPx))
+    : 4;
 
   return (
     <div
@@ -207,8 +305,26 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
         maxWidth: `${wheelSizeRem}rem`,
       }}
     >
+      {/* ── Border ring (one single ring) ──────────────────────────────── */}
+      {hasCustomBorder ? (
+        // Controlled ring from GameSettings
+        <div
+          aria-hidden
+          className="pointer-events-none absolute rounded-full z-10"
+          style={{
+            inset: -(borderGapPx + borderWidthPx),
+            border: `${borderWidthPx}px ${outerBorder!.style} ${outerBorder!.color}`,
+          }}
+        />
+      ) : (
+        // Legacy fallback — invisible div, actual ring comes from box-shadow on wheel div
+        null
+      )}
+
+      {/* ── Pointer triangle — always on top, inside wrapper ─────────────── */}
       <div
-        className="pointer-events-none absolute left-1/2 top-0 z-20 -translate-x-1/2 -translate-y-1"
+        className="pointer-events-none absolute left-1/2 z-20 -translate-x-1/2"
+        style={{ top: pointerTopPx }}
         aria-hidden
       >
         <div
@@ -216,11 +332,42 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
           style={{ borderTopColor: pointerColor }}
         />
       </div>
+
       <div
-        className="relative h-full w-full overflow-hidden rounded-full shadow-[0_20px_60px_-15px_rgba(0,0,0,0.35)]"
-        style={{ boxShadow: `0 0 0 4px ${borderColor}` }}
+        className="relative h-full w-full overflow-hidden rounded-full"
+        style={{
+          boxShadow: hasCustomBorder
+            ? "0 20px 60px -15px rgba(0,0,0,0.35)"           // only depth shadow, no ring
+            : hasOuterBorderProp
+              ? "0 20px 60px -15px rgba(0,0,0,0.35)"         // outerBorder exists but disabled/none → no ring
+              : `0 0 0 4px ${borderColor}, 0 20px 60px -15px rgba(0,0,0,0.35)`, // legacy ring (only when no outerBorder prop)
+        }}
       >
         <svg className="h-full w-full" viewBox="0 0 300 300" aria-label="Wheel">
+          <defs>
+            {centerShadow?.enabled ? (
+              <filter id="mioCenterShadow" x="-50%" y="-50%" width="200%" height="200%">
+                <feDropShadow
+                  dx={centerShadow.offsetX}
+                  dy={centerShadow.offsetY}
+                  stdDeviation={centerShadow.blur}
+                  floodColor={centerShadow.color}
+                  floodOpacity={centerShadow.opacity}
+                />
+              </filter>
+            ) : null}
+            {dividerShadow?.enabled ? (
+              <filter id="mioDividerShadow" x="-50%" y="-50%" width="200%" height="200%">
+                <feDropShadow
+                  dx="0"
+                  dy="0"
+                  stdDeviation={dividerShadow.blur}
+                  floodColor={dividerShadow.color}
+                  floodOpacity={dividerShadow.opacity}
+                />
+              </filter>
+            ) : null}
+          </defs>
           <motion.g style={{ rotate: rotation, transformOrigin: "150px 150px" }}>
             {options.map((opt, i) => {
               const start = -Math.PI / 2 + i * segRad;
@@ -237,7 +384,9 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
             {dividerEnabled && options.length > 1
               ? Array.from({ length: n }, (_, i) => {
                   const ang = -Math.PI / 2 + i * segRad;
-                  const p = polar(ang, r);
+                  // Extend 1px beyond the edge and use round caps to avoid
+                  // subpixel "gaps" that can appear at the outer rim.
+                  const p = polar(ang, rEdge + 1);
                   return (
                     <line
                       key={`div-${i}`}
@@ -247,7 +396,9 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
                       y2={p.y}
                       stroke={dividerColor}
                       strokeWidth={dividerWidth}
+                      strokeLinecap="round"
                       vectorEffect="non-scaling-stroke"
+                      filter={dividerShadow?.enabled ? "url(#mioDividerShadow)" : undefined}
                     />
                   );
                 })
@@ -295,13 +446,22 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
                   x={p.x}
                   y={p.y}
                   fill="white"
-                  fontSize={12}
+                  fontSize={labelFontSizePx}
                   fontWeight={800}
                   textAnchor="middle"
                   dominantBaseline="middle"
                   direction={isRtl ? "rtl" : "ltr"}
                   unicodeBidi="plaintext"
-                  style={{ paintOrder: "stroke", stroke: "rgba(0,0,0,0.25)", strokeWidth: 2 }}
+                  style={
+                    labelOutline?.enabled
+                      ? {
+                          paintOrder: "stroke",
+                          stroke: labelOutline.color,
+                          strokeWidth: labelOutline.width,
+                          strokeOpacity: labelOutline.opacity,
+                        }
+                      : undefined
+                  }
                   transform={`rotate(${rot} ${p.x} ${p.y})`}
                 >
                   {opt.label}
@@ -318,12 +478,16 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
                 stroke={innerCircleBorderColor}
                 strokeWidth={3}
                 vectorEffect="non-scaling-stroke"
+                filter={centerShadow?.enabled ? "url(#mioCenterShadow)" : undefined}
               />
             ) : null}
           </motion.g>
         </svg>
 
-        <div className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-br from-white/25 to-transparent" />
+        {/* Subtle rim highlight. Hide when outerBorder is explicitly disabled to avoid a "ghost border". */}
+        {hasCustomBorder || !hasOuterBorderProp ? (
+          <div className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-br from-white/25 to-transparent" />
+        ) : null}
       </div>
       <span className="sr-only" aria-live="polite">
         {spinning ? "Spinning" : `Rotation ${Math.round(displayRotation % 360)}`}

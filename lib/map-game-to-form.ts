@@ -31,6 +31,13 @@ export function mapToGameFormValues(
     bg_type: game.bg_type ?? "color",
     bg_value: game.bg_value ?? base.bg_value,
     player_mode: game.player_mode ?? false,
+    meta_title_he: game.meta_title_he ?? "",
+    meta_title_en: game.meta_title_en ?? "",
+    meta_description_he: game.meta_description_he ?? "",
+    meta_description_en: game.meta_description_en ?? "",
+    og_image_url: game.og_image_url ?? "",
+    keywords_csv: Array.isArray(game.keywords) ? game.keywords.join(", ") : "",
+    sort_order: game.sort_order ?? 0,
     wheel: {
       ...base.wheel,
       ...(wheel

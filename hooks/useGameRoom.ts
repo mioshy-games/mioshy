@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import type { GamePlayer, GameRoom, GameState, PlayerInfo } from "@/lib/snakes/types";
+import { useGameRoomStore } from "@/lib/store/useGameRoomStore";
 
 type GameType = "wheel" | "snakes";
 
@@ -34,6 +35,9 @@ async function generateUniqueRoomCode() {
   return randomRoomCode();
 }
 
+/** Result returned by claimCharacter */
+export type ClaimResult = "ok" | "avatar_taken" | "color_taken" | "not_found" | "error";
+
 export interface UseGameRoom {
   room: GameRoom | null;
   players: GamePlayer[];
@@ -46,6 +50,15 @@ export interface UseGameRoom {
   leaveRoom: () => Promise<void>;
   transferHostIfNeeded: () => Promise<void>;
   setRoomByCode: (code: string) => Promise<void>;
+  /**
+   * Atomically claim an avatar+colour for the local player.
+   * Returns a discriminated result string so the UI can show specific errors.
+   */
+  claimCharacter: (avatar: string, color: string) => Promise<ClaimResult>;
+  /**
+   * Unlock the local player's selection so they can pick again.
+   */
+  unlockCharacter: () => Promise<boolean>;
   error: string | null;
 }
 
@@ -57,6 +70,12 @@ export function useGameRoom(initialRoomCode?: string): UseGameRoom {
   const [myPlayerId, setMyPlayerId] = useState<string | null>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // ── Keep the Zustand store in sync with local state ───────────────────────
+  const store = useGameRoomStore();
+  const storeSetPlayers = store.setPlayers;
+  const storeSetRoom    = store.setRoom;
+  const storeSetMyId    = store.setMyPlayerId;
 
   const isHost = useMemo(() => {
     if (!room || !myPlayerId) return false;
@@ -86,10 +105,15 @@ export function useGameRoom(initialRoomCode?: string): UseGameRoom {
           .order("order_index", { ascending: true })
           .order("created_at", { ascending: true }),
       ]);
-      if (roomRow) setRoom(roomRow as unknown as GameRoom);
-      setPlayers((playersRows ?? []) as unknown as GamePlayer[]);
+      if (roomRow) {
+        setRoom(roomRow as unknown as GameRoom);
+        storeSetRoom(roomRow as unknown as GameRoom);
+      }
+      const ps = (playersRows ?? []) as unknown as GamePlayer[];
+      setPlayers(ps);
+      storeSetPlayers(ps);
     },
-    [supabase],
+    [supabase, storeSetRoom, storeSetPlayers],
   );
 
   const subscribe = useCallback(
@@ -207,8 +231,8 @@ export function useGameRoom(initialRoomCode?: string): UseGameRoom {
           room_id: r.id,
           user_id: user.id,
           user_name: playerInfo.userName,
-          avatar: playerInfo.avatar,
-          color: playerInfo.color,
+          avatar: playerInfo.avatar ?? "💜",
+          color: playerInfo.color  ?? "#c084fc",
           order_index: 0,
           is_host: true,
           position: 1,
@@ -221,6 +245,7 @@ export function useGameRoom(initialRoomCode?: string): UseGameRoom {
       }
       const me = player as unknown as GamePlayer;
       setMyPlayerId(me.id);
+      storeSetMyId(me.id);
 
       const { data: playersRows } = await supabase
         .from("game_players")
@@ -268,6 +293,7 @@ export function useGameRoom(initialRoomCode?: string): UseGameRoom {
         .maybeSingle();
       if (existing?.id) {
         setMyPlayerId(existing.id as string);
+        storeSetMyId(existing.id as string);
       } else {
         const { count } = await supabase
           .from("game_players")
@@ -293,7 +319,9 @@ export function useGameRoom(initialRoomCode?: string): UseGameRoom {
           setError("הצטרפות לחדר נכשלה");
           throw insErr ?? new Error("join_failed");
         }
-        setMyPlayerId((inserted as unknown as GamePlayer).id);
+        const insertedPlayer = inserted as unknown as GamePlayer;
+        setMyPlayerId(insertedPlayer.id);
+        storeSetMyId(insertedPlayer.id);
       }
 
       const { data: playersRows } = await supabase
@@ -358,6 +386,7 @@ export function useGameRoom(initialRoomCode?: string): UseGameRoom {
     setMyPlayerId(null);
     setRoom(null);
     setPlayers([]);
+    store.reset();
   }, [cleanupChannel, myPlayerId, room, supabase]);
 
   const transferHostIfNeeded = useCallback(async () => {
@@ -377,6 +406,67 @@ export function useGameRoom(initialRoomCode?: string): UseGameRoom {
     }
   }, [players, room, supabase]);
 
+  // ── Character / colour locking ─────────────────────────────────────────────
+
+  const claimCharacter = useCallback(
+    async (avatar: string, color: string): Promise<ClaimResult> => {
+      if (!room || !myPlayerId) return "error";
+      store.setIsLocking(true);
+      store.setLockError(null);
+      try {
+        const { data, error: rpcErr } = await supabase.rpc("claim_player_character", {
+          p_player_id: myPlayerId,
+          p_room_id:   room.id,
+          p_avatar:    avatar,
+          p_color:     color,
+        });
+        if (rpcErr) {
+          store.setLockError(rpcErr.message);
+          return "error";
+        }
+        const result = data as ClaimResult;
+        if (result !== "ok") {
+          const msg =
+            result === "avatar_taken" ? "האוואטר הזה תפוס, בחר/י אחר" :
+            result === "color_taken"  ? "הצבע הזה תפוס, בחר/י אחר"    :
+                                        "בחירה נכשלה";
+          store.setLockError(msg);
+        } else {
+          store.setLockError(null);
+          // Refetch so the local player's is_locked = true shows up immediately.
+          await refetch(room.id);
+        }
+        return result;
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "שגיאה בלתי צפויה";
+        store.setLockError(msg);
+        return "error";
+      } finally {
+        store.setIsLocking(false);
+      }
+    },
+    [myPlayerId, refetch, room, store, supabase],
+  );
+
+  const unlockCharacter = useCallback(async (): Promise<boolean> => {
+    if (!room || !myPlayerId) return false;
+    store.setIsLocking(true);
+    store.setLockError(null);
+    try {
+      const { data, error: rpcErr } = await supabase.rpc("unlock_player_character", {
+        p_player_id: myPlayerId,
+        p_room_id:   room.id,
+      });
+      if (rpcErr || !data) return false;
+      await refetch(room.id);
+      return true;
+    } finally {
+      store.setIsLocking(false);
+    }
+  }, [myPlayerId, refetch, room, store, supabase]);
+
+  // ─────────────────────────────────────────────────────────────────────────
+
   useEffect(() => {
     if (initialRoomCode) void loadRoomByCode(initialRoomCode);
     return () => cleanupChannel();
@@ -394,6 +484,8 @@ export function useGameRoom(initialRoomCode?: string): UseGameRoom {
     leaveRoom,
     transferHostIfNeeded,
     setRoomByCode,
+    claimCharacter,
+    unlockCharacter,
     error,
   };
 }

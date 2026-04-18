@@ -27,6 +27,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
@@ -751,6 +752,147 @@ export function GameForm({
               <p className="text-muted-foreground text-xs">
                 For images, upload to the <code className="text-xs">backgrounds</code>{" "}
                 bucket. For colors, use a hex like <code className="text-xs">#0b0b0f</code>.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* ──────────────── SEO / Discovery ──────────────── */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Search & social</CardTitle>
+            <CardDescription>
+              Override how this game appears on Google and when shared on
+              WhatsApp / Facebook / X. Leave fields empty to use the name &
+              description above.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="meta_title_he">Meta title (HE)</Label>
+                <Controller
+                  control={control}
+                  name="meta_title_he"
+                  render={({ field }) => (
+                    <Input
+                      id="meta_title_he"
+                      placeholder="עד ~60 תווים. ישתמש בשם המשחק אם ריק."
+                      dir="rtl"
+                      {...field}
+                      value={field.value ?? ""}
+                    />
+                  )}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="meta_title_en">Meta title (EN)</Label>
+                <Controller
+                  control={control}
+                  name="meta_title_en"
+                  render={({ field }) => (
+                    <Input
+                      id="meta_title_en"
+                      placeholder="Up to ~60 characters. Falls back to game name."
+                      {...field}
+                      value={field.value ?? ""}
+                    />
+                  )}
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="meta_description_he">Meta description (HE)</Label>
+                <Controller
+                  control={control}
+                  name="meta_description_he"
+                  render={({ field }) => (
+                    <Textarea
+                      id="meta_description_he"
+                      rows={3}
+                      dir="rtl"
+                      placeholder="עד ~160 תווים. תקציר שיופיע בתוצאות חיפוש."
+                      {...field}
+                      value={field.value ?? ""}
+                    />
+                  )}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="meta_description_en">Meta description (EN)</Label>
+                <Controller
+                  control={control}
+                  name="meta_description_en"
+                  render={({ field }) => (
+                    <Textarea
+                      id="meta_description_en"
+                      rows={3}
+                      placeholder="Up to ~160 characters. Appears in Google snippet."
+                      {...field}
+                      value={field.value ?? ""}
+                    />
+                  )}
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="og_image_url">Social share image (URL)</Label>
+                <Controller
+                  control={control}
+                  name="og_image_url"
+                  render={({ field }) => (
+                    <Input
+                      id="og_image_url"
+                      placeholder="https://… 1200×630 recommended. Falls back to thumbnail."
+                      {...field}
+                      value={field.value ?? ""}
+                    />
+                  )}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="sort_order">Sort order</Label>
+                <Controller
+                  control={control}
+                  name="sort_order"
+                  render={({ field }) => (
+                    <Input
+                      id="sort_order"
+                      type="number"
+                      step={1}
+                      {...field}
+                      value={field.value ?? 0}
+                      onChange={(e) => field.onChange(Number(e.target.value) || 0)}
+                    />
+                  )}
+                />
+                <p className="text-muted-foreground text-xs">
+                  Lower numbers appear first on the /games catalogue.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="keywords_csv">Keywords</Label>
+              <Controller
+                control={control}
+                name="keywords_csv"
+                render={({ field }) => (
+                  <Input
+                    id="keywords_csv"
+                    placeholder="couples games, date night, truth or dare, …"
+                    {...field}
+                    value={field.value ?? ""}
+                  />
+                )}
+              />
+              <p className="text-muted-foreground text-xs">
+                Comma-separated. Used for internal search and related-games
+                suggestions (not rendered as deprecated meta keywords).
               </p>
             </div>
           </CardContent>

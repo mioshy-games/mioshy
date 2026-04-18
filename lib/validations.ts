@@ -65,6 +65,14 @@ export const gameFormSchema = z.object({
   bg_type: z.enum(["color", "image"]),
   bg_value: z.string().min(1),
   player_mode: z.boolean(),
+  // Admin-editable SEO overrides. Empty string means "use default".
+  meta_title_he: z.string().max(70).optional().nullable(),
+  meta_title_en: z.string().max(70).optional().nullable(),
+  meta_description_he: z.string().max(180).optional().nullable(),
+  meta_description_en: z.string().max(180).optional().nullable(),
+  og_image_url: z.union([z.string().url(), z.literal(""), z.null()]).optional(),
+  keywords_csv: z.string().optional().nullable(),
+  sort_order: z.number().int().optional().nullable(),
   wheel: wheelConfigFormSchema,
 });
 

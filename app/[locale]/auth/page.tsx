@@ -1,11 +1,14 @@
-import { AuthForm } from "@/components/AuthForm";
+import { AuthBackground } from "@/components/auth/AuthBackground";
+import { LoginForm } from "@/components/auth/LoginForm";
 
-export default function AuthPage() {
+export default function AuthPage({
+  searchParams,
+}: {
+  searchParams: { kicked?: string };
+}) {
   return (
-    <div className="min-h-[100dvh] bg-gradient-to-br from-indigo-950 via-fuchsia-950 to-rose-950 font-[family-name:var(--font-geist-sans)]">
-      <main className="mx-auto flex max-w-6xl flex-col items-center px-4 py-12">
-        <AuthForm />
-      </main>
-    </div>
+    <AuthBackground>
+      <LoginForm kicked={searchParams.kicked === "1"} />
+    </AuthBackground>
   );
 }

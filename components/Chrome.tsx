@@ -13,7 +13,13 @@ function shouldHideChrome(pathname: string) {
   // - /en/game/ABCD/snakes
   // - /en/games/truth-or-dare
   // - /en/games/some-slug
-  return /^\/(en|he)\/(game|games)(\/|$)/.test(pathname);
+  // Support any locale prefix (/[locale]/...) and also non-localized routes.
+  return (
+    /^\/[^/]+\/(game|games)(\/|$)/.test(pathname) ||
+    /^\/(game|games)(\/|$)/.test(pathname) ||
+    /^\/[^/]+\/auth(\/|$)/.test(pathname) ||
+    /^\/auth(\/|$)/.test(pathname)
+  );
 }
 
 export function Chrome({ children }: { children: ReactNode }) {

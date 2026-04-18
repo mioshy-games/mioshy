@@ -22,6 +22,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { MoreHorizontal, Pencil } from "lucide-react";
 import { deleteGame, toggleGameActive } from "@/app/dashboard/actions/games";
+import { SettingsTrigger } from "@/components/settings/SettingsTrigger";
 
 export function GameActions({
   gameId,
@@ -91,6 +92,7 @@ export function GameActions({
           onCheckedChange={(v) => void onToggle(v)}
         />
       </div>
+      <SettingsTrigger gameId={gameId} />
       <Link
         href={`/dashboard/games/${gameId}/edit`}
         className={cn(
@@ -112,12 +114,12 @@ export function GameActions({
           <MoreHorizontal className="size-4" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onSelect={() => void duplicate()}>
+          <DropdownMenuItem onClick={() => void duplicate()}>
             Duplicate game
           </DropdownMenuItem>
           <DropdownMenuItem
             className="text-destructive focus:text-destructive"
-            onSelect={() => setDeleteOpen(true)}
+            onClick={() => setDeleteOpen(true)}
           >
             Delete game
           </DropdownMenuItem>

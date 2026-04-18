@@ -1,8 +1,17 @@
-import type { CoinResult, GameConfig, Question, SnakeOrLadder } from "./types";
+import type { CoinResult, DiceResult, GameConfig, Question, SnakeOrLadder } from "./types";
 import { getSnakeOrLadderAt } from "./boardUtils";
 
 export function flipCoin(): CoinResult {
   return Math.random() > 0.5 ? "heads" : "tails";
+}
+
+/**
+ * rollDice — returns a fair 1..6 result.
+ * Kept deliberately simple; tuning (weighted dice, etc.) would happen in a
+ * wrapper, not here.
+ */
+export function rollDice(): DiceResult {
+  return (Math.floor(Math.random() * 6) + 1) as DiceResult;
 }
 
 export function calculateNewPosition(

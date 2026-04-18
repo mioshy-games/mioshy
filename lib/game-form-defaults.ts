@@ -13,6 +13,13 @@ export function getDefaultGameFormValues(): GameFormValues {
     bg_type: "color",
     bg_value: "#0b0b0f",
     player_mode: false,
+    meta_title_he: "",
+    meta_title_en: "",
+    meta_description_he: "",
+    meta_description_en: "",
+    og_image_url: "",
+    keywords_csv: "",
+    sort_order: 0,
     wheel: {
       slices: defaultSlices(6),
       pointer_color: "#ffffff",

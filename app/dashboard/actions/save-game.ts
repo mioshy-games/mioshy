@@ -73,6 +73,14 @@ export async function saveGame(gameId: string | null, raw: unknown) {
   const balanced =
     v.player_mode ? null : buildBalancedSlices();
 
+  // Parse the comma-separated keyword string into a clean text[] for Postgres.
+  const keywords =
+    (v.keywords_csv ?? "")
+      .split(/[,\n]/)
+      .map((k) => k.trim())
+      .filter((k) => k.length > 0 && k.length < 60) // sanity: drop unreasonably long tags
+      .slice(0, 25); // cap so the row stays small
+
   const gamePayload = {
     name_he: v.name_he,
     name_en: v.name_en,
@@ -84,6 +92,14 @@ export async function saveGame(gameId: string | null, raw: unknown) {
     bg_type: v.bg_type,
     bg_value: v.bg_value,
     player_mode: v.player_mode,
+    // SEO overrides — null-out empty strings so Postgres stores NULL (→ fallback)
+    meta_title_he: (v.meta_title_he ?? "").trim() || null,
+    meta_title_en: (v.meta_title_en ?? "").trim() || null,
+    meta_description_he: (v.meta_description_he ?? "").trim() || null,
+    meta_description_en: (v.meta_description_en ?? "").trim() || null,
+    og_image_url: (v.og_image_url ?? "").trim() || null,
+    keywords,
+    sort_order: Number.isFinite(v.sort_order) ? Number(v.sort_order) : 0,
   };
 
   const wheelPayload = {

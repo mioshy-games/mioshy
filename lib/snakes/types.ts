@@ -27,6 +27,12 @@ export interface GameConfig {
 
 export type CoinResult = "heads" | "tails";
 
+/**
+ * A regular 1..6 die roll. The dice replaces the coin flip as the primary
+ * turn mechanic; `CoinResult` is kept so existing rooms finish cleanly.
+ */
+export type DiceResult = 1 | 2 | 3 | 4 | 5 | 6;
+
 export type GamePhase = "waiting_flip" | "moving" | "question" | "ended";
 
 export interface GameLogEntry {
@@ -42,7 +48,10 @@ export interface GameState {
   positions: Record<string, number>; // game_players.id -> cell number
   phase: GamePhase;
   currentQuestion: Question | null;
+  /** @deprecated kept for backward compatibility with rooms using a coin */
   lastCoinResult: CoinResult | null;
+  /** Primary turn mechanic going forward — value shown on the die */
+  lastDiceResult: DiceResult | null;
   winner: string | null; // game_players.id
   turnCount: number;
   log: GameLogEntry[];
@@ -70,12 +79,18 @@ export interface GamePlayer {
   position: number;
   order_index: number;
   is_host: boolean;
+  /** true once the player has confirmed their avatar+colour in the lobby */
+  is_locked: boolean;
+  /** true when the player signals they are ready to start */
+  is_ready: boolean;
   created_at: string;
 }
 
 export interface PlayerInfo {
   userName: string;
-  avatar: string;
-  color: string;
+  /** Player joins first with a default avatar; confirmed later via claimCharacter */
+  avatar?: string;
+  /** Player joins first with a default colour; confirmed later via claimCharacter */
+  color?: string;
 }
 

@@ -4,6 +4,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { GameRow, QuestionRow, WheelConfigRow } from "@/lib/types/database";
 import { unstable_noStore as noStore } from "next/cache";
 import type { Metadata } from "next";
+import { fetchGameSettings } from "@/lib/settings-queries";
 
 function siteUrl() {
   return (process.env.NEXT_PUBLIC_SITE_URL || "https://mioshy.com").replace(
@@ -22,24 +23,35 @@ export async function generateMetadata({
   const supabase = await createServerSupabaseClient();
   const { data: game } = await supabase
     .from("games")
-    .select("slug, name_en, name_he, description_en, description_he, thumbnail_url")
+    .select(
+      "slug, name_en, name_he, description_en, description_he, thumbnail_url, meta_title_he, meta_title_en, meta_description_he, meta_description_en, og_image_url, keywords",
+    )
     .eq("slug", slug)
     .eq("is_active", true)
     .maybeSingle();
 
-  const name =
+  // Prefer the admin-editable SEO overrides when set, otherwise fall back to
+  // the display name/description so existing games stay indexable.
+  const metaTitle =
     locale === "he"
-      ? game?.name_he ?? game?.name_en ?? "Game"
-      : game?.name_en ?? game?.name_he ?? "Game";
-  const description =
+      ? game?.meta_title_he ?? game?.name_he ?? game?.name_en ?? "Game"
+      : game?.meta_title_en ?? game?.name_en ?? game?.name_he ?? "Game";
+  const metaDescription =
     locale === "he"
-      ? game?.description_he ?? game?.description_en ?? ""
-      : game?.description_en ?? game?.description_he ?? "";
+      ? game?.meta_description_he ?? game?.description_he ?? game?.description_en ?? ""
+      : game?.meta_description_en ?? game?.description_en ?? game?.description_he ?? "";
 
+  const ogImage = game?.og_image_url || game?.thumbnail_url || null;
   const canonical = `${base}/${locale}/games/${slug}`;
   return {
-    title: `Mioshy — ${name}`,
-    description,
+    title: metaTitle.toLowerCase().startsWith("mioshy")
+      ? metaTitle
+      : `Mioshy — ${metaTitle}`,
+    description: metaDescription,
+    keywords:
+      Array.isArray(game?.keywords) && game.keywords.length > 0
+        ? game.keywords
+        : undefined,
     alternates: {
       canonical,
       languages: {
@@ -51,10 +63,16 @@ export async function generateMetadata({
     openGraph: {
       type: "website",
       url: canonical,
-      title: `Mioshy — ${name}`,
-      description,
-      images: game?.thumbnail_url ? [{ url: game.thumbnail_url }] : undefined,
+      title: metaTitle,
+      description: metaDescription,
+      images: ogImage ? [{ url: ogImage }] : undefined,
       siteName: "Mioshy",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: metaTitle,
+      description: metaDescription,
+      images: ogImage ? [ogImage] : undefined,
     },
   };
 }
@@ -86,7 +104,7 @@ export default async function GameBySlugPage({
     );
   }
 
-  const [{ data: wheel }, { data: questions }] = await Promise.all([
+  const [{ data: wheel }, { data: questions }, gameSettings] = await Promise.all([
     supabase
       .from("wheel_configs")
       .select("*")
@@ -98,6 +116,7 @@ export default async function GameBySlugPage({
       .eq("game_id", game.id)
       .eq("is_active", true)
       .order("created_at", { ascending: true }),
+    fetchGameSettings(supabase, game.id),
   ]);
 
   if (!wheel) {
@@ -168,18 +187,18 @@ export default async function GameBySlugPage({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-        <TruthOrDareClient game={g} wheel={w} questions={qs} />
+        <TruthOrDareClient game={g} wheel={w} questions={qs} gameSettings={gameSettings} />
       </div>
     );
   }
 
   return (
-    <GamePageBackground gameSlug={g.slug} primaryColor={bgValue}>
+    <GamePageBackground gameSlug={g.slug} primaryColor={bgValue} bgSettings={gameSettings?.background} particlesSettings={gameSettings?.particles}>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <TruthOrDareClient game={g} wheel={w} questions={qs} transparent />
+      <TruthOrDareClient game={g} wheel={w} questions={qs} transparent gameSettings={gameSettings} />
     </GamePageBackground>
   );
 }

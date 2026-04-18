@@ -168,6 +168,67 @@ export default async function ArticleDetailPage({
 
   const [from, to] = getGradient(a.emoji ?? a.slug ?? "article");
 
+  // ── Structured data (Article + BreadcrumbList) ─────────────────────────
+  const base = siteUrl();
+  const articleUrl = `${base}/${locale}/articles/${a.slug}`;
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Article",
+        "@id": `${articleUrl}#article`,
+        headline: titlePick.value || "",
+        description: excerptPick.value || "",
+        inLanguage: locale === "he" ? "he-IL" : "en-US",
+        datePublished: a.published_at ?? a.created_at ?? undefined,
+        dateModified: a.published_at ?? a.created_at ?? undefined,
+        author: {
+          "@type": "Person",
+          name: a.author || "Mioshy",
+        },
+        image: a.cover_image_url ? [a.cover_image_url] : undefined,
+        publisher: {
+          "@type": "Organization",
+          "@id": `${base}/#organization`,
+          name: "Mioshy",
+          logo: {
+            "@type": "ImageObject",
+            url: `${base}/icon.png`,
+          },
+        },
+        mainEntityOfPage: {
+          "@type": "WebPage",
+          "@id": articleUrl,
+        },
+        keywords:
+          Array.isArray(a.tags) && a.tags.length > 0 ? a.tags.join(", ") : undefined,
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          {
+            "@type": "ListItem",
+            position: 1,
+            name: locale === "he" ? "דף הבית" : "Home",
+            item: `${base}/${locale}`,
+          },
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: locale === "he" ? "מאמרים" : "Articles",
+            item: `${base}/${locale}/articles`,
+          },
+          {
+            "@type": "ListItem",
+            position: 3,
+            name: titlePick.value || "",
+            item: articleUrl,
+          },
+        ],
+      },
+    ],
+  };
+
   // Related articles
   const { data: relatedRaw } = await supabase
     .from("articles")
@@ -198,6 +259,10 @@ export default async function ArticleDetailPage({
       className="min-h-[100dvh]"
       dir={isRtl ? "rtl" : "ltr"}
     >
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
 
       {/* ── HERO (dark, branded) ──────────────────────────────────────────── */}
       <div className="relative bg-[var(--mio-surface-a)]">

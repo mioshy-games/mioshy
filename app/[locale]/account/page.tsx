@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { cancelSubscription } from "./actions";
+import { LogoutButton } from "@/components/auth/LogoutButton";
 
 export default async function AccountPage({
   params,
@@ -36,8 +37,13 @@ export default async function AccountPage({
 
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-10">
-      <h1 className="text-3xl font-extrabold tracking-tight">{t("title")}</h1>
-      <p className="mt-2 text-muted-foreground">{t("subtitle")}</p>
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight">{t("title")}</h1>
+          <p className="mt-2 text-muted-foreground">{t("subtitle")}</p>
+        </div>
+        <LogoutButton className="rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-sm font-medium text-white/70 hover:bg-white/10 hover:text-white transition" />
+      </div>
 
       <div className="mt-8 rounded-2xl border p-5">
         <div className="text-sm font-semibold">{t("email")}</div>

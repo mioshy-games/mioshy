@@ -2,6 +2,8 @@
 
 import { motion } from "framer-motion";
 import type { ReactNode } from "react";
+import type { BackgroundSettings, ParticlesSettings } from "@/lib/types/settings";
+import { FloatingParticles } from "./FloatingParticles";
 
 // ─── Color utilities ──────────────────────────────────────────────────────────
 // Pure functions — no deps — derive a palette from a single hex input
@@ -128,32 +130,68 @@ function Blob({ b, i }: { b: BlobConfig; i: number }) {
 /**
  * @param gameSlug   — used as theme key
  * @param primaryColor — hex from game.bg_value in DB (overrides slug theme)
+ * @param bgSettings  — from game_settings table; takes priority over primaryColor
  */
 export function GamePageBackground({
   gameSlug,
   primaryColor,
+  bgSettings,
+  particlesSettings,
   children,
 }: {
   gameSlug: string;
   primaryColor?: string;
+  /** Background settings from GameSettings (takes priority over primaryColor) */
+  bgSettings?: BackgroundSettings | null;
+  /** Floating particles settings from GameSettings */
+  particlesSettings?: ParticlesSettings | null;
   children: ReactNode;
 }) {
-  // Resolve palette: DB color → derive, slug fallback, then hardcoded default
+  // ── If bgSettings has an image, render it directly and skip blobs ─────────
+  if (bgSettings?.type === "image" && bgSettings.imageUrl) {
+    return (
+      <div
+        className="relative min-h-[100dvh] w-full"
+        style={{
+          backgroundImage: `url(${bgSettings.imageUrl})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      >
+        <div className="relative min-h-[100dvh]">{children}</div>
+      </div>
+    );
+  }
+
+  // ── Derive the base color for blob palette ────────────────────────────────
+  // Priority: bgSettings.gradient.from → bgSettings.color → primaryColor → slug theme
+  let baseHex: string | undefined;
+  if (bgSettings?.type === "gradient" && bgSettings.gradient?.from) {
+    baseHex = bgSettings.gradient.from;
+  } else if (bgSettings?.type === "color" && bgSettings.color) {
+    baseHex = bgSettings.color;
+  } else {
+    baseHex = primaryColor;
+  }
+
+  // Resolve palette
   const [c1, c2, c3] =
-    primaryColor && primaryColor.startsWith("#") && primaryColor.length >= 7
-      ? derivePalette(primaryColor)
+    baseHex && baseHex.startsWith("#") && baseHex.length >= 7
+      ? (bgSettings?.type === "gradient" && bgSettings.gradient?.to
+          ? [baseHex, bgSettings.gradient.to, derivePalette(baseHex)[2]]
+          : derivePalette(baseHex))
       : SLUG_THEMES[gameSlug] ?? ["#8800ff", "#ff0088", "#0088ff"];
 
-  // Dark base — always near-black regardless of palette
-  const base = "#05030a";
+  // Solid base — use bgSettings.color for solid, otherwise keep near-black
+  const base =
+    bgSettings?.type === "color" && bgSettings.color
+      ? bgSettings.color
+      : "#05030a";
 
-  // Three blobs — big movements, staggered timings, offset positions
+  // Three blobs
   const blobs: BlobConfig[] = [
-    // Primary — large, centre-left, moves far right and down
     { color: c1, size: "90vw",  x: "20%",  y: "40%", dx: 320, dy: 220, dur: 18, blur: "110px", op: 0.80 },
-    // Secondary — medium, centre-right, moves left and up
     { color: c2, size: "70vw",  x: "70%",  y: "55%", dx: 280, dy: 260, dur: 22, blur: "100px", op: 0.70 },
-    // Tertiary — smaller, top, drifts diagonally
     { color: c3, size: "55vw",  x: "45%",  y: "15%", dx: 200, dy: 300, dur: 27, blur: "120px", op: 0.50 },
   ];
 
@@ -185,6 +223,9 @@ export function GamePageBackground({
           background: "radial-gradient(ellipse at 50% 50%, transparent 30%, rgba(0,0,0,0.80) 100%)",
         }}
       />
+
+      {/* Floating particles */}
+      <FloatingParticles settings={particlesSettings} bgSettings={bgSettings} />
 
       {/* Content */}
       <div className="relative min-h-[100dvh]">{children}</div>

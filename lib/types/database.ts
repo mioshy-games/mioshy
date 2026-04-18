@@ -22,6 +22,14 @@ export type GameRow = {
   bg_value: string;
   player_mode?: boolean;
   created_at: string;
+  /** SEO overrides — added by migration 024; all optional with graceful fallbacks */
+  meta_title_he?: string | null;
+  meta_title_en?: string | null;
+  meta_description_he?: string | null;
+  meta_description_en?: string | null;
+  og_image_url?: string | null;
+  keywords?: string[] | null;
+  sort_order?: number | null;
 };
 
 export type WheelConfigRow = {
@@ -118,6 +126,10 @@ export type GamePlayerRow = {
   position: number;
   order_index: number;
   is_host: boolean;
+  /** true once the player confirmed their avatar+colour via claim_player_character RPC */
+  is_locked: boolean;
+  /** true when the player signals ready to start */
+  is_ready: boolean;
   created_at: string;
 };
 

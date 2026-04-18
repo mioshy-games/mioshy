@@ -1,5 +1,22 @@
+# Mioshy — couples games platform
+# Allow all crawlers to index content pages, block admin & API.
+
 User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /dashboard/
+Disallow: /api/
+Disallow: /auth/
+Disallow: /paywall/
+Disallow: /account/
+Disallow: /billing/
+Disallow: /game/local
+Disallow: /game/*/snakes
+Disallow: /*?preview=
+Disallow: /*?debug=
+
+# Allow Google Image to crawl the product thumbnails
+User-agent: Googlebot-Image
 Allow: /
 
 Sitemap: https://mioshy.com/sitemap.xml
-

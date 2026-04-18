@@ -1,8 +1,22 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import type { GameConfig, GameLogEntry, GamePlayer, GameRoom, GameState, Question } from "@/lib/snakes/types";
-import { applyPenalty, calculateNewPosition, flipCoin, getNextPlayerIndex, getRandomQuestion } from "@/lib/snakes/gameEngine";
+import type {
+  DiceResult,
+  GameConfig,
+  GameLogEntry,
+  GamePlayer,
+  GameRoom,
+  GameState,
+  Question,
+} from "@/lib/snakes/types";
+import {
+  applyPenalty,
+  calculateNewPosition,
+  getNextPlayerIndex,
+  getRandomQuestion,
+  rollDice,
+} from "@/lib/snakes/gameEngine";
 
 function nowIso() {
   return new Date().toISOString();
@@ -25,7 +39,10 @@ export interface UseSnakesGame {
   currentPlayer: GamePlayer | null;
   isMyTurn: boolean;
   error: string | null;
-  flip: () => Promise<void>;
+  /** Roll the dice, apply movement + snake/ladder, advance phase. */
+  roll: () => Promise<DiceResult | null>;
+  /** Backward-compatible alias for the old coin-flip hook method. */
+  flip: () => Promise<DiceResult | null>;
   answer: (didAnswer: boolean) => Promise<void>;
 }
 
@@ -63,29 +80,29 @@ export function useSnakesGame({
     return cp?.id === myPlayerId;
   }, [myPlayerId, players, state]);
 
-  const flip = useCallback(async () => {
+  const roll = useCallback(async (): Promise<DiceResult | null> => {
     setError(null);
-    if (!room || !state || !config) return;
+    if (!room || !state || !config) return null;
     if (!isMyTurn) {
       setError("זה לא התור שלך");
-      return;
+      return null;
     }
-    if (state.phase !== "waiting_flip") return;
+    if (state.phase !== "waiting_flip") return null;
     const me = currentPlayer;
-    if (!me) return;
+    if (!me) return null;
 
-    const result = flipCoin();
-    const steps = result === "heads" ? config.coinHeadsSteps : config.coinTailsSteps;
+    const result = rollDice();
+    const steps = result; // dice face === steps
     const curPos = state.positions[me.id] ?? me.position ?? 1;
 
     const move = calculateNewPosition(curPos, steps, config, config.boardSize);
     const q = getRandomQuestion(config.questions ?? []);
 
-    const logFlip: GameLogEntry = {
+    const logRoll: GameLogEntry = {
       timestamp: nowIso(),
       playerName: me.user_name,
       avatar: me.avatar,
-      action: result === "heads" ? `עץ (+${steps})` : `פלי (+${steps})`,
+      action: `קובייה: ${result} (+${steps})`,
       type: "flip",
     };
 
@@ -118,17 +135,22 @@ export function useSnakesGame({
 
     const nextPositions = { ...state.positions, [me.id]: move.final };
     const next: Partial<GameState> = {
-      lastCoinResult: result,
+      lastDiceResult: result,
+      lastCoinResult: null,
       positions: nextPositions,
       phase: move.event === "win" ? "ended" : "question",
       currentQuestion: move.event === "win" ? null : (q as Question),
       winner: move.event === "win" ? me.id : null,
       turnCount: (state.turnCount ?? 0) + 1,
-      log: pushLogs(state.log ?? [], [logFlip, logMove, ...(extra ? [extra] : [])]),
-    } as unknown as Partial<GameState>;
+      log: pushLogs(state.log ?? [], [logRoll, logMove, ...(extra ? [extra] : [])]),
+    };
 
     await updateGameState(next);
+    return result;
   }, [config, currentPlayer, isMyTurn, room, state, updateGameState]);
+
+  // Back-compat alias for any call site still using .flip()
+  const flip = roll;
 
   const answer = useCallback(
     async (didAnswer: boolean) => {
@@ -187,6 +209,6 @@ export function useSnakesGame({
     [config, currentPlayer, isMyTurn, players.length, room, state, updateGameState],
   );
 
-  return { state, config, currentPlayer, isMyTurn, error, flip, answer };
+  return { state, config, currentPlayer, isMyTurn, error, roll, flip, answer };
 }
 

@@ -29,6 +29,20 @@ const assistant = Assistant({
   display: "swap",
 });
 
+// Preconnect to the Supabase domain used for images & realtime so the first
+// paint of any game/article page isn't gated on a DNS round-trip. We read
+// the env var at module scope so the URL is baked into the HTML and works
+// even with JS disabled.
+const SUPABASE_ORIGIN = (() => {
+  try {
+    const raw = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    if (!raw) return null;
+    return new URL(raw).origin;
+  } catch {
+    return null;
+  }
+})();
+
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html
@@ -41,6 +55,16 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         assistant.variable,
       )}
     >
+      <head>
+        {SUPABASE_ORIGIN ? (
+          <>
+            <link rel="preconnect" href={SUPABASE_ORIGIN} crossOrigin="" />
+            <link rel="dns-prefetch" href={SUPABASE_ORIGIN} />
+          </>
+        ) : null}
+        <meta name="theme-color" content="#1a0a2e" />
+        <meta name="format-detection" content="telephone=no" />
+      </head>
       <body className="min-h-[100dvh] antialiased">{children}</body>
     </html>
   );

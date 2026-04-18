@@ -44,7 +44,6 @@ export function AuthForm() {
 
     setFeedback({ text: t("signedInNonAdmin"), tone: "info" });
     router.push("/");
-    router.refresh();
   }
 
   async function onSubmit(e: FormEvent) {

@@ -130,6 +130,31 @@ export default async function HomePage({
       : undefined;
 
   const base = siteUrl();
+
+  // ── FAQ items collected from next-intl so Google can pick them up for
+  //    the "People also ask" / FAQ-rich-result entitlement.
+  const faqItems: Array<{ q: string; a: string }> = [];
+  for (let i = 0; i < 10; i++) {
+    try {
+      const q = t(`faq.items.${i}.q`);
+      const a = t(`faq.items.${i}.a`);
+      if (q && a && !q.startsWith("marketingHome.")) faqItems.push({ q, a });
+    } catch {
+      break;
+    }
+  }
+
+  const aggregateRating =
+    s.rating_count > 0
+      ? {
+          "@type": "AggregateRating",
+          ratingValue: Number(s.rating_value ?? 4.9).toFixed(1),
+          ratingCount: s.rating_count,
+          bestRating: "5",
+          worstRating: "1",
+        }
+      : undefined;
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
@@ -146,12 +171,55 @@ export default async function HomePage({
         },
       },
       {
+        "@type": "Organization",
+        "@id": `${base}/#organization`,
+        name: "Mioshy",
+        url: base,
+        logo: `${base}/mioshy-white.svg`,
+        sameAs: [] as string[],
+      },
+      {
         "@type": "SoftwareApplication",
+        "@id": `${base}/#app`,
         name: "Mioshy",
         applicationCategory: "GameApplication",
         operatingSystem: "Web",
         url: `${base}/${locale}`,
+        offers: {
+          "@type": "Offer",
+          price: "0",
+          priceCurrency: "USD",
+          availability: "https://schema.org/InStock",
+        },
+        ...(aggregateRating ? { aggregateRating } : {}),
       },
+      {
+        "@type": "ItemList",
+        "@id": `${base}/${locale}#game-catalogue`,
+        name: isHe ? "משחקי זוגיות" : "Couples games",
+        itemListElement: activeGames.slice(0, 30).map((g, i) => ({
+          "@type": "ListItem",
+          position: i + 1,
+          url: `${base}/${locale}/games/${g.slug}`,
+          name: isHe ? g.name_he : g.name_en,
+        })),
+      },
+      ...(faqItems.length
+        ? [
+            {
+              "@type": "FAQPage",
+              "@id": `${base}/${locale}#faq`,
+              mainEntity: faqItems.map((it) => ({
+                "@type": "Question",
+                name: it.q,
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: it.a,
+                },
+              })),
+            },
+          ]
+        : []),
     ],
   };
 

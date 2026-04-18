@@ -6,6 +6,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import Link from "next/link";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export default async function DashboardSettingsPage() {
   const { user } = await requireAdmin();
@@ -18,6 +21,23 @@ export default async function DashboardSettingsPage() {
           Account and environment hints for admins.
         </p>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Game wheel</CardTitle>
+          <CardDescription>
+            Set global default wheel size and label position for all games.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Link
+            href="/dashboard/settings/wheel"
+            className={cn(buttonVariants({ variant: "outline" }))}
+          >
+            Open Wheel Settings
+          </Link>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

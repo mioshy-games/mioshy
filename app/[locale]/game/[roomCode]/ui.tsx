@@ -113,6 +113,7 @@ export function RoomClient({ locale, roomCode }: { locale: string; roomCode: str
                   phase: "waiting_flip",
                   currentQuestion: null,
                   lastCoinResult: null,
+                  lastDiceResult: null,
                   winner: null,
                   turnCount: 0,
                   log: [],

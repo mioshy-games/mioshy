@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import { QuestionsTable, type QuestionTableRow } from "@/components/dashboard/QuestionsTable";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Download } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -29,7 +31,8 @@ export function QuestionsPageClient({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
+      <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
         <div className="space-y-1.5">
           <Label>Type</Label>
           <Select
@@ -63,6 +66,21 @@ export function QuestionsPageClient({
               <SelectItem value="deep">Deep</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+        </div>
+
+        <div className="flex justify-end">
+          <Button
+            type="button"
+            variant="outline"
+            className="gap-2"
+            onClick={() => {
+              window.location.href = "/dashboard/questions/export";
+            }}
+          >
+            <Download className="size-4" />
+            Export CSV
+          </Button>
         </div>
       </div>
       <QuestionsTable

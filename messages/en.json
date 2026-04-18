@@ -66,9 +66,18 @@
     "how": {
       "title": "How it works",
       "subtitle": "Minimal steps. Maximum spark.",
-      "step1": { "title": "Choose a game", "desc": "Pick the vibe you want tonight." },
-      "step2": { "title": "Spin the wheel", "desc": "Let fate choose the next move." },
-      "step3": { "title": "Do it 😉", "desc": "Go for it — no overthinking." }
+      "step1": {
+        "title": "Choose a game",
+        "desc": "Pick the vibe you want tonight."
+      },
+      "step2": {
+        "title": "Spin the wheel",
+        "desc": "Let fate choose the next move."
+      },
+      "step3": {
+        "title": "Do it 😉",
+        "desc": "Go for it — no overthinking."
+      }
     },
     "expert": {
       "title": "Our expert",
@@ -88,9 +97,18 @@
         "f3": "New content regularly"
       },
       "plans": {
-        "weekly": { "name": "Weekly", "price": "$3/week" },
-        "monthly": { "name": "Monthly", "price": "$9/month" },
-        "annual": { "name": "Annual", "price": "$123/year" }
+        "weekly": {
+          "name": "Weekly",
+          "price": "$3/week"
+        },
+        "monthly": {
+          "name": "Monthly",
+          "price": "$9/month"
+        },
+        "annual": {
+          "name": "Annual",
+          "price": "$123/year"
+        }
       },
       "cta": "Start now"
     },
@@ -99,20 +117,47 @@
       "readMore": "Read more",
       "all": "All articles",
       "cards": {
-        "0": { "title": "How to ask deeper questions", "excerpt": "A simple way to move from “How was your day?” to real connection." },
-        "1": { "title": "Flirt like grown-ups", "excerpt": "Playful doesn’t mean childish. Here’s how to keep it premium." },
-        "2": { "title": "The intimacy reset", "excerpt": "Three minutes that shift the whole night — without pressure." }
+        "0": {
+          "title": "How to ask deeper questions",
+          "excerpt": "A simple way to move from “How was your day?” to real connection."
+        },
+        "1": {
+          "title": "Flirt like grown-ups",
+          "excerpt": "Playful doesn’t mean childish. Here’s how to keep it premium."
+        },
+        "2": {
+          "title": "The intimacy reset",
+          "excerpt": "Three minutes that shift the whole night — without pressure."
+        }
       }
     },
     "faq": {
       "title": "FAQ",
       "items": {
-        "0": { "q": "Is it suitable for every couple?", "a": "Yes — from new couples to long-term partners. You choose the pace and the vibe." },
-        "1": { "q": "How does the subscription work?", "a": "Choose a plan and get access to all games with unlimited spins." },
-        "2": { "q": "Can I cancel anytime?", "a": "Yes. Cancel anytime from your account — no questions asked." },
-        "3": { "q": "Are the games in Hebrew?", "a": "Yes. Full Hebrew and English support." },
-        "4": { "q": "What’s the difference between plans?", "a": "Only the billing period changes. Access stays premium on every plan." },
-        "5": { "q": "Is there a group mode?", "a": "Not yet — it’s planned. For now, Mioshy is designed for couples." }
+        "0": {
+          "q": "Is it suitable for every couple?",
+          "a": "Yes — from new couples to long-term partners. You choose the pace and the vibe."
+        },
+        "1": {
+          "q": "How does the subscription work?",
+          "a": "Choose a plan and get access to all games with unlimited spins."
+        },
+        "2": {
+          "q": "Can I cancel anytime?",
+          "a": "Yes. Cancel anytime from your account — no questions asked."
+        },
+        "3": {
+          "q": "Are the games in Hebrew?",
+          "a": "Yes. Full Hebrew and English support."
+        },
+        "4": {
+          "q": "What’s the difference between plans?",
+          "a": "Only the billing period changes. Access stays premium on every plan."
+        },
+        "5": {
+          "q": "Is there a group mode?",
+          "a": "Not yet — it’s planned. For now, Mioshy is designed for couples."
+        }
       }
     },
     "footer": {
@@ -273,5 +318,36 @@
     "fallbackNotice": "This article is only available in {language}.",
     "langHebrew": "Hebrew",
     "langEnglish": "English"
+  },
+  "gamesHub": {
+    "title": "Couples Games — Browse All Games",
+    "subtitle": "Mioshy's interactive catalogue: truth-or-dare wheels, snakes & ladders with deep questions, challenges and more — in your browser, one device or two.",
+    "h1": "Interactive couples games",
+    "lede": "Pick a game, spin the wheel or play snakes & ladders with personal questions. No installs, no code — just open and play.",
+    "whyTitle": "Why Mioshy?",
+    "whyItems": {
+      "0": {
+        "h": "Thousands of prompts",
+        "p": "A growing library of deep, flirty and playful prompts in English and Hebrew."
+      },
+      "1": {
+        "h": "Play together — even remotely",
+        "p": "Same game, one device or two. Mioshy keeps you in sync in real-time."
+      },
+      "2": {
+        "h": "Beautiful, fluid design",
+        "p": "Smooth animations, atmospheric backgrounds, subtle sound — the moment is yours."
+      },
+      "3": {
+        "h": "Private by default",
+        "p": "Your conversation isn't logged. You stay in charge of what happens on screen."
+      }
+    },
+    "catalogueTitle": "All games",
+    "ctaTitle": "Ready to play?",
+    "ctaSub": "Pick a game and start. Free to try.",
+    "ctaPrimary": "Pick a game",
+    "breadcrumbHome": "Home",
+    "breadcrumbGames": "Games"
   }
 }

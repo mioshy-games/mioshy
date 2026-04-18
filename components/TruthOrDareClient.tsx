@@ -1,12 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/navigation";
 import { GameLayout } from "./GameLayout";
 import { Wheel, type WheelApi } from "./Wheel";
 import { type Question, type QuestionType } from "@/lib/game-engine";
 import type { GameRow, QuestionRow, WheelConfigRow } from "@/lib/types/database";
+import type { GameSettings } from "@/lib/types/settings";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { hasActiveSubscription } from "@/lib/subscriptions";
 import {
@@ -30,16 +32,21 @@ export function TruthOrDareClient({
   wheel,
   questions,
   transparent = false,
+  gameSettings,
 }: {
   game: GameRow;
   wheel: WheelConfigRow;
   questions: QuestionRow[];
   /** When true, GameLayout renders without its own background image (parent supplies the bg). */
   transparent?: boolean;
+  /** Visual settings from game_settings table. Falls back to wheel_configs values when absent. */
+  gameSettings?: GameSettings | null;
 }) {
   const t = useTranslations("game");
   const locale = useLocale();
   const wheelRef = useRef<WheelApi>(null);
+  const gameTitle =
+    locale === "he" ? (game.name_he ?? game.name_en ?? "") : (game.name_en ?? game.name_he ?? "");
 
   const [completedSpins, setCompletedSpins] = useState(0);
   const [current, setCurrent] = useState<Question | null>(null);
@@ -60,6 +67,42 @@ export function TruthOrDareClient({
   const authWaiterRef = useRef<{
     resolve: (uid: string | null) => void;
   } | null>(null);
+
+  // ── Map GameSettings → Wheel props ──────────────────────────────────────
+  // spinSpeed 1-10 maps to duration 6s-1.5s (higher speed = shorter duration)
+  const spinDuration = gameSettings
+    ? 6 - (gameSettings.motion.spinSpeed - 1) * (4.5 / 9)
+    : 3.8;
+
+  const EASING_MAP: Record<string, number[] | string> = {
+    linear:       "linear",
+    "ease-in":    [0.55, 0, 1, 0.45],
+    "ease-out":   [0.12, 0.8, 0.12, 1],
+    "ease-in-out":[0.45, 0, 0.55, 1],
+  };
+  const spinEasing = gameSettings
+    ? (EASING_MAP[gameSettings.motion.easing] ?? [0.12, 0.8, 0.12, 1])
+    : [0.12, 0.8, 0.12, 1];
+
+  const outerBorder = gameSettings?.border ?? undefined;
+
+  // ── Wheel size + label position: gameSettings.wheel takes priority over
+  //    the legacy wheel_configs.marker_config values ─────────────────────
+  const wheelSizeRemFromConfig =
+    typeof (wheel.marker_config as Record<string, unknown>)?.wheel_size_rem === "number"
+      ? (wheel.marker_config as Record<string, number>).wheel_size_rem
+      : 22;
+  const labelFractionFromConfig =
+    typeof (wheel.marker_config as Record<string, unknown>)?.label_radius_fraction === "number"
+      ? (wheel.marker_config as Record<string, number>).label_radius_fraction
+      : 0.72;
+
+  const resolvedSizeRem = gameSettings?.wheel?.sizeRem ?? wheelSizeRemFromConfig;
+  const resolvedLabelFraction = gameSettings?.wheel?.labelRadiusFraction ?? labelFractionFromConfig;
+  const centerShadow = gameSettings?.wheel?.centerShadow;
+  const dividerShadow = gameSettings?.wheel?.dividerShadow;
+  const labelFontSizePx = gameSettings?.wheel?.labelFontSizePx ?? 12;
+  const labelOutline = gameSettings?.wheel?.labelOutline;
 
   const options = useMemo(() => {
     const base = (wheel.slices ?? []).map((s) => ({
@@ -394,120 +437,200 @@ export function TruthOrDareClient({
     };
   }, []);
 
+  // ── Layout: read from game settings, default to "centered" ────────────────
+  const pageLayout = gameSettings?.layout ?? "centered";
+
+  // ── Shared JSX pieces ───────────────────────────────────────────────────────
+
+  /** Slim top bar: back link, game title, sound toggle */
+  const topBar = (
+    <div className="flex w-full shrink-0 items-center gap-2 px-1">
+      <Link
+        href="/products"
+        className="rounded-full bg-white/15 px-4 py-2 text-sm font-medium text-white backdrop-blur hover:bg-white/25"
+      >
+        {t("back")}
+      </Link>
+
+      <div className="flex-1 text-center px-2">
+        <span
+          className="text-sm font-semibold text-white/95 drop-shadow-sm line-clamp-1 sm:text-base"
+          style={{ fontFamily: "var(--font-heading-hebrew), var(--font-heading-latin), system-ui" }}
+        >
+          {gameTitle}
+        </span>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => setSpinSoundOn((m) => !m)}
+        className="rounded-full bg-white/15 px-4 py-2 text-xs font-medium text-white backdrop-blur hover:bg-white/25"
+      >
+        {spinSoundOn ? t("spinSoundOn") : t("spinSoundOff")}
+      </button>
+    </div>
+  );
+
+  /** Mioshy logo */
+  const logo = (
+    <Image
+      src="/mioshy-white.svg"
+      alt="Mioshy"
+      width={96}
+      height={36}
+      className="opacity-90 drop-shadow-sm select-none pointer-events-none"
+      priority
+    />
+  );
+
+  /** Wheel or player-mode setup card */
+  const wheelOrSetup = game.player_mode && !playerStarted ? (
+    <div className="w-full max-w-md rounded-3xl border border-white/15 bg-white/10 p-4 backdrop-blur">
+      <p className="text-sm font-semibold text-white">Enter player names</p>
+      <p className="mt-1 text-xs text-white/70">Add at least 2 players.</p>
+      <div className="mt-3 flex gap-2">
+        <input
+          value={playerDraft}
+          onChange={(e) => setPlayerDraft(e.target.value)}
+          className="w-full rounded-2xl border border-white/20 bg-black/20 px-4 py-2 text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-fuchsia-400/40"
+          placeholder="Name"
+        />
+        <button
+          type="button"
+          className="min-h-[44px] rounded-2xl bg-white/15 px-4 text-sm font-semibold text-white"
+          onClick={() => {
+            const n = playerDraft.trim();
+            if (!n) return;
+            setPlayers((p) => [...p, n]);
+            setPlayerDraft("");
+          }}
+        >
+          Add
+        </button>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {players.map((p) => (
+          <span key={p} className="rounded-full bg-white/10 px-3 py-1 text-xs text-white">
+            {p}
+          </span>
+        ))}
+      </div>
+      <button
+        type="button"
+        disabled={players.length < 2}
+        className="mt-4 min-h-[44px] w-full rounded-full bg-gradient-to-r from-fuchsia-500 to-rose-500 px-6 py-3 text-base font-semibold text-white disabled:opacity-50"
+        onClick={() => setPlayerStarted(true)}
+      >
+        Start
+      </button>
+    </div>
+  ) : (
+    <Wheel
+      ref={wheelRef}
+      options={options}
+      onSettled={handleSettled}
+      disabled={!authReady || !!rateLimitMs}
+      isSpinSoundEnabled={spinSoundOn}
+      pointerColor={wheel.pointer_color}
+      borderColor={wheel.border_color}
+      innerCircle={wheel.inner_circle}
+      innerCircleColor={wheel.inner_circle_color}
+      innerCircleBorderColor={wheel.inner_circle_border_color}
+      dividerColor={wheel.divider_color}
+      dividerEnabled={wheel.divider_enabled ?? wheel.show_divider ?? true}
+      dividerWidth={wheel.divider_width ?? 2}
+      markerConfig={wheel.marker_config ?? {}}
+      forbiddenType={forbiddenType}
+      spinDuration={spinDuration}
+      spinEasing={spinEasing}
+      outerBorder={outerBorder}
+      wheelSizeRem={resolvedSizeRem}
+      labelRadiusFraction={resolvedLabelFraction}
+      centerShadow={centerShadow}
+      dividerShadow={dividerShadow}
+            labelFontSizePx={labelFontSizePx}
+            labelOutline={labelOutline}
+    />
+  );
+
+  /** Spin button + rate-limit hint */
+  const spinControls = (
+    <div className="w-full max-w-md space-y-3">
+      <button
+        type="button"
+        onClick={handleSpinClick}
+        disabled={!authReady || !!current}
+        className="min-h-[44px] w-full rounded-full bg-gradient-to-r from-fuchsia-500 to-rose-500 px-6 py-3 text-base font-semibold text-white shadow-lg shadow-fuchsia-900/40 transition hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 sm:text-lg"
+        style={{ fontFamily: "var(--font-heading-hebrew), var(--font-heading-latin), system-ui" }}
+      >
+        {rateLimitMs
+          ? `${Math.floor(rateLimitSecs / 60)}:${String(rateLimitSecs % 60).padStart(2, "0")}`
+          : t("spin")}
+      </button>
+      {rateLimitMs && !subOpen && (
+        <p className="text-center text-xs text-white/60">
+          {locale === "he"
+            ? "הסיבוב הבא יהיה זמין בעוד כמה דקות — או שדרג למנוי ללא הגבלה"
+            : "Next spin available soon — or subscribe for unlimited play"}
+        </p>
+      )}
+    </div>
+  );
+
   return (
     <GameLayout
-      title={(locale === "he" ? game.name_he : game.name_en) || t("pageTitle")}
       backgroundSrc={transparent ? false : undefined}
       showVignette={!transparent}
     >
-      <div className="flex min-h-0 w-full max-w-lg flex-1 flex-col items-center gap-6 px-2 sm:px-0">
-        <div className="flex w-full shrink-0 items-center justify-between gap-2 px-1">
-          <Link
-            href="/products"
-            className="rounded-full bg-white/15 px-4 py-2 text-sm font-medium text-white backdrop-blur hover:bg-white/25"
-          >
-            {t("back")}
-          </Link>
-          <button
-            type="button"
-            onClick={() => setSpinSoundOn((m) => !m)}
-            className="rounded-full bg-white/15 px-4 py-2 text-xs font-medium text-white backdrop-blur hover:bg-white/25"
-          >
-            {spinSoundOn ? t("spinSoundOn") : t("spinSoundOff")}
-          </button>
-        </div>
+      {pageLayout === "side-by-side" ? (
+        /* ── SIDE-BY-SIDE LAYOUT ─────────────────────────────────────────────
+           Desktop (≥ md): wheel on the left, controls on the right.
+           Mobile (< md):  stacks exactly like the centered layout.
+        ──────────────────────────────────────────────────────────────────── */
+        <div className="flex min-h-0 w-full max-w-5xl flex-1 flex-col gap-4 px-3 sm:px-5">
+          {/* Top bar — full width */}
+          {topBar}
 
-        {game.player_mode && !playerStarted ? (
-          <div className="w-full max-w-md rounded-3xl border border-white/15 bg-white/10 p-4 backdrop-blur">
-            <p className="text-sm font-semibold text-white">Enter player names</p>
-            <p className="mt-1 text-xs text-white/70">Add at least 2 players.</p>
-            <div className="mt-3 flex gap-2">
-              <input
-                value={playerDraft}
-                onChange={(e) => setPlayerDraft(e.target.value)}
-                className="w-full rounded-2xl border border-white/20 bg-black/20 px-4 py-2 text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-fuchsia-400/40"
-                placeholder="Name"
-              />
-              <button
-                type="button"
-                className="min-h-[44px] rounded-2xl bg-white/15 px-4 text-sm font-semibold text-white"
-                onClick={() => {
-                  const n = playerDraft.trim();
-                  if (!n) return;
-                  setPlayers((p) => [...p, n]);
-                  setPlayerDraft("");
-                }}
-              >
-                Add
-              </button>
+          {/* Main content area */}
+          <div className="flex flex-1 flex-col items-center gap-6 md:flex-row md:items-center md:gap-10">
+            {/* Left column: logo + wheel */}
+            <div className="flex flex-col items-center gap-4 md:flex-1">
+              {logo}
+              {wheelOrSetup}
             </div>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {players.map((p) => (
-                <span key={p} className="rounded-full bg-white/10 px-3 py-1 text-xs text-white">
-                  {p}
-                </span>
-              ))}
+
+            {/* Right column: game title (big) + spin controls */}
+            <div className="flex w-full flex-col items-center justify-center gap-6 md:flex-1 md:items-start">
+              <div className="text-center md:text-start">
+                <h1
+                  className="text-2xl font-bold leading-tight text-white drop-shadow-md sm:text-3xl md:text-4xl"
+                  style={{ fontFamily: "var(--font-heading-hebrew), var(--font-heading-latin), system-ui" }}
+                >
+                  {gameTitle}
+                </h1>
+              </div>
+              {spinControls}
             </div>
-            <button
-              type="button"
-              disabled={players.length < 2}
-              className="mt-4 min-h-[44px] w-full rounded-full bg-gradient-to-r from-fuchsia-500 to-rose-500 px-6 py-3 text-base font-semibold text-white disabled:opacity-50"
-              onClick={() => setPlayerStarted(true)}
-            >
-              Start
-            </button>
           </div>
-        ) : (
-          <Wheel
-            ref={wheelRef}
-            options={options}
-            onSettled={handleSettled}
-            disabled={!authReady || !!rateLimitMs}
-            isSpinSoundEnabled={spinSoundOn}
-            pointerColor={wheel.pointer_color}
-            borderColor={wheel.border_color}
-            innerCircle={wheel.inner_circle}
-            innerCircleColor={wheel.inner_circle_color}
-            innerCircleBorderColor={wheel.inner_circle_border_color}
-            dividerColor={wheel.divider_color}
-            dividerEnabled={wheel.divider_enabled ?? wheel.show_divider ?? true}
-            dividerWidth={wheel.divider_width ?? 2}
-            markerConfig={wheel.marker_config ?? {}}
-            forbiddenType={forbiddenType}
-            wheelSizeRem={
-              typeof (wheel.marker_config as Record<string, unknown>)?.wheel_size_rem === "number"
-                ? (wheel.marker_config as Record<string, number>).wheel_size_rem
-                : 22
-            }
-            labelRadiusFraction={
-              typeof (wheel.marker_config as Record<string, unknown>)?.label_radius_fraction === "number"
-                ? (wheel.marker_config as Record<string, number>).label_radius_fraction
-                : 0.72
-            }
-          />
-        )}
-
-        <div className="w-full max-w-md space-y-3">
-          <button
-            type="button"
-            onClick={handleSpinClick}
-            disabled={!authReady || !!current}
-            className="min-h-[44px] w-full rounded-full bg-gradient-to-r from-fuchsia-500 to-rose-500 px-6 py-3 text-base font-semibold text-white shadow-lg shadow-fuchsia-900/40 transition hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 sm:text-lg"
-            style={{ fontFamily: "var(--font-heading-hebrew), var(--font-heading-latin), system-ui" }}
-          >
-            {rateLimitMs
-              ? `${Math.floor(rateLimitSecs / 60)}:${String(rateLimitSecs % 60).padStart(2, "0")}`
-              : t("spin")}
-          </button>
-          {rateLimitMs && !subOpen && (
-            <p className="text-center text-xs text-white/60">
-              {locale === "he"
-                ? "הסיבוב הבא יהיה זמין בעוד כמה דקות — או שדרג למנוי ללא הגבלה"
-                : "Next spin available soon — or subscribe for unlimited play"}
-            </p>
-          )}
         </div>
-      </div>
+      ) : (
+        /* ── CENTERED LAYOUT (default) ───────────────────────────────────────
+           Classic stacked layout with Mioshy logo at the top.
+        ──────────────────────────────────────────────────────────────────── */
+        <div className="flex min-h-0 w-full max-w-lg flex-1 flex-col items-center gap-6 px-2 sm:px-0">
+          {/* Top bar */}
+          {topBar}
+
+          {/* Mioshy logo */}
+          {logo}
+
+          {/* Wheel */}
+          {wheelOrSetup}
+
+          {/* Spin button */}
+          {spinControls}
+        </div>
+      )}
 
       {/* ── Question popup — rendered fixed over everything ── */}
       {(() => {
