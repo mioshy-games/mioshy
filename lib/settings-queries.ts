@@ -193,13 +193,16 @@ export async function saveSettingsWithScope(
   // All settings — including wheel — can be saved per-game.
   // The global /dashboard/settings/wheel provides the base default;
   // per-game settings override it (last write wins).
-  const perGamePartial = {
+  const perGamePartial: Partial<GameSettings> = {
     wheel: newSettings.wheel,
     border: newSettings.border,
     background: newSettings.background,
     motion: newSettings.motion,
     shape: newSettings.shape,
-  } satisfies Partial<GameSettings>;
+    particles: newSettings.particles,
+    layout: newSettings.layout,
+    ...(newSettings.wheelGapPx !== undefined ? { wheelGapPx: newSettings.wheelGapPx } : {}),
+  };
   if (scope.currentGameOnly || (!scope.allExistingGames && !scope.saveAsDefault)) {
     tasks.push(
       (async () => {

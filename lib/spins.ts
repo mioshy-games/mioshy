@@ -1,109 +1,126 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-type ProfileSpinRow = {
-  spins_used: number;
-  last_spin_reset: string | null;
+/**
+ * Per-game play budget for free users.
+ *
+ * Every game has its own independent counter:
+ *   * Plays 1-3   → free (both guests and logged-in users)
+ *   * Guests after play 3 → lead signup modal (still dismissable)
+ *   * After successful signup, a one-time +3 bonus is granted per game,
+ *     giving the freshly signed-up user 3 more plays before the paywall.
+ *   * Plays 4-6 (post-signup) → free thanks to the bonus
+ *   * Play 7   → paywall modal (non-dismissable) until they subscribe
+ *
+ * Logged-in users without a post-signup bonus hit the paywall at play 4
+ * for each game.
+ */
+
+export const FREE_PLAYS_PER_GAME = 3;
+export const POST_SIGNUP_BONUS = 3;
+
+// ───────────────────────────────────────────────────────────────────────
+// Logged-in users: user_game_plays table (migration 034)
+// ───────────────────────────────────────────────────────────────────────
+
+export type UserGamePlays = {
+  plays_used: number;
+  post_signup_bonus_used: boolean;
 };
 
-const RESET_AFTER_DAYS = 7;
-
-export async function getAndMaybeResetUserSpins(
+/**
+ * Read the caller's current play state for a specific game. Applies the
+ * weekly auto-reset server-side; also auto-creates the row if missing.
+ */
+export async function getUserGamePlays(
   supabase: SupabaseClient,
-  userId: string,
-): Promise<ProfileSpinRow> {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("spins_used, last_spin_reset")
-    .eq("id", userId)
-    .maybeSingle();
-
+  gameSlug: string,
+): Promise<UserGamePlays> {
+  const { data, error } = await supabase.rpc("get_user_game_plays", {
+    p_game_slug: gameSlug,
+  });
   if (error || !data) {
-    return { spins_used: 0, last_spin_reset: null };
+    return { plays_used: 0, post_signup_bonus_used: false };
   }
-
-  const last = data.last_spin_reset ? new Date(data.last_spin_reset).getTime() : null;
-  const shouldReset =
-    last == null ||
-    Date.now() - last > RESET_AFTER_DAYS * 24 * 60 * 60 * 1000;
-
-  if (!shouldReset) return data;
-
-  const { data: updated } = await supabase
-    .from("profiles")
-    .update({ spins_used: 0, last_spin_reset: new Date().toISOString() })
-    .eq("id", userId)
-    .select("spins_used, last_spin_reset")
-    .maybeSingle();
-
-  return updated ?? { spins_used: 0, last_spin_reset: new Date().toISOString() };
+  // RPC returns SETOF — Supabase client resolves it as an array.
+  const row = Array.isArray(data) ? data[0] : data;
+  return {
+    plays_used: Number(row?.plays_used ?? 0),
+    post_signup_bonus_used: Boolean(row?.post_signup_bonus_used ?? false),
+  };
 }
 
-export async function incrementUserSpins(
+/**
+ * Atomically increment plays_used for a specific game and return the new
+ * value. Weekly reset is applied transactionally on the server.
+ */
+export async function incrementUserGamePlays(
   supabase: SupabaseClient,
-  userId: string,
-  nextValue: number,
-) {
-  await supabase
-    .from("profiles")
-    .update({ spins_used: nextValue })
-    .eq("id", userId);
+  gameSlug: string,
+): Promise<number> {
+  const { data, error } = await supabase.rpc("increment_user_game_plays", {
+    p_game_slug: gameSlug,
+  });
+  if (error || data == null) return 0;
+  return Number(data);
 }
 
-const GUEST_KEY = "mioshy:guest_spins_v1";
-const GUEST_LOCK_KEY = "mioshy:guest_lock_until_v1";
+/**
+ * Flip the post_signup_bonus_used flag and reset plays_used to 0 — giving
+ * the caller a fresh window of FREE_PLAYS_PER_GAME. Idempotent: if the
+ * bonus was already granted, returns the current plays_used without change.
+ */
+export async function grantPostSignupBonus(
+  supabase: SupabaseClient,
+  gameSlug: string,
+): Promise<UserGamePlays> {
+  const { data, error } = await supabase.rpc("grant_post_signup_bonus", {
+    p_game_slug: gameSlug,
+  });
+  if (error || !data) {
+    return { plays_used: 0, post_signup_bonus_used: true };
+  }
+  const row = Array.isArray(data) ? data[0] : data;
+  return {
+    plays_used: Number(row?.plays_used ?? 0),
+    post_signup_bonus_used: Boolean(row?.post_signup_bonus_used ?? true),
+  };
+}
 
-export function getGuestSpins(): number {
+// ───────────────────────────────────────────────────────────────────────
+// Guests: localStorage, sharded per game slug
+// ───────────────────────────────────────────────────────────────────────
+
+function guestPlaysKey(gameSlug: string) {
+  return `mioshy:guest_plays_v2:${gameSlug}`;
+}
+
+export function getGuestGamePlays(gameSlug: string): number {
   if (typeof window === "undefined") return 0;
-  const raw = window.localStorage.getItem(GUEST_KEY);
+  const raw = window.localStorage.getItem(guestPlaysKey(gameSlug));
   const n = raw ? Number(raw) : 0;
   return Number.isFinite(n) ? Math.max(0, n) : 0;
 }
 
-export function setGuestSpins(n: number) {
+export function setGuestGamePlays(gameSlug: string, n: number) {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(GUEST_KEY, String(Math.max(0, Math.floor(n))));
+  window.localStorage.setItem(
+    guestPlaysKey(gameSlug),
+    String(Math.max(0, Math.floor(n))),
+  );
 }
 
-export function getGuestLockUntilMs(): number | null {
-  if (typeof window === "undefined") return null;
-  const raw = window.localStorage.getItem(GUEST_LOCK_KEY);
-  const n = raw ? Number(raw) : NaN;
-  return Number.isFinite(n) ? n : null;
+export function incrementGuestGamePlays(gameSlug: string): number {
+  const next = getGuestGamePlays(gameSlug) + 1;
+  setGuestGamePlays(gameSlug, next);
+  return next;
 }
 
-export function lockGuestUntilTomorrow() {
-  if (typeof window === "undefined") return;
-  const now = new Date();
-  const tomorrow = new Date(now);
-  tomorrow.setDate(now.getDate() + 1);
-  tomorrow.setHours(0, 0, 0, 0);
-  window.localStorage.setItem(GUEST_LOCK_KEY, String(tomorrow.getTime()));
+/**
+ * Returns true while the user holds a cached lead_id locally — i.e. they
+ * have already completed the lead signup modal at some point. The flag is
+ * written once, globally, by the lead-capture step in SubscriptionModal.
+ */
+export function hasGuestLeadCaptured(): boolean {
+  if (typeof window === "undefined") return false;
+  return Boolean(window.localStorage.getItem("mioshy:lead_id_v1"));
 }
-
-// ── 10-minute rate limit (kicks in after 6 spins for non-subscribers) ─────────
-
-const RATE_LIMIT_KEY = "mioshy:rate_limit_until_v1";
-const RATE_LIMIT_MS  = 10 * 60 * 1000; // 10 minutes
-
-/** Returns the timestamp (ms) until which the user is rate-limited, or null if not limited. */
-export function getRateLimitUntilMs(): number | null {
-  if (typeof window === "undefined") return null;
-  const raw = window.localStorage.getItem(RATE_LIMIT_KEY);
-  const n   = raw ? Number(raw) : NaN;
-  if (!Number.isFinite(n)) return null;
-  return n > Date.now() ? n : null;
-}
-
-/** Set a 10-minute cooldown starting now. */
-export function setSpinRateLimit() {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(RATE_LIMIT_KEY, String(Date.now() + RATE_LIMIT_MS));
-}
-
-/** Clear rate limit (e.g. after subscribing). */
-export function clearSpinRateLimit() {
-  if (typeof window === "undefined") return;
-  window.localStorage.removeItem(RATE_LIMIT_KEY);
-}
-
-

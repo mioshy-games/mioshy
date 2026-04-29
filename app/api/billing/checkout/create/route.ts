@@ -5,7 +5,16 @@
  * redirect URL. Called from the SubscriptionModal when a user picks a plan.
  *
  * Body: { email, name?, plan, country_code, language, is_israeli, vat_rate_percent, lead_id? }
- * Response: { checkout_session_id, redirect_url }
+ * Response: { success, checkout_session_id, redirect_url, code?, message? }
+ *
+ * Error codes (for localized UI messages):
+ *   - UNAUTHORIZED           — user not signed in
+ *   - INVALID_PLAN           — plan not weekly/monthly/annual
+ *   - MISSING_EMAIL          — no email on account
+ *   - MISSING_CARDCOM_ENV    — server missing Cardcom credentials (ops issue)
+ *   - DB_ERROR               — cannot create checkout session row
+ *   - CARDCOM_NETWORK_ERROR  — fetch to Cardcom failed
+ *   - CARDCOM_REJECTED       — Cardcom returned a non-ok response
  */
 
 export const runtime = "nodejs"
@@ -17,14 +26,45 @@ import { createAdminClient }   from "@/lib/supabase-admin"
 import { openLowProfile }      from "@/lib/cardcom"
 import { getPlanPrice }        from "@/lib/billing"
 
-const BASE_URL = (process.env.PUBLIC_BASE_URL ?? "https://mioshy.com").replace(/\/+$/, "")
+function baseUrl(req: Request) {
+  const envUrl = process.env.PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL
+  if (envUrl) return envUrl.replace(/\/+$/, "")
+  // Fall back to the host the request came from — avoids hard-coded mioshy.com
+  // breaking preview deployments.
+  try {
+    const origin = new URL(req.url).origin
+    return origin.replace(/\/+$/, "")
+  } catch {
+    return "https://mioshy.com"
+  }
+}
 
 export async function POST(req: Request) {
+  // ── Preflight: Cardcom credentials must be present ──────────────────────────
+  const hasCardcomEnv =
+    !!process.env.CARDCOM_TERMINAL_NUMBER &&
+    !!process.env.CARDCOM_API_USERNAME &&
+    !!process.env.CARDCOM_API_PASSWORD
+  if (!hasCardcomEnv) {
+    console.error("[checkout/create] Missing Cardcom env vars")
+    return NextResponse.json(
+      {
+        success: false,
+        code: "MISSING_CARDCOM_ENV",
+        message: "Payment gateway is not configured. Please contact support.",
+      },
+      { status: 503 },
+    )
+  }
+
   // ── Auth ────────────────────────────────────────────────────────────────────
   const supabase     = await createServerSupabaseClient()
   const { data: auth } = await supabase.auth.getUser()
   if (!auth?.user) {
-    return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 })
+    return NextResponse.json(
+      { success: false, code: "UNAUTHORIZED", message: "Please sign in before paying." },
+      { status: 401 },
+    )
   }
 
   // ── Parse body ──────────────────────────────────────────────────────────────
@@ -33,21 +73,114 @@ export async function POST(req: Request) {
     email          = auth.user.email ?? "",
     name           = null,
     plan,
+    product        = "journey",           // which pillar this purchase unlocks
+    purchase_type  = "subscription",       // 'subscription' | 'one_time'
+    target_game_id = null,                 // required when purchase_type='one_time'
     country_code   = "",
     language       = "he",
     is_israeli     = false,
     vat_rate_percent = 0,
     lead_id        = null,
+    return_path   = null,                  // optional post-payment landing path
   } = body
 
-  if (!plan || !["weekly", "monthly", "annual"].includes(plan)) {
-    return NextResponse.json({ success: false, message: "Invalid plan" }, { status: 400 })
+  // Subscription plans must be one of weekly/monthly/annual.
+  // One-time purchases use plan='one_time' and an explicit target_game_id;
+  // amount is derived server-side from the experience_games row so the
+  // client can never spoof the price.
+  if (purchase_type !== "subscription" && purchase_type !== "one_time") {
+    return NextResponse.json(
+      { success: false, code: "INVALID_PURCHASE_TYPE", message: "Invalid purchase_type" },
+      { status: 400 },
+    )
+  }
+  if (purchase_type === "subscription") {
+    if (!plan || !["weekly", "monthly", "annual"].includes(plan)) {
+      return NextResponse.json(
+        { success: false, code: "INVALID_PLAN", message: "Invalid plan" },
+        { status: 400 },
+      )
+    }
+  } else {
+    if (plan !== "one_time") {
+      return NextResponse.json(
+        { success: false, code: "INVALID_PLAN", message: "One-time purchase must use plan='one_time'" },
+        { status: 400 },
+      )
+    }
+    if (!target_game_id || typeof target_game_id !== "string") {
+      return NextResponse.json(
+        { success: false, code: "MISSING_TARGET", message: "target_game_id is required for one-time purchases" },
+        { status: 400 },
+      )
+    }
+  }
+  if (!["games", "journey", "adults"].includes(product)) {
+    return NextResponse.json(
+      { success: false, code: "INVALID_PRODUCT", message: "Invalid product pillar" },
+      { status: 400 },
+    )
   }
   if (!email) {
-    return NextResponse.json({ success: false, message: "Email required" }, { status: 400 })
+    return NextResponse.json(
+      { success: false, code: "MISSING_EMAIL", message: "Email required" },
+      { status: 400 },
+    )
   }
 
-  const { amount, currency, coinId } = getPlanPrice(plan, is_israeli)
+  // Pricing: subscriptions go through getPlanPrice() (settings-driven matrix);
+  // one-time purchases read the fixed price off the game row. We refuse the
+  // request if the game is missing / inactive so a stale link can't open a
+  // checkout for nothing.
+  let amount: number
+  let currency: string
+  let coinId: number | undefined
+  if (purchase_type === "subscription") {
+    const planPrice = getPlanPrice(plan, is_israeli)
+    amount = planPrice.amount
+    currency = planPrice.currency
+    coinId = planPrice.coinId
+  } else {
+    const adminClient = await createAdminClient()
+    const { data: game } = await adminClient
+      .from("experience_games")
+      .select("id, is_active, price_ils, price_usd")
+      .eq("id", target_game_id)
+      .maybeSingle()
+    if (!game || !game.is_active) {
+      return NextResponse.json(
+        { success: false, code: "GAME_UNAVAILABLE", message: "Game not available for purchase" },
+        { status: 400 },
+      )
+    }
+    if (is_israeli) {
+      const ils = game.price_ils as number | null
+      if (ils == null || ils <= 0) {
+        return NextResponse.json(
+          { success: false, code: "GAME_UNPRICED", message: "Game has no ILS price set" },
+          { status: 400 },
+        )
+      }
+      amount = ils
+      currency = "ILS"
+      coinId = 1 // Cardcom coinId for ILS
+    } else {
+      const usd = game.price_usd as number | null
+      if (usd == null || usd <= 0) {
+        return NextResponse.json(
+          { success: false, code: "GAME_UNPRICED", message: "Game has no USD price set" },
+          { status: 400 },
+        )
+      }
+      amount = usd
+      currency = "USD"
+      coinId = 2 // Cardcom coinId for USD
+    }
+  }
+
+  // Determine locale for redirect URLs — avoids the middleware double-redirect bug
+  // where /billing/success gets turned into /he/billing/success?session_id=he/billing/success?...
+  const urlLocale = (language === "he" || is_israeli) ? "he" : "en"
 
   // ── Create checkout session in DB ───────────────────────────────────────────
   const serviceClient = await createAdminClient()
@@ -60,6 +193,12 @@ export async function POST(req: Request) {
       email,
       name:             name || null,
       plan,
+      product,
+      // One-time vs subscription is distinguished here; the indicator
+      // webhook reads this back to know which entitlement code path to
+      // run on success (couple_entitlement vs subscriptions row).
+      purchase_type,
+      target_game_id:   purchase_type === "one_time" ? target_game_id : null,
       amount,
       currency,
       coin_id:          coinId,
@@ -74,34 +213,77 @@ export async function POST(req: Request) {
 
   if (dbErr || !session?.id) {
     console.error("[checkout/create] DB error", dbErr)
-    return NextResponse.json({ success: false, message: "Failed to create session" }, { status: 500 })
+    return NextResponse.json(
+      { success: false, code: "DB_ERROR", message: "Failed to create session" },
+      { status: 500 },
+    )
   }
 
   const sessionId = session.id
+  const BASE_URL  = baseUrl(req)
 
   // ── Open Cardcom LowProfile ─────────────────────────────────────────────────
   const cardcomLang = (language === "he" || is_israeli) ? "he" : "en"
+
+  // For one-time Adults purchases the natural success destination is the
+  // product page itself (the entitled state surfaces the pair code there).
+  // We pass return_path through to /billing/success so it can route
+  // accordingly; the legacy billing-success page handles missing return_path
+  // by falling back to its current /my redirect.
+  const safeReturnPath =
+    typeof return_path === "string" && return_path.startsWith("/")
+      ? return_path
+      : null
+  const successQuery = safeReturnPath
+    ? `session_id=${sessionId}&return_path=${encodeURIComponent(safeReturnPath)}`
+    : `session_id=${sessionId}`
 
   let cardcomResult: Awaited<ReturnType<typeof openLowProfile>>
   try {
     cardcomResult = await openLowProfile({
       amount,
       coinId,
-      successUrl:   `${BASE_URL}/billing/success?session_id=${sessionId}`,
-      errorUrl:     `${BASE_URL}/billing/error?session_id=${sessionId}`,
+      // Include locale directly in the URL to avoid next-intl middleware double-redirecting
+      // and corrupting the session_id query param.
+      successUrl:   `${BASE_URL}/${urlLocale}/billing/success?${successQuery}`,
+      errorUrl:     `${BASE_URL}/${urlLocale}/billing/error?session_id=${sessionId}`,
       indicatorUrl: `${BASE_URL}/api/billing/cardcom/indicator`,
       returnValue:  sessionId,
       pageLanguage: cardcomLang,
     })
   } catch (err) {
-    console.error("[checkout/create] Cardcom error", err)
-    return NextResponse.json({ success: false, message: "Payment gateway error" }, { status: 502 })
+    console.error("[checkout/create] Cardcom network error", err)
+    await serviceClient
+      .from("checkout_sessions")
+      .update({ status: "failed", updated_at: new Date().toISOString() })
+      .eq("id", sessionId)
+    return NextResponse.json(
+      {
+        success: false,
+        code: "CARDCOM_NETWORK_ERROR",
+        message: "Payment gateway unreachable. Please try again.",
+      },
+      { status: 502 },
+    )
   }
 
   if (!cardcomResult.ok) {
-    console.error("[checkout/create] Cardcom non-ok", cardcomResult.responseCode, cardcomResult.raw)
+    console.error(
+      "[checkout/create] Cardcom non-ok",
+      cardcomResult.responseCode,
+      cardcomResult.raw,
+    )
+    await serviceClient
+      .from("checkout_sessions")
+      .update({ status: "failed", updated_at: new Date().toISOString() })
+      .eq("id", sessionId)
     return NextResponse.json(
-      { success: false, message: "Failed to open payment page", cardcom_code: cardcomResult.responseCode },
+      {
+        success: false,
+        code: "CARDCOM_REJECTED",
+        message: "Failed to open payment page",
+        cardcom_code: cardcomResult.responseCode,
+      },
       { status: 502 },
     )
   }
@@ -109,7 +291,11 @@ export async function POST(req: Request) {
   // ── Update session with LowProfileCode ─────────────────────────────────────
   await serviceClient
     .from("checkout_sessions")
-    .update({ status: "redirected", low_profile_code: cardcomResult.lowProfileCode, updated_at: new Date().toISOString() })
+    .update({
+      status: "redirected",
+      low_profile_code: cardcomResult.lowProfileCode,
+      updated_at: new Date().toISOString(),
+    })
     .eq("id", sessionId)
 
   return NextResponse.json({

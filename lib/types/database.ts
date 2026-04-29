@@ -71,12 +71,45 @@ export type ProfileRow = {
 export type SiteSettingsRow = {
   id: number;
   updated_at: string;
+
+  // ── Background / images ───────────────────────────────────
   home_hero_bg_type: "gradient" | "image";
   home_hero_bg_value: string;
   expert_photo_url: string | null;
+
+  // ── Social proof ─────────────────────────────────────────
   social_proof_couples_count: number;
   rating_value: number;
   rating_count: number;
+
+  // ── Hero content (DB overrides i18n when set) ─────────────
+  hero_headline_he?: string | null;
+  hero_headline_en?: string | null;
+  hero_sub_he?: string | null;
+  hero_sub_en?: string | null;
+
+  // ── Primary CTA ───────────────────────────────────────────
+  cta_primary_text_he?: string | null;
+  cta_primary_text_en?: string | null;
+  cta_primary_href?: string | null;
+  /** 'gradient' | 'gradient-rose' | 'gradient-purple' | 'outline-purple' */
+  cta_primary_style?: string | null;
+
+  // ── Secondary CTA ─────────────────────────────────────────
+  cta_secondary_text_he?: string | null;
+  cta_secondary_text_en?: string | null;
+  cta_secondary_href?: string | null;
+
+  // ── Homepage article-card images ──────────────────────────
+  home_article_img_0?: string | null;
+  home_article_img_1?: string | null;
+  home_article_img_2?: string | null;
+
+  // ── Hero template picker (E6) ─────────────────────────────
+  /** Which hero template the public homepage renders. */
+  hero_template?: "classic-dark" | "light-gradient" | null;
+  /** Optional image used alongside the hero (e.g. wheel art in classic-dark). */
+  hero_side_image_url?: string | null;
 };
 
 export type ArticleRow = {

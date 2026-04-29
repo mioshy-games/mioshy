@@ -83,12 +83,12 @@ function PlayerCard({
         <div className="flex items-center gap-1.5 truncate text-sm font-semibold text-slate-100">
           {name}
           {isHost && (
-            <span className="rounded-full bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-bold text-amber-400">
+            <span className="rounded-full bg-amber-500/20 px-1.5 py-0.5 text-xs font-bold text-amber-400">
               מארח
             </span>
           )}
           {isMe && (
-            <span className="rounded-full bg-cyan-500/20 px-1.5 py-0.5 text-[10px] font-bold text-cyan-400">
+            <span className="rounded-full bg-cyan-500/20 px-1.5 py-0.5 text-xs font-bold text-cyan-400">
               אני
             </span>
           )}
@@ -331,12 +331,12 @@ export function GameLobby({
                       {a}
                     </button>
                     {taken && (
-                      <span className="pointer-events-none absolute -right-1 -top-1 text-[14px]">
+                      <span className="pointer-events-none absolute -right-1 -top-1 text-sm">
                         🔒
                       </span>
                     )}
                     {locked && (
-                      <span className="pointer-events-none absolute -right-1 -top-1 text-[14px]">
+                      <span className="pointer-events-none absolute -right-1 -top-1 text-sm">
                         ✅
                       </span>
                     )}
@@ -379,12 +379,12 @@ export function GameLobby({
                       aria-label={name}
                     />
                     {taken && (
-                      <span className="pointer-events-none absolute -right-1 -top-1 text-[14px]">
+                      <span className="pointer-events-none absolute -right-1 -top-1 text-sm">
                         🔒
                       </span>
                     )}
                     {locked && (
-                      <span className="pointer-events-none absolute -right-1 -top-1 text-[14px]">
+                      <span className="pointer-events-none absolute -right-1 -top-1 text-sm">
                         ✅
                       </span>
                     )}

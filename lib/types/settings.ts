@@ -20,10 +20,18 @@ export type GamePageLayout = "centered" | "side-by-side";
 // ── Wheel (global visual sizing) ────────────────────────────────────────────
 export type WheelSettings = {
   /**
-   * Diameter of the wheel in rem units.
-   * Default: 22 (≈352px).
+   * Minimum diameter of the wheel in rem units (mobile / narrow screens).
+   * On mobile the wheel is always capped at 92 vw regardless of this value.
+   * Default: 22 (≈352 px).
    */
   sizeRem: number;
+  /**
+   * Maximum diameter of the wheel in rem units (large / wide screens).
+   * When set the wheel scales via CSS clamp() from sizeRem → sizeRemMax as
+   * the viewport grows.  Omit (or set equal to sizeRem) to keep a fixed size.
+   * Default: 32 (≈512 px).
+   */
+  sizeRemMax?: number;
   /**
    * Radial position of slice labels as a fraction of r (0–1).
    * Default: 0.72 (sits in the outer third of each slice).
@@ -45,11 +53,55 @@ export type WheelSettings = {
   };
 
   labelFontSizePx: number;
+  /** Fill color of the slice text. Default: "#ffffff". */
+  labelColor: string;
   labelOutline: {
     enabled: boolean;
+    /** Stroke / outline color. Default: "#000000". */
     color: string;
     opacity: number; // 0-1
     width: number; // px
+  };
+
+  // ── Wheel colors & per-game appearance ──────────────────────────────────
+  /** Color of the pointer (triangle or SVG currentColor fill). Default: "#ffffff". */
+  pointerColor: string;
+  /**
+   * Vertical offset of the pointer in px.
+   * Negative = upward (deeper into the wheel), positive = downward (away from wheel).
+   * Range: -50 … +10. Default: 0.
+   */
+  pointerOffsetY: number;
+  /**
+   * Custom SVG markup for the pointer.
+   * When provided, replaces the default triangle.
+   * Tip: use fill="currentColor" so pointerColor still controls the fill.
+   */
+  pointerSvg?: string;
+  /** Width of the custom SVG pointer in px. Default: 40. */
+  pointerSvgWidth?: number;
+  /** Height of the custom SVG pointer in px. Default: 48. */
+  pointerSvgHeight?: number;
+  /** Inner center circle. */
+  innerCircle: {
+    enabled: boolean;
+    fillColor: string;   // default "#fafafa"
+    borderColor: string; // default "#e5e5e5"
+  };
+  /** Lines between slices. */
+  divider: {
+    enabled: boolean;
+    color: string;   // default "#ffffff"
+    width: number;   // px, default 2
+  };
+  /** Decorative markers placed at slice boundaries. */
+  markers: {
+    type: "none" | "circle" | "svg_icon"; // default "none"
+    color: string;      // default "#ffffff"
+    size: number;       // px, default 14
+    count: number;      // default 0
+    position: number;   // % of radius, default 100
+    svgPath?: string;   // optional custom SVG path d=""
   };
 };
 
@@ -118,6 +170,14 @@ export type GameSettings = {
   particles: ParticlesSettings;
   /** Page layout for the game. Default: "centered". */
   layout: GamePageLayout;
+  /**
+   * Fixed gap (px) inserted between the wheel and the spin button,
+   * and between the title and the wheel.
+   * Large enough to visually clear the pointer tip (top) and any marker
+   * dots that bleed outside the wheel container (bottom).
+   * Default: 32.
+   */
+  wheelGapPx?: number;
 };
 
 // ── Versioned settings (for rollback) ────────────────────────────────────

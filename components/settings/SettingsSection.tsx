@@ -27,6 +27,8 @@ export const SectionGroupContext = createContext<{
 
 type Props = {
   title: string;
+  /** Optional short subtitle shown below the title (visible when collapsed) */
+  subtitle?: string;
   /** Optional colored dot next to the title */
   dotClassName?: string;
   defaultOpen?: boolean;
@@ -36,6 +38,7 @@ type Props = {
 
 export function SettingsSection({
   title,
+  subtitle,
   dotClassName,
   defaultOpen = true,
   children,
@@ -83,7 +86,12 @@ export function SettingsSection({
           {dotClassName ? (
             <span className={cn("w-2 h-2 rounded-full flex-shrink-0", dotClassName)} />
           ) : null}
-          <h3 className="text-sm font-semibold truncate">{title}</h3>
+          <div className="min-w-0">
+            <h3 className="text-sm font-semibold truncate">{title}</h3>
+            {subtitle ? (
+              <p className="text-xs text-muted-foreground truncate mt-0.5">{subtitle}</p>
+            ) : null}
+          </div>
         </div>
         <ChevronDown
           className={cn(

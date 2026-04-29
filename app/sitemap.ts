@@ -30,6 +30,10 @@ type DbGame = {
   created_at: string;
   thumbnail_url: string | null;
 };
+type DbAdultsGame = {
+  slug: string;
+  created_at: string;
+};
 
 function langAlternates(site: string, path: string) {
   return {
@@ -46,6 +50,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPaths: Array<{ path: string; priority: number; changeFrequency: MetadataRoute.Sitemap[number]["changeFrequency"] }> = [
     { path: "", priority: 1.0, changeFrequency: "weekly" },
     { path: "/games", priority: 0.95, changeFrequency: "weekly" },
+    // /adults is the flagship product surface — high priority.
+    { path: "/adults", priority: 0.95, changeFrequency: "weekly" },
+    { path: "/journey", priority: 0.85, changeFrequency: "weekly" },
+    { path: "/how-it-works", priority: 0.7, changeFrequency: "monthly" },
     { path: "/products", priority: 0.8, changeFrequency: "monthly" },
     { path: "/pricing", priority: 0.7, changeFrequency: "monthly" },
     { path: "/articles", priority: 0.8, changeFrequency: "weekly" },
@@ -66,16 +74,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     const supabase = await createServerSupabaseClient();
 
-    const [{ data: articles }, { data: games }] = await Promise.all([
-      supabase
-        .from("articles")
-        .select("slug, published_at, created_at, cover_image_url")
-        .eq("is_published", true),
-      supabase
-        .from("games")
-        .select("slug, created_at, thumbnail_url")
-        .eq("is_active", true),
-    ]);
+    const [{ data: articles }, { data: games }, { data: adultsGames }] =
+      await Promise.all([
+        supabase
+          .from("articles")
+          .select("slug, published_at, created_at, cover_image_url")
+          .eq("is_published", true),
+        supabase
+          .from("games")
+          .select("slug, created_at, thumbnail_url")
+          .eq("is_active", true),
+        // Flagship /adults catalogue — published-only experience games.
+        supabase
+          .from("experience_games")
+          .select("slug, created_at")
+          .eq("is_active", true),
+      ]);
 
     const articleEntries: MetadataRoute.Sitemap = ((articles ?? []) as DbArticle[])
       .filter((a) => Boolean(a.slug))
@@ -105,7 +119,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         }));
       });
 
-    return [...staticEntries, ...articleEntries, ...gameEntries];
+    const adultsEntries: MetadataRoute.Sitemap = ((adultsGames ?? []) as DbAdultsGame[])
+      .filter((g) => Boolean(g.slug))
+      .flatMap((g) => {
+        const lm = new Date(g.created_at);
+        const path = `/adults/${g.slug}`;
+        return (["en", "he"] as const).map((locale) => ({
+          url: `${site}/${locale}${path}`,
+          lastModified: lm,
+          changeFrequency: "monthly" as const,
+          priority: 0.85,
+          alternates: { languages: langAlternates(site, path) },
+        }));
+      });
+
+    return [
+      ...staticEntries,
+      ...articleEntries,
+      ...gameEntries,
+      ...adultsEntries,
+    ];
   } catch {
     return staticEntries;
   }

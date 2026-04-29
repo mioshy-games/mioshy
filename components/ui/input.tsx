@@ -3,9 +3,20 @@ import { Input as InputPrimitive } from "@base-ui/react/input"
 
 import { cn } from "@/lib/utils"
 
-function Input({ className, type, ...props }: React.ComponentProps<"input">) {
+// Wrapped in `React.forwardRef` so libraries like react-hook-form (which
+// register fields by attaching a `ref` callback) can reach the underlying
+// native <input>. Without forwardRef, the spread `{...register("name")}`
+// silently drops the `ref`, RHF never tracks the field's value, and
+// submission ends up with `undefined` for every field — which Zod then
+// rejects with confusing "expected string, received undefined" errors
+// even though the user clearly typed something.
+const Input = React.forwardRef<
+  HTMLInputElement,
+  React.ComponentProps<"input">
+>(function Input({ className, type, ...props }, ref) {
   return (
     <InputPrimitive
+      ref={ref}
       type={type}
       data-slot="input"
       className={cn(
@@ -15,6 +26,6 @@ function Input({ className, type, ...props }: React.ComponentProps<"input">) {
       {...props}
     />
   )
-}
+})
 
 export { Input }

@@ -14,7 +14,7 @@ import {
   applyPenalty,
   calculateNewPosition,
   getNextPlayerIndex,
-  getRandomQuestion,
+  pickNextQuestion,
   rollDice,
 } from "@/lib/snakes/gameEngine";
 
@@ -96,7 +96,12 @@ export function useSnakesGame({
     const curPos = state.positions[me.id] ?? me.position ?? 1;
 
     const move = calculateNewPosition(curPos, steps, config, config.boardSize);
-    const q = getRandomQuestion(config.questions ?? []);
+    // Non-repeating draw — the remaining pool is persisted in game_state so it
+    // survives refreshes and is shared across all connected clients of a room.
+    const { question: q, nextPool } = pickNextQuestion(
+      state.questionPool,
+      config.questions ?? [],
+    );
 
     const logRoll: GameLogEntry = {
       timestamp: nowIso(),
@@ -140,6 +145,9 @@ export function useSnakesGame({
       positions: nextPositions,
       phase: move.event === "win" ? "ended" : "question",
       currentQuestion: move.event === "win" ? null : (q as Question),
+      // Persist the draw pool only when we actually consumed a question.
+      // On win we end without drawing, so leave the pool untouched.
+      ...(move.event === "win" ? {} : { questionPool: nextPool }),
       winner: move.event === "win" ? me.id : null,
       turnCount: (state.turnCount ?? 0) + 1,
       log: pushLogs(state.log ?? [], [logRoll, logMove, ...(extra ? [extra] : [])]),

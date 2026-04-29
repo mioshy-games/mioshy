@@ -6,6 +6,21 @@ export function mapToGameFormValues(
   game: GameRow,
   wheel: WheelConfigRow | null,
 ): GameFormValues {
+  // Server-side log so we can correlate "user reported save didn't persist"
+  // with what the page actually fetched on reload. If this prints the old
+  // name right after a save, the DB write didn't land. If it prints the new
+  // name but the client still shows the old one, the issue is on the client.
+  console.log(
+    "[mapToGameFormValues]",
+    JSON.stringify({
+      id: game.id,
+      name_he: game.name_he,
+      name_en: game.name_en,
+      slug: game.slug,
+      hasWheel: Boolean(wheel),
+      wheelSlices: wheel?.slices ? (wheel.slices as unknown[]).length : 0,
+    }),
+  );
   const base = getDefaultGameFormValues();
   const mergedMarkerConfig = {
     ...base.wheel.marker_config,
@@ -59,5 +74,17 @@ export function mapToGameFormValues(
     },
   };
   const parsed = gameFormSchema.safeParse(merged);
-  return parsed.success ? parsed.data : merged;
+  if (parsed.success) return parsed.data;
+
+  // Zod rejected the merged object (most common cause: slug contains characters
+  // the regex doesn't allow, e.g. imported Hebrew slugs before the regex was
+  // widened, or a completely missing slug). Clear the slug so the form loads in
+  // an editable state rather than silently locked with an invalid value.
+  console.warn(
+    "[mapToGameFormValues] Zod parse failed — clearing slug. Errors:",
+    parsed.error.flatten().fieldErrors,
+  );
+  const sanitized = { ...merged, slug: "" };
+  const reparsed = gameFormSchema.safeParse(sanitized);
+  return reparsed.success ? reparsed.data : sanitized;
 }

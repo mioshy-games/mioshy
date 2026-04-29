@@ -45,16 +45,12 @@ export function LivePreview({ settings }: Props) {
     };
   }, [hasBorder, border.width, border.style, border.color, borderGapPx]);
 
-  // ── Pointer top (mirrors Wheel.tsx logic) ───────────────────────────────
-  // Pointer is a ▼ 14 px tall (in the mock). Base at pointerTop, tip 14 px below.
-  // With border: snap base to outer border edge, clamp tip ≥ 1 px inside wheel.
-  // Without border: base at top of wheel mock (slight overlap).
-  const mockPointerH = 14;
-  const pointerTop = useMemo(() => {
-    if (!hasBorder) return 0; // base at wheel rim
-    const outerEdge = -(borderGapPx + border.width);
-    return Math.max(-(mockPointerH - 1), outerEdge);
-  }, [hasBorder, borderGapPx, border.width]);
+  // ── Pointer top (mirrors Wheel.tsx logic, includes pointerOffsetY) ────────
+  // Pointer is fully independent of the border ring — mirrors Wheel.tsx logic.
+  // pointerOffsetY is the sole control (clamped -50…+10 px).
+  // 0 = tip at the wheel rim; negative = deeper into wheel; positive = outside.
+  const mockPointerH = 14; // height of the ▼ triangle in the mock (px)
+  const pointerTop = Math.max(-50, Math.min(10, wheel.pointerOffsetY ?? 0));
 
   // ── Shape clip ─────────────────────────────────────────────────────────
   const clipPath = useMemo(() => {

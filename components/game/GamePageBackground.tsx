@@ -138,6 +138,13 @@ export function GamePageBackground({
   bgSettings,
   particlesSettings,
   children,
+  /**
+   * Override the default `min-h-[100dvh] w-full overflow-hidden` wrapper
+   * class. Use when embedding the backdrop into a contained marketing
+   * surface (e.g. a hero "demo wheel" column) instead of the full game page.
+   * The inner content wrapper height also adapts when this is provided.
+   */
+  containerClassName,
 }: {
   gameSlug: string;
   primaryColor?: string;
@@ -146,19 +153,28 @@ export function GamePageBackground({
   /** Floating particles settings from GameSettings */
   particlesSettings?: ParticlesSettings | null;
   children: ReactNode;
+  containerClassName?: string;
 }) {
   // ── If bgSettings has an image, render it directly and skip blobs ─────────
   if (bgSettings?.type === "image" && bgSettings.imageUrl) {
     return (
       <div
-        className="relative min-h-[100dvh] w-full"
+        className={containerClassName ?? "relative min-h-[100dvh] w-full"}
         style={{
           backgroundImage: `url(${bgSettings.imageUrl})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
         }}
       >
-        <div className="relative min-h-[100dvh]">{children}</div>
+        <div
+          className={
+            containerClassName
+              ? "relative h-full w-full"
+              : "relative min-h-[100dvh]"
+          }
+        >
+          {children}
+        </div>
       </div>
     );
   }
@@ -197,7 +213,9 @@ export function GamePageBackground({
 
   return (
     <motion.div
-      className="relative min-h-[100dvh] w-full overflow-hidden"
+      className={
+        containerClassName ?? "relative min-h-[100dvh] w-full overflow-hidden"
+      }
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.8, ease: "easeOut" }}
@@ -228,7 +246,15 @@ export function GamePageBackground({
       <FloatingParticles settings={particlesSettings} bgSettings={bgSettings} />
 
       {/* Content */}
-      <div className="relative min-h-[100dvh]">{children}</div>
+      <div
+        className={
+          containerClassName
+            ? "relative h-full w-full"
+            : "relative min-h-[100dvh]"
+        }
+      >
+        {children}
+      </div>
     </motion.div>
   );
 }

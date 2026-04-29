@@ -26,16 +26,30 @@ export function PlayersOverlay({
   positions,
   boardSize,
   currentPlayerId,
+  visualPositions,
+  arrivingPlayerId,
+  isWalking,
 }: {
   players: GamePlayer[];
+  /** Real authoritative positions from game state. */
   positions: Record<string, number>;
   boardSize: number;
   currentPlayerId: string | null;
+  /** Optional client-side visual override used during step-by-step walk animation. */
+  visualPositions?: Record<string, number>;
+  /** Player currently doing the arrival bounce after a walk completes. */
+  arrivingPlayerId?: string | null;
+  /** When true, use a snappier spring so tokens hop crisply between cells. */
+  isWalking?: boolean;
 }) {
-  // Group players by their current cell so we can offset overlapping tokens.
+  // Derive which positions to actually display.
+  const displayPos = visualPositions ?? positions;
+
+  // Group players by their *display* cell so offset calculation stays in sync
+  // with what the player sees, not what Supabase already resolved.
   const byCell = new Map<number, string[]>();
   for (const p of players) {
-    const cell = positions[p.id] ?? p.position ?? 1;
+    const cell = displayPos[p.id] ?? p.position ?? 1;
     const list = byCell.get(cell) ?? [];
     list.push(p.id);
     byCell.set(cell, list);
@@ -44,13 +58,14 @@ export function PlayersOverlay({
   return (
     <div className="pointer-events-none absolute inset-0">
       {players.map((p) => {
-        const cell = positions[p.id] ?? p.position ?? 1;
+        const cell = displayPos[p.id] ?? p.position ?? 1;
         const center = cellToBoardPercent(cell, boardSize);
         const shareGroup = byCell.get(cell) ?? [p.id];
         const indexInGroup = shareGroup.indexOf(p.id);
         const offset = offsetForIndex(indexInGroup, shareGroup.length);
 
         const isCurrent = currentPlayerId === p.id;
+        const isArriving = arrivingPlayerId === p.id;
 
         return (
           <motion.div
@@ -69,13 +84,16 @@ export function PlayersOverlay({
             animate={{
               left: `calc(${center.xPct}% + ${offset.x}%)`,
               top: `calc(${center.yPct}% + ${offset.y}%)`,
+              // Arrival bounce: pop up, squash back, settle.
+              scale: isArriving ? [1, 1.45, 0.82, 1.12, 1] : 1,
             }}
-            transition={{
-              type: "spring",
-              stiffness: 180,
-              damping: 22,
-              mass: 0.9,
-            }}
+            transition={
+              isArriving
+                ? { duration: 0.48, ease: [0.36, 0.07, 0.19, 0.97], times: [0, 0.28, 0.55, 0.78, 1] }
+                : isWalking
+                  ? { type: "spring", stiffness: 620, damping: 42 }
+                  : { type: "spring", stiffness: 180, damping: 22, mass: 0.9 }
+            }
           >
             <PlayerBadge
               avatar={p.avatar}

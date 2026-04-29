@@ -1,12 +1,15 @@
 "use client";
 
 import { useMemo } from "react";
+import { fitSvgToContainer } from "@/lib/utils";
 import type { WheelSlice } from "@/lib/types/database";
 
 type WheelPreviewProps = {
   slices: WheelSlice[];
   borderColor: string;
   pointerColor: string;
+  /** Vertical offset of the pointer in px. Negative = up into the wheel, positive = down. Default 0. */
+  pointerOffsetY?: number;
   innerCircle: boolean;
   innerCircleColor: string;
   innerCircleBorderColor: string;
@@ -17,6 +20,20 @@ type WheelPreviewProps = {
   /** Which label to show on preview slices */
   labelLang?: "he" | "en";
   className?: string;
+  /** Label font size in px (from game_settings) */
+  labelFontSizePx?: number;
+  /** Label fill color (from game_settings) */
+  labelColor?: string;
+  /** Label text outline (from game_settings) */
+  labelOutline?: { enabled: boolean; color: string; opacity: number; width: number };
+  /** Outer border ring (from game_settings.border) */
+  outerBorder?: { enabled: boolean; color: string; style: "solid" | "dashed" | "none"; width: number; distance: number } | null;
+  /** Custom SVG markup for the pointer (replaces triangle). */
+  pointerSvg?: string;
+  /** Width of the custom SVG pointer in px. Default: 40. */
+  pointerSvgWidth?: number;
+  /** Height of the custom SVG pointer in px. Default: 48. */
+  pointerSvgHeight?: number;
 };
 
 type MarkerConfig = {
@@ -49,6 +66,7 @@ export function WheelPreview({
   slices,
   borderColor,
   pointerColor,
+  pointerOffsetY = 0,
   innerCircle,
   innerCircleColor,
   innerCircleBorderColor,
@@ -57,6 +75,13 @@ export function WheelPreview({
   dividerWidth,
   markerConfig,
   labelLang = "he",
+  labelFontSizePx = 12,
+  labelColor = "#ffffff",
+  labelOutline,
+  outerBorder,
+  pointerSvg,
+  pointerSvgWidth = 40,
+  pointerSvgHeight = 48,
 }: WheelPreviewProps) {
   const n = Math.max(slices.length, 1);
   const seg = (Math.PI * 2) / n;
@@ -88,17 +113,54 @@ export function WheelPreview({
 
   const markerRadius = (r * markerPos) / 100;
 
+  // Outer border ring (from game_settings.border) — absolutely positioned sibling
+  const hasOuterBorder = outerBorder?.enabled && outerBorder.style !== "none";
+  const outerGapPx     = hasOuterBorder ? (outerBorder!.distance ?? 0) : 0;
+  const outerWidthPx   = hasOuterBorder ? (outerBorder!.width ?? 2) : 0;
+
   return (
     <div className="relative mx-auto aspect-square w-full max-w-[300px] min-w-[200px] sm:max-w-[300px]">
-      <div
-        className="pointer-events-none absolute left-1/2 top-0 z-10 -translate-x-1/2 -translate-y-1"
-        aria-hidden
-      >
+      {/* Outer border ring */}
+      {hasOuterBorder && (
         <div
-          className="h-0 w-0 border-x-[10px] border-x-transparent border-t-[16px] drop-shadow-md"
-          style={{ borderTopColor: pointerColor }}
+          className="pointer-events-none absolute rounded-full z-[5]"
+          style={{
+            inset: -(outerGapPx + outerWidthPx),
+            border: `${outerWidthPx}px ${outerBorder!.style} ${outerBorder!.color}`,
+          }}
+          aria-hidden
         />
-      </div>
+      )}
+
+      {pointerSvg ? (
+        /* Custom SVG pointer */
+        <div
+          className="pointer-events-none absolute z-30"
+          style={{
+            top: Math.max(-50, Math.min(10, pointerOffsetY)) - 1,
+            left: "50%",
+            width: pointerSvgWidth,
+            height: pointerSvgHeight,
+            marginLeft: -(pointerSvgWidth / 2),
+            color: pointerColor,
+            filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.5))",
+          }}
+          aria-hidden
+          dangerouslySetInnerHTML={{ __html: fitSvgToContainer(pointerSvg) }}
+        />
+      ) : (
+        /* Default triangle */
+        <div
+          className="pointer-events-none absolute left-1/2 z-30 -translate-x-1/2"
+          style={{ top: Math.max(-50, Math.min(10, pointerOffsetY)) - 1 }}
+          aria-hidden
+        >
+          <div
+            className="h-0 w-0 border-x-[10px] border-x-transparent border-t-[16px] drop-shadow-md"
+            style={{ borderTopColor: pointerColor }}
+          />
+        </div>
+      )}
 
       <svg
         className="h-full w-full overflow-visible drop-shadow-lg"
@@ -106,6 +168,11 @@ export function WheelPreview({
         role="img"
         aria-label="Wheel preview"
       >
+        <defs>
+          <filter id="mioInnerCircleShadowPrev" x="-40%" y="-40%" width="180%" height="180%">
+            <feDropShadow dx="0" dy="2" stdDeviation="5" floodColor="#000000" floodOpacity="0.28" />
+          </filter>
+        </defs>
         {slices.map((s, i) => {
           const start = -Math.PI / 2 + i * seg;
           const end = start + seg;
@@ -150,6 +217,7 @@ export function WheelPreview({
             stroke={innerCircleBorderColor}
             strokeWidth={3}
             vectorEffect="non-scaling-stroke"
+            filter="url(#mioInnerCircleShadowPrev)"
           />
         ) : null}
 
@@ -182,9 +250,18 @@ export function WheelPreview({
           : null}
 
         {labels.map(({ i, bisector, label }) => {
-          const rr = 85;
+          const rr = r * 0.6; // ~60% of radius for label placement
           const p = polar(cx, cy, rr, bisector);
           const rot = (bisector * 180) / Math.PI - 90;
+          const outlineStyle: React.CSSProperties =
+            labelOutline?.enabled
+              ? {
+                  paintOrder: "stroke",
+                  stroke: labelOutline.color,
+                  strokeWidth: labelOutline.width,
+                  strokeOpacity: labelOutline.opacity,
+                }
+              : {};
           return (
             <g
               key={`lbl-${i}`}
@@ -193,11 +270,12 @@ export function WheelPreview({
               <text
                 x={0}
                 y={0}
-                fill="white"
-                fontSize="12"
+                fill={labelColor}
+                fontSize={labelFontSizePx}
                 fontWeight="700"
                 textAnchor="middle"
                 dominantBaseline="middle"
+                style={outlineStyle}
               >
                 {label}
               </text>

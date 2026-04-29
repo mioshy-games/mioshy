@@ -13,7 +13,7 @@ export async function GET() {
   const { data, error } = await supabase
     .from("questions")
     .select(
-      "id, game_id, type, level, text_he, text_en, is_active, created_at, games(slug, name_en, name_he)",
+      "id, game_id, type, level, category, text_he, text_en, is_active, created_at, games(slug, name_en, name_he)",
     )
     .order("created_at", { ascending: true });
 
@@ -29,6 +29,7 @@ export async function GET() {
     "question_id",
     "type",
     "level",
+    "category",
     "text_he",
     "text_en",
     "is_active",
@@ -46,6 +47,7 @@ export async function GET() {
       (q as { id: string }).id,
       (q as { type: string }).type,
       (q as { level: string }).level,
+      (q as { category?: string }).category ?? "",
       (q as { text_he: string }).text_he,
       (q as { text_en: string }).text_en,
       String((q as { is_active: boolean }).is_active),

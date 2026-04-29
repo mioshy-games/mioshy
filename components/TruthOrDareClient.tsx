@@ -12,15 +12,13 @@ import type { GameSettings } from "@/lib/types/settings";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { hasActiveSubscription } from "@/lib/subscriptions";
 import {
-  getAndMaybeResetUserSpins,
-  getGuestSpins,
-  getGuestLockUntilMs,
-  getRateLimitUntilMs,
-  setSpinRateLimit,
-  clearSpinRateLimit,
-  incrementUserSpins,
-  lockGuestUntilTomorrow,
-  setGuestSpins,
+  FREE_PLAYS_PER_GAME,
+  getGuestGamePlays,
+  getUserGamePlays,
+  grantPostSignupBonus,
+  hasGuestLeadCaptured,
+  incrementGuestGamePlays,
+  incrementUserGamePlays,
 } from "@/lib/spins";
 import { RegistrationModal } from "@/components/RegistrationModal";
 import { SubscriptionModal } from "@/components/SubscriptionModal";
@@ -61,9 +59,12 @@ export function TruthOrDareClient({
   const [regOpen, setRegOpen] = useState(false);
   const [subOpen, setSubOpen] = useState(false);
   const [subLocked, setSubLocked] = useState(false);
+  /** Local cache of whether the post-signup +3 bonus has been consumed for
+   *  this game. When true, the paywall shows at play #{FREE_PLAYS_PER_GAME}+1
+   *  (no more bonus); when false we grant the bonus right after signup and
+   *  reset plays_used to 0 so the user gets a fresh 3-play window. */
+  const [bonusConsumed, setBonusConsumed] = useState(false);
   const [leadCaptured, setLeadCaptured] = useState(false);
-  const [rateLimitMs, setRateLimitMs] = useState<number | null>(null);
-  const [rateLimitSecs, setRateLimitSecs] = useState(0);
   const authWaiterRef = useRef<{
     resolve: (uid: string | null) => void;
   } | null>(null);
@@ -97,12 +98,65 @@ export function TruthOrDareClient({
       ? (wheel.marker_config as Record<string, number>).label_radius_fraction
       : 0.72;
 
-  const resolvedSizeRem = gameSettings?.wheel?.sizeRem ?? wheelSizeRemFromConfig;
+  const resolvedSizeRem    = gameSettings?.wheel?.sizeRem    ?? wheelSizeRemFromConfig;
+  const resolvedSizeRemMax = gameSettings?.wheel?.sizeRemMax ?? undefined; // undefined = fixed size (no responsive scaling)
   const resolvedLabelFraction = gameSettings?.wheel?.labelRadiusFraction ?? labelFractionFromConfig;
   const centerShadow = gameSettings?.wheel?.centerShadow;
   const dividerShadow = gameSettings?.wheel?.dividerShadow;
-  const labelFontSizePx = gameSettings?.wheel?.labelFontSizePx ?? 12;
-  const labelOutline = gameSettings?.wheel?.labelOutline;
+
+  // ── Wheel shape: only "circle" and "square" are implemented; "custom" falls back to circle ──
+  const wheelShape =
+    gameSettings?.shape?.enabled && gameSettings.shape.type !== "custom"
+      ? (gameSettings.shape.type as "circle" | "square")
+      : "circle";
+  const labelFontSizePx  = gameSettings?.wheel?.labelFontSizePx ?? 12;
+  const labelColor       = gameSettings?.wheel?.labelColor ?? "#ffffff";
+  const labelOutline     = gameSettings?.wheel?.labelOutline;
+  const pointerSvg       = gameSettings?.wheel?.pointerSvg;
+  const pointerSvgWidth  = gameSettings?.wheel?.pointerSvgWidth;
+  const pointerSvgHeight = gameSettings?.wheel?.pointerSvgHeight;
+
+  // Gap (px) between wheel and its neighbours (title above, button below).
+  // Large enough to visually clear the pointer tip + marker dot overflow.
+  const wheelGapPx = gameSettings?.wheelGapPx ?? 32;
+
+  // ── Wheel colors: gameSettings.wheel takes priority over legacy wheel_configs ──
+  const resolvedPointerColor =
+    gameSettings?.wheel?.pointerColor ?? wheel.pointer_color ?? "#ffffff";
+  const resolvedPointerOffsetY = gameSettings?.wheel?.pointerOffsetY ?? 0;
+  const resolvedInnerCircle =
+    gameSettings?.wheel?.innerCircle?.enabled ?? wheel.inner_circle ?? true;
+  const resolvedInnerCircleColor =
+    gameSettings?.wheel?.innerCircle?.fillColor ?? wheel.inner_circle_color ?? "#fafafa";
+  const resolvedInnerCircleBorderColor =
+    gameSettings?.wheel?.innerCircle?.borderColor ?? wheel.inner_circle_border_color ?? "#e5e5e5";
+  const resolvedDividerEnabled =
+    gameSettings?.wheel?.divider?.enabled ?? wheel.divider_enabled ?? wheel.show_divider ?? true;
+  const resolvedDividerColor =
+    gameSettings?.wheel?.divider?.color ?? wheel.divider_color ?? "#ffffff";
+  const resolvedDividerWidth =
+    gameSettings?.wheel?.divider?.width ?? wheel.divider_width ?? 2;
+  // Markers priority:
+  //   1. gameSettings.wheel.markers — only when type is "circle" or "svg_icon"
+  //      (type "none" = "no override"; fall through to wheel_configs legacy data)
+  //   2. wheel_configs.marker_config — legacy fallback (set via GameForm)
+  //
+  // This prevents DEFAULT_GAME_SETTINGS markers.type="none" from silently
+  // zeroing out circles that were configured in wheel_configs before
+  // game_settings existed for the game.
+  const resolvedMarkerConfig = {
+    ...(wheel.marker_config as Record<string, unknown> ?? {}),
+    ...(gameSettings?.wheel?.markers && gameSettings.wheel.markers.type !== "none"
+      ? {
+          marker_type:     gameSettings.wheel.markers.type,
+          marker_color:    gameSettings.wheel.markers.color,
+          marker_size:     gameSettings.wheel.markers.size,
+          marker_count:    gameSettings.wheel.markers.count,
+          marker_position: gameSettings.wheel.markers.position,
+          svg_path_d:      gameSettings.wheel.markers.svgPath ?? "",
+        }
+      : {}),
+  };
 
   const options = useMemo(() => {
     const base = (wheel.slices ?? []).map((s) => ({
@@ -139,95 +193,49 @@ export function TruthOrDareClient({
     [locale],
   );
 
-  // ── Rate-limit countdown ticker ────────────────────────────────────────────
-  useEffect(() => {
-    if (!rateLimitMs) return;
-    const tick = () => {
-      const remaining = Math.ceil((rateLimitMs - Date.now()) / 1000);
-      if (remaining <= 0) {
-        setRateLimitMs(null);
-        setRateLimitSecs(0);
-      } else {
-        setRateLimitSecs(remaining);
-      }
-    };
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, [rateLimitMs]);
-
+  // ── Spin gate ─────────────────────────────────────────────────────────────
+  // 1. subscribed         → unlimited
+  // 2. guest, plays < 3   → free
+  // 3. guest, plays >= 3 && no lead yet → lead signup modal
+  // 4. guest, lead captured but still not logged in → paywall (locked)
+  // 5. logged-in, plays < 3 → free
+  // 6. logged-in, plays >= 3 → paywall (locked)
   const handleSpinClick = () => {
     if (!authReady) return;
 
-    // Subscribers spin freely
     if (subscribed) {
       wheelRef.current?.spin();
       return;
     }
 
-    // ── Guest (not logged in) ────────────────────────────────────────────────
-    if (!userId) {
-      const used        = getGuestSpins();
-      const lockedUntil = getGuestLockUntilMs();
+    const slug = game.slug;
 
-      // Legacy day-lock (dismissed lead gate)
-      if (lockedUntil && lockedUntil > Date.now()) {
+    // ── Guest ────────────────────────────────────────────────────────────────
+    if (!userId) {
+      const used = getGuestGamePlays(slug);
+
+      if (used < FREE_PLAYS_PER_GAME) {
+        wheelRef.current?.spin();
+        return;
+      }
+
+      // Free budget spent — ask for the lead (signup) first.
+      if (!hasGuestLeadCaptured() && !leadCaptured) {
         setSubLocked(false);
         setSubOpen(true);
         return;
       }
 
-      // After 6 spins → 10-min rate limit (not hard block)
-      if (used >= 6) {
-        const rl = getRateLimitUntilMs();
-        if (rl) {
-          setRateLimitMs(rl);
-          setSubLocked(false);
-          setSubOpen(true);   // show plans, but user can close
-          return;
-        }
-        // 10 min passed — allow spin
-        wheelRef.current?.spin();
-        return;
-      }
-
-      // Spins 4-6: require lead capture first
-      if (used >= 3) {
-        const existingLead =
-          typeof window !== "undefined"
-            ? window.localStorage.getItem("mioshy:lead_id_v1")
-            : null;
-        if (!existingLead && !leadCaptured) {
-          setSubLocked(false);
-          setSubOpen(true);
-          return;
-        }
-        // Lead captured — allow spin
-        wheelRef.current?.spin();
-        return;
-      }
-
-      // Spins 1-3: free
-      wheelRef.current?.spin();
+      // Lead captured but the user never completed account creation. Hard
+      // paywall — they must subscribe (or sign in elsewhere) to continue.
+      setSubLocked(true);
+      setSubOpen(true);
       return;
     }
 
     // ── Logged-in non-subscriber ─────────────────────────────────────────────
-    if (completedSpins >= 6) {
-      const rl = getRateLimitUntilMs();
-      if (rl) {
-        setRateLimitMs(rl);
-        setSubLocked(false);
-        setSubOpen(true);
-        return;
-      }
-      wheelRef.current?.spin();
-      return;
-    }
-
-    // Logged-in free user: first 3 spins free, then show paywall
-    if (completedSpins >= 3) {
-      setSubLocked(false);
+    if (completedSpins >= FREE_PLAYS_PER_GAME) {
+      setSubLocked(true);
       setSubOpen(true);
       return;
     }
@@ -361,43 +369,31 @@ export function TruthOrDareClient({
       setCurrent(q);
       setCompletedSpins((c) => c + 1);
 
-      // Persist spins
-      if (!subscribed) {
-        if (!userId) {
-          const next = getGuestSpins() + 1;
-          setGuestSpins(next);
-          if (next >= 6) {
-            // Set 10-min rate limit after 6th spin
-            setSpinRateLimit();
-            setRateLimitMs(getRateLimitUntilMs());
-            setSubLocked(false);
-            setSubOpen(true);   // show plans, but user can close
-          } else if (next >= 3) {
-            const existingLead =
-              typeof window !== "undefined"
-                ? window.localStorage.getItem("mioshy:lead_id_v1")
-                : null;
-            if (!existingLead && !leadCaptured) {
-              setSubLocked(false);
-              setSubOpen(true);
-            }
-          }
-        } else {
-          const nextSpins = completedSpins + 1;
-          void incrementUserSpins(createBrowserSupabaseClient(), userId, nextSpins);
-          if (nextSpins >= 6) {
-            setSpinRateLimit();
-            setRateLimitMs(getRateLimitUntilMs());
-            setSubLocked(false);
-            setSubOpen(true);
-          } else if (nextSpins >= 3) {
-            setSubLocked(false);
-            setSubOpen(true);
-          }
+      if (subscribed) return;
+
+      const slug = game.slug;
+
+      // Persist per-game play counter.
+      if (!userId) {
+        const next = incrementGuestGamePlays(slug);
+        // Guest just hit the budget → pop the lead signup modal when they
+        // try to spin again. We don't interrupt the current round.
+        if (next >= FREE_PLAYS_PER_GAME && !hasGuestLeadCaptured() && !leadCaptured) {
+          setSubLocked(false);
+          setSubOpen(true);
+        }
+      } else {
+        void incrementUserGamePlays(createBrowserSupabaseClient(), slug);
+        const nextSpins = completedSpins + 1;
+        if (nextSpins >= FREE_PLAYS_PER_GAME) {
+          // Logged-in non-subscriber hit their per-game budget → hard paywall
+          // on the next click.
+          setSubLocked(true);
+          setSubOpen(true);
         }
       }
     },
-    [completedSpins, game.player_mode, pickNextQuestion, subscribed, userId, leadCaptured],
+    [completedSpins, game.player_mode, game.slug, pickNextQuestion, subscribed, userId, leadCaptured],
   );
 
   const handleNext = () => setCurrent(null);
@@ -425,62 +421,59 @@ export function TruthOrDareClient({
       if (uid) {
         const active = await hasActiveSubscription(supabase, uid);
         if (!cancelled) setSubscribed(active);
-        const spins = await getAndMaybeResetUserSpins(supabase, uid);
-        if (!cancelled) setCompletedSpins(spins.spins_used ?? 0);
+        const plays = await getUserGamePlays(supabase, game.slug);
+        if (!cancelled) {
+          setCompletedSpins(plays.plays_used);
+          setBonusConsumed(plays.post_signup_bonus_used);
+        }
       } else {
-        setCompletedSpins(getGuestSpins());
+        setCompletedSpins(getGuestGamePlays(game.slug));
       }
       setAuthReady(true);
     })();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [game.slug]);
 
   // ── Layout: read from game settings, default to "centered" ────────────────
   const pageLayout = gameSettings?.layout ?? "centered";
 
   // ── Shared JSX pieces ───────────────────────────────────────────────────────
 
-  /** Slim top bar: back link, game title, sound toggle */
+  /** Top bar: logo full-width centred (big), utility buttons row below on mobile only.
+   *  On desktop the back/sound buttons live in the fixed bottom corners — see below. */
   const topBar = (
-    <div className="flex w-full shrink-0 items-center gap-2 px-1">
-      <Link
-        href="/products"
-        className="rounded-full bg-white/15 px-4 py-2 text-sm font-medium text-white backdrop-blur hover:bg-white/25"
-      >
-        {t("back")}
-      </Link>
-
-      <div className="flex-1 text-center px-2">
-        <span
-          className="text-sm font-semibold text-white/95 drop-shadow-sm line-clamp-1 sm:text-base"
-          style={{ fontFamily: "var(--font-heading-hebrew), var(--font-heading-latin), system-ui" }}
-        >
-          {gameTitle}
-        </span>
+    <div className="flex w-full shrink-0 flex-col items-center gap-2 px-1">
+      {/* Logo — full-width centred, prominent */}
+      <div className="flex w-full justify-center py-1">
+        <Image
+          src="/mioshy-white.svg"
+          alt="Mioshy"
+          width={140}
+          height={52}
+          className="opacity-90 drop-shadow-md select-none pointer-events-none"
+          priority
+        />
       </div>
 
-      <button
-        type="button"
-        onClick={() => setSpinSoundOn((m) => !m)}
-        className="rounded-full bg-white/15 px-4 py-2 text-xs font-medium text-white backdrop-blur hover:bg-white/25"
-      >
-        {spinSoundOn ? t("spinSoundOn") : t("spinSoundOff")}
-      </button>
+      {/* Utility buttons — mobile only (desktop uses fixed bottom corners) */}
+      <div className="flex w-full items-center justify-between md:hidden">
+        <Link
+          href="/products"
+          className="rounded-full bg-white/15 px-4 py-2 text-sm font-medium text-white backdrop-blur hover:bg-white/25"
+        >
+          {t("back")}
+        </Link>
+        <button
+          type="button"
+          onClick={() => setSpinSoundOn((m) => !m)}
+          className="rounded-full bg-white/15 px-4 py-2 text-sm font-medium text-white backdrop-blur hover:bg-white/25"
+        >
+          {spinSoundOn ? t("spinSoundOn") : t("spinSoundOff")}
+        </button>
+      </div>
     </div>
-  );
-
-  /** Mioshy logo */
-  const logo = (
-    <Image
-      src="/mioshy-white.svg"
-      alt="Mioshy"
-      width={96}
-      height={36}
-      className="opacity-90 drop-shadow-sm select-none pointer-events-none"
-      priority
-    />
   );
 
   /** Wheel or player-mode setup card */
@@ -529,31 +522,41 @@ export function TruthOrDareClient({
       ref={wheelRef}
       options={options}
       onSettled={handleSettled}
-      disabled={!authReady || !!rateLimitMs}
+      disabled={!authReady}
       isSpinSoundEnabled={spinSoundOn}
-      pointerColor={wheel.pointer_color}
+      pointerColor={resolvedPointerColor}
+      pointerOffsetY={resolvedPointerOffsetY}
       borderColor={wheel.border_color}
-      innerCircle={wheel.inner_circle}
-      innerCircleColor={wheel.inner_circle_color}
-      innerCircleBorderColor={wheel.inner_circle_border_color}
-      dividerColor={wheel.divider_color}
-      dividerEnabled={wheel.divider_enabled ?? wheel.show_divider ?? true}
-      dividerWidth={wheel.divider_width ?? 2}
-      markerConfig={wheel.marker_config ?? {}}
+      innerCircle={resolvedInnerCircle}
+      innerCircleColor={resolvedInnerCircleColor}
+      innerCircleBorderColor={resolvedInnerCircleBorderColor}
+      dividerColor={resolvedDividerColor}
+      dividerEnabled={resolvedDividerEnabled}
+      dividerWidth={resolvedDividerWidth}
+      markerConfig={resolvedMarkerConfig}
       forbiddenType={forbiddenType}
       spinDuration={spinDuration}
       spinEasing={spinEasing}
       outerBorder={outerBorder}
       wheelSizeRem={resolvedSizeRem}
+      wheelSizeRemMax={resolvedSizeRemMax}
+      // Budget = GameLayout padding (32) + topBar (60) + mt-2 (8) + title (40)
+      //        + 2× wheelGapPx spacers + button (44) + breathing room (8)
+      viewportBudgetPx={192 + wheelGapPx * 2}
       labelRadiusFraction={resolvedLabelFraction}
       centerShadow={centerShadow}
       dividerShadow={dividerShadow}
             labelFontSizePx={labelFontSizePx}
+            labelColor={labelColor}
             labelOutline={labelOutline}
+            wheelShape={wheelShape}
+            pointerSvg={pointerSvg}
+            pointerSvgWidth={pointerSvgWidth}
+            pointerSvgHeight={pointerSvgHeight}
     />
   );
 
-  /** Spin button + rate-limit hint */
+  /** Spin button */
   const spinControls = (
     <div className="w-full max-w-md space-y-3">
       <button
@@ -563,17 +566,8 @@ export function TruthOrDareClient({
         className="min-h-[44px] w-full rounded-full bg-gradient-to-r from-fuchsia-500 to-rose-500 px-6 py-3 text-base font-semibold text-white shadow-lg shadow-fuchsia-900/40 transition hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 sm:text-lg"
         style={{ fontFamily: "var(--font-heading-hebrew), var(--font-heading-latin), system-ui" }}
       >
-        {rateLimitMs
-          ? `${Math.floor(rateLimitSecs / 60)}:${String(rateLimitSecs % 60).padStart(2, "0")}`
-          : t("spin")}
+        {t("spin")}
       </button>
-      {rateLimitMs && !subOpen && (
-        <p className="text-center text-xs text-white/60">
-          {locale === "he"
-            ? "הסיבוב הבא יהיה זמין בעוד כמה דקות — או שדרג למנוי ללא הגבלה"
-            : "Next spin available soon — or subscribe for unlimited play"}
-        </p>
-      )}
     </div>
   );
 
@@ -615,20 +609,35 @@ export function TruthOrDareClient({
         </div>
       ) : (
         /* ── CENTERED LAYOUT (default) ───────────────────────────────────────
-           Classic stacked layout with Mioshy logo at the top.
+           Order: top bar → big game title → wheel → spin button
+           Logo moved into the top bar; game title is the main visual anchor.
+           Spacing is kept compact so everything fits on a laptop viewport.
         ──────────────────────────────────────────────────────────────────── */
-        <div className="flex min-h-0 w-full max-w-lg flex-1 flex-col items-center gap-6 px-2 sm:px-0">
+        <div className="flex min-h-0 w-full max-w-3xl flex-1 flex-col items-center px-2 sm:px-0">
           {/* Top bar */}
           {topBar}
 
-          {/* Mioshy logo */}
-          {logo}
+          {/* Game title */}
+          <div className="mt-2 w-full shrink-0 px-4 text-center">
+            <h1
+              className="text-2xl font-bold leading-tight text-white drop-shadow-md sm:text-3xl lg:text-4xl line-clamp-2"
+              style={{ fontFamily: "var(--font-heading-hebrew), var(--font-heading-latin), system-ui" }}
+            >
+              {gameTitle}
+            </h1>
+          </div>
+
+          {/* Fixed spacer above wheel — clears pointer tip overflow */}
+          <div className="shrink-0" style={{ height: wheelGapPx }} />
 
           {/* Wheel */}
-          {wheelOrSetup}
+          <div className="w-full flex justify-center">{wheelOrSetup}</div>
 
-          {/* Spin button */}
-          {spinControls}
+          {/* Fixed spacer below wheel — clears marker dot overflow */}
+          <div className="shrink-0" style={{ height: wheelGapPx }} />
+
+          {/* Spin button — shrink-0 so it's never squished */}
+          <div className="w-full shrink-0 flex justify-center">{spinControls}</div>
         </div>
       )}
 
@@ -673,8 +682,9 @@ export function TruthOrDareClient({
           const uid = user?.id ?? null;
           setUserId(uid);
           if (uid) {
-            const spins = await getAndMaybeResetUserSpins(supabase, uid);
-            setCompletedSpins(spins.spins_used ?? 0);
+            const plays = await getUserGamePlays(supabase, game.slug);
+            setCompletedSpins(plays.plays_used);
+            setBonusConsumed(plays.post_signup_bonus_used);
           }
           authWaiterRef.current?.resolve(uid);
           authWaiterRef.current = null;
@@ -682,27 +692,29 @@ export function TruthOrDareClient({
         }}
       />
 
+      {/* ── Desktop corner buttons — fixed position, hidden on mobile ── */}
+      <Link
+        href="/products"
+        className="hidden md:flex fixed bottom-5 right-5 z-30 rounded-full bg-white/15 px-4 py-2 text-sm font-medium text-white backdrop-blur hover:bg-white/25"
+      >
+        {t("back")}
+      </Link>
+      <button
+        type="button"
+        onClick={() => setSpinSoundOn((m) => !m)}
+        className="hidden md:flex fixed bottom-5 left-5 z-30 rounded-full bg-white/15 px-4 py-2 text-sm font-medium text-white backdrop-blur hover:bg-white/25"
+      >
+        {spinSoundOn ? t("spinSoundOn") : t("spinSoundOff")}
+      </button>
+
       <SubscriptionModal
         open={subOpen}
         onOpenChange={(v) => {
           setSubOpen(v);
-          if (!v) {
-            // If user didn't provide lead details at the lead-gate, lock them until tomorrow.
-            if (!userId && getGuestSpins() >= 3 && getGuestSpins() < 6) {
-              const existingLead =
-                typeof window !== "undefined"
-                  ? window.localStorage.getItem("mioshy:lead_id_v1")
-                  : null;
-              if (!existingLead && !leadCaptured) {
-                lockGuestUntilTomorrow();
-              }
-            }
-            // If they dismissed paywall at >=6 spins, keep it locked.
-            if (getGuestSpins() >= 6) setSubLocked(true);
-          }
         }}
         locked={subLocked}
         userId={userId}
+        gameSlug={game.slug}
         onRequireAuth={async () => {
           if (userId) return userId;
           setRegOpen(true);
@@ -714,19 +726,36 @@ export function TruthOrDareClient({
           setSubscribed(true);
           setSubLocked(false);
           setSubOpen(false);
-          setRateLimitMs(null);
-          clearSpinRateLimit();
         }}
-        mode={userId || getGuestSpins() >= 6 ? "paywall" : "lead"}
+        // ── Mode selection ─────────────────────────────────────────────────
+        // "lead" while the user has never provided their details — guests on
+        //   play 4+ land here, giving them a chance to sign up for +3 more.
+        // "paywall" once they have a lead / are logged-in / bonus consumed.
+        mode={
+          !userId && !leadCaptured && !hasGuestLeadCaptured()
+            ? "lead"
+            : "paywall"
+        }
         onLeadSaved={(_, newUserId) => {
           setLeadCaptured(true);
           setSubOpen(false);
-          // If registration created a new user, promote to logged-in state
           if (newUserId && !userId) {
             setUserId(newUserId);
-            // Carry over guest spins (3) to the new account
-            void incrementUserSpins(createBrowserSupabaseClient(), newUserId, 3);
-            setCompletedSpins(3);
+            // Grant the one-time post-signup +3 bonus for this game: reset
+            // plays_used to 0 server-side and mark the flag. We also clear
+            // the guest counter locally so the UI doesn't gate the next
+            // click before the server state catches up.
+            (async () => {
+              const supabase = createBrowserSupabaseClient();
+              if (!bonusConsumed) {
+                await grantPostSignupBonus(supabase, game.slug);
+                setBonusConsumed(true);
+              }
+              // Re-read — this is the authoritative counter from here on.
+              const plays = await getUserGamePlays(supabase, game.slug);
+              setCompletedSpins(plays.plays_used);
+              setBonusConsumed(plays.post_signup_bonus_used);
+            })();
           }
         }}
       />

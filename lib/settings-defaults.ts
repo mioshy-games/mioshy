@@ -19,6 +19,7 @@ export const DEFAULT_PARTICLES: ParticlesSettings = {
 export const DEFAULT_GAME_SETTINGS: GameSettings = {
   wheel: {
     sizeRem: 22,
+    sizeRemMax: 32,
     labelRadiusFraction: 0.72,
     centerShadow: {
       enabled: false,
@@ -35,12 +36,18 @@ export const DEFAULT_GAME_SETTINGS: GameSettings = {
       blur: 2,
     },
     labelFontSizePx: 12,
+    labelColor: "#ffffff",
     labelOutline: {
       enabled: true,
       color: "#000000",
       opacity: 0.25,
       width: 2,
     },
+    pointerColor: "#ffffff",
+    pointerOffsetY: 0,
+    innerCircle: { enabled: true, fillColor: "#fafafa", borderColor: "#e5e5e5" },
+    divider: { enabled: true, color: "#ffffff", width: 2 },
+    markers: { type: "none", color: "#ffffff", size: 14, count: 0, position: 100, svgPath: "" },
   },
   border: {
     enabled: true,
@@ -94,12 +101,18 @@ export const BUILT_IN_PRESETS: SettingsPreset[] = [
           blur: 2,
         },
         labelFontSizePx: 12,
+        labelColor: "#ffffff",
         labelOutline: {
           enabled: true,
           color: "#000000",
           opacity: 0.25,
           width: 2,
         },
+        pointerColor: "#ffffff",
+        pointerOffsetY: 0,
+        innerCircle: { enabled: true, fillColor: "#fafafa", borderColor: "#e5e5e5" },
+        divider: { enabled: true, color: "#ffffff", width: 2 },
+        markers: { type: "none", color: "#ffffff", size: 14, count: 0, position: 100, svgPath: "" },
       },
       border: { enabled: true, width: 3, color: "#f59e0b", style: "solid", distance: 0 },
       background: { type: "gradient", color: "#1e1b4b", gradient: { from: "#f59e0b", to: "#ef4444" } },
@@ -133,12 +146,18 @@ export const BUILT_IN_PRESETS: SettingsPreset[] = [
           blur: 2,
         },
         labelFontSizePx: 12,
+        labelColor: "#ffffff",
         labelOutline: {
           enabled: true,
           color: "#000000",
           opacity: 0.25,
           width: 2,
         },
+        pointerColor: "#ffffff",
+        pointerOffsetY: 0,
+        innerCircle: { enabled: true, fillColor: "#fafafa", borderColor: "#e5e5e5" },
+        divider: { enabled: true, color: "#ffffff", width: 2 },
+        markers: { type: "none", color: "#ffffff", size: 14, count: 0, position: 100, svgPath: "" },
       },
       border: { enabled: true, width: 5, color: "#fde68a", style: "dashed", distance: 8 },
       background: { type: "gradient", color: "#fef9c3", gradient: { from: "#bfdbfe", to: "#fbcfe8" } },
@@ -172,12 +191,18 @@ export const BUILT_IN_PRESETS: SettingsPreset[] = [
           blur: 2,
         },
         labelFontSizePx: 12,
+        labelColor: "#ffffff",
         labelOutline: {
           enabled: true,
           color: "#000000",
           opacity: 0.25,
           width: 2,
         },
+        pointerColor: "#ffffff",
+        pointerOffsetY: 0,
+        innerCircle: { enabled: true, fillColor: "#fafafa", borderColor: "#e5e5e5" },
+        divider: { enabled: true, color: "#ffffff", width: 2 },
+        markers: { type: "none", color: "#ffffff", size: 14, count: 0, position: 100, svgPath: "" },
       },
       border: { enabled: false, width: 0, color: "transparent", style: "none", distance: 0 },
       background: { type: "color", color: "#0f172a" },
@@ -196,7 +221,7 @@ export function mergeSettings(
   base: GameSettings,
   overrides: Partial<GameSettings>,
 ): GameSettings {
-  return {
+  const merged: GameSettings = {
     wheel: { ...base.wheel, ...(overrides.wheel ?? {}) },
     border: { ...base.border, ...(overrides.border ?? {}) },
     background: { ...base.background, ...(overrides.background ?? {}) },
@@ -205,6 +230,10 @@ export function mergeSettings(
     particles: { ...DEFAULT_PARTICLES, ...(base.particles ?? {}), ...(overrides.particles ?? {}) },
     layout: overrides.layout ?? base.layout,
   };
+  // Pass through optional top-level scalars that aren't sub-objects
+  const resolvedGapPx = overrides.wheelGapPx ?? base.wheelGapPx;
+  if (resolvedGapPx !== undefined) merged.wheelGapPx = resolvedGapPx;
+  return merged;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

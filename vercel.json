@@ -3,6 +3,10 @@
     {
       "path": "/api/billing/renewals/run",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/journey/notify-unlocks",
+      "schedule": "15 * * * *"
     }
   ]
 }

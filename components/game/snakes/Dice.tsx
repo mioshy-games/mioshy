@@ -27,16 +27,30 @@ const PIP_POSITIONS: Record<DiceResult, Array<[number, number]>> = {
   6: [[0, 0], [0, 1], [0, 2], [2, 0], [2, 1], [2, 2]],
 };
 
-function DieFace({ value, color }: { value: DiceResult; color: string }) {
+function DieFace({ value }: { value: DiceResult }) {
   const pips = PIP_POSITIONS[value];
   return (
     <div
-      className="relative grid h-full w-full grid-cols-3 grid-rows-3 place-items-center rounded-[22%] border border-white/25 p-[14%] shadow-inner"
+      className="relative grid h-full w-full grid-cols-3 grid-rows-3 place-items-center rounded-[22%] p-[14%]"
       style={{
-        background: `linear-gradient(140deg, #fff7ed 0%, #fde68a 55%, #fcd34d 100%)`,
+        // Deep velvet surface — radial highlight simulates light catching the fabric
+        background:
+          "radial-gradient(ellipse at 32% 28%, #1e3d28 0%, #0e2017 45%, #070f0b 100%)",
+        // Layered border: outer gold rim + inner shadow for depth
+        boxShadow:
+          "inset 0 2px 4px rgba(255,255,255,0.08), inset 0 -2px 6px rgba(0,0,0,0.7), 0 0 0 1.5px rgba(160,120,60,0.55)",
       }}
       aria-hidden
     >
+      {/* Subtle sheen line across the top-left — light catching velvet nap */}
+      <span
+        className="pointer-events-none absolute inset-0 rounded-[22%] opacity-60"
+        style={{
+          background:
+            "linear-gradient(135deg, rgba(255,255,255,0.07) 0%, transparent 45%)",
+        }}
+      />
+
       {Array.from({ length: 9 }).map((_, i) => {
         const col = i % 3;
         const row = Math.floor(i / 3);
@@ -45,10 +59,20 @@ function DieFace({ value, color }: { value: DiceResult; color: string }) {
           <span
             key={i}
             className={cn(
-              "h-[65%] w-[65%] rounded-full transition-opacity",
-              isPip ? "opacity-100 shadow-[inset_0_2px_2px_rgba(0,0,0,0.35)]" : "opacity-0",
+              "relative z-10 h-[62%] w-[62%] rounded-full transition-opacity",
+              isPip ? "opacity-100" : "opacity-0",
             )}
-            style={{ background: isPip ? color : "transparent" }}
+            style={
+              isPip
+                ? {
+                    // Ivory pip with depth: top highlight, bottom shadow
+                    background:
+                      "radial-gradient(circle at 38% 35%, #f5ede0 0%, #d4c4a8 60%, #b8a88a 100%)",
+                    boxShadow:
+                      "inset 0 1px 2px rgba(255,255,255,0.6), inset 0 -1px 3px rgba(0,0,0,0.5), 0 2px 4px rgba(0,0,0,0.7)",
+                  }
+                : {}
+            }
           />
         );
       })}
@@ -124,23 +148,28 @@ export function Dice({
         className={cn(
           "relative h-28 w-28 select-none rounded-[22%] outline-none sm:h-32 sm:w-32",
           "focus-visible:ring-4 focus-visible:ring-amber-300/60",
-          canRoll ? "cursor-pointer" : "cursor-not-allowed opacity-70",
+          canRoll ? "cursor-pointer" : "cursor-not-allowed opacity-60",
         )}
-        whileTap={canRoll ? { scale: 0.93 } : undefined}
+        whileTap={canRoll ? { scale: 0.91 } : undefined}
         animate={
           tumbling
-            ? { rotate: [0, -18, 20, -10, 14, 0], y: [0, -8, 0, -4, 0] }
+            ? { rotate: [0, -20, 22, -12, 16, -8, 0], y: [0, -10, 2, -6, 2, 0] }
             : { rotate: 0, y: 0 }
         }
         transition={tumbling ? { duration: tumblingFor / 1000, ease: "easeOut" } : rollTransition}
         style={{
-          filter: "drop-shadow(0 8px 14px rgba(0,0,0,0.35))",
+          // Multi-layer shadow: ambient lift + strong directional drop + gold glow edge
+          filter: `
+            drop-shadow(0 2px 2px rgba(0,0,0,0.55))
+            drop-shadow(0 8px 18px rgba(0,0,0,0.65))
+            drop-shadow(0 0 12px rgba(140,100,40,0.30))
+          `,
         }}
       >
-        <DieFace value={displayValue} color={playerColor} />
+        <DieFace value={displayValue} />
       </motion.button>
 
-      <div className="text-sm font-semibold text-amber-50/90">
+      <div className="text-sm font-semibold tracking-wide text-amber-200/80 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
         {tumbling ? "…" : canRoll ? label : disabled ? "ממתין לתור שלך" : label}
       </div>
     </div>

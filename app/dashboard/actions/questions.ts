@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth/admin";
 import { questionFormSchema } from "@/lib/validations";
+import { createAdminClient } from "@/lib/supabase-admin";
 
 export async function upsertQuestion(
   gameId: string,
@@ -89,6 +90,36 @@ export async function deleteQuestion(questionId: string, gameId: string) {
   revalidatePath("/dashboard/questions");
   revalidatePath(`/dashboard/games/${gameId}/edit`);
   return { ok: true as const };
+}
+
+/**
+ * Hard-delete questions. Pass a gameId to limit to one game, or omit / pass
+ * null to delete ALL questions across all games.
+ *
+ * Uses the admin (service-role) client so RLS does not interfere.
+ * Returns { ok, deleted } on success or { ok: false, error } on failure.
+ */
+export async function clearAllQuestions(gameId?: string | null) {
+  await requireAdmin(); // auth check — still need a valid admin session
+  const admin = await createAdminClient();
+
+  // Select IDs first so we know what we're deleting (also gives us the count)
+  let countQuery = admin.from("questions").select("id");
+  if (gameId) countQuery = countQuery.eq("game_id", gameId);
+  const { data: toDelete, error: countErr } = await countQuery;
+  if (countErr) return { ok: false as const, error: countErr.message };
+
+  const ids = (toDelete ?? []).map((r: { id: string }) => r.id);
+  if (ids.length === 0) return { ok: true as const, deleted: 0 };
+
+  const { error } = await admin.from("questions").delete().in("id", ids);
+  if (error) return { ok: false as const, error: error.message };
+
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/questions");
+  if (gameId) revalidatePath(`/dashboard/games/${gameId}/edit`);
+
+  return { ok: true as const, deleted: ids.length };
 }
 
 export async function toggleQuestionActive(

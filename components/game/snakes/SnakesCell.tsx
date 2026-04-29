@@ -56,7 +56,7 @@ export function SnakesCell({
         className={cn(
           "font-bold leading-none tracking-tight",
           isEven ? "text-amber-900/75" : "text-amber-50/85",
-          "text-[clamp(0.55rem,1.1vw,0.9rem)]",
+          "text-[clamp(0.875rem,1.1vw,1.1rem)]",
         )}
       >
         {cell}

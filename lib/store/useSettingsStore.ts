@@ -85,6 +85,7 @@ export type SettingsStoreActions = {
     shape?: Partial<ShapeSettings>;
     particles?: Partial<ParticlesSettings>;
     layout?: GameSettings["layout"];
+    wheelGapPx?: number;
   }) => void;
 
   /** Reset draft to the saved (committed) settings */
@@ -162,6 +163,7 @@ export const useSettingsStore = create<SettingsStore>()(
         if (partial.shape) s.draftSettings.shape = { ...s.draftSettings.shape, ...partial.shape };
         if (partial.particles) s.draftSettings.particles = { ...s.draftSettings.particles, ...partial.particles };
         if (partial.layout !== undefined) s.draftSettings.layout = partial.layout;
+        if (partial.wheelGapPx !== undefined) s.draftSettings.wheelGapPx = partial.wheelGapPx;
       }),
 
     resetDraft: () =>

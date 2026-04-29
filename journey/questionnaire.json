@@ -1,0 +1,547 @@
+{
+  "version": 1,
+  "gating": {
+    "auth_after_index": 26,
+    "paywall_after_index": 99
+  },
+  "total_questions": 28,
+  "locales": [
+    "he",
+    "en"
+  ],
+  "likert_labels": {
+    "he": [
+      "בכלל לא",
+      "לעיתים רחוקות",
+      "לפעמים",
+      "לעיתים קרובות",
+      "כמעט תמיד"
+    ],
+    "en": [
+      "Not at all",
+      "Rarely",
+      "Sometimes",
+      "Often",
+      "Almost always"
+    ]
+  },
+  "questions": [
+    {
+      "id": "q01_knowledge_world",
+      "category": "free",
+      "type": "likert5",
+      "axes": [
+        {
+          "axis": "love_map",
+          "weight": 1.0
+        }
+      ],
+      "purpose": "Baseline Love Map — does the person actually know their partner's current inner life?",
+      "insight": "If low: partner feels invisible. We open with Love Map week.",
+      "he": "בשבועיים האחרונים, עד כמה אני מרגיש/ה שאני באמת יודע/ת מה עובר על בן/בת הזוג שלי — המתחים, הקטנויות, מה מעסיק אותם באמת?",
+      "en": "In the past two weeks, how much do I feel I truly know what my partner is going through — their stresses, small worries, what's really on their mind?"
+    },
+    {
+      "id": "q02_admiration_see_good",
+      "category": "free",
+      "type": "likert5",
+      "axes": [
+        {
+          "axis": "fondness",
+          "weight": 1.0
+        }
+      ],
+      "purpose": "Fondness & Admiration snapshot — can the user still articulate what they love?",
+      "insight": "If low + low Love Map: relationship is in early Negative Sentiment Override.",
+      "he": "כשאני חושב/ת על בן/בת הזוג שלי השבוע — עד כמה קל לי להיזכר בשלושה דברים שאני ממש מעריך/ה בהם?",
+      "en": "When I think of my partner this week — how easy is it for me to recall three things I genuinely admire about them?"
+    },
+    {
+      "id": "q03_bids_turn_toward",
+      "category": "free",
+      "type": "likert5",
+      "axes": [
+        {
+          "axis": "turn_toward",
+          "weight": 1.0
+        }
+      ],
+      "purpose": "Turn Toward: do small connection bids get responded to?",
+      "insight": "The single strongest Gottman predictor of long-term stability.",
+      "he": "כשבן/בת הזוג שלי פונה אליי עם משהו קטן — משפט, צחוק, מחווה — באיזו תדירות אני באמת נותן/ת תשומת לב ולא דוחה את זה ל'אחר כך'?",
+      "en": "When my partner reaches out with something small — a comment, a laugh, a touch — how often do I actually give attention instead of putting it off to 'later'?"
+    },
+    {
+      "id": "q04_love_language_pair_a",
+      "category": "registered",
+      "type": "forced_choice",
+      "axes": [],
+      "purpose": "Love language forced-choice pair 1 of 5 (Words vs Time).",
+      "insight": "Forced-choice avoids the 'all of the above' bias of Likert love-language quizzes.",
+      "he_prompt": "מה ייתן לי יותר תחושה שאוהבים אותי השבוע?",
+      "en_prompt": "Which would make me feel more loved this week?",
+      "options": [
+        {
+          "id": "a",
+          "he": "שבן/בת הזוג יגיד/תגיד לי משהו אישי ומחמם על מי שאני",
+          "en": "My partner saying something personal and warm about who I am",
+          "scores": [
+            {
+              "axis": "love_language_words",
+              "weight": 1
+            }
+          ]
+        },
+        {
+          "id": "b",
+          "he": "שנקבע ביחד ערב בלי טלפונים, רק אנחנו",
+          "en": "Setting aside an evening together with no phones — just us",
+          "scores": [
+            {
+              "axis": "love_language_time",
+              "weight": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "q05_love_language_pair_b",
+      "category": "registered",
+      "type": "forced_choice",
+      "axes": [],
+      "purpose": "Love language forced-choice pair 2 of 5 (Service vs Touch).",
+      "he_prompt": "מה ייתן לי יותר תחושה שאכפת לבן/בת הזוג השבוע?",
+      "en_prompt": "Which would make me feel more cared for this week?",
+      "options": [
+        {
+          "id": "a",
+          "he": "שבן/בת הזוג ייקח/תיקח על עצמו/ה משהו ברשימה שלי בלי שאבקש",
+          "en": "Them taking something off my to-do list without being asked",
+          "scores": [
+            {
+              "axis": "love_language_service",
+              "weight": 1
+            }
+          ]
+        },
+        {
+          "id": "b",
+          "he": "יותר חיבוקים, נגיעות, קרבה פיזית לא-מינית במהלך היום",
+          "en": "More hugs, casual touch, non-sexual physical closeness during the day",
+          "scores": [
+            {
+              "axis": "love_language_touch",
+              "weight": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "q06_love_language_pair_c",
+      "category": "registered",
+      "type": "forced_choice",
+      "axes": [],
+      "purpose": "Love language forced-choice pair 3 of 5 (Gifts vs Words).",
+      "he_prompt": "מה יגע בי יותר השבוע?",
+      "en_prompt": "Which would move me more this week?",
+      "options": [
+        {
+          "id": "a",
+          "he": "שבן/בת הזוג יביא/תביא לי משהו קטן שמראה שחשבו עליי",
+          "en": "Them bringing me a small thing that shows they were thinking of me",
+          "scores": [
+            {
+              "axis": "love_language_gifts",
+              "weight": 1
+            }
+          ]
+        },
+        {
+          "id": "b",
+          "he": "שיגידו לי באמצע היום: 'אני גאה בך'",
+          "en": "Them saying, mid-day: 'I'm proud of you'",
+          "scores": [
+            {
+              "axis": "love_language_words",
+              "weight": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "q07_pso_benefit_of_doubt",
+      "category": "paid",
+      "type": "likert5",
+      "axes": [
+        {
+          "axis": "pso",
+          "weight": 1.0
+        }
+      ],
+      "purpose": "Positive Sentiment Override — assumed intent when partner is off.",
+      "insight": "PSO score predicts whether repair attempts will land.",
+      "he": "כשבן/בת הזוג שלי במצב רוח רע — באיזו תדירות ההנחה הראשונה שלי היא 'כנראה עבר עליו/ה משהו' ולא 'זה מכוון נגדי'?",
+      "en": "When my partner is in a bad mood — how often is my first assumption 'they must be going through something' rather than 'this is aimed at me'?"
+    },
+    {
+      "id": "q08_influence_decisions",
+      "category": "paid",
+      "type": "likert5",
+      "axes": [
+        {
+          "axis": "influence",
+          "weight": 1.0
+        }
+      ],
+      "purpose": "Accepting Influence — power sharing.",
+      "he": "בהחלטות משמעותיות (כסף, ילדים, זמן) — עד כמה אני מרגיש/ה שהדעה שלי באמת משפיעה על התוצאה הסופית?",
+      "en": "On meaningful decisions (money, kids, time) — how much do I feel my opinion actually shapes the final outcome?"
+    },
+    {
+      "id": "q09_repair_recovery",
+      "category": "paid",
+      "type": "likert5",
+      "axes": [
+        {
+          "axis": "repair",
+          "weight": 1.0
+        }
+      ],
+      "purpose": "Repair Attempts — can you de-escalate a tense moment?",
+      "he": "כשיש בינינו ריב או מתח — באיזו תדירות אחד מאיתנו מצליח להוריד את החום (בדיחה, הפסקה, התנצלות) ושזה באמת עובד?",
+      "en": "When there's an argument or tension — how often does one of us manage to take the heat down (joke, break, apology) and it actually works?"
+    },
+    {
+      "id": "q10_criticism_vs_complaint",
+      "category": "paid",
+      "type": "likert5",
+      "axes": [
+        {
+          "axis": "four_horsemen_criticism",
+          "weight": 1.0
+        }
+      ],
+      "purpose": "Four Horsemen — Criticism.",
+      "insight": "A high score here flags the need for Week-5 conflict track.",
+      "he": "בוויכוחים שלנו, באיזו תדירות אני שומע/ת את עצמי או את בן/בת הזוג מתחילים משפטים ב'אתה תמיד...' או 'את אף פעם לא...'?",
+      "en": "In our arguments, how often do I hear myself or my partner start sentences with 'you always…' or 'you never…'?"
+    },
+    {
+      "id": "q11_contempt",
+      "category": "paid",
+      "type": "likert5",
+      "axes": [
+        {
+          "axis": "four_horsemen_contempt",
+          "weight": 1.0
+        }
+      ],
+      "purpose": "Four Horsemen — Contempt (single strongest divorce predictor in Gottman's data).",
+      "he": "באיזו תדירות קורה שאחד מאיתנו מגלגל עיניים, לועג, או משתמש בטון של 'אתה לא מבין שום דבר' כלפי השני?",
+      "en": "How often does one of us roll our eyes, mock, or use a 'you just don't get it' tone toward the other?"
+    },
+    {
+      "id": "q12_defensive",
+      "category": "paid",
+      "type": "likert5",
+      "axes": [
+        {
+          "axis": "four_horsemen_defensive",
+          "weight": 1.0
+        }
+      ],
+      "purpose": "Four Horsemen — Defensiveness.",
+      "he": "כשבן/בת הזוג מעלה משהו שהפריע להם — באיזו תדירות התגובה הראשונה שלי היא להסביר למה זה לא באשמתי, במקום לשמוע?",
+      "en": "When my partner raises something that bothered them — how often is my first reaction to explain why it's not my fault, instead of listening?"
+    },
+    {
+      "id": "q13_stonewall",
+      "category": "paid",
+      "type": "likert5",
+      "axes": [
+        {
+          "axis": "four_horsemen_stonewall",
+          "weight": 1.0
+        }
+      ],
+      "purpose": "Four Horsemen — Stonewalling (shutdown, usually later-stage).",
+      "he": "כשהשיחה נהיית קשה — באיזו תדירות אחד מאיתנו מתנתק, שותק, מסתובב ועוזב את הדיון?",
+      "en": "When a conversation gets hard — how often does one of us shut down, go silent, turn away, or leave the discussion?"
+    },
+    {
+      "id": "q14_autonomy_separateness",
+      "category": "paid",
+      "type": "likert5",
+      "axes": [
+        {
+          "axis": "passion_autonomy",
+          "weight": 1.0
+        }
+      ],
+      "purpose": "Passion — autonomy (Perel). Can you still see your partner as *other*?",
+      "he": "עד כמה בן/בת הזוג עדיין מפתיע/ה אותי — עדיין יש צד בהם שאני סקרן/ית לגביו ולא הכל צפוי?",
+      "en": "How much does my partner still surprise me — is there still a side of them I'm curious about, not fully predictable?"
+    },
+    {
+      "id": "q15_anticipation",
+      "category": "paid",
+      "type": "likert5",
+      "axes": [
+        {
+          "axis": "passion_anticipation",
+          "weight": 1.0
+        }
+      ],
+      "purpose": "Passion — anticipation. Is there something to look forward to with them?",
+      "he": "במהלך שבוע טיפוסי — עד כמה אני מוצא/ת את עצמי מחכה למשהו ספציפי שקורה בינינו?",
+      "en": "In a typical week — how much do I find myself looking forward to something specific that happens between us?"
+    },
+    {
+      "id": "q16_play",
+      "category": "paid",
+      "type": "likert5",
+      "axes": [
+        {
+          "axis": "passion_play",
+          "weight": 1.0
+        }
+      ],
+      "purpose": "Passion — play. Do you still joke, tease, have non-goal-oriented fun?",
+      "he": "עד כמה יש בינינו הומור, התקנטויות קלות, וצחוקים משותפים בימים רגילים (לא רק באירועים מיוחדים)?",
+      "en": "How much humor, playful teasing, and shared laughter do we have on regular days (not just special occasions)?"
+    },
+    {
+      "id": "q17_context_logistics",
+      "category": "paid",
+      "type": "likert5",
+      "axes": [
+        {
+          "axis": "passion_context",
+          "weight": -1.0
+        }
+      ],
+      "purpose": "Passion — context. Negative weight: high score = bad (logistics eats us).",
+      "insight": "Inverted: 'almost always' = daily logistics dominate → low passion_context.",
+      "he": "כשאנחנו לבד בערב ללא ילדים/עבודה — באיזו תדירות השיחה עדיין מסתיימת בסופרמרקט, לו\"ז, או רשימות מטלות?",
+      "en": "When we're alone in the evening with no kids/work — how often does the conversation still end up on groceries, schedules, or to-do lists?"
+    },
+    {
+      "id": "q18_shared_meaning_goals",
+      "category": "paid",
+      "type": "likert5",
+      "axes": [
+        {
+          "axis": "shared_meaning",
+          "weight": 1.0
+        }
+      ],
+      "purpose": "Shared Meaning — goals (Gottman Pillar 3).",
+      "he": "כשאני חושב/ת על החיים שאני רוצה בעוד 5 שנים — עד כמה הם תואמים למה שבן/בת הזוג רוצה?",
+      "en": "When I think about the life I want 5 years from now — how much does it line up with what my partner wants?"
+    },
+    {
+      "id": "q19_rituals",
+      "category": "paid",
+      "type": "likert5",
+      "axes": [
+        {
+          "axis": "shared_meaning",
+          "weight": 0.5
+        }
+      ],
+      "purpose": "Shared Meaning — rituals of connection (Gottman Pillar 2).",
+      "he": "יש לנו רגע קבוע ביום או בשבוע שרק שייך לנו (קפה של בוקר, דייט קבוע, טקס ערב)?",
+      "en": "Do we have a regular moment in the day or week that belongs only to us (morning coffee, standing date, evening ritual)?"
+    },
+    {
+      "id": "q20_biggest_gap",
+      "category": "paid",
+      "type": "single_choice",
+      "axes": [],
+      "purpose": "User-perceived top gap — used to weight recommendations.",
+      "he_prompt": "אם היה אפשר לשפר דבר אחד בלבד בזוגיות שלכם בחודש הקרוב — מה זה היה?",
+      "en_prompt": "If you could improve one thing in your relationship this month, what would it be?",
+      "options": [
+        {
+          "id": "knowing",
+          "he": "להרגיש שבאמת מכירים אחד את השני שוב",
+          "en": "Feeling we really know each other again",
+          "scores": [
+            {
+              "axis": "love_map",
+              "weight": 1
+            }
+          ]
+        },
+        {
+          "id": "appreciation",
+          "he": "לקבל יותר הערכה והכרה",
+          "en": "Getting more appreciation and recognition",
+          "scores": [
+            {
+              "axis": "fondness",
+              "weight": 1
+            }
+          ]
+        },
+        {
+          "id": "closeness",
+          "he": "להרגיש יותר קרובים רגשית",
+          "en": "Feeling more emotionally close",
+          "scores": [
+            {
+              "axis": "turn_toward",
+              "weight": 1
+            }
+          ]
+        },
+        {
+          "id": "fights",
+          "he": "לריב פחות / להתאושש מהר יותר",
+          "en": "Fighting less / recovering faster",
+          "scores": [
+            {
+              "axis": "repair",
+              "weight": 1
+            }
+          ]
+        },
+        {
+          "id": "passion",
+          "he": "לחזור להרגיש תשוקה ומשיכה",
+          "en": "Bringing back desire and attraction",
+          "scores": [
+            {
+              "axis": "passion_anticipation",
+              "weight": 1
+            }
+          ]
+        },
+        {
+          "id": "direction",
+          "he": "להבין לאן אנחנו הולכים ביחד",
+          "en": "Understanding where we're heading together",
+          "scores": [
+            {
+              "axis": "shared_meaning",
+              "weight": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "q21_reflect_strength",
+      "category": "paid",
+      "type": "reflection",
+      "axes": [],
+      "purpose": "Open reflection — surfaces the user's own framing (qualitative data for coach).",
+      "he_prompt": "באיזה רגע מהחודש האחרון הרגשת הכי קרוב/ה לבן/בת הזוג? תכתוב/י קצר, אפילו משפט אחד.",
+      "en_prompt": "In the past month, when did you feel closest to your partner? A short answer is enough — even one sentence.",
+      "max_length": 600
+    },
+    {
+      "id": "q22_reflect_friction",
+      "category": "paid",
+      "type": "reflection",
+      "axes": [],
+      "purpose": "Open reflection — friction point (coach input).",
+      "he_prompt": "ומה הרגע האחרון שבו הרגשת הכי רחוק/ה? (ללא האשמות, רק תיאור קצר)",
+      "en_prompt": "And when did you feel furthest away? (No blame — just a short description.)",
+      "max_length": 600
+    },
+    {
+      "id": "q23_time_together",
+      "category": "paid",
+      "type": "likert5",
+      "axes": [
+        {
+          "axis": "shared_meaning",
+          "weight": 0.5
+        },
+        {
+          "axis": "passion_context",
+          "weight": 0.5
+        }
+      ],
+      "purpose": "Quality-time availability (context for recommendations).",
+      "he": "בשבוע טיפוסי, כמה זמן איכות באמת יש לנו לבד (בלי ילדים, בלי מסכים, בלי לו\"ז)?",
+      "en": "In a typical week, how much real quality time do we have alone (no kids, no screens, no schedule)?"
+    },
+    {
+      "id": "q24_physical_closeness",
+      "category": "paid",
+      "type": "likert5",
+      "axes": [
+        {
+          "axis": "love_language_touch",
+          "weight": 0.5
+        },
+        {
+          "axis": "passion_play",
+          "weight": 0.5
+        }
+      ],
+      "purpose": "Non-sexual physical closeness frequency.",
+      "he": "באיזו תדירות יש בינינו קרבה פיזית לא-מינית (חיבוק ארוך, יד על הכתף, להירדם צמודים)?",
+      "en": "How often do we have non-sexual physical closeness (long hug, hand on shoulder, falling asleep close)?"
+    },
+    {
+      "id": "q25_gratitude_expressed",
+      "category": "paid",
+      "type": "likert5",
+      "axes": [
+        {
+          "axis": "fondness",
+          "weight": 0.5
+        },
+        {
+          "axis": "love_language_words",
+          "weight": 0.5
+        }
+      ],
+      "purpose": "Expressed (not just felt) appreciation.",
+      "he": "באיזו תדירות אני אומר/ת לבן/בת הזוג משהו ספציפי שאני מעריך/ה (לא 'תודה' סתמי)?",
+      "en": "How often do I tell my partner something specific I appreciate (not just a casual 'thanks')?"
+    },
+    {
+      "id": "q26_partner_texts_unprompted",
+      "category": "paid",
+      "type": "likert5",
+      "axes": [
+        {
+          "axis": "turn_toward",
+          "weight": 0.5
+        },
+        {
+          "axis": "passion_anticipation",
+          "weight": 0.5
+        }
+      ],
+      "purpose": "Small-bid frequency from partner (mid-day reaching out).",
+      "he": "באיזו תדירות בן/בת הזוג פונה אליי באמצע היום בלי סיבה פרקטית — רק כדי להתחבר?",
+      "en": "How often does my partner reach out to me mid-day for no practical reason — just to connect?"
+    },
+    {
+      "id": "q27_commitment_willingness",
+      "category": "paid",
+      "type": "likert5",
+      "axes": [
+        {
+          "axis": "shared_meaning",
+          "weight": 0.5
+        },
+        {
+          "axis": "influence",
+          "weight": 0.5
+        }
+      ],
+      "purpose": "Willingness to invest weekly time — predicts program engagement.",
+      "he": "עד כמה אני מוכן/ה להקדיש 15-20 דקות בשבוע לתרגיל זוגי קצר אם אדע שהוא מותאם אישית לנו?",
+      "en": "How willing am I to dedicate 15–20 minutes a week to a short relationship exercise if I know it's personalized for us?"
+    }
+  ]
+}

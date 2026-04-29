@@ -36,14 +36,6 @@ export function BehaviorTab() {
             onChange={(v) => patch({ motion: { ...draft.motion, spinSpeed: v } })}
           />
 
-          <SliderControl
-            label="Animation speed"
-            value={draft.motion.movementSpeed}
-            min={1}
-            max={10}
-            onChange={(v) => patch({ motion: { ...draft.motion, movementSpeed: v } })}
-          />
-
           <SelectControl
             label="Easing type"
             value={draft.motion.easing}

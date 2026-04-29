@@ -1,0 +1,264 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { FormProvider, useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
+
+import {
+  journeyItemSchema,
+  type JourneyItemFormValues,
+} from "@/lib/journey-content/validations";
+import { saveJourneyItem } from "@/app/dashboard/actions/journey-content";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Field, Section } from "./Field";
+
+export interface CategoryOption {
+  id: string;
+  label: string;
+  program_label: string | null;
+}
+
+export function ItemForm({
+  itemId,
+  defaultValues,
+  categories,
+}: {
+  itemId: string | null;
+  defaultValues: JourneyItemFormValues;
+  categories: CategoryOption[];
+}) {
+  const router = useRouter();
+  const [saving, setSaving] = useState(false);
+
+  const methods = useForm<JourneyItemFormValues>({
+    resolver: zodResolver(journeyItemSchema),
+    defaultValues,
+    mode: "onBlur",
+  });
+
+  const { register, watch, setValue, handleSubmit, formState } = methods;
+
+  async function onSubmit(values: JourneyItemFormValues) {
+    setSaving(true);
+    const res = await saveJourneyItem(itemId, values);
+    setSaving(false);
+    if (!res.ok) {
+      const firstField = Object.keys(res.error ?? {})[0];
+      const firstMsg =
+        (res.error as Record<string, string[] | undefined>)?.[firstField ?? ""]?.[0] ??
+        "Save failed";
+      toast.error(firstMsg);
+      return;
+    }
+    toast.success("Saved");
+    if (!itemId) {
+      router.push(`/dashboard/journey/items/${res.id}`);
+    }
+    router.refresh();
+  }
+
+  const isActive = watch("is_active");
+  const categoryId = watch("category_id");
+
+  return (
+    <FormProvider {...methods}>
+      <form
+        className="space-y-6"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void handleSubmit(onSubmit)(e);
+        }}
+      >
+        <div className="bg-background/95 supports-[backdrop-filter]:bg-background/70 sticky top-0 z-20 -mx-4 flex items-center justify-between gap-3 border-b px-4 py-3 backdrop-blur sm:mx-0 sm:rounded-md sm:border sm:px-4">
+          <div className="flex items-center gap-3">
+            <Switch
+              checked={!!isActive}
+              onCheckedChange={(v) =>
+                setValue("is_active", v, { shouldDirty: true })
+              }
+              id="is_active"
+            />
+            <Label htmlFor="is_active" className="cursor-pointer text-sm">
+              {isActive ? "Active" : "Draft"}
+            </Label>
+            <span className="text-muted-foreground hidden text-xs sm:inline">
+              {formState.isDirty ? "• unsaved" : "• saved"}
+            </span>
+          </div>
+          <Button type="submit" disabled={saving} size="sm" className="min-w-[110px]">
+            {saving ? <Loader2 className="me-2 size-4 animate-spin" /> : null}
+            Save
+          </Button>
+        </div>
+
+        <Section
+          title="Placement"
+          description="Where this item lives and when it unlocks relative to the assignment anchor."
+        >
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Category" className="sm:col-span-2">
+              <Select
+                value={categoryId || undefined}
+                onValueChange={(v) => {
+                  if (v) {
+                    setValue("category_id", v, { shouldDirty: true });
+                  }
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.program_label ? `${c.program_label} · ` : ""}
+                      {c.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+
+            <Field label="Slug" hint="Unique within category" className="sm:col-span-2">
+              <Input
+                {...register("slug")}
+                className="font-mono"
+                placeholder="sunday-reset-conversation"
+              />
+            </Field>
+
+            <Field
+              label="Default offset (days)"
+              hint="0 = unlocks on anchor day"
+            >
+              <Input
+                type="number"
+                min={0}
+                max={3650}
+                {...register("default_offset_days", { valueAsNumber: true })}
+              />
+            </Field>
+
+            <Field label="Sort order" hint="Ties broken by created_at">
+              <Input
+                type="number"
+                min={-1000}
+                max={10000}
+                {...register("sort_order", { valueAsNumber: true })}
+              />
+            </Field>
+          </div>
+        </Section>
+
+        <Section
+          title="Content"
+          description="Markdown-friendly. Edits propagate to every existing assignment automatically."
+        >
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Title (HE)">
+              <Input
+                {...register("title_he")}
+                dir="rtl"
+                placeholder="שיחת יום ראשון"
+              />
+            </Field>
+            <Field label="Title (EN)">
+              <Input {...register("title_en")} placeholder="Sunday conversation" />
+            </Field>
+
+            <Field label="Body (HE)" className="sm:col-span-2">
+              <Textarea
+                {...register("body_he")}
+                dir="rtl"
+                rows={8}
+                placeholder="הטקסט הראשי — תומך ב-Markdown"
+              />
+            </Field>
+            <Field label="Body (EN)" className="sm:col-span-2">
+              <Textarea
+                {...register("body_en")}
+                rows={8}
+                placeholder="Main body — Markdown supported"
+              />
+            </Field>
+          </div>
+        </Section>
+
+        <Section
+          title="Practice"
+          description="Optional: a short task they can do this week, plus an optional stretch challenge."
+        >
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Task (HE)">
+              <Textarea
+                {...register("task_he")}
+                dir="rtl"
+                rows={3}
+                placeholder="מה עושים השבוע"
+              />
+            </Field>
+            <Field label="Task (EN)">
+              <Textarea
+                {...register("task_en")}
+                rows={3}
+                placeholder="What to do this week"
+              />
+            </Field>
+
+            <Field label="Challenge (HE)">
+              <Textarea
+                {...register("challenge_he")}
+                dir="rtl"
+                rows={3}
+                placeholder="אתגר אופציונלי"
+              />
+            </Field>
+            <Field label="Challenge (EN)">
+              <Textarea
+                {...register("challenge_en")}
+                rows={3}
+                placeholder="Stretch challenge"
+              />
+            </Field>
+          </div>
+        </Section>
+
+        <Section title="Media" description="Optional video embed URL and cover image.">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Video URL">
+              <Input
+                {...register("video_url")}
+                placeholder="https://player.vimeo.com/..."
+              />
+            </Field>
+            <Field label="Image URL">
+              <Input {...register("image_url")} placeholder="https://..." />
+            </Field>
+          </div>
+        </Section>
+
+        <div className="flex items-center justify-end pt-2">
+          <Button type="submit" disabled={saving} className="min-w-[140px]">
+            {saving ? <Loader2 className="me-2 size-4 animate-spin" /> : null}
+            Save item
+          </Button>
+        </div>
+      </form>
+    </FormProvider>
+  );
+}

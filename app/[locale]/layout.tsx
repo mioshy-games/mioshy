@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import { LocaleAttributes } from "@/components/LocaleAttributes";
 import { Chrome } from "@/components/Chrome";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -38,10 +39,23 @@ export default async function LocaleLayout({
   setRequestLocale(locale);
   const messages = await getMessages();
 
+  // Determine auth once per request so the header can show "My Mioshy"
+  // to signed-in visitors (C2b, E3).
+  let isAuthed = false;
+  try {
+    const supabase = await createServerSupabaseClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    isAuthed = !!user;
+  } catch {
+    isAuthed = false;
+  }
+
   return (
     <NextIntlClientProvider messages={messages}>
       <LocaleAttributes />
-      <Chrome>{children}</Chrome>
+      <Chrome isAuthed={isAuthed}>{children}</Chrome>
     </NextIntlClientProvider>
   );
 }

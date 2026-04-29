@@ -7,7 +7,16 @@ import { SnakesGameBoard } from "@/components/game/snakes/SnakesGameBoard";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { hasActiveSubscription } from "@/lib/subscriptions";
 import { SubscriptionModal } from "@/components/SubscriptionModal";
+import {
+  FREE_PLAYS_PER_GAME,
+  getUserGamePlays,
+  incrementUserGamePlays,
+} from "@/lib/spins";
 import type { GameAdapter } from "@/lib/snakes/adapter";
+
+/** Snakes shares a single per-user budget across every room; this is the
+ *  slug we use when recording plays in `user_game_plays`. */
+const SNAKES_SLUG = "snakes";
 
 function normalize(code: string) {
   return code.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -70,19 +79,16 @@ export function SnakesGameClient({ locale, roomCode }: { locale: string; roomCod
       if (uid) {
         const active = await hasActiveSubscription(supabase, uid);
         if (!cancelled) setSubscribed(active);
+        // Seed the per-game counter from the server so navigating between
+        // rooms keeps the budget continuous.
+        const plays = await getUserGamePlays(supabase, SNAKES_SLUG);
+        if (!cancelled) rollCountRef.current = plays.plays_used;
       }
     })();
     return () => {
       cancelled = true;
     };
   }, []);
-
-  useEffect(() => {
-    if (!room?.id || !userId) return;
-    const key = `mioshy:snakes:${room.id}:${userId}:rolls_v1`;
-    const raw = typeof window !== "undefined" ? window.localStorage.getItem(key) : null;
-    rollCountRef.current = Number(raw ?? "0") || 0;
-  }, [room?.id, userId]);
 
   // Adapter wrapping the Supabase-backed hook. The paywall is enforced in
   // updateGameState: roll events carry `lastDiceResult`, so we intercept
@@ -92,24 +98,24 @@ export function SnakesGameClient({ locale, roomCode }: { locale: string; roomCod
     () =>
       async (patch: Parameters<typeof updateGameState>[0]) => {
         if (patch && "lastDiceResult" in patch && patch.lastDiceResult != null) {
-          if (!subscribed && rollCountRef.current >= 3) {
+          if (!subscribed && rollCountRef.current >= FREE_PLAYS_PER_GAME) {
             setSubLocked(true);
             setSubOpen(true);
             return;
           }
           rollCountRef.current += 1;
-          if (room?.id && userId) {
-            const key = `mioshy:snakes:${room.id}:${userId}:rolls_v1`;
-            window.localStorage.setItem(key, String(rollCountRef.current));
+          if (userId) {
+            // Fire-and-forget increment; the server weekly-resets under us.
+            void incrementUserGamePlays(createBrowserSupabaseClient(), SNAKES_SLUG);
           }
-          if (!subscribed && rollCountRef.current >= 3) {
+          if (!subscribed && rollCountRef.current >= FREE_PLAYS_PER_GAME) {
             setSubLocked(true);
             setSubOpen(true);
           }
         }
         await updateGameState(patch);
       },
-    [room?.id, subscribed, updateGameState, userId],
+    [subscribed, updateGameState, userId],
   );
 
   const adapter: GameAdapter = useMemo(
@@ -127,7 +133,8 @@ export function SnakesGameClient({ locale, roomCode }: { locale: string; roomCod
 
   const handleExit = async () => {
     await leaveRoom();
-    router.replace(`/${locale}/game`);
+    // Back to the games catalog (not the snakes lobby) — per product spec.
+    router.replace(`/${locale}/games`);
   };
 
   const handlePlayAgain = async () => {
@@ -142,6 +149,9 @@ export function SnakesGameClient({ locale, roomCode }: { locale: string; roomCod
       currentPlayerIndex: 0,
       positions: Object.fromEntries(players.map((p) => [p.id, 1])),
       log: [],
+      // Reset the draw pool so the fresh round starts with a newly shuffled
+      // cycle rather than finishing off the leftovers from the prior game.
+      questionPool: [],
     });
     router.replace(`/${locale}/game/${code}`);
   };
@@ -158,6 +168,7 @@ export function SnakesGameClient({ locale, roomCode }: { locale: string; roomCod
         onOpenChange={(v) => setSubOpen(v)}
         locked={subLocked}
         userId={userId}
+        gameSlug={SNAKES_SLUG}
         onRequireAuth={async () => {
           router.push(`/${locale}/auth`);
           return null;

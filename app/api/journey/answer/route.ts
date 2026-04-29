@@ -1,0 +1,304 @@
+/**
+ * POST /api/journey/answer
+ *
+ * Body: { question_id, answer: {kind,...}, locale, language?, device_id? }
+ *
+ *  - Creates (or reuses) the caller's in-progress journey row.
+ *  - Validates the answer shape matches the question type in the static bank.
+ *  - Upserts into journey_responses.
+ *  - Advances `current_step` and enforces gating (auth, paywall).
+ *  - If the final question is answered, kicks off analysis and returns the
+ *    Analysis object.
+ *
+ * Hardening (2026-04):
+ *  - Auth is resolved with the session-scoped client, but every write goes
+ *    through the service-role admin client. Reason: @supabase/ssr cookies
+ *    occasionally land in a state where `getUser()` returns the correct
+ *    user but the JWT isn't propagated to PostgREST in the same request,
+ *    so `auth.uid()` is null during RLS checks. That was showing up as a
+ *    `journey_create_failed` on the very first Q1 answer. Using admin
+ *    client also sidesteps the `journey_responses_by_owner` policy, which
+ *    doesn't allow the anonymous (device_id-only) write path — a real bug
+ *    for Q1-Q5 that no user would hit through RLS.
+ *  - `trusted_user_id` is authoritative (from the session cookie) — we
+ *    never read `user_id` from the request body.
+ *  - Per-(ip + device_id) sliding-window rate limit guards against script
+ *    floods answering every question in a tight loop.
+ */
+
+import { NextResponse } from "next/server";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase-admin";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import {
+  QUESTIONNAIRE,
+  getQuestion,
+  totalQuestions,
+  requiresAuthAt,
+  requiresPaywallAt,
+} from "@/lib/journey/questions";
+import { analyze } from "@/lib/journey/analysis";
+import type { AnswerValue, Locale, Response } from "@/lib/journey/types";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+interface AnswerPayload {
+  question_id: string;
+  answer: AnswerValue;
+  locale: Locale;
+  language?: Locale;
+  device_id?: string;
+}
+
+function isValidAnswer(qType: string, answer: AnswerValue): boolean {
+  switch (qType) {
+    case "likert5":
+      return answer.kind === "likert" && [1, 2, 3, 4, 5].includes(answer.value);
+    case "forced_choice":
+    case "single_choice":
+      return answer.kind === "single" && typeof answer.option === "string";
+    case "multi_choice":
+      return answer.kind === "multi" && Array.isArray(answer.options);
+    case "reflection":
+      return answer.kind === "text" && typeof answer.text === "string";
+    default:
+      return false;
+  }
+}
+
+export async function POST(req: Request) {
+  let body: AnswerPayload;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "invalid_json" }, { status: 400 });
+  }
+
+  const { question_id, answer, locale } = body;
+  const q = getQuestion(question_id);
+  if (!q) return NextResponse.json({ error: "unknown_question" }, { status: 400 });
+  if (!isValidAnswer(q.type, answer))
+    return NextResponse.json({ error: "invalid_answer_shape", expected: q.type }, { status: 400 });
+
+  // ── Auth resolution (session client) ────────────────────────────────────────
+  // We use the session-scoped client ONLY to resolve who the caller is. All
+  // writes happen through the admin client below so we aren't subject to any
+  // transient RLS / JWT-propagation flakes.
+  let trusted_user_id: string | null = null;
+  try {
+    const supa = await createServerSupabaseClient();
+    const { data: { user } } = await supa.auth.getUser();
+    trusted_user_id = user?.id ?? null;
+  } catch {
+    trusted_user_id = null;
+  }
+
+  const deviceId =
+    (typeof body.device_id === "string" && body.device_id.length > 8
+      ? body.device_id
+      : null) ??
+    req.headers.get("x-device-id") ??
+    null;
+
+  if (!trusted_user_id && (!deviceId || deviceId.length < 9)) {
+    return NextResponse.json({ error: "missing_identity" }, { status: 400 });
+  }
+
+  // ── Rate limit: 120 answers / 10 min per (ip + identity) ───────────────────
+  const ip       = getClientIp(req);
+  const rateKey  = `journey:answer:${ip}:${trusted_user_id ?? deviceId}`;
+  const rl       = checkRateLimit(rateKey, 120, 600);
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: "rate_limited", message: "Too many requests. Please slow down." },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } },
+    );
+  }
+
+  // ── Question index + gating ─────────────────────────────────────────────────
+  const index = QUESTIONNAIRE.questions.findIndex((x) => x.id === question_id);
+  if (index < 0) return NextResponse.json({ error: "unknown_question_index" }, { status: 400 });
+
+  // If the index requires auth and caller is anon → reject.
+  if (requiresAuthAt(index - 1) && !trusted_user_id) {
+    return NextResponse.json(
+      { error: "auth_required", at: QUESTIONNAIRE.gating.auth_after_index },
+      { status: 401 },
+    );
+  }
+
+  const admin = await createAdminClient();
+
+  // Paywall: check active subscription if the index requires it.
+  if (requiresPaywallAt(index - 1) && trusted_user_id) {
+    const { data: sub } = await admin
+      .from("subscriptions")
+      .select("status")
+      .eq("user_id", trusted_user_id)
+      .eq("status", "active")
+      .maybeSingle();
+    if (!sub) {
+      return NextResponse.json(
+        { error: "paywall_required", at: QUESTIONNAIRE.gating.paywall_after_index },
+        { status: 402 },
+      );
+    }
+  }
+
+  // ── Find or create journey ─────────────────────────────────────────────────
+  // Prefer the authed journey if present. If the user just signed up mid-flow
+  // we also claim any prior anon-by-device row by linking it to their user_id
+  // (mirrors link_journey_to_user's intent without a round-trip RPC).
+  let journeyId: string | undefined;
+
+  if (trusted_user_id) {
+    const { data: existingAuthed } = await admin
+      .from("journeys")
+      .select("id")
+      .eq("user_id", trusted_user_id)
+      .in("status", ["in_progress", "paywall"])
+      .order("last_activity_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    journeyId = existingAuthed?.id;
+
+    // Claim anon journey by device_id, if any, once the user signs in.
+    if (!journeyId && deviceId) {
+      const { data: anonJourney } = await admin
+        .from("journeys")
+        .select("id")
+        .eq("device_id", deviceId)
+        .is("user_id", null)
+        .in("status", ["in_progress", "paywall"])
+        .order("last_activity_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (anonJourney?.id) {
+        await admin
+          .from("journeys")
+          .update({ user_id: trusted_user_id, device_id: null })
+          .eq("id", anonJourney.id);
+        journeyId = anonJourney.id;
+      }
+    }
+  } else if (deviceId) {
+    const { data: existingAnon } = await admin
+      .from("journeys")
+      .select("id")
+      .eq("device_id", deviceId)
+      .is("user_id", null)
+      .in("status", ["in_progress", "paywall"])
+      .order("last_activity_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    journeyId = existingAnon?.id;
+  }
+
+  if (!journeyId) {
+    const { data: newJourney, error: insertErr } = await admin
+      .from("journeys")
+      .insert({
+        user_id: trusted_user_id,
+        device_id: trusted_user_id ? null : deviceId,
+        language: body.language ?? locale ?? "he",
+        status: "in_progress",
+        current_step: 0,
+      })
+      .select("id")
+      .single();
+    if (insertErr) {
+      console.error("[journey/answer] journey insert failed", insertErr);
+      return NextResponse.json(
+        { error: "journey_create_failed", detail: insertErr.message },
+        { status: 500 },
+      );
+    }
+    journeyId = newJourney.id;
+  }
+
+  // ── Persist the answer (upsert by (journey_id, question_id)) ───────────────
+  const { error: upsertErr } = await admin
+    .from("journey_responses")
+    .upsert(
+      { journey_id: journeyId, question_id, answer, locale },
+      { onConflict: "journey_id,question_id" },
+    );
+  if (upsertErr) {
+    console.error("[journey/answer] answer upsert failed", upsertErr);
+    return NextResponse.json(
+      { error: "answer_save_failed", detail: upsertErr.message },
+      { status: 500 },
+    );
+  }
+
+  // ── Advance step ────────────────────────────────────────────────────────────
+  const nextStep   = index + 1;
+  const isComplete = nextStep >= totalQuestions();
+  const newStatus  =
+    isComplete
+      ? "complete"
+      : nextStep > QUESTIONNAIRE.gating.paywall_after_index && !trusted_user_id
+        ? "paywall"
+        : "in_progress";
+
+  await admin
+    .from("journeys")
+    .update({
+      current_step:     nextStep,
+      status:           newStatus,
+      last_activity_at: new Date().toISOString(),
+      completed_at:     isComplete ? new Date().toISOString() : null,
+    })
+    .eq("id", journeyId);
+
+  // ── Audit ───────────────────────────────────────────────────────────────────
+  await admin.from("activity_logs").insert({
+    user_id:  trusted_user_id,
+    actor_id: trusted_user_id,
+    action:   "answer_saved",
+    metadata: { question_id, index, journey_id: journeyId },
+  });
+
+  // ── Compute analysis eagerly on completion ─────────────────────────────────
+  let analysis = null;
+  if (isComplete) {
+    const { data: allResponses } = await admin
+      .from("journey_responses")
+      .select("question_id, answer, locale")
+      .eq("journey_id", journeyId);
+
+    const parsed: Response[] = (allResponses ?? []).map((r) => ({
+      question_id: r.question_id,
+      answer:      r.answer as AnswerValue,
+      locale:      r.locale as Locale,
+    }));
+    analysis = analyze(parsed);
+
+    await admin.from("journey_analysis").insert({
+      journey_id:              journeyId,
+      user_id:                 trusted_user_id,
+      axis_scores:             analysis.axis_scores,
+      friendship_score:        analysis.friendship_score,
+      conflict_health:         analysis.conflict_health,
+      passion_risk:            analysis.passion_risk,
+      primary_love_language:   analysis.primary_love_language,
+      secondary_love_language: analysis.secondary_love_language,
+      top_gap:                 analysis.top_gap,
+      four_horsemen_flag:      analysis.four_horsemen_flag,
+      summary:                 analysis.summary,
+    });
+  }
+
+  return NextResponse.json({
+    ok:          true,
+    journey_id:  journeyId,
+    next_index:  nextStep,
+    status:      newStatus,
+    gating: {
+      auth_required_next:    requiresAuthAt(nextStep - 1) && !trusted_user_id,
+      paywall_required_next: requiresPaywallAt(nextStep - 1) && !!trusted_user_id,
+    },
+    analysis,
+  });
+}

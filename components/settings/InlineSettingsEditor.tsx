@@ -2,27 +2,23 @@
 
 import { useEffect, useState } from "react";
 import { AppearanceTab } from "./tabs/AppearanceTab";
-import { BehaviorTab } from "./tabs/BehaviorTab";
 import { AdvancedTab } from "./tabs/AdvancedTab";
-import { LivePreview } from "./LivePreview";
 import { SectionGroupContext } from "./SettingsSection";
 import { useGameSettings } from "@/hooks/useGameSettings";
-import { useSettingsStore } from "@/lib/store/useSettingsStore";
-import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { ChevronsDownUp, ChevronsUpDown } from "lucide-react";
+import { ChevronsDownUp, ChevronsUpDown, ChevronDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export function InlineSettingsEditor({ gameId }: { gameId: string }) {
-  const { loadInline, isLoading, versionHistory, rollback, duplicateFrom, savePreset } =
-    useGameSettings(gameId);
+  const { loadInline, isLoading } = useGameSettings(gameId);
+
+  // Card-level collapse (whole Wheel appearance card)
+  const [cardOpen, setCardOpen] = useState(true);
 
   // Version counters drive expand / collapse all.
   // Each increment signals all SettingsSection children to open or close.
   const [forceOpenVersion, setForceOpenVersion]   = useState(0);
   const [forceCloseVersion, setForceCloseVersion] = useState(0);
-
-  // Read the live draft for the sticky preview
-  const draftSettings = useSettingsStore((s) => s.draftSettings);
 
   useEffect(() => {
     void loadInline();
@@ -36,74 +32,79 @@ export function InlineSettingsEditor({ gameId }: { gameId: string }) {
     );
   }
 
+  // NOTE: The wheel / live preview used to live in a right column here, but it
+  // only stuck inside this card. The page now renders a dedicated EditSidebar
+  // that's sticky across the full edit page, so the preview stays visible while
+  // the admin scrolls through the form. This component is now a single-column
+  // editor card.
+
   return (
     <div className="rounded-2xl border border-border bg-background/60 backdrop-blur overflow-hidden">
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between gap-4 px-5 py-4 border-b border-border">
-        <div>
-          <h2 className="text-lg font-semibold">Visual Settings</h2>
-          <p className="text-sm text-muted-foreground">
-            Appearance, behavior and advanced controls — live preview on the right.
-          </p>
-        </div>
+      {/* Outer div — cannot be a button because it contains Button children  */}
+      <div className="flex items-center justify-between gap-4 px-5 py-4">
 
-        {/* Expand / Collapse all */}
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 gap-1.5 text-xs"
-            onClick={() => setForceOpenVersion((v) => v + 1)}
-          >
-            <ChevronsUpDown className="w-3.5 h-3.5" />
-            פתח הכל
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 gap-1.5 text-xs"
-            onClick={() => setForceCloseVersion((v) => v + 1)}
-          >
-            <ChevronsDownUp className="w-3.5 h-3.5" />
-            מזער הכל
-          </Button>
-        </div>
+        {/* Left: click to collapse/expand the whole card */}
+        <button
+          type="button"
+          className="flex items-center gap-2 min-w-0 text-left flex-1"
+          onClick={() => setCardOpen((v) => !v)}
+          aria-expanded={cardOpen}
+        >
+          <ChevronDown
+            className={cn(
+              "w-4 h-4 text-muted-foreground transition-transform flex-shrink-0",
+              cardOpen ? "rotate-180" : "rotate-0",
+            )}
+          />
+          <div className="min-w-0">
+            <h2 className="text-lg font-semibold">Wheel appearance</h2>
+            <p className="text-sm text-muted-foreground">
+              צבעי גלגל, גודל, תוויות וגבול — תצוגה מקדימה חיה בצד ימין.
+            </p>
+          </div>
+        </button>
+
+        {/* Right: Expand / Collapse all — only visible when card is open */}
+        {cardOpen && (
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1.5 text-xs"
+              onClick={() => setForceOpenVersion((v) => v + 1)}
+            >
+              <ChevronsUpDown className="w-3.5 h-3.5" />
+              פתח הכל
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1.5 text-xs"
+              onClick={() => setForceCloseVersion((v) => v + 1)}
+            >
+              <ChevronsDownUp className="w-3.5 h-3.5" />
+              מזער הכל
+            </Button>
+          </div>
+        )}
       </div>
 
-      {/* ── Two-column body ─────────────────────────────────────────────────── */}
-      <div className="flex min-h-0">
-
-        {/* Left column: scrollable settings */}
-        <div className="flex-1 min-w-0 overflow-y-auto max-h-[calc(100vh-200px)]">
+      {/* ── Body (single column — preview lives in sticky page sidebar) ────── */}
+      {cardOpen && (
+        <>
+          <div className="border-t border-border" />
           <SectionGroupContext.Provider value={{ forceOpenVersion, forceCloseVersion }}>
             <div className="p-5 space-y-3">
               <AppearanceTab />
-
-              <Separator className="my-1" />
-
-              <BehaviorTab />
-
-              <Separator className="my-1" />
-
-              <AdvancedTab
-                onSaveAsPreset={savePreset}
-                onDuplicateFrom={duplicateFrom}
-                versionHistory={versionHistory}
-                onRollback={rollback}
-              />
+              <AdvancedTab />
             </div>
           </SectionGroupContext.Provider>
-        </div>
-
-        {/* Right column: sticky live preview (hidden on small screens) */}
-        <div className="hidden xl:block w-72 flex-shrink-0 border-l border-border">
-          <div className="sticky top-0 p-4">
-            <LivePreview settings={draftSettings} />
-          </div>
-        </div>
-
-      </div>
+        </>
+      )}
     </div>
   );
 }

@@ -1,0 +1,180 @@
+// ============================================================
+// TypeScript types for the Journey Content System.
+// Mirrors the schema defined in supabase/migrations/035_journey_content_system.sql.
+//
+// Design context: docs/journey-content-system-design.md (Revision 2).
+// This is intentionally a separate namespace from `lib/journey/` which
+// powers the questionnaire/analysis product.
+// ============================================================
+
+export type AnchorKind = "assignment" | "purchase" | "fixed";
+export type AssignmentOrigin = "admin_manual" | "purchase" | "trigger";
+export type AssignmentSourceKind = "program" | "category" | "item";
+
+/**
+ * Display status derived from unlock_at + completion row.
+ *   locked    — unlock_at > now
+ *   available — unlock_at <= now and not completed
+ *   completed — has a row in journey_item_completions
+ */
+export type ScheduledItemStatus = "locked" | "available" | "completed";
+
+// ------------------------------------------------------------
+// Row shapes (as returned from Supabase)
+// ------------------------------------------------------------
+
+/**
+ * Product pillar a program is tied to for post-purchase automation.
+ * NULL = program is not automation-eligible (admin-only manual assign).
+ * Matches subscriptions.product values defined in migration 032.
+ */
+export type JourneyProductSlug = "games" | "journey" | "adults";
+
+export interface JourneyProgram {
+  id: string;
+  slug: string;
+  name_he: string;
+  name_en: string | null;
+  description_he: string | null;
+  description_en: string | null;
+  cover_image_url: string | null;
+  default_anchor: AnchorKind;
+  product_slug: JourneyProductSlug | null;
+  is_active: boolean;
+  sort_weight: number;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface JourneyCategory {
+  id: string;
+  program_id: string | null;
+  slug: string;
+  name_he: string;
+  name_en: string | null;
+  description_he: string | null;
+  description_en: string | null;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface JourneyItem {
+  id: string;
+  category_id: string;
+  slug: string;
+  title_he: string;
+  title_en: string | null;
+  body_he: string;
+  body_en: string | null;
+  task_he: string | null;
+  task_en: string | null;
+  challenge_he: string | null;
+  challenge_en: string | null;
+  video_url: string | null;
+  image_url: string | null;
+  sort_order: number;
+  default_offset_days: number;
+  is_active: boolean;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface JourneyAssignment {
+  id: string;
+  user_id: string | null;
+  couple_id: string | null;
+  source_kind: AssignmentSourceKind;
+  source_id: string;
+  anchor_kind: AnchorKind;
+  anchor_date: string;
+  origin: AssignmentOrigin;
+  origin_ref: string | null;
+  assigned_by: string | null;
+  notes: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface JourneyScheduledItem {
+  id: string;
+  assignment_id: string;
+  item_id: string;
+  unlock_at: string;
+  sort_order: number;
+  has_unlock_override: boolean;
+  admin_notes: string | null;
+  /**
+   * Set by the unlock-notifier the first time an owner is told this
+   * item is now available. NULL means "due for notification".
+   * Migration 036.
+   */
+  notified_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface JourneyItemCompletion {
+  scheduled_item_id: string;
+  completed_at: string;
+  completed_by: string | null;
+  created_at: string;
+}
+
+export interface JourneyItemResponse {
+  id: string;
+  scheduled_item_id: string;
+  user_id: string;
+  response_text: string;
+  is_private: boolean;
+  created_at: string;
+}
+
+// ------------------------------------------------------------
+// Polymorphic owner helpers
+// ------------------------------------------------------------
+
+export type JourneyOwner =
+  | { kind: "user"; userId: string }
+  | { kind: "couple"; coupleId: string };
+
+/**
+ * Serialized owner key used in URLs — "user:<uuid>" or "couple:<uuid>".
+ * Used for admin Manage-Client routes so both flavors of owner share one
+ * URL shape.
+ */
+export type OwnerKey = `user:${string}` | `couple:${string}`;
+
+// ------------------------------------------------------------
+// Derived/joined shapes
+// ------------------------------------------------------------
+
+/**
+ * A scheduled item enriched with its item content + completion state for
+ * a specific viewer. Used by the user-facing timeline.
+ */
+export interface TimelineEntry {
+  scheduled: JourneyScheduledItem;
+  item: JourneyItem;
+  category: Pick<JourneyCategory, "id" | "name_he" | "name_en" | "slug">;
+  status: ScheduledItemStatus;
+  completion: JourneyItemCompletion | null;
+  /** Responses visible to the current viewer (private filtering applied). */
+  responses: JourneyItemResponse[];
+}
+
+/**
+ * A program with its categories + items inlined. Used by the admin editor
+ * and the bulk-assign preview.
+ */
+export interface ProgramWithContent {
+  program: JourneyProgram;
+  categories: Array<{
+    category: JourneyCategory;
+    items: JourneyItem[];
+  }>;
+}

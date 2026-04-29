@@ -5,12 +5,23 @@ export interface SnakeOrLadder {
   label: string;
 }
 
+/**
+ * Difficulty level for a question/challenge.
+ *   1 = קליל  (light / warm-up)
+ *   2 = בינוני (medium)
+ *   3 = מאתגר (deep / bold)
+ * Defaults to 1 when absent (backward-compatible with existing saved configs).
+ */
+export type QuestionLevel = 1 | 2 | 3;
+
 export interface Question {
   id: string;
   type: "question" | "challenge";
   text_he: string;
   text_en: string;
   category: string;
+  /** Difficulty level 1–3. Omitted in legacy data → treated as 1. */
+  level?: QuestionLevel;
 }
 
 export interface GameConfig {
@@ -55,6 +66,13 @@ export interface GameState {
   winner: string | null; // game_players.id
   turnCount: number;
   log: GameLogEntry[];
+  /**
+   * Non-repeating draw pool of remaining question IDs for this session.
+   * When empty/undefined the engine reseeds it from config.questions (shuffled)
+   * so every question is seen once before any repeat. See
+   * `pickNextQuestion` in gameEngine.
+   */
+  questionPool?: string[];
 }
 
 export interface GameRoom {

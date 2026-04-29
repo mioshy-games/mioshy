@@ -1,0 +1,212 @@
+/**
+ * /[locale]/journey/timeline/[scheduledId]
+ *
+ * Detail view for a single scheduled item. Loads the item content, the
+ * owning assignment, the completion state, and the responses visible to
+ * the viewer (private-filtered). Hands off to ItemDetailClient for the
+ * interactive surface.
+ *
+ * Ownership gate: viewer must either be the assignment's user_id or a
+ * member of the assignment's couple. Otherwise we render 404 so we don't
+ * leak the item's existence.
+ */
+
+import type { Metadata } from "next";
+import { notFound, redirect } from "next/navigation";
+import { setRequestLocale } from "next-intl/server";
+import { Link } from "@/navigation";
+import { ArrowLeft, ArrowRight, Compass } from "lucide-react";
+import { routing } from "@/i18n/routing";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase-admin";
+import { deriveStatus, isOpenable } from "@/lib/journey-content/status";
+import type {
+  JourneyAssignment,
+  JourneyCategory,
+  JourneyItem,
+  JourneyItemCompletion,
+  JourneyItemResponse,
+  JourneyScheduledItem,
+} from "@/lib/journey-content/types";
+import { ItemDetailClient } from "@/components/journey/timeline/ItemDetailClient";
+
+export const dynamic = "force-dynamic";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: { locale: string; scheduledId: string };
+}): Promise<Metadata> {
+  const isHe = params.locale === "he";
+  return {
+    title: `Mioshy — ${isHe ? "פרק במסע" : "Journey chapter"}`,
+    robots: { index: false, follow: false },
+  };
+}
+
+export default async function JourneyTimelineItemPage({
+  params,
+}: {
+  params: { locale: string; scheduledId: string };
+}) {
+  const { locale, scheduledId } = params;
+  if (!routing.locales.includes(locale as (typeof routing.locales)[number])) {
+    notFound();
+  }
+  setRequestLocale(locale);
+
+  const isHe = locale === "he";
+
+  // ── Auth ─────────────────────────────────────────────────────────────
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect(`/${locale}/auth`);
+
+  // ── Load scheduled + assignment (admin client — RLS would allow this
+  // read for legit owners but admin is simpler and authorisation is
+  // enforced below by explicit ownership checks).
+  const admin = createServiceRoleClient();
+  if (!admin) throw new Error("service role unavailable");
+
+  const { data: scheduledRow } = await admin
+    .from("journey_scheduled_items")
+    .select("*")
+    .eq("id", scheduledId)
+    .maybeSingle();
+  if (!scheduledRow) notFound();
+  const scheduled = scheduledRow as JourneyScheduledItem;
+
+  const { data: assignmentRow } = await admin
+    .from("journey_assignments")
+    .select("*")
+    .eq("id", scheduled.assignment_id)
+    .maybeSingle();
+  if (!assignmentRow) notFound();
+  const assignment = assignmentRow as JourneyAssignment;
+
+  // ── Ownership gate: viewer is the user, or a member of the couple.
+  let ownedByMe = false;
+  if (assignment.user_id && assignment.user_id === user.id) {
+    ownedByMe = true;
+  } else if (assignment.couple_id) {
+    const { data: membership } = await admin
+      .from("couple_members")
+      .select("couple_id")
+      .eq("couple_id", assignment.couple_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (membership) ownedByMe = true;
+  }
+  if (!ownedByMe) notFound();
+
+  // Cancelled assignments should not surface deep-links.
+  if (!assignment.is_active) {
+    redirect(`/${locale}/journey/timeline`);
+  }
+
+  // ── Item + category + completion + responses ─────────────────────────
+  const [itemRes, completionRes, responsesRes] = await Promise.all([
+    admin.from("journey_items").select("*").eq("id", scheduled.item_id).maybeSingle(),
+    admin
+      .from("journey_item_completions")
+      .select("*")
+      .eq("scheduled_item_id", scheduledId)
+      .maybeSingle(),
+    admin
+      .from("journey_item_responses")
+      .select("*")
+      .eq("scheduled_item_id", scheduledId)
+      .order("created_at", { ascending: true }),
+  ]);
+
+  if (!itemRes.data) notFound();
+  const item = itemRes.data as JourneyItem;
+
+  const { data: categoryRow } = await admin
+    .from("journey_categories")
+    .select("id, name_he, name_en, slug")
+    .eq("id", item.category_id)
+    .maybeSingle();
+  const category =
+    (categoryRow as Pick<JourneyCategory, "id" | "name_he" | "name_en" | "slug"> | null) ??
+    null;
+
+  const completion =
+    (completionRes.data as JourneyItemCompletion | null) ?? null;
+
+  // Private-response filter: only the author sees their own private notes.
+  const responses = ((responsesRes.data ?? []) as JourneyItemResponse[]).filter(
+    (r) => !r.is_private || r.user_id === user.id,
+  );
+
+  const status = deriveStatus({
+    unlockAt: scheduled.unlock_at,
+    hasCompletion: !!completion,
+  });
+
+  // Locked items shouldn't be reachable (TimelineList wraps them in a
+  // non-link), but if someone manually hit the URL we redirect back to
+  // the list rather than showing a half-functional page.
+  if (!isOpenable(status)) {
+    redirect(`/${locale}/journey/timeline`);
+  }
+
+  const Arrow = isHe ? ArrowLeft : ArrowRight;
+
+  return (
+    <div
+      dir={isHe ? "rtl" : "ltr"}
+      className="relative min-h-[100dvh] overflow-hidden bg-gradient-to-b from-[#050f1a] via-[#0a1326] to-[#020610] text-white"
+    >
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-[80vh] opacity-65 animate-aurora-drift"
+        style={{
+          background:
+            "radial-gradient(1000px 500px at 15% -10%, rgba(99,102,241,0.22), transparent 60%), radial-gradient(800px 400px at 85% 10%, rgba(16,185,129,0.14), transparent 60%)",
+        }}
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-[55vh] h-[80vh] opacity-50 animate-aurora-breathe"
+        style={{
+          background:
+            "radial-gradient(800px 400px at 80% 40%, rgba(236,72,153,0.10), transparent 60%), radial-gradient(700px 380px at 15% 65%, rgba(99,102,241,0.12), transparent 60%)",
+        }}
+      />
+
+      <main className="relative mx-auto max-w-3xl px-4 pb-24 pt-10 sm:pt-14">
+        <Link
+          href="/journey/timeline"
+          className="inline-flex items-center gap-1 text-xs font-medium text-white/55 transition hover:text-white/90"
+        >
+          <Arrow className="h-3 w-3 rotate-180" />
+          {isHe ? "חזרה לציר המסע" : "Back to the timeline"}
+        </Link>
+
+        <div className="mt-5 flex items-center gap-2 text-xs text-white/60">
+          <Compass className="h-3.5 w-3.5 text-indigo-300" />
+          <span>
+            {category
+              ? (isHe ? category.name_he : category.name_en ?? category.name_he)
+              : isHe
+                ? "פרק"
+                : "Chapter"}
+          </span>
+        </div>
+
+        <ItemDetailClient
+          item={item}
+          scheduled={scheduled}
+          status={status}
+          completion={completion}
+          responses={responses}
+          viewerUserId={user.id}
+          locale={locale}
+        />
+      </main>
+    </div>
+  );
+}

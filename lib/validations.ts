@@ -3,35 +3,45 @@ import { z } from "zod";
 export const questionTypeSchema = z.string().min(1);
 export const questionLevelSchema = z.enum(["light", "flirty", "deep"]);
 
+// Color fields: validate format, but fall back to a safe default instead of
+// blocking the entire form save when an imported/legacy value is malformed.
+// The admin can then fix colors visually without losing all other edits.
+const colorField = (fallback = "#ffffff") =>
+  z.string().regex(/^#[0-9A-Fa-f]{6}$/).catch(fallback);
+
 export const wheelSliceSchema = z.object({
   id: z.string().min(1),
   label_he: z.string(),
   label_en: z.string(),
-  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
+  color: colorField("#6366f1"),
   question_type: questionTypeSchema,
 });
 
 export const wheelConfigFormSchema = z.object({
-  slices: z.array(wheelSliceSchema).min(2).max(16),
-  pointer_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
+  // Allow 0 slices so saving game details / SEO fields is never blocked
+  // by an incomplete wheel (e.g. new game, player_mode game).
+  // The actual "must have ≥ 2 slices to spin" guard lives in the game page.
+  slices: z.array(wheelSliceSchema).max(16),
+  pointer_color: colorField("#ffffff"),
   inner_circle: z.boolean(),
-  inner_circle_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
-  inner_circle_border_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
-  border_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
-  divider_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
+  inner_circle_color: colorField("#1e1b4b"),
+  inner_circle_border_color: colorField("#ffffff"),
+  border_color: colorField("#ffffff"),
+  divider_color: colorField("#ffffff"),
   divider_enabled: z.boolean(),
   divider_width: z.number().int().min(1).max(10),
   marker_config: z
     .object({
       marker_type: z.enum(["none", "circle", "svg_icon"]),
-      marker_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
+      marker_color: colorField("#ffffff"),
       marker_size: z.number().int().min(2).max(64),
       marker_count: z.number().int().min(0).max(64),
       marker_position: z.number().min(0).max(120),
       svg_path_d: z.string().optional(),
     })
     .passthrough(),
-  category_colors: z.record(z.string(), z.string().regex(/^#[0-9A-Fa-f]{6}$/)),
+  // category_colors values: fall back per-entry so one bad color doesn't block save
+  category_colors: z.record(z.string(), colorField("#6366f1")),
   player_config: z
     .object({
       desired_total_slices: z.number().int().min(2).max(16).default(6),
@@ -42,7 +52,7 @@ export const wheelConfigFormSchema = z.object({
             key: z.string().min(1),
             label_he: z.string(),
             label_en: z.string(),
-            color: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
+            color: colorField("#6366f1"),
           }),
         )
         .default([]),
@@ -59,7 +69,10 @@ export const gameFormSchema = z.object({
   slug: z
     .string()
     .min(1)
-    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Lowercase letters, numbers, hyphens"),
+    .regex(
+      /^[a-z0-9\u0590-\u05FF]+(?:-[a-z0-9\u0590-\u05FF]+)*$/,
+      "Lowercase letters, numbers, hyphens (Hebrew characters allowed)",
+    ),
   thumbnail_url: z.union([z.string().url(), z.literal("")]).optional(),
   is_active: z.boolean(),
   bg_type: z.enum(["color", "image"]),

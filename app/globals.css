@@ -5,16 +5,71 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ═══════════════════════════════════════════════════════════
+   TYPOGRAPHY — base rules
+   • body / html root: 18 px (1.125 rem)
+   • paragraphs: 18–20 px via clamp
+   • no element may render below 16 px (rem-safe)
+   ═══════════════════════════════════════════════════════════ */
+
+html {
+  /* 16 px floor so all rem values start from a safe base */
+  font-size: 16px;
+}
+
 body {
   font-family: var(--font-body), system-ui, sans-serif;
-  font-size: 18px;
+  /* 18 px base for reading comfort */
+  font-size: 1.125rem;
+  line-height: 1.65;
   background: #0d0a14;
   color: #f9fafb;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* ── Paragraph / running text ───────────────────────────── */
+p, li, dd, figcaption, blockquote, td, th {
+  /* 18 px on mobile → 20 px on wide screens */
+  font-size: clamp(1.125rem, 1rem + 0.5vw, 1.25rem);
+  line-height: 1.7;
+}
+
+/* ── Responsive heading scale ───────────────────────────── */
+h1 { font-size: clamp(2.25rem, 4vw + 1rem, 4.5rem); line-height: 1.08; }
+h2 { font-size: clamp(1.75rem, 3vw + 0.75rem, 3rem);  line-height: 1.15; }
+h3 { font-size: clamp(1.375rem, 2vw + 0.5rem, 2rem);  line-height: 1.25; }
+h4 { font-size: clamp(1.125rem, 1.5vw + 0.25rem, 1.5rem); line-height: 1.35; }
+h5 { font-size: clamp(1rem, 1vw + 0.25rem, 1.25rem);  line-height: 1.4; }
+h6 { font-size: 1rem; line-height: 1.5; }
+
+/* ── Hard floor — nothing below 14 px (0.875 rem) ──────── */
+/* Tailwind text-xs is remapped to 14 px in tailwind.config;
+   this catches any rogue inline styles on the public site. */
+:root {
+  --fs-min: 0.875rem;   /* 14 px — minimum for ornamental labels */
+  --fs-body: 1.125rem;  /* 18 px — default body */
+  --fs-lead: 1.25rem;   /* 20 px — lead / subheading */
+}
+
+/* ── Input / form elements ──────────────────────────────── */
+input, textarea, select, button {
+  font-size: 1rem; /* 16 px minimum — avoids iOS zoom-on-focus */
+}
+
+/* ── Small / muted helper text ──────────────────────────── */
+small, .text-small {
+  font-size: 0.875rem; /* 14 px */
+  line-height: 1.5;
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+  .text-pretty {
+    text-wrap: pretty;
   }
 }
 
@@ -34,6 +89,110 @@ body {
   [dir="rtl"] {
     --font-body: var(--font-body-hebrew);
     --font-heading: var(--font-heading-hebrew);
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     HOMEPAGE V2 — Design tokens (scoped to .home-v2)
+     New marketing language: warm reds + dark purples + warm cream.
+     Only applied where .home-v2 wraps the section, so legacy pages
+     stay untouched.
+     ═══════════════════════════════════════════════════════════ */
+  .home-v2 {
+    /* COLORS */
+    --bg: #FFFFFF;
+    --bg-soft: #FAF6F7;
+    --bg-warm: #FBF1F2;
+    --bg-cream: #F8EEEC;
+    --ink: #170E14;
+    --ink-2: #2A1B25;
+    --ink-3: #4A3A45;
+    --ink-4: #7A6A75;
+    --line: #EAE0E3;
+    --line-strong: #D4C7CC;
+    --accent: #B83C4D;
+    --accent-deep: #8B2638;
+    --accent-soft: #E9C4CA;
+    --accent-bg: #FBE9EC;
+    --purple: #3D1F3D;
+    --purple-deep: #1E0F1E;
+    --wine: #4A1721;
+
+    /* TYPE TOKENS — sizes */
+    --fs-display: clamp(46px, 6.6vw, 96px);
+    --fs-h2: clamp(28px, 4.4vw, 56px);
+    --fs-h3: clamp(22px, 2.2vw, 30px);
+    --fs-h4: 22px;
+    --fs-lead: 21px;
+    --fs-body-lg: 18px;
+    --fs-body: 17px;
+    --fs-small: 14px;
+    --fs-tag: 11px;
+    --fs-label: 13px;
+
+    /* TYPE TOKENS — line-heights */
+    --lh-display: 0.98;
+    --lh-tight: 1.05;
+    --lh-snug: 1.2;
+    --lh-relaxed: 1.6;
+    --lh-loose: 1.7;
+
+    /* TYPE TOKENS — letter-spacing */
+    --ls-display: -0.03em;
+    --ls-heading: -0.02em;
+    --ls-eyebrow: 0.2em;
+    --ls-tag: 0.18em;
+
+    /* SEMANTIC TEXT COLORS */
+    --text-1: var(--ink);
+    --text-2: var(--ink-2);
+    --text-3: var(--ink-3);
+    --text-muted: var(--ink-4);
+
+    /* RADII / SHADOWS */
+    --radius: 16px;
+    --radius-lg: 28px;
+    --shadow-sm: 0 2px 8px rgba(20, 10, 20, 0.04);
+    --shadow-md: 0 16px 40px rgba(20, 10, 20, 0.08);
+    --shadow-lg: 0 30px 80px rgba(20, 10, 20, 0.14);
+
+    /* MOTION */
+    --t: cubic-bezier(.22, .61, .36, 1);
+
+    /* CONTAINER */
+    --max: 1320px;
+
+    /* FONT FAMILIES — override the legacy Hebrew fonts within v2 only */
+    --font-body: var(--font-heebo);
+    --font-heading: var(--font-frank-ruhl);
+    --font-display: var(--font-noto-serif-hebrew);
+
+    /* Default text colour — surfaces are intentionally NOT painted here.
+       Each v2 wrapper / section / page is responsible for its own
+       background, so embedding `.home-v2` inside a coloured surface
+       (e.g. /games press section) shows that surface through. The
+       homepage applies its own `bg-white` on its root wrapper. */
+    color: var(--ink);
+  }
+
+  /* When v2 is inside an RTL document, keep tokens consistent */
+  [dir="rtl"] .home-v2 {
+    --font-body: var(--font-heebo);
+    --font-heading: var(--font-frank-ruhl);
+    --font-display: var(--font-noto-serif-hebrew);
+  }
+
+  /* Honor prefers-reduced-motion globally — applies to all CSS animations
+     in the v2 homepage (hero blobs, particle floats, blob-float, etc.).
+     Framer-motion components honor this via useReducedMotion() in JS. */
+  @media (prefers-reduced-motion: reduce) {
+    .home-v2 *,
+    .home-v2 *::before,
+    .home-v2 *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 
   .font-heading {

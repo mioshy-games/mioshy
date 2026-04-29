@@ -33,10 +33,8 @@ export function QuestionModal({
   penalty: Pick<GameConfig, "penaltyType" | "penaltySteps">;
   originPct?: { xPct: number; yPct: number } | null;
 }) {
-  const penaltyText =
-    penalty.penaltyType === "start"
-      ? "דילוג = חזרה להתחלה"
-      : `דילוג = חזרה ${penalty.penaltySteps} צעדים`;
+  // Skip/penalty text removed — the modal now has only one action (close)
+  // so there is no "skip" path and therefore no penalty to warn about.
 
   // If we have a board-cell origin, we animate the modal's transform origin
   // to match. We place the modal absolutely inside the board wrapper, grow
@@ -55,9 +53,7 @@ export function QuestionModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-40 bg-black/55 backdrop-blur-sm"
-            onClick={() => {
-              /* clicking scrim does nothing — user must answer or skip */
-            }}
+            onClick={() => onAnswer(true)}
           />
 
           <motion.div
@@ -118,24 +114,15 @@ export function QuestionModal({
                 {question?.text_he ?? "—"}
               </div>
 
-              <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              <div className="mt-6">
                 <button
                   type="button"
                   onClick={() => onAnswer(true)}
-                  className="min-h-[48px] rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-500 px-4 py-3 text-sm font-bold text-white hover:brightness-110"
+                  className="w-full min-h-[52px] rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-500 px-6 py-3 text-base font-bold text-white shadow-lg hover:brightness-110 active:scale-[0.98] transition-all"
                 >
-                  ✅ ענה / עשה
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onAnswer(false)}
-                  className="min-h-[48px] rounded-2xl border border-slate-600/60 bg-white/5 px-4 py-3 text-sm font-bold text-slate-100 hover:bg-white/10"
-                >
-                  ❌ דלג
+                  סגור ✓
                 </button>
               </div>
-
-              <p className="mt-4 text-xs text-slate-300/80">{penaltyText}</p>
             </motion.div>
           </motion.div>
         </>

@@ -11,6 +11,7 @@ import {
 } from "react";
 import type { QuestionType } from "@/lib/game-engine";
 import { startSpinSound, stopSpinSound } from "@/lib/sounds";
+import { fitSvgToContainer } from "@/lib/utils";
 
 export type WheelSegment = {
   type: QuestionType;
@@ -28,6 +29,12 @@ export type WheelProps = {
   /** When false, wheel spin SFX is muted. Default: true. */
   isSpinSoundEnabled?: boolean;
   pointerColor?: string;
+  /**
+   * Vertical offset applied to the pointer triangle in px.
+   * Negative = upward (deeper into the wheel), positive = downward.
+   * Clamped internally to -50 … +10. Default: 0.
+   */
+  pointerOffsetY?: number;
   borderColor?: string;
   innerCircle?: boolean;
   innerCircleColor?: string;
@@ -39,10 +46,30 @@ export type WheelProps = {
   /** If set, wheel will try to avoid landing on this type. */
   forbiddenType?: QuestionType | null;
   /**
-   * Diameter of the wheel in rem units.
-   * Default: 22 (≈352px). Only affects size — all other settings unchanged.
+   * Minimum diameter of the wheel in rem units (base / mobile size).
+   * Default: 22 (≈352 px).
    */
   wheelSizeRem?: number;
+  /**
+   * Maximum diameter in rem units for wide screens.
+   * When set (and > wheelSizeRem) the width uses
+   * CSS min(92vw, clamp(wheelSizeRem, 40vw, wheelSizeRemMax))
+   * so the wheel scales smoothly between ~880 px and ~1280 px viewport.
+   * On mobile the 92 vw cap always wins regardless of this value.
+   * Defaults to wheelSizeRem (fixed size, old behaviour).
+   */
+  wheelSizeRemMax?: number;
+  /**
+   * Approximate px height consumed by all non-wheel content around the wheel
+   * (top bar, logo, margins, spin button, safe-area padding, etc.).
+   * When provided, the wheel width (= height, because aspect-ratio 1) is
+   * additionally capped at `calc(100dvh - viewportBudgetPx)` so the wheel
+   * and all surrounding content fit inside the visible viewport without
+   * scrolling on short screens such as a laptop.
+   * Has no effect when the screen is tall enough.
+   * Default: 0 (no height constraint).
+   */
+  viewportBudgetPx?: number;
   /**
    * Radial position of slice labels as a fraction of r (0–1).
    * Default: 0.72 (sits in the outer third of each slice).
@@ -88,12 +115,28 @@ export type WheelProps = {
     blur: number; // px
   };
   labelFontSizePx?: number;
+  /** Fill colour of the slice text labels. Default: "#ffffff". */
+  labelColor?: string;
   labelOutline?: {
     enabled: boolean;
     color: string;
     opacity: number; // 0-1
     width: number; // px
   };
+  /**
+   * Wheel container shape. Default: "circle".
+   * "square" → rounded rectangle (keeps the circular SVG segments, clips to square).
+   */
+  wheelShape?: "circle" | "square";
+  /**
+   * Custom SVG markup for the pointer.
+   * Replaces the default triangle. Use fill="currentColor" so pointerColor still applies.
+   */
+  pointerSvg?: string;
+  /** Width of the custom SVG pointer in px. Default: 40. */
+  pointerSvgWidth?: number;
+  /** Height of the custom SVG pointer in px. Default: 48. */
+  pointerSvgHeight?: number;
 };
 
 export type WheelApi = {
@@ -109,6 +152,7 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
     onSpinStart,
     isSpinSoundEnabled = true,
     pointerColor = "#ffffff",
+    pointerOffsetY = 0,
     borderColor = "rgba(255,255,255,0.30)",
     innerCircle = true,
     innerCircleColor = "rgba(255,255,255,0.95)",
@@ -119,6 +163,8 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
     markerConfig = {},
     forbiddenType = null,
     wheelSizeRem = 22,
+    wheelSizeRemMax,
+    viewportBudgetPx = 0,
     labelRadiusFraction = 0.72,
     spinDuration = 3.8,
     spinEasing = [0.12, 0.8, 0.12, 1],
@@ -126,7 +172,12 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
     centerShadow,
     dividerShadow,
     labelFontSizePx = 12,
+    labelColor = "#ffffff",
     labelOutline = { enabled: true, color: "#000000", opacity: 0.25, width: 2 },
+    wheelShape = "circle",
+    pointerSvg,
+    pointerSvgWidth = 40,
+    pointerSvgHeight = 48,
   },
   ref,
 ) {
@@ -215,9 +266,14 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
       ? eligible[Math.floor(Math.random() * eligible.length)]
       : Math.floor(Math.random() * options.length);
     const middleDeg = winIndex * segmentAngle + segmentAngle / 2;
+    // Land within ±38% of the segment width — keeps the pointer clearly inside
+    // the winning slice while making each spin look visually unique instead of
+    // always stopping at the dead centre of the slice.
+    const sliceJitter = (Math.random() - 0.5) * segmentAngle * 0.76;
+    const targetDeg = middleDeg + sliceJitter;
     const startRot = rotation.get();
-    const fullSpins = 4 + Math.floor(Math.random() * 2);
-    const delta = fullSpins * 360 + (360 - (middleDeg % 360));
+    const fullSpins = 4 + Math.floor(Math.random() * 3); // 4–6 spins (was 4–5)
+    const delta = fullSpins * 360 + (360 - (targetDeg % 360));
     const targetRot = startRot + delta;
     const playAudio = isSpinSoundEnabled;
 
@@ -284,36 +340,72 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
   const borderWidthPx = hasCustomBorder ? outerBorder!.width : 0;
 
   // ── Pointer position ────────────────────────────────────────────────────
-  // The pointer is a ▼ triangle: base at `top`, tip 22 px below.
+  // The pointer is fully INDEPENDENT of the border ring.
+  // pointerOffsetY is the sole control:
+  //   0  → tip sits right at the wheel rim (default)
+  //   negative → moves up / deeper into the wheel (max -50 px)
+  //   positive → moves down / away from the wheel  (max +10 px)
+  // The border ring is a sibling element at z-[5] and never affects this value.
+  const clampedOffsetY = Math.max(-50, Math.min(10, pointerOffsetY));
+  const pointerTopPx = clampedOffsetY;
+
+  // ── Responsive width ────────────────────────────────────────────────────
+  // The wheel is square (aspect-ratio 1), so constraining width = constraining height.
   //
-  // • No border  → base sits just inside the wheel rim (original feel, +4 px).
-  // • With border → base snaps to the outer edge of the border ring so the
-  //   pointer visually "attaches" to the ring.  We also clamp the tip to be
-  //   at most -2 px (i.e. always enters the wheel area) even when the gap is
-  //   very large.
+  // Sizing axes (all composed with CSS min/clamp):
+  //   1. 92 vw              — mobile cap; wheel never wider than 92% of viewport
+  //   2. 100dvh - budget    — height constraint: wheel + surrounding content fit
+  //                           within one viewport without scrolling
+  //   3. effectiveMax rem   — hard ceiling (60 rem ≈ 960 px default)
   //
-  //   clamped = max(-(22 - 2), -(gap + width))  →  tip ≥ 2 px inside wheel
-  const pointerTopPx = hasCustomBorder
-    ? Math.max(-(22 - 2), -(borderGapPx + borderWidthPx))
-    : 4;
+  // Floor: 14rem (224px) absolute minimum when height-budget is active,
+  //        so the wheel stays usable on very short screens (landscape mobile,
+  //        small laptops). Without a budget the floor is wheelSizeRem.
+  //
+  // Note: wheelSizeRem (admin "Wheel size" slider) acts as the minimum floor
+  //       on game pages. The real maximum is the viewport height constraint —
+  //       not wheelSizeRem — so the wheel fills the screen proportionally.
+  //       Only a wheelSizeRemMax explicitly larger than wheelSizeRem acts as
+  //       a hard cap; otherwise 60rem is used so the height constraint wins.
+  const effectiveMax = (wheelSizeRemMax && wheelSizeRemMax > wheelSizeRem)
+    ? wheelSizeRemMax
+    : 60; // 60rem ≈ 960 px; viewport constraints (92vw, 100dvh-N) do the real limiting
+
+  // Primary sizing driver: remaining viewport height after surrounding content.
+  // No inner vw cap — 92vw outer cap already handles mobile.
+  const preferred = viewportBudgetPx > 0
+    ? `calc(100dvh - ${viewportBudgetPx}px)`
+    : `${wheelSizeRem}rem`; // no budget → treat sizeRem as a fixed target
+
+  // floor: shrink below sizeRem on very short screens when a budget is given
+  const floor = viewportBudgetPx > 0 ? `14rem` : `${wheelSizeRem}rem`;
+
+  // Simple fixed-size path: no budget AND no explicit max → legacy behaviour.
+  // Responsive path: budget given → let height constraint drive size.
+  const wheelWidth = (viewportBudgetPx === 0 && (!wheelSizeRemMax || wheelSizeRemMax <= wheelSizeRem))
+    ? `min(92vw, ${wheelSizeRem}rem)`
+    : `min(92vw, clamp(${floor}, ${preferred}, ${effectiveMax}rem))`;
 
   return (
     <div
-      className="relative mx-auto aspect-square mt-10 sm:mt-14"
+      className="relative mx-auto aspect-square"
       style={{
-        width: `min(92vw, ${wheelSizeRem}rem)`,
-        maxWidth: `${wheelSizeRem}rem`,
+        width: wheelWidth,
+        maxWidth: `min(92vw, ${effectiveMax}rem)`,
       }}
     >
       {/* ── Border ring (one single ring) ──────────────────────────────── */}
+      {/* z-[5]: sits BELOW the wheel disc (z-auto), markers (z-20), and    */}
+      {/* pointer (z-30) so it never obscures them.                          */}
       {hasCustomBorder ? (
         // Controlled ring from GameSettings
         <div
           aria-hidden
-          className="pointer-events-none absolute rounded-full z-10"
+          className="pointer-events-none absolute z-[5]"
           style={{
             inset: -(borderGapPx + borderWidthPx),
             border: `${borderWidthPx}px ${outerBorder!.style} ${outerBorder!.color}`,
+            borderRadius: wheelShape === "square" ? `calc(1.25rem + ${borderGapPx + borderWidthPx}px)` : "9999px",
           }}
         />
       ) : (
@@ -321,21 +413,42 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
         null
       )}
 
-      {/* ── Pointer triangle — always on top, inside wrapper ─────────────── */}
-      <div
-        className="pointer-events-none absolute left-1/2 z-20 -translate-x-1/2"
-        style={{ top: pointerTopPx }}
-        aria-hidden
-      >
+      {/* ── Pointer — topmost element (z-30) ─────────────────────────────── */}
+      {/* Above border ring (z-[5]), wheel disc (z-auto), and markers (z-20) */}
+      {pointerSvg ? (
+        /* Custom SVG pointer — centered via marginLeft so inline style wins cleanly */
         <div
-          className="h-0 w-0 border-x-[14px] border-x-transparent border-t-[22px] drop-shadow-md"
-          style={{ borderTopColor: pointerColor }}
+          className="pointer-events-none absolute z-30"
+          style={{
+            top: pointerTopPx,
+            left: "50%",
+            transform: `translateX(-50%)`,
+            width: pointerSvgWidth,
+            height: pointerSvgHeight,
+            color: pointerColor,
+            filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.5))",
+          }}
+          aria-hidden
+          dangerouslySetInnerHTML={{ __html: fitSvgToContainer(pointerSvg) }}
         />
-      </div>
+      ) : (
+        /* Default triangle */
+        <div
+          className="pointer-events-none absolute left-1/2 z-30 -translate-x-1/2"
+          style={{ top: pointerTopPx }}
+          aria-hidden
+        >
+          <div
+            className="h-0 w-0 border-x-[14px] border-x-transparent border-t-[22px] drop-shadow-md"
+            style={{ borderTopColor: pointerColor }}
+          />
+        </div>
+      )}
 
       <div
-        className="relative h-full w-full overflow-hidden rounded-full"
+        className="relative h-full w-full overflow-hidden"
         style={{
+          borderRadius: wheelShape === "square" ? "1.25rem" : "9999px",
           boxShadow: hasCustomBorder
             ? "0 20px 60px -15px rgba(0,0,0,0.35)"           // only depth shadow, no ring
             : hasOuterBorderProp
@@ -345,6 +458,18 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
       >
         <svg className="h-full w-full" viewBox="0 0 300 300" aria-label="Wheel">
           <defs>
+            {/* Default soft shadow always applied to the inner circle.
+                Gives depth without requiring the admin to configure centerShadow. */}
+            <filter id="mioInnerCircleShadow" x="-40%" y="-40%" width="180%" height="180%">
+              <feDropShadow
+                dx="0"
+                dy="2"
+                stdDeviation="5"
+                floodColor="#000000"
+                floodOpacity="0.28"
+              />
+            </filter>
+
             {centerShadow?.enabled ? (
               <filter id="mioCenterShadow" x="-50%" y="-50%" width="200%" height="200%">
                 <feDropShadow
@@ -404,33 +529,8 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
                 })
               : null}
 
-            {markerType !== "none"
-              ? markerAngles.map((ang, idx) => {
-                  const p = polar(ang, markerRadius);
-                  if (markerType === "circle") {
-                    return (
-                      <circle
-                        key={`m-${idx}`}
-                        cx={p.x}
-                        cy={p.y}
-                        r={markerSize / 2}
-                        fill={markerColor}
-                      />
-                    );
-                  }
-                  if (!markerPathD) return null;
-                  const s = markerSize / 24;
-                  return (
-                    <g
-                      key={`m-${idx}`}
-                      transform={`translate(${p.x}, ${p.y}) scale(${s}) translate(-12, -12)`}
-                      fill={markerColor}
-                    >
-                      <path d={markerPathD} />
-                    </g>
-                  );
-                })
-              : null}
+            {/* Markers were moved to the overlay SVG below the overflow-hidden div
+                so they are never clipped when positioned near or beyond the rim. */}
 
             {options.map((opt, i) => {
               // Segment i covers [i*seg, (i+1)*seg] clockwise from top, so bisector is centerline.
@@ -445,7 +545,7 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
                   key={`lbl-${i}`}
                   x={p.x}
                   y={p.y}
-                  fill="white"
+                  fill={labelColor}
                   fontSize={labelFontSizePx}
                   fontWeight={800}
                   textAnchor="middle"
@@ -478,7 +578,7 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
                 stroke={innerCircleBorderColor}
                 strokeWidth={3}
                 vectorEffect="non-scaling-stroke"
-                filter={centerShadow?.enabled ? "url(#mioCenterShadow)" : undefined}
+                filter={centerShadow?.enabled ? "url(#mioCenterShadow)" : "url(#mioInnerCircleShadow)"}
               />
             ) : null}
           </motion.g>
@@ -489,6 +589,51 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
           <div className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-br from-white/25 to-transparent" />
         ) : null}
       </div>
+
+      {/* ── Marker overlay — OUTSIDE the overflow-hidden div ──────────────── */}
+      {/* Rendered in a sibling SVG so dots are never clipped by the circular  */}
+      {/* mask, even when markerRadius + markerSize/2 exceeds the wheel rim.   */}
+      {/* z-20: above border ring (z-[5]) and wheel disc (z-auto),             */}
+      {/* but below the pointer triangle (z-30).                               */}
+      {markerType !== "none" && markerAngles.length > 0 ? (
+        <svg
+          className="pointer-events-none absolute inset-0 z-20 h-full w-full"
+          viewBox="0 0 300 300"
+          // overflow:visible lets markers bleed past the SVG bounding box
+          // when positioned near or slightly outside the wheel edge.
+          style={{ overflow: "visible" }}
+          aria-hidden
+        >
+          <motion.g style={{ rotate: rotation, transformOrigin: "150px 150px" }}>
+            {markerAngles.map((ang, idx) => {
+              const p = polar(ang, markerRadius);
+              if (markerType === "circle") {
+                return (
+                  <circle
+                    key={`m-${idx}`}
+                    cx={p.x}
+                    cy={p.y}
+                    r={markerSize / 2}
+                    fill={markerColor}
+                  />
+                );
+              }
+              if (!markerPathD) return null;
+              const s = markerSize / 24;
+              return (
+                <g
+                  key={`m-${idx}`}
+                  transform={`translate(${p.x}, ${p.y}) scale(${s}) translate(-12, -12)`}
+                  fill={markerColor}
+                >
+                  <path d={markerPathD} />
+                </g>
+              );
+            })}
+          </motion.g>
+        </svg>
+      ) : null}
+
       <span className="sr-only" aria-live="polite">
         {spinning ? "Spinning" : `Rotation ${Math.round(displayRotation % 360)}`}
       </span>

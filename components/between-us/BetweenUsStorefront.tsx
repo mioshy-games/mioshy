@@ -1,0 +1,351 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { Link } from "@/navigation";
+import {
+  Flame,
+  Heart,
+  MessageCircleHeart,
+  Sparkles,
+  Star,
+} from "lucide-react";
+import type {
+  ExperienceGameCategory,
+  ExperienceGameTag,
+} from "@/lib/between-us/types";
+import type { GameCardData } from "@/lib/between-us/queries";
+
+type Hero = {
+  title: string;
+  tagline: string;
+  singlePrice: string;
+  subPrice: string;
+  singleEnabled: boolean;
+  subEnabled: boolean;
+  buyXGetX: { buy: number; get: number }[];
+};
+
+export function BetweenUsStorefront({
+  locale,
+  hero,
+  cards,
+  categories,
+  tags,
+  hideHero = false,
+  catalogueHeading,
+}: {
+  locale: string;
+  hero: Hero;
+  cards: GameCardData[];
+  categories: ExperienceGameCategory[];
+  tags: ExperienceGameTag[];
+  /** When true, the internal hero is suppressed (so the page can render its own). */
+  hideHero?: boolean;
+  /** Optional heading shown above the grid when hero is hidden. */
+  catalogueHeading?: { title: string; subtitle?: string | null };
+}) {
+  const isHe = locale === "he";
+  const [selectedCategory, setSelectedCategory] = useState<string | "all">("all");
+  const [selectedTag, setSelectedTag] = useState<string | "all">("all");
+
+  const filtered = useMemo(() => {
+    return cards.filter((c) => {
+      if (selectedCategory !== "all" && !c.category_ids.includes(selectedCategory)) return false;
+      if (selectedTag !== "all" && !c.tag_ids.includes(selectedTag)) return false;
+      return true;
+    });
+  }, [cards, selectedCategory, selectedTag]);
+
+  return (
+    <main className="mx-auto max-w-6xl px-4 py-12">
+      {/* Hero */}
+      {hideHero ? null : (
+      <section className="text-center">
+        <div className="mx-auto inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs backdrop-blur">
+          <Sparkles className="h-3.5 w-3.5 text-fuchsia-200" />
+          <span className="text-white/85">
+            {isHe ? "מבצע זוגות" : "For couples"}
+          </span>
+        </div>
+        <h1 className="mt-6 text-4xl font-bold tracking-tight sm:text-5xl">
+          {hero.title}
+        </h1>
+        <p className="mx-auto mt-4 max-w-2xl text-lg text-white/80">
+          {hero.tagline}
+        </p>
+
+        {/* Pricing strip */}
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-3 text-sm">
+          {hero.singleEnabled ? (
+            <div className="rounded-full border border-white/20 bg-white/10 px-4 py-2 backdrop-blur">
+              <span className="text-white/70">
+                {isHe ? "משחק בודד" : "Single game"}
+              </span>
+              <span className="ms-2 font-semibold">{hero.singlePrice}</span>
+            </div>
+          ) : null}
+          {hero.subEnabled ? (
+            <div className="rounded-full border border-fuchsia-300/40 bg-fuchsia-400/15 px-4 py-2 backdrop-blur">
+              <Star className="me-1.5 inline h-3.5 w-3.5" />
+              <span className="text-white/80">
+                {isHe ? "מינוי" : "Membership"}
+              </span>
+              <span className="ms-2 font-semibold">{hero.subPrice}</span>
+            </div>
+          ) : null}
+          {hero.buyXGetX.length > 0 ? (
+            <div className="rounded-full border border-amber-300/40 bg-amber-400/15 px-4 py-2 backdrop-blur">
+              <span className="text-white/80">
+                {hero.buyXGetX
+                  .map((t) =>
+                    isHe
+                      ? `קנה ${t.buy} קבל ${t.get}`
+                      : `Buy ${t.buy} Get ${t.get}`,
+                  )
+                  .join(" · ")}
+              </span>
+            </div>
+          ) : null}
+        </div>
+      </section>
+      )}
+
+      {/* Catalogue heading (only when hero is hidden) */}
+      {hideHero && catalogueHeading ? (
+        <section className="mb-2 mt-2 text-center">
+          <h2 className="font-heading text-3xl font-bold tracking-tight sm:text-4xl">
+            {catalogueHeading.title}
+          </h2>
+          {catalogueHeading.subtitle ? (
+            <p className="mx-auto mt-3 max-w-2xl text-white/75">
+              {catalogueHeading.subtitle}
+            </p>
+          ) : null}
+        </section>
+      ) : null}
+
+      {/* Filters */}
+      {categories.length > 0 || tags.length > 0 ? (
+        <section className="mt-12 space-y-3">
+          {categories.length > 0 ? (
+            <FilterRow
+              label={isHe ? "קטגוריות" : "Categories"}
+              items={[
+                { id: "all", label: isHe ? "הכל" : "All", color_hex: null },
+                ...categories.map((c) => ({
+                  id: c.id,
+                  label: isHe ? c.name_he : c.name_en || c.name_he,
+                  color_hex: c.color_hex,
+                })),
+              ]}
+              selected={selectedCategory}
+              onSelect={(v) => setSelectedCategory(v as string)}
+            />
+          ) : null}
+          {tags.length > 0 ? (
+            <FilterRow
+              label={isHe ? "תגיות" : "Tags"}
+              items={[
+                { id: "all", label: isHe ? "הכל" : "All", color_hex: null },
+                ...tags.map((t) => ({
+                  id: t.id,
+                  label: isHe ? t.name_he : t.name_en || t.name_he,
+                  color_hex: t.color_hex,
+                })),
+              ]}
+              selected={selectedTag}
+              onSelect={(v) => setSelectedTag(v as string)}
+            />
+          ) : null}
+        </section>
+      ) : null}
+
+      {/* Grid */}
+      <section className="mt-10">
+        {filtered.length === 0 ? (
+          <div className="mx-auto max-w-lg rounded-3xl border border-white/10 bg-white/5 p-10 text-center backdrop-blur">
+            <p className="text-white/80">
+              {isHe
+                ? "אין משחקים התואמים את הסינון. נסו לאפס את הסינון."
+                : "No games match the current filter. Try clearing it."}
+            </p>
+          </div>
+        ) : (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {filtered.map(({ game }) => (
+              <GameCard
+                key={game.id}
+                locale={locale}
+                game={game}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+    </main>
+  );
+}
+
+function FilterRow({
+  label,
+  items,
+  selected,
+  onSelect,
+}: {
+  label: string;
+  items: { id: string; label: string; color_hex: string | null }[];
+  selected: string;
+  onSelect: (id: string) => void;
+}) {
+  return (
+    <div>
+      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-white/60">
+        {label}
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {items.map((it) => {
+          const isActive = selected === it.id;
+          return (
+            <button
+              type="button"
+              key={it.id}
+              onClick={() => onSelect(it.id)}
+              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs transition ${
+                isActive
+                  ? "border-white/40 bg-white/20 text-white"
+                  : "border-white/15 bg-white/5 text-white/75 hover:bg-white/10"
+              }`}
+            >
+              {it.color_hex ? (
+                <span
+                  className="h-2 w-2 rounded-full"
+                  style={{ background: it.color_hex }}
+                />
+              ) : null}
+              {it.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function GameCard({
+  locale,
+  game,
+}: {
+  locale: string;
+  game: GameCardData["game"];
+}) {
+  const isHe = locale === "he";
+  const title = isHe ? game.title_he : game.title_en || game.title_he;
+  const desc = isHe
+    ? game.short_desc_he
+    : game.short_desc_en || game.short_desc_he;
+  const priceLabel =
+    isHe && game.price_ils != null
+      ? `₪${Number(game.price_ils).toFixed(0)}`
+      : game.price_usd != null
+        ? `$${Number(game.price_usd).toFixed(0)}`
+        : null;
+
+  return (
+    <Link
+      href={`/adults/${game.slug}`}
+      className="group block overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/10 to-white/5 shadow-xl backdrop-blur transition hover:border-fuchsia-300/40 hover:from-white/20"
+    >
+      <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-fuchsia-500/30 to-violet-500/20">
+        {game.cover_image_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={game.cover_image_url}
+            alt={title}
+            className="h-full w-full object-cover transition group-hover:scale-105"
+            loading="lazy"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center text-white/40">
+            <Heart className="h-12 w-12" />
+          </div>
+        )}
+        <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/70 to-transparent" />
+
+        {/* Flags */}
+        <div className="absolute top-3 end-3 flex flex-col gap-1">
+          {game.is_new ? (
+            <span className="rounded-full bg-emerald-500/90 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider text-white shadow">
+              {isHe ? "חדש" : "New"}
+            </span>
+          ) : null}
+          {game.is_popular ? (
+            <span className="rounded-full bg-amber-500/90 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider text-white shadow">
+              {isHe ? "פופולרי" : "Popular"}
+            </span>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="p-5">
+        <h3 className="text-xl font-bold text-white group-hover:text-fuchsia-100">
+          {title}
+        </h3>
+        {desc ? (
+          <p className="mt-2 line-clamp-2 text-sm text-white/70">{desc}</p>
+        ) : null}
+
+        {/* Level badges */}
+        <div className="mt-4 flex items-center gap-3 text-xs text-white/70">
+          <LevelBadge
+            icon={<Heart className="h-3.5 w-3.5 text-rose-300" />}
+            label={isHe ? "אינטימיות" : "Intimacy"}
+            level={game.intimacy_level}
+          />
+          <LevelBadge
+            icon={
+              <MessageCircleHeart className="h-3.5 w-3.5 text-sky-300" />
+            }
+            label={isHe ? "תקשורת" : "Talk"}
+            level={game.communication_level}
+          />
+          <LevelBadge
+            icon={<Flame className="h-3.5 w-3.5 text-orange-300" />}
+            label={isHe ? "חום" : "Heat"}
+            level={game.heat_level}
+          />
+        </div>
+
+        <div className="mt-5 flex items-center justify-between">
+          <span className="text-sm text-fuchsia-200 group-hover:text-white">
+            {isHe ? "לצפייה במשחק" : "Open game"} →
+          </span>
+          {priceLabel ? (
+            <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white">
+              {priceLabel}
+            </span>
+          ) : null}
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+function LevelBadge({
+  icon,
+  label,
+  level,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  level: number;
+}) {
+  return (
+    <div
+      className="inline-flex items-center gap-1 rounded-full bg-white/5 px-2 py-0.5 text-xs ring-1 ring-white/10"
+      title={`${label}: ${level}/5`}
+    >
+      {icon}
+      <span className="font-semibold text-white/85">{level}/5</span>
+    </div>
+  );
+}

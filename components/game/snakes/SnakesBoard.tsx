@@ -15,9 +15,11 @@ import { PlayersOverlay } from "./PlayersOverlay";
  *   2. SVG overlay — snakes and ladders drawn as large curved graphics.
  *   3. Players overlay — big animated avatar tokens that glide between cells.
  *
- * Sizing:
- *   - Mobile: fills ~92vw (square)
- *   - Desktop: min(70vw, 82vh) — ~70% of the viewport like Itzik asked for.
+ * Sizing (after the April '26 layout redesign):
+ *   - Mobile: min(95vw, 70vh) — tall vertical layout dominates the screen.
+ *   - Desktop: min(60vw, 88vh) — leaves room for the right-hand sidebar
+ *     (logo+title, dice surface, players list, exit) without squashing
+ *     the board.
  */
 export function SnakesBoard({
   config,
@@ -26,6 +28,9 @@ export function SnakesBoard({
   currentPlayerId,
   highlightCell,
   className,
+  visualPositions,
+  arrivingPlayerId,
+  isWalking,
 }: {
   config: Pick<GameConfig, "boardSize" | "snakes" | "ladders">;
   positions: Record<string, number>;
@@ -33,6 +38,12 @@ export function SnakesBoard({
   currentPlayerId?: string | null;
   highlightCell?: number;
   className?: string;
+  /** Client-side visual override during step-by-step walk animation. */
+  visualPositions?: Record<string, number>;
+  /** Player currently doing the arrival bounce. */
+  arrivingPlayerId?: string | null;
+  /** When true, tokens hop crisply between cells. */
+  isWalking?: boolean;
 }) {
   const size = config.boardSize || 100;
   const grid = buildBoard(size);
@@ -42,7 +53,7 @@ export function SnakesBoard({
     <div
       className={cn(
         "relative mx-auto w-full",
-        "max-w-[min(92vw,78vh)] md:max-w-[min(70vw,82vh)]",
+        "max-w-[min(95vw,70vh)] md:max-w-[min(60vw,88vh)]",
         "rounded-3xl p-2 sm:p-3",
         // Rich parchment frame: dark wood-like border with inner warm glow
         "border-2 border-amber-950/80",
@@ -87,6 +98,9 @@ export function SnakesBoard({
           positions={positions}
           boardSize={size}
           currentPlayerId={currentPlayerId ?? null}
+          visualPositions={visualPositions}
+          arrivingPlayerId={arrivingPlayerId}
+          isWalking={isWalking}
         />
       </div>
     </div>

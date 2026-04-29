@@ -57,6 +57,14 @@ export async function updateSnakesConfig(
     ladders: unknown[];
     questions: unknown[];
     is_default: boolean;
+    // SEO / identity
+    slug: string;
+    game_name_he: string;
+    game_name_en: string;
+    meta_title_he: string;
+    meta_title_en: string;
+    meta_description_he: string;
+    meta_description_en: string;
   }>,
 ) {
   const { supabase } = await requireAdmin();

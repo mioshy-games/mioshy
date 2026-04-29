@@ -12,23 +12,16 @@ import {
 } from "react-hook-form";
 import type { Resolver } from "react-hook-form";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
 import { saveGame } from "@/app/dashboard/actions/save-game";
 import { gameFormSchema, type GameFormValues } from "@/lib/validations";
+import { useGameSettings } from "@/hooks/useGameSettings";
 import { slugifyNameEn } from "@/lib/wheel-defaults";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -36,12 +29,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SettingsSection, SectionGroupContext } from "@/components/settings/SettingsSection";
 import { LocalizedFieldRow } from "@/components/dashboard/LocalizedFieldRow";
 import { SliceEditor } from "@/components/dashboard/SliceEditor";
-import { WheelPreview } from "@/components/dashboard/WheelPreview";
+import { WheelFormSync } from "@/components/dashboard/WheelFormSync";
 import { QuestionsTable } from "@/components/dashboard/QuestionsTable";
+import { PageDesignEditor } from "@/components/settings/PageDesignEditor";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
-import type { QuestionRow, WheelSlice } from "@/lib/types/database";
+import type { QuestionRow } from "@/lib/types/database";
 
 type GameFormProps = {
   gameId: string | null;
@@ -49,411 +44,28 @@ type GameFormProps = {
   initialQuestions: QuestionRow[];
 };
 
-function WheelPreviewSection() {
-  const [labelLang, setLabelLang] = useState<"he" | "en">("he");
-  const { control } = useFormContext<GameFormValues>();
-  const slices = useWatch({ control, name: "wheel.slices" }) as
-    | WheelSlice[]
-    | undefined;
-  const pointer = useWatch({ control, name: "wheel.pointer_color" }) as
-    | string
-    | undefined;
-  const inner = useWatch({ control, name: "wheel.inner_circle" }) as
-    | boolean
-    | undefined;
-  const innerColor = useWatch({
-    control,
-    name: "wheel.inner_circle_color",
-  }) as string | undefined;
-  const innerBorder = useWatch({
-    control,
-    name: "wheel.inner_circle_border_color",
-  }) as string | undefined;
-  const border = useWatch({ control, name: "wheel.border_color" }) as
-    | string
-    | undefined;
-  const dividerEnabled = useWatch({ control, name: "wheel.divider_enabled" }) as
-    | boolean
-    | undefined;
-  const dividerColor = useWatch({ control, name: "wheel.divider_color" }) as
-    | string
-    | undefined;
-  const dividerWidth = useWatch({ control, name: "wheel.divider_width" }) as
-    | number
-    | undefined;
-  const markerConfig = useWatch({ control, name: "wheel.marker_config" }) as
-    | Record<string, unknown>
-    | undefined;
-
-  return (
-    <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
-      <div className="min-w-0 flex-1 space-y-3">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <Label>Pointer color</Label>
-            <ColorField name="wheel.pointer_color" />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Border color</Label>
-            <ColorField name="wheel.border_color" />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Slice divider</Label>
-            <DividerSwitch />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Divider color</Label>
-            <ColorField name="wheel.divider_color" />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Divider width</Label>
-            <DividerWidthField />
-          </div>
-          <div className="space-y-1.5 sm:col-span-2">
-            <Label>Markers</Label>
-            <MarkerEditor />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Inner circle</Label>
-            <InnerCircleSwitch />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Inner fill</Label>
-            <ColorField name="wheel.inner_circle_color" />
-          </div>
-          <div className="space-y-1.5 sm:col-span-2">
-            <Label>Inner border</Label>
-            <ColorField name="wheel.inner_circle_border_color" />
-          </div>
-        </div>
-      </div>
-      <div className="flex w-full shrink-0 flex-col items-center gap-2 lg:w-[320px]">
-        <Tabs
-          value={labelLang}
-          onValueChange={(v) => setLabelLang(v as "he" | "en")}
-          className="w-full"
-        >
-          <TabsList className="grid w-full max-w-[200px] grid-cols-2">
-            <TabsTrigger value="he">Preview HE</TabsTrigger>
-            <TabsTrigger value="en">Preview EN</TabsTrigger>
-          </TabsList>
-        </Tabs>
-        <WheelPreview
-          slices={slices ?? []}
-          pointerColor={pointer ?? "#ffffff"}
-          borderColor={border ?? "#ffffff"}
-          innerCircle={inner ?? true}
-          innerCircleColor={innerColor ?? "#fafafa"}
-          innerCircleBorderColor={innerBorder ?? "#e5e5e5"}
-          labelLang={labelLang}
-          dividerEnabled={dividerEnabled ?? true}
-          dividerColor={dividerColor ?? "#ffffff"}
-          dividerWidth={dividerWidth ?? 2}
-          markerConfig={markerConfig ?? {}}
-        />
-        <p className="text-muted-foreground text-center text-xs">
-          Divider: {dividerEnabled ? "On" : "Off"} ·{" "}
-          <span className="font-mono">
-            {dividerColor ?? "#ffffff"} / {dividerWidth ?? 2}px
-          </span>
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function InnerCircleSwitch() {
-  const { control } = useFormContext<GameFormValues>();
-  return (
-    <Controller
-      control={control}
-      name="wheel.inner_circle"
-      render={({ field }) => (
-        <div className="flex h-10 items-center gap-2">
-          <Switch checked={field.value} onCheckedChange={field.onChange} />
-          <span className="text-muted-foreground text-sm">
-            {field.value ? "On" : "Off"}
-          </span>
-        </div>
-      )}
-    />
-  );
-}
-
-function DividerSwitch() {
-  const { control } = useFormContext<GameFormValues>();
-  return (
-    <Controller
-      control={control}
-      name="wheel.divider_enabled"
-      render={({ field }) => (
-        <div className="flex h-10 items-center gap-2">
-          <Switch checked={field.value} onCheckedChange={field.onChange} />
-          <span className="text-muted-foreground text-sm">
-            {field.value ? "On" : "Off"}
-          </span>
-        </div>
-      )}
-    />
-  );
-}
-
-function DividerWidthField() {
-  const { control } = useFormContext<GameFormValues>();
-  return (
-    <Controller
-      control={control}
-      name="wheel.divider_width"
-      render={({ field }) => (
-        <Input
-          type="number"
-          min={1}
-          max={10}
-          inputMode="numeric"
-          className="font-mono text-sm"
-          value={field.value}
-          onChange={(e) => field.onChange(Number(e.target.value))}
-        />
-      )}
-    />
-  );
-}
-
-function MarkerEditor() {
-  const { control } = useFormContext<GameFormValues>();
-  return (
-    <div className="grid gap-3 sm:grid-cols-2">
-      <Controller
-        control={control}
-        name="wheel.marker_config.marker_type"
-        render={({ field }) => (
-          <div className="space-y-1.5">
-            <Label className="text-muted-foreground text-xs">Type</Label>
-            <Select
-              value={String(field.value)}
-              onValueChange={(v) => field.onChange(v)}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">None</SelectItem>
-                <SelectItem value="circle">Circle</SelectItem>
-                <SelectItem value="svg_icon">SVG icon</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-      />
-
-      <Controller
-        control={control}
-        name="wheel.marker_config.marker_color"
-        render={({ field }) => (
-          <div className="space-y-1.5">
-            <Label className="text-muted-foreground text-xs">Color</Label>
-            <div className="flex gap-2">
-              <input
-                type="color"
-                className="border-input h-10 w-14 shrink-0 cursor-pointer rounded-md border p-1"
-                value={field.value || "#ffffff"}
-                onChange={(e) => field.onChange(e.target.value)}
-                aria-label="Pick marker color"
-              />
-              <Input
-                className="font-mono text-sm"
-                value={field.value}
-                onChange={field.onChange}
-              />
-            </div>
-          </div>
-        )}
-      />
-
-      <Controller
-        control={control}
-        name="wheel.marker_config.marker_size"
-        render={({ field }) => (
-          <div className="space-y-1.5">
-            <Label className="text-muted-foreground text-xs">Size (px)</Label>
-            <Input
-              type="number"
-              min={2}
-              max={64}
-              inputMode="numeric"
-              className="font-mono text-sm"
-              value={field.value ?? 14}
-              onChange={(e) => field.onChange(Number(e.target.value))}
-            />
-          </div>
-        )}
-      />
-
-      <Controller
-        control={control}
-        name="wheel.marker_config.marker_count"
-        render={({ field }) => (
-          <div className="space-y-1.5">
-            <Label className="text-muted-foreground text-xs">Count</Label>
-            <Input
-              type="number"
-              min={0}
-              max={64}
-              inputMode="numeric"
-              className="font-mono text-sm"
-              value={field.value ?? 0}
-              onChange={(e) => field.onChange(Number(e.target.value))}
-            />
-          </div>
-        )}
-      />
-
-      <Controller
-        control={control}
-        name="wheel.marker_config.marker_position"
-        render={({ field }) => (
-          <div className="space-y-1.5 sm:col-span-2">
-            <Label className="text-muted-foreground text-xs">
-              Position (% radius): {Math.round((field.value ?? 100) * 10) / 10}
-            </Label>
-            <input
-              type="range"
-              min={0}
-              max={120}
-              step={1}
-              value={field.value ?? 100}
-              onChange={(e) => field.onChange(Number(e.target.value))}
-              className="w-full"
-            />
-          </div>
-        )}
-      />
-
-      <Controller
-        control={control}
-        name="wheel.marker_config.svg_path_d"
-        render={({ field }) => (
-          <div className="space-y-1.5 sm:col-span-2">
-            <Label className="text-muted-foreground text-xs">
-              SVG path (d)
-            </Label>
-            <Input
-              className="font-mono text-xs"
-              value={field.value ?? ""}
-              onChange={field.onChange}
-              placeholder="M10 20L..."
-            />
-          </div>
-        )}
-      />
-
-      {/* ── Wheel size ─────────────────────────────────────────────────── */}
-      <Controller
-        control={control}
-        name="wheel.marker_config.wheel_size_rem"
-        render={({ field }) => {
-          const val = typeof field.value === "number" ? field.value : 22;
-          return (
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label className="text-muted-foreground text-xs">
-                Wheel size — {val} rem ({Math.round(val * 16)}px)
-              </Label>
-              <input
-                type="range"
-                min={14}
-                max={36}
-                step={0.5}
-                value={val}
-                onChange={(e) => field.onChange(Number(e.target.value))}
-                className="w-full accent-fuchsia-500"
-              />
-              <p className="text-muted-foreground text-[11px]">
-                Only affects wheel diameter — all other settings stay unchanged. Default: 22 rem.
-              </p>
-            </div>
-          );
-        }}
-      />
-
-      {/* ── Label position (radial fraction) ───────────────────────────── */}
-      <Controller
-        control={control}
-        name="wheel.marker_config.label_radius_fraction"
-        render={({ field }) => {
-          const val = typeof field.value === "number" ? field.value : 0.72;
-          const pct = Math.round(val * 100);
-          return (
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label className="text-muted-foreground text-xs">
-                Text position in slice — {pct}% from centre
-              </Label>
-              <input
-                type="range"
-                min={0.4}
-                max={0.92}
-                step={0.01}
-                value={val}
-                onChange={(e) => field.onChange(Number(e.target.value))}
-                className="w-full accent-fuchsia-500"
-              />
-              <p className="text-muted-foreground text-[11px]">
-                Higher % = text closer to outer rim. Default: 72%.
-              </p>
-            </div>
-          );
-        }}
-      />
-    </div>
-  );
-}
-
-function ColorField({
-  name,
-}: {
-  name:
-    | "wheel.pointer_color"
-    | "wheel.border_color"
-    | "wheel.inner_circle_color"
-    | "wheel.inner_circle_border_color"
-    | "wheel.divider_color";
-}) {
-  const { control } = useFormContext<GameFormValues>();
-  return (
-    <Controller
-      control={control}
-      name={name}
-      render={({ field }) => (
-        <div className="flex gap-2">
-          <input
-            type="color"
-            className="border-input h-10 w-14 shrink-0 cursor-pointer rounded-md border p-1"
-            value={field.value || "#000000"}
-            onChange={(e) => field.onChange(e.target.value)}
-            aria-label="Pick color"
-          />
-          <Input
-            className="font-mono text-sm"
-            value={field.value}
-            onChange={field.onChange}
-            onBlur={field.onBlur}
-            name={field.name}
-            ref={field.ref}
-          />
-        </div>
-      )}
-    />
-  );
-}
-
 export function GameForm({
   gameId,
   defaultValues,
   initialQuestions,
 }: GameFormProps) {
   const router = useRouter();
+  // Visual settings (game_settings table) — save alongside the main form.
+  // gameId is null for new games; in that case we skip the settings save.
+  const { save: saveVisualSettings, isSaving: isSavingSettings } =
+    useGameSettings(gameId ?? "");
   const slugTouched = useRef(false);
+  // Reset the form only when we're loading a different game (mount or navigation).
+  // Router refreshes would otherwise flow a new `defaultValues` reference down on
+  // every render — even a subtly stale one — and overwrite the user's unsaved or
+  // just-saved edits. By anchoring to gameId we keep the form authoritative once
+  // it has been populated.
+  const lastGameIdRef = useRef<string | null | undefined>(undefined);
   const [uploading, setUploading] = useState(false);
   const [uploadingBg, setUploadingBg] = useState(false);
+  // Top-level section expand / collapse
+  const [formOpenVersion, setFormOpenVersion] = useState(0);
+  const [formCloseVersion, setFormCloseVersion] = useState(0);
 
   const methods = useForm<GameFormValues>({
     resolver: zodResolver(gameFormSchema) as unknown as Resolver<GameFormValues>,
@@ -464,7 +76,7 @@ export function GameForm({
   const {
     handleSubmit,
     control,
-    formState: { isSubmitting, isDirty },
+    formState: { isSubmitting, isDirty, errors },
     reset,
     setValue,
   } = methods;
@@ -486,8 +98,18 @@ export function GameForm({
   );
 
   useEffect(() => {
+    // Only reset when we're actually switching to a different game (or on first
+    // mount). Router refreshes for the same game keep the user's current form
+    // state — otherwise a delayed RSC re-render could silently wipe edits they
+    // just made, which is what was happening when "Save" appeared to revert to
+    // defaults.
+    if (lastGameIdRef.current === gameId) return;
+    lastGameIdRef.current = gameId;
     reset(defaultValues);
-  }, [defaultValues, reset]);
+    // A fresh reset means the user hasn't touched the slug yet — allow SlugSync
+    // to auto-fill from the English name again if the slug field is empty.
+    slugTouched.current = false;
+  }, [gameId, defaultValues, reset]); // slugTouched + lastGameIdRef are refs — intentionally omitted
 
   useEffect(() => {
     const onBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -547,21 +169,77 @@ export function GameForm({
   }
 
   async function onSubmit(values: GameFormValues) {
-    const res = await saveGame(gameId, values);
+    // ── Client-side save logging ──────────────────────────────────────────
+    // Keep this verbose so a user hitting "save doesn't persist" can open the
+    // browser console and immediately see (a) what we sent, (b) what came back,
+    // and (c) whether the form was reset afterwards. We intentionally log the
+    // full object — it's admin-only, so leaking the payload shape is fine.
+    const saveStart = performance.now();
+    console.log("[GameForm] ▶ onSubmit fired", {
+      gameId,
+      name_he: values.name_he,
+      name_en: values.name_en,
+      slug: values.slug,
+      slicesCount: values.wheel.slices.length,
+      categoriesCount: values.wheel.player_config.categories?.length ?? 0,
+      isDirty,
+    });
+
+    let res: Awaited<ReturnType<typeof saveGame>>;
+    try {
+      res = await saveGame(gameId, values);
+    } catch (err) {
+      console.error("[GameForm] ✗ saveGame threw:", err);
+      toast.error(
+        err instanceof Error ? err.message : "Unexpected error calling saveGame",
+      );
+      return;
+    }
+    const elapsed = Math.round(performance.now() - saveStart);
+    console.log("[GameForm] ◀ saveGame returned", { elapsedMs: elapsed, res });
+
     if (!res.ok) {
       if (typeof res.error === "string") {
+        console.warn("[GameForm] save rejected:", res.error);
         toast.error(res.error);
       } else {
+        console.warn("[GameForm] save rejected (validation):", res.error);
         toast.error("Please fix validation errors");
       }
       return;
     }
+
+    // Confirm what the server says it persisted, if it echoed the row back.
+    if ("savedName" in res && res.savedName) {
+      console.log("[GameForm] ✓ server confirmed persisted name:", res.savedName);
+    }
+
+    // ── Also persist visual settings (game_settings table) ──────────────────
+    // The InlineSettingsEditor populates the same Zustand store; we just flush
+    // it here so the admin doesn't need a second "Save visual settings" button.
+    if (gameId) {
+      try {
+        await saveVisualSettings();
+        console.log("[GameForm] ✓ visual settings saved alongside game");
+      } catch (err) {
+        console.warn("[GameForm] ⚠ visual settings save failed (game itself was saved):", err);
+        toast.error("Game saved — but visual settings failed. Try saving them again.");
+      }
+    }
+
     toast.success(gameId ? "Game saved" : "Game created");
+    // Reset form to the values we JUST saved so isDirty returns to false without
+    // waiting on the server round-trip. The gameId-gated useEffect will no longer
+    // clobber these values on the subsequent router.refresh().
     reset(values);
     if (!gameId && res.id) {
+      // New game: navigate to the edit page — full re-mount is fine.
       router.push(`/dashboard/games/${res.id}/edit`);
       router.refresh();
     } else {
+      // Existing game: refresh the RSC so sibling server components (e.g. the
+      // page's question list) pick up the new state. The form itself is already
+      // locked to the saved values by the reset() above.
       router.refresh();
     }
   }
@@ -569,18 +247,40 @@ export function GameForm({
   return (
     <FormProvider {...methods}>
       <SlugSync slugTouched={slugTouched} />
+      {/* Sync wheel form values → Zustand store so WheelPreviewPanel (in the
+          page-level sticky EditGameSidebar) stays updated while the admin scrolls. */}
+      <WheelFormSync />
       <form
-        onSubmit={handleSubmit(onSubmit)}
-        className="mx-auto max-w-4xl space-y-8"
+        onSubmit={handleSubmit(onSubmit, (errors) => {
+          console.error("[GameForm] ✗ Validation blocked submit:", errors);
+          toast.error("שגיאת אימות — בדוק שדות אדומים (ייתכן בסקשן מקופל)");
+        })}
+        className="mx-auto max-w-4xl space-y-3"
       >
-        <Card>
-          <CardHeader>
-            <CardTitle>Game details</CardTitle>
-            <CardDescription>
-              Names, description, URL slug, and thumbnail.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
+        {/* ── Section toolbar ───────────────────────────────────────────── */}
+        <div className="flex items-center justify-end gap-2 pb-1">
+          <Button type="button" variant="outline" size="sm"
+            className="h-7 gap-1 text-xs"
+            onClick={() => setFormOpenVersion((v) => v + 1)}>
+            <ChevronsUpDown className="w-3 h-3" />פתח הכל
+          </Button>
+          <Button type="button" variant="outline" size="sm"
+            className="h-7 gap-1 text-xs"
+            onClick={() => setFormCloseVersion((v) => v + 1)}>
+            <ChevronsDownUp className="w-3 h-3" />מזער הכל
+          </Button>
+        </div>
+
+        <SectionGroupContext.Provider value={{ forceOpenVersion: formOpenVersion, forceCloseVersion: formCloseVersion }}>
+
+        {/* ── Slices & categories ─────────────────────────────────────────── */}
+        <SettingsSection title="Wheel slices" subtitle="עריכת פרוסות, קטגוריות ומספר הסיבובים" defaultOpen>
+          <SliceEditor />
+        </SettingsSection>
+
+        {/* ── Game info ───────────────────────────────────────────────────── */}
+        <SettingsSection title="Game details" subtitle="שם, תיאור, slug ותמונה" defaultOpen>
+          <div className="space-y-6">
             <LocalizedFieldRow control={control} fieldBase="name" />
             <LocalizedFieldRow
               control={control}
@@ -605,10 +305,16 @@ export function GameForm({
                     />
                   )}
                 />
-                <p className="text-muted-foreground text-xs">
-                  Lowercase letters, numbers, and hyphens. Filled from English
-                  name when empty.
-                </p>
+                {errors.slug ? (
+                  <p className="text-xs text-destructive">
+                    {errors.slug.message}
+                  </p>
+                ) : (
+                  <p className="text-muted-foreground text-xs">
+                    Lowercase letters, numbers, and hyphens. Filled from English
+                    name when empty.
+                  </p>
+                )}
               </div>
               <div className="space-y-1.5">
                 <Label>Active</Label>
@@ -754,20 +460,19 @@ export function GameForm({
                 bucket. For colors, use a hex like <code className="text-xs">#0b0b0f</code>.
               </p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </SettingsSection>
 
-        {/* ──────────────── SEO / Discovery ──────────────── */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Search & social</CardTitle>
-            <CardDescription>
-              Override how this game appears on Google and when shared on
-              WhatsApp / Facebook / X. Leave fields empty to use the name &
-              description above.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
+        {/* ── Page & Background ───────────────────────────────────────────── */}
+        {gameId && (
+          <SettingsSection title="Page & Background" subtitle="רקע, חלקיקים, תנועה ופריסת עמוד" defaultOpen={false}>
+            <PageDesignEditor gameId={gameId} />
+          </SettingsSection>
+        )}
+
+        {/* ── SEO ─────────────────────────────────────────────────────────── */}
+        <SettingsSection title="Search & social" subtitle="Meta titles, OG image ומילות מפתח" defaultOpen={false}>
+          <div className="space-y-6">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label htmlFor="meta_title_he">Meta title (HE)</Label>
@@ -895,54 +600,23 @@ export function GameForm({
                 suggestions (not rendered as deprecated meta keywords).
               </p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </SettingsSection>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Wheel appearance</CardTitle>
-            <CardDescription>
-              Colors and live preview of the wheel.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <WheelPreviewSection />
-          </CardContent>
-        </Card>
+        {/* ── Questions ─────────────────────────────────────────────────────── */}
+        <SettingsSection title="Questions" subtitle={gameId ? "ניהול שאלות למשחק זה" : "שמור את המשחק תחילה להוספת שאלות"} defaultOpen={false}>
+          <QuestionsTable
+            gameId={gameId}
+            initialQuestions={initialQuestions}
+            categoryOptions={categoryOptions}
+          />
+        </SettingsSection>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Wheel slices</CardTitle>
-            <CardDescription>
-              Labels per language, colors, and question type per slice.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <SliceEditor />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Questions</CardTitle>
-            <CardDescription>
-              {gameId
-                ? "Manage questions for this game."
-                : "Save the game first to add questions."}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <QuestionsTable
-              gameId={gameId}
-              initialQuestions={initialQuestions}
-              categoryOptions={categoryOptions}
-            />
-          </CardContent>
-        </Card>
+        </SectionGroupContext.Provider>
 
         <div className="flex flex-wrap items-center gap-3">
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? (
+          <Button type="submit" disabled={isSubmitting || isSavingSettings}>
+            {isSubmitting || isSavingSettings ? (
               <>
                 <Loader2 className="mr-2 size-4 animate-spin" />
                 Saving…

@@ -9,6 +9,7 @@ import { SnakesGameBoard } from "@/components/game/snakes/SnakesGameBoard";
 import { DEFAULT_SNAKES_CONFIG } from "@/lib/snakes/defaultConfig";
 import { unlockAudio } from "@/lib/sounds";
 import { cn } from "@/lib/utils";
+import { track } from "@/lib/analytics";
 
 const AVATAR_OPTIONS = ["💜", "💛", "💙", "💚", "🌸", "🔥", "🌊", "🌙", "⭐", "🦋"];
 const COLOR_OPTIONS = [
@@ -64,7 +65,24 @@ export function LocalGameClient() {
     room: storeRoom,
   } = useLocalSnakesStore();
 
-  const [drafts, setDrafts] = useState<DraftPlayer[]>(() => [buildDefaults(0), buildDefaults(1)]);
+  const [drafts, setDrafts] = useState<DraftPlayer[]>(() => {
+    // Pre-fill names/avatars/colors if redirected from /game setup page
+    try {
+      const raw1 = sessionStorage.getItem("local_p1");
+      const raw2 = sessionStorage.getItem("local_p2");
+      if (raw1 && raw2) {
+        const p1 = JSON.parse(raw1) as { userName: string; avatar: string; color: string };
+        const p2 = JSON.parse(raw2) as { userName: string; avatar: string; color: string };
+        sessionStorage.removeItem("local_p1");
+        sessionStorage.removeItem("local_p2");
+        return [
+          { id: `draft_${Math.random().toString(36).slice(2, 8)}`, userName: p1.userName, avatar: p1.avatar, color: p1.color },
+          { id: `draft_${Math.random().toString(36).slice(2, 8)}`, userName: p2.userName, avatar: p2.avatar, color: p2.color },
+        ];
+      }
+    } catch { /* ignore */ }
+    return [buildDefaults(0), buildDefaults(1)];
+  });
   const [err, setErr] = useState<string | null>(null);
 
   // Build a fresh lobby room when the page loads, so state is clean every visit.
@@ -105,6 +123,7 @@ export function LocalGameClient() {
       return;
     }
     unlockAudio(); // iOS AudioContext needs a user-gesture unlock
+    track("game_start", { game_type: "snakes", mode: "local", player_count: drafts.length });
 
     // Reset players in the store & push the drafts as players.
     // (createRoom above gave us a fresh lobby; clear any prior players.)

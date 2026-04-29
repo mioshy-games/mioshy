@@ -1,17 +1,22 @@
 import { notFound } from "next/navigation";
+import { unstable_noStore as noStore } from "next/cache";
 import { GameForm } from "@/components/dashboard/GameForm";
 import { requireAdmin } from "@/lib/auth/admin";
 import { mapToGameFormValues } from "@/lib/map-game-to-form";
 import type { GameRow, QuestionRow, WheelConfigRow } from "@/lib/types/database";
 import { SettingsTrigger } from "@/components/settings/SettingsTrigger";
 import { InlineSettingsEditor } from "@/components/settings/InlineSettingsEditor";
-import { FloatingSaveButton } from "@/components/settings/FloatingSaveButton";
+import { EditGameSidebar } from "@/components/dashboard/EditGameSidebar";
 
 export default async function EditGamePage({
   params,
 }: {
   params: { id: string };
 }) {
+  // Opt out of all Next.js data caching so router.refresh() always fetches
+  // the latest game data from Supabase rather than a cached RSC payload.
+  noStore();
+
   const { supabase } = await requireAdmin();
   const { id } = params;
 
@@ -42,24 +47,30 @@ export default async function EditGamePage({
     wheel as WheelConfigRow | null,
   );
 
+  // Two-column layout: form on the left, sticky preview on the right. The
+  // sidebar hides below xl to keep the form usable on laptops/tablets; the
+  // EditGameSidebar component handles that breakpoint internally.
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Edit game</h1>
-          <p className="text-muted-foreground mt-1 text-sm font-mono">{id}</p>
+    <div className="flex gap-6 items-start">
+      <div className="flex-1 min-w-0 space-y-6">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Edit game</h1>
+            <p className="text-muted-foreground mt-1 text-sm font-mono">{id}</p>
+          </div>
+          <SettingsTrigger gameId={id} label="Save to" />
         </div>
-        <SettingsTrigger gameId={id} label="Save to" />
+
+        <InlineSettingsEditor gameId={id} />
+
+        <GameForm
+          gameId={id}
+          defaultValues={defaults}
+          initialQuestions={(questions ?? []) as QuestionRow[]}
+        />
       </div>
 
-      <FloatingSaveButton gameId={id} />
-      <InlineSettingsEditor gameId={id} />
-
-      <GameForm
-        gameId={id}
-        defaultValues={defaults}
-        initialQuestions={(questions ?? []) as QuestionRow[]}
-      />
+      <EditGameSidebar />
     </div>
   );
 }
