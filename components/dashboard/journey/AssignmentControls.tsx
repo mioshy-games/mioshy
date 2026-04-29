@@ -119,7 +119,7 @@ export function AssignmentControls({
           <p className="text-muted-foreground text-sm">
             This cascades through scheduled rows, completions, and responses.
             For a softer path, cancel instead — cancelled assignments stop
-            appearing in the owner's timeline but keep their history.
+            appearing in the owner&apos;s timeline but keep their history.
           </p>
           <DialogFooter>
             <Button

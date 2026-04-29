@@ -587,9 +587,11 @@ export function TruthOrDareClient({
 
           {/* Main content area */}
           <div className="flex flex-1 flex-col items-center gap-6 md:flex-row md:items-center md:gap-10">
-            {/* Left column: logo + wheel */}
+            {/* Left column: wheel only — the logo lives inside `topBar`
+                above (rendered at line ~586), so we don't render it
+                again here. The earlier `{logo}` reference was a stale
+                pointer left behind when the logo moved into topBar. */}
             <div className="flex flex-col items-center gap-4 md:flex-1">
-              {logo}
               {wheelOrSetup}
             </div>
 

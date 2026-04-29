@@ -22,7 +22,6 @@ import {
   ArrowRight,
   Check,
   Crown,
-  Layers,
   Sparkles,
   Star,
 } from "lucide-react";
@@ -90,7 +89,7 @@ export function AdultsManifestoSection({ isHe }: { isHe: boolean }) {
                 className="bg-gradient-to-br from-rose-200 via-rose-400 to-amber-300 bg-clip-text text-transparent"
                 style={{ fontStyle: "italic", fontWeight: 500 }}
               >
-                An evening you won't want to end.
+                An evening you won&apos;t want to end.
               </span>
             </>
           )}
@@ -808,7 +807,7 @@ export function AdultsClosingCta({ isHe }: { isHe: boolean }) {
                 className="block bg-gradient-to-br from-rose-200 via-rose-400 to-amber-300 bg-clip-text text-transparent"
                 style={{ fontStyle: "italic", fontWeight: 500 }}
               >
-                That's all it takes to know.
+                That&apos;s all it takes to know.
               </span>
             </>
           )}

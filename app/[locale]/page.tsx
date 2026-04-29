@@ -1262,9 +1262,9 @@ function BuCard({
 }
 
 async function ArticlesStrip({
-  locale,
   isHe,
 }: {
+  // `locale` is part of the parent's contract but not used in this view yet.
   locale: string;
   isHe: boolean;
 }) {

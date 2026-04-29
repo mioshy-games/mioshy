@@ -84,7 +84,6 @@ export function Dice({
   onRoll,
   disabled,
   result,
-  playerColor = "#7c3aed",
   label = "הטל/י קובייה",
   tumblingFor = 900,
 }: {

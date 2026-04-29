@@ -360,7 +360,7 @@ export function SliceEditor() {
           <div className="flex items-start gap-2">
             <AlertTriangle className="mt-0.5 size-4 shrink-0" />
             <p>
-              Slices are generated evenly across categories. If total slices isn't
+              Slices are generated evenly across categories. If total slices isn&apos;t
               divisible by category count, the system will round to the nearest
               supported distribution (up to 16).
             </p>

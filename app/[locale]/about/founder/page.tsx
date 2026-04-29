@@ -146,8 +146,8 @@ export default function FounderStoryPage({
             className="text-[26px] leading-[1.3] text-stone-900 sm:text-[32px]"
             style={{ fontStyle: "italic", fontWeight: 500 }}
           >
-            "פעם חשבנו להתפרק. היום אני בונה משחקים שמחזירים לאלפי זוגות את
-            התשוקה שאיבדו."
+            &quot;פעם חשבנו להתפרק. היום אני בונה משחקים שמחזירים לאלפי זוגות
+            את התשוקה שאיבדו.&quot;
           </p>
         </blockquote>
       </header>
@@ -269,7 +269,7 @@ export default function FounderStoryPage({
             it from prose. */}
         <Chapter num={7} title='למה "מיאושי"?'>
           <Lede>
-            השם "מיאושי" לא הומצא בחדר ישיבות, ולא נבחר על ידי משרד פרסום.
+            השם &quot;מיאושי&quot; לא הומצא בחדר ישיבות, ולא נבחר על ידי משרד פרסום.
             הוא יצא מתוך הסיפור הכי אישי שלנו.
           </Lede>
           <p>
@@ -337,7 +337,7 @@ export default function FounderStoryPage({
             שתחזרו לעצמכם.
           </p>
           <p className="font-semibold text-stone-900">
-            אל תחיו "ליד".
+            אל תחיו &quot;ליד&quot;.
           </p>
         </Chapter>
 

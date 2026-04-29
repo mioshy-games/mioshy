@@ -88,13 +88,14 @@ function StatusDot({ status }: { status: ScheduledItemStatus }) {
 }
 
 export function ScheduledItemRow({
-  ownerKey: _ownerKey,
   scheduled,
   item,
   status,
   completedAt,
 }: {
-  ownerKey: string;
+  // ownerKey is part of the parent's data shape but unused here; keep the
+  // type doc-only so future props can land if/when needed.
+  ownerKey?: string;
   scheduled: JourneyScheduledItem;
   item: JourneyItem;
   status: ScheduledItemStatus;
@@ -242,7 +243,7 @@ export function ScheduledItemRow({
             <DialogTitle>Remove item from timeline?</DialogTitle>
           </DialogHeader>
           <p className="text-muted-foreground text-sm">
-            “{item.title_he}” will disappear from this client's timeline. Any
+            “{item.title_he}” will disappear from this client&apos;s timeline. Any
             completion and responses on this scheduled row are deleted too (the
             item itself stays in the catalog).
           </p>

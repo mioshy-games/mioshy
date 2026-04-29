@@ -24,7 +24,6 @@ import {
   Clock,
   Compass,
   Flame,
-  Lock,
   PauseCircle,
   UserRound,
   Users,

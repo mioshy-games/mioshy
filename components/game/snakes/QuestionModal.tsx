@@ -22,7 +22,6 @@ export function QuestionModal({
   playerName,
   avatar,
   onAnswer,
-  penalty,
   originPct,
 }: {
   open: boolean;

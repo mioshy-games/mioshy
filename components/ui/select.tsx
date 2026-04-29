@@ -6,7 +6,49 @@ import { Select as SelectPrimitive } from "@base-ui/react/select"
 import { cn } from "@/lib/utils"
 import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from "lucide-react"
 
-const Select = SelectPrimitive.Root
+/**
+ * Select — thin wrapper around Base UI's primitive Root.
+ *
+ * Base UI types `onValueChange` as `(value: string | null, ...) => void` —
+ * the `null` represents a cleared selection. Our entire codebase keeps
+ * `Select`-bound state as plain `string`, treating "" as "no value", so
+ * every call site previously had to coerce: `onValueChange={v => set(v ?? "")}`.
+ *
+ * That's a footgun: forget the `?? ""` and TypeScript flags the assignment
+ * (Type 'string | null' is not assignable to type 'string'), and you get
+ * the same error in dozens of files as the project grows.
+ *
+ * The wrapper centralises the coercion: consumers declare
+ *   onValueChange={(v: string) => ...}
+ * and the wrapper does the `?? ""` mapping before forwarding to Base UI.
+ * No call site has to think about null again.
+ *
+ * If a future consumer needs the original null behaviour (e.g. distinguishing
+ * "cleared" from "empty string"), they can use SelectPrimitive.Root directly.
+ */
+// Base UI's Root.Props is generic over the value type. We constrain to
+// `string` because every Select in this project deals in string-valued
+// options (slugs, ids, channel names). If a consumer ever needs a
+// non-string Select they can drop down to SelectPrimitive.Root directly.
+type SelectRootProps = Omit<
+  SelectPrimitive.Root.Props<string>,
+  "onValueChange"
+> & {
+  onValueChange?: (value: string) => void
+}
+
+function Select({ onValueChange, ...rest }: SelectRootProps) {
+  return (
+    <SelectPrimitive.Root
+      {...rest}
+      onValueChange={
+        onValueChange
+          ? (value) => onValueChange(value ?? "")
+          : undefined
+      }
+    />
+  )
+}
 
 function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
   return (

@@ -39,7 +39,6 @@ import {
   ArrowRight,
   Check,
   Copy,
-  KeyRound,
   Loader2,
   Lock,
   Play,
@@ -114,15 +113,30 @@ export function AdultsHeroBuy({
 
   async function runPurchase() {
     setError(null);
+
+    console.log(
+      "[AdultsHeroBuy] action.start",
+      JSON.stringify({
+        game_id: gameId,
+        slug: gameSlug,
+        locale,
+        return_path: gamePath,
+      }),
+    );
+
     start(async () => {
-      // startAdultsSinglePurchase opens a Cardcom LowProfile session for
-      // a one-time charge tied to this specific game. On success the
-      // server returns { redirect_url } — Cardcom's hosted checkout —
-      // and we navigate the user there. After payment, Cardcom calls
-      // our /api/billing/cardcom/indicator webhook, which writes the
-      // couple_entitlement (source='paid', PERMANENT) and bounces the
-      // user back to /[locale]/adults/[slug]. The page then renders
-      // in the entitled branch with the pair code visible.
+      // startAdultsSinglePurchase has TWO success branches:
+      //   • bypassed=true  → admin email; entitlement granted server-side,
+      //                       no Cardcom round-trip.
+      //   • bypassed=false → Cardcom LowProfile session opened; server
+      //                       returned a redirect_url. After payment, the
+      //                       indicator webhook writes a couple_entitlement
+      //                       (source='paid') and bounces the user back to
+      //                       /[locale]/adults/[slug] so the entitled state
+      //                       renders with the pair code visible.
+      // We narrow the discriminated union via the `bypassed` field — that's
+      // why this branch checks `res.bypassed` instead of `res.redirect_url`
+      // (the latter doesn't exist on the bypass variant and TS rejects it).
       const res = await startAdultsSinglePurchase({
         gameId,
         locale,
@@ -130,15 +144,30 @@ export function AdultsHeroBuy({
       });
 
       if (!res.ok) {
+        console.warn(
+          "[AdultsHeroBuy] action.error",
+          JSON.stringify({
+            game_id: gameId,
+            error: res.error,
+          }),
+        );
         // Auth/profile gates — gracefully redirect with `next=` so the
         // visitor returns to this very page and re-fires automatically.
         if (res.error === "login_required") {
           const next = `${gamePath}?continuePurchase=1`;
+          console.log(
+            "[AdultsHeroBuy] auth.required → /auth",
+            JSON.stringify({ next }),
+          );
           router.push(`/${locale}/auth?next=${encodeURIComponent(next)}`);
           return;
         }
         if (res.error === "profile_incomplete") {
           const next = `${gamePath}?continuePurchase=1`;
+          console.log(
+            "[AdultsHeroBuy] profile.incomplete → /account/profile",
+            JSON.stringify({ next }),
+          );
           router.push(
             `/${locale}/account/profile?reason=profile_incomplete&next=${encodeURIComponent(
               next,
@@ -150,30 +179,67 @@ export function AdultsHeroBuy({
         return;
       }
 
-      // Cardcom redirect — leave the SPA, off to Cardcom's hosted
-      // payment page. Hard navigation (window.location) instead of
-      // router.push so we exit the Next.js client router cleanly.
-      if (res.redirect_url) {
-        window.location.assign(res.redirect_url);
+      // ── Branch 1: admin bypass — entitlement already exists ─────────
+      if (res.bypassed) {
+        console.log(
+          "[AdultsHeroBuy] bypass.success → product page",
+          JSON.stringify({
+            game_id: gameId,
+            couple_id: res.couple_id,
+            entitlement_id: res.entitlement_id,
+          }),
+        );
+        router.push(`/${locale}${gamePath}`);
         return;
       }
 
-      // Bypass branch (admin / future test mode) — server already
-      // granted entitlement directly. Bounce to the product page so
-      // the entitled state renders with the pair code.
-      router.push(`/${locale}${gamePath}`);
+      // ── Branch 2: real Cardcom redirect ─────────────────────────────
+      // Hard navigation (window.location) instead of router.push so we
+      // exit the Next.js client router cleanly into Cardcom's domain.
+      console.log(
+        "[AdultsHeroBuy] cardcom.redirect → Cardcom",
+        JSON.stringify({
+          game_id: gameId,
+          checkout_session_id: res.checkout_session_id,
+          // Don't log the full URL — it has the LowProfileCode in it which
+          // is sensitive. Just log the host so we can confirm the right env.
+          redirect_host: tryParseHost(res.redirect_url),
+        }),
+      );
+      window.location.assign(res.redirect_url);
     });
   }
 
   function handleBuyClick() {
+    console.log(
+      "[AdultsHeroBuy] click",
+      JSON.stringify({
+        game_id: gameId,
+        slug: gameSlug,
+        logged_in: loggedIn,
+      }),
+    );
     if (!loggedIn) {
       // Logged-out shortcut: skip the server round-trip and route directly
       // to /auth, so the user never sees a flash of "login_required" error.
       const next = `${gamePath}?continuePurchase=1`;
+      console.log(
+        "[AdultsHeroBuy] not-logged-in → /auth",
+        JSON.stringify({ next }),
+      );
       router.push(`/${locale}/auth?next=${encodeURIComponent(next)}`);
       return;
     }
     void runPurchase();
+  }
+
+  /** Pulls the host out of a URL string for safe logging — never throws. */
+  function tryParseHost(u: string): string | null {
+    try {
+      return new URL(u).host;
+    } catch {
+      return null;
+    }
   }
 
   // ─────────────────────────────────────────────────────────────────────

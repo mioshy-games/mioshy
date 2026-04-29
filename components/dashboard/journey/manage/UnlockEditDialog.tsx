@@ -131,7 +131,7 @@ export function UnlockEditDialog({
             />
             <p className="text-muted-foreground text-[11px]">
               The item becomes available to the client at 00:00 UTC on this
-              date. Saving here sets a custom unlock that won't be moved by
+              date. Saving here sets a custom unlock that won&apos;t be moved by
               future catalog edits.
             </p>
           </div>

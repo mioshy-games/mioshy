@@ -44,10 +44,11 @@ type Hero = {
 
 export function AdultsMarketingHero({
   isHe,
-  hero,
   ctaHref = "#catalogue",
 }: {
   isHe: boolean;
+  // `hero` is in the contract for forward-compat but the simplified
+  // hero variant doesn't read it.
   hero: Hero;
   ctaHref?: string;
   /** Kept for backward compat; unused in this minimal hero. */

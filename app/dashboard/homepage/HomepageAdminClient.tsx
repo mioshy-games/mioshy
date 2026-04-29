@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/select";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import type { SiteSettingsRow } from "@/lib/types/database";
-import { saveHomepageSettings, clearImageField } from "./actions";
+import { saveHomepageSettings } from "./actions";
 import {
   HOMEPAGE_LINK_OPTIONS,
   CTA_STYLE_OPTIONS,

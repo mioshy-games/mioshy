@@ -97,7 +97,10 @@ export function TemplateCreateForm() {
         <Label>Channel</Label>
         <Select
           value={form.channel}
-          onValueChange={(v) => setForm({ ...form, channel: v })}
+          // Radix Select's onValueChange types `v` as string | null (null when
+          // the value is cleared). The form state holds `channel` as a plain
+          // string, so coerce: empty string == "no value".
+          onValueChange={(v) => setForm({ ...form, channel: v ?? "" })}
         >
           <SelectTrigger>
             <SelectValue />
@@ -113,7 +116,7 @@ export function TemplateCreateForm() {
         <Label>Trigger axis (optional)</Label>
         <Select
           value={form.trigger_axis}
-          onValueChange={(v) => setForm({ ...form, trigger_axis: v })}
+          onValueChange={(v) => setForm({ ...form, trigger_axis: v ?? "" })}
         >
           <SelectTrigger>
             <SelectValue placeholder="— none —" />

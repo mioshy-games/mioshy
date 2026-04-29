@@ -138,7 +138,7 @@ export function TemplateEditor({ template }: { template: Template }) {
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Channel</Label>
-              <Select value={form.channel} onValueChange={(v) => setForm({ ...form, channel: v })}>
+              <Select value={form.channel} onValueChange={(v) => setForm({ ...form, channel: v ?? "" })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>

@@ -29,7 +29,11 @@ async function resolveOrCreateGames(
   supabase: Pick<Awaited<ReturnType<typeof requireAdmin>>["supabase"], "from">,
   names: string[],
 ): Promise<Map<string, string>> {
-  const uniqueNames = [...new Set(names.filter(Boolean))];
+  // Array.from(new Set(...)) instead of [...new Set(...)] because the
+  // tsconfig target predates ES2015 iterators on built-ins. Functionally
+  // identical — produces the deduped string array — but compiles cleanly
+  // without needing `downlevelIteration` on the project.
+  const uniqueNames = Array.from(new Set(names.filter(Boolean)));
   const map = new Map<string, string>();
 
   for (const name of uniqueNames) {
@@ -188,9 +192,14 @@ export async function POST(request: Request): Promise<Response> {
   // in production. For those rows we fall back to creating the game by name
   // (game_name_he / game_name_en captured by the parser), or skip with a clear
   // error message instead of a cryptic FK constraint violation.
-  const uniqueGameIds = [
-    ...new Set(rows.filter((r) => r.game_id).map((r) => r.game_id)),
-  ];
+  // Array.from(new Set(...)) instead of [...new Set(...)] — see the
+  // earlier resolveOrCreateGames helper in this file for the same pattern.
+  // tsconfig target predates ES2015 iterators on built-ins, so spreading
+  // a Set fails to compile without `downlevelIteration`. Array.from is
+  // a no-cost equivalent that compiles cleanly.
+  const uniqueGameIds = Array.from(
+    new Set(rows.filter((r) => r.game_id).map((r) => r.game_id)),
+  );
 
   if (uniqueGameIds.length > 0) {
     const { data: existingGames } = await supabase
@@ -210,9 +219,11 @@ export async function POST(request: Request): Promise<Response> {
         }
       }
 
-      const uniqueOrphanNames = [
-        ...new Set([...orphanNameMap.values()].filter(Boolean)),
-      ];
+      // Both the outer Set spread and the inner Map.values() spread fail to
+      // compile under this project's tsconfig target. Use Array.from for both.
+      const uniqueOrphanNames = Array.from(
+        new Set(Array.from(orphanNameMap.values()).filter(Boolean)),
+      );
       const resolvedMap =
         uniqueOrphanNames.length > 0
           ? await resolveOrCreateGames(supabase, uniqueOrphanNames)

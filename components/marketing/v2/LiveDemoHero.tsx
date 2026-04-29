@@ -95,7 +95,6 @@ export function LiveDemoHero({
   ctaSecondaryHref = "#why",
   trust,
   gameHref,
-  sampleQuestion,
   sampleQuestionType,
   slices,
   wheelConfig,
@@ -175,10 +174,10 @@ export function LiveDemoHero({
   // Outer border (custom ring around the wheel)
   const resolvedOuterBorder = gameSettings?.border ?? undefined;
 
-  // Label styling
-  const resolvedLabelFontSizePx = gameSettings?.wheel?.labelFontSizePx ?? 12;
-  const resolvedLabelColor = gameSettings?.wheel?.labelColor ?? "#ffffff";
-  const resolvedLabelOutline = gameSettings?.wheel?.labelOutline;
+  // Label styling lookups (font size / color / outline) used to live here
+  // but are not consumed by the simplified hero preview. When the label
+  // customisation work resumes, read them from gameSettings?.wheel directly
+  // — the original lookups are 1-liners and don't need to be precomputed.
   const resolvedLabelFraction =
     gameSettings?.wheel?.labelRadiusFraction ??
     (typeof (wheelConfig?.marker_config as Record<string, unknown>)?.label_radius_fraction === "number"

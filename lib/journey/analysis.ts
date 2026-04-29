@@ -16,10 +16,9 @@ import type {
   AxisScoreMap,
   AxisWeight,
   LoveLanguage,
-  Question,
   Response,
 } from "./types";
-import { QUESTIONS, getQuestion } from "./questions";
+import { getQuestion } from "./questions";
 
 // Axis labels (bilingual) for narrative rendering ----------------------------
 
@@ -131,7 +130,14 @@ export function scoreResponses(responses: Response[]): {
 
     // FORCED / SINGLE CHOICE → pull scores from the selected option.
     if ((q.type === "forced_choice" || q.type === "single_choice") && r.answer.kind === "single") {
-      const option = q.options.find((o) => o.id === r.answer.option);
+      // Extract the option id BEFORE the find() callback. Inside the
+      // callback, TypeScript can't preserve the narrowing of `r.answer`
+      // to the single variant — a callback might (in theory) be called
+      // after `r.answer` has changed type, so TS forbids `.option`
+      // access there. Pulling it out into a local const captures the
+      // narrowed value at this point and the callback only sees a string.
+      const optionId = r.answer.option;
+      const option = q.options.find((o) => o.id === optionId);
       if (!option) continue;
       for (const { axis, weight } of option.scores) {
         accum[axis] = (accum[axis] ?? 0) + weight;

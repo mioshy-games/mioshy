@@ -1,4 +1,3 @@
-import { Link } from "@/navigation";
 import { TrackedLink } from "./TrackedLink";
 
 /**

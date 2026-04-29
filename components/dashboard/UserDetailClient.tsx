@@ -318,9 +318,11 @@ function TasksCard({
           <CardDescription>Assignments surfaced inside the user&apos;s program.</CardDescription>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm">Assign</Button>
-          </DialogTrigger>
+          {/* Base UI's Dialog uses `render` instead of Radix's `asChild`.
+              The render prop receives an element that the trigger merges
+              its props into; children of <DialogTrigger> become children
+              of that rendered element (here, the Button label). */}
+          <DialogTrigger render={<Button size="sm" />}>Assign</DialogTrigger>
           <DialogContent className="max-w-lg">
             <DialogHeader>
               <DialogTitle>Assign task</DialogTitle>

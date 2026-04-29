@@ -88,7 +88,7 @@ export default function NotFound() {
           העמוד הזה נעלם ב&shy;רמה אחרת
         </h1>
         <p className="mt-2 max-w-lg text-balance text-base text-white/55 sm:text-lg">
-          This level doesn't exist. Let's get you back to the fun.
+          This level doesn&apos;t exist. Let&apos;s get you back to the fun.
         </p>
 
         {/* CTA buttons */}

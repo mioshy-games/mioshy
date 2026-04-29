@@ -11,7 +11,7 @@
  *    behind that function.
  */
 
-import type { Analysis, Axis, Locale } from "./types";
+import type { Analysis, Locale } from "./types";
 
 // ---------------------------------------------------------------------------
 // Plan builder
