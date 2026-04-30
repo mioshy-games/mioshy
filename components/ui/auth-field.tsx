@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Shared form primitives — AuthField + AuthSubmitButton
+ * Shared form primitives - AuthField + AuthSubmitButton
  *
  * Design token (from /auth login & signup pages):
  *   Label  → text-xs font-semibold uppercase tracking-widest text-white/40
@@ -141,7 +141,7 @@ export function AuthSubmitButton({
 }
 
 // ─── AuthCard ─────────────────────────────────────────────────────────────────
-// The frosted-glass card wrapping the form — consistent across all auth surfaces.
+// The frosted-glass card wrapping the form - consistent across all auth surfaces.
 
 export function AuthCard({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (

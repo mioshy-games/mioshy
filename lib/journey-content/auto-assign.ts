@@ -3,21 +3,21 @@
 //
 // When the Cardcom indicator (webhook) confirms a paid subscription, we
 // want the user to land on /journey/timeline with content already queued
-// — no "go to dashboard and click Assign" middle-step.
+// - no "go to dashboard and click Assign" middle-step.
 //
 // This module resolves:
 //   1. Which program corresponds to the purchased product pillar
 //      (migration 036 added journey_programs.product_slug).
-//   2. Who the owner is — prefer the user's couple when paired, so both
+//   2. Who the owner is - prefer the user's couple when paired, so both
 //      partners see the same timeline immediately.
 //   3. Whether an auto-assignment already exists (idempotent on the
 //      origin_ref so webhook replays don't duplicate rows).
 //   4. Whether the owner already has an active manual/auto assignment
-//      for the same source program — if so we leave it alone. This is
+//      for the same source program - if so we leave it alone. This is
 //      the "no overwrites without intent" rule from the Phase 6 brief.
 //
 // The Cardcom indicator is fire-and-forget from the user's perspective,
-// so this helper NEVER throws — failures are logged and returned as a
+// so this helper NEVER throws - failures are logged and returned as a
 // result object. A later admin retry can call createJourneyAssignment
 // directly without ceremony.
 // ============================================================
@@ -37,11 +37,11 @@ import type {
 // ------------------------------------------------------------
 
 export interface AssignJourneyOnPurchaseArgs {
-  /** Buyer from the checkout session — always required. */
+  /** Buyer from the checkout session - always required. */
   userId: string;
   /** Product pillar they subscribed to. */
   product: JourneyProductSlug;
-  /** When the payment cleared — becomes the assignment's anchor. */
+  /** When the payment cleared - becomes the assignment's anchor. */
   purchasedAt: Date;
   /**
    * Stable idempotency key from the upstream payment system (Cardcom
@@ -85,7 +85,7 @@ export type AssignJourneyOnPurchaseResult =
   | { ok: false; reason: string };
 
 /**
- * Main entry point — idempotent, non-throwing, safe to call from a webhook.
+ * Main entry point - idempotent, non-throwing, safe to call from a webhook.
  *
  * Contract:
  *   • Always resolves to an `ok: true` result when the business state is
@@ -99,7 +99,7 @@ export async function assignJourneyOnPurchase(
   const originRef = buildOriginRef(args.checkoutSessionId);
 
   try {
-    // 1. Idempotency — has this specific checkout already assigned?
+    // 1. Idempotency - has this specific checkout already assigned?
     const existingForCheckout = await findAssignmentByOriginRef(
       supabase,
       originRef,
@@ -115,7 +115,7 @@ export async function assignJourneyOnPurchase(
     // 2. Program lookup by product_slug (exactly one active row per slug).
     const program = await findActiveProgramForProduct(supabase, args.product);
     if (!program) {
-      // Not configured yet — webhook should not fail; admin can wire this
+      // Not configured yet - webhook should not fail; admin can wire this
       // up in the program editor when ready.
       return {
         ok: true,
@@ -124,7 +124,7 @@ export async function assignJourneyOnPurchase(
       };
     }
 
-    // 3. Resolve the preferred owner — couple wins when the user has one.
+    // 3. Resolve the preferred owner - couple wins when the user has one.
     const owner = await resolveOwnerForUser(supabase, args.userId);
 
     // 4. Respect any pre-existing active assignment for this owner+program.
@@ -278,7 +278,7 @@ async function findActiveAssignmentForOwnerProgram(
 
   const { data, error } = await q.maybeSingle();
   if (error) {
-    // When more than one row matches maybeSingle() returns an error — we
+    // When more than one row matches maybeSingle() returns an error - we
     // still want the first as the "existing" signal for the dedup check.
     if (/multiple/i.test(error.message)) {
       const { data: fallback } = await q.limit(1);

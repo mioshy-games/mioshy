@@ -5,12 +5,12 @@
 -- Product context (from docs/journey-content-system-design.md Revision 2):
 --   * A "journey" is a time-released roadmap of content delivered to an
 --     OWNER, where an owner is EITHER a single user OR a couple
---     (polymorphic ownership — exactly one of user_id/couple_id is set).
+--     (polymorphic ownership - exactly one of user_id/couple_id is set).
 --   * Content lives ONCE in the items table and is referenced by FK from
---     scheduled rows — edits to body/title/task/media flow through to
+--     scheduled rows - edits to body/title/task/media flow through to
 --     every existing user automatically (retroactive by design).
 --   * Structural edits (add/remove item, change default_offset_days)
---     are NOT automatic — admin chooses via PropagateConfirmDialog
+--     are NOT automatic - admin chooses via PropagateConfirmDialog
 --     whether to apply to existing assignments.
 --   * Completion is OPTIONAL. Responses (text reflections) are separate,
 --     append-only, shared within a couple by default with a per-response
@@ -21,13 +21,13 @@
 --     trigger) + origin_ref so purchase/trigger hooks slot in later.
 --
 -- Mutations route through the admin (service-role) client per the
--- project's @supabase/ssr pattern — this migration installs SELECT-only
+-- project's @supabase/ssr pattern - this migration installs SELECT-only
 -- RLS policies. There are intentionally NO insert/update/delete policies.
 -- ============================================================
 
 
 -- ============================================================
--- SECTION 1 — PROGRAMS
+-- SECTION 1 - PROGRAMS
 -- A program is a reusable template (e.g. "6-week intimacy reset").
 -- It contains categories. Admin bulk-assigns it to owners and each
 -- item inside becomes a scheduled row per assignment.
@@ -66,7 +66,7 @@ CREATE INDEX IF NOT EXISTS journey_programs_active_idx
 
 
 -- ============================================================
--- SECTION 2 — CATEGORIES
+-- SECTION 2 - CATEGORIES
 -- A category groups items topically. It can belong to a program
 -- (program_id not null) or stand alone (program_id null) so that
 -- admin can bulk-assign a topical category to an owner on its own.
@@ -103,9 +103,9 @@ CREATE INDEX IF NOT EXISTS journey_categories_program_idx
 
 
 -- ============================================================
--- SECTION 3 — ITEMS (content catalog)
+-- SECTION 3 - ITEMS (content catalog)
 -- Every item MUST belong to a category (resolved adj #4). Content lives
--- here and ONLY here — scheduled rows reference items by FK so content
+-- here and ONLY here - scheduled rows reference items by FK so content
 -- edits flow through to existing users automatically (adj #6).
 -- default_offset_days = how many days after the assignment's anchor
 -- date this item should unlock (0 = unlocks on anchor day).
@@ -145,10 +145,10 @@ CREATE INDEX IF NOT EXISTS journey_items_active_idx
 
 
 -- ============================================================
--- SECTION 4 — ASSIGNMENTS
+-- SECTION 4 - ASSIGNMENTS
 -- Owner is polymorphic: exactly one of user_id / couple_id is set.
 -- origin tracks whether this was manual or fired by a future trigger
--- (purchase webhook, etc.) — schema stays stable when automation lands.
+-- (purchase webhook, etc.) - schema stays stable when automation lands.
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS public.journey_assignments (
@@ -157,7 +157,7 @@ CREATE TABLE IF NOT EXISTS public.journey_assignments (
   user_id        uuid         REFERENCES auth.users(id)  ON DELETE CASCADE,
   couple_id      uuid         REFERENCES public.couples(id) ON DELETE CASCADE,
   -- What is being assigned. source_id points at programs/categories/items
-  -- — the join happens in the query layer (no FK partitioning in SQL,
+  -- - the join happens in the query layer (no FK partitioning in SQL,
   -- kept intentionally simple).
   source_kind    text         NOT NULL,
   source_id      uuid         NOT NULL,
@@ -217,7 +217,7 @@ CREATE INDEX IF NOT EXISTS journey_assignments_origin_idx
 
 
 -- ============================================================
--- SECTION 5 — SCHEDULED ITEMS
+-- SECTION 5 - SCHEDULED ITEMS
 -- Materialized timeline row per (assignment × item). Only the absolute
 -- unlock_at is stored; content is fetched via the FK to journey_items.
 -- NO expires_at, NO status column, NO per-row content copy (adj #2, #6).
@@ -248,7 +248,7 @@ CREATE INDEX IF NOT EXISTS journey_scheduled_items_item_idx
 
 
 -- ============================================================
--- SECTION 6 — COMPLETIONS (sparse, optional)
+-- SECTION 6 - COMPLETIONS (sparse, optional)
 -- One row per scheduled item that has been marked done. Most scheduled
 -- rows will never have a completion row, so this stays small.
 -- Primary key = scheduled_item_id so UPSERT is trivial.
@@ -266,7 +266,7 @@ CREATE INDEX IF NOT EXISTS journey_item_completions_completed_by_idx
 
 
 -- ============================================================
--- SECTION 7 — RESPONSES (reflections / feedback)
+-- SECTION 7 - RESPONSES (reflections / feedback)
 -- Per-user, append-only, multiple allowed per scheduled item.
 -- Shared by default within a couple; is_private flips it to "only
 -- the author + admin" (resolved decision D2).
@@ -295,7 +295,7 @@ CREATE INDEX IF NOT EXISTS journey_item_responses_user_idx
 
 
 -- ============================================================
--- SECTION 8 — UPDATED_AT TRIGGERS
+-- SECTION 8 - UPDATED_AT TRIGGERS
 -- Reuse the project-wide public.tg_set_updated_at() function defined
 -- in migration 029.
 -- ============================================================
@@ -335,10 +335,10 @@ END $$;
 
 
 -- ============================================================
--- SECTION 9 — ROW LEVEL SECURITY (SELECT only)
+-- SECTION 9 - ROW LEVEL SECURITY (SELECT only)
 -- Writes are performed via the service-role admin client per the
 -- project's @supabase/ssr pattern. No INSERT/UPDATE/DELETE policies
--- are installed — admin actions must use supabase-admin.
+-- are installed - admin actions must use supabase-admin.
 -- ============================================================
 
 ALTER TABLE public.journey_programs             ENABLE ROW LEVEL SECURITY;

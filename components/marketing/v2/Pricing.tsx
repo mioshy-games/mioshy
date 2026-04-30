@@ -2,8 +2,8 @@ import { Link } from "@/navigation";
 import { TrackedLink } from "./TrackedLink";
 
 /**
- * Pricing — 3-card transparent pricing section with featured middle card.
- * The middle card highlights "couples in one price" — both partners included
+ * Pricing - 3-card transparent pricing section with featured middle card.
+ * The middle card highlights "couples in one price" - both partners included
  * at no extra cost.
  */
 export function Pricing() {
@@ -17,11 +17,11 @@ export function Pricing() {
             <br />
             בלי הפתעות, בלי התחייבות.
           </h2>
-          <p>שלושה שירותים, שלוש דרכים להתחבר. בחרו מה שמתאים לכם — ועצרו בכל רגע שתרצו.</p>
+          <p>שלושה שירותים, שלוש דרכים להתחבר. בחרו מה שמתאים לכם - ועצרו בכל רגע שתרצו.</p>
         </div>
 
         <div className="pricing-grid">
-          {/* Card 1: Online games — weekly */}
+          {/* Card 1: Online games - weekly */}
           <div className="price-card">
             <div className="price-tag">משחקי זוגיות אונליין</div>
             <div className="price-amount-wrap">
@@ -48,10 +48,10 @@ export function Pricing() {
             </div>
           </div>
 
-          {/* Card 2: Featured — couples coaching */}
+          {/* Card 2: Featured - couples coaching */}
           <div className="price-card price-card-featured">
             <span className="price-badge">המומלץ ביותר</span>
-            <div className="price-tag">ליווי צמוד עם המומחים</div>
+            <div className="price-tag">ליווי עם מיאושי</div>
             <div className="price-amount-wrap">
               <div className="price-amount">
                 <span className="amount">57</span>
@@ -64,12 +64,30 @@ export function Pricing() {
             </div>
             <ul className="price-features">
               <li>
-                <strong>שניכם במחיר אחד</strong> — זוגי לחלוטין
+                <div className="price-feat-stack">
+                  <strong>שניכם במחיר אחד</strong>
+                  <span>זוגי לחלוטין</span>
+                </div>
               </li>
-              <li>כלול משחקי זוגיות אונליין</li>
-              <li>אבחון אישי של 10 דקות בהתחלה</li>
-              <li>כל חודש — אבחון ומטרות חדשות לפי הצורך האישי שלכם, לבד או כזוג</li>
-              <li>משימות ואתגרים חודשיים מתחדשים</li>
+              <li>
+                <div className="price-feat-stack">
+                  <strong>כולל הכל</strong>
+                  <span>משחקי זוגיות אונליין + משחקים למבוגרים בלבד</span>
+                </div>
+              </li>
+              <li>
+                <div className="price-feat-stack">
+                  <strong>אבחון אישי מכוון</strong>
+                  <span>המומחים שלנו לומדים להכיר אתכם באופן ייחודי, מה שזוגות אחרים לא יקבלו</span>
+                </div>
+              </li>
+              <li>
+                <div className="price-feat-stack">
+                  <strong>אזור אימון זוגי משותף</strong>
+                  <span>סביבה שנבנית בדיוק עבורכם, מרחב אישי לשניכם</span>
+                </div>
+              </li>
+              <li>המומחים שואלים את השאלות הקשות, אתם עונים - והם בונים עבורכם אסטרטגיית זוגיות אישית</li>
               <li>מענה אישי מהמומחים בצ&apos;אט פנימי</li>
             </ul>
             <div className="price-cta">
@@ -79,7 +97,7 @@ export function Pricing() {
             </div>
           </div>
 
-          {/* Card 3: Adults — one-time */}
+          {/* Card 3: Adults - one-time */}
           <div className="price-card">
             <div className="price-tag">משחקים למבוגרים בלבד</div>
             <div className="price-amount-wrap">
@@ -93,9 +111,9 @@ export function Pricing() {
               </div>
             </div>
             <ul className="price-features">
-              <li>חוויה מודרכת — ננחה אתכם שלב אחר שלב</li>
+              <li>חוויה מודרכת - ננחה אתכם שלב אחר שלב</li>
               <li>משחקים מקוריים של מיאושי</li>
-              <li>רכישה אחת — גישה חופשית לבן/ת הזוג</li>
+              <li>רכישה אחת - גישה חופשית לבן/ת הזוג</li>
               <li>חד-פעמי, בלי מנוי</li>
               <li>פרטיות מלאה</li>
             </ul>

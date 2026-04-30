@@ -5,7 +5,7 @@ import { ArrowLeft, ArrowRight, Sparkles } from "lucide-react";
 /**
  * /[locale]/about/founder
  *
- * The personal story of Itzik Berlev — Mioshy's founder. Linked from the
+ * The personal story of Itzik Berlev - Mioshy's founder. Linked from the
  * Founder section CTA on the homepage ("קראו את הסיפור המלא").
  *
  * Design direction
@@ -16,10 +16,10 @@ import { ArrowLeft, ArrowRight, Sparkles } from "lucide-react";
  * quotes that interrupt the flow at the right moments, and a long quiet
  * closing CTA back to the product.
  *
- * The story has 8 chapters that are tonally distinct — crisis → decision →
+ * The story has 8 chapters that are tonally distinct - crisis → decision →
  * study → breakthrough → insight → founding → naming → invitation. The
  * naming chapter (the Italian etymology) is the best moment of the whole
- * piece and gets its own visual treatment — it's the brand's emotional
+ * piece and gets its own visual treatment - it's the brand's emotional
  * keystone.
  *
  * Localization
@@ -44,11 +44,11 @@ export async function generateMetadata({
   const isHe = params.locale === "he";
   return {
     title: isHe
-      ? "איציק ברלב — הסיפור שמאחורי מיאושי"
-      : "Itzik Berlev — The Story Behind Mioshy",
+      ? "איציק ברלב - הסיפור שמאחורי מיאושי"
+      : "Itzik Berlev - The Story Behind Mioshy",
     description: isHe
-      ? "המסע האישי של איציק ברלב, מייסד מיאושי — מהמשבר הזוגי שכמעט פירק את הנישואים, דרך 600 ספרים בשלוש שפות, ועד למיאושי. הסיפור שיכול להיות גם שלכם."
-      : "The personal journey of Itzik Berlev, Mioshy's founder — from a near-breakup, through 600 books in three languages, to founding Mioshy. A story that could be yours too.",
+      ? "המסע האישי של איציק ברלב, מייסד מיאושי - מהמשבר הזוגי שכמעט פירק את הנישואים, דרך 600 ספרים בשלוש שפות, ועד למיאושי. הסיפור שיכול להיות גם שלכם."
+      : "The personal journey of Itzik Berlev, Mioshy's founder - from a near-breakup, through 600 books in three languages, to founding Mioshy. A story that could be yours too.",
     openGraph: {
       type: "article",
       authors: ["Itzik Berlev"],
@@ -71,7 +71,7 @@ export default function FounderStoryPage({
       className="relative min-h-[100dvh] overflow-hidden bg-[#fdf8f4] text-stone-900"
       style={{ fontFamily: BODY_FONT }}
     >
-      {/* Soft warm gradient wash — cream → peach at the top so the page
+      {/* Soft warm gradient wash - cream → peach at the top so the page
           reads like an open book rather than a flat content page. The
           gradient is purely decorative; pointer-events-none keeps it
           out of any selection. */}
@@ -82,7 +82,7 @@ export default function FounderStoryPage({
 
       {/* ───── HERO ───── */}
       <header className="relative z-10 mx-auto max-w-[920px] px-5 pt-12 sm:pt-16">
-        {/* Back link — quiet, doesn't compete with the headline */}
+        {/* Back link - quiet, doesn't compete with the headline */}
         <Link
           href="/"
           className="inline-flex items-center gap-1.5 text-[13px] font-medium text-stone-500 transition hover:text-stone-900"
@@ -92,7 +92,7 @@ export default function FounderStoryPage({
         </Link>
 
         {/* Eyebrow + bold name treatment. The name itself is the page's
-            strongest asset — set big, in serif, with an underline accent. */}
+            strongest asset - set big, in serif, with an underline accent. */}
         <div className="mt-10 sm:mt-14">
           <p
             className="text-[12px] font-semibold uppercase tracking-[0.32em] text-rose-600/80"
@@ -116,7 +116,7 @@ export default function FounderStoryPage({
           </p>
         </div>
 
-        {/* Hero photo — editorial frame.
+        {/* Hero photo - editorial frame.
             Aspect changed from 16:10 → 4:3 because the source photo is a
             seated portrait with Itzik's head near the top of the frame; a
             wide letterbox crop sliced his face. 4:3 keeps more vertical
@@ -136,8 +136,8 @@ export default function FounderStoryPage({
 
         {/* Big pull quote that hooks the reader before chapter 1.
             The job of this quote: make a stranger commit to reading the
-            next 5 minutes. It promises the arc of the whole story — the
-            crisis, the journey, and the outcome — in one breath. */}
+            next 5 minutes. It promises the arc of the whole story - the
+            crisis, the journey, and the outcome - in one breath. */}
         <blockquote
           className="mx-auto mt-12 max-w-[680px] text-center sm:mt-16"
           style={{ fontFamily: SERIF_FONT }}
@@ -162,7 +162,7 @@ export default function FounderStoryPage({
           </Lede>
           <p>
             השגרה הצמיחה רגליים. עבודה, גן, ארוחות ערב, הרדמת ילדים, שינה.
-            ובסוף השבוע — אותו דבר. כשניסינו להזכר מתי בפעם האחרונה צחקנו ביחד
+            ובסוף השבוע - אותו דבר. כשניסינו להזכר מתי בפעם האחרונה צחקנו ביחד
             עד דמעות, באמת לא ידענו לענות.
           </p>
           <p>
@@ -174,30 +174,30 @@ export default function FounderStoryPage({
           </p>
         </Chapter>
 
-        <Chapter num={2} title="ההחלטה — לקחת את זה לידיים">
+        <Chapter num={2} title="ההחלטה - לקחת את זה לידיים">
           <p>
             הייתי יכול להמשיך לחפש מטפל אחר, גישה אחרת, איזשהו פתרון מבחוץ.
             במקום זה, החלטתי משהו אחר: אם אף אחד לא הולך להציל את הזוגיות
-            שלנו — אני אעשה את זה בעצמי.
+            שלנו - אני אעשה את זה בעצמי.
           </p>
           <p>
             הפסקתי לחכות לתשובות. התחלתי לחפש אותן. מה השתבש בדרך? איפה איבדנו
-            אחד את השני? והכי חשוב — האם בכלל אפשר לחזור?
+            אחד את השני? והכי חשוב - האם בכלל אפשר לחזור?
           </p>
           <p>
             ידעתי שזה לא ייפתר בסוף שבוע ארוך. אם אני רוצה לראות שוב את אושרת
-            כפי שראיתי אותה כשהכרתי אותה — אצטרך ללכת עם זה עד הסוף.
+            כפי שראיתי אותה כשהכרתי אותה - אצטרך ללכת עם זה עד הסוף.
           </p>
         </Chapter>
 
         <Chapter num={3} title="מאות ספרים. שלוש שפות.">
           <p>
-            התחלתי לקרוא. בעברית, באנגלית, ובאיטלקית — שלוש שפות, מאות ספרים.
+            התחלתי לקרוא. בעברית, באנגלית, ובאיטלקית - שלוש שפות, מאות ספרים.
             זוגיות, תשוקה, אהבה, פסיכולוגיה, סקסולוגיה. כל מה שמצאתי, קראתי.
             בלילות, אחרי שהילדים נרדמו, בנסיעות לעבודה, בכל חור של זמן.
           </p>
           <p>
-            לא הסתפקתי בספרים. נרשמתי לקורסים — ייעוץ זוגי, NLP, סקסולוגיה.
+            לא הסתפקתי בספרים. נרשמתי לקורסים - ייעוץ זוגי, NLP, סקסולוגיה.
             רציתי שיהיה לי גם הידע התיאורטי וגם הכלים המעשיים. רציתי להבין את
             זה כל הדרך עד הסוף.
           </p>
@@ -206,7 +206,7 @@ export default function FounderStoryPage({
           </PullQuote>
           <p>
             וככל שצללתי עמוק יותר, התחלתי לראות שהסיפור שלנו לא יוצא דופן.
-            זוגות נופלים שוב ושוב לאותן המלכודות. אבל גיליתי גם משהו אחר —
+            זוגות נופלים שוב ושוב לאותן המלכודות. אבל גיליתי גם משהו אחר -
             שיש דרכים אחרות לצאת מהן. לא דרך הספה אצל המטפל, ולא דרך לילות
             של בכי. דרכים שמרגישות אחרת לגמרי. קלות יותר. חמות יותר. ביחד.
           </p>
@@ -219,8 +219,8 @@ export default function FounderStoryPage({
           </p>
           <p>
             לא היה רגע אחד דרמטי. היה תהליך. אבל בנקודה מסוימת הסתכלתי על
-            אושרת והבנתי שמשהו השתנה — אנחנו שוב <em style={{ fontStyle: "italic" }}>אנחנו</em>.
-            וכל מה שעברנו עד אז לא היה הסוף — הוא היה התחלה חדשה.
+            אושרת והבנתי שמשהו השתנה - אנחנו שוב <em style={{ fontStyle: "italic" }}>אנחנו</em>.
+            וכל מה שעברנו עד אז לא היה הסוף - הוא היה התחלה חדשה.
           </p>
         </Chapter>
 
@@ -231,10 +231,10 @@ export default function FounderStoryPage({
             מאוימים. את זה שבמשחק, מותר לשאול מה שלא היית מעז לשאול בארוחת ערב.
           </p>
           <p>
-            ברגע שחיברתי בין הידע שצברתי לבין האהבה הזאת — הבנתי שיש פה משהו.
-            התחלתי ליצור משחקים. בהתחלה רק לאושרת ולי. אחר-כך לחברים קרובים —
+            ברגע שחיברתי בין הידע שצברתי לבין האהבה הזאת - הבנתי שיש פה משהו.
+            התחלתי ליצור משחקים. בהתחלה רק לאושרת ולי. אחר-כך לחברים קרובים -
             אלה שראיתי אצלם את אותם הדפוסים שהיו אצלנו. הם עבדו. שם, בסלון,
-            על השולחן בארוחת ערב — הם פשוט עבדו.
+            על השולחן בארוחת ערב - הם פשוט עבדו.
           </p>
           <p>
             וזה היה הרגע שבו הבנתי שאני לא יכול לשמור את זה לעצמי.
@@ -243,28 +243,28 @@ export default function FounderStoryPage({
 
         <Chapter num={6} title="ככה נולדה מיאושי">
           <p>
-            עם הידע שצברתי, עם האהבה שלי למשחקים, ועם ההבנה שזה באמת עובד —
+            עם הידע שצברתי, עם האהבה שלי למשחקים, ועם ההבנה שזה באמת עובד -
             התחלתי לבנות משהו גדול יותר. מקום שיתן לזוגות אחרים את אותם
             הכלים בדיוק שעזרו לנו, בלי שיצטרכו לעבור את הדרך הארוכה שאני
             עברתי.
           </p>
           <p>
-            ככה נולדה מיאושי. בית — יצירתי, חם, חכם, ועם מטרה אחת ברורה:
+            ככה נולדה מיאושי. בית - יצירתי, חם, חכם, ועם מטרה אחת ברורה:
             להחזיר לזוגיות את הרוח שלה. המשחקים שפיתחתי לאורך השנים מובילים
-            אתכם למסע שמחבר אתכם מחדש — בתקשורת, בתשוקה, באינטימיות. אנחנו
+            אתכם למסע שמחבר אתכם מחדש - בתקשורת, בתשוקה, באינטימיות. אנחנו
             לא בקדמת הבמה. אנחנו ברקע, מלווים. צעד אחר צעד.
           </p>
           <p>
-            ולמי שמוכן ללכת רחוק יותר — פתחנו דלת גם לעולם של אביזרי המין.
+            ולמי שמוכן ללכת רחוק יותר - פתחנו דלת גם לעולם של אביזרי המין.
             בעדינות, בהדרגה, דרך מארזי תשוקה ומשחקים שיצרנו במיוחד למטרה הזו.
-            תמיד באיכות. תמיד בטעם טוב. ותמיד ממקום שאנחנו עומדים מאחוריו —
+            תמיד באיכות. תמיד בטעם טוב. ותמיד ממקום שאנחנו עומדים מאחוריו -
             כי גם אנחנו עברנו את הדרך הזו.
           </p>
         </Chapter>
 
         {/* ───── THE NAMING CHAPTER ───── */}
         {/* This is the brand's emotional keystone. Visually it deserves its
-            own treatment — a soft accent card with the Italian etymology
+            own treatment - a soft accent card with the Italian etymology
             broken out so the reader sees the wordplay rather than parsing
             it from prose. */}
         <Chapter num={7} title='למה "מיאושי"?'>
@@ -273,14 +273,14 @@ export default function FounderStoryPage({
             הוא יצא מתוך הסיפור הכי אישי שלנו.
           </Lede>
           <p>
-            ארבע שנים מטריפות ביליתי באיטליה — עם אושרת, אשתי, שאז עוד הייתה
-            החברה שלי. איטלקית — השפה הסקסית ביותר שיש — נכנסה לי לדם. כשחזרנו
+            ארבע שנים מטריפות ביליתי באיטליה - עם אושרת, אשתי, שאז עוד הייתה
+            החברה שלי. איטלקית - השפה הסקסית ביותר שיש - נכנסה לי לדם. כשחזרנו
             הביתה, היא נשארה איתנו. כינויי החיבה, המשפטים הקטנים, הצורה שבה
             קוראים לאהוב.
           </p>
           <p>וככה, בלי שתכננו, נבנה גם השם:</p>
 
-          {/* Etymology breakout — three rows, each a piece of the name */}
+          {/* Etymology breakout - three rows, each a piece of the name */}
           <div
             className="my-8 rounded-[20px] border border-amber-200/70 bg-gradient-to-br from-amber-50 to-rose-50/60 px-6 py-7 sm:px-8 sm:py-8"
             dir="rtl"
@@ -320,19 +320,19 @@ export default function FounderStoryPage({
 
           <p>
             כל פעם שמישהו אומר את השם, הוא בעצם אומר את המשפט הכי אינטימי
-            שיכול להיות בין שני אנשים — <em style={{ fontStyle: "italic" }}>
+            שיכול להיות בין שני אנשים - <em style={{ fontStyle: "italic" }}>
             אישה שלי</em>. וזה בדיוק מה שמיאושי עוסקת בו.
           </p>
         </Chapter>
 
         <Chapter num={8} title="הסיפור הזה יכול להיות גם שלכם">
           <p>
-            מאהבה ותשוקה ענקיות, דרך הדעיכה שמביא איתו הזמן, ומשם — הצתה
+            מאהבה ותשוקה ענקיות, דרך הדעיכה שמביא איתו הזמן, ומשם - הצתה
             חוזרת של כל מה שהדליק אותנו פעם, באיטליה, בתחילת הדרך.
           </p>
           <p>
             הסיפור הזה לא רק שלי. הוא של אלפי זוגות שעברו אותו דרך מיאושי.
-            ובדיוק בשביל זה הקמתי את המקום הזה — כדי שלא תצטרכו לקרוא מאות
+            ובדיוק בשביל זה הקמתי את המקום הזה - כדי שלא תצטרכו לקרוא מאות
             ספרים, לעבור עשרות קורסים, ולעשות את הטעויות שאנחנו עשינו, לפני
             שתחזרו לעצמכם.
           </p>
@@ -342,7 +342,7 @@ export default function FounderStoryPage({
         </Chapter>
 
         {/* ───── CLOSING CTA ─────
-            Primary "התחילו את המסע שלכם" routes to /journey by request —
+            Primary "התחילו את המסע שלכם" routes to /journey by request -
             after a 7-minute personal-letter read, the reader is in the
             highest emotional readiness state of the funnel and the right
             move is to drop them into the most committed product (Journey)
@@ -384,7 +384,7 @@ export default function FounderStoryPage({
           </div>
         </div>
 
-        {/* Footer note — soft sign-off, the equivalent of "yours, Itzik" at
+        {/* Footer note - soft sign-off, the equivalent of "yours, Itzik" at
             the bottom of a long letter. Marketing surfaces below the article
             (footer / nav) make the page feel like a real read instead of a
             trapped destination. */}
@@ -402,11 +402,11 @@ export default function FounderStoryPage({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Subcomponents — kept inline so the page reads top-to-bottom as a story.
+// Subcomponents - kept inline so the page reads top-to-bottom as a story.
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Chapter — numbered section with a serif title. The number is set in
+ * Chapter - numbered section with a serif title. The number is set in
  * italic-serif rose, the title in a heavier serif, and there's a thin
  * horizontal rule between chapters so the reader's eye gets a beat to
  * breathe between sections.
@@ -422,7 +422,7 @@ function Chapter({
 }) {
   return (
     <section className="mt-14 first:mt-0 sm:mt-16">
-      {/* Chapter divider — only show above non-first chapters; the first
+      {/* Chapter divider - only show above non-first chapters; the first
           chapter sits directly under the hero pull-quote. */}
       {num > 1 ? (
         <div
@@ -462,7 +462,7 @@ function Chapter({
 }
 
 /**
- * Lede — the first paragraph of a chapter, slightly heavier weight + a
+ * Lede - the first paragraph of a chapter, slightly heavier weight + a
  * touch larger than body. Editorial convention; signals "this is the
  * opening claim of the section, lean in".
  */
@@ -475,7 +475,7 @@ function Lede({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * PullQuote — interrupts the flow at a key emotional beat. Larger, italic,
+ * PullQuote - interrupts the flow at a key emotional beat. Larger, italic,
  * serif, and indented from the body so the eye knows it's not regular text.
  */
 function PullQuote({ children }: { children: React.ReactNode }) {
@@ -490,7 +490,7 @@ function PullQuote({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * EtymologyRow — used inside the naming chapter to break down the Italian
+ * EtymologyRow - used inside the naming chapter to break down the Italian
  * roots of "Mioshy". Two columns: the Italian word large in serif, the
  * Hebrew meaning in body sans on the right.
  */

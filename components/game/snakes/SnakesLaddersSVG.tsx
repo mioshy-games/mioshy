@@ -5,16 +5,16 @@ import type { GameConfig } from "@/lib/snakes/types";
 import { cellToBoardPercent } from "@/lib/snakes/boardUtils";
 
 /**
- * SnakesLaddersSVG — draws snakes and ladders as large graphical paths
+ * SnakesLaddersSVG - draws snakes and ladders as large graphical paths
  * stretched across multiple cells, overlaid on top of the cell grid.
  *
  * Rationale (from Itzik): snakes should NOT be tiny emoji inside a single
- * cell — they should be big, beautiful illustrations that carry the visual
+ * cell - they should be big, beautiful illustrations that carry the visual
  * identity of the board, spanning from the "from" cell to the "to" cell.
  *
  * Implementation:
  *   • Coordinates are expressed in a 100×100 viewBox mapped to the board's
- *     square bounding box — so the overlay scales perfectly with the grid.
+ *     square bounding box - so the overlay scales perfectly with the grid.
  *   • Snakes are drawn as a curvy S-body with a patterned fill, gradient
  *     shading, and a little head with eyes + tongue at the "from" end.
  *   • Ladders are drawn as two parallel rails with evenly-spaced rungs,
@@ -60,7 +60,7 @@ export function SnakesLaddersSVG({
       aria-hidden
     >
       <defs>
-        {/* Snake skin gradient — emerald with a darker belly */}
+        {/* Snake skin gradient - emerald with a darker belly */}
         <linearGradient id={`snakeSkin-${uid}`} x1="0" x2="0" y1="0" y2="1">
           <stop offset="0%" stopColor="#22c55e" />
           <stop offset="60%" stopColor="#15803d" />
@@ -86,7 +86,7 @@ export function SnakesLaddersSVG({
         </pattern>
       </defs>
 
-      {/* Ladders first — snakes render on top of them */}
+      {/* Ladders first - snakes render on top of them */}
       {ladderPaths.map((lp, i) => (
         <Ladder
           key={`ladder-${i}-${lp.item.from}-${lp.item.to}`}
@@ -142,7 +142,7 @@ function Ladder({
   const rightFrom = { x: fromX - px * halfW, y: fromY - py * halfW };
   const rightTo = { x: toX - px * halfW, y: toY - py * halfW };
 
-  // Rungs — every ~3.5 vb units along the line
+  // Rungs - every ~3.5 vb units along the line
   const rungCount = Math.max(3, Math.round(len / 3.5));
   const rungs: Array<{ a: { x: number; y: number }; b: { x: number; y: number } }> = [];
   for (let i = 1; i < rungCount; i++) {
@@ -208,9 +208,9 @@ function Snake({
   gradientId: string;
   patternId: string;
 }) {
-  // Construct a curvy cubic Bezier S-shape from (fromX,fromY) — the HEAD,
-  // which sits on the snake's "from" cell (always higher on the board) —
-  // down to (toX,toY) — the TAIL. Control points are offset perpendicular
+  // Construct a curvy cubic Bezier S-shape from (fromX,fromY) - the HEAD,
+  // which sits on the snake's "from" cell (always higher on the board) -
+  // down to (toX,toY) - the TAIL. Control points are offset perpendicular
   // to the line and alternated to create the S curve.
 
   const dx = toX - fromX;
@@ -222,7 +222,7 @@ function Snake({
   // Curve amplitude proportional to length → longer snakes curve more
   const amp = Math.min(18, Math.max(6, len * 0.35));
 
-  // Two control points flipping sides — classic S-curve
+  // Two control points flipping sides - classic S-curve
   const cp1x = fromX + dx * 0.33 + px * amp;
   const cp1y = fromY + dy * 0.33 + py * amp;
   const cp2x = fromX + dx * 0.66 - px * amp;
@@ -232,7 +232,7 @@ function Snake({
 
   return (
     <g style={{ filter: "drop-shadow(0 0.6px 0.8px rgba(0,0,0,0.55))" }}>
-      {/* body underlay — darker edge for depth */}
+      {/* body underlay - darker edge for depth */}
       <path
         d={d}
         fill="none"
@@ -265,7 +265,7 @@ function Snake({
         strokeWidth={0.5}
         strokeLinecap="round"
       />
-      {/* head — a small filled circle + eyes + tongue at the "from" end */}
+      {/* head - a small filled circle + eyes + tongue at the "from" end */}
       <SnakeHead x={fromX} y={fromY} angle={Math.atan2(cp1y - fromY, cp1x - fromX)} />
     </g>
   );

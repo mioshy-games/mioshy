@@ -100,7 +100,7 @@ export async function deleteQuestion(questionId: string, gameId: string) {
  * Returns { ok, deleted } on success or { ok: false, error } on failure.
  */
 export async function clearAllQuestions(gameId?: string | null) {
-  await requireAdmin(); // auth check — still need a valid admin session
+  await requireAdmin(); // auth check - still need a valid admin session
   const admin = await createAdminClient();
 
   // Select IDs first so we know what we're deleting (also gives us the count)

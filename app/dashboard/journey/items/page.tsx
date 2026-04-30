@@ -111,7 +111,7 @@ export default async function ItemsListPage({
                 >
                   {searchParams.category
                     ? "No items in this category yet."
-                    : "No items yet — click \"New item\" to add one."}
+                    : "No items yet - click \"New item\" to add one."}
                 </TableCell>
               </TableRow>
             ) : (
@@ -144,7 +144,7 @@ export default async function ItemsListPage({
                           {cat.name_he}
                         </Link>
                       ) : (
-                        "—"
+                        "-"
                       )}
                     </TableCell>
                     <TableCell className="text-muted-foreground font-mono text-xs">

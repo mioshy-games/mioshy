@@ -9,6 +9,6 @@ export const dynamic = "force-dynamic";
 export default async function NewExperienceGamePage() {
   await requireAdmin();
   await createAndRedirectNewGame();
-  // redirect() throws internally — nothing below is reached
+  // redirect() throws internally - nothing below is reached
   return null;
 }

@@ -13,7 +13,7 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Root metadata — inherited by every page, with per-page metadata overriding
+// Root metadata - inherited by every page, with per-page metadata overriding
 // only what's specific. Without `metadataBase`, every per-page OG/Twitter URL
 // is relative and crawlers / unfurlers (Slack, Twitter, Facebook, Google) can
 // not resolve them. Defining it once here fixes social-share previews
@@ -26,11 +26,11 @@ const SITE_URL = (
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Mioshy — Couples games that warm up the connection",
+    default: "Mioshy - Couples games that warm up the connection",
     template: "%s · Mioshy",
   },
   description:
-    "Mioshy is a platform for couples — games, an online couple-therapy track, and a personalised journey. Built by relationship experts.",
+    "Mioshy is a platform for couples - games, an online couple-therapy track, and a personalised journey. Built by relationship experts.",
   applicationName: "Mioshy",
   authors: [{ name: "Mioshy" }],
   // Default OG card. Pages that override `openGraph` will replace this entirely
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
         url: "/images/og-default.png",
         width: 1200,
         height: 630,
-        alt: "Mioshy — Couples games",
+        alt: "Mioshy - Couples games",
       },
     ],
   },
@@ -85,7 +85,7 @@ const assistant = Assistant({
   display: "swap",
 });
 
-// New homepage v2 fonts — body, accent serif, and display serif.
+// New homepage v2 fonts - body, accent serif, and display serif.
 // Loaded alongside the existing fonts so legacy pages stay untouched.
 const heebo = Heebo({
   subsets: ["hebrew", "latin"],

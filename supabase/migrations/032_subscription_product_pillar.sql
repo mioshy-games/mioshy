@@ -1,7 +1,7 @@
 -- ============================================================
 -- 032_subscription_product_pillar.sql
 -- Distinguish subscriptions by product pillar (games / journey / adults).
--- Pre-launch migration — no live user backfill needed beyond defaulting
+-- Pre-launch migration - no live user backfill needed beyond defaulting
 -- existing rows to 'journey' (which is what the old flow was built for).
 -- ============================================================
 

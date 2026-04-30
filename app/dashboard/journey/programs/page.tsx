@@ -65,7 +65,7 @@ export default async function ProgramsListPage() {
                   colSpan={6}
                   className="text-muted-foreground h-24 text-center"
                 >
-                  No programs yet — click &quot;New program&quot; to add one.
+                  No programs yet - click &quot;New program&quot; to add one.
                 </TableCell>
               </TableRow>
             ) : (

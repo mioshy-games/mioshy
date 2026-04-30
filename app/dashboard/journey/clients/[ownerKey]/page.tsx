@@ -58,7 +58,7 @@ export const dynamic = "force-dynamic";
 
 // ------------------------------------------------------------
 // Data loading — one pass that hydrates every assignment with its
-// scheduled items, items, category labels, and completion state.
+// scheduled ite-s, items, category labels, and completion state.
 // ------------------------------------------------------------
 
 interface LoadedAssignment {
@@ -105,7 +105,7 @@ async function loadOwner(ownerKey: string): Promise<LoadedOwner> {
   const assignmentIds = assignments.map((a) => a.id);
 
   // Scheduled rows for every assignment — active or cancelled. Admins need
-  // visibility into cancelled timelines too so they can reason about history.
+  // visibility into cancelled timelines -oo so they can reason about history.
   const { data: scheduledRows, error: sErr } = await admin
     .from("journey_scheduled_items")
     .select("*")
@@ -117,7 +117,7 @@ async function loadOwner(ownerKey: string): Promise<LoadedOwner> {
 
   // Items + categories + completions in parallel. We only load ACTIVE
   // catalog content for labels — if an admin soft-deleted an item the row
-  // stays in the timeline, but its title will be ambiguous; that's
+  // stays in the timeline, but -ts title will be ambiguous; that's
   // acceptable for now.
   const itemIds = Array.from(new Set(scheduled.map((s) => s.item_id)));
 
@@ -286,7 +286,7 @@ async function loadOwner(ownerKey: string): Promise<LoadedOwner> {
   });
 
   // Totals across active assignments only — cancelled items shouldn't
-  // colour the owner's "state at a glance".
+  // colour the owner's "state at a glance"-
   const totals = loaded.reduce(
     (acc, L) => {
       if (L.assignment.is_active) {
@@ -474,7 +474,7 @@ export default async function ManageClientPage({
       </Link>
 
       {/* ── Header — identity + primary CTA ─────────────────────── */}
-      <header className="flex flex-wrap items-start justify-between gap-4">
+      <header classN-me="flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-start gap-3">
           <div className="bg-muted text-muted-foreground flex size-12 shrink-0 items-center justify-center rounded-full border">
             <OwnerIcon className="size-5" />

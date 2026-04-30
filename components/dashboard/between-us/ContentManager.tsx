@@ -46,19 +46,19 @@ const LEVELS: { value: Level; labelHe: string; hint: string; accent: string }[] 
     {
       value: "מרגש",
       labelHe: "מרגש",
-      hint: "תוכן רגיש ורומנטי — מתאים לכולם",
+      hint: "תוכן רגיש ורומנטי - מתאים לכולם",
       accent: "bg-rose-50 text-rose-900 border-rose-200",
     },
     {
       value: "מעורר",
       labelHe: "מעורר",
-      hint: "תוכן מעורר — חושני ופתוח",
+      hint: "תוכן מעורר - חושני ופתוח",
       accent: "bg-amber-50 text-amber-900 border-amber-200",
     },
     {
       value: "ללא_גבולות",
       labelHe: "ללא גבולות",
-      hint: "תוכן מפורש — +18 בלבד",
+      hint: "תוכן מפורש - +18 בלבד",
       accent: "bg-violet-50 text-violet-900 border-violet-200",
     },
   ];
@@ -108,7 +108,7 @@ export function ContentManager({
 
   return (
     <>
-      {/* Level selector — stickier than chunky tabs */}
+      {/* Level selector - stickier than chunky tabs */}
       <div className="bg-card overflow-x-auto rounded-lg border">
         <div className="flex min-w-max gap-1 p-1.5">
           {LEVELS.map((l) => {
@@ -188,7 +188,7 @@ export function ContentManager({
 
             {rows.length === 0 ? (
               <div className="text-muted-foreground py-12 text-center text-sm">
-                No cards yet — click{" "}
+                No cards yet - click{" "}
                 <strong className="text-foreground">New card</strong> to add the
                 first one.
               </div>
@@ -351,7 +351,7 @@ function ContentRow({
             dir="rtl"
           >
             {row.body_he || row.body_en || (
-              <em>No body yet — click to edit</em>
+              <em>No body yet - click to edit</em>
             )}
           </p>
         </button>
@@ -563,7 +563,7 @@ function ContentEditDialog({
                 onChange={(e) => setBodyHe(e.target.value)}
                 rows={8}
                 maxLength={4000}
-                placeholder="גוף הכרטיס — מה זוג רואה כשהם פותחים אותו"
+                placeholder="גוף הכרטיס - מה זוג רואה כשהם פותחים אותו"
               />
             </div>
             <div className="space-y-1.5">
@@ -578,7 +578,7 @@ function ContentEditDialog({
                 onChange={(e) => setBodyEn(e.target.value)}
                 rows={8}
                 maxLength={4000}
-                placeholder="Body — what the couple sees when opening this card"
+                placeholder="Body - what the couple sees when opening this card"
               />
             </div>
           </div>

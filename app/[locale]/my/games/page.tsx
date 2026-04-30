@@ -23,10 +23,10 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const isHe = params.locale === "he";
   return {
-    title: `Mioshy — ${isHe ? "משחקים · הגלריה" : "Games · Gallery"}`,
+    title: `Mioshy - ${isHe ? "משחקים · הגלריה" : "Games · Gallery"}`,
     description: isHe
-      ? "גלגל האמת, נחשים ושלבים — כל המשחקים שלכם, מוכנים להפעלה."
-      : "Truth wheel, snakes & ladders — all your games, ready to play.",
+      ? "גלגל האמת, נחשים ושלבים - כל המשחקים שלכם, מוכנים להפעלה."
+      : "Truth wheel, snakes & ladders - all your games, ready to play.",
   };
 }
 
@@ -55,7 +55,7 @@ export default async function MyGamesGalleryPage({
   return (
     <div
       dir={isHe ? "rtl" : "ltr"}
-      className="min-h-[100dvh] bg-gradient-to-b from-[#0a0620] via-[#12082c] to-[#05020f] text-white"
+      className="min-h-[100dvh] text-white"
     >
       <main className="mx-auto max-w-6xl px-4 pb-20 pt-10 sm:pt-14">
         <Link
@@ -81,8 +81,8 @@ export default async function MyGamesGalleryPage({
             </h1>
             <p className="mt-3 max-w-2xl text-white/70">
               {isHe
-                ? "משחקי גלגל ואמת או חובה, נחשים ושלבים — בוחרים ומתחילים בערב אחד."
-                : "Truth wheel and snakes & ladders — pick one and play tonight."}
+                ? "משחקי גלגל ואמת או חובה, נחשים ושלבים - בוחרים ומתחילים בערב אחד."
+                : "Truth wheel and snakes & ladders - pick one and play tonight."}
             </p>
           </div>
         </section>
@@ -123,7 +123,7 @@ export default async function MyGamesGalleryPage({
           </div>
 
           {games.length === 0 ? (
-            <p className="mt-6 text-white/60">—</p>
+            <p className="mt-6 text-white/60">-</p>
           ) : (
             <ul className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {games.map((g) => {

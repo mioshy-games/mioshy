@@ -33,7 +33,7 @@ export interface ProfileGate {
  * Fetch profile + auth signals and decide whether the caller is
  * allowed to take "privileged" actions (pair / redeem / play / buy).
  *
- * Returns `null` when there is no signed-in user — callers should
+ * Returns `null` when there is no signed-in user - callers should
  * treat that as "login_required" rather than "profile_incomplete".
  */
 export async function getProfileGate(): Promise<ProfileGate | null> {

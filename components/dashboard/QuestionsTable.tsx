@@ -187,7 +187,7 @@ export function QuestionsTable({
                 <TableRow key={q.id}>
                   {mode === "global" ? (
                     <TableCell className="max-w-[160px] truncate text-sm">
-                      {q.game_name ?? "—"}
+                      {q.game_name ?? "-"}
                     </TableCell>
                   ) : null}
                   <TableCell>

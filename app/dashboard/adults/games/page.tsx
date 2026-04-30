@@ -119,7 +119,7 @@ export default async function BetweenUsGamesListPage({
                     colSpan={6}
                     className="text-muted-foreground h-24 text-center"
                   >
-                    No games yet — click &quot;New game&quot; to add one.
+                    No games yet - click &quot;New game&quot; to add one.
                   </TableCell>
                 </TableRow>
               ) : (
@@ -127,7 +127,7 @@ export default async function BetweenUsGamesListPage({
                   <TableRow key={g.id}>
                     <TableCell className="align-top">
                       <div className="font-medium">
-                        {g.title_he || g.title_en || "—"}
+                        {g.title_he || g.title_en || "-"}
                       </div>
                       {g.title_en ? (
                         <div className="text-muted-foreground text-xs">

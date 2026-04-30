@@ -1,13 +1,13 @@
 /**
- * /[locale]/adults/[slug]/play — POST-PURCHASE GAME SURFACE.
+ * /[locale]/adults/[slug]/play - POST-PURCHASE GAME SURFACE.
  *
  * Reusable game-experience template. Designed once, fits every game
- * we add to the catalogue — the structure adapts to whatever
+ * we add to the catalogue - the structure adapts to whatever
  * content rows + full_desc the admin saves for that game.
  *
  * Visual direction
  * ────────────────
- * Dark / sexy / playful — NOT an article. Bigger typography, magazine
+ * Dark / sexy / playful - NOT an article. Bigger typography, magazine
  * layout, alternating two-column stage cards, role-coded sections
  * (blue for "him", red for "her") parsed from the full_desc text,
  * a sparkle burst on first load to mark the unlock moment, and a
@@ -53,14 +53,14 @@ export async function generateMetadata({
       ? "המשחק שלכם"
       : "Your game";
   return {
-    // Owners-only — keep out of the index.
+    // Owners-only - keep out of the index.
     robots: { index: false, follow: false },
-    title: `Mioshy — ${title}`,
+    title: `Mioshy - ${title}`,
   };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Role detection — splits a free-form `full_desc` into typed paragraphs so we
+// Role detection - splits a free-form `full_desc` into typed paragraphs so we
 // can render "his" / "hers" sections in their own colour-coded panels.
 //
 // The admin field is plain text. If they prefix a paragraph with one of
@@ -74,14 +74,14 @@ export async function generateMetadata({
 type Role = "his" | "hers" | "prose";
 
 const HIS_PATTERNS = [
-  /^\s*תפקיד\s+(?:הגבר|האיש)\s*[:\-—–]?/i,
-  /^\s*(?:הגבר|האיש)\s*[:\-—–]/i,
-  /^\s*(?:his\s+role|he)\s*[:\-—–]/i,
+  /^\s*תפקיד\s+(?:הגבר|האיש)\s*[:\--–]?/i,
+  /^\s*(?:הגבר|האיש)\s*[:\--–]/i,
+  /^\s*(?:his\s+role|he)\s*[:\--–]/i,
 ];
 const HERS_PATTERNS = [
-  /^\s*תפקיד\s+האישה\s*[:\-—–]?/i,
-  /^\s*האישה\s*[:\-—–]/i,
-  /^\s*(?:her\s+role|she)\s*[:\-—–]/i,
+  /^\s*תפקיד\s+האישה\s*[:\--–]?/i,
+  /^\s*האישה\s*[:\--–]/i,
+  /^\s*(?:her\s+role|she)\s*[:\--–]/i,
 ];
 
 function detectRole(paragraph: string): Role {
@@ -98,11 +98,11 @@ function splitParagraphs(text: string): string[] {
 }
 
 // Paragraphs labelled "his" or "hers" usually start with the marker
-// followed by a colon — we strip that prefix so the role chip carries
+// followed by a colon - we strip that prefix so the role chip carries
 // the label and the body reads cleanly without repetition.
 function stripRoleHeader(paragraph: string): string {
   return paragraph.replace(
-    /^\s*(?:תפקיד\s+(?:הגבר|האיש|האישה)|(?:הגבר|האיש|האישה|his\s+role|her\s+role|he|she))\s*[:\-—–]\s*/i,
+    /^\s*(?:תפקיד\s+(?:הגבר|האיש|האישה)|(?:הגבר|האיש|האישה|his\s+role|her\s+role|he|she))\s*[:\--–]\s*/i,
     "",
   );
 }
@@ -139,7 +139,7 @@ export default async function PlayExperienceGamePage({
 
   // ── Gated payload ───────────────────────────────────────────────────────
   // NOTE: experience_game_content (per-level "stage cards") is intentionally
-  // NOT fetched here. Our games are scenario-based — one continuous arc told
+  // NOT fetched here. Our games are scenario-based - one continuous arc told
   // through `full_desc` + role panels (תפקיד הגבר / תפקיד האישה), not Q&A
   // decks. The card grid produced misleading output (generic seed prompts
   // showing as if they were the game's stages). If we ever add a true
@@ -155,7 +155,7 @@ export default async function PlayExperienceGamePage({
   const fullDescParas = fullDesc ? splitParagraphs(fullDesc) : [];
 
   // Optional in-play question reference (only set on games that need
-  // it — most don't). When the locale's questions array is empty, the
+  // it - most don't). When the locale's questions array is empty, the
   // whole "Play questions" section below renders nothing.
   const playQuestionsIntro = (
     isHe ? game.play_questions_intro_he : game.play_questions_intro_en
@@ -169,11 +169,11 @@ export default async function PlayExperienceGamePage({
       dir={isHe ? "rtl" : "ltr"}
       // `isolate` (CSS isolation: isolate) is REQUIRED so the negative
       // z-index PlayAmbience layer paints inside this wrapper's stacking
-      // context — otherwise its bg-[#040114] above paints OVER the fog
+      // context - otherwise its bg-[#040114] above paints OVER the fog
       // blobs and you see flat black. See AmbienceDebugProbe for details.
       className="relative isolate min-h-[100dvh] overflow-hidden bg-[#040114] text-white"
     >
-      {/* Deep-midnight base — slightly cooler than /adults so the play
+      {/* Deep-midnight base - slightly cooler than /adults so the play
           surface feels distinct. The animated PlayAmbience layer paints
           blue + red mood lighting on top. */}
       <div
@@ -183,7 +183,7 @@ export default async function PlayExperienceGamePage({
       <PlayAmbience />
 
       {/* Outer rail matches the rest of the site (max-w-7xl, mx-auto, px-4)
-          so the page sits on the same grid as header & footer — but
+          so the page sits on the same grid as header & footer - but
           *reading content* inside is capped tighter (≈ max-w-[680px], the
           ~60–70 character optimum for sustained reading per cognitive
           psychology research on saccade jumps). The cover image is
@@ -203,7 +203,7 @@ export default async function PlayExperienceGamePage({
 
         {/* ───── HERO ─────
             Centered reading column. Title stays in Frank Ruhl serif (it's
-            display) but everything below — eyebrow, lede, levels — uses
+            display) but everything below - eyebrow, lede, levels - uses
             Assistant for cleaner readability against the dark surface. */}
         <section className="relative mx-auto mt-10 max-w-[680px]">
           <span
@@ -238,7 +238,7 @@ export default async function PlayExperienceGamePage({
             </p>
           ) : null}
 
-          {/* Levels strip — quick reminder of the intensity profile */}
+          {/* Levels strip - quick reminder of the intensity profile */}
           <div className="mt-6 flex flex-wrap gap-2.5">
             <LevelChip
               icon={<Heart className="h-3.5 w-3.5 text-rose-200" />}
@@ -257,7 +257,7 @@ export default async function PlayExperienceGamePage({
             />
           </div>
 
-          {/* Cover image — capped to the same reading column width
+          {/* Cover image - capped to the same reading column width
               (680px) at a 16:10 ratio so it doesn't dwarf the text. The
               previous full-bleed cover at max-w-7xl was ~6× taller than
               the next paragraph, breaking the visual hierarchy of a
@@ -286,7 +286,7 @@ export default async function PlayExperienceGamePage({
 
         {/* ───── THE STORY (full_desc) ─────
             Reading column stays capped at 680px. Body switches to
-            Assistant (var(--font-body-hebrew)) — Frank Ruhl Libre is a
+            Assistant (var(--font-body-hebrew)) - Frank Ruhl Libre is a
             display serif and was punishing to read at 18px on the dark
             ground. Sans + 17–18px + 1.75 leading + white/90 contrast is
             the configuration that actually reads. */}
@@ -373,10 +373,10 @@ export default async function PlayExperienceGamePage({
           </section>
         ) : null}
 
-        {/* ───── PLAY QUESTIONS — optional reference list ─────
+        {/* ───── PLAY QUESTIONS - optional reference list ─────
             Only renders when the admin saved at least one question for
             this game in the active locale. Display-only: no answer
-            input, no submit, no scoring — just the numbered list the
+            input, no submit, no scoring - just the numbered list the
             couple reads from at the table when their physical-game
             trigger fires (drew a card / landed on a tile / etc). */}
         {playQuestions.length > 0 ? (
@@ -392,8 +392,8 @@ export default async function PlayExperienceGamePage({
               {playQuestionsIntro && playQuestionsIntro.length > 0
                 ? playQuestionsIntro
                 : isHe
-                  ? "ענו על השאלה הבאה — לפי הסדר או לבחירתכם."
-                  : "Answer the next question — in order or as you wish."}
+                  ? "ענו על השאלה הבאה - לפי הסדר או לבחירתכם."
+                  : "Answer the next question - in order or as you wish."}
             </h2>
 
             <ol className="mt-8 space-y-3 list-none p-0">
@@ -439,13 +439,13 @@ export default async function PlayExperienceGamePage({
             }}
           >
             {isHe
-              ? "אין סדר נכון. אין מהירות נכונה. כל מה שמתאים לכם — זה הנכון."
-              : "There's no right order. No right pace. Whatever fits the two of you — that's right."}
+              ? "אין סדר נכון. אין מהירות נכונה. כל מה שמתאים לכם - זה הנכון."
+              : "There's no right order. No right pace. Whatever fits the two of you - that's right."}
           </p>
         </section>
       </main>
 
-      {/* Sparkle keyframes — same as the marketing hero burst (one-shot,
+      {/* Sparkle keyframes - same as the marketing hero burst (one-shot,
           honours prefers-reduced-motion). */}
       <style
         dangerouslySetInnerHTML={{
@@ -541,7 +541,7 @@ function LevelChip({
   );
 }
 
-// Role-coded panel — "his" gets a deep-blue accent rail + chip; "hers"
+// Role-coded panel - "his" gets a deep-blue accent rail + chip; "hers"
 // gets a deep-red one. Body text styling stays consistent so the eye
 // can compare them side-by-side as the couple reads through.
 function RolePanel({
@@ -611,7 +611,7 @@ function RolePanel({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PlaySparkleBurst — same one-shot burst pattern as the /adults marketing
+// PlaySparkleBurst - same one-shot burst pattern as the /adults marketing
 // hero. Plays once on mount, lasts 4s, then settles. Pure CSS + deterministic
 // positions for SSR/hydration parity.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -620,7 +620,7 @@ function PlaySparkleBurst() {
   const SPARK_COUNT = 28;
   const TINTS = [
     "#fda4af", // rose-300
-    "#93c5fd", // blue-300 — for the play page's blue/red duality
+    "#93c5fd", // blue-300 - for the play page's blue/red duality
     "#f0abfc", // fuchsia-300
     "#fcd34d", // amber-300
     "#ffffff",

@@ -18,23 +18,23 @@ import type { WheelConfigRow } from "@/lib/types/database";
 import type { GameSettings } from "@/lib/types/settings";
 
 /**
- * LiveDemoHero — premium "Try-before-signup" hero for /games.
+ * LiveDemoHero - premium "Try-before-signup" hero for /games.
  *
  * Embeds the *production* Wheel.tsx component (same one used in
- * /games/honesty-or-challenge) — same colours, same divider, same
+ * /games/honesty-or-challenge) - same colours, same divider, same
  * easing, same spin curve. Just smaller and silent.
  *
  * Behaviour:
  *   • Auto-spins ONCE ~1.2s after mount (delegates to Wheel.spin())
  *   • forbiddenType="dare" → wheel always lands on a Truth slice for
  *     a clean, on-brand first impression
- *   • Sound is muted (isSpinSoundEnabled={false}) — autoplay-friendly
+ *   • Sound is muted (isSpinSoundEnabled={false}) - autoplay-friendly
  *   • After the wheel settles, a question card pops next to it with
  *     the sample question, and the primary CTA mutates to
  *     "המשיכו לשחק עם השאלה הזאת" → /games/honesty-or-challenge
  *
  * Slices, pointer colour, divider colour, inner circle colours all
- * arrive as props from the server-side fetch in /games/page.tsx —
+ * arrive as props from the server-side fetch in /games/page.tsx -
  * so the demo wheel always mirrors the live game's configuration.
  * Falls back to a sensible wine-palette default if the DB lookup
  * doesn't return data.
@@ -58,23 +58,23 @@ type Props = {
   sampleQuestionType: string;
   /** Wheel slices fetched from the live game's wheel_configs row. */
   slices: WheelSegment[] | null;
-  /** Full wheel_configs row of the demo game — used for chrome (colors,
+  /** Full wheel_configs row of the demo game - used for chrome (colors,
    *  marker_config, etc.) so the hero mirrors the admin-configured wheel. */
   wheelConfig: WheelConfigRow | null;
   /** GameSettings (markers, custom border, label fonts, motion easing,
-   *  background, particles) — same source TruthOrDareClient consumes,
+   *  background, particles) - same source TruthOrDareClient consumes,
    *  so anything an admin tweaks shows up here too. */
   gameSettings: GameSettings | null;
   /** Used as a theme key for the contained GamePageBackground. */
   gameSlug: string;
-  /** game.bg_value — solid/gradient base when gameSettings.background is absent. */
+  /** game.bg_value - solid/gradient base when gameSettings.background is absent. */
   gameBgValue: string | null;
 };
 
 type Phase = "idle" | "spinning" | "settled";
 
 // Wine-palette fallback if the DB lookup fails (game not found, no wheel
-// config, etc.) — keeps the hero functional in any environment.
+// config, etc.) - keeps the hero functional in any environment.
 const FALLBACK_SLICES: WheelSegment[] = [
   { type: "truth", label: "אמת",  color: "#B83C4D" },
   { type: "dare",  label: "אתגר", color: "#3D1F3D" },
@@ -112,7 +112,7 @@ export function LiveDemoHero({
     slices && slices.length > 0 ? slices : FALLBACK_SLICES;
 
   // Demo content — fixed wording per slice type. The actual game pulls
-  // questions from the DB; this is the marketing taste-tester.
+  // questions fro- the DB; this is the marketing taste-tester.
   const isChallenge =
     landedSlice?.type === "Challenge" || landedSlice?.type === "dare";
   const displayedQuestion = isChallenge
@@ -129,7 +129,7 @@ export function LiveDemoHero({
   }
 
   // ── Resolved Wheel props — mirrors TruthOrDareClient's mapping so the demo
-  //    wheel matches the admin-configured production wheel pixel-for-pixel.
+  //    wheel matches the adm-n-configured production wheel pixel-for-pixel.
   //    Priority: gameSettings → wheel_configs → safe defaults.
   const resolvedPointerColor =
     gameSettings?.wheel?.pointerColor ?? wheelConfig?.pointer_color ?? "#FAF6F7";
@@ -185,7 +185,7 @@ export function LiveDemoHero({
       : 0.72);
 
   // Motion — for the marketing demo we always spin for exactly 4s
-  // (per Itzik) regardless of admin spinSpeed, so the user gets a
+  // (per It-ik) regardless of admin spinSpeed, so the user gets a
   // predictable settle window for the question card to land.
   const resolvedSpinDuration = 4;
   const EASING_MAP: Record<string, number[] | string> = {
@@ -204,8 +204,8 @@ export function LiveDemoHero({
   const resolvedPointerSvgHeight = gameSettings?.wheel?.pointerSvgHeight;
 
   // Auto-spin immediately on mount — no entrance delay (per Itzik).
-  // Production Wheel handles all the easing, duration and landing math —
-  // we just trigger and listen.
+  // Production Wheel handles all th- easing, duration and landing math —
+  // we just trigger and listen.-
   //
   // Diagnostic logging: trace the chain to surface why the spin might
   // silently no-op (ref not yet assigned, options empty, double-mount
@@ -222,7 +222,7 @@ export function LiveDemoHero({
 
     // Defer one tick so Wheel's useImperativeHandle has assigned the ref.
     // Crucially: NO cleanup that cancels the timer — React 18 StrictMode
-    // tears down the first effect before the timer fires, and we want
+    // tears down the first effect before the timer -ires, and we want
     // the spin to happen exactly once. The Wheel's internal `spinning`
     // guard prevents a double-trigger if anything fires twice.
     setTimeout(() => {
@@ -240,10 +240,10 @@ export function LiveDemoHero({
       console.log("[LiveDemoHero] spin() called");
     }, 0);
     // Intentionally no cleanup — see comment above.
-  }, []);
+  }, [effectiveSlices]);
 
   // Dynamic CTA — once the wheel has landed, the primary CTA invites the
-  // user to continue with the very question they just got.
+  // user to cont-nue with the very question they just got.
   const isSettled = phase === "settled";
   const primaryLabel = isSettled
     ? isHe
@@ -378,11 +378,11 @@ export function LiveDemoHero({
         {/* ── WHEEL COLUMN ────────────────────────────────────────── */}
         <div className="relative z-10 flex w-full items-center justify-center lg:flex-1">
           {/* Wheel column — vertically centred to hero height; question
-              card is absolutely positioned ABOVE the wheel so the wheel
+              card is absol-tely positioned ABOVE the wheel so the wheel
               itself never shifts when the card lands. */}
           <div className="relative flex w-full items-center justify-center">
             {/* Sample question card — appears ABOVE the wheel after settle.
-                Dismissable via the X button (revealing the wheel fully). */}
+                Dismissable via the X-button (revealing the wheel fully). */}
             <AnimatePresence>
               {phase === "settled" && cardOpen ? (
                 <motion.div
@@ -423,7 +423,7 @@ export function LiveDemoHero({
                   </p>
 
                   {/* Single prominent CTA — "Spin again" actually drops the
-                      user straight into the live game where their next
+                      user straight into th- live game where their next
                       spin (and the rest of the flow) continues. */}
                   <Link
                     href={gameHref}
@@ -440,14 +440,14 @@ export function LiveDemoHero({
                   <p className="mt-2 text-center text-[12px] text-[#7A6A75]">
                     {isHe
                       ? "הסיבוב הבא ממשיך את הערב — בתוך המשחק עצמו."
-                      : "The next spin continues your evening — inside the game itself."}
-                  </p>
+                      : "The next spin continues y-ur evening — inside the game itself."}
+                  </p>-
                 </motion.div>
               ) : null}
             </AnimatePresence>
 
             {/* Production Wheel — identical to the live game.
-                550px (≈34.375rem). Sound muted; auto-spins once via ref.
+                550px (≈34.375rem-. Sound muted; auto-spins once via ref.
                 All chrome resolved from gameSettings → wheel_configs. */}
             <Wheel
               ref={wheelRef}
@@ -487,7 +487,7 @@ export function LiveDemoHero({
       </GamePageBackground>
 
       {/* Local keyframes — kept inline so the component is drop-in. */}
-      <style jsx>{`
+      <style jsx>{`-
         @keyframes mio-gradient-shift {
           0%,
           100% {

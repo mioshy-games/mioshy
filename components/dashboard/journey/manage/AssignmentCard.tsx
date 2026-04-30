@@ -1,17 +1,17 @@
 "use client";
 
 // ============================================================
-// AssignmentCard — the main unit of the Manage-Client panel.
+// AssignmentCard - the main unit of the Manage-Client panel.
 //
 // One card per journey_assignment row. Summarises the assignment
-// (source, anchor, state, progress dots) and — when expanded —
+// (source, anchor, state, progress dots) and - when expanded -
 // exposes the full, scannable per-item timeline underneath, grouped
 // by category. Each row has inline controls for unlock date editing
 // and removal so the admin never has to bounce to a different page
 // to nudge a schedule.
 //
 // Assignment-level ops (re-materialize, cancel/reactivate, delete)
-// reuse the existing AssignmentControls component — the user-facing
+// reuse the existing AssignmentControls component - the user-facing
 // behaviour is identical to /dashboard/journey/assignments/[id].
 // ============================================================
 
@@ -60,7 +60,7 @@ interface Stats {
 }
 
 function fmtDate(iso: string | null | undefined) {
-  if (!iso) return "—";
+  if (!iso) return "-";
   return new Date(iso).toLocaleDateString(undefined, {
     year: "numeric",
     month: "short",
@@ -75,7 +75,7 @@ function sourceIcon(kind: AssignmentCardSourceRef["kind"]) {
 }
 
 /**
- * Tiny horizontal progress bar that splits into segments — one per
+ * Tiny horizontal progress bar that splits into segments - one per
  * scheduled item. Admins get a visual density that tells them at a
  * glance how many items are completed, available, and still locked
  * without counting numbers.
@@ -246,7 +246,7 @@ export function AssignmentCard({
         <div className="border-t">
           {items.length === 0 ? (
             <div className="text-muted-foreground p-6 text-center text-sm">
-              No scheduled items for this assignment. Try re-materialize — the
+              No scheduled items for this assignment. Try re-materialize - the
               source may have been empty at creation time.
             </div>
           ) : (

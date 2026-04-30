@@ -38,7 +38,7 @@ export function AuthGateModal({ open, locale, deviceId, onAuthenticated, onClose
   const t = locale === "he"
     ? {
         title: "שמרו את ההתקדמות שלכם",
-        body: "כדי להמשיך — צריך חשבון קטן. שלוש שאלות נשמרו כבר, לא תאבדו כלום.",
+        body: "כדי להמשיך - צריך חשבון קטן. שלוש שאלות נשמרו כבר, לא תאבדו כלום.",
         fullName: "שם מלא",
         email: "אימייל",
         phone: "טלפון",
@@ -51,7 +51,7 @@ export function AuthGateModal({ open, locale, deviceId, onAuthenticated, onClose
       }
     : {
         title: "Save your progress",
-        body: "To continue we need a quick account. Your first 3 answers are safe — you won't lose anything.",
+        body: "To continue we need a quick account. Your first 3 answers are safe - you won't lose anything.",
         fullName: "Full name",
         email: "Email",
         phone: "Phone",

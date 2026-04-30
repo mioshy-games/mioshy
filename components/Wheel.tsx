@@ -266,7 +266,7 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
       ? eligible[Math.floor(Math.random() * eligible.length)]
       : Math.floor(Math.random() * options.length);
     const middleDeg = winIndex * segmentAngle + segmentAngle / 2;
-    // Land within ±38% of the segment width — keeps the pointer clearly inside
+    // Land within ±38% of the segment width - keeps the pointer clearly inside
     // the winning slice while making each spin look visually unique instead of
     // always stopping at the dead centre of the slice.
     const sliceJitter = (Math.random() - 0.5) * segmentAngle * 0.76;
@@ -353,18 +353,18 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
   // The wheel is square (aspect-ratio 1), so constraining width = constraining height.
   //
   // Sizing axes (all composed with CSS min/clamp):
-  //   1. 92 vw              — mobile cap; wheel never wider than 92% of viewport
-  //   2. 100dvh - budget    — height constraint: wheel + surrounding content fit
+  //   1. 92 vw              - mobile cap; wheel never wider than 92% of viewport
+  //   2. 100dvh - budget    - height constraint: wheel + surrounding content fit
   //                           within one viewport without scrolling
-  //   3. effectiveMax rem   — hard ceiling (60 rem ≈ 960 px default)
+  //   3. effectiveMax rem   - hard ceiling (60 rem ≈ 960 px default)
   //
   // Floor: 14rem (224px) absolute minimum when height-budget is active,
   //        so the wheel stays usable on very short screens (landscape mobile,
   //        small laptops). Without a budget the floor is wheelSizeRem.
   //
   // Note: wheelSizeRem (admin "Wheel size" slider) acts as the minimum floor
-  //       on game pages. The real maximum is the viewport height constraint —
-  //       not wheelSizeRem — so the wheel fills the screen proportionally.
+  //       on game pages. The real maximum is the viewport height constraint -
+  //       not wheelSizeRem - so the wheel fills the screen proportionally.
   //       Only a wheelSizeRemMax explicitly larger than wheelSizeRem acts as
   //       a hard cap; otherwise 60rem is used so the height constraint wins.
   const effectiveMax = (wheelSizeRemMax && wheelSizeRemMax > wheelSizeRem)
@@ -372,7 +372,7 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
     : 60; // 60rem ≈ 960 px; viewport constraints (92vw, 100dvh-N) do the real limiting
 
   // Primary sizing driver: remaining viewport height after surrounding content.
-  // No inner vw cap — 92vw outer cap already handles mobile.
+  // No inner vw cap - 92vw outer cap already handles mobile.
   const preferred = viewportBudgetPx > 0
     ? `calc(100dvh - ${viewportBudgetPx}px)`
     : `${wheelSizeRem}rem`; // no budget → treat sizeRem as a fixed target
@@ -409,14 +409,14 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
           }}
         />
       ) : (
-        // Legacy fallback — invisible div, actual ring comes from box-shadow on wheel div
+        // Legacy fallback - invisible div, actual ring comes from box-shadow on wheel div
         null
       )}
 
-      {/* ── Pointer — topmost element (z-30) ─────────────────────────────── */}
+      {/* ── Pointer - topmost element (z-30) ─────────────────────────────── */}
       {/* Above border ring (z-[5]), wheel disc (z-auto), and markers (z-20) */}
       {pointerSvg ? (
-        /* Custom SVG pointer — centered via marginLeft so inline style wins cleanly */
+        /* Custom SVG pointer - centered via marginLeft so inline style wins cleanly */
         <div
           className="pointer-events-none absolute z-30"
           style={{
@@ -590,7 +590,7 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
         ) : null}
       </div>
 
-      {/* ── Marker overlay — OUTSIDE the overflow-hidden div ──────────────── */}
+      {/* ── Marker overlay - OUTSIDE the overflow-hidden div ──────────────── */}
       {/* Rendered in a sibling SVG so dots are never clipped by the circular  */}
       {/* mask, even when markerRadius + markerSize/2 exceeds the wheel rim.   */}
       {/* z-20: above border ring (z-[5]) and wheel disc (z-auto),             */}

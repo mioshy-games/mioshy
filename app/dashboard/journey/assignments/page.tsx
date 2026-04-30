@@ -20,7 +20,7 @@ import { ArrowLeft, Plus } from "lucide-react";
 export const dynamic = "force-dynamic";
 
 function fmtDate(iso: string | null | undefined) {
-  if (!iso) return "—";
+  if (!iso) return "-";
   return new Date(iso).toLocaleDateString(undefined, {
     year: "numeric",
     month: "short",
@@ -105,7 +105,7 @@ export default async function AssignmentsListPage() {
               return (
                 <TableRow key={a.id}>
                   <TableCell className="font-mono text-xs">
-                    {ownerKey ?? "—"}
+                    {ownerKey ?? "-"}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">

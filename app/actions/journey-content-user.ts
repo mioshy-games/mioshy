@@ -7,7 +7,7 @@
 // write here uses this pattern:
 //
 //   1. Resolve the current user identity via the SESSION client
-//      (createServerSupabaseClient) — honours RLS, uses the signed-in
+//      (createServerSupabaseClient) - honours RLS, uses the signed-in
 //      cookie. Also runs the profile-complete gate so anonymous or
 //      half-onboarded users cannot trigger writes.
 //   2. Resolve authorization by loading the scheduled_item + its
@@ -17,7 +17,7 @@
 //   3. Perform the write through the ADMIN client (service role).
 //
 // This matches the project-wide rule we distilled in the Supabase SSR
-// memory — session-for-identity, admin-for-writes — because the
+// memory - session-for-identity, admin-for-writes - because the
 // @supabase/ssr JWT handshake to PostgREST is flaky and we've been bitten
 // by RLS-denied inserts under load. For reads inside user surfaces we
 // still use the session client (see getTimelineForOwner).
@@ -27,6 +27,7 @@ import { revalidatePath } from "next/cache";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { requireCompleteProfile } from "@/lib/auth/profile-gate";
+import { logActivity } from "@/lib/journey/activity";
 import type {
   JourneyAssignment,
   JourneyItemResponse,
@@ -52,7 +53,7 @@ async function resolveViewer(): Promise<
   if (!gate.ok) return { ok: false, error: gate.error };
   const userId = gate.gate.user_id;
 
-  // Every couple the user is currently a member of — usually 0 or 1, but
+  // Every couple the user is currently a member of - usually 0 or 1, but
   // we don't assume the RPC has enforced that invariant.
   const session = await createServerSupabaseClient();
   const { data: memberships, error } = await session
@@ -125,7 +126,7 @@ function revalidateTimeline() {
 }
 
 // ============================================================
-// Completions — mark / unmark
+// Completions - mark / unmark
 // ============================================================
 
 /**
@@ -168,6 +169,13 @@ export async function markScheduledItemComplete(
 
   if (error) return { ok: false, error: error.message };
 
+  await logActivity({
+    userId: viewer.userId,
+    coupleId: scope.assignment.couple_id ?? null,
+    scheduledItemId: scheduledItemId,
+    verb: "item_completed",
+  });
+
   revalidateTimeline();
   return {
     ok: true,
@@ -198,12 +206,19 @@ export async function unmarkScheduledItemComplete(
 
   if (error) return { ok: false, error: error.message };
 
+  await logActivity({
+    userId: viewer.userId,
+    coupleId: scope.assignment.couple_id ?? null,
+    scheduledItemId,
+    verb: "item_uncompleted",
+  });
+
   revalidateTimeline();
   return { ok: true };
 }
 
 // ============================================================
-// Responses — add / delete own
+// Responses - add / delete own
 // ============================================================
 
 const RESPONSE_MAX_LEN = 4000;
@@ -233,7 +248,7 @@ export async function addScheduledItemResponse(args: {
   if (!scope.ok) return scope;
 
   // Responding to a locked item makes no sense in the UI, but we block it
-  // server-side too — otherwise a curious client could seed answers before
+  // server-side too - otherwise a curious client could seed answers before
   // the item unlocks, which would surprise the partner.
   if (!isUnlocked(scope.scheduled)) {
     return { ok: false, error: "locked" };
@@ -255,12 +270,20 @@ export async function addScheduledItemResponse(args: {
     return { ok: false, error: error?.message ?? "insert_failed" };
   }
 
+  await logActivity({
+    userId: viewer.userId,
+    coupleId: scope.assignment.couple_id ?? null,
+    scheduledItemId,
+    verb: "response_posted",
+    payload: { is_private: !!args.isPrivate },
+  });
+
   revalidateTimeline();
   return { ok: true, response: data as JourneyItemResponse };
 }
 
 /**
- * Delete a response — only the author may delete. We don't expose an
+ * Delete a response - only the author may delete. We don't expose an
  * edit path yet; users who want to change wording should delete + repost
  * so the feed keeps append-only semantics for the partner.
  */
@@ -289,7 +312,7 @@ export async function deleteScheduledItemResponse(
     return { ok: false, error: "forbidden" };
   }
 
-  // Also sanity-check scope — if the user was removed from the couple
+  // Also sanity-check scope - if the user was removed from the couple
   // since they posted, we shouldn't let them touch the row anymore.
   const scope = await loadScheduledForViewer({
     scheduledItemId: resp.scheduled_item_id,
@@ -304,6 +327,13 @@ export async function deleteScheduledItemResponse(
     .eq("id", responseId);
 
   if (error) return { ok: false, error: error.message };
+
+  await logActivity({
+    userId: viewer.userId,
+    coupleId: scope.assignment.couple_id ?? null,
+    scheduledItemId: resp.scheduled_item_id,
+    verb: "response_deleted",
+  });
 
   revalidateTimeline();
   return { ok: true };

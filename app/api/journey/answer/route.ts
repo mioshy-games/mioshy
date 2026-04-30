@@ -18,9 +18,9 @@
  *    so `auth.uid()` is null during RLS checks. That was showing up as a
  *    `journey_create_failed` on the very first Q1 answer. Using admin
  *    client also sidesteps the `journey_responses_by_owner` policy, which
- *    doesn't allow the anonymous (device_id-only) write path — a real bug
+ *    doesn't allow the anonymous (device_id-only) write path - a real bug
  *    for Q1-Q5 that no user would hit through RLS.
- *  - `trusted_user_id` is authoritative (from the session cookie) — we
+ *  - `trusted_user_id` is authoritative (from the session cookie) - we
  *    never read `user_id` from the request body.
  *  - Per-(ip + device_id) sliding-window rate limit guards against script
  *    floods answering every question in a tight loop.
@@ -38,6 +38,7 @@ import {
   requiresPaywallAt,
 } from "@/lib/journey/questions";
 import { analyze } from "@/lib/journey/analysis";
+import { isValidOrder } from "@/lib/journey/priorities";
 import type { AnswerValue, Locale, Response } from "@/lib/journey/types";
 
 export const runtime = "nodejs";
@@ -62,6 +63,11 @@ function isValidAnswer(qType: string, answer: AnswerValue): boolean {
       return answer.kind === "multi" && Array.isArray(answer.options);
     case "reflection":
       return answer.kind === "text" && typeof answer.text === "string";
+    case "ranking":
+      // Must be an exact permutation of PRIORITY_KEYS — no missing slug,
+      // no extras, no duplicates. isValidOrder is the same helper the
+      // client uses pre-submit, so client and server agree on the shape.
+      return answer.kind === "ranking" && isValidOrder(answer.order);
     default:
       return false;
   }
@@ -180,6 +186,36 @@ export async function POST(req: Request) {
           .update({ user_id: trusted_user_id, device_id: null })
           .eq("id", anonJourney.id);
         journeyId = anonJourney.id;
+
+        // Backfill profile.gender from a previously-anon q_gender answer.
+        // The user just claimed their journey, so any answers stored against
+        // it (including q_gender from earlier in the assessment) should be
+        // mirrored onto their fresh profile row. Idempotent — a no-op if
+        // the user never answered q_gender.
+        const { data: genderRow } = await admin
+          .from("journey_responses")
+          .select("answer")
+          .eq("journey_id", anonJourney.id)
+          .eq("question_id", "q_gender")
+          .maybeSingle();
+        const ans = genderRow?.answer as AnswerValue | undefined;
+        if (
+          ans &&
+          ans.kind === "single" &&
+          typeof ans.option === "string" &&
+          ["male", "female", "other"].includes(ans.option)
+        ) {
+          const { error: gErr } = await admin
+            .from("profiles")
+            .update({ gender: ans.option })
+            .eq("id", trusted_user_id);
+          if (gErr) {
+            console.warn(
+              "[journey/answer] anon-claim gender backfill failed",
+              gErr.message,
+            );
+          }
+        }
       }
     }
   } else if (deviceId) {
@@ -230,6 +266,27 @@ export async function POST(req: Request) {
       { error: "answer_save_failed", detail: upsertErr.message },
       { status: 500 },
     );
+  }
+
+  // ── Side-effect: persist gender to profiles when q_gender is answered ──────
+  // The questionnaire's q_gender is a forced_choice with option ids that
+  // match profiles.gender values ('male' | 'female' | 'other'). If the user
+  // is already authed at answer time, mirror it onto the profile row right
+  // away. Anon flows are caught by the backfill below (after journey claim).
+  if (
+    question_id === "q_gender" &&
+    trusted_user_id &&
+    answer.kind === "single" &&
+    typeof answer.option === "string" &&
+    ["male", "female", "other"].includes(answer.option)
+  ) {
+    const { error: gErr } = await admin
+      .from("profiles")
+      .update({ gender: answer.option })
+      .eq("id", trusted_user_id);
+    if (gErr) {
+      console.warn("[journey/answer] gender update failed", gErr.message);
+    }
   }
 
   // ── Advance step ────────────────────────────────────────────────────────────

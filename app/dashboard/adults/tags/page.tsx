@@ -69,7 +69,7 @@ export default async function TagsListPage() {
                   colSpan={6}
                   className="text-muted-foreground h-24 text-center"
                 >
-                  No tags yet — click &quot;New tag&quot; to add one.
+                  No tags yet - click &quot;New tag&quot; to add one.
                 </TableCell>
               </TableRow>
             ) : (

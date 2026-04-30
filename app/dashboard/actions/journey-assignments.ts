@@ -1,7 +1,7 @@
 "use server";
 
 // ============================================================
-// Server actions for Journey Assignments (admin) — create / cancel /
+// Server actions for Journey Assignments (admin) - create / cancel /
 // re-materialize, plus propagation plan+apply for catalog changes.
 //
 // All writes go through the admin client (service role) because the
@@ -55,7 +55,7 @@ function revalidateJourney(ownerKey?: string) {
 }
 
 // ============================================================
-// Assignments — create + materialize
+// Assignments - create + materialize
 // ============================================================
 
 /**
@@ -89,7 +89,7 @@ export async function createJourneyAssignment(
 
   // Resolve the anchor once on the server so the timeline and the admin
   // preview agree. 'purchase' origin is supported but the real anchor is
-  // computed from the purchase hook — for manual admin creation we treat
+  // computed from the purchase hook - for manual admin creation we treat
   // it the same as 'assignment' if no date is supplied.
   const anchorDate = resolveAnchorDate({
     anchorKind: v.anchor_kind,
@@ -124,7 +124,7 @@ export async function createJourneyAssignment(
   }
   const assignment = data as JourneyAssignment;
 
-  // Materialize — idempotent, so re-running on retry is safe.
+  // Materialize - idempotent, so re-running on retry is safe.
   const { inserted } = await materializeAssignment({
     assignment,
     supabase,
@@ -171,7 +171,7 @@ export async function deleteJourneyAssignment(assignmentId: string) {
 }
 
 /**
- * Re-run the materializer for an existing assignment — useful when the
+ * Re-run the materializer for an existing assignment - useful when the
  * admin has added items to the source program/category after the
  * assignment was created. Safe to call repeatedly (upsert semantics).
  */
@@ -234,7 +234,7 @@ export async function previewJourneyAssignment(
 }
 
 // ============================================================
-// Propagation — plan + apply (used by PropagateConfirmDialog)
+// Propagation - plan + apply (used by PropagateConfirmDialog)
 // ============================================================
 
 async function loadItem(itemId: string): Promise<JourneyItem> {
@@ -304,7 +304,7 @@ export async function planPropagateItemRemovedAction(
 }
 
 // ============================================================
-// Bulk-assign helper — server-action redirect from the list page
+// Bulk-assign helper - server-action redirect from the list page
 // ============================================================
 
 export async function createAndRedirectNewAssignment() {

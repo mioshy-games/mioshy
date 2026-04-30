@@ -92,7 +92,7 @@ export function TagForm({
           <header className="flex items-baseline justify-between gap-3 border-b pb-2">
             <h2 className="text-base font-semibold">Tag</h2>
             <span className="text-muted-foreground text-xs">
-              Lightweight label — multiple tags per game
+              Lightweight label - multiple tags per game
             </span>
           </header>
 

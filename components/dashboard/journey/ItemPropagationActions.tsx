@@ -3,9 +3,9 @@
 // ============================================================
 // Admin controls for propagating item changes into existing timelines.
 // Lives on the item edit page as a small card with two buttons:
-//   - "Propagate additions" — add this item to assignments that already
+//   - "Propagate additions" - add this item to assignments that already
 //     reference the parent category/program but don't yet include it.
-//   - "Propagate offset change" — recompute unlock_at for all existing
+//   - "Propagate offset change" - recompute unlock_at for all existing
 //     scheduled rows of this item based on its CURRENT default_offset_days
 //     (skipping admin-overridden rows).
 // Both open PropagateConfirmDialog with a preview before applying.

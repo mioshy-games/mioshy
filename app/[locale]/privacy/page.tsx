@@ -7,7 +7,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const isHe = params.locale === "he";
   return {
-    title: isHe ? "פרטיות — מיאושי" : "Privacy — Mioshy",
+    title: isHe ? "פרטיות - מיאושי" : "Privacy - Mioshy",
     description: isHe
       ? "מדיניות הפרטיות של מיאושי"
       : "Privacy policy for the Mioshy service",
@@ -60,7 +60,7 @@ const he = {
     },
     {
       t: "3. מי רואה את התשובות",
-      d: "אתם. הצוות של מיאושי — רק חברי צוות הליווי. אנחנו לא מוכרים, לא משכירים, ולא מפרסמים את התשובות או הניתוח שלכם.",
+      d: "אתם. הצוות של מיאושי - רק חברי צוות הליווי. אנחנו לא מוכרים, לא משכירים, ולא מפרסמים את התשובות או הניתוח שלכם.",
     },
     {
       t: "4. איפה המידע שמור",
@@ -68,7 +68,7 @@ const he = {
     },
     {
       t: "5. זכויותיכם",
-      d: "אתם יכולים בכל עת לבקש לקבל עותק של המידע שלכם, לעדכן אותו, או למחוק את החשבון שלכם — צרו קשר ב- hello@mioshy.com.",
+      d: "אתם יכולים בכל עת לבקש לקבל עותק של המידע שלכם, לעדכן אותו, או למחוק את החשבון שלכם - צרו קשר ב- hello@mioshy.com.",
     },
     {
       t: "6. Cookies",
@@ -95,7 +95,7 @@ const en = {
     },
     {
       t: "3. Who sees the answers",
-      d: "You. The Mioshy team — only members of the care team. We don't sell, rent, or publish your answers or analysis.",
+      d: "You. The Mioshy team - only members of the care team. We don't sell, rent, or publish your answers or analysis.",
     },
     {
       t: "4. Where data is stored",
@@ -103,7 +103,7 @@ const en = {
     },
     {
       t: "5. Your rights",
-      d: "You can request a copy of your data, update it, or delete your account at any time — contact hello@mioshy.com.",
+      d: "You can request a copy of your data, update it, or delete your account at any time - contact hello@mioshy.com.",
     },
     {
       t: "6. Cookies",

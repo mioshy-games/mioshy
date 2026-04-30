@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * WheelPreviewPanel — standalone wheel preview for the sticky sidebar.
+ * WheelPreviewPanel - standalone wheel preview for the sticky sidebar.
  *
  * Reads from useWheelFormStore (populated by WheelFormSync inside the form
  * AND by AppearanceTab's useEffect bridge) so it can safely live outside the

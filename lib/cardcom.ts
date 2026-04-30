@@ -1,7 +1,7 @@
 /**
  * lib/cardcom.ts
  * Cardcom payment gateway client for mioshy.
- * Terminal 183655 — same terminal as app.ux.
+ * Terminal 183655 - same terminal as app.ux.
  */
 
 function cfg() {
@@ -14,7 +14,7 @@ function cfg() {
   return { terminalNumber, apiUsername, apiPassword }
 }
 
-/** Parse Cardcom's response — either JSON or &-separated key=value pairs. */
+/** Parse Cardcom's response - either JSON or &-separated key=value pairs. */
 export function parseCardcomResponse(raw: string): Record<string, string> {
   const text = (raw ?? "").trim()
   if (!text) return {}
@@ -38,7 +38,7 @@ export async function openLowProfile(args: {
   successUrl: string
   errorUrl: string
   indicatorUrl: string
-  returnValue: string      // opaque value echoed back — we use checkout session id
+  returnValue: string      // opaque value echoed back - we use checkout session id
   pageLanguage?: string    // "he" | "en"
 }) {
   const c = cfg()
@@ -82,7 +82,7 @@ export async function openLowProfile(args: {
 
 /**
  * Pull the authoritative indicator status for a completed LowProfile.
- * Always call this server-side — never trust redirect URL params alone.
+ * Always call this server-side - never trust redirect URL params alone.
  */
 export async function pullLowProfileIndicator(lowProfileCode: string) {
   const c  = cfg()

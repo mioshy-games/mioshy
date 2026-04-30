@@ -1,14 +1,14 @@
 "use client";
 
 /**
- * PlayAmbience — dark mood lighting specifically tuned for the post-
+ * PlayAmbience - dark mood lighting specifically tuned for the post-
  * purchase /adults/[slug]/play surface.
  *
  * Why a separate component (not just AdultsAmbience)
  * ───────────────────────────────────────────────────
  * The marketing /adults page uses a rose / fuchsia / amber / violet
- * palette — "after-dark sensual" but warm. This play surface is the
- * actual game space — we lean into a him/her duality with deep BLUE
+ * palette - "after-dark sensual" but warm. This play surface is the
+ * actual game space - we lean into a him/her duality with deep BLUE
  * and deep RED fog blobs that drift across the page, separated by a
  * neutral violet midline. The colour story doubles as a visual cue
  * for the role markers used inside the content (blue = his prompts,
@@ -71,7 +71,7 @@ export function PlayAmbience() {
   const particles = useMemo(makeParticles, []);
   const rootRef = useRef<HTMLDivElement | null>(null);
 
-  // Single mount log — confirms render on dev. Cheap to leave; can be
+  // Single mount log - confirms render on dev. Cheap to leave; can be
   // removed once we trust the layer.
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -89,7 +89,7 @@ export function PlayAmbience() {
       aria-hidden
       className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
     >
-      {/* ── 1. Drifting fog blobs — blue + red duality ── */}
+      {/* ── 1. Drifting fog blobs - blue + red duality ── */}
       <div className="mio-pf mio-pf-1 absolute -start-[10%] top-[3%] h-[680px] w-[680px] rounded-full bg-[rgba(37,99,235,0.32)] blur-[120px]" />
       <div className="mio-pf mio-pf-2 absolute -end-[10%] top-[15%] h-[640px] w-[640px] rounded-full bg-[rgba(220,38,38,0.30)] blur-[120px]" />
       <div className="mio-pf mio-pf-3 absolute start-[35%] top-[40%] h-[540px] w-[540px] rounded-full bg-[rgba(124,58,237,0.32)] blur-[130px]" />

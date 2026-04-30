@@ -41,7 +41,7 @@ export async function getUserGamePlays(
   if (error || !data) {
     return { plays_used: 0, post_signup_bonus_used: false };
   }
-  // RPC returns SETOF — Supabase client resolves it as an array.
+  // RPC returns SETOF - Supabase client resolves it as an array.
   const row = Array.isArray(data) ? data[0] : data;
   return {
     plays_used: Number(row?.plays_used ?? 0),
@@ -65,7 +65,7 @@ export async function incrementUserGamePlays(
 }
 
 /**
- * Flip the post_signup_bonus_used flag and reset plays_used to 0 — giving
+ * Flip the post_signup_bonus_used flag and reset plays_used to 0 - giving
  * the caller a fresh window of FREE_PLAYS_PER_GAME. Idempotent: if the
  * bonus was already granted, returns the current plays_used without change.
  */
@@ -116,7 +116,7 @@ export function incrementGuestGamePlays(gameSlug: string): number {
 }
 
 /**
- * Returns true while the user holds a cached lead_id locally — i.e. they
+ * Returns true while the user holds a cached lead_id locally - i.e. they
  * have already completed the lead signup modal at some point. The flag is
  * written once, globally, by the lead-capture step in SubscriptionModal.
  */

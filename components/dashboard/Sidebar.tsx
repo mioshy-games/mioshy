@@ -28,6 +28,7 @@ import {
   FileText,
   Tags,
   FolderKanban,
+  Stethoscope,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -42,7 +43,7 @@ import {
 
 // ── Navigation model ────────────────────────────────────────────────────────
 // The sidebar is a tree of NavItems. Groups are items that optionally have an
-// `href` (so clicking the group also navigates — the group is still a valid
+// `href` (so clicking the group also navigates - the group is still a valid
 // destination) and a `children` list (the expandable sub-items). Leaf items
 // have only `href`. Everything is driven off this single structure so adding
 // a new page is just one edit.
@@ -64,10 +65,21 @@ type NavGroup = {
   children: NavLeaf[];
 };
 
-type NavItem = NavLeaf | NavGroup;
+type NavItem = (NavLeaf | NavGroup) & { adminOnly?: boolean };
 
 const NAV: NavItem[] = [
   { kind: "leaf", href: "/dashboard", label: "Overview", icon: LayoutDashboard },
+
+  {
+    kind: "group",
+    id: "coaching",
+    label: "Coaching",
+    icon: Stethoscope,
+    children: [
+      { kind: "leaf", href: "/dashboard/my-clients", label: "My Clients", icon: HeartHandshake },
+      { kind: "leaf", href: "/dashboard/experts", label: "Experts", icon: UserCog },
+    ],
+  },
 
   {
     kind: "group",
@@ -141,7 +153,7 @@ const NAV: NavItem[] = [
     id: "report",
     label: "Report",
     icon: BarChart3,
-    // Placeholder — no report pages shipped yet; the group is visible so admins
+    // Placeholder - no report pages shipped yet; the group is visible so admins
     // know analytics is a first-class area we plan to fill. Remove this TODO
     // and populate children when the analytics pages land.
     children: [],
@@ -358,13 +370,44 @@ function useExpandedGroups(pathname: string) {
   return { expanded, toggle };
 }
 
-export function Sidebar() {
+// Admin-only sidebar groups — experts (non-admin) don't see these. Keep this
+// list explicit so a non-admin signing in only sees Coaching.
+const ADMIN_ONLY_GROUP_IDS = new Set([
+  "games",
+  "journey",
+  "adults",
+  "users",
+  "marketing",
+  "report",
+  "system",
+]);
+
+function filterNav(items: NavItem[], isAdmin: boolean): NavItem[] {
+  if (isAdmin) return items;
+  return items.filter((item) => {
+    if (item.kind === "leaf") return item.href === "/dashboard"; // overview only
+    return item.id === "coaching" // expert keeps Coaching
+      && !ADMIN_ONLY_GROUP_IDS.has(item.id);
+  }).map((item) => {
+    if (item.kind !== "group") return item;
+    if (item.id === "coaching") {
+      return {
+        ...item,
+        children: item.children.filter((c) => c.href !== "/dashboard/experts"),
+      };
+    }
+    return item;
+  });
+}
+
+export function Sidebar({ isAdmin = true }: { isAdmin?: boolean }) {
   const pathname = usePathname();
   const { expanded, toggle } = useExpandedGroups(pathname);
+  const visibleNav = useMemo(() => filterNav(NAV, isAdmin), [isAdmin]);
 
   const nav = (
     <nav className="flex flex-col gap-1">
-      {NAV.map((item) =>
+      {visibleNav.map((item) =>
         item.kind === "leaf" ? (
           <LeafLink key={item.href} item={item} pathname={pathname} />
         ) : (
@@ -383,7 +426,9 @@ export function Sidebar() {
   return (
     <>
       <aside className="bg-sidebar text-sidebar-foreground hidden w-60 shrink-0 border-r border-sidebar-border md:flex md:flex-col">
-        <div className="p-4 text-lg font-semibold tracking-tight">Mioshy Admin</div>
+        <div className="p-4 text-lg font-semibold tracking-tight">
+          {isAdmin ? "Mioshy Admin" : "Mioshy Coaching"}
+        </div>
         <div className="px-2 pb-4 overflow-y-auto">{nav}</div>
       </aside>
       <div className="border-border bg-background flex items-center justify-between border-b p-3 md:hidden">

@@ -50,15 +50,15 @@ const cardVariants = {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 /**
- * QuestionPopup — same visual language as the marketing /games hero
+ * QuestionPopup - same visual language as the marketing /games hero
  * "live taste" card: warm cream surface, bold serif-italic question
  * text, accent badge, and a gradient "Spin again" CTA. Backdrop stays
  * a dark blurred overlay so the card pops off any game background.
  *
  * Typography:
- *   • Category label  — Heebo / system uppercase, accent color
- *   • Question        — Frank Ruhl Libre 700 italic, ink color
- *   • CTA             — gradient (accent → accent-deep), white text
+ *   • Category label  - Heebo / system uppercase, accent color
+ *   • Question        - Frank Ruhl Libre 700 italic, ink color
+ *   • CTA             - gradient (accent → accent-deep), white text
  */
 export function QuestionPopup({
   question,
@@ -115,14 +115,14 @@ export function QuestionPopup({
             onClick={(e) => e.stopPropagation()}  // don't close when clicking card
           >
 
-            {/* ── Accent ribbon at top — uses slice color ──────────────── */}
+            {/* ── Accent ribbon at top - uses slice color ──────────────── */}
             <div
               aria-hidden
               className="pointer-events-none absolute inset-x-0 top-0 h-1.5"
               style={{ background: question.accentColor }}
             />
 
-            {/* ── Close (X) — matches hero popup ────────────────────── */}
+            {/* ── Close (X) - matches hero popup ────────────────────── */}
             <button
               type="button"
               onClick={onClose}
@@ -143,7 +143,7 @@ export function QuestionPopup({
               </span>
             </div>
 
-            {/* ── Question text — bold serif italic ─────────────────── */}
+            {/* ── Question text - bold serif italic ─────────────────── */}
             <p
               className="mt-5 text-[24px] leading-[1.35] text-[#170E14] sm:text-[28px]"
               style={{
@@ -158,7 +158,7 @@ export function QuestionPopup({
             {/* Decorative hairline */}
             <div className="mx-auto my-6 h-px w-16 rounded-full bg-[#B83C4D]/30" />
 
-            {/* ── Spin-again CTA — wine gradient, white text ─────────── */}
+            {/* ── Spin-again CTA - wine gradient, white text ─────────── */}
             <motion.button
               type="button"
               onClick={onClose}

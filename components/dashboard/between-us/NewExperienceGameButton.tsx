@@ -18,7 +18,7 @@ export function NewExperienceGameButton() {
         await createAndRedirectNewGame();
         // redirect throws internally; we won't reach here on success
       } catch (err) {
-        // Next redirect throws a NEXT_REDIRECT — swallow it silently
+        // Next redirect throws a NEXT_REDIRECT - swallow it silently
         const msg = (err as Error)?.message ?? "";
         if (msg.includes("NEXT_REDIRECT")) return;
         setClicked(false);

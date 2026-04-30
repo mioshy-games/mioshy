@@ -20,6 +20,7 @@ import { routing } from "@/i18n/routing";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
 import { deriveStatus, isOpenable } from "@/lib/journey-content/status";
+import { logActivity } from "@/lib/journey/activity";
 import type {
   JourneyAssignment,
   JourneyCategory,
@@ -39,7 +40,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const isHe = params.locale === "he";
   return {
-    title: `Mioshy — ${isHe ? "פרק במסע" : "Journey chapter"}`,
+    title: `Mioshy - ${isHe ? "פרק במסע" : "Journey chapter"}`,
     robots: { index: false, follow: false },
   };
 }
@@ -64,7 +65,7 @@ export default async function JourneyTimelineItemPage({
   } = await supabase.auth.getUser();
   if (!user) redirect(`/${locale}/auth`);
 
-  // ── Load scheduled + assignment (admin client — RLS would allow this
+  // ── Load scheduled + assignment (admin client - RLS would allow this
   // read for legit owners but admin is simpler and authorisation is
   // enforced below by explicit ownership checks).
   const admin = createServiceRoleClient();
@@ -88,18 +89,35 @@ export default async function JourneyTimelineItemPage({
 
   // ── Ownership gate: viewer is the user, or a member of the couple.
   let ownedByMe = false;
+  let viewerCoupleRole: "owner" | "partner" | null = null;
   if (assignment.user_id && assignment.user_id === user.id) {
     ownedByMe = true;
   } else if (assignment.couple_id) {
     const { data: membership } = await admin
       .from("couple_members")
-      .select("couple_id")
+      .select("couple_id, role")
       .eq("couple_id", assignment.couple_id)
       .eq("user_id", user.id)
       .maybeSingle();
-    if (membership) ownedByMe = true;
+    if (membership) {
+      ownedByMe = true;
+      viewerCoupleRole =
+        ((membership as { role: string }).role as "owner" | "partner") ?? null;
+    }
   }
   if (!ownedByMe) notFound();
+
+  // Audience gate — if this scheduled row is targeted at the OTHER partner,
+  // bounce back to the timeline. ('both' is always allowed; user-owned
+  // assignments are always 'both' by the migration's invariants but we still
+  // check defensively for stored values.)
+  if (
+    assignment.couple_id &&
+    scheduled.audience !== "both" &&
+    scheduled.audience !== viewerCoupleRole
+  ) {
+    redirect(`/${locale}/journey/timeline`);
+  }
 
   // Cancelled assignments should not surface deep-links.
   if (!assignment.is_active) {
@@ -153,12 +171,22 @@ export default async function JourneyTimelineItemPage({
     redirect(`/${locale}/journey/timeline`);
   }
 
+  // Log item_opened for the unread-count badge on /my. Idempotent on the
+  // user side — multiple visits all count as "opened" and the badge stays
+  // off. Failure-tolerant (logActivity catches its own errors).
+  await logActivity({
+    userId: user.id,
+    coupleId: assignment.couple_id ?? null,
+    scheduledItemId: scheduled.id,
+    verb: "item_opened",
+  });
+
   const Arrow = isHe ? ArrowLeft : ArrowRight;
 
   return (
     <div
       dir={isHe ? "rtl" : "ltr"}
-      className="relative min-h-[100dvh] overflow-hidden bg-gradient-to-b from-[#050f1a] via-[#0a1326] to-[#020610] text-white"
+      className="relative min-h-[100dvh] overflow-hidden text-white"
     >
       <div
         aria-hidden

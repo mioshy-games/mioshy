@@ -1,14 +1,14 @@
 "use client";
 
 // ============================================================
-// ItemDetailClient — the interactive surface for a single timeline
+// ItemDetailClient - the interactive surface for a single timeline
 // entry. Renders the item body (+ optional task / challenge / video),
 // a one-tap complete toggle, and a shared response thread with a
 // private-toggle.
 //
 // State updates are optimistic where the network trip is small
 // (complete/uncomplete) and conservative where it might lose
-// partner-visible data (response post — wait for server confirmation
+// partner-visible data (response post - wait for server confirmation
 // before clearing the textarea).
 // ============================================================
 
@@ -68,7 +68,7 @@ export function ItemDetailClient({
   const isHe = locale === "he";
   const router = useRouter();
 
-  // Optimistic state — completion + responses. The parent route hydrates
+  // Optimistic state - completion + responses. The parent route hydrates
   // them on revalidate, but keeping local state makes the action feel
   // instant and lets us show an in-flight spinner per row.
   const [completion, setCompletion] = React.useState<
@@ -116,7 +116,7 @@ export function ItemDetailClient({
           completed_by: viewerUserId,
           created_at: res.completed_at,
         });
-        // Skip the toast here — the celebration modal delivers the
+        // Skip the toast here - the celebration modal delivers the
         // emotional reinforcement; doubling up would feel noisy.
         setCelebrationOpen(true);
       }
@@ -177,7 +177,7 @@ export function ItemDetailClient({
         </div>
       </header>
 
-      {/* Cover image — constrained on mobile so the actionable controls
+      {/* Cover image - constrained on mobile so the actionable controls
           (complete button, response form) stay above the fold. On phones
           we clamp to a 4:3 frame with a height cap; desktop keeps the
           wider cinematic 16:8 frame. */}
@@ -197,7 +197,7 @@ export function ItemDetailClient({
       {/* Video (inline simple embed fallback for youtube / mp4) */}
       {item.video_url ? <VideoBlock url={item.video_url} isHe={isHe} /> : null}
 
-      {/* Body — preserve paragraphs from the admin textarea */}
+      {/* Body - preserve paragraphs from the admin textarea */}
       <section
         dir={isHe ? "rtl" : "ltr"}
         className="whitespace-pre-wrap text-base leading-relaxed text-white/85"
@@ -246,8 +246,8 @@ export function ItemDetailClient({
                   ? "אפשר תמיד לפתוח שוב ולענות, גם אחרי שסומן."
                   : "You can reopen and add reflections anytime, even after marking it done."
                 : isHe
-                  ? "סמנו כשהתרגול נעשה — זה לא חייב להיות מיד. הפרק יישאר פתוח."
-                  : "Mark it once the practice is done — no rush. The chapter stays open."}
+                  ? "סמנו כשהתרגול נעשה - זה לא חייב להיות מיד. הפרק יישאר פתוח."
+                  : "Mark it once the practice is done - no rush. The chapter stays open."}
             </p>
           </div>
           <Button
@@ -350,7 +350,7 @@ function StatusBadge({
 }
 
 // ------------------------------------------------------------
-// Callout — task / challenge blocks
+// Callout - task / challenge blocks
 // ------------------------------------------------------------
 
 function Callout({
@@ -389,7 +389,7 @@ function Callout({
 }
 
 // ------------------------------------------------------------
-// VideoBlock — minimal YouTube/MP4 embed
+// VideoBlock - minimal YouTube/MP4 embed
 // ------------------------------------------------------------
 
 function VideoBlock({ url, isHe }: { url: string; isHe: boolean }) {
@@ -561,7 +561,7 @@ function ResponseForm({
         onChange={(e) => setText(e.target.value.slice(0, RESPONSE_MAX_LEN))}
         placeholder={
           isHe
-            ? "שתפו מחשבה, תובנה או שאלה. התגובות משותפות עם בן/בת הזוג — אלא אם תסמנו פרטי."
+            ? "שתפו מחשבה, תובנה או שאלה. התגובות משותפות עם בן/בת הזוג - אלא אם תסמנו פרטי."
             : "Share a thought, insight or question. Responses are shared with your partner unless you mark them private."
         }
         rows={3}
@@ -617,7 +617,7 @@ function errorCopy(code: string, isHe: boolean): string {
         : "You don't have access to this item.";
     case "locked":
       return isHe
-        ? "הפריט עדיין נעול — חזרו כשייפתח."
+        ? "הפריט עדיין נעול - חזרו כשייפתח."
         : "This item is still locked.";
     case "assignment_inactive":
       return isHe

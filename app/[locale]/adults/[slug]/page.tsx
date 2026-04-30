@@ -21,7 +21,7 @@ import {
 import { getCurrentCoupleContext } from "@/lib/between-us/couples";
 import { AdultsHeroBuy } from "@/components/adults/AdultsHeroBuy";
 // Page-wide animated mood lighting (drifting fog blobs + floating particles)
-// — keeps the detail page from looking like a flat dark plate. Reuses the
+// - keeps the detail page from looking like a flat dark plate. Reuses the
 // /adults marketing-surface ambience component.
 import { AdultsAmbience } from "@/components/adults/AdultsAmbience";
 // Diagnostic probe: logs from the page level whether the ambience layer
@@ -56,7 +56,7 @@ export async function generateMetadata({
     (isHe ? game.short_desc_he : game.short_desc_en || game.short_desc_he);
   const base = siteUrl();
   return {
-    title: `Mioshy — ${title}`,
+    title: `Mioshy - ${title}`,
     description,
     alternates: {
       canonical: `${base}/${locale}/adults/${slug}`,
@@ -94,7 +94,7 @@ export default async function BetweenUsGameDetailPage({
       getCurrentCoupleContext(),
       // Note: per-game content (`listGameContent(game.id)`) used to be
       // fetched here for the now-removed preview card section. Don't
-      // re-add this fetch on the public page — that data belongs only on
+      // re-add this fetch on the public page - that data belongs only on
       // the gated /play surface.
       getGameCategoryIds(game.id),
       getGameTagIds(game.id),
@@ -106,7 +106,7 @@ export default async function BetweenUsGameDetailPage({
 
   // Couple-share is now a pure copy-and-paste flow built around the
   // visible pair_code. We deliberately removed the email-invite query
-  // — the buyer never gives us the partner's contact details, they
+  // - the buyer never gives us the partner's contact details, they
   // just copy the prepared invite text and send it via whatever
   // channel they prefer. See AdultsHeroBuy for the full spec.
 
@@ -115,7 +115,7 @@ export default async function BetweenUsGameDetailPage({
     ? game.short_desc_he
     : game.short_desc_en || game.short_desc_he;
   // NOTE: `full_desc` is the actual purchased product. It must NEVER appear
-  // on this public marketing page — it belongs on /adults/[slug]/play behind
+  // on this public marketing page - it belongs on /adults/[slug]/play behind
   // the entitlement gate. We intentionally do not destructure it here.
   const benefits = isHe ? game.benefits_he : game.benefits_en ?? game.benefits_he;
   const targets = isHe
@@ -138,13 +138,13 @@ export default async function BetweenUsGameDetailPage({
     .map((id) => tagLookup.get(id))
     .filter(Boolean) as typeof allTags;
 
-  // ── Structured data — Product + BreadcrumbList ─────────────────────────
+  // ── Structured data - Product + BreadcrumbList ─────────────────────────
   // Without this, /adults/[slug] is the only public route on the site
   // missing JSON-LD. Product schema lets Google show rich shopping snippets
   // (price, availability, breadcrumbs) on result pages, which is high-value
-  // for a flagship commerce surface like this. Schema is conservative —
+  // for a flagship commerce surface like this. Schema is conservative -
   // we omit any field we don't have ground-truth for (no review aggregates,
-  // no GTIN — those would be misleading).
+  // no GTIN - those would be misleading).
   const base = siteUrl();
   // pricing.currency lives on the root; each tier has priceIls + priceUsd
   // in whole-currency-unit units (not minor units). Pick the matching one.
@@ -249,12 +249,12 @@ export default async function BetweenUsGameDetailPage({
       // `isolate` (CSS isolation: isolate) is CRITICAL here.
       // Without it, `position: relative` alone does NOT create a stacking
       // context, so the `-z-10` AdultsAmbience layer paints behind THIS
-      // element's `bg-[#0a0410]` solid background — i.e. invisible.
+      // element's `bg-[#0a0410]` solid background - i.e. invisible.
       // Adding `isolate` makes the wrapper its own stacking context, so
       // `-z-10` paints between the wrapper's bg and the in-flow content.
       className="relative isolate min-h-[100dvh] overflow-hidden bg-[#0a0410] text-white"
     >
-      {/* Deep midnight base + ambient color washes — same vocabulary as the
+      {/* Deep midnight base + ambient color washes - same vocabulary as the
           /adults marketing surface so the detail page feels like part of the
           same after-dark room rather than a flat indigo plate. The fog
           blobs inside AdultsAmbience use mix-blend-screen, so overlapping
@@ -268,14 +268,14 @@ export default async function BetweenUsGameDetailPage({
       <AdultsAmbience />
       <AmbienceDebugProbe label="adults-detail" />
 
-      {/* Product structured data — Google rich-result eligibility. */}
+      {/* Product structured data - Google rich-result eligibility. */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       {/* Outer rail width AND padding match the SiteHeader exactly
           (max-w-7xl, mx-auto, px-4) so the page, header and footer
-          all sit on the same vertical grid lines — same right edge in
+          all sit on the same vertical grid lines - same right edge in
           RTL on every screen. Content blocks below still cap themselves
           (max-w-3xl on the benefits column, etc.) for reading comfort. */}
       <main className="relative mx-auto max-w-7xl px-4 py-10">
@@ -304,7 +304,7 @@ export default async function BetweenUsGameDetailPage({
           </Link>
         ) : null}
 
-        {/* Hero — focused two-column layout.
+        {/* Hero - focused two-column layout.
             Per design spec: each column capped at 550px wide. Cover side
             also fixes its height at 420px (landscape). On screens <md the
             two columns stack vertically; on md+ they sit side-by-side and
@@ -313,7 +313,7 @@ export default async function BetweenUsGameDetailPage({
         <section className="mt-6 flex flex-col items-stretch gap-8 md:flex-row md:items-start md:justify-center md:gap-10">
           <div className="w-full md:max-w-[550px] md:flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              {/* "New" badge — was bg-emerald-500 (green), which clashed
+              {/* "New" badge - was bg-emerald-500 (green), which clashed
                   against the rose / fuchsia / violet ambience. Now uses
                   the warm rose-amber gradient that matches the page's
                   primary CTA + headline gradient family. */}
@@ -349,7 +349,7 @@ export default async function BetweenUsGameDetailPage({
               <p className="mt-4 text-lg text-white/80">{shortDesc}</p>
             ) : null}
 
-            {/* PRIMARY COMMERCE — big price + buy CTA, directly under the
+            {/* PRIMARY COMMERCE - big price + buy CTA, directly under the
                 lede where the visitor's eye naturally lands after reading
                 the short description. Replaces the old right-sidebar
                 pricing panel + "Sign in required" lock card.
@@ -414,7 +414,7 @@ export default async function BetweenUsGameDetailPage({
             ) : null}
           </div>
 
-          {/* Cover — capped at 550px wide × 420px tall (landscape) per
+          {/* Cover - capped at 550px wide × 420px tall (landscape) per
               spec. On mobile, drops to a comfortable aspect-[4/3]
               auto-height so it doesn't crop ugly. */}
           <div className="relative aspect-[4/3] w-full overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-fuchsia-500/30 to-violet-500/20 shadow-2xl md:aspect-auto md:h-[420px] md:max-w-[550px] md:flex-1">
@@ -434,7 +434,7 @@ export default async function BetweenUsGameDetailPage({
         </section>
 
         {/* Below-the-fold details: benefits + target audience.
-            full_desc DELIBERATELY OMITTED — that's purchased product and
+            full_desc DELIBERATELY OMITTED - that's purchased product and
             lives on /adults/[slug]/play behind the entitlement gate.
 
             Layout: same start-aligned column as the hero copy (NOT
@@ -445,7 +445,7 @@ export default async function BetweenUsGameDetailPage({
           <div className="max-w-3xl space-y-8 text-start">
             {benefits && benefits.length > 0 ? (
               <div>
-                {/* Section heading — bumped to text-2xl (24px) per design
+                {/* Section heading - bumped to text-2xl (24px) per design
                     spec ("at least 20px"). Body bullets bumped from
                     text-sm (14px) to text-base (16px) so the section as
                     a whole reads with more weight against the now-bright
@@ -503,7 +503,7 @@ export default async function BetweenUsGameDetailPage({
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={src}
-                    alt={`${title} — ${i + 1}`}
+                    alt={`${title} - ${i + 1}`}
                     className="h-48 w-full object-cover"
                     loading="lazy"
                   />
@@ -517,7 +517,7 @@ export default async function BetweenUsGameDetailPage({
             Reasons:
               1. Per-game content rows often inherit from a generic seed
                  template, so the cards shown here didn't necessarily match
-                 the actual purchased product — confusing for buyers.
+                 the actual purchased product - confusing for buyers.
               2. The full purchased content (including any preview cards)
                  belongs exclusively on the gated /adults/[slug]/play
                  surface; leaking even "preview" cards onto the public

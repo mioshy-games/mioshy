@@ -1,4 +1,4 @@
-# Journey Content System — Design Doc (Revision 2)
+# Journey Content System - Design Doc (Revision 2)
 
 **Status:** Draft for review.
 **Author:** Claude + Itzik, 2026-04-21.
@@ -14,7 +14,7 @@
 | 5 | **Automation-ready** | Assignments carry `origin` (`'admin_manual' \| 'purchase' \| 'trigger'`) + `origin_ref`. Purchase / trigger hooks can slot in without schema changes. |
 | 6 | **Content edits are retroactive** | `scheduled_items` only *references* `items.id`; it never copies content. Editing title / body / task / media always flows through to existing users. |
 | 7 | **Structural edits: admin chooses** | When admin adds/removes an item or changes default offsets on a program, a confirm dialog asks *"Apply to existing assigned users?"*. Default = no (safe). |
-| — | **Simplification** | Dropped: `status` column, resync action, passed-vs-completed distinction. States are just `locked / available / completed`. |
+| - | **Simplification** | Dropped: `status` column, resync action, passed-vs-completed distinction. States are just `locked / available / completed`. |
 
 ---
 
@@ -26,7 +26,7 @@
 | **Category** | Topical grouping of items. Lives inside a program, or stands alone. |
 | **Item** | A single content unit (title / body / task / challenge / media / timing defaults). Reusable. Always belongs to a category. |
 | **Assignment** | Link from an **owner** (user or couple) to a program / category / item. Has an anchor date + an `origin`. |
-| **Scheduled item** | Materialized row per-assignment per-item with absolute `unlock_at`. Points to the item by FK — never copies content. |
+| **Scheduled item** | Materialized row per-assignment per-item with absolute `unlock_at`. Points to the item by FK - never copies content. |
 | **Item state** | Optional per-assignment-per-item record holding completion + admin override. Sparse. |
 | **Response** | Free-text feedback a user submits on an item. Multiple allowed. |
 | **Owner** | The subject of a journey: one `user` or one `couple`. |
@@ -74,7 +74,7 @@ create table journey_programs (
 
 -- ── CATEGORIES ───────────────────────────────────────────────────────
 -- A category can belong to a program (program_id not null) or stand
--- alone (program_id null) — admins can bulk-assign a standalone
+-- alone (program_id null) - admins can bulk-assign a standalone
 -- category to an owner directly.
 create table journey_categories (
   id                uuid primary key default gen_random_uuid(),
@@ -93,7 +93,7 @@ create table journey_categories (
 
 -- ── ITEMS (content catalog) ──────────────────────────────────────────
 -- Every item MUST belong to a category (adj #4). Content lives here and
--- ONLY here — scheduled rows reference items by FK so content edits
+-- ONLY here - scheduled rows reference items by FK so content edits
 -- flow through to existing users automatically (adj #6).
 create table journey_items (
   id                    uuid primary key default gen_random_uuid(),
@@ -148,7 +148,7 @@ create index on journey_assignments (couple_id) where couple_id is not null;
 
 -- ── SCHEDULED ITEMS ──────────────────────────────────────────────────
 -- Materialized timeline row per (assignment × item). Only absolute
--- `unlock_at` is stored. `item_id` is a FK — content is always fresh.
+-- `unlock_at` is stored. `item_id` is a FK - content is always fresh.
 -- NO expires_at, NO status column, NO per-row copy of title/body (adj #2, #6).
 create table journey_scheduled_items (
   id               uuid primary key default gen_random_uuid(),
@@ -167,7 +167,7 @@ create index on journey_scheduled_items (assignment_id, unlock_at);
 
 -- ── COMPLETION (per-owner per-scheduled-item) ────────────────────────
 -- Separate from scheduled_items so sparse (most rows never get marked).
--- Completion is OPTIONAL (adj #3) — no DB constraint forces it.
+-- Completion is OPTIONAL (adj #3) - no DB constraint forces it.
 create table journey_item_completions (
   scheduled_item_id   uuid primary key
                       references journey_scheduled_items(id) on delete cascade,
@@ -291,9 +291,9 @@ export function deriveStatus(row: {
 
 UX treatments:
 
-- **locked** — teaser-only card, padlock icon, "Unlocks in N days".
-- **available** — full card, gentle pulse, primary CTAs ("Open", "Mark complete", "Write a response").
-- **completed** — dimmed, green check, completion timestamp. Re-readable.
+- **locked** - teaser-only card, padlock icon, "Unlocks in N days".
+- **available** - full card, gentle pulse, primary CTAs ("Open", "Mark complete", "Write a response").
+- **completed** - dimmed, green check, completion timestamp. Re-readable.
 
 ---
 
@@ -301,10 +301,10 @@ UX treatments:
 
 Every structural change in admin shows a two-step modal:
 
-**Step 1** — "Are you sure you want to {edit / delete / remove from program}?"
-**Step 2** — "Apply this change to existing assigned users?"
-  - **No** (default) — template changes only. New future assignments pick up the change. Existing assignments keep the old structure.
-  - **Yes, apply to all N existing assignments** — propagates.
+**Step 1** - "Are you sure you want to {edit / delete / remove from program}?"
+**Step 2** - "Apply this change to existing assigned users?"
+  - **No** (default) - template changes only. New future assignments pick up the change. Existing assignments keep the old structure.
+  - **Yes, apply to all N existing assignments** - propagates.
 
 Applied to these admin actions:
 
@@ -315,9 +315,9 @@ Applied to these admin actions:
 | Add an item to a program / category | Also inserts `scheduled_items` for every active assignment of that program/category. `unlock_at = existing_assignment.anchor_date + newItem.default_offset_days`. |
 | Change an item's `default_offset_days` | Also updates `scheduled_items.unlock_at` for existing rows where `has_unlock_override = false`. Rows with override are left alone. |
 | Change a program's `default_anchor` | Only applies to future assignments. Existing ones keep their resolved `anchor_date` on the assignment row. |
-| Soft-archive (`is_active = false`) any entity | Pure template change. Existing assignments still render the archived content — admins see an "archived" chip in their view. |
+| Soft-archive (`is_active = false`) any entity | Pure template change. Existing assignments still render the archived content - admins see an "archived" chip in their view. |
 
-Plain content edits (title, body, task, media) NEVER show the second prompt — they're always retroactive by design (FK flow-through).
+Plain content edits (title, body, task, media) NEVER show the second prompt - they're always retroactive by design (FK flow-through).
 
 Implementation detail: admin actions accept an explicit `propagate: boolean` param. UI dialog turns the user's choice into that flag. No server-side magic.
 
@@ -350,7 +350,7 @@ GET  /api/journey/content/timeline
 POST /api/journey/content/complete
   body: { scheduled_item_id: string }
   UPSERT journey_item_completions(scheduled_item_id, completed_at, completed_by).
-  Optional completion — same endpoint handles un-completing:
+  Optional completion - same endpoint handles un-completing:
     DELETE journey_item_completions where scheduled_item_id = $id  (if body.undo)
 
 POST /api/journey/content/respond
@@ -376,7 +376,7 @@ updateCategory(id, input)
 deleteCategory(id, { propagate })
 reorderCategories(programId, ids)
 
-// Items (content-only edits are always retroactive — no propagate flag on update)
+// Items (content-only edits are always retroactive - no propagate flag on update)
 createItem(categoryId, input, { propagate })       // adding an item can cascade
 updateItem(id, input)                               // title/body/video: always retroactive
 updateItemTiming(id, { default_offset_days }, { propagate })   // needs propagate flag
@@ -401,7 +401,7 @@ unmarkScheduledItemComplete(id)
 listResponsesForScheduledItem(id)
 ```
 
-### Automation hook (prepared now, wired later — adj #5)
+### Automation hook (prepared now, wired later - adj #5)
 
 Purchase-complete webhook will call:
 
@@ -489,7 +489,7 @@ create policy journey_responses_owner_read on journey_item_responses for select
   );
 ```
 
-No INSERT/UPDATE/DELETE policies — that's by design. All mutations route through the admin client (per `project_supabase_ssr_rls_pattern`).
+No INSERT/UPDATE/DELETE policies - that's by design. All mutations route through the admin client (per `project_supabase_ssr_rls_pattern`).
 
 ---
 
@@ -604,9 +604,9 @@ Visual parity with `/games` premium aesthetic: deep indigo/violet background, au
 - Completed: check icon + timestamp, still re-openable.
 - Locked: padlock + "Unlocks in N days".
 
-Completion is optional — users can engage with content without marking anything.
+Completion is optional - users can engage with content without marking anything.
 
-### 10.3 Admin — Manage Client (`/dashboard/journey/clients/[ownerKey]`)
+### 10.3 Admin - Manage Client (`/dashboard/journey/clients/[ownerKey]`)
 
 `ownerKey` = `u:<user_id>` or `c:<couple_id>`. Same screen handles both.
 
@@ -626,19 +626,19 @@ Completion is optional — users can engage with content without marking anythin
 │ Alice • item X • 2d ago: "this one hit"                                     │
 │ Bob   • item Y • 1d ago: "we tried it, not easy"                            │
 ├─ Assignments history ───────────────────────────────────────────────────────┤
-│ program X — assigned 2026-04-01 by @admin (active)                          │
-│ item Y   — assigned 2026-04-10 by @admin (removed)                          │
+│ program X - assigned 2026-04-01 by @admin (active)                          │
+│ item Y   - assigned 2026-04-10 by @admin (removed)                          │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
 Clients list table has a `Type` column: `Couple (Alice & Bob)` or `User (Dana)`.
 
-### 10.4 Program editor — structural edit flow
+### 10.4 Program editor - structural edit flow
 
 Admin clicks "Remove item from program":
 
-1. `ConfirmDialog` — *"Remove '{item.title}' from this program?"* — Yes / Cancel.
-2. `PropagateConfirmDialog` — *"This program is active for 12 assignments. Also remove this item from those users' timelines?"* — **No, template only** / **Yes, remove from everyone**.
+1. `ConfirmDialog` - *"Remove '{item.title}' from this program?"* - Yes / Cancel.
+2. `PropagateConfirmDialog` - *"This program is active for 12 assignments. Also remove this item from those users' timelines?"* - **No, template only** / **Yes, remove from everyone**.
 
 The dialog reports the exact count so admins know the blast radius.
 
@@ -657,25 +657,25 @@ The dialog reports the exact count so admins know the blast radius.
 
 ## 12. Phased implementation plan
 
-### Phase 0 — Carve out `/journey` routing
+### Phase 0 - Carve out `/journey` routing
 Move questionnaire to `/journey/assessment`. Make `/journey/page.tsx` a small router. ~1-2 hrs.
 
-### Phase 1 — Pre-purchase marketing page (task #52)
+### Phase 1 - Pre-purchase marketing page (task #52)
 Build `JourneyMarketingHero` + `Why` + `FAQ` in the games-world premium aesthetic. Strong CTA → `/journey/assessment`. ~½ day.
 
-### Phase 2 — Schema + catalog CRUD
+### Phase 2 - Schema + catalog CRUD
 Migration 035 (programs + categories + items only). `/dashboard/journey/{programs,categories,items}` CRUD. Compact admin form pattern, bilingual fields. ~2-3 days.
 
-### Phase 3 — Assignments + scheduled materialization
+### Phase 3 - Assignments + scheduled materialization
 Add `journey_assignments`, `journey_scheduled_items`, `journey_item_completions`, `journey_item_responses`. Server actions + propagation helpers. `PropagateConfirmDialog`. ~2-3 days.
 
-### Phase 4 — Admin Manage-Client
+### Phase 4 - Admin Manage-Client
 `/dashboard/journey/clients/page.tsx` + `[ownerKey]/page.tsx`. Timeline view, gear override, response viewer, assignment dialogs. ~2 days.
 
-### Phase 5 — User-facing timeline
+### Phase 5 - User-facing timeline
 APIs + components. Entitlement lights up when owner has active assignments. ~2 days.
 
-### Phase 6 — Polish + automation wiring
+### Phase 6 - Polish + automation wiring
 Email notification on unlock (via existing `sent_messages` / `engagement_schedules` pipeline). Hook purchase webhook to `assignProgramToOwner`. Admin analytics (completion rate, response rate per item). ~2 days.
 
 **Total:** ~10-12 working days.
@@ -685,7 +685,7 @@ Email notification on unlock (via existing `sent_messages` / `engagement_schedul
 ## 13. What we're explicitly NOT doing in v1
 
 - Automatic assignment by subscription tier (schema is ready; wiring is phase 6 / later).
-- Per-partner separate completion state (both partners share one completion row — simplest-thing-that-works).
+- Per-partner separate completion state (both partners share one completion row - simplest-thing-that-works).
 - Video uploads (URLs only).
 - Recurring / repeating items.
 - Client-side filter/search on admin catalog (add when count > 50).
@@ -699,14 +699,14 @@ Email notification on unlock (via existing `sent_messages` / `engagement_schedul
 When a user with an active user-owned journey pairs with a partner, we surface a one-screen modal during the pairing flow:
 
 > *"Share your journey with your partner?"*
-> *Your current progress (N unlocked items, M completions, K responses) will become visible to your partner, and future unlocked content + completions will be shared from now on. You can't undo this from the user side — ask admin if you need to split back out.*
+> *Your current progress (N unlocked items, M completions, K responses) will become visible to your partner, and future unlocked content + completions will be shared from now on. You can't undo this from the user side - ask admin if you need to split back out.*
 >
 > **[ Yes, share journey ] ← default, pre-selected**
 > [ Keep private (partner starts fresh) ]
 
 Implementation:
 - Add a `migrateUserAssignmentsToCouple(userId, coupleId)` helper in `lib/journey-content/propagation.ts` that flips `user_id → null, couple_id → <id>` on all active assignments owned by that user. `scheduled_items`, completions, responses ride along by FK.
-- Hook into the existing pairing server action — block pair completion until the user picks.
+- Hook into the existing pairing server action - block pair completion until the user picks.
 - If the partner already has their own active user-owned journey, show a merge preview (keep both timelines; dedupe happens only on conflicting `(assignment.source_kind, source_id)`).
 - Log the choice in `journey_assignments.notes` (JSON snippet) for audit.
 
@@ -719,7 +719,7 @@ Implementation:
 **D3. Archived programs → existing assignments keep rendering.**
 - `journey_programs.is_active = false` is template-only. Archived programs vanish from the "Assign program" picker.
 - Existing active assignments continue to unlock + display normally; admin UI shows a dim "Archived program" chip on the owner's timeline.
-- If admin wants to stop an archived program for existing users, they deactivate assignments individually (or bulk) via the existing `deactivateAssignment` action — no magic cascade.
+- If admin wants to stop an archived program for existing users, they deactivate assignments individually (or bulk) via the existing `deactivateAssignment` action - no magic cascade.
 
 **Schema additions for D1 + D2:**
 
@@ -728,4 +728,4 @@ alter table journey_item_responses
   add column is_private boolean not null default false;
 ```
 
-(D1 needs no schema change — just the pairing-flow server action.)
+(D1 needs no schema change - just the pairing-flow server action.)

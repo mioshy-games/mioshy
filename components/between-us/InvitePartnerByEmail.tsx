@@ -91,10 +91,10 @@ export function InvitePartnerByEmail({
         isHe
           ? res.email_dispatched
             ? "ההזמנה נשלחה במייל 💌"
-            : "ההזמנה נוצרה — אפשר לשלוח ידנית את הקישור."
+            : "ההזמנה נוצרה - אפשר לשלוח ידנית את הקישור."
           : res.email_dispatched
             ? "Invitation sent by email 💌"
-            : "Invitation created — you can share the link manually.",
+            : "Invitation created - you can share the link manually.",
       );
       setLocalInvitation({
         id: res.invitation_id,
@@ -265,7 +265,7 @@ export function InvitePartnerByEmail({
           <p className="mt-0.5 text-xs text-white/70">
             {isHe
               ? "מלאו את המייל של הפרטנר/ית ונשלח להם קישור להצטרפות לחלל הזוגי."
-              : "Enter your partner's email — we'll send them a link to join your couple space."}
+              : "Enter your partner's email - we'll send them a link to join your couple space."}
           </p>
           <div className="mt-3 flex flex-col gap-2 sm:flex-row">
             <input

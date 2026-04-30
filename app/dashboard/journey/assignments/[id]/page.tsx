@@ -19,7 +19,7 @@ import type { JourneyAssignment, ScheduledItemStatus } from "@/lib/journey-conte
 export const dynamic = "force-dynamic";
 
 function fmtDate(iso: string | null | undefined) {
-  if (!iso) return "—";
+  if (!iso) return "-";
   return new Date(iso).toLocaleDateString(undefined, {
     year: "numeric",
     month: "short",
@@ -157,7 +157,7 @@ export default async function AssignmentDetailPage({
                   colSpan={5}
                   className="text-muted-foreground py-8 text-center text-sm"
                 >
-                  No scheduled rows. Try re-materializing — the source may
+                  No scheduled rows. Try re-materializing - the source may
                   have been empty when this assignment was created.
                 </TableCell>
               </TableRow>
@@ -185,7 +185,7 @@ export default async function AssignmentDetailPage({
                   {t.scheduled.has_unlock_override ? (
                     <Badge variant="outline">custom</Badge>
                   ) : (
-                    <span className="text-muted-foreground text-xs">—</span>
+                    <span className="text-muted-foreground text-xs">-</span>
                   )}
                 </TableCell>
               </TableRow>

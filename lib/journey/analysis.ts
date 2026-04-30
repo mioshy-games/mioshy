@@ -5,7 +5,7 @@
  * Turns raw `Response[]` into an `Analysis` object (scores, love language,
  * top gap, horsemen flag, bilingual recommendations).
  *
- * No ML, no external calls — deterministic, cheap, auditable. v2 can
+ * No ML, no external calls - deterministic, cheap, auditable. v2 can
  * replace `generateSummary` with an LLM call without touching callers.
  */
 
@@ -19,6 +19,14 @@ import type {
   Response,
 } from "./types";
 import { getQuestion } from "./questions";
+import {
+  PRIORITY_KEYS,
+  PRIORITY_LABELS_HE,
+  PRIORITY_LABELS_EN,
+  PRIORITY_DESC_HE,
+  PRIORITY_DESC_EN,
+  type PriorityKey,
+} from "./priorities";
 
 // Axis labels (bilingual) for narrative rendering ----------------------------
 
@@ -235,76 +243,112 @@ function fourHorsemenFlag(scores: AxisScoreMap): boolean {
 
 // --- Narrative / recommendations (deterministic copy) -----------------------
 
+/**
+ * Pulls the user's #1 priority slug out of their `q_priorities` ranking
+ * answer. Returns null if the question wasn't answered or the answer is
+ * malformed. The validator on /api/journey/answer normally guarantees
+ * order is a full permutation of PRIORITY_KEYS — but the analysis layer
+ * never trusts that and re-validates here.
+ */
+function extractTopPriority(responses: Response[]): PriorityKey | null {
+  for (const r of responses) {
+    if (r.answer.kind !== "ranking") continue;
+    const order = r.answer.order;
+    if (!Array.isArray(order) || order.length === 0) continue;
+    const first = order[0];
+    if (typeof first !== "string") continue;
+    if ((PRIORITY_KEYS as readonly string[]).includes(first)) {
+      return first as PriorityKey;
+    }
+  }
+  return null;
+}
+
 function generateSummary(params: {
   scores: AxisScoreMap;
   topGap: Axis | null;
+  topPriority: PriorityKey | null;
   primary: LoveLanguage | null;
-  friendship: number;
-  conflict: number;
-  passion: number;
   horsemenFlag: boolean;
 }): AnalysisSummaryBilingual {
-  const { topGap, primary, friendship, conflict, passion, horsemenFlag } = params;
+  // The new narrative leans on the chosen priority + love language
+  // instead of leading with raw friendship/conflict/passion scores —
+  // those still surface as their own card row in AnalysisSummary.tsx
+  // so we don't repeat them in prose. Hence the smaller param surface.
+  const { topPriority, primary, horsemenFlag } = params;
 
-  const topGapHe = topGap ? AXIS_LABEL_HE[topGap] : "חיבור כללי";
-  const topGapEn = topGap ? AXIS_LABEL_EN[topGap] : "connection";
-  const primaryHe = primary ? AXIS_LABEL_HE[primary] : "מגע אישי";
-  const primaryEn = primary ? AXIS_LABEL_EN[primary] : "personal touch";
+  // Resolve the user's chosen #1 priority into HE/EN labels. Falls back
+  // to the legacy axis-based topGap when ranking wasn't answered (older
+  // sessions / partial diagnostics).
+  const focusHe = topPriority
+    ? PRIORITY_LABELS_HE[topPriority]
+    : params.topGap ? AXIS_LABEL_HE[params.topGap] : "חיבור כללי";
+  const focusEn = topPriority
+    ? PRIORITY_LABELS_EN[topPriority]
+    : params.topGap ? AXIS_LABEL_EN[params.topGap] : "connection";
+  const focusDescHe = topPriority ? PRIORITY_DESC_HE[topPriority] : "";
+  const focusDescEn = topPriority ? PRIORITY_DESC_EN[topPriority] : "";
 
-  const narrative_he =
-    `על פי התשובות שלך, הציון החברי (friendship) שלכם הוא ${friendship}/100, ` +
-    `רמת השקט בוויכוחים ${conflict}/100, והפוטנציאל לתשוקה מתגעגע ב-${passion}/100. ` +
-    `האזור שהכי ישתלם לעבוד עליו קודם הוא ${topGapHe}. ` +
-    `בן/בת הזוג שלך כנראה יגיב/תגיב הכי חזק כשאת/ה מביא/ה יותר ${primaryHe}. ` +
-    (horsemenFlag
-      ? "זיהינו סימנים ששווה להתייחס אליהם בתקשורת שלכם — נתחיל שם לפני כל דבר אחר."
-      : "בסיס התקשורת ביניכם סביר; אפשר לצלול מייד לעבודה על הקשר.");
+  const primaryHe = primary ? AXIS_LABEL_HE[primary] : null;
+  const primaryEn = primary ? AXIS_LABEL_EN[primary] : null;
 
-  const narrative_en =
-    `Based on your answers, your friendship score is ${friendship}/100, ` +
-    `conflict health is ${conflict}/100, and your passion is at risk by ${passion}/100. ` +
-    `The highest-leverage area to work on first is ${topGapEn}. ` +
-    `Your partner will likely respond most strongly when you offer more ${primaryEn}. ` +
-    (horsemenFlag
-      ? "We noticed communication patterns worth addressing — we'll start there before anything else."
-      : "Your communication foundation is solid; we can move straight into deepening connection.");
+  // ── Marketing/psychology narrative ──
+  // Tone: warm, knowing, never "rate-card" clinical. Avoids leading with
+  // raw scores (those have their own card UI further down). Centres the
+  // story around the priority the user JUST told us they care about.
+  const narrativeHeParts = [
+    `אנחנו רואים בתשובות שלכם זוגיות אמיתית — עם היכרות, חום, ורצון להתחבר עוד יותר.`,
+    `העדיפות הראשונה שבחרתם היא ${focusHe}${focusDescHe ? ` — ${focusDescHe}` : ""}, ושם אנחנו מתחילים.`,
+    primaryHe
+      ? `שפת האהבה שמאירה אצלכם הכי חזק היא ${primaryHe} — דרכה אפשר לבן/בת הזוג להרגיש את האהבה שלכם בלי מאמץ.`
+      : "",
+    horsemenFlag
+      ? "זיהינו דפוסי תקשורת שמומחי הזוגיות שלנו יודעים בדיוק איך לעבוד איתם — נתחיל שם, ברוגע ובעדינות."
+      : "בסיס התקשורת ביניכם איתן, מה שמאפשר לנו לצלול מיד לעומק החיבור.",
+  ].filter(Boolean);
 
-  // Top-3 recommendations, selected by priority tree.
+  const narrativeEnParts = [
+    `Your answers describe a real, living relationship — with depth, warmth, and a real wish to connect more.`,
+    `The #1 priority you chose is ${focusEn}${focusDescEn ? ` — ${focusDescEn}` : ""}, and that's where we begin.`,
+    primaryEn
+      ? `Your strongest love language is ${primaryEn} — through it, your partner feels your love effortlessly.`
+      : "",
+    horsemenFlag
+      ? "We noticed a few communication patterns our experts know exactly how to soften. We'll start there, gently."
+      : "Your communication foundation is solid, which lets us dive straight into deepening the connection.",
+  ].filter(Boolean);
+
+  const narrative_he = narrativeHeParts.join(" ");
+  const narrative_en = narrativeEnParts.join(" ");
+
+  // ── Recommendations / "How we'll work together" ──
+  // Per product direction: do NOT enumerate daily exercises here. Show ONE
+  // value-driven block that names the focus area and explains the method.
+  // The actual schedule of micro-tasks is something the subscriber sees
+  // post-checkout, not a teaser on the result screen.
   const recommendations: AnalysisSummaryBilingual["recommendations"] = [];
 
-  if (horsemenFlag) {
-    recommendations.push({
-      id: "rec_horsemen",
-      axis: "repair",
-      priority: 1,
-      he:
-        "נתחיל עם תרגיל 7-ימים של 'פנייה רכה' — במקום 'אתה תמיד…', תנסו 'אני מרגיש/ה כש…'. נשלח לכם ניסוח מוכן כל יום.",
-      en:
-        "We'll start with a 7-day 'soft start-up' exercise — instead of 'you always…', try 'I feel when…'. We'll send you a ready-made phrase every day.",
-    });
-  }
+  recommendations.push({
+    id: topPriority
+      ? `rec_priority_${topPriority}`
+      : params.topGap ? `rec_topgap_${params.topGap}` : "rec_general",
+    axis: params.topGap ?? "shared_meaning",
+    priority: 1,
+    he:
+      `נתחיל בעדיפות ${focusHe} שבחרתם. ` +
+      "בעזרת כלים מעולם הפסיכולוגיה הזוגית, הניסיון של מאות זוגות שעברו אצלנו, " +
+      "ועם המומחים שלנו בתחום — בנינו תוכן מעמיק שיעבוד בדיוק איפה שאתם רוצים. " +
+      "הכי חשוב: השירות אישי לחלוטין. אנחנו לומדים אתכם, " +
+      "והמומחים שלנו מתאימים את התוכן עבורכם לאורך כל הדרך.",
+    en:
+      `We'll start with the priority you chose: ${focusEn}. ` +
+      "Using tools from couples psychology, the experience of hundreds of couples who walked this path with us, " +
+      "and our in-house experts — we've built deep content that works exactly where you want it to. " +
+      "Most importantly: this service is fully personal. " +
+      "We learn you, and our experts adapt the content for you, every step of the way.",
+  });
 
-  if (topGap) {
-    recommendations.push({
-      id: `rec_topgap_${topGap}`,
-      axis: topGap,
-      priority: horsemenFlag ? 2 : 1,
-      he: `המוקד שלנו בחודש הראשון: ${AXIS_LABEL_HE[topGap]}. שלושה מיקרו-תרגולים, חמש דקות כל אחד, פרוסים לאורך השבוע.`,
-      en: `Our focus in the first month: ${AXIS_LABEL_EN[topGap]}. Three micro-exercises, five minutes each, spread through the week.`,
-    });
-  }
-
-  if (primary) {
-    recommendations.push({
-      id: `rec_love_lang_${primary}`,
-      axis: primary,
-      priority: horsemenFlag ? 3 : 2,
-      he: `נלמד אותך לדייק בשפת האהבה של בן/בת הזוג: ${AXIS_LABEL_HE[primary]}. שלושה ניסויים קצרים לקבלת משוב אמיתי ממנו/ה.`,
-      en: `We'll help you target your partner's love language: ${AXIS_LABEL_EN[primary]}. Three short experiments to get real feedback from them.`,
-    });
-  }
-
-  return { narrative_he, narrative_en, recommendations };
+  return { narrative_he, narrative_en, recommendations, top_priority: topPriority ?? undefined };
 }
 
 // --- Public entrypoint ------------------------------------------------------
@@ -318,14 +362,15 @@ export function analyze(responses: Response[]): Analysis {
   const secondary = secondaryLoveLanguage(scores, primary);
   const topGap = findTopGap(scores);
   const horsemenFlag = fourHorsemenFlag(scores);
+  // The user's #1 chosen priority drives the marketing narrative.
+  // Falls back to topGap when ranking wasn't answered.
+  const topPriority = extractTopPriority(responses);
 
   const summary = generateSummary({
     scores,
     topGap,
+    topPriority,
     primary,
-    friendship,
-    conflict,
-    passion,
     horsemenFlag,
   });
 

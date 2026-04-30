@@ -65,7 +65,7 @@ export const experienceGameSchema = z.object({
 
   title_he: z.string().min(1).max(120),
   title_en: z.string().max(120),
-  // Short description — used as the marketing-card subtitle and the
+  // Short description - used as the marketing-card subtitle and the
   // detail-page lede. Kept unbounded on purpose: the public surfaces
   // already use `line-clamp-2`/`line-clamp-3` so longer copy is
   // gracefully truncated in the UI without breaking layout.

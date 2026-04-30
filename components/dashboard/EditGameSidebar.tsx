@@ -1,13 +1,13 @@
 "use client";
 
 /**
- * EditGameSidebar — page-level sticky preview column for the Edit Game page.
+ * EditGameSidebar - page-level sticky preview column for the Edit Game page.
  *
  * Renders both the appearance LivePreview (fed by useSettingsStore) and the
  * wheel slices preview (fed by useWheelFormStore via WheelFormSync inside the
  * GameForm tree). Because it lives at the PAGE layout level (not inside
  * InlineSettingsEditor anymore), it stays visible as the admin scrolls through
- * every section of the form — game details, slices, questions, SEO, etc.
+ * every section of the form - game details, slices, questions, SEO, etc.
  *
  * The sidebar is collapsible on wider screens so admins can reclaim horizontal
  * space when editing long tables (questions list). It hides entirely below the
@@ -29,7 +29,7 @@ export function EditGameSidebar() {
   return (
     <aside
       className={cn(
-        // Sticky column — anchors to the admin main top padding (~1rem) so the
+        // Sticky column - anchors to the admin main top padding (~1rem) so the
         // preview stays pinned while the form scrolls underneath it.
         "hidden xl:flex xl:flex-col sticky top-4 self-start",
         "max-h-[calc(100vh-2rem)] overflow-y-auto",
@@ -39,7 +39,7 @@ export function EditGameSidebar() {
       )}
       aria-label="Live preview sidebar"
     >
-      {/* Collapse toggle — single button, swaps icon when collapsed */}
+      {/* Collapse toggle - single button, swaps icon when collapsed */}
       <div className="flex items-center justify-between border-b border-border px-2 py-1.5">
         {!collapsed && (
           <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground px-1.5">

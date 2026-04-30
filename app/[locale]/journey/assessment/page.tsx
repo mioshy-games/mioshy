@@ -6,9 +6,9 @@
  *
  * Anonymous progress: answers are always persisted server-side via the
  * device_id cookie. On return/refresh we restore current_step so the user
- * continues from where they left off — even before creating an account.
+ * continues from where they left off - even before creating an account.
  *
- * Previously lived at /[locale]/journey/page.tsx — moved here as part of
+ * Previously lived at /[locale]/journey/page.tsx - moved here as part of
  * the Journey Content System carve-out (Phase 0). /journey now routes
  * between marketing / resume-assessment / timeline based on state.
  * See docs/journey-content-system-design.md §9.
@@ -23,6 +23,11 @@ import { createServiceRoleClient } from "@/lib/supabase-admin";
 import { JourneyClient } from "@/components/journey/JourneyClient";
 import type { Locale } from "@/lib/journey/types";
 
+// Force fresh render on EVERY request — never cache. Critical for an
+// auth-aware page: we don't want a stale Cookie+user pair to be served
+// to a different visitor.
+export const dynamic = "force-dynamic";
+
 export default async function JourneyAssessmentPage({
   params,
 }: {
@@ -34,17 +39,20 @@ export default async function JourneyAssessmentPage({
   }
   setRequestLocale(locale);
 
+  const cookieStoreForLog = cookies();
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   let initialProgress: { current_step: number; status: string; language: Locale } | null = null;
   let subscriptionActive = false;
 
+  const deviceIdForLog = cookieStoreForLog.get("mioshy_device_id")?.value ?? null;
+
   if (user) {
     // ── Authenticated user: restore progress + check subscription ────────
     const { data: journey } = await supabase
       .from("journeys")
-      .select("current_step, status, language")
+      .select("id, current_step, status, language, last_activity_at, device_id")
       .eq("user_id", user.id)
       .order("last_activity_at", { ascending: false })
       .limit(1)
@@ -56,6 +64,25 @@ export default async function JourneyAssessmentPage({
         status: journey.status,
         language: (journey.language ?? locale) as Locale,
       };
+    } else if (deviceIdForLog) {
+      // No user-owned journey — possibly the resume call didn't link the
+      // anon row. Probe for an orphan anon journey under the same device
+      // and surface it on the page log so we can see what should have
+      // been linked.
+      const admin = createServiceRoleClient();
+      if (admin) {
+        const { data: orphan } = await admin
+          .from("journeys")
+          .select("id, current_step, status, user_id, last_activity_at")
+          .eq("device_id", deviceIdForLog)
+          .order("last_activity_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        console.warn(
+          "[/journey/assessment] NO journey for this user — possible unlinked anon row:",
+          orphan,
+        );
+      }
     }
 
     const { data: sub } = await supabase

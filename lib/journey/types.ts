@@ -41,7 +41,8 @@ export type QuestionType =
   | "forced_choice"
   | "single_choice"
   | "multi_choice"
-  | "reflection";
+  | "reflection"
+  | "ranking";
 
 export interface AxisWeight {
   axis: Axis;
@@ -90,7 +91,43 @@ export interface QuestionReflection {
   max_length?: number;
 }
 
-export type Question = QuestionLikert | QuestionChoice | QuestionReflection;
+/**
+ * Ranking question — user reorders a fixed set of 5 categories by personal
+ * priority. Each category has a stable English `key` that is what gets
+ * stored in the answer; HE/EN labels and short descriptions live alongside
+ * for the renderer. Doesn't drive any axis (`axes: []`).
+ *
+ * The `key`s here MUST match `PRIORITY_KEYS` in lib/journey/priorities.ts.
+ * The validator on /api/journey/answer enforces that the answer is exactly
+ * a permutation of those keys.
+ */
+export interface QuestionRankingCategory {
+  key: string;
+  he: string;
+  en: string;
+  he_desc: string;
+  en_desc: string;
+}
+
+export interface QuestionRanking {
+  id: string;
+  category: QuestionCategory;
+  type: "ranking";
+  axes: AxisWeight[]; // always [] for ranking — kept for shape-compatibility
+  purpose: string;
+  insight?: string;
+  he_prompt: string;
+  en_prompt: string;
+  he_subline?: string;
+  en_subline?: string;
+  categories: QuestionRankingCategory[];
+}
+
+export type Question =
+  | QuestionLikert
+  | QuestionChoice
+  | QuestionReflection
+  | QuestionRanking;
 
 export interface QuestionnaireGating {
   auth_after_index: number; // zero-based index after which auth is required
@@ -112,7 +149,11 @@ export type AnswerValue =
   | { kind: "likert"; value: 1 | 2 | 3 | 4 | 5 }
   | { kind: "single"; option: string }
   | { kind: "multi"; options: string[] }
-  | { kind: "text"; text: string };
+  | { kind: "text"; text: string }
+  /** Ordered list of stable category slugs; index 0 = highest priority.
+   *  The server validator enforces it's a permutation of PRIORITY_KEYS
+   *  from lib/journey/priorities.ts (no missing, no extras, no duplicates). */
+  | { kind: "ranking"; order: string[] };
 
 export interface Response {
   question_id: string;
@@ -127,6 +168,10 @@ export type AxisScoreMap = Partial<Record<Axis, number>>;
 export interface AnalysisSummaryBilingual {
   narrative_he: string;
   narrative_en: string;
+  /** User's #1 chosen priority slug (PriorityKey) from the ranking step.
+   *  Stored INSIDE `summary` JSONB so adding the field needs no DB
+   *  migration. Older rows without it render the legacy top_gap fallback. */
+  top_priority?: string;
   recommendations: Array<{
     id: string;
     axis: Axis;

@@ -5,7 +5,7 @@ export type SnakeOrLadder = {
   label: string;
 };
 
-/** Difficulty level — 1 = קליל, 2 = בינוני, 3 = מאתגר */
+/** Difficulty level - 1 = קליל, 2 = בינוני, 3 = מאתגר */
 export type QuestionLevel = 1 | 2 | 3;
 
 export type Question = {

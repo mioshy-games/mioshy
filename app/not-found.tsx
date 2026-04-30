@@ -2,11 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "404 — Mioshy",
+  title: "404 - Mioshy",
   robots: { index: false, follow: false },
 };
 
-// Pixel-art style decoration — pure CSS, no images needed
+// Pixel-art style decoration - pure CSS, no images needed
 function PixelDeco({ className }: { className?: string }) {
   return (
     <div

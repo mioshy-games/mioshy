@@ -113,7 +113,7 @@ export function WheelPreview({
 
   const markerRadius = (r * markerPos) / 100;
 
-  // Outer border ring (from game_settings.border) — absolutely positioned sibling
+  // Outer border ring (from game_settings.border) - absolutely positioned sibling
   const hasOuterBorder = outerBorder?.enabled && outerBorder.style !== "none";
   const outerGapPx     = hasOuterBorder ? (outerBorder!.distance ?? 0) : 0;
   const outerWidthPx   = hasOuterBorder ? (outerBorder!.width ?? 2) : 0;

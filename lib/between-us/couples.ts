@@ -78,7 +78,7 @@ export async function isGameEntitled(
 }
 
 // ------------------------------------------------------------
-// Library — full game rows for every game the couple owns
+// Library - full game rows for every game the couple owns
 // ------------------------------------------------------------
 export interface OwnedGame {
   id: string;

@@ -13,7 +13,7 @@
 //   - neither                   → marketing page / assessment CTA
 //
 // The helper is polymorphic on owner (couple > user). We read via the
-// session client so RLS (migration 035) is honored — the journey_*
+// session client so RLS (migration 035) is honored - the journey_*
 // policies already let the current user see their own assignments by
 // user_id or couple membership.
 // ============================================================
@@ -30,7 +30,7 @@ export interface OwnerJourneyStatus {
 
 /**
  * Look up the viewer's Journey pillar status. Caller supplies the user
- * id and optional couple id — we prefer the couple owner when present
+ * id and optional couple id - we prefer the couple owner when present
  * (matches `preferCoupleOwner()` and every other Journey query).
  *
  * Never throws; on error we return "no active content" so the routing
@@ -43,7 +43,7 @@ export async function getOwnerJourneyStatus(args: {
   const owner = preferCoupleOwner(args.userId, args.coupleId ?? null);
   const supabase = await createServerSupabaseClient();
 
-  // 1. Active assignment existence — cheap existence check (head + limit 1).
+  // 1. Active assignment existence - cheap existence check (head + limit 1).
   const assignmentQuery = supabase
     .from("journey_assignments")
     .select("id", { head: true, count: "exact" })
@@ -55,7 +55,7 @@ export async function getOwnerJourneyStatus(args: {
       ? assignmentQuery.eq("couple_id", owner.coupleId)
       : assignmentQuery.eq("user_id", owner.userId);
 
-  // 2. In-progress assessment — the legacy `journeys` table predates the
+  // 2. In-progress assessment - the legacy `journeys` table predates the
   //    content system. Any row that isn't "completed" counts as resumable.
   const assessmentQuery = supabase
     .from("journeys")

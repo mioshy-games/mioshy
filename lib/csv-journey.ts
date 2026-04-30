@@ -16,7 +16,7 @@
  *     task_he, task_en, challenge_he, challenge_en, video_url, image_url,
  *     sort_order, default_offset_days, is_active
  *
- *   assignments.csv  (export only — assignments are import via UI)
+ *   assignments.csv  (export only - assignments are import via UI)
  *     assignment_id, owner_key, source_kind, source_id, anchor_kind,
  *     anchor_date, origin, origin_ref, notes, is_active, created_at
  *
@@ -155,6 +155,9 @@ export const ITEM_COLS = [
   "sort_order",
   "default_offset_days",
   "is_active",
+  // 'both' | 'owner' | 'partner' — added in migration 044. Old CSV files
+  // without this column default to 'both' on import.
+  "audience",
 ] as const;
 
 export const ASSIGNMENT_COLS = [
@@ -218,6 +221,8 @@ export type ItemExportRow = {
   sort_order: number;
   default_offset_days: number;
   is_active: boolean;
+  /** 'both' | 'owner' | 'partner' — see migration 044. */
+  audience: "both" | "owner" | "partner";
 };
 
 export type AssignmentExportRow = {
@@ -295,6 +300,7 @@ export function buildItemsCsv(rows: ItemExportRow[]): string {
       r.sort_order,
       r.default_offset_days,
       String(r.is_active),
+      r.audience,
     ]),
   );
 }
@@ -360,8 +366,8 @@ export function buildCategoriesTemplate(): string {
       "",                              // category_id (empty = INSERT)
       "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx", // program_id (UUID or empty for standalone)
       "week-1-trust",                  // slug
-      "שבוע 1 — אמון",                 // name_he
-      "Week 1 — Trust",               // name_en
+      "שבוע 1 - אמון",                 // name_he
+      "Week 1 - Trust",               // name_en
       "בניית אמון בסיסי",              // description_he
       "Building foundational trust",   // description_en
       "0",                             // sort_order
@@ -469,6 +475,7 @@ export type ItemImportRow = {
   sort_order: number;
   default_offset_days: number;
   is_active: boolean;
+  audience: "both" | "owner" | "partner"; // missing column → 'both'
 };
 
 // ---------------------------------------------------------------------------
@@ -651,6 +658,24 @@ export function parseItemsCsv(text: string): CsvParseResult<ItemImportRow> {
 
     if (err) continue;
 
+    // audience: optional column; missing/blank → 'both'. Any other value
+    // is rejected so a typo doesn't silently mark content as the wrong
+    // partner.
+    const rawAudience = get(row, "audience").toLowerCase();
+    let audience: "both" | "owner" | "partner";
+    if (rawAudience === "" || rawAudience === "both") {
+      audience = "both";
+    } else if (rawAudience === "owner" || rawAudience === "partner") {
+      audience = rawAudience;
+    } else {
+      skipped.push({
+        row: rn,
+        field: "audience",
+        message: `Must be both|owner|partner (got "${rawAudience}")`,
+      });
+      continue;
+    }
+
     rows.push({
       item_id: rawId,
       category_id: rawCatId,
@@ -668,6 +693,7 @@ export function parseItemsCsv(text: string): CsvParseResult<ItemImportRow> {
       sort_order: parseInt10(get(row, "sort_order")),
       default_offset_days: parseInt10(get(row, "default_offset_days")),
       is_active: parseBool(get(row, "is_active")),
+      audience,
     });
   }
 

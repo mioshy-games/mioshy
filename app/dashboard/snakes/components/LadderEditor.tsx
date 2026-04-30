@@ -107,7 +107,7 @@ export function LadderEditor({ cfg }: { cfg: SnakesConfig }) {
                   <TableCell className="font-mono">{l.from}</TableCell>
                   <TableCell className="font-mono">{l.to}</TableCell>
                   <TableCell>{l.emoji}</TableCell>
-                  <TableCell className="text-muted-foreground">{l.label || "—"}</TableCell>
+                  <TableCell className="text-muted-foreground">{l.label || "-"}</TableCell>
                   <TableCell className="text-right">
                     <Button
                       variant="destructive"

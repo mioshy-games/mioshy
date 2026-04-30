@@ -1,19 +1,19 @@
-# Phase 6 — End-to-End QA Runbook
+# Phase 6 - End-to-End QA Runbook
 
 A step-by-step validation guide for the five real-world flows that must pass
 cleanly before Phase 6 (Journey polish + purchase automation) is considered
 production-ready.
 
-- **Audience** — Itzik, running against staging or a local preview deploy.
-- **Prereqs** — admin account for the dashboard, one fresh test email for
+- **Audience** - Itzik, running against staging or a local preview deploy.
+- **Prereqs** - admin account for the dashboard, one fresh test email for
   the buyer, one more fresh email for the partner (solo→couple flow), access
   to the Supabase project (SQL editor) and Brevo inbox, mobile device or
   Chrome devtools device emulation.
-- **Env** — `JOURNEY_UNLOCK_CRON_SECRET` (falls back to
+- **Env** - `JOURNEY_UNLOCK_CRON_SECRET` (falls back to
   `CARDCOM_BILLING_CRON_SECRET`) must be set in Vercel for the notification
   cron to be callable. `NEXT_PUBLIC_SITE_URL` / `PUBLIC_BASE_URL` must point
   at the deployed host used by the email links.
-- **Reset between runs** — see “Test data reset” at the bottom.
+- **Reset between runs** - see “Test data reset” at the bottom.
 
 Pass/fail is recorded inline with each step. A flow passes only when every
 step passes.
@@ -27,7 +27,7 @@ step passes.
    - `product_slug = "journey"` is set (migration 036).
    - `is_active = true`.
    - At least 3 items are attached, with `unlock_offset_days` of `0`, `1`,
-     and `7` (or similar — we just need a mix so the first item is
+     and `7` (or similar - we just need a mix so the first item is
      immediately available and the others are future-locked).
 2. In Supabase SQL editor run:
 
@@ -37,7 +37,7 @@ step passes.
    where product_slug = 'journey' and is_active = true;
    ```
 
-   Record the program id — you’ll use it later as `<PROGRAM_ID>`.
+   Record the program id - you’ll use it later as `<PROGRAM_ID>`.
 3. In `checkout_sessions`, confirm the `product` column exists (added by
    migration 036) and the column is populated for recent rows.
 
@@ -45,7 +45,7 @@ Pass ☐ / Fail ☐
 
 ---
 
-## Flow 1 — Full purchase flow
+## Flow 1 - Full purchase flow
 
 **Goal** A brand new user completes the assessment, purchases a journey
 subscription, lands with a program auto-assigned, and the first item is
@@ -68,7 +68,7 @@ Pass ☐ / Fail ☐
 2. The page should show two CTAs: **Open my journey** (primary, pointing at
    `/journey/timeline`) and **My library** (secondary, pointing at `/my`).
    *If the CTAs say “Back to questionnaire”, the new success-page copy did
-   not deploy — pull latest and retry.*
+   not deploy - pull latest and retry.*
 3. Click **Open my journey**.
 
 Pass ☐ / Fail ☐
@@ -106,7 +106,7 @@ Pass ☐ / Fail ☐
 ### 1D. Idempotency
 
 In the SQL editor, pretend the webhook fires again by re-running the
-`/api/billing/cardcom/indicator` call logic manually — easier: just reload
+`/api/billing/cardcom/indicator` call logic manually - easier: just reload
 the billing success page (the webhook will not re-fire, but you can verify
 no duplicate was ever created). Re-run the query from 1C. Expected: still
 exactly one row.
@@ -140,7 +140,7 @@ Pass ☐ / Fail ☐
 
 ---
 
-## Flow 2 — Unlock flow
+## Flow 2 - Unlock flow
 
 **Goal** A scheduled item flips from locked → available, appears correctly
 in the timeline, and triggers an email exactly once.
@@ -226,7 +226,7 @@ Pass ☐ / Fail ☐
      **Open this chapter** linking to `<SITE_URL>/<locale>/journey/timeline/
      <SCHEDULED_ID>`.
    - Footer branded **Mioshy**.
-3. Click the CTA — you land on the item detail page, authenticated if
+3. Click the CTA - you land on the item detail page, authenticated if
    your session cookie is still valid, or on the sign-in page otherwise.
 
 Pass ☐ / Fail ☐
@@ -245,7 +245,7 @@ Immediately re-run the curl from 2D. Expected:
 }
 ```
 
-Re-check your inbox — no second email should arrive.
+Re-check your inbox - no second email should arrive.
 
 SQL sanity check:
 
@@ -288,12 +288,12 @@ Pass ☐ / Fail ☐
 
 ---
 
-## Flow 3 — Solo → couple transition
+## Flow 3 - Solo → couple transition
 
 **Goal** A user who started solo shares their journey with a partner
 without losing responses or scheduled items, and no duplicates appear.
 
-### 3A. Setup — confirm solo state
+### 3A. Setup - confirm solo state
 
 Using the Flow 1 buyer (still solo), open `/account` and issue a couple
 invitation to a **new** email you control.
@@ -309,7 +309,7 @@ where couple_id in (
 order by created_at desc;
 ```
 
-Wait — the buyer is not in a couple yet, so `couple_members` has nothing
+Wait - the buyer is not in a couple yet, so `couple_members` has nothing
 yet. Instead, the `couple_invitations` row should exist with
 `status = 'pending'` and a freshly-minted `couple_id` placeholder. Record
 `<INVITE_TOKEN>` from the email or `invitation_token` column.
@@ -329,7 +329,7 @@ Pass ☐ / Fail ☐
 
 1. In the partner’s `/my`, the Journey pillar card shows the same
    “active” chip + **לציר הזמן** / **Open timeline** CTA.
-2. Open `/journey/timeline` — same chapters, same progress, same NextUp
+2. Open `/journey/timeline` - same chapters, same progress, same NextUp
    as the buyer.
 
 SQL confirmation:
@@ -359,11 +359,11 @@ order by created_at asc;
 Expected: exactly one active row for the program, couple-owned. No solo
 duplicate. If the partner brought their own solo journey for the same
 program, that row should have `is_active = false` with a note like
-“Deactivated on pairing — couple already owned …”.
+“Deactivated on pairing - couple already owned …”.
 
 Pass ☐ / Fail ☐
 
-### 3E. Data persistence — responses + completions
+### 3E. Data persistence - responses + completions
 
 1. From Flow 1E you may have filed responses and completed at least one
    item. Open `/journey/timeline/<SCHEDULED_ID>` as the buyer again and
@@ -390,7 +390,7 @@ Pass ☐ / Fail ☐
 
 ---
 
-## Flow 4 — Admin control
+## Flow 4 - Admin control
 
 **Goal** Assign, override, remove, re-materialize from
 `/dashboard/journey/clients/<ownerKey>` and see the changes reflected
@@ -401,7 +401,7 @@ immediately on the user timeline.
 1. As admin, open `/dashboard/journey/clients/couple:<COUPLE_ID>` (or
    `user:<USER_ID>` for a solo owner).
 2. Use **New assignment** to add a second program or category.
-3. Confirm — the new AssignmentCard appears on the page, with its own
+3. Confirm - the new AssignmentCard appears on the page, with its own
    list of ScheduledItemRows.
 4. In a second tab, reload `/journey/timeline` as the user. The new items
    should appear under their category section immediately.
@@ -424,7 +424,7 @@ Pass ☐ / Fail ☐
 1. In the admin **Program catalog**, add a new item to the program the
    user is assigned to.
 2. The PropagateConfirmDialog should offer to add this item to existing
-   assignments — apply.
+   assignments - apply.
 3. Back on the client’s AssignmentCard, click **Re-materialize** (or
    confirm via the propagation dialog). Scheduled item count goes up by
    one.
@@ -450,7 +450,7 @@ Pass ☐ / Fail ☐
 
 ---
 
-## Flow 5 — Mobile experience
+## Flow 5 - Mobile experience
 
 **Goal** Timeline is readable, CTAs are obvious, scrolling and hierarchy
 feel premium on a phone.
@@ -517,7 +517,7 @@ delete from journey_assignments
   where user_id = '<USER_ID>'
      or couple_id in (select couple_id from couple_members where user_id = '<USER_ID>');
 
--- 3. Undo couple (careful — this also affects the partner)
+-- 3. Undo couple (careful - this also affects the partner)
 delete from couple_invitations
   where couple_id in (select couple_id from couple_members where user_id = '<USER_ID>');
 delete from couple_members where user_id = '<USER_ID>';
@@ -537,7 +537,7 @@ delete from checkout_sessions where user_id = '<USER_ID>';
 
 - The billing success copy was updated in this phase to
   `goJourney → /journey/timeline` (primary) and `goAccount → /my`
-  (secondary) — the old copy said “Back to questionnaire”. Re-deploy if
+  (secondary) - the old copy said “Back to questionnaire”. Re-deploy if
   you still see the old strings.
 - The unlock cron scan re-visits already-completed-before-notified rows
   each hour (skipped immediately, but wastes one row-scan). Optional
@@ -551,10 +551,10 @@ delete from checkout_sessions where user_id = '<USER_ID>';
 
 ## Sign-off
 
-- Flow 1 — Purchase ☐
-- Flow 2 — Unlock ☐
-- Flow 3 — Solo → Couple ☐
-- Flow 4 — Admin control ☐
-- Flow 5 — Mobile ☐
+- Flow 1 - Purchase ☐
+- Flow 2 - Unlock ☐
+- Flow 3 - Solo → Couple ☐
+- Flow 4 - Admin control ☐
+- Flow 5 - Mobile ☐
 
 When all five are ☑, Phase 6 is production-ready.

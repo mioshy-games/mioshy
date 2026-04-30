@@ -19,7 +19,7 @@ const ITEMS: MediaItem[] = [
     name: "ישראל היום",
     date: "מדור מומלצים",
     quote:
-      "מיאושי — הפלטפורמה הישראלית שמחזירה זוגות אחד אל השני.",
+      "מיאושי עוזרת למאות זוגות להחזיר את התשוקה שאבדה - במקום להיפרד.",
     url: "https://www.israelhayom.co.il/mumlazim/article/13374120",
     logoSrc: "/images/israel.webp",
     logoAlt: "ישראל היום",
@@ -28,7 +28,7 @@ const ITEMS: MediaItem[] = [
     name: "walla!",
     date: "TLD · מגזין החיים",
     quote:
-      "מיאושי הפכה את הזוגיות בישראל למשהו שמשחקים אותו.",
+      "משחקים ואתגרים שמצילים את הזוגיות - עם ליווי מקצועי אישי לכל זוג.",
     url: "https://tld.walla.co.il/item/3528908",
     logoSrc: "/images/walla.webp",
     logoAlt: "Walla!",
@@ -36,24 +36,24 @@ const ITEMS: MediaItem[] = [
 ];
 
 /**
- * MediaSlider — editorial press table.
+ * MediaSlider - editorial press table.
  *
  * Same design language as the new Benefits section: right-aligned
  * editorial header, stacked rows with [logo | quote | CTA], hairline
  * dividers between rows, layered drifting white gradients underneath
  * the cream surface for breathable depth.
  *
- * Static (no rotation) — both publications are visible at once,
+ * Static (no rotation) - both publications are visible at once,
  * each in its own row. Click "קראו את הכתבה" to open the article in a
  * new tab.
  *
- * Server-rendered (no use-client) — there's no interactive state.
+ * Server-rendered (no use-client) - there's no interactive state.
  */
 export function MediaSlider() {
   return (
     <section className="media-press">
       <div className="media-press-wrap">
-        {/* Editorial header — right-aligned (RTL natural axis). */}
+        {/* Editorial header - right-aligned (RTL natural axis). */}
         <header className="media-press-head">
           <div className="media-press-eyebrow">
             <span className="media-press-dot" aria-hidden="true" />
@@ -64,7 +64,7 @@ export function MediaSlider() {
           </h2>
         </header>
 
-        {/* Editorial table rows — 2-column grid: [Logo | Content].
+        {/* Editorial table rows - 2-column grid: [Logo | Content].
             CTA lives INSIDE the content column, right-aligned (RTL start)
             so it sits next to the right edge of the quote text. */}
         <ul className="media-press-rows">
@@ -81,7 +81,7 @@ export function MediaSlider() {
                 />
               </div>
 
-              {/* Content column — quote, meta, then CTA right-aligned */}
+              {/* Content column - quote, meta, then CTA right-aligned */}
               <div className="media-press-row-content">
                 <p className="media-press-quote">
                   <span aria-hidden="true">״</span>
@@ -97,7 +97,7 @@ export function MediaSlider() {
                   <span className="media-press-date">{item.date}</span>
                 </div>
 
-                {/* CTA — italic serif, no border, no bg. Pure editorial link. */}
+                {/* CTA - italic serif, no border, no bg. Pure editorial link. */}
                 <a
                   href={item.url}
                   target="_blank"

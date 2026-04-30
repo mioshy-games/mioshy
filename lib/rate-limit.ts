@@ -34,9 +34,9 @@ function maybeCleanup(nowMs: number) {
  * Returns `ok: true` when the caller is under the limit, else `ok: false`
  * with the number of seconds to wait before trying again.
  *
- * @param key     — unique bucket key (e.g. `leads:${ip}:${deviceId}`)
- * @param limit   — max number of requests within `windowSec`
- * @param windowSec — sliding window length in seconds
+ * @param key     - unique bucket key (e.g. `leads:${ip}:${deviceId}`)
+ * @param limit   - max number of requests within `windowSec`
+ * @param windowSec - sliding window length in seconds
  */
 export function checkRateLimit(
   key: string,

@@ -5,12 +5,12 @@ import type { GameConfig } from "@/lib/snakes/types";
 import { getSnakeOrLadderAt } from "@/lib/snakes/boardUtils";
 
 /**
- * SnakesCell — a single tile on the Snakes & Ladders board.
+ * SnakesCell - a single tile on the Snakes & Ladders board.
  *
  * The cell is now a pure background tile: it shows only the cell number
  * and (optionally) a subtle tint if a snake-head or ladder-foot lives here.
  * Players and the snake/ladder graphics themselves are rendered in
- * absolutely-positioned overlays by SnakesBoard — this way the snakes can
+ * absolutely-positioned overlays by SnakesBoard - this way the snakes can
  * span multiple cells, the players can animate smoothly between cells,
  * and the cell grid stays a clean background layer.
  *
@@ -39,7 +39,7 @@ export function SnakesCell({
       className={cn(
         "relative flex h-full flex-col justify-between overflow-hidden border p-[2px] sm:p-1",
         "border-amber-900/40",
-        // warm parchment alternation — cream and moss, like the reference board
+        // warm parchment alternation - cream and moss, like the reference board
         isEven
           ? "bg-gradient-to-br from-amber-50/95 via-amber-100/90 to-amber-200/85"
           : "bg-gradient-to-br from-emerald-700/90 via-emerald-800/90 to-emerald-900/95",

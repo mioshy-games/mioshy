@@ -19,7 +19,7 @@ export function BillingSuccessContent() {
   const rawSessionId = searchParams.get("session_id") ?? ""
   const sessionId    = rawSessionId.split(/[?/]/)[0] ?? ""
 
-  // Optional return_path — when /api/billing/checkout/create is called with
+  // Optional return_path - when /api/billing/checkout/create is called with
   // return_path in the body (e.g. an Adults one-time purchase asking to
   // land back on the product page), Cardcom is told to redirect here with
   // ?return_path=… in the success URL. Once payment is confirmed we auto-
@@ -64,7 +64,7 @@ export function BillingSuccessContent() {
       setAttempts(a => {
         const next = a + 1
         if (next >= MAX_ATTEMPTS) {
-          // Treat as success after timeout — the webhook may still be on its way.
+          // Treat as success after timeout - the webhook may still be on its way.
           setPhase("active")
           return next
         }
@@ -79,7 +79,7 @@ export function BillingSuccessContent() {
   }, [sessionId])
 
   // Auto-redirect to return_path once the session flips to paid. The short
-  // 1.4s delay gives the celebratory state a beat — the user briefly sees
+  // 1.4s delay gives the celebratory state a beat - the user briefly sees
   // "Payment confirmed!" before we hand them to /adults/[slug] (or wherever
   // the originating buy CTA asked). If no return_path is provided, we leave
   // the user on this screen with the existing CTA buttons (legacy Journey

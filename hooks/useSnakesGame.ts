@@ -96,7 +96,7 @@ export function useSnakesGame({
     const curPos = state.positions[me.id] ?? me.position ?? 1;
 
     const move = calculateNewPosition(curPos, steps, config, config.boardSize);
-    // Non-repeating draw — the remaining pool is persisted in game_state so it
+    // Non-repeating draw - the remaining pool is persisted in game_state so it
     // survives refreshes and is shared across all connected clients of a room.
     const { question: q, nextPool } = pickNextQuestion(
       state.questionPool,

@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import type { ReactNode } from "react";
 
 /**
- * Reusable dark animated background — extracted from GamePageBackground.
+ * Reusable dark animated background - extracted from GamePageBackground.
  * Lighter than the full game variant (no particles, no scanlines) so it
  * can be used as a backdrop for any "hero-ish" surface without stealing
  * focus from the content on top of it.

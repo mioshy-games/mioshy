@@ -16,10 +16,10 @@ type Props = {
 };
 
 /**
- * ParallaxImage — wraps next/image with a subtle parallax scroll effect.
+ * ParallaxImage - wraps next/image with a subtle parallax scroll effect.
  * The image translates ±range/2 px as the user scrolls past it.
  *
- * Honors `prefers-reduced-motion` — falls back to a plain Image if user
+ * Honors `prefers-reduced-motion` - falls back to a plain Image if user
  * opted out. Range default 16px is intentionally small to avoid motion
  * sickness; never goes above 24px.
  */

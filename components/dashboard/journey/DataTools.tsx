@@ -76,7 +76,7 @@ function ResultModal({
           {summary.skipped.length > 0 && (
             <details className="rounded-lg border border-border overflow-hidden">
               <summary className="cursor-pointer bg-muted/30 px-4 py-2 text-sm font-medium select-none hover:bg-muted/50 transition-colors">
-                {summary.skipped.length} skipped / failed row{summary.skipped.length !== 1 ? "s" : ""} — click to expand
+                {summary.skipped.length} skipped / failed row{summary.skipped.length !== 1 ? "s" : ""} - click to expand
               </summary>
               <ul className="max-h-48 overflow-y-auto divide-y divide-border text-xs font-mono">
                 {summary.skipped.map((e, i) => (

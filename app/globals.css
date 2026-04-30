@@ -6,7 +6,7 @@
 @tailwind utilities;
 
 /* ═══════════════════════════════════════════════════════════
-   TYPOGRAPHY — base rules
+   TYPOGRAPHY - base rules
    • body / html root: 18 px (1.125 rem)
    • paragraphs: 18–20 px via clamp
    • no element may render below 16 px (rem-safe)
@@ -44,18 +44,18 @@ h4 { font-size: clamp(1.125rem, 1.5vw + 0.25rem, 1.5rem); line-height: 1.35; }
 h5 { font-size: clamp(1rem, 1vw + 0.25rem, 1.25rem);  line-height: 1.4; }
 h6 { font-size: 1rem; line-height: 1.5; }
 
-/* ── Hard floor — nothing below 14 px (0.875 rem) ──────── */
+/* ── Hard floor - nothing below 14 px (0.875 rem) ──────── */
 /* Tailwind text-xs is remapped to 14 px in tailwind.config;
    this catches any rogue inline styles on the public site. */
 :root {
-  --fs-min: 0.875rem;   /* 14 px — minimum for ornamental labels */
-  --fs-body: 1.125rem;  /* 18 px — default body */
-  --fs-lead: 1.25rem;   /* 20 px — lead / subheading */
+  --fs-min: 0.875rem;   /* 14 px - minimum for ornamental labels */
+  --fs-body: 1.125rem;  /* 18 px - default body */
+  --fs-lead: 1.25rem;   /* 20 px - lead / subheading */
 }
 
 /* ── Input / form elements ──────────────────────────────── */
 input, textarea, select, button {
-  font-size: 1rem; /* 16 px minimum — avoids iOS zoom-on-focus */
+  font-size: 1rem; /* 16 px minimum - avoids iOS zoom-on-focus */
 }
 
 /* ── Small / muted helper text ──────────────────────────── */
@@ -92,7 +92,7 @@ small, .text-small {
   }
 
   /* ═══════════════════════════════════════════════════════════
-     HOMEPAGE V2 — Design tokens (scoped to .home-v2)
+     HOMEPAGE V2 - Design tokens (scoped to .home-v2)
      New marketing language: warm reds + dark purples + warm cream.
      Only applied where .home-v2 wraps the section, so legacy pages
      stay untouched.
@@ -117,7 +117,7 @@ small, .text-small {
     --purple-deep: #1E0F1E;
     --wine: #4A1721;
 
-    /* TYPE TOKENS — sizes */
+    /* TYPE TOKENS - sizes */
     --fs-display: clamp(46px, 6.6vw, 96px);
     --fs-h2: clamp(28px, 4.4vw, 56px);
     --fs-h3: clamp(22px, 2.2vw, 30px);
@@ -129,14 +129,14 @@ small, .text-small {
     --fs-tag: 11px;
     --fs-label: 13px;
 
-    /* TYPE TOKENS — line-heights */
+    /* TYPE TOKENS - line-heights */
     --lh-display: 0.98;
     --lh-tight: 1.05;
     --lh-snug: 1.2;
     --lh-relaxed: 1.6;
     --lh-loose: 1.7;
 
-    /* TYPE TOKENS — letter-spacing */
+    /* TYPE TOKENS - letter-spacing */
     --ls-display: -0.03em;
     --ls-heading: -0.02em;
     --ls-eyebrow: 0.2em;
@@ -161,12 +161,12 @@ small, .text-small {
     /* CONTAINER */
     --max: 1320px;
 
-    /* FONT FAMILIES — override the legacy Hebrew fonts within v2 only */
+    /* FONT FAMILIES - override the legacy Hebrew fonts within v2 only */
     --font-body: var(--font-heebo);
     --font-heading: var(--font-frank-ruhl);
     --font-display: var(--font-noto-serif-hebrew);
 
-    /* Default text colour — surfaces are intentionally NOT painted here.
+    /* Default text colour - surfaces are intentionally NOT painted here.
        Each v2 wrapper / section / page is responsible for its own
        background, so embedding `.home-v2` inside a coloured surface
        (e.g. /games press section) shows that surface through. The
@@ -181,7 +181,7 @@ small, .text-small {
     --font-display: var(--font-noto-serif-hebrew);
   }
 
-  /* Honor prefers-reduced-motion globally — applies to all CSS animations
+  /* Honor prefers-reduced-motion globally - applies to all CSS animations
      in the v2 homepage (hero blobs, particle floats, blob-float, etc.).
      Framer-motion components honor this via useReducedMotion() in JS. */
   @media (prefers-reduced-motion: reduce) {

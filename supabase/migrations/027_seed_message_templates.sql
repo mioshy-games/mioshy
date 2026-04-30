@@ -20,7 +20,7 @@ VALUES
 
 השלמתם את המסע הראשוני. ציון החברות שלכם: {{friendship_score}}/100. שפת האהבה המרכזית שלכם: {{primary_love_language}}.
 
-בשבועות הקרובים נשלח לכם תרגול אחד קצר בכל שבוע — פעולה קטנה אחת שמחקרים מראים שמחזקת את הזוגיות.
+בשבועות הקרובים נשלח לכם תרגול אחד קצר בכל שבוע - פעולה קטנה אחת שמחקרים מראים שמחזקת את הזוגיות.
 
 מתחילים מחר.
 מיאושי',
@@ -28,7 +28,7 @@ VALUES
 
 You finished the first journey. Your friendship score: {{friendship_score}}/100. Your primary love language: {{primary_love_language}}.
 
-Over the coming weeks we''ll send one short practice a week — a tiny action that research shows strengthens couples.
+Over the coming weeks we''ll send one short practice a week - a tiny action that research shows strengthens couples.
 
 We''re starting tomorrow.
 Mioshy',
@@ -37,7 +37,7 @@ Mioshy',
   TRUE
 ),
 
--- ───────────────────────── Week 1 — Love Map ─────────────────────────
+-- ───────────────────────── Week 1 - Love Map ─────────────────────────
 (
   'w01_love_map_deep_dive',
   'email',
@@ -47,14 +47,14 @@ Mioshy',
 
 השבוע, שאלו אחד את השנייה: "מה היה הרגע הכי טוב השבוע, ומה הרגע הכי קשה?"
 
-אל תציעו פתרונות. רק הקשיבו. שמרו את המידע — זה "מפת האהבה" שלכם.
+אל תציעו פתרונות. רק הקשיבו. שמרו את המידע - זה "מפת האהבה" שלכם.
 
 5 דקות לפני השינה. זה הכל.',
   'Hi {{first_name}},
 
 This week, ask each other: "What was your best moment of the week, and what was your hardest?"
 
-Don''t offer solutions. Just listen. Hold onto what you hear — this is your "love map".
+Don''t offer solutions. Just listen. Hold onto what you hear - this is your "love map".
 
 5 minutes before bed. That''s it.',
   'love_map',
@@ -62,7 +62,7 @@ Don''t offer solutions. Just listen. Hold onto what you hear — this is your "l
   TRUE
 ),
 
--- ───────────────────────── Week 2 — Fondness ─────────────────────────
+-- ───────────────────────── Week 2 - Fondness ─────────────────────────
 (
   'w02_seven_day_appreciation',
   'email',
@@ -70,16 +70,16 @@ Don''t offer solutions. Just listen. Hold onto what you hear — this is your "l
   '7 days, one appreciation a day',
   'שבוע של הערכה:
 
-בכל יום שלחו לבן/בת הזוג שלכם הודעה אחת קצרה — משהו ספציפי שאתם מעריכים.
+בכל יום שלחו לבן/בת הזוג שלכם הודעה אחת קצרה - משהו ספציפי שאתם מעריכים.
 
 לא "אתה מדהים". כן "אהבתי איך שחיממת לי את הקפה הבוקר, חסכת לי חצי שעה".
 
 פרטים. הם מה שנשאר.',
   'A week of appreciation:
 
-Each day, send your partner one short message — something specific you appreciate.
+Each day, send your partner one short message - something specific you appreciate.
 
-Not "you''re amazing." Instead: "I loved that you heated my coffee this morning — it saved me half an hour."
+Not "you''re amazing." Instead: "I loved that you heated my coffee this morning - it saved me half an hour."
 
 Specifics. They''re what sticks.',
   'fondness',
@@ -87,18 +87,18 @@ Specifics. They''re what sticks.',
   TRUE
 ),
 
--- ───────────────────────── Week 3 — Turn Toward ─────────────────────────
+-- ───────────────────────── Week 3 - Turn Toward ─────────────────────────
 (
   'w03_missed_bids',
   'email',
   'הבקשות הקטנות שפספסתם',
   'The small bids you''ve been missing',
-  'גוטמן מכנה אותן "bids" — רגעים קטנים שבהם בן/בת הזוג שלך מבקש/ת תשומת לב: "תראי את הציפור הזאת", "אני עייף היום".
+  'גוטמן מכנה אותן "bids" - רגעים קטנים שבהם בן/בת הזוג שלך מבקש/ת תשומת לב: "תראי את הציפור הזאת", "אני עייף היום".
 
 השבוע, שימו לב. תענו גם כשאתם באמצע משהו. 3 שניות של מגע בעין, או משפט של "אני שומע/ת אותך".
 
 זה מה שבונה אמון.',
-  'Gottman calls them "bids" — small moments where your partner asks for attention: "look at that bird", "I''m tired today."
+  'Gottman calls them "bids" - small moments where your partner asks for attention: "look at that bird", "I''m tired today."
 
 This week, notice them. Respond even when you''re in the middle of something. Three seconds of eye contact, or an "I hear you."
 
@@ -108,7 +108,7 @@ This is what builds trust.',
   TRUE
 ),
 
--- ───────────────────────── Week 4 — Love Language ─────────────────────────
+-- ───────────────────────── Week 4 - Love Language ─────────────────────────
 (
   'w04_love_language_action',
   'email',
@@ -116,14 +116,14 @@ This is what builds trust.',
   'This week: {{primary_love_language}}',
   'שפת האהבה המרכזית שלכם היא {{primary_love_language}}. הגוף הזה פועל כשמדברים את השפה הנכונה, לא הכי הרבה.
 
-השבוע, בחרו פעולה אחת מהשפה הזאת ועשו אותה פעמיים — בלי להזכיר אותה.
+השבוע, בחרו פעולה אחת מהשפה הזאת ועשו אותה פעמיים - בלי להזכיר אותה.
 
 לדוגמה: אם זה "זמן איכות", 20 דקות בלי טלפון. אם זה "מגע", 30 שניות חיבוק בבוקר.
 
 פעולה. בלי להסביר.',
-  'Your primary love language is {{primary_love_language}}. The body responds when someone speaks the right language — not the loudest one.
+  'Your primary love language is {{primary_love_language}}. The body responds when someone speaks the right language - not the loudest one.
 
-This week, pick one action from that language and do it twice — without mentioning it.
+This week, pick one action from that language and do it twice - without mentioning it.
 
 For example: if it''s "quality time", 20 phone-free minutes. If it''s "touch", a 30-second morning hug.
 
@@ -133,7 +133,7 @@ Action. No explanation.',
   TRUE
 ),
 
--- ───────────────────────── Week 5 — Repair (conditional) ─────────────────────────
+-- ───────────────────────── Week 5 - Repair (conditional) ─────────────────────────
 (
   'w05_conflict_repair_phrases',
   'email',
@@ -152,7 +152,7 @@ Action. No explanation.',
 Memorize one phrase from this list and use it this week:
 • "Wait, let''s try that again."
 • "You''re right, I''m sorry."
-• "I need a short break — let''s come back to this in 20 minutes."
+• "I need a short break - let''s come back to this in 20 minutes."
 
 One phrase. At the right moment. That''s enough.',
   'defensiveness',
@@ -160,7 +160,7 @@ One phrase. At the right moment. That''s enough.',
   TRUE
 ),
 
--- ───────────────────────── Week 6 — Passion: Autonomy ─────────────────────────
+-- ───────────────────────── Week 6 - Passion: Autonomy ─────────────────────────
 (
   'w06_passion_autonomy',
   'email',
@@ -168,16 +168,16 @@ One phrase. At the right moment. That''s enough.',
   'The distance that grows attraction',
   'אסתר פרל כותבת: "אי אפשר להתגעגע אל מישהו שתמיד נמצא."
 
-השבוע, קחו שעה אחת לעצמכם בלי להודיע למה. קריאה, הליכה, שתיקה. זה לא דחייה — זה אחד הדברים שבונים משיכה לאורך זמן.',
+השבוע, קחו שעה אחת לעצמכם בלי להודיע למה. קריאה, הליכה, שתיקה. זה לא דחייה - זה אחד הדברים שבונים משיכה לאורך זמן.',
   'Esther Perel writes: "You can''t miss someone who''s always there."
 
-This week, take one hour for yourself without explaining why. Reading, walking, silence. This isn''t rejection — it''s one of the things that builds long-term attraction.',
+This week, take one hour for yourself without explaining why. Reading, walking, silence. This isn''t rejection - it''s one of the things that builds long-term attraction.',
   'autonomy',
   '["first_name"]'::jsonb,
   TRUE
 ),
 
--- ───────────────────────── Week 7 — Passion: Anticipation ─────────────────────────
+-- ───────────────────────── Week 7 - Passion: Anticipation ─────────────────────────
 (
   'w07_passion_anticipation',
   'email',
@@ -185,12 +185,12 @@ This week, take one hour for yourself without explaining why. Reading, walking, 
   'Building anticipation',
   'משיכה גדלה בזמן שבין ההודעה לבין המפגש.
 
-השבוע: קבעו פגישה ל-72 שעות קדימה. שלחו הודעה אחת ביום שמזכירה אותה — בלי להסגיר מה יהיה. "חמישי ב-20:00. תלבשי את הפריט האדום".
+השבוע: קבעו פגישה ל-72 שעות קדימה. שלחו הודעה אחת ביום שמזכירה אותה - בלי להסגיר מה יהיה. "חמישי ב-20:00. תלבשי את הפריט האדום".
 
 הציפייה היא מחצית מהחוויה.',
   'Desire grows in the gap between the message and the meeting.
 
-This week: schedule something for 72 hours from now. Send one message a day that hints at it — without giving it away. "Thursday 8pm. Wear the red one."
+This week: schedule something for 72 hours from now. Send one message a day that hints at it - without giving it away. "Thursday 8pm. Wear the red one."
 
 Anticipation is half the experience.',
   'anticipation',
@@ -198,13 +198,13 @@ Anticipation is half the experience.',
   TRUE
 ),
 
--- ───────────────────────── Week 8 — Play ─────────────────────────
+-- ───────────────────────── Week 8 - Play ─────────────────────────
 (
   'w08_playful_rituals',
   'email',
   'הטקסים הקטנים של זוגיות שורדת',
   'The tiny rituals long couples keep',
-  'זוגות ששורדים 20 שנה לא עושים פחות ריבים — יש להם יותר טקסים קטנים.
+  'זוגות ששורדים 20 שנה לא עושים פחות ריבים - יש להם יותר טקסים קטנים.
 
 בחרו אחד:
 • בדיחה פנימית חדשה השבוע
@@ -212,7 +212,7 @@ Anticipation is half the experience.',
 • מילה מקודדת ל"אני שמח/ה שאני איתך"
 
 מה שמשותף רק לכם. זה מה שמחבר.',
-  'Couples who last 20 years don''t fight less — they have more small rituals.
+  'Couples who last 20 years don''t fight less - they have more small rituals.
 
 Pick one:
 • A new inside joke this week
@@ -225,18 +225,18 @@ Something only the two of you share. That''s what holds.',
   TRUE
 ),
 
--- ───────────────────────── Week 9 — Shared Meaning ─────────────────────────
+-- ───────────────────────── Week 9 - Shared Meaning ─────────────────────────
 (
   'w09_shared_meaning_goals',
   'email',
   'מה אנחנו בונים ביחד',
   'What are we building together',
-  'גוטמן מכנה את זה "משמעות משותפת" — שיחה על מה שמעבר ליום-יום.
+  'גוטמן מכנה את זה "משמעות משותפת" - שיחה על מה שמעבר ליום-יום.
 
 השבוע, שאלו: "איך נרצה לזכור את השנה הזאת בעוד 10 שנים?"
 
 אין תשובה נכונה. אין לוח זמנים. רק שיחה אחת של 15 דקות.',
-  'Gottman calls it "shared meaning" — conversations about what goes beyond daily logistics.
+  'Gottman calls it "shared meaning" - conversations about what goes beyond daily logistics.
 
 This week, ask: "How will we want to remember this year ten years from now?"
 
@@ -246,12 +246,12 @@ No right answer. No timeline. Just one 15-minute conversation.',
   TRUE
 ),
 
--- ───────────────────────── Week 10 — Mid-program check-in ─────────────────────────
+-- ───────────────────────── Week 10 - Mid-program check-in ─────────────────────────
 (
   'w10_mid_program_checkin',
   'email',
-  'אנחנו באמצע — איך הולך?',
-  'We''re halfway in — how''s it going?',
+  'אנחנו באמצע - איך הולך?',
+  'We''re halfway in - how''s it going?',
   'היי {{first_name}},
 
 עברנו 10 שבועות. רוב הזוגות באמת מרגישים שינוי בערך עכשיו.
@@ -277,7 +277,7 @@ The Mioshy team is here if you want to talk.',
   TRUE
 ),
 
--- ───────────────────────── Week 12 — Partner invite ─────────────────────────
+-- ───────────────────────── Week 12 - Partner invite ─────────────────────────
 (
   'w12_partner_invite',
   'email',
@@ -298,18 +298,18 @@ No other report reveals more.',
   TRUE
 ),
 
--- ───────────────────────── Week 16 — Habit consolidation ─────────────────────────
+-- ───────────────────────── Week 16 - Habit consolidation ─────────────────────────
 (
   'w16_habit_consolidation',
   'email',
   'איזו פעולה הפכה להרגל?',
   'Which action has become a habit?',
-  'עברו 16 שבועות. פעולה שחוזרת 16 פעמים הופכת להתנהגות. שלוש פעמים — לזהות.
+  'עברו 16 שבועות. פעולה שחוזרת 16 פעמים הופכת להתנהגות. שלוש פעמים - לזהות.
 
 השבוע: בחרו את הפעולה האחת שתרצו שתישאר איתכם לתמיד. הפכו אותה לטקס קבוע (זמן, מקום, טריגר).
 
 כל השאר ישחק תפקיד פחות חשוב.',
-  'It''s been 16 weeks. An action repeated 16 times becomes a behavior. Three times — an identity.
+  'It''s been 16 weeks. An action repeated 16 times becomes a behavior. Three times - an identity.
 
 This week: pick the one action you want to keep forever. Make it a fixed ritual (time, place, trigger).
 
@@ -319,7 +319,7 @@ Everything else plays a smaller role.',
   TRUE
 ),
 
--- ───────────────────────── Week 20 — Reassess ─────────────────────────
+-- ───────────────────────── Week 20 - Reassess ─────────────────────────
 (
   'w20_second_half_reassess',
   'email',
@@ -327,12 +327,12 @@ Everything else plays a smaller role.',
   'Where you are today vs where you started',
   'לפני 20 שבועות ציון החברות שלכם היה {{friendship_score}}.
 
-רוב הזוגות שמגיעים עד לפה מגלים שהציון עלה ב-12 עד 20 נקודות — אבל רק אם ענו מחדש. קחו 10 דקות, ענו על השאלון מחדש, וקבלו דו"ח השוואה.
+רוב הזוגות שמגיעים עד לפה מגלים שהציון עלה ב-12 עד 20 נקודות - אבל רק אם ענו מחדש. קחו 10 דקות, ענו על השאלון מחדש, וקבלו דו"ח השוואה.
 
 זה הרגע שמראה לכם שזה אמיתי.',
   'Twenty weeks ago your friendship score was {{friendship_score}}.
 
-Most couples who make it here find their score has moved up 12–20 points — but only if they reassess. Take 10 minutes, retake the questionnaire, and get a comparison report.
+Most couples who make it here find their score has moved up 12–20 points - but only if they reassess. Take 10 minutes, retake the questionnaire, and get a comparison report.
 
 This is the moment that shows you it''s real.',
   NULL,
@@ -340,7 +340,7 @@ This is the moment that shows you it''s real.',
   TRUE
 ),
 
--- ───────────────────────── Week 26 — Graduation ─────────────────────────
+-- ───────────────────────── Week 26 - Graduation ─────────────────────────
 (
   'w26_program_graduation',
   'email',
@@ -350,14 +350,14 @@ This is the moment that shows you it''s real.',
 
 26 שבועות. זה לא עניין של מזל.
 
-קיבלתם את ההרגלים. עכשיו הזוגיות שלכם היא מערכת שמתחזקת את עצמה. המשיכו לתרגל את האחד/ה שהיה הכי חשוב/ה לכם — פעם בשבוע, בערב קבוע.
+קיבלתם את ההרגלים. עכשיו הזוגיות שלכם היא מערכת שמתחזקת את עצמה. המשיכו לתרגל את האחד/ה שהיה הכי חשוב/ה לכם - פעם בשבוע, בערב קבוע.
 
 אנחנו כאן כשתרצו להמשיך לעומק.',
   'Hi {{first_name}},
 
 26 weeks. That''s not luck.
 
-You''ve got the habits. Your relationship is now a system that maintains itself. Keep practicing the one that mattered most to you — once a week, on a fixed evening.
+You''ve got the habits. Your relationship is now a system that maintains itself. Keep practicing the one that mattered most to you - once a week, on a fixed evening.
 
 We''re here when you want to go deeper.',
   NULL,

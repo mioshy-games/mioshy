@@ -87,8 +87,8 @@ export function RegistrationModal({
       setError(
         isRateLimit
           ? isHe
-            ? "הגבלת שליחת מיילים — נסו שוב בעוד מספר דקות."
-            : "Email rate limit reached — please try again in a few minutes."
+            ? "הגבלת שליחת מיילים - נסו שוב בעוד מספר דקות."
+            : "Email rate limit reached - please try again in a few minutes."
           : msg || t.registerFailed
       );
     } finally {
@@ -114,7 +114,7 @@ export function RegistrationModal({
               <p className="mt-1 text-sm text-white/50">{t.sub}</p>
             </div>
 
-            {/* Fields — AuthField tokens */}
+            {/* Fields - AuthField tokens */}
             <div className="space-y-4">
               <AuthField id="reg_fullname" label={t.fullName} value={fullName} onChange={setFullName} autoComplete="name" required />
               <AuthField id="reg_mobile"   label={t.mobile}   value={mobile}   onChange={setMobile}   autoComplete="tel" optional />

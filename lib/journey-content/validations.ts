@@ -35,7 +35,7 @@ const anchorKind = z.enum(["assignment", "purchase", "fixed"]);
 
 /**
  * Product pillar this program is wired to for post-purchase automation.
- * Empty string = "none" (form sentinel — the action layer normalizes it
+ * Empty string = "none" (form sentinel - the action layer normalizes it
  * to NULL). The enum must stay in sync with migration 036's CHECK and
  * with JourneyProductSlug in types.ts.
  */
@@ -75,7 +75,7 @@ export type JourneyProgramFormValues = z.infer<typeof journeyProgramSchema>;
 
 export const journeyCategorySchema = z.object({
   /**
-   * program_id is nullable — standalone categories have none. The form
+   * program_id is nullable - standalone categories have none. The form
    * passes either a uuid string or null (never an empty string, that's
    * handled at the form layer).
    */
@@ -111,6 +111,12 @@ export const journeyItemSchema = z.object({
   sort_order: z.number().int().min(-1000).max(10000),
   default_offset_days: z.number().int().min(0).max(3650),
   is_active: z.boolean(),
+  /** Migration 044: who in the couple sees this item.
+   *   'both'    — both partners (default, mirrors prior behavior)
+   *   'owner'   — only the couple_members.role='owner' partner
+   *   'partner' — only the couple_members.role='partner' partner
+   * Solo (user-owned) assignments behave as 'both' regardless. */
+  audience: z.enum(["both", "owner", "partner"]),
 });
 
 export type JourneyItemFormValues = z.infer<typeof journeyItemSchema>;
@@ -124,7 +130,7 @@ const ownerKeyRegex = /^(user|couple):[0-9a-f-]{36}$/i;
 export const journeyAssignmentSchema = z
   .object({
     /**
-     * Owner key — "user:<uuid>" or "couple:<uuid>". Opaque to the form;
+     * Owner key - "user:<uuid>" or "couple:<uuid>". Opaque to the form;
      * parseOwnerKey() at the action layer turns it back into a JourneyOwner.
      */
     owner_key: z
@@ -133,7 +139,7 @@ export const journeyAssignmentSchema = z
     source_kind: z.enum(["program", "category", "item"]),
     source_id: z.string().uuid({ message: "Source is required" }),
     anchor_kind: z.enum(["assignment", "purchase", "fixed"]),
-    /** ISO date — only required when anchor_kind === "fixed". */
+    /** ISO date - only required when anchor_kind === "fixed". */
     anchor_date: z.string().trim().max(64),
     origin: z.enum(["admin_manual", "purchase", "trigger"]),
     notes: z.string().trim().max(2000),

@@ -22,7 +22,7 @@ export type GameRow = {
   bg_value: string;
   player_mode?: boolean;
   created_at: string;
-  /** SEO overrides — added by migration 024; all optional with graceful fallbacks */
+  /** SEO overrides - added by migration 024; all optional with graceful fallbacks */
   meta_title_he?: string | null;
   meta_title_en?: string | null;
   meta_description_he?: string | null;

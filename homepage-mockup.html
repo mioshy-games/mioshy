@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>מיאושי — מחזירים זוגות אחד אל השני</title>
+<title>מיאושי - מחזירים זוגות אחד אל השני</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&family=Frank+Ruhl+Libre:wght@400;500;700;900&family=Noto+Serif+Hebrew:wght@400;700;900&display=swap" rel="stylesheet">
@@ -16,7 +16,7 @@
     --bg-cream: #F8EEEC;
     --ink: #170E14;
     --ink-2: #2A1B25;       /* darker than before for stronger body text */
-    --ink-3: #4A3A45;       /* darker than before — readable for descriptions */
+    --ink-3: #4A3A45;       /* darker than before - readable for descriptions */
     --ink-4: #7A6A75;
     --line: #EAE0E3;
     --line-strong: #D4C7CC;
@@ -28,7 +28,7 @@
     --purple-deep: #1E0F1E;
     --wine: #4A1721;
 
-    /* TYPE TOKENS — sizes */
+    /* TYPE TOKENS - sizes */
     --fs-display: clamp(46px,6.6vw,96px);    /* h1 */
     --fs-h2: clamp(28px,4.4vw,56px);          /* section heading */
     --fs-h3: clamp(22px,2.2vw,30px);          /* sub-heading */
@@ -40,20 +40,20 @@
     --fs-tag: 11px;                            /* uppercase tag */
     --fs-label: 13px;                          /* eyebrow / pill */
 
-    /* TYPE TOKENS — line-heights */
+    /* TYPE TOKENS - line-heights */
     --lh-display: 0.98;                        /* h1 */
     --lh-tight: 1.05;                          /* h2 */
     --lh-snug: 1.2;                            /* h3 / h4 */
     --lh-relaxed: 1.6;                         /* lead */
     --lh-loose: 1.7;                           /* body */
 
-    /* TYPE TOKENS — letter-spacing */
+    /* TYPE TOKENS - letter-spacing */
     --ls-display: -0.03em;
     --ls-heading: -0.02em;
     --ls-eyebrow: 0.2em;
     --ls-tag: 0.18em;
 
-    /* TEXT COLORS — semantic */
+    /* TEXT COLORS - semantic */
     --text-1: var(--ink);          /* primary headlines */
     --text-2: var(--ink-2);        /* important descriptions, leads */
     --text-3: var(--ink-3);        /* secondary descriptions */
@@ -77,7 +77,7 @@
   button{font-family:inherit;cursor:pointer}
   .container{max-width:var(--max);margin:0 auto;padding:0 40px}
 
-  /* TYPE — driven by tokens */
+  /* TYPE - driven by tokens */
   .display{font-family:'Noto Serif Hebrew','Frank Ruhl Libre',serif;font-size:var(--fs-display);line-height:var(--lh-display);letter-spacing:var(--ls-display);font-weight:900}
   .serif{font-family:'Frank Ruhl Libre',serif;letter-spacing:-0.015em}
   h1{font-family:'Noto Serif Hebrew','Frank Ruhl Libre',serif;font-size:var(--fs-display);line-height:var(--lh-display);font-weight:900;letter-spacing:var(--ls-display);color:var(--ink)}
@@ -96,7 +96,7 @@
      ACCESSIBILITY (תקן ישראלי 5568 / WCAG 2.1 AA)
      ============================================ */
 
-  /* Skip link — appears on focus, lets keyboard users jump to main */
+  /* Skip link - appears on focus, lets keyboard users jump to main */
   .skip-link{
     position:absolute;
     top:-100px;
@@ -113,7 +113,7 @@
   }
   .skip-link:focus{top:14px;outline:2px solid #fff;outline-offset:2px}
 
-  /* Visible focus ring for keyboard users — invisible for mouse users */
+  /* Visible focus ring for keyboard users - invisible for mouse users */
   *:focus{outline:none}
   *:focus-visible{
     outline:2px solid var(--accent);
@@ -127,7 +127,7 @@
     outline-offset:4px;
   }
 
-  /* Respect reduced-motion preference — required by IS 5568 */
+  /* Respect reduced-motion preference - required by IS 5568 */
   @media (prefers-reduced-motion: reduce){
     *,*::before,*::after{
       animation-duration:0.01ms !important;
@@ -176,21 +176,38 @@
   .nav-cta{display:inline-flex;align-items:center;gap:8px;background:var(--ink);color:#fff;padding:12px 24px;border-radius:999px;font-size:14px;font-weight:500;transition:transform .2s ease}
   .nav-cta:hover{transform:translateY(-1px);background:var(--accent)}
 
-  /* HERO — DARK ANIMATED */
-  .hero{position:relative;padding:70px 0 80px;overflow:hidden;background:#0E0810;color:#fff;isolation:isolate}
+  /* HERO - DARK ANIMATED */
+  .hero{position:relative;padding:54px 0 54px;overflow:hidden;background:#0E0810;color:#fff;isolation:isolate}
   .hero-bg{position:absolute;inset:0;z-index:0;overflow:hidden}
   .hero-blob{position:absolute;border-radius:50%;filter:blur(90px);opacity:0.7;mix-blend-mode:screen;will-change:transform}
-  .hero-blob-1{width:680px;height:680px;background:radial-gradient(circle,#C44456 0%,rgba(196,68,86,0) 70%);top:-180px;right:-120px;animation:hero-blob-1 22s ease-in-out infinite}
-  .hero-blob-2{width:560px;height:560px;background:radial-gradient(circle,#5C2A5C 0%,rgba(92,42,92,0) 70%);bottom:-120px;left:5%;animation:hero-blob-2 26s ease-in-out infinite}
-  .hero-blob-3{width:440px;height:440px;background:radial-gradient(circle,#8B2638 0%,rgba(139,38,56,0) 70%);top:25%;left:35%;animation:hero-blob-3 19s ease-in-out infinite}
-  .hero-blob-4{width:380px;height:380px;background:radial-gradient(circle,#3D1F3D 0%,rgba(61,31,61,0) 70%);bottom:15%;right:25%;animation:hero-blob-4 24s ease-in-out infinite}
-  .hero-blob-5{width:320px;height:320px;background:radial-gradient(circle,#B83C4D 0%,rgba(184,60,77,0) 70%);top:55%;right:8%;animation:hero-blob-5 28s ease-in-out infinite}
+  .hero-blob-1{width:680px;height:680px;background:radial-gradient(circle,#C44456 0%,rgba(196,68,86,0) 70%);top:-180px;right:-120px;animation:hero-blob-1 38s ease-in-out infinite}
+  .hero-blob-2{width:560px;height:560px;background:radial-gradient(circle,#5C2A5C 0%,rgba(92,42,92,0) 70%);bottom:-120px;left:5%;animation:hero-blob-2 38s ease-in-out infinite}
+  .hero-blob-3{width:440px;height:440px;background:radial-gradient(circle,#8B2638 0%,rgba(139,38,56,0) 70%);top:25%;left:35%;animation:hero-blob-3 32s ease-in-out infinite}
+  .hero-blob-4{width:380px;height:380px;background:radial-gradient(circle,#3D1F3D 0%,rgba(61,31,61,0) 70%);bottom:15%;right:25%;animation:hero-blob-4 36s ease-in-out infinite}
+  .hero-blob-5{width:320px;height:320px;background:radial-gradient(circle,#B83C4D 0%,rgba(184,60,77,0) 70%);top:55%;right:8%;animation:hero-blob-5 34s ease-in-out infinite}
   .hero-grain{position:absolute;inset:0;background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400'><defs><filter id='n'><feTurbulence baseFrequency='0.85' numOctaves='2'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.4 0'/></filter></defs><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");opacity:0.06;mix-blend-mode:overlay;pointer-events:none;z-index:1}
-  @keyframes hero-blob-1{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(80px,60px) scale(1.15)}}
-  @keyframes hero-blob-2{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-70px,-50px) scale(1.1)}}
+  /* Red (top-right) and Purple (bottom-left) slowly drift toward each other and back */
+  @keyframes hero-blob-1{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-220px,180px) scale(1.18)}}
+  @keyframes hero-blob-2{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(220px,-180px) scale(1.15)}}
   @keyframes hero-blob-3{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(120px,-90px) scale(0.9)}66%{transform:translate(-50px,80px) scale(1.05)}}
   @keyframes hero-blob-4{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-110px,50px) scale(1.2)}}
   @keyframes hero-blob-5{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(60px,-70px) scale(1.1)}}
+
+  /* Floating circles (wheels-game style particles) */
+  .hero-particles{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden}
+  .hero-particle{position:absolute;border-radius:50%;will-change:transform,opacity;opacity:.5}
+  .hero-particle.c-pink{background:#F1C8CF;box-shadow:0 0 12px rgba(241,200,207,0.55)}
+  .hero-particle.c-red{background:#C44456;box-shadow:0 0 14px rgba(196,68,86,0.55)}
+  .hero-particle.c-purple{background:#9A6BAA;box-shadow:0 0 14px rgba(154,107,170,0.55)}
+  .hero-particle.c-rose{background:#E9C4CA;box-shadow:0 0 10px rgba(233,196,202,0.45)}
+  @keyframes hp-drift-a{0%,100%{transform:translate(0,0);opacity:.25}25%{opacity:.85}50%{transform:translate(40px,-60px);opacity:.45}75%{opacity:.9}}
+  @keyframes hp-drift-b{0%,100%{transform:translate(0,0);opacity:.3}50%{transform:translate(-50px,40px);opacity:.85}}
+  @keyframes hp-drift-c{0%,100%{transform:translate(0,0);opacity:.2}33%{transform:translate(60px,30px);opacity:.7}66%{transform:translate(-30px,-50px);opacity:.9}}
+  @keyframes hp-drift-d{0%,100%{transform:translate(0,0);opacity:.35}50%{transform:translate(-40px,-70px);opacity:.85}}
+  @keyframes hp-drift-e{0%,100%{transform:translate(0,0);opacity:.25}50%{transform:translate(70px,50px);opacity:.8}}
+  @media (prefers-reduced-motion: reduce){
+    .hero-blob,.hero-particle{animation:none !important}
+  }
 
   .hero .container{position:relative;z-index:2}
   .hero-grid{display:grid;grid-template-columns:1.05fr 0.95fr;gap:90px;align-items:center}
@@ -211,7 +228,7 @@
   .hero-meta-item .num{font-family:'Frank Ruhl Libre',serif;font-size:32px;font-weight:700;color:#fff;line-height:1}
   .hero-meta-item .label{font-size:13px;color:rgba(255,255,255,0.6);letter-spacing:0.05em}
 
-  .hero-visual{position:relative;aspect-ratio:4/5}
+  .hero-visual{position:relative;aspect-ratio:5/4;max-height:520px}
   .hero-visual .hero-img{
     width:100%;height:100%;
     object-fit:cover;object-position:center;
@@ -234,7 +251,7 @@
   .section-head h2{margin-bottom:24px}
   .section-head p{color:var(--ink-3);font-size:var(--fs-lead);font-weight:300;line-height:var(--lh-relaxed)}
 
-  /* TEXT MARKER UTILITY — black band beneath a word, doesn't hide the text */
+  /* TEXT MARKER UTILITY - black band beneath a word, doesn't hide the text */
   .text-mark{text-decoration:underline solid var(--ink);text-decoration-thickness:10px;text-underline-offset:8px;text-decoration-skip-ink:none}
 
   /* PROBLEM */
@@ -341,7 +358,7 @@
   .bio-item-value{font-family:'Frank Ruhl Libre',serif;font-size:18px;font-weight:600;color:var(--ink)}
   .founder-actions{display:flex;gap:16px;flex-wrap:wrap}
 
-  /* JOURNEY — EDITORIAL TIMELINE */
+  /* JOURNEY - EDITORIAL TIMELINE */
   .journey{padding:95px 0;background:var(--bg-soft)}
   .journey-head h2 em{color:var(--accent);font-style:italic;font-family:'Frank Ruhl Libre',serif;font-weight:700}
 
@@ -368,7 +385,7 @@
   .journey-cta{text-align:center;margin-top:100px;padding-top:64px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:center;gap:32px;flex-wrap:wrap}
   .journey-cta-text{font-family:'Frank Ruhl Libre',serif;font-size:22px;font-weight:500;color:var(--ink)}
 
-  /* COUPLES GAMES — energetic spotlight */
+  /* COUPLES GAMES - energetic spotlight */
   .couples-games{
     padding:95px 0;
     position:relative;
@@ -379,7 +396,7 @@
       radial-gradient(ellipse 55% 50% at 85% 90%, #F1ECF8 0%, transparent 60%),
       linear-gradient(135deg, #FBF6F4 0%, #FBEEEE 45%, #F4F0F9 100%);
   }
-  /* Subtle dot grid overlay — adds texture, barely visible */
+  /* Subtle dot grid overlay - adds texture, barely visible */
   .couples-games::before{
     content:"";
     position:absolute;
@@ -435,9 +452,9 @@
   .cg-card-title{font-family:'Frank Ruhl Libre',serif;font-size:22px;font-weight:700;line-height:1.15}
   .cg-card-noise{position:absolute;inset:0;background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='280' height='400'><defs><filter id='nn'><feTurbulence baseFrequency='0.9' numOctaves='2'/></filter></defs><rect width='100%25' height='100%25' filter='url(%23nn)' opacity='.1'/></svg>");mix-blend-mode:overlay;pointer-events:none}
 
-  /* ADULT GAMES — light editorial, modern, clear in 2 seconds */
+  /* ADULT GAMES - light editorial, modern, clear in 2 seconds */
   /* ========================================================
-     ADULT GAMES — "החדר הסגור" (private chamber, dark cinematic)
+     ADULT GAMES - "החדר הסגור" (private chamber, dark cinematic)
      Premium: midnight wine + bronze/gold accent
      ======================================================== */
   .adult-games{
@@ -490,7 +507,7 @@
   }
   .ag-stage{position:relative;text-align:center}
 
-  /* Pills — naked, no wrapper border */
+  /* Pills - naked, no wrapper border */
   .ag-pills{
     display:inline-flex;
     align-items:center;
@@ -555,7 +572,7 @@
   }
   .ag-lead strong{color:#FBF3F0;font-weight:500}
 
-  /* Three pillars — curation manifesto */
+  /* Three pillars - curation manifesto */
   .ag-pillars{
     display:grid;
     grid-template-columns:repeat(3,1fr);
@@ -607,7 +624,7 @@
     font-weight:300;
   }
 
-  /* Signature line — italic whisper between pillars and closer */
+  /* Signature line - italic whisper between pillars and closer */
   .ag-signature{
     display:flex;
     align-items:center;
@@ -708,17 +725,17 @@
   }
 
   /* EDUCATION */
-  /* ====== EDUCATION — LIGHT EDITORIAL ======
+  /* ====== EDUCATION - LIGHT EDITORIAL ======
      Warm cream + textured background, dark ink type,
      single column with statement above + 4 dramatic stats below
      ============================================ */
   .education{
     background-color:#FAF6F1;
     background-image:
-      /* corner accents — warm wine glows, very subtle */
+      /* corner accents - warm wine glows, very subtle */
       radial-gradient(ellipse 700px 420px at 100% -8%, rgba(184,60,77,0.08) 0%, transparent 70%),
       radial-gradient(ellipse 580px 400px at 0% 108%, rgba(74,23,33,0.06) 0%, transparent 70%),
-      /* fine dot grid — adds tactile texture */
+      /* fine dot grid - adds tactile texture */
       radial-gradient(circle, rgba(74,23,33,0.05) 1px, transparent 1.4px);
     background-size: auto, auto, 26px 26px;
     background-position: 0 0, 0 0, 0 0;
@@ -727,7 +744,7 @@
     position:relative;
     overflow:hidden;
   }
-  /* Mask the dot grid so it fades at edges — feels organic, not mechanical */
+  /* Mask the dot grid so it fades at edges - feels organic, not mechanical */
   .education::before{
     content:"";
     position:absolute;inset:0;
@@ -770,7 +787,7 @@
     padding:44px 28px;
     text-align:center;
   }
-  /* Hairline divider between cells — like a magazine */
+  /* Hairline divider between cells - like a magazine */
   .edu-stat:not(:last-child)::after{
     content:"";
     position:absolute;
@@ -973,7 +990,7 @@
     .for-whom-cta .btn{width:100%;justify-content:center;padding:16px;font-size:16px;white-space:normal;line-height:1.3}
     .faq-grid{grid-template-columns:1fr;gap:60px}
     .faq-side{position:static}
-    /* ADULT GAMES — tablet */
+    /* ADULT GAMES - tablet */
     .adult-games{padding:90px 0 80px}
     .ag-frame{padding:0 24px}
     .ag-pillars{grid-template-columns:1fr;border-top:1px solid rgba(212,165,116,0.2)}
@@ -1019,7 +1036,7 @@
     .reviews-grid:not(.expanded) .review-card:nth-child(n+4){display:none}
     .reviews-load-more{display:flex;margin-top:20px}
 
-    /* Media slider — tighten mobile */
+    /* Media slider - tighten mobile */
     .media-slider{padding:36px 24px 32px}
     .media-label{margin-bottom:20px}
     .media-quote-wrap{margin:0 auto 18px;padding:0 14px}
@@ -1058,7 +1075,7 @@
     .cg-actions{flex-wrap:nowrap;gap:8px}
     .cg-actions .btn{flex:1;justify-content:center;font-size:14px;padding:14px 12px;white-space:nowrap}
 
-    /* ADULT GAMES — mobile (private chamber) */
+    /* ADULT GAMES - mobile (private chamber) */
     .adult-games{padding:64px 0 56px}
     .ag-frame{padding:0 20px}
     .ag-pills{margin-bottom:24px;padding:5px 4px;flex-wrap:nowrap}
@@ -1103,7 +1120,7 @@
     .faq-item summary{padding:18px 0}
     .faq-answer{padding:0 0 20px}
 
-    /* Footer mobile — single column */
+    /* Footer mobile - single column */
     .footer-grid{grid-template-columns:1fr;gap:36px}
     .cg-visual{height:340px;width:100%;max-width:320px;margin:0 auto;overflow:visible}
     .cg-card{width:150px}
@@ -1138,13 +1155,31 @@
     <div class="hero-blob hero-blob-4"></div>
     <div class="hero-blob hero-blob-5"></div>
   </div>
+  <div class="hero-particles" aria-hidden="true">
+    <span class="hero-particle c-pink"   style="left:8%;top:18%;width:6px;height:6px;animation:hp-drift-a 11s ease-in-out infinite;animation-delay:0s"></span>
+    <span class="hero-particle c-red"    style="left:14%;top:62%;width:9px;height:9px;animation:hp-drift-b 14s ease-in-out infinite;animation-delay:.6s"></span>
+    <span class="hero-particle c-purple" style="left:22%;top:36%;width:5px;height:5px;animation:hp-drift-c 13s ease-in-out infinite;animation-delay:1.2s"></span>
+    <span class="hero-particle c-rose"   style="left:30%;top:78%;width:8px;height:8px;animation:hp-drift-d 16s ease-in-out infinite;animation-delay:2s"></span>
+    <span class="hero-particle c-pink"   style="left:38%;top:24%;width:4px;height:4px;animation:hp-drift-e 12s ease-in-out infinite;animation-delay:.4s"></span>
+    <span class="hero-particle c-purple" style="left:46%;top:88%;width:7px;height:7px;animation:hp-drift-a 15s ease-in-out infinite;animation-delay:1.8s"></span>
+    <span class="hero-particle c-red"    style="left:54%;top:14%;width:5px;height:5px;animation:hp-drift-b 13s ease-in-out infinite;animation-delay:2.6s"></span>
+    <span class="hero-particle c-rose"   style="left:62%;top:50%;width:10px;height:10px;animation:hp-drift-c 17s ease-in-out infinite;animation-delay:.9s"></span>
+    <span class="hero-particle c-pink"   style="left:70%;top:30%;width:6px;height:6px;animation:hp-drift-d 14s ease-in-out infinite;animation-delay:3.1s"></span>
+    <span class="hero-particle c-purple" style="left:78%;top:72%;width:8px;height:8px;animation:hp-drift-e 16s ease-in-out infinite;animation-delay:1.4s"></span>
+    <span class="hero-particle c-red"    style="left:86%;top:22%;width:4px;height:4px;animation:hp-drift-a 12s ease-in-out infinite;animation-delay:2.2s"></span>
+    <span class="hero-particle c-rose"   style="left:92%;top:58%;width:7px;height:7px;animation:hp-drift-b 15s ease-in-out infinite;animation-delay:.3s"></span>
+    <span class="hero-particle c-pink"   style="left:18%;top:8%;width:5px;height:5px;animation:hp-drift-c 13s ease-in-out infinite;animation-delay:3.4s"></span>
+    <span class="hero-particle c-purple" style="left:50%;top:66%;width:6px;height:6px;animation:hp-drift-d 18s ease-in-out infinite;animation-delay:1.1s"></span>
+    <span class="hero-particle c-red"    style="left:74%;top:6%;width:8px;height:8px;animation:hp-drift-e 14s ease-in-out infinite;animation-delay:2.8s"></span>
+    <span class="hero-particle c-rose"   style="left:6%;top:46%;width:5px;height:5px;animation:hp-drift-a 16s ease-in-out infinite;animation-delay:.7s"></span>
+  </div>
   <div class="hero-grain"></div>
   <div class="container">
     <div class="hero-grid">
       <div class="hero-text">
         <div class="hero-tag"><span class="dot"></span> מלווים זוגות בישראל מאז 2021</div>
         <h1>אתם חיים יחד.<br>אבל מתי הייתם <em>באמת יחד</em>?</h1>
-        <p class="lead">החיים בולעים את הזמן — ילדים, עבודה, רשימות. ובאמצע כל זה, הזוגיות שלכם מחכה בצד. אנחנו עוזרים לכם לחזור אחד אל השנייה. לא בטיפול. לא בקורסים. בדרך הכי טבעית שיש — דרך משחק, חוויה, וצחוק יחד.</p>
+        <p class="lead">החיים בולעים את הזמן - ילדים, עבודה, רשימות. ובאמצע כל זה, הזוגיות שלכם מחכה בצד. אנחנו עוזרים לכם לחזור אחד אל השנייה. לא בטיפול. לא בקורסים. בדרך הכי טבעית שיש - דרך משחק, חוויה, וצחוק יחד.</p>
         <div class="hero-actions">
           <a href="#start" class="btn btn-primary">התחילו את המסע שלכם <span class="arrow">←</span></a>
           <a href="#solutions" class="btn btn-ghost">איך זה עובד?</a>
@@ -1193,35 +1228,35 @@
       <div class="problem-image">
         <picture>
           <source media="(max-width: 640px)" srcset="public/images/woman-w.webp">
-          <img src="public/images/woman%20mioshy.webp" alt="אישה בריחוק רגשי בסלון — רגע של שגרה ועייפות" class="problem-img" loading="lazy">
+          <img src="public/images/woman%20mioshy.webp" alt="אישה בריחוק רגשי בסלון - רגע של שגרה ועייפות" class="problem-img" loading="lazy">
         </picture>
       </div>
 
       <div class="problem-text">
         <div class="eyebrow">המציאות שאף אחד לא מדבר עליה</div>
         <h2>אתם לא שבורים.<br>פשוט שכחתם <em>להיות זוג.</em></h2>
-        <p class="lead">השגרה לא נכנסה ביום אחד — ויתור אחר ויתור. הנה 3 הסימנים שכדאי לזהות בזמן, ולעצור.</p>
+        <p class="lead">השגרה לא נכנסה ביום אחד - ויתור אחר ויתור. הנה 3 הסימנים שכדאי לזהות בזמן, ולעצור.</p>
 
         <div class="problem-list">
           <div class="problem-item">
             <span class="problem-num">01</span>
             <div>
               <h3>השיחות הפכו לרשימת מטלות</h3>
-              <p>"מי לוקח את הילדים?", "תזכרי לקנות חלב". מתי בפעם האחרונה דיברתם על מה שבאמת מגרה אתכם — על מה שאתם חולמים, חושקים, רוצים יותר?</p>
+              <p>"מי לוקח את הילדים?", "תזכרי לקנות חלב". מתי בפעם האחרונה דיברתם על מה שבאמת מגרה אתכם - על מה שאתם חולמים, חושקים, רוצים יותר?</p>
             </div>
           </div>
           <div class="problem-item">
             <span class="problem-num">02</span>
             <div>
               <h3>פעם זה היה אש. היום זה מתוזמן.</h3>
-              <p>פעם זה היה מלא תשוקה. היום זה מתערבב עם עייפות, חזרתיות וחיים. מתי בפעם האחרונה שמתם את זה על השולחן — באמת דיברתם על מה שאתם רוצים?</p>
+              <p>פעם זה היה מלא תשוקה. היום זה מתערבב עם עייפות, חזרתיות וחיים. מתי בפעם האחרונה שמתם את זה על השולחן - באמת דיברתם על מה שאתם רוצים?</p>
             </div>
           </div>
           <div class="problem-item">
             <span class="problem-num">03</span>
             <div>
               <h3>השגרה משתיקה. הרצון לא נעלם.</h3>
-              <p>המחויבויות גברו. הרצון, הצורך, הגעגוע — נשארו בשיאם. מתי בפעם האחרונה השקעתם בעצמכם, לא ויתרתם, ובחרתם לקחת אחריות לשנות?</p>
+              <p>המחויבויות גברו. הרצון, הצורך, הגעגוע - נשארו בשיאם. מתי בפעם האחרונה השקעתם בעצמכם, לא ויתרתם, ובחרתם לקחת אחריות לשנות?</p>
             </div>
           </div>
         </div>
@@ -1239,7 +1274,7 @@
     </div>
 
     <div class="auth-narrative">
-      <p>מאז 2021 אנחנו מלווים זוגות. <strong>שמענו אלפי סיפורים</strong> — ראינו זוגות צוחקים, בוכים, מתפייסים, חוזרים אחד אל השנייה. כל מה שאנחנו עושים — נולד מהם. מהשיחות, מהמשובים, מהדמעות, מהחיוכים. זאת הסיבה שמיאושי לא נשאר אותו דבר. הוא משתנה, גדל, מתחדש. <strong>בדיוק כמו זוגיות בריאה.</strong></p>
+      <p>מאז 2021 אנחנו מלווים זוגות. <strong>שמענו אלפי סיפורים</strong> - ראינו זוגות צוחקים, בוכים, מתפייסים, חוזרים אחד אל השנייה. כל מה שאנחנו עושים - נולד מהם. מהשיחות, מהמשובים, מהדמעות, מהחיוכים. זאת הסיבה שמיאושי לא נשאר אותו דבר. הוא משתנה, גדל, מתחדש. <strong>בדיוק כמו זוגיות בריאה.</strong></p>
     </div>
 
     <div class="auth-banner">
@@ -1279,7 +1314,7 @@
 
       <div class="review-card">
         <div class="review-stars">★★★★★</div>
-        <p class="review-text">"תראו, הייתי בשלוש מטפלות בשנה האחרונה — כלום לא עזר. בייאוש ניסיתי את הליווי של מיאושי. בחודש הראשון כבר הרגשתי שמישהו סוף סוף שומע אותנו באמת. אנחנו עדיין יחד, והפעם זה אמיתי."</p>
+        <p class="review-text">"תראו, הייתי בשלוש מטפלות בשנה האחרונה - כלום לא עזר. בייאוש ניסיתי את הליווי של מיאושי. בחודש הראשון כבר הרגשתי שמישהו סוף סוף שומע אותנו באמת. אנחנו עדיין יחד, והפעם זה אמיתי."</p>
         <div class="review-meta">
           <div class="review-avatar">ד</div>
           <div>
@@ -1303,7 +1338,7 @@
 
       <div class="review-card">
         <div class="review-stars">★★★★★</div>
-        <p class="review-text">"אגיד את זה ככה — היום זו השיחה הקבועה של יום שני בערב אצלנו: 'מה המשימה הפעם?'. עידן רץ לפתוח את האפליקציה לפני. דבר שלא חשבתי שיכול לקרות אצלנו."</p>
+        <p class="review-text">"אגיד את זה ככה - היום זו השיחה הקבועה של יום שני בערב אצלנו: 'מה המשימה הפעם?'. עידן רץ לפתוח את האפליקציה לפני. דבר שלא חשבתי שיכול לקרות אצלנו."</p>
         <div class="review-meta">
           <div class="review-avatar">מ</div>
           <div>
@@ -1327,7 +1362,7 @@
 
       <div class="review-card">
         <div class="review-stars">★★★★★</div>
-        <p class="review-text">"ביום האהבה כל המסעדות היו מלאות, אז במקום לצאת — הורדנו משחק של מיאושי בבית. זה היה ערב הרבה יותר טוב מכל מסעדה שהיינו בה השנה. רצינית."</p>
+        <p class="review-text">"ביום האהבה כל המסעדות היו מלאות, אז במקום לצאת - הורדנו משחק של מיאושי בבית. זה היה ערב הרבה יותר טוב מכל מסעדה שהיינו בה השנה. רצינית."</p>
         <div class="review-meta">
           <div class="review-avatar">ט</div>
           <div>
@@ -1351,7 +1386,7 @@
       <div class="media-label">כתבו עלינו</div>
 
       <div class="media-quote-wrap">
-        <p class="media-quote" data-quote>"מיאושי — הפלטפורמה הישראלית שמחזירה זוגות אחד אל השני, דרך משחק ולא דרך טיפול."</p>
+        <p class="media-quote" data-quote>"מיאושי - הפלטפורמה הישראלית שמחזירה זוגות אחד אל השני, דרך משחק ולא דרך טיפול."</p>
       </div>
 
       <div class="media-source">
@@ -1369,12 +1404,12 @@
   </div>
 </section>
 
-<!-- FOUNDER — Itzik Berlev -->
+<!-- FOUNDER - Itzik Berlev -->
 <section class="founder" id="about">
   <div class="container">
     <div class="founder-grid">
       <div class="founder-image">
-        <img src="public/images/itzik-barlev.webp" alt="איציק ברלב — מייסד מיאושי" class="founder-img" loading="lazy">
+        <img src="public/images/itzik-barlev.webp" alt="איציק ברלב - מייסד מיאושי" class="founder-img" loading="lazy">
         <div class="founder-badge">
           <div class="founder-badge-icon">א</div>
           <div class="founder-badge-text">
@@ -1387,7 +1422,7 @@
       <div class="founder-content">
         <div class="eyebrow">הכירו את המייסד · איציק ברלב</div>
         <h2>שינה את הזוגיות של אלפי זוגות.<br><em>בעזרת משחק.</em></h2>
-        <p class="lead">המומחה לזוגיות שעומד מאחורי מיאושי — והמלווה שלכם בכל צעד. במשך שנים, איציק שינה את עולם הזוגיות עבור אלפי זוגות בישראל ובעולם — דרך משחקים, תקשורת אינטימית, ופשוט עוד דרך לדבר. החזון שלו אחד וברור: <strong>לשבור את השגרה. להחזיר את הקרבה.</strong></p>
+        <p class="lead">המומחה לזוגיות שעומד מאחורי מיאושי - והמלווה שלכם בכל צעד. במשך שנים, איציק שינה את עולם הזוגיות עבור אלפי זוגות בישראל ובעולם - דרך משחקים, תקשורת אינטימית, ופשוט עוד דרך לדבר. החזון שלו אחד וברור: <strong>לשבור את השגרה. להחזיר את הקרבה.</strong></p>
 
         <div class="founder-bio">
           <div class="bio-item">
@@ -1413,12 +1448,12 @@
   </div>
 </section>
 
-<!-- JOURNEY — TIMELINE -->
+<!-- JOURNEY - TIMELINE -->
 <section class="journey" id="journey">
   <div class="container">
     <div class="section-head journey-head">
       <div class="eyebrow">ליווי חודשי · ללא התחייבות</div>
-      <h2>כל חודש שעובר —<br>הזוגיות שלכם <em>מתחזקת.</em></h2>
+      <h2>כל חודש שעובר -<br>הזוגיות שלכם <em>מתחזקת.</em></h2>
       <p>אנחנו אתכם חודש בחודש, עובדים ושרים את הזוגיות יחד. ללא התחייבות, ללא חוזה ארוך טווח. ניתן לעצור בכל רגע. ככה זה נראה בפועל.</p>
     </div>
 
@@ -1429,7 +1464,7 @@
         <div class="journey-stage">
           <div class="journey-num-wrap"><div class="journey-num">01<span class="dot">.</span></div></div>
           <h3>היכרות מחדש</h3>
-          <p>אבחון אישי קצר, שאלות שלא שאלתם — ופתאום אתם מתחילים לדבר על מה שבאמת חשוב.</p>
+          <p>אבחון אישי קצר, שאלות שלא שאלתם - ופתאום אתם מתחילים לדבר על מה שבאמת חשוב.</p>
           <ul class="journey-list">
             <li>אבחון מותאם</li>
             <li>תוכנית אישית</li>
@@ -1440,7 +1475,7 @@
         <div class="journey-stage">
           <div class="journey-num-wrap"><div class="journey-num">02<span class="dot">.</span></div></div>
           <h3>שבירת השעמום המיני</h3>
-          <p>משימות, אתגרים וחוויות חדשות — ופתאום אתם זוכרים בדיוק למה התאהבתם פעם. גם בחדר השינה.</p>
+          <p>משימות, אתגרים וחוויות חדשות - ופתאום אתם זוכרים בדיוק למה התאהבתם פעם. גם בחדר השינה.</p>
           <ul class="journey-list">
             <li>משימות שבועיות</li>
             <li>אתגרים זוגיים</li>
@@ -1451,7 +1486,7 @@
         <div class="journey-stage">
           <div class="journey-num-wrap"><div class="journey-num">03<span class="dot">.</span></div></div>
           <h3>חיבור עמוק</h3>
-          <p>האינטימיות חוזרת. השיחות מעמיקות. אתם שוב חברים לדרך — ומתחברים גם בחדר השינה.</p>
+          <p>האינטימיות חוזרת. השיחות מעמיקות. אתם שוב חברים לדרך - ומתחברים גם בחדר השינה.</p>
           <ul class="journey-list">
             <li>קרבה רגשית</li>
             <li>אינטימיות אמיתית</li>
@@ -1462,7 +1497,7 @@
         <div class="journey-stage">
           <div class="journey-num-wrap"><div class="journey-num">04<span class="dot">.</span></div></div>
           <h3>התחדשות שלא נגמרת</h3>
-          <p>אנחנו ממשיכים אתכם כל עוד תרצו. כי זוגיות בריאה — היא משהו שמתחדש כל יום.</p>
+          <p>אנחנו ממשיכים אתכם כל עוד תרצו. כי זוגיות בריאה - היא משהו שמתחדש כל יום.</p>
           <ul class="journey-list">
             <li>הרגלים חדשים</li>
             <li>תוכן מתעדכן</li>
@@ -1480,17 +1515,17 @@
   </div>
 </section>
 
-<!-- COUPLES GAMES — Energetic spotlight -->
+<!-- COUPLES GAMES - Energetic spotlight -->
 <section class="couples-games" id="couples-games">
   <div class="container">
     <div class="cg-grid">
       <div class="cg-text">
         <div class="eyebrow">המשחקים של מיאושי</div>
         <h2>המשחקים שכבר<br><span class="text-mark">הטריפו</span> את המדינה.</h2>
-        <p class="lead">רוצים להיפתח? להתחבר? להתגלות מחדש? אלפי זוגות בישראל כבר ממליצים — מהסלון, מהמיטה, ואפילו כשאחד מכם בחו"ל. אתם הבאים בתור.</p>
+        <p class="lead">רוצים להיפתח? להתחבר? להתגלות מחדש? אלפי זוגות בישראל כבר ממליצים - מהסלון, מהמיטה, ואפילו כשאחד מכם בחו"ל. אתם הבאים בתור.</p>
 
         <div class="cg-callout">
-          <p>"תכניסו תשוקה. תתחברו מחדש. תתאהבו ותחזירו את הפרפרים — במיוחד למי שבזוגיות ארוכה עם ילדים, ומרגיש איך השחיקה עושה את שלה."</p>
+          <p>"תכניסו תשוקה. תתחברו מחדש. תתאהבו ותחזירו את הפרפרים - במיוחד למי שבזוגיות ארוכה עם ילדים, ומרגיש איך השחיקה עושה את שלה."</p>
         </div>
 
         <div class="cg-stats">
@@ -1541,9 +1576,9 @@
   </div>
 </section>
 
-<!-- ADULT GAMES — manifesto / benefits -->
+<!-- ADULT GAMES - manifesto / benefits -->
 <!-- =========================================================
-     ADULT GAMES — "החדר הסגור"
+     ADULT GAMES - "החדר הסגור"
      Premium private-chamber section: midnight wine + bronze
      ========================================================= -->
 <section class="adult-games" id="adult-games">
@@ -1559,15 +1594,15 @@
         <span class="ag-pill">פרטיות מוחלטת</span>
       </div>
 
-      <span class="ag-eyebrow">— החדר הסגור —</span>
+      <span class="ag-eyebrow">- החדר הסגור -</span>
 
       <h2>לא לכל אחד.<br><em>לאמיצים בלבד.</em></h2>
 
       <p class="ag-lead">
-        אוסף משחקי זוגיות שכתבו <strong>הבכירים בעולם</strong> בתחומי האינטימיות, הסקסולוגיה והטיפול הזוגי — ועוצבו במדויק לחדר המיטות שלכם. לא טיפים מהאינטרנט, לא רשימות גנריות. חוויות שלמות, מובְנות, מהוקצעות. <strong>לאמיצים. למתפנקים. לזוגות שמוכנים לגלות מה עוד אפשר להיות.</strong>
+        אוסף משחקי זוגיות שכתבו <strong>הבכירים בעולם</strong> בתחומי האינטימיות, הסקסולוגיה והטיפול הזוגי - ועוצבו במדויק לחדר המיטות שלכם. לא טיפים מהאינטרנט, לא רשימות גנריות. חוויות שלמות, מובְנות, מהוקצעות. <strong>לאמיצים. למתפנקים. לזוגות שמוכנים לגלות מה עוד אפשר להיות.</strong>
       </p>
 
-      <!-- Three pillars — the curation manifesto -->
+      <!-- Three pillars - the curation manifesto -->
       <div class="ag-pillars">
         <article class="ag-pillar">
           <span class="ag-pillar-num">I</span>
@@ -1577,12 +1612,12 @@
         <article class="ag-pillar">
           <span class="ag-pillar-num">II</span>
           <h4>עוצב לחדר המיטות</h4>
-          <p>לא טיפים, לא רשימות. כל משחק הוא חוויה שלמה — עם התחלה, מתח שנבנה, ושיא שתזכרו.</p>
+          <p>לא טיפים, לא רשימות. כל משחק הוא חוויה שלמה - עם התחלה, מתח שנבנה, ושיא שתזכרו.</p>
         </article>
         <article class="ag-pillar">
           <span class="ag-pillar-num">III</span>
           <h4>רק לכם. רק יחד.</h4>
-          <p>פרטיות מוחלטת, ללא שיתוף נתונים, ללא היסטוריה. רכישה אחת — ושניכם בפנים, לכל החיים.</p>
+          <p>פרטיות מוחלטת, ללא שיתוף נתונים, ללא היסטוריה. רכישה אחת - ושניכם בפנים, לכל החיים.</p>
         </article>
       </div>
 
@@ -1625,7 +1660,7 @@
       <div>
         <div class="eyebrow">למה זה קורה</div>
         <h2>זוגיות לא נשברת בלילה אחד.<br>היא נשחקת לאט.</h2>
-        <p>שגרה, ילדים, קריירה, עייפות — הם לא רעים. הם פשוט <strong>דוחקים את הזוגיות לפינה</strong>. וביום שבו אתם מבינים שאתם זרים, השחיקה כבר נעשתה לפני שנים.</p>
+        <p>שגרה, ילדים, קריירה, עייפות - הם לא רעים. הם פשוט <strong>דוחקים את הזוגיות לפינה</strong>. וביום שבו אתם מבינים שאתם זרים, השחיקה כבר נעשתה לפני שנים.</p>
       </div>
       <div>
         <div class="edu-stat-grid">
@@ -1635,7 +1670,7 @@
           </div>
           <div class="edu-stat">
             <div class="num"><em>3 דק׳</em></div>
-            <div class="label">מספיקות ביום כדי לשנות את הדינמיקה — אם משקיעים נכון</div>
+            <div class="label">מספיקות ביום כדי לשנות את הדינמיקה - אם משקיעים נכון</div>
           </div>
           <div class="edu-stat">
             <div class="num"><em>×4</em></div>
@@ -1656,8 +1691,8 @@
   <div class="container">
     <div class="section-head">
       <div class="eyebrow">למי זה מתאים</div>
-      <h2>אם אתם מזהים את עצמכם<br>באחד מאלה — מיאושי <em style="font-family:'Frank Ruhl Libre',serif;color:var(--accent);font-style:italic">בשבילכם.</em></h2>
-      <p>אנחנו לא מתאימים לכל אחד. אנחנו עובדים הכי טוב עם זוגות שמוכנים להשקיע — גם אם זה רק 10 דקות בשבוע.</p>
+      <h2>אם אתם מזהים את עצמכם<br>באחד מאלה - מיאושי <em style="font-family:'Frank Ruhl Libre',serif;color:var(--accent);font-style:italic">בשבילכם.</em></h2>
+      <p>אנחנו לא מתאימים לכל אחד. אנחנו עובדים הכי טוב עם זוגות שמוכנים להשקיע - גם אם זה רק 10 דקות בשבוע.</p>
     </div>
 
     <div class="personas-grid">
@@ -1671,21 +1706,21 @@
       <a href="#journey" class="persona">
         <div class="persona-icon">⌛</div>
         <h3>רוצים זמן זוגי באמת</h3>
-        <p>הילדים, העבודה, הבית — והזוגיות נשארה אחרונה. אתם רוצים להחזיר אותה לראש הסדר.</p>
+        <p>הילדים, העבודה, הבית - והזוגיות נשארה אחרונה. אתם רוצים להחזיר אותה לראש הסדר.</p>
         <span class="persona-link">ליווי חודשי גמיש <span>←</span></span>
       </a>
 
       <a href="#journey" class="persona">
         <div class="persona-icon">◆</div>
         <h3>מחפשים מומחה שיעזור</h3>
-        <p>הייתם אצל מטפלת. עזר באופן חלקי. אתם מחפשים משהו אחר — חוויתי, פחות כבד, יותר ביחד.</p>
+        <p>הייתם אצל מטפלת. עזר באופן חלקי. אתם מחפשים משהו אחר - חוויתי, פחות כבד, יותר ביחד.</p>
         <span class="persona-link">ליווי עם המומחים שלנו <span>←</span></span>
       </a>
 
       <a href="#couples-games" class="persona">
         <div class="persona-icon">↻</div>
         <h3>רוצים להתחבר מחדש</h3>
-        <p>הקשר טוב. אתם רק רוצים להעלות הילוך — חוויות חדשות, שיחות חדשות, אינטימיות חדשה.</p>
+        <p>הקשר טוב. אתם רק רוצים להעלות הילוך - חוויות חדשות, שיחות חדשות, אינטימיות חדשה.</p>
         <span class="persona-link">משחקי חיבור ותקשורת <span>←</span></span>
       </a>
 
@@ -1699,7 +1734,7 @@
       <a href="#adult-games" class="persona">
         <div class="persona-icon">♨</div>
         <h3>רוצים לפלפל את חיי המין</h3>
-        <p>אתם מוכנים לקצת הרפתקנות — להחזיר את התשוקה, לגלות צד חדש, לפתח את האינטימיות.</p>
+        <p>אתם מוכנים לקצת הרפתקנות - להחזיר את התשוקה, לגלות צד חדש, לפתח את האינטימיות.</p>
         <span class="persona-link">משחקים למבוגרים בלבד <span>←</span></span>
       </a>
     </div>
@@ -1707,7 +1742,7 @@
     <div class="for-whom-cta">
       <div class="for-whom-cta-text">
         <span class="small">בחינם · 90 שניות · בלי הרשמה</span>
-        <span class="big">בואו גלו על הזוגיות שלכם דברים שלא ידעתם — חינם לגמרי.</span>
+        <span class="big">בואו גלו על הזוגיות שלכם דברים שלא ידעתם - חינם לגמרי.</span>
       </div>
       <a href="/is-this-for-me" class="btn btn-primary">בואו לגלות מה קורה בזוגיות שלכם <span class="arrow">←</span></a>
     </div>
@@ -1720,7 +1755,7 @@
     <div class="section-head">
       <div class="eyebrow">המחירים שלנו</div>
       <h2>שקיפות מלאה.<br>בלי הפתעות, בלי התחייבות.</h2>
-      <p>שלושה שירותים, שלוש דרכים להתחבר. בחרו מה שמתאים לכם — ועצרו בכל רגע שתרצו.</p>
+      <p>שלושה שירותים, שלוש דרכים להתחבר. בחרו מה שמתאים לכם - ועצרו בכל רגע שתרצו.</p>
     </div>
 
     <div class="pricing-grid">
@@ -1759,10 +1794,10 @@
           <div class="price-original">במקום <s>₪114 לשבוע</s></div>
         </div>
         <ul class="price-features">
-          <li><strong>שניכם במחיר אחד</strong> — זוגי לחלוטין</li>
+          <li><strong>שניכם במחיר אחד</strong> - זוגי לחלוטין</li>
           <li>כלול משחקי זוגיות אונליין</li>
           <li>אבחון אישי של 10 דקות בהתחלה</li>
-          <li>כל חודש — אבחון ומטרות חדשות לפי הצורך האישי שלכם, לבד או כזוג</li>
+          <li>כל חודש - אבחון ומטרות חדשות לפי הצורך האישי שלכם, לבד או כזוג</li>
           <li>משימות ואתגרים חודשיים מתחדשים</li>
           <li>מענה אישי מהמומחים בצ'אט פנימי</li>
         </ul>
@@ -1782,9 +1817,9 @@
           <div class="price-original">רכישה בודדת · <s>₪200 למשחק</s></div>
         </div>
         <ul class="price-features">
-          <li>חוויה מודרכת — ננחה אתכם שלב אחר שלב</li>
+          <li>חוויה מודרכת - ננחה אתכם שלב אחר שלב</li>
           <li>משחקים מקוריים של מיאושי</li>
-          <li>רכישה אחת — גישה חופשית לבן/ת הזוג</li>
+          <li>רכישה אחת - גישה חופשית לבן/ת הזוג</li>
           <li>חד-פעמי, בלי מנוי</li>
           <li>פרטיות מלאה</li>
         </ul>
@@ -1820,14 +1855,14 @@
       <div class="final-choice final-choice-featured">
         <span class="final-choice-tag">הכי פופולרי</span>
         <h3>משחקי זוגיות אונליין</h3>
-        <p>לשבור את הקרח, להנות מערב מהנה יחד. שאלות, אתגרים ומשחקים שיוצרים שיחה אמיתית — מהסלון, בלי הכנה.</p>
+        <p>לשבור את הקרח, להנות מערב מהנה יחד. שאלות, אתגרים ומשחקים שיוצרים שיחה אמיתית - מהסלון, בלי הכנה.</p>
         <a href="#" class="btn btn-primary">התחילו עכשיו <span class="arrow">←</span></a>
       </div>
 
       <div class="final-choice">
         <span class="final-choice-tag">למבוגרים בלבד</span>
         <h3>משחקים להרפתקנים</h3>
-        <p>למי שמוכן ואוהב לשבור את השגרה — גם בסקס. משחקים נועזים שעיצבנו עבור הזוגות הכי הרפתקניים שלנו.</p>
+        <p>למי שמוכן ואוהב לשבור את השגרה - גם בסקס. משחקים נועזים שעיצבנו עבור הזוגות הכי הרפתקניים שלנו.</p>
         <a href="#" class="btn btn-ghost">גלו את המשחקים <span class="arrow">←</span></a>
       </div>
     </div>
@@ -1853,71 +1888,58 @@
 
       <div class="faq-list">
         <details class="faq-item" open>
-          <summary>מה זה בעצם מיאושי? <span class="faq-icon">+</span></summary>
-          <div class="faq-answer">
-            <p>מיאושי היא פלטפורמה לזוגות, שמאחוריה עומד צוות מומחים בינלאומי — מטפלים זוגיים, פסיכולוגים, סקסולוגים ומאמני זוגיות מכל רחבי העולם, עם ניסיון מצטבר של <strong>מאות שנים</strong> בעבודה עם זוגות, אינטימיות וקשר.</p>
-            <p>ביחד הם בנו דרך חוויתית להחיות זוגיות מחדש — לא בטיפול, לא בקורס, אלא בדרך הכי טבעית שיש: משחקים, אבחונים וליווי אישי שמותאם בדיוק לכם. עם מטרה אחת ברורה — לבנות לכם זוגיות חדשה, מלאת אינטימיות, סקס ואהבה. להחזיר את הפרפרים שחשבתם שאיבדתם.</p>
-          </div>
-        </details>
-        <details class="faq-item">
           <summary>זה תחליף לטיפול זוגי? <span class="faq-icon">+</span></summary>
           <div class="faq-answer">
-            <p>לא בדיוק. אנחנו פתרון מקדים — לזוגות שמרגישים שמשהו נשחק, אבל לא מוכנים לקפוץ לטיפול. אם יש משברים אמיתיים, נמליץ גם על מטפל/ת מוסמכ/ת, ובחלק מהמסלולים אפילו נחבר אתכם לאחד מהמומחים שלנו.</p>
+            <p>לא בדיוק. אנחנו פתרון מקדים - לזוגות שמרגישים שמשהו נשחק, אבל לא מוכנים לקפוץ לטיפול. אם יש משברים אמיתיים, נמליץ גם על מטפל/ת מוסמכ/ת, ובחלק מהמסלולים אפילו נחבר אתכם לאחד מהמומחים שלנו.</p>
           </div>
         </details>
         <details class="faq-item">
           <summary>איך זה עובד בפועל? <span class="faq-icon">+</span></summary>
           <div class="faq-answer">
-            <p>תלוי באיזה מסלול תבחרו. אם זה משחק — מקבלים גישה אונליין ופותחים את הערב הראשון יחד. אם זה הליווי הצמוד — מתחילים באבחון של 10 דקות, ומקבלים תוכנית אישית עם משימות חודשיות. ממשיכים חודש בחודש, ללא חוזה — ועוצרים בכל רגע שתרצו.</p>
+            <p>תלוי באיזה מסלול תבחרו. אם זה משחק - מקבלים גישה אונליין ופותחים את הערב הראשון יחד. אם זה הליווי הצמוד - מתחילים באבחון של 10 דקות, ומקבלים תוכנית אישית עם משימות חודשיות. ממשיכים חודש בחודש, ללא חוזה - ועוצרים בכל רגע שתרצו.</p>
           </div>
         </details>
         <details class="faq-item">
           <summary>כמה זמן לוקח להרגיש שינוי? <span class="faq-icon">+</span></summary>
           <div class="faq-answer">
-            <p>זוגות מדווחים על שינוי כבר אחרי הערב הראשון — בעיקר ברמת השיחה והפתיחות. שינוי משמעותי וקבוע לרוב מורגש אחרי 30 ימים של עבודה רציפה. בקיצור — מהר יותר ממה שאתם חושבים.</p>
+            <p>זוגות מדווחים על שינוי כבר אחרי הערב הראשון - בעיקר ברמת השיחה והפתיחות. שינוי משמעותי וקבוע לרוב מורגש אחרי 30 ימים של עבודה רציפה. בקיצור - מהר יותר ממה שאתם חושבים.</p>
           </div>
         </details>
         <details class="faq-item">
           <summary>הפרטיות שלי שמורה? <span class="faq-icon">+</span></summary>
           <div class="faq-answer">
-            <p>בהחלט. כל הנתונים שלכם מוצפנים ולא משותפים עם אף אחד — לעולם. אנחנו לא מוכרים נתונים, ולא מציגים פרסומות. הפרטיות שלכם — וגם של בן/בת הזוג — קדושה אצלנו.</p>
+            <p>בהחלט. כל הנתונים שלכם מוצפנים ולא משותפים עם אף אחד - לעולם. אנחנו לא מוכרים נתונים, ולא מציגים פרסומות. הפרטיות שלכם - וגם של בן/בת הזוג - קדושה אצלנו.</p>
           </div>
         </details>
         <details class="faq-item">
           <summary>מה עושים אם בן/בת הזוג לא מוכן/ה? <span class="faq-icon">+</span></summary>
           <div class="faq-answer">
-            <p>זה נפוץ הרבה יותר ממה שנראה לכם. ההצעה שלנו: התחילו עם משחק קל וחוויתי — בלי להגדיר את זה כ"טיפול" או כ"תיקון". פשוט "ערב כיף יחד". רוב הזוגות שמתחילים ככה ממשיכים יחד באופן טבעי.</p>
+            <p>זה נפוץ הרבה יותר ממה שנראה לכם. ההצעה שלנו: התחילו עם משחק קל וחוויתי - בלי להגדיר את זה כ"טיפול" או כ"תיקון". פשוט "ערב כיף יחד". רוב הזוגות שמתחילים ככה ממשיכים יחד באופן טבעי.</p>
           </div>
         </details>
         <details class="faq-item">
           <summary>מה ההבדל בין שלושת המסלולים? <span class="faq-icon">+</span></summary>
           <div class="faq-answer">
-            <p><strong>משחקי זוגיות אונליין:</strong> פתיחה קלה, גישה לכל המשחקים בפלטפורמה, מנוי חודשי גמיש. <strong>ליווי צמוד עם המומחים:</strong> המסלול הכי מקיף שלנו — <em>הכל כלול</em>: כל המשחקים (כולל המשחקים למבוגרים), אבחון אישי, תוכנית מותאמת, משימות חודשיות, ומענה אישי מהצוות. <strong>משחקים למבוגרים בלבד:</strong> משחקים אקסקלוסיביים לחדר המיטות, רכישה נפרדת לפי משחק. אפשר לשלב — ורבים עושים את זה.</p>
+            <p><strong>משחקי זוגיות אונליין:</strong> פתיחה קלה, גישה לכל המשחקים בפלטפורמה, מנוי חודשי גמיש. <strong>ליווי צמוד עם המומחים:</strong> המסלול הכי מקיף שלנו - <em>הכל כלול</em>: כל המשחקים (כולל המשחקים למבוגרים), אבחון אישי, תוכנית מותאמת, משימות חודשיות, ומענה אישי מהצוות. <strong>משחקים למבוגרים בלבד:</strong> משחקים אקסקלוסיביים לחדר המיטות, רכישה נפרדת לפי משחק. אפשר לשלב - ורבים עושים את זה.</p>
           </div>
         </details>
         <details class="faq-item">
-          <summary>"ליווי צמוד עם המומחים" — באמת הכל כלול? <span class="faq-icon">+</span></summary>
+          <summary>"ליווי צמוד עם המומחים" - באמת הכל כלול? <span class="faq-icon">+</span></summary>
           <div class="faq-answer">
-            <p>כן. בכוונה. בנינו את המסלול הזה לזוגות שרוצים <strong>שיהיה מי שבאמת איתם</strong> — אז ויתרנו על המודל של "תוסף בתשלום על תוסף". <strong>הכל כלול:</strong> גישה מלאה לכל המשחקים בפלטפורמה (גם לאלו של המבוגרים), אבחון אישי של 10 דקות עם מומחה זוגי, תוכנית מותאמת אישית, משימות חודשיות מתחדשות, ו<strong>מענה ישיר מהצוות בצ'אט פנימי</strong> — לשאלות, להתלבטויות, ולרגעים שצריך מישהו שיגיד מילה. ללא חוזה, ללא קנסות, אפשר לעצור בכל שלב. רצינו ללכת איתכם את כל הדרך — כי אנחנו <em>באמת</em> רוצים אתכם מאושרים, אוהבים, ועם כלים שעובדים. זה השירות שהיינו רוצים שיציעו לנו.</p>
+            <p>כן. בכוונה. בנינו את המסלול הזה לזוגות שרוצים <strong>שיהיה מי שבאמת איתם</strong> - אז ויתרנו על המודל של "תוסף בתשלום על תוסף". <strong>הכל כלול:</strong> גישה מלאה לכל המשחקים בפלטפורמה (גם לאלו של המבוגרים), אבחון אישי של 10 דקות עם מומחה זוגי, תוכנית מותאמת אישית, משימות חודשיות מתחדשות, ו<strong>מענה ישיר מהצוות בצ'אט פנימי</strong> - לשאלות, להתלבטויות, ולרגעים שצריך מישהו שיגיד מילה. ללא חוזה, ללא קנסות, אפשר לעצור בכל שלב. רצינו ללכת איתכם את כל הדרך - כי אנחנו <em>באמת</em> רוצים אתכם מאושרים, אוהבים, ועם כלים שעובדים. זה השירות שהיינו רוצים שיציעו לנו.</p>
           </div>
         </details>
         <details class="faq-item">
-          <summary>אפשר לבטל בכל שלב? <span class="faq-icon">+</span></summary>
+          <summary>אנחנו לא נשואים - זה עדיין מתאים? <span class="faq-icon">+</span></summary>
           <div class="faq-answer">
-            <p>בהחלט. אין מחויבות, ואין קנסות. ביטול נעשה בלחיצת כפתור באזור האישי, או בפנייה לתמיכה. בלי שאלות, בלי בעיות.</p>
-          </div>
-        </details>
-        <details class="faq-item">
-          <summary>אנחנו לא נשואים — זה עדיין מתאים? <span class="faq-icon">+</span></summary>
-          <div class="faq-answer">
-            <p>בוודאי. מיאושי מתאים לכל זוג בקשר רומנטי — נשואים, בני זוג, מאורסים. הקריטריון היחיד הוא שאתם רוצים להעמיק את הקשר.</p>
+            <p>בוודאי. מיאושי מתאים לכל זוג בקשר רומנטי - נשואים, בני זוג, מאורסים. הקריטריון היחיד הוא שאתם רוצים להעמיק את הקשר.</p>
           </div>
         </details>
 
         <details class="faq-item">
           <summary>למי בדיוק התוכן מתאים? <span class="faq-icon">+</span></summary>
           <div class="faq-answer">
-            <p>נכון להיום, התוכן והמשימות שלנו מותאמים לזוגות הטרוסקסואליים — גבר ואישה. אנחנו עובדים על הרחבת התוכן לכל סוגי הזוגיות, ומקווים להציג עדכון בתקופה הקרובה.</p>
+            <p>נכון להיום, התוכן והמשימות שלנו מותאמים לזוגות הטרוסקסואליים - גבר ואישה. אנחנו עובדים על הרחבת התוכן לכל סוגי הזוגיות, ומקווים להציג עדכון בתקופה הקרובה.</p>
           </div>
         </details>
       </div>
@@ -1931,22 +1953,22 @@
     <div class="footer-grid">
       <div class="footer-brand">
         <a href="#" class="logo"><span class="logo-mark"></span> מיאושי</a>
-        <p>מלווים זוגות בישראל ובעולם מאז 2021. מאמינים שכל זוגיות יכולה להתחדש — ויש לנו את הכלים להוכיח את זה.</p>
+        <p>מלווים זוגות בישראל ובעולם מאז 2021. מאמינים שכל זוגיות יכולה להתחדש - ויש לנו את הכלים להוכיח את זה.</p>
       </div>
       <div class="footer-col">
         <h4>השירותים שלנו</h4>
         <ul class="footer-services-list">
           <li>
             <a href="#" class="svc-link"><strong>משחקים לזוגות</strong> <span class="arrow">←</span></a>
-            <p class="svc-desc">משחקים אונליין לבילוי מהנה — לחזור לדבר, לצחוק ולהתחבר אחד עם השנייה.</p>
+            <p class="svc-desc">משחקים אונליין לבילוי מהנה - לחזור לדבר, לצחוק ולהתחבר אחד עם השנייה.</p>
           </li>
           <li>
             <a href="#" class="svc-link"><strong>ייעוץ זוגי</strong> <span class="arrow">←</span></a>
-            <p class="svc-desc">ייעוץ אונליין עם מיטב המומחים. נכיר אתכם, ותקבלו משימות ואתגרים שיחברו ביניכם מחדש — גם אם שכחתם כבר מה זה אומר להיות יחד.</p>
+            <p class="svc-desc">ייעוץ אונליין עם מיטב המומחים. נכיר אתכם, ותקבלו משימות ואתגרים שיחברו ביניכם מחדש - גם אם שכחתם כבר מה זה אומר להיות יחד.</p>
           </li>
           <li>
             <a href="#" class="svc-link"><strong>משחקים למבוגרים בלבד</strong> <span class="arrow">←</span></a>
-            <p class="svc-desc">קבלו משחקים שאתם יכולים לשחק בחדר המיטות — שהמומחים שלנו עיצבו במיוחד בשביל ההנאה שלכם.</p>
+            <p class="svc-desc">קבלו משחקים שאתם יכולים לשחק בחדר המיטות - שהמומחים שלנו עיצבו במיוחד בשביל ההנאה שלכם.</p>
           </li>
         </ul>
       </div>
@@ -1977,9 +1999,9 @@
 </footer>
 
 <script>
-  // (Pillars section removed — replaced with Journey timeline)
+  // (Pillars section removed - replaced with Journey timeline)
 
-  // CG-CARDS DEBUG — diagnose positioning issue
+  // CG-CARDS DEBUG - diagnose positioning issue
   (function(){
     function logCardPositions(label){
       const visual = document.querySelector('.cg-visual');
@@ -1989,7 +2011,7 @@
       const vRect = visual.getBoundingClientRect();
       const vStyle = window.getComputedStyle(visual);
 
-      console.group('[CG-DEBUG] '+label+' — viewport: '+window.innerWidth+'px');
+      console.group('[CG-DEBUG] '+label+' - viewport: '+window.innerWidth+'px');
       console.log('cg-visual:', {
         left: vRect.left.toFixed(1),
         right: vRect.right.toFixed(1),
@@ -2040,20 +2062,20 @@
     });
   })();
 
-  // MEDIA SLIDER — auto rotation
+  // MEDIA SLIDER - auto rotation
   (function(){
     // TODO: עדכן ציטוטים אמיתיים מהכתבות
     const items = [
       {
         name:'ישראל היום',
         date:'· מדור מומלצים',
-        quote:'"מיאושי — הפלטפורמה הישראלית שמחזירה זוגות אחד אל השני, דרך משחק ולא דרך טיפול."',
+        quote:'"מיאושי - הפלטפורמה הישראלית שמחזירה זוגות אחד אל השני, דרך משחק ולא דרך טיפול."',
         url:'https://www.israelhayom.co.il/mumlazim/article/13374120'
       },
       {
         name:'walla!',
         date:'· TLD · מגזין החיים',
-        quote:'"מיאושי הפכה את הזוגיות בישראל למשהו שמשחקים אותו — לא מטפלים בו. ולזה יש אפקט עצום."',
+        quote:'"מיאושי הפכה את הזוגיות בישראל למשהו שמשחקים אותו - לא מטפלים בו. ולזה יש אפקט עצום."',
         url:'https://tld.walla.co.il/item/3528908'
       },
     ];

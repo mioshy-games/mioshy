@@ -19,7 +19,7 @@ import Link from "next/link";
 
 function formatDate(iso: string) {
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
+  if (Number.isNaN(d.getTime())) return "-";
   return d.toLocaleString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
 

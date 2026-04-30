@@ -81,7 +81,7 @@ export function mapToGameFormValues(
   // widened, or a completely missing slug). Clear the slug so the form loads in
   // an editable state rather than silently locked with an invalid value.
   console.warn(
-    "[mapToGameFormValues] Zod parse failed — clearing slug. Errors:",
+    "[mapToGameFormValues] Zod parse failed - clearing slug. Errors:",
     parsed.error.flatten().fieldErrors,
   );
   const sanitized = { ...merged, slug: "" };

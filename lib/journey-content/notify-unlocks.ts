@@ -6,14 +6,14 @@
 //   AND notified_at IS NULL
 //   AND assignment is active
 //   AND there is no completion yet (no point emailing about something
-//       the couple already finished — admin-scheduled items sometimes
+//       the couple already finished - admin-scheduled items sometimes
 //       unlock retroactively)
 //
 // Groups them by owner, resolves the email recipients (solo user OR
 // both couple members), sends a single summary email per recipient,
 // then stamps notified_at on every item we successfully dispatched.
 //
-// Designed to be called by a cron endpoint. Never throws — returns a
+// Designed to be called by a cron endpoint. Never throws - returns a
 // structured report so the cron can log outcomes. All writes go through
 // the admin/service-role client.
 // ============================================================
@@ -77,11 +77,11 @@ export interface NotifyUnlocksResult {
 interface NotifyUnlocksOptions {
   /** Max scheduled items to examine in one run (keeps runtime bounded). */
   limit?: number;
-  /** Override the "now" clock — helpful for tests/backfills. */
+  /** Override the "now" clock - helpful for tests/backfills. */
   now?: Date;
   /** Allow callers to pass an existing admin client (e.g. from the cron route). */
   supabase?: SupabaseClient;
-  /** Root URL used to build item deep-links — falls back to env. */
+  /** Root URL used to build item deep-links - falls back to env. */
   baseUrl?: string;
 }
 
@@ -261,7 +261,7 @@ export async function runJourneyUnlockNotifier(
     .select("user_id, email, full_name, preferred_locale")
     .in("user_id", Array.from(userIdsToLookup));
   if (userFetch.error) {
-    // `preferred_locale` / `full_name` may not exist on older views — retry
+    // `preferred_locale` / `full_name` may not exist on older views - retry
     // with the minimal shape before giving up.
     const retry = await supabase
       .from("admin_users_overview")
@@ -295,7 +295,7 @@ export async function runJourneyUnlockNotifier(
 
   // ── 6. For each assignment, merge newly-unlocked items per recipient ────
   // A user may own/belong-to several assignments that unlocked the same day
-  // — aggregate across them into a single email per recipient.
+  // - aggregate across them into a single email per recipient.
   const itemsByRecipient = new Map<
     string,
     {
@@ -317,7 +317,7 @@ export async function runJourneyUnlockNotifier(
       recipientUserIds.push(a.user_id);
     }
     if (recipientUserIds.length === 0) {
-      // Couple has no members yet (edge case) — still mark notified_at so
+      // Couple has no members yet (edge case) - still mark notified_at so
       // we don't scan this row every cron tick. Silent skip.
       result.skipped += rows.length;
       continue;
@@ -326,7 +326,7 @@ export async function runJourneyUnlockNotifier(
     for (const uid of recipientUserIds) {
       const recipient = usersById.get(uid);
       if (!recipient) {
-        // Email missing for this user — mark these items as skipped but
+        // Email missing for this user - mark these items as skipped but
         // don't stamp notified_at (the user might add an email later).
         result.skipped += rows.length;
         continue;
@@ -402,7 +402,7 @@ export async function runJourneyUnlockNotifier(
     }
 
     // Stamp notified_at on every scheduled row the recipient was told
-    // about. We batch by id list — cheaper than per-row updates. Even
+    // about. We batch by id list - cheaper than per-row updates. Even
     // when `send.skipped` is true (dev no-op) we still stamp so the
     // item doesn't loop forever in local development.
     const scheduledIdsToStamp = Array.from(

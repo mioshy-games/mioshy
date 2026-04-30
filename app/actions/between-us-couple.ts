@@ -14,7 +14,7 @@ type Ok<T> = { ok: true } & T;
 type Err = { ok: false; error: string };
 
 // ---------------------------------------------------------------------------
-// createCoupleForSelf — calls RPC that makes a couple + adds caller as owner
+// createCoupleForSelf - calls RPC that makes a couple + adds caller as owner
 // Idempotent: returns existing couple if already a member.
 // ---------------------------------------------------------------------------
 export async function createCoupleForSelf(
@@ -57,7 +57,7 @@ export async function createCoupleForSelf(
 }
 
 // ---------------------------------------------------------------------------
-// joinCoupleByPairCode — partner enters the 6-char code to link accounts
+// joinCoupleByPairCode - partner enters the 6-char code to link accounts
 // ---------------------------------------------------------------------------
 export async function joinCoupleByPairCode(
   pairCode: string,
@@ -99,17 +99,17 @@ export async function joinCoupleByPairCode(
 }
 
 // ---------------------------------------------------------------------------
-// startAdultsSinglePurchase — entry point for the Adults BUY button.
+// startAdultsSinglePurchase - entry point for the Adults BUY button.
 // ---------------------------------------------------------------------------
 // Branches on the caller's identity:
 //
-// (1) ADMIN BYPASS  — emails listed in lib/auth/admin-bypass.ts skip Cardcom
+// (1) ADMIN BYPASS  - emails listed in lib/auth/admin-bypass.ts skip Cardcom
 //     entirely. We grant a couple_entitlement immediately with
 //     source='admin_bypass' so the team can replay the full purchase →
 //     pair-code → partner-redeem journey without test charges. The bypass
 //     is server-side and double-checked (never trust a client header).
 //
-// (2) REAL PURCHASE — every other user is sent through the real Cardcom
+// (2) REAL PURCHASE - every other user is sent through the real Cardcom
 //     LowProfile checkout. We POST to /api/billing/checkout/create with
 //     purchase_type='one_time' and target_game_id=<gameId>. The endpoint
 //     opens the Cardcom session, persists a checkout_sessions row, and
@@ -131,7 +131,7 @@ export async function startAdultsSinglePurchase({
   gameId: string;
   /** UI locale, used to build the post-payment return URL. */
   locale: string;
-  /** Path the buyer should land on after Cardcom finishes — typically the
+  /** Path the buyer should land on after Cardcom finishes - typically the
    *  product page itself so the entitled state renders with the pair code. */
   returnPath: string;
 }): Promise<
@@ -151,7 +151,7 @@ export async function startAdultsSinglePurchase({
   if (!user) return { ok: false, error: "login_required" };
 
   // Verify the game exists + is active before doing anything else. Both
-  // branches need this — the bypass branch to write a meaningful row, the
+  // branches need this - the bypass branch to write a meaningful row, the
   // Cardcom branch to know what amount to charge.
   const { data: game } = await supabase
     .from("experience_games")
@@ -331,7 +331,7 @@ async function grantBypassedEntitlement({
           : gamePriceUsd != null
             ? "USD"
             : null,
-      notes: "Admin bypass — no real charge processed",
+      notes: "Admin bypass - no real charge processed",
     })
     .select("id")
     .single();
@@ -365,7 +365,7 @@ async function grantBypassedEntitlement({
 }
 
 // ---------------------------------------------------------------------------
-// stubPurchaseGame — DEPRECATED. Kept temporarily for any caller that still
+// stubPurchaseGame - DEPRECATED. Kept temporarily for any caller that still
 // references it; new code must use startAdultsSinglePurchase. Will be
 // removed after a grep confirms no external callers remain.
 // ---------------------------------------------------------------------------
@@ -437,7 +437,7 @@ export async function stubPurchaseGame(
       acquired_by_user_id: user.id,
       price_paid: game.price_ils ?? game.price_usd ?? null,
       currency: game.price_ils != null ? "ILS" : game.price_usd != null ? "USD" : null,
-      notes: "Stub grant — Cardcom billing not yet integrated",
+      notes: "Stub grant - Cardcom billing not yet integrated",
     })
     .select("id")
     .single();
@@ -461,7 +461,7 @@ export async function stubPurchaseGame(
 }
 
 // ---------------------------------------------------------------------------
-// leaveCouple — unlinks the current user from their couple. If they were
+// leaveCouple - unlinks the current user from their couple. If they were
 // the only member, also deactivates the couple.
 // ---------------------------------------------------------------------------
 export async function leaveCouple(): Promise<Ok<object> | Err> {

@@ -97,7 +97,7 @@ function ImageUploader({
       if (error) throw error;
       const { data } = client.storage.from(BUCKET).getPublicUrl(path);
       onUrlChange(data.publicUrl);
-      toast.success("Image uploaded — remember to Save all changes.");
+      toast.success("Image uploaded - remember to Save all changes.");
     } catch (err: unknown) {
       toast.error(`Upload failed: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
@@ -110,7 +110,7 @@ function ImageUploader({
     setClearing(true);
     onUrlChange("");
     setClearing(false);
-    toast.info("Image cleared — remember to Save all changes.");
+    toast.info("Image cleared - remember to Save all changes.");
   }
 
   return (
@@ -177,7 +177,7 @@ function ImageUploader({
         )}
       </div>
 
-      {/* Hidden file input — works on desktop AND mobile */}
+      {/* Hidden file input - works on desktop AND mobile */}
       <input
         ref={inputRef}
         type="file"
@@ -522,7 +522,7 @@ export function HomepageAdminClient({
         </Button>
       </div>
 
-      {/* flex-col forces the list above the panels — Base UI sets data-orientation="horizontal",
+      {/* flex-col forces the list above the panels - Base UI sets data-orientation="horizontal",
           not data-horizontal, so the component's own data-horizontal:flex-col never fires */}
       <Tabs value={activeTab} onValueChange={handleTabChange} className="flex-col">
         {/* ── Tab navigation bar ──────────────────────────────────────────
@@ -540,10 +540,10 @@ export function HomepageAdminClient({
                   // Base
                   "relative flex h-11 shrink-0 items-center gap-1.5 rounded-none",
                   "px-4 text-sm font-medium whitespace-nowrap",
-                  // Colours — Base UI uses data-active (not data-[state=active])
+                  // Colours - Base UI uses data-active (not data-[state=active])
                   "text-muted-foreground hover:text-foreground",
                   "data-active:text-foreground",
-                  // Active indicator — bottom border
+                  // Active indicator - bottom border
                   "border-b-2 border-transparent",
                   "data-active:border-fuchsia-500",
                   // Remove default active shadow/bg
@@ -622,7 +622,7 @@ export function HomepageAdminClient({
                         ?.label
                     }
                   </span>{" "}
-                  — press <em>Save all changes</em> to publish.
+                  - press <em>Save all changes</em> to publish.
                 </p>
               </CardContent>
             </Card>
@@ -717,7 +717,7 @@ export function HomepageAdminClient({
             </Card>
           </div>
 
-          {/* Row 2: Article card images — 3 columns */}
+          {/* Row 2: Article card images - 3 columns */}
           <Card>
             <CardHeader>
               <CardTitle>Article card images</CardTitle>

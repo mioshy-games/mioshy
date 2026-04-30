@@ -140,7 +140,7 @@ export function AssignmentForm({
       return;
     }
     toast.success(
-      `Assignment created — ${res.inserted ?? 0} scheduled rows materialized`,
+      `Assignment created - ${res.inserted ?? 0} scheduled rows materialized`,
     );
     router.push(`/dashboard/journey/assignments/${res.id}`);
     router.refresh();
@@ -267,7 +267,7 @@ export function AssignmentForm({
 
         <Section
           title="Schedule"
-          description="Anchor determines day 0 — all item offsets are relative to this date."
+          description="Anchor determines day 0 - all item offsets are relative to this date."
         >
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Anchor kind">
@@ -289,13 +289,13 @@ export function AssignmentForm({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="assignment">
-                    Assignment — unlock from today
+                    Assignment - unlock from today
                   </SelectItem>
                   <SelectItem value="purchase">
-                    Purchase — unlock from the purchase date
+                    Purchase - unlock from the purchase date
                   </SelectItem>
                   <SelectItem value="fixed">
-                    Fixed — pick a specific date
+                    Fixed - pick a specific date
                   </SelectItem>
                 </SelectContent>
               </Select>
@@ -306,7 +306,7 @@ export function AssignmentForm({
               hint={
                 anchorKind === "fixed"
                   ? "Required for 'fixed'"
-                  : "Optional — leave empty to use now"
+                  : "Optional - leave empty to use now"
               }
             >
               <Input

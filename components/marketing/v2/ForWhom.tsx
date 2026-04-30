@@ -19,21 +19,21 @@ const PERSONAS: Persona[] = [
   {
     icon: "⌛",
     title: "רוצים זמן זוגי באמת",
-    desc: "הילדים, העבודה, הבית — והזוגיות נשארה אחרונה. אתם רוצים להחזיר אותה לראש הסדר.",
+    desc: "הילדים, העבודה, הבית - והזוגיות נשארה אחרונה. אתם רוצים להחזיר אותה לראש הסדר.",
     linkLabel: "ליווי חודשי גמיש",
     href: "#journey",
   },
   {
     icon: "◆",
     title: "מחפשים מומחה שיעזור",
-    desc: "הייתם אצל מטפלת. עזר באופן חלקי. אתם מחפשים משהו אחר — חוויתי, פחות כבד, יותר ביחד.",
+    desc: "הייתם אצל מטפלת. עזר באופן חלקי. אתם מחפשים משהו אחר - חוויתי, פחות כבד, יותר ביחד.",
     linkLabel: "ליווי עם המומחים שלנו",
     href: "#journey",
   },
   {
     icon: "↻",
     title: "רוצים להתחבר מחדש",
-    desc: "הקשר טוב. אתם רק רוצים להעלות הילוך — חוויות חדשות, שיחות חדשות, אינטימיות חדשה.",
+    desc: "הקשר טוב. אתם רק רוצים להעלות הילוך - חוויות חדשות, שיחות חדשות, אינטימיות חדשה.",
     linkLabel: "משחקי חיבור ותקשורת",
     href: "#couples-games",
   },
@@ -47,14 +47,14 @@ const PERSONAS: Persona[] = [
   {
     icon: "♨",
     title: "רוצים לפלפל את חיי המין",
-    desc: "אתם מוכנים לקצת הרפתקנות — להחזיר את התשוקה, לגלות צד חדש, לפתח את האינטימיות.",
+    desc: "אתם מוכנים לקצת הרפתקנות - להחזיר את התשוקה, לגלות צד חדש, לפתח את האינטימיות.",
     linkLabel: "משחקים למבוגרים בלבד",
     href: "#adult-games",
   },
 ];
 
 /**
- * ForWhom — 6 personas grid. Each card is a clickable link to the matching
+ * ForWhom - 6 personas grid. Each card is a clickable link to the matching
  * service section. CTA banner below points to the assessment quiz.
  */
 export function ForWhom() {
@@ -66,7 +66,7 @@ export function ForWhom() {
           <h2>
             אם אתם מזהים את עצמכם
             <br />
-            באחד מאלה — מיאושי{" "}
+            באחד מאלה - מיאושי{" "}
             <em
               style={{
                 fontFamily: "'Frank Ruhl Libre', serif",
@@ -78,8 +78,7 @@ export function ForWhom() {
             </em>
           </h2>
           <p>
-            אנחנו לא מתאימים לכל אחד. אנחנו עובדים הכי טוב עם זוגות שמוכנים להשקיע — גם אם זה רק 10
-            דקות בשבוע.
+            הליווי של מיאושי לא לכולם. הוא למי שמוכן לבחור בזוגיות אחרת.
           </p>
         </div>
 
@@ -100,7 +99,7 @@ export function ForWhom() {
           <div className="for-whom-cta-text">
             <span className="small">בחינם · 90 שניות · בלי הרשמה</span>
             <span className="big">
-              בואו גלו על הזוגיות שלכם דברים שלא ידעתם — חינם לגמרי.
+              בואו גלו על הזוגיות שלכם דברים שלא ידעתם - חינם לגמרי.
             </span>
           </div>
           <TrackedLink href="/journey/assessment" className="btn btn-primary" ctaId="for_whom_assessment" section="for-whom">

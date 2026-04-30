@@ -52,7 +52,7 @@ export function AssignmentControls({
       toast.error(res.error);
       return;
     }
-    toast.success(`Re-materialized — ${res.inserted} new rows`);
+    toast.success(`Re-materialized - ${res.inserted} new rows`);
     router.refresh();
   }
 
@@ -118,7 +118,7 @@ export function AssignmentControls({
           </DialogHeader>
           <p className="text-muted-foreground text-sm">
             This cascades through scheduled rows, completions, and responses.
-            For a softer path, cancel instead — cancelled assignments stop
+            For a softer path, cancel instead - cancelled assignments stop
             appearing in the owner&apos;s timeline but keep their history.
           </p>
           <DialogFooter>

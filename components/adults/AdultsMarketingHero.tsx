@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Hero for /[locale]/adults — Mioshy's flagship after-dark surface.
+ * Hero for /[locale]/adults - Mioshy's flagship after-dark surface.
  *
  * Composition
  * ───────────
@@ -9,15 +9,15 @@
  *   The closing-CTA's centred drama is the structural spine.
  * - Two TAROT-STYLE poster cards float at the start/end edges of the hero.
  *   They never overlap the centre. They're tilted, drift gently, and act
- *   as atmospheric "preview" hints — not a feature grid.
+ *   as atmospheric "preview" hints - not a feature grid.
  * - Each card has a CLEAR, dashed-border image placeholder zone with an
- *   image icon + caption — invites "drop real artwork here" without breaking
+ *   image icon + caption - invites "drop real artwork here" without breaking
  *   the dark aesthetic.
  *
  * Why two cards (not three)
  * ─────────────────────────
  * Three cards forced the third one into the centre, where it competed
- * with — and visually overlapped — the primary CTA. Two cards keep the
+ * with - and visually overlapped - the primary CTA. Two cards keep the
  * centre clean and let the headline + CTA breathe.
  */
 
@@ -30,6 +30,7 @@ import {
   ImageIcon,
 } from "lucide-react";
 import { useEffect, useRef } from "react";
+import Image from "next/image";
 import { Link } from "@/navigation";
 
 type Hero = {
@@ -55,13 +56,13 @@ export function AdultsMarketingHero({
   secondaryHref?: string;
 }) {
   return (
-    <section className="relative" dir={isHe ? "rtl" : "ltr"}>
+    <section className="relative" dir={isHe ? "rt-" : "ltr"}>
       {/* Hairline gradient rail at the very top — section rhythm. */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-rose-400/40 to-transparent"
       />
-
+-
       {/* Local concentrated radial behind the headline — focal pool. */}
       <div
         aria-hidden
@@ -71,7 +72,7 @@ export function AdultsMarketingHero({
             "radial-gradient(900px 520px at 50% 38%, rgba(244,63,94,0.20), transparent 65%)",
         }}
       />
-
+-
       {/* Breadcrumb — quiet, away from the headline. */}
       <nav
         aria-label="breadcrumb"
@@ -85,7 +86,7 @@ export function AdultsMarketingHero({
           {isHe ? "למבוגרים בלבד" : "Adults only"}
         </span>
       </nav>
-
+-
       {/* ── DESKTOP edge cards — two only, brought closer to the headline.
             start/end values bumped from 2% → 8% so the cards read as part
             of the headline cluster, not pinned to the screen edges.
@@ -94,13 +95,16 @@ export function AdultsMarketingHero({
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 hidden lg:block"
-      >
-        {/* Card peek — start (right in RTL) edge */}
+      >-
+        {/* Card peek — start (right in RTL) edge.
+            Position iterations: 8% → 4% (out to edges) → 6.5% (gentle pull
+            back toward centre per user feedback). Aligned around the
+            headline's vertical centre at top:200px. */}
         <motion.div
           initial={{ y: 8, rotate: -8 }}
           animate={{ y: [8, -8, 8], rotate: [-8, -6, -8] }}
           transition={{ duration: 11, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-[180px] start-[8%] h-[400px] w-[260px]"
+          className="absolute top-[200px] start-[6.5%] h-[360px] w-[240px]"
         >
           <PosterCard
             tone="violet"
@@ -108,6 +112,8 @@ export function AdultsMarketingHero({
             level={isHe ? "מרגש" : "Touching"}
             hint={isHe ? "שאלות שמפיגות מרחק" : "Prompts that close distance"}
             placeholderLabel={isHe ? "תמונת המשחק" : "Game artwork"}
+            imageSrc="/images/woman-mioshy.webp"
+            imageAlt={isHe ? "מרגש — תמונת המשחק" : "Touching — game artwork"}
           />
         </motion.div>
 
@@ -121,7 +127,7 @@ export function AdultsMarketingHero({
             ease: "easeInOut",
             delay: 0.7,
           }}
-          className="absolute top-[240px] end-[8%] h-[400px] w-[260px]"
+          className="absolute top-[260px] end-[6.5%] h-[360px] w-[240px]"
         >
           <PosterCard
             tone="rose"
@@ -129,12 +135,14 @@ export function AdultsMarketingHero({
             level={isHe ? "מעורר" : "Stirring"}
             hint={isHe ? "הזמנות לחוויה משותפת" : "Invitations into play"}
             placeholderLabel={isHe ? "תמונת המשחק" : "Game artwork"}
+            imageSrc="/images/woman-sexy.webp"
+            imageAlt={isHe ? "מעורר — תמונת המשחק" : "Stirring — game artwork"}
           />
         </motion.div>
       </div>
-
+-
       {/* ── CENTRE STAGE — copy + CTA (always clear of the cards) ── */}
-      <div className="relative z-10 mx-auto max-w-3xl px-4 pb-20 pt-14 text-center sm:pt-20">
+      <div className="relative z-10 mx-auto max-w-3xl px-4 pb-14 pt-10 text-center sm:pt-14">
         {/* Tiny flagship + 18+ kicker. */}
         <div className="flex items-center justify-center gap-3 text-[11px] font-semibold uppercase tracking-[0.28em]">
           <span className="inline-flex items-center gap-1.5 text-rose-200/85">
@@ -147,51 +155,52 @@ export function AdultsMarketingHero({
           </span>
         </div>
 
-        {/* The statement. Two lines, second in italic-gradient.
-            Wrapped in a relative container so the on-load firework burst
-            (HeroFireworks below) can emit sparks from the headline's centre. */}
-        <div className="relative mt-9">
-          <HeroFireworks />
+        {/* The statement. Two lines, second in italic SOLID rose-300.
+            (Was a 3-stop gradient via bg-clip-text — Hebrew italic letters
+            with descenders rendered with visible cropping artifacts on
+            many browsers, same root cause as the homepage closer fix.
+            Solid colour renders identically across UAs and avoids the
+            bug at large display sizes.) */}
+        <div className="mt-8">
           <h1
-            className="relative z-[1] text-balance text-[44px] leading-[0.98] tracking-[-0.025em] sm:text-[60px] lg:text-[84px]"
+            className="text-balance text-[66px] leading-[1.02] tracking-[-0.03em] sm:text-[86px] lg:text-[99px]"
             style={{ fontFamily: "'Frank Ruhl Libre', serif", fontWeight: 600 }}
           >
             <span className="block text-white">
-              {isHe ? "לילה אחד." : "One night."}
+              {isHe ? "ערב אחד." : "One evening."}
             </span>
             <span
-              className="mt-1 block bg-gradient-to-br from-rose-200 via-rose-400 to-amber-300 bg-clip-text text-transparent"
+              className="mt-2 block text-rose-300"
               style={{ fontStyle: "italic", fontWeight: 500 }}
             >
-              {isHe ? "אחר לגמרי." : "Like nothing before."}
+              {isHe ? "חוויה מינית חדשה." : "A new sexual experience."}
             </span>
           </h1>
         </div>
 
-        {/* Lede — exactly 4 words. Names the game type, the outcome,
-            and implicitly the problem it solves. */}
+        {/* Lede — names the product type + the emotional payoff. */}
         <p
-          className="mx-auto mt-8 max-w-xl text-pretty text-[20px] leading-[1.55] text-white/85 sm:text-[22px]"
+          className="mx-auto mt-7 max-w-xl text-pretty text-[20px] leading-[1.6] text-white/85 sm:text-[22px]"
           style={{ fontFamily: "'Frank Ruhl Libre', serif", fontWeight: 500 }}
         >
           {isHe ? (
             <>
-              משחק מיני.{" "}
+              משחקים שכתבו מומחים בעולם.{" "}
               <em
                 className="text-rose-200"
                 style={{ fontStyle: "italic", fontWeight: 500 }}
               >
-                תשוקה שחוזרת.
+                לזוגות שמוכנים לזה.
               </em>
             </>
           ) : (
             <>
-              Sexual game.{" "}
+              Games written by world-class experts.{" "}
               <em
                 className="text-rose-200"
                 style={{ fontStyle: "italic", fontWeight: 500 }}
               >
-                Desire returns.
+                For couples ready for it.
               </em>
             </>
           )}
@@ -219,9 +228,10 @@ export function AdultsMarketingHero({
           </Link>
         </div>
 
-        {/* Reassurance line. */}
+        {/* Reassurance line. Bumped 13px → 15px — was below readable
+            minimum at the new hero scale. */}
         <p
-          className="mt-6 text-[13px] text-white/45"
+          className="mt-7 text-[15px] text-white/55"
           style={{
             fontFamily: "'Frank Ruhl Libre', serif",
             fontStyle: "italic",
@@ -262,7 +272,7 @@ export function AdultsMarketingHero({
                Each spark gets its own --dx/--dy via inline style; this single
                keyframe gives a fast hot flash, a held bright phase as the
                spark moves outward, then a long fading trail. iteration-count:
-               1 (forwards) so the burst plays exactly once when the page
+               1 (forwards) so the burst-plays exactly once when the page
                loads. Total duration 4s — matches the user's spec. */
             @keyframes mio-hero-spark {
               0%   { transform: translate(0, 0) scale(0.3); opacity: 0; }
@@ -287,7 +297,7 @@ export function AdultsMarketingHero({
             .mio-hero-spark {
               animation: mio-hero-spark 4s cubic-bezier(0.18, 0.7, 0.25, 1) 1 forwards;
             }
-
+-
             /* Central pulse flash — the bright halo at the burst origin.
                Pops fast (peak at 6%) then expands + fades over the rest of
                the 4s. Plays once. */
@@ -304,7 +314,7 @@ export function AdultsMarketingHero({
               will-change: transform, opacity;
               filter: blur(2px);
             }
-
+-
             /* Reduced-motion fallback — instead of hiding the burst entirely
                (was opacity: 0 !important), give a brief static fade-in/out
                so the user still gets the visual cue without movement. */
@@ -333,13 +343,13 @@ export function AdultsMarketingHero({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ──────────────-──────────────────────────────────────────────────────────────
 // HeroFireworks — small one-shot firework burst around the headline.
 //
 // UX intent
 // ─────────
 // On page load, ~30 tiny coloured sparks burst outward from the headline's
-// centre, travelling up to 200px before fading to zero. The whole burst lasts
+// centre, travelling up to 200-x before fading to zero. The whole burst lasts
 // 4 seconds and never repeats — it's a punctuation mark, not ambience.
 //
 // Implementation notes
@@ -347,11 +357,16 @@ export function AdultsMarketingHero({
 // - Pure CSS keyframe animation; no framer-motion. Sparks use CSS custom
 //   properties (--dx / --dy) for their target offset so all 30 of them share
 //   one keyframe rule.
-// - Spark positions are deterministic (index-based math, not Math.random())
+// - Spark positions are deterministic (-ndex-based math, not Math.random())
 //   so SSR HTML and hydrated DOM agree — no React mismatch warnings.
 // - Honours `prefers-reduced-motion` (the keyframe rule disables itself).
 // ─────────────────────────────────────────────────────────────────────────────
 
+// HeroFireworks is currently unused — the on-load burst was disabled
+// when the hero copy was redesigned. Keeping the implementation in place
+// (instead of deleting) so we can re-enable it cheaply if the burst comes
+// back. The eslint-disable below tells lint to allow the dead function.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function HeroFireworks() {
   const SPARK_COUNT = 36;
   // Five tints — rose, fuchsia, amber, pink, white — to fit the dark palette.
@@ -415,7 +430,7 @@ function HeroFireworks() {
       // sparks were z-0 and the white-text headline drew on top of them,
       // making the burst near-invisible against its own light.
       className="pointer-events-none absolute left-1/2 top-1/2 z-[2] -translate-x-1/2 -translate-y-1/2"
-    >
+    >-
       {/* Central pulse flash — a large soft radial halo that pops bright at
           burst origin then expands and fades. This makes the firework
           impossible to miss even before individual sparks are noticed. */}
@@ -433,7 +448,7 @@ function HeroFireworks() {
             "radial-gradient(circle, rgba(255,221,228,0.85) 0%, rgba(244,63,94,0.55) 30%, rgba(168,85,247,0.30) 55%, transparent 75%)",
         }}
       />
-
+-
       {/* Individual sparks — fly outward from the same origin. */}
       {sparks.map((s, i) => (
         <span
@@ -462,7 +477,7 @@ function HeroFireworks() {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────────────────
 // PosterCard — tarot/movie-poster aesthetic. NOT phone-shaped.
 //
 // Layout from top → bottom:
@@ -484,12 +499,17 @@ function PosterCard({
   level,
   hint,
   placeholderLabel,
+  imageSrc,
+  imageAlt,
 }: {
   tone: "violet" | "rose";
   Icon: typeof Heart;
   level: string;
   hint: string;
   placeholderLabel: string;
+  /** Optional artwork. When present, replaces the dashed placeholder zone. */
+  imageSrc?: string;
+  imageAlt?: string;
 }) {
   const accent =
     tone === "violet"
@@ -514,10 +534,12 @@ function PosterCard({
 
   return (
     <article
-      className={`group flex h-full flex-col overflow-hidden rounded-[24px] border ${accent.ring} bg-[rgba(8,4,12,0.55)] p-4 backdrop-blur-xl ${accent.glow}`}
+      className={`group flex h-full flex-col overflow-hidden rounded-[24px] border ${accent.ring} bg-[rgba(8,4,12,0.30)] p-3 backdrop-blur-xl ${accent.glow}`}
     >
-      {/* 1. Top rail — tone-coloured hair line + Mioshy mark */}
-      <div className="flex items-center justify-between">
+      {/* TOP ROW — single tight line: Mioshy mark + tone icon. No divider
+          (was eating ~10px of vertical real estate that the artwork
+          needed). */}
+      <div className="flex items-center justify-between px-1 py-0.5">
         <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/85">
           <span
             className={`h-1.5 w-1.5 rounded-full ${accent.dot} shadow-[0_0_8px_rgba(255,255,255,0.5)]`}
@@ -526,65 +548,80 @@ function PosterCard({
         </span>
         <Icon className={`h-3.5 w-3.5 ${accent.iconColor}`} />
       </div>
-      <span
-        aria-hidden
-        className={`mt-2 h-px w-full bg-gradient-to-r ${accent.railFrom} ${accent.railVia} to-transparent`}
-      />
 
-      {/* 2. IMAGE PLACEHOLDER — replace with <Image /> when art lands.
-            The dashed border + icon + caption explicitly tell editors that
-            this slot is meant for real artwork. */}
-      <div className="relative mt-3 flex flex-1 items-center justify-center overflow-hidden rounded-[16px] border border-dashed border-white/20 bg-[rgba(255,255,255,0.025)]">
-        <div className="flex flex-col items-center gap-2 text-white/40">
-          <ImageIcon className="h-7 w-7 stroke-[1.4]" />
+      {/* ARTWORK ZONE — dominates the card. flex-1 + tight outer chrome
+          gives the image roughly 90% of the card's vertical real estate. */}
+      {imageSrc ? (
+        <div className="relative mt-2 flex-1 overflow-hidden rounded-[16px] border border-white/10 bg-[rgba(255,255,255,0.02)]">
+          {/* Image sized to 90% of the frame area (5% inset on every side).
+              Corner ticks live in that thin strip and act as photographic
+              crop marks. */}
+          <Image
+            src={imageSrc}
+            alt={imageAlt ?? placeholderLabel}
+            fill
+            sizes="(max-width: 768px) 90vw, 450px"
+            className="absolute h-[90%] w-[90%] rounded-[10px] object-cover"
+            style={{ inset: "5%" }}
+          />
           <span
-            className="text-[11px] uppercase tracking-[0.22em]"
+            aria-hidden
+            className="pointer-events-none absolute h-[90%] w-[90%] rounded-[10px]"
             style={{
-              fontFamily: "'Frank Ruhl Libre', serif",
-              fontStyle: "italic",
+              inset: "5%",
+              background:
+                "radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.35) 100%)",
             }}
-          >
-            {placeholderLabel}
-          </span>
+          />
+          <CornerTicks />
         </div>
-        {/* corner ticks — subtle frame marks (helps it read as "frame", not "screen") */}
-        <CornerTicks />
+      ) : (
+        <div className="relative mt-2 flex flex-1 items-center justify-center overflow-hidden rounded-[16px] border border-dashed border-white/20 bg-[rgba(255,255,255,0.025)]">
+          <div className="flex flex-col items-center gap-2 text-white/40">
+            <ImageIcon className="h-7 w-7 stroke-[1.4]" />
+            <span
+              className="text-[11px] uppercase tracking-[0.22em]"
+              style={{
+                fontFamily: "'Frank Ruhl Libre', serif",
+                fontStyle: "italic",
+              }}
+            >
+              {placeholderLabel}
+            </span>
+          </div>
+          <CornerTicks />
+        </div>
+      )}
+
+      {/* BOTTOM ROW — level + intensity dots on a single line, hint as a
+          micro-caption beneath. The hairline divider that used to sit
+          here was removed; the artwork edge already provides the visual
+          break. */}
+      <div className="mt-2 flex items-baseline justify-between px-1">
+        <h3
+          className="text-[22px] leading-[1] text-white"
+          style={{
+            fontFamily: "'Frank Ruhl Libre', serif",
+            fontStyle: "italic",
+            fontWeight: 500,
+          }}
+        >
+          {level}
+        </h3>
+        <div className="flex items-center gap-1">
+          {[1, 2, 3].map((n) => (
+            <span
+              key={n}
+              className={`h-1 w-1 rounded-full ${
+                n <= accent.intensity ? accent.dot : "bg-white/15"
+              }`}
+            />
+          ))}
+        </div>
       </div>
-
-      {/* 3. Hairline divider */}
-      <span
-        aria-hidden
-        className="mt-3 h-px w-full bg-gradient-to-r from-transparent via-white/15 to-transparent"
-      />
-
-      {/* 4. Italic-serif level word */}
-      <h3
-        className="mt-2 text-[26px] leading-[1] text-white"
-        style={{
-          fontFamily: "'Frank Ruhl Libre', serif",
-          fontStyle: "italic",
-          fontWeight: 500,
-        }}
-      >
-        {level}
-      </h3>
-
-      {/* 5. Hint */}
-      <p className="mt-1 line-clamp-2 text-[12px] leading-snug text-white/55">
+      <p className="mt-0.5 line-clamp-1 px-1 text-[11px] leading-snug text-white/55">
         {hint}
       </p>
-
-      {/* 6. Intensity indicator — 3 dots, filled per tone */}
-      <div className="mt-3 flex items-center gap-1.5">
-        {[1, 2, 3].map((n) => (
-          <span
-            key={n}
-            className={`h-1 w-1 rounded-full ${
-              n <= accent.intensity ? accent.dot : "bg-white/15"
-            }`}
-          />
-        ))}
-      </div>
     </article>
   );
 }
@@ -610,7 +647,7 @@ function CornerTicks() {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────────────────
 // MobilePosterCard — same poster aesthetic, smaller, simpler. Replaces the
 // 3-up mobile row with a 2-up row for parity with desktop.
 // ─────────────────────────────────────────────────────────────────────────────

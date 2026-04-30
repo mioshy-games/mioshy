@@ -3,7 +3,7 @@
 // ============================================================
 // Server actions for Journey Content admin CRUD.
 //
-// Migration 035 installs SELECT-only RLS policies intentionally — writes
+// Migration 035 installs SELECT-only RLS policies intentionally - writes
 // MUST route through the admin/service-role client (see
 // feedback: supabase-ssr-rls-pattern memory). Reads stay on the session
 // client so we still enforce admin identity via requireAdmin().
@@ -144,15 +144,15 @@ export async function saveJourneyCategory(
   categoryId: string | null,
   raw: unknown,
 ): Promise<Result<string>> {
+  console.log("[saveJourneyCategory] called", { categoryId, raw });
   const parsed = journeyCategorySchema.safeParse(raw);
   if (!parsed.success) {
-    return {
-      ok: false,
-      error: parsed.error.flatten().fieldErrors as Record<
-        string,
-        string[] | undefined
-      >,
-    };
+    const errors = parsed.error.flatten().fieldErrors as Record<
+      string,
+      string[] | undefined
+    >;
+    console.warn("[saveJourneyCategory] zod validation failed", errors);
+    return { ok: false, error: errors };
   }
   const v: JourneyCategoryFormValues = parsed.data;
   const supabase = await adminDb();
@@ -174,7 +174,10 @@ export async function saveJourneyCategory(
       .from("journey_categories")
       .update(row)
       .eq("id", categoryId);
-    if (error) return { ok: false, error: { _root: [error.message] } };
+    if (error) {
+      console.error("[saveJourneyCategory] update failed", error);
+      return { ok: false, error: { _root: [error.message] } };
+    }
   } else {
     const { data, error } = await supabase
       .from("journey_categories")
@@ -182,6 +185,7 @@ export async function saveJourneyCategory(
       .select("id")
       .single();
     if (error || !data) {
+      console.error("[saveJourneyCategory] insert failed", error);
       return {
         ok: false,
         error: { _root: [error?.message ?? "Insert failed"] },
@@ -190,6 +194,7 @@ export async function saveJourneyCategory(
     savedId = data.id as string;
   }
 
+  console.log("[saveJourneyCategory] saved OK", { id: savedId });
   revalidateJourney();
   return { ok: true, id: savedId! };
 }
@@ -233,15 +238,15 @@ export async function saveJourneyItem(
   itemId: string | null,
   raw: unknown,
 ): Promise<Result<string>> {
+  console.log("[saveJourneyItem] called", { itemId, raw });
   const parsed = journeyItemSchema.safeParse(raw);
   if (!parsed.success) {
-    return {
-      ok: false,
-      error: parsed.error.flatten().fieldErrors as Record<
-        string,
-        string[] | undefined
-      >,
-    };
+    const errors = parsed.error.flatten().fieldErrors as Record<
+      string,
+      string[] | undefined
+    >;
+    console.warn("[saveJourneyItem] zod validation failed", errors);
+    return { ok: false, error: errors };
   }
   const v: JourneyItemFormValues = parsed.data;
   const supabase = await adminDb();
@@ -262,6 +267,7 @@ export async function saveJourneyItem(
     sort_order: v.sort_order,
     default_offset_days: v.default_offset_days,
     is_active: v.is_active,
+    audience: v.audience,
   };
 
   let savedId = itemId;
@@ -270,7 +276,10 @@ export async function saveJourneyItem(
       .from("journey_items")
       .update(row)
       .eq("id", itemId);
-    if (error) return { ok: false, error: { _root: [error.message] } };
+    if (error) {
+      console.error("[saveJourneyItem] update failed", error);
+      return { ok: false, error: { _root: [error.message] } };
+    }
   } else {
     const { data, error } = await supabase
       .from("journey_items")
@@ -278,6 +287,7 @@ export async function saveJourneyItem(
       .select("id")
       .single();
     if (error || !data) {
+      console.error("[saveJourneyItem] insert failed", error);
       return {
         ok: false,
         error: { _root: [error?.message ?? "Insert failed"] },
@@ -286,6 +296,7 @@ export async function saveJourneyItem(
     savedId = data.id as string;
   }
 
+  console.log("[saveJourneyItem] saved OK", { id: savedId });
   revalidateJourney();
   return { ok: true, id: savedId! };
 }
@@ -313,10 +324,11 @@ export async function createAndRedirectNewItem(categoryId: string) {
       slug,
       title_he: "פריט חדש",
       title_en: "New Item",
-      body_he: "",
+      body_he: "טיוטה — מלאו את התוכן ושמרו",
       sort_order: 0,
       default_offset_days: 0,
       is_active: false,
+      audience: "both",
     })
     .select("id")
     .single();

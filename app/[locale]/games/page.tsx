@@ -29,15 +29,15 @@ import { Counter } from "@/components/marketing/v2/Counter";
 import { RevealOnScroll } from "@/components/marketing/v2/RevealOnScroll";
 
 /**
- * /games — the games category landing page.
+ * /games - the games category landing page.
  *
  * Sections (top → bottom):
  *  1. Hero (dark, animated aurora)
  *  2. Why Mioshy (light bg, big cards)
- *  3. Benefits — "מה זה עושה לכם" (dark editorial spread, 4 emotion words)
+ *  3. Benefits - "מה זה עושה לכם" (dark editorial spread, 4 emotion words)
  *  4. Press mentions (light bg)
- *  5. Catalogue — all active wheel games + virtual snakes card (light bg)
- *  6. Personas — "למי זה מתאים" (light bg, 3 magazine chapters)
+ *  5. Catalogue - all active wheel games + virtual snakes card (light bg)
+ *  6. Personas - "למי זה מתאים" (light bg, 3 magazine chapters)
  */
 
 function siteUrl() {
@@ -55,7 +55,7 @@ export async function generateMetadata({
   const { locale } = params;
   const base = siteUrl();
   const t = await getTranslations({ locale, namespace: "gamesHub" });
-  const title = `Mioshy — ${t("title")}`;
+  const title = `Mioshy - ${t("title")}`;
   const description = t("subtitle");
   const canonical = `${base}/${locale}/games`;
   return {
@@ -115,7 +115,7 @@ export default async function GamesHubPage({
     .order("created_at", { ascending: false });
   const games = (data ?? []) as GameRow[];
 
-  // ── Demo wheel data — fetch the live wheel_configs row of the
+  // ── Demo wheel data - fetch the live wheel_configs row of the
   //    "honesty-or-challenge" game so the hero's demo wheel uses
   //    the EXACT same slices/colours as the real production game.
   //    Falls back to wine-palette defaults inside LiveDemoHero if
@@ -144,7 +144,7 @@ export default async function GamesHubPage({
     }
   }
 
-  // Admin check — show image-edit overlay only to admins.
+  // Admin check - show image-edit overlay only to admins.
   const adminSession = await getAdminSession().catch(() => null);
   const isAdmin = !!adminSession;
 
@@ -192,7 +192,7 @@ export default async function GamesHubPage({
     p: t(`whyItems.${i}.p`),
   }));
 
-  // V2 unified palette — same card treatment for all 4, only icons differentiated.
+  // V2 unified palette - same card treatment for all 4, only icons differentiated.
   // No more rainbow. Warm cream bg + accent top-bar + warm-toned icon backgrounds.
   const whyMeta = [
     {
@@ -224,14 +224,14 @@ export default async function GamesHubPage({
     { icon: "infinity", label: isHe ? "זוגות מכל העולם" : "Couples worldwide" },
   ];
 
-  // V2 wine palette — three subtle warm gradients for tile hover glows
+  // V2 wine palette - three subtle warm gradients for tile hover glows
   const accents = [
     "from-[#B83C4D]/30 via-[#8B2638]/20 to-[#4A1721]/20",
     "from-[#8B2638]/30 via-[#4A1721]/20 to-[#3D1F3D]/20",
     "from-[#4A1721]/30 via-[#3D1F3D]/20 to-[#1E0F1E]/20",
   ];
 
-  // Editorial benefits — light cream spread, 3 focused emotion words.
+  // Editorial benefits - light cream spread, 3 focused emotion words.
   // Roman numerals + serif italic. Was 5; trimmed to תשוקה / חברות / כיף.
   const benefits = [
     {
@@ -245,8 +245,8 @@ export default async function GamesHubPage({
       numeral: "II",
       title: isHe ? "חברות" : "Friendship",
       body: isHe
-        ? "תגלו על בני הזוג שלכם דברים שלא ידעתם — ועל החברים, דברים שלא חשבתם לשאול."
-        : "Discover things about your partner — and your friends — you'd never have thought to ask.",
+        ? "תגלו על בני הזוג שלכם דברים שלא ידעתם - ועל החברים, דברים שלא חשבתם לשאול."
+        : "Discover things about your partner - and your friends - you'd never have thought to ask.",
     },
     {
       numeral: "III",
@@ -257,7 +257,7 @@ export default async function GamesHubPage({
     },
   ];
 
-  // Personas — magazine chapters on light. Three couple archetypes; tag = the
+  // Personas - magazine chapters on light. Three couple archetypes; tag = the
   // *promise* this game-line gives that persona (curiosity / reminder / surprise).
   const personas = [
     {
@@ -265,8 +265,8 @@ export default async function GamesHubPage({
       title: isHe ? "הזוגות החדשים" : "The new couples",
       tag: isHe ? "סקרנות" : "Curiosity",
       body: isHe
-        ? "אתם רוצים לדעת הכל — אבל \"מה הכי הפחיד אותך כילד?\" לא נשאלת בקפה השני. אנחנו שואלים את זה בשבילכם, באופן שצוחק על הרצינות."
-        : "You want to know everything — but \"what scared you most as a kid?\" doesn't fly on date two. We ask it for you — in a way that laughs at the seriousness of it.",
+        ? "אתם רוצים לדעת הכל - אבל \"מה הכי הפחיד אותך כילד?\" לא נשאלת בקפה השני. אנחנו שואלים את זה בשבילכם, באופן שצוחק על הרצינות."
+        : "You want to know everything - but \"what scared you most as a kid?\" doesn't fly on date two. We ask it for you - in a way that laughs at the seriousness of it.",
       quote: isHe
         ? "להכיר מישהו לעומק לא דורש שנים. רק את השאלה הנכונה."
         : "Knowing someone deeply doesn't take years. Just the right question.",
@@ -279,19 +279,19 @@ export default async function GamesHubPage({
         ? "אתם לא איבדתם את הזוגיות. רק את הזמן לזכור אותה. מיאושי דוחס בחצי שעה את מה שמסעדה רומנטית עושה בשלוש."
         : "You haven't lost the relationship. Only the time to remember it. Mioshy compresses into thirty minutes what a romantic dinner does in three hours.",
       quote: isHe
-        ? "חצי שעה במקום הנכון — זה לא מעט. זה הכל."
-        : "Thirty minutes in the right place — isn't a little. It's everything.",
+        ? "חצי שעה במקום הנכון - זה לא מעט. זה הכל."
+        : "Thirty minutes in the right place - isn't a little. It's everything.",
     },
     {
       num: "03",
       title: isHe ? "הזוגות הוותיקים" : "The veterans",
       tag: isHe ? "הפתעה" : "Surprise",
       body: isHe
-        ? "אתם מסיימים אחד לשני את המשפטים. עכשיו רק צריך משפטים חדשים להתחיל. אנחנו לא נספר לכם משהו שלא ידעתם — רק נשאל את השאלה שלא חשבתם לשאול."
-        : "You finish each other's sentences. Now you just need new sentences to start. We won't tell you something you didn't know — we'll just ask the question you didn't think to ask.",
+        ? "אתם מסיימים אחד לשני את המשפטים. עכשיו רק צריך משפטים חדשים להתחיל. אנחנו לא נספר לכם משהו שלא ידעתם - רק נשאל את השאלה שלא חשבתם לשאול."
+        : "You finish each other's sentences. Now you just need new sentences to start. We won't tell you something you didn't know - we'll just ask the question you didn't think to ask.",
       quote: isHe
-        ? "מי שחושב שהוא יודע הכל — שואל את השאלות הלא נכונות."
-        : "Anyone who thinks they know it all — is asking the wrong questions.",
+        ? "מי שחושב שהוא יודע הכל - שואל את השאלות הלא נכונות."
+        : "Anyone who thinks they know it all - is asking the wrong questions.",
     },
   ];
 
@@ -300,7 +300,7 @@ export default async function GamesHubPage({
       className="relative min-h-[100dvh] overflow-hidden text-white"
       dir={isHe ? "rtl" : "ltr"}
     >
-      {/* ── Dark hero backdrop (covers only the first viewport) — V2 wine palette ── */}
+      {/* ── Dark hero backdrop (covers only the first viewport) - V2 wine palette ── */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 -z-20 h-[110vh] bg-[linear-gradient(180deg,#0E0810_0%,#1A0B14_55%,#1E0F1E_100%)]"
@@ -324,7 +324,7 @@ export default async function GamesHubPage({
       <main className="relative">
 
         {/* ════════════════════════════════════════════════════════════
-            1. HERO — dark, animated
+            1. HERO - dark, animated
         ════════════════════════════════════════════════════════════ */}
         <section className="relative">
           <nav
@@ -352,8 +352,8 @@ export default async function GamesHubPage({
             sampleQuestionType={isHe ? "אמת" : "Truth"}
             sampleQuestion={
               isHe
-                ? "מה הרגע איתי שלא יוצא לך מהראש — ולמה דווקא הוא?"
-                : "What moment with me can't you stop replaying — and why that one?"
+                ? "מה הרגע איתי שלא יוצא לך מהראש - ולמה דווקא הוא?"
+                : "What moment with me can't you stop replaying - and why that one?"
             }
             slices={demoSlices}
             wheelConfig={demoWheel}
@@ -361,12 +361,12 @@ export default async function GamesHubPage({
             gameSlug={demoGame?.slug ?? "honesty-or-challenge"}
             gameBgValue={demoGame?.bg_value ?? null}
           />
-          {/* /LazyLiveDemoHero — the underlying LiveDemoHero is loaded via
+          {/* /LazyLiveDemoHero - the underlying LiveDemoHero is loaded via
               next/dynamic with ssr:false; see LazyLiveDemoHero.tsx. */}
         </section>
 
         {/* ════════════════════════════════════════════════════════════
-            LIGHT SECTIONS — #why + #press + #catalogue
+            LIGHT SECTIONS - #why + #press + #catalogue
         ════════════════════════════════════════════════════════════ */}
         <div className="bg-[#FAF6F7] pb-[60px] text-slate-900">
 
@@ -374,7 +374,7 @@ export default async function GamesHubPage({
           <div className="pointer-events-none -mt-16 h-16 bg-[linear-gradient(to_bottom,transparent,#FAF6F7)]" />
 
           {/* ════════════════════════════════════════════════════════════
-              2. WHY MIOSHY — light bg, big cards with stat chips
+              2. WHY MIOSHY - light bg, big cards with stat chips
           ════════════════════════════════════════════════════════════ */}
           <section id="why" className="relative bg-[#FAF6F7] px-4 pb-20 pt-16">
             <div className="mx-auto max-w-6xl">
@@ -388,12 +388,12 @@ export default async function GamesHubPage({
                 </h2>
                 <p className="mx-auto mt-5 max-w-xl text-[19px] leading-[1.6] text-[#2A1B25]">
                   {isHe
-                    ? "עזרנו למאות זוגות לשפר את הקשר שלהם — בדרך הכי כיפית שיש"
-                    : "We've helped hundreds of couples improve their connection — in the most fun way possible"}
+                    ? "עזרנו למאות זוגות לשפר את הקשר שלהם - בדרך הכי כיפית שיש"
+                    : "We've helped hundreds of couples improve their connection - in the most fun way possible"}
                 </p>
               </div>
 
-              {/* Unified card design — V2 cream bg, accent top-bar on hover only.
+              {/* Unified card design - V2 cream bg, accent top-bar on hover only.
                   All 4 cards are visually identical except for the icon color. */}
               <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
                 {whyItems.map((it, i) => {
@@ -403,7 +403,7 @@ export default async function GamesHubPage({
                       key={i}
                       className="group relative flex flex-col overflow-hidden rounded-3xl border border-[#EAE0E3] bg-[#FBF5F2] p-7 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-transparent hover:shadow-md"
                     >
-                      {/* Accent top-bar — same color for all cards (V2 brand) */}
+                      {/* Accent top-bar - same color for all cards (V2 brand) */}
                       <div
                         aria-hidden
                         className="absolute inset-x-0 top-0 h-[3px] origin-right scale-x-0 rounded-t-3xl bg-[#B83C4D] transition-transform duration-400 group-hover:scale-x-100"
@@ -414,7 +414,7 @@ export default async function GamesHubPage({
                       >
                         <Icon className="h-7 w-7" />
                       </div>
-                      {/* Stat chip — neutral V2 style */}
+                      {/* Stat chip - neutral V2 style */}
                       <span className="mt-4 inline-block self-start rounded-full border border-[#EAE0E3] bg-[#FBE9EC] px-3 py-1 text-[12px] font-semibold uppercase tracking-[0.05em] text-[#8B2638]">
                         {stat}
                       </span>
@@ -429,7 +429,7 @@ export default async function GamesHubPage({
                 })}
               </div>
 
-              {/* Social proof — editorial pull-quote.
+              {/* Social proof - editorial pull-quote.
                   The numbers ARE the story: each one set in serif italic accent
                   inside a flowing magazine-style sentence, instead of a sterile
                   data row. Decorative em-dashes flank a small italic kicker line. */}
@@ -439,7 +439,7 @@ export default async function GamesHubPage({
                   {isHe ? "המספרים" : "By the numbers"}
                 </span>
 
-                {/* Main pull-quote — clean line breaks, no awkward wrapping. */}
+                {/* Main pull-quote - clean line breaks, no awkward wrapping. */}
                 <p
                   className="mt-7 text-[26px] leading-[1.45] text-[#170E14] sm:text-[30px] lg:text-[34px]"
                   style={{
@@ -488,7 +488,7 @@ export default async function GamesHubPage({
                   )}
                 </p>
 
-                {/* Trial line — its own line, black italic, smaller weight.
+                {/* Trial line - its own line, black italic, smaller weight.
                     Honest, qualified "free" framing: explicit no-credit-card
                     promise so the 6-spin paywall later doesn't feel like a
                     trap. */}
@@ -501,8 +501,8 @@ export default async function GamesHubPage({
                   }}
                 >
                   {isHe
-                    ? "התחילו חינם — בלי כרטיס אשראי."
-                    : "Start free — no credit card required."}
+                    ? "התחילו חינם - בלי כרטיס אשראי."
+                    : "Start free - no credit card required."}
                 </p>
 
                 {/* Italic kicker line, flanked by decorative hairlines */}
@@ -521,7 +521,7 @@ export default async function GamesHubPage({
                   >
                     {isHe
                       ? "בקליק אחד מתחילים"
-                      : "one click — and you're in"}
+                      : "one click - and you're in"}
                   </p>
                   <span
                     aria-hidden
@@ -529,7 +529,7 @@ export default async function GamesHubPage({
                   />
                 </div>
 
-                {/* CTA — delivers on the kicker's promise: one click → game */}
+                {/* CTA - delivers on the kicker's promise: one click → game */}
                 <div className="mt-7">
                   <Link
                     href={
@@ -556,7 +556,7 @@ export default async function GamesHubPage({
           </section>
 
           {/* ════════════════════════════════════════════════════════════
-              3. PRESS — V2 MediaSlider on the plain cream section bg.
+              3. PRESS - V2 MediaSlider on the plain cream section bg.
               A single blurred peach blob enters from the left and drifts
               gently L↔R behind the content (matches the blob aesthetic
               used elsewhere on the site).
@@ -565,7 +565,7 @@ export default async function GamesHubPage({
             id="press"
             className="relative overflow-hidden bg-[#FAF6F7] px-4 py-14 sm:py-20"
           >
-            {/* Drifting peach blob — heavy blur, enters from screen-left */}
+            {/* Drifting peach blob - heavy blur, enters from screen-left */}
             <div
               aria-hidden
               className="pointer-events-none absolute inset-0 -z-0 overflow-hidden"
@@ -590,7 +590,7 @@ export default async function GamesHubPage({
           </section>
 
           {/* ════════════════════════════════════════════════════════════
-              4. CATALOGUE — all wheel games + snakes virtual card
+              4. CATALOGUE - all wheel games + snakes virtual card
           ════════════════════════════════════════════════════════════ */}
           <section id="catalogue" className="relative bg-white px-4 pb-24 pt-14">
             {/* Subtle V2-tinted gradient mesh */}
@@ -623,7 +623,7 @@ export default async function GamesHubPage({
               </div>
 
               {games.length === 0 && (
-                <p className="mt-10 text-[#7A6A75]">—</p>
+                <p className="mt-10 text-[#7A6A75]">-</p>
               )}
 
               <ul className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -693,7 +693,7 @@ export default async function GamesHubPage({
                   );
                 })}
 
-                {/* ── Virtual snakes & ladders card — V2 wine palette ── */}
+                {/* ── Virtual snakes & ladders card - V2 wine palette ── */}
                 <li className="group relative">
                   <div
                     aria-hidden
@@ -703,7 +703,7 @@ export default async function GamesHubPage({
                     href="/game"
                     className="relative flex h-full flex-col overflow-hidden rounded-3xl border border-[#EAE0E3] bg-white shadow-md shadow-[#EAE0E3]/40 transition duration-300 hover:-translate-y-1 hover:border-[#E9C4CA] hover:shadow-[#FBE9EC]/60"
                   >
-                    {/* Thumbnail — V2 warm gradient */}
+                    {/* Thumbnail - V2 warm gradient */}
                     <div className="relative aspect-[16/10] w-full overflow-hidden bg-gradient-to-br from-[#B83C4D]/20 via-[#8B2638]/15 to-[#3D1F3D]/20">
                       <div className="absolute inset-0 flex items-center justify-center gap-3">
                         <span className="text-5xl drop-shadow-md">🐍</span>
@@ -720,7 +720,7 @@ export default async function GamesHubPage({
                     </div>
 
                     <div className="flex flex-1 flex-col p-6">
-                      {/* Multi-player badge — V2 accent-bg */}
+                      {/* Multi-player badge - V2 accent-bg */}
                       <span className="mb-3 inline-flex items-center gap-1.5 self-start rounded-full border border-[#E9C4CA] bg-[#FBE9EC] px-2.5 py-0.5 text-xs font-semibold text-[#8B2638]">
                         <Users className="h-3 w-3" />
                         {isHe ? "עד 8 שחקנים" : "Up to 8 players"}
@@ -730,8 +730,8 @@ export default async function GamesHubPage({
                       </h3>
                       <p className="mt-2 line-clamp-3 text-[18px] leading-[1.5] text-[#4A3A45]">
                         {isHe
-                          ? "לוח קלאסי עם שאלות ואתגרים זוגיים — שחקו על מכשיר אחד או על שני מכשירים שונים"
-                          : "Classic board game with couples questions & challenges — play on one device or remotely"}
+                          ? "לוח קלאסי עם שאלות ואתגרים זוגיים - שחקו על מכשיר אחד או על שני מכשירים שונים"
+                          : "Classic board game with couples questions & challenges - play on one device or remotely"}
                       </p>
                       <span className="mt-auto inline-flex items-center gap-2 pt-5 text-[18px] font-semibold text-[#B83C4D] transition group-hover:text-[#8B2638]">
                         {isHe ? "שחקו עכשיו" : "Play now"}
@@ -748,7 +748,7 @@ export default async function GamesHubPage({
             </div>
           </section>
           {/* ════════════════════════════════════════════════════════════
-              5. PERSONAS — "למי זה מתאים" (magazine chapters on cream)
+              5. PERSONAS - "למי זה מתאים" (magazine chapters on cream)
                   3 cards w/ giant chapter number, persona title, italic
                   tag, body, and italic quote at the bottom.
           ════════════════════════════════════════════════════════════ */}
@@ -869,7 +869,7 @@ export default async function GamesHubPage({
                         {p.body}
                       </p>
 
-                      {/* Italic quote — bottom */}
+                      {/* Italic quote - bottom */}
                       <div className="relative mt-auto pt-8">
                         <div className="mb-4 h-px w-12 bg-[#B83C4D]/30" />
                         <p
@@ -892,7 +892,7 @@ export default async function GamesHubPage({
             </div>
           </section>
           {/* ════════════════════════════════════════════════════════════
-              BENEFITS — "מה זה עושה לכם" (moved to bottom, above footer)
+              BENEFITS - "מה זה עושה לכם" (moved to bottom, above footer)
                    Editorial spread: serif-italic emotion words, hairline rows.
           ════════════════════════════════════════════════════════════ */}
           <section
@@ -900,7 +900,7 @@ export default async function GamesHubPage({
             className="relative mx-4 mt-6 overflow-hidden bg-white px-6 py-[60px] sm:mx-8 sm:px-10 lg:mx-12 lg:px-14"
           >
             <div className="relative mx-auto max-w-4xl">
-              {/* Header — right-aligned (RTL natural). Single reading axis, no
+              {/* Header - right-aligned (RTL natural). Single reading axis, no
                   center→right awkwardness. */}
               <RevealOnScroll variant="scale-up">
                 <div className="text-start">
@@ -940,12 +940,12 @@ export default async function GamesHubPage({
                   <p className="mt-6 max-w-2xl text-[19px] leading-[1.65] text-[#4A3A45]">
                     {isHe
                       ? "לא טיפול. לא קורס. לא 'כלים לזוגיות'. משחק. אבל אחד שעובד."
-                      : "Not therapy. Not a course. Not 'tools for relationships.' A game — but one that works."}
+                      : "Not therapy. Not a course. Not 'tools for relationships.' A game - but one that works."}
                   </p>
                 </div>
               </RevealOnScroll>
 
-              {/* Editorial benefit rows — 2-column structure */}
+              {/* Editorial benefit rows - 2-column structure */}
               <ul className="mt-[60px] space-y-2">
                 {benefits.map((b, i) => (
                   <RevealOnScroll
@@ -954,7 +954,7 @@ export default async function GamesHubPage({
                     delay={0.1 + i * 0.1}
                   >
                     <li className="group grid gap-y-4 border-t border-[#EAE0E3] pt-8 transition-colors duration-300 hover:border-[#B83C4D]/40 lg:grid-cols-[240px_1fr] lg:items-baseline lg:gap-x-[45px] lg:pt-9">
-                      {/* Title cluster — numeral + word inline, baseline-aligned */}
+                      {/* Title cluster - numeral + word inline, baseline-aligned */}
                       <div className="flex items-baseline gap-3">
                         <span
                           className="text-[22px] tracking-[0.08em] text-[#B83C4D] transition-colors duration-300 group-hover:text-[#8B2638] sm:text-[24px]"
@@ -992,7 +992,7 @@ export default async function GamesHubPage({
                 />
               </ul>
 
-              {/* Closing italic — kept right-aligned to match the new axis */}
+              {/* Closing italic - kept right-aligned to match the new axis */}
               <RevealOnScroll variant="fade" delay={0.4}>
                 <p
                   className="mt-10 max-w-xl text-[18px] text-[#7A6A75] lg:mt-12"
@@ -1002,8 +1002,8 @@ export default async function GamesHubPage({
                   }}
                 >
                   {isHe
-                    ? "— לפעמים שינוי לא דורש מהפכה. רק התחלה."
-                    : "— sometimes change doesn't need a revolution. Just a start."}
+                    ? "- לפעמים שינוי לא דורש מהפכה. רק התחלה."
+                    : "- sometimes change doesn't need a revolution. Just a start."}
                 </p>
               </RevealOnScroll>
             </div>

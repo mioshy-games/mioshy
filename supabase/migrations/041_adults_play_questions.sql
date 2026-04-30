@@ -6,11 +6,11 @@
 -- Use case: physical/hybrid games where, when something happens at the
 -- table (e.g. a player draws a heart card), the rules say "answer one of
 -- these questions". The post-purchase /adults/[slug]/play page renders
--- this list as a numbered reference — display-only, no interaction.
+-- this list as a numbered reference - display-only, no interaction.
 --
 -- Optional per game: most games WON'T set these fields. The play page
 -- conditionally renders the section only when the locale's questions
--- array has at least one item — empty arrays = section hidden.
+-- array has at least one item - empty arrays = section hidden.
 --
 -- Schema mirrors the existing benefits_*/target_audience_* string-array
 -- pattern so the admin form (StringListColumn) and Zod (.array(string))

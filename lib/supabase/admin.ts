@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 
 /**
- * Service-role Supabase client — ONLY use in server-side code (Server Actions,
+ * Service-role Supabase client - ONLY use in server-side code (Server Actions,
  * Route Handlers, Server Components).  Never expose to the browser.
  *
  * Requires SUPABASE_SERVICE_ROLE_KEY in env (not the anon key).

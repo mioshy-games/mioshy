@@ -3,7 +3,7 @@ import { ParallaxImage } from "./ParallaxImage";
 import { RevealOnScroll } from "./RevealOnScroll";
 
 /**
- * Founder — Itzik Berlev section. Two-column layout with photo + floating
+ * Founder - Itzik Berlev section. Two-column layout with photo + floating
  * badge on the left, full bio + CTAs on the right.
  */
 export function Founder() {
@@ -14,7 +14,7 @@ export function Founder() {
           <div className="founder-image">
             <ParallaxImage
               src="/images/itzik-barlev.webp"
-              alt="איציק ברלב — מייסד מיאושי"
+              alt="איציק ברלב - מייסד מיאושי"
               width={600}
               height={750}
               className="founder-img"
@@ -37,8 +37,8 @@ export function Founder() {
               <em>בעזרת משחק.</em>
             </h2>
             <p className="lead">
-              המומחה לזוגיות שעומד מאחורי מיאושי — והמלווה שלכם בכל צעד. במשך שנים, איציק שינה את
-              עולם הזוגיות עבור אלפי זוגות בישראל ובעולם — דרך משחקים, תקשורת אינטימית, ופשוט עוד דרך
+              המומחה לזוגיות שעומד מאחורי מיאושי - והמלווה שלכם בכל צעד. במשך שנים, איציק שינה את
+              עולם הזוגיות עבור אלפי זוגות בישראל ובעולם - דרך משחקים, תקשורת אינטימית, ופשוט עוד דרך
               לדבר. החזון שלו אחד וברור: <strong>לשבור את השגרה. להחזיר את הקרבה.</strong>
             </p>
 
@@ -57,7 +57,7 @@ export function Founder() {
               </div>
             </div>
 
-            {/* Single CTA — was a primary + ghost pair, but the ghost was
+            {/* Single CTA - was a primary + ghost pair, but the ghost was
                 "המומחים שלנו" which over-promised: today the entire
                 methodology is Itzik's. Adding a fake-team affordance would
                 erode trust the moment a visitor clicked through. We can

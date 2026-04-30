@@ -14,7 +14,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const isHe = params.locale === "he";
   return {
-    title: `Mioshy — ${isHe ? "הזמנה לחלל הזוגי" : "Couple invitation"}`,
+    title: `Mioshy - ${isHe ? "הזמנה לחלל הזוגי" : "Couple invitation"}`,
     description: isHe
       ? "הוזמנת להצטרף לחלל הזוגי במיאושי."
       : "You've been invited to join a couple space on Mioshy.",
@@ -30,10 +30,17 @@ export default async function InviteClaimPage({
   const { locale, token } = params;
   const isHe = locale === "he";
 
+  console.log("[invite:VIEW] page hit", {
+    locale,
+    token_length: token?.length,
+    token_preview: token?.slice(0, 8) + "…",
+  });
+
   const display = await getInvitationDisplay(token);
 
   // ── Token invalid / missing ─────────────────────────────────────
   if (!display) {
+    console.warn("[invite:NOT_FOUND] token has no row in couple_invitations");
     return (
       <InvalidInvitation
         isHe={isHe}
@@ -44,9 +51,17 @@ export default async function InviteClaimPage({
   }
 
   const { invitation, inviter_full_name } = display;
+  console.log("[invite:VIEW] invitation loaded", {
+    invitation_id: invitation.id,
+    couple_id: invitation.couple_id,
+    status: invitation.status,
+    expires_at: invitation.expires_at,
+    inviter_name: inviter_full_name,
+    invitee_email: invitation.invitee_email,
+  });
 
   if (invitation.status === "accepted") {
-    // Already accepted — if this is the same user logged in, send to library
+    // Already accepted - if this is the same user logged in, send to library
     const supabase = await createServerSupabaseClient();
     const {
       data: { user },
@@ -72,7 +87,7 @@ export default async function InviteClaimPage({
     return <InvalidInvitation isHe={isHe} reason="expired" locale={locale} />;
   }
 
-  // ── Token valid & pending — show claim flow ─────────────────────
+  // ── Token valid & pending - show claim flow ─────────────────────
   const supabase = await createServerSupabaseClient();
   const {
     data: { user },
@@ -113,8 +128,8 @@ export default async function InviteClaimPage({
           </h1>
           <p className="mt-3 text-white/80">
             {isHe
-              ? "הוזמנת להצטרף לחלל הזוגי במיאושי — כל המשחקים שנרכשו כבר מחכים לשניכם שם."
-              : "You've been invited to join a couple space on Mioshy — every game you've both bought is already waiting inside."}
+              ? "הוזמנת להצטרף לחלל הזוגי במיאושי - כל המשחקים שנרכשו כבר מחכים לשניכם שם."
+              : "You've been invited to join a couple space on Mioshy - every game you've both bought is already waiting inside."}
           </p>
         </div>
 

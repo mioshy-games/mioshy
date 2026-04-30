@@ -83,7 +83,7 @@ export function buildSchedulePlan(
 
 /**
  * Replace {{var}} placeholders. Unknown vars render as empty string.
- * No Turing-complete logic — that's deliberate; admins should not ship code.
+ * No Turing-complete logic - that's deliberate; admins should not ship code.
  */
 export function renderTemplate(
   body: string,
@@ -142,7 +142,7 @@ export interface SendResult {
 /**
  * Provider adapter stub.
  * Wire these to SendGrid / Mailgun / Twilio / WhatsApp Cloud API via env vars.
- * Keep this thin — all business logic lives in the scheduler.
+ * Keep this thin - all business logic lives in the scheduler.
  */
 export async function sendViaProvider(req: SendRequest): Promise<SendResult> {
   // Email path: SENDGRID_API_KEY / MAILGUN_API_KEY
@@ -169,7 +169,7 @@ export async function sendViaProvider(req: SendRequest): Promise<SendResult> {
 }
 
 // ---------------------------------------------------------------------------
-// Week picker — used by admin UI to show what's next
+// Week picker - used by admin UI to show what's next
 // ---------------------------------------------------------------------------
 
 export function weekOfProgram(startedAt: Date, now: Date = new Date()): number {

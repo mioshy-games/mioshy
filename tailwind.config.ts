@@ -10,11 +10,11 @@ const config: Config = {
   theme: {
     extend: {
       fontSize: {
-        // ── Typography scale — minimum 16 px (1 rem) for all body-text classes ──
-        // text-xs  → 14 px (0.875 rem) — used only for ornamental/badge labels
-        // text-sm  → 16 px (1 rem)     — smallest permitted body/UI text
-        // text-base → 18 px (1.125 rem) — comfortable reading size
-        // text-lg  → 20 px (1.25 rem)  — lead / subheading
+        // ── Typography scale - minimum 16 px (1 rem) for all body-text classes ──
+        // text-xs  → 14 px (0.875 rem) - used only for ornamental/badge labels
+        // text-sm  → 16 px (1 rem)     - smallest permitted body/UI text
+        // text-base → 18 px (1.125 rem) - comfortable reading size
+        // text-lg  → 20 px (1.25 rem)  - lead / subheading
         xs:   ["0.875rem",  { lineHeight: "1.4" }],  // 14 px
         sm:   ["1rem",      { lineHeight: "1.5" }],  // 16 px
         base: ["1.125rem",  { lineHeight: "1.65" }], // 18 px

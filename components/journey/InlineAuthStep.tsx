@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { AuthField, AuthSubmitButton, AuthCard } from "@/components/ui/auth-field";
 import type { Locale } from "@/lib/journey/types";
 import { track } from "@/lib/analytics";
+import { journeyInlineSignup } from "@/app/actions/journey-inline-signup";
 
 interface InlineAuthStepProps {
   locale: Locale;
@@ -14,7 +14,7 @@ interface InlineAuthStepProps {
 }
 
 /**
- * Inline registration / login — shown after 100% questionnaire completion.
+ * Inline registration / login - shown after 100% questionnaire completion.
  * Uses the same AuthField / AuthSubmitButton / AuthCard tokens as /auth pages.
  */
 export function InlineAuthStep({ locale, deviceId, onAuthenticated }: InlineAuthStepProps) {
@@ -26,13 +26,12 @@ export function InlineAuthStep({ locale, deviceId, onAuthenticated }: InlineAuth
   const [busy,     setBusy]     = useState(false);
   const [error,    setError]    = useState<string | null>(null);
 
-  const supabase = createBrowserSupabaseClient();
   const isHe = locale === "he";
 
   const t = isHe
     ? {
         heading: "סיימתם את השאלון! 🎉",
-        sub: "הניתוח האישי שלכם מוכן — צרו חשבון חינמי כדי לקבל אותו.",
+        sub: "הניתוח האישי שלכם מוכן - צרו חשבון חינמי כדי לקבל אותו.",
         fullName: "שם מלא",
         email: "אימייל",
         phone: "טלפון",
@@ -40,14 +39,14 @@ export function InlineAuthStep({ locale, deviceId, onAuthenticated }: InlineAuth
         passwordPlaceholder: "לפחות 8 תווים",
         submitRegister: "קבלו את הניתוח האישי שלכם ←",
         submitLogin: "התחברות וצפייה בניתוח ←",
-        switchToLogin: "כבר יש לי חשבון — כניסה",
-        switchToRegister: "אני חדש/ה כאן — הרשמה",
+        switchToLogin: "כבר יש לי חשבון - כניסה",
+        switchToRegister: "אני חדש/ה כאן - הרשמה",
         errDefault: "משהו השתבש. נסו שוב.",
         badges: ["🔒 מוגן לחלוטין", "ניתוח אישי תוך שניות", "ניתן לביטול בכל עת"],
       }
     : {
         heading: "You finished the questionnaire! 🎉",
-        sub: "Your personal analysis is ready — create a free account to unlock it.",
+        sub: "Your personal analysis is ready - create a free account to unlock it.",
         fullName: "Full name",
         email: "Email",
         phone: "Phone",
@@ -67,42 +66,76 @@ export function InlineAuthStep({ locale, deviceId, onAuthenticated }: InlineAuth
     setError(null);
 
     try {
-      if (mode === "register") {
-        const { error: signUpErr } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: {
-              full_name: fullName,
-              phone,
-              language: locale,
-            },
-          },
-        });
-        if (signUpErr) throw signUpErr;
-      } else {
-        const { error: loginErr } = await supabase.auth.signInWithPassword({ email, password });
-        if (loginErr) throw loginErr;
-      }
+      console.log("[InlineAuthStep] submit", { mode, deviceId });
 
-      // Link the anonymous journey to the freshly authenticated user.
-      await fetch("/api/journey/resume", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ device_id: deviceId }),
+      // One server-side call does it all atomically:
+      //   • admin.createUser({email_confirm:true})  — no email, no rate limit
+      //   • signInWithPassword                      — sets the auth cookie
+      //   • createSession + writeSessionCookie      — single-session record
+      //   • link_journey_to_user RPC                — links anon → user
+      //   • returns the linked journey row          — client jumps straight in
+      const result = await journeyInlineSignup({
+        email,
+        password,
+        fullName,
+        phone,
+        language: locale,
+        deviceId,
+        mode,
       });
 
+      // Log the FULL server-side debug envelope to the browser console so
+      // we never have to switch terminals. Includes the pre-RPC anon
+      // journey state, the RPC result + any error, the fallback's
+      // result, and the post-link journey row resolved for this user.
+      console.log("[InlineAuthStep] journeyInlineSignup returned", {
+        success: result.success,
+        ...(result.success
+          ? {
+              userId: result.userId,
+              journey: result.journey,
+              debug: result.debug,
+            }
+          : { error: result.error, debug: result.debug }),
+      });
+      if (!result.success) {
+        // Throwing pushes us into the existing catch block which already
+        // surfaces the message into the rose error UI.
+        throw new Error(result.error);
+      }
+
       track("registration_completed", { source: "journey_inline", mode });
+      console.log("[InlineAuthStep] calling onAuthenticated() → page reload");
       onAuthenticated();
     } catch (err) {
+      // Log the FULL error envelope so we can see what Supabase is
+      // actually returning (status, code, message, name, plus the full
+      // object if it's a SupabaseAuthError). This is what was missing —
+      // the previous code only surfaced the .message string.
+      console.error("[InlineAuthStep] submit failed", {
+        mode,
+        email,
+        errorName: err instanceof Error ? err.name : typeof err,
+        errorMessage: err instanceof Error ? err.message : String(err),
+        // SupabaseAuthError carries .status and .code — log them explicitly.
+        errorStatus: (err as { status?: number })?.status,
+        errorCode: (err as { code?: string })?.code,
+        rawError: err,
+      });
       const msg = err instanceof Error ? err.message : "";
       const isRateLimit = /rate.?limit|too many/i.test(msg);
+      const isAlreadyRegistered =
+        /already.?registered|already.?exists|user.?already/i.test(msg);
       setError(
         isRateLimit
           ? isHe
-            ? "הגבלת שליחת מיילים — נסו שוב בעוד מספר דקות."
-            : "Email rate limit reached — please try again in a few minutes."
-          : msg || t.errDefault
+            ? "הגבלת שליחת מיילים - נסו שוב בעוד מספר דקות."
+            : "Email rate limit reached - please try again in a few minutes."
+          : isAlreadyRegistered
+            ? isHe
+              ? "המייל הזה כבר רשום במערכת. עברו ל'יש לי כבר חשבון' למטה ↓"
+              : "This email is already registered. Switch to 'I already have an account' below ↓"
+            : msg || t.errDefault
       );
     } finally {
       setBusy(false);
@@ -136,7 +169,7 @@ export function InlineAuthStep({ locale, deviceId, onAuthenticated }: InlineAuth
         ))}
       </div>
 
-      {/* Form card — same token as /auth pages */}
+      {/* Form card - same token as /auth pages */}
       <AuthCard>
         <form onSubmit={submit} className="space-y-4">
           {mode === "register" && (

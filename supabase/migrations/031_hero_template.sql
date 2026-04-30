@@ -3,7 +3,7 @@
 -- swap between the classic-dark (a0f6258 revival) and the current light
 -- gradient hero, and provides a per-template side image slot (wheel art).
 --
--- Idempotent — safe to re-run.
+-- Idempotent - safe to re-run.
 
 alter table public.site_settings
   add column if not exists hero_template text

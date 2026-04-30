@@ -1,17 +1,17 @@
 "use client";
 
 /**
- * AdultsPricingPanel — the commerce surface on the /[locale]/adults/[slug]
+ * AdultsPricingPanel - the commerce surface on the /[locale]/adults/[slug]
  * game detail page. Replaces the old single-tier PairAndPurchasePanel with
  * three tiers:
  *
- *   1. Single — one-time per-game purchase (calls stubPurchaseGame)
- *   2. Monthly — couple-scoped recurring sub (subscribeAdultsTier('monthly'))
- *   3. Annual — couple-scoped recurring sub + bonus game slot (subscribeAdultsTier('annual'))
+ *   1. Single - one-time per-game purchase (calls stubPurchaseGame)
+ *   2. Monthly - couple-scoped recurring sub (subscribeAdultsTier('monthly'))
+ *   3. Annual - couple-scoped recurring sub + bonus game slot (subscribeAdultsTier('annual'))
  *
  * Keeps the existing behaviour that once a couple already owns the game
  * (via any tier), we just show the play CTA + invite-partner block. The
- * couple pairing flow is unchanged — subscribing auto-creates the couple
+ * couple pairing flow is unchanged - subscribing auto-creates the couple
  * server-side the same way stubPurchaseGame does.
  */
 
@@ -60,7 +60,7 @@ export function AdultsPricingPanel({
 }: {
   locale: string;
   gameId: string;
-  /** Slug of the game — required so the post-purchase CTA can route the
+  /** Slug of the game - required so the post-purchase CTA can route the
    *  owner straight into the gated play surface (`/adults/[slug]/play`). */
   gameSlug: string;
   gameTitle: string;
@@ -187,11 +187,11 @@ export function AdultsPricingPanel({
         setInfo(
           isHe
             ? res.already_owned
-              ? "כבר היה לכם גישה למשחק הזה — מעבירים ל'מיאושי שלי'…"
-              : "הרכישה הושלמה — מעבירים ל'מיאושי שלי'…"
+              ? "כבר היה לכם גישה למשחק הזה - מעבירים ל'מיאושי שלי'…"
+              : "הרכישה הושלמה - מעבירים ל'מיאושי שלי'…"
             : res.already_owned
-              ? "You already owned this game — taking you to My Mioshy…"
-              : "Purchase complete — taking you to My Mioshy…",
+              ? "You already owned this game - taking you to My Mioshy…"
+              : "Purchase complete - taking you to My Mioshy…",
         );
         setTimeout(
           () => router.push(`/my?purchased=${encodeURIComponent(gameId)}`),
@@ -210,11 +210,11 @@ export function AdultsPricingPanel({
       setInfo(
         isHe
           ? selected === "annual"
-            ? "המינוי הזוגי השנתי הופעל — מעבירים ל'מיאושי שלי'…"
-            : "המינוי הזוגי הופעל — מעבירים ל'מיאושי שלי'…"
+            ? "המינוי הזוגי השנתי הופעל - מעבירים ל'מיאושי שלי'…"
+            : "המינוי הזוגי הופעל - מעבירים ל'מיאושי שלי'…"
           : selected === "annual"
-            ? "Annual couple plan active — taking you to My Mioshy…"
-            : "Couple plan active — taking you to My Mioshy…",
+            ? "Annual couple plan active - taking you to My Mioshy…"
+            : "Couple plan active - taking you to My Mioshy…",
       );
       setTimeout(() => router.push(`/my?subscribed=${selected}`), 650);
     });
@@ -248,8 +248,8 @@ export function AdultsPricingPanel({
         </div>
         <p className="mt-1 text-sm text-white/75">
           {isHe
-            ? "רכישה אישית חד-פעמית, או מינוי זוגי — שניכם נהנים."
-            : "One-time personal purchase, or a couple plan — both of you enjoy it."}
+            ? "רכישה אישית חד-פעמית, או מינוי זוגי - שניכם נהנים."
+            : "One-time personal purchase, or a couple plan - both of you enjoy it."}
         </p>
 
         <div className="mt-5 space-y-3">
@@ -263,8 +263,8 @@ export function AdultsPricingPanel({
               period=""
               hint={
                 isHe
-                  ? "גישה למשחק אחד — לכם אישית, לצמיתות"
-                  : "Access to this one game — yours forever"
+                  ? "גישה למשחק אחד - לכם אישית, לצמיתות"
+                  : "Access to this one game - yours forever"
               }
             />
           ) : null}
@@ -312,8 +312,8 @@ export function AdultsPricingPanel({
         </button>
         <p className="mt-3 text-sm text-white/55">
           {isHe
-            ? "* בשלב זה מדובר ברכישת הדגמה — ללא חיוב אמיתי."
-            : "* Demo checkout — no real charge yet."}
+            ? "* בשלב זה מדובר ברכישת הדגמה - ללא חיוב אמיתי."
+            : "* Demo checkout - no real charge yet."}
         </p>
       </div>
 
@@ -355,11 +355,11 @@ export function AdultsPricingPanel({
         <Flame className="me-1 inline h-3 w-3" />
         {isHe
           ? selected === "single"
-            ? "רכישה אישית — גישה מלאה למשחק הזה."
-            : "מינוי זוגי — ביטול בכל עת, בלי התחייבות."
+            ? "רכישה אישית - גישה מלאה למשחק הזה."
+            : "מינוי זוגי - ביטול בכל עת, בלי התחייבות."
           : selected === "single"
-            ? "Personal purchase — full access to this game."
-            : "Couple plan — cancel anytime, no commitment."}
+            ? "Personal purchase - full access to this game."
+            : "Couple plan - cancel anytime, no commitment."}
       </p>
     </div>
   );

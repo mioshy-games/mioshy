@@ -50,7 +50,7 @@ const ANCHOR_OPTIONS: Array<{
 ];
 
 // Sentinel used for "not automation-eligible" in the picker. Zod's
-// productSlug union accepts "" so we reuse it here — the action layer
+// productSlug union accepts "" so we reuse it here - the action layer
 // maps "" → NULL before writing.
 const PRODUCT_NONE = "" as const;
 
@@ -61,7 +61,7 @@ const PRODUCT_OPTIONS: Array<{
 }> = [
   {
     value: PRODUCT_NONE,
-    label: "— None —",
+    label: "- None -",
     hint: "Admin-only program. Never auto-assigned by the purchase webhook.",
   },
   {
@@ -175,11 +175,11 @@ export function ProgramForm({
               <Input
                 {...register("name_he")}
                 dir="rtl"
-                placeholder="איפוס אינטימיות — 6 שבועות"
+                placeholder="איפוס אינטימיות - 6 שבועות"
               />
             </Field>
             <Field label="Name (EN)">
-              <Input {...register("name_en")} placeholder="Intimacy Reset — 6 weeks" />
+              <Input {...register("name_en")} placeholder="Intimacy Reset - 6 weeks" />
             </Field>
 
             <Field label="Description (HE)">
@@ -304,7 +304,7 @@ export function ProgramForm({
               When a user buys the selected pillar, the Cardcom webhook
               creates a purchase-anchored assignment from this program and
               materializes its items. Existing active assignments are left
-              alone — no overwrites.
+              alone - no overwrites.
             </div>
           </div>
         </Section>

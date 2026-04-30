@@ -5,7 +5,7 @@
  *
  * Renders animated particles over the game-page background.
  * Colors are auto-derived from the current background palette so they always
- * feel harmonious — no manual color picking needed.
+ * feel harmonious - no manual color picking needed.
  *
  * Controlled by ParticlesSettings (from GameSettings.particles).
  */

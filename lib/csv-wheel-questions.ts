@@ -3,25 +3,25 @@
  *
  * Two import formats are supported:
  *
- * Format A — Full (matches export, for round-trip backup/restore):
+ * Format A - Full (matches export, for round-trip backup/restore):
  *   game_id, game_slug, game_name_he, game_name_en,
  *   question_id, type, level, text_he, text_en, is_active, created_at
  *
- * Format B — Simple (for new content without a game UUID):
+ * Format B - Simple (for new content without a game UUID):
  *   game_name, type, text_he, text_en          (level defaults to "light")
  *   game_name, type, text                      (text maps to both text_he + text_en)
  *
  * Import rules
  * ────────────
- * • game_id   OR game_name — at least one required; game_id takes priority
- * • question_id — optional; empty → INSERT; UUID → UPDATE
- * • type       — required; must be: truth | dare | custom
- * • level      — optional; must be: light | flirty | deep (default: light)
- * • text_he    — required (or `text` which maps to both he + en)
- * • text_en    — required (or `text` which maps to both he + en)
- * • is_active  — optional; default true
- * • category   — optional; free-text tag (e.g. "romance", "family"); default ""
- * • game_slug / game_name_he / game_name_en / created_at — informational,
+ * • game_id   OR game_name - at least one required; game_id takes priority
+ * • question_id - optional; empty → INSERT; UUID → UPDATE
+ * • type       - required; must be: truth | dare | custom
+ * • level      - optional; must be: light | flirty | deep (default: light)
+ * • text_he    - required (or `text` which maps to both he + en)
+ * • text_en    - required (or `text` which maps to both he + en)
+ * • is_active  - optional; default true
+ * • category   - optional; free-text tag (e.g. "romance", "family"); default ""
+ * • game_slug / game_name_he / game_name_en / created_at - informational,
  *   ignored during import
  *
  * Encoding: UTF-8 with BOM (Excel-compatible)
@@ -89,7 +89,7 @@ export const WHEEL_CSV_HEADERS = [
 ] as const;
 
 // `type` is a free-form category string (e.g. "truth", "dare", "Honesty", "Romance").
-// Any non-empty value is accepted — the wheel renders whatever category name is given.
+// Any non-empty value is accepted - the wheel renders whatever category name is given.
 const VALID_LEVELS = new Set(["light", "flirty", "deep"]);
 
 // ---------------------------------------------------------------------------
@@ -239,7 +239,7 @@ function parseRawCsv(text: string): string[][] {
 /**
  * Parse and validate a CSV string for wheel question import.
  *
- * Invalid rows are collected as errors and skipped — the rest are returned
+ * Invalid rows are collected as errors and skipped - the rest are returned
  * so the caller can decide how to handle partial failures.
  */
 export function parseWheelQuestionsCsv(text: string): WheelCsvParseResult {
@@ -387,10 +387,10 @@ export type WheelCsvResult = WheelCsvParseSuccess | WheelCsvParseFatal;
  * Parse wheel questions CSV with full error detail.
  * Supports two formats:
  *
- * Format A — Full (export round-trip):
+ * Format A - Full (export round-trip):
  *   game_id, ..., question_id, type, level, text_he, text_en, is_active, ...
  *
- * Format B — Simple (new content by game name):
+ * Format B - Simple (new content by game name):
  *   game_name, type, text_he, text_en     (level defaults to "light")
  *   game_name, type, text                 (text maps to text_he + text_en)
  *
@@ -462,7 +462,7 @@ export function parseWheelQuestionsWithDetail(text: string): WheelCsvResult {
 
     const get = (col: string): string => (idx(col) >= 0 ? (row[idx(col)] ?? "").trim() : "");
 
-    // Game identifier — prefer game_id, fall back to game_name
+    // Game identifier - prefer game_id, fall back to game_name
     const rawGameId   = hasGameId   ? get("game_id")   : "";
     // For Format B rows use game_name directly; for Format A (export round-trip)
     // also capture game_name_he / game_name_en as a fallback name so the import
@@ -539,7 +539,7 @@ export function parseWheelQuestionsWithDetail(text: string): WheelCsvResult {
 
     validRows.push({
       question_id: rawQId,
-      game_id: rawGameId,       // empty if Format B — import route resolves via game_name
+      game_id: rawGameId,       // empty if Format B - import route resolves via game_name
       game_name: rawGameName,   // empty if Format A
       type: rawType,
       level: rawLevel,

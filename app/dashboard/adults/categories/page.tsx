@@ -69,7 +69,7 @@ export default async function CategoriesListPage() {
                   colSpan={6}
                   className="text-muted-foreground h-24 text-center"
                 >
-                  No categories yet — click &quot;New category&quot; to add
+                  No categories yet - click &quot;New category&quot; to add
                   one.
                 </TableCell>
               </TableRow>

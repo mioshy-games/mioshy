@@ -1,6 +1,6 @@
 /**
- * POST /api/admin/tasks     — assign a task to a user
- * PATCH /api/admin/tasks    — update status or notes
+ * POST /api/admin/tasks     - assign a task to a user
+ * PATCH /api/admin/tasks    - update status or notes
  *
  * Body (POST): { user_id, title_he, title_en, body_he, body_en, due_at?, template_id? }
  * Body (PATCH): { id, status?, notes? }

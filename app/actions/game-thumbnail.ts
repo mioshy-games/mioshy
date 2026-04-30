@@ -5,7 +5,7 @@ import { requireAdmin } from "@/lib/auth/admin";
 
 /**
  * Update a game's thumbnail_url.
- * Admin-only — requireAdmin() throws a redirect if the caller is not admin.
+ * Admin-only - requireAdmin() throws a redirect if the caller is not admin.
  */
 export async function updateGameThumbnailAction(
   gameId: string,

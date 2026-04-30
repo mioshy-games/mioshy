@@ -7,9 +7,9 @@ import { Gamepad2, Heart, Library, LogOut, Menu, Sparkles, X } from "lucide-reac
 import { logoutAction } from "@/app/actions/auth-actions";
 
 /**
- * SiteHeader — three-pillar navigation, theme-adaptive.
+ * SiteHeader - three-pillar navigation, theme-adaptive.
  * -----------------------------------------------------
- * The header lives inside the root layout, so it renders on every page —
+ * The header lives inside the root layout, so it renders on every page -
  * some pages are dark-themed (home hero, /games, /adults, play pages),
  * others are light-themed (past-the-fold home sections, future light pages).
  *
@@ -18,7 +18,7 @@ import { logoutAction } from "@/app/actions/auth-actions";
  *     contrast; the nav "floats" on it with a soft glass pill look.
  *   • After ~40px of scroll → becomes an opaque frosted bar. Bar tone
  *     follows the page theme (detected from `document.documentElement`'s
- *     data-header-theme attr, or — as a fallback — by sampling the
+ *     data-header-theme attr, or - as a fallback - by sampling the
  *     background color of the element directly beneath the header).
  *
  * Pillars (always in this order for both locales, RTL keeps visual order):
@@ -55,28 +55,20 @@ const PILLARS: PillarLink[] = [
   },
 ];
 
-// Decide whether the area the header sits over is light or dark. We first
-// check for an explicit `data-header-theme` on <html> (pages can opt-in).
-// Otherwise we sample the bg color of a probe element 1px below the header.
+// Header theme detection — kept as an opt-in only.
+// Background-flipping while scrolling (light-glass over cream sections vs
+// dark-glass over the hero) made the mobile experience feel unstable —
+// the bar repainted on every scroll tick. We now LOCK to dark glass once
+// scrolled, on every page, unless the page explicitly sets
+// `<html data-header-theme="light">`. That gives editorial pages a way to
+// opt into the inverted style when the whole page is light, but day-to-day
+// users on the homepage / product pages get a single consistent dark bar.
 function detectTheme(): "light" | "dark" {
   if (typeof document === "undefined") return "dark";
   const explicit = document.documentElement.dataset.headerTheme;
   if (explicit === "light" || explicit === "dark") return explicit;
-
-  // Probe: element at (centerX, headerBottom + 8). Works well because the
-  // header is sticky and sampling below it gives the section scrolling under.
-  const probeX = window.innerWidth / 2;
-  const probeY = 72; // just past the header
-  const el     = document.elementFromPoint(probeX, probeY) as HTMLElement | null;
-  if (!el) return "dark";
-
-  const bg = getComputedStyle(el).backgroundColor;
-  const m  = bg.match(/rgba?\(([^)]+)\)/);
-  if (!m) return "dark";
-  const [r, g, b] = m[1]!.split(",").map((v) => Number(v.trim()));
-  // Perceived luminance (ITU-R BT.601); > 180/255 ≈ light.
-  const lum = (0.299 * (r ?? 0) + 0.587 * (g ?? 0) + 0.114 * (b ?? 0));
-  return lum > 180 ? "light" : "dark";
+  // No explicit opt-in → always dark. No more sampling, no more flip.
+  return "dark";
 }
 
 export function SiteHeader({ isAuthed = false }: { isAuthed?: boolean }) {
@@ -90,7 +82,7 @@ export function SiteHeader({ isAuthed = false }: { isAuthed?: boolean }) {
   const [isPending, startTransition] = useTransition();
 
   // Track scroll + theme on mount and on scroll. We intentionally resample
-  // the theme on every scroll tick — switching between dark hero and light
+  // the theme on every scroll tick - switching between dark hero and light
   // sections should flip the header tone live.
   useEffect(() => {
     const onScroll = () => {
@@ -157,7 +149,7 @@ export function SiteHeader({ isAuthed = false }: { isAuthed?: boolean }) {
     <header
       className={`sticky top-0 z-50 border-b backdrop-blur-xl transition-all duration-300 ${barBg}`}
     >
-      {/* Top-of-page gradient hair — only when transparent, to keep identity. */}
+      {/* Top-of-page gradient hair - only when transparent, to keep identity. */}
       {!scrolled ? (
         <div
           aria-hidden
@@ -208,7 +200,7 @@ export function SiteHeader({ isAuthed = false }: { isAuthed?: boolean }) {
                   }`}
                 />
                 <span>{t(p.tKey)}</span>
-                {/* Underline — always visible when active, hover-only otherwise */}
+                {/* Underline - always visible when active, hover-only otherwise */}
                 <span
                   aria-hidden
                   className={`pointer-events-none absolute inset-x-3 bottom-1 h-[2px] origin-center rounded-full bg-gradient-to-r ${p.accent} transition-transform duration-200 ${
@@ -249,15 +241,22 @@ export function SiteHeader({ isAuthed = false }: { isAuthed?: boolean }) {
               >
                 {t("signIn")}
               </Link>
+              {/* Primary CTA in the header is now "ליווי עם מיאושי" → /journey
+                  rather than the generic "Sign up" → /auth/signup. The
+                  flagship product is Journey and the header is its biggest
+                  conversion surface. New visitors who click discover the
+                  product first; signup happens naturally during purchase. */}
               <Link
-                href="/auth/signup"
+                href="/journey"
                 className="group relative inline-flex min-h-[40px] items-center justify-center overflow-hidden rounded-full px-5 text-base font-semibold text-white shadow-lg shadow-fuchsia-500/25 transition hover:brightness-110"
               >
                 <span
                   aria-hidden
                   className="absolute inset-0 bg-[linear-gradient(110deg,#d946ef_0%,#a855f7_35%,#ec4899_70%,#f59e0b_100%)] bg-[length:220%_100%] mio-nav-cta-shift"
                 />
-                <span className="relative z-10">{t("signUp")}</span>
+                <span className="relative z-10">
+                  {isHe ? "ליווי עם מיאושי" : "Mioshy Journey"}
+                </span>
               </Link>
             </>
           )}
@@ -266,7 +265,7 @@ export function SiteHeader({ isAuthed = false }: { isAuthed?: boolean }) {
         {/* ─────── Mobile compact actions (auth + toggle) ───────
             On screens below `md` (mobile / phablet) the desktop auth
             block is hidden, which used to leave the user without a
-            one-tap shortcut to their library — they had to open the
+            one-tap shortcut to their library - they had to open the
             hamburger drawer first. We now surface a compact "מיאושי
             שלי" pill alongside the hamburger so authenticated users
             can jump straight into /my, and unauthenticated users get
@@ -283,15 +282,21 @@ export function SiteHeader({ isAuthed = false }: { isAuthed?: boolean }) {
               <span>{t("library")}</span>
             </Link>
           ) : (
+            // Mobile primary CTA — same swap as desktop: "ליווי עם מיאושי"
+            // → /journey instead of "Sign up" → /auth/signup. Slightly
+            // more compact label so it fits in the cramped mobile header
+            // alongside the hamburger.
             <Link
-              href="/auth/signup"
+              href="/journey"
               className="group relative inline-flex min-h-[36px] items-center justify-center overflow-hidden rounded-full px-4 text-sm font-semibold text-white shadow-md shadow-fuchsia-500/25 transition hover:brightness-110 md:hidden"
             >
               <span
                 aria-hidden
                 className="absolute inset-0 bg-[linear-gradient(110deg,#d946ef_0%,#a855f7_35%,#ec4899_70%,#f59e0b_100%)] bg-[length:220%_100%] mio-nav-cta-shift"
               />
-              <span className="relative z-10">{t("signUp")}</span>
+              <span className="relative z-10">
+                {isHe ? "ליווי מיאושי" : "Journey"}
+              </span>
             </Link>
           )}
 
@@ -390,12 +395,16 @@ export function SiteHeader({ isAuthed = false }: { isAuthed?: boolean }) {
                 >
                   {t("signIn")}
                 </Link>
+                {/* Drawer primary CTA — Journey, matching the desktop +
+                    mobile header buttons. Replaces the previous Sign-up
+                    button so the entire site funnels new visitors into
+                    the flagship product first. */}
                 <Link
-                  href="/auth/signup"
+                  href="/journey"
                   onClick={() => setOpen(false)}
                   className="mt-1 inline-flex min-h-[44px] items-center justify-center rounded-full bg-gradient-to-r from-fuchsia-500 via-purple-500 to-pink-500 px-5 text-base font-semibold text-white shadow-lg shadow-fuchsia-500/25"
                 >
-                  {t("signUp")}
+                  {isHe ? "ליווי עם מיאושי" : "Mioshy Journey"}
                 </Link>
               </>
             )}

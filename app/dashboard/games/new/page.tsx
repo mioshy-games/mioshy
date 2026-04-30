@@ -1,7 +1,9 @@
 import { GameForm } from "@/components/dashboard/GameForm";
 import { getDefaultGameFormValues } from "@/lib/game-form-defaults";
+import { requireAdmin } from "@/lib/auth/admin";
 
-export default function NewGamePage() {
+export default async function NewGamePage() {
+  await requireAdmin();
   return (
     <div className="space-y-6">
       <div>

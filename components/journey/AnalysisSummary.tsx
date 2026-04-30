@@ -4,6 +4,12 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import type { Analysis, Locale } from "@/lib/journey/types";
 import { axisLabel } from "@/lib/journey/analysis";
+import {
+  PRIORITY_LABELS_HE,
+  PRIORITY_LABELS_EN,
+  PRIORITY_KEYS,
+  type PriorityKey,
+} from "@/lib/journey/priorities";
 
 interface AnalysisSummaryProps {
   analysis: Analysis | null;
@@ -37,17 +43,18 @@ export function AnalysisSummary({ analysis, locale, subscriptionActive = false }
         conflict: "שקט בוויכוחים",
         passion: "סיכון לירידה בתשוקה",
         loveLang: "שפת האהבה שלכם",
-        topGap: "מוקד לחודש הקרוב",
+        topGap: "מוקד לחודש הראשון",
         recs: "התוכנית המותאמת שלכם",
         ctaTitle: "הצטרפו לשירות וקבלו תוכנית אישית",
         ctaSub: "המסע שלכם רק מתחיל. לאחר הצטרפות תקבלו:",
         features: [
-          "2–4 משימות בשבוע, שנבחרו ע\"י מומחים בזוגיות",
+          "גישה מלאה לכל התכנים באתר",
+          'כולל "תוכן למבוגרים בלבד"',
           "שאלונים נוספים בשבועות הראשונים — לפרופיל מדויק יותר",
-          "שירות מותאם אישית לחלוטין לפי התשובות שלכם",
+          "שירות אישי לחלוטין שמתאים את עצמו אליכם",
           "בהמשך: שיחות עם מומחים — כלול במחיר, ללא תוספת",
         ],
-        price: "₪98 / חודש — ניתן לביטול בכל עת",
+        price: "57₪ / שבוע · התחייבות חודש בלבד, לאחריו ניתן לעצור בכל עת",
         cta: "הצטרפות לשירות",
         ctaLoading: "מכין תשלום…",
         activeTitle: "אתם כבר חלק מהמסע! 🎉",
@@ -60,23 +67,36 @@ export function AnalysisSummary({ analysis, locale, subscriptionActive = false }
         conflict: "Conflict health",
         passion: "Passion at risk",
         loveLang: "Your love language",
-        topGap: "Focus this month",
+        topGap: "Focus for the first month",
         recs: "Your personalized program",
         ctaTitle: "Join the service and get your personal plan",
         ctaSub: "Your journey is just beginning. After joining you'll get:",
         features: [
-          "2–4 expert-curated weekly tasks tailored to your answers",
+          "Full access to every piece of content on the site",
+          'Includes the "Adults Only" content',
           "Additional questionnaires in the first weeks for a sharper profile",
-          "100% personalized — every task is chosen with your relationship in mind",
+          "Fully personal service that adapts itself to you",
           "Later: expert consultations included in the price, no add-ons",
         ],
-        price: "$33 / month — cancel anytime",
+        price: "$19 / week · 1-month commitment, cancel anytime after",
         cta: "Join the service",
         ctaLoading: "Preparing checkout…",
         activeTitle: "You're all set! 🎉",
         activeSub: "Your personal plan is active. Weekly tasks will be delivered to you soon.",
         goAccount: "My account",
       };
+
+  // Resolve the focus area for "מוקד לחודש הראשון" / "Focus for the first
+  // month". Priority: user's chosen #1 from ranking → legacy top_gap axis
+  // → null (skip the section entirely).
+  const topPrioritySlug = analysis.summary.top_priority;
+  const isPriorityKey = (k: string | undefined): k is PriorityKey =>
+    !!k && (PRIORITY_KEYS as readonly string[]).includes(k);
+  const focusLabel = isPriorityKey(topPrioritySlug)
+    ? (isHe ? PRIORITY_LABELS_HE[topPrioritySlug] : PRIORITY_LABELS_EN[topPrioritySlug])
+    : analysis.top_gap
+      ? axisLabel(analysis.top_gap, locale)
+      : null;
 
   const startCheckout = async () => {
     setCheckoutBusy(true);
@@ -150,12 +170,18 @@ export function AnalysisSummary({ analysis, locale, subscriptionActive = false }
         </div>
       )}
 
-      {/* ── Top gap ── */}
-      {analysis.top_gap && (
-        <div className="rounded-2xl border border-white/15 bg-white/5 p-4">
-          <div className="text-xs text-white/70">{t.topGap}</div>
-          <div className="mt-1 text-xl font-semibold text-white">
-            {axisLabel(analysis.top_gap, locale)}
+      {/* ── Focus for the first month ──
+          Source priority:
+          1. summary.top_priority — the user's #1 ranking pick (preferred)
+          2. analysis.top_gap — legacy fallback (axis with lowest score)
+          The card is hidden entirely when neither source has data. */}
+      {focusLabel && (
+        <div className="rounded-2xl border border-fuchsia-400/30 bg-fuchsia-500/[0.07] p-4">
+          <div className="text-xs uppercase tracking-wider text-fuchsia-200/80">
+            {t.topGap}
+          </div>
+          <div className="mt-1 text-2xl font-semibold text-white">
+            {focusLabel}
           </div>
         </div>
       )}

@@ -9,7 +9,7 @@
  *
  * Encoding: UTF-8 with BOM (Excel-compatible)
  * Delimiter: comma
- * Text quoting: RFC 4180 — fields containing commas, newlines or quotes are
+ * Text quoting: RFC 4180 - fields containing commas, newlines or quotes are
  *   wrapped in double-quotes; internal double-quotes are doubled.
  */
 
@@ -54,7 +54,7 @@ const HEADERS = [
   "level",
 ] as const;
 
-/** Columns that must be present — level is optional (backward-compat). */
+/** Columns that must be present - level is optional (backward-compat). */
 const REQUIRED_HEADERS = [
   "question_id",
   "question_type",
@@ -195,7 +195,7 @@ export function parseCsvQuestions(text: string): CsvParseResult {
   // Normalise headers (trim + lower)
   const headers = headerRow.map((h) => h.trim().toLowerCase());
 
-  // Verify required columns (level is optional — backward-compat with old 5-col exports)
+  // Verify required columns (level is optional - backward-compat with old 5-col exports)
   const missing = REQUIRED_HEADERS.filter((h) => !headers.includes(h));
   if (missing.length > 0) {
     return {
@@ -228,7 +228,7 @@ export function parseCsvQuestions(text: string): CsvParseResult {
       errors.push({
         row: rowNum,
         field: "row",
-        message: `שורה קצרה מדי — ${row.length} עמודות במקום לפחות ${MIN_COLS}`,
+        message: `שורה קצרה מדי - ${row.length} עמודות במקום לפחות ${MIN_COLS}`,
       });
       continue;
     }

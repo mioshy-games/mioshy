@@ -22,7 +22,7 @@ export default async function NewJourneyItemPage({
     return null;
   }
 
-  // Otherwise show a tiny picker — item requires a category, so we block
+  // Otherwise show a tiny picker - item requires a category, so we block
   // the redirect path until the admin picks one.
   const [categories, programs] = await Promise.all([
     adminListCategoriesWithItemCounts(),
@@ -42,7 +42,7 @@ export default async function NewJourneyItemPage({
         </Link>
         <h1 className="mt-2 text-3xl font-bold tracking-tight">New item</h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          Pick a category — every item must belong to one.
+          Pick a category - every item must belong to one.
         </p>
       </div>
 

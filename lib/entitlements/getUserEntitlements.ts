@@ -1,5 +1,5 @@
 // ============================================================
-// Unified entitlements — the single source of truth that drives
+// Unified entitlements - the single source of truth that drives
 // the three-pillar navigation surface (games / journey / adults).
 //
 // Callers: /my hub, gallery pages, header links, middleware-style
@@ -25,7 +25,7 @@ export interface UserEntitlements {
 
 /**
  * Build the full entitlement snapshot for the given user id.
- * `null` means "not signed in" — the caller decides what to do.
+ * `null` means "not signed in" - the caller decides what to do.
  */
 export async function getUserEntitlements(
   userId?: string,
@@ -49,7 +49,7 @@ export async function getUserEntitlements(
     email = user?.email ?? null;
   }
 
-  // ── Couple membership — needed to look up `adults` entitlements ────────
+  // ── Couple membership - needed to look up `adults` entitlements ────────
   const { data: membership } = await supabase
     .from("couple_members")
     .select("couple_id")
@@ -85,8 +85,13 @@ export async function getUserEntitlements(
     adults = (ents ?? []).length > 0;
   }
 
-  const games = activeBy("games");
+  // Coaching subscription ("journey") implicitly grants games access — per
+  // the product spec, paying for the higher-tier coaching includes the
+  // lower-tier games library at no extra cost. Dropping coaching also drops
+  // games unless the user separately bought a games sub (the cancel-modal
+  // on /account billing surfaces this explicitly).
   const journey = activeBy("journey");
+  const games = activeBy("games") || journey;
 
   const pillarCount = (Number(games) + Number(journey) + Number(adults)) as
     | 0

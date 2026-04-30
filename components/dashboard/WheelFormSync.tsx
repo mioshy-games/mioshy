@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * WheelFormSync — invisible bridge component.
+ * WheelFormSync - invisible bridge component.
  *
  * Render this INSIDE the RHF <FormProvider>. It watches all wheel-related
  * fields and syncs their values to useWheelFormStore so that WheelPreviewPanel
@@ -48,6 +48,6 @@ export function WheelFormSync() {
     divEnabled, divColor, divWidth, markerConfig, setWheelPreview,
   ]);
 
-  // Renders nothing — pure side-effect component
+  // Renders nothing - pure side-effect component
   return null;
 }

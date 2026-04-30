@@ -3,7 +3,7 @@
  *
  * Each time a user logs in we:
  *  1. Generate a fresh session_token (UUID v4).
- *  2. Upsert it into `user_sessions` (one row per user — old row is replaced).
+ *  2. Upsert it into `user_sessions` (one row per user - old row is replaced).
  *  3. Write the token to a cookie called `mioshy_session`.
  *
  * Middleware reads the cookie and validates it against the DB:
@@ -70,7 +70,7 @@ export async function validateSession(
 
   if (error || !data) return { valid: false };
 
-  // Bump last_active_at (fire-and-forget — don't await to keep middleware fast)
+  // Bump last_active_at (fire-and-forget - don't await to keep middleware fast)
   void admin
     .from("user_sessions")
     .update({ last_active_at: new Date().toISOString() })

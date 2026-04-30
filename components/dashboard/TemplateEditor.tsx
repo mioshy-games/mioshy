@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * TemplateEditor — interactive editor for a single message template.
+ * TemplateEditor - interactive editor for a single message template.
  *
  * Left: form for channel/subject/body (he + en) + activation toggle.
  * Right: live preview rendered with {{vars}} replaced by demo values.

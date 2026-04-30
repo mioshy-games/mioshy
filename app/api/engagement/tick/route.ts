@@ -31,7 +31,7 @@ export async function GET(req: Request) {
   }
 
   // We need service-role-ish power here. For now reuse server client with
-  // admin policies — the endpoint is protected by shared secret. In
+  // admin policies - the endpoint is protected by shared secret. In
   // production, swap to `createSupabaseAdminClient` with the service role key.
   const supabase = await createServerSupabaseClient();
 

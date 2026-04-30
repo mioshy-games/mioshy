@@ -53,7 +53,7 @@ export default async function DashboardSettingsPage() {
           </p>
           <p>
             <span className="text-muted-foreground">Email:</span>{" "}
-            {user.email ?? "—"}
+            {user.email ?? "-"}
           </p>
         </CardContent>
       </Card>

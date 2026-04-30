@@ -17,25 +17,25 @@ import { playSound } from "@/lib/sounds";
 import { cn } from "@/lib/utils";
 
 /**
- * SnakesGameBoard — adapter-agnostic game screen.
+ * SnakesGameBoard - adapter-agnostic game screen.
  *
- * Layout (April 2026 redesign — see product brief with colour-coded zones):
+ * Layout (April 2026 redesign - see product brief with colour-coded zones):
  *
- *   • Green zone — top: Mioshy logo + game title + subtitle.
- *   • Yellow zone — board (large, responsive; vertical on mobile).
- *   • White zone — dice surface (desktop only; on mobile the dice
+ *   • Green zone - top: Mioshy logo + game title + subtitle.
+ *   • Yellow zone - board (large, responsive; vertical on mobile).
+ *   • White zone - dice surface (desktop only; on mobile the dice
  *     shows as a floating popup overlay on the board).
- *   • Blue zone — players list (active + pending-approval), each with
+ *   • Blue zone - players list (active + pending-approval), each with
  *     avatar icon and a host badge for the room host.
- *   • Red zone — exit button returning to the /games catalog (not the
+ *   • Red zone - exit button returning to the /games catalog (not the
  *     snakes lobby).
  *
  * Responsive:
  *   • Desktop (≥ md): CSS grid with a 18rem sidebar on the right (RTL
- *     handled by grid column ordering — sidebar sits in the first grid
+ *     handled by grid column ordering - sidebar sits in the first grid
  *     column which maps to the visual right in RTL), and the board
  *     filling the second column.
- *   • Mobile (< md): flex-col stack — header on top, board in the
+ *   • Mobile (< md): flex-col stack - header on top, board in the
  *     middle (with popup dice overlay), players list below.
  *
  * Extras:
@@ -156,7 +156,7 @@ export function SnakesGameBoard({
 
     // Build the naive walk path (no snake/ladder resolution).
     // The visual token hops from prevPos+1 … min(prevPos+dice, boardSize).
-    // After the interval finishes we snap to finalPos — if a snake/ladder
+    // After the interval finishes we snap to finalPos - if a snake/ladder
     // is involved, PlayersOverlay's spring glides the token there naturally.
     const naiveEnd = Math.min(prevPos + (diceResult as number), boardSize);
     const steps: number[] = [];
@@ -166,13 +166,13 @@ export function SnakesGameBoard({
     prevTurnCountRef.current = turnCount;
 
     if (steps.length === 0) {
-      // Already at destination — just sync
+      // Already at destination - just sync
       setVisualPositions((prev) => ({ ...prev, [playerId]: finalPos }));
       prevPositionsRef.current = { ...(prevPositionsRef.current ?? {}), [playerId]: finalPos };
       return;
     }
 
-    const STEP_MS = 370; // ms per tile hop — spring settles in ~200 ms at stiffness 620
+    const STEP_MS = 370; // ms per tile hop - spring settles in ~200 ms at stiffness 620
     // Hard upper bound: max 6 steps + 480ms teleport pause + 520ms bounce = ~3.5s.
     // If something goes wrong the modal must never stay blocked forever.
     const SAFETY_MS = steps.length * STEP_MS + 1200;
@@ -198,7 +198,7 @@ export function SnakesGameBoard({
         stepIdx++;
       } else {
         clearInterval(interval);
-        clearTimeout(safetyTimer); // walk completed normally — disarm the watchdog
+        clearTimeout(safetyTimer); // walk completed normally - disarm the watchdog
 
         // Snap to final position (handles snake/ladder teleport).
         // The existing spring in PlayersOverlay glides the token there.
@@ -253,11 +253,11 @@ export function SnakesGameBoard({
   useEffect(() => {
     if (!state) return;
     const prev = lastPhaseRef.current;
-    // Walk effect handles snake / ladder / move sounds — skip them here
+    // Walk effect handles snake / ladder / move sounds - skip them here
     if (state.phase === "ended" && prev !== "ended" && !winFiredRef.current) {
       winFiredRef.current = true;
       playSound("win");
-      // Win burst — centred on the board, not three full-screen fountains
+      // Win burst - centred on the board, not three full-screen fountains
       const getBoardOrigin = () => {
         if (!boardSectionRef.current) return { x: 0.5, y: 0.45 };
         const r = boardSectionRef.current.getBoundingClientRect();
@@ -281,7 +281,7 @@ export function SnakesGameBoard({
   // Local confetti burst when any player climbs a ladder.
   // We debounce by tracking log length so the same entry never re-triggers on
   // a re-render (and a full log replay on room join doesn't fire old bursts).
-  // NOTE: when the walk animation is in progress we defer this effect — the
+  // NOTE: when the walk animation is in progress we defer this effect - the
   // walk effect fires the burst itself after the token teleports, so the
   // confetti pops from the correct (ladder-top) cell position.
   useEffect(() => {
@@ -302,7 +302,7 @@ export function SnakesGameBoard({
     const newEntries = state.log.slice(prevLen);
     if (!newEntries.some((e) => e.type === "ladder")) return;
 
-    // Walk effect owns the timing when a roll just happened — skip here.
+    // Walk effect owns the timing when a roll just happened - skip here.
     if (isWalkingRef.current) return;
 
     // Compute the burst origin from the board's bounding box so the particles
@@ -318,12 +318,12 @@ export function SnakesGameBoard({
     const o = getBoardOrigin();
     const colors = ["#fde68a", "#fb923c", "#f472b6", "#a78bfa", "#34d399"];
 
-    // Two quick pops — feels punchy without hijacking the whole screen
+    // Two quick pops - feels punchy without hijacking the whole screen
     confetti({ particleCount: 55, spread: 75, origin: o, colors, startVelocity: 32, gravity: 1.1, scalar: 0.9, ticks: 90 });
     setTimeout(() => confetti({ particleCount: 35, spread: 55, origin: o, colors, startVelocity: 22, gravity: 1.3, scalar: 0.75, ticks: 70 }), 180);
   }, [state]);
 
-  // Players split into "active" (locked in — has claimed a character) and
+  // Players split into "active" (locked in - has claimed a character) and
   // "pending approval" (joined but not yet confirmed their identity). The
   // existing schema doesn't have a dedicated is_approved column, so the lock
   // state is the closest proxy for "ready to play". A future migration could
@@ -353,7 +353,7 @@ export function SnakesGameBoard({
 
   const winner = state.winner ? players.find((p) => p.id === state.winner) ?? null : null;
 
-  // Where on the board the current player's token sits — used both as the
+  // Where on the board the current player's token sits - used both as the
   // modal's animation origin and as the hint anchor for the floating dice.
   const currentCellCenter = currentPlayer
     ? cellToBoardPercent(
@@ -376,7 +376,7 @@ export function SnakesGameBoard({
         )}
         dir={isHe ? "rtl" : "ltr"}
       >
-        {/* ───────────────────── Green zone — header (logo + game title) */}
+        {/* ───────────────────── Green zone - header (logo + game title) */}
         <motion.header
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -420,7 +420,7 @@ export function SnakesGameBoard({
           ) : null}
         </motion.header>
 
-        {/* ───────────────────── Yellow zone — board */}
+        {/* ───────────────────── Yellow zone - board */}
         <section
           ref={boardSectionRef}
           className={cn(
@@ -440,7 +440,7 @@ export function SnakesGameBoard({
               isWalking={isWalking}
             />
 
-            {/* Question modal — only opens after the walk animation finishes so
+            {/* Question modal - only opens after the walk animation finishes so
                 the player sees the full journey before the question card erupts
                 from their final tile. */}
             <QuestionModal
@@ -455,14 +455,14 @@ export function SnakesGameBoard({
           </div>
         </section>
 
-        {/* ───────────────────── White zone — dice surface (desktop) */}
+        {/* ───────────────────── White zone - dice surface (desktop) */}
         <section
           className={cn(
             "hidden md:flex",
             "md:col-start-1 md:row-start-2",
             "items-center justify-center rounded-3xl",
             "border border-[#a07040]/30",
-            // Premium dark table surface — deep felt / baize
+            // Premium dark table surface - deep felt / baize
             "bg-[radial-gradient(ellipse_at_50%_30%,_#152b1e_0%,_#0a1810_55%,_#060d09_100%)]",
             "p-5 shadow-[0_14px_40px_-14px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.04)]",
           )}
@@ -508,7 +508,7 @@ export function SnakesGameBoard({
           </AnimatePresence>
         </section>
 
-        {/* ───────────────────── Blue zone — players list */}
+        {/* ───────────────────── Blue zone - players list */}
         <section
           className={cn(
             "order-3 md:order-none",
@@ -575,7 +575,7 @@ export function SnakesGameBoard({
             })}
           </ul>
 
-          {/* Pending-approval sub-list — only renders if somebody hasn't
+          {/* Pending-approval sub-list - only renders if somebody hasn't
               confirmed their character yet. Admin approval can be wired to
               a server action later; the button currently just surfaces the
               intent visually (no-op) because there is no approval endpoint
@@ -600,7 +600,7 @@ export function SnakesGameBoard({
                     <button
                       type="button"
                       className="rounded-full border border-emerald-400/40 bg-emerald-500/15 px-2.5 py-1 text-xs font-bold text-emerald-100 transition hover:bg-emerald-500/25"
-                      // Approval is deferred to a future server action — see
+                      // Approval is deferred to a future server action - see
                       // the comment above. For now the button is rendered so
                       // the blue zone matches the spec visually; wire the
                       // onClick to a server action when the column exists.
@@ -615,7 +615,7 @@ export function SnakesGameBoard({
             </div>
           ) : null}
 
-          {/* Red zone — exit button (desktop). Tied to the sidebar so the
+          {/* Red zone - exit button (desktop). Tied to the sidebar so the
               board area stays clean. Mobile gets its exit inside the header. */}
           {onExit ? (
             <button
@@ -633,7 +633,7 @@ export function SnakesGameBoard({
           ) : null}
         </section>
 
-        {/* Floating dice popup — MOBILE ONLY. Slides up from the bottom when
+        {/* Floating dice popup - MOBILE ONLY. Slides up from the bottom when
             it's the user's turn. On desktop the dice lives in the white
             surface above. */}
         <AnimatePresence>
@@ -707,7 +707,7 @@ export function SnakesGameBoard({
           ) : null}
         </AnimatePresence>
 
-        {/* Win overlay — sits above everything */}
+        {/* Win overlay - sits above everything */}
         <AnimatePresence>
           {state.phase === "ended" ? (
             <motion.div

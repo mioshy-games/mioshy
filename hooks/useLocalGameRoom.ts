@@ -6,7 +6,7 @@ import type { GameAdapter } from "@/lib/snakes/adapter";
 import type { GameState } from "@/lib/snakes/types";
 
 /**
- * useLocalGameRoom — single-device, pass-the-phone adapter.
+ * useLocalGameRoom - single-device, pass-the-phone adapter.
  *
  * Mirrors the surface of `useGameRoom` so the Snakes game UI can run
  * unchanged. The key quirk: in local mode `myPlayerId` is always the id of
@@ -15,7 +15,7 @@ import type { GameState } from "@/lib/snakes/types";
  * around.
  *
  * Everything here is synchronous but awaited to preserve the async contract
- * of the remote hook — this lets the UI await updateGameState() uniformly.
+ * of the remote hook - this lets the UI await updateGameState() uniformly.
  */
 export function useLocalGameRoom(): GameAdapter {
   const room = useLocalSnakesStore((s) => s.room);

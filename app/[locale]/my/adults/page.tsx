@@ -38,7 +38,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const isHe = params.locale === "he";
   return {
-    title: `Mioshy — ${isHe ? "למבוגרים בלבד · הגלריה" : "Adults Only · Gallery"}`,
+    title: `Mioshy - ${isHe ? "למבוגרים בלבד · הגלריה" : "Adults Only · Gallery"}`,
     description: isHe
       ? "כל המשחקים שפתחתם, במקום אחד."
       : "Every experience you've unlocked, in one place.",
@@ -72,19 +72,19 @@ export default async function MyAdultsGalleryPage({
   return (
     <div
       dir={isHe ? "rtl" : "ltr"}
-      // `isolate` is REQUIRED — without it the AdultsAmbience layer at
+      // `isolate` is REQUIRED - without it the AdultsAmbience layer at
       // -z-10 paints behind the wrapper's own gradient (i.e. invisible).
       // Same fix applied across every dark page on the site.
       className="relative isolate min-h-[100dvh] overflow-hidden bg-[#0a0410] text-white"
     >
-      {/* Deep base wash — slightly cooler than the marketing /adults page
+      {/* Deep base wash - slightly cooler than the marketing /adults page
           so the gallery feels distinct ("home" rather than "store front")
           while staying inside the same after-dark colour family. */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 -z-20 h-full bg-[linear-gradient(180deg,#0a0410_0%,#13061a_25%,#1a071f_50%,#15051a_75%,#0a0410_100%)]"
       />
-      {/* Drifting fog blobs + floating sparkle particles — same vocabulary
+      {/* Drifting fog blobs + floating sparkle particles - same vocabulary
           as /adults and /adults/[slug]. Pure CSS, honours
           prefers-reduced-motion via the component itself. */}
       <AdultsAmbience />
@@ -102,7 +102,7 @@ export default async function MyAdultsGalleryPage({
           {isHe ? "חזרה למיאושי שלי" : "Back to My Mioshy"}
         </Link>
 
-        {/* Header — eyebrow + display-serif headline + lede + CTA back to
+        {/* Header - eyebrow + display-serif headline + lede + CTA back to
             the marketing page. The headline keeps Frank Ruhl Libre because
             it's display, but the lede and supporting text use Assistant. */}
         <section className="mt-6 flex flex-wrap items-end justify-between gap-5">
@@ -127,8 +127,8 @@ export default async function MyAdultsGalleryPage({
             </h1>
             <p className="mt-4 text-[16px] leading-[1.7] text-white/80 sm:text-[17px]">
               {isHe
-                ? "כל המשחקים שרכשתם, במקום אחד. לחיצה פותחת את התוכן המלא — גם לכם וגם לבן/בת הזוג."
-                : "Every experience you've purchased, in one place. Tap any card to open the full content — for both of you."}
+                ? "כל המשחקים שרכשתם, במקום אחד. לחיצה פותחת את התוכן המלא - גם לכם וגם לבן/בת הזוג."
+                : "Every experience you've purchased, in one place. Tap any card to open the full content - for both of you."}
             </p>
           </div>
 
@@ -175,7 +175,7 @@ function EmptyGallery({ isHe }: { isHe: boolean }) {
     <section className="mt-14">
       <div className="relative overflow-hidden rounded-[28px] border border-rose-300/25 bg-gradient-to-br from-rose-500/10 via-fuchsia-500/8 to-violet-600/10 p-10 text-center backdrop-blur">
         {/* Inner halo so the empty state still feels like a moment, not
-            a void. Pure decoration — pointer-events-none. */}
+            a void. Pure decoration - pointer-events-none. */}
         <div
           aria-hidden
           className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-rose-500/15 to-transparent"
@@ -192,8 +192,8 @@ function EmptyGallery({ isHe }: { isHe: boolean }) {
           style={{ fontFamily: BODY_FONT }}
         >
           {isHe
-            ? "בחרו משחק ראשון וגלו עולם שלם שמתאים רק לכם. כל מה שתקנו יופיע כאן — אוטומטית גם לבן/בת הזוג."
-            : "Pick your first experience and unlock a world built just for the two of you. Everything you own appears here — automatically for your partner too."}
+            ? "בחרו משחק ראשון וגלו עולם שלם שמתאים רק לכם. כל מה שתקנו יופיע כאן - אוטומטית גם לבן/בת הזוג."
+            : "Pick your first experience and unlock a world built just for the two of you. Everything you own appears here - automatically for your partner too."}
         </p>
         <Link
           href="/adults"
@@ -239,7 +239,7 @@ function OwnedGameCard({ game, isHe }: { game: OwnedGame; isHe: boolean }) {
       href={`/adults/${game.slug}/play`}
       className="group relative block overflow-hidden rounded-[24px] border border-white/10 bg-gradient-to-br from-white/[0.07] via-white/[0.04] to-white/[0.02] shadow-[0_24px_60px_-25px_rgba(244,63,94,0.45)] backdrop-blur-md transition hover:-translate-y-1 hover:border-rose-300/50 hover:shadow-[0_32px_80px_-20px_rgba(244,63,94,0.6)]"
     >
-      {/* Gradient halo on hover — sits behind the card content. The
+      {/* Gradient halo on hover - sits behind the card content. The
           rose→fuchsia→violet wash is the same family used by every
           adults CTA, so the card "lights up" in the brand palette
           when it becomes the user's focus. */}
@@ -275,7 +275,7 @@ function OwnedGameCard({ game, isHe }: { game: OwnedGame; isHe: boolean }) {
           aria-hidden
           className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/75 via-black/30 to-transparent"
         />
-        {/* "Owned" badge — emerald gradient pill instead of flat fill so
+        {/* "Owned" badge - emerald gradient pill instead of flat fill so
             it reads as a brand mark, not a status sticker. */}
         <span
           className="absolute end-3 top-3 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-emerald-400 to-teal-400 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-950 shadow-lg shadow-emerald-500/30"

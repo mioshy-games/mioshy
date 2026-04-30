@@ -1,7 +1,7 @@
 "use client";
 
 // ============================================================
-// ScheduledItemRow — one line per journey_scheduled_item row on the
+// ScheduledItemRow - one line per journey_scheduled_item row on the
 // Manage-Client panel. Shows:
 //   • status dot (locked / available / completed)
 //   • title (linked to the admin item editor)
@@ -177,7 +177,7 @@ export function ScheduledItemRow({
           ) : null}
         </div>
       </div>
-
+-
       {/* Unlock date — click to edit */}
       <button
         type="button"
@@ -191,7 +191,7 @@ export function ScheduledItemRow({
         <CalendarClock className="size-3.5 text-muted-foreground" />
         {fmtDate(scheduled.unlock_at)}
       </button>
-
+-
       {/* Secondary controls — compact, revealed on hover for less noise */}
       <div className="flex items-center gap-1 opacity-70 transition-opacity group-hover:opacity-100">
         {scheduled.has_unlock_override ? (

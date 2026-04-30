@@ -10,9 +10,9 @@ const intlMiddleware = createIntlMiddleware(routing);
  * Detect the preferred locale for an incoming request.
  *
  * Priority:
- *  1. Vercel geolocation header (x-vercel-ip-country) — set automatically
+ *  1. Vercel geolocation header (x-vercel-ip-country) - set automatically
  *     on Vercel deployments; Israeli IP → Hebrew.
- *  2. Browser Accept-Language header — if Hebrew is listed, use Hebrew;
+ *  2. Browser Accept-Language header - if Hebrew is listed, use Hebrew;
  *     if English is listed (and Hebrew isn't), use English.
  *  3. Default: Hebrew (Israel-first product).
  */

@@ -11,7 +11,7 @@ import type {
 } from "@/lib/snakes/types";
 
 /**
- * useLocalSnakesStore — in-memory state for single-device (pass-the-phone)
+ * useLocalSnakesStore - in-memory state for single-device (pass-the-phone)
  * play. Shapes itself like the remote Supabase data so the game UI can treat
  * both modes the same via GameAdapter.
  *
@@ -19,7 +19,7 @@ import type {
  *   • a synthetic GameRoom (status, game_state, config)
  *   • the ordered list of players
  *
- * No network, no auth, no realtime — everything is local, synchronous, and
+ * No network, no auth, no realtime - everything is local, synchronous, and
  * reset-on-refresh. That's fine: pass-the-phone sessions are ephemeral by
  * nature.
  */

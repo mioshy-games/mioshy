@@ -14,7 +14,7 @@
  * Returns JSON ImportResult.
  *
  * Notes:
- *   • Assignments import is not supported here — create them via the UI so
+ *   • Assignments import is not supported here - create them via the UI so
  *     scheduled-item materialization runs correctly.
  *   • Row-level errors are collected and returned; they do NOT abort the import.
  *   • All writes use the Supabase service-role client (bypasses RLS).
@@ -309,7 +309,7 @@ async function handleItemsImport(
     }
   }
 
-  // Updates (sequential — each needs its own .eq())
+  // Updates (sequential - each needs its own .eq())
   for (const r of toUpdate) {
     const { error } = await admin
       .from("journey_items")
@@ -352,5 +352,6 @@ function itemPayload(r: ItemImportRow) {
     sort_order: r.sort_order,
     default_offset_days: r.default_offset_days,
     is_active: r.is_active,
+    audience: r.audience,
   };
 }

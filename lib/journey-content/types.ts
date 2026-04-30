@@ -13,9 +13,9 @@ export type AssignmentSourceKind = "program" | "category" | "item";
 
 /**
  * Display status derived from unlock_at + completion row.
- *   locked    — unlock_at > now
- *   available — unlock_at <= now and not completed
- *   completed — has a row in journey_item_completions
+ *   locked    - unlock_at > now
+ *   available - unlock_at <= now and not completed
+ *   completed - has a row in journey_item_completions
  */
 export type ScheduledItemStatus = "locked" | "available" | "completed";
 
@@ -61,6 +61,8 @@ export interface JourneyCategory {
   updated_at: string;
 }
 
+export type JourneyAudience = "both" | "owner" | "partner";
+
 export interface JourneyItem {
   id: string;
   category_id: string;
@@ -78,6 +80,8 @@ export interface JourneyItem {
   sort_order: number;
   default_offset_days: number;
   is_active: boolean;
+  /** Migration 044: 'both' | 'owner' | 'partner'. Solo assignments behave as 'both'. */
+  audience: JourneyAudience;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -114,6 +118,9 @@ export interface JourneyScheduledItem {
    * Migration 036.
    */
   notified_at: string | null;
+  /** Migration 044: copied from item at materialization. The expert may
+   * override this row independently (e.g. via per-couple CSV upload). */
+  audience: JourneyAudience;
   created_at: string;
   updated_at: string;
 }
@@ -143,7 +150,7 @@ export type JourneyOwner =
   | { kind: "couple"; coupleId: string };
 
 /**
- * Serialized owner key used in URLs — "user:<uuid>" or "couple:<uuid>".
+ * Serialized owner key used in URLs - "user:<uuid>" or "couple:<uuid>".
  * Used for admin Manage-Client routes so both flavors of owner share one
  * URL shape.
  */

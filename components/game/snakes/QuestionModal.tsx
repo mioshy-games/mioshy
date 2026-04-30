@@ -5,7 +5,7 @@ import type { GameConfig, Question } from "@/lib/snakes/types";
 import { cn } from "@/lib/utils";
 
 /**
- * QuestionModal — slides/scales IN from the exact cell on the board where
+ * QuestionModal - slides/scales IN from the exact cell on the board where
  * the current player's token is sitting. This makes it feel like the
  * question is erupting out of the tile they just landed on, not a detached
  * floating modal. When `originPct` is null we fall back to a gentle centered
@@ -33,7 +33,7 @@ export function QuestionModal({
   originPct?: { xPct: number; yPct: number } | null;
 }) {
   // Skip/penalty text removed — the modal now has only one action (close)
-  // so there is no "skip" path and therefore no penalty to warn about.
+  // so there is no "skip" path-and therefore no penalty to warn about.
 
   // If we have a board-cell origin, we animate the modal's transform origin
   // to match. We place the modal absolutely inside the board wrapper, grow
@@ -111,7 +111,7 @@ export function QuestionModal({
 
               <div className="mt-5 text-xl font-bold leading-relaxed">
                 {question?.text_he ?? "—"}
-              </div>
+              </div>-
 
               <div className="mt-6">
                 <button

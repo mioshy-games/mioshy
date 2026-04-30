@@ -1,12 +1,12 @@
 "use client";
 
 // ============================================================
-// TimelineList — the user-facing vertical timeline for the Journey
+// TimelineList - the user-facing vertical timeline for the Journey
 // Content System. Groups entries by category, shows a status-aware
 // card per item with a lock countdown / complete checkmark / open
 // affordance, and links each unlocked entry to the item-detail route.
 //
-// This component is pure presentation — all mutations happen on the
+// This component is pure presentation - all mutations happen on the
 // item-detail page via server actions. Keeping writes off the list
 // page lets us statically revalidate the timeline after any edit.
 // ============================================================
@@ -53,7 +53,7 @@ export function TimelineList({ entries, locale, partnered }: Props) {
       const name =
         (isHe ? e.category.name_he : e.category.name_en) ??
         e.category.name_he ??
-        "—";
+        "-";
       const group = map.get(id);
       if (group) {
         group.items.push(e);
@@ -80,7 +80,7 @@ export function TimelineList({ entries, locale, partnered }: Props) {
 }
 
 // ------------------------------------------------------------
-// Category group — chapter heading + vertical rail of items
+// Category group - chapter heading + vertical rail of items
 // ------------------------------------------------------------
 
 function CategoryGroup({
@@ -112,7 +112,7 @@ function CategoryGroup({
       </header>
 
       <ol className="relative space-y-3">
-        {/* Vertical rail — positioned on the start side (RTL-aware) */}
+        {/* Vertical rail - positioned on the start side (RTL-aware) */}
         <div
           aria-hidden
           className={cn(
@@ -160,7 +160,7 @@ function TimelineCard({
 
   return (
     <li className="relative">
-      {/* Node dot on the rail — subtly animated when available so the eye
+      {/* Node dot on the rail - subtly animated when available so the eye
           lands on it; crisp checkmark when done; muted when locked. */}
       <span
         aria-hidden
@@ -191,11 +191,11 @@ function TimelineCard({
           className={cn(
             "relative rounded-2xl border backdrop-blur transition",
             isHe ? "me-12" : "ms-12",
-            // Completed: green accent but reduced emphasis — ink fades so
+            // Completed: green accent but reduced emphasis - ink fades so
             // the eye doesn't re-read every "done" row on every scroll.
             status === "completed" &&
               "border-emerald-400/30 bg-gradient-to-br from-emerald-500/[0.08] via-white/[0.02] to-white/0 opacity-90 hover:opacity-100 hover:from-emerald-500/[0.12]",
-            // Available: strongest affordance — ambient glow ring + amber
+            // Available: strongest affordance - ambient glow ring + amber
             // tint + soft hover lift for the primary action.
             status === "available" &&
               "border-amber-300/65 bg-gradient-to-br from-amber-400/20 via-rose-400/10 to-indigo-500/10 shadow-[0_0_0_1px_rgba(252,211,77,0.35),0_20px_60px_-30px_rgba(251,191,36,0.55)] hover:-translate-y-0.5 hover:from-amber-400/25",
@@ -258,7 +258,7 @@ function TimelineCard({
                 />
               </div>
 
-              {/* Short snippet of body — full content on detail page */}
+              {/* Short snippet of body - full content on detail page */}
               <p
                 className={cn(
                   "mt-1.5 line-clamp-2 text-sm",
@@ -288,7 +288,7 @@ function TimelineCard({
                   ) : null}
                 </div>
                 {status !== "locked" ? (
-                  // Thumb-friendly "Open" affordance — min-h 44 on mobile so
+                  // Thumb-friendly "Open" affordance - min-h 44 on mobile so
                   // the tap target matches the card's clickable area and
                   // users never miss the edge.
                   <span className="inline-flex min-h-[44px] items-center gap-1 rounded-full bg-white/5 px-3 py-1 text-sm font-semibold text-white/90 sm:min-h-0 sm:bg-transparent sm:px-0 sm:py-0 sm:text-xs sm:font-medium sm:text-white/80">
@@ -337,7 +337,7 @@ function LockedWrap({ children }: { children: React.ReactNode }) {
 }
 
 // ------------------------------------------------------------
-// StatusPill — small badge with unlock countdown when locked
+// StatusPill - small badge with unlock countdown when locked
 // ------------------------------------------------------------
 
 function StatusPill({
@@ -381,7 +381,7 @@ function formatLockedPill(unlockAt: string, isHe: boolean): string {
   if (days < 14) return isHe ? `בעוד ${days} ימים` : `In ${days} days`;
   const weeks = Math.ceil(days / 7);
   if (weeks < 6) return isHe ? `בעוד ${weeks} שבועות` : `In ${weeks} weeks`;
-  // Fallback — show a date once the gap is long enough that weeks feel silly.
+  // Fallback - show a date once the gap is long enough that weeks feel silly.
   return new Date(unlockAt).toLocaleDateString(isHe ? "he-IL" : "en-US", {
     month: "short",
     day: "numeric",

@@ -6,7 +6,7 @@ import type { BackgroundSettings, ParticlesSettings } from "@/lib/types/settings
 import { FloatingParticles } from "./FloatingParticles";
 
 // ─── Color utilities ──────────────────────────────────────────────────────────
-// Pure functions — no deps — derive a palette from a single hex input
+// Pure functions - no deps - derive a palette from a single hex input
 
 function hexToHsl(hex: string): [number, number, number] {
   const r = parseInt(hex.slice(1, 3), 16) / 255;
@@ -80,7 +80,7 @@ const SLUG_THEMES: Record<string, [string, string, string]> = {
   "naughty-or-nice":     ["#0099ff", "#00ffcc", "#ff0099"],
 };
 
-// ─── Blob component — GPU-only transform animation ────────────────────────────
+// ─── Blob component - GPU-only transform animation ────────────────────────────
 
 type BlobConfig = {
   color: string;
@@ -128,9 +128,9 @@ function Blob({ b, i }: { b: BlobConfig; i: number }) {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 /**
- * @param gameSlug   — used as theme key
- * @param primaryColor — hex from game.bg_value in DB (overrides slug theme)
- * @param bgSettings  — from game_settings table; takes priority over primaryColor
+ * @param gameSlug   - used as theme key
+ * @param primaryColor - hex from game.bg_value in DB (overrides slug theme)
+ * @param bgSettings  - from game_settings table; takes priority over primaryColor
  */
 export function GamePageBackground({
   gameSlug,
@@ -198,7 +198,7 @@ export function GamePageBackground({
           : derivePalette(baseHex))
       : SLUG_THEMES[gameSlug] ?? ["#8800ff", "#ff0088", "#0088ff"];
 
-  // Solid base — use bgSettings.color for solid, otherwise keep near-black
+  // Solid base - use bgSettings.color for solid, otherwise keep near-black
   const base =
     bgSettings?.type === "color" && bgSettings.color
       ? bgSettings.color
@@ -226,7 +226,7 @@ export function GamePageBackground({
       {/* Animated blobs */}
       {blobs.map((b, i) => <Blob key={i} b={b} i={i} />)}
 
-      {/* Scanlines — light gaming texture */}
+      {/* Scanlines - light gaming texture */}
       <div
         className="pointer-events-none absolute inset-0"
         style={{
@@ -234,7 +234,7 @@ export function GamePageBackground({
         }}
       />
 
-      {/* Vignette — dark edges push eye to centre */}
+      {/* Vignette - dark edges push eye to centre */}
       <div
         className="pointer-events-none absolute inset-0"
         style={{

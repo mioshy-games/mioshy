@@ -1,7 +1,7 @@
 /**
- * /[locale]/journey — MARKETING PAGE.
+ * /[locale]/journey - MARKETING PAGE.
  *
- * Pre-purchase pillar landing page for "Journey" — the structured
+ * Pre-purchase pillar landing page for "Journey" - the structured
  * content-delivery product line. Sits parallel to /games and /adults.
  *
  * VISUAL DIRECTION (V2):
@@ -24,7 +24,7 @@
  *                                    gets lost behind a second funnel step).
  *
  * `hasActiveAssignments` comes from getOwnerJourneyStatus() and honors the
- * couple-preferred-owner rule — so a paired user sees the couple's
+ * couple-preferred-owner rule - so a paired user sees the couple's
  * journey, not their private pre-pairing one.
  */
 
@@ -48,7 +48,7 @@ import { routing } from "@/i18n/routing";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getOwnerJourneyStatus } from "@/lib/journey-content/owner-status";
 import { getCurrentCoupleContext } from "@/lib/between-us/couples";
-// FAQ uses the same scoped CSS as the homepage v2 FAQ — wrapper class .home-v2
+// FAQ uses the same scoped CSS as the homepage v2 FAQ - wrapper class .home-v2
 import "@/components/marketing/v2/styles.css";
 
 function siteUrl() {
@@ -189,7 +189,7 @@ export default async function JourneyMarketingPage({
     h: t(`why.items.${i}.h`),
     p: t(`why.items.${i}.p`),
   }));
-  // V2 wine-palette unified card design — same icon-tile chrome across all 4,
+  // V2 wine-palette unified card design - same icon-tile chrome across all 4,
   // only icon and stat differ. No more rainbow.
   const whyMeta = [
     {
@@ -236,7 +236,7 @@ export default async function JourneyMarketingPage({
   const trust = [0, 1, 2, 3].map((i) => t(`trust.${i}`));
 
   // When the viewer already has an active journey, the assessment funnel
-  // is a detour — send them straight to the timeline from every CTA.
+  // is a detour - send them straight to the timeline from every CTA.
   const primaryHref = hasActiveAssignments
     ? "/journey/timeline"
     : "/journey/assessment";
@@ -254,7 +254,7 @@ export default async function JourneyMarketingPage({
       className="relative min-h-[100dvh] overflow-hidden text-white"
       dir={isHe ? "rtl" : "ltr"}
     >
-      {/* Hero backdrop — kept dark voyage palette as the journey identity */}
+      {/* Hero backdrop - kept dark voyage palette as the journey identity */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 -z-20 h-[110vh] bg-[linear-gradient(180deg,#070b18_0%,#0a1126_40%,#0c1530_100%)]"
@@ -277,7 +277,7 @@ export default async function JourneyMarketingPage({
 
       <main className="relative">
         {/* ════════════════════════════════════════════════════════════
-            1. HERO — dark voyage palette (kept)
+            1. HERO - dark voyage palette (kept)
         ════════════════════════════════════════════════════════════ */}
         <section className="relative">
           <nav
@@ -291,17 +291,39 @@ export default async function JourneyMarketingPage({
             <span className="text-white/80">{t("breadcrumbJourney")}</span>
           </nav>
 
-          {/* Floating orbs — decorative only */}
+          {/* Animated background — converging emerald ↔ amber blobs, floating
+              orb, and 12 small drifting circles. Mirrors the homepage hero
+              animation system but in the journey voyage palette.
+              Lifted from -z-10 to z-0 so the layer paints above the aurora
+              wash and the orbs/blobs read clearly. Content above sets its
+              own positive z-index. */}
           <div
             aria-hidden
-            className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
+            className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
           >
-            <div className="absolute start-[10%] top-[22%] h-40 w-40 rounded-full bg-[radial-gradient(circle,rgba(16,185,129,0.25),transparent_65%)] blur-2xl mio-journey-float" />
-            <div className="absolute end-[14%] top-[38%] h-48 w-48 rounded-full bg-[radial-gradient(circle,rgba(251,191,36,0.22),transparent_65%)] blur-2xl mio-journey-float-delay" />
-            <div className="absolute start-[42%] top-[12%] h-32 w-32 rounded-full bg-[radial-gradient(circle,rgba(20,184,166,0.22),transparent_65%)] blur-2xl mio-journey-float-slow" />
+            {/* Converging pair — emerald (left) ↔ amber (right) */}
+            <div className="journey-blob journey-blob-1" />
+            <div className="journey-blob journey-blob-2" />
+
+            {/* Soft floating circle */}
+            <div className="journey-floating-circle" />
+
+            {/* 12 wheels-game-style drifting dots, journey palette */}
+            <span className="journey-orbit journey-orbit-1" />
+            <span className="journey-orbit journey-orbit-2" />
+            <span className="journey-orbit journey-orbit-3" />
+            <span className="journey-orbit journey-orbit-4" />
+            <span className="journey-orbit journey-orbit-5" />
+            <span className="journey-orbit journey-orbit-6" />
+            <span className="journey-orbit journey-orbit-7" />
+            <span className="journey-orbit journey-orbit-8" />
+            <span className="journey-orbit journey-orbit-9" />
+            <span className="journey-orbit journey-orbit-10" />
+            <span className="journey-orbit journey-orbit-11" />
+            <span className="journey-orbit journey-orbit-12" />
           </div>
 
-          <div className="relative mx-auto max-w-5xl px-4 pb-32 pt-10 text-center sm:pt-16">
+          <div className="relative z-10 mx-auto max-w-5xl px-4 pb-32 pt-10 text-center sm:pt-16">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/25 bg-emerald-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-emerald-100 backdrop-blur-md">
               <Sparkles className="h-3 w-3" />
               {t("badge")}
@@ -325,8 +347,8 @@ export default async function JourneyMarketingPage({
               <div className="mx-auto mt-6 inline-flex items-center gap-2 rounded-full border border-emerald-300/40 bg-emerald-400/10 px-4 py-1.5 text-xs font-medium text-emerald-100 backdrop-blur-md">
                 <Sparkles className="h-3.5 w-3.5" />
                 {isHe
-                  ? "המסלול שלכם פעיל — המשיכו מאיפה שעצרתם"
-                  : "Your journey is active — pick up where you left off"}
+                  ? "המסלול שלכם פעיל - המשיכו מאיפה שעצרתם"
+                  : "Your journey is active - pick up where you left off"}
               </div>
             ) : hasInProgressAssessment ? (
               <div className="mx-auto mt-6 inline-flex items-center gap-2 rounded-full border border-amber-300/30 bg-amber-400/10 px-4 py-1.5 text-xs font-medium text-amber-100 backdrop-blur-md">
@@ -338,11 +360,11 @@ export default async function JourneyMarketingPage({
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
                 href={primaryHref}
-                className="group relative inline-flex min-h-[56px] items-center justify-center overflow-hidden rounded-full px-9 text-base font-semibold text-white shadow-xl shadow-emerald-500/25 transition hover:brightness-110"
+                className="group relative inline-flex min-h-[56px] items-center justify-center overflow-hidden rounded-full px-9 text-base font-semibold text-white shadow-xl shadow-fuchsia-500/30 transition hover:brightness-110"
               >
                 <span
                   aria-hidden
-                  className="absolute inset-0 bg-[linear-gradient(110deg,#10b981_0%,#14b8a6_28%,#38bdf8_55%,#fbbf24_100%)] bg-[length:220%_100%] mio-journey-gradient-shift"
+                  className="absolute inset-0 bg-[linear-gradient(110deg,#F43F5E_0%,#EC4899_45%,#A855F7_100%)] bg-[length:220%_100%] mio-journey-gradient-shift"
                 />
                 <span className="relative z-10 inline-flex items-center">
                   {primaryLabel}
@@ -378,12 +400,12 @@ export default async function JourneyMarketingPage({
         </section>
 
         {/* ════════════════════════════════════════════════════════════
-            LIGHT WRAPPER — V2 cream language for everything below
+            LIGHT WRAPPER - V2 cream language for everything below
         ════════════════════════════════════════════════════════════ */}
         <div className="bg-[#FAF6F7] text-slate-900">
 
           {/* ════════════════════════════════════════════════════════════
-              2. WHY — light cream, 4 unified cards w/ stat chips
+              2. WHY - light cream, 4 unified cards w/ stat chips
           ════════════════════════════════════════════════════════════ */}
           <section
             id="why"
@@ -437,7 +459,7 @@ export default async function JourneyMarketingPage({
                 })}
               </div>
 
-              {/* Social proof — editorial pull-quote, mirroring /games.
+              {/* Social proof - editorial pull-quote, mirroring /games.
                   Two italic-accent phrases inside a flowing serif sentence,
                   black-italic trial qualifier, kicker line, and a CTA that
                   delivers on the kicker's promise. */}
@@ -495,7 +517,7 @@ export default async function JourneyMarketingPage({
                   )}
                 </p>
 
-                {/* Trial qualifier — black italic, smaller weight */}
+                {/* Trial qualifier - black italic, smaller weight */}
                 <p
                   className="mt-4 text-[22px] leading-[1.4] text-[#170E14] sm:text-[24px] lg:text-[28px]"
                   style={{
@@ -505,8 +527,8 @@ export default async function JourneyMarketingPage({
                   }}
                 >
                   {isHe
-                    ? "התחילו חינם — בלי כרטיס אשראי."
-                    : "Start free — no credit card required."}
+                    ? "התחילו חינם - בלי כרטיס אשראי."
+                    : "Start free - no credit card required."}
                 </p>
 
                 {/* Italic kicker, flanked by hairlines */}
@@ -527,7 +549,7 @@ export default async function JourneyMarketingPage({
                   <span aria-hidden className="h-px w-16 bg-[#B83C4D]/40" />
                 </div>
 
-                {/* CTA — delivers on the kicker's promise */}
+                {/* CTA - delivers on the kicker's promise */}
                 <div className="mt-7">
                   <Link
                     href={primaryHref}
@@ -552,7 +574,7 @@ export default async function JourneyMarketingPage({
           </section>
 
           {/* ════════════════════════════════════════════════════════════
-              3. HOW IT WORKS — magazine chapter cards (3 stages)
+              3. HOW IT WORKS - magazine chapter cards (3 stages)
           ════════════════════════════════════════════════════════════ */}
           <section
             id="how"
@@ -645,7 +667,7 @@ export default async function JourneyMarketingPage({
           </section>
 
           {/* ════════════════════════════════════════════════════════════
-              4. INSIDE — dark wine editorial card (full break from cream)
+              4. INSIDE - dark wine editorial card (full break from cream)
           ════════════════════════════════════════════════════════════ */}
           <section
             id="inside"
@@ -740,7 +762,7 @@ export default async function JourneyMarketingPage({
           </section>
 
           {/* ════════════════════════════════════════════════════════════
-              5. CTA BLOCK — light cream manifesto closer
+              5. CTA BLOCK - light cream manifesto closer
           ════════════════════════════════════════════════════════════ */}
           <section className="relative bg-[#FAF6F7] px-4 pt-[85px] pb-20 lg:pb-24">
             <div className="relative mx-auto max-w-3xl text-center">
@@ -791,7 +813,7 @@ export default async function JourneyMarketingPage({
           </section>
 
           {/* ════════════════════════════════════════════════════════════
-              6. FAQ — same design language as the homepage FAQ.
+              6. FAQ - same design language as the homepage FAQ.
               Two-column grid: sticky side panel (eyebrow / title / blurb /
               CTA) on one side, accordion list on the other.
               Styles are scoped under `.home-v2` (see styles.css).
@@ -854,7 +876,7 @@ export default async function JourneyMarketingPage({
         {/* ── end light wrapper ── */}
       </main>
 
-      {/* Local keyframes — server component can't use <style jsx>. */}
+      {/* Local keyframes - server component can't use <style jsx>. */}
       <style
         dangerouslySetInnerHTML={{
           __html: `
@@ -876,6 +898,94 @@ export default async function JourneyMarketingPage({
             .mio-journey-float       { animation: mio-journey-float 9s ease-in-out infinite; }
             .mio-journey-float-delay { animation: mio-journey-float 10s ease-in-out infinite; animation-delay: -3s; }
             .mio-journey-float-slow  { animation: mio-journey-float 14s ease-in-out infinite; animation-delay: -5s; }
+
+            /* ── Journey hero animated background — voyage palette ──────
+               Goal: feel atmospheric, not announced. Ambient drift, not
+               a moving billboard. */
+
+            /* Large drifting blobs — soft, slow, atmospheric. */
+            .journey-blob {
+              position: absolute;
+              border-radius: 50%;
+              filter: blur(110px);
+              opacity: 0.42;
+              will-change: transform;
+            }
+            .journey-blob-1 {
+              width: 620px; height: 620px;
+              top: -160px;
+              inset-inline-start: -120px;
+              background: radial-gradient(circle, rgba(16,185,129,0.7) 0%, rgba(16,185,129,0) 70%);
+              animation: journey-blob-1-converge 56s ease-in-out infinite;
+            }
+            .journey-blob-2 {
+              width: 560px; height: 560px;
+              bottom: -140px;
+              inset-inline-end: -100px;
+              background: radial-gradient(circle, rgba(251,191,36,0.6) 0%, rgba(251,191,36,0) 70%);
+              animation: journey-blob-2-converge 56s ease-in-out infinite;
+            }
+
+            /* Slow, small drift — converge gently, never crowd the headline */
+            @keyframes journey-blob-1-converge {
+              0%, 100% { transform: translate(0, 0) scale(1); }
+              50%      { transform: translate(140px, 100px) scale(1.06); }
+            }
+            @keyframes journey-blob-2-converge {
+              0%, 100% { transform: translate(0, 0) scale(1); }
+              50%      { transform: translate(-140px, -100px) scale(1.06); }
+            }
+
+            /* Soft floating circle */
+            .journey-floating-circle {
+              position: absolute;
+              width: 200px; height: 200px;
+              left: 58%; top: 32%;
+              border-radius: 50%;
+              background: radial-gradient(circle, rgba(56,189,248,0.35) 0%, rgba(56,189,248,0) 65%);
+              filter: blur(40px);
+              opacity: 0.45;
+              animation: journey-floating-circle-move 32s ease-in-out infinite;
+              pointer-events: none;
+            }
+            @keyframes journey-floating-circle-move {
+              0%, 100% { transform: translate(0, 0) scale(1); }
+              25%      { transform: translate(-30px, 40px) scale(1.05); }
+              50%      { transform: translate(40px, 60px) scale(0.97); }
+              75%      { transform: translate(60px, -30px) scale(1.07); }
+            }
+
+            /* 12 small drifting orbit dots — journey palette.
+               Single smooth fade gradient (no mid-stop ring) so they feather
+               into the bg instead of looking outlined. Glow halo softened
+               so the dots blend rather than announce themselves. */
+            .journey-orbit {
+              position: absolute;
+              border-radius: 50%;
+              pointer-events: none;
+              opacity: 0.45;
+              will-change: transform, opacity;
+            }
+            .journey-orbit-1  { width: 8px;  height: 8px;  left: 12%; top: 22%; background: radial-gradient(circle, rgba(16,185,129,0.85) 0%, rgba(16,185,129,0) 70%);  box-shadow: 0 0 10px rgba(16,185,129,0.25);  animation: journey-orbit-a 26s ease-in-out infinite; }
+            .journey-orbit-2  { width: 6px;  height: 6px;  left: 24%; top: 68%; background: radial-gradient(circle, rgba(20,184,166,0.85) 0%, rgba(20,184,166,0) 70%);  box-shadow: 0 0 8px  rgba(20,184,166,0.22);  animation: journey-orbit-b 32s ease-in-out infinite; animation-delay: 1s; }
+            .journey-orbit-3  { width: 10px; height: 10px; left: 38%; top: 18%; background: radial-gradient(circle, rgba(251,191,36,0.8)  0%, rgba(251,191,36,0)  70%);  box-shadow: 0 0 12px rgba(251,191,36,0.22);  animation: journey-orbit-c 30s ease-in-out infinite; animation-delay: 2s; }
+            .journey-orbit-4  { width: 5px;  height: 5px;  left: 48%; top: 74%; background: radial-gradient(circle, rgba(56,189,248,0.85) 0%, rgba(56,189,248,0) 70%);  box-shadow: 0 0 8px  rgba(56,189,248,0.22);  animation: journey-orbit-d 36s ease-in-out infinite; animation-delay: 3s; }
+            .journey-orbit-5  { width: 7px;  height: 7px;  left: 62%; top: 30%; background: radial-gradient(circle, rgba(16,185,129,0.8)  0%, rgba(16,185,129,0)  70%);  box-shadow: 0 0 10px rgba(16,185,129,0.22);  animation: journey-orbit-e 28s ease-in-out infinite; animation-delay: .8s; }
+            .journey-orbit-6  { width: 7px;  height: 7px;  left: 74%; top: 66%; background: radial-gradient(circle, rgba(129,140,248,0.85) 0%, rgba(129,140,248,0) 70%);  box-shadow: 0 0 10px rgba(129,140,248,0.22);  animation: journey-orbit-a 34s ease-in-out infinite; animation-delay: 3.6s; }
+            .journey-orbit-7  { width: 9px;  height: 9px;  left: 86%; top: 24%; background: radial-gradient(circle, rgba(251,191,36,0.85) 0%, rgba(251,191,36,0) 70%);  box-shadow: 0 0 12px rgba(251,191,36,0.22);  animation: journey-orbit-b 30s ease-in-out infinite; animation-delay: 4.2s; }
+            .journey-orbit-8  { width: 6px;  height: 6px;  left: 18%; top: 46%; background: radial-gradient(circle, rgba(45,212,191,0.85) 0%, rgba(45,212,191,0) 70%);  box-shadow: 0 0 8px  rgba(45,212,191,0.22);  animation: journey-orbit-c 38s ease-in-out infinite; animation-delay: 1.6s; }
+            .journey-orbit-9  { width: 8px;  height: 8px;  left: 54%; top: 54%; background: radial-gradient(circle, rgba(56,189,248,0.8)  0%, rgba(56,189,248,0)  70%);  box-shadow: 0 0 10px rgba(56,189,248,0.22);  animation: journey-orbit-d 32s ease-in-out infinite; animation-delay: 5s; }
+            .journey-orbit-10 { width: 7px;  height: 7px;  left: 80%; top: 48%; background: radial-gradient(circle, rgba(34,211,238,0.85) 0%, rgba(34,211,238,0) 70%);  box-shadow: 0 0 10px rgba(34,211,238,0.22);  animation: journey-orbit-e 34s ease-in-out infinite; animation-delay: 2.4s; }
+            .journey-orbit-11 { width: 5px;  height: 5px;  left: 30%; top: 38%; background: radial-gradient(circle, rgba(167,243,208,0.8)  0%, rgba(167,243,208,0)  70%);  box-shadow: 0 0 8px  rgba(167,243,208,0.2);   animation: journey-orbit-a 28s ease-in-out infinite; animation-delay: 4s; }
+            .journey-orbit-12 { width: 8px;  height: 8px;  left: 68%; top: 8%;  background: radial-gradient(circle, rgba(253,224,71,0.8)   0%, rgba(253,224,71,0)   70%);  box-shadow: 0 0 10px rgba(253,224,71,0.22);   animation: journey-orbit-b 30s ease-in-out infinite; animation-delay: .5s; }
+
+            /* Drift ranges halved from previous version — feels ambient,
+               not propelled. Opacity softer so dots breathe in/out. */
+            @keyframes journey-orbit-a { 0%,100% { transform: translate(0,0); opacity: .25; } 50% { transform: translate(30px,-40px);  opacity: .65; } }
+            @keyframes journey-orbit-b { 0%,100% { transform: translate(0,0); opacity: .25; } 50% { transform: translate(-40px,30px); opacity: .65; } }
+            @keyframes journey-orbit-c { 0%,100% { transform: translate(0,0); opacity: .2; }  33% { transform: translate(40px,18px);  opacity: .55; } 66% { transform: translate(-25px,-30px); opacity: .7; } }
+            @keyframes journey-orbit-d { 0%,100% { transform: translate(0,0); opacity: .25; } 50% { transform: translate(-30px,-45px); opacity: .65; } }
+            @keyframes journey-orbit-e { 0%,100% { transform: translate(0,0); opacity: .25; } 50% { transform: translate(45px,35px);  opacity: .65; } }
           `,
         }}
       />

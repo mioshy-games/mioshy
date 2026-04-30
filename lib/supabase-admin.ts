@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 
-/** Service role — use only in trusted server contexts (never expose to client). */
+/** Service role - use only in trusted server contexts (never expose to client). */
 export function createServiceRoleClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -13,7 +13,7 @@ export function createServiceRoleClient() {
 }
 
 /**
- * Admin client — same as service role, throws if env vars are missing.
+ * Admin client - same as service role, throws if env vars are missing.
  * Used by billing API routes that must never fail silently.
  */
 export async function createAdminClient() {

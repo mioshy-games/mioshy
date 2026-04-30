@@ -119,7 +119,7 @@ function RedeemDialog({
       router.refresh();
       setTimeout(() => {
         onClose();
-        // Redirect to the caller-provided destination — defaults to /my
+        // Redirect to the caller-provided destination - defaults to /my
         // when used in account/global contexts; game-page callers pass
         // /adults/[slug]/play so the partner lands inside the game.
         router.push(redirectTo);
@@ -176,7 +176,7 @@ function RedeemDialog({
           ) : null}
           {success ? (
             <p className="rounded-xl border border-emerald-300/40 bg-emerald-400/10 px-3 py-2 text-xs text-emerald-100">
-              {isHe ? "צומדתם בהצלחה — מעבר למיאושי שלי…" : "Paired! Taking you to My Mioshy…"}
+              {isHe ? "צומדתם בהצלחה - מעבר למיאושי שלי…" : "Paired! Taking you to My Mioshy…"}
             </p>
           ) : null}
           <button

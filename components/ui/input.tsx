@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
 // register fields by attaching a `ref` callback) can reach the underlying
 // native <input>. Without forwardRef, the spread `{...register("name")}`
 // silently drops the `ref`, RHF never tracks the field's value, and
-// submission ends up with `undefined` for every field — which Zod then
+// submission ends up with `undefined` for every field - which Zod then
 // rejects with confusing "expected string, received undefined" errors
 // even though the user clearly typed something.
 const Input = React.forwardRef<

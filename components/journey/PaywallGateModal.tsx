@@ -20,29 +20,29 @@ export function PaywallGateModal({ open, locale, onClose }: PaywallGateModalProp
 
   const t = locale === "he"
     ? {
-        title: "תוכנית אישית — שבוע אחר שבוע",
+        title: "תוכנית אישית - שבוע אחר שבוע",
         body: "הצטרפו לשירות וקבלו ניתוח מעמיק, משימות שבועיות מותאמות, ושיחות עם מומחים.",
         bullets: [
-          "2–4 משימות בשבוע שנבחרו ע\"י מומחים — בדיוק למה שאתם צריכים",
+          "2–4 משימות בשבוע שנבחרו ע\"י מומחים - בדיוק למה שאתם צריכים",
           "שאלונים נוספים בשבועות הראשונים לכיוון מדויק יותר",
-          "שירות מותאם אישית לחלוטין — לא תוכנית גנרית",
-          "שיחות עם מומחים כלולות במחיר — ללא תוספת",
+          "שירות מותאם אישית לחלוטין - לא תוכנית גנרית",
+          "שיחות עם מומחים כלולות במחיר - ללא תוספת",
         ],
-        price: "₪98 / $33 לחודש — ניתן לביטול בכל עת",
+        price: "₪98 / $33 לחודש - ניתן לביטול בכל עת",
         cta: "הצטרפות לשירות",
         cancel: "אחר כך",
         loading: "מכין תשלום…",
       }
     : {
-        title: "A personalized plan — week after week",
+        title: "A personalized plan - week after week",
         body: "Join the service and get an in-depth analysis, weekly personalized tasks, and expert consultations.",
         bullets: [
-          "2–4 expert-picked weekly tasks — matched precisely to your needs",
+          "2–4 expert-picked weekly tasks - matched precisely to your needs",
           "Additional questionnaires in early weeks to sharpen your profile",
-          "100% personalized — not a generic program",
-          "Expert consultations are included in the price — no add-ons",
+          "100% personalized - not a generic program",
+          "Expert consultations are included in the price - no add-ons",
         ],
-        price: "$33 / ₪98 per month — cancel anytime",
+        price: "$33 / ₪98 per month - cancel anytime",
         cta: "Join the service",
         cancel: "Not now",
         loading: "Preparing checkout…",

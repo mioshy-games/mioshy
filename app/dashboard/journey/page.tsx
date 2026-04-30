@@ -81,7 +81,7 @@ export default async function JourneyDashboardPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            Journey — Content System
+            Journey - Content System
           </h1>
           <p className="text-muted-foreground mt-1 max-w-2xl text-sm">
             Time-released roadmaps for couples. Build programs, categories and
@@ -166,7 +166,7 @@ export default async function JourneyDashboardPage() {
           <ul className="divide-border divide-y">
             {programs.length === 0 ? (
               <li className="text-muted-foreground p-4 text-sm">
-                No programs yet —{" "}
+                No programs yet -{" "}
                 <Link
                   href="/dashboard/journey/programs/new"
                   className="text-primary hover:underline"
@@ -215,7 +215,7 @@ export default async function JourneyDashboardPage() {
             {standaloneCats.length === 0 ? (
               <li className="text-muted-foreground p-4 text-sm">
                 No standalone categories. These are categories not tied to any
-                program — useful for one-off assigns.
+                program - useful for one-off assigns.
               </li>
             ) : (
               standaloneCats.slice(0, 8).map((c) => (

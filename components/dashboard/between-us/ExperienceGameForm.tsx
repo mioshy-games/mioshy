@@ -53,7 +53,7 @@ const SECTIONS: { id: SectionId; label: string }[] = [
   { id: "media", label: "Media" },
   { id: "metrics", label: "Metrics" },
   { id: "taxonomy", label: "Taxonomy" },
-  // Optional per game — leave the lists empty for games that don't
+  // Optional per game - leave the lists empty for games that don't
   // need an in-play question reference. The play page hides the
   // section automatically when the active locale's array is empty.
   { id: "play-questions", label: "Play questions" },
@@ -118,7 +118,7 @@ export function ExperienceGameForm({
   // first failing field as a toast AND log everything to the console
   // so the user has both immediate feedback and full diagnostics.
   function onInvalid(errors: FieldErrors<ExperienceGameFormValues>) {
-    // Dump both the errors AND the values RHF actually has — when these
+    // Dump both the errors AND the values RHF actually has - when these
     // disagree with what the user sees in the inputs, the cause is almost
     // always a UI primitive that doesn't forward `ref`/`onChange` to the
     // native <input>, which prevents RHF from tracking the value.
@@ -312,7 +312,7 @@ export function ExperienceGameForm({
                     min={0}
                     max={9999}
                     // Use setValueAs so an empty input becomes 0 instead of
-                    // NaN — `valueAsNumber: true` produces NaN on empty
+                    // NaN - `valueAsNumber: true` produces NaN on empty
                     // inputs and Zod's `z.number().int()` then rejects it
                     // silently, leaving the user unable to save with no clue
                     // why.
@@ -568,7 +568,7 @@ export function ExperienceGameForm({
                 Optional in-play reference list. Use it for games that
                 ask players to answer a question when a physical event
                 triggers (e.g. "draw a heart card"). Leave both lists
-                empty for games that don't need this — the play page
+                empty for games that don't need this - the play page
                 hides the whole section automatically. */}
             <Section
               id="play-questions"
@@ -585,7 +585,7 @@ export function ExperienceGameForm({
                     dir="rtl"
                     rows={2}
                     maxLength={280}
-                    placeholder='למשל: "השאלות של המשחק — מי שיצא לו עלה צריך לענות על אחת מהשאלות הבאות."'
+                    placeholder='למשל: "השאלות של המשחק - מי שיצא לו עלה צריך לענות על אחת מהשאלות הבאות."'
                   />
                 </Field>
                 <Field
@@ -728,7 +728,7 @@ export function ExperienceGameForm({
 }
 
 /* ------------------------------------------------------------------
-   Layout primitives — compact section + field wrappers
+   Layout primitives - compact section + field wrappers
    ------------------------------------------------------------------ */
 
 function Section({
@@ -776,7 +776,7 @@ function Field({
   label: string;
   hint?: string;
   className?: string;
-  /** Optional RHF field name — when set, renders the validation error
+  /** Optional RHF field name - when set, renders the validation error
    *  message inline beneath the input. */
   errorFor?: keyof ExperienceGameFormValues;
   children: React.ReactNode;
@@ -839,7 +839,7 @@ function InlineSwitchRow({
 }
 
 /* ------------------------------------------------------------------
-   String list column — inline repeating text inputs
+   String list column - inline repeating text inputs
    ------------------------------------------------------------------ */
 
 type StringArrayField =

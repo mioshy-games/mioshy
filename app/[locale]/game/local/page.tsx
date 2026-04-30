@@ -13,7 +13,7 @@ export async function generateMetadata({
   const { locale } = params;
   const base = siteUrl();
   return {
-    title: "Mioshy — משחק מקומי",
+    title: "Mioshy - משחק מקומי",
     description: "משחק סולמות ונחשים לזוגות, על מכשיר אחד.",
     alternates: {
       canonical: `${base}/${locale}/game/local`,

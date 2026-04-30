@@ -1,6 +1,6 @@
 /**
  * Minimal pure-JavaScript ZIP builder (PKZip STORE method, no compression).
- * No external dependencies — uses only TextEncoder and DataView.
+ * No external dependencies - uses only TextEncoder and DataView.
  *
  * Limitations:
  *   • Files > 4 GB not supported (uint32 size fields)

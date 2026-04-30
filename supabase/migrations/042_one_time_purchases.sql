@@ -5,13 +5,13 @@
 --
 -- Until now, every successful Cardcom indicator callback created a row in
 -- public.subscriptions (recurring). The Adults pillar now ships as one-time
--- per-game purchases — one Cardcom charge unlocks a single experience_game
+-- per-game purchases - one Cardcom charge unlocks a single experience_game
 -- forever, no recurring billing, no subscription row.
 --
 -- We extend the existing `checkout_sessions` table with two columns:
 --
---   • `purchase_type`  — 'subscription' | 'one_time'
---   • `target_game_id` — uuid (nullable) that points at experience_games.id
+--   • `purchase_type`  - 'subscription' | 'one_time'
+--   • `target_game_id` - uuid (nullable) that points at experience_games.id
 --                        when purchase_type = 'one_time'
 --
 -- Both default sensibly so existing flows (Journey live in prod) keep working
@@ -20,7 +20,7 @@
 -- insert couple_entitlement (source = 'paid'), no subscription row.
 --
 -- Permanent access for purchased Adults games: the entitlement is keyed by
--- the COUPLE (not the user) and never expires — this remains true even after
+-- the COUPLE (not the user) and never expires - this remains true even after
 -- a Journey subscription is cancelled, per spec.
 -- ============================================================================
 
@@ -40,7 +40,7 @@ ALTER TABLE public.checkout_sessions
 
 -- Sanity rule: target_game_id is required for one_time purchases (otherwise
 -- the indicator webhook has no idea which game to entitle), and forbidden for
--- subscriptions (those grant pillar-wide access — they don't target a row).
+-- subscriptions (those grant pillar-wide access - they don't target a row).
 ALTER TABLE public.checkout_sessions
   DROP CONSTRAINT IF EXISTS checkout_sessions_target_shape_check;
 ALTER TABLE public.checkout_sessions
@@ -52,7 +52,7 @@ ALTER TABLE public.checkout_sessions
   );
 
 -- Helpful index for the indicator webhook to look up sessions by target +
--- type when reconciling — and for reporting ("how many one-time Adults
+-- type when reconciling - and for reporting ("how many one-time Adults
 -- purchases this month").
 CREATE INDEX IF NOT EXISTS checkout_sessions_purchase_type_idx
   ON public.checkout_sessions (purchase_type, target_game_id)
@@ -61,7 +61,7 @@ CREATE INDEX IF NOT EXISTS checkout_sessions_purchase_type_idx
 -- ============================================================================
 -- ensure_couple_for_user(p_user_id uuid)
 -- ----------------------------------------------------------------------------
--- The Cardcom indicator webhook runs with the SUPABASE service-role key —
+-- The Cardcom indicator webhook runs with the SUPABASE service-role key -
 -- there is NO `auth.uid()` available inside its execution context (it's not
 -- an authenticated user request, it's a server-to-server call).
 --

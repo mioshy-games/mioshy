@@ -6,7 +6,7 @@
  * Distinct visual identity from /adults:
  *   - Palette is cool / electric (indigo → violet → fuchsia → cyan), signalling
  *     playful gaming energy. /adults uses warm rose/amber/violet for intimacy.
- *   - Visual column is a floating "wheel + dice + card" stack — an homage to
+ *   - Visual column is a floating "wheel + dice + card" stack - an homage to
  *     the catalogue's wheel and snakes-and-ladders games. /adults uses tilted
  *     glass cards hinting at private conversations.
  *   - Background motion is larger, bouncier (longer travel, shorter duration),
@@ -52,12 +52,12 @@ export function GamesMarketingHero({
       dir={isHe ? "rtl" : "ltr"}
       className="relative isolate overflow-hidden"
     >
-      {/* Ambient aurora orbs — large, slow, high-blur */}
+      {/* Ambient aurora orbs - large, slow, high-blur */}
       <AuroraOrb className="start-[-10%] top-[-10%] h-[520px] w-[520px]" tint="indigo" />
       <AuroraOrb className="end-[-12%] top-[8%] h-[440px] w-[440px]" tint="fuchsia" />
       <AuroraOrb className="bottom-[-15%] start-[20%] h-[420px] w-[420px]" tint="cyan" />
 
-      {/* Subtle grid texture — gaming-console-like */}
+      {/* Subtle grid texture - gaming-console-like */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 -z-10 opacity-[0.06]"
@@ -172,13 +172,13 @@ export function GamesMarketingHero({
           ) : null}
         </div>
 
-        {/* Visual column — spinning wheel + floating dice + cards */}
+        {/* Visual column - spinning wheel + floating dice + cards */}
         <div className="relative z-10 lg:flex-1">
           <FloatingGamingStack isHe={isHe} />
         </div>
       </div>
 
-      {/* Local keyframes — kept inline so the component is drop-in. */}
+      {/* Local keyframes - kept inline so the component is drop-in. */}
       <style jsx>{`
         @keyframes mio-gradient-shift {
           0%, 100% { background-position: 0% 50%; }
@@ -224,7 +224,7 @@ function AuroraOrb({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Visual column — a spinning wheel behind, dice floating top-right,
+// Visual column - a spinning wheel behind, dice floating top-right,
 // and a playing card tilted at bottom. Three elements, three motion patterns.
 
 function FloatingGamingStack({ isHe }: { isHe: boolean }) {
@@ -236,7 +236,7 @@ function FloatingGamingStack({ isHe }: { isHe: boolean }) {
         className="absolute inset-0 -z-10 rounded-full bg-[radial-gradient(circle_at_50%_50%,rgba(124,58,237,0.35),transparent_65%)] blur-2xl"
       />
 
-      {/* Wheel — always spinning */}
+      {/* Wheel - always spinning */}
       <motion.div
         aria-hidden
         className="absolute start-1/2 top-1/2 h-[78%] w-[78%] -translate-x-1/2 -translate-y-1/2 rounded-full"
@@ -320,7 +320,7 @@ function FloatingGamingStack({ isHe }: { isHe: boolean }) {
 }
 
 function Dice5Face() {
-  // 5-pip dice face — positioned as absolute children inside the 24-unit square.
+  // 5-pip dice face - positioned as absolute children inside the 24-unit square.
   const dot = "absolute h-3.5 w-3.5 rounded-full bg-slate-900 shadow-inner";
   return (
     <div className="relative h-full w-full">

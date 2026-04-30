@@ -1,7 +1,7 @@
 /**
  * POST /api/billing/renewals/run
  *
- * Cron endpoint — charge subscriptions whose next_billing_date is due.
+ * Cron endpoint - charge subscriptions whose next_billing_date is due.
  * Protected by CARDCOM_BILLING_CRON_SECRET bearer token.
  *
  * Vercel cron: add to vercel.json:

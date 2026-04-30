@@ -10,7 +10,7 @@ import { safeNext } from "@/lib/auth/safe-next";
 
 type Props = {
   /** Optional ?next=/path to return to after a successful signup.
-   *  Same validation rules as LoginForm — same-origin only. */
+   *  Same validation rules as LoginForm - same-origin only. */
   next?: string;
 };
 

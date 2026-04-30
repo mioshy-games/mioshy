@@ -2,7 +2,7 @@ import { requireAdmin } from "@/lib/auth/admin";
 import type { SiteSettingsRow } from "@/lib/types/database";
 import { HomepageAdminClient } from "./HomepageAdminClient";
 
-export const metadata = { title: "Homepage editor — Mioshy Admin" };
+export const metadata = { title: "Homepage editor - Mioshy Admin" };
 
 export default async function HomepageAdminPage() {
   const { supabase } = await requireAdmin();

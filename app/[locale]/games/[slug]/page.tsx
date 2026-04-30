@@ -46,7 +46,7 @@ export async function generateMetadata({
   return {
     title: metaTitle.toLowerCase().startsWith("mioshy")
       ? metaTitle
-      : `Mioshy — ${metaTitle}`,
+      : `Mioshy - ${metaTitle}`,
     description: metaDescription,
     keywords:
       Array.isArray(game?.keywords) && game.keywords.length > 0
@@ -134,7 +134,7 @@ export default async function GameBySlugPage({
   const w = wheel as WheelConfigRow;
   const qs = (questions ?? []) as QuestionRow[];
 
-  // bg_type "image" games still use their own image bg — everything else gets
+  // bg_type "image" games still use their own image bg - everything else gets
   // the new GamePageBackground gradient system.
   const bgType = g.bg_type ?? "color";
   const bgValue = g.bg_value ?? "#0b0b0f";
@@ -172,7 +172,7 @@ export default async function GameBySlugPage({
   };
 
   if (useImageBg) {
-    // Legacy image-background games — keep the original behaviour
+    // Legacy image-background games - keep the original behaviour
     return (
       <div
         style={{

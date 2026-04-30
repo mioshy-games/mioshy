@@ -2,7 +2,7 @@
  * /dashboard/journey/clients
  *
  * Index of every owner (user OR couple) that has at least one Journey
- * assignment — active or cancelled. Each row links into the Manage-Client
+ * assignment - active or cancelled. Each row links into the Manage-Client
  * page where the admin can bulk-assign content, nudge unlock dates, and
  * re-materialize.
  *
@@ -39,7 +39,7 @@ async function collectOwnerSummaries(
   const admin = createServiceRoleClient();
   if (!admin) throw new Error("service role unavailable");
 
-  // 1. Assignments — grouped client-side
+  // 1. Assignments - grouped client-side
   const { data: assignmentRows, error: aErr } = await admin
     .from("journey_assignments")
     .select("id, user_id, couple_id, is_active, created_at")
@@ -89,7 +89,7 @@ async function collectOwnerSummaries(
 
   if (byOwner.size === 0) return [];
 
-  // 2. Scheduled items + completions — for the "X / Y done" stat.
+  // 2. Scheduled items + completions - for the "X / Y done" stat.
   const allAssignmentIds = Array.from(byOwner.values()).flatMap(
     (b) => b.assignmentIds,
   );
@@ -126,7 +126,7 @@ async function collectOwnerSummaries(
     );
   }
 
-  // 3. Labels — users via admin_users_overview, couples via couples.
+  // 3. Labels - users via admin_users_overview, couples via couples.
   const userIds = Array.from(byOwner.values())
     .filter((b) => b.kind === "user")
     .map((b) => b.id);
@@ -226,7 +226,7 @@ async function collectOwnerSummaries(
 }
 
 function fmtDate(iso: string | null | undefined) {
-  if (!iso) return "—";
+  if (!iso) return "-";
   return new Date(iso).toLocaleDateString(undefined, {
     year: "numeric",
     month: "short",
@@ -316,7 +316,7 @@ export default async function JourneyClientsIndexPage({
         <div className="border-border bg-muted/30 text-muted-foreground rounded-lg border p-8 text-center text-sm">
           {search
             ? `No clients match “${search}”.`
-            : "No clients yet — bulk-assign a program to someone to see them here."}
+            : "No clients yet - bulk-assign a program to someone to see them here."}
         </div>
       ) : (
         <ul className="divide-border border-border overflow-hidden rounded-lg border divide-y">

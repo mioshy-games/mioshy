@@ -11,11 +11,11 @@ import type { GameConfig, Question } from "./types";
  *   • ~6 ladders and ~6 snakes, distributed across the board so the
  *     middle section remains interesting.
  *   • A short starter set of couples-appropriate questions/challenges
- *     in Hebrew — enough for a fun session without feeling scripted.
+ *     in Hebrew - enough for a fun session without feeling scripted.
  */
 
 const STARTER_QUESTIONS: Question[] = [
-  // ── Level 1 — קליל (light warm-up) ───────────────────────────────────────
+  // ── Level 1 - קליל (light warm-up) ───────────────────────────────────────
   {
     id: "q-local-3",
     type: "question",
@@ -72,7 +72,7 @@ const STARTER_QUESTIONS: Question[] = [
     category: "fun",
     level: 1,
   },
-  // ── Level 2 — בינוני (medium) ─────────────────────────────────────────────
+  // ── Level 2 - בינוני (medium) ─────────────────────────────────────────────
   {
     id: "q-local-2",
     type: "question",
@@ -121,7 +121,7 @@ const STARTER_QUESTIONS: Question[] = [
     category: "gratitude",
     level: 2,
   },
-  // ── Level 3 — מאתגר (deep / bold) ────────────────────────────────────────
+  // ── Level 3 - מאתגר (deep / bold) ────────────────────────────────────────
   {
     id: "q-local-1",
     type: "question",

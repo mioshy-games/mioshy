@@ -50,14 +50,14 @@ export function GameForm({
   initialQuestions,
 }: GameFormProps) {
   const router = useRouter();
-  // Visual settings (game_settings table) — save alongside the main form.
+  // Visual settings (game_settings table) - save alongside the main form.
   // gameId is null for new games; in that case we skip the settings save.
   const { save: saveVisualSettings, isSaving: isSavingSettings } =
     useGameSettings(gameId ?? "");
   const slugTouched = useRef(false);
   // Reset the form only when we're loading a different game (mount or navigation).
   // Router refreshes would otherwise flow a new `defaultValues` reference down on
-  // every render — even a subtly stale one — and overwrite the user's unsaved or
+  // every render - even a subtly stale one - and overwrite the user's unsaved or
   // just-saved edits. By anchoring to gameId we keep the form authoritative once
   // it has been populated.
   const lastGameIdRef = useRef<string | null | undefined>(undefined);
@@ -100,16 +100,16 @@ export function GameForm({
   useEffect(() => {
     // Only reset when we're actually switching to a different game (or on first
     // mount). Router refreshes for the same game keep the user's current form
-    // state — otherwise a delayed RSC re-render could silently wipe edits they
+    // state - otherwise a delayed RSC re-render could silently wipe edits they
     // just made, which is what was happening when "Save" appeared to revert to
     // defaults.
     if (lastGameIdRef.current === gameId) return;
     lastGameIdRef.current = gameId;
     reset(defaultValues);
-    // A fresh reset means the user hasn't touched the slug yet — allow SlugSync
+    // A fresh reset means the user hasn't touched the slug yet - allow SlugSync
     // to auto-fill from the English name again if the slug field is empty.
     slugTouched.current = false;
-  }, [gameId, defaultValues, reset]); // slugTouched + lastGameIdRef are refs — intentionally omitted
+  }, [gameId, defaultValues, reset]); // slugTouched + lastGameIdRef are refs - intentionally omitted
 
   useEffect(() => {
     const onBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -173,7 +173,7 @@ export function GameForm({
     // Keep this verbose so a user hitting "save doesn't persist" can open the
     // browser console and immediately see (a) what we sent, (b) what came back,
     // and (c) whether the form was reset afterwards. We intentionally log the
-    // full object — it's admin-only, so leaking the payload shape is fine.
+    // full object - it's admin-only, so leaking the payload shape is fine.
     const saveStart = performance.now();
     console.log("[GameForm] ▶ onSubmit fired", {
       gameId,
@@ -223,7 +223,7 @@ export function GameForm({
         console.log("[GameForm] ✓ visual settings saved alongside game");
       } catch (err) {
         console.warn("[GameForm] ⚠ visual settings save failed (game itself was saved):", err);
-        toast.error("Game saved — but visual settings failed. Try saving them again.");
+        toast.error("Game saved - but visual settings failed. Try saving them again.");
       }
     }
 
@@ -233,7 +233,7 @@ export function GameForm({
     // clobber these values on the subsequent router.refresh().
     reset(values);
     if (!gameId && res.id) {
-      // New game: navigate to the edit page — full re-mount is fine.
+      // New game: navigate to the edit page - full re-mount is fine.
       router.push(`/dashboard/games/${res.id}/edit`);
       router.refresh();
     } else {
@@ -253,7 +253,7 @@ export function GameForm({
       <form
         onSubmit={handleSubmit(onSubmit, (errors) => {
           console.error("[GameForm] ✗ Validation blocked submit:", errors);
-          toast.error("שגיאת אימות — בדוק שדות אדומים (ייתכן בסקשן מקופל)");
+          toast.error("שגיאת אימות - בדוק שדות אדומים (ייתכן בסקשן מקופל)");
         })}
         className="mx-auto max-w-4xl space-y-3"
       >
@@ -422,7 +422,7 @@ export function GameForm({
                     name="bg_value"
                     render={({ field }) => (
                       <div className="flex items-center gap-2">
-                        {/* Color picker — visible only when type = color */}
+                        {/* Color picker - visible only when type = color */}
                         {bgType === "color" && (
                           <input
                             type="color"

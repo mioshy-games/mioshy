@@ -8,13 +8,13 @@
  * Response: { success, checkout_session_id, redirect_url, code?, message? }
  *
  * Error codes (for localized UI messages):
- *   - UNAUTHORIZED           — user not signed in
- *   - INVALID_PLAN           — plan not weekly/monthly/annual
- *   - MISSING_EMAIL          — no email on account
- *   - MISSING_CARDCOM_ENV    — server missing Cardcom credentials (ops issue)
- *   - DB_ERROR               — cannot create checkout session row
- *   - CARDCOM_NETWORK_ERROR  — fetch to Cardcom failed
- *   - CARDCOM_REJECTED       — Cardcom returned a non-ok response
+ *   - UNAUTHORIZED           - user not signed in
+ *   - INVALID_PLAN           - plan not weekly/monthly/annual
+ *   - MISSING_EMAIL          - no email on account
+ *   - MISSING_CARDCOM_ENV    - server missing Cardcom credentials (ops issue)
+ *   - DB_ERROR               - cannot create checkout session row
+ *   - CARDCOM_NETWORK_ERROR  - fetch to Cardcom failed
+ *   - CARDCOM_REJECTED       - Cardcom returned a non-ok response
  */
 
 export const runtime = "nodejs"
@@ -29,7 +29,7 @@ import { getPlanPrice }        from "@/lib/billing"
 function baseUrl(req: Request) {
   const envUrl = process.env.PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL
   if (envUrl) return envUrl.replace(/\/+$/, "")
-  // Fall back to the host the request came from — avoids hard-coded mioshy.com
+  // Fall back to the host the request came from - avoids hard-coded mioshy.com
   // breaking preview deployments.
   try {
     const origin = new URL(req.url).origin
@@ -40,6 +40,13 @@ function baseUrl(req: Request) {
 }
 
 export async function POST(req: Request) {
+  console.log("[checkout:CREATE] start", {
+    has_terminal: !!process.env.CARDCOM_TERMINAL_NUMBER,
+    has_api_user: !!process.env.CARDCOM_API_USERNAME,
+    has_api_pass: !!process.env.CARDCOM_API_PASSWORD,
+    cardcom_mode: process.env.CARDCOM_MODE ?? "(unset)",
+  })
+
   // ── Preflight: Cardcom credentials must be present ──────────────────────────
   const hasCardcomEnv =
     !!process.env.CARDCOM_TERMINAL_NUMBER &&
@@ -178,7 +185,7 @@ export async function POST(req: Request) {
     }
   }
 
-  // Determine locale for redirect URLs — avoids the middleware double-redirect bug
+  // Determine locale for redirect URLs - avoids the middleware double-redirect bug
   // where /billing/success gets turned into /he/billing/success?session_id=he/billing/success?...
   const urlLocale = (language === "he" || is_israeli) ? "he" : "en"
 
@@ -212,7 +219,7 @@ export async function POST(req: Request) {
     .single()
 
   if (dbErr || !session?.id) {
-    console.error("[checkout/create] DB error", dbErr)
+    console.error("[checkout:CREATE] DB error", dbErr)
     return NextResponse.json(
       { success: false, code: "DB_ERROR", message: "Failed to create session" },
       { status: 500 },
@@ -221,6 +228,16 @@ export async function POST(req: Request) {
 
   const sessionId = session.id
   const BASE_URL  = baseUrl(req)
+  console.log("[checkout:CREATE] session row inserted", {
+    session_id: sessionId,
+    user_id: auth.user.id,
+    plan,
+    product,
+    purchase_type,
+    amount,
+    currency,
+    base_url: BASE_URL,
+  })
 
   // ── Open Cardcom LowProfile ─────────────────────────────────────────────────
   const cardcomLang = (language === "he" || is_israeli) ? "he" : "en"
@@ -297,6 +314,12 @@ export async function POST(req: Request) {
       updated_at: new Date().toISOString(),
     })
     .eq("id", sessionId)
+
+  console.log("[checkout:CREATE] DONE — Cardcom redirect ready", {
+    session_id: sessionId,
+    low_profile_code: cardcomResult.lowProfileCode,
+    redirect_url: cardcomResult.redirectUrl,
+  })
 
   return NextResponse.json({
     success:              true,

@@ -1,15 +1,15 @@
 "use client";
 
 // ============================================================
-// CompletionCelebrationModal — opens for a brief moment when the user
+// CompletionCelebrationModal - opens for a brief moment when the user
 // marks a journey chapter as done. Its job is *emotional*, not
 // functional: reinforce the value of what they just did, anchor the
 // bigger vision, and add a credibility signal so the moment feels
 // meaningful rather than transactional.
 //
 // Keeping it as a controlled Dialog (open + onOpenChange) means the
-// parent chooses when to show it — typically right after a successful
-// complete call — and the user can dismiss at their own pace.
+// parent chooses when to show it - typically right after a successful
+// complete call - and the user can dismiss at their own pace.
 // ============================================================
 
 import * as React from "react";
@@ -43,10 +43,10 @@ export function CompletionCelebrationModal({
     ? {
         kicker: "עוד צעד קטן · שינוי אמיתי",
         title: "עשיתם משהו חשוב ביחד.",
-        body: "רגעים קטנים כאלה הם מה שבונה קרבה שנשארת. המסע שלכם מתקדם — צעד אחר צעד, בקצב שלכם.",
+        body: "רגעים קטנים כאלה הם מה שבונה קרבה שנשארת. המסע שלכם מתקדם - צעד אחר צעד, בקצב שלכם.",
         impactLabel: "מה השגתם כרגע",
         impactLine:
-          "בניתם שריר חדש לזוגיות — הקשבה, נוכחות וכנות בין שניכם. זה לא נבנה מאליו.",
+          "בניתם שריר חדש לזוגיות - הקשבה, נוכחות וכנות בין שניכם. זה לא נבנה מאליו.",
         credibilityTitle: "איציק ברלב",
         credibilitySub: "מלווה זוגות משנת 2001",
         credibilityProof: "שיטה שנבחנה עם מאות זוגות · למעלה מ-25 שנות ליווי",
@@ -56,10 +56,10 @@ export function CompletionCelebrationModal({
     : {
         kicker: "One more step · real change",
         title: "You just did something that matters.",
-        body: "Small moments like this are what build a closeness that lasts. Your journey is moving forward — step by step, at your own pace.",
+        body: "Small moments like this are what build a closeness that lasts. Your journey is moving forward - step by step, at your own pace.",
         impactLabel: "What you just built",
         impactLine:
-          "You grew a new relationship muscle — listening, presence, honesty between the two of you. That doesn't happen by accident.",
+          "You grew a new relationship muscle - listening, presence, honesty between the two of you. That doesn't happen by accident.",
         credibilityTitle: "Itzik Berlav",
         credibilitySub: "Coaching couples since 2001",
         credibilityProof:
@@ -76,7 +76,7 @@ export function CompletionCelebrationModal({
         dir={isHe ? "rtl" : "ltr"}
         className="max-w-[calc(100%-2rem)] sm:max-w-lg border-emerald-300/30 bg-gradient-to-br from-[#061220] via-[#0b1a30] to-[#06111e] p-0 text-white shadow-[0_40px_120px_-30px_rgba(52,211,153,0.35)]"
       >
-        {/* Ambient glow — two layered auroras that drift gently so the
+        {/* Ambient glow - two layered auroras that drift gently so the
             moment has a sense of aliveness, not a flat "modal". */}
         <div
           aria-hidden
@@ -105,7 +105,7 @@ export function CompletionCelebrationModal({
             {t.body}
           </p>
 
-          {/* Impact pill — names the relationship-level change, so the
+          {/* Impact pill - names the relationship-level change, so the
               completion feels meaningful, not transactional. */}
           <div className="mx-auto mt-5 max-w-sm rounded-2xl border border-emerald-300/25 bg-emerald-400/8 px-4 py-3 text-start backdrop-blur">
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-200/90">
@@ -116,7 +116,7 @@ export function CompletionCelebrationModal({
             </p>
           </div>
 
-          {/* Credibility anchor — Itzik's 25-year credential gives the
+          {/* Credibility anchor - Itzik's 25-year credential gives the
               moment weight beyond "a notification from an app". */}
           <div className="mx-auto mt-5 inline-flex max-w-sm items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-start backdrop-blur">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-rose-400/80 to-fuchsia-500/80 text-white shadow-inner">
@@ -135,7 +135,7 @@ export function CompletionCelebrationModal({
             </div>
           </div>
 
-          {/* CTAs — thumb-friendly (≥48px) with the primary taking full
+          {/* CTAs - thumb-friendly (≥48px) with the primary taking full
               width on mobile so it's impossible to miss. */}
           <div className="mt-7 flex flex-col gap-2.5 sm:flex-row sm:justify-center">
             <Button

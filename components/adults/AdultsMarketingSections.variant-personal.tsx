@@ -1,5 +1,5 @@
 /**
- * Marketing sections for /[locale]/adults — rendered above the catalogue grid.
+ * Marketing sections for /[locale]/adults - rendered above the catalogue grid.
  *
  * Server component (no interactivity). Bilingual copy is inlined for the
  * landing-page framing only; all pricing + tagline pieces that actually drive
@@ -42,7 +42,7 @@ export function AdultsMarketingSections({
 }) {
   return (
     <div dir={isHe ? "rtl" : "ltr"} className="relative">
-      {/* Pricing surfaces first — answers "how do I buy this?" immediately
+      {/* Pricing surfaces first - answers "how do I buy this?" immediately
           after the hero instead of making users scroll past two framing
           sections to reach the buy decision. */}
       <PricingSection isHe={isHe} hero={hero} pricing={pricing} />
@@ -64,9 +64,9 @@ function InsideSection({ isHe }: { isHe: boolean }) {
       titleHe: "3 רמות עוצמה בכל משחק",
       titleEn: "3 intensity levels per game",
       bodyHe:
-        "מרגש · מעורר · ללא גבולות — מתחילים בעדין, מחליטים יחד מתי לעלות שלב.",
+        "מרגש · מעורר · ללא גבולות - מתחילים בעדין, מחליטים יחד מתי לעלות שלב.",
       bodyEn:
-        "Touching · Stirring · No-limits — start soft and decide together when to level up.",
+        "Touching · Stirring · No-limits - start soft and decide together when to level up.",
       tone: "from-rose-500/25 to-amber-500/15",
     },
     {
@@ -74,9 +74,9 @@ function InsideSection({ isHe }: { isHe: boolean }) {
       titleHe: "שאלות שפותחות שיחה",
       titleEn: "Prompts that open conversation",
       bodyHe:
-        "לא רק אינטימיות פיזית — גם תקשורת אמיתית, קשב, וכנות שלא תמיד קל ליצור לבד.",
+        "לא רק אינטימיות פיזית - גם תקשורת אמיתית, קשב, וכנות שלא תמיד קל ליצור לבד.",
       bodyEn:
-        "More than just physical intimacy — real communication, attention, and honesty that's not easy to reach alone.",
+        "More than just physical intimacy - real communication, attention, and honesty that's not easy to reach alone.",
       tone: "from-violet-500/25 to-fuchsia-500/15",
     },
     {
@@ -86,7 +86,7 @@ function InsideSection({ isHe }: { isHe: boolean }) {
       bodyHe:
         "זיווג חד־פעמי בקוד או במייל, ואז כל מה שרכשתם פתוח לשניכם באופן אוטומטי.",
       bodyEn:
-        "Pair once via code or email — everything you own opens for both of you, automatically.",
+        "Pair once via code or email - everything you own opens for both of you, automatically.",
       tone: "from-sky-500/25 to-violet-500/15",
     },
     {
@@ -114,8 +114,8 @@ function InsideSection({ isHe }: { isHe: boolean }) {
         </h2>
         <p className="mx-auto mt-3 max-w-2xl text-white/75">
           {isHe
-            ? "כל משחק הוא עולם קטן — עם קצב משלו, אווירה משלו, והמון חופש לזוג שלכם."
-            : "Every game is its own small world — its own pacing, its own mood, and plenty of room for the two of you."}
+            ? "כל משחק הוא עולם קטן - עם קצב משלו, אווירה משלו, והמון חופש לזוג שלכם."
+            : "Every game is its own small world - its own pacing, its own mood, and plenty of room for the two of you."}
         </p>
       </header>
 
@@ -159,21 +159,21 @@ function AudienceSection({ isHe }: { isHe: boolean }) {
       titleHe: "זוגות שרוצים לצאת מהשגרה",
       titleEn: "Couples tired of the routine",
       bodyHe:
-        "לא מחליפים בני זוג — משנים איך אתם פוגשים אחד את השני בערב שקט אחרי יום עמוס.",
+        "לא מחליפים בני זוג - משנים איך אתם פוגשים אחד את השני בערב שקט אחרי יום עמוס.",
       bodyEn:
-        "You're not changing partners — you're changing how you meet each other after a long day.",
+        "You're not changing partners - you're changing how you meet each other after a long day.",
     },
     {
       titleHe: "זוגות שאוהבים לדבר",
       titleEn: "Couples who like to talk",
       bodyHe:
-        "אם שיחות עמוקות הן אחד הדברים הכי טובים אצלכם — יש לכם כאן קרקע עשירה.",
+        "אם שיחות עמוקות הן אחד הדברים הכי טובים אצלכם - יש לכם כאן קרקע עשירה.",
       bodyEn:
-        "If deep conversations are one of your best things — there's rich soil here.",
+        "If deep conversations are one of your best things - there's rich soil here.",
     },
     {
-      titleHe: "זוגות שרוצים להעז — אבל בצורה חכמה",
-      titleEn: "Couples who want to be bold — but thoughtfully",
+      titleHe: "זוגות שרוצים להעז - אבל בצורה חכמה",
+      titleEn: "Couples who want to be bold - but thoughtfully",
       bodyHe:
         "הרמות מאפשרות לזוז בקצב שלכם, ולהסכים יחד על כל צעד. בלי לחץ, בלי סבבים מביכים.",
       bodyEn:
@@ -230,14 +230,14 @@ function PricingSection({
   const singlePerks = [
     isHe ? "גישה מלאה למשחק שבחרתם" : "Full access to the game you pick",
     isHe
-      ? "לשני בני הזוג — בלי רכישה כפולה"
-      : "For both partners — no double purchase",
+      ? "לשני בני הזוג - בלי רכישה כפולה"
+      : "For both partners - no double purchase",
     isHe ? "לכל החיים, בלי מינוי" : "Forever, with no subscription",
   ];
   const monthlyPerks = [
     isHe
-      ? "תוכן חדש מדי שבוע — מאמרים, וידאו ותרגילי זוגיות"
-      : "Weekly curated drops — articles, video, couples exercises",
+      ? "תוכן חדש מדי שבוע - מאמרים, וידאו ותרגילי זוגיות"
+      : "Weekly curated drops - articles, video, couples exercises",
     isHe
       ? "פיתוח עם צוות של פסיכולוגים, מטפלות מין ויועצי זוגיות"
       : "Developed with psychologists, sex therapists, and couples counselors",
@@ -246,8 +246,8 @@ function PricingSection({
   ];
   const annualPerks = [
     isHe
-      ? "כל מה שכלול במינוי החודשי — כל השנה"
-      : "Everything in Monthly — all year long",
+      ? "כל מה שכלול במינוי החודשי - כל השנה"
+      : "Everything in Monthly - all year long",
     isHe
       ? "בונוס: משחק אחד מהקטלוג הראשי (גלגל/סולמות) נפתח ל-30 יום"
       : "Bonus: one Games-pillar game (Wheel / Snakes) unlocked for 30 days",
@@ -287,11 +287,11 @@ function PricingSection({
           <p className="mx-auto mt-3 max-w-xl text-white/75">
             {isHe
               ? enabledCount >= 3
-                ? "שלושה מסלולים — משחק אחד, מינוי חודשי עם תוכן חדש, או שנתי עם בונוס ממוצרי הליבה."
-                : "שני מסלולים — בחרו את מה שמתאים לכם."
+                ? "שלושה מסלולים - משחק אחד, מינוי חודשי עם תוכן חדש, או שנתי עם בונוס ממוצרי הליבה."
+                : "שני מסלולים - בחרו את מה שמתאים לכם."
               : enabledCount >= 3
-                ? "Three ways in — a single game, a monthly drop with fresh content, or the annual plan."
-                : "Two options — pick what fits you best."}
+                ? "Three ways in - a single game, a monthly drop with fresh content, or the annual plan."
+                : "Two options - pick what fits you best."}
           </p>
         )}
       </header>
@@ -465,9 +465,9 @@ function FaqSection({ isHe }: { isHe: boolean }) {
       qHe: "האם זה מתאים גם אם אנחנו ביחד שנים?",
       qEn: "Does this still work after years together?",
       aHe:
-        "כן — דווקא אז. זוגיות ארוכה מרוויחה מאפשרות לגלות דברים חדשים יחד, בלי להרגיש שצריך לבנות הכל מאפס.",
+        "כן - דווקא אז. זוגיות ארוכה מרוויחה מאפשרות לגלות דברים חדשים יחד, בלי להרגיש שצריך לבנות הכל מאפס.",
       aEn:
-        "Yes — especially then. Long relationships thrive on small chances to discover something new together, without starting over.",
+        "Yes - especially then. Long relationships thrive on small chances to discover something new together, without starting over.",
     },
     {
       qHe: "האם התוכן נראה גם לשותף/ה שלי?",
@@ -488,9 +488,9 @@ function FaqSection({ isHe }: { isHe: boolean }) {
     {
       qHe: "האם אני יכול/ה לבטל מינוי?",
       qEn: "Can I cancel the membership?",
-      aHe: "כמובן — בכל עת, באזור האישי. כל מה שרכשתם נשאר שלכם לתמיד.",
+      aHe: "כמובן - בכל עת, באזור האישי. כל מה שרכשתם נשאר שלכם לתמיד.",
       aEn:
-        "Absolutely — anytime, from your account. Everything you've unlocked stays yours for good.",
+        "Absolutely - anytime, from your account. Everything you've unlocked stays yours for good.",
     },
   ];
 

@@ -14,7 +14,7 @@
 --   * `post_signup_bonus_used`  → ensures the "extra 3 plays after signup"
 --                                  bonus fires exactly once per (user, game)
 --
--- The legacy global column stays in place for now but is no longer read —
+-- The legacy global column stays in place for now but is no longer read -
 -- the pre-launch rule against backwards-compat shims means we can drop it
 -- later once the client is fully migrated (tracked separately).
 -- ============================================================

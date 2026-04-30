@@ -2,10 +2,10 @@
 // Brevo (formerly Sendinblue) transactional email client
 // ============================================================
 // Server-only. Expects env vars:
-//   BREVO_API_KEY     — secret API key (required in prod; if missing
+//   BREVO_API_KEY     - secret API key (required in prod; if missing
 //                       in dev the sender becomes a noop + console log)
-//   BREVO_SENDER_EMAIL — "from" address (e.g. hi@mioshy.co.il)
-//   BREVO_SENDER_NAME  — "from" display name (e.g. "Mioshy")
+//   BREVO_SENDER_EMAIL - "from" address (e.g. hi@mioshy.co.il)
+//   BREVO_SENDER_NAME  - "from" display name (e.g. "Mioshy")
 // ============================================================
 import "server-only";
 
@@ -41,7 +41,7 @@ function envOrNull(key: string): string | null {
 /**
  * Send a transactional email through Brevo. Returns an OK result even
  * when skipped (dev mode without API key) so callers don't need to
- * branch on the environment — they just treat "email was dispatched".
+ * branch on the environment - they just treat "email was dispatched".
  */
 export async function sendBrevoEmail(
   payload: BrevoPayload,
@@ -51,10 +51,10 @@ export async function sendBrevoEmail(
   const senderName = envOrNull("BREVO_SENDER_NAME") ?? "Mioshy";
 
   if (!apiKey || !senderEmail) {
-    // Don't throw in dev — just log so devs can see the message we
+    // Don't throw in dev - just log so devs can see the message we
     // would have sent.
     console.warn(
-      "[brevo] BREVO_API_KEY/BREVO_SENDER_EMAIL not set — skipping send",
+      "[brevo] BREVO_API_KEY/BREVO_SENDER_EMAIL not set - skipping send",
       {
         to: payload.to.map((r) => r.email),
         subject: payload.subject,

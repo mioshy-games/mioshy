@@ -125,7 +125,7 @@ function PointerSvgEditor({
           )}
         </div>
 
-        {/* Clear button — only when custom SVG is loaded */}
+        {/* Clear button - only when custom SVG is loaded */}
         {hasCustom && (
           <button
             type="button"
@@ -139,7 +139,7 @@ function PointerSvgEditor({
         )}
       </div>
 
-      {/* Size sliders — only relevant when custom SVG loaded */}
+      {/* Size sliders - only relevant when custom SVG loaded */}
       {hasCustom && (
         <div className="grid grid-cols-2 gap-4">
           <SliderControl
@@ -275,7 +275,7 @@ export function AppearanceTab() {
             Negative = moves into the wheel · Positive = moves outward
           </p>
 
-          {/* Pointer shape — always visible */}
+          {/* Pointer shape - always visible */}
           <PointerSvgEditor
             svgContent={draft.wheel.pointerSvg ?? ""}
             svgWidth={draft.wheel.pointerSvgWidth ?? 40}
@@ -557,7 +557,7 @@ export function AppearanceTab() {
             onChange={(v) => patch({ wheelGapPx: v })}
           />
           <p className="text-xs text-muted-foreground -mt-2">
-            Space above and below the wheel — clears the pointer tip and marker dots.
+            Space above and below the wheel - clears the pointer tip and marker dots.
           </p>
         </div>
       </SettingsSection>

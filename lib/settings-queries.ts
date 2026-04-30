@@ -190,7 +190,7 @@ export async function saveSettingsWithScope(
 ): Promise<void> {
   const tasks: Promise<void>[] = [];
 
-  // All settings — including wheel — can be saved per-game.
+  // All settings - including wheel - can be saved per-game.
   // The global /dashboard/settings/wheel provides the base default;
   // per-game settings override it (last write wins).
   const perGamePartial: Partial<GameSettings> = {

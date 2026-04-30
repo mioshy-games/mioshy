@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { ArrowRight, Heart, Shield, Sparkles, Star } from "lucide-react";
 import { Link } from "@/navigation";
 import { Reveal } from "@/components/marketing/Reveal";
@@ -7,7 +8,7 @@ import { GentleAnimatedBg } from "@/components/marketing/GentleAnimatedBg";
 
 export type HeroLightGradientProps = {
   isHe: boolean;
-  /** Headline sits after "Mioshy —" (handled inside this component for the branded look). */
+  /** Headline sits after "Mioshy -" (handled inside this component for the branded look). */
   headline: string;
   sub: string;
   trustBadge?: string | null;
@@ -20,7 +21,7 @@ export type HeroLightGradientProps = {
 };
 
 /**
- * "Light gradient" hero — the current published design:
+ * "Light gradient" hero - the current published design:
  * - Animated pastel background via <GentleAnimatedBg />
  * - Centered copy, full-bleed CTAs, inline rating + couple count row
  */
@@ -36,6 +37,10 @@ export function HeroLightGradient({
   socialProofLine,
   privacyLabel,
 }: HeroLightGradientProps) {
+  useEffect(() => {
+    console.log("[HeroLightGradient] mounted v2 — purple↔red converge + particles");
+  }, []);
+
   return (
     <section
       className="relative isolate overflow-hidden bg-white text-slate-900"
@@ -56,7 +61,7 @@ export function HeroLightGradient({
             <span className="bg-gradient-to-l from-rose-600 via-fuchsia-600 to-violet-600 bg-clip-text text-transparent">
               Mioshy
             </span>
-            <span className="mx-3 text-slate-400">—</span>
+            <span className="mx-3 text-slate-400">-</span>
             {headline}
           </h1>
         </Reveal>

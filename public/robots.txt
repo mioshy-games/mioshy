@@ -1,4 +1,4 @@
-# Mioshy — couples games platform
+# Mioshy - couples games platform
 # Allow all crawlers to index content pages, block admin & API.
 
 User-agent: *

@@ -2,7 +2,7 @@
 --
 -- One-shot idempotent migration. Running this on a clean Supabase project
 -- brings the Snakes & Ladders multiplayer to working state. Running it again
--- on a project that already has some pieces installed is safe — every
+-- on a project that already has some pieces installed is safe - every
 -- statement is guarded with IF NOT EXISTS / CREATE OR REPLACE.
 --
 -- What this file installs:

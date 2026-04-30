@@ -36,8 +36,8 @@ export async function generateMetadata({
   const isHe = params.locale === "he";
   return {
     title: isHe
-      ? "איך זה עובד — מיאושי"
-      : "How it works — Mioshy",
+      ? "איך זה עובד - מיאושי"
+      : "How it works - Mioshy",
     description: isHe
       ? "המסע האישי של מיאושי: שאלון, ניתוח, ותוכנית שבועית שמותאמת בדיוק לכם. לא עצות גנריות."
       : "Mioshy's personal journey: a questionnaire, deep analysis, and a weekly plan tailored to you. Not generic advice.",
@@ -248,13 +248,13 @@ const he = {
   badge: "השירות המרכזי של מיאושי",
   heroTitle: "לא עצות מהספרים. ליווי מותאם אישית לזוגיות שלכם.",
   heroSub:
-    "שאלון חכם, ניתוח של 20 צירים מקצועיים, ותוכנית שבועית של פעולות מדויקות — לא טיפים כלליים. זה השירות של מיאושי.",
+    "שאלון חכם, ניתוח של 20 צירים מקצועיים, ותוכנית שבועית של פעולות מדויקות - לא טיפים כלליים. זה השירות של מיאושי.",
   ctaPrimary: "התחלת המסע",
   ctaSecondary: "איך זה בדיוק עובד",
 
   whyTitle: "למה לא עוד אפליקציית עצות?",
   whyIntro:
-    "רוב האפליקציות נותנות לכל זוג את אותן 10 עצות. הבעיה היא שהעצה ש״תעבוד לכם״ תלויה לגמרי בפער הספציפי שלכם. אנחנו מזהים את הפער — ואז בונים את התוכנית.",
+    "רוב האפליקציות נותנות לכל זוג את אותן 10 עצות. הבעיה היא שהעצה ש״תעבוד לכם״ תלויה לגמרי בפער הספציפי שלכם. אנחנו מזהים את הפער - ואז בונים את התוכנית.",
   whyGenericLabel: "אפליקציות גנריות",
   whyGenericList: [
     "רשימת ״10 טיפים״ לכל זוג",
@@ -267,7 +267,7 @@ const he = {
     "שאלון קצר שמגלה את הפער האישי שלכם",
     "ניתוח מקצועי שמבוסס על גוטמן, פרל וצ׳פמן",
     "משימות שנבחרות ספציפית לפי הציונים שלכם",
-    "התאמה שבועית — לא קובץ סטטי",
+    "התאמה שבועית - לא קובץ סטטי",
   ],
 
   processTitle: "איך זה עובד",
@@ -287,23 +287,23 @@ const he = {
   step3Badge: "תוכנית אישית",
   step4Title: "תרגול שבועי",
   step4Desc:
-    "2–4 משימות בשבוע שמגיעות במייל או בווטסאפ. פעולה אחת כל פעם. ללא הרצאות, ללא מאמרים ארוכים — רק מה לעשות.",
+    "2–4 משימות בשבוע שמגיעות במייל או בווטסאפ. פעולה אחת כל פעם. ללא הרצאות, ללא מאמרים ארוכים - רק מה לעשות.",
   step4Badge: "26 שבועות",
 
   getTitle: "מה מקבלים בשירות",
   getSub: "המחיר אחד. כל מה שבהמשך נכלל.",
   get1Title: "2–4 משימות בשבוע",
   get1Desc:
-    "תרגולים קצרים שמותאמים לפער האישי שלכם. כל משימה לוקחת 5–20 דקות — לא פרויקט.",
+    "תרגולים קצרים שמותאמים לפער האישי שלכם. כל משימה לוקחת 5–20 דקות - לא פרויקט.",
   get2Title: "שאלונים נוספים להתאמה מדויקת",
   get2Desc:
-    "כל 4 שבועות שאלון קצר לחידוד. התוכנית שלכם מתעדכנת בהתאם — לא סטטית.",
+    "כל 4 שבועות שאלון קצר לחידוד. התוכנית שלכם מתעדכנת בהתאם - לא סטטית.",
   get3Title: "דוח אישי מפורט",
   get3Desc:
     "ניתוח של 20 צירים עם המלצות שעולות מהציונים שלכם. ניתן לשתף עם בן/בת הזוג.",
   get4Title: "שיחות עם מומחים",
   get4Desc:
-    "בשלב הבא של התוכנית — שיחות אישיות קצרות עם מומחה לזוגיות, כלולות במחיר.",
+    "בשלב הבא של התוכנית - שיחות אישיות קצרות עם מומחה לזוגיות, כלולות במחיר.",
   getSoonBadge: "בהמשך",
 
   trust1Title: "פרטי, לגמרי",
@@ -318,7 +318,7 @@ const he = {
 
   finalTitle: "המסע מתחיל בשאלה אחת",
   finalSub:
-    "שלוש שאלות ראשונות הן חינם — לפני בקשת תשלום תוכלו לראות איך זה מרגיש ולהחליט.",
+    "שלוש שאלות ראשונות הן חינם - לפני בקשת תשלום תוכלו לראות איך זה מרגיש ולהחליט.",
   finalCta: "התחלת המסע",
   finalFinePrint: "אין צורך בכרטיס אשראי בהתחלה. הצטרפות 2 דקות.",
 };
@@ -328,13 +328,13 @@ const en = {
   badge: "Mioshy's flagship service",
   heroTitle: "Not advice from books. A journey built for your relationship.",
   heroSub:
-    "A smart questionnaire, analysis across 20 professional axes, and a weekly plan of specific actions — not generic tips. That's Mioshy.",
+    "A smart questionnaire, analysis across 20 professional axes, and a weekly plan of specific actions - not generic tips. That's Mioshy.",
   ctaPrimary: "Begin my journey",
   ctaSecondary: "How it works, exactly",
 
   whyTitle: "Why not another advice app?",
   whyIntro:
-    "Most apps give every couple the same 10 tips. The problem: the advice that will work for you depends entirely on your specific gap. We identify the gap — then build the plan.",
+    "Most apps give every couple the same 10 tips. The problem: the advice that will work for you depends entirely on your specific gap. We identify the gap - then build the plan.",
   whyGenericLabel: "Generic apps",
   whyGenericList: [
     "A '10 tips' list for every couple",
@@ -347,7 +347,7 @@ const en = {
     "A short questionnaire that reveals your personal gap",
     "Professional analysis grounded in Gottman, Perel, Chapman",
     "Tasks chosen specifically based on your scores",
-    "Weekly adaptation — not a static file",
+    "Weekly adaptation - not a static file",
   ],
 
   processTitle: "How it works",
@@ -367,23 +367,23 @@ const en = {
   step3Badge: "Personal plan",
   step4Title: "Weekly practice",
   step4Desc:
-    "2–4 tasks per week arriving by email or WhatsApp. One action at a time. No lectures, no long articles — just what to do.",
+    "2–4 tasks per week arriving by email or WhatsApp. One action at a time. No lectures, no long articles - just what to do.",
   step4Badge: "26 weeks",
 
   getTitle: "What you get",
   getSub: "One price. Everything below is included.",
   get1Title: "2–4 tasks per week",
   get1Desc:
-    "Short practices matched to your personal gap. Each takes 5–20 minutes — not a project.",
+    "Short practices matched to your personal gap. Each takes 5–20 minutes - not a project.",
   get2Title: "Ongoing questionnaires for precise matching",
   get2Desc:
-    "Every 4 weeks a short check-in. Your plan updates based on it — never static.",
+    "Every 4 weeks a short check-in. Your plan updates based on it - never static.",
   get3Title: "Detailed personal report",
   get3Desc:
     "20-axis analysis with recommendations derived from your scores. Shareable with your partner.",
   get4Title: "Expert consultations",
   get4Desc:
-    "In the next phase of the program — short 1-on-1 sessions with a relationship expert, included in the price.",
+    "In the next phase of the program - short 1-on-1 sessions with a relationship expert, included in the price.",
   getSoonBadge: "Coming soon",
 
   trust1Title: "Private, always",
@@ -394,11 +394,11 @@ const en = {
     "Gottman's model (40 years of research), Chapman's 5 Love Languages, and Perel's insights on desire.",
   trust3Title: "Cancel anytime",
   trust3Desc:
-    "Monthly plan. No annual commitment — pause or cancel anytime.",
+    "Monthly plan. No annual commitment - pause or cancel anytime.",
 
   finalTitle: "The journey starts with one question",
   finalSub:
-    "The first 3 questions are free — you can feel how it works before any payment.",
+    "The first 3 questions are free - you can feel how it works before any payment.",
   finalCta: "Begin my journey",
   finalFinePrint: "No credit card up front. Sign-up takes 2 minutes.",
 };

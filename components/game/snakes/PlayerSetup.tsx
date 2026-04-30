@@ -31,7 +31,7 @@ export function PlayerSetup({
     >
       <div className="text-lg font-bold text-slate-100">הצטרף/י למשחק</div>
       <div className="mt-1 text-sm text-slate-300/80">
-        הזן/י שם — דמות וצבע ייבחרו בלובי המשחק.
+        הזן/י שם - דמות וצבע ייבחרו בלובי המשחק.
       </div>
 
       <label className="mt-4 block text-sm font-semibold text-slate-200">

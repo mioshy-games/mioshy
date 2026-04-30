@@ -5,9 +5,9 @@
  *
  * This button is bolted to the bottom-left of the Edit Game page and ONLY
  * saves the visual settings draft in `useSettingsStore` (the
- * `InlineSettingsEditor` card — appearance, motion, particles, layout, etc.).
+ * `InlineSettingsEditor` card - appearance, motion, particles, layout, etc.).
  *
- * It does **not** save anything owned by the main GameForm — game name, slug,
+ * It does **not** save anything owned by the main GameForm - game name, slug,
  * slices, categories, background, SEO fields, or questions. Those have their
  * own "Save game" button at the bottom of the form.
  *
@@ -41,7 +41,7 @@ export function FloatingSaveButton({ gameId }: { gameId: string }) {
   return (
     <div
       className="fixed left-4 bottom-4 z-50"
-      title="Saves only the Visual Settings card. Game name / slices / SEO live on the main form — use its own 'Save game' button."
+      title="Saves only the Visual Settings card. Game name / slices / SEO live on the main form - use its own 'Save game' button."
     >
       <Button
         type="button"

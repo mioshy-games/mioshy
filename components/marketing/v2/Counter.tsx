@@ -22,10 +22,10 @@ type Props = {
 };
 
 /**
- * Counter — animates a number from 0 to `to` when scrolled into view.
+ * Counter - animates a number from 0 to `to` when scrolled into view.
  *
  * Used for stats blocks (1,000+, 4.8★, 67%, etc.). Honors
- * `prefers-reduced-motion` — renders the final value immediately if user
+ * `prefers-reduced-motion` - renders the final value immediately if user
  * opted out.
  *
  * Triggers once and stays put.

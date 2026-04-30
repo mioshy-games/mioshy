@@ -61,7 +61,7 @@ export interface GameState {
   currentQuestion: Question | null;
   /** @deprecated kept for backward compatibility with rooms using a coin */
   lastCoinResult: CoinResult | null;
-  /** Primary turn mechanic going forward — value shown on the die */
+  /** Primary turn mechanic going forward - value shown on the die */
   lastDiceResult: DiceResult | null;
   winner: string | null; // game_players.id
   turnCount: number;

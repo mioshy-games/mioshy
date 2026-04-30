@@ -22,6 +22,7 @@ import {
 } from "@/lib/between-us/invitations";
 import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
 import { getOwnerJourneyStatus } from "@/lib/journey-content/owner-status";
+import { countUnreadJourneyItems } from "@/lib/journey-content/unread";
 import { getProfileGate } from "@/lib/auth/profile-gate";
 import { PairCodeWidget } from "@/components/between-us/PairCodeWidget";
 import { RedeemCodeButton } from "@/components/between-us/RedeemCodeButton";
@@ -38,10 +39,10 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const isHe = params.locale === "he";
   return {
-    title: `Mioshy — ${isHe ? "מיאושי שלי" : "My Mioshy"}`,
+    title: `Mioshy - ${isHe ? "מיאושי שלי" : "My Mioshy"}`,
     description: isHe
-      ? "שלושת עולמות מיאושי במקום אחד — משחקים, ליווי ולמבוגרים בלבד."
-      : "The three worlds of Mioshy in one place — games, journey, adults only.",
+      ? "שלושת עולמות מיאושי במקום אחד - משחקים, ליווי ולמבוגרים בלבד."
+      : "The three worlds of Mioshy in one place - games, journey, adults only.",
   };
 }
 
@@ -55,13 +56,82 @@ export default async function MyHubPage({
   const { locale } = params;
   const isHe = locale === "he";
 
+  // Post-purchase shortcut — when the billing-success page sends users back
+  // to /my?purchased=<game_id> after an Adults purchase, we drop them
+  // straight into /my/adults instead of showing a celebration banner.
+  // Per spec: "User wants to use, not celebrate."
+  const purchasedQuery = searchParams?.purchased ?? null;
+  if (purchasedQuery) {
+    redirect(`/${locale}/my/adults`);
+  }
+
   const ctx = await getCurrentCoupleContext();
   if (!ctx) redirect(`/${locale}/auth`);
 
   const entitlements = await getUserEntitlements(ctx.user_id);
   if (!entitlements) redirect(`/${locale}/auth`);
 
-  // Journey pillar — decide whether the "Open" CTA should go to the live
+  // ── DIAGNOSTIC LOGS ────────────────────────────────────────────────────
+  // Dump everything the page reads from the DB so we can see exactly why
+  // a paying user is getting routed into the marketing-panel branch.
+  // Goes to the server console (Vercel logs / `next dev` terminal).
+  // Remove once routing is verified.
+  if (typeof window === "undefined") {
+    const { createServiceRoleClient } = await import("@/lib/supabase-admin");
+    const admin = createServiceRoleClient();
+    if (admin) {
+      const { data: allSubs } = await admin
+        .from("subscriptions")
+        .select(
+          "id, user_id, email, product, plan, status, current_period_end, stripe_subscription_id, created_at",
+        )
+        .eq("user_id", ctx.user_id)
+        .order("created_at", { ascending: false });
+      const { data: allCharges } = await admin
+        .from("subscription_charges")
+        .select("id, status, amount, currency, created_at")
+        .eq("user_id", ctx.user_id)
+        .order("created_at", { ascending: false })
+        .limit(5);
+      const { data: coupleEnts } = ctx.couple_id
+        ? await admin
+            .from("couple_entitlements")
+            .select("id, game_id, created_at")
+            .eq("couple_id", ctx.couple_id)
+        : { data: [] };
+      console.log("[/my] DEBUG", {
+        userId: ctx.user_id,
+        email: entitlements.email,
+        coupleId: ctx.couple_id,
+        coupleRole: ctx.role,
+        partnerCount: ctx.partner_count,
+        // RAW SUB ROWS — every column, every status
+        allSubscriptions: allSubs,
+        // last 5 charges so we can correlate
+        recentCharges: allCharges,
+        // adults entitlements (couple-level)
+        coupleEntitlements: coupleEnts,
+        // computed flags
+        entitlements: {
+          games: entitlements.games,
+          journey: entitlements.journey,
+          adults: entitlements.adults,
+          pillarCount: entitlements.pillarCount,
+        },
+      });
+    }
+  }
+  // ── /DIAGNOSTIC LOGS ───────────────────────────────────────────────────
+
+  // Coaching pillar notification badge — count unlocked items the user
+  // hasn't opened or completed yet. Cheap query (≤ 4 round-trips, gated
+  // on having any active assignment).
+  const unreadJourneyCount = await countUnreadJourneyItems({
+    userId: ctx.user_id,
+    coupleId: ctx.couple_id,
+  }).catch(() => 0);
+
+  // Journey pillar - decide whether the "Open" CTA should go to the live
   // timeline, to Resume Assessment, or to the marketing hub. This is the
   // only state that isn't already encoded in entitlements.
   const journeyStatus = await getOwnerJourneyStatus({
@@ -76,11 +146,6 @@ export default async function MyHubPage({
     : [];
   const ownedCount = owned.length;
 
-  const purchasedId = searchParams?.purchased ?? null;
-  const justPurchased = purchasedId
-    ? owned.find((g) => g.id === purchasedId) ?? null
-    : null;
-
   const profileGate = await getProfileGate();
   const profileIncomplete = !!profileGate && !profileGate.complete;
 
@@ -94,39 +159,42 @@ export default async function MyHubPage({
   const needsPartner = hasCouple && (ctx.partner_count ?? 0) < 2;
   const isOwner = !hasCouple || ctx.role === "owner";
 
+  // Log the rendering decision per pillar so we can see what the user actually sees.
+  console.log("[/my] PILLAR DECISIONS", {
+    games: {
+      branch: entitlements.games ? "EntitledPillar" : "ServicePanel(marketing)",
+      href: entitlements.games ? "/my/games" : "/games",
+    },
+    journey: {
+      branch: entitlements.journey ? "EntitledPillar" : "ServicePanel(marketing)",
+      href: entitlements.journey
+        ? journeyStatus.hasActiveAssignments
+          ? "/journey/timeline"
+          : journeyStatus.hasInProgressAssessment
+            ? "/journey/assessment"
+            : "/journey"
+        : "/journey",
+      journeyStatus: {
+        hasActiveAssignments: journeyStatus.hasActiveAssignments,
+        hasInProgressAssessment: journeyStatus.hasInProgressAssessment,
+      },
+      unreadCount: unreadJourneyCount,
+    },
+    adults: {
+      branch: entitlements.adults ? "EntitledPillar" : "ServicePanel(marketing)",
+      href: entitlements.adults ? "/my/adults" : "/adults",
+      ownedCount,
+    },
+  });
+
   return (
     <div
       dir={isHe ? "rtl" : "ltr"}
-      className="relative min-h-[100dvh] overflow-hidden bg-gradient-to-b from-[#0d0618] via-[#16081f] to-[#0b0410] text-white"
+      className="relative text-white"
     >
-      {/* Ambient aurora — subtle moving gradients so scroll never feels
-          empty or flat. Three layers at different depths + opacities so
-          the motion reads as atmosphere, not noise. Pointer-events-none
-          so they don't interfere with any clickable surface. */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-[80vh] opacity-60 animate-aurora-drift"
-        style={{
-          background:
-            "radial-gradient(900px 480px at 12% -10%, rgba(244,63,94,0.22), transparent 60%), radial-gradient(800px 420px at 88% 6%, rgba(139,92,246,0.18), transparent 60%)",
-        }}
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-[50vh] h-[80vh] opacity-45 animate-aurora-breathe"
-        style={{
-          background:
-            "radial-gradient(800px 420px at 78% 36%, rgba(16,185,129,0.14), transparent 60%), radial-gradient(700px 380px at 14% 60%, rgba(236,72,153,0.12), transparent 60%)",
-        }}
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-[60vh] opacity-35"
-        style={{
-          background:
-            "radial-gradient(700px 380px at 50% 100%, rgba(251,191,36,0.14), transparent 70%)",
-        }}
-      />
+      {/* Backdrop is now provided globally by Chrome.tsx for every authed
+          page (fixed-positioned, viewport-locked). Page just renders its
+          own content above. */}
 
       <main className="relative mx-auto max-w-6xl px-4 pb-16 pt-10 sm:pt-14">
         {/* ─────── Page title ─────── */}
@@ -144,8 +212,8 @@ export default async function MyHubPage({
             </h1>
             <p className="mt-3 max-w-xl text-white/70">
               {isHe
-                ? "שלושה שירותים, כל אחד בנפרד. פותחים את מה שרכשתם — ומכאן אפשר לגלות את השאר."
-                : "Three services, each on its own. Open what you own — and discover the rest from here."}
+                ? "שלושה שירותים, כל אחד בנפרד. פותחים את מה שרכשתם - ומכאן אפשר לגלות את השאר."
+                : "Three services, each on its own. Open what you own - and discover the rest from here."}
             </p>
           </div>
 
@@ -167,41 +235,31 @@ export default async function MyHubPage({
           </div>
         </section>
 
-        {/* ─────── Just-purchased celebration banner ─────── */}
-        {justPurchased ? (
+        {/* (Adults purchase celebration removed — users are redirected
+            straight to /my/adults at the top of this page now.) */}
+
+        {/* ─────── Always-visible invite-code panel ─────── */}
+        {!hasCouple ? (
           <section className="mt-8">
-            <div className="relative overflow-hidden rounded-3xl border border-emerald-300/40 bg-gradient-to-br from-emerald-500/20 via-emerald-400/10 to-teal-500/10 p-6 backdrop-blur">
-              <div className="absolute -end-16 -top-16 h-48 w-48 rounded-full bg-emerald-400/20 blur-3xl" />
-              <div className="relative flex flex-wrap items-start justify-between gap-4">
-                <div className="flex items-start gap-3">
-                  <div className="rounded-2xl bg-emerald-400/20 p-2.5 ring-1 ring-emerald-200/40">
-                    <Sparkles className="h-5 w-5 text-emerald-100" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wider text-emerald-200">
-                      {isHe ? "הרכישה הושלמה" : "Purchase complete"}
-                    </p>
-                    <h2 className="mt-1 text-xl font-bold text-white sm:text-2xl">
-                      {isHe
-                        ? `${justPurchased.title_he} פתוח לשניכם 💜`
-                        : `${
-                            justPurchased.title_en || justPurchased.title_he
-                          } is ready for both of you 💜`}
-                    </h2>
-                    <p className="mt-1 max-w-xl text-sm text-white/80">
-                      {isHe
-                        ? "כל התכנים פתוחים ומוכנים. פתחו את המשחק ותתחילו."
-                        : "All content is unlocked and ready. Open the game to begin."}
-                    </p>
-                  </div>
-                </div>
-                <Link
-                  href={`/adults/${justPurchased.slug}`}
-                  className="inline-flex min-h-[44px] items-center gap-2 rounded-full bg-gradient-to-r from-rose-500 via-red-500 to-amber-500 px-6 text-sm font-semibold text-white shadow-lg shadow-rose-500/30 transition hover:brightness-110"
-                >
-                  {isHe ? "פתיחת המשחק" : "Open the game"}
-                </Link>
+            <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-fuchsia-300/30 bg-fuchsia-500/10 p-5 backdrop-blur">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-full border border-fuchsia-300/40 bg-fuchsia-500/20">
+                <Heart className="size-5 text-fuchsia-200" />
               </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-white">
+                  {isHe ? "קיבלתם קוד מבן/בת הזוג?" : "Got a code from your partner?"}
+                </p>
+                <p className="mt-0.5 text-xs text-white/65">
+                  {isHe
+                    ? "הזינו את הקוד והחשבון שלכם יתחבר אליהם מיד — בלי להמתין, בלי רענון."
+                    : "Enter the code and your account links to theirs instantly — no waiting, no refresh."}
+                </p>
+              </div>
+              <RedeemCodeButton
+                isHe={isHe}
+                variant="primary"
+                redirectTo={`/${locale}/my`}
+              />
             </div>
           </section>
         ) : null}
@@ -216,7 +274,7 @@ export default async function MyHubPage({
                 </p>
                 <p className="mt-1 text-amber-100/85">
                   {isHe
-                    ? "כדי לצמד פרטנר/ית, להזין קוד או להתחיל משחק — צריך שם מלא, נייד וסיסמה."
+                    ? "כדי לצמד פרטנר/ית, להזין קוד או להתחיל משחק - צריך שם מלא, נייד וסיסמה."
                     : "To pair a partner, redeem a code or start a game, add your full name, mobile, and password."}
                 </p>
               </div>
@@ -244,8 +302,8 @@ export default async function MyHubPage({
               Icon={Gamepad2}
               description={
                 isHe
-                  ? "גלגל האמת, נחשים ושלבים — והחברים שלהם."
-                  : "Truth wheel, snakes & ladders — and their friends."
+                  ? "גלגל האמת, נחשים ושלבים - והחברים שלהם."
+                  : "Truth wheel, snakes & ladders - and their friends."
               }
               galleryHref="/my/games"
               accent="from-violet-500 via-fuchsia-500 to-cyan-500"
@@ -258,8 +316,8 @@ export default async function MyHubPage({
               titleEn="Games for couples"
               tagline={
                 isHe
-                  ? "גלגל האמת, נחשים ושלבים — משחקים לזוגות שמרעננים את הקשר, בערב אחד."
-                  : "Truth wheel, snakes & ladders, and more — couples games that refresh your connection in a single evening."
+                  ? "גלגל האמת, נחשים ושלבים - משחקים לזוגות שמרעננים את הקשר, בערב אחד."
+                  : "Truth wheel, snakes & ladders, and more - couples games that refresh your connection in a single evening."
               }
               bullets={
                 isHe
@@ -284,12 +342,12 @@ export default async function MyHubPage({
               description={
                 journeyStatus.hasActiveAssignments
                   ? isHe
-                    ? "המסלול הפעיל שלכם ממתין — המשיכו מאיפה שעצרתם."
-                    : "Your live journey is waiting — pick up where you left off."
+                    ? "המסלול הפעיל שלכם ממתין - המשיכו מאיפה שעצרתם."
+                    : "Your live journey is waiting - pick up where you left off."
                   : journeyStatus.hasInProgressAssessment
                     ? isHe
-                      ? "האבחון שלכם באמצע — חזרו להשלים אותו."
-                      : "Your assessment is in progress — come back and finish it."
+                      ? "האבחון שלכם באמצע - חזרו להשלים אותו."
+                      : "Your assessment is in progress - come back and finish it."
                     : isHe
                       ? "האבחון האישי שלכם + שלבים להמשך."
                       : "Your personal diagnostic + next steps."
@@ -316,6 +374,7 @@ export default async function MyHubPage({
                     : "Open gallery"
               }
               accent="from-teal-400 via-indigo-500 to-purple-500"
+              notificationCount={unreadJourneyCount}
             />
           ) : (
             <ServicePanel
@@ -325,8 +384,8 @@ export default async function MyHubPage({
               titleEn="Journey with Mioshy"
               tagline={
                 isHe
-                  ? "אבחון מקצועי + תובנות אישיות לקשר שלכם — ליווי שמבוסס על שבעת עקרונות הקשר הבריא."
-                  : "Professional diagnostic + personal insights for your relationship — guidance built on seven principles of healthy partnership."
+                  ? "אבחון מקצועי + תובנות אישיות לקשר שלכם - ליווי שמבוסס על שבעת עקרונות הקשר הבריא."
+                  : "Professional diagnostic + personal insights for your relationship - guidance built on seven principles of healthy partnership."
               }
               bullets={
                 isHe
@@ -356,6 +415,8 @@ export default async function MyHubPage({
                   : `${ownedCount} game${ownedCount === 1 ? "" : "s"} unlocked for the two of you.`
               }
               galleryHref="/my/adults"
+              ctaLabelHe="הרכישות שלי"
+              ctaLabelEn="My purchases"
               accent="from-rose-500 via-red-500 to-amber-500"
             />
           ) : (
@@ -366,8 +427,8 @@ export default async function MyHubPage({
               titleEn="Adults Only"
               tagline={
                 isHe
-                  ? "משחקי זוגיות יותר אינטימיים — שלושה שלבי עוצמה, תכנים מותאמים, פרטיות מלאה."
-                  : "More intimate couples games — three intensity tiers, curated content, full privacy."
+                  ? "משחקי זוגיות יותר אינטימיים - שלושה שלבי עוצמה, תכנים מותאמים, פרטיות מלאה."
+                  : "More intimate couples games - three intensity tiers, curated content, full privacy."
               }
               bullets={
                 isHe
@@ -376,7 +437,7 @@ export default async function MyHubPage({
               }
               badge="💜"
               ctaHref="/adults"
-              ctaLabel={isHe ? "לגילוי התכנים" : "Explore content"}
+              ctaLabel={isHe ? "צפה במשחקים שלנו" : "View our games"}
               compact
             />
           )}
@@ -426,7 +487,7 @@ export default async function MyHubPage({
                   <p className="mt-1 text-xs text-white/65">
                     {isHe
                       ? "שלחו מייל וכל מה שיש לכם יחכה גם להם."
-                      : "Send an email — everything you own will be waiting for them too."}
+                      : "Send an email - everything you own will be waiting for them too."}
                   </p>
                   <div className="mt-3">
                     <InvitePartnerByEmail
@@ -455,7 +516,7 @@ export default async function MyHubPage({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// EntitledPillar — the "you have access" card
+// EntitledPillar - the "you have access" card
 // ─────────────────────────────────────────────────────────────────────────────
 
 function EntitledPillar({
@@ -469,6 +530,7 @@ function EntitledPillar({
   accent,
   ctaLabelHe,
   ctaLabelEn,
+  notificationCount,
 }: {
   isHe: boolean;
   pillar: PillarKey;
@@ -481,12 +543,17 @@ function EntitledPillar({
   /** Optional per-pillar override of the "Open gallery / לגלריה" CTA. */
   ctaLabelHe?: string;
   ctaLabelEn?: string;
+  /** Coaching pillar shows a red dot + counter when the expert has
+   *  prescribed new content the user hasn't opened yet (derived in
+   *  lib/journey-content/unread.ts). Other pillars omit the prop. */
+  notificationCount?: number;
 }) {
   const Arrow = isHe ? ArrowLeft : ArrowRight;
   const title = isHe ? titleHe : titleEn;
   const ctaLabel = isHe
     ? (ctaLabelHe ?? "לגלריה")
     : (ctaLabelEn ?? "Open gallery");
+  const hasNotif = (notificationCount ?? 0) > 0;
 
   return (
     <Link
@@ -499,6 +566,22 @@ function EntitledPillar({
         aria-hidden
         className={`pointer-events-none absolute -top-20 end-[-40px] h-56 w-56 rounded-full bg-gradient-to-br ${accent} opacity-30 blur-3xl transition group-hover:opacity-50`}
       />
+
+      {/* Notification badge — red dot + counter, top-end corner. Pulse
+          animation matches the homepage hero's "dot" eyebrow so the
+          surface reads as one visual family. */}
+      {hasNotif ? (
+        <span
+          aria-label={isHe ? `${notificationCount} חדשים` : `${notificationCount} new`}
+          className="absolute end-4 top-4 z-10 inline-flex min-w-[26px] items-center justify-center gap-1 rounded-full bg-rose-500 px-2 py-1 text-[11px] font-bold text-white shadow-lg shadow-rose-500/40 ring-2 ring-rose-300/30"
+        >
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-300 opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-rose-100" />
+          </span>
+          {notificationCount}
+        </span>
+      ) : null}
 
       <div className="relative">
         <div

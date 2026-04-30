@@ -178,7 +178,7 @@ export function CsvImportExport({ configId, configName, questions, onSave }: Pro
         <div className="rounded-2xl border border-destructive/40 bg-destructive/5 p-4 space-y-3">
           <div className="flex items-center justify-between">
             <p className="font-semibold text-destructive">
-              ⚠️ נמצאו {state.errors.length} שגיאות — הייבוא לא בוצע
+              ⚠️ נמצאו {state.errors.length} שגיאות - הייבוא לא בוצע
             </p>
             <Button size="sm" variant="ghost" onClick={() => setState({ phase: "idle" })}>
               סגור
@@ -215,7 +215,7 @@ export function CsvImportExport({ configId, configName, questions, onSave }: Pro
         <div className="rounded-2xl border p-4 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="font-semibold">
-              תצוגה מקדימה — {state.incoming.length} שאלות בקובץ
+              תצוגה מקדימה - {state.incoming.length} שאלות בקובץ
             </p>
             <Button size="sm" variant="ghost" onClick={() => setState({ phase: "idle" })}>
               ביטול

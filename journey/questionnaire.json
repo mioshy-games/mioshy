@@ -1,10 +1,10 @@
 {
-  "version": 1,
+  "version": 4,
   "gating": {
-    "auth_after_index": 26,
+    "auth_after_index": 33,
     "paywall_after_index": 99
   },
-  "total_questions": 28,
+  "total_questions": 35,
   "locales": [
     "he",
     "en"
@@ -36,10 +36,10 @@
           "weight": 1.0
         }
       ],
-      "purpose": "Baseline Love Map — does the person actually know their partner's current inner life?",
+      "purpose": "Baseline Love Map - does the person actually know their partner's current inner life?",
       "insight": "If low: partner feels invisible. We open with Love Map week.",
-      "he": "בשבועיים האחרונים, עד כמה אני מרגיש/ה שאני באמת יודע/ת מה עובר על בן/בת הזוג שלי — המתחים, הקטנויות, מה מעסיק אותם באמת?",
-      "en": "In the past two weeks, how much do I feel I truly know what my partner is going through — their stresses, small worries, what's really on their mind?"
+      "he": "בשבועיים האחרונים, עד כמה אני מרגיש/ה שאני באמת יודע/ת מה עובר על בן/בת הזוג שלי - המתחים, הקטנויות, מה מעסיק אותם באמת?",
+      "en": "In the past two weeks, how much do I feel I truly know what my partner is going through - their stresses, small worries, what's really on their mind?"
     },
     {
       "id": "q02_admiration_see_good",
@@ -51,10 +51,145 @@
           "weight": 1.0
         }
       ],
-      "purpose": "Fondness & Admiration snapshot — can the user still articulate what they love?",
+      "purpose": "Fondness & Admiration snapshot - can the user still articulate what they love?",
       "insight": "If low + low Love Map: relationship is in early Negative Sentiment Override.",
-      "he": "כשאני חושב/ת על בן/בת הזוג שלי השבוע — עד כמה קל לי להיזכר בשלושה דברים שאני ממש מעריך/ה בהם?",
-      "en": "When I think of my partner this week — how easy is it for me to recall three things I genuinely admire about them?"
+      "he": "כשאני חושב/ת על בן/בת הזוג שלי השבוע - עד כמה קל לי להיזכר בשלושה דברים שאני ממש מעריך/ה בהם?",
+      "en": "When I think of my partner this week - how easy is it for me to recall three things I genuinely admire about them?"
+    },
+    {
+      "id": "q_gender",
+      "category": "free",
+      "type": "forced_choice",
+      "axes": [],
+      "purpose": "Captures the respondent's gender label for audience-targeted coaching content (migration 044). Doesn't drive the diagnostic — option ids map directly to profiles.gender ('male' | 'female' | 'other').",
+      "insight": "Persisted onto profiles.gender immediately if authed, or backfilled the moment the anon journey is claimed by a user. The audience filter on couple timelines is structural (couple_members.role), so this is purely the display label the expert sees.",
+      "he_prompt": "כדי שנוכל להתאים את התכנים האישיים שלך - מה המגדר שלך?",
+      "en_prompt": "So we can tailor content to you - what's your gender?",
+      "options": [
+        {
+          "id": "female",
+          "he": "אישה",
+          "en": "Female",
+          "scores": []
+        },
+        {
+          "id": "male",
+          "he": "גבר",
+          "en": "Male",
+          "scores": []
+        },
+        {
+          "id": "other",
+          "he": "אחר / מעדיף/ה לא לציין",
+          "en": "Other / prefer not to say",
+          "scores": []
+        }
+      ]
+    },
+    {
+      "id": "q_relationship_status",
+      "category": "free",
+      "type": "forced_choice",
+      "axes": [],
+      "purpose": "Relationship type — used by the expert to pick appropriate framing (married couples vs. dating differ in conflict patterns).",
+      "insight": "Doesn't affect axis scores; surfaced on the expert couple-detail page.",
+      "he_prompt": "מה הסטטוס שלכם כזוג?",
+      "en_prompt": "What's your relationship status?",
+      "options": [
+        { "id": "married", "he": "נשואים", "en": "Married", "scores": [] },
+        { "id": "partnership", "he": "ידועים בציבור / חיים יחד", "en": "Partnership / living together", "scores": [] },
+        { "id": "dating", "he": "בזוגיות, לא גרים יחד", "en": "Dating, not living together", "scores": [] },
+        { "id": "engaged", "he": "מאורסים", "en": "Engaged", "scores": [] }
+      ]
+    },
+    {
+      "id": "q_relationship_years",
+      "category": "free",
+      "type": "forced_choice",
+      "axes": [],
+      "purpose": "How long the couple has been together — pacing of long-married vs. early-relationship couples differs.",
+      "insight": "Surfaced on expert dashboard.",
+      "he_prompt": "כמה שנים אתם יחד?",
+      "en_prompt": "How long have you been together?",
+      "options": [
+        { "id": "lt1", "he": "פחות משנה", "en": "Less than 1 year", "scores": [] },
+        { "id": "1to3", "he": "1-3 שנים", "en": "1-3 years", "scores": [] },
+        { "id": "4to7", "he": "4-7 שנים", "en": "4-7 years", "scores": [] },
+        { "id": "8to15", "he": "8-15 שנים", "en": "8-15 years", "scores": [] },
+        { "id": "gt15", "he": "יותר מ-15 שנים", "en": "More than 15 years", "scores": [] }
+      ]
+    },
+    {
+      "id": "q_kids_count",
+      "category": "free",
+      "type": "forced_choice",
+      "axes": [],
+      "purpose": "Family size — informs scheduling-realistic prescriptions.",
+      "insight": "Surfaced on expert dashboard.",
+      "he_prompt": "כמה ילדים יש לכם?",
+      "en_prompt": "How many kids do you have?",
+      "options": [
+        { "id": "0", "he": "אין", "en": "None", "scores": [] },
+        { "id": "1", "he": "ילד אחד", "en": "1", "scores": [] },
+        { "id": "2", "he": "שני ילדים", "en": "2", "scores": [] },
+        { "id": "3", "he": "שלושה ילדים", "en": "3", "scores": [] },
+        { "id": "4plus", "he": "4 ומעלה", "en": "4 or more", "scores": [] }
+      ]
+    },
+    {
+      "id": "q_kids_age",
+      "category": "free",
+      "type": "forced_choice",
+      "axes": [],
+      "purpose": "Age band of the youngest child — exhausted-with-baby couples need different prescriptions than empty-nest.",
+      "insight": "Surfaced on expert dashboard.",
+      "he_prompt": "מה גיל הילד הצעיר ביותר?",
+      "en_prompt": "How old is your youngest?",
+      "options": [
+        { "id": "no_kids", "he": "אין ילדים", "en": "No kids", "scores": [] },
+        { "id": "0to2", "he": "0-2 (תינוקות)", "en": "0-2 (infants)", "scores": [] },
+        { "id": "3to5", "he": "3-5 (גן)", "en": "3-5 (preschool)", "scores": [] },
+        { "id": "6to12", "he": "6-12 (יסודי)", "en": "6-12 (elementary)", "scores": [] },
+        { "id": "13to17", "he": "13-17 (נוער)", "en": "13-17 (teens)", "scores": [] },
+        { "id": "18plus", "he": "18 ומעלה", "en": "18+ (adults)", "scores": [] }
+      ]
+    },
+    {
+      "id": "q_household_employment",
+      "category": "free",
+      "type": "forced_choice",
+      "axes": [],
+      "purpose": "Whether both partners work — defines available bandwidth for shared rituals.",
+      "insight": "Surfaced on expert dashboard.",
+      "he_prompt": "מי מכם עובד/ת?",
+      "en_prompt": "Who is currently working?",
+      "options": [
+        { "id": "both_full", "he": "שנינו במשרה מלאה", "en": "Both of us full-time", "scores": [] },
+        { "id": "one_full_one_part", "he": "אחד מאיתנו מלאה, השני חלקית", "en": "One full-time, one part-time", "scores": [] },
+        { "id": "one_works", "he": "רק אחד עובד", "en": "Only one of us works", "scores": [] },
+        { "id": "both_flex", "he": "שנינו פרילנס / גמיש", "en": "Both freelance / flexible", "scores": [] },
+        { "id": "both_home", "he": "שנינו בבית כרגע", "en": "Both at home right now", "scores": [] }
+      ]
+    },
+    {
+      "id": "q_work_field",
+      "category": "free",
+      "type": "forced_choice",
+      "axes": [],
+      "purpose": "Industry of the primary earner — flavours how the expert frames examples.",
+      "insight": "Surfaced on expert dashboard.",
+      "he_prompt": "באיזה תחום אתם עובדים? (העיקרי במשפחה)",
+      "en_prompt": "What field do you work in? (the primary earner)",
+      "options": [
+        { "id": "tech", "he": "הייטק / טכנולוגיה", "en": "Tech", "scores": [] },
+        { "id": "health", "he": "בריאות / רפואה", "en": "Health / medicine", "scores": [] },
+        { "id": "education", "he": "חינוך / אקדמיה", "en": "Education / academia", "scores": [] },
+        { "id": "business", "he": "עסקים / פיננסים", "en": "Business / finance", "scores": [] },
+        { "id": "arts", "he": "אומנות / מדיה", "en": "Arts / media", "scores": [] },
+        { "id": "trades", "he": "מקצועות עצמאיים", "en": "Trades / hands-on", "scores": [] },
+        { "id": "public", "he": "שירות ציבורי / צבא", "en": "Public sector / military", "scores": [] },
+        { "id": "other", "he": "אחר", "en": "Other", "scores": [] }
+      ]
     },
     {
       "id": "q03_bids_turn_toward",
@@ -68,8 +203,8 @@
       ],
       "purpose": "Turn Toward: do small connection bids get responded to?",
       "insight": "The single strongest Gottman predictor of long-term stability.",
-      "he": "כשבן/בת הזוג שלי פונה אליי עם משהו קטן — משפט, צחוק, מחווה — באיזו תדירות אני באמת נותן/ת תשומת לב ולא דוחה את זה ל'אחר כך'?",
-      "en": "When my partner reaches out with something small — a comment, a laugh, a touch — how often do I actually give attention instead of putting it off to 'later'?"
+      "he": "כשבן/בת הזוג שלי פונה אליי עם משהו קטן - משפט, צחוק, מחווה - באיזו תדירות אני באמת נותן/ת תשומת לב ולא דוחה את זה ל'אחר כך'?",
+      "en": "When my partner reaches out with something small - a comment, a laugh, a touch - how often do I actually give attention instead of putting it off to 'later'?"
     },
     {
       "id": "q04_love_language_pair_a",
@@ -95,7 +230,7 @@
         {
           "id": "b",
           "he": "שנקבע ביחד ערב בלי טלפונים, רק אנחנו",
-          "en": "Setting aside an evening together with no phones — just us",
+          "en": "Setting aside an evening together with no phones - just us",
           "scores": [
             {
               "axis": "love_language_time",
@@ -181,10 +316,10 @@
           "weight": 1.0
         }
       ],
-      "purpose": "Positive Sentiment Override — assumed intent when partner is off.",
+      "purpose": "Positive Sentiment Override - assumed intent when partner is off.",
       "insight": "PSO score predicts whether repair attempts will land.",
-      "he": "כשבן/בת הזוג שלי במצב רוח רע — באיזו תדירות ההנחה הראשונה שלי היא 'כנראה עבר עליו/ה משהו' ולא 'זה מכוון נגדי'?",
-      "en": "When my partner is in a bad mood — how often is my first assumption 'they must be going through something' rather than 'this is aimed at me'?"
+      "he": "כשבן/בת הזוג שלי במצב רוח רע - באיזו תדירות ההנחה הראשונה שלי היא 'כנראה עבר עליו/ה משהו' ולא 'זה מכוון נגדי'?",
+      "en": "When my partner is in a bad mood - how often is my first assumption 'they must be going through something' rather than 'this is aimed at me'?"
     },
     {
       "id": "q08_influence_decisions",
@@ -196,9 +331,9 @@
           "weight": 1.0
         }
       ],
-      "purpose": "Accepting Influence — power sharing.",
-      "he": "בהחלטות משמעותיות (כסף, ילדים, זמן) — עד כמה אני מרגיש/ה שהדעה שלי באמת משפיעה על התוצאה הסופית?",
-      "en": "On meaningful decisions (money, kids, time) — how much do I feel my opinion actually shapes the final outcome?"
+      "purpose": "Accepting Influence - power sharing.",
+      "he": "בהחלטות משמעותיות (כסף, ילדים, זמן) - עד כמה אני מרגיש/ה שהדעה שלי באמת משפיעה על התוצאה הסופית?",
+      "en": "On meaningful decisions (money, kids, time) - how much do I feel my opinion actually shapes the final outcome?"
     },
     {
       "id": "q09_repair_recovery",
@@ -210,9 +345,9 @@
           "weight": 1.0
         }
       ],
-      "purpose": "Repair Attempts — can you de-escalate a tense moment?",
-      "he": "כשיש בינינו ריב או מתח — באיזו תדירות אחד מאיתנו מצליח להוריד את החום (בדיחה, הפסקה, התנצלות) ושזה באמת עובד?",
-      "en": "When there's an argument or tension — how often does one of us manage to take the heat down (joke, break, apology) and it actually works?"
+      "purpose": "Repair Attempts - can you de-escalate a tense moment?",
+      "he": "כשיש בינינו ריב או מתח - באיזו תדירות אחד מאיתנו מצליח להוריד את החום (בדיחה, הפסקה, התנצלות) ושזה באמת עובד?",
+      "en": "When there's an argument or tension - how often does one of us manage to take the heat down (joke, break, apology) and it actually works?"
     },
     {
       "id": "q10_criticism_vs_complaint",
@@ -224,7 +359,7 @@
           "weight": 1.0
         }
       ],
-      "purpose": "Four Horsemen — Criticism.",
+      "purpose": "Four Horsemen - Criticism.",
       "insight": "A high score here flags the need for Week-5 conflict track.",
       "he": "בוויכוחים שלנו, באיזו תדירות אני שומע/ת את עצמי או את בן/בת הזוג מתחילים משפטים ב'אתה תמיד...' או 'את אף פעם לא...'?",
       "en": "In our arguments, how often do I hear myself or my partner start sentences with 'you always…' or 'you never…'?"
@@ -239,7 +374,7 @@
           "weight": 1.0
         }
       ],
-      "purpose": "Four Horsemen — Contempt (single strongest divorce predictor in Gottman's data).",
+      "purpose": "Four Horsemen - Contempt (single strongest divorce predictor in Gottman's data).",
       "he": "באיזו תדירות קורה שאחד מאיתנו מגלגל עיניים, לועג, או משתמש בטון של 'אתה לא מבין שום דבר' כלפי השני?",
       "en": "How often does one of us roll our eyes, mock, or use a 'you just don't get it' tone toward the other?"
     },
@@ -253,9 +388,9 @@
           "weight": 1.0
         }
       ],
-      "purpose": "Four Horsemen — Defensiveness.",
-      "he": "כשבן/בת הזוג מעלה משהו שהפריע להם — באיזו תדירות התגובה הראשונה שלי היא להסביר למה זה לא באשמתי, במקום לשמוע?",
-      "en": "When my partner raises something that bothered them — how often is my first reaction to explain why it's not my fault, instead of listening?"
+      "purpose": "Four Horsemen - Defensiveness.",
+      "he": "כשבן/בת הזוג מעלה משהו שהפריע להם - באיזו תדירות התגובה הראשונה שלי היא להסביר למה זה לא באשמתי, במקום לשמוע?",
+      "en": "When my partner raises something that bothered them - how often is my first reaction to explain why it's not my fault, instead of listening?"
     },
     {
       "id": "q13_stonewall",
@@ -267,9 +402,9 @@
           "weight": 1.0
         }
       ],
-      "purpose": "Four Horsemen — Stonewalling (shutdown, usually later-stage).",
-      "he": "כשהשיחה נהיית קשה — באיזו תדירות אחד מאיתנו מתנתק, שותק, מסתובב ועוזב את הדיון?",
-      "en": "When a conversation gets hard — how often does one of us shut down, go silent, turn away, or leave the discussion?"
+      "purpose": "Four Horsemen - Stonewalling (shutdown, usually later-stage).",
+      "he": "כשהשיחה נהיית קשה - באיזו תדירות אחד מאיתנו מתנתק, שותק, מסתובב ועוזב את הדיון?",
+      "en": "When a conversation gets hard - how often does one of us shut down, go silent, turn away, or leave the discussion?"
     },
     {
       "id": "q14_autonomy_separateness",
@@ -281,9 +416,9 @@
           "weight": 1.0
         }
       ],
-      "purpose": "Passion — autonomy (Perel). Can you still see your partner as *other*?",
-      "he": "עד כמה בן/בת הזוג עדיין מפתיע/ה אותי — עדיין יש צד בהם שאני סקרן/ית לגביו ולא הכל צפוי?",
-      "en": "How much does my partner still surprise me — is there still a side of them I'm curious about, not fully predictable?"
+      "purpose": "Passion - autonomy (Perel). Can you still see your partner as *other*?",
+      "he": "עד כמה בן/בת הזוג עדיין מפתיע/ה אותי - עדיין יש צד בהם שאני סקרן/ית לגביו ולא הכל צפוי?",
+      "en": "How much does my partner still surprise me - is there still a side of them I'm curious about, not fully predictable?"
     },
     {
       "id": "q15_anticipation",
@@ -295,9 +430,9 @@
           "weight": 1.0
         }
       ],
-      "purpose": "Passion — anticipation. Is there something to look forward to with them?",
-      "he": "במהלך שבוע טיפוסי — עד כמה אני מוצא/ת את עצמי מחכה למשהו ספציפי שקורה בינינו?",
-      "en": "In a typical week — how much do I find myself looking forward to something specific that happens between us?"
+      "purpose": "Passion - anticipation. Is there something to look forward to with them?",
+      "he": "במהלך שבוע טיפוסי - עד כמה אני מוצא/ת את עצמי מחכה למשהו ספציפי שקורה בינינו?",
+      "en": "In a typical week - how much do I find myself looking forward to something specific that happens between us?"
     },
     {
       "id": "q16_play",
@@ -309,7 +444,7 @@
           "weight": 1.0
         }
       ],
-      "purpose": "Passion — play. Do you still joke, tease, have non-goal-oriented fun?",
+      "purpose": "Passion - play. Do you still joke, tease, have non-goal-oriented fun?",
       "he": "עד כמה יש בינינו הומור, התקנטויות קלות, וצחוקים משותפים בימים רגילים (לא רק באירועים מיוחדים)?",
       "en": "How much humor, playful teasing, and shared laughter do we have on regular days (not just special occasions)?"
     },
@@ -323,10 +458,10 @@
           "weight": -1.0
         }
       ],
-      "purpose": "Passion — context. Negative weight: high score = bad (logistics eats us).",
+      "purpose": "Passion - context. Negative weight: high score = bad (logistics eats us).",
       "insight": "Inverted: 'almost always' = daily logistics dominate → low passion_context.",
-      "he": "כשאנחנו לבד בערב ללא ילדים/עבודה — באיזו תדירות השיחה עדיין מסתיימת בסופרמרקט, לו\"ז, או רשימות מטלות?",
-      "en": "When we're alone in the evening with no kids/work — how often does the conversation still end up on groceries, schedules, or to-do lists?"
+      "he": "כשאנחנו לבד בערב ללא ילדים/עבודה - באיזו תדירות השיחה עדיין מסתיימת בסופרמרקט, לו\"ז, או רשימות מטלות?",
+      "en": "When we're alone in the evening with no kids/work - how often does the conversation still end up on groceries, schedules, or to-do lists?"
     },
     {
       "id": "q18_shared_meaning_goals",
@@ -338,9 +473,9 @@
           "weight": 1.0
         }
       ],
-      "purpose": "Shared Meaning — goals (Gottman Pillar 3).",
-      "he": "כשאני חושב/ת על החיים שאני רוצה בעוד 5 שנים — עד כמה הם תואמים למה שבן/בת הזוג רוצה?",
-      "en": "When I think about the life I want 5 years from now — how much does it line up with what my partner wants?"
+      "purpose": "Shared Meaning - goals (Gottman Pillar 3).",
+      "he": "כשאני חושב/ת על החיים שאני רוצה בעוד 5 שנים - עד כמה הם תואמים למה שבן/בת הזוג רוצה?",
+      "en": "When I think about the life I want 5 years from now - how much does it line up with what my partner wants?"
     },
     {
       "id": "q19_rituals",
@@ -352,7 +487,7 @@
           "weight": 0.5
         }
       ],
-      "purpose": "Shared Meaning — rituals of connection (Gottman Pillar 2).",
+      "purpose": "Shared Meaning - rituals of connection (Gottman Pillar 2).",
       "he": "יש לנו רגע קבוע ביום או בשבוע שרק שייך לנו (קפה של בוקר, דייט קבוע, טקס ערב)?",
       "en": "Do we have a regular moment in the day or week that belongs only to us (morning coffee, standing date, evening ritual)?"
     },
@@ -361,8 +496,8 @@
       "category": "paid",
       "type": "single_choice",
       "axes": [],
-      "purpose": "User-perceived top gap — used to weight recommendations.",
-      "he_prompt": "אם היה אפשר לשפר דבר אחד בלבד בזוגיות שלכם בחודש הקרוב — מה זה היה?",
+      "purpose": "User-perceived top gap - used to weight recommendations.",
+      "he_prompt": "אם היה אפשר לשפר דבר אחד בלבד בזוגיות שלכם בחודש הקרוב - מה זה היה?",
       "en_prompt": "If you could improve one thing in your relationship this month, what would it be?",
       "options": [
         {
@@ -438,9 +573,9 @@
       "category": "paid",
       "type": "reflection",
       "axes": [],
-      "purpose": "Open reflection — surfaces the user's own framing (qualitative data for coach).",
+      "purpose": "Open reflection - surfaces the user's own framing (qualitative data for coach).",
       "he_prompt": "באיזה רגע מהחודש האחרון הרגשת הכי קרוב/ה לבן/בת הזוג? תכתוב/י קצר, אפילו משפט אחד.",
-      "en_prompt": "In the past month, when did you feel closest to your partner? A short answer is enough — even one sentence.",
+      "en_prompt": "In the past month, when did you feel closest to your partner? A short answer is enough - even one sentence.",
       "max_length": 600
     },
     {
@@ -448,9 +583,9 @@
       "category": "paid",
       "type": "reflection",
       "axes": [],
-      "purpose": "Open reflection — friction point (coach input).",
+      "purpose": "Open reflection - friction point (coach input).",
       "he_prompt": "ומה הרגע האחרון שבו הרגשת הכי רחוק/ה? (ללא האשמות, רק תיאור קצר)",
-      "en_prompt": "And when did you feel furthest away? (No blame — just a short description.)",
+      "en_prompt": "And when did you feel furthest away? (No blame - just a short description.)",
       "max_length": 600
     },
     {
@@ -522,8 +657,8 @@
         }
       ],
       "purpose": "Small-bid frequency from partner (mid-day reaching out).",
-      "he": "באיזו תדירות בן/בת הזוג פונה אליי באמצע היום בלי סיבה פרקטית — רק כדי להתחבר?",
-      "en": "How often does my partner reach out to me mid-day for no practical reason — just to connect?"
+      "he": "באיזו תדירות בן/בת הזוג פונה אליי באמצע היום בלי סיבה פרקטית - רק כדי להתחבר?",
+      "en": "How often does my partner reach out to me mid-day for no practical reason - just to connect?"
     },
     {
       "id": "q27_commitment_willingness",
@@ -539,9 +674,58 @@
           "weight": 0.5
         }
       ],
-      "purpose": "Willingness to invest weekly time — predicts program engagement.",
+      "purpose": "Willingness to invest weekly time - predicts program engagement.",
       "he": "עד כמה אני מוכן/ה להקדיש 15-20 דקות בשבוע לתרגיל זוגי קצר אם אדע שהוא מותאם אישית לנו?",
       "en": "How willing am I to dedicate 15–20 minutes a week to a short relationship exercise if I know it's personalized for us?"
+    },
+    {
+      "id": "q_priorities",
+      "category": "registered",
+      "type": "ranking",
+      "axes": [],
+      "purpose": "Captures the user's perceived priority order across 5 relationship domains. Drives the expert's per-partner alignment view.",
+      "insight": "Doesn't move diagnostic axes. Stored as ordered list of stable slugs in journey_responses; renders side-by-side with the partner's list in the expert dashboard for divergence flags.",
+      "he_prompt": "דרג את תחומי הזוגיות לפי סדר החשיבות עבורך",
+      "en_prompt": "Rank the relationship areas by personal priority",
+      "he_subline": "הראשון הוא הכי חשוב לך, האחרון פחות. תוכל לגרור ולשנות את הסדר.",
+      "en_subline": "The first is most important to you, the last is least. Drag to reorder.",
+      "categories": [
+        {
+          "key": "communication",
+          "he": "תקשורת זוגית",
+          "en": "Couple Communication",
+          "he_desc": "איך אנחנו מדברים, מקשיבים ופותרים אי-הסכמות",
+          "en_desc": "How we talk, listen, and resolve disagreements"
+        },
+        {
+          "key": "intimacy",
+          "he": "מיניות ואינטימיות",
+          "en": "Sexuality & Intimacy",
+          "he_desc": "החיים המיניים, המגע, הקרבה הפיזית והרצון",
+          "en_desc": "Sex life, touch, physical closeness, desire"
+        },
+        {
+          "key": "emotional_connection",
+          "he": "אהבה וחיבור רגשי",
+          "en": "Love & Emotional Connection",
+          "he_desc": "תחושת קרבה, ביטויי אהבה, פתיחות רגשית",
+          "en_desc": "Closeness, expressions of love, emotional openness"
+        },
+        {
+          "key": "friendship",
+          "he": "חברות ושותפות יומיומית",
+          "en": "Friendship & Daily Partnership",
+          "he_desc": "כיף, חוויות משותפות, שגרה והתנהלות יומיומית",
+          "en_desc": "Fun, shared experiences, daily routine"
+        },
+        {
+          "key": "family",
+          "he": "משפחה, הורות ולחצים חיצוניים",
+          "en": "Family, Parenting & External Pressures",
+          "he_desc": "ילדים, משפחות מוצא, עבודה, כסף ולחצים מבחוץ",
+          "en_desc": "Kids, in-laws, work, money, outside pressures"
+        }
+      ]
     }
   ]
 }

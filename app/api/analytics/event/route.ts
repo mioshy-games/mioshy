@@ -5,7 +5,7 @@
  * analytics_events. Uses service-role so RLS doesn't interfere.
  *
  * Accepts: { event, session_id, device_id, locale, properties }
- * Returns: 204 No Content on success (or any error — never let this
+ * Returns: 204 No Content on success (or any error - never let this
  *          surface to the user).
  */
 
@@ -36,7 +36,7 @@ export async function POST(req: Request): Promise<NextResponse> {
       const { data: { user } } = await sessionClient.auth.getUser();
       userId = user?.id ?? null;
     } catch {
-      // ignore — analytics must never fail because of auth errors
+      // ignore - analytics must never fail because of auth errors
     }
 
     const admin = createServiceRoleClient();
@@ -51,7 +51,7 @@ export async function POST(req: Request): Promise<NextResponse> {
       properties: body.properties ?? {},
     });
   } catch {
-    // Silently swallow — analytics must never break the app
+    // Silently swallow - analytics must never break the app
   }
 
   return new NextResponse(null, { status: 204 });

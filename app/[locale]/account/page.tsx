@@ -52,10 +52,17 @@ type PaymentMethodRow = {
 
 export default async function AccountPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>;
+  searchParams?: Promise<{ tab?: string }>;
 }) {
   const { locale } = await params;
+  const sp = (await searchParams) ?? {};
+  // Two-tab layout (profile + billing) on a single URL — per spec a single
+  // "החשבון שלי" header item houses both. Default = profile.
+  const activeTab: "profile" | "billing" =
+    sp.tab === "billing" ? "billing" : "profile";
   const t = await getTranslations({ locale, namespace: "account" });
   const supabase = await createServerSupabaseClient();
   const isHe = locale === "he";
@@ -68,7 +75,7 @@ export default async function AccountPage({
     redirect(`/${locale}/auth`);
   }
 
-  // Profile completeness — drives the "complete profile" nudge on this page
+  // Profile completeness - drives the "complete profile" nudge on this page
   const profileGate = await getProfileGate();
 
   // Couple context + invitation history (for the "couple space" section)
@@ -86,7 +93,7 @@ export default async function AccountPage({
   const coupleNeedsPartner =
     !!coupleCtx?.couple_id && (coupleCtx.partner_count ?? 0) < 2;
 
-  // Latest subscription (any status) — we still want to show cancelled/frozen
+  // Latest subscription (any status) - we still want to show cancelled/frozen
   const { data: subRaw } = await supabase
     .from("subscriptions")
     .select(
@@ -109,7 +116,7 @@ export default async function AccountPage({
 
   const charges = (chargesRaw as ChargeRow[] | null) ?? [];
 
-  // Payment method (masked — token_enc stays server-side)
+  // Payment method (masked - token_enc stays server-side)
   const { data: pmRaw } = sub?.payment_method_id
     ? await supabase
         .from("customer_payment_methods")
@@ -164,7 +171,7 @@ export default async function AccountPage({
         <LogoutButton className="rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-sm font-medium text-white/70 hover:bg-white/10 hover:text-white transition" />
       </div>
 
-      {/* ── Grace / blocked banners ──────────────────────────────────────── */}
+      {/* ── Grace / blocked banners (always visible across tabs) ────────── */}
       {sub?.status === "past_due" && (
         <div className="mt-6 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-200">
           {t("graceNotice")}
@@ -176,6 +183,40 @@ export default async function AccountPage({
         </div>
       )}
 
+      {/* ── Tab nav — two URLs (?tab=profile|billing) under one menu item ── */}
+      <nav
+        role="tablist"
+        className="mt-6 inline-flex rounded-full border border-white/15 bg-white/5 p-1 text-sm"
+      >
+        <Link
+          role="tab"
+          aria-selected={activeTab === "profile"}
+          href="/account"
+          className={
+            activeTab === "profile"
+              ? "rounded-full bg-white/15 px-4 py-1.5 font-semibold text-white"
+              : "rounded-full px-4 py-1.5 text-white/65 hover:text-white"
+          }
+        >
+          {isHe ? "פרטים" : "Profile"}
+        </Link>
+        <Link
+          role="tab"
+          aria-selected={activeTab === "billing"}
+          href="/account?tab=billing"
+          className={
+            activeTab === "billing"
+              ? "rounded-full bg-white/15 px-4 py-1.5 font-semibold text-white"
+              : "rounded-full px-4 py-1.5 text-white/65 hover:text-white"
+          }
+        >
+          {isHe ? "תשלומים וחשבוניות" : "Billing & invoices"}
+        </Link>
+      </nav>
+
+      {/* ── PROFILE TAB ──────────────────────────────────────────────────── */}
+      {activeTab === "profile" ? (
+      <>
       {/* ── Account identity ─────────────────────────────────────────────── */}
       <div className="mt-8 rounded-2xl border p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -234,14 +275,14 @@ export default async function AccountPage({
               {coupleCtx?.couple_id
                 ? coupleCtx.partner_count === 2
                   ? isHe
-                    ? "החלל שלכם פעיל — שני חשבונות מחוברים."
-                    : "Your couple is live — two accounts linked."
+                    ? "החלל שלכם פעיל - שני חשבונות מחוברים."
+                    : "Your couple is live - two accounts linked."
                   : isHe
                     ? "יש לכם חלל זוגי פעיל. מחכים שהפרטנר/ית יצטרפו."
                     : "You have an active couple space. Waiting for your partner to join."
                 : isHe
                   ? "עוד לא יצרתם חלל זוגי. הוא יווצר אוטומטית ברכישה הראשונה."
-                  : "No couple space yet — it's created automatically when you make your first purchase."}
+                  : "No couple space yet - it's created automatically when you make your first purchase."}
             </p>
           </div>
           {coupleCtx?.couple_id ? (
@@ -315,6 +356,12 @@ export default async function AccountPage({
         ) : null}
       </div>
 
+      </>
+      ) : null}
+
+      {/* ── BILLING TAB ──────────────────────────────────────────────────── */}
+      {activeTab === "billing" ? (
+      <>
       {/* ── Plan + controls ──────────────────────────────────────────────── */}
       <div className="mt-4 rounded-2xl border p-5">
         <div className="grid gap-4 sm:grid-cols-2">
@@ -327,7 +374,7 @@ export default async function AccountPage({
           <div>
             <div className="text-sm font-semibold">{t("status")}</div>
             <div className="mt-1 text-sm text-muted-foreground">
-              {statusLabel ?? "—"}
+              {statusLabel ?? "-"}
             </div>
           </div>
           <div>
@@ -454,6 +501,8 @@ export default async function AccountPage({
           </ul>
         )}
       </div>
+      </>
+      ) : null}
     </main>
   );
 }

@@ -25,7 +25,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 
 function fmt(iso?: string | null) {
-  if (!iso) return "—";
+  if (!iso) return "-";
   return new Date(iso).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
 
@@ -74,18 +74,18 @@ export default async function AdminUsersPage() {
                       <Badge variant="secondary">
                         {r.journey_status} · {r.current_step}
                       </Badge>
-                    ) : "—"}
+                    ) : "-"}
                   </TableCell>
                   <TableCell>
                     {r.subscription_status ? (
                       <Badge variant={r.subscription_status === "active" ? "default" : "outline"}>
                         {r.plan ?? ""} {r.subscription_status}
                       </Badge>
-                    ) : "—"}
+                    ) : "-"}
                   </TableCell>
-                  <TableCell>{r.friendship_score ?? "—"}</TableCell>
-                  <TableCell>{r.conflict_health ?? "—"}</TableCell>
-                  <TableCell>{r.passion_risk ?? "—"}</TableCell>
+                  <TableCell>{r.friendship_score ?? "-"}</TableCell>
+                  <TableCell>{r.conflict_health ?? "-"}</TableCell>
+                  <TableCell>{r.passion_risk ?? "-"}</TableCell>
                   <TableCell>
                     {r.four_horsemen_flag ? <Badge variant="destructive">horsemen</Badge> : null}
                     {r.open_tasks_count ? <Badge variant="secondary" className="ml-1">{r.open_tasks_count} tasks</Badge> : null}

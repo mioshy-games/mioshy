@@ -4,7 +4,7 @@ import { Counter } from "./Counter";
 import { ParallaxImage } from "./ParallaxImage";
 
 /**
- * Hero — first section of HomepageV2.
+ * Hero - first section of HomepageV2.
  * Dark animated background with 5 floating blobs, headline, lead paragraph,
  * primary + secondary CTAs, social-proof meta strip, and right-side image
  * with two floating badge cards.
@@ -25,7 +25,9 @@ export function Hero() {
         <div className="hero-blob hero-blob-3"></div>
         <div className="hero-blob hero-blob-4"></div>
         <div className="hero-blob hero-blob-5"></div>
-        {/* Drifting sparkles — same vibe as the /adults ambience.
+        {/* New floating circle, softly blurred, floating in a loop */}
+        <div className="hero-floating-circle"></div>
+        {/* Drifting sparkles - same vibe as the /adults ambience.
             CSS-only (see .hero-spark in styles.css). Each spark gets a
             different size / position / drift duration via nth-child so
             the field never repeats in lockstep. */}
@@ -34,6 +36,19 @@ export function Hero() {
             <span key={i} className={`hero-spark hero-spark-${(i % 6) + 1}`}></span>
           ))}
         </div>
+        {/* Wheels-game style small floating circles - solid colour drift */}
+        <span className="hero-orbit hero-orbit-1" aria-hidden></span>
+        <span className="hero-orbit hero-orbit-2" aria-hidden></span>
+        <span className="hero-orbit hero-orbit-3" aria-hidden></span>
+        <span className="hero-orbit hero-orbit-4" aria-hidden></span>
+        <span className="hero-orbit hero-orbit-5" aria-hidden></span>
+        <span className="hero-orbit hero-orbit-6" aria-hidden></span>
+        <span className="hero-orbit hero-orbit-7" aria-hidden></span>
+        <span className="hero-orbit hero-orbit-8" aria-hidden></span>
+        <span className="hero-orbit hero-orbit-9" aria-hidden></span>
+        <span className="hero-orbit hero-orbit-10" aria-hidden></span>
+        <span className="hero-orbit hero-orbit-11" aria-hidden></span>
+        <span className="hero-orbit hero-orbit-12" aria-hidden></span>
       </div>
       <div className="hero-grain"></div>
       <div className="container">
@@ -47,7 +62,7 @@ export function Hero() {
 
             <RevealOnScroll variant="scale-up" delay={0.05}>
               {/*
-                Hero headline — short on purpose. The previous version
+                Hero headline - short on purpose. The previous version
                 ("אתם חיים יחד… מתי הייתם באמת יחד") was a poetic question;
                 lovely on a billboard, but slow to parse. A new visitor
                 needs to know what Mioshy IS in the first second of scroll.
@@ -56,34 +71,34 @@ export function Hero() {
                 tag lights up the keyword in serif italic.
               */}
               <h1>
-                זוגיות — רק עם קצת יותר <em>פלפל</em>.
+                זוגיות - רק עם קצת יותר <em>פלפל</em>.
               </h1>
             </RevealOnScroll>
 
             <RevealOnScroll variant="fade-up" delay={0.15}>
               {/*
                 Sub-line earns its keep by NAMING the three pillars in one
-                breath — anyone scanning the hero now knows in 8 seconds
+                breath - anyone scanning the hero now knows in 8 seconds
                 exactly what's on offer.
-                The closer ("בלי לרוקן את הכיס, בלי ממחטות — זוגיות עושים
+                The closer ("בלי לרוקן את הכיס, בלי ממחטות - זוגיות עושים
                 באהבה") evolved through a few drafts:
-                  • "בלי טיפול, בלי קורסים"   — self-contradicting (Journey
+                  • "בלי טיפול, בלי קורסים"   - self-contradicting (Journey
                                                   is a form of coaching);
                                                   also "courses" isn't a real
                                                   pain point people relate to.
-                  • "בלי לרוקן את הכיס"        — affordability differentiator,
+                  • "בלי לרוקן את הכיס"        - affordability differentiator,
                                                   honest + real advantage.
-                  • "בלי ממחטות"               — visual / emotional swap for
+                  • "בלי ממחטות"               - visual / emotional swap for
                                                   "no therapy". Implies the
                                                   brand doesn't dwell in heavy
                                                   emotional places. Couples
                                                   here laugh more than they cry.
                 The closing turn ("עושים באהבה") flips the two negatives into
-                a warm positive — same rhythm trick as the headline's פלפל.
+                a warm positive - same rhythm trick as the headline's פלפל.
               */}
               <p className="lead">
-                משחקי זוגיות, חוויות אינטימיות וליווי אישי — מקום אחד שמחזיר
-                לכם את הניצוץ. בלי לרוקן את הכיס, בלי ממחטות — זוגיות עושים
+                משחקי זוגיות, חוויות אינטימיות וליווי אישי - מקום אחד שמחזיר
+                לכם את הניצוץ. בלי לרוקן את הכיס, בלי ממחטות - זוגיות עושים
                 באהבה.
               </p>
             </RevealOnScroll>

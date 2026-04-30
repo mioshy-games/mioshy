@@ -6,10 +6,10 @@ import { cn } from "@/lib/utils";
 import type { DiceResult } from "@/lib/snakes/types";
 
 /**
- * Dice — primary turn mechanic. Replaces CoinFlip.
+ * Dice - primary turn mechanic. Replaces CoinFlip.
  *
  * Behavior:
- *   • Large, thumb-friendly target (min 120px) — works on phones without
+ *   • Large, thumb-friendly target (min 120px) - works on phones without
  *     zooming the board.
  *   • When the parent reports a new `result`, the die tumbles for ~900ms
  *     showing rapidly changing faces, then snaps to the final face.
@@ -33,7 +33,7 @@ function DieFace({ value }: { value: DiceResult }) {
     <div
       className="relative grid h-full w-full grid-cols-3 grid-rows-3 place-items-center rounded-[22%] p-[14%]"
       style={{
-        // Deep velvet surface — radial highlight simulates light catching the fabric
+        // Deep velvet surface - radial highlight simulates light catching the fabric
         background:
           "radial-gradient(ellipse at 32% 28%, #1e3d28 0%, #0e2017 45%, #070f0b 100%)",
         // Layered border: outer gold rim + inner shadow for depth
@@ -42,7 +42,7 @@ function DieFace({ value }: { value: DiceResult }) {
       }}
       aria-hidden
     >
-      {/* Subtle sheen line across the top-left — light catching velvet nap */}
+      {/* Subtle sheen line across the top-left - light catching velvet nap */}
       <span
         className="pointer-events-none absolute inset-0 rounded-[22%] opacity-60"
         style={{

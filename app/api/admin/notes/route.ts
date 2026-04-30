@@ -1,11 +1,11 @@
 /**
- * POST /api/admin/notes   — add a coach note for a user
+ * POST /api/admin/notes   - add a coach note for a user
  * Body: { user_id, body, is_pinned? }
  *
- * PATCH /api/admin/notes  — toggle pin or edit body
+ * PATCH /api/admin/notes  - toggle pin or edit body
  * Body: { id, is_pinned?, body? }
  *
- * DELETE /api/admin/notes?id=...   — remove a note
+ * DELETE /api/admin/notes?id=...   - remove a note
  */
 
 import { NextResponse } from "next/server";

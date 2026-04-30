@@ -35,7 +35,7 @@ export function LoginForm({ kicked = false, next }: Props) {
     startTransition(async () => {
       const result = await loginAction(fd);
       if (!result.success) { setError(result.error); return; }
-      // Admins always land on the dashboard regardless of `next` — we
+      // Admins always land on the dashboard regardless of `next` - we
       // don't want a marketing-page next= silently demoting an admin.
       if (result.isAdmin) {
         window.location.assign("/dashboard");

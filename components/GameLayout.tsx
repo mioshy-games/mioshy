@@ -46,7 +46,7 @@ export function GameLayout({
         • my-auto on the inner wrapper distributes remaining space equally above
           and below → content is vertically centred when the viewport is tall.
         • When content is taller than the available space the auto margins
-          collapse to 0 and content simply starts at the top — nothing is
+          collapse to 0 and content simply starts at the top - nothing is
           clipped above.
         • overflow-x-hidden (not overflow-hidden) on the root lets the page
           scroll vertically when needed.

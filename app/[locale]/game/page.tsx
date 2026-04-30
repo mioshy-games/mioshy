@@ -13,7 +13,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = params;
   const base = siteUrl();
-  const title = "Mioshy — Game Lobby";
+  const title = "Mioshy - Game Lobby";
   const description = "Start a new game or join a room.";
   return {
     title,

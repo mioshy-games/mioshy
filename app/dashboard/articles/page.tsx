@@ -84,7 +84,7 @@ export default async function ArticlesAdminPage() {
                       )}
                     </TableCell>
                     <TableCell className="font-medium">
-                      {a.title_en || a.title_he || "—"}
+                      {a.title_en || a.title_he || "-"}
                     </TableCell>
                     <TableCell className="text-muted-foreground font-mono text-sm">
                       {a.slug}

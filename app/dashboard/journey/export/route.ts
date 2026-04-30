@@ -38,7 +38,7 @@ export async function GET() {
 
     admin
       .from("journey_items")
-      .select("id, category_id, slug, title_he, title_en, body_he, body_en, task_he, task_en, challenge_he, challenge_en, video_url, image_url, sort_order, default_offset_days, is_active")
+      .select("id, category_id, slug, title_he, title_en, body_he, body_en, task_he, task_en, challenge_he, challenge_en, video_url, image_url, sort_order, default_offset_days, is_active, audience")
       .order("sort_order", { ascending: true }),
 
     admin

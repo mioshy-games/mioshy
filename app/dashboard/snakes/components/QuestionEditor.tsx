@@ -18,9 +18,9 @@ function makeId() {
 }
 
 const LEVEL_OPTIONS: { value: QuestionLevel; label: string; color: string }[] = [
-  { value: 1, label: "1 — קליל",   color: "bg-green-100 text-green-700 border-green-300" },
-  { value: 2, label: "2 — בינוני", color: "bg-yellow-100 text-yellow-700 border-yellow-300" },
-  { value: 3, label: "3 — מאתגר",  color: "bg-red-100 text-red-700 border-red-300" },
+  { value: 1, label: "1 - קליל",   color: "bg-green-100 text-green-700 border-green-300" },
+  { value: 2, label: "2 - בינוני", color: "bg-yellow-100 text-yellow-700 border-yellow-300" },
+  { value: 3, label: "3 - מאתגר",  color: "bg-red-100 text-red-700 border-red-300" },
 ];
 
 const LEVEL_BADGE: Record<number, string> = {
@@ -530,7 +530,7 @@ function QuestionRow({
         </div>
       </div>
 
-      {/* Actions — visible on hover */}
+      {/* Actions - visible on hover */}
       <div
         className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
         onClick={(e) => e.stopPropagation()}

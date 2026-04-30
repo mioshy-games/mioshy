@@ -7,7 +7,7 @@
  * Hardening:
  *   - Per-(IP + device_id) sliding-window rate limit (20 reqs / 10 min).
  *   - Never trusts a `user_id` sent from the client. We ignore whatever is
- *     in the body and re-derive `user_id` from the session cookie instead —
+ *     in the body and re-derive `user_id` from the session cookie instead -
  *     the client sends a Bearer-less fetch, so the cookie is authoritative.
  *     If the caller is signed-out, the lead is stored with `user_id = null`.
  *   - Graceful recovery if the FK still fails (race with fresh auth rows):
@@ -44,7 +44,7 @@ export async function POST(req: Request) {
     marketing_consent  = false,
     terms_accepted     = false,
     terms_accepted_at  = null,
-    // NOTE: we intentionally ignore `user_id` from the body — it is
+    // NOTE: we intentionally ignore `user_id` from the body - it is
     // re-derived server-side from the session cookie. This prevents a
     // malicious client from associating a lead with someone else's account
     // and it sidesteps Supabase's synthetic-user-id quirk that triggered the
@@ -113,8 +113,8 @@ export async function POST(req: Request) {
   // ── Try to insert; on duplicate, fetch existing; on FK, retry w/ null ──────
   let { data: inserted, error: insertErr } = await tryInsert(trusted_user_id)
 
-  // If the FK check blew up even though we trust the session — an auth.users
-  // row might not be committed yet — retry once with null so we still capture
+  // If the FK check blew up even though we trust the session - an auth.users
+  // row might not be committed yet - retry once with null so we still capture
   // the lead.
   if (insertErr && (insertErr as unknown as { code?: string }).code === FK_VIOLATION_CODE) {
     console.warn("[leads/upsert] FK violation on user_id, retrying with null", {

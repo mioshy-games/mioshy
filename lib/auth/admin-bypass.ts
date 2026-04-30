@@ -1,26 +1,26 @@
 /**
- * Admin payment bypass — for end-to-end testing without real Cardcom charges.
+ * Admin payment bypass - for end-to-end testing without real Cardcom charges.
  *
  * Whitelisted user emails are allowed to skip the Cardcom checkout entirely.
  * Their server-side purchase action grants the same entitlement / subscription
  * row that a successful indicator callback would write, tagged with a
  * distinct `source = 'admin_bypass'` so the audit trail stays honest.
  *
- * Default whitelist: mioshyoffice@gmail.com — the team's shared admin login.
+ * Default whitelist: mioshyoffice@gmail.com - the team's shared admin login.
  * Override via env var `MIOSHY_TEST_BYPASS_EMAILS` (comma-separated) when
  * you need to onboard another tester without a code change.
  *
  * SECURITY NOTES
  * ──────────────
- * 1. The check is server-only — never trust a client-supplied "I am admin"
+ * 1. The check is server-only - never trust a client-supplied "I am admin"
  *    flag. Always read `auth.user.email` from the server Supabase client.
  * 2. The whitelist is a small, fixed set. Production Cardcom credentials
- *    still get loaded normally — the bypass is purely behavioural; no env
+ *    still get loaded normally - the bypass is purely behavioural; no env
  *    is unset.
  * 3. Bypassed entitlements are visually identical to real ones to the user
  *    (same /play access, same pair code, same partner inheritance) so we
  *    can replay the full journey end-to-end. The only DB difference is
- *    `source = 'admin_bypass'` — useful for filtering analytics.
+ *    `source = 'admin_bypass'` - useful for filtering analytics.
  */
 
 const DEFAULT_BYPASS_EMAILS = ["mioshyoffice@gmail.com"];

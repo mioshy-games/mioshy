@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, ChevronDown, Sparkles, Star } from "lucide-react";
 import { Link } from "@/navigation";
@@ -8,20 +9,20 @@ import { FloatingParticles } from "@/components/game/FloatingParticles";
 
 export type HeroClassicDarkProps = {
   isHe: boolean;
-  /** Full headline — if you want an accent word, wrap it in **bold** and it'll gradient. */
+  /** Full headline - if you want an accent word, wrap it in **bold** and it'll gradient. */
   headline: string;
   sub: string;
   trustBadge?: string | null;
   ctaPrimary: { text: string; href: string };
   ctaSecondary: { text: string; href: string };
-  /** Optional url — if unset, a gradient-wheel placeholder is rendered. */
+  /** Optional url - if unset, a gradient-wheel placeholder is rendered. */
   sideImageUrl?: string | null;
   tagline?: string | null;
   foundedLine?: string | null;
 };
 
 /**
- * AnimatedOrb — a drifting blurred colour orb. Mirrors the Blob primitive
+ * AnimatedOrb - a drifting blurred colour orb. Mirrors the Blob primitive
  * used by GamePageBackground so the hero's ambient motion reads as part of
  * the same visual family as the wheels page.
  */
@@ -79,7 +80,61 @@ function AnimatedOrb({
 }
 
 /**
- * "Classic dark" hero — revival of the a0f6258 split layout:
+ * ConvergingOrb - paired drifting orb. Two of these (side="left" and
+ * side="right") slowly travel toward each other near the centre and back,
+ * creating a "purple meets red" attraction effect. Both share the same
+ * duration so the convergence stays in phase.
+ */
+function ConvergingOrb({
+  side,
+  size,
+  x,
+  y,
+  color,
+  blur,
+}: {
+  side: "left" | "right";
+  size: string;
+  x: string;
+  y: string;
+  color: string;
+  blur: string;
+}) {
+  const sign = side === "left" ? 1 : -1; // left orb moves right, right orb moves left
+  const travelX = 320 * sign;
+  const travelY = side === "left" ? 80 : -80;
+  return (
+    <motion.div
+      aria-hidden
+      className="pointer-events-none absolute rounded-full"
+      style={{
+        width: size,
+        height: size,
+        left: x,
+        top: y,
+        translateX: "-50%",
+        translateY: "-50%",
+        background: color,
+        filter: `blur(${blur})`,
+        willChange: "transform",
+      }}
+      animate={{
+        x: [0, travelX * 0.5, travelX, travelX * 0.5, 0],
+        y: [0, travelY * 0.6, travelY, travelY * 0.6, 0],
+        scale: [1, 1.06, 1.15, 1.06, 1],
+      }}
+      transition={{
+        duration: 32,
+        ease: "easeInOut",
+        repeat: Infinity,
+        repeatType: "loop",
+      }}
+    />
+  );
+}
+
+/**
+ * "Classic dark" hero - revival of the a0f6258 split layout:
  * - Deep purple/rose radial-gradient background
  * - Three animated drifting blobs (same FX family as the game wheels page)
  * - FloatingParticles layer (small drifting dots, colour-derived from
@@ -98,6 +153,10 @@ export function HeroClassicDark({
   tagline,
   foundedLine,
 }: HeroClassicDarkProps) {
+  useEffect(() => {
+    console.log("[HeroClassicDark] mounted v2 — orbs converge/diverge + particles");
+  }, []);
+
   return (
     <section
       className="noise-overlay relative isolate overflow-hidden bg-[#0d0a14] text-white"
@@ -106,36 +165,30 @@ export function HeroClassicDark({
       {/* Warm gradient background */}
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(900px_circle_at_25%_20%,#3b0764,transparent_60%),radial-gradient(700px_circle_at_75%_30%,rgba(251,113,133,0.18),transparent_55%),radial-gradient(1200px_circle_at_50%_80%,#1a0a2e,transparent_70%),linear-gradient(180deg,#0d0a14,rgba(13,10,20,0.85),#0d0a14)]" />
 
-      {/* ── Animated drifting orbs (mirrors wheels page FX) ────────────── */}
-      <AnimatedOrb
-        size="90vw"
-        x="20%"
-        y="40%"
-        color="rgba(139,92,246,0.45)"
-        dx={280}
-        dy={180}
-        dur={22}
-        op={0.75}
+      {/* ── Purple ↔ Red converging pair (slow attraction, mirrored) ───── */}
+      <ConvergingOrb
+        side="left"
+        size="80vw"
+        x="22%"
+        y="42%"
+        color="rgba(139,92,246,0.55)"
         blur="130px"
-        dir={1}
       />
-      <AnimatedOrb
-        size="70vw"
-        x="75%"
-        y="50%"
-        color="rgba(244,63,94,0.35)"
-        dx={240}
-        dy={220}
-        dur={26}
-        op={0.65}
+      <ConvergingOrb
+        side="right"
+        size="72vw"
+        x="78%"
+        y="55%"
+        color="rgba(244,63,94,0.48)"
         blur="120px"
-        dir={-1}
       />
+
+      {/* ── Secondary drifting orbs (ambient depth) ────────────────────── */}
       <AnimatedOrb
         size="55vw"
         x="45%"
         y="15%"
-        color="rgba(217,70,239,0.35)"
+        color="rgba(217,70,239,0.32)"
         dx={180}
         dy={240}
         dur={30}
@@ -147,7 +200,7 @@ export function HeroClassicDark({
         size="40vw"
         x="85%"
         y="85%"
-        color="rgba(251,113,133,0.32)"
+        color="rgba(251,113,133,0.30)"
         dx={200}
         dy={-160}
         dur={24}
@@ -156,28 +209,23 @@ export function HeroClassicDark({
         dir={-1}
       />
 
-      {/* ── Floating dot particles — same component the wheels page uses ─ */}
-      {/*
-       * bgSettings.color is used only to derive the particle palette. A
-       * purple base gives us soft lavender + rose-complement + cyan-analog
-       * dots — which harmonises with the headline gradient above.
-       */}
-      <div className="pointer-events-none absolute inset-0 -z-0">
+      {/* ── Floating dot particles - same component the wheels page uses ─ */}
+      <div className="pointer-events-none absolute inset-0 z-[1]">
         <FloatingParticles
           settings={{
             enabled: true,
-            count: 28,
+            count: 36,
             shape: "circle",
-            opacity: 0.7,
+            opacity: 0.85,
             speed: 3,
-            sizeMin: 3,
-            sizeMax: 10,
+            sizeMin: 4,
+            sizeMax: 12,
           }}
           bgSettings={{ type: "color", color: "#8b5cf6" }}
         />
       </div>
 
-      {/* Subtle scanlines — gaming-cabinet texture, identical to GamePageBackground. */}
+      {/* Subtle scanlines - gaming-cabinet texture, identical to GamePageBackground. */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 -z-0"
@@ -187,7 +235,7 @@ export function HeroClassicDark({
         }}
       />
 
-      {/* Vignette — pulls the eye to centre without darkening copy. */}
+      {/* Vignette - pulls the eye to centre without darkening copy. */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 -z-0"
@@ -264,7 +312,7 @@ export function HeroClassicDark({
           ) : null}
         </div>
 
-        {/* Visual column — rotating wheel art */}
+        {/* Visual column - rotating wheel art */}
         <Reveal delay={0.15} className="relative z-10 mt-12 lg:mt-0 lg:flex-1">
           <div className="mx-auto flex max-w-md items-center justify-center lg:max-w-none">
             <div className="relative">
@@ -299,7 +347,7 @@ export function HeroClassicDark({
 }
 
 /**
- * Pure-CSS/SVG rotating wheel fallback — used when no side image is configured.
+ * Pure-CSS/SVG rotating wheel fallback - used when no side image is configured.
  * Conic-gradient disc with 8 romantic-themed sectors, rotating continuously,
  * with a small Sparkles emblem in the middle.
  */

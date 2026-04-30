@@ -20,7 +20,7 @@
  *   2. There is no layout shift when the real hero hydrates (skeleton matches
  *      the hero's vertical footprint).
  *   3. Server-side `getTranslations()` work in the parent page is unaffected
- *      — props are still resolved in the server component and passed in.
+ *      - props are still resolved in the server component and passed in.
  *
  * The wrapper itself must be a client component because `ssr: false` is
  * only honored when `next/dynamic` is called from the client side.
@@ -48,7 +48,7 @@ export function LazyLiveDemoHero(props: LiveDemoHeroProps) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Skeleton — sized to match the real hero so we never trigger CLS on swap.
+// Skeleton - sized to match the real hero so we never trigger CLS on swap.
 // Uses only static markup so it costs almost nothing to render.
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -76,7 +76,7 @@ function HeroSkeleton() {
           </div>
         </div>
 
-        {/* Wheel column placeholder — square footprint, dark glass */}
+        {/* Wheel column placeholder - square footprint, dark glass */}
         <div className="relative mx-auto aspect-square w-full max-w-[440px] rounded-[36px] border border-white/10 bg-white/[0.025] backdrop-blur-sm">
           <div className="absolute inset-1/4 rounded-full border border-white/10 bg-white/[0.03]" />
         </div>

@@ -5,7 +5,7 @@ import { Link } from "@/navigation";
 import { track } from "@/lib/analytics";
 
 type Props = ComponentProps<typeof Link> & {
-  /** A short stable identifier for this CTA — used for analytics. */
+  /** A short stable identifier for this CTA - used for analytics. */
   ctaId: string;
   /** Optional section name to group CTAs by source section. */
   section?: string;
@@ -13,7 +13,7 @@ type Props = ComponentProps<typeof Link> & {
 };
 
 /**
- * TrackedLink — fires `home_v2_cta_click` to internal analytics on click,
+ * TrackedLink - fires `home_v2_cta_click` to internal analytics on click,
  * then navigates via the locale-aware `Link` from next-intl.
  *
  * Use only for key conversion CTAs (Hero, Pricing, Assessment, Final).

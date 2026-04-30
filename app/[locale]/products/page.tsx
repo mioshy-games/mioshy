@@ -14,7 +14,7 @@ export async function generateMetadata({
   const { locale } = params;
   const base = siteUrl();
   const t = await getTranslations({ locale, namespace: "products" });
-  const title = `Mioshy — ${t("title")}`;
+  const title = `Mioshy - ${t("title")}`;
   const description = t("subtitle");
   return {
     title,

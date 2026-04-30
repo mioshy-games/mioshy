@@ -25,7 +25,7 @@ export async function getBetweenUsSettings(): Promise<BetweenUsSettings> {
 
   if (error) throw new Error(error.message);
   if (!data) {
-    throw new Error("between_us_settings singleton row missing — run migration 029");
+    throw new Error("between_us_settings singleton row missing - run migration 029");
   }
   return data as BetweenUsSettings;
 }
@@ -106,7 +106,7 @@ export async function getGameTagIds(gameId: string): Promise<string[]> {
 }
 
 // ------------------------------------------------------------
-// Games with taxonomy joined — for the public storefront
+// Games with taxonomy joined - for the public storefront
 // ------------------------------------------------------------
 export interface GameCardData {
   game: ExperienceGame;

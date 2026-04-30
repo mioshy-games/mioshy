@@ -60,7 +60,7 @@ export default async function GameContentPage({
             Back to {game.title_he || game.title_en || "game"}
           </Link>
           <h1 className="mt-2 text-3xl font-bold tracking-tight">
-            Content — {game.title_he || game.title_en || "Untitled"}
+            Content - {game.title_he || game.title_en || "Untitled"}
           </h1>
           <p className="text-muted-foreground mt-1 font-mono text-xs">
             {game.slug}

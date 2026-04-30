@@ -1,6 +1,6 @@
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 038_analytics_events.sql
--- Product analytics event log (internal — no third-party trackers).
+-- Product analytics event log (internal - no third-party trackers).
 -- ─────────────────────────────────────────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS analytics_events (
@@ -24,7 +24,7 @@ CREATE INDEX analytics_events_event_time ON analytics_events(event, created_at D
 -- RLS: only service-role can read; anyone (anon/authed) can insert via our API route
 ALTER TABLE analytics_events ENABLE ROW LEVEL SECURITY;
 
--- Service role bypasses RLS automatically — these policies cover the API route
+-- Service role bypasses RLS automatically - these policies cover the API route
 -- which runs as the anon/authenticated role via Supabase client
 CREATE POLICY "analytics_insert_anon"
   ON analytics_events
@@ -53,4 +53,4 @@ GROUP BY 1, 2, 3
 ORDER BY 1 DESC, 3 DESC;
 
 COMMENT ON TABLE analytics_events IS
-  'Product analytics — fire-and-forget events from client + server. No PII beyond user_id/device_id.';
+  'Product analytics - fire-and-forget events from client + server. No PII beyond user_id/device_id.';

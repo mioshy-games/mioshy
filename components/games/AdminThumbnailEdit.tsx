@@ -52,7 +52,7 @@ export function AdminThumbnailEdit({ gameId }: { gameId: string }) {
 
   return (
     <>
-      {/* Camera button — appears on card hover */}
+      {/* Camera button - appears on card hover */}
       <button
         type="button"
         onClick={handleOpen}

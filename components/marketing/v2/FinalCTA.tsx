@@ -2,7 +2,7 @@ import { TrackedLink } from "./TrackedLink";
 
 /**
  * FinalCTA — closing section with animated background blobs, dramatic
- * headline, and two-column choice grid (online vs adults).
+ * headline,-and two-column choice grid (online vs adults).
  */
 export function FinalCTA() {
   return (
@@ -29,7 +29,7 @@ export function FinalCTA() {
             <h3>משחקי זוגיות אונליין</h3>
             <p>
               לשבור את הקרח, להנות מערב מהנה יחד. שאלות, אתגרים ומשחקים שיוצרים שיחה אמיתית —
-              מהסלון, בלי הכנה.
+              מהסלון, בלי הכנה.-
             </p>
             <TrackedLink href="/journey" className="btn btn-primary" ctaId="final_primary" section="final">
               התחילו עכשיו <span className="arrow">←</span>
@@ -41,7 +41,7 @@ export function FinalCTA() {
             <h3>משחקים להרפתקנים</h3>
             <p>
               למי שמוכן ואוהב לשבור את השגרה — גם בסקס. משחקים נועזים שעיצבנו עבור הזוגות הכי
-              הרפתקניים שלנו.
+              הרפתקניים שלנו.-
             </p>
             <TrackedLink href="/adults" className="btn btn-ghost" ctaId="final_secondary" section="final">
               גלו את המשחקים <span className="arrow">←</span>

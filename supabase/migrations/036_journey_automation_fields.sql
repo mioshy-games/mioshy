@@ -5,7 +5,7 @@
 -- Phase 6 of the three-pillar restructure adds two capabilities that the
 -- base schema (035) didn't need yet:
 --
---   1. Post-purchase auto-assignment — when a Cardcom webhook activates a
+--   1. Post-purchase auto-assignment - when a Cardcom webhook activates a
 --      subscription for a product pillar, we need to pick which program
 --      to assign. Rather than hardcoding program UUIDs in application
 --      code, we tag programs with a `product_slug` so admins can switch
@@ -13,19 +13,19 @@
 --      program per product may be the automation target (partial unique
 --      index, active-only).
 --
---   2. Unlock notifications — a lightweight "has this row already been
+--   2. Unlock notifications - a lightweight "has this row already been
 --      announced to the owner" flag on scheduled items. We do not create
 --      a dedicated notifications table; we just mark the scheduled row
 --      as notified so the next notifier pass skips it. This keeps the
 --      hot path cheap and lets us swap delivery mechanisms (Brevo email
 --      now, web push later) without schema changes.
 --
--- Pre-launch migration — no historical data to backfill.
+-- Pre-launch migration - no historical data to backfill.
 -- ============================================================
 
 
 -- ============================================================
--- SECTION 1 — product_slug on journey_programs
+-- SECTION 1 - product_slug on journey_programs
 -- ============================================================
 
 ALTER TABLE public.journey_programs
@@ -40,7 +40,7 @@ ALTER TABLE public.journey_programs
   CHECK (product_slug IS NULL OR product_slug IN ('games','journey','adults'));
 
 -- Only ONE active program per product may be the auto-assign target.
--- NULL product_slug means "not automation-eligible" — any number of those
+-- NULL product_slug means "not automation-eligible" - any number of those
 -- can exist. The partial predicate excludes inactive programs so admins
 -- can stage a replacement by flipping is_active without hitting a unique
 -- violation.
@@ -56,7 +56,7 @@ CREATE INDEX IF NOT EXISTS journey_programs_product_lookup_idx
 
 
 -- ============================================================
--- SECTION 2 — notified_at on journey_scheduled_items
+-- SECTION 2 - notified_at on journey_scheduled_items
 -- ============================================================
 
 ALTER TABLE public.journey_scheduled_items
@@ -72,7 +72,7 @@ CREATE INDEX IF NOT EXISTS journey_scheduled_items_notify_pending_idx
 
 
 -- ============================================================
--- SECTION 3 — product on checkout_sessions
+-- SECTION 3 - product on checkout_sessions
 -- The Cardcom indicator needs to know which product pillar was purchased
 -- so it can (a) upsert the correct per-product subscription row (see
 -- migration 032) and (b) fire the appropriate auto-assign hook.

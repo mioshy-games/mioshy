@@ -1,6 +1,6 @@
 /**
- * GET  /api/admin/templates         — list all message templates
- * POST /api/admin/templates         — create a template
+ * GET  /api/admin/templates         - list all message templates
+ * POST /api/admin/templates         - create a template
  *
  * Template body supports {{variable}} placeholders rendered at send time.
  */

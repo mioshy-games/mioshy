@@ -1,6 +1,6 @@
 -- ============================================================
 -- 029_between_us_section.sql
--- "Between Us" (בינינו) — couples-games content section
+-- "Between Us" (בינינו) - couples-games content section
 --
 -- Adds a new product line alongside the existing wheel/snakes games:
 --   * Couple-ownership model (couples + couple_members)
@@ -22,7 +22,7 @@
 
 
 -- ============================================================
--- SECTION 1 — COUPLES + COUPLE MEMBERSHIP
+-- SECTION 1 - COUPLES + COUPLE MEMBERSHIP
 -- ============================================================
 
 -- 1.1 couples: a pairing entity that owns purchases
@@ -235,7 +235,7 @@ END;
 $$;
 
 
--- 1.8 RLS — couples
+-- 1.8 RLS - couples
 ALTER TABLE public.couples ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "couples_select_member" ON public.couples;
@@ -271,7 +271,7 @@ CREATE POLICY "couples_admin_delete"
   USING (public.is_admin());
 
 
--- 1.9 RLS — couple_members
+-- 1.9 RLS - couple_members
 ALTER TABLE public.couple_members ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "couple_members_select_own" ON public.couple_members;
@@ -303,7 +303,7 @@ CREATE POLICY "couple_members_self_or_admin_delete"
 
 
 -- ============================================================
--- SECTION 2 — EXPERIENCE GAMES (content catalog)
+-- SECTION 2 - EXPERIENCE GAMES (content catalog)
 -- ============================================================
 
 -- 2.1 experience_games: the game catalog (bilingual + SEO)
@@ -487,7 +487,7 @@ CREATE INDEX IF NOT EXISTS experience_game_content_preview_idx
   WHERE is_preview = true AND is_active = true;
 
 
--- 2.7 RLS — experience_games + taxonomy
+-- 2.7 RLS - experience_games + taxonomy
 ALTER TABLE public.experience_games            ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.experience_game_categories  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.experience_game_tags        ENABLE ROW LEVEL SECURITY;
@@ -596,7 +596,7 @@ CREATE POLICY "exp_content_admin_all"
 
 
 -- ============================================================
--- SECTION 3 — ENTITLEMENTS, SUBSCRIPTION PICKS, PROMOTIONS
+-- SECTION 3 - ENTITLEMENTS, SUBSCRIPTION PICKS, PROMOTIONS
 -- ============================================================
 
 -- 3.1 couple_entitlements: what this couple owns
@@ -713,7 +713,7 @@ ALTER TABLE public.couple_entitlements
   FOREIGN KEY (promotion_id) REFERENCES public.promotions(id) ON DELETE SET NULL;
 
 
--- 3.4 RLS — entitlements
+-- 3.4 RLS - entitlements
 ALTER TABLE public.couple_entitlements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.subscription_monthly_picks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.promotions ENABLE ROW LEVEL SECURITY;
@@ -733,7 +733,7 @@ CREATE POLICY "entitlements_admin_all"
   USING (public.is_admin())
   WITH CHECK (public.is_admin());
 
--- Content entitlement policy (deferred from Section 2.7 — needs couple_entitlements to exist)
+-- Content entitlement policy (deferred from Section 2.7 - needs couple_entitlements to exist)
 DROP POLICY IF EXISTS "exp_content_entitled_read" ON public.experience_game_content;
 CREATE POLICY "exp_content_entitled_read"
   ON public.experience_game_content FOR SELECT
@@ -781,7 +781,7 @@ CREATE POLICY "promotions_admin_all"
 
 
 -- ============================================================
--- SECTION 4 — BETWEEN-US SETTINGS (single-row, fully dynamic)
+-- SECTION 4 - BETWEEN-US SETTINGS (single-row, fully dynamic)
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS public.between_us_settings (
@@ -838,7 +838,7 @@ VALUES (1)
 ON CONFLICT (id) DO NOTHING;
 
 
--- 4.1 RLS — settings
+-- 4.1 RLS - settings
 ALTER TABLE public.between_us_settings ENABLE ROW LEVEL SECURITY;
 
 -- Public read (needed to render prices, section name, switches on the storefront)
@@ -861,7 +861,7 @@ CREATE POLICY "between_us_settings_admin_insert"
 
 
 -- ============================================================
--- SECTION 5 — UPDATED_AT TRIGGERS (consistency with the rest of the schema)
+-- SECTION 5 - UPDATED_AT TRIGGERS (consistency with the rest of the schema)
 -- ============================================================
 
 CREATE OR REPLACE FUNCTION public.tg_set_updated_at()
@@ -916,7 +916,7 @@ $$;
 
 
 -- ============================================================
--- SECTION 6 — STORAGE: between-us media bucket
+-- SECTION 6 - STORAGE: between-us media bucket
 -- ============================================================
 
 INSERT INTO storage.buckets (id, name, public)
@@ -945,8 +945,8 @@ CREATE POLICY "between_us_admin_delete"
 
 
 -- ============================================================
--- SECTION 7 — SEED: starter categories, tags, demo game
--- All content is placeholder — Itzik will edit via admin UI.
+-- SECTION 7 - SEED: starter categories, tags, demo game
+-- All content is placeholder - Itzik will edit via admin UI.
 -- Seed rows are idempotent (ON CONFLICT DO NOTHING).
 -- ============================================================
 
@@ -985,7 +985,7 @@ VALUES
 ON CONFLICT (slug) DO NOTHING;
 
 
--- 7.3 Demo game — fully populated placeholder so admin UI has a live example
+-- 7.3 Demo game - fully populated placeholder so admin UI has a live example
 DO $$
 DECLARE
   v_game_id  uuid;
@@ -1014,12 +1014,12 @@ BEGIN
     'לילה של שנינו',     'A Night of Us',
     'ערב שיחה שלם על מה שחשוב באמת',
     'A full evening of conversation about what really matters',
-    'המשחק מוביל אתכם דרך שאלות מדורגות — מהכי רכות ועד להכי אינטימיות. בלי לחץ, בלי דדליין, בלי טלפונים. רק שניכם והשאלות שאף פעם לא שאלתם אחד את השני.',
-    'The game guides you through graduated questions — from the softest to the most intimate. No pressure, no deadline, no phones. Just the two of you and the questions you never thought to ask.',
-    'לילה של שנינו — משחק זוגי לערב שיחה עמוקה | בינינו',
-    'A Night of Us — Deep-talk game for couples | Between Us',
+    'המשחק מוביל אתכם דרך שאלות מדורגות - מהכי רכות ועד להכי אינטימיות. בלי לחץ, בלי דדליין, בלי טלפונים. רק שניכם והשאלות שאף פעם לא שאלתם אחד את השני.',
+    'The game guides you through graduated questions - from the softest to the most intimate. No pressure, no deadline, no phones. Just the two of you and the questions you never thought to ask.',
+    'לילה של שנינו - משחק זוגי לערב שיחה עמוקה | בינינו',
+    'A Night of Us - Deep-talk game for couples | Between Us',
     'משחק דיגיטלי לזוגות שרוצים להתקרב. שאלות מדורגות ברמות מרגש, מעורר וללא גבולות. ללא הורדה, נפתח ישירות בחשבונכם.',
-    'A digital couples-game for getting closer. Graduated questions at Touching, Stirring and No-Limits levels. No downloads — unlocked straight in your account.',
+    'A digital couples-game for getting closer. Graduated questions at Touching, Stirring and No-Limits levels. No downloads - unlocked straight in your account.',
     '["מעמיק את ההכרות ההדדית","פותח שיחות שנמנעתם מהן","סביבה בטוחה לשיתוף"]'::jsonb,
     '["Deepens mutual knowing","Opens conversations you''ve been avoiding","A safe space for sharing"]'::jsonb,
     '["זוגות אחרי תקופה של שגרה","זוגות חדשים שרוצים להעמיק מהר","זוגות לפני החלטה משמעותית"]'::jsonb,

@@ -5,7 +5,7 @@ import "./styles.css";
 import { Link } from "@/navigation";
 
 /**
- * AdultGames — "החדר הסגור". Premium private-chamber section with midnight
+ * AdultGames - "החדר הסגור". Premium private-chamber section with midnight
  * wine + bronze palette, 3 manifesto pillars, signature whisper, and dramatic
  * closer CTA.
  */
@@ -23,7 +23,7 @@ export function AdultGames() {
             <span className="ag-pill">פרטיות מוחלטת</span>
           </div>
 
-          <span className="ag-eyebrow">— החדר הסגור —</span>
+          <span className="ag-eyebrow">- החדר הסגור -</span>
 
           <h2>
             לא לכל אחד.
@@ -33,7 +33,7 @@ export function AdultGames() {
 
           <p className="ag-lead">
             אוסף משחקי זוגיות שכתבו <strong>הבכירים בעולם</strong> בתחומי האינטימיות, הסקסולוגיה
-            והטיפול הזוגי — ועוצבו במדויק לחדר המיטות שלכם. לא טיפים מהאינטרנט, לא רשימות גנריות.
+            והטיפול הזוגי - ועוצבו במדויק לחדר המיטות שלכם. לא טיפים מהאינטרנט, לא רשימות גנריות.
             חוויות שלמות, מובְנות, מהוקצעות.{" "}
             <strong>לאמיצים. למתפנקים. לזוגות שמוכנים לגלות מה עוד אפשר להיות.</strong>
           </p>
@@ -48,21 +48,21 @@ export function AdultGames() {
               <span className="ag-pillar-num">II</span>
               <h4>עוצב לחדר המיטות</h4>
               <p>
-                לא טיפים, לא רשימות. כל משחק הוא חוויה שלמה — עם התחלה, מתח שנבנה, ושיא שתזכרו.
+                לא טיפים, לא רשימות. כל משחק הוא חוויה שלמה - עם התחלה, מתח שנבנה, ושיא שתזכרו.
               </p>
             </article>
             <article className="ag-pillar">
               <span className="ag-pillar-num">III</span>
               <h4>רק לכם. רק יחד.</h4>
               <p>
-                פרטיות מוחלטת, ללא שיתוף נתונים, ללא היסטוריה. רכישה אחת — ושניכם בפנים, לכל החיים.
+                פרטיות מוחלטת, ללא שיתוף נתונים, ללא היסטוריה. רכישה אחת - ושניכם בפנים, לכל החיים.
               </p>
             </article>
           </div>
 
           <div className="ag-signature">
             <span className="ag-signature-line" aria-hidden="true"></span>
-            <em>מאחורי הדלת הזו, זוגיות לומדת לדבר אחרת.</em>
+            <em>משחקי מין לאמיצים בלבד.</em>
             <span className="ag-signature-line" aria-hidden="true"></span>
           </div>
 

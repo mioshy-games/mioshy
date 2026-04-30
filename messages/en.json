@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "title": "Mioshy — Couples games",
-    "description": "A playful platform for couples — interactive games in the browser"
+    "title": "Mioshy - Couples games",
+    "description": "A playful platform for couples - interactive games in the browser"
   },
   "nav": {
     "home": "Home",
@@ -22,7 +22,7 @@
   "home": {
     "badge": "Online couples games",
     "headline": "Get closer. Laugh more. Stay playful.",
-    "sub": "Beautiful games for mobile and desktop — no install. Jump in instantly.",
+    "sub": "Beautiful games for mobile and desktop - no install. Jump in instantly.",
     "ctaPrimary": "Start playing",
     "ctaSecondary": "Browse games",
     "cardTodTitle": "Truth or Dare",
@@ -46,7 +46,7 @@
       "joining": "Join {count} couples already playing",
       "rating": "{value} stars • {count} reviews",
       "quotes": {
-        "0": "It got us talking — and laughing — within minutes.",
+        "0": "It got us talking - and laughing - within minutes.",
         "1": "Bold, intimate, and surprisingly classy.",
         "2": "The wheel makes it effortless to keep the heat going."
       }
@@ -59,17 +59,17 @@
         "therapy": "You’re in a therapeutic process",
         "therapyDesc": "A safe structure to practice closeness and honesty.",
         "flirt": "You want flirtation & play",
-        "flirtDesc": "Turn tension into teasing — with confidence.",
+        "flirtDesc": "Turn tension into teasing - with confidence.",
         "deepen": "You want to deepen the bond",
         "deepenDesc": "Go past small talk. Stay connected."
       }
     },
     "games": {
       "title": "Our games",
-      "subtitle": "Active games updated by our admin — no installs, just play.",
+      "subtitle": "Active games updated by our admin - no installs, just play.",
       "playNow": "Play now",
       "comingSoonTitle": "More games coming soon",
-      "comingSoonDesc": "New experiences are being crafted — darker, deeper, better."
+      "comingSoonDesc": "New experiences are being crafted - darker, deeper, better."
     },
     "how": {
       "title": "How it works",
@@ -84,7 +84,7 @@
       },
       "step3": {
         "title": "Do it 😉",
-        "desc": "Go for it — no overthinking."
+        "desc": "Go for it - no overthinking."
       }
     },
     "expert": {
@@ -96,7 +96,7 @@
     },
     "pricing": {
       "title": "Memberships",
-      "subtitle": "Unlimited access. Cancel anytime — no drama.",
+      "subtitle": "Unlimited access. Cancel anytime - no drama.",
       "popular": "Most popular",
       "cancelAnytime": "Cancel anytime",
       "features": {
@@ -135,7 +135,7 @@
         },
         "2": {
           "title": "The intimacy reset",
-          "excerpt": "Three minutes that shift the whole night — without pressure."
+          "excerpt": "Three minutes that shift the whole night - without pressure."
         }
       }
     },
@@ -144,7 +144,7 @@
       "items": {
         "0": {
           "q": "Is it suitable for every couple?",
-          "a": "Yes — from new couples to long-term partners. You choose the pace and the vibe."
+          "a": "Yes - from new couples to long-term partners. You choose the pace and the vibe."
         },
         "1": {
           "q": "How does the subscription work?",
@@ -152,7 +152,7 @@
         },
         "2": {
           "q": "Can I cancel anytime?",
-          "a": "Yes. Cancel anytime from your account — no questions asked."
+          "a": "Yes. Cancel anytime from your account - no questions asked."
         },
         "3": {
           "q": "Are the games in Hebrew?",
@@ -164,7 +164,7 @@
         },
         "5": {
           "q": "Is there a group mode?",
-          "a": "Not yet — it’s planned. For now, Mioshy is designed for couples."
+          "a": "Not yet - it’s planned. For now, Mioshy is designed for couples."
         }
       }
     },
@@ -173,7 +173,7 @@
       "linksTitle": "Links",
       "socialTitle": "Social",
       "noteTitle": "Tone",
-      "note": "Bold. Hot. Professional. Built for real couples — not for kids.",
+      "note": "Bold. Hot. Professional. Built for real couples - not for kids.",
       "links": {
         "games": "Games",
         "pricing": "Pricing",
@@ -187,7 +187,7 @@
   },
   "products": {
     "title": "Choose a game",
-    "subtitle": "One live game today — more arriving soon.",
+    "subtitle": "One live game today - more arriving soon.",
     "todName": "Truth or Dare",
     "todBlurb": "A lucky wheel with prompts and dares for couples.",
     "snakesName": "Snakes & Ladders",
@@ -224,7 +224,7 @@
     "yearlyPrice": "₪570",
     "yearlyDesc": "Best value for couples who play often",
     "cta": "Continue (coming soon)",
-    "placeholder": "Payments will be enabled later — this is UI only.",
+    "placeholder": "Payments will be enabled later - this is UI only.",
     "back": "Back to games"
   },
   "auth": {
@@ -239,11 +239,11 @@
     "missingEnv": "Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to enable auth.",
     "success": "Signed in successfully.",
     "confirmEmail": "Check your email to confirm your account before signing in.",
-    "signedInNonAdmin": "You are signed in. This account is not an admin — redirecting home.",
+    "signedInNonAdmin": "You are signed in. This account is not an admin - redirecting home.",
     "loginTitle": "Welcome back",
     "loginSubtitle": "Sign in to continue playing",
     "signupTitle": "Create account",
-    "signupSubtitle": "Free — no card required",
+    "signupSubtitle": "Free - no card required",
     "signupTagline": "Your couples game experience starts here.",
     "loginTagline": "Play together. Grow together.",
     "namePlaceholder": "Your name",
@@ -282,11 +282,11 @@
     "languagesTitle": "Languages",
     "hebrew": "Hebrew",
     "english": "English",
-    "tagline": "Mioshy offers two couples games that warm up your bond, plus an online couple therapy service. Bringing back the warmth, the spark, and the questions never asked — in a simple, accessible, and professional way."
+    "tagline": "Mioshy offers two couples games that warm up your bond, plus an online couple therapy service. Bringing back the warmth, the spark, and the questions never asked - in a simple, accessible, and professional way."
   },
   "dashboard": {
     "title": "Content admin",
-    "subtitle": "Preview UI — server persistence comes later.",
+    "subtitle": "Preview UI - server persistence comes later.",
     "listTitle": "Questions",
     "type": "Type",
     "empty": "No questions yet.",
@@ -305,7 +305,7 @@
     "feature2": "New games added regularly",
     "feature3": "Cancel anytime",
     "cta": "Continue (Stripe coming soon)",
-    "disclaimer": "Payments are not enabled yet — this is UI only.",
+    "disclaimer": "Payments are not enabled yet - this is UI only.",
     "account": "Account"
   },
   "account": {
@@ -315,7 +315,7 @@
     "plan": "Plan",
     "renewal": "Renewal",
     "noPlan": "No active subscription",
-    "noRenewal": "—",
+    "noRenewal": "-",
     "status": "Status",
     "statusActive": "Active",
     "statusCancelled": "Cancelled",
@@ -324,7 +324,7 @@
     "statusBlocked": "Blocked",
     "statusExpired": "Expired",
     "cancel": "Cancel subscription",
-    "cancelConfirm": "Cancel subscription? Automatic billing will stop immediately.",
+    "cancelConfirm": "Cancel subscription? Automatic billing will stop immediately. Cancelling coaching also revokes access to the games library (unless you purchased it separately).",
     "freeze": "Freeze subscription",
     "freezeConfirm": "Freezing stops automatic billing. You can resume anytime.",
     "resume": "Resume subscription",
@@ -338,7 +338,7 @@
     "invoiceSucceeded": "Paid",
     "invoiceFailed": "Failed",
     "paymentMethod": "Payment method",
-    "paymentMethodNone": "—",
+    "paymentMethodNone": "-",
     "paymentMethodEndsWith": "Card ···· {last4}",
     "graceNotice": "Your last charge failed. Please update your payment method soon, otherwise access will be blocked.",
     "blockedNotice": "Access is blocked due to billing failures. Please update your payment method.",
@@ -366,7 +366,7 @@
     "loading": "Loading…"
   },
   "snakesGame": {
-    "title": "Snakes & Ladders — room",
+    "title": "Snakes & Ladders - room",
     "gameName": "Snakes & Ladders",
     "gameSubtitle": "An interactive couples' game",
     "loading": "Loading…",
@@ -389,7 +389,7 @@
     "title": "Tips & Articles",
     "subtitle": "Straight talk, practical intimacy, and playful ideas for tonight.",
     "readMore": "Read more",
-    "empty": "No articles yet — check back soon.",
+    "empty": "No articles yet - check back soon.",
     "untitled": "Untitled"
   },
   "articlePage": {
@@ -402,10 +402,10 @@
     "langEnglish": "English"
   },
   "gamesHub": {
-    "title": "Couples Games — Browse All Games",
-    "subtitle": "Mioshy's interactive catalogue: truth-or-dare wheels, snakes & ladders with deep questions, challenges and more — in your browser, one device or two.",
+    "title": "Couples Games - Browse All Games",
+    "subtitle": "Mioshy's interactive catalogue: truth-or-dare wheels, snakes & ladders with deep questions, challenges and more - in your browser, one device or two.",
     "h1": "Interactive couples games",
-    "lede": "Pick a game, spin the wheel or play snakes & ladders with personal questions. No installs, no code — just open and play.",
+    "lede": "Pick a game, spin the wheel or play snakes & ladders with personal questions. No installs, no code - just open and play.",
     "whyTitle": "Why Mioshy?",
     "whyItems": {
       "0": {
@@ -413,12 +413,12 @@
         "p": "A growing library of deep, flirty and playful prompts in English and Hebrew."
       },
       "1": {
-        "h": "Play together — even remotely",
+        "h": "Play together - even remotely",
         "p": "Same game, one device or two. Mioshy keeps you in sync in real-time."
       },
       "2": {
         "h": "Beautiful, fluid design",
-        "p": "Smooth animations, atmospheric backgrounds, subtle sound — the moment is yours."
+        "p": "Smooth animations, atmospheric backgrounds, subtle sound - the moment is yours."
       },
       "3": {
         "h": "Private by default",
@@ -433,15 +433,15 @@
     "breadcrumbGames": "Games"
   },
   "journeyHub": {
-    "metaTitle": "Couples Journey — Mioshy Journey",
-    "metaDescription": "A short assessment, instant insights, and a personal roadmap of practices and conversations — delivered to you over time. Together, at your own pace.",
+    "metaTitle": "Couples Journey - Mioshy Journey",
+    "metaDescription": "A short assessment, instant insights, and a personal roadmap of practices and conversations - delivered to you over time. Together, at your own pace.",
     "badge": "Couples journey · Mioshy Journey",
     "h1": "A journey built for your relationship",
-    "lede": "Generic relationship advice never quite fits your relationship. Answer a 5-minute assessment and get a personal roadmap — short practices, real conversations and weekly challenges that move you from \"we should work on us\" to actually doing it, 5 minutes a day.",
+    "lede": "Generic relationship advice never quite fits your relationship. Answer a 5-minute assessment and get a personal roadmap - short practices, real conversations and weekly challenges that move you from \"we should work on us\" to actually doing it, 5 minutes a day.",
     "ctaPrimary": "Start your relationship assessment",
     "ctaSecondary": "How it works",
     "ctaResume": "Continue your relationship assessment",
-    "resumeHint": "You've got a relationship assessment in progress — pick up where you left off.",
+    "resumeHint": "You've got a relationship assessment in progress - pick up where you left off.",
     "trust": {
       "0": "5-minute assessment",
       "1": "Instant insights",
@@ -454,19 +454,19 @@
       "items": {
         "0": {
           "h": "Built around you",
-          "p": "A short assessment maps your relationship across 7 dimensions. Your roadmap starts exactly where you need it — not where a generic course says to start."
+          "p": "A short assessment maps your relationship across 7 dimensions. Your roadmap starts exactly where you need it - not where a generic course says to start."
         },
         "1": {
           "h": "Human pace",
-          "p": "No content dumps. Each week a new chapter opens — a practice, a challenge, or a shared conversation. Enough time to feel it, try it, come back."
+          "p": "No content dumps. Each week a new chapter opens - a practice, a challenge, or a shared conversation. Enough time to feel it, try it, come back."
         },
         "2": {
           "h": "Expert-written",
-          "p": "Every piece is co-authored with couples therapists. Practical, research-based, actually doable — not Instagram quotes."
+          "p": "Every piece is co-authored with couples therapists. Practical, research-based, actually doable - not Instagram quotes."
         },
         "3": {
           "h": "Together, truly",
-          "p": "Both partners see the same journey. Mark conversations, write reflections, and watch how you progress — together, for real."
+          "p": "Both partners see the same journey. Mark conversations, write reflections, and watch how you progress - together, for real."
         }
       }
     },
@@ -476,7 +476,7 @@
       "steps": {
         "0": {
           "title": "Map your relationship in 5 minutes",
-          "body": "15 short questions on communication, conflict, intimacy, and routine. By the end you'll see exactly where you stand — no jargon, no filler."
+          "body": "15 short questions on communication, conflict, intimacy, and routine. By the end you'll see exactly where you stand - no jargon, no filler."
         },
         "1": {
           "title": "Get a diagnostic you can actually use",
@@ -484,7 +484,7 @@
         },
         "2": {
           "title": "Small practices, at your own pace",
-          "body": "Short practices that add up to about an hour a week — depending on your time and availability. Try them, check in together, and feel the shift at a pace that fits your life."
+          "body": "Short practices that add up to about an hour a week - depending on your time and availability. Try them, check in together, and feel the shift at a pace that fits your life."
         }
       }
     },
@@ -494,7 +494,7 @@
       "cards": {
         "0": {
           "h": "Daily practices",
-          "p": "Little connection moments — 5 minutes a day that build the couple muscle."
+          "p": "Little connection moments - 5 minutes a day that build the couple muscle."
         },
         "1": {
           "h": "Deep conversations",
@@ -502,7 +502,7 @@
         },
         "2": {
           "h": "Weekly challenges",
-          "p": "One thing per week — an outing, a gesture, an experiment — that breaks the routine."
+          "p": "One thing per week - an outing, a gesture, an experiment - that breaks the routine."
         },
         "3": {
           "h": "Video + reflection",
@@ -513,7 +513,7 @@
     "ctaBlock": {
       "badge": "Free to try",
       "title": "The assessment is free. The journey begins when you're in.",
-      "sub": "Take 5 minutes, answer the questionnaire, and get your diagnostic. No commitment — just direction.",
+      "sub": "Take 5 minutes, answer the questionnaire, and get your diagnostic. No commitment - just direction.",
       "primary": "Start your relationship assessment"
     },
     "faq": {
@@ -522,19 +522,19 @@
       "items": {
         "0": {
           "q": "How long is the assessment?",
-          "a": "Less than 5 minutes. You can pause mid-way and come back — we save your place."
+          "a": "Less than 5 minutes. You can pause mid-way and come back - we save your place."
         },
         "1": {
           "q": "Can we do this as a couple?",
-          "a": "Yes — that's the point. You each answer separately, then see the joint diagnostic and start the journey together."
+          "a": "Yes - that's the point. You each answer separately, then see the joint diagnostic and start the journey together."
         },
         "2": {
           "q": "What if we start and don't keep going?",
-          "a": "Totally fine. Every chapter that has opened stays open — you can come back any time. No pressure, no countdown."
+          "a": "Totally fine. Every chapter that has opened stays open - you can come back any time. No pressure, no countdown."
         },
         "3": {
           "q": "Are our answers private?",
-          "a": "Yes. Your answers aren't shared — only the two of you and the system see them. We never use them for marketing."
+          "a": "Yes. Your answers aren't shared - only the two of you and the system see them. We never use them for marketing."
         },
         "4": {
           "q": "How much does it cost?",

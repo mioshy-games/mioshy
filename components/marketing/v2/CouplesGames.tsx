@@ -1,7 +1,7 @@
 import { Link } from "@/navigation";
 
 /**
- * CouplesGames — energetic two-column section with text content on the right
+ * CouplesGames - energetic two-column section with text content on the right
  * (RTL) and a fanned stack of 3 game cards on the left.
  */
 export function CouplesGames() {
@@ -17,13 +17,13 @@ export function CouplesGames() {
               <span className="text-mark">הטריפו</span> את המדינה.
             </h2>
             <p className="lead">
-              רוצים להיפתח? להתחבר? להתגלות מחדש? אלפי זוגות בישראל כבר ממליצים — מהסלון, מהמיטה,
+              רוצים להיפתח? להתחבר? להתגלות מחדש? אלפי זוגות בישראל כבר ממליצים - מהסלון, מהמיטה,
               ואפילו כשאחד מכם בחו&quot;ל. אתם הבאים בתור.
             </p>
 
             <div className="cg-callout">
               <p>
-                &quot;תכניסו תשוקה. תתחברו מחדש. תתאהבו ותחזירו את הפרפרים — במיוחד למי שבזוגיות
+                &quot;תכניסו תשוקה. תתחברו מחדש. תתאהבו ותחזירו את הפרפרים - במיוחד למי שבזוגיות
                 ארוכה עם ילדים, ומרגיש איך השחיקה עושה את שלה.&quot;
               </p>
             </div>

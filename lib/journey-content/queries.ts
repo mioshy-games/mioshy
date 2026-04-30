@@ -168,7 +168,7 @@ export async function getItemById(id: string): Promise<JourneyItem | null> {
 }
 
 // ------------------------------------------------------------
-// Composite — programs with inlined content
+// Composite - programs with inlined content
 // ------------------------------------------------------------
 
 /**
@@ -257,7 +257,7 @@ export async function getAssignmentById(
 // ------------------------------------------------------------
 
 /**
- * Hydrate the timeline for an owner — returns every scheduled item across
+ * Hydrate the timeline for an owner - returns every scheduled item across
  * all of the owner's active assignments, enriched with content, category,
  * completion state, and visible responses (private filtering applied for
  * the given viewerUserId).
@@ -265,9 +265,13 @@ export async function getAssignmentById(
 export async function getTimelineForOwner(args: {
   owner: JourneyOwner;
   viewerUserId: string;
+  /** Viewer's role inside the couple (owner|partner) when owner.kind ===
+   * 'couple'. Used to filter out scheduled items targeted at the OTHER
+   * partner. Pass null for solo timelines or when role is unknown. */
+  viewerCoupleRole?: "owner" | "partner" | null;
   now?: Date;
 }): Promise<TimelineEntry[]> {
-  const { owner, viewerUserId, now } = args;
+  const { owner, viewerUserId, viewerCoupleRole, now } = args;
   const supabase = await createServerSupabaseClient();
 
   // 1. Active assignments for this owner
@@ -282,7 +286,19 @@ export async function getTimelineForOwner(args: {
     .in("assignment_id", assignmentIds)
     .order("unlock_at", { ascending: true });
   if (sErr) throw new Error(sErr.message);
-  const scheduled = (scheduledRows ?? []) as JourneyScheduledItem[];
+  let scheduled = (scheduledRows ?? []) as JourneyScheduledItem[];
+
+  // Audience filter — only relevant for couple-owned timelines.
+  // 'both' is always shown; 'owner' / 'partner' rows show only to the
+  // matching couple_member.role. Unknown role falls back to 'both' only.
+  if (owner.kind === "couple") {
+    scheduled = scheduled.filter((s) => {
+      if (s.audience === "both") return true;
+      if (!viewerCoupleRole) return false; // unknown role → hide targeted rows
+      return s.audience === viewerCoupleRole;
+    });
+  }
+
   if (scheduled.length === 0) return [];
 
   const itemIds = Array.from(new Set(scheduled.map((s) => s.item_id)));
@@ -392,7 +408,7 @@ export async function adminListPrograms(): Promise<JourneyProgram[]> {
 // ------------------------------------------------------------
 
 export interface OwnerOption {
-  /** Stable key used as Select value — "user:<uuid>" or "couple:<uuid>". */
+  /** Stable key used as Select value - "user:<uuid>" or "couple:<uuid>". */
   key: string;
   kind: "user" | "couple";
   label: string;
@@ -409,7 +425,7 @@ export async function adminListOwnerOptions(args: {
   const limit = Math.min(args.limit ?? 200, 500);
   const search = args.search?.trim() ?? "";
 
-  // Couples first (usually a smaller set) — show paired couples by display
+  // Couples first (usually a smaller set) - show paired couples by display
   // name + their pair_code so the admin can match a lead to the right row.
   let cq = supabase
     .from("couples")
@@ -423,7 +439,7 @@ export async function adminListOwnerOptions(args: {
   const { data: couples, error: cErr } = await cq;
   if (cErr) throw new Error(cErr.message);
 
-  // Users — prefer the admin_users_overview view which already joins in
+  // Users - prefer the admin_users_overview view which already joins in
   // email; fall back to auth.users if the view is missing.
   let uq = supabase
     .from("admin_users_overview")

@@ -15,7 +15,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const isHe = params.locale === "he";
   return {
-    title: `Mioshy — ${isHe ? "השלמת הפרופיל" : "Complete your profile"}`,
+    title: `Mioshy - ${isHe ? "השלמת הפרופיל" : "Complete your profile"}`,
     description: isHe
       ? "מלאו את פרטי הפרופיל כדי לצמד עם בן/בת הזוג ולפתוח את המשחקים."
       : "Add your details to pair with your partner and unlock your games.",
@@ -75,7 +75,7 @@ export default async function ProfileDetailsPage({
             </h1>
             <p className="mt-1 max-w-xl text-white/75">
               {isHe
-                ? "כדי לצמד עם בן/בת הזוג, להזין קוד צימוד או להתחיל משחק — אנחנו צריכים שם, נייד וסיסמה. הפרטים נשארים פרטיים ומשמשים רק לחיבור בין השניים שלכם."
+                ? "כדי לצמד עם בן/בת הזוג, להזין קוד צימוד או להתחיל משחק - אנחנו צריכים שם, נייד וסיסמה. הפרטים נשארים פרטיים ומשמשים רק לחיבור בין השניים שלכם."
                 : "Before you pair with your partner, redeem a code, or launch a game, we need your name, mobile and a password. Your details stay private and are only used to tie the two of you together."}
             </p>
           </div>
@@ -84,8 +84,8 @@ export default async function ProfileDetailsPage({
         {reason === "profile_incomplete" ? (
           <div className="mt-6 rounded-2xl border border-amber-300/40 bg-amber-400/10 px-4 py-3 text-sm text-amber-100">
             {isHe
-              ? "השלימו את הפרטים שלמטה כדי להמשיך — זה לוקח פחות מדקה."
-              : "Finish the fields below to continue — it takes less than a minute."}
+              ? "השלימו את הפרטים שלמטה כדי להמשיך - זה לוקח פחות מדקה."
+              : "Finish the fields below to continue - it takes less than a minute."}
           </div>
         ) : null}
 
@@ -95,8 +95,8 @@ export default async function ProfileDetailsPage({
           </h2>
           <p className="mt-1 text-sm text-white/65">
             {isHe
-              ? "שם מלא ונייד — כדי שהפרטנר/ית ידעו עם מי הם מצומדים, ושנוכל ליצור איתכם קשר בנושא חשבון."
-              : "Full name and mobile — so your partner can see who they're paired with and we can reach you about account matters."}
+              ? "שם מלא ונייד - כדי שהפרטנר/ית ידעו עם מי הם מצומדים, ושנוכל ליצור איתכם קשר בנושא חשבון."
+              : "Full name and mobile - so your partner can see who they're paired with and we can reach you about account matters."}
           </p>
           <div className="mt-4">
             <ProfileDetailsForm
@@ -135,7 +135,7 @@ export default async function ProfileDetailsPage({
           <p>
             {isHe ? "האימייל שלכם" : "Your email"}:{" "}
             <span className="font-mono text-white/80">
-              {gate.email ?? "—"}
+              {gate.email ?? "-"}
             </span>
           </p>
         </section>

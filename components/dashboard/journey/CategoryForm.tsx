@@ -56,15 +56,17 @@ export function CategoryForm({
   const { register, watch, setValue, handleSubmit, formState } = methods;
 
   async function onSubmit(values: JourneyCategoryFormValues) {
+    console.log("[CategoryForm] submit", { categoryId, values });
     setSaving(true);
     const res = await saveJourneyCategory(categoryId, values);
     setSaving(false);
+    console.log("[CategoryForm] saveJourneyCategory result", res);
     if (!res.ok) {
-      const firstField = Object.keys(res.error ?? {})[0];
-      const firstMsg =
-        (res.error as Record<string, string[] | undefined>)?.[firstField ?? ""]?.[0] ??
-        "Save failed";
-      toast.error(firstMsg);
+      const errMap = (res.error ?? {}) as Record<string, string[] | undefined>;
+      const firstField = Object.keys(errMap)[0];
+      const firstMsg = errMap[firstField ?? ""]?.[0] ?? "Save failed";
+      console.error("[CategoryForm] save failed", { errors: errMap });
+      toast.error(`Save failed: ${firstMsg}`);
       return;
     }
     toast.success("Saved");
@@ -72,6 +74,26 @@ export function CategoryForm({
       router.push(`/dashboard/journey/categories/${res.id}`);
     }
     router.refresh();
+  }
+
+  function onInvalid(errors: typeof formState.errors) {
+    // Surface client-side validation rejections so users don't experience
+    // a silent no-op when react-hook-form blocks the submit.
+    console.warn("[CategoryForm] validation rejected submit", errors);
+    const fields = Object.entries(errors).flatMap(([field, err]) => {
+      const msg =
+        err && typeof err === "object" && "message" in err
+          ? (err as { message?: string }).message ?? "invalid"
+          : "invalid";
+      return [`${field}: ${msg}`];
+    });
+    toast.error(
+      fields.length === 0
+        ? "Form invalid"
+        : `Cannot save — ${fields.slice(0, 3).join(" · ")}${
+            fields.length > 3 ? ` (+${fields.length - 3} more)` : ""
+          }`,
+    );
   }
 
   const isActive = watch("is_active");
@@ -84,7 +106,7 @@ export function CategoryForm({
         className="space-y-6"
         onSubmit={(e) => {
           e.preventDefault();
-          void handleSubmit(onSubmit)(e);
+          void handleSubmit(onSubmit, onInvalid)(e);
         }}
       >
         <div className="bg-background/95 supports-[backdrop-filter]:bg-background/70 sticky top-0 z-20 -mx-4 flex items-center justify-between gap-3 border-b px-4 py-3 backdrop-blur sm:mx-0 sm:rounded-md sm:border sm:px-4">
@@ -135,7 +157,7 @@ export function CategoryForm({
                   {programs.map((p) => (
                     <SelectItem key={p.id} value={p.id}>
                       {p.name_he}
-                      {p.name_en ? ` — ${p.name_en}` : ""}
+                      {p.name_en ? ` - ${p.name_en}` : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -155,10 +177,10 @@ export function CategoryForm({
             </Field>
 
             <Field label="Name (HE)">
-              <Input {...register("name_he")} dir="rtl" placeholder="שבוע 1 — חיבור מחדש" />
+              <Input {...register("name_he")} dir="rtl" placeholder="שבוע 1 - חיבור מחדש" />
             </Field>
             <Field label="Name (EN)">
-              <Input {...register("name_en")} placeholder="Week 1 — Reconnect" />
+              <Input {...register("name_en")} placeholder="Week 1 - Reconnect" />
             </Field>
 
             <Field label="Description (HE)">

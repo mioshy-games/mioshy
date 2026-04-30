@@ -12,20 +12,20 @@
 //     member of the couple (user_id = <member>, couple_id IS NULL).
 //   • For each, checks whether the couple already has an active assignment
 //     for the same source (program/category/item). If yes, the solo one is
-//     deactivated (the couple version wins — admin or newer purchase made
+//     deactivated (the couple version wins - admin or newer purchase made
 //     it intentionally). If no, the solo row is rewritten in place:
 //     user_id = NULL, couple_id = <coupleId>. Scheduled items, responses,
 //     and completions ride along untouched because they reference the
 //     assignment by id, not by its owner.
-//   • Idempotent — running twice for the same couple is a no-op.
+//   • Idempotent - running twice for the same couple is a no-op.
 //   • Never throws. Returns a structured report so callers (server action,
 //     admin backfill, etc.) can surface results.
 //
 // Not handled here:
-//   • New-partner-side "did they also bring a solo journey?" — the helper
+//   • New-partner-side "did they also bring a solo journey?" - the helper
 //     walks BOTH members, so both sides of a pairing are migrated in the
 //     same call.
-//   • Telling the user about the migration — that's a UX concern left to
+//   • Telling the user about the migration - that's a UX concern left to
 //     the caller (e.g. the pairing dialog can inline a summary).
 // ============================================================
 
@@ -38,7 +38,7 @@ import type { JourneyAssignment } from "./types";
 export interface MigrateSoloJourneyArgs {
   /**
    * One of the pair's user ids. Typically the user who just accepted an
-   * invite — the other member is discovered via couple_members.
+   * invite - the other member is discovered via couple_members.
    */
   userId: string;
   coupleId: string;
@@ -56,7 +56,7 @@ export interface MigrateSoloJourneyResult {
   promoted: number;
   /** Deactivated because the couple already had a conflicting assignment. */
   deactivated: number;
-  /** Already owned by the couple — no action. */
+  /** Already owned by the couple - no action. */
   skipped: number;
   errors: Array<{ where: string; message: string }>;
   /** Per-assignment log for debugging / admin UI. */
@@ -71,7 +71,7 @@ export interface MigrateSoloJourneyResult {
 
 /**
  * Promote solo journey assignments to couple ownership on pairing.
- * Safe to call multiple times — the filter on `couple_id IS NULL`
+ * Safe to call multiple times - the filter on `couple_id IS NULL`
  * naturally prevents re-promoting rows that already moved.
  */
 export async function migrateSoloJourneyToCouple(
@@ -146,7 +146,7 @@ export async function migrateSoloJourneyToCouple(
   if (solo.length === 0) return result;
 
   // 3. Existing couple-owned assignments for the same (source_kind, source_id)
-  //    — fetched once to keep conflict checks in-memory.
+  //    - fetched once to keep conflict checks in-memory.
   const coupleOwnedBySource = new Map<string, JourneyAssignment>();
   const { data: coupleRowsRaw, error: cErr } = await supabase
     .from("journey_assignments")
@@ -181,7 +181,7 @@ export async function migrateSoloJourneyToCouple(
           is_active: false,
           notes: appendNote(
             a.notes,
-            `Deactivated on pairing — couple already owned ${conflict.id}.`,
+            `Deactivated on pairing - couple already owned ${conflict.id}.`,
           ),
         })
         .eq("id", a.id);
@@ -203,7 +203,7 @@ export async function migrateSoloJourneyToCouple(
       continue;
     }
 
-    // No conflict — rehome the solo assignment to the couple. The XOR
+    // No conflict - rehome the solo assignment to the couple. The XOR
     // constraint (`(user_id IS NOT NULL) <> (couple_id IS NOT NULL)`)
     // requires nulling user_id in the same UPDATE.
     const { error: uErr } = await supabase

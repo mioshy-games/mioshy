@@ -1,4 +1,4 @@
--- Migration 024 — SEO fields on games
+-- Migration 024 - SEO fields on games
 -- ----------------------------------------------------------------------------
 -- The marketing lead asked for admin-level control over per-game search
 -- metadata. The site-wide metadata already lives in `site_settings`, articles

@@ -42,7 +42,7 @@ export function InlineSettingsEditor({ gameId }: { gameId: string }) {
     <div className="rounded-2xl border border-border bg-background/60 backdrop-blur overflow-hidden">
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      {/* Outer div — cannot be a button because it contains Button children  */}
+      {/* Outer div - cannot be a button because it contains Button children  */}
       <div className="flex items-center justify-between gap-4 px-5 py-4">
 
         {/* Left: click to collapse/expand the whole card */}
@@ -61,12 +61,12 @@ export function InlineSettingsEditor({ gameId }: { gameId: string }) {
           <div className="min-w-0">
             <h2 className="text-lg font-semibold">Wheel appearance</h2>
             <p className="text-sm text-muted-foreground">
-              צבעי גלגל, גודל, תוויות וגבול — תצוגה מקדימה חיה בצד ימין.
+              צבעי גלגל, גודל, תוויות וגבול - תצוגה מקדימה חיה בצד ימין.
             </p>
           </div>
         </button>
 
-        {/* Right: Expand / Collapse all — only visible when card is open */}
+        {/* Right: Expand / Collapse all - only visible when card is open */}
         {cardOpen && (
           <div className="flex items-center gap-2 flex-shrink-0">
             <Button
@@ -93,7 +93,7 @@ export function InlineSettingsEditor({ gameId }: { gameId: string }) {
         )}
       </div>
 
-      {/* ── Body (single column — preview lives in sticky page sidebar) ────── */}
+      {/* ── Body (single column - preview lives in sticky page sidebar) ────── */}
       {cardOpen && (
         <>
           <div className="border-t border-border" />

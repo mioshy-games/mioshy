@@ -55,7 +55,7 @@ export default async function BetweenUsSettingsPage() {
             Back to overview
           </Link>
           <h1 className="mt-2 text-3xl font-bold tracking-tight">
-            Adults Only — Settings
+            Adults Only - Settings
           </h1>
           <p className="text-muted-foreground mt-1 text-sm">
             Global settings for the couples-games section. Everything here is

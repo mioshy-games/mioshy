@@ -1,6 +1,6 @@
 // Plain (non-"use server") module for constants + types shared between the
 // admin client and the server actions. A "use server" file can only export
-// async functions — moving these here is what avoids the runtime
+// async functions - moving these here is what avoids the runtime
 // "X.map is not a function" errors at import time.
 
 // ── Available internal links (shown in dropdowns) ──────────────────────────
@@ -47,7 +47,7 @@ export const CTA_STYLE_OPTIONS = [
   },
 ] as const;
 
-// ── Hero template catalog (drives the admin picker — E6) ──────────────────
+// ── Hero template catalog (drives the admin picker - E6) ──────────────────
 export const HERO_TEMPLATE_OPTIONS = [
   {
     value: "classic-dark" as const,

@@ -8,7 +8,7 @@ type Err = { ok: false; error: string };
 
 // Minimal Israeli-friendly mobile validation: 8–15 digits after stripping
 // common separators; accepts a leading "+". We don't want to be draconian
-// about format — partners around the world will paste all kinds of things.
+// about format - partners around the world will paste all kinds of things.
 function normaliseMobile(raw: string): string | null {
   const trimmed = raw.trim();
   if (!trimmed) return null;

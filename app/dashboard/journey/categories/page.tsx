@@ -76,7 +76,7 @@ export default async function CategoriesListPage() {
                   colSpan={7}
                   className="text-muted-foreground h-24 text-center"
                 >
-                  No categories yet — click &quot;New category&quot; to add one.
+                  No categories yet - click &quot;New category&quot; to add one.
                 </TableCell>
               </TableRow>
             ) : (
@@ -101,7 +101,7 @@ export default async function CategoriesListPage() {
                         href={`/dashboard/journey/programs/${c.program_id}`}
                         className="hover:underline"
                       >
-                        {programNameById.get(c.program_id) ?? "—"}
+                        {programNameById.get(c.program_id) ?? "-"}
                       </Link>
                     ) : (
                       <span className="text-muted-foreground">Standalone</span>

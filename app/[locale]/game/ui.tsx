@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * GameLobbyClient — redesigned pre-game flow
+ * GameLobbyClient - redesigned pre-game flow
  *
  * New flow (registration deferred):
  *   1. Page loads → show player setup immediately (up to 2 players)
@@ -158,7 +158,7 @@ export function GameLobbyClient() {
   const [isStarting, setIsStarting] = useState(false);
   const [regOpen,    setRegOpen]    = useState(false);
 
-  // Pending create payload — held until user registers, then retried
+  // Pending create payload - held until user registers, then retried
   const pendingRef = useRef<{ p1: PlayerDraft; p2: PlayerDraft | null } | null>(null);
 
   const {
@@ -296,7 +296,7 @@ export function GameLobbyClient() {
             נחשים וסולמות 🐍🌈
           </h1>
           <p className="text-sm text-slate-300/80">
-            הגדירו שחקנים, בחרו דמות — ואז צרו חדר.
+            הגדירו שחקנים, בחרו דמות - ואז צרו חדר.
           </p>
         </div>
 
@@ -312,7 +312,7 @@ export function GameLobbyClient() {
               <div>
                 <div className="text-base">לשחק על מכשיר אחד (מקומי)</div>
                 <div className="mt-0.5 text-xs font-normal text-amber-100/70">
-                  בלי קוד, בלי חשבון — מעבירים את הטלפון
+                  בלי קוד, בלי חשבון - מעבירים את הטלפון
                 </div>
               </div>
             </div>
@@ -383,7 +383,7 @@ export function GameLobbyClient() {
               onClick={() => setJoinMode(true)}
               className="w-full text-center text-sm text-slate-400 hover:text-slate-200 underline underline-offset-4 transition"
             >
-              יש לי קוד חדר — אני רוצה להצטרף
+              יש לי קוד חדר - אני רוצה להצטרף
             </button>
           </div>
         )}
@@ -440,7 +440,7 @@ export function GameLobbyClient() {
         )}
       </main>
 
-      {/* Registration modal — shown only when unauthenticated user tries to create */}
+      {/* Registration modal - shown only when unauthenticated user tries to create */}
       <RegistrationModal
         open={regOpen}
         onOpenChange={setRegOpen}

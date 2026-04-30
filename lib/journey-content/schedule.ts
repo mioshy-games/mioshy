@@ -41,7 +41,7 @@ export interface ResolveAnchorInput {
  *   purchase   → purchaseAt || fixedAt || now
  *   fixed      → fixedAt (required)
  *
- * Throws if kind === 'fixed' is chosen without a fixedAt — that is a
+ * Throws if kind === 'fixed' is chosen without a fixedAt - that is a
  * programmer error the UI should have prevented.
  */
 export function resolveAnchorDate(input: ResolveAnchorInput): string {
@@ -80,7 +80,7 @@ export function resolveAnchorDate(input: ResolveAnchorInput): string {
  *
  * Callers that want to model a per-item override (admin has dragged the
  * unlock earlier/later) should persist that override directly and skip
- * this helper — the unlock_at column is the source of truth.
+ * this helper - the unlock_at column is the source of truth.
  */
 export function computeUnlockAt(
   anchorDate: string | Date,
@@ -96,7 +96,7 @@ export function computeUnlockAt(
 }
 
 /**
- * Shape used by the propagation planner — given an existing scheduled row,
+ * Shape used by the propagation planner - given an existing scheduled row,
  * decide the new unlock_at after a structural change.
  *
  * Rules:

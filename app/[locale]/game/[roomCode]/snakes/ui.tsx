@@ -23,7 +23,7 @@ function normalize(code: string) {
 }
 
 /**
- * SnakesGameClient — the REMOTE route's entry point.
+ * SnakesGameClient - the REMOTE route's entry point.
  *
  * This is now a thin wrapper: it owns the Supabase-backed game room hook,
  * auth, subscription gating, and routing. It delegates the entire gameplay
@@ -133,7 +133,7 @@ export function SnakesGameClient({ locale, roomCode }: { locale: string; roomCod
 
   const handleExit = async () => {
     await leaveRoom();
-    // Back to the games catalog (not the snakes lobby) — per product spec.
+    // Back to the games catalog (not the snakes lobby) - per product spec.
     router.replace(`/${locale}/games`);
   };
 

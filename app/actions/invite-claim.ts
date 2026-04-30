@@ -90,7 +90,7 @@ async function verifyInvitationPreflight(
 }
 
 // ─────────────────────────────────────────────────────────────────
-// Normalise mobile number — keep same rules as profile form
+// Normalise mobile number - keep same rules as profile form
 // ─────────────────────────────────────────────────────────────────
 function normaliseMobile(raw: string): string | null {
   const trimmed = raw.trim();
@@ -101,7 +101,7 @@ function normaliseMobile(raw: string): string | null {
 }
 
 // ─────────────────────────────────────────────────────────────────
-// NEW USER path — create account + accept invitation
+// NEW USER path - create account + accept invitation
 // ─────────────────────────────────────────────────────────────────
 export async function claimInviteAsNewUser(params: {
   token: string;
@@ -151,7 +151,7 @@ export async function claimInviteAsNewUser(params: {
 
   const userId = created.user.id;
 
-  // 3. Upsert profile row (both `mobile` and `phone` columns exist —
+  // 3. Upsert profile row (both `mobile` and `phone` columns exist -
   //    write to both so legacy readers still work).
   const { error: profileErr } = await admin.from("profiles").upsert(
     {
@@ -164,7 +164,7 @@ export async function claimInviteAsNewUser(params: {
   );
   if (profileErr) {
     console.error("[invite-claim/new] profile upsert failed", profileErr);
-    // Non-fatal — the user can edit the profile later.
+    // Non-fatal - the user can edit the profile later.
   }
 
   // 4. Sign them in (so the anon client has a valid session for the
@@ -185,7 +185,7 @@ export async function claimInviteAsNewUser(params: {
   }
 
   // 5a. Promote any solo journey assignments either member owned into
-  //     shared couple ownership — best-effort; pairing still succeeds
+  //     shared couple ownership - best-effort; pairing still succeeds
   //     if this fails. (A brand-new account has nothing to migrate.)
   try {
     await migrateSoloJourneyToCouple({
@@ -206,7 +206,7 @@ export async function claimInviteAsNewUser(params: {
 }
 
 // ─────────────────────────────────────────────────────────────────
-// EXISTING USER path — sign in (if needed) + accept invitation
+// EXISTING USER path - sign in (if needed) + accept invitation
 // ─────────────────────────────────────────────────────────────────
 export async function claimInviteAsExistingUser(params: {
   token: string;
@@ -216,7 +216,7 @@ export async function claimInviteAsExistingUser(params: {
   const token = (params.token ?? "").trim();
   const supabase = await createServerSupabaseClient();
 
-  // 1. Preflight — we still want an email to validate when provided.
+  // 1. Preflight - we still want an email to validate when provided.
   const pre = await verifyInvitationPreflight(token, params.email ?? null);
   if (!pre.ok) return pre;
 
@@ -233,7 +233,7 @@ export async function claimInviteAsExistingUser(params: {
   if (params.email && params.password) {
     const email = normaliseEmail(params.email);
     if (existingUser && existingUser.email?.toLowerCase() !== email) {
-      // User is signed in as a different account — sign them out
+      // User is signed in as a different account - sign them out
       // first so the new credentials take effect cleanly.
       await supabase.auth.signOut();
     }
@@ -256,7 +256,7 @@ export async function claimInviteAsExistingUser(params: {
   }
 
   // 3a. Promote solo journey assignments (from either partner) into the
-  //     shared couple ownership — best-effort so pairing never fails
+  //     shared couple ownership - best-effort so pairing never fails
   //     if a journey migration error happens.
   if (userId) {
     try {

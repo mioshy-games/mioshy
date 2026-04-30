@@ -1,5 +1,5 @@
 -- ============================================================
--- 028 — Homepage content management via admin
+-- 028 - Homepage content management via admin
 -- Adds editable columns to site_settings so the admin dashboard
 -- can control hero text, CTA buttons/styles/links, and image slots
 -- for the homepage (hero background, expert photo, article cards).

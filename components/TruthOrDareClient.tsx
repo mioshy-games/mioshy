@@ -137,9 +137,9 @@ export function TruthOrDareClient({
   const resolvedDividerWidth =
     gameSettings?.wheel?.divider?.width ?? wheel.divider_width ?? 2;
   // Markers priority:
-  //   1. gameSettings.wheel.markers — only when type is "circle" or "svg_icon"
+  //   1. gameSettings.wheel.markers - only when type is "circle" or "svg_icon"
   //      (type "none" = "no override"; fall through to wheel_configs legacy data)
-  //   2. wheel_configs.marker_config — legacy fallback (set via GameForm)
+  //   2. wheel_configs.marker_config - legacy fallback (set via GameForm)
   //
   // This prevents DEFAULT_GAME_SETTINGS markers.type="none" from silently
   // zeroing out circles that were configured in wheel_configs before
@@ -219,7 +219,7 @@ export function TruthOrDareClient({
         return;
       }
 
-      // Free budget spent — ask for the lead (signup) first.
+      // Free budget spent - ask for the lead (signup) first.
       if (!hasGuestLeadCaptured() && !leadCaptured) {
         setSubLocked(false);
         setSubOpen(true);
@@ -227,7 +227,7 @@ export function TruthOrDareClient({
       }
 
       // Lead captured but the user never completed account creation. Hard
-      // paywall — they must subscribe (or sign in elsewhere) to continue.
+      // paywall - they must subscribe (or sign in elsewhere) to continue.
       setSubLocked(true);
       setSubOpen(true);
       return;
@@ -442,10 +442,10 @@ export function TruthOrDareClient({
   // ── Shared JSX pieces ───────────────────────────────────────────────────────
 
   /** Top bar: logo full-width centred (big), utility buttons row below on mobile only.
-   *  On desktop the back/sound buttons live in the fixed bottom corners — see below. */
+   *  On desktop the back/sound buttons live in the fixed bottom corners - see below. */
   const topBar = (
     <div className="flex w-full shrink-0 flex-col items-center gap-2 px-1">
-      {/* Logo — full-width centred, prominent */}
+      {/* Logo - full-width centred, prominent */}
       <div className="flex w-full justify-center py-1">
         <Image
           src="/mioshy-white.svg"
@@ -457,7 +457,7 @@ export function TruthOrDareClient({
         />
       </div>
 
-      {/* Utility buttons — mobile only (desktop uses fixed bottom corners) */}
+      {/* Utility buttons - mobile only (desktop uses fixed bottom corners) */}
       <div className="flex w-full items-center justify-between md:hidden">
         <Link
           href="/products"
@@ -582,7 +582,7 @@ export function TruthOrDareClient({
            Mobile (< md):  stacks exactly like the centered layout.
         ──────────────────────────────────────────────────────────────────── */
         <div className="flex min-h-0 w-full max-w-5xl flex-1 flex-col gap-4 px-3 sm:px-5">
-          {/* Top bar — full width */}
+          {/* Top bar - full width */}
           {topBar}
 
           {/* Main content area */}
@@ -627,21 +627,21 @@ export function TruthOrDareClient({
             >
               {gameTitle}
             </h1>
-          </div>
+          </div>-
 
           {/* Fixed spacer above wheel — clears pointer tip overflow */}
           <div className="shrink-0" style={{ height: wheelGapPx }} />
 
           {/* Wheel */}
-          <div className="w-full flex justify-center">{wheelOrSetup}</div>
+          <div className="w-full flex j-stify-center">{wheelOrSetup}</div>
 
           {/* Fixed spacer below wheel — clears marker dot overflow */}
-          <div className="shrink-0" style={{ height: wheelGapPx }} />
+          <div className="-hrink-0" style={{ height: wheelGapPx }} />
 
           {/* Spin button — shrink-0 so it's never squished */}
           <div className="w-full shrink-0 flex justify-center">{spinControls}</div>
         </div>
-      )}
+      )}-
 
       {/* ── Question popup — rendered fixed over everything ── */}
       {(() => {
@@ -692,7 +692,7 @@ export function TruthOrDareClient({
           authWaiterRef.current = null;
           setRegOpen(false);
         }}
-      />
+      />-
 
       {/* ── Desktop corner buttons — fixed position, hidden on mobile ── */}
       <Link

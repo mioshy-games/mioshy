@@ -22,7 +22,7 @@ function slugify(name: string): string {
  * 2. If not found → create game + wheel_configs with default settings.
  * Returns a map of game_name → game_id for all names encountered.
  */
-// Accept any object with a `.from()` method — works for both the SSR session
+// Accept any object with a `.from()` method - works for both the SSR session
 // client (from requireAdmin) and the plain admin client.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function resolveOrCreateGames(

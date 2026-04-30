@@ -1,9 +1,9 @@
 -- ============================================================
 -- 033_adults_three_tier_pricing.sql
 -- Adults pillar pricing model: three tiers per game.
---   1. Single  — one-time purchase (default ₪127 / $39)
---   2. Monthly — recurring membership (default ₪87/mo / $24)
---   3. Annual  — recurring membership + cross-pillar game slot (default ₪570/yr / $149)
+--   1. Single  - one-time purchase (default ₪127 / $39)
+--   2. Monthly - recurring membership (default ₪87/mo / $24)
+--   3. Annual  - recurring membership + cross-pillar game slot (default ₪570/yr / $149)
 --
 -- Pre-launch migration. We are intentionally renaming the legacy
 -- `subscription_*` columns to `monthly_*` and dropping the now-obsolete
@@ -48,7 +48,7 @@ alter table public.between_us_settings
 
 -- Bump the singleton row to the new defaults so the admin UI
 -- reflects the real launch pricing out of the gate. Only touch fields
--- that still hold the legacy seed values — avoid clobbering anything
+-- that still hold the legacy seed values - avoid clobbering anything
 -- the admin has already tuned.
 update public.between_us_settings
 set
@@ -62,7 +62,7 @@ where id = 1;
 -- 2) experience_games: optional per-game single-purchase override
 -- ----------------------------------------------------------------
 -- The adults catalogue already has `price_ils` / `price_usd` columns on
--- `experience_games` — those are the authoritative per-game single-purchase
+-- `experience_games` - those are the authoritative per-game single-purchase
 -- prices (with settings.single_price_* acting as the default at seed time).
 -- No schema change needed here; documenting intent only.
 
@@ -71,7 +71,7 @@ where id = 1;
 -- ----------------------------------------------------------------
 -- `product` (from 032) tells us which pillar the subscription belongs to
 -- (games / journey / adults). For adults we also need to know whether the
--- user is on the monthly or annual plan — the annual plan grants the
+-- user is on the monthly or annual plan - the annual plan grants the
 -- cross-pillar rotating game slot, monthly does not.
 
 alter table public.subscriptions

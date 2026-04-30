@@ -145,7 +145,7 @@ function SettingsPanel({ cfg }: { cfg: SnakesConfig }) {
       {/* ── Top save bar ──────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between rounded-xl border bg-card p-4 shadow-sm">
         <p className="text-muted-foreground text-sm">
-          Game identity &amp; SEO — 🇮🇱 Hebrew + 🇺🇸 English
+          Game identity &amp; SEO - 🇮🇱 Hebrew + 🇺🇸 English
         </p>
         <SaveBtn />
       </div>
@@ -160,7 +160,7 @@ function SettingsPanel({ cfg }: { cfg: SnakesConfig }) {
           className="font-mono"
         />
         <p className="text-muted-foreground text-xs">
-          URL path — lowercase, hyphens only. E.g.{" "}
+          URL path - lowercase, hyphens only. E.g.{" "}
           <code className="font-mono">/games/snakes-and-ladders-couples</code>
         </p>
       </div>
@@ -255,7 +255,7 @@ export function SnakesAdminClient({ configs }: { configs: SnakesConfig[] }) {
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-bold tracking-tight">Snakes &amp; Ladders</h1>
         <p className="text-muted-foreground text-sm">
-          Full config editor — active config is used for new rooms.
+          Full config editor - active config is used for new rooms.
         </p>
       </div>
 
@@ -275,7 +275,7 @@ export function SnakesAdminClient({ configs }: { configs: SnakesConfig[] }) {
           {selected ? (
             <Tabs value={activeTab} onValueChange={handleTabChange} className="flex-col">
 
-              {/* ── Tab navigation bar — homepage style ─────────────────
+              {/* ── Tab navigation bar - homepage style ─────────────────
                   Horizontal scroll on mobile · fuchsia underline on active
               ──────────────────────────────────────────────────────────── */}
               <div className="overflow-x-auto border-b border-border">

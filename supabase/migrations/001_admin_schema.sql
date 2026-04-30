@@ -88,7 +88,7 @@ ALTER TABLE public.games ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.wheel_configs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.questions ENABLE ROW LEVEL SECURITY;
 
--- profiles: users read own row; updates typically via service — allow read own
+-- profiles: users read own row; updates typically via service - allow read own
 DROP POLICY IF EXISTS "profiles_select_own" ON public.profiles;
 CREATE POLICY "profiles_select_own"
   ON public.profiles FOR SELECT
@@ -189,8 +189,8 @@ BEGIN
 
   INSERT INTO public.games (name_he, name_en, description_he, description_en, slug, thumbnail_url, is_active)
   VALUES (
-    g.name_he || ' — Copy',
-    g.name_en || ' — Copy',
+    g.name_he || ' - Copy',
+    g.name_en || ' - Copy',
     g.description_he,
     g.description_en,
     g.slug || '-copy-' || substr(md5(random()::text), 1, 8),

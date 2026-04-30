@@ -9,7 +9,7 @@
 import type { JourneyOwner, OwnerKey } from "./types";
 
 /**
- * Serialize an owner to a stable string key — e.g. "user:8f3c..." or
+ * Serialize an owner to a stable string key - e.g. "user:8f3c..." or
  * "couple:a2d1...". Safe for URL paths and cache keys.
  */
 export function toOwnerKey(owner: JourneyOwner): OwnerKey {
@@ -45,7 +45,7 @@ export function ownersEqual(a: JourneyOwner, b: JourneyOwner): boolean {
 
 /**
  * Returns the viewer's "preferred owner" given a user id and (optionally)
- * an active couple id. If the user has paired, the couple is the owner —
+ * an active couple id. If the user has paired, the couple is the owner -
  * otherwise the user themselves is the owner. Matches the runtime rule
  * used by the assignment-lookup queries.
  */
@@ -59,7 +59,7 @@ export function preferCoupleOwner(
 }
 
 /**
- * Convenience for building the Supabase filter pair — returns a tuple that
+ * Convenience for building the Supabase filter pair - returns a tuple that
  * can be spread into a query's equality filter. Callers use it like:
  *
  *     const { column, value } = ownerFilter(owner);

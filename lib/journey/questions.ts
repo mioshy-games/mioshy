@@ -1,6 +1,6 @@
 /**
  * lib/journey/questions.ts
- * Loads the questionnaire bank. The JSON is the source of truth — edit
+ * Loads the questionnaire bank. The JSON is the source of truth - edit
  * journey/questionnaire.json, not this file.
  */
 

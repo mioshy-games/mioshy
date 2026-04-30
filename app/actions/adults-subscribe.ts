@@ -1,17 +1,17 @@
 "use server";
 
 /**
- * Adults pillar — subscription stub actions.
+ * Adults pillar - subscription stub actions.
  *
  * These are Phase-1 stubs: they create (or reactivate) the row in
  * `public.subscriptions` with product='adults' and the selected `plan_tier`,
  * and pair the caller into a couple so every feature gated on couple
- * membership works end-to-end. Cardcom wiring lives in Phase 2 — the real
+ * membership works end-to-end. Cardcom wiring lives in Phase 2 - the real
  * checkout call will replace the stub insert but keep the same contract.
  *
  * The two tiers:
- *   - `monthly` — content drip + catalogue access.
- *   - `annual`  — same as monthly + a 30-day rotating Games-pillar slot (the
+ *   - `monthly` - content drip + catalogue access.
+ *   - `annual`  - same as monthly + a 30-day rotating Games-pillar slot (the
  *                 `couple_active_slots` table will land in Phase 3; until then
  *                 we just record the plan so the UI can show the right state).
  */
@@ -29,7 +29,7 @@ type Err = { ok: false; error: string };
 /**
  * Subscribe the current user to the Adults pillar on the given tier.
  *
- * Phase 1: stub only — no payment integration. Safeguarded with:
+ * Phase 1: stub only - no payment integration. Safeguarded with:
  *   - complete-profile gate (same rule as couple pairing / purchase)
  *   - admin setting flag must be ON for the requested tier
  *   - idempotent: if the user already has an active adults sub, we update
@@ -61,7 +61,7 @@ export async function subscribeAdultsTier(
     return { ok: false, error: "annual_tier_disabled" };
   }
 
-  // Ensure couple exists — every adults membership is couple-scoped.
+  // Ensure couple exists - every adults membership is couple-scoped.
   const { error: coupleErr } = await supabase.rpc(
     "create_couple_for_current_user",
     { p_display_name: null },

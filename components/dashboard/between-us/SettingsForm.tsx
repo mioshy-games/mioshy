@@ -193,7 +193,7 @@ export function SettingsForm({
             >
               <CommerceBlock
                 title="Single purchase"
-                hint="Buy a game once, lifetime access (default — per-game override lives on the game form)."
+                hint="Buy a game once, lifetime access (default - per-game override lives on the game form)."
                 enabled={singleEnabled}
                 onToggle={(v) =>
                   setValue("single_purchase_enabled", v, { shouldDirty: true })
@@ -223,7 +223,7 @@ export function SettingsForm({
 
               <CommerceBlock
                 title="Monthly membership"
-                hint="Recurring plan — content drip + access to the catalogue."
+                hint="Recurring plan - content drip + access to the catalogue."
                 enabled={monthlyEnabled}
                 onToggle={(v) =>
                   setValue("monthly_enabled", v, { shouldDirty: true })
@@ -253,7 +253,7 @@ export function SettingsForm({
 
               <CommerceBlock
                 title="Annual membership"
-                hint="Yearly plan — monthly benefits + one rotating Games-pillar game (30-day slot)."
+                hint="Yearly plan - monthly benefits + one rotating Games-pillar game (30-day slot)."
                 enabled={annualEnabled}
                 onToggle={(v) =>
                   setValue("annual_enabled", v, { shouldDirty: true })

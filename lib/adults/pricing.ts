@@ -1,5 +1,5 @@
 // ============================================================
-// Adults pillar — pricing resolver
+// Adults pillar - pricing resolver
 //
 // Converts the admin-controlled `between_us_settings` + per-game overrides
 // into a stable shape the UI (marketing pages, game detail pricing panel,
@@ -118,7 +118,7 @@ export function resolveAdultsPricing(
 }
 
 /**
- * Annualized cost of the monthly tier — useful for marketing the annual tier
+ * Annualized cost of the monthly tier - useful for marketing the annual tier
  * ("save vs paying monthly"). Returns a formatted string in the pricing currency.
  */
 export function annualizedMonthlyCost(pricing: AdultsPricing): string {

@@ -6,7 +6,7 @@ export function flipCoin(): CoinResult {
 }
 
 /**
- * rollDice — returns a fair 1..6 result.
+ * rollDice - returns a fair 1..6 result.
  * Kept deliberately simple; tuning (weighted dice, etc.) would happen in a
  * wrapper, not here.
  */
@@ -53,7 +53,7 @@ const FALLBACK_QUESTION: Question = {
 };
 
 /**
- * @deprecated Prefer {@link pickNextQuestion} — it avoids repeats until the
+ * @deprecated Prefer {@link pickNextQuestion} - it avoids repeats until the
  * pool is exhausted. Kept for any legacy room that still calls it directly.
  */
 export function getRandomQuestion(questions: Question[]): Question {
@@ -101,23 +101,23 @@ function seedPoolByLevel(questions: readonly Question[]): string[] {
 }
 
 /**
- * pickNextQuestion — non-repeating random draw with level escalation.
+ * pickNextQuestion - non-repeating random draw with level escalation.
  *
  * Given the current draw `pool` of question IDs (typically `state.questionPool`)
  * and the full `questions` list from the config, returns:
- *   • `question` — the selected Question (full object, not just the id)
- *   • `nextPool` — the remaining pool after this pick
+ *   • `question` - the selected Question (full object, not just the id)
+ *   • `nextPool` - the remaining pool after this pick
  *
  * Behaviour:
  *   1. If the pool is empty/undefined or every id in it is stale
- *      (no longer in `questions`), it is reseeded via `seedPoolByLevel` —
+ *      (no longer in `questions`), it is reseeded via `seedPoolByLevel` -
  *      which groups by level 1→2→3 and shuffles within each group.
  *      This means a fresh cycle always starts with lighter questions and
  *      escalates toward more challenging ones.
  *   2. One id is popped from the front of the pool; the caller writes
  *      the returned `nextPool` back to game state.
  *   3. If `questions` is empty a deterministic fallback question is
- *      returned with an empty pool — the game never blocks on missing
+ *      returned with an empty pool - the game never blocks on missing
  *      content.
  *
  * This guarantees every question is shown once per cycle before any repeat,
@@ -139,7 +139,7 @@ export function pickNextQuestion(
 
   const [pickedId, ...rest] = working;
   const question = pickedId ? byId.get(pickedId) : undefined;
-  // Guard — `pickedId` can only be undefined if `questions` is empty, handled
+  // Guard - `pickedId` can only be undefined if `questions` is empty, handled
   // above; this branch keeps TS happy while being resilient to the edge case.
   if (!question || !pickedId) {
     return { question: FALLBACK_QUESTION, nextPool: [] };

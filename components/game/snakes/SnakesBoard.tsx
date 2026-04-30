@@ -8,16 +8,16 @@ import { SnakesLaddersSVG } from "./SnakesLaddersSVG";
 import { PlayersOverlay } from "./PlayersOverlay";
 
 /**
- * SnakesBoard — responsive Snakes & Ladders board.
+ * SnakesBoard - responsive Snakes & Ladders board.
  *
  * Three stacked layers (bottom → top):
- *   1. Cell grid — solid parchment/moss checkerboard, only cell numbers.
- *   2. SVG overlay — snakes and ladders drawn as large curved graphics.
- *   3. Players overlay — big animated avatar tokens that glide between cells.
+ *   1. Cell grid - solid parchment/moss checkerboard, only cell numbers.
+ *   2. SVG overlay - snakes and ladders drawn as large curved graphics.
+ *   3. Players overlay - big animated avatar tokens that glide between cells.
  *
  * Sizing (after the April '26 layout redesign):
- *   - Mobile: min(95vw, 70vh) — tall vertical layout dominates the screen.
- *   - Desktop: min(60vw, 88vh) — leaves room for the right-hand sidebar
+ *   - Mobile: min(95vw, 70vh) - tall vertical layout dominates the screen.
+ *   - Desktop: min(60vw, 88vh) - leaves room for the right-hand sidebar
  *     (logo+title, dice surface, players list, exit) without squashing
  *     the board.
  */

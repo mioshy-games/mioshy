@@ -25,9 +25,9 @@ export type PromotionScope = "between_us" | "wheel" | "snakes" | "all";
 /**
  * Pricing plan tiers for the Adults pillar.
  *
- *  - `single`  — one-time purchase of a specific game (couple-owned, lifetime).
- *  - `monthly` — recurring membership; content drip + access to the catalogue.
- *  - `annual`  — recurring membership; same as monthly + one rotating Games-pillar
+ *  - `single`  - one-time purchase of a specific game (couple-owned, lifetime).
+ *  - `monthly` - recurring membership; content drip + access to the catalogue.
+ *  - `annual`  - recurring membership; same as monthly + one rotating Games-pillar
  *                game unlocked for 30 days at a time, swappable at period end.
  */
 export type AdultsPlanTier = "single" | "monthly" | "annual";
@@ -79,7 +79,7 @@ export interface ExperienceGame {
   benefits_en: string[];
   target_audience_he: string[];
   target_audience_en: string[];
-  // Optional "play questions" — only used by games that need a reference
+  // Optional "play questions" - only used by games that need a reference
   // list of in-game prompts (e.g. card-draw or board-event triggers). When
   // empty, the play page hides the whole section.
   play_questions_intro_he: string;

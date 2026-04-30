@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS public.user_sessions (
   last_active_at  timestamptz NOT NULL DEFAULT now()
 );
 
--- One row per user — enforce at DB level
+-- One row per user - enforce at DB level
 CREATE UNIQUE INDEX IF NOT EXISTS user_sessions_user_id_unique
   ON public.user_sessions (user_id);
 

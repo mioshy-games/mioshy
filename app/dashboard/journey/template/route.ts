@@ -4,7 +4,7 @@
  * Returns a ZIP file with three import-ready CSV templates:
  *   programs_template.csv, categories_template.csv, items_template.csv
  *
- * Assignments are intentionally excluded — they should be created via the UI.
+ * Assignments are intentionally excluded - they should be created via the UI.
  * Requires admin auth.
  */
 import { requireAdmin } from "@/lib/auth/admin";

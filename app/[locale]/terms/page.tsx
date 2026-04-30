@@ -7,7 +7,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const isHe = params.locale === "he";
   return {
-    title: isHe ? "תנאי שימוש — מיאושי" : "Terms of use — Mioshy",
+    title: isHe ? "תנאי שימוש - מיאושי" : "Terms of use - Mioshy",
     description: isHe
       ? "תנאי השימוש בשירות מיאושי"
       : "Terms of use for the Mioshy service",
@@ -52,7 +52,7 @@ const he = {
   sections: [
     {
       t: "1. השירות",
-      d: "מיאושי מספקת ליווי אישי לזוגות — שאלון, ניתוח, ותוכנית שבועית של פעולות. השירות אינו תחליף לטיפול זוגי, רפואי או נפשי. אם אתם במצוקה, פנו למטפל מוסמך.",
+      d: "מיאושי מספקת ליווי אישי לזוגות - שאלון, ניתוח, ותוכנית שבועית של פעולות. השירות אינו תחליף לטיפול זוגי, רפואי או נפשי. אם אתם במצוקה, פנו למטפל מוסמך.",
     },
     {
       t: "2. רישום והצטרפות",
@@ -76,7 +76,7 @@ const he = {
     },
     {
       t: "7. יצירת קשר",
-      d: "לכל שאלה — hello@mioshy.com.",
+      d: "לכל שאלה - hello@mioshy.com.",
     },
   ],
 };
@@ -87,7 +87,7 @@ const en = {
   sections: [
     {
       t: "1. The service",
-      d: "Mioshy provides personal guidance for couples — a questionnaire, analysis, and a weekly plan of actions. The service is not a substitute for couples therapy, medical care, or mental-health treatment. If you're in distress, please contact a licensed professional.",
+      d: "Mioshy provides personal guidance for couples - a questionnaire, analysis, and a weekly plan of actions. The service is not a substitute for couples therapy, medical care, or mental-health treatment. If you're in distress, please contact a licensed professional.",
     },
     {
       t: "2. Sign-up",
@@ -111,7 +111,7 @@ const en = {
     },
     {
       t: "7. Contact",
-      d: "Any questions — hello@mioshy.com.",
+      d: "Any questions - hello@mioshy.com.",
     },
   ],
 };

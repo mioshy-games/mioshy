@@ -19,7 +19,7 @@ import { SubscriptionActions } from "@/components/dashboard/SubscriptionActions"
 
 function formatDate(iso: string) {
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
+  if (Number.isNaN(d.getTime())) return "-";
   return d.toLocaleString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
 
@@ -76,7 +76,7 @@ export default async function SubscriptionsAdminPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
-                      {s.plan ?? "—"}
+                      {s.plan ?? "-"}
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
                       {formatDate(s.created_at)}

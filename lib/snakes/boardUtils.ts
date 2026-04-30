@@ -43,7 +43,7 @@ export function getSnakeOrLadderAt(
 }
 
 /**
- * cellToGridPosition — converts a cell number (1..size) into its
+ * cellToGridPosition - converts a cell number (1..size) into its
  * (col, row) position inside the rendered grid, where row 0 is the TOP row
  * (the finish line, e.g. 91..100 in a 100-cell board) and row N-1 is the
  * bottom row (1..10). Columns are 0-indexed left→right.
@@ -68,7 +68,7 @@ export function cellToGridPosition(
 }
 
 /**
- * cellToBoardPercent — returns the center of `cell` as percentages of the
+ * cellToBoardPercent - returns the center of `cell` as percentages of the
  * board's (width, height). Useful for absolutely-positioning overlays
  * (SVG snake curves, animated player tokens, modal launch origin) on top
  * of a responsive square grid.

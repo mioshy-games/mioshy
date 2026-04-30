@@ -62,7 +62,7 @@ export async function signupAction(formData: FormData): Promise<SignupResult> {
   try {
     const admin = createAdminSupabaseClient();
 
-    // Create user — email_confirm: true skips email verification
+    // Create user - email_confirm: true skips email verification
     const { data: userData, error: createError } =
       await admin.auth.admin.createUser({
         email,
@@ -94,7 +94,7 @@ export async function signupAction(formData: FormData): Promise<SignupResult> {
     });
 
     if (signInError) {
-      return { success: false, error: "Account created — please log in." };
+      return { success: false, error: "Account created - please log in." };
     }
 
     // Single-session record
@@ -128,12 +128,24 @@ export async function loginAction(formData: FormData): Promise<LoginResult> {
   try {
     const supabase = await createServerSupabaseClient();
 
+    console.log("[loginAction] attempting sign-in", { email });
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
     if (error) {
+      // Surface the full GoTrue payload — name / status / code / message —
+      // so we can tell apart "Invalid credentials" from "Database error
+      // querying schema" (which means a column GoTrue queries on auth.users
+      // is in an unreadable state, NOT a wrong password).
+      console.error("[loginAction] sign-in failed", {
+        email,
+        name: error.name,
+        status: (error as { status?: number }).status,
+        code: (error as { code?: string }).code,
+        message: error.message,
+      });
       return {
         success: false,
         error:
@@ -142,6 +154,8 @@ export async function loginAction(formData: FormData): Promise<LoginResult> {
             : error.message,
       };
     }
+
+    console.log("[loginAction] sign-in OK", { userId: data.user.id });
 
     const userId = data.user.id;
 

@@ -30,7 +30,7 @@ const T = {
     titleLead:           "לפני שממשיכים",
     subtitleLead:        "שתי דקות, ואתם בדרך להמשך המשחק",
     titlePaywallSelect:  "בחרו את החבילה שמתאימה לכם",
-    subtitlePaywall:     "כל חבילה פותחת את כל המשחקים במיאושי — ביטול בקליק אחד",
+    subtitlePaywall:     "כל חבילה פותחת את כל המשחקים במיאושי - ביטול בקליק אחד",
     titlePaywallConfirm: "עוד צעד קטן לתשלום",
     subtitleConfirm:     "נאשר את המדינה ואת המע״מ ונעביר לעמוד הסליקה המאובטח",
     fullNameLabel:       "שם מלא",
@@ -46,7 +46,7 @@ const T = {
     termsLink:           "תנאי השימוש ומדיניות הפרטיות",
     termsRequired:       "יש לאשר את תנאי השימוש להמשך",
     weakPassword:        "הסיסמה חייבת להכיל לפחות 6 תווים",
-    emailExists:         "אימייל זה כבר רשום — בדוק את הסיסמה ונסה שוב",
+    emailExists:         "אימייל זה כבר רשום - בדוק את הסיסמה ונסה שוב",
     countryLabel:        "מדינה",
     countryPlaceholder:  "בחר מדינה",
     vatNote:             (pct: number) => `כולל מע״מ ${pct}%`,
@@ -68,15 +68,15 @@ const T = {
     ],
     period: {
       weekly:  { label: "שבועי", short: "לשבוע",  note: "/שבוע", blurb: "התנסות קצרה ללא התחייבות" },
-      monthly: { label: "חודשי", short: "לחודש", note: "/חודש", blurb: "הפופולרי ביותר — משחק חופשי בכל משחק" },
-      annual:  { label: "שנתי",  short: "לשנה",  note: "/שנה",  blurb: "החיסכון הכי גדול — ₪30 לחודש בלבד" },
+      monthly: { label: "חודשי", short: "לחודש", note: "/חודש", blurb: "הפופולרי ביותר - משחק חופשי בכל משחק" },
+      annual:  { label: "שנתי",  short: "לשנה",  note: "/שנה",  blurb: "החיסכון הכי גדול - ₪30 לחודש בלבד" },
     },
   },
   en: {
     titleLead:           "Before you continue",
     subtitleLead:        "Two minutes, and you're back in the game",
     titlePaywallSelect:  "Pick the plan that fits you",
-    subtitlePaywall:     "Every plan unlocks every game on Mioshy — cancel anytime with one click",
+    subtitlePaywall:     "Every plan unlocks every game on Mioshy - cancel anytime with one click",
     titlePaywallConfirm: "One small step to payment",
     subtitleConfirm:     "We'll confirm your country + VAT and send you to the secure checkout",
     fullNameLabel:       "Full name",
@@ -92,7 +92,7 @@ const T = {
     termsLink:           "Terms of Service and Privacy Policy",
     termsRequired:       "You must accept the terms to continue",
     weakPassword:        "Password must be at least 6 characters",
-    emailExists:         "This email is already registered — check your password and try again",
+    emailExists:         "This email is already registered - check your password and try again",
     countryLabel:        "Country",
     countryPlaceholder:  "Select country",
     vatNote:             (pct: number) => `Includes ${pct}% VAT`,
@@ -113,9 +113,9 @@ const T = {
       "Cancel with one click, anytime",
     ],
     period: {
-      weekly:  { label: "Weekly",  short: "/week",  note: "/week",  blurb: "A short trial — no commitment" },
-      monthly: { label: "Monthly", short: "/month", note: "/month", blurb: "Most popular — unlimited play across every game" },
-      annual:  { label: "Annual",  short: "/year",  note: "/year",  blurb: "The biggest saving — just $7 per month" },
+      weekly:  { label: "Weekly",  short: "/week",  note: "/week",  blurb: "A short trial - no commitment" },
+      monthly: { label: "Monthly", short: "/month", note: "/month", blurb: "Most popular - unlimited play across every game" },
+      annual:  { label: "Annual",  short: "/year",  note: "/year",  blurb: "The biggest saving - just $7 per month" },
     },
   },
 } as const;
@@ -142,7 +142,7 @@ const COUNTRIES: CountryOption[] = [
   { code: "IN", he: "הודו",        en: "India"          },
 ];
 
-// ── Plan prices (display only — server resolves the real charge) ─────────────
+// ── Plan prices (display only - server resolves the real charge) ─────────────
 
 const TEST_PRICE = process.env.NEXT_PUBLIC_BILLING_TEST_PRICE
   ? String(process.env.NEXT_PUBLIC_BILLING_TEST_PRICE)
@@ -158,9 +158,9 @@ const PRICES_USD = TEST_PRICE
 
 type Plan = "weekly" | "monthly" | "annual";
 
-// ── Per-game palette lookup — matches GamePageBackground.SLUG_THEMES ──────────
+// ── Per-game palette lookup - matches GamePageBackground.SLUG_THEMES ──────────
 // Keep this list in sync. Admin overrides via bg_value will cascade naturally
-// once we wire the prop through — until then the slug is sufficient.
+// once we wire the prop through - until then the slug is sufficient.
 const SLUG_PALETTES: Record<string, [string, string, string]> = {
   "first-date-spin":     ["#9b00ff", "#ff0099", "#00d4ff"],
   "couple-heart-spin":   ["#ff0050", "#cc0088", "#ff7700"],
@@ -192,7 +192,7 @@ function ModalBackdrop({ palette }: { palette: [string, string, string] }) {
   ];
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-2xl">
-      {/* Translucent dark wash — lets the page behind show through.
+      {/* Translucent dark wash - lets the page behind show through.
        *  Using rgba with 0.65 alpha instead of a solid color so we get one
        *  unified dark layer that still reveals what's underneath. */}
       <div
@@ -482,7 +482,7 @@ export function SubscriptionModal({
         options: { data: { full_name: fullName.trim() } },
       });
 
-      // Resolve the real user id — Supabase has a privacy quirk: when the
+      // Resolve the real user id - Supabase has a privacy quirk: when the
       // email is already registered, it returns a synthetic `user` object
       // whose `id` is NOT a real row in auth.users (and `identities` is an
       // empty array). Passing that fake id to our leads table triggers the
@@ -614,7 +614,7 @@ export function SubscriptionModal({
         {/* Animated gradient backdrop */}
         <ModalBackdrop palette={palette} />
 
-        {/* Custom close button — logical-end (RTL: visual left, LTR: visual right) */}
+        {/* Custom close button - logical-end (RTL: visual left, LTR: visual right) */}
         {!locked && (
           <button
             type="button"
@@ -648,7 +648,7 @@ export function SubscriptionModal({
 
           {mode === "lead" ? (
             /* ── Lead registration ──────────────────────────────────────── */
-            /* Single translucent layer — no inner card chrome. The form sits
+            /* Single translucent layer - no inner card chrome. The form sits
              * directly on the modal's one dark-translucent backdrop so the
              * game page behind bleeds through and the colours wash through. */
             <div className="mx-auto mt-5 flex w-full max-w-sm flex-col gap-4">
@@ -698,7 +698,7 @@ export function SubscriptionModal({
                 </div>
               </div>
 
-              {/* Marketing consent — bare row, no background chrome */}
+              {/* Marketing consent - bare row, no background chrome */}
               <label className="flex cursor-pointer items-start gap-2.5 py-0.5">
                 <input
                   type="checkbox"
@@ -712,7 +712,7 @@ export function SubscriptionModal({
                 </span>
               </label>
 
-              {/* Terms — bare row, no background chrome */}
+              {/* Terms - bare row, no background chrome */}
               <label className="flex cursor-pointer items-start gap-2.5 py-0.5">
                 <input
                   type="checkbox"
@@ -753,7 +753,7 @@ export function SubscriptionModal({
                 {busy ? t.saving : t.saveCta}
               </Button>
 
-              {/* Already-a-member shortcut — takes the user to the sign-in flow */}
+              {/* Already-a-member shortcut - takes the user to the sign-in flow */}
               <p className="text-center text-xs text-white/70">
                 {t.alreadyMember}{" "}
                 <button
@@ -896,7 +896,7 @@ export function SubscriptionModal({
 
               {TEST_PRICE && (
                 <p className="rounded-md bg-amber-500/15 px-3 py-1.5 text-xs font-semibold text-amber-200 ring-1 ring-amber-400/30">
-                  {isHe ? `🧪 מצב בדיקה — מחיר: ${currency}${TEST_PRICE}` : `🧪 Test mode — price: ${currency}${TEST_PRICE}`}
+                  {isHe ? `🧪 מצב בדיקה - מחיר: ${currency}${TEST_PRICE}` : `🧪 Test mode - price: ${currency}${TEST_PRICE}`}
                 </p>
               )}
 

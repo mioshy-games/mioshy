@@ -2,13 +2,13 @@
  * Mioshy Product Analytics
  * ────────────────────────
  * Lightweight internal analytics layer backed by Supabase (no third-party
- * trackers — see privacy policy).
+ * trackers - see privacy policy).
  *
  * Usage (client components):
  *   import { track } from "@/lib/analytics";
  *   track("game_start", { game_type: "snakes", mode: "local" });
  *
- * The call is fire-and-forget — it never throws and never blocks UI.
+ * The call is fire-and-forget - it never throws and never blocks UI.
  *
  * In development, events are also printed to the console (debug mode).
  */
@@ -45,7 +45,7 @@ export type AnalyticsEvent =
 
   // Homepage V2 (new marketing surface)
   | "home_v2_section_viewed"   // user scrolled a v2 section into view
-  | "home_v2_cta_click";       // user clicked any v2 CTA — see properties for which
+  | "home_v2_cta_click";       // user clicked any v2 CTA - see properties for which
 
 export type EventProperties = Record<string, string | number | boolean | null | undefined>;
 
@@ -102,7 +102,7 @@ export function track(event: AnalyticsEvent, props: EventProperties = {}): void 
     console.debug("[analytics]", payload.event, payload.properties);
   }
 
-  // Fire-and-forget — never await, never throw into the caller
+  // Fire-and-forget - never await, never throw into the caller
   void fetch("/api/analytics/event", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -110,7 +110,7 @@ export function track(event: AnalyticsEvent, props: EventProperties = {}): void 
     // keepalive lets the request survive page navigation
     keepalive: true,
   }).catch(() => {
-    /* silently swallow — analytics must never break the app */
+    /* silently swallow - analytics must never break the app */
   });
 }
 

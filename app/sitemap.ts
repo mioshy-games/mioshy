@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 /**
- * Sitemap for Mioshy — a couples-games platform.
+ * Sitemap for Mioshy - a couples-games platform.
  *
  * Strategy:
  *   • Every public URL is emitted with both its /en and /he variant and a
@@ -50,7 +50,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPaths: Array<{ path: string; priority: number; changeFrequency: MetadataRoute.Sitemap[number]["changeFrequency"] }> = [
     { path: "", priority: 1.0, changeFrequency: "weekly" },
     { path: "/games", priority: 0.95, changeFrequency: "weekly" },
-    // /adults is the flagship product surface — high priority.
+    // /adults is the flagship product surface - high priority.
     { path: "/adults", priority: 0.95, changeFrequency: "weekly" },
     { path: "/journey", priority: 0.85, changeFrequency: "weekly" },
     { path: "/how-it-works", priority: 0.7, changeFrequency: "monthly" },
@@ -84,7 +84,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           .from("games")
           .select("slug, created_at, thumbnail_url")
           .eq("is_active", true),
-        // Flagship /adults catalogue — published-only experience games.
+        // Flagship /adults catalogue - published-only experience games.
         supabase
           .from("experience_games")
           .select("slug, created_at")

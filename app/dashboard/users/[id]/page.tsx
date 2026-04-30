@@ -23,16 +23,20 @@ import type { Axis } from "@/lib/journey/types";
 function answerToText(qId: string, answer: unknown, locale: "he" | "en" = "en"): string {
   const q = QUESTIONS.find((x) => x.id === qId);
   if (!q) return JSON.stringify(answer);
-  const a = answer as { kind?: string; value?: number; option?: string; options?: string[]; text?: string };
+  const a = answer as { kind?: string; value?: number; option?: string; options?: string[]; text?: string; order?: string[] };
   if (a.kind === "likert") return `${a.value}/5`;
-  if (a.kind === "single" && q.type !== "likert5" && q.type !== "reflection") {
-    const opt = q.options.find((o) => o.id === a.option);
-    return opt ? (locale === "he" ? opt.he : opt.en) : a.option ?? "—";
+  // Narrow to choice-shaped questions before reading .options. The Question
+  // union now includes QuestionRanking (no .options) — that variant is
+  // handled by the kind === "ranking" branch below.
+  const hasOptions = q.type === "forced_choice" || q.type === "single_choice" || q.type === "multi_choice";
+  if (a.kind === "single" && hasOptions) {
+    const opt = q.options.find((o: { id: string; he: string; en: string }) => o.id === a.option);
+    return opt ? (locale === "he" ? opt.he : opt.en) : a.option ?? "-";
   }
   if (a.kind === "multi" && q.type === "multi_choice") {
     return (a.options ?? [])
       .map((id) => {
-        const opt = q.options.find((o) => o.id === id);
+        const opt = q.options.find((o: { id: string; he: string; en: string }) => o.id === id);
         return opt ? (locale === "he" ? opt.he : opt.en) : id;
       })
       .join(", ");
@@ -107,7 +111,7 @@ export default async function UserDetailPage({ params }: { params: { id: string 
         <CardHeader>
           <CardTitle>{overview?.email ?? userId}</CardTitle>
           <CardDescription>
-            Journey: {journey?.status ?? "—"} ({journey?.current_step ?? 0}) · Subscription:{" "}
+            Journey: {journey?.status ?? "-"} ({journey?.current_step ?? 0}) · Subscription:{" "}
             <Badge variant={overview?.subscription_status === "active" ? "default" : "outline"}>
               {overview?.plan ?? ""} {overview?.subscription_status ?? "none"}
             </Badge>

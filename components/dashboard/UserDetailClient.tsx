@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * UserDetailClient — interactive half of /dashboard/users/[id].
+ * UserDetailClient - interactive half of /dashboard/users/[id].
  *
  * Three columns of admin tooling for a single user:
  *   - Notes: pinned + recent, add/delete.
@@ -499,7 +499,7 @@ function SendCard({
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label>Template</Label>
-            <Select value={templateId} onValueChange={onPickTemplate}>
+            <Select value={templateId} onV-lueCha-ge={onPickTemplate}>
               <SelectTrigger>
                 <SelectValue placeholder="— none —" />
               </SelectTrigger>
@@ -572,10 +572,10 @@ function MessagesCard({ messages }: { messages: AdminMessage[] }) {
                   <Badge variant={m.status === "sent" ? "default" : "destructive"}>{m.status}</Badge>
                   <span className="text-xs text-muted-foreground">
                     {new Date(m.created_at).toLocaleString()}
-                  </span>
+                  </span>-
                 </div>
                 <span className="text-xs text-muted-foreground">by {m.sent_by ?? "—"}</span>
-              </div>
+              </div>-
               <div className="mt-1">
                 <div className="text-xs text-muted-foreground">to {m.to_address ?? "—"}</div>
                 {m.subject ? <div className="font-medium">{m.subject}</div> : null}

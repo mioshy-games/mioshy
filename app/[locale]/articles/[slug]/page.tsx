@@ -19,9 +19,9 @@ function siteUrl() {
 }
 
 function formatDate(iso: string | null) {
-  if (!iso) return "—";
+  if (!iso) return "-";
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
+  if (Number.isNaN(d.getTime())) return "-";
   return d.toLocaleDateString(undefined, {
     year: "numeric",
     month: "long",
@@ -387,8 +387,8 @@ export default async function ArticleDetailPage({
         </p>
         <p className="text-white/80 mb-6 text-sm">
           {isRtl
-            ? "כל המשחקים שנזכרו במאמר — חינמיים, ללא הורדה"
-            : "All games mentioned in this article — free, no download"}
+            ? "כל המשחקים שנזכרו במאמר - חינמיים, ללא הורדה"
+            : "All games mentioned in this article - free, no download"}
         </p>
         <Link
           href="/games"

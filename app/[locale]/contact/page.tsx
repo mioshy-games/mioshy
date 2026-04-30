@@ -8,7 +8,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const isHe = params.locale === "he";
   return {
-    title: isHe ? "יצירת קשר — מיאושי" : "Contact — Mioshy",
+    title: isHe ? "יצירת קשר - מיאושי" : "Contact - Mioshy",
     description: isHe
       ? "איך ליצור קשר עם הצוות של מיאושי"
       : "How to reach the Mioshy team",
@@ -32,8 +32,8 @@ export default function ContactPage({
         </h1>
         <p className="mt-4 text-lg leading-relaxed text-white/75">
           {isHe
-            ? "אנחנו כאן כדי לעזור. תפנו אלינו בשאלות, הצעות או תמיכה — נחזור תוך יום עסקים."
-            : "We're here to help. Reach out with questions, suggestions, or support — we'll respond within one business day."}
+            ? "אנחנו כאן כדי לעזור. תפנו אלינו בשאלות, הצעות או תמיכה - נחזור תוך יום עסקים."
+            : "We're here to help. Reach out with questions, suggestions, or support - we'll respond within one business day."}
         </p>
 
         <div className="mt-10 space-y-4">
@@ -48,8 +48,8 @@ export default function ContactPage({
               </p>
               <p className="mt-1 text-sm text-white/70">
                 {isHe
-                  ? "לכל דבר — תמיכה, שאלות, הצעות"
-                  : "For anything — support, questions, suggestions"}
+                  ? "לכל דבר - תמיכה, שאלות, הצעות"
+                  : "For anything - support, questions, suggestions"}
               </p>
               <p className="mt-2 font-semibold text-fuchsia-300">
                 hello@mioshy.com
@@ -65,8 +65,8 @@ export default function ContactPage({
               </p>
               <p className="mt-1 text-sm text-white/70">
                 {isHe
-                  ? "אם יש לכם שאלות על השאלון, הניתוח, או התוכנית השבועית — נשמח לענות לפני שתתחייבו."
-                  : "If you have questions about the questionnaire, analysis, or weekly plan — we're happy to answer before you commit."}
+                  ? "אם יש לכם שאלות על השאלון, הניתוח, או התוכנית השבועית - נשמח לענות לפני שתתחייבו."
+                  : "If you have questions about the questionnaire, analysis, or weekly plan - we're happy to answer before you commit."}
               </p>
             </div>
           </div>

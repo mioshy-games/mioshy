@@ -6,12 +6,12 @@
 // Shared dialog that previews the fallout of a structural catalog change
 // (item added / offset changed / item removed) across every existing
 // assignment, then applies the plan on confirm. Used anywhere an admin
-// wants to trigger propagation explicitly — usually from an item or
+// wants to trigger propagation explicitly - usually from an item or
 // category page.
 //
 // API is intentionally narrow: pass an async `loadPlan` that returns a
 // PropagationPlan, and an async `onConfirm` that applies it. The dialog
-// doesn't know the shape of the specific action — it just renders the
+// doesn't know the shape of the specific action - it just renders the
 // plan and calls back.
 // ============================================================
 
@@ -36,9 +36,9 @@ export interface PropagateConfirmDialogProps {
   onOpenChange: (open: boolean) => void;
   title: string;
   description?: string;
-  /** Called when the dialog opens — loads the plan from the server. */
+  /** Called when the dialog opens - loads the plan from the server. */
   loadPlan: () => Promise<PropagationPlan>;
-  /** Called when admin confirms — executes the plan. */
+  /** Called when admin confirms - executes the plan. */
   onConfirm: () => Promise<void>;
   /** Copy for the confirm button. */
   confirmLabel?: string;
@@ -64,7 +64,7 @@ function ownerShort(row: {
 }) {
   if (row.couple_id) return `couple · ${row.couple_id.slice(0, 8)}`;
   if (row.user_id) return `user · ${row.user_id.slice(0, 8)}`;
-  return "—";
+  return "-";
 }
 
 export function PropagateConfirmDialog({
@@ -105,7 +105,7 @@ export function PropagateConfirmDialog({
     return () => {
       cancelled = true;
     };
-    // loadPlan identity is intentionally excluded — the caller creates a
+    // loadPlan identity is intentionally excluded - the caller creates a
     // fresh closure on every render, but we only want to refetch when the
     // dialog is actually opened.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -230,7 +230,7 @@ export function PropagateConfirmDialog({
               </div>
             ) : (
               <p className="text-muted-foreground text-sm">
-                Nothing to propagate — no existing assignments match this
+                Nothing to propagate - no existing assignments match this
                 change.
               </p>
             )}

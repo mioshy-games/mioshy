@@ -2,7 +2,7 @@
  * GET /api/billing/cardcom/indicator
  *
  * Server-to-server callback from Cardcom after a payment attempt.
- * Must respond HTTP 200 quickly — heavy work happens here synchronously
+ * Must respond HTTP 200 quickly - heavy work happens here synchronously
  * (mioshy is on Vercel edge/serverless so we process inline, not via queue).
  *
  * Cardcom sends:  ?LowProfileCode=xxx&ReturnValue=<checkout_session_id>
@@ -22,7 +22,7 @@ import type { JourneyProductSlug }   from "@/lib/journey-content/types"
 /** Narrow the free-form checkout_sessions.product to the pillar union. */
 function normalizeProduct(raw: unknown): JourneyProductSlug {
   if (raw === "games" || raw === "adults") return raw
-  // Anything else — NULL, unknown strings, or legacy 'journey' — maps to
+  // Anything else - NULL, unknown strings, or legacy 'journey' - maps to
   // 'journey'. Migration 036 backfilled historical rows this way.
   return "journey"
 }
@@ -32,8 +32,15 @@ export async function GET(req: Request) {
   const lowProfileCode = url.searchParams.get("LowProfileCode") ?? ""
   const returnValue    = url.searchParams.get("ReturnValue")    ?? ""   // checkout session id
 
+  console.log("[indicator:START] callback received from Cardcom", {
+    has_low_profile: !!lowProfileCode,
+    return_value: returnValue || "(empty)",
+    full_url_query: url.search,
+  })
+
   // Always respond 200 to Cardcom immediately
   if (!lowProfileCode) {
+    console.warn("[indicator:NO_CODE] missing LowProfileCode — exiting")
     return new Response("ok", { status: 200 })
   }
 
@@ -48,10 +55,13 @@ export async function GET(req: Request) {
     .maybeSingle()
 
   if (existing?.processed) {
+    console.log("[indicator:IDEMPOTENT_SKIP] already processed", {
+      idempotency_key: idempotencyKey,
+    })
     return new Response("ok", { status: 200 })
   }
 
-  // Insert event row (ignore conflict — already handled above)
+  // Insert event row (ignore conflict - already handled above)
   await admin
     .from("billing_events")
     .upsert({ idempotency_key: idempotencyKey, processed: false }, { onConflict: "idempotency_key" })
@@ -60,7 +70,13 @@ export async function GET(req: Request) {
   let indicator: Awaited<ReturnType<typeof pullLowProfileIndicator>>
   try {
     indicator = await pullLowProfileIndicator(lowProfileCode)
+    console.log("[indicator:PULLED] cardcom indicator", {
+      paid: indicator.paid,
+      deal_number: indicator.dealNumber ?? null,
+      low_profile_code: lowProfileCode,
+    })
   } catch (err) {
+    console.error("[indicator:PULL_FAILED] Cardcom indicator unreachable", err)
     await admin.from("billing_events").update({ error: String(err) }).eq("idempotency_key", idempotencyKey)
     return new Response("ok", { status: 200 })
   }
@@ -95,6 +111,11 @@ export async function GET(req: Request) {
 
   // ── Payment failed ──────────────────────────────────────────────────────────
   if (!indicator.paid) {
+    console.warn("[indicator:PAYMENT_FAILED] marking session failed", {
+      session_id: sessionId,
+      user_id: session.user_id,
+      product: session.product,
+    })
     await admin
       .from("checkout_sessions")
       .update({ status: "failed", updated_at: new Date().toISOString() })
@@ -210,7 +231,7 @@ export async function GET(req: Request) {
       )
     } else {
       // Resolve / create the buyer's couple. Service-role RPC added in
-      // migration 042 — works without auth.uid().
+      // migration 042 - works without auth.uid().
       const { data: coupleIdResp, error: coupleErr } = await admin.rpc(
         "ensure_couple_for_user",
         { p_user_id: userId },
@@ -356,7 +377,7 @@ export async function GET(req: Request) {
       }
     }
 
-    // Auto-assign journey content (subscription-only — irrelevant for
+    // Auto-assign journey content (subscription-only - irrelevant for
     // one-time purchases). Fire-and-forget; the helper is idempotent and
     // never throws.
     if (userId) {
@@ -372,7 +393,7 @@ export async function GET(req: Request) {
           console.error("[indicator] auto-assign failed", result.reason)
         } else if (result.outcome === "no_program_configured") {
           console.warn(
-            `[indicator] no journey program wired for product='${product}' — skipping auto-assign`,
+            `[indicator] no journey program wired for product='${product}' - skipping auto-assign`,
           )
         }
       } catch (err) {
@@ -419,7 +440,7 @@ export async function GET(req: Request) {
       }
     }
     // For one-time purchases we don't have a subscription row to attach the
-    // invoice URL to — the invoice is still created at uxellent and the
+    // invoice URL to - the invoice is still created at uxellent and the
     // checkout_sessions row already carries the deal_number for tracing.
   } else {
     console.error("[indicator] invoice creation failed", invoiceResult.message)

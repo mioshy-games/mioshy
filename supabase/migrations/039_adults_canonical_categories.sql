@@ -2,15 +2,15 @@
 -- 039_adults_canonical_categories.sql
 --
 -- Seed the canonical four categories used on the /adults catalogue surface.
--- These reflect the actual product taxonomy — what the user picks before
+-- These reflect the actual product taxonomy - what the user picks before
 -- buying a sexual game:
 --
---   1. WITH sex toys      — games whose actions assume a toy is in the room
---   2. WITHOUT sex toys   — games that need no equipment at all
---   3. SHE takes control  — games where the woman drives the scene
---   4. HE takes control   — games where the man drives the scene
+--   1. WITH sex toys      - games whose actions assume a toy is in the room
+--   2. WITHOUT sex toys   - games that need no equipment at all
+--   3. SHE takes control  - games where the woman drives the scene
+--   4. HE takes control   - games where the man drives the scene
 --
--- Idempotent on slug — re-running the migration is safe; it ONLY inserts
+-- Idempotent on slug - re-running the migration is safe; it ONLY inserts
 -- rows that don't already exist (and updates the names/colors of the
 -- canonical four if their slugs already exist with old labels).
 --
@@ -35,8 +35,8 @@ VALUES
     'without-toys',
     'בלי צעצועי מין',
     'Without sex toys',
-    'משחקים שלא דורשים שום ציוד — רק שניכם.',
-    'Games that need no equipment at all — just the two of you.',
+    'משחקים שלא דורשים שום ציוד - רק שניכם.',
+    'Games that need no equipment at all - just the two of you.',
     '#A855F7',
     20,
     true

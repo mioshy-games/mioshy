@@ -1,9 +1,9 @@
-# Seven Principles — Extracted Insights & Framework
+# Seven Principles - Extracted Insights & Framework
 
 **Sources analyzed:**
-- *The Seven Principles for Making Marriage Work* — John Gottman & Nan Silver (PDF, ~543KB text extracted)
-- *הסוד לנישואים מאושרים ארוכים* — Itzik Barlev (Hebrew docx)
-- *The 10 Commands for Your Relationship* — Itzik Barlev (bilingual docx)
+- *The Seven Principles for Making Marriage Work* - John Gottman & Nan Silver (PDF, ~543KB text extracted)
+- *הסוד לנישואים מאושרים ארוכים* - Itzik Barlev (Hebrew docx)
+- *The 10 Commands for Your Relationship* - Itzik Barlev (bilingual docx)
 
 The product (mioshy) is **not** a Gottman clone. Gottman is used as the empirical backbone for diagnostics; the Hebrew source gives the tonal voice (warm, coach-like, "I came from UX, I rebuilt my own marriage"). The unified questionnaire below transforms both into a modern subscription product.
 
@@ -26,7 +26,7 @@ The product (mioshy) is **not** a Gottman clone. Gottman is used as the empirica
 Criticism → Contempt → Defensiveness → Stonewalling. We screen all four to flag couples who need a de-escalation track before passion work.
 
 ### Gary Chapman's Five Love Languages (the personalization layer)
-Words of Affirmation / Quality Time / Acts of Service / Physical Touch / Gifts. Detected via forced-choice pairs, not Likert (more accurate — Chapman himself uses forced-choice).
+Words of Affirmation / Quality Time / Acts of Service / Physical Touch / Gifts. Detected via forced-choice pairs, not Likert (more accurate - Chapman himself uses forced-choice).
 
 ### Esther Perel's Eroticism / Distance axis (the passion layer)
 Passion dies when couples over-merge. We probe:
@@ -36,7 +36,7 @@ Passion dies when couples over-merge. We probe:
 - Context (does daily logistics eat every shared minute?)
 
 ### Itzik Barlev's framing (the tonal layer)
-From *הסוד* and the 10 Commands — the "I" in the relationship, fate, communication, fight-or-flight, persistence, love & respect, forgiveness, creation, play. We use his voice in copy: first-person, coach-not-clinician, growth-oriented, no jargon.
+From *הסוד* and the 10 Commands - the "I" in the relationship, fate, communication, fight-or-flight, persistence, love & respect, forgiveness, creation, play. We use his voice in copy: first-person, coach-not-clinician, growth-oriented, no jargon.
 
 ---
 
@@ -45,8 +45,8 @@ From *הסוד* and the 10 Commands — the "I" in the relationship, fate, commu
 - Gottman's T/F binary scoring (too blunt for mobile/web; users click-through without thinking).
 - Gendered language ("husband"/"wife" → "partner"/"בן/בת זוג").
 - Religious framing around shared values (broadened to values).
-- The entire "solvable vs perpetual problem" framework — too complex for onboarding; we move it into Week-3 content after paywall.
-- Anything explicit sexually (mioshy is intimacy-not-erotica — we probe *desire gaps* and *emotional-physical connection*, not technique).
+- The entire "solvable vs perpetual problem" framework - too complex for onboarding; we move it into Week-3 content after paywall.
+- Anything explicit sexually (mioshy is intimacy-not-erotica - we probe *desire gaps* and *emotional-physical connection*, not technique).
 
 ---
 
@@ -103,14 +103,14 @@ Once subscribed, the user enters a **26-week program** generated from their anal
 | 6 | Passion: autonomy + anticipation rituals | +38d |
 | … | … | weekly cadence; each week = 2 emails + 1 SMS nudge + 1 task |
 
-All content is stored in `message_templates`; the scheduler in `engagement_schedules` enqueues concrete `messages` rows at the right time per user. **Sending stops only when `subscriptions.status != 'active'`** — which is set when (a) user hits Cancel in `/account`, (b) Cardcom reports failed renewal + grace period expires, or (c) admin manually cancels.
+All content is stored in `message_templates`; the scheduler in `engagement_schedules` enqueues concrete `messages` rows at the right time per user. **Sending stops only when `subscriptions.status != 'active'`** - which is set when (a) user hits Cancel in `/account`, (b) Cardcom reports failed renewal + grace period expires, or (c) admin manually cancels.
 
 ---
 
 ## 6. What the admin sees (panel design rationale)
 
 Admins are coaches + operators. They need:
-- Users list (filters: plan, engagement health, last-activity, flagged horsemen) — for triage.
+- Users list (filters: plan, engagement health, last-activity, flagged horsemen) - for triage.
 - User detail: timeline of answers → analysis → messages sent → tasks assigned → notes. This is the **single source of truth** for a coach before a 1:1.
 - Templates: CRUD on email/SMS/task copy, bilingual. Variable injection: `{{first_name}}`, `{{primary_love_language}}`, `{{top_gap}}`, etc.
 - Automation scheduler: drag a template onto a timeline offset (`+3d after payment`, `every Monday 08:00`, `when four_horsemen_contempt ≥ 2`).
@@ -121,13 +121,13 @@ Admins are coaches + operators. They need:
 
 ## 7. File inventory produced in this pass
 
-- `journey/EXTRACTED_INSIGHTS.md` — this file
-- `journey/questionnaire.json` — 28 questions, he+en, scoring tuples
-- `supabase/migrations/026_journey_questionnaire.sql` — full schema
-- `lib/journey/{types,questions,analysis,engagement}.ts` — core logic
-- `app/api/journey/**` — progress/answer/analyze/resume endpoints
-- `app/api/admin/**` — users/notes/messages/templates/tasks endpoints
-- `app/api/engagement/tick/route.ts` — cron worker
-- `app/[locale]/journey/**` — user-facing questionnaire UI
-- `app/dashboard/users/**` + `app/dashboard/templates/**` + `app/dashboard/automation/**` — admin UI
-- `journey/README.md` — runbook: env vars, migration, cron, next steps
+- `journey/EXTRACTED_INSIGHTS.md` - this file
+- `journey/questionnaire.json` - 28 questions, he+en, scoring tuples
+- `supabase/migrations/026_journey_questionnaire.sql` - full schema
+- `lib/journey/{types,questions,analysis,engagement}.ts` - core logic
+- `app/api/journey/**` - progress/answer/analyze/resume endpoints
+- `app/api/admin/**` - users/notes/messages/templates/tasks endpoints
+- `app/api/engagement/tick/route.ts` - cron worker
+- `app/[locale]/journey/**` - user-facing questionnaire UI
+- `app/dashboard/users/**` + `app/dashboard/templates/**` + `app/dashboard/automation/**` - admin UI
+- `journey/README.md` - runbook: env vars, migration, cron, next steps

@@ -14,7 +14,7 @@ import { FinalCTA } from "./FinalCTA";
 import { FAQ } from "./FAQ";
 
 /**
- * HomepageV2 — new marketing homepage.
+ * HomepageV2 - new marketing homepage.
  *
  * Wraps all 13 marketing sections under a single `.home-v2` class.
  * The class scopes all styles in `./styles.css` and pulls design
@@ -22,7 +22,7 @@ import { FAQ } from "./FAQ";
  *
  * `bg-white` is applied here explicitly so the homepage paints over
  * the legacy dark `body { background: #0d0a14 }`. The `.home-v2`
- * class itself no longer forces a background — that lets it be
+ * class itself no longer forces a background - that lets it be
  * embedded inside coloured surfaces (e.g. the cream press card on
  * /games) without painting over them.
  *

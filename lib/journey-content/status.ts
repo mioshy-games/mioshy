@@ -1,7 +1,7 @@
 // ============================================================
 // Status derivation for the Journey Content System.
 //
-// There is no status column on journey_scheduled_items — display status
+// There is no status column on journey_scheduled_items - display status
 // is derived at read time from (unlock_at, completion?). Keeping the
 // rule in one place means the user-facing timeline, admin preview, and
 // notification worker all agree.
@@ -29,14 +29,14 @@ export function deriveStatus(input: DeriveStatusInput): ScheduledItemStatus {
 
 /**
  * Returns true if the viewer can open the item right now.
- * Completed items remain openable — they just render with a checkmark.
+ * Completed items remain openable - they just render with a checkmark.
  */
 export function isOpenable(status: ScheduledItemStatus): boolean {
   return status !== "locked";
 }
 
 /**
- * Compact diff summary for progress bars — (completed / total / available).
+ * Compact diff summary for progress bars - (completed / total / available).
  */
 export interface StatusCounts {
   total: number;

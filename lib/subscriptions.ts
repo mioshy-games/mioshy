@@ -21,7 +21,7 @@ export type SubscriptionRow = {
 /**
  * Returns true only when the user has an "active" subscription that has not
  * yet reached current_period_end. Frozen, cancelled, expired, past_due, and
- * blocked subscriptions all gate access — business rule 5 from product.
+ * blocked subscriptions all gate access - business rule 5 from product.
  *
  * past_due within grace window is handled by a separate flag on the account
  * page; the renewal cron will transition to "blocked" once grace expires.

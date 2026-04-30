@@ -1,7 +1,7 @@
 "use client";
 
 // ============================================================
-// UnlockEditDialog — nudge a single scheduled item's unlock date,
+// UnlockEditDialog - nudge a single scheduled item's unlock date,
 // or clear the override back to the catalog default. Shows the
 // item's default_offset_days so the admin has a mental reference
 // for "how far away from the anchor this normally sits".
@@ -41,7 +41,7 @@ export function UnlockEditDialog({
   onOpenChange: (v: boolean) => void;
   scheduledItemId: string;
   itemTitle: string;
-  /** YYYY-MM-DD — matches the <input type="date"> value shape. */
+  /** YYYY-MM-DD - matches the <input type="date"> value shape. */
   defaultDate: string;
   defaultOffsetDays: number;
   defaultAdminNotes: string;
@@ -102,7 +102,7 @@ export function UnlockEditDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="line-clamp-1">
-            Edit unlock — {itemTitle}
+            Edit unlock - {itemTitle}
           </DialogTitle>
         </DialogHeader>
 
@@ -116,7 +116,7 @@ export function UnlockEditDialog({
             {hasOverride ? (
               <>
                 {" "}This row is currently{" "}
-                <span className="text-foreground">overridden</span> — clearing
+                <span className="text-foreground">overridden</span> - clearing
                 the override will recompute from the anchor.
               </>
             ) : null}
@@ -142,7 +142,7 @@ export function UnlockEditDialog({
               rows={3}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Why this schedule was adjusted — visible only to admins."
+              placeholder="Why this schedule was adjusted - visible only to admins."
             />
           </div>
         </div>

@@ -2,7 +2,7 @@ import { Counter } from "./Counter";
 import { RevealOnScroll } from "./RevealOnScroll";
 
 /**
- * Education — "למה זה קורה". Light cream section with two-column flow:
+ * Education - "למה זה קורה". Light cream section with two-column flow:
  * narrative on the right, 4 dramatic stats on the left.
  */
 export function Education() {
@@ -27,7 +27,7 @@ export function Education() {
                 היא נשחקת לאט.
               </h2>
               <p>
-                שגרה, ילדים, קריירה, עייפות — הם לא רעים. הם פשוט{" "}
+                שגרה, ילדים, קריירה, עייפות - הם לא רעים. הם פשוט{" "}
                 <strong>דוחקים את הזוגיות לפינה</strong>. וביום שבו אתם מבינים שאתם זרים, השחיקה
                 כבר נעשתה לפני שנים.
               </p>
@@ -51,7 +51,7 @@ export function Education() {
                     </em>
                   </div>
                   <div className="label">
-                    מספיקות ביום כדי לשנות את הדינמיקה — אם משקיעים נכון
+                    מספיקות ביום כדי לשנות את הדינמיקה - אם משקיעים נכון
                   </div>
                 </div>
                 <div className="edu-stat">

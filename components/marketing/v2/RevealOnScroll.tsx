@@ -7,7 +7,7 @@ type Variant = "fade-up" | "scale-up" | "fade";
 
 type Props = {
   children: ReactNode;
-  /** Animation variant — `scale-up` for headlines, `fade-up` for body. */
+  /** Animation variant - `scale-up` for headlines, `fade-up` for body. */
   variant?: Variant;
   /** Delay in seconds before animation starts. */
   delay?: number;
@@ -32,15 +32,15 @@ const VARIANTS: Record<Variant, Variants> = {
 };
 
 /**
- * RevealOnScroll — wraps children in a motion.div that animates from a
+ * RevealOnScroll - wraps children in a motion.div that animates from a
  * subtle starting state to its final state when scrolled into view.
  *
  * Variants:
- *   • fade-up   — opacity 0.4 → 1 + translateY(16px) → 0   (body text)
- *   • scale-up  — opacity 0 → 1 + scale 94% → 100% + translateY(24px) → 0   (headlines)
- *   • fade      — opacity 0 → 1 only   (decorative elements)
+ *   • fade-up   - opacity 0.4 → 1 + translateY(16px) → 0   (body text)
+ *   • scale-up  - opacity 0 → 1 + scale 94% → 100% + translateY(24px) → 0   (headlines)
+ *   • fade      - opacity 0 → 1 only   (decorative elements)
  *
- * Honors `prefers-reduced-motion` — skips animation entirely if user opted out.
+ * Honors `prefers-reduced-motion` - skips animation entirely if user opted out.
  * Triggers once and stays in final state (no re-animate on scroll back).
  */
 export function RevealOnScroll({

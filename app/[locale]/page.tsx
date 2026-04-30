@@ -239,9 +239,9 @@ export default async function HomePage({
     : s.hero_headline_en || "Walk out with a relationship on fire";
   const heroSub = isHe
     ? s.hero_sub_he ||
-      "מיאושי — פלטפורמה עולמית למשחקי זוגיות ואיתון אישי, שמדליקה מחדש את מה שהיה וגם את מה שעדיין לא גיליתם."
+      "מיאושי - פלטפורמה עולמית למשחקי זוגיות ואיתון אישי, שמדליקה מחדש את מה שהיה וגם את מה שעדיין לא גיליתם."
     : s.hero_sub_en ||
-      "Mioshy — a world-class couples platform of games, questionnaires and personal coaching that relights the spark.";
+      "Mioshy - a world-class couples platform of games, questionnaires and personal coaching that relights the spark.";
   const ctaPrimaryText = isHe
     ? s.cta_primary_text_he || "מתחילים עכשיו"
     : s.cta_primary_text_en || "Start now";
@@ -272,7 +272,7 @@ export default async function HomePage({
       "Adults Only";
   const buTagline = isHe
     ? betweenUsSettings?.section_tagline_he ||
-      "משחקי זוגיות עומק — חוויות משותפות שמשאירות חותם."
+      "משחקי זוגיות עומק - חוויות משותפות שמשאירות חותם."
     : betweenUsSettings?.section_tagline_en ||
       betweenUsSettings?.section_tagline_he ||
       "Deep couples experiences that leave a mark.";
@@ -288,7 +288,7 @@ export default async function HomePage({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
 
-        {/* ─────────────── HERO (dark — the only dark section) ─────────────── */}
+        {/* ─────────────── HERO (dark - the only dark section) ─────────────── */}
         {heroTemplate === "classic-dark" ? (
           <HeroClassicDark
             {...sharedHeroProps}
@@ -320,8 +320,8 @@ export default async function HomePage({
               title={isHe ? "משחקים מוכחים" : "Proven games"}
               body={
                 isHe
-                  ? "גלגל הזוגיות ונחשים וסולמות — שעות של צחוק, שיחה ופתיחות."
-                  : "Wheel and Snakes — hours of laughter, conversation and openness."
+                  ? "גלגל הזוגיות ונחשים וסולמות - שעות של צחוק, שיחה ופתיחות."
+                  : "Wheel and Snakes - hours of laughter, conversation and openness."
               }
             />
             <AuroraValueCell
@@ -340,8 +340,8 @@ export default async function HomePage({
               title={isHe ? "חדר המיטות" : "For the bedroom"}
               body={
                 isHe
-                  ? "חבילת למבוגרים בלבד — משחקי זוגיות עומק, בהתאמה לרמה ולקצב שלכם."
-                  : "Adults Only — premium intimate games, paced to you."
+                  ? "חבילת למבוגרים בלבד - משחקי זוגיות עומק, בהתאמה לרמה ולקצב שלכם."
+                  : "Adults Only - premium intimate games, paced to you."
               }
             />
           </div>
@@ -386,13 +386,13 @@ export default async function HomePage({
           eyebrow={isHe ? "אימון זוגי חודשי" : "Monthly couple coaching"}
           title={
             isHe
-              ? "שאלון שלומד אתכם — ומביא תובנות כל חודש"
-              : "A questionnaire that learns you — and delivers monthly insights"
+              ? "שאלון שלומד אתכם - ומביא תובנות כל חודש"
+              : "A questionnaire that learns you - and delivers monthly insights"
           }
           subtitle={
             isHe
-              ? "עונים פעם אחת, ומקבלים ליווי מותאם אישית כל חודש — תשוקה, אהבה, מיניות, איפוק, הערכת זמן הסקס, שפת האהבה ועוד."
-              : "Answer once and receive monthly guidance tailored to you — passion, love, intimacy, restraint, cherishing your time together, love languages, and more."
+              ? "עונים פעם אחת, ומקבלים ליווי מותאם אישית כל חודש - תשוקה, אהבה, מיניות, איפוק, הערכת זמן הסקס, שפת האהבה ועוד."
+              : "Answer once and receive monthly guidance tailored to you - passion, love, intimacy, restraint, cherishing your time together, love languages, and more."
           }
           accent="rose"
         >
@@ -402,8 +402,8 @@ export default async function HomePage({
                 {
                   accent: "from-rose-500 to-pink-500",
                   icon: <Heart className="h-4 w-4 text-white" />,
-                  he: "אבחון זוגי — איפה אנחנו ואיפה כדאי לשים פוקוס.",
-                  en: "A couple diagnostic — where we are, where to focus.",
+                  he: "אבחון זוגי - איפה אנחנו ואיפה כדאי לשים פוקוס.",
+                  en: "A couple diagnostic - where we are, where to focus.",
                 },
                 {
                   accent: "from-amber-500 to-orange-500",
@@ -414,14 +414,14 @@ export default async function HomePage({
                 {
                   accent: "from-sky-500 to-indigo-500",
                   icon: <MessageCircleHeart className="h-4 w-4 text-white" />,
-                  he: "שיחות מונחות — להעמיק במקום לדעוך.",
-                  en: "Guided conversations — deepen, don't drift.",
+                  he: "שיחות מונחות - להעמיק במקום לדעוך.",
+                  en: "Guided conversations - deepen, don't drift.",
                 },
                 {
                   accent: "from-fuchsia-500 to-violet-500",
                   icon: <Sparkles className="h-4 w-4 text-white" />,
-                  he: "תרגולי תשוקה, אהבה, מיניות ואיפוק — קצב שמכבד אתכם.",
-                  en: "Practices for passion, love, intimacy and restraint — at your pace.",
+                  he: "תרגולי תשוקה, אהבה, מיניות ואיפוק - קצב שמכבד אתכם.",
+                  en: "Practices for passion, love, intimacy and restraint - at your pace.",
                 },
               ].map((item, i) => (
                 <Reveal key={i} delay={0.04 * i}>
@@ -473,13 +473,13 @@ export default async function HomePage({
                 </span>
                 <p className="relative mt-6 font-heading text-2xl font-bold leading-snug text-slate-900">
                   {isHe
-                    ? "חודש אחרי חודש — אתם יודעים על עצמכם יותר ממה שידעתם אי פעם."
-                    : "Month after month — you learn each other better than ever."}
+                    ? "חודש אחרי חודש - אתם יודעים על עצמכם יותר ממה שידעתם אי פעם."
+                    : "Month after month - you learn each other better than ever."}
                 </p>
                 <p className="relative mt-4 text-sm text-slate-600">
                   {isHe
                     ? "לא עוד עצות כלליות. השאלון מתאים את עצמו למה שקורה אצלכם עכשיו, ואנחנו בונים איתכם מסע."
-                    : "No generic advice. The questionnaire adapts to what's going on with you now — and we build the journey together."}
+                    : "No generic advice. The questionnaire adapts to what's going on with you now - and we build the journey together."}
                 </p>
 
                 <dl className="relative mt-6 grid grid-cols-3 gap-2 border-t border-slate-200/70 pt-5 text-center">
@@ -513,13 +513,13 @@ export default async function HomePage({
           </div>
         </AuroraSection>
 
-        {/* ─────────────── 3. ADULTS ONLY — LIGHT, WARM AURORA ─────────────── */}
+        {/* ─────────────── 3. ADULTS ONLY - LIGHT, WARM AURORA ─────────────── */}
         <AuroraSection id="between-us" accent="heat">
           <div className="text-center">
             <Reveal>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-rose-300/60 bg-white/85 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-rose-700 shadow-sm backdrop-blur">
                 <Sparkles className="h-3.5 w-3.5" />
-                {isHe ? "חדש — חדר המיטות" : "New — bedroom line"}
+                {isHe ? "חדש - חדר המיטות" : "New - bedroom line"}
               </span>
             </Reveal>
             <Reveal delay={0.05}>
@@ -566,7 +566,7 @@ export default async function HomePage({
           title={
             isHe
               ? "הסיפור האמיתי: מה זוגות אומרים"
-              : "The real story — what couples say"
+              : "The real story - what couples say"
           }
           accent="violet"
         >
@@ -604,10 +604,10 @@ export default async function HomePage({
           </div>
         </AuroraSection>
 
-        {/* ─────────────── 5. EXPERT — LIGHT, CINEMATIC FRAME ─────────────── */}
+        {/* ─────────────── 5. EXPERT - LIGHT, CINEMATIC FRAME ─────────────── */}
         <AuroraSection id="expert" accent="amber">
           <div className="grid gap-10 lg:grid-cols-[1fr_1.3fr] lg:items-center">
-            {/* Portrait inside a gradient frame — dramatic on light */}
+            {/* Portrait inside a gradient frame - dramatic on light */}
             <div className="relative mx-auto w-full max-w-sm">
               <span
                 aria-hidden
@@ -729,7 +729,7 @@ export default async function HomePage({
           </div>
         </AuroraSection>
 
-        {/* ─────────────── 8. FINAL CTA — THE ONE HE LOVES ─────────────── */}
+        {/* ─────────────── 8. FINAL CTA - THE ONE HE LOVES ─────────────── */}
         <section className="relative isolate overflow-hidden py-24">
           <div
             aria-hidden
@@ -806,7 +806,7 @@ export default async function HomePage({
             </span>
             <h2 className="mt-5 font-heading text-3xl font-bold text-slate-900 sm:text-5xl lg:text-6xl">
               {isHe
-                ? "יוצאים מכאן — עם זוגיות לוהטת"
+                ? "יוצאים מכאן - עם זוגיות לוהטת"
                 : "Walk out with a relationship on fire"}
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-lg text-slate-700">
@@ -841,13 +841,13 @@ export default async function HomePage({
 
 // ────────────────────────────────────────────────────────────────
 // The entire page (after the dark hero) runs on a single primitive:
-// AuroraSection. Every section is light and colourful — rose, violet,
-// amber, or heat — so the rhythm comes from palette shift, not from
+// AuroraSection. Every section is light and colourful - rose, violet,
+// amber, or heat - so the rhythm comes from palette shift, not from
 // tone flip. No dead white space, no boring panels.
 // ────────────────────────────────────────────────────────────────
 
 /**
- * AuroraSection — rich, colourful light section modelled on the final
+ * AuroraSection - rich, colourful light section modelled on the final
  * CTA ("יוצאים מכאן") that Itzik loves. A multi-stop gradient base with
  * three oversized blurred colour orbs and subtle grain on top. The
  * `accent` prop just shifts which orbs dominate so consecutive sections
@@ -992,7 +992,7 @@ function AuroraSection({
 }
 
 /**
- * AuroraValueCell — pillar cell used on the bridge strip. Semi-transparent
+ * AuroraValueCell - pillar cell used on the bridge strip. Semi-transparent
  * white card over the aurora so the colourful backdrop reads through the
  * edges. Gradient icon chip anchors the card.
  */
@@ -1051,7 +1051,7 @@ function Stars({
 }
 
 /**
- * GameTile — premium card for a first-class games catalog entry on the
+ * GameTile - premium card for a first-class games catalog entry on the
  * home page. Lives on a light aurora section: white body, gradient edge,
  * colourful placeholder cover so even empty states feel game-world.
  */
@@ -1170,7 +1170,7 @@ function GameTile({
 }
 
 /**
- * BuCard — adults-only tile on the light aurora section. Keeps sensuous
+ * BuCard - adults-only tile on the light aurora section. Keeps sensuous
  * warm palette: rose/fuchsia gradient cover, white body, soft shadow.
  */
 function BuCard({

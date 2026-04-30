@@ -1,5 +1,5 @@
 /**
- * Marketing sections for /[locale]/adults — Mioshy's flagship "after-dark"
+ * Marketing sections for /[locale]/adults - Mioshy's flagship "after-dark"
  * product surface.
  *
  * VISUAL DIRECTION
@@ -9,9 +9,9 @@
  *   - cinematic typography (huge serif headlines, italic accent words)
  *   - editorial blockquotes instead of card grids
  *   - hard-proof stats as gigantic numbers
- *   - tone is bold, sensual, after-dark — not "magazine pastel"
+ *   - tone is bold, sensual, after-dark - not "magazine pastel"
  *
- * Tone: bold, erotic, sexual, dark — but never crude. The copy keeps
+ * Tone: bold, erotic, sexual, dark - but never crude. The copy keeps
  * a confident, expert-curated voice (we sell taste, not shock).
  *
  * Each section is exported individually so the page can compose them in
@@ -39,44 +39,33 @@ type Hero = {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 1. MANIFESTO — what these games actually are. Editorial single-column block.
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────-───────────────────────────────────────────────────────────────
 
 export function AdultsManifestoSection({ isHe }: { isHe: boolean }) {
   return (
     <section
       id="manifesto"
-      className="relative overflow-hidden px-4 py-[100px]"
+      className="relative overflow-hidden px-4 py-[90px]"
     >
-      {/* A pair of slow drifts — nothing card-shaped, just mood. */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 -z-0 opacity-70"
-        style={{
-          background:
-            "radial-gradient(700px 380px at 12% 30%, rgba(244,63,94,0.08), transparent 60%), " +
-            "radial-gradient(700px 380px at 88% 70%, rgba(168,85,247,0.08), transparent 60%)",
-        }}
-      />
-
       <div className="relative mx-auto max-w-3xl">
         {/* Eyebrow */}
         <div className="text-center">
-          <span className="inline-flex items-center gap-2.5 text-[11px] font-semibold uppercase tracking-[0.32em] text-rose-200/80">
-            <span className="h-1.5 w-1.5 rounded-full bg-rose-400 shadow-[0_0_12px_rgba(244,63,94,0.7)]" />
+          <span className="inline-flex items-center gap-2.5 text-[11px] font-semibold uppercase tracking-[0.32em] text-[#8B2638]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#B83C4D] shadow-[0_0_8px_rgba(184,60,77,0.3)]" />
             {isHe ? "מה זה באמת" : "What this really is"}
           </span>
         </div>
 
-        {/* Headline — emotional, not transactional. */}
+        {/* Headline */}
         <h2
-          className="mt-7 text-balance text-center text-[40px] leading-[1.05] tracking-[-0.02em] text-white sm:text-5xl lg:text-[60px]"
+          className="mt-7 text-balance text-center text-[40px] leading-[1.05] tracking-[-0.02em] text-[#170E14] sm:text-5xl lg:text-[56px]"
           style={{ fontFamily: "'Frank Ruhl Libre', serif", fontWeight: 600 }}
         >
           {isHe ? (
             <>
               לא עוד משחק.{" "}
               <span
-                className="bg-gradient-to-br from-rose-200 via-rose-400 to-amber-300 bg-clip-text text-transparent"
+                className="text-[#B83C4D]"
                 style={{ fontStyle: "italic", fontWeight: 500 }}
               >
                 ערב שלא רוצים שייגמר.
@@ -86,7 +75,7 @@ export function AdultsManifestoSection({ isHe }: { isHe: boolean }) {
             <>
               Not another game.{" "}
               <span
-                className="bg-gradient-to-br from-rose-200 via-rose-400 to-amber-300 bg-clip-text text-transparent"
+                className="text-[#B83C4D]"
                 style={{ fontStyle: "italic", fontWeight: 500 }}
               >
                 An evening you won&apos;t want to end.
@@ -95,34 +84,27 @@ export function AdultsManifestoSection({ isHe }: { isHe: boolean }) {
           )}
         </h2>
 
-        {/* Body — three short editorial paragraphs. The vertical accent rule
-            on the start side gives them a print-quote feel without us actually
-            using a blockquote. */}
-        <div
-          className={`relative mt-12 ${
-            // Side-rule + padding; CSS logical props handle RTL flip.
-            "ps-8 sm:ps-10"
-          }`}
-        >
+        {/* Body — three editorial paragraphs with vertical accent rule */}
+        <div className="relative mt-12 ps-8 sm:ps-10">
           <span
             aria-hidden
-            className="absolute inset-y-2 start-0 w-px bg-gradient-to-b from-rose-400/0 via-rose-400/60 to-rose-400/0"
+            className="absolute inset-y-2 start-0 w-px bg-gradient-to-b from-[#B83C4D]/0 via-[#B83C4D]/50 to-[#B83C4D]/0"
           />
 
-          <p className="text-[20px] leading-[1.7] text-white/85 sm:text-[22px]">
+          <p className="text-[20px] leading-[1.7] text-[#170E14] sm:text-[22px]">
             {isHe
               ? "המומחים של מיאושי בנו עבורכם משחקי מיניות בשלבים — כל שלב הוא פעולה מינית מסוימת שאתם מבצעים יחד. חלק מהמשחקים משלבים צעצועי מין. חלק לא. ההחלטה איתכם."
               : "Mioshy's experts have built you sexual games in stages — each stage is a specific sexual act you perform together. Some games incorporate sex toys. Some don't. The choice is yours."}
           </p>
 
-          <p className="mt-7 text-[18px] leading-[1.75] text-white/70 sm:text-[19px]">
+          <p className="mt-7 text-[18px] leading-[1.75] text-[#4A3A45] sm:text-[19px]">
             {isHe
               ? "כולם מכוונים למטרה אחת — חוויה מינית בלתי-נשכחת. המשחקים מיניים. אירוטיים. מעוררים. ובנויים בכוונה כך, שלא תרצו להפסיק לשחק."
               : "All of them point to one goal — an unforgettable sexual experience. The games are sexual. Erotic. Arousing. And built — on purpose — so you won't want to stop playing."}
           </p>
 
           <p
-            className="mt-7 text-[18px] leading-[1.7] text-white/55"
+            className="mt-7 text-[18px] leading-[1.7] text-[#8B2638]"
             style={{ fontFamily: "'Frank Ruhl Libre', serif", fontStyle: "italic" }}
           >
             {isHe
@@ -137,79 +119,55 @@ export function AdultsManifestoSection({ isHe }: { isHe: boolean }) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 2. PROOF — gigantic stats. Single most credibility-loaded section on page.
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────-───────────────────────────────────────────────────────────────────
 
 export function AdultsProofSection({ isHe }: { isHe: boolean }) {
   return (
     <section
       id="proof"
-      className="relative overflow-hidden px-4 py-[110px]"
+      className="relative overflow-hidden px-4 py-[80px]"
     >
-      {/* Subtle top + bottom hairline rules, like a print spread divider. */}
+      {/* Top hairline divider */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-rose-400/30 to-transparent"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-rose-400/30 to-transparent"
-      />
-      {/* Center glow */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 -z-0"
-        style={{
-          background:
-            "radial-gradient(900px 500px at 50% 50%, rgba(244,63,94,0.10), transparent 60%)",
-        }}
+        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#B83C4D]/25 to-transparent"
       />
 
       <div className="relative mx-auto max-w-5xl">
         {/* Eyebrow */}
         <div className="text-center">
-          <span className="inline-flex items-center gap-2.5 text-[11px] font-semibold uppercase tracking-[0.32em] text-rose-200/80">
-            <span className="h-1.5 w-1.5 rounded-full bg-rose-400 shadow-[0_0_12px_rgba(244,63,94,0.7)]" />
+          <span className="inline-flex items-center gap-2.5 text-[11px] font-semibold uppercase tracking-[0.32em] text-[#8B2638]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#B83C4D] shadow-[0_0_8px_rgba(184,60,77,0.3)]" />
             {isHe ? "המספרים מדברים" : "The numbers speak"}
           </span>
         </div>
 
         <h2
-          className="mt-7 text-balance text-center text-[36px] leading-[1.1] tracking-[-0.02em] text-white sm:text-[44px]"
+          className="mt-6 text-balance text-center text-[36px] leading-[1.1] tracking-[-0.02em] text-[#170E14] sm:text-[44px]"
           style={{ fontFamily: "'Frank Ruhl Libre', serif", fontWeight: 600 }}
         >
-          {isHe
-            ? "אחרי משחק אחד —"
-            : "After the first game —"}{" "}
+          {isHe ? "אחרי משחק אחד — " : "After the first game — "}
           <span
-            className="text-rose-300"
+            className="text-[#B83C4D]"
             style={{ fontStyle: "italic", fontWeight: 500 }}
           >
             {isHe ? "רוצים עוד." : "they want more."}
           </span>
         </h2>
 
-        {/* Stats — split, centered, no card edges. The numbers ARE the design. */}
-        <div className="mt-16 grid gap-y-14 gap-x-10 md:grid-cols-2">
+        {/* Two stat cards */}
+        <div className="mt-14 grid gap-6 sm:grid-cols-2">
           {/* Stat 1 — 80% */}
-          <div className="text-center md:text-end">
-            <div className="relative inline-block">
-              <span
-                className="block bg-gradient-to-br from-white via-rose-200 to-amber-300 bg-clip-text text-[140px] leading-[0.85] tracking-[-0.04em] text-transparent sm:text-[180px] lg:text-[220px]"
-                style={{
-                  fontFamily: "'Frank Ruhl Libre', serif",
-                  fontWeight: 700,
-                }}
-              >
-                80<span className="text-[0.5em]">%</span>
-              </span>
-              {/* Underline */}
-              <span
-                aria-hidden
-                className="mx-auto mt-2 block h-px w-32 bg-gradient-to-r from-transparent via-rose-400 to-transparent md:ms-auto md:me-0"
-              />
-            </div>
+          <div className="rounded-3xl border border-[#EAE0E3] bg-[#FBF5F2] px-10 py-12 text-center shadow-sm">
+            <span
+              className="block text-[100px] leading-none tracking-[-0.03em] text-[#170E14]"
+              style={{ fontFamily: "'Frank Ruhl Libre', serif", fontWeight: 700 }}
+            >
+              80<span className="text-[0.5em] text-[#B83C4D]">%</span>
+            </span>
+            <div className="mx-auto mt-4 h-px w-20 bg-[#B83C4D]/30" />
             <p
-              className="mx-auto mt-6 max-w-sm text-[18px] leading-[1.5] text-white/85 md:mx-0 md:ms-auto"
+              className="mx-auto mt-6 max-w-xs text-[17px] leading-[1.55] text-[#4A3A45]"
               style={{ fontFamily: "'Frank Ruhl Libre', serif", fontWeight: 500 }}
             >
               {isHe
@@ -219,24 +177,16 @@ export function AdultsProofSection({ isHe }: { isHe: boolean }) {
           </div>
 
           {/* Stat 2 — 50% */}
-          <div className="text-center md:text-start">
-            <div className="relative inline-block">
-              <span
-                className="block bg-gradient-to-br from-white via-rose-200 to-amber-300 bg-clip-text text-[140px] leading-[0.85] tracking-[-0.04em] text-transparent sm:text-[180px] lg:text-[220px]"
-                style={{
-                  fontFamily: "'Frank Ruhl Libre', serif",
-                  fontWeight: 700,
-                }}
-              >
-                50<span className="text-[0.5em]">%</span>
-              </span>
-              <span
-                aria-hidden
-                className="mx-auto mt-2 block h-px w-32 bg-gradient-to-r from-transparent via-rose-400 to-transparent md:ms-0 md:me-auto"
-              />
-            </div>
+          <div className="rounded-3xl border border-[#EAE0E3] bg-[#FBF5F2] px-10 py-12 text-center shadow-sm">
+            <span
+              className="block text-[100px] leading-none tracking-[-0.03em] text-[#170E14]"
+              style={{ fontFamily: "'Frank Ruhl Libre', serif", fontWeight: 700 }}
+            >
+              50<span className="text-[0.5em] text-[#B83C4D]">%</span>
+            </span>
+            <div className="mx-auto mt-4 h-px w-20 bg-[#B83C4D]/30" />
             <p
-              className="mx-auto mt-6 max-w-sm text-[18px] leading-[1.5] text-white/85 md:mx-0 md:me-auto"
+              className="mx-auto mt-6 max-w-xs text-[17px] leading-[1.55] text-[#4A3A45]"
               style={{ fontFamily: "'Frank Ruhl Libre', serif", fontWeight: 500 }}
             >
               {isHe
@@ -246,9 +196,9 @@ export function AdultsProofSection({ isHe }: { isHe: boolean }) {
           </div>
         </div>
 
-        {/* Closing italic */}
+        {/* Closing note */}
         <p
-          className="mx-auto mt-16 max-w-xl text-center text-[18px] text-white/55"
+          className="mx-auto mt-10 max-w-xl text-center text-[15px] text-[#8B2638]/70"
           style={{ fontFamily: "'Frank Ruhl Libre', serif", fontStyle: "italic" }}
         >
           {isHe
@@ -261,146 +211,13 @@ export function AdultsProofSection({ isHe }: { isHe: boolean }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 3. INSIDE EACH GAME — three intensity levels. Not a card grid: a typographic
-//    sequence with side rules (more "menu" than "feature list").
+// (removed) "INSIDE EACH GAME — three intensity levels" — section pulled per
+// product decision; no replacement.
 // ─────────────────────────────────────────────────────────────────────────────
-
-export function AdultsLevelsSection({ isHe }: { isHe: boolean }) {
-  // Tone: these are SEXUAL games for adventurous couples, not "couples-therapy
-  // lite". Each level escalates intentionally — gentle warmup is still
-  // explicit, mid-level brings the body in, top tier is for the bold only.
-  const levels = [
-    {
-      numeral: "I",
-      titleHe: "מרגש",
-      titleEn: "Touching",
-      bodyHe:
-        "שאלות אינטימיות, חשיפה הדדית, פנטזיות מילוליות. הרמה שמכינה את שניכם — לפני שהגוף מצטרף.",
-      bodyEn:
-        "Intimate questions, mutual reveals, verbal fantasies. The level that warms you both up — before the body joins.",
-    },
-    {
-      numeral: "II",
-      titleHe: "מעורר",
-      titleEn: "Stirring",
-      bodyHe:
-        "מגע מכוון, אינטראקציה גופנית, וחלק מהמשחקים משלבים צעצועי מין. הרמה שמדליקה — בכוונה.",
-      bodyEn:
-        "Directed touch, physical interaction, and some games incorporate sex toys. The level that turns up the heat — on purpose.",
-    },
-    {
-      numeral: "III",
-      titleHe: "ללא גבולות",
-      titleEn: "No limits",
-      bodyHe:
-        "לזוגות הנועזים בלבד. הזמנות מיניות עזות, חוויות שלא חשבתם שתעזו, ולילה שלא תשכחו.",
-      bodyEn:
-        "For daring couples only. Bold sexual invitations, experiences you didn't think you'd dare, a night you won't forget.",
-    },
-  ];
-
-  return (
-    <section
-      id="levels"
-      className="relative overflow-hidden px-4 py-[110px]"
-    >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 -z-0 opacity-70"
-        style={{
-          background:
-            "radial-gradient(900px 500px at 90% 0%, rgba(168,85,247,0.10), transparent 60%), " +
-            "radial-gradient(800px 480px at 10% 100%, rgba(244,63,94,0.10), transparent 60%)",
-        }}
-      />
-
-      <div className="relative mx-auto max-w-5xl">
-        <div className="mx-auto max-w-2xl text-center">
-          <span className="inline-flex items-center gap-2.5 text-[11px] font-semibold uppercase tracking-[0.32em] text-rose-200/80">
-            <span className="h-1.5 w-1.5 rounded-full bg-rose-400 shadow-[0_0_12px_rgba(244,63,94,0.7)]" />
-            {isHe ? "בתוך כל משחק" : "Inside every game"}
-          </span>
-          <h2
-            className="mt-7 text-[36px] leading-[1.05] tracking-[-0.02em] text-white sm:text-[44px] lg:text-[52px]"
-            style={{ fontFamily: "'Frank Ruhl Libre', serif", fontWeight: 600 }}
-          >
-            {isHe ? (
-              <>
-                שלוש רמות.{" "}
-                <span
-                  className="text-rose-300"
-                  style={{ fontStyle: "italic", fontWeight: 500 }}
-                >
-                  רק לנועזים מספיק לעבור את כולן.
-                </span>
-              </>
-            ) : (
-              <>
-                Three levels.{" "}
-                <span
-                  className="text-rose-300"
-                  style={{ fontStyle: "italic", fontWeight: 500 }}
-                >
-                  Only for those bold enough to clear them all.
-                </span>
-              </>
-            )}
-          </h2>
-        </div>
-
-        {/* Levels — numbered editorial rows, hairline-divided. */}
-        <ul className="mt-16 space-y-2">
-          {levels.map((l, i) => (
-            <li
-              key={i}
-              className="group grid gap-y-4 border-t border-white/10 pt-9 transition-colors duration-300 hover:border-rose-300/40 lg:grid-cols-[280px_1fr] lg:items-baseline lg:gap-x-12 lg:pt-10"
-            >
-              <div className="flex items-baseline gap-4">
-                <span
-                  className="text-[28px] tracking-[0.06em] text-rose-300/90 transition-colors duration-300 group-hover:text-rose-200"
-                  style={{
-                    fontFamily: "'Frank Ruhl Libre', serif",
-                    fontStyle: "italic",
-                    fontWeight: 500,
-                  }}
-                >
-                  {l.numeral}
-                </span>
-                <h3
-                  className="text-[40px] leading-[1] tracking-[-0.02em] text-white sm:text-[48px]"
-                  style={{
-                    fontFamily: "'Frank Ruhl Libre', serif",
-                    fontStyle: "italic",
-                    fontWeight: 500,
-                  }}
-                >
-                  {isHe ? l.titleHe : l.titleEn}
-                </h3>
-              </div>
-              <p className="text-[18px] leading-[1.7] text-white/70 lg:-mt-1">
-                {isHe ? l.bodyHe : l.bodyEn}
-              </p>
-            </li>
-          ))}
-          <li aria-hidden className="!mt-2 h-px w-full bg-white/10" />
-        </ul>
-
-        <p
-          className="mx-auto mt-12 max-w-xl text-center text-[16px] text-white/55"
-          style={{ fontFamily: "'Frank Ruhl Libre', serif", fontStyle: "italic" }}
-        >
-          {isHe
-            ? "— רוב הזוגות מתחילים ברמה הראשונה. הנועזים שבהם לא עוצרים שם."
-            : "— most couples start at the first level. The daring ones don't stop there."}
-        </p>
-      </div>
-    </section>
-  );
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 4. PRICING — dark plan cards, in keeping with the after-dark mood.
-// ─────────────────────────────────────────────────────────────────────────────
+// ───────────-─────────────────────────────────────────────────────────────────
 
 export function AdultsPricingSection({
   isHe,
@@ -645,19 +462,12 @@ function DarkPlanCard({
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 5. FAQ — single-column dark accordion. Distinct from /games + /journey
-//    (which use the homepage two-column V2 FAQ). Keeps the page identity.
+//    (whi-h use the homepage two-column V2 FAQ). Keeps the page identity.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function AdultsFaqSection({ isHe }: { isHe: boolean }) {
+  // First and last items removed per design review.
   const items = [
-    {
-      qHe: "האם זה באמת בנוי לזוגות עם ניסיון?",
-      qEn: "Is this really built for experienced couples?",
-      aHe:
-        "כן. הרמות מאפשרות התחלה רכה אם בא לכם, אבל המשחקים נכתבו ע״י מומחי תוכן עם הרבה ניסיון בעבודה עם זוגות. אתם תרגישו את ההבדל.",
-      aEn:
-        "Yes. The levels let you start soft if you want, but the games were written by content experts with deep experience working with couples. You'll feel the difference.",
-    },
     {
       qHe: "צריך לקנות צעצועי מין?",
       qEn: "Do I need to buy sex toys?",
@@ -690,33 +500,30 @@ export function AdultsFaqSection({ isHe }: { isHe: boolean }) {
       aEn:
         "Then start at level one — talk and questions, no pressure. Most couples who start there find the other opens up naturally.",
     },
-    {
-      qHe: "אפשר לבטל בכל שלב?",
-      qEn: "Can I cancel anytime?",
-      aHe:
-        "כן — באזור האישי, בלחיצה. כל מה שרכשתם נשאר שלכם לצמיתות.",
-      aEn:
-        "Yes — from your account, one click. Everything you've unlocked stays yours forever.",
-    },
   ];
 
   return (
-    <section id="faq" className="relative px-4 py-[110px]">
+    <section id="faq" className="relative px-4 py-[80px]">
+      {/* Top hairline */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#B83C4D]/20 to-transparent"
+      />
       <div className="relative mx-auto max-w-3xl">
         <div className="text-center">
-          <span className="inline-flex items-center gap-2.5 text-[11px] font-semibold uppercase tracking-[0.32em] text-rose-200/80">
-            <span className="h-1.5 w-1.5 rounded-full bg-rose-400 shadow-[0_0_12px_rgba(244,63,94,0.7)]" />
+          <span className="inline-flex items-center gap-2.5 text-[11px] font-semibold uppercase tracking-[0.32em] text-[#8B2638]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#B83C4D] shadow-[0_0_8px_rgba(184,60,77,0.3)]" />
             {isHe ? "שאלות נפוצות" : "FAQ"}
           </span>
           <h2
-            className="mt-7 text-[36px] leading-[1.05] tracking-[-0.02em] text-white sm:text-[44px]"
+            className="mt-7 text-[36px] leading-[1.05] tracking-[-0.02em] text-[#170E14] sm:text-[44px]"
             style={{ fontFamily: "'Frank Ruhl Libre', serif", fontWeight: 600 }}
           >
             {isHe ? (
               <>
                 שאלות שזוגות שואלים{" "}
                 <span
-                  className="text-rose-300"
+                  className="text-[#B83C4D]"
                   style={{ fontStyle: "italic", fontWeight: 500 }}
                 >
                   לפני הרכישה.
@@ -726,7 +533,7 @@ export function AdultsFaqSection({ isHe }: { isHe: boolean }) {
               <>
                 Questions couples ask{" "}
                 <span
-                  className="text-rose-300"
+                  className="text-[#B83C4D]"
                   style={{ fontStyle: "italic", fontWeight: 500 }}
                 >
                   before they buy.
@@ -739,17 +546,17 @@ export function AdultsFaqSection({ isHe }: { isHe: boolean }) {
         <ul className="mt-12 space-y-2">
           {items.map((it, i) => (
             <li key={i}>
-              <details className="group border-b border-white/10 transition hover:border-rose-300/30">
-                <summary className="flex cursor-pointer list-none items-start justify-between gap-4 py-6 text-[18px] font-semibold text-white transition group-open:text-rose-200 [&::-webkit-details-marker]:hidden">
+              <details className="group border-b border-[#EAE0E3] transition hover:border-[#B83C4D]/30">
+                <summary className="flex cursor-pointer list-none items-start justify-between gap-4 py-6 text-[18px] font-semibold text-[#170E14] transition group-open:text-[#B83C4D] [&::-webkit-details-marker]:hidden">
                   <span className="text-start">{isHe ? it.qHe : it.qEn}</span>
                   <span
                     aria-hidden
-                    className="mt-0.5 inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white/70 transition group-open:rotate-45 group-open:border-rose-300/40 group-open:bg-rose-400/15 group-open:text-rose-200"
+                    className="mt-0.5 inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full border border-[#EAE0E3] bg-white text-[#8B2638]/60 transition group-open:rotate-45 group-open:border-[#B83C4D]/30 group-open:bg-[#FBE9EC] group-open:text-[#B83C4D]"
                   >
                     +
                   </span>
                 </summary>
-                <p className="pb-6 text-[16px] leading-[1.7] text-white/65">
+                <p className="pb-6 text-[16px] leading-[1.7] text-[#4A3A45]">
                   {isHe ? it.aHe : it.aEn}
                 </p>
               </details>
@@ -763,7 +570,7 @@ export function AdultsFaqSection({ isHe }: { isHe: boolean }) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 6. CLOSING — single dramatic statement + CTA. The page's last word.
-// ─────────────────────────────────────────────────────────────────────────────
+// ───────────-─────────────────────────────────────────────────────────────────
 
 export function AdultsClosingCta({ isHe }: { isHe: boolean }) {
   return (
@@ -859,27 +666,32 @@ export function AdultsClosingCta({ isHe }: { isHe: boolean }) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Catalogue intro — small editorial heading rendered just above the storefront.
-// Kept as its own export so the page can still position the storefront where
+// Kept as its own -xport so the page can still position the storefront where
 // it wants.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function AdultsCatalogueIntro({ isHe }: { isHe: boolean }) {
   return (
-    <div id="catalogue-intro" className="relative px-4 pb-2 pt-[110px]">
+    <div id="catalogue-intro" className="relative px-4 pb-2 pt-[80px]">
+      {/* Top hairline */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#B83C4D]/20 to-transparent"
+      />
       <div className="mx-auto max-w-3xl text-center">
-        <span className="inline-flex items-center gap-2.5 text-[11px] font-semibold uppercase tracking-[0.32em] text-rose-200/80">
-          <span className="h-1.5 w-1.5 rounded-full bg-rose-400 shadow-[0_0_12px_rgba(244,63,94,0.7)]" />
+        <span className="inline-flex items-center gap-2.5 text-[11px] font-semibold uppercase tracking-[0.32em] text-[#8B2638]">
+          <span className="h-1.5 w-1.5 rounded-full bg-[#B83C4D] shadow-[0_0_8px_rgba(184,60,77,0.3)]" />
           {isHe ? "הקטלוג" : "The catalogue"}
         </span>
         <h2
-          className="mt-7 text-[36px] leading-[1.05] tracking-[-0.02em] text-white sm:text-[44px] lg:text-[52px]"
+          className="mt-7 text-[36px] leading-[1.05] tracking-[-0.02em] text-[#170E14] sm:text-[44px] lg:text-[52px]"
           style={{ fontFamily: "'Frank Ruhl Libre', serif", fontWeight: 600 }}
         >
           {isHe ? (
             <>
               בחרו את המשחק{" "}
               <span
-                className="text-rose-300"
+                className="text-[#B83C4D]"
                 style={{ fontStyle: "italic", fontWeight: 500 }}
               >
                 שמתחיל את הערב.
@@ -889,7 +701,7 @@ export function AdultsCatalogueIntro({ isHe }: { isHe: boolean }) {
             <>
               Pick the game{" "}
               <span
-                className="text-rose-300"
+                className="text-[#B83C4D]"
                 style={{ fontStyle: "italic", fontWeight: 500 }}
               >
                 that opens the evening.
@@ -916,7 +728,6 @@ export function AdultsMarketingSections({
     <>
       <AdultsManifestoSection isHe={isHe} />
       <AdultsProofSection isHe={isHe} />
-      <AdultsLevelsSection isHe={isHe} />
       <AdultsPricingSection isHe={isHe} hero={hero} pricing={pricing} />
       <AdultsFaqSection isHe={isHe} />
       <AdultsClosingCta isHe={isHe} />

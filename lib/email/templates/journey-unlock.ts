@@ -9,7 +9,7 @@
 import "server-only";
 
 export interface JourneyUnlockEmailItem {
-  /** Localized title — caller picks the right language. */
+  /** Localized title - caller picks the right language. */
   title: string;
   /** Optional category name for context. */
   categoryName: string | null;
@@ -52,7 +52,7 @@ export function renderJourneyUnlockEmail(
 
   // A personal opener at the very top ("Hi {name},"), followed by a
   // quiet credibility micro-line so the email lands as a note from a
-  // real person with 25 years behind it — not a system notification.
+  // real person with 25 years behind it - not a system notification.
   const greetingLine = isHe
     ? `<p style="margin:0 0 6px;font-size:18px;color:#1f2937;line-height:1.4;font-weight:600;">היי ${greetingName},</p>`
     : `<p style="margin:0 0 6px;font-size:18px;color:#1f2937;line-height:1.4;font-weight:600;">Hi ${greetingName},</p>`;
@@ -64,14 +64,14 @@ export function renderJourneyUnlockEmail(
   const intro = multi
     ? isHe
       ? `${greetingLine}${trustLine}
-         <p style="margin:0 0 18px;font-size:16px;color:#334155;line-height:1.6;">כמה פרקים חדשים נפתחו במסע שלכם. אני יודע שהחיים עמוסים — לכן הם לא ילחצו עליכם. הם פשוט מחכים לרגע השקט ביניכם, לשיחה הקצרה שתעשו ביחד. כל פרק נבנה בזהירות על סמך עבודה עם זוגות אמיתיים.</p>`
+         <p style="margin:0 0 18px;font-size:16px;color:#334155;line-height:1.6;">כמה פרקים חדשים נפתחו במסע שלכם. אני יודע שהחיים עמוסים - לכן הם לא ילחצו עליכם. הם פשוט מחכים לרגע השקט ביניכם, לשיחה הקצרה שתעשו ביחד. כל פרק נבנה בזהירות על סמך עבודה עם זוגות אמיתיים.</p>`
       : `${greetingLine}${trustLine}
-         <p style="margin:0 0 18px;font-size:16px;color:#334155;line-height:1.6;">A few new chapters just opened on your journey. I know life is full — that's why they won't rush you. They're simply waiting for a quiet moment between you, a short conversation you'll have together. Each chapter was carefully built from real work with real couples.</p>`
+         <p style="margin:0 0 18px;font-size:16px;color:#334155;line-height:1.6;">A few new chapters just opened on your journey. I know life is full - that's why they won't rush you. They're simply waiting for a quiet moment between you, a short conversation you'll have together. Each chapter was carefully built from real work with real couples.</p>`
     : isHe
       ? `${greetingLine}${trustLine}
-         <p style="margin:0 0 18px;font-size:16px;color:#334155;line-height:1.6;">פרק חדש במסע שלכם מחכה לכם עכשיו. הוא נבנה כדי לקחת רק כמה דקות — אבל עם הרגע הנכון והשיחה הנכונה, הוא יכול לשנות את היום שלכם כזוג. זה הצעד הקטן שבונה את הקשר הגדול.</p>`
+         <p style="margin:0 0 18px;font-size:16px;color:#334155;line-height:1.6;">פרק חדש במסע שלכם מחכה לכם עכשיו. הוא נבנה כדי לקחת רק כמה דקות - אבל עם הרגע הנכון והשיחה הנכונה, הוא יכול לשנות את היום שלכם כזוג. זה הצעד הקטן שבונה את הקשר הגדול.</p>`
       : `${greetingLine}${trustLine}
-         <p style="margin:0 0 18px;font-size:16px;color:#334155;line-height:1.6;">A new chapter is waiting for you on your journey. It's built to take just a few minutes — but with the right moment and the right conversation, it can quietly change your day as a couple. Small steps like this are what build the relationship that lasts.</p>`;
+         <p style="margin:0 0 18px;font-size:16px;color:#334155;line-height:1.6;">A new chapter is waiting for you on your journey. It's built to take just a few minutes - but with the right moment and the right conversation, it can quietly change your day as a couple. Small steps like this are what build the relationship that lasts.</p>`;
 
   const itemsHtml = input.items
     .map((it) => {
@@ -108,7 +108,7 @@ export function renderJourneyUnlockEmail(
       </div>`
     : "";
 
-  // Signature block — turns the email from "system notification" to
+  // Signature block - turns the email from "system notification" to
   // "a note from Itzik". The small since-2001 line builds trust without
   // feeling like a sales footer.
   const signature = isHe
@@ -167,8 +167,8 @@ export function renderJourneyUnlockEmail(
                 <p style="margin:16px 0 0;font-size:12px;color:#94a3b8;">
                   ${
                     isHe
-                      ? "אין לחץ של זמן — הפרק ישאר פתוח כל עוד המסלול פעיל."
-                      : "No time pressure — this chapter stays open as long as your program is active."
+                      ? "אין לחץ של זמן - הפרק ישאר פתוח כל עוד המסלול פעיל."
+                      : "No time pressure - this chapter stays open as long as your program is active."
                   }
                 </p>
                 ${signature}
@@ -209,8 +209,8 @@ export function renderJourneyUnlockEmail(
   textLines.push("");
   textLines.push(
     isHe
-      ? "בהצלחה ובאהבה,\nאיציק ברלב — מלווה זוגות מאז 2001"
-      : "With you on the journey,\nItzik Berlav — Coaching couples since 2001",
+      ? "בהצלחה ובאהבה,\nאיציק ברלב - מלווה זוגות מאז 2001"
+      : "With you on the journey,\nItzik Berlav - Coaching couples since 2001",
   );
 
   return {

@@ -136,7 +136,7 @@ export function stopSpinSound() {
 // Instead of shipping ~150KB of extra WAVs, each event is a tiny oscillator
 // patch scheduled against the shared AudioContext. This keeps the bundle
 // light and plays reliably on iOS Safari (the same ctx is already unlocked
-// by any prior user gesture — tapping the dice resumes it if needed).
+// by any prior user gesture - tapping the dice resumes it if needed).
 //
 // Call `playSound(kind)` from anywhere in the game UI. Silent on SSR.
 // ─────────────────────────────────────────────────────────────────────────

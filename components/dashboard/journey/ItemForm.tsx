@@ -54,15 +54,17 @@ export function ItemForm({
   const { register, watch, setValue, handleSubmit, formState } = methods;
 
   async function onSubmit(values: JourneyItemFormValues) {
+    console.log("[ItemForm] submit", { itemId, values });
     setSaving(true);
     const res = await saveJourneyItem(itemId, values);
     setSaving(false);
+    console.log("[ItemForm] saveJourneyItem result", res);
     if (!res.ok) {
-      const firstField = Object.keys(res.error ?? {})[0];
-      const firstMsg =
-        (res.error as Record<string, string[] | undefined>)?.[firstField ?? ""]?.[0] ??
-        "Save failed";
-      toast.error(firstMsg);
+      const errMap = (res.error ?? {}) as Record<string, string[] | undefined>;
+      const firstField = Object.keys(errMap)[0];
+      const firstMsg = errMap[firstField ?? ""]?.[0] ?? "Save failed";
+      console.error("[ItemForm] save failed", { errors: errMap });
+      toast.error(`Save failed: ${firstMsg}`);
       return;
     }
     toast.success("Saved");
@@ -72,8 +74,31 @@ export function ItemForm({
     router.refresh();
   }
 
+  function onInvalid(errors: typeof formState.errors) {
+    // react-hook-form's handleSubmit silently rejects when the form fails
+    // client-side validation, so users see no feedback and assume "save
+    // didn't do anything". Surface every problem field as a toast +
+    // console.warn so the cause is visible.
+    console.warn("[ItemForm] validation rejected submit", errors);
+    const fields = Object.entries(errors).flatMap(([field, err]) => {
+      const msg =
+        err && typeof err === "object" && "message" in err
+          ? (err as { message?: string }).message ?? "invalid"
+          : "invalid";
+      return [`${field}: ${msg}`];
+    });
+    toast.error(
+      fields.length === 0
+        ? "Form invalid"
+        : `Cannot save — ${fields.slice(0, 3).join(" · ")}${
+            fields.length > 3 ? ` (+${fields.length - 3} more)` : ""
+          }`,
+    );
+  }
+
   const isActive = watch("is_active");
   const categoryId = watch("category_id");
+  const audience = watch("audience") ?? "both";
 
   return (
     <FormProvider {...methods}>
@@ -81,7 +106,7 @@ export function ItemForm({
         className="space-y-6"
         onSubmit={(e) => {
           e.preventDefault();
-          void handleSubmit(onSubmit)(e);
+          void handleSubmit(onSubmit, onInvalid)(e);
         }}
       >
         <div className="bg-background/95 supports-[backdrop-filter]:bg-background/70 sticky top-0 z-20 -mx-4 flex items-center justify-between gap-3 border-b px-4 py-3 backdrop-blur sm:mx-0 sm:rounded-md sm:border sm:px-4">
@@ -162,6 +187,32 @@ export function ItemForm({
                 {...register("sort_order", { valueAsNumber: true })}
               />
             </Field>
+
+            <Field
+              label="Audience"
+              hint="Who in the couple sees this item. Solo timelines always see 'both'."
+              className="sm:col-span-2"
+            >
+              <Select
+                value={audience}
+                onValueChange={(v) => {
+                  if (v) {
+                    setValue("audience", v as "both" | "owner" | "partner", {
+                      shouldDirty: true,
+                    });
+                  }
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Audience" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="both">Both partners</SelectItem>
+                  <SelectItem value="owner">Owner only (partner A)</SelectItem>
+                  <SelectItem value="partner">Partner only (partner B)</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
           </div>
         </Section>
 
@@ -186,14 +237,14 @@ export function ItemForm({
                 {...register("body_he")}
                 dir="rtl"
                 rows={8}
-                placeholder="הטקסט הראשי — תומך ב-Markdown"
+                placeholder="הטקסט הראשי - תומך ב-Markdown"
               />
             </Field>
             <Field label="Body (EN)" className="sm:col-span-2">
               <Textarea
                 {...register("body_en")}
                 rows={8}
-                placeholder="Main body — Markdown supported"
+                placeholder="Main body - Markdown supported"
               />
             </Field>
           </div>

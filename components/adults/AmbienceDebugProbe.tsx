@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * AmbienceDebugProbe — diagnostic probe that runs after the page hydrates
+ * AmbienceDebugProbe - diagnostic probe that runs after the page hydrates
  * and inspects what's ACTUALLY happening to the fog-blob layer at runtime.
  *
  * Why we're going so deep
@@ -13,11 +13,11 @@
  *
  * This probe expands on the prior version by inspecting each blob's
  * computed styles AND running `elementFromPoint()` at each blob's
- * centre — if the topmost element at that point is NOT one of the
+ * centre - if the topmost element at that point is NOT one of the
  * blob ancestors, something opaque is sitting in front of them
  * (a non-transparent <main>, a stacking context above z-index, etc).
  *
- * Reads only — never mutates the DOM. Cheap to leave in. Removes
+ * Reads only - never mutates the DOM. Cheap to leave in. Removes
  * itself with one line when we're satisfied visibility is correct.
  */
 
@@ -67,7 +67,7 @@ function runProbe(label: string) {
     computedMixBlendMode: ambienceCS.mixBlendMode,
   });
 
-  // Walk up the parent chain — find anyone above us that introduces an
+  // Walk up the parent chain - find anyone above us that introduces an
   // unexpected stacking context (transform, filter, isolation, etc).
   log("ambience ancestor chain (looking for stacking-context creators)");
   let walker: HTMLElement | null = ambience.parentElement;
@@ -139,11 +139,11 @@ function runProbe(label: string) {
     });
   });
 
-  // Sample the actual painted pixels at the centre of the viewport — this
+  // Sample the actual painted pixels at the centre of the viewport - this
   // tells us what colour is reaching the user's eye, not just what the
   // computed styles claim. We can't read the framebuffer (CORS), but we
   // can ask elementFromPoint and walk up to find the first non-transparent
-  // ancestor — that's the colour the user sees.
+  // ancestor - that's the colour the user sees.
   const cx = Math.round(window.innerWidth / 2);
   const cy = Math.round(window.innerHeight / 2);
   let painter = document.elementFromPoint(cx, cy) as HTMLElement | null;

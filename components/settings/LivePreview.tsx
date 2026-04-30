@@ -46,7 +46,7 @@ export function LivePreview({ settings }: Props) {
   }, [hasBorder, border.width, border.style, border.color, borderGapPx]);
 
   // ── Pointer top (mirrors Wheel.tsx logic, includes pointerOffsetY) ────────
-  // Pointer is fully independent of the border ring — mirrors Wheel.tsx logic.
+  // Pointer is fully independent of the border ring - mirrors Wheel.tsx logic.
   // pointerOffsetY is the sole control (clamped -50…+10 px).
   // 0 = tip at the wheel rim; negative = deeper into wheel; positive = outside.
   const mockPointerH = 14; // height of the ▼ triangle in the mock (px)
@@ -141,7 +141,7 @@ export function LivePreview({ settings }: Props) {
           })}
         </svg>
 
-        {/* Pointer — base snaps to border outer edge when border is active */}
+        {/* Pointer - base snaps to border outer edge when border is active */}
         <div
           className="absolute left-1/2 -translate-x-1/2 z-20"
           style={{ top: pointerTop }}

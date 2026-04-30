@@ -4,7 +4,7 @@
 // Admin server actions for individual journey_scheduled_items rows.
 //
 // The Manage-Client screen (Phase 4) needs to adjust the schedule one
-// item at a time — moving an unlock date, clearing an override back to
+// item at a time - moving an unlock date, clearing an override back to
 // the item's default offset, or removing a scheduled row entirely.
 //
 // All writes go through the admin client because migration 035 installs
@@ -40,7 +40,7 @@ function revalidate(ownerKey?: string) {
 
 /**
  * Load a scheduled row and figure out the owner_key for the assignment
- * it belongs to — so revalidate() can invalidate the right Manage-Client
+ * it belongs to - so revalidate() can invalidate the right Manage-Client
  * page without the caller having to pass it.
  */
 async function loadScheduledWithOwner(
@@ -82,7 +82,7 @@ async function loadScheduledWithOwner(
  * has_unlock_override=true so the propagation planner knows to leave
  * this row alone when the item's default_offset_days changes later.
  *
- * The admin UI sends a date-only ISO ("2026-05-12") — we widen to start-
+ * The admin UI sends a date-only ISO ("2026-05-12") - we widen to start-
  * of-day UTC for consistency with materializer output.
  */
 export async function updateScheduledItemUnlock(args: {
@@ -183,7 +183,7 @@ export async function clearScheduledItemOverride(
 
 /**
  * Delete a scheduled row. This cascades to completions + responses via
- * FK ON DELETE CASCADE (migration 035). Callers should confirm — the
+ * FK ON DELETE CASCADE (migration 035). Callers should confirm - the
  * partner may have already reflected on this item, and those replies
  * disappear. The content itself stays in journey_items; only this
  * scheduling row is removed.

@@ -41,7 +41,7 @@ type ScheduleRow = {
 };
 
 function fmt(iso?: string | null) {
-  if (!iso) return "—";
+  if (!iso) return "-";
   return new Date(iso).toLocaleString();
 }
 
@@ -181,11 +181,11 @@ function ScheduleTable({
                 <TableCell>
                   <Badge variant="outline">{keyMap.get(r.template_id) ?? r.template_id.slice(0, 8)}</Badge>
                 </TableCell>
-                <TableCell className="text-muted-foreground">{r.reason ?? "—"}</TableCell>
+                <TableCell className="text-muted-foreground">{r.reason ?? "-"}</TableCell>
                 <TableCell>{fmt(r[dateCol])}</TableCell>
                 {showError ? (
                   <TableCell className="max-w-[280px] truncate text-destructive">
-                    {r.error ?? "—"}
+                    {r.error ?? "-"}
                   </TableCell>
                 ) : null}
               </TableRow>

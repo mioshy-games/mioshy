@@ -1,5 +1,5 @@
 -- ============================================================
--- 035_smoke_test.sql — POST-MIGRATION smoke test for Journey Content.
+-- 035_smoke_test.sql - POST-MIGRATION smoke test for Journey Content.
 --
 -- Run this AFTER applying 035_journey_content_system.sql. It is
 -- idempotent-ish (rolls back in a transaction) and exercises:
@@ -11,7 +11,7 @@
 --   * is_private policy blocks cross-partner leakage
 --
 -- USAGE: run in Supabase SQL editor with service role. No data is
--- committed — the whole test is wrapped in a ROLLBACK.
+-- committed - the whole test is wrapped in a ROLLBACK.
 -- ============================================================
 
 BEGIN;
@@ -27,7 +27,7 @@ DECLARE
 BEGIN
   SELECT id INTO v_user_a FROM auth.users ORDER BY created_at LIMIT 1;
   IF v_user_a IS NULL THEN
-    RAISE EXCEPTION 'No users in auth.users — create at least one test user first.';
+    RAISE EXCEPTION 'No users in auth.users - create at least one test user first.';
   END IF;
   PERFORM set_config('test.user_a', v_user_a::text, true);
   RAISE NOTICE 'Using user_a = %', v_user_a;
@@ -191,7 +191,7 @@ BEGIN
   IF v_body = 'גוף-לאחר-עדכון' THEN
     RAISE NOTICE 'OK: item body edit reflected in existing timeline (retroactive propagation works)';
   ELSE
-    RAISE EXCEPTION 'FAIL: timeline body is stale — got %, expected גוף-לאחר-עדכון', v_body;
+    RAISE EXCEPTION 'FAIL: timeline body is stale - got %, expected גוף-לאחר-עדכון', v_body;
   END IF;
 END $$;
 
@@ -200,7 +200,7 @@ END $$;
 --
 -- Service role BYPASSES RLS, so we simulate the RLS check manually
 -- by calling a SELECT as if we were user_b. The real test of the
--- policy requires a session JWT — do that from the app with two
+-- policy requires a session JWT - do that from the app with two
 -- accounts. Here we at least verify the policy USING clause parses.
 -- ------------------------------------------------------------
 INSERT INTO public.journey_item_responses (scheduled_item_id, user_id, response_text, is_private)

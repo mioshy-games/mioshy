@@ -1,7 +1,7 @@
 /**
  * POST /api/journey/notify-unlocks
  *
- * Cron endpoint — scans journey_scheduled_items for rows whose `unlock_at`
+ * Cron endpoint - scans journey_scheduled_items for rows whose `unlock_at`
  * has passed but haven't been notified yet, then emails each owner (both
  * couple members when applicable) a summary of the freshly-unlocked
  * chapters. Items that were already completed or belong to an inactive
@@ -11,7 +11,7 @@
  * CARDCOM_BILLING_CRON_SECRET so a single cron secret can power both
  * schedulers until operators set up the dedicated one.
  *
- * Vercel cron: see vercel.json — runs hourly.
+ * Vercel cron: see vercel.json - runs hourly.
  *
  * Manual test:
  *   curl -X POST $SITE_URL/api/journey/notify-unlocks \

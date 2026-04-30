@@ -41,13 +41,13 @@ export async function saveGame(gameId: string | null, raw: unknown) {
   // Auth check via session client (proves caller is an admin),
   // but all DB writes go through the service-role admin client.
   // The SSR session-client JWT→PostgREST handshake is flaky under @supabase/ssr
-  // and silently drops writes — always use the admin client for mutations.
+  // and silently drops writes - always use the admin client for mutations.
   await requireAdmin();
   const supabase = createAdminSupabaseClient();
 
   // Derive category_colors from the actual slices so it always stays in sync.
   // The SliceEditor already generates slices from categories in the UI when the
-  // admin clicks "Recompute slices" — we must NOT rebuild here or direct slice
+  // admin clicks "Recompute slices" - we must NOT rebuild here or direct slice
   // edits (per-slice label/color/type changes) would be silently overwritten.
   const derivedCategoryColors: Record<string, string> = {};
   for (const s of v.wheel.slices) {
@@ -83,7 +83,7 @@ export async function saveGame(gameId: string | null, raw: unknown) {
     bg_type: v.bg_type,
     bg_value: v.bg_value,
     player_mode: v.player_mode,
-    // SEO overrides — null-out empty strings so Postgres stores NULL (→ fallback)
+    // SEO overrides - null-out empty strings so Postgres stores NULL (→ fallback)
     meta_title_he: (v.meta_title_he ?? "").trim() || null,
     meta_title_en: (v.meta_title_en ?? "").trim() || null,
     meta_description_he: (v.meta_description_he ?? "").trim() || null,
@@ -122,7 +122,7 @@ export async function saveGame(gameId: string | null, raw: unknown) {
 
   if (gameId) {
     // ── Update games row ───────────────────────────────────────────────────────
-    // Using .select() so we get the row back — if data is empty, 0 rows were
+    // Using .select() so we get the row back - if data is empty, 0 rows were
     // matched (wrong id / row deleted) and the "success" would be a silent no-op.
     const { data: updatedGames, error: ge } = await supabase
       .from("games")
@@ -136,8 +136,8 @@ export async function saveGame(gameId: string | null, raw: unknown) {
     }
 
     if (!updatedGames || updatedGames.length === 0) {
-      // 0 rows matched — gameId not in DB or RLS blocked the write
-      const msg = `Game ${gameId} not found — 0 rows updated. Verify the ID exists in the games table.`;
+      // 0 rows matched - gameId not in DB or RLS blocked the write
+      const msg = `Game ${gameId} not found - 0 rows updated. Verify the ID exists in the games table.`;
       console.error("[saveGame] ✗", msg);
       return { ok: false as const, error: msg };
     }
@@ -159,7 +159,7 @@ export async function saveGame(gameId: string | null, raw: unknown) {
       console.log("[saveGame] ✓ post-write verify:", JSON.stringify(verify));
       if (verify && (verify.name_he !== gamePayload.name_he || verify.name_en !== gamePayload.name_en)) {
         console.error(
-          "[saveGame] ✗ DB value does not match payload — something is reverting the write",
+          "[saveGame] ✗ DB value does not match payload - something is reverting the write",
           { payload: { he: gamePayload.name_he, en: gamePayload.name_en }, db: verify },
         );
         return {

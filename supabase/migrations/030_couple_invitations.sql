@@ -2,11 +2,11 @@
 -- 030_couple_invitations.sql
 -- Email-based couple invitations (replaces manual pair-code copy/paste
 -- as the primary pairing mechanism; pair_code is kept but re-purposed
--- as a "game session code" for cross-device play — see D6).
+-- as a "game session code" for cross-device play - see D6).
 --
 -- Product rules (from Itzik, 2026-04-21):
 --   * Only a couple owner (role='owner') can invite a partner.
---   * A couple has AT MOST ONE accepted invitation ever — once a
+--   * A couple has AT MOST ONE accepted invitation ever - once a
 --     partner joins, the couple is "full" (2 members, closed).
 --   * A couple has AT MOST ONE active pending invitation at a time
 --     (revoke the old one before sending a new one).
@@ -16,7 +16,7 @@
 
 
 -- ============================================================
--- SECTION 1 — TABLE
+-- SECTION 1 - TABLE
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS public.couple_invitations (
@@ -79,7 +79,7 @@ CREATE INDEX IF NOT EXISTS couple_invitations_expires_idx
 
 
 -- ============================================================
--- SECTION 2 — RLS
+-- SECTION 2 - RLS
 -- ============================================================
 ALTER TABLE public.couple_invitations ENABLE ROW LEVEL SECURITY;
 
@@ -112,7 +112,7 @@ CREATE POLICY "couple_invitations_update_inviter"
 
 
 -- ============================================================
--- SECTION 3 — HELPERS
+-- SECTION 3 - HELPERS
 -- ============================================================
 
 -- Generate a cryptographically-random URL-safe token (32+ bytes)
@@ -151,7 +151,7 @@ BEGIN
     RAISE EXCEPTION 'not authenticated';
   END IF;
 
-  -- Reject if user already belongs to a couple — business rule
+  -- Reject if user already belongs to a couple - business rule
   SELECT EXISTS (
     SELECT 1 FROM public.couple_members WHERE user_id = v_user_id
   ) INTO v_is_already_member;

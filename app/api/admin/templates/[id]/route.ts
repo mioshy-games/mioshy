@@ -1,6 +1,6 @@
 /**
- * PATCH  /api/admin/templates/[id]  — update a template
- * DELETE /api/admin/templates/[id]  — delete (hard)
+ * PATCH  /api/admin/templates/[id]  - update a template
+ * DELETE /api/admin/templates/[id]  - delete (hard)
  */
 
 import { NextResponse } from "next/server";

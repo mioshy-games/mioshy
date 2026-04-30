@@ -6,7 +6,7 @@
  * Shows every scheduled item across the viewer's active assignments,
  * grouped by category, with status-aware affordances (locked / available /
  * completed). If the viewer has no active assignments we render a warm
- * empty state that points back to the marketing pillar — this is the
+ * empty state that points back to the marketing pillar - this is the
  * surface an owner arrives at after a successful purchase (Phase 6 will
  * wire that redirect).
  *
@@ -42,6 +42,7 @@ import { countStatuses } from "@/lib/journey-content/status";
 import type { TimelineEntry } from "@/lib/journey-content/types";
 import { TimelineList } from "@/components/journey/timeline/TimelineList";
 import { NextUpHero } from "@/components/journey/timeline/NextUpHero";
+import { UserRecentActivity } from "@/components/journey/timeline/UserRecentActivity";
 
 export const dynamic = "force-dynamic";
 
@@ -52,10 +53,10 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const isHe = params.locale === "he";
   return {
-    title: `Mioshy — ${isHe ? "מסע זוגי · הציר שלכם" : "Journey · Your timeline"}`,
+    title: `Mioshy - ${isHe ? "מסע זוגי · הציר שלכם" : "Journey · Your timeline"}`,
     description: isHe
-      ? "המסלול האישי שלכם — פרקים שנפתחים בקצב שלכם, תרגולים ותובנות."
-      : "Your personal path — chapters that open at your pace, exercises and insights.",
+      ? "המסלול האישי שלכם - פרקים שנפתחים בקצב שלכם, תרגולים ותובנות."
+      : "Your personal path - chapters that open at your pace, exercises and insights.",
   };
 }
 
@@ -84,9 +85,13 @@ export default async function JourneyTimelinePage({
   const owner = preferCoupleOwner(user.id, couple?.couple_id ?? null);
 
   // ── Load timeline ─────────────────────────────────────────────────────
+  // Pass the viewer's couple_member role so audience-targeted items
+  // ('owner'|'partner') are filtered to the right person. Solo users
+  // see everything as 'both'.
   const entries = await getTimelineForOwner({
     owner,
     viewerUserId: user.id,
+    viewerCoupleRole: couple?.role ?? null,
   }).catch(() => []);
 
   const counts = countStatuses(entries.map((e) => e.status));
@@ -109,9 +114,9 @@ export default async function JourneyTimelinePage({
     return (
       <div
         dir={isHe ? "rtl" : "ltr"}
-        className="relative min-h-[100dvh] overflow-hidden bg-gradient-to-b from-[#050f1a] via-[#0a1326] to-[#020610] text-white"
+        className="relative min-h-[100dvh] overflow-hidden text-white"
       >
-        {/* Soft aurora glow — indigo / emerald journey palette */}
+        {/* Soft aurora glow - indigo / emerald journey palette */}
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 opacity-70"
@@ -136,8 +141,8 @@ export default async function JourneyTimelinePage({
 
           <p className="mt-5 max-w-xl text-base text-white/75 sm:text-lg">
             {isHe
-              ? "לאחר שתצטרפו למסלול, פרקים אישיים ייפתחו כאן בקצב שלכם — תרגולים, שיחות וטקסי שבוע."
-              : "Once you join a program, personal chapters will open here at your own pace — exercises, conversations, and weekly rituals."}
+              ? "לאחר שתצטרפו למסלול, פרקים אישיים ייפתחו כאן בקצב שלכם - תרגולים, שיחות וטקסי שבוע."
+              : "Once you join a program, personal chapters will open here at your own pace - exercises, conversations, and weekly rituals."}
           </p>
 
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
@@ -172,9 +177,9 @@ export default async function JourneyTimelinePage({
   return (
     <div
       dir={isHe ? "rtl" : "ltr"}
-      className="relative min-h-[100dvh] overflow-hidden bg-gradient-to-b from-[#050f1a] via-[#0a1326] to-[#020610] text-white"
+      className="relative min-h-[100dvh] overflow-hidden text-white"
     >
-      {/* Ambient layer 1 — the top "aurora" accent that anchors the hero */}
+      {/* Ambient layer 1 - the top "aurora" accent that anchors the hero */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 h-[90vh] opacity-70 animate-aurora-drift"
@@ -183,7 +188,7 @@ export default async function JourneyTimelinePage({
             "radial-gradient(1200px 600px at 20% -10%, rgba(99,102,241,0.22), transparent 60%), radial-gradient(900px 500px at 80% 10%, rgba(16,185,129,0.16), transparent 60%)",
         }}
       />
-      {/* Ambient layer 2 — mid-scroll depth: keeps the page feeling alive
+      {/* Ambient layer 2 - mid-scroll depth: keeps the page feeling alive
           once you leave the hero. Slower breathing motion than layer 1. */}
       <div
         aria-hidden
@@ -193,7 +198,7 @@ export default async function JourneyTimelinePage({
             "radial-gradient(900px 500px at 85% 30%, rgba(236,72,153,0.10), transparent 60%), radial-gradient(800px 400px at 10% 60%, rgba(99,102,241,0.14), transparent 60%)",
         }}
       />
-      {/* Ambient layer 3 — deep bottom warmth for the trust anchor area */}
+      {/* Ambient layer 3 - deep bottom warmth for the trust anchor area */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 bottom-0 h-[60vh] opacity-45"
@@ -222,7 +227,7 @@ export default async function JourneyTimelinePage({
           {isHe ? "חזרה למיאושי שלי" : "Back to My Mioshy"}
         </Link>
 
-        {/* Header — compact on mobile so the hero leads the scroll */}
+        {/* Header - compact on mobile so the hero leads the scroll */}
         <section className="mt-5 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
           <div>
             <div className="inline-flex items-center gap-1.5 rounded-full border border-indigo-300/40 bg-indigo-500/10 px-3 py-1 text-xs backdrop-blur">
@@ -237,12 +242,12 @@ export default async function JourneyTimelinePage({
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-white/70 sm:mt-3 sm:text-base">
               {isHe
-                ? "כל פרק נפתח בזמן שלו. כשהגיע התור — היכנסו, תרגלו וענו יחד."
-                : "Each chapter opens on its own time. When it's ready — step in, reflect, and practice together."}
+                ? "כל פרק נפתח בזמן שלו. כשהגיע התור - היכנסו, תרגלו וענו יחד."
+                : "Each chapter opens on its own time. When it's ready - step in, reflect, and practice together."}
             </p>
           </div>
 
-          {/* Progress summary — full width on mobile, right-aligned on desktop */}
+          {/* Progress summary - full width on mobile, right-aligned on desktop */}
           <div className="self-start sm:self-end">
             <ProgressSummary
               isHe={isHe}
@@ -255,7 +260,7 @@ export default async function JourneyTimelinePage({
           </div>
         </section>
 
-        {/* Next up — the visually dominant "do this now" card */}
+        {/* Next up - the visually dominant "do this now" card */}
         <section className="mt-6 sm:mt-8">
           <NextUpHero
             entry={nextUpEntry}
@@ -280,7 +285,17 @@ export default async function JourneyTimelinePage({
           />
         </section>
 
-        {/* Trust anchor — quiet but present, reinforcing this is a
+        {/* Recent activity — the user's own audit trail */}
+        <section className="mt-10 sm:mt-12">
+          <div className="mb-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-white/55">
+            <span className="h-px flex-1 bg-gradient-to-r from-transparent via-white/15 to-transparent" />
+            <span>{isHe ? "ההיסטוריה שלכם" : "Recent activity"}</span>
+            <span className="h-px flex-1 bg-gradient-to-r from-transparent via-white/15 to-transparent" />
+          </div>
+          <UserRecentActivity userId={user.id} isHe={isHe} />
+        </section>
+
+        {/* Trust anchor - quiet but present, reinforcing this is a
             guided, proven service rather than auto-generated content. */}
         <TrustAnchor isHe={isHe} />
       </main>
@@ -289,7 +304,7 @@ export default async function JourneyTimelinePage({
 }
 
 // ------------------------------------------------------------
-// TrustAnchor — compact "designed by Itzik Berlav · since 2001"
+// TrustAnchor - compact "designed by Itzik Berlav · since 2001"
 // footer for journey surfaces. Keeps the reassurance subtle so it
 // reads as background authority rather than marketing.
 // ------------------------------------------------------------
@@ -321,15 +336,15 @@ function TrustAnchor({ isHe }: { isHe: boolean }) {
       </div>
       <p className="mt-1 max-w-md text-xs leading-relaxed text-white/55">
         {isHe
-          ? "כל פרק במסע נבנה על בסיס אלפי שיחות עם זוגות אמיתיים — לא תוכן גנרי, אלא צעדים שעובדים."
-          : "Every chapter is built on thousands of real couples' conversations — not generic content, but steps that actually work."}
+          ? "כל פרק במסע נבנה על בסיס אלפי שיחות עם זוגות אמיתיים - לא תוכן גנרי, אלא צעדים שעובדים."
+          : "Every chapter is built on thousands of real couples' conversations - not generic content, but steps that actually work."}
       </p>
     </aside>
   );
 }
 
 // ------------------------------------------------------------
-// Progress summary — compact ring + 3 stat pills
+// Progress summary - compact ring + 3 stat pills
 // ------------------------------------------------------------
 
 function ProgressSummary({

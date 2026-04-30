@@ -17,7 +17,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   const { supabase } = session;
   const userId = params.id;
 
-  // Fire these in parallel — none depend on each other.
+  // Fire these in parallel - none depend on each other.
   const [
     overviewRes,
     journeyRes,

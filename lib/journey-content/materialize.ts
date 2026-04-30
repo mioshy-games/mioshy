@@ -5,13 +5,13 @@
 // is expanded into a concrete set of scheduled_items rows, each with its
 // own unlock_at computed from the anchor_date + item.default_offset_days.
 //
-// The scheduled_items rows are pure FKs — they never copy item content,
+// The scheduled_items rows are pure FKs - they never copy item content,
 // so future edits to journey_items propagate automatically via JOIN.
 // See migration 035 and the Phase 2 smoke test.
 //
 // This module is split into:
 //   1. A pure planner (planMaterializeAssignment) that builds the row
-//      shapes from plain inputs — testable without a DB.
+//      shapes from plain inputs - testable without a DB.
 //   2. An applier (materializeAssignment) that takes an assignment id,
 //      resolves the catalog side via the admin client, and bulk-inserts.
 //      Returns the inserted ids for revalidation or follow-up navigation.
@@ -32,7 +32,7 @@ import { computeUnlockAt } from "./schedule";
 // ------------------------------------------------------------
 
 export interface PlannedScheduledRow {
-  /** Not yet persisted — the applier fills this in from the INSERT response. */
+  /** Not yet persisted - the applier fills this in from the INSERT response. */
   id?: string;
   assignment_id: string;
   item_id: string;
@@ -40,13 +40,20 @@ export interface PlannedScheduledRow {
   sort_order: number;
   has_unlock_override: false;
   admin_notes: null;
+  /** Copied from journey_items.audience at materialization time so per-item
+   * tweaks AFTER materialization don't silently re-route who sees what. The
+   * expert can override this row by editing the per-couple CSV. */
+  audience: "both" | "owner" | "partner";
 }
 
 export interface PlanMaterializeInput {
   assignmentId: string;
   anchorDate: string;
   /** Only the fields we actually need for planning. */
-  items: Pick<JourneyItem, "id" | "default_offset_days" | "sort_order">[];
+  items: Pick<
+    JourneyItem,
+    "id" | "default_offset_days" | "sort_order" | "audience"
+  >[];
 }
 
 /**
@@ -64,6 +71,7 @@ export function planMaterializeAssignment(
     sort_order: item.sort_order,
     has_unlock_override: false as const,
     admin_notes: null,
+    audience: item.audience ?? "both",
   }));
 }
 
@@ -74,7 +82,7 @@ export function planMaterializeAssignment(
 /**
  * Resolve a source (program|category|item) into the concrete list of
  * active items that should be materialized. Admin-client ignores RLS so
- * inactive content is excluded here explicitly — we never pipe draft
+ * inactive content is excluded here explicitly - we never pipe draft
  * content into a user's timeline.
  */
 export async function expandSourceToItems(args: {
@@ -106,7 +114,7 @@ export async function expandSourceToItems(args: {
     return (data ?? []) as JourneyItem[];
   }
 
-  // program — find all active categories, then their active items
+  // program - find all active categories, then their active items
   const { data: categories, error: cErr } = await supabase
     .from("journey_categories")
     .select("id")
@@ -142,7 +150,7 @@ export interface MaterializeResult {
 }
 
 /**
- * Materialize one assignment — idempotent by composite PK
+ * Materialize one assignment - idempotent by composite PK
  * (assignment_id, item_id) which was declared in migration 035. If the
  * scheduled rows already exist, we skip them silently instead of erroring.
  */
@@ -170,10 +178,11 @@ export async function materializeAssignment(args: {
       id: i.id,
       default_offset_days: i.default_offset_days,
       sort_order: i.sort_order,
+      audience: i.audience,
     })),
   });
 
-  // Upsert on (assignment_id, item_id) — the table's PK. ignoreDuplicates
+  // Upsert on (assignment_id, item_id) - the table's PK. ignoreDuplicates
   // keeps subsequent "re-materialize" clicks safe; callers that want to
   // actually recompute unlock_at should use the propagation planner instead.
   const { data: inserted, error } = await supabase

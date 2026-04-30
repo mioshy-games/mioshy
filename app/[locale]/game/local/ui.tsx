@@ -44,12 +44,12 @@ function buildDefaults(index: number): DraftPlayer {
 }
 
 /**
- * LocalGameClient — full single-device pass-the-phone flow.
+ * LocalGameClient - full single-device pass-the-phone flow.
  *
  *   Lobby → add at least two players, pick avatars/colors → start.
  *   Game  → same SnakesGameBoard as remote mode, backed by useLocalGameRoom.
  *
- * The local store only lives in memory, so a refresh drops the session —
+ * The local store only lives in memory, so a refresh drops the session -
  * that's acceptable for ephemeral play and avoids privacy concerns.
  */
 export function LocalGameClient() {

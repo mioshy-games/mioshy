@@ -23,7 +23,7 @@ export async function generateMetadata({
   const { locale } = params;
   const base = siteUrl();
   const t = await getTranslations({ locale, namespace: "articlesPage" });
-  const title = `Mioshy — ${t("title")}`;
+  const title = `Mioshy - ${t("title")}`;
   const description = t("subtitle");
 
   return {
@@ -48,9 +48,9 @@ export async function generateMetadata({
 }
 
 function formatDate(iso: string | null) {
-  if (!iso) return "—";
+  if (!iso) return "-";
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
+  if (Number.isNaN(d.getTime())) return "-";
   return d.toLocaleDateString(undefined, {
     year: "numeric",
     month: "short",

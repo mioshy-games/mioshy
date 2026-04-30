@@ -1,4 +1,4 @@
-# Mioshy Journey — Operator Runbook
+# Mioshy Journey - Operator Runbook
 
 > The journey module layers a 28-question relationship questionnaire, a
 > rule-based analysis engine, and a 26-week engagement program onto the
@@ -64,7 +64,7 @@ journey/
 | Path                                    | What                                          |
 | --------------------------------------- | --------------------------------------------- |
 | `/[locale]/journey`                     | 28-question flow with auth gate + paywall     |
-| `/[locale]/account`                     | existing — now reflects active subscription   |
+| `/[locale]/account`                     | existing - now reflects active subscription   |
 
 ### Admin UI
 
@@ -83,9 +83,9 @@ Add to `.env.local`:
 ```bash
 # Journey / engagement
 ENGAGEMENT_CRON_SECRET=<random-long-string>
-ENGAGEMENT_DRY_RUN=1     # set to "1" in dev/staging — prints instead of sending
+ENGAGEMENT_DRY_RUN=1     # set to "1" in dev/staging - prints instead of sending
 
-# Message provider — any one of these, depending on which you wire first
+# Message provider - any one of these, depending on which you wire first
 RESEND_API_KEY=<key>
 TWILIO_ACCOUNT_SID=<sid>
 TWILIO_AUTH_TOKEN=<token>
@@ -124,7 +124,7 @@ before going live.
 ## 4. How a user flows through
 
 1. Lands on `/[locale]/journey` → gets a `device_id` cookie, a `journeys` row with `user_id=NULL` is created.
-2. Answers q01, q02, q03 (free — `gating.auth_after_index = 2`).
+2. Answers q01, q02, q03 (free - `gating.auth_after_index = 2`).
 3. `AuthGateModal` opens. On signup, `/api/journey/resume` calls the `link_journey_to_user` RPC to attach the anonymous journey to the new `auth.users.id`.
 4. Answers q04, q05, q06 (registered tier).
 5. `PaywallGateModal` opens (`gating.paywall_after_index = 5`). Cardcom checkout → on success, `subscriptions.status = 'active'` → middleware on `/api/journey/answer` allows further submissions.
@@ -170,7 +170,7 @@ real rendered content for that user.
 
 **Stop a user from receiving more messages.** `UPDATE engagement_schedules
 SET status='skipped' WHERE user_id=... AND status='pending'`. Or cancel
-subscription — the cron checks `shouldSendForSubscription(sub.status)` on
+subscription - the cron checks `shouldSendForSubscription(sub.status)` on
 each send and will skip non-active plans.
 
 **Retry a failed schedule.** `UPDATE engagement_schedules SET status='pending',
@@ -189,10 +189,10 @@ rendering.
 | Cron returns 403                            | `ENGAGEMENT_CRON_SECRET` env missing or `x-engagement-secret` not matching. |
 | User stuck at paywall                       | No `subscriptions` row with `status='active'` or Cardcom webhook didn't fire. |
 | "already_scheduled" on automation POST      | User already has rows in `engagement_schedules`. Use `force:true` to rebuild. |
-| Messages showing `{{first_name}}` literally | `journey_analysis` row missing — run POST `/api/journey/analyze`. |
+| Messages showing `{{first_name}}` literally | `journey_analysis` row missing - run POST `/api/journey/analyze`. |
 
 ## 9. Files not to touch without care
 
-- `lib/journey/analysis.ts` — changes invalidate historical analyses stored in DB. Bump `analysis_version`.
-- `supabase/migrations/026_*.sql` — already applied in prod; write new migrations instead.
-- `journey/questionnaire.json` — changing IDs breaks old responses. Add new questions with new IDs; don't rename.
+- `lib/journey/analysis.ts` - changes invalidate historical analyses stored in DB. Bump `analysis_version`.
+- `supabase/migrations/026_*.sql` - already applied in prod; write new migrations instead.
+- `journey/questionnaire.json` - changing IDs breaks old responses. Add new questions with new IDs; don't rename.

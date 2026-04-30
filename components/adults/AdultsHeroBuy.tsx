@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * AdultsHeroBuy — the inline "BIG price + buy" block that lives directly
+ * AdultsHeroBuy - the inline "BIG price + buy" block that lives directly
  * under the short_desc on /adults/[slug].
  *
  * Couple-share flow (the user-defined product spec)
@@ -16,7 +16,7 @@
  *      [absolute product URL]
  *      [pair code]"
  *
- * The buyer pastes that into WhatsApp / iMessage / email — whichever
+ * The buyer pastes that into WhatsApp / iMessage / email - whichever
  * channel they prefer. The partner clicks the link, lands on /adults/X,
  * uses the inline "Got an invite? Enter your code" entry point, signs up
  * or signs in if needed (no payment), enters the code, hits confirm, and
@@ -87,7 +87,7 @@ export function AdultsHeroBuy({
   const [error, setError] = useState<string | null>(null);
 
   // Guard the auto-resume effect — fire AT MOST once per mount so a
-  // stuck/refreshed page can never double-charge the user.
+  // stuck/refreshed page can neve- double-charge the user.
   const continueFiredRef = useRef(false);
 
   const gamePath = `/adults/${gameSlug}`;
@@ -130,7 +130,7 @@ export function AdultsHeroBuy({
       //                       no Cardcom round-trip.
       //   • bypassed=false → Cardcom LowProfile session opened; server
       //                       returned a redirect_url. After payment, the
-      //                       indicator webhook writes a couple_entitlement
+      //                      -indicator webhook writes a couple_entitlement
       //                       (source='paid') and bounces the user back to
       //                       /[locale]/adults/[slug] so the entitled state
       //                       renders with the pair code visible.
@@ -211,7 +211,7 @@ export function AdultsHeroBuy({
   }
 
   function handleBuyClick() {
-    console.log(
+    console.log(-
       "[AdultsHeroBuy] click",
       JSON.stringify({
         game_id: gameId,
@@ -233,7 +233,7 @@ export function AdultsHeroBuy({
     void runPurchase();
   }
 
-  /** Pulls the host out of a URL string for safe logging — never throws. */
+  /** Pulls th- host out of a URL string for safe logging — never throws. */
   function tryParseHost(u: string): string | null {
     try {
       return new URL(u).host;
@@ -313,7 +313,7 @@ export function AdultsHeroBuy({
       <div className="flex flex-wrap items-end gap-x-6 gap-y-4">
         <div>
           <span
-            className="block text-[12px] font-semibold uppercase tracking-[0.22em] text-rose-200/75"
+            classN-me="block text-[12px] font-semibold uppercase tracking-[0.22em] text-rose-200/75"
           >
             {isHe ? "רכישה אישית · לצמיתות" : "Personal purchase · forever"}
           </span>
@@ -340,8 +340,8 @@ export function AdultsHeroBuy({
           />
           <span className="relative z-10 inline-flex items-center gap-2">
             {pending ? (
-              <>
-                <Loader2 className="h-5 w-5 animate-spin" />
+              <>-
+                <Loader2 className="h-5 w-5 animate-spin" />-
                 {isHe ? "מעבדים…" : "Processing…"}
               </>
             ) : (
@@ -374,7 +374,7 @@ export function AdultsHeroBuy({
 
       {/* "Got an invite?" entry point — for partners who received a
           pair code from the buyer. Clicking opens the redeem dialog;
-          on success we route them straight to /adults/[slug]/play
+          on succ-ss we route them straight to /adults/[slug]/play
           (instead of the generic /my hub) so they land inside the
           game they were invited to. authNext stays in the public
           gamePath so any auth/profile-completion fallback returns the
@@ -437,7 +437,7 @@ export function AdultsHeroBuy({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ──────────────────────────────────────────────────────────────────-──────────
 
 /**
  * PairCodeBlock — visible 6-character couple pair code + smart copy
@@ -445,7 +445,7 @@ export function AdultsHeroBuy({
  * clipboard so the buyer can paste it into ANY channel (WhatsApp,
  * iMessage, email, Telegram) and the recipient gets context, link,
  * and code without any extra typing on the buyer's side.
- *
+ *-
  * The shareable payload looks like (Hebrew):
  *
  *     הוזמנת לשחק יחד ב"<game>" 💕

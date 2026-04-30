@@ -143,7 +143,7 @@ export async function createOrRefreshInvitation(params: {
 }
 
 /**
- * Public lookup by token — anyone with the token can see the invite's
+ * Public lookup by token - anyone with the token can see the invite's
  * basic display info (couple display name, inviter name hint, email,
  * expires_at, status). Used on the /invite/[token] landing page.
  *
@@ -200,7 +200,7 @@ export async function getInvitationDisplay(token: string): Promise<
 }
 
 /**
- * Accept the invitation — called after the user is signed in.
+ * Accept the invitation - called after the user is signed in.
  * Wraps the SECURITY DEFINER RPC which atomically inserts into
  * couple_members and marks the invitation accepted.
  */

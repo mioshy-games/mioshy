@@ -1,15 +1,15 @@
 "use client";
 
 // ============================================================
-// NextUpHero — the visually dominant "what to do next" card at the top
+// NextUpHero - the visually dominant "what to do next" card at the top
 // of the timeline. Picks one entry from the timeline and renders it
 // large, so the user's eye lands on the single next action rather than
 // scanning the full category list.
 //
 // Selection rule (applied by the server page):
-//   1. first available entry (by unlock_at asc)  — "do this now"
-//   2. else the nearest locked entry             — "coming next"
-//   3. else null (all completed)                 — render a victory card
+//   1. first available entry (by unlock_at asc)  - "do this now"
+//   2. else the nearest locked entry             - "coming next"
+//   3. else null (all completed)                 - render a victory card
 // ============================================================
 
 import * as React from "react";
@@ -28,7 +28,7 @@ import {
 import type { TimelineEntry } from "@/lib/journey-content/types";
 
 interface Props {
-  /** The entry to feature — or null when everything is completed. */
+  /** The entry to feature - or null when everything is completed. */
   entry: TimelineEntry | null;
   locale: string;
   /** Total entries + how many are completed (for the victory state). */
@@ -50,7 +50,7 @@ export function NextUpHero({ entry, locale, total, completed }: Props) {
 }
 
 // ------------------------------------------------------------
-// Active state — either "available now" or "coming next (locked)"
+// Active state - either "available now" or "coming next (locked)"
 // ------------------------------------------------------------
 
 function ActiveNextUpHero({
@@ -100,8 +100,8 @@ function ActiveNextUpHero({
         badgeIcon: <Clock className="h-3.5 w-3.5" />,
         kicker: formatUnlockCountdown(entry.scheduled.unlock_at, isHe),
         whyLine: isHe
-          ? "המסע נבנה בקצב הנכון — הפרק הזה מחכה בדיוק לרגע שבו תהיו מוכנים אליו."
-          : "Your journey builds at the right pace — this chapter is waiting for exactly the right moment.",
+          ? "המסע נבנה בקצב הנכון - הפרק הזה מחכה בדיוק לרגע שבו תהיו מוכנים אליו."
+          : "Your journey builds at the right pace - this chapter is waiting for exactly the right moment.",
         cta: isHe ? "הצצה מהפרק" : "Peek inside",
         border: "border-indigo-300/40",
         glowA: "from-indigo-400/25",
@@ -131,7 +131,7 @@ function ActiveNextUpHero({
         />
 
         <div className="relative flex flex-col gap-6 p-6 sm:flex-row sm:items-center sm:gap-8 sm:p-8">
-          {/* Media — hero image with fallback glyph. Square ratio on
+          {/* Media - hero image with fallback glyph. Square ratio on
               mobile so vertical portraits don't dominate the viewport. */}
           <div className="relative mx-auto h-36 w-36 shrink-0 overflow-hidden rounded-2xl border border-white/15 bg-white/5 shadow-2xl shadow-black/40 sm:mx-0 sm:h-44 sm:w-44">
             {hasImage ? (
@@ -193,7 +193,7 @@ function ActiveNextUpHero({
               </p>
             ) : null}
 
-            {/* Subtle credibility anchor — reminds the user this isn't
+            {/* Subtle credibility anchor - reminds the user this isn't
                 content generated in a vacuum; it's part of a method that's
                 been used with real couples. One line, low visual weight. */}
             <p className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-white/55">
@@ -230,7 +230,7 @@ function ActiveNextUpHero({
 }
 
 // ------------------------------------------------------------
-// Victory state — everything is done
+// Victory state - everything is done
 // ------------------------------------------------------------
 
 function VictoryHero({ isHe, total }: { isHe: boolean; total: number }) {
@@ -257,8 +257,8 @@ function VictoryHero({ isHe, total }: { isHe: boolean; total: number }) {
             </h2>
             <p className="mt-1 text-sm text-white/75 sm:text-base">
               {isHe
-                ? `${total} פרקים הושלמו. זה ההזדמנות לדבר — מה חשוב לכם לשמר?`
-                : `${total} chapters done. A good moment to reflect — what do you want to keep?`}
+                ? `${total} פרקים הושלמו. זה ההזדמנות לדבר - מה חשוב לכם לשמר?`
+                : `${total} chapters done. A good moment to reflect - what do you want to keep?`}
             </p>
           </div>
         </div>

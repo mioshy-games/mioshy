@@ -3,7 +3,7 @@ import { Counter } from "./Counter";
 import { RevealOnScroll } from "./RevealOnScroll";
 
 /**
- * Authority — third section. "5 שנים. אלפי זוגות." narrative + stat banner +
+ * Authority - third section. "5 שנים. אלפי זוגות." narrative + stat banner +
  * 6-card reviews grid (with mobile load-more behavior in ReviewsGrid).
  */
 export function Authority() {
@@ -34,8 +34,8 @@ export function Authority() {
         <RevealOnScroll variant="fade-up" delay={0.1}>
           <div className="auth-narrative">
             <p>
-              מאז 2021 אנחנו מלווים זוגות. <strong>שמענו אלפי סיפורים</strong> — ראינו זוגות צוחקים,
-              בוכים, מתפייסים, חוזרים אחד אל השנייה. כל מה שאנחנו עושים — נולד מהם. מהשיחות,
+              מאז 2021 אנחנו מלווים זוגות. <strong>שמענו אלפי סיפורים</strong> - ראינו זוגות צוחקים,
+              בוכים, מתפייסים, חוזרים אחד אל השנייה. כל מה שאנחנו עושים - נולד מהם. מהשיחות,
               מהמשובים, מהדמעות, מהחיוכים. זאת הסיבה שמיאושי לא נשאר אותו דבר. הוא משתנה, גדל,
               מתחדש. <strong>בדיוק כמו זוגיות בריאה.</strong>
             </p>
@@ -50,7 +50,7 @@ export function Authority() {
                   <Counter to={1000} prefix="+" />
                 </em>
               </div>
-              <div className="label">זוגות פעילים</div>
+              <div className="label">הזוגות שבחרו במיאושי</div>
             </div>
             <div className="auth-divider"></div>
             <div className="auth-stat">

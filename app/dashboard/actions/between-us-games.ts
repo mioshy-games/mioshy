@@ -47,7 +47,7 @@ export async function saveExperienceGame(
     benefits_en: v.benefits_en,
     target_audience_he: v.target_audience_he,
     target_audience_en: v.target_audience_en,
-    // Optional play-questions payload — empty strings/arrays when the
+    // Optional play-questions payload - empty strings/arrays when the
     // admin didn't fill them in. The play page hides the whole section
     // when the locale's questions array is empty.
     play_questions_intro_he: v.play_questions_intro_he,

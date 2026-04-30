@@ -61,7 +61,7 @@ export default async function PromotionsListPage() {
                   colSpan={7}
                   className="text-muted-foreground h-24 text-center"
                 >
-                  No promotions yet — click &quot;New promotion&quot; to create
+                  No promotions yet - click &quot;New promotion&quot; to create
                   one.
                 </TableCell>
               </TableRow>
@@ -169,7 +169,7 @@ function WindowLabel({
 }) {
   if (!starts && !ends) return <span>Always</span>;
   const fmt = (iso: string | null) => {
-    if (!iso) return "—";
+    if (!iso) return "-";
     try {
       return new Date(iso).toLocaleDateString();
     } catch {

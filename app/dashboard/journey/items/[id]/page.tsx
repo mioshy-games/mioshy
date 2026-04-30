@@ -53,6 +53,7 @@ export default async function EditItemPage({
     sort_order: item.sort_order,
     default_offset_days: item.default_offset_days,
     is_active: item.is_active,
+    audience: (item.audience ?? "both") as "both" | "owner" | "partner",
   };
 
   return (

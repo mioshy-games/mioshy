@@ -52,7 +52,7 @@ export function InviteClaimClient({
   }
 
   // If the current session's email matches the invited email, we show a single
-  // "Join now" button — account already exists.
+  // "Join now" button - account already exists.
   const sameAccount =
     currentUserEmail?.toLowerCase() === invitedEmail.toLowerCase();
 
@@ -74,8 +74,8 @@ export function InviteClaimClient({
       <div>
         <p className="text-sm text-white/80">
           {isHe
-            ? "זיהינו אותך כבר מחובר/ת לחשבון הנכון — לחיצה אחת ונכנסים לחלל הזוגי."
-            : "You're already signed in with the right account — one click and you're in."}
+            ? "זיהינו אותך כבר מחובר/ת לחשבון הנכון - לחיצה אחת ונכנסים לחלל הזוגי."
+            : "You're already signed in with the right account - one click and you're in."}
         </p>
         <button
           type="button"
@@ -109,7 +109,7 @@ export function InviteClaimClient({
     );
   }
 
-  // Otherwise — show signup/signin tabs.
+  // Otherwise - show signup/signin tabs.
   return (
     <SignupOrSigninForm
       isHe={isHe}
@@ -289,7 +289,7 @@ function SignupOrSigninForm({
         {success ? (
           <p className="inline-flex items-center gap-1.5 rounded-2xl border border-emerald-300/40 bg-emerald-400/10 px-3 py-2 text-xs text-emerald-100">
             <Check className="h-3.5 w-3.5" />
-            {isHe ? "מעולה! מעבירים אותך למיאושי שלי…" : "You're in — opening My Mioshy…"}
+            {isHe ? "מעולה! מעבירים אותך למיאושי שלי…" : "You're in - opening My Mioshy…"}
           </p>
         ) : null}
 
@@ -339,8 +339,8 @@ function translateError(code: string, isHe: boolean): string {
       en: "You're already in another couple",
     },
     email_already_registered: {
-      he: "כתובת המייל הזו כבר רשומה — יש להיכנס עם סיסמה קיימת",
-      en: "This email is already registered — sign in with your password",
+      he: "כתובת המייל הזו כבר רשומה - יש להיכנס עם סיסמה קיימת",
+      en: "This email is already registered - sign in with your password",
     },
     invalid_credentials: {
       he: "פרטי ההתחברות שגויים",
@@ -355,8 +355,8 @@ function translateError(code: string, isHe: boolean): string {
       en: "This invitation was sent to a different email",
     },
     signin_after_signup_failed: {
-      he: "החשבון נוצר, אך הכניסה נכשלה — נא להיכנס ידנית",
-      en: "Account created but sign-in failed — please sign in manually",
+      he: "החשבון נוצר, אך הכניסה נכשלה - נא להיכנס ידנית",
+      en: "Account created but sign-in failed - please sign in manually",
     },
     signup_failed: {
       he: "נכשלה יצירת החשבון. נסה/י שוב.",

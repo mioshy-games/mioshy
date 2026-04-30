@@ -3,7 +3,7 @@
 // components/articles/ArticleContent.tsx
 //
 // Renders Markdown with beautiful, professional typography.
-// Does NOT require @tailwindcss/typography — all styles are explicit Tailwind classes.
+// Does NOT require @tailwindcss/typography - all styles are explicit Tailwind classes.
 
 import ReactMarkdown from "react-markdown";
 import type { Components } from "react-markdown";

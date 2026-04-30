@@ -107,7 +107,7 @@ export function SnakeEditor({ cfg }: { cfg: SnakesConfig }) {
                   <TableCell className="font-mono">{s.from}</TableCell>
                   <TableCell className="font-mono">{s.to}</TableCell>
                   <TableCell>{s.emoji}</TableCell>
-                  <TableCell className="text-muted-foreground">{s.label || "—"}</TableCell>
+                  <TableCell className="text-muted-foreground">{s.label || "-"}</TableCell>
                   <TableCell className="text-right">
                     <Button
                       variant="destructive"

@@ -24,7 +24,7 @@ export const PLAN_AMOUNTS_USD: Record<Plan, number> = {
  * Israeli users pay ILS (CoinId=1), others pay USD (CoinId=2).
  *
  * If NEXT_PUBLIC_BILLING_TEST_PRICE is set (e.g. "1"), overrides all amounts to
- * that value — useful for testing real Cardcom charges without paying full price.
+ * that value - useful for testing real Cardcom charges without paying full price.
  */
 export function getPlanPrice(plan: Plan, isIsraeli: boolean) {
   const testOverride = process.env.NEXT_PUBLIC_BILLING_TEST_PRICE

@@ -34,7 +34,7 @@ export function LocalizedFieldRow<T extends FieldValues>({
         className,
       )}
     >
-      {/* Mobile: Hebrew first (rtl), then English — order by putting he before en in mobile stack */}
+      {/* Mobile: Hebrew first (rtl), then English - order by putting he before en in mobile stack */}
       {[...languages]
         .sort((a, b) => {
           if (a.code === "he") return -1;

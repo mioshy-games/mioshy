@@ -74,15 +74,15 @@ export default async function TemplatesPage() {
                   <TableCell>
                     <Badge variant="outline">{t.channel}</Badge>
                   </TableCell>
-                  <TableCell className="max-w-[320px] truncate">{t.subject_en ?? "—"}</TableCell>
-                  <TableCell>{t.trigger_axis ?? "—"}</TableCell>
+                  <TableCell className="max-w-[320px] truncate">{t.subject_en ?? "-"}</TableCell>
+                  <TableCell>{t.trigger_axis ?? "-"}</TableCell>
                   <TableCell>
                     <Badge variant={t.is_active ? "default" : "outline"}>
                       {t.is_active ? "active" : "paused"}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {t.updated_at ? new Date(t.updated_at).toLocaleDateString() : "—"}
+                    {t.updated_at ? new Date(t.updated_at).toLocaleDateString() : "-"}
                   </TableCell>
                 </TableRow>
               ))}

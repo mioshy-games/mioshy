@@ -141,11 +141,11 @@ export function PairAndPurchasePanel({
       setInfo(
         isHe
           ? res.already_owned
-            ? "כבר היה לכם גישה למשחק הזה — מעבירים ל'מיאושי שלי'…"
-            : "הרכישה הושלמה — מעבירים ל'מיאושי שלי'…"
+            ? "כבר היה לכם גישה למשחק הזה - מעבירים ל'מיאושי שלי'…"
+            : "הרכישה הושלמה - מעבירים ל'מיאושי שלי'…"
           : res.already_owned
-            ? "You already owned this game — taking you to My Mioshy…"
-            : "Purchase complete — taking you to My Mioshy…",
+            ? "You already owned this game - taking you to My Mioshy…"
+            : "Purchase complete - taking you to My Mioshy…",
       );
       // Send buyer straight into their library so the purchase
       // "lands" on the content they just unlocked.
@@ -188,13 +188,13 @@ export function PairAndPurchasePanel({
             <p className="mt-3 text-sm text-white/55">
               {isHe
                 ? "* בשלב זה מדובר ברכישת הדגמה (ללא חיוב אמיתי)."
-                : "* Demo checkout — no real charge is made yet."}
+                : "* Demo checkout - no real charge is made yet."}
             </p>
           </div>
         </div>
       </div>
 
-      {/* Partner preview — even before purchase the owner can already
+      {/* Partner preview - even before purchase the owner can already
           line up who the game is for. Without a couple yet we just
           show a hint; once they buy, a couple is auto-created. */}
       {ctx?.couple_id && (ctx.partner_count < 2 || pendingInvitation) ? (

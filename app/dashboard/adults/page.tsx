@@ -41,7 +41,7 @@ export default async function BetweenUsOverviewPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            Adults Only — {settings.section_name_he}
+            Adults Only - {settings.section_name_he}
           </h1>
           <p className="text-muted-foreground mt-1 text-sm">
             The couples-games content library. Add games, manage pricing, toggle
@@ -130,7 +130,7 @@ export default async function BetweenUsOverviewPage() {
             <SettingsIcon className="size-5" /> Quick links
           </CardTitle>
           <CardDescription>
-            Everything about this section is editable from the admin —
+            Everything about this section is editable from the admin -
             no code changes required.
           </CardDescription>
         </CardHeader>
@@ -143,7 +143,7 @@ export default async function BetweenUsOverviewPage() {
               >
                 Manage games
               </Link>
-              {" — "}add, edit, publish/unpublish, duplicate, archive
+              {" - "}add, edit, publish/unpublish, duplicate, archive
             </li>
             <li>
               <Link
@@ -152,7 +152,7 @@ export default async function BetweenUsOverviewPage() {
               >
                 Section settings
               </Link>
-              {" — "}pricing, promotions toggle, subscription toggle, section
+              {" - "}pricing, promotions toggle, subscription toggle, section
               name
             </li>
             <li>
@@ -169,7 +169,7 @@ export default async function BetweenUsOverviewPage() {
               >
                 Tags
               </Link>
-              {" — "}taxonomy for filtering
+              {" - "}taxonomy for filtering
             </li>
           </ul>
         </CardContent>

@@ -5,12 +5,12 @@ import type { GamePlayer } from "@/lib/snakes/types";
 import { cellToBoardPercent } from "@/lib/snakes/boardUtils";
 
 /**
- * PlayersOverlay — absolutely-positioned, significantly-larger player
+ * PlayersOverlay - absolutely-positioned, significantly-larger player
  * tokens that glide between cells when positions change.
  *
  * Why an overlay, not cell children?
  *   • A token inside a cell is constrained by the cell's 1/100th of the
- *     board — too small on desktop, and any size-change requires relayout.
+ *     board - too small on desktop, and any size-change requires relayout.
  *   • As an absolutely-positioned sibling on top of the grid, the token
  *     can be ~18% of the board wide (big + readable), can overlap other
  *     tokens without affecting layout, and its `left`/`top` are just

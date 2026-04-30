@@ -56,12 +56,12 @@ export function renderCoupleInviteEmail(
 
   const benefits = isHe
     ? [
-        "כל המשחקים והתוכן שנרכשו — פתוחים לשניכם",
+        "כל המשחקים והתוכן שנרכשו - פתוחים לשניכם",
         "חלל פרטי רק לשניכם, נשמר בחשבון שלכם",
         "אפשר לשחק מכל מחשב או טלפון, גם לא זה ליד זה",
       ]
     : [
-        "Every game and piece of content you've both bought — unlocked for the two of you",
+        "Every game and piece of content you've both bought - unlocked for the two of you",
         "A private space just for the two of you, tied to your account",
         "Play from any laptop or phone, even when you're not side by side",
       ];
@@ -73,7 +73,7 @@ export function renderCoupleInviteEmail(
   `;
 
   const expirationNote = isHe
-    ? `<p style="margin:24px 0 0;font-size:12px;color:#64748b;">הקישור תקף עד ${expiryLabel}. אם לא ביקשת את ההזמנה — אפשר פשוט להתעלם.</p>`
+    ? `<p style="margin:24px 0 0;font-size:12px;color:#64748b;">הקישור תקף עד ${expiryLabel}. אם לא ביקשת את ההזמנה - אפשר פשוט להתעלם.</p>`
     : `<p style="margin:24px 0 0;font-size:12px;color:#64748b;">This link is valid until ${expiryLabel}. If you weren't expecting it, just ignore this email.</p>`;
 
   const footer = isHe
@@ -145,9 +145,9 @@ export function renderCoupleInviteEmail(
         input.inviteUrl,
         "",
         `הקישור תקף עד ${expiryLabel}.`,
-        "אם לא ביקשת את ההזמנה — אפשר להתעלם.",
+        "אם לא ביקשת את ההזמנה - אפשר להתעלם.",
         "",
-        "— מיאושי",
+        "- מיאושי",
       ]
     : [
         `${inviteeGreeting},`,
@@ -160,7 +160,7 @@ export function renderCoupleInviteEmail(
         `This link is valid until ${expiryLabel}.`,
         "If you weren't expecting it, just ignore this email.",
         "",
-        "— Mioshy",
+        "- Mioshy",
       ];
 
   return {

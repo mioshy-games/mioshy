@@ -1,7 +1,7 @@
 // ============================================================
 // Propagation planner for the Journey Content System.
 //
-// Body / title / media edits on journey_items propagate automatically —
+// Body / title / media edits on journey_items propagate automatically -
 // the timeline fetches content via a JOIN through scheduled_items.item_id,
 // so nothing to plan. Structural changes are different:
 //
@@ -18,7 +18,7 @@
 //
 // This module produces a *plan* (row counts + sample rows) for the admin
 // confirm dialog, and a separate applier that executes the plan via the
-// admin client. Plans are idempotent — running apply after a successful
+// admin client. Plans are idempotent - running apply after a successful
 // apply inserts zero rows thanks to the (assignment_id, item_id) unique
 // index.
 // ============================================================
@@ -33,7 +33,7 @@ import type {
 import { computeUnlockAt } from "./schedule";
 
 // ------------------------------------------------------------
-// Shared plan shape — the dialog renders whatever's in here
+// Shared plan shape - the dialog renders whatever's in here
 // ------------------------------------------------------------
 
 export type PropagationKind =
@@ -45,7 +45,7 @@ export interface PropagationAssignmentPreview {
   assignment_id: string;
   user_id: string | null;
   couple_id: string | null;
-  /** What will change for THIS assignment — currently "insert" or "update". */
+  /** What will change for THIS assignment - currently "insert" or "update". */
   change: "insert" | "update" | "delete";
   /** Resolved unlock_at for the preview row. */
   unlock_at: string;
@@ -63,7 +63,7 @@ export interface PropagationPlan {
     rows_to_delete: number;
     rows_skipped_override: number;
   };
-  /** Up to 50 rows for the preview list — never the full set. */
+  /** Up to 50 rows for the preview list - never the full set. */
   preview: PropagationAssignmentPreview[];
 }
 
@@ -115,7 +115,7 @@ async function assignmentsThatReferenceItem(
 
   // Narrow by source_kind so a program_id never accidentally matches an
   // assignment whose source_kind is 'item' but whose source_id happens to
-  // equal the program uuid (would require uuid collision — paranoid).
+  // equal the program uuid (would require uuid collision - paranoid).
   return ((data ?? []) as JourneyAssignment[]).filter((a) => {
     if (a.source_kind === "item") return a.source_id === item.id;
     if (a.source_kind === "category") return a.source_id === item.category_id;
@@ -292,7 +292,7 @@ export async function planPropagateItemRemoved(args: {
 }
 
 // ------------------------------------------------------------
-// Appliers — execute the plan
+// Appliers - execute the plan
 // ------------------------------------------------------------
 
 export async function applyPropagateItemAdded(args: {

@@ -27,7 +27,7 @@ export type ServicePanelProps = {
   tagline: string;
   /** The emoji/character displayed in the soft badge on top */
   badge?: string;
-  /** Bullet list of 2–4 quick wins — shown under the tagline */
+  /** Bullet list of 2–4 quick wins - shown under the tagline */
   bullets?: string[];
   /** Marketing/purchase route. Link becomes the main CTA. */
   ctaHref: string;
@@ -37,7 +37,7 @@ export type ServicePanelProps = {
   secondary?: { href: string; label: string };
   /** Fine print under the button (e.g. "₪39 / month") */
   priceLine?: string;
-  /** Size variant — default looks great at ~520px height */
+  /** Size variant - default looks great at ~520px height */
   compact?: boolean;
 };
 
@@ -116,7 +116,7 @@ export function ServicePanel({
           {tagline}
         </motion.p>
 
-        {/* Bullets — only render if supplied */}
+        {/* Bullets - only render if supplied */}
         {bullets && bullets.length > 0 ? (
           <motion.ul
             initial={{ opacity: 0, y: 12 }}
