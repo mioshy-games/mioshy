@@ -364,7 +364,7 @@ export async function GET(req: Request) {
     // (user, product)", so each pillar (games / journey / adults) has its own
     // subscription row. We scope the upsert on the checkout session's product.
     if (userId) {
-      const { data: existingSub } = await admin
+      const lookupRes = await admin
         .from("subscriptions")
         .select("id")
         .eq("user_id", userId)
@@ -373,8 +373,18 @@ export async function GET(req: Request) {
         .limit(1)
         .maybeSingle()
 
+      const existingSub = lookupRes.data
+      console.log("[indicator:SUBSCRIPTION_LOOKUP]", {
+        user_id: userId,
+        product,
+        existing_id: existingSub?.id ?? null,
+        lookup_error: lookupRes.error
+          ? { message: lookupRes.error.message, code: (lookupRes.error as { code?: string }).code ?? null }
+          : null,
+      })
+
       if (existingSub?.id) {
-        await admin
+        const upd = await admin
           .from("subscriptions")
           .update({
             status:              "active",
@@ -392,9 +402,15 @@ export async function GET(req: Request) {
             payment_method_id:   paymentMethodId,
           })
           .eq("id", existingSub.id)
+        console.log("[indicator:SUBSCRIPTION_UPDATED]", {
+          sub_id: existingSub.id,
+          update_error: upd.error
+            ? { message: upd.error.message, code: (upd.error as { code?: string }).code ?? null }
+            : null,
+        })
         subscriptionId = existingSub.id
       } else {
-        const { data: newSub } = await admin
+        const ins = await admin
           .from("subscriptions")
           .insert({
             user_id:             userId,
@@ -415,7 +431,24 @@ export async function GET(req: Request) {
           })
           .select("id")
           .maybeSingle()
-        subscriptionId = newSub?.id ?? null
+        subscriptionId = ins.data?.id ?? null
+        console.log("[indicator:SUBSCRIPTION_INSERTED]", {
+          user_id: userId,
+          product,
+          plan: session.plan,
+          amount: session.amount,
+          currency: session.currency,
+          payment_method_id: paymentMethodId,
+          inserted_id: subscriptionId,
+          insert_error: ins.error
+            ? {
+                message: ins.error.message,
+                code: (ins.error as { code?: string }).code ?? null,
+                details: (ins.error as { details?: string }).details ?? null,
+                hint: (ins.error as { hint?: string }).hint ?? null,
+              }
+            : null,
+        })
       }
     }
 
