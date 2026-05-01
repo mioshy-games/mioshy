@@ -85,7 +85,7 @@ export async function GET(req: Request) {
     existing_processed: existing?.processed ?? null,
     existing_error:   existing?.error ?? null,
     existing_created_at: existing?.created_at ?? null,
-    lookup_error:     existingErr ? { message: existingErr.message, code: (existingErr as any).code } : null,
+    lookup_error:     existingErr ? { message: existingErr.message, code: (existingErr as { code?: string }).code ?? null } : null,
   })
 
   if (existing?.processed) {
@@ -105,7 +105,7 @@ export async function GET(req: Request) {
   console.log("[indicator:EVENT_UPSERTED]", {
     idempotency_key: idempotencyKey,
     elapsed_ms:      Date.now() - upsertStart,
-    upsert_error:    upsertErr ? { message: upsertErr.message, code: (upsertErr as any).code } : null,
+    upsert_error:    upsertErr ? { message: upsertErr.message, code: (upsertErr as { code?: string }).code ?? null } : null,
   })
 
   // ── Pull authoritative indicator from Cardcom ───────────────────────────────
