@@ -151,20 +151,37 @@ export async function POST(req: Request) {
       // Country: ISO-2; subscriptions table doesn't carry it, so we
       // default by is_israeli (matches the issuer schema requirement
       // of exactly 2 chars).
-      const invoiceResult = await createBillingDocumentWithRetry(
-        {
-          user_id:     userId,
-          email:       sub.email ?? "",
-          country:     sub.is_israeli ? "IL" : "US",
-          amount:      sub.plan_amount,
-          currency:    sub.currency,
-          language:    (sub.is_israeli ? "he" : "en") as "he" | "en",
-          is_israeli:  sub.is_israeli,
-          plan:        sub.plan,
-          deal_number: asmachta, // idempotency anchor for renewals
-        },
-        { chargeId, subscriptionId: subId },
-      )
+      //
+      // Feature flag UXELLENT_BILLING_DISABLED — see indicator route
+      // for full rationale. When set, renewals charge but skip invoice.
+      const billingDisabled =
+        String(process.env.UXELLENT_BILLING_DISABLED || "").toLowerCase() === "true"
+
+      const invoiceResult = billingDisabled
+        ? (() => {
+            console.warn("[renewals] UXELLENT_BILLING_DISABLED=true — skipping invoice creation", {
+              sub_id: subId, charge_id: chargeId, asmachta,
+            })
+            return {
+              success: false as const,
+              message: "skipped:UXELLENT_BILLING_DISABLED",
+              errorCode: "unknown" as const,
+            }
+          })()
+        : await createBillingDocumentWithRetry(
+            {
+              user_id:     userId,
+              email:       sub.email ?? "",
+              country:     sub.is_israeli ? "IL" : "US",
+              amount:      sub.plan_amount,
+              currency:    sub.currency,
+              language:    (sub.is_israeli ? "he" : "en") as "he" | "en",
+              is_israeli:  sub.is_israeli,
+              plan:        sub.plan,
+              deal_number: asmachta, // idempotency anchor for renewals
+            },
+            { chargeId, subscriptionId: subId },
+          )
 
       const invoiceUrl = invoiceResult.success ? invoiceResult.document_url : null
 

@@ -504,21 +504,56 @@ export async function GET(req: Request) {
       ? session.country_code.trim().toUpperCase()
       : (session.is_israeli ? "IL" : "US")
 
-  const invoiceResult = await createBillingDocumentWithRetry(
-    {
-      user_id:     userId ?? "",
-      email:       session.email,
-      name:        session.name ?? null,
-      country:     country2,
-      amount:      session.amount,
-      currency:    session.currency,
-      language:    (session.language === "he" ? "he" : "en") as "he" | "en",
-      is_israeli:  session.is_israeli,
-      plan:        session.plan,
-      deal_number: indicator.dealNumber ?? null,
-    },
-    { chargeId, subscriptionId },
-  )
+  // ─────────────────────────────────────────────────────────────────
+  // Feature flag: UXELLENT_BILLING_DISABLED
+  //
+  // When enabled, we DO NOT call the external billing API to issue
+  // an invoice/receipt. The payment + subscription flow completes
+  // without a `tax invoice / receipt`. Use this when the issuer
+  // (app.uxellent.com) is unavailable or its signing service is not
+  // ready, so a paying user still gets immediate access.
+  //
+  // Once the issuer is back, run /api/billing/repair-missing-invoices
+  // to retroactively create invoices for charges that were processed
+  // while this flag was on (rows have status='succeeded' AND
+  // invoice_url IS NULL).
+  //
+  // Tax compliance note: in Israel, official invoices/receipts are
+  // legally required for purchases. This flag is acceptable only as a
+  // short-term operational workaround — never as a permanent state.
+  // ─────────────────────────────────────────────────────────────────
+  const billingDisabled =
+    String(process.env.UXELLENT_BILLING_DISABLED || "").toLowerCase() === "true"
+
+  const invoiceResult = billingDisabled
+    ? (() => {
+        console.warn("[indicator] UXELLENT_BILLING_DISABLED=true — skipping invoice creation", {
+          session_id: sessionId,
+          user_id:    userId,
+          deal_number: indicator.dealNumber ?? null,
+          charge_id:   chargeId,
+        })
+        return {
+          success: false as const,
+          message: "skipped:UXELLENT_BILLING_DISABLED",
+          errorCode: "unknown" as const,
+        }
+      })()
+    : await createBillingDocumentWithRetry(
+        {
+          user_id:     userId ?? "",
+          email:       session.email,
+          name:        session.name ?? null,
+          country:     country2,
+          amount:      session.amount,
+          currency:    session.currency,
+          language:    (session.language === "he" ? "he" : "en") as "he" | "en",
+          is_israeli:  session.is_israeli,
+          plan:        session.plan,
+          deal_number: indicator.dealNumber ?? null,
+        },
+        { chargeId, subscriptionId },
+      )
 
   if (invoiceResult.success) {
     if (subscriptionId) {
