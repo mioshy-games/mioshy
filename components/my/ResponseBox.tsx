@@ -20,6 +20,7 @@ import {
   submitJourneyResponse,
   type SubmitResponseResult,
 } from "@/lib/journey-content/responses";
+import { track } from "@/lib/analytics";
 
 const MAX_LEN = 4000;
 
@@ -57,6 +58,11 @@ export function ResponseBox({
         isPrivate,
       });
       if (result.ok) {
+        track("journey_response_submitted", {
+          scheduled_item_id: scheduledItemId,
+          length: text.length,
+          is_private: isPrivate,
+        });
         setText("");
         setFeedback({ kind: "saved", visibleUntil: Date.now() + 5000 });
         onSubmitted?.(result.responseId);

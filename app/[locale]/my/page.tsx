@@ -301,8 +301,8 @@ export default async function MyHubPage({
               subtitleEn="Personal work program"
               description={
                 isHe
-                  ? "החדר הפרטי שלכם — תוכן אישי שהמומחים שלנו מכינים עבורכם."
-                  : "Your private space — personal content our experts prepare for you."
+                  ? "הקליניקה המכווננת שלכם — תוכן שמסודר לפי מה שחשוב לכם, כל אחד עם הסדר שלו."
+                  : "Your tuned clinic — content ordered by what matters to you, each partner sees their own ranking."
               }
               notificationCount={journeyNotificationCount}
             />

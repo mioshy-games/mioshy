@@ -25,6 +25,7 @@
  */
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { computeResponseTags } from "@/lib/dashboard/auto-tag";
 
 export type AssessmentSubmitResult =
   | { ok: true; responseId: string }
@@ -85,6 +86,14 @@ export async function submitAssessmentResponse(args: {
     .limit(1)
     .maybeSingle();
 
+  // Phase 4 — auto-tags. Pass hasStructuredAnswer=true so the
+  // clinician CRM can filter assessment-kind responses cheaply.
+  const tags = computeResponseTags({
+    text: summaryText,
+    isPrivate: args.isPrivate === true,
+    hasStructuredAnswer: true,
+  });
+
   let responseId: string | null = null;
 
   if (existing?.id) {
@@ -95,6 +104,7 @@ export async function submitAssessmentResponse(args: {
         response_text: responseText,
         structured_answer: answers,
         is_private: args.isPrivate === true,
+        tags,
       })
       .eq("id", existing.id)
       .select("id")
@@ -113,6 +123,7 @@ export async function submitAssessmentResponse(args: {
         response_text: responseText,
         structured_answer: answers,
         is_private: args.isPrivate === true,
+        tags,
       })
       .select("id")
       .single();

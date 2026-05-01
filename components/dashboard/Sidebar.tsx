@@ -29,6 +29,7 @@ import {
   Tags,
   FolderKanban,
   Stethoscope,
+  TrendingDown,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -53,6 +54,8 @@ type NavLeaf = {
   href: string;
   label: string;
   icon: LucideIcon;
+  /** Hide this leaf from non-admin sidebars. Optional. */
+  adminOnly?: boolean;
 };
 
 type NavGroup = {
@@ -63,9 +66,11 @@ type NavGroup = {
   /** Optional landing href for the group (e.g. Adults → /dashboard/adults). */
   href?: string;
   children: NavLeaf[];
+  /** Hide this whole group from non-admin sidebars. Optional. */
+  adminOnly?: boolean;
 };
 
-type NavItem = (NavLeaf | NavGroup) & { adminOnly?: boolean };
+type NavItem = NavLeaf | NavGroup;
 
 const NAV: NavItem[] = [
   { kind: "leaf", href: "/dashboard", label: "Overview", icon: LayoutDashboard },
@@ -76,6 +81,7 @@ const NAV: NavItem[] = [
     label: "Coaching",
     icon: Stethoscope,
     children: [
+      { kind: "leaf", href: "/dashboard/clinician", label: "Today's queue", icon: Stethoscope },
       { kind: "leaf", href: "/dashboard/my-clients", label: "My Clients", icon: HeartHandshake },
       { kind: "leaf", href: "/dashboard/experts", label: "Experts", icon: UserCog },
     ],
@@ -106,6 +112,7 @@ const NAV: NavItem[] = [
       { kind: "leaf", href: "/dashboard/journey/items", label: "Items", icon: FileText },
       { kind: "leaf", href: "/dashboard/journey/assignments", label: "Assignments", icon: Link2 },
       { kind: "leaf", href: "/dashboard/journey/clients", label: "Clients", icon: Users },
+      { kind: "leaf", href: "/dashboard/journey-analytics", label: "Analytics", icon: TrendingDown, adminOnly: true },
     ],
   },
 

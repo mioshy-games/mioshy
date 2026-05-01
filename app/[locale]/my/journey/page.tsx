@@ -36,7 +36,6 @@ import {
   ArrowLeft,
   ArrowRight,
   Sparkles,
-  Star,
 } from "lucide-react";
 import { routing } from "@/i18n/routing";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -45,19 +44,30 @@ import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
 import { getCurrentCoupleContext } from "@/lib/between-us/couples";
 import { getOwnerJourneyStatus } from "@/lib/journey-content/owner-status";
 import {
-  buildStaticRail,
   buildDynamicRail,
+  buildDbBackedEmptyRail,
   type RailEntry,
 } from "@/lib/dashboard/journey-rail";
-import type { AssessmentStage } from "@/lib/dashboard/pillar-state";
-import { JourneyProgressRail } from "@/components/my/JourneyProgressRail";
 import {
-  JourneyWorkArea,
-  type WorkAreaItem,
-} from "@/components/my/JourneyWorkArea";
+  getViewerPriorityOrder,
+  sortRailByPriorities,
+} from "@/lib/dashboard/priority-routing";
+import type { AssessmentStage } from "@/lib/dashboard/pillar-state";
+import { JourneyDesk } from "@/components/my/JourneyDesk";
 import { ClinicianReplyBanner } from "@/components/my/ClinicianReplyBanner";
 import { getFreshClinicianReplies } from "@/lib/journey-content/fresh-replies";
 import { SubscriptionStatusBanner } from "@/components/my/SubscriptionStatusBanner";
+import { WelcomeProcessingBanner } from "@/components/my/WelcomeProcessingBanner";
+import {
+  JourneyActivityHistory,
+  type JourneyActivityEntry,
+} from "@/components/my/JourneyActivityHistory";
+import {
+  JourneyPriorityRanking,
+  type PriorityItem,
+} from "@/components/my/JourneyPriorityRanking";
+import { JourneyExpertMessage } from "@/components/my/JourneyExpertMessage";
+import { JourneyDashboardViewTracker } from "@/components/my/JourneyDashboardViewTracker";
 import { getTimelineForOwner } from "@/lib/journey-content/queries";
 import { preferCoupleOwner } from "@/lib/journey-content/owner";
 import type { JourneyOwner } from "@/lib/journey-content/types";
@@ -79,10 +89,10 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const isHe = params.locale === "he";
   return {
-    title: `Mioshy - ${isHe ? "החדר הפרטי שלכם" : "Your private space"}`,
+    title: `Mioshy - ${isHe ? "הקליניקה המכווננת שלכם" : "Your tuned clinic"}`,
     description: isHe
-      ? "התוכן האישי שהמומחים שלנו מעלים עבורכם."
-      : "The personal content our experts curate for you.",
+      ? "תוכן אישי שמותאם להעדפות שלכם, מסונן ומדורג לפי מה שחשוב לכם."
+      : "Personal content tuned to your priorities and what matters most to you.",
     robots: { index: false, follow: false },
   };
 }
@@ -277,49 +287,158 @@ export default async function PrivateJourneyPage({
     : journeyStatus.hasInProgressAssessment
       ? "in_progress"
       : "not_started";
-  const railEntries: RailEntry[] =
+  // Empty timeline → pull the program's actual categories from the DB
+  // (Phase 2 step C). The page is never empty: even before any item is
+  // scheduled the user sees the program's real categories instead of
+  // the hardcoded six-topic fallback. buildDbBackedEmptyRail itself
+  // falls back to the hardcoded list if the DB query fails.
+  const railEntriesRaw: RailEntry[] =
     timeline.length > 0
       ? buildDynamicRail({
           isHe,
           timeline,
           assessmentCompleted: journeyStatus.hasCompletedAssessment,
+          viewerUserId: user.id,
+          // itemSeenAt: not yet wired — until we have a seen-state
+          // table, every clinician reply is considered "unread"
+          // until the user clicks into the item.
         })
-      : buildStaticRail({
+      : await buildDbBackedEmptyRail({
           isHe,
           assessmentStage,
-          hasActiveAssignments: journeyStatus.hasActiveAssignments,
         });
-  const railIsDynamic = timeline.length > 0;
 
-  const workAreaItems: WorkAreaItem[] = timeline.map((entry) => {
-    const title = isHe
-      ? entry.item.title_he
-      : entry.item.title_en || entry.item.title_he;
-    const category =
-      (isHe
-        ? entry.category.name_he
-        : entry.category.name_en || entry.category.name_he) ?? null;
-    const status = entry.status;
-    const href =
-      status === "locked" ? null : `/journey/items/${entry.item.id}`;
-    const whenIso =
-      status === "completed"
-        ? entry.completion?.completed_at ?? entry.scheduled.unlock_at
-        : entry.scheduled.unlock_at;
-    return {
-      id: entry.scheduled.id,
-      title,
-      category,
-      status,
-      href,
-      whenIso: whenIso ?? null,
-    };
-  });
+  // Phase 5 — adaptive ordering. Pull THIS viewer's priority ranking
+  // (each partner has their own) and reorder the rail accordingly so
+  // their #1 priority surfaces first. Categories whose slug isn't in
+  // the priority taxonomy keep their natural position after the
+  // priority block.
+  const viewerPriorities = await getViewerPriorityOrder(user.id);
+  // Build the rail-key → category-slug lookup from the live timeline.
+  // For dynamic categories the slug comes from journey_categories;
+  // for the empty/static rails we pull slugs from the bucket data.
+  const categorySlugByKey = new Map<string, string | null>();
+  for (const entry of timeline) {
+    categorySlugByKey.set(`dyn:${entry.category.id}`, entry.category.slug ?? null);
+  }
+  const railEntries: RailEntry[] = sortRailByPriorities(
+    railEntriesRaw,
+    viewerPriorities,
+    categorySlugByKey,
+  );
+  const railIsDynamic = timeline.length > 0;
 
   // Phase 2F — surface a calm banner when the clinician has replied
   // since the user's last visit. Client-side localStorage handles the
   // "since last visit" part; server fetches the latest reply only.
   const freshReplies = await getFreshClinicianReplies(user.id);
+
+  // ── Phase 4 — dashboard data ────────────────────────────────────────
+  // Activity history: derived from data we already have on the page.
+  // In a follow-up phase we'll add a dedicated event-log table; for
+  // now we synthesise a believable timeline from the assessment +
+  // timeline + clinician replies the user has actually accumulated.
+  const activityEntries: JourneyActivityEntry[] = [];
+  if (hasAnyResponses) {
+    activityEntries.push({
+      id: "assessment_completed",
+      kind: "assessment_completed",
+      title: isHe ? "השלמתם את האבחון האישי" : "Assessment completed",
+      detail:
+        focusLabel && topPriority
+          ? isHe
+            ? `המוקד הראשון: ${focusLabel}`
+            : `Top focus: ${focusLabel}`
+          : null,
+      whenIso: new Date().toISOString(),
+    });
+  }
+  for (const entry of completedItems.slice(0, 5)) {
+    const title =
+      (isHe
+        ? entry.item.title_he
+        : entry.item.title_en || entry.item.title_he) ?? "";
+    const cat =
+      (isHe
+        ? entry.category.name_he
+        : entry.category.name_en || entry.category.name_he) ?? null;
+    activityEntries.push({
+      id: `done-${entry.scheduled.id}`,
+      kind: "item_completed",
+      title: isHe ? `סיימתם: ${title}` : `Completed: ${title}`,
+      detail: cat,
+      whenIso:
+        entry.completion?.completed_at ?? entry.scheduled.unlock_at,
+    });
+  }
+  // Recent unlocks for the "item_unlocked" timeline lane
+  for (const entry of openItems.slice(0, 3)) {
+    const title =
+      (isHe
+        ? entry.item.title_he
+        : entry.item.title_en || entry.item.title_he) ?? "";
+    activityEntries.push({
+      id: `unlock-${entry.scheduled.id}`,
+      kind: "item_unlocked",
+      title: isHe ? `נפתח עבורכם: ${title}` : `Just opened: ${title}`,
+      detail: null,
+      whenIso: entry.scheduled.unlock_at,
+    });
+  }
+  if (freshReplies.latestReplyAt) {
+    activityEntries.push({
+      id: `reply-${freshReplies.latestReplyAt}`,
+      kind: "clinician_replied",
+      title: isHe
+        ? "המומחה שלכם השיב על תגובה"
+        : "Your clinician replied",
+      detail: null,
+      whenIso: freshReplies.latestReplyAt,
+    });
+  }
+
+  // Priority ranking — seeds from the user's assessment ranking when
+  // available, otherwise from the canonical six topics. Server passes
+  // the seed; the client component owns the reorder/add UI.
+  const seededPriorities: PriorityItem[] = topPriority
+    ? // Top priority first, then the rest of the canonical six
+      [
+        {
+          id: `priority-${topPriority}`,
+          label: focusLabel,
+          note: focusDesc || null,
+        },
+        ...["communication", "intimacy", "love", "friendship", "family"]
+          .filter((k) => k !== topPriority)
+          .map((k) => ({
+            id: `priority-${k}`,
+            label:
+              k === "communication"
+                ? isHe ? "תקשורת זוגית" : "Communication"
+                : k === "intimacy"
+                  ? isHe ? "מיניות ואינטימיות" : "Intimacy"
+                  : k === "love"
+                    ? isHe ? "אהבה וחיבור רגשי" : "Love & emotional connection"
+                    : k === "friendship"
+                      ? isHe ? "חברות ושותפות יומיומית" : "Friendship & daily partnership"
+                      : isHe ? "משפחה ולחצים פנימיים" : "Family & internal stress",
+          })),
+      ]
+    : [
+        { id: "p-comm", label: isHe ? "תקשורת זוגית" : "Communication" },
+        { id: "p-intim", label: isHe ? "מיניות ואינטימיות" : "Intimacy" },
+        { id: "p-love", label: isHe ? "אהבה וחיבור רגשי" : "Love & emotional connection" },
+        { id: "p-friend", label: isHe ? "חברות ושותפות יומיומית" : "Friendship & daily partnership" },
+        { id: "p-family", label: isHe ? "משפחה ולחצים פנימיים" : "Family & internal stress" },
+      ];
+
+  // Decide whether to show the "experts are reviewing" banner — only
+  // for users who finished the assessment but don't yet have any
+  // assigned content. It would be misleading otherwise.
+  const showWelcomeProcessingBanner =
+    !assessmentMissing &&
+    journeyStatus.hasCompletedAssessment &&
+    !journeyStatus.hasActiveAssignments;
 
   console.log("[/my/journey] rendered for", {
     user_id: user.id,
@@ -334,13 +453,22 @@ export default async function PrivateJourneyPage({
 
   return (
     <div dir={isHe ? "rtl" : "ltr"} className="min-h-[100dvh] text-white">
-      {/* Soft slate frame around the entire therapeutic surface — sets
-          this room apart from the global gradient backdrop and gives
-          the user a clear sense of "I'm inside the private space".
-          Very low opacity so the gradient still bleeds through. */}
-      <div className="mx-auto mt-6 max-w-5xl px-3 sm:px-4">
-        <div className="rounded-3xl border border-white/[0.04] bg-slate-950/30 px-2 pb-8 pt-2 backdrop-blur-[2px] sm:px-4 sm:pb-10 sm:pt-4">
-      <main className="mx-auto max-w-4xl px-4 pb-20 pt-10 sm:pt-14">
+      {/* Phase 2E — fire one analytics event per session when the user
+          lands on the dashboard. Pure side-effect; renders nothing. */}
+      <JourneyDashboardViewTracker
+        hasJourneyEntitlement={true}
+        hasCompletedAssessment={journeyStatus.hasCompletedAssessment}
+        hasActiveAssignments={journeyStatus.hasActiveAssignments}
+        timelineSize={timeline.length}
+        railIsDynamic={railIsDynamic}
+        freshReplyCount={freshReplies.recentReplyCount}
+      />
+      {/* Solid slate frame around the entire therapeutic surface — sets
+          this room apart from the global gradient backdrop. Width matches
+          /my (max-w-6xl) so the user sees the same canvas across pages. */}
+      <div className="mx-auto mt-6 max-w-6xl px-3 sm:px-4">
+        <div className="rounded-3xl border border-white/[0.06] bg-slate-950/75 px-2 pb-8 pt-2 backdrop-blur-md sm:px-4 sm:pb-10 sm:pt-4">
+      <main className="mx-auto w-full px-4 pb-20 pt-10 sm:pt-14">
         {/* Breadcrumb back to /my */}
         <Link
           href="/my"
@@ -361,12 +489,12 @@ export default async function PrivateJourneyPage({
             </span>
           </div>
           <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
-            {isHe ? "החדר הפרטי שלכם" : "Your private space"}
+            {isHe ? "הקליניקה המכווננת שלכם" : "Your tuned clinic"}
           </h1>
           <p className="mt-2 max-w-xl text-white/65">
             {isHe
-              ? "תוכנית עבודה אישית. המומחים שלנו עובדים על התשובות שלכם וכל שלב נבנה במיוחד עבורכם."
-              : "A personal work program. Our experts read your answers and craft each step for you."}
+              ? "תוכן שמסודר לפי מה שחשוב לכם. כל אחד רואה את השלבים בסדר שמתאים למה שביקש באבחון."
+              : "Content ordered by what matters to you. Each partner sees their own ranking — your priorities lead."}
           </p>
         </header>
 
@@ -397,52 +525,57 @@ export default async function PrivateJourneyPage({
           </section>
         ) : null}
 
-        {/* ─────── Coaching path rail — the orientation strip ───────
-            Sits at the top of the therapeutic surface so the user
-            sees past / present / future at a glance. Past = completed
-            categories (emerald), present = current step, future =
-            locked. */}
-        <section className="mt-8">
-          <JourneyProgressRail
-            isHe={isHe}
-            entries={railEntries}
-            hasJourneyEntitlement={true}
-            isDynamic={railIsDynamic}
-          />
-        </section>
-
-        {/* ─────── Chosen priority highlight ───────
-            Calm slate panel — same visual register as the rail and
-            pillar cards. The user's chosen focus is the clinical
-            anchor for everything else on this page. */}
-        {topPriority ? (
-          <section className="mt-8 rounded-2xl border border-slate-300/[0.08] bg-slate-950/40 p-5 backdrop-blur-md">
-            <div className="flex items-start gap-3">
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/[0.06]">
-                <Star className="size-5 text-white/80" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[11px] uppercase tracking-wider text-white/55">
-                  {isHe ? "המוקד הראשון שלכם" : "Your first focus"}
-                </p>
-                <h2 className="mt-1 text-xl font-semibold text-white">
-                  {focusLabel}
-                </h2>
-                {focusDesc ? (
-                  <p className="mt-1 text-sm text-white/65">{focusDesc}</p>
-                ) : null}
-              </div>
-            </div>
+        {/* ─────── "Experts are reviewing" banner ───────
+            Shown for users who completed the assessment but don't yet
+            have assigned content. Stays above the desk so it doesn't
+            compete with the rail/content layout below. */}
+        {showWelcomeProcessingBanner ? (
+          <section className="mt-6">
+            <WelcomeProcessingBanner isHe={isHe} />
           </section>
         ) : null}
 
-        {/* ─────── Past · Present · Future ───────
-            Replaces the older Open/Coming/Completed triple with a
-            single tabbed work-area component. Same data, tighter
-            layout, identical visual language to the /my pillar cards
-            (slate-950/40 dark glass). */}
+        {/* ─────── Personal-priority hint ───────
+            Tells the viewer (each partner sees their OWN order) why
+            the steps below are arranged the way they are. We surface
+            this only when the user has actually ranked priorities. */}
+        {viewerPriorities && viewerPriorities.length > 0 && topPriority ? (
+          <section className="mt-6">
+            <p className="rounded-xl border border-emerald-400/20 bg-emerald-500/[0.06] px-4 py-2.5 text-[13px] text-emerald-100">
+              {isHe
+                ? `מסודר לפי הדירוג שלך: המוקד הראשון הוא ${focusLabel}. בן/בת הזוג רואה את הסדר שלהם בנפרד.`
+                : `Ordered by your ranking: top focus is ${focusLabel}. Your partner sees their own order.`}
+            </p>
+          </section>
+        ) : null}
+
+        {/* ─────── The desk — vertical rail + content panel ───────
+            The rail (right in RTL, top on mobile) acts as the menu;
+            clicking a step swaps the panel content on the left. The
+            rail order has been re-sorted per the viewer's ranking
+            (Phase 5 — sortRailByPriorities). */}
         <section className="mt-8">
-          <JourneyWorkArea isHe={isHe} items={workAreaItems} />
+          <JourneyDesk isHe={isHe} entries={railEntries} />
+        </section>
+
+        {/* ─────── Secondary dashboard ───────
+            The desk above answers "what am I working on now". This
+            grid answers "what's the bigger picture" — history,
+            priorities, and the message channel to the clinician. */}
+        <section className="mt-10 grid gap-6 lg:grid-cols-12">
+          <div className="lg:col-span-7">
+            <JourneyActivityHistory
+              isHe={isHe}
+              entries={activityEntries}
+            />
+          </div>
+          <div className="flex flex-col gap-6 lg:col-span-5">
+            <JourneyPriorityRanking
+              isHe={isHe}
+              initialItems={seededPriorities}
+            />
+            <JourneyExpertMessage isHe={isHe} />
+          </div>
         </section>
 
         {/* ─────── Footer note ─────── */}

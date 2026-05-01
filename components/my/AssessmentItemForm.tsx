@@ -34,6 +34,7 @@ import {
   submitAssessmentResponse,
   type AssessmentSubmitResult,
 } from "@/lib/journey-content/assessment-actions";
+import { track } from "@/lib/analytics";
 
 export function AssessmentItemForm({
   isHe,
@@ -102,6 +103,13 @@ export function AssessmentItemForm({
       if (res.ok) {
         setFeedback({ kind: "saved" });
         setLocked(true);
+        track("journey_assessment_submitted", {
+          scheduled_item_id: scheduledItemId,
+          question_count: questions.length,
+          answered_count: totalAnswered,
+          has_summary: summary.trim().length > 0,
+          is_private: isPrivate,
+        });
       } else {
         setFeedback({
           kind: "error",

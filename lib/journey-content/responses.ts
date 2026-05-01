@@ -22,6 +22,7 @@
  */
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { computeResponseTags } from "@/lib/dashboard/auto-tag";
 
 export type SubmitResponseResult =
   | { ok: true; responseId: string }
@@ -59,6 +60,14 @@ export async function submitJourneyResponse(args: {
     };
   }
 
+  // Phase 4 — deterministic auto-tags so the clinician CRM can
+  // filter "needs attention" rows without scanning every row's text.
+  const tags = computeResponseTags({
+    text,
+    isPrivate: args.isPrivate === true,
+    hasStructuredAnswer: false, // assessment-actions.ts handles that path
+  });
+
   // Insert. RLS ensures the user can only post on their own assignments.
   const { data, error } = await supabase
     .from("journey_item_responses")
@@ -67,6 +76,7 @@ export async function submitJourneyResponse(args: {
       user_id: user.id,
       response_text: text,
       is_private: args.isPrivate === true,
+      tags,
     })
     .select("id")
     .single();

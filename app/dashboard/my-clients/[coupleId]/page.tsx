@@ -46,6 +46,9 @@ import {
 // Phase 2C — read-only inbox of user responses to journey items
 import { listClinicianResponsesForUsers } from "@/lib/journey-content/clinician-responses";
 import { ClientResponsesInbox } from "@/components/dashboard/journey/ClientResponsesInbox";
+// Phase 4 — user→clinician messages from the dashboard
+import { listClinicianUserMessages } from "@/lib/journey-content/user-messages";
+import { ClientMessagesList } from "@/components/dashboard/journey/ClientMessagesList";
 
 export const dynamic = "force-dynamic";
 
@@ -213,6 +216,15 @@ export default async function CoupleDetailPage({
     }),
   ]);
 
+  // Phase 4 — free-text messages from JourneyExpertMessage. Loaded
+  // separately (not in the big Promise.all) to keep the diff clean
+  // and to make it easy to fail-soft if the migration isn't applied
+  // yet on this environment.
+  const journeyUserMessages = await listClinicianUserMessages({
+    userIds: partnerUserIds,
+    limit: 50,
+  }).catch(() => []);
+
   // Map user_id → human label (email or "Partner A/B"), used by the
   // inbox component to attribute each response.
   const partnerLabelsById = new Map<string, string>();
@@ -344,6 +356,19 @@ export default async function CoupleDetailPage({
           rows={journeyItemResponses}
           partners={partnerLabelsById}
           coupleId={detail.coupleId}
+        />
+      </section>
+
+      {/* ── Phase 4 ── Free-text messages the clients typed via
+          JourneyExpertMessage on /my/journey. One-way channel —
+          the clinician acts via assignments + interventions. */}
+      <section className="space-y-2">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          Messages from clients
+        </h2>
+        <ClientMessagesList
+          rows={journeyUserMessages}
+          partners={partnerLabelsById}
         />
       </section>
 

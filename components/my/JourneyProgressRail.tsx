@@ -14,8 +14,10 @@
  */
 
 import { CheckCircle2, Lock, Sparkles } from "lucide-react";
+import { Link } from "@/navigation";
 import type { RailEntry } from "@/lib/dashboard/journey-rail";
 import { SparkleBurst } from "./SparkleBurst";
+import { RailPillTracker } from "./RailPillTracker";
 
 export function JourneyProgressRail({
   isHe,
@@ -113,12 +115,18 @@ function RailPill({ entry }: { entry: RailEntry }) {
         ? Sparkles
         : Lock;
 
-  return (
+  const isClickable = !!entry.href && entry.status !== "pending";
+  const interactiveClass = isClickable
+    ? "cursor-pointer hover:border-white/40 hover:bg-white/[0.06]"
+    : "cursor-default";
+
+  const inner = (
     <div
       className={[
         "group relative flex min-w-[150px] flex-col items-start gap-1 rounded-xl border px-3.5 py-2.5",
         "transition-colors duration-200",
         surfaceClass,
+        interactiveClass,
       ].join(" ")}
       title={entry.hint}
     >
@@ -134,4 +142,15 @@ function RailPill({ entry }: { entry: RailEntry }) {
       <span className="text-sm font-semibold leading-snug">{entry.label}</span>
     </div>
   );
+
+  if (isClickable && entry.href) {
+    return (
+      <RailPillTracker entryKey={entry.key} entryLabel={entry.label} entryStatus={entry.status}>
+        <Link href={entry.href} className="block">
+          {inner}
+        </Link>
+      </RailPillTracker>
+    );
+  }
+  return inner;
 }

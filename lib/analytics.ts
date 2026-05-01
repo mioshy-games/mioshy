@@ -33,6 +33,16 @@ export type AnalyticsEvent =
   | "journey_auth_gate_shown"  // registration step shown
   | "journey_completed"        // all questions answered
 
+  // Journey post-purchase (private space + therapeutic dashboard)
+  | "journey_dashboard_viewed"      // user landed on /my/journey
+  | "journey_rail_pill_clicked"     // user clicked a clickable rail pill
+  | "journey_priority_reordered"    // user moved a priority up/down
+  | "journey_priority_added"        // user added a custom priority
+  | "journey_priority_removed"      // user removed a custom priority
+  | "journey_message_to_expert_sent" // user sent a free-text note to clinician
+  | "journey_response_submitted"     // user submitted a response on an item
+  | "journey_assessment_submitted"   // user submitted a structured assessment
+
   // Auth
   | "registration_started"     // user opens registration form
   | "registration_completed"   // user successfully signed up
