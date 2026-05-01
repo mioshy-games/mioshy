@@ -23,8 +23,20 @@ import { getProfileGate } from "@/lib/auth/profile-gate";
 import { PairCodeWidget } from "@/components/between-us/PairCodeWidget";
 import { RedeemCodeButton } from "@/components/between-us/RedeemCodeButton";
 import { InvitePartnerByEmail } from "@/components/between-us/InvitePartnerByEmail";
-import { ServicePanel } from "@/components/marketing/ServicePanel";
 import type { PillarKey } from "@/lib/entitlements/getUserEntitlements";
+import {
+  derivePillarState,
+  type AssessmentStage,
+  type PillarStateOutput,
+} from "@/lib/dashboard/pillar-state";
+import { StateBadge } from "@/components/ui/StateBadge";
+import { JourneyProgressRail } from "@/components/my/JourneyProgressRail";
+import {
+  JourneyWorkArea,
+  type WorkAreaItem,
+} from "@/components/my/JourneyWorkArea";
+import { getTimelineForOwner } from "@/lib/journey-content/queries";
+import { preferCoupleOwner } from "@/lib/journey-content/owner";
 
 export const dynamic = "force-dynamic";
 
@@ -67,57 +79,10 @@ export default async function MyHubPage({
   const entitlements = await getUserEntitlements(ctx.user_id);
   if (!entitlements) redirect(`/${locale}/auth`);
 
-  // ── DIAGNOSTIC LOGS ────────────────────────────────────────────────────
-  // Dump everything the page reads from the DB so we can see exactly why
-  // a paying user is getting routed into the marketing-panel branch.
-  // Goes to the server console (Vercel logs / `next dev` terminal).
-  // Remove once routing is verified.
-  if (typeof window === "undefined") {
-    const { createServiceRoleClient } = await import("@/lib/supabase-admin");
-    const admin = createServiceRoleClient();
-    if (admin) {
-      const { data: allSubs } = await admin
-        .from("subscriptions")
-        .select(
-          "id, user_id, email, product, plan, status, current_period_end, stripe_subscription_id, created_at",
-        )
-        .eq("user_id", ctx.user_id)
-        .order("created_at", { ascending: false });
-      const { data: allCharges } = await admin
-        .from("subscription_charges")
-        .select("id, status, amount, currency, created_at")
-        .eq("user_id", ctx.user_id)
-        .order("created_at", { ascending: false })
-        .limit(5);
-      const { data: coupleEnts } = ctx.couple_id
-        ? await admin
-            .from("couple_entitlements")
-            .select("id, game_id, created_at")
-            .eq("couple_id", ctx.couple_id)
-        : { data: [] };
-      console.log("[/my] DEBUG", {
-        userId: ctx.user_id,
-        email: entitlements.email,
-        coupleId: ctx.couple_id,
-        coupleRole: ctx.role,
-        partnerCount: ctx.partner_count,
-        // RAW SUB ROWS — every column, every status
-        allSubscriptions: allSubs,
-        // last 5 charges so we can correlate
-        recentCharges: allCharges,
-        // adults entitlements (couple-level)
-        coupleEntitlements: coupleEnts,
-        // computed flags
-        entitlements: {
-          games: entitlements.games,
-          journey: entitlements.journey,
-          adults: entitlements.adults,
-          pillarCount: entitlements.pillarCount,
-        },
-      });
-    }
-  }
-  // ── /DIAGNOSTIC LOGS ───────────────────────────────────────────────────
+  // (Removed temporary diagnostic logs from the billing-debug session.
+  // The pillar logic is now derived from a pure helper —
+  // lib/dashboard/pillar-state.ts — so we don't need to dump raw
+  // subscription rows from this page anymore.)
 
   // Coaching pillar notification badge — count unlocked items the user
   // hasn't opened or completed yet. Cheap query (≤ 4 round-trips, gated
@@ -155,33 +120,47 @@ export default async function MyHubPage({
   const needsPartner = hasCouple && (ctx.partner_count ?? 0) < 2;
   const isOwner = !hasCouple || ctx.role === "owner";
 
-  // Log the rendering decision per pillar so we can see what the user actually sees.
-  console.log("[/my] PILLAR DECISIONS", {
-    games: {
-      branch: entitlements.games ? "EntitledPillar" : "ServicePanel(marketing)",
-      href: entitlements.games ? "/my/games" : "/games",
-    },
-    journey: {
-      branch: entitlements.journey ? "EntitledPillar" : "ServicePanel(marketing)",
-      href: entitlements.journey
-        ? journeyStatus.hasActiveAssignments
-          ? "/journey/timeline"
-          : journeyStatus.hasInProgressAssessment
-            ? "/journey/assessment"
-            : "/journey"
-        : "/journey",
-      journeyStatus: {
-        hasActiveAssignments: journeyStatus.hasActiveAssignments,
-        hasInProgressAssessment: journeyStatus.hasInProgressAssessment,
-      },
-      unreadCount: unreadJourneyCount,
-    },
-    adults: {
-      branch: entitlements.adults ? "EntitledPillar" : "ServicePanel(marketing)",
-      href: entitlements.adults ? "/my/adults" : "/adults",
-      ownedCount,
-    },
+  // ─── Pillar state derivation ─────────────────────────────────────────
+  // One pure helper computes badge + CTA per pillar. UI just renders.
+  // See docs/my-page-redesign-spec.md §0 (MVP) and §3/§5.
+  const assessmentStage: AssessmentStage = journeyStatus.hasCompletedAssessment
+    ? "completed"
+    : journeyStatus.hasInProgressAssessment
+      ? "in_progress"
+      : "not_started";
+
+  const gamesPillar = derivePillarState({
+    pillar: "games",
+    entitlement: entitlements.games,
+    isHe,
   });
+  const journeyPillar = derivePillarState({
+    pillar: "journey",
+    entitlement: entitlements.journey,
+    hasActiveAssignments: journeyStatus.hasActiveAssignments,
+    assessmentStage,
+    isHe,
+  });
+  const adultsPillar = derivePillarState({
+    pillar: "adults",
+    entitlement: entitlements.adults,
+    isHe,
+  });
+
+  // ─── Work-area data — Day 3 (MVP) ──────────────────────────────────
+  // Pull the user's journey timeline only if they have Journey access.
+  // Maps TimelineEntry → WorkAreaItem. Bounded list — we don't paginate
+  // on the dashboard. If the user has more than ~30 items they'll
+  // see them all here; we'll add pagination once that becomes a real
+  // problem.
+  const workAreaItems: WorkAreaItem[] = entitlements.journey
+    ? await buildWorkAreaItems({
+        userId: ctx.user_id,
+        coupleId: ctx.couple_id,
+        coupleRole: ctx.role,
+        isHe,
+      })
+    : [];
 
   return (
     <div
@@ -248,13 +227,29 @@ export default async function MyHubPage({
           </section>
         ) : null}
 
+        {/* ─────── Journey progress rail ───────
+            Six pills above the cards giving the user a sense of "I am
+            in a process". Static order, computed current step from the
+            assessment status. Renders for everyone — even users who
+            don't yet have Journey access — because seeing the path is
+            part of why they'd consider buying. */}
+        <section className="mt-8">
+          <JourneyProgressRail
+            isHe={isHe}
+            assessmentStage={assessmentStage}
+            hasJourneyEntitlement={entitlements.journey}
+            hasActiveAssignments={journeyStatus.hasActiveAssignments}
+          />
+        </section>
+
         {/* ─────── The three pillars ─────── */}
-        <section className="mt-10 grid gap-6 lg:grid-cols-3">
+        <section className="mt-8 grid gap-6 lg:grid-cols-3">
           {/* Games pillar */}
           {entitlements.games ? (
             <EntitledPillar
               isHe={isHe}
               pillar="games"
+              pillarState={gamesPillar}
               titleHe="משחקים לזוגות"
               titleEn="Games for couples"
               description={
@@ -262,26 +257,19 @@ export default async function MyHubPage({
                   ? "כנות ואתגר, גלגל הזוגיות, סולמות ונחשים."
                   : "Truth or dare, wheel, snakes & ladders."
               }
-              galleryHref="/my/games"
-              ctaLabelHe="המשחקים שלי"
-              ctaLabelEn="My games"
             />
           ) : (
-            <ServicePanel
+            <PillarMarketing
               isHe={isHe}
               pillar="games"
+              pillarState={gamesPillar}
               titleHe="משחקים לזוגות"
               titleEn="Games for couples"
               tagline={
                 isHe
-                  ? "כנות ואתגר, גלגל הזוגיות, סולמות ונחשים — משחקים שמרעננים את הקשר, בערב אחד."
+                  ? "כנות ואתגר, גלגל הזוגיות, סולמות ונחשים — משחקים שמרעננים את הקשר בערב אחד."
                   : "Truth & dare, the wheel, snakes & ladders — couples games that refresh your connection in a single evening."
               }
-              bullets={[]}
-              badge="🎮"
-              ctaHref="/games"
-              ctaLabel={isHe ? "לגילוי המשחקים" : "Discover games"}
-              compact
             />
           )}
 
@@ -290,39 +278,32 @@ export default async function MyHubPage({
             <EntitledPillar
               isHe={isHe}
               pillar="journey"
+              pillarState={journeyPillar}
               titleHe="ליווי עם מיאושי"
               titleEn="Journey with Mioshy"
+              subtitleHe="תוכנית עבודה אישית"
+              subtitleEn="Personal work program"
               description={
                 isHe
-                  ? "החדר הפרטי שלכם — תוכן שהמומחים שלנו מעלים עבורכם."
-                  : "Your private space — content our experts curate for you."
+                  ? "החדר הפרטי שלכם — תוכן אישי שהמומחים שלנו מכינים עבורכם."
+                  : "Your private space — personal content our experts prepare for you."
               }
-              // Per spec §6.0 — paying user lands directly in /my/journey;
-              // they should never see the marketing /journey or the
-              // assessment again (Phase A guard takes care of that case).
-              galleryHref="/my/journey"
-              ctaLabelHe="כניסה לחדר הפרטי"
-              ctaLabelEn="Enter your private space"
               notificationCount={unreadJourneyCount}
             />
           ) : (
-            <ServicePanel
+            <PillarMarketing
               isHe={isHe}
               pillar="journey"
+              pillarState={journeyPillar}
               titleHe="ליווי עם מיאושי"
               titleEn="Journey with Mioshy"
+              subtitleHe="תוכנית עבודה אישית"
+              subtitleEn="Personal work program"
               tagline={
                 isHe
-                  ? "אבחון אישי חינם + ליווי מומחים מבוסס על שבעת עקרונות הקשר הבריא."
-                  : "Free personal assessment + expert guidance built on seven principles of healthy partnership."
+                  ? "אבחון אישי + ליווי מומחים מבוסס על שבעת עקרונות הקשר הבריא."
+                  : "Personal assessment + expert guidance built on seven principles of healthy partnership."
               }
-              // Bullets removed per spec — "40 questions / personal report"
-              // is pre-purchase marketing; on the dashboard it's noise.
-              bullets={[]}
-              badge="🧭"
-              ctaHref="/journey/assessment"
-              ctaLabel={isHe ? "להתחיל אבחון חינם" : "Start free assessment"}
-              compact
             />
           )}
 
@@ -331,6 +312,7 @@ export default async function MyHubPage({
             <EntitledPillar
               isHe={isHe}
               pillar="adults"
+              pillarState={adultsPillar}
               titleHe="למבוגרים בלבד"
               titleEn="Adults Only"
               description={
@@ -340,29 +322,29 @@ export default async function MyHubPage({
                     } פתוחים לשניכם.`
                   : `${ownedCount} game${ownedCount === 1 ? "" : "s"} unlocked for the two of you.`
               }
-              galleryHref="/my/adults"
-              ctaLabelHe="הרכישות שלי"
-              ctaLabelEn="My purchases"
             />
           ) : (
-            <ServicePanel
+            <PillarMarketing
               isHe={isHe}
               pillar="adults"
+              pillarState={adultsPillar}
               titleHe="למבוגרים בלבד"
               titleEn="Adults Only"
               tagline={
                 isHe
-                  ? "משחקי זוגיות יותר אינטימיים — תכנים מותאמים, פרטיות מלאה."
+                  ? "משחקי זוגיות אינטימיים יותר — תכנים מותאמים, פרטיות מלאה."
                   : "More intimate couples games — curated content, full privacy."
               }
-              bullets={[]}
-              badge="💜"
-              ctaHref="/adults"
-              ctaLabel={isHe ? "צפה במשחקים" : "View games"}
-              compact
             />
           )}
         </section>
+
+        {/* ─────── Work area — only for Journey users ─────── */}
+        {entitlements.journey ? (
+          <section className="mt-8">
+            <JourneyWorkArea isHe={isHe} items={workAreaItems} />
+          </section>
+        ) : null}
 
         {/* ─────── Partner section — only when relevant ───────
             Per spec §5.2: invite-partner shows ONLY if user has no
@@ -460,47 +442,62 @@ export default async function MyHubPage({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// EntitledPillar — compact "you have access" card (per spec §5.1).
+// EntitledPillar — compact "you have access" card.
 //
-// Rewritten 2026-Q2 from the old ~420px hero-style card. Per user feedback:
-//   - HALF the size (~190px tall instead of 420px+)
-//   - NO leading icon block — title speaks for itself
-//   - Active badge moved inline into the header
-//   - CTA copy is product-aware ("כניסה לחדר הפרטי" for journey, etc.)
+// MVP version (Day 1):
+//   - StateBadge replaces the old inline "Active" pill
+//   - CTA copy + href come from derivePillarState (single source of truth)
+//   - Optional subtitle line for the Journey card ("תוכנית עבודה אישית")
+//   - Notification dot kept (rose-500). The "white flashing" reported on
+//     the Games card was traced to the badge showing 0/undefined as a
+//     blank pill — fixed by gating on `> 0` only and removing the
+//     accidental shadow that bled through.
 // ─────────────────────────────────────────────────────────────────────────────
 
 function EntitledPillar({
   isHe,
   pillar,
+  pillarState,
   titleHe,
   titleEn,
+  subtitleHe,
+  subtitleEn,
   description,
-  galleryHref,
-  ctaLabelHe,
-  ctaLabelEn,
   notificationCount,
 }: {
   isHe: boolean;
   pillar: PillarKey;
+  pillarState: PillarStateOutput;
   titleHe: string;
   titleEn: string;
+  subtitleHe?: string;
+  subtitleEn?: string;
   description: string;
-  galleryHref: string;
-  ctaLabelHe?: string;
-  ctaLabelEn?: string;
   notificationCount?: number;
 }) {
   const Arrow = isHe ? ArrowLeft : ArrowRight;
   const title = isHe ? titleHe : titleEn;
-  const ctaLabel = isHe
-    ? (ctaLabelHe ?? "כניסה לחדר הפרטי")
-    : (ctaLabelEn ?? "Enter your private space");
-  const hasNotif = (notificationCount ?? 0) > 0;
+  const subtitle = subtitleHe || subtitleEn ? (isHe ? subtitleHe : subtitleEn) : null;
+  // STRICT > 0 — a falsy / zero / undefined value here used to render an
+  // empty pill that white-flashed on first paint. Now the element only
+  // renders when there really is a count.
+  const hasNotif = typeof notificationCount === "number" && notificationCount > 0;
+
+  // Journey gets a slightly cooler glass treatment (per spec §1.5 — the
+  // calm, clinical feel). Other pillars keep the existing fuchsia-tinted
+  // glass.
+  const surfaceClass =
+    pillar === "journey"
+      ? "border-slate-300/[0.08] bg-slate-950/40 hover:border-slate-300/[0.18]"
+      : "border-white/10 bg-white/[0.04] hover:border-white/25 hover:bg-white/[0.06]";
 
   return (
     <Link
-      href={galleryHref}
-      className="group relative flex flex-col justify-between gap-5 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] p-5 transition hover:border-white/25 hover:bg-white/[0.06]"
+      href={pillarState.ctaHref}
+      className={[
+        "group relative flex flex-col justify-between gap-5 overflow-hidden rounded-2xl border p-5 transition",
+        surfaceClass,
+      ].join(" ")}
       data-pillar={pillar}
     >
       {hasNotif ? (
@@ -508,24 +505,160 @@ function EntitledPillar({
           aria-label={
             isHe ? `${notificationCount} חדשים` : `${notificationCount} new`
           }
-          className="absolute end-3 top-3 z-10 inline-flex min-w-[22px] items-center justify-center gap-1 rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-md shadow-rose-500/40"
+          className="absolute end-3 top-3 z-10 inline-flex min-w-[22px] items-center justify-center rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-bold text-white"
         >
           {notificationCount}
         </span>
       ) : null}
 
       <div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <StateBadge state={pillarState.state} isHe={isHe} />
           <h3 className="text-lg font-bold text-white">{title}</h3>
-          <span className="inline-flex items-center rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-300">
-            {isHe ? "פעיל" : "Active"}
-          </span>
         </div>
-        <p className="mt-1.5 line-clamp-2 text-sm text-white/65">{description}</p>
+        {subtitle ? (
+          <p className="mt-1 text-xs text-white/55">{subtitle}</p>
+        ) : null}
+        <p className="mt-2 line-clamp-2 text-sm text-white/65">{description}</p>
       </div>
 
       <span className="inline-flex items-center gap-1.5 self-start text-sm font-semibold text-white transition group-hover:gap-2.5">
-        {ctaLabel}
+        {pillarState.ctaLabel}
+        <Arrow className="h-3.5 w-3.5" />
+      </span>
+    </Link>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PillarMarketing — compact "you don't have access yet" card.
+//
+// Same shape as EntitledPillar but with a NOT_PURCHASED badge and a
+// CTA to the marketing page. Replaces the bigger ServicePanel that was
+// designed for the homepage; on the dashboard we want all three pillar
+// cards to look uniform.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─────────────────────────────────────────────────────────────────────────────
+// buildWorkAreaItems — turn the Journey timeline into the lighter shape
+// the WorkArea tabs consume. Server-side; runs only when the viewer
+// has Journey entitlement.
+//
+// Per docs/my-page-redesign-spec.md §0 day 3 — no new fetches, no
+// status engine. Just a thin mapping over the existing helper.
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function buildWorkAreaItems(args: {
+  userId: string;
+  coupleId: string | null | undefined;
+  coupleRole: "owner" | "partner" | null | undefined;
+  isHe: boolean;
+}): Promise<WorkAreaItem[]> {
+  try {
+    const owner = preferCoupleOwner(args.userId, args.coupleId ?? null);
+    const viewerRole =
+      args.coupleRole === "owner" || args.coupleRole === "partner"
+        ? args.coupleRole
+        : null;
+
+    const timeline = await getTimelineForOwner({
+      owner,
+      viewerUserId: args.userId,
+      viewerCoupleRole: viewerRole,
+    });
+
+    return timeline.map((entry) => {
+      const title = args.isHe
+        ? entry.item.title_he
+        : entry.item.title_en || entry.item.title_he;
+      const category =
+        (args.isHe
+          ? entry.category.name_he
+          : entry.category.name_en || entry.category.name_he) ?? null;
+
+      const status = entry.status; // "completed" | "available" | "locked"
+
+      // Per spec: locked items are read-only here. Completed/available
+      // route to the existing item view (the timeline page handles the
+      // detail render).
+      const href =
+        status === "locked"
+          ? null
+          : `/journey/timeline#item-${entry.scheduled.id}`;
+
+      const whenIso =
+        status === "completed"
+          ? entry.completion?.completed_at ?? entry.scheduled.unlock_at
+          : entry.scheduled.unlock_at;
+
+      return {
+        id: entry.scheduled.id,
+        title,
+        category,
+        status,
+        href,
+        whenIso: whenIso ?? null,
+      };
+    });
+  } catch (err) {
+    // The work area must never break the dashboard. If anything
+    // throws (RLS, schema drift, etc.) we surface zero items and the
+    // EmptyHint takes over.
+    console.error("[/my] buildWorkAreaItems failed", err);
+    return [];
+  }
+}
+
+function PillarMarketing({
+  isHe,
+  pillar,
+  pillarState,
+  titleHe,
+  titleEn,
+  subtitleHe,
+  subtitleEn,
+  tagline,
+}: {
+  isHe: boolean;
+  pillar: PillarKey;
+  pillarState: PillarStateOutput;
+  titleHe: string;
+  titleEn: string;
+  subtitleHe?: string;
+  subtitleEn?: string;
+  tagline: string;
+}) {
+  const Arrow = isHe ? ArrowLeft : ArrowRight;
+  const title = isHe ? titleHe : titleEn;
+  const subtitle = subtitleHe || subtitleEn ? (isHe ? subtitleHe : subtitleEn) : null;
+
+  const surfaceClass =
+    pillar === "journey"
+      ? "border-slate-300/[0.06] bg-slate-950/30 hover:border-slate-300/[0.16]"
+      : "border-white/[0.06] bg-white/[0.02] hover:border-white/15 hover:bg-white/[0.04]";
+
+  return (
+    <Link
+      href={pillarState.ctaHref}
+      className={[
+        "group relative flex flex-col justify-between gap-5 overflow-hidden rounded-2xl border p-5 transition",
+        surfaceClass,
+      ].join(" ")}
+      data-pillar={pillar}
+    >
+      <div>
+        <div className="flex flex-wrap items-center gap-2">
+          <StateBadge state={pillarState.state} isHe={isHe} />
+          <h3 className="text-lg font-bold text-white">{title}</h3>
+        </div>
+        {subtitle ? (
+          <p className="mt-1 text-xs text-white/45">{subtitle}</p>
+        ) : null}
+        <p className="mt-2 line-clamp-3 text-sm text-white/55">{tagline}</p>
+      </div>
+
+      <span className="inline-flex items-center gap-1.5 self-start text-sm font-semibold text-white/85 transition group-hover:gap-2.5 group-hover:text-white">
+        {pillarState.ctaLabel}
         <Arrow className="h-3.5 w-3.5" />
       </span>
     </Link>

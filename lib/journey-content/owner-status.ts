@@ -26,6 +26,12 @@ export interface OwnerJourneyStatus {
   owner: JourneyOwner;
   hasActiveAssignments: boolean;
   hasInProgressAssessment: boolean;
+  /**
+   * The user finished the questionnaire — `journeys.status === 'completed'`
+   * on the most-recent row. Drives the "כניסה לליווי עם מיאושי" CTA copy
+   * (see docs/my-page-redesign-spec.md §5).
+   */
+  hasCompletedAssessment: boolean;
 }
 
 /**
@@ -78,6 +84,15 @@ export async function getOwnerJourneyStatus(args: {
     !assessmentRes.error &&
     !!assessmentRow &&
     assessmentRow.status !== "completed";
+  const hasCompletedAssessment =
+    !assessmentRes.error &&
+    !!assessmentRow &&
+    assessmentRow.status === "completed";
 
-  return { owner, hasActiveAssignments, hasInProgressAssessment };
+  return {
+    owner,
+    hasActiveAssignments,
+    hasInProgressAssessment,
+    hasCompletedAssessment,
+  };
 }
