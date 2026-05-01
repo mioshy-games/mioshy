@@ -70,23 +70,43 @@ export async function GET(req: Request) {
   const admin          = await createAdminClient()
 
   // ── Idempotency guard ───────────────────────────────────────────────────────
-  const { data: existing } = await admin
+  const idempotencyCheckStart = Date.now()
+  const { data: existing, error: existingErr } = await admin
     .from("billing_events")
-    .select("processed")
+    .select("id, processed, error, created_at")
     .eq("idempotency_key", idempotencyKey)
     .maybeSingle()
 
+  console.log("[indicator:IDEMPOTENCY_LOOKUP] result", {
+    idempotency_key:  idempotencyKey,
+    elapsed_ms:       Date.now() - idempotencyCheckStart,
+    existing_found:   !!existing,
+    existing_id:      existing?.id ?? null,
+    existing_processed: existing?.processed ?? null,
+    existing_error:   existing?.error ?? null,
+    existing_created_at: existing?.created_at ?? null,
+    lookup_error:     existingErr ? { message: existingErr.message, code: (existingErr as any).code } : null,
+  })
+
   if (existing?.processed) {
-    console.log("[indicator:IDEMPOTENT_SKIP] already processed", {
+    console.log("[indicator:IDEMPOTENT_SKIP] already processed — returning early", {
       idempotency_key: idempotencyKey,
+      existing_id:     existing.id,
+      existing_created_at: existing.created_at,
     })
     return new Response("ok", { status: 200 })
   }
 
   // Insert event row (ignore conflict - already handled above)
-  await admin
+  const upsertStart = Date.now()
+  const { error: upsertErr } = await admin
     .from("billing_events")
     .upsert({ idempotency_key: idempotencyKey, processed: false }, { onConflict: "idempotency_key" })
+  console.log("[indicator:EVENT_UPSERTED]", {
+    idempotency_key: idempotencyKey,
+    elapsed_ms:      Date.now() - upsertStart,
+    upsert_error:    upsertErr ? { message: upsertErr.message, code: (upsertErr as any).code } : null,
+  })
 
   // ── Pull authoritative indicator from Cardcom ───────────────────────────────
   let indicator: Awaited<ReturnType<typeof pullLowProfileIndicator>>
