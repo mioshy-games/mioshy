@@ -94,16 +94,40 @@ export async function POST(req: Request) {
     )
   }
 
+  type SubscriptionJoin = {
+    id: string
+    email: string | null
+    plan: string
+    is_israeli: boolean
+    currency: string
+    status: string
+  }
+
+  type ChargeRow = {
+    id:               string
+    user_id:          string | null
+    subscription_id:  string | null
+    amount:           number
+    currency:         string
+    uniq_asmachta:    string | null
+    raw_response:     unknown
+    created_at:       string
+    // Supabase typings sometimes return a joined relation as either an
+    // array or a single object depending on the query shape — we narrow
+    // it ourselves below.
+    subscriptions:    SubscriptionJoin | SubscriptionJoin[] | null
+  }
+
   const rows: RepairRow[] = []
   let scanned  = 0
   let repaired = 0
   let failed   = 0
 
-  for (const c of (charges || []) as any[]) {
+  for (const c of (charges ?? []) as ChargeRow[]) {
     scanned++
-    const sub = c.subscriptions as
-      | { id: string; email: string; plan: string; is_israeli: boolean; currency: string; status: string }
-      | null
+    const sub: SubscriptionJoin | null = Array.isArray(c.subscriptions)
+      ? (c.subscriptions[0] ?? null)
+      : (c.subscriptions ?? null)
 
     const dealNumber = extractDealNumber(c.raw_response, c.uniq_asmachta)
 
@@ -171,21 +195,22 @@ export async function POST(req: Request) {
       }
       repaired++
       rows.push({ ...baseRow, outcome: "repaired" })
-    } catch (e: any) {
+    } catch (e: unknown) {
       // Issuer succeeded but our local update failed — count it as a
       // failure so we re-run next cycle. Idempotent issuer means no
       // duplicate invoice; the local UPDATE will retry tomorrow.
+      const msg = e instanceof Error ? e.message : String(e)
       await logMioshyBillingFailure({
         userId:         String(c.user_id),
         subscriptionId: String(sub.id),
         chargeId:       String(c.id),
         dealNumber,
-        errorMessage:   `repair-cron: invoice issued but local update failed: ${e?.message ?? String(e)}`,
+        errorMessage:   `repair-cron: invoice issued but local update failed: ${msg}`,
         errorCode:      "unknown",
         payload:        { document_url: res.document_url, document_id: res.document_id },
       })
       failed++
-      rows.push({ ...baseRow, outcome: "still_failed", error: String(e?.message ?? e) })
+      rows.push({ ...baseRow, outcome: "still_failed", error: msg })
     }
   }
 
@@ -211,13 +236,14 @@ function clampInt(n: number, min: number, max: number) {
  * idempotency key is stable across the original call and the repair.
  * Falls back to `uniq_asmachta` so retries still dedupe.
  */
-function extractDealNumber(rawResponse: any, uniqAsmachta: string | null): string | null {
+function extractDealNumber(rawResponse: unknown, uniqAsmachta: string | null): string | null {
   try {
     if (rawResponse && typeof rawResponse === "object") {
+      const r = rawResponse as Record<string, unknown>
       const dn =
-        rawResponse.deal_number ??
-        rawResponse.InternalDealNumber ??
-        rawResponse.internal_deal_number ??
+        (r.deal_number as string | undefined) ??
+        (r.InternalDealNumber as string | undefined) ??
+        (r.internal_deal_number as string | undefined) ??
         null
       if (dn) return String(dn)
     }

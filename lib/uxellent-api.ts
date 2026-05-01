@@ -91,9 +91,17 @@ export async function createBillingDocument(
     }
   }
 
-  let json: any = null
+  type IssuerResponse = {
+    success?:           boolean
+    message?:           string
+    document_url?:      string
+    document_id?:       string
+    idempotent_replay?: boolean
+  }
+
+  let json: IssuerResponse = {}
   try {
-    json = await res.json()
+    json = (await res.json()) as IssuerResponse
   } catch {
     return {
       success: false,
@@ -102,7 +110,7 @@ export async function createBillingDocument(
     }
   }
 
-  if (!res.ok || !json?.success) {
+  if (!res.ok || !json.success) {
     console.error("[uxellent-api] create-document failed", res.status, json)
     const code: MioshyBillingErrorCode =
       res.status >= 500 ? "http_5xx" :
@@ -110,7 +118,7 @@ export async function createBillingDocument(
       "provider_error"
     return {
       success: false,
-      message: String(json?.message ?? `Billing API error (HTTP ${res.status})`),
+      message: String(json.message ?? `Billing API error (HTTP ${res.status})`),
       errorCode: code,
     }
   }

@@ -193,10 +193,7 @@ export default async function PrivateJourneyPage({
   // couple-owned timeline (admin assignments tend to live at couple
   // level). Otherwise fall back to user-owned.
   const couple = await getCurrentCoupleContext();
-  const owner: JourneyOwner = preferCoupleOwner(
-    { kind: "user", user_id: user.id },
-    couple?.couple_id ? { kind: "couple", couple_id: couple.couple_id } : null,
-  );
+  const owner: JourneyOwner = preferCoupleOwner(user.id, couple?.couple_id ?? null);
   const viewerRole =
     couple?.role === "owner" || couple?.role === "partner"
       ? couple.role
