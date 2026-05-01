@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic"
 import { pullLowProfileIndicator, extractToken, normalizeExpiry } from "@/lib/cardcom"
 import { encryptToken, tokenHashSha256 }  from "@/lib/tokenCrypto"
 import { addPlanPeriod, type Plan } from "@/lib/billing"
-import { createBillingDocument }     from "@/lib/uxellent-api"
+import { createBillingDocumentWithRetry } from "@/lib/uxellent-api"
 import { createAdminClient }         from "@/lib/supabase-admin"
 import { assignJourneyOnPurchase }   from "@/lib/journey-content/auto-assign"
 import type { JourneyProductSlug }   from "@/lib/journey-content/types"
@@ -403,18 +403,70 @@ export async function GET(req: Request) {
   }
 
   // ── Create invoice via uxellent API ─────────────────────────────────────────
-  const invoiceResult = await createBillingDocument({
-    user_id:     userId ?? "",
-    email:       session.email,
-    name:        session.name ?? null,
-    country:     session.country_code ?? "",
-    amount:      session.amount,
-    currency:    session.currency,
-    language:    (session.language === "he" ? "he" : "en") as "he" | "en",
-    is_israeli:  session.is_israeli,
-    plan:        session.plan,
-    deal_number: indicator.dealNumber ?? null,
-  })
+  // IMPORTANT: We insert the subscription_charges row BEFORE calling the
+  // billing API, with status='succeeded' and invoice_url=null. The Cardcom
+  // payment already succeeded, so the charge is succeeded regardless of
+  // whether we manage to issue the invoice. Storing the row first means:
+  //   1. Failed invoice creation leaves a discoverable row for the daily
+  //      repair cron (status='succeeded' AND invoice_url IS NULL).
+  //   2. Subsequent indicator retries from Cardcom dedupe via uniq_asmachta.
+  //   3. The retry wrapper attaches charge_id to mioshy_billing_failures.
+  let chargeId: string | null = null
+
+  if (subscriptionId && userId && paymentMethodId) {
+    const { data: charge, error: chargeErr } = await admin
+      .from("subscription_charges")
+      .upsert(
+        {
+          user_id:              userId,
+          subscription_id:      subscriptionId,
+          payment_method_id:    paymentMethodId,
+          amount:               session.amount,
+          currency:             session.currency,
+          status:               "succeeded",
+          uniq_asmachta:        `initial:${sessionId}`,
+          billing_period_start: now.toISOString(),
+          billing_period_end:   periodEnd.toISOString(),
+          invoice_url:          null,
+          raw_response:         { deal_number: indicator.dealNumber ?? null },
+        },
+        { onConflict: "uniq_asmachta" },
+      )
+      .select("id, invoice_url")
+      .maybeSingle()
+
+    if (chargeErr) {
+      console.error("[indicator] failed to upsert initial subscription_charges", chargeErr)
+    } else {
+      chargeId = charge?.id ?? null
+
+      // Idempotency short-circuit: if this charge already has an invoice_url
+      // (Cardcom retried its callback after we already issued), skip.
+      if (charge?.invoice_url) {
+        await admin.from("billing_events").update({ processed: true }).eq("idempotency_key", idempotencyKey)
+        console.log("[indicator:IDEMPOTENT_INVOICE] charge already has invoice_url — skipping issuance", {
+          session_id: sessionId, charge_id: chargeId,
+        })
+        return new Response("ok", { status: 200 })
+      }
+    }
+  }
+
+  const invoiceResult = await createBillingDocumentWithRetry(
+    {
+      user_id:     userId ?? "",
+      email:       session.email,
+      name:        session.name ?? null,
+      country:     session.country_code ?? "",
+      amount:      session.amount,
+      currency:    session.currency,
+      language:    (session.language === "he" ? "he" : "en") as "he" | "en",
+      is_israeli:  session.is_israeli,
+      plan:        session.plan,
+      deal_number: indicator.dealNumber ?? null,
+    },
+    { chargeId, subscriptionId },
+  )
 
   if (invoiceResult.success) {
     if (subscriptionId) {
@@ -422,28 +474,22 @@ export async function GET(req: Request) {
         .from("subscriptions")
         .update({ invoice_url: invoiceResult.document_url })
         .eq("id", subscriptionId)
-
-      // Also record on the initial charge
-      if (paymentMethodId) {
-        await admin.from("subscription_charges").insert({
-          user_id:             userId!,
-          subscription_id:     subscriptionId,
-          payment_method_id:   paymentMethodId,
-          amount:              session.amount,
-          currency:            session.currency,
-          status:              "succeeded",
-          uniq_asmachta:       `initial:${sessionId}`,
-          billing_period_start: now.toISOString(),
-          billing_period_end:   periodEnd.toISOString(),
-          invoice_url:          invoiceResult.document_url,
-        }).then(() => { /* ignore errors */ })
-      }
     }
-    // For one-time purchases we don't have a subscription row to attach the
-    // invoice URL to - the invoice is still created at uxellent and the
-    // checkout_sessions row already carries the deal_number for tracing.
+    if (chargeId) {
+      await admin
+        .from("subscription_charges")
+        .update({ invoice_url: invoiceResult.document_url })
+        .eq("id", chargeId)
+    }
   } else {
-    console.error("[indicator] invoice creation failed", invoiceResult.message)
+    // Note: per-attempt and final failures are already logged by the
+    // retry wrapper. We do NOT block the response — Cardcom must get 200
+    // and the user keeps their subscription. The daily repair cron at
+    // /api/billing/repair-missing-invoices will retry.
+    console.error("[indicator] invoice creation failed (after retries)", {
+      message: invoiceResult.message,
+      errorCode: invoiceResult.errorCode,
+    })
   }
 
   // ── Mark event as processed ─────────────────────────────────────────────────

@@ -5,6 +5,10 @@
       "schedule": "0 6 * * *"
     },
     {
+      "path": "/api/billing/repair-missing-invoices",
+      "schedule": "30 6 * * *"
+    },
+    {
       "path": "/api/journey/notify-unlocks",
       "schedule": "15 * * * *"
     }

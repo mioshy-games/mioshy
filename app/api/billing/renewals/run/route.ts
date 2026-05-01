@@ -17,7 +17,7 @@ import { NextResponse }            from "next/server"
 import { chargeToken }             from "@/lib/cardcom"
 import { decryptToken }            from "@/lib/tokenCrypto"
 import { addPlanPeriod, makeAsmachta, GRACE_PERIOD_DAYS } from "@/lib/billing"
-import { createBillingDocument }   from "@/lib/uxellent-api"
+import { createBillingDocumentWithRetry } from "@/lib/uxellent-api"
 import { createAdminClient }       from "@/lib/supabase-admin"
 
 export async function POST(req: Request) {
@@ -146,17 +146,22 @@ export async function POST(req: Request) {
         })
         .eq("id", subId)
 
-      // Create invoice
-      const invoiceResult = await createBillingDocument({
-        user_id:    userId,
-        email:      sub.email ?? "",
-        country:    "",
-        amount:     sub.plan_amount,
-        currency:   sub.currency,
-        language:   (sub.is_israeli ? "he" : "en") as "he" | "en",
-        is_israeli: sub.is_israeli,
-        plan:       sub.plan,
-      })
+      // Create invoice (with retry, structured failure logging, and
+      // forward-compatible idempotency_key based on the asmachta).
+      const invoiceResult = await createBillingDocumentWithRetry(
+        {
+          user_id:     userId,
+          email:       sub.email ?? "",
+          country:     "",
+          amount:      sub.plan_amount,
+          currency:    sub.currency,
+          language:    (sub.is_israeli ? "he" : "en") as "he" | "en",
+          is_israeli:  sub.is_israeli,
+          plan:        sub.plan,
+          deal_number: asmachta, // idempotency anchor for renewals
+        },
+        { chargeId, subscriptionId: subId },
+      )
 
       const invoiceUrl = invoiceResult.success ? invoiceResult.document_url : null
 
