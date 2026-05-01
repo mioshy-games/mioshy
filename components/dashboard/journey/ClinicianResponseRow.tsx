@@ -27,6 +27,7 @@ import {
   type ClinicianActionResult,
 } from "@/lib/journey-content/clinician-actions";
 import type { ClinicianResponseRow as ResponseRow } from "@/lib/journey-content/clinician-responses";
+import { StructuredAnswerView } from "./StructuredAnswerView";
 
 const MAX_LEN = 4000;
 
@@ -115,13 +116,27 @@ export function ClinicianResponseRow({
         </div>
       </header>
 
-      {/* Body — the user's response */}
-      <div className="mt-2 flex items-start gap-2">
-        <MessageCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-white/40" aria-hidden="true" />
-        <p className="whitespace-pre-wrap text-sm leading-relaxed text-white/80">
-          {row.responseText}
-        </p>
-      </div>
+      {/* Body — assessment answers (Phase 3 step 4) when present;
+          otherwise the user's prose response_text. Both can co-exist
+          if the user typed a summary alongside a structured answer. */}
+      {row.itemKind !== "content" && row.assessmentPayload && row.structuredAnswer ? (
+        <div className="mt-2">
+          <StructuredAnswerView
+            payload={row.assessmentPayload}
+            answers={row.structuredAnswer}
+            isHe={isHe}
+          />
+        </div>
+      ) : null}
+
+      {row.responseText && row.responseText !== "[שאלון מלא — מובנה בלבד]" ? (
+        <div className="mt-2 flex items-start gap-2">
+          <MessageCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-white/40" aria-hidden="true" />
+          <p className="whitespace-pre-wrap text-sm leading-relaxed text-white/80">
+            {row.responseText}
+          </p>
+        </div>
+      ) : null}
 
       {/* Existing clinician reply (read-only block) */}
       {row.clinicianReplyText ? (

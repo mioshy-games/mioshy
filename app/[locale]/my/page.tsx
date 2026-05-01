@@ -19,6 +19,7 @@ import {
 import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
 import { getOwnerJourneyStatus } from "@/lib/journey-content/owner-status";
 import { countUnreadJourneyItems } from "@/lib/journey-content/unread";
+import { getFreshClinicianReplies } from "@/lib/journey-content/fresh-replies";
 import { getProfileGate } from "@/lib/auth/profile-gate";
 import { PairCodeWidget } from "@/components/between-us/PairCodeWidget";
 import { RedeemCodeButton } from "@/components/between-us/RedeemCodeButton";
@@ -77,13 +78,26 @@ export default async function MyHubPage({
   // lib/dashboard/pillar-state.ts — so we don't need to dump raw
   // subscription rows from this page anymore.)
 
-  // Coaching pillar notification badge — count unlocked items the user
-  // hasn't opened or completed yet. Cheap query (≤ 4 round-trips, gated
-  // on having any active assignment).
-  const unreadJourneyCount = await countUnreadJourneyItems({
-    userId: ctx.user_id,
-    coupleId: ctx.couple_id,
-  }).catch(() => 0);
+  // Coaching pillar notification — TWO sources combined:
+  //   a. unread content items (countUnreadJourneyItems)
+  //   b. recent clinician replies (getFreshClinicianReplies, 30-day window)
+  //
+  // We sum both into a single dot on the pillar card. The user just
+  // wants to know "is there something new for me?" — not "of what kind?".
+  // The detail (item vs. reply) shows up inside /my/journey.
+  const [unreadJourneyCount, freshReplies] = await Promise.all([
+    countUnreadJourneyItems({
+      userId: ctx.user_id,
+      coupleId: ctx.couple_id,
+    }).catch(() => 0),
+    getFreshClinicianReplies(ctx.user_id).catch(() => ({
+      latestReplyAt: null,
+      recentReplyCount: 0,
+      latestReplyHref: null,
+    })),
+  ]);
+  const journeyNotificationCount =
+    unreadJourneyCount + freshReplies.recentReplyCount;
 
   // Journey pillar - decide whether the "Open" CTA should go to the live
   // timeline, to Resume Assessment, or to the marketing hub. This is the
@@ -167,6 +181,11 @@ export default async function MyHubPage({
     },
     journey_cta: journeyPillar.ctaLabel,
     journey_href: journeyPillar.ctaHref,
+    notifications: {
+      unreadItems: unreadJourneyCount,
+      freshReplies: freshReplies.recentReplyCount,
+      total: journeyNotificationCount,
+    },
   });
 
   // The Journey rail and the per-tab work-area used to live here. They
@@ -285,7 +304,7 @@ export default async function MyHubPage({
                   ? "החדר הפרטי שלכם — תוכן אישי שהמומחים שלנו מכינים עבורכם."
                   : "Your private space — personal content our experts prepare for you."
               }
-              notificationCount={unreadJourneyCount}
+              notificationCount={journeyNotificationCount}
             />
           ) : (
             <PillarMarketing

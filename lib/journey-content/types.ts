@@ -63,6 +63,58 @@ export interface JourneyCategory {
 
 export type JourneyAudience = "both" | "owner" | "partner";
 
+/**
+ * Migration 050 — discriminator for items that aren't plain content:
+ *   - 'content'    → the original kind (articles / exercises / video)
+ *   - 'assessment' → a structured questionnaire the user fills in
+ *   - 'reflection' → a single open-ended prompt
+ *
+ * For 'assessment' / 'reflection' items, `assessment_payload` carries
+ * the question schema. The user-side response goes through
+ * `journey_item_responses.structured_answer` (also added in 050).
+ */
+export type JourneyItemKind = "content" | "assessment" | "reflection";
+
+export type JourneyAssessmentQuestionKind =
+  | "single_choice"
+  | "multiple_choice"
+  | "scale"
+  | "open_text"
+  | "ranking";
+
+export interface JourneyAssessmentQuestion {
+  id: string;
+  kind: JourneyAssessmentQuestionKind;
+  prompt_he: string;
+  prompt_en?: string | null;
+  required?: boolean;
+  /** For choice/ranking kinds. */
+  options?: Array<{
+    key: string;
+    label_he: string;
+    label_en?: string | null;
+  }>;
+  /** For scale kind. */
+  scale_min?: number;
+  scale_max?: number;
+  scale_min_label_he?: string | null;
+  scale_max_label_he?: string | null;
+  scale_min_label_en?: string | null;
+  scale_max_label_en?: string | null;
+  /** Optional partner-targeting per question. Defaults to the item's
+   *  audience when omitted. */
+  audience?: JourneyAudience;
+}
+
+export interface JourneyAssessmentPayload {
+  version: number;
+  questions: JourneyAssessmentQuestion[];
+  intro_he?: string | null;
+  intro_en?: string | null;
+  outro_he?: string | null;
+  outro_en?: string | null;
+}
+
 export interface JourneyItem {
   id: string;
   category_id: string;
@@ -77,6 +129,10 @@ export interface JourneyItem {
   challenge_en: string | null;
   video_url: string | null;
   image_url: string | null;
+  /** Migration 050. */
+  kind?: JourneyItemKind;
+  /** Migration 050. Present only when kind != 'content'. */
+  assessment_payload?: JourneyAssessmentPayload | null;
   sort_order: number;
   default_offset_days: number;
   is_active: boolean;
@@ -147,6 +203,10 @@ export interface JourneyItemResponse {
   clinician_id?: string | null;
   clinician_reply_text?: string | null;
   clinician_replied_at?: string | null;
+  /** Migration 050 — for assessment/reflection items, the user's
+   *  serialized structured answer keyed by question id. Null for
+   *  content items (which keep using `response_text`). */
+  structured_answer?: Record<string, unknown> | null;
 }
 
 // ------------------------------------------------------------

@@ -30,6 +30,7 @@ import type {
   JourneyScheduledItem,
 } from "@/lib/journey-content/types";
 import { ItemDetailClient } from "@/components/journey/timeline/ItemDetailClient";
+import { AssessmentItemForm } from "@/components/my/AssessmentItemForm";
 
 export const dynamic = "force-dynamic";
 
@@ -159,6 +160,18 @@ export default async function JourneyTimelineItemPage({
     (r) => !r.is_private || r.user_id === user.id,
   );
 
+  // Phase 3 step 2 — for assessment-kind items, the form pre-fills
+  // from the user's most-recent prior response (if any) so they can
+  // revise rather than re-answer from scratch.
+  const myExistingResponse =
+    item.kind === "assessment"
+      ? responses
+          .filter((r) => r.user_id === user.id)
+          .sort((a, b) =>
+            (b.created_at ?? "").localeCompare(a.created_at ?? ""),
+          )[0]
+      : null;
+
   const status = deriveStatus({
     unlockAt: scheduled.unlock_at,
     hasCompletion: !!completion,
@@ -224,6 +237,28 @@ export default async function JourneyTimelineItemPage({
                 : "Chapter"}
           </span>
         </div>
+
+        {/* Phase 3 step 2: when this is an assessment-kind item, render
+            the structured form ABOVE the standard detail block. The
+            standard ItemDetailClient still renders the body / category
+            / past responses underneath; the assessment form is just
+            a richer way to collect a response.
+            For 'content' items (the existing default), the form is
+            skipped — ItemDetailClient handles everything. */}
+        {item.kind === "assessment" && item.assessment_payload ? (
+          <div className="mt-6">
+            <AssessmentItemForm
+              isHe={isHe}
+              scheduledItemId={scheduled.id}
+              payload={item.assessment_payload}
+              initialAnswers={
+                myExistingResponse?.structured_answer ?? undefined
+              }
+              initialSummary={myExistingResponse?.response_text}
+              initialPrivate={myExistingResponse?.is_private}
+            />
+          </div>
+        ) : null}
 
         <ItemDetailClient
           item={item}

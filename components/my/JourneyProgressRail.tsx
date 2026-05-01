@@ -15,6 +15,7 @@
 
 import { CheckCircle2, Lock, Sparkles } from "lucide-react";
 import type { RailEntry } from "@/lib/dashboard/journey-rail";
+import { SparkleBurst } from "./SparkleBurst";
 
 export function JourneyProgressRail({
   isHe,
@@ -115,12 +116,15 @@ function RailPill({ entry }: { entry: RailEntry }) {
   return (
     <div
       className={[
-        "group flex min-w-[150px] flex-col items-start gap-1 rounded-xl border px-3.5 py-2.5",
+        "group relative flex min-w-[150px] flex-col items-start gap-1 rounded-xl border px-3.5 py-2.5",
         "transition-colors duration-200",
         surfaceClass,
       ].join(" ")}
       title={entry.hint}
     >
+      {/* One-shot sparkle when this entry just became "current" — only
+          fires the first time the user sees it (localStorage tracked). */}
+      <SparkleBurst sparkleKey={entry.key} active={entry.status === "current"} />
       <div className="flex items-center gap-1.5">
         <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
         <span className="text-[10px] uppercase tracking-wider text-current/70">

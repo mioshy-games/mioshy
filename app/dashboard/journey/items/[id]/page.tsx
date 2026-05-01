@@ -9,8 +9,13 @@ import {
 import { ItemForm } from "@/components/dashboard/journey/ItemForm";
 import type { CategoryOption } from "@/components/dashboard/journey/ItemForm";
 import { ItemPropagationActions } from "@/components/dashboard/journey/ItemPropagationActions";
+import { AssessmentEditor } from "@/components/dashboard/journey/AssessmentEditor";
 import { ArrowLeft } from "lucide-react";
 import type { JourneyItemFormValues } from "@/lib/journey-content/validations";
+import type {
+  JourneyItemKind,
+  JourneyAssessmentPayload,
+} from "@/lib/journey-content/types";
 
 export const dynamic = "force-dynamic";
 
@@ -75,6 +80,19 @@ export default async function EditItemPage({
         itemId={item.id}
         defaultValues={defaults}
         categories={categoryOptions}
+      />
+
+      {/* Phase 3 step 3 — assessment / reflection editor.
+          Available on every item; for content items it just shows the
+          kind selector. Setting kind=assessment opens the JSON editor
+          + live preview using the same form the end user will see. */}
+      <AssessmentEditor
+        itemId={item.id}
+        initialKind={(item.kind as JourneyItemKind | undefined) ?? "content"}
+        initialPayload={
+          (item.assessment_payload as JourneyAssessmentPayload | null | undefined) ??
+          null
+        }
       />
 
       <ItemPropagationActions

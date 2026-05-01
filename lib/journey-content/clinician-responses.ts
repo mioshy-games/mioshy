@@ -19,6 +19,10 @@
  */
 
 import { createServiceRoleClient } from "@/lib/supabase-admin";
+import type {
+  JourneyAssessmentPayload,
+  JourneyItemKind,
+} from "@/lib/journey-content/types";
 
 export type ClinicianResponseStatus = "open" | "resolved" | "concerning" | null;
 
@@ -35,6 +39,12 @@ export interface ClinicianResponseRow {
   clinicianStatus: ClinicianResponseStatus;
   clinicianReplyText: string | null;
   clinicianRepliedAt: string | null;
+  /** Phase 3 step 4. When the underlying journey_item is an
+   *  assessment / reflection, the clinician sees the structured
+   *  answer paired with the question prompts. */
+  itemKind: JourneyItemKind;
+  assessmentPayload: JourneyAssessmentPayload | null;
+  structuredAnswer: Record<string, unknown> | null;
 }
 
 /**
@@ -63,7 +73,7 @@ export async function listClinicianResponsesForUsers(args: {
   const { data: responses, error: rErr } = await admin
     .from("journey_item_responses")
     .select(
-      "id, scheduled_item_id, user_id, response_text, is_private, created_at, clinician_status, clinician_reply_text, clinician_replied_at",
+      "id, scheduled_item_id, user_id, response_text, is_private, created_at, clinician_status, clinician_reply_text, clinician_replied_at, structured_answer",
     )
     .in("user_id", userIds)
     .order("created_at", { ascending: false })
@@ -112,7 +122,7 @@ export async function listClinicianResponsesForUsers(args: {
 
   const { data: items, error: iErr } = await admin
     .from("journey_items")
-    .select("id, title_he, title_en, category_id")
+    .select("id, title_he, title_en, category_id, kind, assessment_payload")
     .in("id", itemIds);
   if (iErr || !items) {
     console.error("[clinician-responses] item fetch failed", iErr?.message);
@@ -160,6 +170,12 @@ export async function listClinicianResponsesForUsers(args: {
       clinicianStatus: (r.clinician_status as ClinicianResponseStatus) ?? null,
       clinicianReplyText: (r.clinician_reply_text as string | null) ?? null,
       clinicianRepliedAt: (r.clinician_replied_at as string | null) ?? null,
+      itemKind: ((item as { kind?: JourneyItemKind } | null)?.kind ?? "content") as JourneyItemKind,
+      assessmentPayload:
+        ((item as { assessment_payload?: JourneyAssessmentPayload | null } | null)
+          ?.assessment_payload as JourneyAssessmentPayload | null) ?? null,
+      structuredAnswer:
+        (r.structured_answer as Record<string, unknown> | null) ?? null,
     };
   });
 }
