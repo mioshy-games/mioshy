@@ -139,6 +139,14 @@ export interface JourneyItemResponse {
   response_text: string;
   is_private: boolean;
   created_at: string;
+  /** Clinician fields (migration 049). All nullable; populated when
+   *  the clinician triages or replies via the dashboard. The user-
+   *  facing item view surfaces `clinician_reply_text` inline so the
+   *  user can see the reply without leaving the item. */
+  clinician_status?: "open" | "resolved" | "concerning" | null;
+  clinician_id?: string | null;
+  clinician_reply_text?: string | null;
+  clinician_replied_at?: string | null;
 }
 
 // ------------------------------------------------------------

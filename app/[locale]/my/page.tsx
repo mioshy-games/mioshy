@@ -30,13 +30,6 @@ import {
   type PillarStateOutput,
 } from "@/lib/dashboard/pillar-state";
 import { StateBadge } from "@/components/ui/StateBadge";
-import { JourneyProgressRail } from "@/components/my/JourneyProgressRail";
-import {
-  JourneyWorkArea,
-  type WorkAreaItem,
-} from "@/components/my/JourneyWorkArea";
-import { getTimelineForOwner } from "@/lib/journey-content/queries";
-import { preferCoupleOwner } from "@/lib/journey-content/owner";
 
 export const dynamic = "force-dynamic";
 
@@ -147,20 +140,39 @@ export default async function MyHubPage({
     isHe,
   });
 
-  // ─── Work-area data — Day 3 (MVP) ──────────────────────────────────
-  // Pull the user's journey timeline only if they have Journey access.
-  // Maps TimelineEntry → WorkAreaItem. Bounded list — we don't paginate
-  // on the dashboard. If the user has more than ~30 items they'll
-  // see them all here; we'll add pagination once that becomes a real
-  // problem.
-  const workAreaItems: WorkAreaItem[] = entitlements.journey
-    ? await buildWorkAreaItems({
-        userId: ctx.user_id,
-        coupleId: ctx.couple_id,
-        coupleRole: ctx.role,
-        isHe,
-      })
-    : [];
+  // ─── Diagnostic log — prints once per render, server-side only ────
+  // Surfaces in Vercel logs the exact state we're showing the user.
+  // Helps reproduce reports like "I subscribed but the page treats
+  // me as a guest" — we can correlate user_id to the resolved state.
+  console.log("[/my:RENDER]", {
+    user_id: ctx.user_id,
+    email: entitlements.email,
+    couple_id: ctx.couple_id,
+    entitlements: {
+      games: entitlements.games,
+      journey: entitlements.journey,
+      adults: entitlements.adults,
+      pillarCount: entitlements.pillarCount,
+    },
+    assessmentStage,
+    journeyStatus: {
+      hasActiveAssignments: journeyStatus.hasActiveAssignments,
+      hasInProgressAssessment: journeyStatus.hasInProgressAssessment,
+      hasCompletedAssessment: journeyStatus.hasCompletedAssessment,
+    },
+    pillarStates: {
+      games: gamesPillar.state,
+      journey: journeyPillar.state,
+      adults: adultsPillar.state,
+    },
+    journey_cta: journeyPillar.ctaLabel,
+    journey_href: journeyPillar.ctaHref,
+  });
+
+  // The Journey rail and the per-tab work-area used to live here. They
+  // moved to /[locale]/my/journey, where all the past/present/future
+  // therapeutic management lives. /my stays a quiet hub of the three
+  // pillars; everything Journey-specific is one click away.
 
   return (
     <div
@@ -226,21 +238,6 @@ export default async function MyHubPage({
             </div>
           </section>
         ) : null}
-
-        {/* ─────── Journey progress rail ───────
-            Six pills above the cards giving the user a sense of "I am
-            in a process". Static order, computed current step from the
-            assessment status. Renders for everyone — even users who
-            don't yet have Journey access — because seeing the path is
-            part of why they'd consider buying. */}
-        <section className="mt-8">
-          <JourneyProgressRail
-            isHe={isHe}
-            assessmentStage={assessmentStage}
-            hasJourneyEntitlement={entitlements.journey}
-            hasActiveAssignments={journeyStatus.hasActiveAssignments}
-          />
-        </section>
 
         {/* ─────── The three pillars ─────── */}
         <section className="mt-8 grid gap-6 lg:grid-cols-3">
@@ -338,13 +335,6 @@ export default async function MyHubPage({
             />
           )}
         </section>
-
-        {/* ─────── Work area — only for Journey users ─────── */}
-        {entitlements.journey ? (
-          <section className="mt-8">
-            <JourneyWorkArea isHe={isHe} items={workAreaItems} />
-          </section>
-        ) : null}
 
         {/* ─────── Partner section — only when relevant ───────
             Per spec §5.2: invite-partner shows ONLY if user has no
@@ -538,76 +528,6 @@ function EntitledPillar({
 // designed for the homepage; on the dashboard we want all three pillar
 // cards to look uniform.
 // ─────────────────────────────────────────────────────────────────────────────
-
-// ─────────────────────────────────────────────────────────────────────────────
-// buildWorkAreaItems — turn the Journey timeline into the lighter shape
-// the WorkArea tabs consume. Server-side; runs only when the viewer
-// has Journey entitlement.
-//
-// Per docs/my-page-redesign-spec.md §0 day 3 — no new fetches, no
-// status engine. Just a thin mapping over the existing helper.
-// ─────────────────────────────────────────────────────────────────────────────
-
-async function buildWorkAreaItems(args: {
-  userId: string;
-  coupleId: string | null | undefined;
-  coupleRole: "owner" | "partner" | null | undefined;
-  isHe: boolean;
-}): Promise<WorkAreaItem[]> {
-  try {
-    const owner = preferCoupleOwner(args.userId, args.coupleId ?? null);
-    const viewerRole =
-      args.coupleRole === "owner" || args.coupleRole === "partner"
-        ? args.coupleRole
-        : null;
-
-    const timeline = await getTimelineForOwner({
-      owner,
-      viewerUserId: args.userId,
-      viewerCoupleRole: viewerRole,
-    });
-
-    return timeline.map((entry) => {
-      const title = args.isHe
-        ? entry.item.title_he
-        : entry.item.title_en || entry.item.title_he;
-      const category =
-        (args.isHe
-          ? entry.category.name_he
-          : entry.category.name_en || entry.category.name_he) ?? null;
-
-      const status = entry.status; // "completed" | "available" | "locked"
-
-      // Per spec: locked items are read-only here. Completed/available
-      // route to the existing item view (the timeline page handles the
-      // detail render).
-      const href =
-        status === "locked"
-          ? null
-          : `/journey/timeline#item-${entry.scheduled.id}`;
-
-      const whenIso =
-        status === "completed"
-          ? entry.completion?.completed_at ?? entry.scheduled.unlock_at
-          : entry.scheduled.unlock_at;
-
-      return {
-        id: entry.scheduled.id,
-        title,
-        category,
-        status,
-        href,
-        whenIso: whenIso ?? null,
-      };
-    });
-  } catch (err) {
-    // The work area must never break the dashboard. If anything
-    // throws (RLS, schema drift, etc.) we surface zero items and the
-    // EmptyHint takes over.
-    console.error("[/my] buildWorkAreaItems failed", err);
-    return [];
-  }
-}
 
 function PillarMarketing({
   isHe,

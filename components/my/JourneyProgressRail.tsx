@@ -1,98 +1,43 @@
 /**
- * JourneyProgressRail — six pills above the pillar grid that give the
- * user a sense of "I am inside a process" (per docs/my-page-redesign-spec.md
- * §0 day 2 + §4).
+ * JourneyProgressRail — horizontal progress strip above the pillar
+ * grid that tells the user "I am inside a process" at a glance.
  *
- * MVP version (locked):
- *   - Static order. The six topics are baked into this component.
- *   - No DB queries beyond what the parent already fetched.
- *   - Computed current step from `assessmentStage` only:
- *       not_started   → "אבחון" is current, rest is pending
- *       in_progress   → same — current step is still "אבחון"
- *       completed     → "אבחון" is completed, "תובנות" becomes current
- *                        (everything beyond stays pending)
- *   - When the user has an active journey assignment we treat them as
- *     "advancing through topics" but we still don't promise dates;
- *     the rail visually indicates "you're moving".
- *
- * What this is NOT (for now):
- *   - Not connected to journey_assignments / journey_scheduled_items.
- *     The "real rail" version that maps to the admin's content
- *     calendar lives in §13 of the spec — Phase 2.
- *   - Not interactive. Pills are read-only on day 1; later phases
- *     will make completed/active pills clickable to open the item.
+ * MVP day 2 + Phase 2A:
+ *   - Receives a list of entries (RailEntry[]) from the page.
+ *   - Two sources for that list: a STATIC fallback (six baseline
+ *     topics) for users with no assigned content, and a DYNAMIC
+ *     version that aggregates the user's real journey timeline.
+ *   - This component only renders. It doesn't fetch or compute the
+ *     statuses — that lives in lib/dashboard/journey-rail.ts.
+ *   - Static, no animation. The only visual cues are the per-pill
+ *     icon, color, and the small hint line.
  */
 
 import { CheckCircle2, Lock, Sparkles } from "lucide-react";
-import type { AssessmentStage } from "@/lib/dashboard/pillar-state";
-
-type StepStatus = "completed" | "current" | "pending";
-
-interface RailStep {
-  key: string;
-  label_he: string;
-  label_en: string;
-}
-
-// Six topics, in order. The first one ("אבחון") is the questionnaire
-// the user already takes today; the next five are the work topics
-// the clinical team builds the program around. Order matters — it
-// telegraphs the journey shape.
-const STEPS: RailStep[] = [
-  { key: "assessment",   label_he: "אבחון",            label_en: "Assessment" },
-  { key: "insights",     label_he: "תובנות",           label_en: "Insights" },
-  { key: "communication",label_he: "תקשורת זוגית",     label_en: "Communication" },
-  { key: "intimacy",     label_he: "מיניות ואינטימיות", label_en: "Intimacy" },
-  { key: "love",         label_he: "אהבה וחיבור",      label_en: "Love & connection" },
-  { key: "family",       label_he: "משפחה ולחצים",     label_en: "Family & stress" },
-];
-
-function deriveStepStatuses(args: {
-  assessmentStage: AssessmentStage;
-  hasActiveAssignments: boolean;
-}): StepStatus[] {
-  const { assessmentStage, hasActiveAssignments } = args;
-
-  // Default: all pending
-  const out: StepStatus[] = STEPS.map(() => "pending");
-
-  if (assessmentStage === "completed") {
-    out[0] = "completed";
-    // Once the assessment is done we mark "תובנות" as current — it's
-    // the bridge step where the clinician reads answers and prepares
-    // the next content. If there's actually content already assigned,
-    // keep "תובנות" current (visible "you're being processed") and
-    // signal that more is coming.
-    out[1] = hasActiveAssignments ? "completed" : "current";
-    if (hasActiveAssignments) {
-      // Light up the third pill — they're already in the work part.
-      out[2] = "current";
-    }
-  } else {
-    // not_started OR in_progress — assessment is the current step
-    out[0] = "current";
-  }
-
-  return out;
-}
+import type { RailEntry } from "@/lib/dashboard/journey-rail";
 
 export function JourneyProgressRail({
   isHe,
-  assessmentStage,
+  entries,
   hasJourneyEntitlement,
-  hasActiveAssignments,
+  isDynamic,
 }: {
   isHe: boolean;
-  assessmentStage: AssessmentStage;
+  entries: RailEntry[];
   hasJourneyEntitlement: boolean;
-  hasActiveAssignments: boolean;
+  /** True when the entries came from the user's real timeline,
+   *  false when they're the static fallback. Drives the small
+   *  caption above the rail. */
+  isDynamic: boolean;
 }) {
-  const statuses = deriveStepStatuses({ assessmentStage, hasActiveAssignments });
-
-  // For users without Journey access, we still show the rail — but we
-  // ground it as a *preview* with a subtler caption. They see the same
-  // shape they'd get if they bought.
+  // Logged-in users without a Journey purchase still see the rail —
+  // it's the clearest "what you'd get" preview. We dim it slightly
+  // and label it as a preview.
   const previewMode = !hasJourneyEntitlement;
+
+  // Don't render anything if there's nothing to show — protects the
+  // page when an unexpected empty array slips through.
+  if (entries.length === 0) return null;
 
   return (
     <div
@@ -111,48 +56,37 @@ export function JourneyProgressRail({
         </h2>
         <p className="text-[11px] text-white/45">
           {previewMode
-            ? isHe
-              ? "תצוגה מקדימה"
-              : "Preview"
-            : isHe
-              ? "השלב הנוכחי מסומן"
-              : "Current step highlighted"}
+            ? isHe ? "תצוגה מקדימה" : "Preview"
+            : isDynamic
+              ? isHe ? "מבוסס על התוכנית האישית שלכם" : "Based on your personal program"
+              : isHe ? "השלב הנוכחי מסומן" : "Current step highlighted"}
         </p>
       </div>
 
-      {/* Horizontal scroll on small screens, full row on lg+ */}
       <ol
         className={[
           "mt-3 flex gap-2 overflow-x-auto pb-1",
           "snap-x snap-mandatory",
-          // Soft inner gradient at the edges to hint at scrollability
           "[scrollbar-width:none] [-ms-overflow-style:none]",
           "[&::-webkit-scrollbar]:hidden",
         ].join(" ")}
       >
-        {STEPS.map((step, idx) => (
+        {entries.map((entry) => (
           <li
-            key={step.key}
+            key={entry.key}
             className="snap-start"
-            // Only the current step ARIA-current
-            aria-current={statuses[idx] === "current" ? "step" : undefined}
+            aria-current={entry.status === "current" ? "step" : undefined}
           >
-            <RailPill
-              label={isHe ? step.label_he : step.label_en}
-              status={statuses[idx]}
-              isHe={isHe}
-            />
+            <RailPill entry={entry} />
           </li>
         ))}
       </ol>
 
-      {/* Calm reassurance line — calibrated per the §1.5 tone rules.
-          Single sentence, formal, no marketing voice. */}
       <p className="mt-3 text-[12px] leading-relaxed text-white/55">
         {previewMode
           ? isHe
             ? "תוכנית עבודה שמותאמת אישית לכם — מתחילה באבחון ונבנית סביב הנושאים שעולים מהתשובות שלכם."
-            : "A personalized work program — starts with the assessment and is built around the topics emerging from your answers."
+            : "A personalized work program — starts with the assessment and is built around topics emerging from your answers."
           : isHe
             ? "אנחנו עובדים על התשובות שלכם. כל פעם שיש תוכן חדש, הוא ייפתח כאן. אין הפתעות."
             : "We're working on your answers. New content opens here when it's ready. No surprises."}
@@ -162,34 +96,21 @@ export function JourneyProgressRail({
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// RailPill — one step. Three visual variants per status.
-// ─────────────────────────────────────────────────────────────────────
 
-function RailPill({
-  label,
-  status,
-  isHe,
-}: {
-  label: string;
-  status: StepStatus;
-  isHe: boolean;
-}) {
-  const hint =
-    status === "completed"
-      ? isHe ? "הושלם" : "Completed"
-      : status === "current"
-        ? isHe ? "השלב הנוכחי" : "Current step"
-        : isHe ? "ייפתח בהמשך" : "Coming up";
-
-  // Three visual treatments — kept calm, no animation.
+function RailPill({ entry }: { entry: RailEntry }) {
   const surfaceClass =
-    status === "completed"
+    entry.status === "completed"
       ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-100"
-      : status === "current"
+      : entry.status === "current"
         ? "border-white/40 bg-white/[0.08] text-white shadow-sm shadow-white/10"
         : "border-white/[0.06] bg-white/[0.02] text-white/45";
 
-  const Icon = status === "completed" ? CheckCircle2 : status === "current" ? Sparkles : Lock;
+  const Icon =
+    entry.status === "completed"
+      ? CheckCircle2
+      : entry.status === "current"
+        ? Sparkles
+        : Lock;
 
   return (
     <div
@@ -198,15 +119,15 @@ function RailPill({
         "transition-colors duration-200",
         surfaceClass,
       ].join(" ")}
-      title={hint}
+      title={entry.hint}
     >
       <div className="flex items-center gap-1.5">
         <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
         <span className="text-[10px] uppercase tracking-wider text-current/70">
-          {hint}
+          {entry.hint}
         </span>
       </div>
-      <span className="text-sm font-semibold leading-snug">{label}</span>
+      <span className="text-sm font-semibold leading-snug">{entry.label}</span>
     </div>
   );
 }

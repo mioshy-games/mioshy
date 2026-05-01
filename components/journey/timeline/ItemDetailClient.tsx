@@ -515,10 +515,60 @@ function ResponseList({
             <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-white/90">
               {r.response_text}
             </p>
+            {/* Phase 2E — clinician's reply, when present.
+                Calm slate panel inset under the user's message,
+                clearly attributed and timestamped. Never auto-marks
+                as read; the toast on /my/journey handles "new". */}
+            {r.clinician_reply_text ? (
+              <ClinicianReplyPanel
+                replyText={r.clinician_reply_text}
+                repliedAt={r.clinician_replied_at ?? null}
+                isHe={isHe}
+              />
+            ) : null}
           </li>
         );
       })}
     </ul>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// ClinicianReplyPanel — read-only inset showing the clinician's reply.
+// ─────────────────────────────────────────────────────────────────────
+
+function ClinicianReplyPanel({
+  replyText,
+  repliedAt,
+  isHe,
+}: {
+  replyText: string;
+  repliedAt: string | null;
+  isHe: boolean;
+}) {
+  return (
+    <div className="mt-3 rounded-xl border border-emerald-400/20 bg-emerald-500/[0.05] p-3">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-emerald-200/85">
+          {isHe ? "מענה מהמומחה" : "From your clinician"}
+        </span>
+        {repliedAt ? (
+          <time
+            className="text-[11px] text-emerald-200/55"
+            dateTime={repliedAt}
+            title={new Date(repliedAt).toLocaleString(isHe ? "he-IL" : "en-US")}
+          >
+            {new Date(repliedAt).toLocaleDateString(isHe ? "he-IL" : "en-US", {
+              month: "short",
+              day: "numeric",
+            })}
+          </time>
+        ) : null}
+      </div>
+      <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-emerald-50/95">
+        {replyText}
+      </p>
+    </div>
   );
 }
 

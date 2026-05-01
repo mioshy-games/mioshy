@@ -303,9 +303,29 @@ export async function journeyInlineSignup(args: {
       .limit(1)
       .maybeSingle();
 
+    // Diagnostic: also count journey_responses for the resolved journey,
+    // because that's what /my/journey gates on. If the journey is linked
+    // but responses are 0, /my/journey will show the "assessment_missing"
+    // recovery banner — and we want to know about it from the signup logs.
+    let responsesCount = 0;
+    if (journey?.id) {
+      const { count } = await admin
+        .from("journey_responses")
+        .select("question_id", { count: "exact", head: true })
+        .eq("journey_id", journey.id);
+      responsesCount = count ?? 0;
+    }
+
     debug.postLink.journey = (journey ?? null) as JourneyDebug["postLink"]["journey"];
     debug.step = "complete";
-    console.log("[journeyInlineSignup] complete", { userId, journey });
+    console.log("[journeyInlineSignup] complete", {
+      userId,
+      journey,
+      // critical: if this is 0 the user will be looped to /journey/assessment
+      // unless we render the recovery banner. Surface so we can spot it.
+      journey_responses_count: responsesCount,
+      will_loop_at_my_journey: !!journey?.id && responsesCount === 0,
+    });
     return { success: true, userId, journey: journey ?? null, debug };
   } catch (err) {
     console.error("[journeyInlineSignup] unhandled error", err);

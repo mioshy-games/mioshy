@@ -35,8 +35,6 @@ import { Link } from "@/navigation";
 import {
   ArrowLeft,
   ArrowRight,
-  CheckCircle2,
-  Lock,
   Sparkles,
   Star,
 } from "lucide-react";
@@ -45,6 +43,21 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
 import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
 import { getCurrentCoupleContext } from "@/lib/between-us/couples";
+import { getOwnerJourneyStatus } from "@/lib/journey-content/owner-status";
+import {
+  buildStaticRail,
+  buildDynamicRail,
+  type RailEntry,
+} from "@/lib/dashboard/journey-rail";
+import type { AssessmentStage } from "@/lib/dashboard/pillar-state";
+import { JourneyProgressRail } from "@/components/my/JourneyProgressRail";
+import {
+  JourneyWorkArea,
+  type WorkAreaItem,
+} from "@/components/my/JourneyWorkArea";
+import { ClinicianReplyBanner } from "@/components/my/ClinicianReplyBanner";
+import { getFreshClinicianReplies } from "@/lib/journey-content/fresh-replies";
+import { SubscriptionStatusBanner } from "@/components/my/SubscriptionStatusBanner";
 import { getTimelineForOwner } from "@/lib/journey-content/queries";
 import { preferCoupleOwner } from "@/lib/journey-content/owner";
 import type { JourneyOwner } from "@/lib/journey-content/types";
@@ -143,28 +156,54 @@ export default async function PrivateJourneyPage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect(`/${locale}/auth`);
+  if (!user) {
+    console.log("[/my/journey:GATE] no user → /auth");
+    redirect(`/${locale}/auth`);
+  }
 
   const entitlements = await getUserEntitlements();
-  if (!entitlements) redirect(`/${locale}/auth`);
+  console.log("[/my/journey:GATE] entitlements", {
+    user_id: user.id,
+    email: user.email,
+    entitlements,
+  });
+  if (!entitlements) {
+    console.log("[/my/journey:GATE] null entitlements → /auth");
+    redirect(`/${locale}/auth`);
+  }
   if (!entitlements.journey) {
-    // Not paid — bounce them to the marketing page where they can start
-    // the free assessment. The /my page entitlement-aware CTAs do the
-    // same thing; this is the deep-link fallback.
+    console.log(
+      "[/my/journey:GATE] not entitled to journey → /journey marketing",
+      { user_id: user.id, entitlements },
+    );
     redirect(`/${locale}/journey`);
   }
 
   // ── Did they actually take the assessment? ────────────────────────────────
   const { topPriority, hasAnyResponses } = await getUserTopPriority(user.id);
-  if (!hasAnyResponses) {
-    // Edge case: paid the subscription but never completed the
-    // assessment. Send them to finish it; the assessment page's own
-    // logic will then route back here once they're done.
-    console.log(
-      "[/my/journey] subscriber with no responses — redirecting to assessment",
-      { user_id: user.id },
+  console.log("[/my/journey:GATE] assessment probe", {
+    user_id: user.id,
+    topPriority,
+    hasAnyResponses,
+  });
+
+  // Detection of the bug we hit before: paid + signed in + assessment
+  // looked complete during onboarding, but the responses table is empty
+  // for this user_id (anon journey wasn't linked, or RLS blocked the
+  // read). Bouncing back to /journey/assessment in this case loops the
+  // user. Instead we render the page with a recovery banner — the user
+  // sees their dashboard, knows their subscription is active, and gets
+  // a one-click "complete the assessment" CTA. No infinite loop.
+  const assessmentMissing = !hasAnyResponses;
+  if (assessmentMissing) {
+    console.warn(
+      "[/my/journey:GATE] paid user has no responses — rendering recovery banner instead of redirecting",
+      {
+        user_id: user.id,
+        email: user.email,
+        suggestion: "verify journeys.user_id link + journey_responses RLS",
+      },
     );
-    redirect(`/${locale}/journey/assessment`);
   }
 
   // Resolve the priority into bilingual labels — defaults if the user
@@ -224,17 +263,83 @@ export default async function PrivateJourneyPage({
     (entry) => !!entry.completion?.completed_at,
   );
 
+  // ── Rail + work-area data ────────────────────────────────────────────
+  // The /my/journey page is the therapeutic surface — past / present /
+  // future of the work plan. Rail at the top gives the orientation,
+  // WorkArea below gives the per-tab detail. Both reuse the same
+  // tokens as the /my pillar cards (slate-950/40 dark glass).
+  const journeyStatus = await getOwnerJourneyStatus({
+    userId: user.id,
+    coupleId: couple?.couple_id ?? null,
+  });
+  const assessmentStage: AssessmentStage = journeyStatus.hasCompletedAssessment
+    ? "completed"
+    : journeyStatus.hasInProgressAssessment
+      ? "in_progress"
+      : "not_started";
+  const railEntries: RailEntry[] =
+    timeline.length > 0
+      ? buildDynamicRail({
+          isHe,
+          timeline,
+          assessmentCompleted: journeyStatus.hasCompletedAssessment,
+        })
+      : buildStaticRail({
+          isHe,
+          assessmentStage,
+          hasActiveAssignments: journeyStatus.hasActiveAssignments,
+        });
+  const railIsDynamic = timeline.length > 0;
+
+  const workAreaItems: WorkAreaItem[] = timeline.map((entry) => {
+    const title = isHe
+      ? entry.item.title_he
+      : entry.item.title_en || entry.item.title_he;
+    const category =
+      (isHe
+        ? entry.category.name_he
+        : entry.category.name_en || entry.category.name_he) ?? null;
+    const status = entry.status;
+    const href =
+      status === "locked" ? null : `/journey/items/${entry.item.id}`;
+    const whenIso =
+      status === "completed"
+        ? entry.completion?.completed_at ?? entry.scheduled.unlock_at
+        : entry.scheduled.unlock_at;
+    return {
+      id: entry.scheduled.id,
+      title,
+      category,
+      status,
+      href,
+      whenIso: whenIso ?? null,
+    };
+  });
+
+  // Phase 2F — surface a calm banner when the clinician has replied
+  // since the user's last visit. Client-side localStorage handles the
+  // "since last visit" part; server fetches the latest reply only.
+  const freshReplies = await getFreshClinicianReplies(user.id);
+
   console.log("[/my/journey] rendered for", {
     user_id: user.id,
     owner_kind: owner.kind,
     timeline_total: timeline.length,
+    rail_dynamic: railIsDynamic,
     open: openItems.length,
     upcoming: upcomingItems.length,
     completed: completedItems.length,
+    recent_replies: freshReplies.recentReplyCount,
   });
 
   return (
     <div dir={isHe ? "rtl" : "ltr"} className="min-h-[100dvh] text-white">
+      {/* Soft slate frame around the entire therapeutic surface — sets
+          this room apart from the global gradient backdrop and gives
+          the user a clear sense of "I'm inside the private space".
+          Very low opacity so the gradient still bleeds through. */}
+      <div className="mx-auto mt-6 max-w-5xl px-3 sm:px-4">
+        <div className="rounded-3xl border border-white/[0.04] bg-slate-950/30 px-2 pb-8 pt-2 backdrop-blur-[2px] sm:px-4 sm:pb-10 sm:pt-4">
       <main className="mx-auto max-w-4xl px-4 pb-20 pt-10 sm:pt-14">
         {/* Breadcrumb back to /my */}
         <Link
@@ -245,33 +350,79 @@ export default async function PrivateJourneyPage({
           {isHe ? "חזרה למיאושי שלי" : "Back to My Mioshy"}
         </Link>
 
-        {/* ─────── Header ─────── */}
+        {/* ─────── Header ───────
+            Same visual register as the rest of the redesigned surface:
+            slate-toned glass, calm typography, no marketing voice. */}
         <header className="mt-6">
-          <div className="inline-flex items-center gap-1.5 rounded-full border border-amber-300/30 bg-amber-500/10 px-3 py-1 text-xs backdrop-blur">
-            <Sparkles className="h-3.5 w-3.5 text-amber-200" />
-            <span className="font-semibold text-amber-100">
-              {isHe ? "החדר הפרטי" : "Private space"}
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-slate-950/40 px-3 py-1 text-xs backdrop-blur">
+            <Sparkles className="h-3.5 w-3.5 text-white/70" />
+            <span className="font-semibold text-white/85">
+              {isHe ? "ליווי עם מיאושי" : "Coaching with Mioshy"}
             </span>
           </div>
           <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
-            {isHe ? "ברוכים הבאים לחדר שלכם" : "Welcome to your space"}
+            {isHe ? "החדר הפרטי שלכם" : "Your private space"}
           </h1>
-          <p className="mt-2 max-w-xl text-white/70">
+          <p className="mt-2 max-w-xl text-white/65">
             {isHe
-              ? "המומחים שלנו עובדים על תוכנית עבודה מותאמת אישית עבורכם — סביב מה שבחרתם בעדיפות הראשונה."
-              : "Our experts are crafting a personal program for you — around the priority you chose first."}
+              ? "תוכנית עבודה אישית. המומחים שלנו עובדים על התשובות שלכם וכל שלב נבנה במיוחד עבורכם."
+              : "A personal work program. Our experts read your answers and craft each step for you."}
           </p>
         </header>
 
-        {/* ─────── Chosen priority highlight ─────── */}
+        {/* ─────── Subscription status — explicit confirmation ───────
+            A calm "your subscription is active" line when entitled,
+            or a recovery banner when the assessment didn't get
+            attached to this account (we don't loop back to it; the
+            user controls when they restart). */}
+        <section className="mt-6">
+          <SubscriptionStatusBanner
+            isHe={isHe}
+            variant={assessmentMissing ? "assessment_missing" : "active"}
+          />
+        </section>
+
+        {/* ─────── Phase 2F — clinician reply banner ───────
+            Calm one-liner shown when there's at least one new reply
+            from the clinician since the user's last visit (tracked
+            client-side via localStorage). Self-dismisses on click. */}
+        {freshReplies.latestReplyAt ? (
+          <section className="mt-4">
+            <ClinicianReplyBanner
+              isHe={isHe}
+              latestReplyAt={freshReplies.latestReplyAt}
+              freshCount={freshReplies.recentReplyCount}
+              href={freshReplies.latestReplyHref ?? undefined}
+            />
+          </section>
+        ) : null}
+
+        {/* ─────── Coaching path rail — the orientation strip ───────
+            Sits at the top of the therapeutic surface so the user
+            sees past / present / future at a glance. Past = completed
+            categories (emerald), present = current step, future =
+            locked. */}
+        <section className="mt-8">
+          <JourneyProgressRail
+            isHe={isHe}
+            entries={railEntries}
+            hasJourneyEntitlement={true}
+            isDynamic={railIsDynamic}
+          />
+        </section>
+
+        {/* ─────── Chosen priority highlight ───────
+            Calm slate panel — same visual register as the rail and
+            pillar cards. The user's chosen focus is the clinical
+            anchor for everything else on this page. */}
         {topPriority ? (
-          <section className="mt-8 rounded-2xl border border-amber-300/30 bg-gradient-to-br from-amber-500/10 via-rose-500/5 to-transparent p-5 backdrop-blur">
+          <section className="mt-8 rounded-2xl border border-slate-300/[0.08] bg-slate-950/40 p-5 backdrop-blur-md">
             <div className="flex items-start gap-3">
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-full border border-amber-300/40 bg-amber-500/15">
-                <Star className="size-5 text-amber-200" />
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/[0.06]">
+                <Star className="size-5 text-white/80" />
               </div>
               <div className="min-w-0">
-                <p className="text-xs uppercase tracking-wider text-amber-200/80">
+                <p className="text-[11px] uppercase tracking-wider text-white/55">
                   {isHe ? "המוקד הראשון שלכם" : "Your first focus"}
                 </p>
                 <h2 className="mt-1 text-xl font-semibold text-white">
@@ -285,153 +436,14 @@ export default async function PrivateJourneyPage({
           </section>
         ) : null}
 
-        {/* ─────── Today / Open ───────
-            Shows admin-prescribed content if any exists. Falls back to
-            the spec §6.2 placeholder ("our experts will update this
-            page shortly") when the admin hasn't pushed anything yet. */}
+        {/* ─────── Past · Present · Future ───────
+            Replaces the older Open/Coming/Completed triple with a
+            single tabbed work-area component. Same data, tighter
+            layout, identical visual language to the /my pillar cards
+            (slate-950/40 dark glass). */}
         <section className="mt-8">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-white/55">
-            {isHe ? "פתוח עכשיו" : "Open now"}
-          </h2>
-
-          {openItems.length > 0 ? (
-            <ul className="mt-3 space-y-3">
-              {openItems.map((entry) => {
-                const titleHe = entry.item.title_he ?? entry.item.title_en ?? "";
-                const titleEn = entry.item.title_en ?? entry.item.title_he ?? "";
-                const title = isHe ? titleHe : titleEn;
-                return (
-                  <li key={entry.scheduled.id}>
-                    <Link
-                      href={`/journey/items/${entry.item.id}`}
-                      className="group flex items-start gap-3 rounded-2xl border border-amber-300/20 bg-amber-500/[0.06] p-5 backdrop-blur transition hover:border-amber-300/40"
-                    >
-                      <div className="flex size-10 shrink-0 items-center justify-center rounded-full border border-amber-300/40 bg-amber-500/15">
-                        <Sparkles className="size-5 text-amber-200" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <h3 className="text-base font-semibold text-white group-hover:text-amber-100">
-                          {title}
-                        </h3>
-                        {entry.item.task_he || entry.item.task_en ? (
-                          <p className="mt-1 line-clamp-2 text-sm text-white/65">
-                            {isHe
-                              ? entry.item.task_he ?? entry.item.task_en
-                              : entry.item.task_en ?? entry.item.task_he}
-                          </p>
-                        ) : null}
-                      </div>
-                      <Arrow className="mt-1 size-4 shrink-0 text-white/40 transition group-hover:text-white" />
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          ) : (
-            <div className="mt-3 rounded-2xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur">
-              <h3 className="text-lg font-semibold text-white">
-                {isHe
-                  ? `${focusLabel} — מתחיל בקרוב`
-                  : `${focusLabel} — coming soon`}
-              </h3>
-              <p className="mt-2 text-sm leading-relaxed text-white/70">
-                {isHe
-                  ? "המומחים שלנו יעדכנו אתכם בעמוד הזה בקרוב על תוכנית עבודה מותאמת. כל מה שצריך לעשות זה להיכנס לכאן."
-                  : "Our experts will update this page with a tailored program shortly. All you have to do is come back here."}
-              </p>
-              <p className="mt-3 text-xs text-white/45">
-                {isHe
-                  ? "טיפ: שמרו את העמוד הזה במועדפים — נתחיל לדחוף תוכן ברגע שהוא מוכן."
-                  : "Tip: bookmark this page — we'll start pushing content the moment it's ready."}
-              </p>
-            </div>
-          )}
+          <JourneyWorkArea isHe={isHe} items={workAreaItems} />
         </section>
-
-        {/* ─────── Coming up ─────── */}
-        <section className="mt-8">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-white/55">
-            {isHe ? "בהמשך" : "Coming up"}
-          </h2>
-          <ul className="mt-3 space-y-2">
-            {upcomingItems.length > 0
-              ? upcomingItems.map((entry) => {
-                  const titleHe = entry.item.title_he ?? entry.item.title_en ?? "";
-                  const titleEn = entry.item.title_en ?? entry.item.title_he ?? "";
-                  const title = isHe ? titleHe : titleEn;
-                  const unlockDate = new Date(entry.scheduled.unlock_at);
-                  return (
-                    <li
-                      key={entry.scheduled.id}
-                      className="flex items-center gap-3 rounded-xl border border-white/5 bg-white/[0.02] p-4"
-                    >
-                      <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-white/5">
-                        <Lock className="size-4 text-white/40" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-white/65">
-                          {title}
-                        </p>
-                        <p className="text-xs text-white/35">
-                          {isHe ? "ייפתח ב־" : "Unlocks "}
-                          {unlockDate.toLocaleDateString(
-                            isHe ? "he-IL" : "en-US",
-                            { day: "numeric", month: "short" },
-                          )}
-                        </p>
-                      </div>
-                    </li>
-                  );
-                })
-              : // No upcoming items yet — show a few generic "coming soon" rows
-                // so the section never looks broken on day one.
-                [1, 2, 3].map((i) => (
-                  <li
-                    key={i}
-                    className="flex items-center gap-3 rounded-xl border border-white/5 bg-white/[0.02] p-4"
-                  >
-                    <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-white/5">
-                      <Lock className="size-4 text-white/40" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm text-white/55">
-                        {isHe ? "ייחשף בהדרגה" : "Unlocks gradually"}
-                      </p>
-                      <p className="text-xs text-white/35">
-                        {isHe
-                          ? "המומחים שלנו יחליטו מתי השלב הבא מתאים לכם."
-                          : "Our experts will decide when the next step is right for you."}
-                      </p>
-                    </div>
-                  </li>
-                ))}
-          </ul>
-        </section>
-
-        {/* ─────── Completed (only if any) ─────── */}
-        {completedItems.length > 0 ? (
-          <section className="mt-8">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-white/55">
-              {isHe ? "הושלם" : "Completed"}
-            </h2>
-            <ul className="mt-3 space-y-2">
-              {completedItems.map((entry) => {
-                const titleHe = entry.item.title_he ?? entry.item.title_en ?? "";
-                const titleEn = entry.item.title_en ?? entry.item.title_he ?? "";
-                const title = isHe ? titleHe : titleEn;
-                return (
-                  <li
-                    key={entry.scheduled.id}
-                    className="flex items-center gap-3 rounded-xl border border-emerald-500/15 bg-emerald-500/[0.05] p-4"
-                  >
-                    <CheckCircle2 className="size-4 shrink-0 text-emerald-300" />
-                    <p className="text-sm text-white/70">{title}</p>
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
-        ) : null}
 
         {/* ─────── Footer note ─────── */}
         <footer className="mt-12 border-t border-white/5 pt-6 text-center">
@@ -442,6 +454,8 @@ export default async function PrivateJourneyPage({
           </p>
         </footer>
       </main>
+        </div>
+      </div>
     </div>
   );
 }

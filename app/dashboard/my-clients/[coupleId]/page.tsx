@@ -43,6 +43,9 @@ import {
   FeedbackList,
   FeedbackNewButton,
 } from "@/components/dashboard/journey/feedback/FeedbackList";
+// Phase 2C — read-only inbox of user responses to journey items
+import { listClinicianResponsesForUsers } from "@/lib/journey-content/clinician-responses";
+import { ClientResponsesInbox } from "@/components/dashboard/journey/ClientResponsesInbox";
 
 export const dynamic = "force-dynamic";
 
@@ -191,6 +194,7 @@ export default async function CoupleDetailPage({
     couplesAll,
     categoriesAll,
     feedbackForCouple,
+    journeyItemResponses,
   ] = await Promise.all([
     listAssignableSources(),
     loadPartnerResponses(partnerUserIds),
@@ -201,7 +205,19 @@ export default async function CoupleDetailPage({
       rows: [],
       total: 0,
     })),
+    // Phase 2C — read-only inbox of journey-item responses by both partners
+    listClinicianResponsesForUsers({
+      userIds: partnerUserIds,
+      limit: 50,
+      isHe: true,
+    }),
   ]);
+
+  // Map user_id → human label (email or "Partner A/B"), used by the
+  // inbox component to attribute each response.
+  const partnerLabelsById = new Map<string, string>();
+  if (partnerAId) partnerLabelsById.set(partnerAId, partnerALabel);
+  if (partnerBId) partnerLabelsById.set(partnerBId, partnerBLabel);
 
   // Build the comparison matrix once, server-side. Empty arrays for
   // missing partners — the matrix builder treats them as "not answered".
@@ -312,6 +328,22 @@ export default async function CoupleDetailPage({
           partnerBLabel={partnerBLabel}
           items={items}
           hasPartnerB={!!partnerBId}
+        />
+      </section>
+
+      {/* ── Phase 2C ── Inbox: what the clients said about the items
+          they've already opened. Read-only for now; the clinician
+          reads to decide what to send next via "Send intervention"
+          above. Reply / status workflow ships in Phase 2D. */}
+      <section className="space-y-2">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          Client responses
+        </h2>
+        <ClientResponsesInbox
+          isHe={true}
+          rows={journeyItemResponses}
+          partners={partnerLabelsById}
+          coupleId={detail.coupleId}
         />
       </section>
 
