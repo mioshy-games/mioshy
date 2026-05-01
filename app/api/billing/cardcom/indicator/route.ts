@@ -27,10 +27,30 @@ function normalizeProduct(raw: unknown): JourneyProductSlug {
   return "journey"
 }
 
+/**
+ * Case-insensitive query-param read.
+ *
+ * Cardcom is *inconsistent* about parameter casing. Their docs say
+ * `LowProfileCode` / `ReturnValue` (PascalCase), but in production
+ * they sometimes send `lowprofilecode` / `returnvalue` (all lowercase).
+ * `URLSearchParams.get()` is case-sensitive, so the wrong casing
+ * silently returns null and we exit early without recording the
+ * payment. That hid a paid customer in production once already.
+ *
+ * This helper iterates the params manually and matches case-insensitively.
+ */
+function getParamCI(url: URL, ...candidates: string[]): string {
+  const wanted = candidates.map(c => c.toLowerCase())
+  for (const [k, v] of url.searchParams.entries()) {
+    if (wanted.includes(k.toLowerCase()) && v) return v
+  }
+  return ""
+}
+
 export async function GET(req: Request) {
   const url            = new URL(req.url)
-  const lowProfileCode = url.searchParams.get("LowProfileCode") ?? ""
-  const returnValue    = url.searchParams.get("ReturnValue")    ?? ""   // checkout session id
+  const lowProfileCode = getParamCI(url, "LowProfileCode", "lowprofilecode")
+  const returnValue    = getParamCI(url, "ReturnValue",    "returnvalue")    // checkout session id
 
   console.log("[indicator:START] callback received from Cardcom", {
     has_low_profile: !!lowProfileCode,
@@ -40,7 +60,9 @@ export async function GET(req: Request) {
 
   // Always respond 200 to Cardcom immediately
   if (!lowProfileCode) {
-    console.warn("[indicator:NO_CODE] missing LowProfileCode — exiting")
+    console.warn("[indicator:NO_CODE] missing LowProfileCode — exiting", {
+      query: url.search,
+    })
     return new Response("ok", { status: 200 })
   }
 
