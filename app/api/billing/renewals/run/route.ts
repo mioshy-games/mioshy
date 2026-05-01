@@ -148,11 +148,14 @@ export async function POST(req: Request) {
 
       // Create invoice (with retry, structured failure logging, and
       // forward-compatible idempotency_key based on the asmachta).
+      // Country: ISO-2; subscriptions table doesn't carry it, so we
+      // default by is_israeli (matches the issuer schema requirement
+      // of exactly 2 chars).
       const invoiceResult = await createBillingDocumentWithRetry(
         {
           user_id:     userId,
           email:       sub.email ?? "",
-          country:     "",
+          country:     sub.is_israeli ? "IL" : "US",
           amount:      sub.plan_amount,
           currency:    sub.currency,
           language:    (sub.is_israeli ? "he" : "en") as "he" | "en",

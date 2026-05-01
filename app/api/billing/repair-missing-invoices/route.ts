@@ -163,7 +163,9 @@ export async function POST(req: Request) {
       {
         user_id:     String(c.user_id),
         email:       sub.email ?? "",
-        country:     "", // not stored on charges; issuer accepts empty
+        // ISO-2 default: issuer requires exactly 2 chars. We don't
+        // carry country on charges/subscriptions, so derive from is_israeli.
+        country:     sub.is_israeli ? "IL" : "US",
         amount:      Number(c.amount),
         currency:    String(c.currency || sub.currency || "ILS"),
         language:    (sub.is_israeli ? "he" : "en") as "he" | "en",

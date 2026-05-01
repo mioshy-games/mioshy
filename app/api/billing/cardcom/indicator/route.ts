@@ -474,12 +474,22 @@ export async function GET(req: Request) {
     }
   }
 
+  // ISO-2 country fallback. The issuer schema requires exactly 2 chars
+  // (`z.string().min(2).max(2)`); if checkout_sessions.country_code is
+  // null (e.g. inline signup without a geo question) we have to default
+  // — Israeli purchases are by far the common case and we already know
+  // is_israeli from the session.
+  const country2 =
+    typeof session.country_code === "string" && session.country_code.trim().length === 2
+      ? session.country_code.trim().toUpperCase()
+      : (session.is_israeli ? "IL" : "US")
+
   const invoiceResult = await createBillingDocumentWithRetry(
     {
       user_id:     userId ?? "",
       email:       session.email,
       name:        session.name ?? null,
-      country:     session.country_code ?? "",
+      country:     country2,
       amount:      session.amount,
       currency:    session.currency,
       language:    (session.language === "he" ? "he" : "en") as "he" | "en",
