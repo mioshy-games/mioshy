@@ -17,6 +17,7 @@ import {
   type OwnedGame,
 } from "@/lib/between-us/couples";
 import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
+import { getAdultsMonthlyStatus } from "@/lib/entitlements/adults-monthly";
 // Same drifting fog + sparkle field used on the /adults marketing
 // surface. Reusing this component (instead of forking a "lite" version)
 // keeps the post-purchase gallery in the same after-dark world as the
@@ -66,6 +67,12 @@ export default async function MyAdultsGalleryPage({
   const owned = hasCouple
     ? await listOwnedGamesForCouple(ctx.couple_id as string)
     : [];
+
+  // Monthly Adults bundle (spec §8.4) — Journey subscribers get one
+  // free game per calendar month. We surface the slot's state at the
+  // top of the page so the user knows whether to "use it now" or
+  // wait until next month.
+  const monthlyStatus = await getAdultsMonthlyStatus(ctx.user_id);
 
   const Arrow = isHe ? ArrowLeft : ArrowRight;
 
@@ -141,6 +148,69 @@ export default async function MyAdultsGalleryPage({
             <Arrow className="h-3.5 w-3.5" />
           </Link>
         </section>
+
+        {/* ─────── Monthly bundle banner (spec §8.4) ───────
+            Visible only when the user has a Journey subscription that
+            bundles a free Adults game per calendar month. Two states:
+              - available: invite to pick one
+              - consumed:  show when the next slot opens */}
+        {monthlyStatus.has_bundle_subscription ? (
+          <section className="mt-8">
+            {monthlyStatus.available ? (
+              <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-amber-300/40 bg-gradient-to-br from-amber-500/15 via-rose-500/8 to-transparent p-5 backdrop-blur">
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-full border border-amber-300/40 bg-amber-500/15">
+                  <Sparkles className="size-5 text-amber-200" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-white">
+                    {isHe
+                      ? "המשחק החודשי שלכם זמין"
+                      : "Your monthly game is available"}
+                  </p>
+                  <p className="mt-0.5 text-xs text-white/70">
+                    {isHe
+                      ? "המנוי שלכם כולל משחק־למבוגרים אחד בחודש. בחרו את המשחק שתפתחו החודש מבין הקטלוג מטה."
+                      : "Your subscription includes one Adults game per month. Pick which one to unlock from the catalogue below."}
+                  </p>
+                </div>
+                <Link
+                  href="/adults"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-amber-400 px-4 py-2 text-sm font-semibold text-black transition hover:bg-amber-300"
+                >
+                  {isHe ? "לבחירת משחק" : "Pick a game"}
+                  <Arrow className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4 backdrop-blur">
+                <Sparkles className="size-4 shrink-0 text-white/45" />
+                <p className="text-xs text-white/60">
+                  {isHe
+                    ? `המשחק החודשי שלכם נצרך החודש. הבא יהיה זמין ב־${
+                        monthlyStatus.next_available_at
+                          ? new Date(
+                              monthlyStatus.next_available_at,
+                            ).toLocaleDateString("he-IL", {
+                              day: "numeric",
+                              month: "long",
+                            })
+                          : ""
+                      }.`
+                    : `Your monthly game is used. The next one unlocks ${
+                        monthlyStatus.next_available_at
+                          ? new Date(
+                              monthlyStatus.next_available_at,
+                            ).toLocaleDateString("en-US", {
+                              day: "numeric",
+                              month: "long",
+                            })
+                          : "soon"
+                      }.`}
+                </p>
+              </div>
+            )}
+          </section>
+        ) : null}
 
         {/* Games grid */}
         {owned.length > 0 ? (

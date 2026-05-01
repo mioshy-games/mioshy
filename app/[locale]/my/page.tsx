@@ -4,11 +4,7 @@ import { Link } from "@/navigation";
 import {
   ArrowLeft,
   ArrowRight,
-  Compass,
-  Gamepad2,
-  Heart,
   Library,
-  Receipt,
   Sparkles,
   Users,
 } from "lucide-react";
@@ -217,52 +213,14 @@ export default async function MyHubPage({
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Link
-              href="/account/invoices"
-              className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-white/80 transition hover:bg-white/10 hover:text-white"
-            >
-              <Receipt className="h-4 w-4" />
-              {isHe ? "חשבוניות" : "Invoices"}
-            </Link>
-            <Link
-              href="/account"
-              className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-white/80 transition hover:bg-white/10 hover:text-white"
-            >
-              <Users className="h-4 w-4" />
-              {isHe ? "חשבון" : "Account"}
-            </Link>
-          </div>
+          {/* Account + invoices intentionally moved to a quiet quick-links
+              row at the BOTTOM of the page. Per spec §5.3: the dashboard is
+              about products, not admin chrome. Admin lives in /my/account. */}
         </section>
 
-        {/* (Adults purchase celebration removed — users are redirected
-            straight to /my/adults at the top of this page now.) */}
-
-        {/* ─────── Always-visible invite-code panel ─────── */}
-        {!hasCouple ? (
-          <section className="mt-8">
-            <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-fuchsia-300/30 bg-fuchsia-500/10 p-5 backdrop-blur">
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-full border border-fuchsia-300/40 bg-fuchsia-500/20">
-                <Heart className="size-5 text-fuchsia-200" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-white">
-                  {isHe ? "קיבלתם קוד מבן/בת הזוג?" : "Got a code from your partner?"}
-                </p>
-                <p className="mt-0.5 text-xs text-white/65">
-                  {isHe
-                    ? "הזינו את הקוד והחשבון שלכם יתחבר אליהם מיד — בלי להמתין, בלי רענון."
-                    : "Enter the code and your account links to theirs instantly — no waiting, no refresh."}
-                </p>
-              </div>
-              <RedeemCodeButton
-                isHe={isHe}
-                variant="primary"
-                redirectTo={`/${locale}/my`}
-              />
-            </div>
-          </section>
-        ) : null}
+        {/* Per spec §5.2 — the "Got a code from partner?" panel was moved
+            BELOW the pillar cards. Cards come first (the products), partner
+            stuff comes second (the relationship plumbing). */}
 
         {/* ─────── Profile completeness nudge ─────── */}
         {profileIncomplete ? (
@@ -297,16 +255,16 @@ export default async function MyHubPage({
             <EntitledPillar
               isHe={isHe}
               pillar="games"
-              titleHe="משחקים"
-              titleEn="Games"
-              Icon={Gamepad2}
+              titleHe="משחקים לזוגות"
+              titleEn="Games for couples"
               description={
                 isHe
-                  ? "גלגל האמת, נחשים ושלבים - והחברים שלהם."
-                  : "Truth wheel, snakes & ladders - and their friends."
+                  ? "כנות ואתגר, גלגל הזוגיות, סולמות ונחשים."
+                  : "Truth or dare, wheel, snakes & ladders."
               }
               galleryHref="/my/games"
-              accent="from-violet-500 via-fuchsia-500 to-cyan-500"
+              ctaLabelHe="המשחקים שלי"
+              ctaLabelEn="My games"
             />
           ) : (
             <ServicePanel
@@ -316,14 +274,10 @@ export default async function MyHubPage({
               titleEn="Games for couples"
               tagline={
                 isHe
-                  ? "גלגל האמת, נחשים ושלבים - משחקים לזוגות שמרעננים את הקשר, בערב אחד."
-                  : "Truth wheel, snakes & ladders, and more - couples games that refresh your connection in a single evening."
+                  ? "כנות ואתגר, גלגל הזוגיות, סולמות ונחשים — משחקים שמרעננים את הקשר, בערב אחד."
+                  : "Truth & dare, the wheel, snakes & ladders — couples games that refresh your connection in a single evening."
               }
-              bullets={
-                isHe
-                  ? ["+5 משחקים", "עברית ואנגלית", "שני מכשירים"]
-                  : ["5+ games", "Hebrew & English", "Two devices"]
-              }
+              bullets={[]}
               badge="🎮"
               ctaHref="/games"
               ctaLabel={isHe ? "לגילוי המשחקים" : "Discover games"}
@@ -338,42 +292,17 @@ export default async function MyHubPage({
               pillar="journey"
               titleHe="ליווי עם מיאושי"
               titleEn="Journey with Mioshy"
-              Icon={Compass}
               description={
-                journeyStatus.hasActiveAssignments
-                  ? isHe
-                    ? "המסלול הפעיל שלכם ממתין - המשיכו מאיפה שעצרתם."
-                    : "Your live journey is waiting - pick up where you left off."
-                  : journeyStatus.hasInProgressAssessment
-                    ? isHe
-                      ? "האבחון שלכם באמצע - חזרו להשלים אותו."
-                      : "Your assessment is in progress - come back and finish it."
-                    : isHe
-                      ? "האבחון האישי שלכם + שלבים להמשך."
-                      : "Your personal diagnostic + next steps."
+                isHe
+                  ? "החדר הפרטי שלכם — תוכן שהמומחים שלנו מעלים עבורכם."
+                  : "Your private space — content our experts curate for you."
               }
-              galleryHref={
-                journeyStatus.hasActiveAssignments
-                  ? "/journey/timeline"
-                  : journeyStatus.hasInProgressAssessment
-                    ? "/journey/assessment"
-                    : "/journey"
-              }
-              ctaLabelHe={
-                journeyStatus.hasActiveAssignments
-                  ? "לציר הזמן"
-                  : journeyStatus.hasInProgressAssessment
-                    ? "להמשך האבחון"
-                    : "לגלריה"
-              }
-              ctaLabelEn={
-                journeyStatus.hasActiveAssignments
-                  ? "Open timeline"
-                  : journeyStatus.hasInProgressAssessment
-                    ? "Resume assessment"
-                    : "Open gallery"
-              }
-              accent="from-teal-400 via-indigo-500 to-purple-500"
+              // Per spec §6.0 — paying user lands directly in /my/journey;
+              // they should never see the marketing /journey or the
+              // assessment again (Phase A guard takes care of that case).
+              galleryHref="/my/journey"
+              ctaLabelHe="כניסה לחדר הפרטי"
+              ctaLabelEn="Enter your private space"
               notificationCount={unreadJourneyCount}
             />
           ) : (
@@ -384,17 +313,15 @@ export default async function MyHubPage({
               titleEn="Journey with Mioshy"
               tagline={
                 isHe
-                  ? "אבחון מקצועי + תובנות אישיות לקשר שלכם - ליווי שמבוסס על שבעת עקרונות הקשר הבריא."
-                  : "Professional diagnostic + personal insights for your relationship - guidance built on seven principles of healthy partnership."
+                  ? "אבחון אישי חינם + ליווי מומחים מבוסס על שבעת עקרונות הקשר הבריא."
+                  : "Free personal assessment + expert guidance built on seven principles of healthy partnership."
               }
-              bullets={
-                isHe
-                  ? ["40 שאלות", "דוח אישי", "המלצות מעשיות"]
-                  : ["40 questions", "Personal report", "Practical guidance"]
-              }
+              // Bullets removed per spec — "40 questions / personal report"
+              // is pre-purchase marketing; on the dashboard it's noise.
+              bullets={[]}
               badge="🧭"
-              ctaHref="/journey"
-              ctaLabel={isHe ? "להתחלת האבחון" : "Start the journey"}
+              ctaHref="/journey/assessment"
+              ctaLabel={isHe ? "להתחיל אבחון חינם" : "Start free assessment"}
               compact
             />
           )}
@@ -406,7 +333,6 @@ export default async function MyHubPage({
               pillar="adults"
               titleHe="למבוגרים בלבד"
               titleEn="Adults Only"
-              Icon={Heart}
               description={
                 isHe
                   ? `${ownedCount} ${
@@ -417,7 +343,6 @@ export default async function MyHubPage({
               galleryHref="/my/adults"
               ctaLabelHe="הרכישות שלי"
               ctaLabelEn="My purchases"
-              accent="from-rose-500 via-red-500 to-amber-500"
             />
           ) : (
             <ServicePanel
@@ -427,96 +352,121 @@ export default async function MyHubPage({
               titleEn="Adults Only"
               tagline={
                 isHe
-                  ? "משחקי זוגיות יותר אינטימיים - שלושה שלבי עוצמה, תכנים מותאמים, פרטיות מלאה."
-                  : "More intimate couples games - three intensity tiers, curated content, full privacy."
+                  ? "משחקי זוגיות יותר אינטימיים — תכנים מותאמים, פרטיות מלאה."
+                  : "More intimate couples games — curated content, full privacy."
               }
-              bullets={
-                isHe
-                  ? ["מרגש", "מעורר", "18+"]
-                  : ["Moving", "Exciting", "18+"]
-              }
+              bullets={[]}
               badge="💜"
               ctaHref="/adults"
-              ctaLabel={isHe ? "צפה במשחקים שלנו" : "View our games"}
+              ctaLabel={isHe ? "צפה במשחקים" : "View games"}
               compact
             />
           )}
         </section>
 
-        {/* ─────── Couple status card (adults pillar context) ─────── */}
-        {hasCouple ? (
-          <section className="mt-10 rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur">
-            <div className="flex flex-wrap items-start justify-between gap-6">
-              <div>
-                <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-white/55">
-                  <Users className="h-3.5 w-3.5" />
-                  {isHe ? "החלל הזוגי שלכם" : "Your couple space"}
-                </div>
-                <h3 className="mt-2 text-xl font-semibold text-white">
-                  {ctx.partner_count === 2
-                    ? isHe
-                      ? "מצומדים לפרטנר/ית"
-                      : "Paired with your partner"
-                    : isHe
-                      ? "מחכים לפרטנר/ית"
-                      : "Waiting for your partner"}
+        {/* ─────── Partner section — only when relevant ───────
+            Per spec §5.2: invite-partner shows ONLY if user has no
+            partner yet. Once a partner has joined, the whole block
+            disappears. Above the "got code from partner" alert because
+            most signed-in users are senders, not receivers, of codes. */}
+        {hasCouple && needsPartner ? (
+          <section className="mt-8 rounded-2xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="min-w-0 flex-1">
+                <h3 className="text-sm font-semibold text-white">
+                  {isHe ? "הזמינו את בן/בת הזוג" : "Invite your partner"}
                 </h3>
-                {ctx.pair_code ? (
-                  <div className="mt-3">
-                    <p className="text-xs text-white/55">
-                      {isHe
-                        ? "קוד משחק (למכשיר שני)"
-                        : "Game session code (second device)"}
-                    </p>
-                    <div className="mt-1">
-                      <PairCodeWidget
-                        pairCode={ctx.pair_code}
-                        isHe={isHe}
-                        compact
-                      />
-                    </div>
-                  </div>
-                ) : null}
+                <p className="mt-1 text-xs text-white/60">
+                  {isHe
+                    ? "שלחו הזמנה במייל. ברגע שיצטרפו, הזמן הזה ייעלם מהדשבורד."
+                    : "Send an email invitation. Once they join, this section disappears."}
+                </p>
               </div>
+              <div className="w-full sm:w-auto">
+                <InvitePartnerByEmail
+                  locale={isHe ? "he" : "en"}
+                  isHe={isHe}
+                  invitation={pendingInvitation}
+                  canInvite={isOwner}
+                />
+              </div>
+            </div>
 
-              {needsPartner ? (
-                <div className="w-full max-w-md">
-                  <p className="text-sm font-semibold text-white">
-                    {isHe ? "הזמינו את הפרטנר/ית" : "Invite your partner"}
-                  </p>
-                  <p className="mt-1 text-xs text-white/65">
-                    {isHe
-                      ? "שלחו מייל וכל מה שיש לכם יחכה גם להם."
-                      : "Send an email - everything you own will be waiting for them too."}
-                  </p>
-                  <div className="mt-3">
-                    <InvitePartnerByEmail
-                      locale={isHe ? "he" : "en"}
-                      isHe={isHe}
-                      invitation={pendingInvitation}
-                      canInvite={isOwner}
-                    />
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center gap-3">
-                  <RedeemCodeButton
+            {/* Pair code — for cross-device play. Shown alongside the
+                invite (not as a separate section) so the "couple plumbing"
+                lives in one place. */}
+            {ctx.pair_code ? (
+              <div className="mt-4 border-t border-white/5 pt-4">
+                <p className="text-[11px] uppercase tracking-wider text-white/45">
+                  {isHe
+                    ? "קוד משחק (למכשיר שני)"
+                    : "Game session code (second device)"}
+                </p>
+                <div className="mt-2">
+                  <PairCodeWidget
+                    pairCode={ctx.pair_code}
                     isHe={isHe}
-                    variant="pill"
-                    label={isHe ? "הזנת קוד" : "Redeem code"}
+                    compact
                   />
                 </div>
-              )}
+              </div>
+            ) : null}
+          </section>
+        ) : null}
+
+        {/* ─────── "Got a code from partner?" — only for users without
+            a couple yet. Compact version, below the cards per spec §5.2. */}
+        {!hasCouple ? (
+          <section className="mt-8">
+            <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4 backdrop-blur">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-white">
+                  {isHe ? "קיבלתם קוד מבן/בת הזוג?" : "Got a code from your partner?"}
+                </p>
+                <p className="mt-0.5 text-xs text-white/60">
+                  {isHe
+                    ? "הזינו את הקוד והחשבון יתחבר אליהם מיד."
+                    : "Enter the code and your account links to theirs instantly."}
+                </p>
+              </div>
+              <RedeemCodeButton
+                isHe={isHe}
+                variant="primary"
+                redirectTo={`/${locale}/my`}
+              />
             </div>
           </section>
         ) : null}
+
+        {/* ─────── Quick links footer (per spec §5.3) ───────
+            One link to the existing /account page, which already bundles
+            subscription details + charges/invoices + profile + partner
+            management. Per spec §9 the user wanted this surface to
+            consolidate the admin-y bits — and /account already does. */}
+        <footer className="mt-12 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 border-t border-white/5 pt-8 text-sm">
+          <Link
+            href="/account"
+            className="inline-flex items-center gap-1.5 text-white/55 transition hover:text-white"
+          >
+            <Users className="h-3.5 w-3.5" />
+            {isHe
+              ? "החשבון שלי · חשבוניות · ניהול מנוי"
+              : "My account · invoices · subscription"}
+          </Link>
+        </footer>
       </main>
     </div>
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// EntitledPillar - the "you have access" card
+// EntitledPillar — compact "you have access" card (per spec §5.1).
+//
+// Rewritten 2026-Q2 from the old ~420px hero-style card. Per user feedback:
+//   - HALF the size (~190px tall instead of 420px+)
+//   - NO leading icon block — title speaks for itself
+//   - Active badge moved inline into the header
+//   - CTA copy is product-aware ("כניסה לחדר הפרטי" for journey, etc.)
 // ─────────────────────────────────────────────────────────────────────────────
 
 function EntitledPillar({
@@ -524,10 +474,8 @@ function EntitledPillar({
   pillar,
   titleHe,
   titleEn,
-  Icon,
   description,
   galleryHref,
-  accent,
   ctaLabelHe,
   ctaLabelEn,
   notificationCount,
@@ -536,73 +484,50 @@ function EntitledPillar({
   pillar: PillarKey;
   titleHe: string;
   titleEn: string;
-  Icon: typeof Gamepad2;
   description: string;
   galleryHref: string;
-  accent: string;
-  /** Optional per-pillar override of the "Open gallery / לגלריה" CTA. */
   ctaLabelHe?: string;
   ctaLabelEn?: string;
-  /** Coaching pillar shows a red dot + counter when the expert has
-   *  prescribed new content the user hasn't opened yet (derived in
-   *  lib/journey-content/unread.ts). Other pillars omit the prop. */
   notificationCount?: number;
 }) {
   const Arrow = isHe ? ArrowLeft : ArrowRight;
   const title = isHe ? titleHe : titleEn;
   const ctaLabel = isHe
-    ? (ctaLabelHe ?? "לגלריה")
-    : (ctaLabelEn ?? "Open gallery");
+    ? (ctaLabelHe ?? "כניסה לחדר הפרטי")
+    : (ctaLabelEn ?? "Enter your private space");
   const hasNotif = (notificationCount ?? 0) > 0;
 
   return (
     <Link
       href={galleryHref}
-      className="group relative flex min-h-[420px] flex-col justify-between overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] p-8 transition hover:border-white/25 hover:bg-white/[0.06]"
+      className="group relative flex flex-col justify-between gap-5 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] p-5 transition hover:border-white/25 hover:bg-white/[0.06]"
       data-pillar={pillar}
     >
-      {/* Subtle accent orb */}
-      <div
-        aria-hidden
-        className={`pointer-events-none absolute -top-20 end-[-40px] h-56 w-56 rounded-full bg-gradient-to-br ${accent} opacity-30 blur-3xl transition group-hover:opacity-50`}
-      />
-
-      {/* Notification badge — red dot + counter, top-end corner. Pulse
-          animation matches the homepage hero's "dot" eyebrow so the
-          surface reads as one visual family. */}
       {hasNotif ? (
         <span
-          aria-label={isHe ? `${notificationCount} חדשים` : `${notificationCount} new`}
-          className="absolute end-4 top-4 z-10 inline-flex min-w-[26px] items-center justify-center gap-1 rounded-full bg-rose-500 px-2 py-1 text-[11px] font-bold text-white shadow-lg shadow-rose-500/40 ring-2 ring-rose-300/30"
+          aria-label={
+            isHe ? `${notificationCount} חדשים` : `${notificationCount} new`
+          }
+          className="absolute end-3 top-3 z-10 inline-flex min-w-[22px] items-center justify-center gap-1 rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-md shadow-rose-500/40"
         >
-          <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-300 opacity-75" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-rose-100" />
-          </span>
           {notificationCount}
         </span>
       ) : null}
 
-      <div className="relative">
-        <div
-          className={`inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${accent} shadow-xl shadow-black/40 ring-1 ring-white/20`}
-        >
-          <Icon className="h-7 w-7 text-white" />
+      <div>
+        <div className="flex items-center gap-2">
+          <h3 className="text-lg font-bold text-white">{title}</h3>
+          <span className="inline-flex items-center rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-300">
+            {isHe ? "פעיל" : "Active"}
+          </span>
         </div>
-        <h3 className="mt-5 text-2xl font-bold text-white">{title}</h3>
-        <p className="mt-2 text-sm text-white/70">{description}</p>
+        <p className="mt-1.5 line-clamp-2 text-sm text-white/65">{description}</p>
       </div>
 
-      <div className="relative mt-8 flex items-center justify-between">
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-emerald-300">
-          <Sparkles className="h-3 w-3" />
-          {isHe ? "פעיל" : "Active"}
-        </span>
-        <span className="inline-flex items-center gap-2 text-sm font-semibold text-white transition group-hover:gap-3">
-          {ctaLabel}
-          <Arrow className="h-4 w-4" />
-        </span>
-      </div>
+      <span className="inline-flex items-center gap-1.5 self-start text-sm font-semibold text-white transition group-hover:gap-2.5">
+        {ctaLabel}
+        <Arrow className="h-3.5 w-3.5" />
+      </span>
     </Link>
   );
 }

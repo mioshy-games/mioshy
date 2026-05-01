@@ -27,28 +27,36 @@ import { logoutAction } from "@/app/actions/auth-actions";
  *   3. למבוגרים בלבד / Adults   → /adults
  */
 
+type PillarKey = "games" | "journey" | "adults";
+
 type PillarLink = {
-  href: string;
-  tKey: "games" | "journey" | "adults";
+  /** Where anonymous visitors land — the marketing page. */
+  marketingHref: string;
+  /** Where authenticated visitors land — their private dashboard. */
+  authedHref: string;
+  tKey: PillarKey;
   Icon: typeof Gamepad2;
-  accent: string; // gradient class used on hover + mobile badge
+  accent: string;
 };
 
 const PILLARS: PillarLink[] = [
   {
-    href: "/games",
+    marketingHref: "/games",
+    authedHref: "/my/games",
     tKey: "games",
     Icon: Gamepad2,
     accent: "from-violet-400 via-fuchsia-400 to-cyan-400",
   },
   {
-    href: "/journey",
+    marketingHref: "/journey",
+    authedHref: "/my/journey",
     tKey: "journey",
     Icon: Sparkles,
     accent: "from-teal-300 via-indigo-400 to-purple-400",
   },
   {
-    href: "/adults",
+    marketingHref: "/adults",
+    authedHref: "/my/adults",
     tKey: "adults",
     Icon: Heart,
     accent: "from-rose-400 via-red-400 to-amber-400",
@@ -71,7 +79,54 @@ function detectTheme(): "light" | "dark" {
   return "dark";
 }
 
-export function SiteHeader({ isAuthed = false }: { isAuthed?: boolean }) {
+interface SiteHeaderEntitlements {
+  games: boolean;
+  journey: boolean;
+  adults: boolean;
+}
+
+export function SiteHeader({
+  isAuthed = false,
+  entitlements = null,
+}: {
+  isAuthed?: boolean;
+  /** Authenticated users see ONLY the pillars they own. Anonymous
+   *  users (entitlements === null) see all three marketing pillars. */
+  entitlements?: SiteHeaderEntitlements | null;
+}) {
+  // Resolve which pillar links the current visitor sees.
+  //
+  //   - Anonymous → all three marketing pillars.
+  //   - Authenticated, has entitlement for pillar X → /my/X (private).
+  //   - Authenticated, NO entitlement for pillar X → pillar HIDDEN
+  //     entirely (per spec §11 — header should not be a marketing
+  //     surface once the user is signed in).
+  //
+  // We compute a derived list of `{href, tKey, Icon, accent}` to render,
+  // so the rendering loop further down stays simple.
+  const visiblePillars = PILLARS.flatMap((p) => {
+    if (!isAuthed) {
+      return [
+        {
+          href: p.marketingHref,
+          tKey: p.tKey,
+          Icon: p.Icon,
+          accent: p.accent,
+        },
+      ];
+    }
+    // Authenticated — only render the pillar if the user owns it.
+    const owns = entitlements ? entitlements[p.tKey] : false;
+    if (!owns) return [];
+    return [
+      {
+        href: p.authedHref,
+        tKey: p.tKey,
+        Icon: p.Icon,
+        accent: p.accent,
+      },
+    ];
+  });
   const locale = useLocale();
   const pathname = usePathname();
   const isHe = locale === "he";
@@ -180,7 +235,7 @@ export function SiteHeader({ isAuthed = false }: { isAuthed?: boolean }) {
 
         {/* ─────── Pillar links (desktop) ─────── */}
         <nav className="hidden items-center gap-1 lg:flex">
-          {PILLARS.map((p) => {
+          {visiblePillars.map((p) => {
             const isActive = pathname.startsWith(p.href);
             return (
               <Link
@@ -200,7 +255,6 @@ export function SiteHeader({ isAuthed = false }: { isAuthed?: boolean }) {
                   }`}
                 />
                 <span>{t(p.tKey)}</span>
-                {/* Underline - always visible when active, hover-only otherwise */}
                 <span
                   aria-hidden
                   className={`pointer-events-none absolute inset-x-3 bottom-1 h-[2px] origin-center rounded-full bg-gradient-to-r ${p.accent} transition-transform duration-200 ${
@@ -322,7 +376,7 @@ export function SiteHeader({ isAuthed = false }: { isAuthed?: boolean }) {
           dir={isHe ? "rtl" : "ltr"}
         >
           <div className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-3">
-            {PILLARS.map((p) => {
+            {visiblePillars.map((p) => {
               const isActive = pathname.startsWith(p.href);
               return (
                 <Link

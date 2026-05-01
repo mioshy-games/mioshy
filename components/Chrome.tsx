@@ -36,12 +36,23 @@ function shouldHideChrome(pathname: string) {
   );
 }
 
+interface Entitlements {
+  games: boolean;
+  journey: boolean;
+  adults: boolean;
+}
+
 export function Chrome({
   children,
   isAuthed = false,
+  entitlements = null,
 }: {
   children: ReactNode;
   isAuthed?: boolean;
+  /** When the user is signed in, the layout passes their entitlement
+   *  flags so the header can surface ONLY the products they own (per
+   *  spec §11). null = anonymous OR auth fetch failed. */
+  entitlements?: Entitlements | null;
 }) {
   const pathname = usePathname();
   const hide = shouldHideChrome(pathname);
@@ -63,7 +74,7 @@ export function Chrome({
       }
     >
       {isAuthed ? <HomeBackground /> : null}
-      <SiteHeader isAuthed={isAuthed} />
+      <SiteHeader isAuthed={isAuthed} entitlements={entitlements} />
       <div className="flex-1">{children}</div>
       {/* Footer is marketing surface only — hide it for signed-in users
           so the post-login experience reads as "your space, not a brochure". */}

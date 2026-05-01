@@ -78,20 +78,27 @@ export function BillingSuccessContent() {
     return () => { cancelled = true }
   }, [sessionId])
 
-  // Auto-redirect to return_path once the session flips to paid. The short
-  // 1.4s delay gives the celebratory state a beat - the user briefly sees
-  // "Payment confirmed!" before we hand them to /adults/[slug] (or wherever
-  // the originating buy CTA asked). If no return_path is provided, we leave
-  // the user on this screen with the existing CTA buttons (legacy Journey
-  // flow that lands on /journey/timeline).
+  // Auto-redirect once the session flips to paid.
+  //
+  // Two destinations are possible:
+  //   1. `safeReturnPath` — when /api/billing/checkout/create was given an
+  //      explicit return_path (typically Adults one-time purchases asking
+  //      to land back on the product page).
+  //   2. `/[locale]/my` — the default for subscription purchases (Journey,
+  //      Games, etc.). Used to be `/journey/timeline` (which was an empty
+  //      placeholder and broke the post-payment UX, see
+  //      docs/post-purchase-experience-spec.md §4).
+  //
+  // The 1.4s delay lets the user briefly see "Payment confirmed!" before
+  // the navigation happens.
   useEffect(() => {
     if (phase !== "active") return
-    if (!safeReturnPath) return
-    const t = setTimeout(() => {
-      // Prefix the locale so next-intl middleware doesn't bounce again.
-      const target = safeReturnPath.startsWith(`/${locale}/`)
+    const target = safeReturnPath
+      ? safeReturnPath.startsWith(`/${locale}/`)
         ? safeReturnPath
         : `/${locale}${safeReturnPath}`
+      : `/${locale}/my`
+    const t = setTimeout(() => {
       window.location.assign(target)
     }, 1400)
     return () => clearTimeout(t)
@@ -102,9 +109,8 @@ export function BillingSuccessContent() {
         activating:  "מעבד תשלום…",
         checking:    (n: number) => n > 0 ? `בדיקה ${n}…` : "מאמת את התשלום עם קארדקום",
         activeTitle: "התשלום אושר! 🎉",
-        activeSub:   "המנוי שלכם פעיל. התוכנית האישית שלכם מוכנה.",
-        goAccount:   "לספריה שלי",
-        goJourney:   "פתיחת המסע שלכם",
+        activeSub:   "מעבירים אתכם לחדר הפרטי שלכם...",
+        goAccount:   "כניסה למיאושי שלי",
         errTitle:    "אירעה שגיאה",
         errSub:      "התשלום לא עבר. נסה שוב או פנה לתמיכה.",
         errBack:     "חזרה לדף הבית",
@@ -113,9 +119,8 @@ export function BillingSuccessContent() {
         activating:  "Processing payment…",
         checking:    (n: number) => n > 0 ? `Check ${n}…` : "Verifying payment with Cardcom",
         activeTitle: "Payment confirmed! 🎉",
-        activeSub:   "Your subscription is active. Your personalized plan is ready.",
-        goAccount:   "My library",
-        goJourney:   "Open my journey",
+        activeSub:   "Taking you to your private space...",
+        goAccount:   "Open My Mioshy",
         errTitle:    "Something went wrong",
         errSub:      "The payment didn't go through. Try again or contact support.",
         errBack:     "Back to home",
@@ -139,14 +144,8 @@ export function BillingSuccessContent() {
           <p className="max-w-sm text-white/75">{t.activeSub}</p>
           <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:justify-center">
             <a
-              href={`/${locale}/journey/timeline`}
-              className="rounded-2xl bg-gradient-to-r from-indigo-500 via-violet-500 to-emerald-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/40 hover:brightness-110 transition"
-            >
-              {t.goJourney}
-            </a>
-            <a
               href={`/${locale}/my`}
-              className="rounded-2xl border border-white/20 bg-white/5 px-6 py-3 text-sm font-semibold text-white hover:bg-white/10 transition"
+              className="rounded-2xl bg-gradient-to-r from-indigo-500 via-violet-500 to-emerald-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/40 hover:brightness-110 transition"
             >
               {t.goAccount}
             </a>

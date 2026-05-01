@@ -7,6 +7,7 @@ import { routing } from "@/i18n/routing";
 import { LocaleAttributes } from "@/components/LocaleAttributes";
 import { Chrome } from "@/components/Chrome";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -39,23 +40,45 @@ export default async function LocaleLayout({
   setRequestLocale(locale);
   const messages = await getMessages();
 
-  // Determine auth once per request so the header can show "My Mioshy"
-  // to signed-in visitors (C2b, E3).
+  // Determine auth + entitlements once per request so the header can:
+  //   1. Show "My Mioshy" instead of "Sign in" for signed-in visitors.
+  //   2. Surface ONLY the products the user actually owns (per spec §11).
+  //
+  // For anonymous visitors entitlements are null and the header falls back
+  // to the marketing pillar links (/games, /journey, /adults).
   let isAuthed = false;
+  let entitlements: {
+    games: boolean;
+    journey: boolean;
+    adults: boolean;
+  } | null = null;
   try {
     const supabase = await createServerSupabaseClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
     isAuthed = !!user;
+    if (isAuthed) {
+      const ent = await getUserEntitlements();
+      if (ent) {
+        entitlements = {
+          games: ent.games,
+          journey: ent.journey,
+          adults: ent.adults,
+        };
+      }
+    }
   } catch {
     isAuthed = false;
+    entitlements = null;
   }
 
   return (
     <NextIntlClientProvider messages={messages}>
       <LocaleAttributes />
-      <Chrome isAuthed={isAuthed}>{children}</Chrome>
+      <Chrome isAuthed={isAuthed} entitlements={entitlements}>
+        {children}
+      </Chrome>
     </NextIntlClientProvider>
   );
 }

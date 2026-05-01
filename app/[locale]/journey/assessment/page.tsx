@@ -16,11 +16,12 @@
 
 import { setRequestLocale } from "next-intl/server";
 import { cookies } from "next/headers";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
 import { JourneyClient } from "@/components/journey/JourneyClient";
+import { totalQuestions } from "@/lib/journey/questions";
 import type { Locale } from "@/lib/journey/types";
 
 // Force fresh render on EVERY request — never cache. Critical for an
@@ -92,6 +93,26 @@ export default async function JourneyAssessmentPage({
       .eq("status", "active")
       .maybeSingle();
     subscriptionActive = !!sub;
+
+    // ── Post-purchase guard ─────────────────────────────────────────────────
+    // Per spec §4 + §6.0: a user with an active subscription should NEVER
+    // re-encounter the assessment. They've paid; they're done; their seat
+    // is in /my/journey. Without this guard the post-payment redirect path
+    // can dump them right back here on refresh / browser back, which was
+    // the worst UX issue reported.
+    //
+    // Edge case we're tolerant to: completed=true but no subscription —
+    // that's the natural state of an anon → registered user who hasn't
+    // paid yet. We let them see AnalysisSummary with the CTA, as designed.
+    const completed =
+      !!journey && journey.current_step >= totalQuestions();
+    if (subscriptionActive && completed) {
+      console.log(
+        "[/journey/assessment] redirecting paid+completed user → /my/journey",
+        { user_id: user.id },
+      );
+      redirect(`/${locale}/my/journey`);
+    }
   } else {
     // ── Anonymous user: restore progress from device_id cookie ───────────
     // Answers are already being saved by /api/journey/answer (via admin
