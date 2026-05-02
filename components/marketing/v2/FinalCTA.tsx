@@ -1,10 +1,12 @@
+import { useTranslations } from "next-intl";
 import { TrackedLink } from "./TrackedLink";
 
 /**
  * FinalCTA — closing section with animated background blobs, dramatic
- * headline,-and two-column choice grid (online vs adults).
+ * headline, and two-column choice grid (online vs adults).
  */
 export function FinalCTA() {
+  const t = useTranslations("homeV2.finalCta");
   return (
     <section className="final" id="start">
       <div className="final-bg">
@@ -14,45 +16,37 @@ export function FinalCTA() {
       </div>
       <div className="container">
         <div className="eyebrow" style={{ justifyContent: "center", display: "flex" }}>
-          הצעד הראשון
+          {t("eyebrow")}
         </div>
         <h2 className="display">
-          תרגישו קרובים שוב.
-          <br />
-          זה מתחיל הערב.
+          {t.rich("headline", { br: () => <br /> })}
         </h2>
-        <p>מצטרפים לאלפי זוגות שכבר עשו את הצעד הראשון. בחרו איך להתחיל:</p>
+        <p>{t("description")}</p>
 
         <div className="final-choice-grid">
           <div className="final-choice final-choice-featured">
-            <span className="final-choice-tag">הכי פופולרי</span>
-            <h3>משחקי זוגיות אונליין</h3>
-            <p>
-              לשבור את הקרח, להנות מערב מהנה יחד. שאלות, אתגרים ומשחקים שיוצרים שיחה אמיתית —
-              מהסלון, בלי הכנה.-
-            </p>
+            <span className="final-choice-tag">{t("choice1Tag")}</span>
+            <h3>{t("choice1Title")}</h3>
+            <p>{t("choice1Body")}</p>
             <TrackedLink href="/journey" className="btn btn-primary" ctaId="final_primary" section="final">
-              התחילו עכשיו <span className="arrow">←</span>
+              {t("choice1Cta")} <span className="arrow">←</span>
             </TrackedLink>
           </div>
 
           <div className="final-choice">
-            <span className="final-choice-tag">למבוגרים בלבד</span>
-            <h3>משחקים להרפתקנים</h3>
-            <p>
-              למי שמוכן ואוהב לשבור את השגרה — גם בסקס. משחקים נועזים שעיצבנו עבור הזוגות הכי
-              הרפתקניים שלנו.-
-            </p>
+            <span className="final-choice-tag">{t("choice2Tag")}</span>
+            <h3>{t("choice2Title")}</h3>
+            <p>{t("choice2Body")}</p>
             <TrackedLink href="/adults" className="btn btn-ghost" ctaId="final_secondary" section="final">
-              גלו את המשחקים <span className="arrow">←</span>
+              {t("choice2Cta")} <span className="arrow">←</span>
             </TrackedLink>
           </div>
         </div>
 
         <div className="final-trust">
-          <span>ללא מחויבות</span>
-          <span>פרטיות מלאה</span>
-          <span>ביטול בכל עת</span>
+          <span>{t("trust1")}</span>
+          <span>{t("trust2")}</span>
+          <span>{t("trust3")}</span>
         </div>
       </div>
     </section>

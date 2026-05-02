@@ -17,6 +17,7 @@ import {
   AdultsCatalogueIntro,
 } from "@/components/adults/AdultsMarketingSections";
 import { resolveAdultsPricing } from "@/lib/adults/pricing";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
@@ -77,6 +78,16 @@ export default async function AdultsLandingPage({
   const { locale } = params;
   const isHe = locale === "he";
 
+  // Auth gate — logged-in visitors skip the marketing wrap and land
+  // straight in the catalogue (categories + tags + cards). Anonymous
+  // visitors still get the full Manifesto / Proof / FAQ / Closer story
+  // because they're being introduced to the product for the first time.
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const isAuthed = !!user;
+
   const [settings, cards, categories, tags] = await Promise.all([
     getBetweenUsSettings().catch(() => null),
     listActiveGameCards(),
@@ -111,6 +122,68 @@ export default async function AdultsLandingPage({
   // bundle chips read from it. The standalone pricing SECTION has been
   // removed at the user's request: commerce happens on the per-game pages.
   const pricing = resolveAdultsPricing(settings, locale);
+
+  // ─── Logged-in catalog-only view ──────────────────────────────────────
+  // Per Itzik 2026-05-02: members shouldn't see the same intro story
+  // every time they come back. Drop them straight into the storefront
+  // grid with a section title. Marketing intro stays for anonymous
+  // visitors below.
+  if (isAuthed) {
+    const sectionName =
+      (isHe ? settings.section_name_he : settings.section_name_en) ||
+      (isHe ? "למבוגרים בלבד" : "Adults Only");
+    const sectionTagline =
+      (isHe ? settings.section_tagline_he : settings.section_tagline_en) ||
+      (isHe
+        ? "כל המשחקים האקסקלוסיביים שלנו, במקום אחד."
+        : "All our exclusive games, in one place.");
+    const heroForGrid = {
+      title: sectionName,
+      tagline: sectionTagline,
+      singlePrice: pricing.single.displayPrice,
+      subPrice: `${pricing.monthly.displayPrice}${pricing.monthly.periodLabel}`,
+      singleEnabled: pricing.single.enabled,
+      subEnabled: pricing.monthly.enabled,
+      buyXGetX: pricing.bundleTiers,
+    };
+    return (
+      <div
+        dir={isHe ? "rtl" : "ltr"}
+        className="relative isolate min-h-[100dvh] overflow-hidden bg-[#0a0410] text-white"
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 -z-20 h-full bg-[linear-gradient(180deg,#0a0410_0%,#13061a_25%,#1a071f_50%,#15051a_75%,#0a0410_100%)]"
+        />
+        <AdultsAmbience />
+        <main className="relative">
+          {/* Compact authed-user header — replaces the full marketing hero. */}
+          <section className="px-4 pt-12 pb-4">
+            <div className="mx-auto max-w-6xl">
+              <div className="inline-flex items-center gap-2 rounded-full border border-fuchsia-300/30 bg-fuchsia-500/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-fuchsia-100">
+                <span className="h-1.5 w-1.5 rounded-full bg-fuchsia-300" />
+                {isHe ? "החדר הסגור" : "The private chamber"}
+              </div>
+              <h1 className="mt-3 font-heading text-3xl font-bold leading-tight tracking-tight text-white sm:text-4xl">
+                {sectionName}
+              </h1>
+              <p className="mt-2 max-w-2xl text-sm text-white/70">
+                {sectionTagline}
+              </p>
+            </div>
+          </section>
+          <BetweenUsStorefront
+            locale={locale}
+            hero={heroForGrid}
+            cards={cards}
+            categories={categories}
+            tags={tags}
+            hideHero
+          />
+        </main>
+      </div>
+    );
+  }
 
   const hero = {
     title:

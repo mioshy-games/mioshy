@@ -12,7 +12,7 @@ type Props = {
   /** True when redirected here after session invalidation. */
   kicked?: boolean;
   /** Optional ?next=/path to return to after a successful login. Validated
-   *  to be a same-origin path before use. Falls back to /products. */
+   *  to be a same-origin path before use. Falls back to /my. */
   next?: string;
 };
 
@@ -42,7 +42,7 @@ export function LoginForm({ kicked = false, next }: Props) {
         return;
       }
       // Honour caller-supplied next if present and same-origin.
-      const target = safeNext(next, "/products");
+      const target = safeNext(next, "/my");
       router.push(target);
     });
   }
@@ -50,7 +50,7 @@ export function LoginForm({ kicked = false, next }: Props) {
   // Preserve the next param when the user clicks through to signup so the
   // funnel doesn't lose track of where they were trying to go.
   const signupHref = next
-    ? `/auth/signup?next=${encodeURIComponent(safeNext(next, "/products"))}`
+    ? `/auth/signup?next=${encodeURIComponent(safeNext(next, "/my"))}`
     : "/auth/signup";
 
   return (

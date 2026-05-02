@@ -1394,3 +1394,57 @@
 @keyframes blob-float     { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(60px,40px) scale(1.1)} 66%{transform:translate(-40px,30px) scale(0.95)} }
 @keyframes mio-press-blob-drift { 0%,100%{transform:translate3d(0,0,0)} 50%{transform:translate3d(50px,-12px,0)} }
 
+/* ────────────────────────────────────────────────────────────────
+   LTR (English) overrides
+   ────────────────────────────────────────────────────────────────
+   The base styles above were authored for the Hebrew RTL homepage
+   (originally `dir="rtl" lang="he"` was hardcoded on .home-v2).
+   When the same markup serves the English LTR locale, a handful of
+   directional properties need to flip. Rather than refactoring the
+   base CSS to logical properties — which carries regression risk
+   for the validated Hebrew layout — we keep the base intact and
+   append a small set of LTR-only overrides here.
+
+   Anything that "points" or "aligns" in a direction is fixed below;
+   everything else (gap, color, type, animation) inherits unchanged.
+*/
+
+/* Arrow glyphs (`←`) are inlined as text in the JSX. In LTR English
+   the same character should visually point forward (right). We mirror
+   the glyph with scaleX(-1) and re-apply the original hover offsets
+   on top of the mirror so the parallax-style nudge still reads as
+   "forward" in the new direction. */
+.home-v2[dir="ltr"] .arrow {
+  display: inline-block;
+  transform: scaleX(-1);
+}
+.home-v2[dir="ltr"] .btn:hover .arrow {
+  transform: scaleX(-1) translateX(-6px);
+}
+.home-v2[dir="ltr"] .media-press-row-cta:hover .arrow {
+  transform: scaleX(-1) translateX(-4px);
+}
+.home-v2[dir="ltr"] .footer-services-list .svc-link .arrow {
+  transform: scaleX(-1) translateX(-6px);
+}
+.home-v2[dir="ltr"] .footer-services-list li:hover .svc-link .arrow {
+  transform: scaleX(-1) translateX(0);
+}
+
+/* Sections explicitly authored with `text-align:right` (which acts
+   as start-edge alignment in RTL) need to flip to left-edge in LTR
+   so paragraphs read naturally. */
+.home-v2[dir="ltr"] .final-choice,
+.home-v2[dir="ltr"] .auth-narrative,
+.home-v2[dir="ltr"] .auth-narrative p,
+.home-v2[dir="ltr"] .for-whom-cta-text {
+  text-align: left;
+}
+
+/* Accent rules and borders that hug the start edge of a card flip
+   to the start edge of the LTR layout (the left side). */
+.home-v2[dir="ltr"] .cg-callout {
+  border-right: none;
+  border-left: 4px solid var(--accent);
+}
+

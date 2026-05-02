@@ -1,40 +1,5 @@
+import { useTranslations } from "next-intl";
 import { Link } from "@/navigation";
-
-type Stage = {
-  num: string;
-  title: string;
-  description: string;
-  bullets: string[];
-};
-
-const STAGES: Stage[] = [
-  {
-    num: "01",
-    title: "היכרות מחדש",
-    description: "אבחון אישי קצר, שאלות שלא שאלתם - ופתאום אתם מתחילים לדבר על מה שבאמת חשוב.",
-    bullets: ["אבחון מותאם", "תוכנית אישית", "שאלות פתיחה"],
-  },
-  {
-    num: "02",
-    title: "שבירת השעמום המיני",
-    description:
-      "משימות, אתגרים וחוויות חדשות - ופתאום אתם זוכרים בדיוק למה התאהבתם פעם. גם בחדר השינה.",
-    bullets: ["משימות שבועיות", "אתגרים זוגיים", "חוויות חדשות"],
-  },
-  {
-    num: "03",
-    title: "חיבור עמוק",
-    description:
-      "האינטימיות חוזרת. השיחות מעמיקות. אתם שוב חברים לדרך - ומתחברים גם בחדר השינה.",
-    bullets: ["קרבה רגשית", "אינטימיות אמיתית", "שיחות עומק"],
-  },
-  {
-    num: "04",
-    title: "התחדשות שלא נגמרת",
-    description: "אנחנו ממשיכים אתכם כל עוד תרצו. כי זוגיות בריאה - היא משהו שמתחדש כל יום.",
-    bullets: ["הרגלים חדשים", "תוכן מתעדכן", "קהילת זוגות"],
-  },
-];
 
 /**
  * Journey - editorial timeline of 4 stages. Connecting hairline line through
@@ -42,20 +7,47 @@ const STAGES: Stage[] = [
  * banner at the bottom.
  */
 export function Journey() {
+  const t = useTranslations("homeV2.journey");
+
+  const STAGES = [
+    {
+      num: "01",
+      title: t("stage1Title"),
+      description: t("stage1Description"),
+      bullets: [t("stage1Bullet1"), t("stage1Bullet2"), t("stage1Bullet3")],
+    },
+    {
+      num: "02",
+      title: t("stage2Title"),
+      description: t("stage2Description"),
+      bullets: [t("stage2Bullet1"), t("stage2Bullet2"), t("stage2Bullet3")],
+    },
+    {
+      num: "03",
+      title: t("stage3Title"),
+      description: t("stage3Description"),
+      bullets: [t("stage3Bullet1"), t("stage3Bullet2"), t("stage3Bullet3")],
+    },
+    {
+      num: "04",
+      title: t("stage4Title"),
+      description: t("stage4Description"),
+      bullets: [t("stage4Bullet1"), t("stage4Bullet2"), t("stage4Bullet3")],
+    },
+  ];
+
   return (
     <section className="journey" id="journey">
       <div className="container">
         <div className="section-head journey-head">
-          <div className="eyebrow">ליווי חודשי · ללא התחייבות</div>
+          <div className="eyebrow">{t("eyebrow")}</div>
           <h2>
-            כל חודש שעובר -
-            <br />
-            הזוגיות שלכם <em>מתחזקת.</em>
+            {t.rich("headline", {
+              em: (chunks) => <em>{chunks}</em>,
+              br: () => <br />,
+            })}
           </h2>
-          <p>
-            אנחנו אתכם חודש בחודש, עובדים ושרים את הזוגיות יחד. ללא התחייבות, ללא חוזה ארוך טווח.
-            ניתן לעצור בכל רגע. ככה זה נראה בפועל.
-          </p>
+          <p>{t("description")}</p>
         </div>
 
         <div className="journey-timeline">
@@ -82,9 +74,9 @@ export function Journey() {
         </div>
 
         <div className="journey-cta">
-          <div className="journey-cta-text">מוכנים להתחיל? אפשר לעצור בכל רגע.</div>
+          <div className="journey-cta-text">{t("ctaText")}</div>
           <Link href="/journey/assessment" className="btn btn-primary">
-            התחילו את האבחון <span className="arrow">←</span>
+            {t("cta")} <span className="arrow">←</span>
           </Link>
         </div>
       </div>

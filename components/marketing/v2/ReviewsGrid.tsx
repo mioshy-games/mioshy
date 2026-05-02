@@ -1,55 +1,50 @@
 "use client";
 
 import { useState } from "react";
-
-type Review = {
-  text: string;
-  initial: string;
-  name: string;
-  source: string;
-};
-
-const REVIEWS: Review[] = [
-  {
-    text: "\"אז קניתי את 'שאלות שלא שאלנו' כמתנה ליום הנישואים שלנו, חצי בצחוק וחצי באמת. אחרי 11 שנה חשבתי שאני יודעת עליו הכל. טעיתי. גילינו דברים אחד על השני שלא ידענו וצחקנו עד 2 בלילה. וואו.\"",
-    initial: "ש",
-    name: "שירה לוי",
-    source: "נשואים 11 שנים",
-  },
-  {
-    text: '"בעבר ניסינו טיפול זוגי - זה עזר לרגע, אבל היה משהו כבד בכל המפגשים. מהרגע שהצטרפנו לליווי של מיאושי, הכל נעשה קל - השיתוף והתחזוקה של הזוגיות הפכו לכיף. ממליצה בחום..."',
-    initial: "ד",
-    name: "דניאל ק.",
-    source: "נשואים 13 שנים",
-  },
-  {
-    text: "\"אנחנו לקוחות 4 שנים. כל פעם שאני אומרת ליובל 'אולי נוריד את המנוי?' יוצא משהו חדש. ערכה חדשה, אתגר חדש, משחק שלא הכרנו. הם פשוט לא נותנים לנו להתעייף אחד מהשנייה. אחרי 16 שנה.\"",
-    initial: "ר",
-    name: "רוני ויובל",
-    source: "בזוגיות 16 שנים",
-  },
-  {
-    text: "\"אגיד את זה ככה - היום זו השיחה הקבועה של יום שני בערב אצלנו: 'מה המשימה הפעם?'. עידן רץ לבדוק מה יש במיאושי לפני. דבר שלא חשבתי שיכול לקרות אצלנו.\"",
-    initial: "מ",
-    name: "מיכל ועידן",
-    source: "נשואים 8 שנים",
-  },
-  {
-    text: '"לקחתי את בעלי למלון ליום הולדת, ופתאום הבנתי שאין לנו ממש תוכנית לערב. הורדתי משחק של מיאושי, וזה הציל את הסיטואציה. צחקנו, שתינו, ודיברנו על דברים שלא דיברנו עליהם בחיים. הוא עוד מדבר על הערב הזה."',
-    initial: "ע",
-    name: "עינת ברוך",
-    source: "נשואה 9 שנים",
-  },
-  {
-    text: '"ביום האהבה כל המסעדות היו מלאות, אז במקום לצאת - הורדנו משחק של מיאושי בבית. זה היה ערב הרבה יותר טוב מכל מסעדה שהיינו בה השנה. רצינית."',
-    initial: "ט",
-    name: "טל ועומרי",
-    source: "בזוגיות 6 שנים",
-  },
-];
+import { useTranslations } from "next-intl";
 
 export function ReviewsGrid() {
+  const t = useTranslations("homeV2.reviews");
   const [expanded, setExpanded] = useState(false);
+
+  const REVIEWS = [
+    {
+      text: t("item1Text"),
+      initial: t("item1Initial"),
+      name: t("item1Name"),
+      source: t("item1Source"),
+    },
+    {
+      text: t("item2Text"),
+      initial: t("item2Initial"),
+      name: t("item2Name"),
+      source: t("item2Source"),
+    },
+    {
+      text: t("item3Text"),
+      initial: t("item3Initial"),
+      name: t("item3Name"),
+      source: t("item3Source"),
+    },
+    {
+      text: t("item4Text"),
+      initial: t("item4Initial"),
+      name: t("item4Name"),
+      source: t("item4Source"),
+    },
+    {
+      text: t("item5Text"),
+      initial: t("item5Initial"),
+      name: t("item5Name"),
+      source: t("item5Source"),
+    },
+    {
+      text: t("item6Text"),
+      initial: t("item6Initial"),
+      name: t("item6Name"),
+      source: t("item6Source"),
+    },
+  ];
 
   return (
     <>
@@ -72,7 +67,7 @@ export function ReviewsGrid() {
       {!expanded && (
         <div className="reviews-load-more">
           <button type="button" onClick={() => setExpanded(true)}>
-            טען עוד המלצות <span>↓</span>
+            {t("loadMore")} <span>↓</span>
           </button>
         </div>
       )}

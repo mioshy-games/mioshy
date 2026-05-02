@@ -1,72 +1,67 @@
+import { useTranslations } from "next-intl";
 import { TrackedLink } from "./TrackedLink";
-
-type Persona = {
-  icon: string;
-  title: string;
-  desc: string;
-  linkLabel: string;
-  href: string;
-};
-
-const PERSONAS: Persona[] = [
-  {
-    icon: "✦",
-    title: "רוצים להחזיר את הניצוץ",
-    desc: "השגרה השתלטה ואתם מתגעגעים למבטים של פעם, לרצון להיות יחד, לחיוך הספונטני.",
-    linkLabel: "המסע הזוגי המודרך",
-    href: "#journey",
-  },
-  {
-    icon: "⌛",
-    title: "רוצים זמן זוגי באמת",
-    desc: "הילדים, העבודה, הבית - והזוגיות נשארה אחרונה. אתם רוצים להחזיר אותה לראש הסדר.",
-    linkLabel: "ליווי חודשי גמיש",
-    href: "#journey",
-  },
-  {
-    icon: "◆",
-    title: "מחפשים מומחה שיעזור",
-    desc: "הייתם אצל מטפלת. עזר באופן חלקי. אתם מחפשים משהו אחר - חוויתי, פחות כבד, יותר ביחד.",
-    linkLabel: "ליווי עם המומחים שלנו",
-    href: "#journey",
-  },
-  {
-    icon: "↻",
-    title: "רוצים להתחבר מחדש",
-    desc: "הקשר טוב. אתם רק רוצים להעלות הילוך - חוויות חדשות, שיחות חדשות, אינטימיות חדשה.",
-    linkLabel: "משחקי חיבור ותקשורת",
-    href: "#couples-games",
-  },
-  {
-    icon: "★",
-    title: "מחפשים בילוי אינטימי מהנה",
-    desc: "אתם רוצים להחליף את הסדרה בנטפליקס בערב מהנה ומחבר באמת. בלי הכנה, בלי לחץ.",
-    linkLabel: "משחקים אונליין",
-    href: "#couples-games",
-  },
-  {
-    icon: "♨",
-    title: "רוצים לפלפל את חיי המין",
-    desc: "אתם מוכנים לקצת הרפתקנות - להחזיר את התשוקה, לגלות צד חדש, לפתח את האינטימיות.",
-    linkLabel: "משחקים למבוגרים בלבד",
-    href: "#adult-games",
-  },
-];
 
 /**
  * ForWhom - 6 personas grid. Each card is a clickable link to the matching
  * service section. CTA banner below points to the assessment quiz.
  */
 export function ForWhom() {
+  const t = useTranslations("homeV2.forWhom");
+
+  const PERSONAS = [
+    {
+      icon: "✦",
+      title: t("persona1Title"),
+      desc: t("persona1Desc"),
+      linkLabel: t("persona1Link"),
+      href: "#journey",
+    },
+    {
+      icon: "⌛",
+      title: t("persona2Title"),
+      desc: t("persona2Desc"),
+      linkLabel: t("persona2Link"),
+      href: "#journey",
+    },
+    {
+      icon: "◆",
+      title: t("persona3Title"),
+      desc: t("persona3Desc"),
+      linkLabel: t("persona3Link"),
+      href: "#journey",
+    },
+    {
+      icon: "↻",
+      title: t("persona4Title"),
+      desc: t("persona4Desc"),
+      linkLabel: t("persona4Link"),
+      href: "#couples-games",
+    },
+    {
+      icon: "★",
+      title: t("persona5Title"),
+      desc: t("persona5Desc"),
+      linkLabel: t("persona5Link"),
+      href: "#couples-games",
+    },
+    {
+      icon: "♨",
+      title: t("persona6Title"),
+      desc: t("persona6Desc"),
+      linkLabel: t("persona6Link"),
+      href: "#adult-games",
+    },
+  ];
+
   return (
     <section className="for-whom" id="for-whom">
       <div className="container">
         <div className="section-head">
-          <div className="eyebrow">למי זה מתאים</div>
+          <div className="eyebrow">{t("eyebrow")}</div>
           <h2>
-            אם אתם מזהים את עצמכם
+            {t("headlinePart1")}
             <br />
-            באחד מאלה - מיאושי{" "}
+            {t("headlinePart2")}
             <em
               style={{
                 fontFamily: "'Frank Ruhl Libre', serif",
@@ -74,12 +69,10 @@ export function ForWhom() {
                 fontStyle: "italic",
               }}
             >
-              בשבילכם.
+              {t("headlineEm")}
             </em>
           </h2>
-          <p>
-            הליווי של מיאושי לא לכולם. הוא למי שמוכן לבחור בזוגיות אחרת.
-          </p>
+          <p>{t("description")}</p>
         </div>
 
         <div className="personas-grid">
@@ -97,13 +90,11 @@ export function ForWhom() {
 
         <div className="for-whom-cta">
           <div className="for-whom-cta-text">
-            <span className="small">בחינם · 90 שניות · בלי הרשמה</span>
-            <span className="big">
-              בואו גלו על הזוגיות שלכם דברים שלא ידעתם - חינם לגמרי.
-            </span>
+            <span className="small">{t("ctaSmall")}</span>
+            <span className="big">{t("ctaBig")}</span>
           </div>
           <TrackedLink href="/journey/assessment" className="btn btn-primary" ctaId="for_whom_assessment" section="for-whom">
-            בואו לגלות מה קורה בזוגיות שלכם <span className="arrow">←</span>
+            {t("cta")} <span className="arrow">←</span>
           </TrackedLink>
         </div>
       </div>

@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { Link } from "@/navigation";
 
 /**
@@ -5,50 +6,46 @@ import { Link } from "@/navigation";
  * (RTL) and a fanned stack of 3 game cards on the left.
  */
 export function CouplesGames() {
+  const t = useTranslations("homeV2.couplesGames");
   return (
     <section className="couples-games" id="couples-games">
       <div className="container">
         <div className="cg-grid">
           <div className="cg-text">
-            <div className="eyebrow">המשחקים של מיאושי</div>
+            <div className="eyebrow">{t("eyebrow")}</div>
             <h2>
-              המשחקים שכבר
+              {t("headlinePart1")}
               <br />
-              <span className="text-mark">הטריפו</span> את המדינה.
+              <span className="text-mark">{t("headlineMark")}</span>
+              {t("headlinePart2")}
             </h2>
-            <p className="lead">
-              רוצים להיפתח? להתחבר? להתגלות מחדש? אלפי זוגות בישראל כבר ממליצים - מהסלון, מהמיטה,
-              ואפילו כשאחד מכם בחו&quot;ל. אתם הבאים בתור.
-            </p>
+            <p className="lead">{t("lead")}</p>
 
             <div className="cg-callout">
-              <p>
-                &quot;תכניסו תשוקה. תתחברו מחדש. תתאהבו ותחזירו את הפרפרים - במיוחד למי שבזוגיות
-                ארוכה עם ילדים, ומרגיש איך השחיקה עושה את שלה.&quot;
-              </p>
+              <p>{t("callout")}</p>
             </div>
 
             <div className="cg-stats">
               <div className="cg-stat">
-                <div className="num">+500</div>
-                <div className="label">משימות ואתגרים</div>
+                <div className="num">{t("statTasks")}</div>
+                <div className="label">{t("statTasksLabel")}</div>
               </div>
               <div className="cg-stat">
-                <div className="num">+100</div>
-                <div className="label">המלצות</div>
+                <div className="num">{t("statRecs")}</div>
+                <div className="label">{t("statRecsLabel")}</div>
               </div>
               <div className="cg-stat">
-                <div className="num">3 רמות</div>
-                <div className="label">לכל זוג</div>
+                <div className="num">{t("statLevels")}</div>
+                <div className="label">{t("statLevelsLabel")}</div>
               </div>
             </div>
 
             <div className="cg-actions">
               <Link href="/games" className="btn btn-primary">
-                לכל המשחקים <span className="arrow">←</span>
+                {t("ctaPrimary")} <span className="arrow">←</span>
               </Link>
               <Link href="/how-it-works" className="btn btn-ghost">
-                איך בוחרים?
+                {t("ctaSecondary")}
               </Link>
             </div>
           </div>
@@ -57,33 +54,33 @@ export function CouplesGames() {
             <div className="cg-card cg-card-3">
               <div className="cg-card-noise"></div>
               <div className="cg-card-content">
-                <div className="cg-card-tag">קליל</div>
+                <div className="cg-card-tag">{t("card3Tag")}</div>
                 <div className="cg-card-title">
-                  50 שאלות
+                  {t("card3TitleLine1")}
                   <br />
-                  שלא שאלנו
+                  {t("card3TitleLine2")}
                 </div>
               </div>
             </div>
             <div className="cg-card cg-card-2">
               <div className="cg-card-noise"></div>
               <div className="cg-card-content">
-                <div className="cg-card-tag">מעמיק</div>
+                <div className="cg-card-tag">{t("card2Tag")}</div>
                 <div className="cg-card-title">
-                  סיפור
+                  {t("card2TitleLine1")}
                   <br />
-                  החיים שלנו
+                  {t("card2TitleLine2")}
                 </div>
               </div>
             </div>
             <div className="cg-card cg-card-1">
               <div className="cg-card-noise"></div>
               <div className="cg-card-content">
-                <div className="cg-card-tag">מסקרן</div>
+                <div className="cg-card-tag">{t("card1Tag")}</div>
                 <div className="cg-card-title">
-                  אמת או
+                  {t("card1TitleLine1")}
                   <br />
-                  אמת
+                  {t("card1TitleLine2")}
                 </div>
               </div>
             </div>

@@ -1,4 +1,5 @@
 import "./styles.css";
+import { useLocale } from "next-intl";
 import { Hero } from "./Hero";
 import { Problem } from "./Problem";
 import { Authority } from "./Authority";
@@ -26,12 +27,18 @@ import { FAQ } from "./FAQ";
  * embedded inside coloured surfaces (e.g. the cream press card on
  * /games) without painting over them.
  *
+ * Direction (`dir`) and language (`lang`) are pulled from the active
+ * next-intl locale so the same markup serves both Hebrew (RTL) and
+ * English (LTR) without a separate component tree.
+ *
  * This component is rendered conditionally from `app/[locale]/page.tsx`
  * when `?new=1` is present in the URL (feature flag for staged rollout).
  */
 export function HomepageV2() {
+  const locale = useLocale();
+  const dir = locale === "he" ? "rtl" : "ltr";
   return (
-    <div className="home-v2 bg-white" dir="rtl" lang="he">
+    <div className="home-v2 bg-white" dir={dir} lang={locale}>
       <Hero />
       <Problem />
       <Authority />

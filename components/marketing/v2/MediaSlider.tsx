@@ -4,36 +4,7 @@
 import "./styles.css";
 
 import Image from "next/image";
-
-type MediaItem = {
-  name: string;
-  date: string;
-  quote: string;
-  url: string;
-  logoSrc: string;
-  logoAlt: string;
-};
-
-const ITEMS: MediaItem[] = [
-  {
-    name: "ישראל היום",
-    date: "מדור מומלצים",
-    quote:
-      "מיאושי עוזרת למאות זוגות להחזיר את התשוקה שאבדה - במקום להיפרד.",
-    url: "https://www.israelhayom.co.il/mumlazim/article/13374120",
-    logoSrc: "/images/israel.webp",
-    logoAlt: "ישראל היום",
-  },
-  {
-    name: "walla!",
-    date: "TLD · מגזין החיים",
-    quote:
-      "משחקים ואתגרים שמצילים את הזוגיות - עם ליווי מקצועי אישי לכל זוג.",
-    url: "https://tld.walla.co.il/item/3528908",
-    logoSrc: "/images/walla.webp",
-    logoAlt: "Walla!",
-  },
-];
+import { useTranslations } from "next-intl";
 
 /**
  * MediaSlider - editorial press table.
@@ -50,6 +21,27 @@ const ITEMS: MediaItem[] = [
  * Server-rendered (no use-client) - there's no interactive state.
  */
 export function MediaSlider() {
+  const t = useTranslations("homeV2.media");
+
+  const ITEMS = [
+    {
+      name: t("item1Name"),
+      date: t("item1Date"),
+      quote: t("item1Quote"),
+      url: "https://www.israelhayom.co.il/mumlazim/article/13374120",
+      logoSrc: "/images/israel.webp",
+      logoAlt: t("item1LogoAlt"),
+    },
+    {
+      name: t("item2Name"),
+      date: t("item2Date"),
+      quote: t("item2Quote"),
+      url: "https://tld.walla.co.il/item/3528908",
+      logoSrc: "/images/walla.webp",
+      logoAlt: t("item2LogoAlt"),
+    },
+  ];
+
   return (
     <section className="media-press">
       <div className="media-press-wrap">
@@ -57,10 +49,10 @@ export function MediaSlider() {
         <header className="media-press-head">
           <div className="media-press-eyebrow">
             <span className="media-press-dot" aria-hidden="true" />
-            <span>במילים שלהם</span>
+            <span>{t("eyebrow")}</span>
           </div>
           <h2 className="media-press-title">
-            כתבו עלינו פעם. <em>ואז שוב.</em>
+            {t.rich("headline", { em: (chunks) => <em>{chunks}</em> })}
           </h2>
         </header>
 
@@ -104,7 +96,7 @@ export function MediaSlider() {
                   rel="noopener noreferrer"
                   className="media-press-row-cta"
                 >
-                  <span>קראו את הכתבה</span>
+                  <span>{t("readArticle")}</span>
                   <span className="arrow" aria-hidden="true">
                     ←
                   </span>

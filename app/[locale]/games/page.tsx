@@ -108,12 +108,108 @@ export default async function GamesHubPage({
   const t = await getTranslations({ locale, namespace: "gamesHub" });
 
   const supabase = await createServerSupabaseClient();
+
+  // Auth gate — same pattern as /adults: members skip the marketing
+  // wrap and see just the catalog. Anonymous visitors get the full
+  // story below.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const isAuthed = !!user;
+
   const { data } = await supabase
     .from("games")
     .select("*")
     .eq("is_active", true)
     .order("created_at", { ascending: false });
   const games = (data ?? []) as GameRow[];
+
+  // ─── Logged-in catalog-only view ──────────────────────────────────────
+  // Per Itzik 2026-05-02: returning members shouldn't re-read the same
+  // marketing page on every visit. They land on a clean, dense grid
+  // of every active game with a section title.
+  if (isAuthed) {
+    return (
+      <div
+        dir={isHe ? "rtl" : "ltr"}
+        className="relative min-h-[100dvh] bg-[#0E0810] text-white"
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[60vh]"
+          style={{
+            background:
+              "radial-gradient(900px 500px at 20% 0%, rgba(196,68,86,0.18), transparent 65%), " +
+              "radial-gradient(800px 440px at 80% 10%, rgba(139,38,56,0.15), transparent 65%)",
+          }}
+        />
+        <main className="relative mx-auto max-w-6xl px-4 pb-20 pt-12 sm:pt-16">
+          <div className="inline-flex items-center gap-2 rounded-full border border-rose-300/30 bg-rose-500/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-rose-100">
+            <span className="h-1.5 w-1.5 rounded-full bg-rose-300" />
+            {isHe ? "כל המשחקים" : "All Games"}
+          </div>
+          <h1 className="mt-3 font-heading text-3xl font-bold leading-tight tracking-tight sm:text-4xl">
+            {t("catalogueTitle")}
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm text-white/70">
+            {isHe
+              ? "בחרו משחק, פתחו על הטלפון, ומתחילים. בלי הורדות, בלי הכנות."
+              : "Pick one, open it on your phone, and start. No downloads, no prep."}
+          </p>
+
+          {games.length === 0 ? (
+            <p className="mt-12 text-white/60">
+              {isHe ? "עדיין אין משחקים פעילים." : "No active games yet."}
+            </p>
+          ) : (
+            <ul className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {games.map((g) => {
+                const name = isHe ? g.name_he : g.name_en;
+                const desc = isHe ? g.description_he : g.description_en;
+                return (
+                  <li key={g.id}>
+                    <Link
+                      href={`/games/${g.slug}`}
+                      className="group block overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/10 to-white/5 shadow-xl backdrop-blur transition hover:border-rose-300/40 hover:from-white/20"
+                    >
+                      <div className="relative aspect-[16/10] w-full overflow-hidden bg-gradient-to-br from-rose-500/30 to-fuchsia-500/20">
+                        {g.thumbnail_url ? (
+                          <Image
+                            src={g.thumbnail_url}
+                            alt={name ?? ""}
+                            width={640}
+                            height={400}
+                            className="h-full w-full object-cover transition group-hover:scale-105"
+                            unoptimized
+                          />
+                        ) : null}
+                        <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/70 to-transparent" />
+                      </div>
+                      <div className="p-5">
+                        <h3 className="text-xl font-bold text-white group-hover:text-rose-100">
+                          {name}
+                        </h3>
+                        {desc ? (
+                          <p className="mt-2 line-clamp-2 text-sm text-white/70">
+                            {desc}
+                          </p>
+                        ) : null}
+                        <div className="mt-5 flex items-center justify-between">
+                          <span className="text-sm text-rose-200 group-hover:text-white">
+                            {isHe ? "פתחו את המשחק" : "Open the game"} →
+                          </span>
+                        </div>
+                      </div>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </main>
+      </div>
+    );
+  }
 
   // ── Demo wheel data - fetch the live wheel_configs row of the
   //    "honesty-or-challenge" game so the hero's demo wheel uses

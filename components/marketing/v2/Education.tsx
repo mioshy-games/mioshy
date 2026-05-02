@@ -1,11 +1,13 @@
+import { useTranslations } from "next-intl";
 import { Counter } from "./Counter";
 import { RevealOnScroll } from "./RevealOnScroll";
 
 /**
- * Education - "למה זה קורה". Light cream section with two-column flow:
+ * Education - "Why this happens". Light cream section with two-column flow:
  * narrative on the right, 4 dramatic stats on the left.
  */
 export function Education() {
+  const t = useTranslations("homeV2.education");
   return (
     <section className="education">
       <div className="edu-orb"></div>
@@ -20,16 +22,14 @@ export function Education() {
         <div className="edu-grid">
           <RevealOnScroll variant="fade-up">
             <div>
-              <div className="eyebrow">למה זה קורה</div>
+              <div className="eyebrow">{t("eyebrow")}</div>
               <h2>
-                זוגיות לא נשברת בלילה אחד.
-                <br />
-                היא נשחקת לאט.
+                {t.rich("headline", { br: () => <br /> })}
               </h2>
               <p>
-                שגרה, ילדים, קריירה, עייפות - הם לא רעים. הם פשוט{" "}
-                <strong>דוחקים את הזוגיות לפינה</strong>. וביום שבו אתם מבינים שאתם זרים, השחיקה
-                כבר נעשתה לפני שנים.
+                {t.rich("body", {
+                  strong: (chunks) => <strong>{chunks}</strong>,
+                })}
               </p>
             </div>
           </RevealOnScroll>
@@ -39,40 +39,34 @@ export function Education() {
                 <div className="edu-stat">
                   <div className="num">
                     <em>
-                      <Counter to={67} suffix="%" />
+                      <Counter to={67} suffix={t("stat1Suffix")} />
                     </em>
                   </div>
-                  <div className="label">מהזוגות מדווחים על ירידה בקרבה הרגשית אחרי 5 שנים</div>
+                  <div className="label">{t("stat1Label")}</div>
                 </div>
                 <div className="edu-stat">
                   <div className="num">
                     <em>
-                      <Counter to={3} suffix=" דק׳" />
+                      <Counter to={3} suffix={t("stat2Suffix")} />
                     </em>
                   </div>
-                  <div className="label">
-                    מספיקות ביום כדי לשנות את הדינמיקה - אם משקיעים נכון
-                  </div>
+                  <div className="label">{t("stat2Label")}</div>
                 </div>
                 <div className="edu-stat">
                   <div className="num">
                     <em>
-                      ×<Counter to={4} />
+                      {t("stat3Prefix")}<Counter to={4} />
                     </em>
                   </div>
-                  <div className="label">
-                    שיפור בשביעות רצון אצל זוגות שעוסקים בקשר באופן יזום
-                  </div>
+                  <div className="label">{t("stat3Label")}</div>
                 </div>
                 <div className="edu-stat">
                   <div className="num">
                     <em>
-                      <Counter to={30} suffix=" יום" />
+                      <Counter to={30} suffix={t("stat4Suffix")} />
                     </em>
                   </div>
-                  <div className="label">
-                    הזמן הממוצע שלוקח לזוגות אצלנו להרגיש שינוי אמיתי
-                  </div>
+                  <div className="label">{t("stat4Label")}</div>
                 </div>
               </div>
             </div>

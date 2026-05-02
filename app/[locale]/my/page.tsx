@@ -228,6 +228,94 @@ export default async function MyHubPage({
               about products, not admin chrome. Admin lives in /my/account. */}
         </section>
 
+        {/* ─────── Membership-status banner ───────
+            Lights up immediately after the title so a returning user sees
+            "where they stand" without scrolling. Three states:
+              · pillarCount === 0 → Free tier, soft CTA toward pricing.
+              · pillarCount 1-2  → Active, showing which pillar(s), nudge
+                                    toward the unentitled ones.
+              · pillarCount === 3 → All-access, celebratory copy. */}
+        <section className="mt-8">
+          {entitlements.pillarCount === 0 ? (
+            <div className="flex flex-wrap items-start justify-between gap-4 rounded-2xl border border-white/15 bg-gradient-to-br from-fuchsia-500/15 via-white/5 to-violet-500/15 p-5 backdrop-blur">
+              <div>
+                <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-white/85">
+                  <span className="h-1.5 w-1.5 rounded-full bg-white/70" />
+                  {isHe ? "סטטוס: חינם" : "Status: Free"}
+                </div>
+                <p className="mt-2 text-sm font-semibold text-white">
+                  {isHe
+                    ? "החשבון שלך פעיל - אין עדיין מנוי בתשלום."
+                    : "Your account is active — no paid plan yet."}
+                </p>
+                <p className="mt-1 text-sm text-white/70">
+                  {isHe
+                    ? "בחרו מסלול והתחילו לשחק, ללוות, או להזמין משחק למבוגרים בלבד."
+                    : "Pick a plan and start playing, get coached, or order an adults-only game."}
+                </p>
+              </div>
+              <Link
+                href="/pricing"
+                className="inline-flex min-h-[40px] items-center justify-center rounded-full bg-white px-5 text-sm font-semibold text-fuchsia-700 shadow hover:bg-white/90"
+              >
+                {isHe ? "לראות מחירים" : "See pricing"}
+              </Link>
+            </div>
+          ) : entitlements.pillarCount === 3 ? (
+            <div className="flex flex-wrap items-start justify-between gap-4 rounded-2xl border border-emerald-300/40 bg-emerald-400/10 p-5 backdrop-blur">
+              <div>
+                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/40 bg-emerald-500/20 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-emerald-100">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
+                  {isHe ? "סטטוס: הכל פתוח" : "Status: Full access"}
+                </div>
+                <p className="mt-2 text-sm font-semibold text-white">
+                  {isHe
+                    ? "המנוי שלך מקיף את כל מיאושי - משחקים, ליווי, ולמבוגרים בלבד."
+                    : "Your plan covers all of Mioshy — games, journey, and adults only."}
+                </p>
+                <p className="mt-1 text-sm text-emerald-100/85">
+                  {isHe ? "תהנו." : "Enjoy."}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-start justify-between gap-4 rounded-2xl border border-fuchsia-300/30 bg-fuchsia-400/10 p-5 backdrop-blur">
+              <div>
+                <div className="inline-flex items-center gap-2 rounded-full border border-fuchsia-300/40 bg-fuchsia-500/25 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-fuchsia-100">
+                  <span className="h-1.5 w-1.5 rounded-full bg-fuchsia-300" />
+                  {isHe ? "סטטוס: מנוי פעיל" : "Status: Active member"}
+                </div>
+                <p className="mt-2 text-sm font-semibold text-white">
+                  {isHe
+                    ? `יש לכם גישה ל-${entitlements.pillarCount} מתוך 3 השירותים שלנו.`
+                    : `You have access to ${entitlements.pillarCount} of our 3 services.`}
+                </p>
+                <p className="mt-1 text-sm text-fuchsia-100/80">
+                  {(() => {
+                    const owned: string[] = [];
+                    const missing: string[] = [];
+                    if (entitlements.games) owned.push(isHe ? "משחקים" : "Games");
+                    else missing.push(isHe ? "משחקים" : "Games");
+                    if (entitlements.journey) owned.push(isHe ? "ליווי" : "Journey");
+                    else missing.push(isHe ? "ליווי" : "Journey");
+                    if (entitlements.adults) owned.push(isHe ? "למבוגרים בלבד" : "Adults only");
+                    else missing.push(isHe ? "למבוגרים בלבד" : "Adults only");
+                    return isHe
+                      ? `פעיל: ${owned.join(", ")}. אפשר להוסיף: ${missing.join(", ")}.`
+                      : `Active: ${owned.join(", ")}. Add: ${missing.join(", ")}.`;
+                  })()}
+                </p>
+              </div>
+              <Link
+                href="/pricing"
+                className="inline-flex min-h-[40px] items-center justify-center rounded-full border border-white/20 bg-white/10 px-5 text-sm font-semibold text-white backdrop-blur hover:bg-white/20"
+              >
+                {isHe ? "לשדרג מסלול" : "Upgrade plan"}
+              </Link>
+            </div>
+          )}
+        </section>
+
         {/* Per spec §5.2 — the "Got a code from partner?" panel was moved
             BELOW the pillar cards. Cards come first (the products), partner
             stuff comes second (the relationship plumbing). */}

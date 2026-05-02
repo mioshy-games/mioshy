@@ -48,6 +48,7 @@ import { routing } from "@/i18n/routing";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getOwnerJourneyStatus } from "@/lib/journey-content/owner-status";
 import { getCurrentCoupleContext } from "@/lib/between-us/couples";
+import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
 // FAQ uses the same scoped CSS as the homepage v2 FAQ - wrapper class .home-v2
 import "@/components/marketing/v2/styles.css";
 
@@ -130,6 +131,7 @@ export default async function JourneyMarketingPage({
 
   let hasInProgressAssessment = false;
   let hasActiveAssignments = false;
+  let hasJourneyEntitlement = false;
   if (user) {
     const ctx = await getCurrentCoupleContext();
     const status = await getOwnerJourneyStatus({
@@ -139,6 +141,88 @@ export default async function JourneyMarketingPage({
     hasActiveAssignments = status.hasActiveAssignments;
     hasInProgressAssessment =
       !hasActiveAssignments && status.hasInProgressAssessment;
+    const entitlements = await getUserEntitlements(user.id).catch(() => null);
+    hasJourneyEntitlement = !!entitlements?.journey;
+  }
+
+  // ─── Locked view for logged-in members without a Journey subscription ──
+  // Per Itzik 2026-05-02: anyone signed in but without an active Journey
+  // entitlement gets a single dedicated "this is locked, here's why you
+  // want it" page instead of the marketing wall. Anonymous visitors keep
+  // seeing the full marketing page below — they're not yet members and
+  // need the broader pitch.
+  if (user && !hasJourneyEntitlement) {
+    const lockedTrust = [0, 1, 2, 3].map((i) => t(`trust.${i}`));
+    return (
+      <div
+        dir={isHe ? "rtl" : "ltr"}
+        className="relative isolate min-h-[100dvh] overflow-hidden text-white"
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 -z-20 h-full bg-[linear-gradient(180deg,#070b18_0%,#0a1126_40%,#0c1530_100%)]"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[85vh] animate-aurora-drift"
+          style={{
+            background:
+              "radial-gradient(1100px 640px at 14% 0%, rgba(16,185,129,0.22), transparent 62%), " +
+              "radial-gradient(900px 520px at 88% 12%, rgba(251,191,36,0.16), transparent 60%), " +
+              "radial-gradient(700px 460px at 50% 40%, rgba(56,189,248,0.10), transparent 65%)",
+          }}
+        />
+        <main className="relative mx-auto max-w-3xl px-4 pb-24 pt-16 sm:pt-24 text-center">
+          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/30 bg-emerald-400/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-100">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
+            {isHe ? "ליווי עם מיאושי" : "Journey with Mioshy"}
+          </div>
+          <h1 className="mt-5 font-heading text-4xl font-bold leading-tight tracking-tight sm:text-5xl">
+            {isHe
+              ? "המסע נעול - בינתיים."
+              : "The journey is locked — for now."}
+          </h1>
+          <p className="mt-5 text-lg text-white/80">
+            {isHe
+              ? "בשביל הזוגיות שלכם, מגיע לכם משהו שנבנה במיוחד עבורכם. הליווי האישי של מיאושי - תרגולים, אבחון, שיחות ומשימות חודשיות - פתוח רק לחברים במנוי."
+              : "For the sake of your relationship, you deserve something built around you. Mioshy's personal journey — practices, assessment, conversations, and monthly tasks — is open only to members."}
+          </p>
+          <p className="mt-3 text-base text-white/65">
+            {isHe
+              ? "אנחנו לא רוצים שתפספסו את זה."
+              : "We don't want you to miss this."}
+          </p>
+
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
+            <Link
+              href="/pricing"
+              className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-white px-7 text-sm font-semibold text-emerald-700 shadow-lg shadow-emerald-500/20 hover:bg-emerald-50"
+            >
+              {isHe ? "להצטרף לליווי" : "Join the journey"}
+              <ArrowRight className={`ms-2 h-4 w-4 ${isHe ? "rotate-180" : ""}`} />
+            </Link>
+            <Link
+              href="/my"
+              className="inline-flex min-h-[48px] items-center justify-center rounded-full border border-white/20 bg-white/10 px-6 text-sm font-medium text-white backdrop-blur hover:bg-white/20"
+            >
+              {isHe ? "חזרה למיאושי שלי" : "Back to My Mioshy"}
+            </Link>
+          </div>
+
+          <ul className="mt-12 grid gap-3 text-left sm:grid-cols-2">
+            {lockedTrust.map((item, idx) => (
+              <li
+                key={idx}
+                className="flex items-start gap-2 rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-white/80 backdrop-blur"
+              >
+                <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" />
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        </main>
+      </div>
+    );
   }
 
   // SEO JSON-LD

@@ -38,14 +38,14 @@ export function SignupForm({ next }: Props) {
       const result = await signupAction(fd);
       if (!result.success) { setError(result.error); return; }
       // Honour caller-supplied next if present and same-origin.
-      const target = safeNext(next, "/products");
+      const target = safeNext(next, "/my");
       router.push(target);
     });
   }
 
   // Preserve the next param when the user clicks through to login.
   const loginHref = next
-    ? `/auth?next=${encodeURIComponent(safeNext(next, "/products"))}`
+    ? `/auth?next=${encodeURIComponent(safeNext(next, "/my"))}`
     : "/auth";
 
   return (
