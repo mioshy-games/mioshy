@@ -5,7 +5,8 @@ import {
   HE_LABELS,
   type PartnerDetail,
 } from "@/lib/experts/partner-detail";
-import { PRIORITY_LABELS_HE } from "@/lib/journey/priorities";
+import { getPriorityLabels } from "@/lib/journey-content/priority-categories";
+import type { PriorityKey } from "@/lib/journey/priorities";
 import { Badge } from "@/components/ui/badge";
 
 /**
@@ -22,10 +23,13 @@ import { Badge } from "@/components/ui/badge";
  * the column header makes that explicit.
  */
 export async function PartnersSplit({ coupleId }: { coupleId: string }) {
-  const partners = await getPartnerDetailsForCouple(coupleId).catch((e) => {
-    console.error("[PartnersSplit] load failed", e);
-    return [];
-  });
+  const [partners, priorityLabels] = await Promise.all([
+    getPartnerDetailsForCouple(coupleId).catch((e) => {
+      console.error("[PartnersSplit] load failed", e);
+      return [];
+    }),
+    getPriorityLabels(),
+  ]);
 
   if (partners.length === 0) {
     return (
@@ -39,7 +43,11 @@ export async function PartnersSplit({ coupleId }: { coupleId: string }) {
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       {partners.map((p) => (
-        <PartnerColumn key={p.userId} partner={p} />
+        <PartnerColumn
+          key={p.userId}
+          partner={p}
+          labelsHe={priorityLabels.labelsHe}
+        />
       ))}
       {partners.length === 1 ? (
         <div className="border-dashed border-border text-muted-foreground rounded-lg border p-6 text-sm">
@@ -50,7 +58,13 @@ export async function PartnersSplit({ coupleId }: { coupleId: string }) {
   );
 }
 
-function PartnerColumn({ partner: p }: { partner: PartnerDetail }) {
+function PartnerColumn({
+  partner: p,
+  labelsHe,
+}: {
+  partner: PartnerDetail;
+  labelsHe: Record<PriorityKey, string>;
+}) {
   const pct =
     p.scheduledTotal > 0
       ? Math.round((p.scheduledCompleted / p.scheduledTotal) * 100)
@@ -148,7 +162,7 @@ function PartnerColumn({ partner: p }: { partner: PartnerDetail }) {
                     idx === 0 ? "font-semibold" : "text-foreground/85"
                   }
                 >
-                  {PRIORITY_LABELS_HE[key]}
+                  {labelsHe[key]}
                 </span>
               </li>
             ))}

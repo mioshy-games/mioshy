@@ -36,9 +36,14 @@ export type ExpertClientDetail = {
 
 export type ExpertAssignmentRow = {
   id: string;
-  sourceKind: "program" | "category" | "item";
+  /** v3 slice 4: 'cadence' is a per-partner engine container.
+   *  sourceTitle for cadence rows looks like "Cadence · alice@example.com". */
+  sourceKind: "program" | "category" | "item" | "cadence";
   sourceId: string;
   sourceTitle: string | null;
+  /** Per-partner cadence rows carry user_id; legacy v2 rows have it null
+   *  (their owner is on couple_id). Null is fine for the existing UI. */
+  userId?: string | null;
   isActive: boolean;
   createdAt: string;
   anchorDate: string | null;
@@ -329,16 +334,51 @@ export async function getExpertClientDetail(opts: {
     joinedAt: m.joined_at,
   }));
 
-  // Assignments + scheduled stats
-  const { data: assignRows } = await admin
-    .from("journey_assignments")
-    .select("id, source_kind, source_id, is_active, created_at, anchor_date")
-    .eq("couple_id", opts.coupleId)
-    .order("created_at", { ascending: false });
+  // Assignments + scheduled stats. Two axes:
+  //   1. Couple-scoped legacy v2 (program / category / item).
+  //   2. Per-partner cadence (v3) — user-owned, never couple_id, so
+  //      we fetch by user_id IN (members…) and merge.
+  const [coupleAssignRes, cadenceAssignRes] = await Promise.all([
+    admin
+      .from("journey_assignments")
+      .select(
+        "id, source_kind, source_id, user_id, is_active, created_at, anchor_date",
+      )
+      .eq("couple_id", opts.coupleId)
+      .order("created_at", { ascending: false }),
+    userIds.length > 0
+      ? admin
+          .from("journey_assignments")
+          .select(
+            "id, source_kind, source_id, user_id, is_active, created_at, anchor_date",
+          )
+          .in("user_id", userIds)
+          .eq("source_kind", "cadence")
+          .order("created_at", { ascending: false })
+      : Promise.resolve({ data: [] }),
+  ]);
+  const assignRows = [
+    ...((coupleAssignRes.data ?? []) as Array<{
+      id: string;
+      source_kind: string;
+      source_id: string;
+      user_id: string | null;
+      is_active: boolean;
+      created_at: string;
+      anchor_date: string | null;
+    }>),
+    ...((cadenceAssignRes.data ?? []) as Array<{
+      id: string;
+      source_kind: string;
+      source_id: string;
+      user_id: string | null;
+      is_active: boolean;
+      created_at: string;
+      anchor_date: string | null;
+    }>),
+  ];
 
-  const assignmentIds = ((assignRows ?? []) as Array<{ id: string }>).map(
-    (a) => a.id,
-  );
+  const assignmentIds = assignRows.map((a) => a.id);
 
   // Resolve source titles in three lookups (program/category/item)
   const programIds = new Set<string>();
@@ -429,20 +469,54 @@ export async function getExpertClientDetail(opts: {
     }
   }
 
-  const assignments: ExpertAssignmentRow[] = ((assignRows ?? []) as Array<{
-    id: string;
-    source_kind: "program" | "category" | "item";
-    source_id: string;
-    is_active: boolean;
-    created_at: string;
-    anchor_date: string | null;
-  }>).map((a) => {
+  // Cadence partner labels — full_name on profiles + email on
+  // admin_users_overview, same pattern as partner-detail.ts.
+  const cadenceUserIdsForLabels = assignRows
+    .filter((a) => a.source_kind === "cadence" && a.user_id)
+    .map((a) => a.user_id as string);
+  if (cadenceUserIdsForLabels.length > 0) {
+    const [profilesRes, emailsRes] = await Promise.all([
+      admin
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", cadenceUserIdsForLabels),
+      admin
+        .from("admin_users_overview")
+        .select("user_id, email")
+        .in("user_id", cadenceUserIdsForLabels),
+    ]);
+    const fullNameById = new Map(
+      ((profilesRes.data ?? []) as Array<{
+        id: string;
+        full_name: string | null;
+      }>).map((p) => [p.id, p.full_name]),
+    );
+    const emailById = new Map(
+      ((emailsRes.data ?? []) as Array<{
+        user_id: string;
+        email: string | null;
+      }>).map((u) => [u.user_id, u.email]),
+    );
+    for (const uid of cadenceUserIdsForLabels) {
+      titleMap.set(
+        `cadence:${uid}`,
+        `Cadence · ${fullNameById.get(uid) || emailById.get(uid) || `${uid.slice(0, 8)}…`}`,
+      );
+    }
+  }
+
+  const assignments: ExpertAssignmentRow[] = assignRows.map((a) => {
     const sched = schedByAssignment.get(a.id) ?? { total: 0, done: 0 };
+    const titleKey =
+      a.source_kind === "cadence"
+        ? `cadence:${a.user_id ?? ""}`
+        : `${a.source_kind}:${a.source_id}`;
     return {
       id: a.id,
-      sourceKind: a.source_kind,
+      sourceKind: a.source_kind as ExpertAssignmentRow["sourceKind"],
       sourceId: a.source_id,
-      sourceTitle: titleMap.get(`${a.source_kind}:${a.source_id}`) ?? null,
+      sourceTitle: titleMap.get(titleKey) ?? null,
+      userId: a.user_id,
       isActive: a.is_active,
       createdAt: a.created_at,
       anchorDate: a.anchor_date,

@@ -97,9 +97,11 @@ export interface QuestionReflection {
  * stored in the answer; HE/EN labels and short descriptions live alongside
  * for the renderer. Doesn't drive any axis (`axes: []`).
  *
- * The `key`s here MUST match `PRIORITY_KEYS` in lib/journey/priorities.ts.
- * The validator on /api/journey/answer enforces that the answer is exactly
- * a permutation of those keys.
+ * The `key`s here MUST match the seeded
+ * journey_categories.assessment_priority_key values (see migration
+ * 055) — and the PriorityKey literal-union in lib/journey/priorities.ts.
+ * The validator on /api/journey/answer enforces that the answer is
+ * exactly a permutation of those keys.
  */
 export interface QuestionRankingCategory {
   key: string;
@@ -151,8 +153,9 @@ export type AnswerValue =
   | { kind: "multi"; options: string[] }
   | { kind: "text"; text: string }
   /** Ordered list of stable category slugs; index 0 = highest priority.
-   *  The server validator enforces it's a permutation of PRIORITY_KEYS
-   *  from lib/journey/priorities.ts (no missing, no extras, no duplicates). */
+   *  The server validator enforces it's a permutation of the
+   *  PriorityKey literal-union in lib/journey/priorities.ts (which in
+   *  turn is kept in sync with the DB seed in migration 055). */
   | { kind: "ranking"; order: string[] };
 
 export interface Response {
@@ -172,6 +175,13 @@ export interface AnalysisSummaryBilingual {
    *  Stored INSIDE `summary` JSONB so adding the field needs no DB
    *  migration. Older rows without it render the legacy top_gap fallback. */
   top_priority?: string;
+  /** Resolved priority label in Hebrew, baked at compute time so the
+   *  client component never needs to fetch it. v3 slice 1: replaces
+   *  the dropped PRIORITY_LABELS_HE constant lookup. Null when no
+   *  ranking was answered. */
+  focus_label_he?: string | null;
+  /** Resolved priority label in English. Same rules as focus_label_he. */
+  focus_label_en?: string | null;
   recommendations: Array<{
     id: string;
     axis: Axis;

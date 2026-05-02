@@ -24,6 +24,7 @@ export const maxDuration = 300; // 5 min
 
 import { NextResponse } from "next/server";
 import { runJourneyUnlockNotifier } from "@/lib/journey-content/notify-unlocks";
+import { runWithCronLog } from "@/lib/journey-content/cron-log";
 
 export async function POST(req: Request) {
   const secret =
@@ -43,12 +44,32 @@ export async function POST(req: Request) {
     const limitParam = url.searchParams.get("limit");
     const limit = limitParam ? Number.parseInt(limitParam, 10) : undefined;
 
-    const result = await runJourneyUnlockNotifier({
-      limit: Number.isFinite(limit) ? limit : undefined,
+    // Slice 9 — wrap in runWithCronLog so the health board can show
+    // recent runs. The notifier returns its own ok/errors shape so
+    // we surface that to the log helper.
+    type NotifierResult = Awaited<ReturnType<typeof runJourneyUnlockNotifier>>;
+    let captured: NotifierResult | null = null;
+    await runWithCronLog("notify_unlocks", async () => {
+      const result = await runJourneyUnlockNotifier({
+        limit: Number.isFinite(limit) ? limit : undefined,
+      });
+      captured = result;
+      return {
+        rowsProcessed: result.dispatched ?? 0,
+        payload: {
+          scanned: result.scanned,
+          dispatched: result.dispatched,
+          skipped: result.skipped,
+          errors_count: result.errors.length,
+          errors: result.errors.slice(0, 5),
+        },
+        error: result.ok ? undefined : `${result.errors.length} send error(s)`,
+      };
     });
 
+    const result = captured!;
     return NextResponse.json(result, {
-      status: result.ok ? 200 : 207, // 207 = partial success (some errors)
+      status: result.ok ? 200 : 207,
     });
   } catch (err) {
     return NextResponse.json(

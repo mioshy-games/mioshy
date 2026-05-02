@@ -8,6 +8,7 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { analyze } from "@/lib/journey/analysis";
+import { getPriorityLabels } from "@/lib/journey-content/priority-categories";
 import type { AnswerValue, Locale, Response } from "@/lib/journey/types";
 
 export const dynamic = "force-dynamic";
@@ -52,7 +53,8 @@ export async function POST() {
     answer: r.answer as AnswerValue,
     locale: r.locale as Locale,
   }));
-  const analysis = analyze(responses);
+  const priorityLabels = await getPriorityLabels();
+  const analysis = analyze(responses, priorityLabels);
 
   await supabase.from("journey_analysis").insert({
     journey_id: journey.id,

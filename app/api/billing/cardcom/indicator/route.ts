@@ -387,19 +387,25 @@ export async function GET(req: Request) {
         const upd = await admin
           .from("subscriptions")
           .update({
-            status:              "active",
-            plan:                session.plan,
-            plan_amount:         session.amount,
-            currency:            session.currency,
-            coin_id:             session.coin_id,
-            is_israeli:          session.is_israeli,
-            vat_rate_percent:    session.vat_rate_percent,
-            current_period_end:  periodEnd.toISOString(),
-            next_billing_date:   periodEnd.toISOString(),
-            failed_attempts:     0,
-            grace_until:         null,
-            checkout_session_id: session.id,
-            payment_method_id:   paymentMethodId,
+            status:               "active",
+            plan:                 session.plan,
+            plan_amount:          session.amount,
+            currency:             session.currency,
+            coin_id:              session.coin_id,
+            is_israeli:           session.is_israeli,
+            vat_rate_percent:     session.vat_rate_percent,
+            current_period_end:   periodEnd.toISOString(),
+            next_billing_date:    periodEnd.toISOString(),
+            failed_attempts:      0,
+            grace_until:          null,
+            // v3 slice 5: clear journey grace columns on a successful
+            // renewal so the user re-enters 'active' state and the
+            // cadence engine resumes materializing on the next tick.
+            // Harmless for non-journey products (columns just stay NULL).
+            journey_grace_until:  null,
+            journey_blocked_at:   null,
+            checkout_session_id:  session.id,
+            payment_method_id:    paymentMethodId,
           })
           .eq("id", existingSub.id)
         console.log("[indicator:SUBSCRIPTION_UPDATED]", {

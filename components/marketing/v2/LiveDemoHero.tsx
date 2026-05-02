@@ -268,9 +268,13 @@ export function LiveDemoHero({
         particlesSettings={gameSettings?.particles}
         containerClassName="relative w-full overflow-hidden"
       >
-        <div className="mx-auto flex min-h-[700px] max-w-6xl flex-col items-center gap-12 px-4 pb-20 pt-10 lg:flex-row lg:items-stretch lg:gap-12 lg:pt-16">
+        {/* On mobile we open with the wheel — that's the product
+            taste-test. The copy follows below, centered. On desktop
+            the copy reads first on the start side, wheel on the other.
+            flex-col-reverse achieves the swap without duplicating DOM. */}
+        <div className="mx-auto flex min-h-[700px] max-w-6xl flex-col-reverse items-center gap-10 px-4 pb-16 pt-6 lg:flex-row lg:items-stretch lg:gap-12 lg:pb-20 lg:pt-16">
         {/* ── COPY COLUMN ─────────────────────────────────────────── */}
-        <div className="relative z-10 max-w-2xl text-center lg:flex-1 lg:text-start">
+        <div className="relative z-10 mx-auto max-w-2xl text-center lg:mx-0 lg:flex-1 lg:text-start">
           {badge ? (
             <motion.div
               initial={{ opacity: 0, y: -6 }}
@@ -376,11 +380,14 @@ export function LiveDemoHero({
         </div>
 
         {/* ── WHEEL COLUMN ────────────────────────────────────────── */}
-        <div className="relative z-10 flex w-full items-center justify-center lg:flex-1">
+        {/* On mobile the wheel surfaces FIRST (flex-col-reverse) and
+            takes a sensible viewport-relative size so it never gets
+            clipped by the section edge — even on narrow phones. */}
+        <div className="relative z-10 flex w-full items-center justify-center pt-4 lg:flex-1 lg:pt-0">
           {/* Wheel column — vertically centred to hero height; question
-              card is absol-tely positioned ABOVE the wheel so the wheel
+              card is absolutely positioned ABOVE the wheel so the wheel
               itself never shifts when the card lands. */}
-          <div className="relative flex w-full items-center justify-center">
+          <div className="relative mx-auto flex w-full max-w-[min(92vw,560px)] items-center justify-center">
             {/* Sample question card — appears ABOVE the wheel after settle.
                 Dismissable via the X-button (revealing the wheel fully). */}
             <AnimatePresence>

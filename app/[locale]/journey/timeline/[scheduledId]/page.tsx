@@ -30,6 +30,8 @@ import type {
   JourneyScheduledItem,
 } from "@/lib/journey-content/types";
 import { ItemDetailClient } from "@/components/journey/timeline/ItemDetailClient";
+import { PerItemThread } from "@/components/journey/timeline/PerItemThread";
+import { getPerItemThread } from "@/lib/journey-content/messages";
 import { AssessmentItemForm } from "@/components/my/AssessmentItemForm";
 
 export const dynamic = "force-dynamic";
@@ -160,6 +162,12 @@ export default async function JourneyTimelineItemPage({
     (r) => !r.is_private || r.user_id === user.id,
   );
 
+  // v3 slice 6 — load the threaded messages for this scheduled item.
+  // Drives the new PerItemThread UI; the legacy `responses` list above
+  // is kept for the existing ItemDetailClient surfaces during the
+  // dual-write transition.
+  const threadMessages = await getPerItemThread(scheduled.id, user.id);
+
   // Phase 3 step 2 — for assessment-kind items, the form pre-fills
   // from the user's most-recent prior response (if any) so they can
   // revise rather than re-answer from scratch.
@@ -227,7 +235,7 @@ export default async function JourneyTimelineItemPage({
           {isHe ? "חזרה לציר המסע" : "Back to the timeline"}
         </Link>
 
-        <div className="mt-5 flex items-center gap-2 text-xs text-white/60">
+        <div className="mt-5 flex flex-wrap items-center gap-2 text-xs text-white/60">
           <Compass className="h-3.5 w-3.5 text-indigo-300" />
           <span>
             {category
@@ -236,6 +244,13 @@ export default async function JourneyTimelineItemPage({
                 ? "פרק"
                 : "Chapter"}
           </span>
+          {/* v3 slice 8 — source badge for expert pushes. Subtle chip
+              so the user knows this isn't a regular cadence pick. */}
+          {scheduled.source === "expert_push" ? (
+            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-300/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-100">
+              {isHe ? "מהמומחה שלכם" : "From your coach"}
+            </span>
+          ) : null}
         </div>
 
         {/* Phase 3 step 2: when this is an assessment-kind item, render
@@ -269,6 +284,31 @@ export default async function JourneyTimelineItemPage({
           viewerUserId={user.id}
           locale={locale}
         />
+
+        {/* v3 slice 6 — threaded messaging. Per Update B "every item
+            is a prompt expecting a response": composer is the primary
+            affordance, focused on mount, with thread history below.
+            For assessment-kind items the AssessmentItemForm above
+            already collects a structured answer, so we only show the
+            thread for content/reflection kinds. */}
+        {item.kind !== "assessment" ? (
+          <section className="mt-10 rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur sm:p-6">
+            <h2 className="mb-4 text-base font-semibold text-white/85">
+              {isHe ? "השיחה שלכם על הפריט" : "Your conversation on this item"}
+            </h2>
+            <PerItemThread
+              scheduledItemId={scheduled.id}
+              initialMessages={threadMessages}
+              viewerUserId={user.id}
+              isHe={isHe}
+              promptLabel={
+                isHe
+                  ? "כתבו תגובה — המומחים שלנו רואים ומגיבים."
+                  : "Write a response — our experts read and reply."
+              }
+            />
+          </section>
+        ) : null}
       </main>
     </div>
   );

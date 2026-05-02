@@ -8,6 +8,7 @@ import { LocaleAttributes } from "@/components/LocaleAttributes";
 import { Chrome } from "@/components/Chrome";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
+import { getUnreadCountForUser } from "@/lib/journey-content/notifications-read";
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -52,14 +53,20 @@ export default async function LocaleLayout({
     journey: boolean;
     adults: boolean;
   } | null = null;
+  // v3 slice 10 — fetch the unread notifications count once per
+  // request so the header bell badge renders without a flash of zero.
+  let unreadNotifications = 0;
   try {
     const supabase = await createServerSupabaseClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
     isAuthed = !!user;
-    if (isAuthed) {
-      const ent = await getUserEntitlements();
+    if (isAuthed && user) {
+      const [ent, unread] = await Promise.all([
+        getUserEntitlements(),
+        getUnreadCountForUser(user.id).catch(() => 0),
+      ]);
       if (ent) {
         entitlements = {
           games: ent.games,
@@ -67,6 +74,7 @@ export default async function LocaleLayout({
           adults: ent.adults,
         };
       }
+      unreadNotifications = unread;
     }
   } catch {
     isAuthed = false;
@@ -76,7 +84,12 @@ export default async function LocaleLayout({
   return (
     <NextIntlClientProvider messages={messages}>
       <LocaleAttributes />
-      <Chrome isAuthed={isAuthed} entitlements={entitlements}>
+      <Chrome
+        isAuthed={isAuthed}
+        entitlements={entitlements}
+        unreadNotifications={unreadNotifications}
+        locale={locale}
+      >
         {children}
       </Chrome>
     </NextIntlClientProvider>

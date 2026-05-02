@@ -27,6 +27,7 @@ import type {
 } from "@/lib/journey-content/types";
 import { AssessmentItemForm } from "@/components/my/AssessmentItemForm";
 import { AssessmentVisualBuilder } from "./AssessmentVisualBuilder";
+import { HintIcon } from "@/components/ui/hint-icon";
 
 type EditorMode = "visual" | "json";
 
@@ -199,9 +200,12 @@ export function AssessmentEditor({
 
       {/* Kind selector */}
       <div className="space-y-1">
-        <label className="text-xs font-semibold text-muted-foreground">
-          Item kind
-        </label>
+        <span className="inline-flex items-center gap-1.5">
+          <label className="text-xs font-semibold text-muted-foreground">
+            Item kind
+          </label>
+          <HintIcon topic="item.kind" />
+        </span>
         <select
           value={kind}
           onChange={(e) => setKind(e.target.value as Kind)}

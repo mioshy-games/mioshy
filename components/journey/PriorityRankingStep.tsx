@@ -4,19 +4,12 @@ import { useMemo, useState } from "react";
 import { motion, Reorder } from "framer-motion";
 import { GripVertical } from "lucide-react";
 
-import {
-  PRIORITY_KEYS,
-  PRIORITY_LABELS_HE,
-  PRIORITY_LABELS_EN,
-  PRIORITY_DESC_HE,
-  PRIORITY_DESC_EN,
-  isValidOrder,
-  type PriorityKey,
-} from "@/lib/journey/priorities";
+import { isValidOrder, type PriorityKey } from "@/lib/journey/priorities";
 import type {
   AnswerValue,
   Locale,
   QuestionRanking,
+  QuestionRankingCategory,
 } from "@/lib/journey/types";
 import { Button } from "@/components/ui/button";
 
@@ -60,10 +53,10 @@ export function PriorityRankingStep({
 }: Props) {
   const isHe = locale === "he";
 
-  // Initial order: prior answer if valid, else the order declared in the
-  // questionnaire (which is the spec's "default order, but user must
-  // reorder"). PRIORITY_KEYS is the canonical fallback if something looks
-  // off.
+  // Initial order: prior answer if valid, else the order declared in
+  // the questionnaire (which is the spec's "default order, but user
+  // must reorder"). The questionnaire's categories list is the only
+  // fallback — there is no longer a hardcoded PRIORITY_KEYS array.
   const initialOrder = useMemo<PriorityKey[]>(() => {
     if (
       initial &&
@@ -74,13 +67,34 @@ export function PriorityRankingStep({
     }
     const declared = question.categories.map((c) => c.key);
     if (isValidOrder(declared)) return declared;
-    return [...PRIORITY_KEYS];
+    // Last-resort fallback: walk the declared categories in order even
+    // if isValidOrder rejects (e.g. count mismatch). Cast is safe
+    // because the questionnaire schema constrains `key` to PriorityKey.
+    return declared as PriorityKey[];
   }, [initial, question.categories]);
 
   const [order, setOrder] = useState<PriorityKey[]>(initialOrder);
 
-  const labels = isHe ? PRIORITY_LABELS_HE : PRIORITY_LABELS_EN;
-  const descriptions = isHe ? PRIORITY_DESC_HE : PRIORITY_DESC_EN;
+  // Build O(1) lookup tables from the question's own categories list.
+  // The questionnaire JSON carries he/en/he_desc/en_desc per category,
+  // so the assessment can render entirely from props without touching
+  // the DB or any constant map.
+  const labelByKey = useMemo(() => {
+    const m = new Map<string, QuestionRankingCategory>();
+    for (const c of question.categories) m.set(c.key, c);
+    return m;
+  }, [question.categories]);
+
+  const labelFor = (key: PriorityKey): string => {
+    const c = labelByKey.get(key);
+    if (!c) return key;
+    return isHe ? c.he : c.en;
+  };
+  const descFor = (key: PriorityKey): string => {
+    const c = labelByKey.get(key);
+    if (!c) return "";
+    return isHe ? c.he_desc : c.en_desc;
+  };
 
   const headline = isHe ? question.he_prompt : question.en_prompt;
   const subline = isHe ? question.he_subline : question.en_subline;
@@ -182,10 +196,10 @@ export function PriorityRankingStep({
                     idx === 0 ? "text-lg" : "text-base",
                   ].join(" ")}
                 >
-                  {labels[key]}
+                  {labelFor(key)}
                 </div>
                 <p className="mt-0.5 text-xs leading-snug text-white/65">
-                  {descriptions[key]}
+                  {descFor(key)}
                 </p>
               </div>
 

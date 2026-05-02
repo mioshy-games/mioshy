@@ -16,9 +16,11 @@ import { createAdminClient } from "@/lib/supabase-admin";
 import {
   journeyProgramSchema,
   journeyCategorySchema,
+  journeySubtopicSchema,
   journeyItemSchema,
   type JourneyProgramFormValues,
   type JourneyCategoryFormValues,
+  type JourneySubtopicFormValues,
   type JourneyItemFormValues,
 } from "@/lib/journey-content/validations";
 
@@ -231,6 +233,218 @@ export async function createAndRedirectNewCategory(programId?: string | null) {
 }
 
 // ============================================================
+// Subtopics (v3 slice 2)
+// ============================================================
+
+export async function saveJourneySubtopic(
+  subtopicId: string | null,
+  raw: unknown,
+): Promise<Result<string>> {
+  const parsed = journeySubtopicSchema.safeParse(raw);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.flatten().fieldErrors as Record<
+        string,
+        string[] | undefined
+      >,
+    };
+  }
+  const v: JourneySubtopicFormValues = parsed.data;
+  const supabase = await adminDb();
+
+  const row = {
+    category_id: v.category_id,
+    slug: v.slug,
+    name_he: v.name_he,
+    name_en: normalizeOptional(v.name_en),
+    description_he: normalizeOptional(v.description_he),
+    description_en: normalizeOptional(v.description_en),
+    sort_order: v.sort_order,
+    is_active: v.is_active,
+  };
+
+  let savedId = subtopicId;
+  if (subtopicId) {
+    const { error } = await supabase
+      .from("journey_subtopics")
+      .update(row)
+      .eq("id", subtopicId);
+    if (error) return { ok: false, error: { _root: [error.message] } };
+  } else {
+    const { data, error } = await supabase
+      .from("journey_subtopics")
+      .insert(row)
+      .select("id")
+      .single();
+    if (error || !data) {
+      return {
+        ok: false,
+        error: { _root: [error?.message ?? "Insert failed"] },
+      };
+    }
+    savedId = data.id as string;
+  }
+  revalidateJourney();
+  return { ok: true, id: savedId! };
+}
+
+export async function deleteJourneySubtopic(subtopicId: string) {
+  if (!subtopicId) return { ok: false as const, error: "missing subtopicId" };
+  const supabase = await adminDb();
+  const { error } = await supabase
+    .from("journey_subtopics")
+    .delete()
+    .eq("id", subtopicId);
+  if (error) return { ok: false as const, error: error.message };
+  revalidateJourney();
+  return { ok: true as const };
+}
+
+export async function createAndRedirectNewSubtopic(categoryId: string) {
+  if (!categoryId) throw new Error("categoryId is required");
+  const supabase = await adminDb();
+  // New subtopics go to the end of the list — pick max(sort_order) + 1000.
+  const { data: maxRow } = await supabase
+    .from("journey_subtopics")
+    .select("sort_order")
+    .eq("category_id", categoryId)
+    .order("sort_order", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const nextOrder = ((maxRow?.sort_order as number | undefined) ?? 0) + 1000;
+  const slug = `new-subtopic-${Date.now().toString(36)}`;
+  const { data, error } = await supabase
+    .from("journey_subtopics")
+    .insert({
+      category_id: categoryId,
+      slug,
+      name_he: "תת-נושא חדש",
+      name_en: "New Subtopic",
+      sort_order: nextOrder,
+      is_active: false,
+    })
+    .select("id")
+    .single();
+  if (error || !data) throw new Error(error?.message ?? "create failed");
+  redirect(`/dashboard/journey/categories/${categoryId}/subtopics/${data.id}`);
+}
+
+// ============================================================
+// Reorder (v3 slice 2)
+// ------------------------------------------------------------
+// Sparse sort_order: we rewrite EVERY row in the parent list to
+// multiples of 1000 on each drag. Caller passes the full ordered list
+// of child IDs; the action validates that exactly those children
+// belong to the parent (no missing, no extras), then issues per-row
+// updates via the service-role client. Atomicity isn't critical since
+// any partial state still represents a valid total ordering — re-
+// triggering the reorder fixes drift.
+// ============================================================
+
+export type ReorderChildKind = "subtopic" | "item";
+
+export async function reorderJourneyChildren(input: {
+  parentKind: "category" | "subtopic";
+  parentId: string;
+  childKind: ReorderChildKind;
+  /** Items inside a category that have NO subtopic (subtopic_id IS NULL).
+   *  Only meaningful when parentKind='category' and childKind='item'. */
+  scope?: "direct" | "all";
+  orderedIds: string[];
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!input.parentId) return { ok: false, error: "missing parentId" };
+  if (!Array.isArray(input.orderedIds) || input.orderedIds.length === 0) {
+    return { ok: false, error: "orderedIds is empty" };
+  }
+  const supabase = await adminDb();
+
+  // Resolve the table + parent column we're updating.
+  let table: string;
+  let parentColumn: string;
+  let extraFilter: { column: string; value: string | null } | null = null;
+  if (input.childKind === "subtopic") {
+    if (input.parentKind !== "category") {
+      return { ok: false, error: "subtopics live under categories only" };
+    }
+    table = "journey_subtopics";
+    parentColumn = "category_id";
+  } else {
+    table = "journey_items";
+    if (input.parentKind === "subtopic") {
+      parentColumn = "subtopic_id";
+    } else {
+      // parentKind === 'category'
+      parentColumn = "category_id";
+      // Items in a category split into "direct" (no subtopic) and "all".
+      // The category-detail page reorders the direct group; subtopic
+      // detail pages reorder by subtopic_id. Default 'direct'.
+      if ((input.scope ?? "direct") === "direct") {
+        extraFilter = { column: "subtopic_id", value: null };
+      }
+    }
+  }
+
+  // Validate ownership: every orderedId must currently belong to the
+  // parent (and match the extra filter, if any). Reject otherwise so a
+  // stale UI can't accidentally reparent rows.
+  let q = supabase
+    .from(table)
+    .select("id")
+    .eq(parentColumn, input.parentId);
+  if (extraFilter) {
+    q =
+      extraFilter.value === null
+        ? q.is(extraFilter.column, null)
+        : q.eq(extraFilter.column, extraFilter.value);
+  }
+  const { data: existing, error: readErr } = await q;
+  if (readErr) return { ok: false, error: readErr.message };
+  const existingIds = new Set((existing ?? []).map((r) => r.id as string));
+  for (const id of input.orderedIds) {
+    if (!existingIds.has(id)) {
+      return {
+        ok: false,
+        error: `child ${id} does not belong to ${input.parentKind} ${input.parentId}`,
+      };
+    }
+  }
+  if (input.orderedIds.length !== existingIds.size) {
+    return {
+      ok: false,
+      error: `orderedIds length ${input.orderedIds.length} differs from current children count ${existingIds.size}`,
+    };
+  }
+
+  // Rewrite every child to a multiple-of-1000 sort_order in the new
+  // order. Sparse spacing leaves room for in-place inserts later if we
+  // ever support delta-only reorders.
+  const STEP = 1000;
+  const updates = input.orderedIds.map((id, idx) => ({
+    id,
+    sort_order: (idx + 1) * STEP,
+  }));
+
+  for (const u of updates) {
+    const { error } = await supabase
+      .from(table)
+      .update({ sort_order: u.sort_order })
+      .eq("id", u.id);
+    if (error) {
+      console.error("[reorderJourneyChildren] update failed", {
+        table,
+        id: u.id,
+        error,
+      });
+      return { ok: false, error: error.message };
+    }
+  }
+
+  revalidateJourney();
+  return { ok: true };
+}
+
+// ============================================================
 // Items
 // ============================================================
 
@@ -253,6 +467,10 @@ export async function saveJourneyItem(
 
   const row = {
     category_id: v.category_id,
+    // Empty-string sentinel from the form → NULL (item hangs directly
+    // off the category). The DB trigger journey_items_subtopic_consistency
+    // will reject any subtopic that doesn't belong to category_id.
+    subtopic_id: v.subtopic_id && v.subtopic_id.length > 0 ? v.subtopic_id : null,
     slug: v.slug,
     title_he: v.title_he,
     title_en: normalizeOptional(v.title_en),
@@ -313,19 +531,57 @@ export async function deleteJourneyItem(itemId: string) {
   return { ok: true as const };
 }
 
-export async function createAndRedirectNewItem(categoryId: string) {
+export async function createAndRedirectNewItem(
+  categoryId: string,
+  subtopicId?: string | null,
+) {
   if (!categoryId) throw new Error("categoryId is required");
   const supabase = await adminDb();
+
+  // If subtopicId is provided, validate it belongs to this category before
+  // we hand it off to the trigger (better error message than the SQL
+  // raise from journey_items_subtopic_consistency).
+  if (subtopicId) {
+    const { data: sub } = await supabase
+      .from("journey_subtopics")
+      .select("category_id")
+      .eq("id", subtopicId)
+      .maybeSingle();
+    if (!sub || sub.category_id !== categoryId) {
+      throw new Error(
+        "subtopicId does not belong to the given category",
+      );
+    }
+  }
+
+  // Sparse sort_order: place at end of the appropriate list (direct or
+  // inside the subtopic) by reading current max + 1000.
+  let maxQuery = supabase
+    .from("journey_items")
+    .select("sort_order")
+    .eq("category_id", categoryId);
+  if (subtopicId) {
+    maxQuery = maxQuery.eq("subtopic_id", subtopicId);
+  } else {
+    maxQuery = maxQuery.is("subtopic_id", null);
+  }
+  const { data: maxRow } = await maxQuery
+    .order("sort_order", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const nextOrder = ((maxRow?.sort_order as number | undefined) ?? 0) + 1000;
+
   const slug = `new-item-${Date.now().toString(36)}`;
   const { data, error } = await supabase
     .from("journey_items")
     .insert({
       category_id: categoryId,
+      subtopic_id: subtopicId ?? null,
       slug,
       title_he: "פריט חדש",
       title_en: "New Item",
       body_he: "טיוטה — מלאו את התוכן ושמרו",
-      sort_order: 0,
+      sort_order: nextOrder,
       default_offset_days: 0,
       is_active: false,
       audience: "both",

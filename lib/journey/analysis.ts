@@ -19,14 +19,8 @@ import type {
   Response,
 } from "./types";
 import { getQuestion } from "./questions";
-import {
-  PRIORITY_KEYS,
-  PRIORITY_LABELS_HE,
-  PRIORITY_LABELS_EN,
-  PRIORITY_DESC_HE,
-  PRIORITY_DESC_EN,
-  type PriorityKey,
-} from "./priorities";
+import { isPriorityKey, type PriorityKey } from "./priorities";
+import type { PriorityLabelsBundle } from "@/lib/journey-content/priority-categories";
 
 // Axis labels (bilingual) for narrative rendering ----------------------------
 
@@ -257,8 +251,8 @@ function extractTopPriority(responses: Response[]): PriorityKey | null {
     if (!Array.isArray(order) || order.length === 0) continue;
     const first = order[0];
     if (typeof first !== "string") continue;
-    if ((PRIORITY_KEYS as readonly string[]).includes(first)) {
-      return first as PriorityKey;
+    if (isPriorityKey(first)) {
+      return first;
     }
   }
   return null;
@@ -270,24 +264,26 @@ function generateSummary(params: {
   topPriority: PriorityKey | null;
   primary: LoveLanguage | null;
   horsemenFlag: boolean;
+  priorityLabels: PriorityLabelsBundle;
 }): AnalysisSummaryBilingual {
   // The new narrative leans on the chosen priority + love language
   // instead of leading with raw friendship/conflict/passion scores —
   // those still surface as their own card row in AnalysisSummary.tsx
   // so we don't repeat them in prose. Hence the smaller param surface.
-  const { topPriority, primary, horsemenFlag } = params;
+  const { topPriority, primary, horsemenFlag, priorityLabels } = params;
 
-  // Resolve the user's chosen #1 priority into HE/EN labels. Falls back
-  // to the legacy axis-based topGap when ranking wasn't answered (older
-  // sessions / partial diagnostics).
+  // Resolve the user's chosen #1 priority into HE/EN labels via the DB
+  // labels bundle (was the constant maps PRIORITY_LABELS_HE/EN before
+  // v3 slice 1). Falls back to the legacy axis-based topGap when
+  // ranking wasn't answered (older sessions / partial diagnostics).
   const focusHe = topPriority
-    ? PRIORITY_LABELS_HE[topPriority]
+    ? priorityLabels.labelsHe[topPriority]
     : params.topGap ? AXIS_LABEL_HE[params.topGap] : "חיבור כללי";
   const focusEn = topPriority
-    ? PRIORITY_LABELS_EN[topPriority]
+    ? priorityLabels.labelsEn[topPriority]
     : params.topGap ? AXIS_LABEL_EN[params.topGap] : "connection";
-  const focusDescHe = topPriority ? PRIORITY_DESC_HE[topPriority] : "";
-  const focusDescEn = topPriority ? PRIORITY_DESC_EN[topPriority] : "";
+  const focusDescHe = topPriority ? priorityLabels.descsHe[topPriority] : "";
+  const focusDescEn = topPriority ? priorityLabels.descsEn[topPriority] : "";
 
   const primaryHe = primary ? AXIS_LABEL_HE[primary] : null;
   const primaryEn = primary ? AXIS_LABEL_EN[primary] : null;
@@ -348,12 +344,22 @@ function generateSummary(params: {
       "We learn you, and our experts adapt the content for you, every step of the way.",
   });
 
-  return { narrative_he, narrative_en, recommendations, top_priority: topPriority ?? undefined };
+  return {
+    narrative_he,
+    narrative_en,
+    recommendations,
+    top_priority: topPriority ?? undefined,
+    focus_label_he: topPriority ? priorityLabels.labelsHe[topPriority] ?? null : null,
+    focus_label_en: topPriority ? priorityLabels.labelsEn[topPriority] ?? null : null,
+  };
 }
 
 // --- Public entrypoint ------------------------------------------------------
 
-export function analyze(responses: Response[]): Analysis {
+export function analyze(
+  responses: Response[],
+  priorityLabels: PriorityLabelsBundle,
+): Analysis {
   const { scores } = scoreResponses(responses);
   const friendship = friendshipScore(scores);
   const conflict = conflictHealth(scores);
@@ -372,6 +378,7 @@ export function analyze(responses: Response[]): Analysis {
     topPriority,
     primary,
     horsemenFlag,
+    priorityLabels,
   });
 
   return {

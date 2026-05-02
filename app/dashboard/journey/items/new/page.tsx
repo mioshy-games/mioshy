@@ -12,13 +12,18 @@ export const dynamic = "force-dynamic";
 export default async function NewJourneyItemPage({
   searchParams,
 }: {
-  searchParams: { category?: string };
+  searchParams: { category?: string; subtopic?: string };
 }) {
   await requireAdmin();
 
   // If the admin passed a category, just create + redirect.
+  // Optional ?subtopic=<id> prefills subtopic_id (used when the link
+  // came from a subtopic-detail page).
   if (searchParams.category) {
-    await createAndRedirectNewItem(searchParams.category);
+    await createAndRedirectNewItem(
+      searchParams.category,
+      searchParams.subtopic ?? null,
+    );
     return null;
   }
 

@@ -20,8 +20,9 @@ import "server-only";
  *   - sortRailByPriorities(rail, order) — pure reorder of rail entries
  *
  * Mapping rules:
- *   - Categories whose slug is in PRIORITY_KEYS map to the corresponding
- *     priority position.
+ *   - Categories whose slug matches a PriorityKey (i.e. one of the
+ *     seeded journey_categories.assessment_priority_key values) map to
+ *     the corresponding priority position.
  *   - The implicit "static:assessment" pill is always FIRST (the
  *     questionnaire stays at the top).
  *   - Categories outside the priority taxonomy (admin-defined extras)
@@ -35,10 +36,7 @@ import "server-only";
  */
 
 import { createServiceRoleClient } from "@/lib/supabase-admin";
-import {
-  PRIORITY_KEYS,
-  type PriorityKey,
-} from "@/lib/journey/priorities";
+import { isPriorityKey, type PriorityKey } from "@/lib/journey/priorities";
 import type { RailEntry } from "@/lib/dashboard/journey-rail";
 
 /**
@@ -78,11 +76,8 @@ export async function getViewerPriorityOrder(
     if (!Array.isArray(order)) continue;
     const validated: PriorityKey[] = [];
     for (const k of order) {
-      if (
-        typeof k === "string" &&
-        (PRIORITY_KEYS as readonly string[]).includes(k)
-      ) {
-        validated.push(k as PriorityKey);
+      if (isPriorityKey(k)) {
+        validated.push(k);
       }
     }
     if (validated.length > 0) return validated;

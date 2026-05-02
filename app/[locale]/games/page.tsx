@@ -472,52 +472,58 @@ export default async function GamesHubPage({
           {/* ════════════════════════════════════════════════════════════
               2. WHY MIOSHY - light bg, big cards with stat chips
           ════════════════════════════════════════════════════════════ */}
-          <section id="why" className="relative bg-[#FAF6F7] px-4 pb-20 pt-16">
+          <section id="why" className="relative bg-[#FAF6F7] px-4 pb-14 pt-10 sm:pb-20 sm:pt-16">
             <div className="mx-auto max-w-6xl">
               <div className="mx-auto max-w-3xl text-center">
-                <span className="inline-flex items-center gap-2.5 text-[13px] font-semibold uppercase tracking-[0.2em] text-[#170E14]">
+                {/* Eyebrow — bumped to 14px on mobile (16px equivalent
+                    once you account for letter-spacing). */}
+                <span className="inline-flex items-center gap-2.5 text-[14px] font-semibold uppercase tracking-[0.18em] text-[#170E14] sm:text-[13px]">
                   <span className="h-[7px] w-[7px] rounded-sm bg-[#B83C4D] shadow-[0_0_0_3px_rgba(184,60,77,0.18)]" />
                   {isHe ? "למה מיאושי" : "Why Mioshy"}
                 </span>
-                <h2 className="mt-5 font-heading text-3xl font-bold leading-[1.05] tracking-[-0.02em] text-[#170E14] sm:text-4xl lg:text-5xl">
+                <h2 className="mt-4 font-heading text-3xl font-bold leading-[1.05] tracking-[-0.02em] text-[#170E14] sm:text-4xl lg:text-5xl">
                   {t("whyTitle")}
                 </h2>
-                <p className="mx-auto mt-5 max-w-xl text-[19px] leading-[1.6] text-[#2A1B25]">
+                <p className="mx-auto mt-4 max-w-xl text-[17px] leading-[1.55] text-[#2A1B25] sm:mt-5 sm:text-[19px] sm:leading-[1.6]">
                   {isHe
                     ? "עזרנו למאות זוגות לשפר את הקשר שלהם - בדרך הכי כיפית שיש"
                     : "We've helped hundreds of couples improve their connection - in the most fun way possible"}
                 </p>
               </div>
 
-              {/* Unified card design - V2 cream bg, accent top-bar on hover only.
-                  All 4 cards are visually identical except for the icon color. */}
-              <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {/* Unified card design — mobile tightened: padding 20px,
+                  icon + stat chip on the same row (saves a wasted block
+                  of vertical space), title 18px, body 16px to keep
+                  every card scannable on a single phone scroll. */}
+              <div className="mt-8 grid gap-4 sm:mt-14 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4">
                 {whyItems.map((it, i) => {
                   const { Icon, iconBg, stat } = whyMeta[i]!;
                   return (
                     <div
                       key={i}
-                      className="group relative flex flex-col overflow-hidden rounded-3xl border border-[#EAE0E3] bg-[#FBF5F2] p-7 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-transparent hover:shadow-md"
+                      className="group relative flex flex-col overflow-hidden rounded-2xl border border-[#EAE0E3] bg-[#FBF5F2] p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-transparent hover:shadow-md sm:rounded-3xl sm:p-7"
                     >
                       {/* Accent top-bar - same color for all cards (V2 brand) */}
                       <div
                         aria-hidden
                         className="absolute inset-x-0 top-0 h-[3px] origin-right scale-x-0 rounded-t-3xl bg-[#B83C4D] transition-transform duration-400 group-hover:scale-x-100"
                       />
-                      {/* Icon with subtle ring */}
-                      <div
-                        className={`inline-flex h-14 w-14 items-center justify-center rounded-2xl ${iconBg} text-white shadow-md`}
-                      >
-                        <Icon className="h-7 w-7" />
+                      {/* Mobile: icon + stat chip share a row (RTL: icon
+                          on right, chip on left); desktop: stacked. */}
+                      <div className="flex items-center justify-between gap-3 sm:block">
+                        <div
+                          className={`inline-flex h-12 w-12 items-center justify-center rounded-xl ${iconBg} text-white shadow-md sm:h-14 sm:w-14 sm:rounded-2xl`}
+                        >
+                          <Icon className="h-6 w-6 sm:h-7 sm:w-7" />
+                        </div>
+                        <span className="inline-block rounded-full border border-[#EAE0E3] bg-[#FBE9EC] px-3 py-1 text-[12px] font-semibold uppercase tracking-[0.05em] text-[#8B2638] sm:mt-4 sm:self-start">
+                          {stat}
+                        </span>
                       </div>
-                      {/* Stat chip - neutral V2 style */}
-                      <span className="mt-4 inline-block self-start rounded-full border border-[#EAE0E3] bg-[#FBE9EC] px-3 py-1 text-[12px] font-semibold uppercase tracking-[0.05em] text-[#8B2638]">
-                        {stat}
-                      </span>
-                      <h3 className="mt-4 font-heading text-xl font-bold leading-snug text-[#170E14]">
+                      <h3 className="mt-3 font-heading text-[18px] font-bold leading-snug text-[#170E14] sm:mt-4 sm:text-xl">
                         {it.h}
                       </h3>
-                      <p className="mt-2 flex-1 text-[18px] leading-[1.6] text-[#4A3A45]">
+                      <p className="mt-1.5 flex-1 text-[16px] leading-[1.55] text-[#4A3A45] sm:mt-2 sm:text-[18px] sm:leading-[1.6]">
                         {it.p}
                       </p>
                     </div>
@@ -652,38 +658,43 @@ export default async function GamesHubPage({
           </section>
 
           {/* ════════════════════════════════════════════════════════════
-              3. PRESS - V2 MediaSlider on the plain cream section bg.
-              A single blurred peach blob enters from the left and drifts
-              gently L↔R behind the content (matches the blob aesthetic
-              used elsewhere on the site).
+              3. PRESS - Hebrew-only. The press logos are all Israeli
+              outlets (ישראל היום, walla, מגזין החיים, TLD), and we don't
+              have English-language press to swap in for the EN locale,
+              so we hide the whole block entirely outside Hebrew rather
+              than show foreign-language logos that confuse the reader.
+              Mobile padding tightened to remove the dead air the user
+              flagged between the CTA above and the press headline.
           ════════════════════════════════════════════════════════════ */}
-          <section
-            id="press"
-            className="relative overflow-hidden bg-[#FAF6F7] px-4 py-14 sm:py-20"
-          >
-            {/* Drifting peach blob - heavy blur, enters from screen-left */}
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-0 -z-0 overflow-hidden"
+          {isHe ? (
+            <section
+              id="press"
+              className="relative overflow-hidden bg-[#FAF6F7] px-4 py-8 sm:py-20"
             >
+              {/* Drifting peach blob - heavy blur, enters from screen-left */}
               <div
-                className="absolute top-[18%] -left-[12%] h-[620px] w-[620px] rounded-full mio-press-blob"
-                style={{
-                  background:
-                    "radial-gradient(circle, rgba(232,193,177,0.6), rgba(232,193,177,0.3) 45%, transparent 75%)",
-                  filter: "blur(90px)",
-                  willChange: "transform",
-                }}
-              />
-            </div>
+                aria-hidden
+                className="pointer-events-none absolute inset-0 -z-0 overflow-hidden"
+              >
+                <div
+                  className="absolute top-[18%] -left-[12%] h-[620px] w-[620px] rounded-full mio-press-blob"
+                  style={{
+                    background:
+                      "radial-gradient(circle, rgba(232,193,177,0.6), rgba(232,193,177,0.3) 45%, transparent 75%)",
+                    filter: "blur(90px)",
+                    willChange: "transform",
+                  }}
+                />
+              </div>
 
-            <div
-              className="home-v2 relative"
-              dir={isHe ? "rtl" : "ltr"}
-            >
-              <MediaSlider />
-            </div>
-          </section>
+              <div
+                className="home-v2 relative"
+                dir="rtl"
+              >
+                <MediaSlider />
+              </div>
+            </section>
+          ) : null}
 
           {/* ════════════════════════════════════════════════════════════
               4. CATALOGUE - all wheel games + snakes virtual card

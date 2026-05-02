@@ -22,7 +22,6 @@ export function QuestionModal({
   playerName,
   avatar,
   onAnswer,
-  originPct,
 }: {
   open: boolean;
   question: Question | null;
@@ -30,16 +29,15 @@ export function QuestionModal({
   avatar: string;
   onAnswer: (didAnswer: boolean) => void;
   penalty: Pick<GameConfig, "penaltyType" | "penaltySteps">;
+  /** Previously used to anchor the popup to a board cell. Removed —
+   *  on small screens the board fills the viewport and any cell-based
+   *  positioning pushed the modal off the edge. The modal is now
+   *  always centered. Prop kept in the type so existing callers don't
+   *  break; the value is intentionally ignored. */
   originPct?: { xPct: number; yPct: number } | null;
 }) {
   // Skip/penalty text removed — the modal now has only one action (close)
   // so there is no "skip" path-and therefore no penalty to warn about.
-
-  // If we have a board-cell origin, we animate the modal's transform origin
-  // to match. We place the modal absolutely inside the board wrapper, grow
-  // it outward, and when the board is smaller than the modal it just looks
-  // like the modal is anchored to the tile — which is what we want.
-  const hasOrigin = !!originPct;
 
   return (
     <AnimatePresence>
@@ -55,37 +53,24 @@ export function QuestionModal({
             onClick={() => onAnswer(true)}
           />
 
+          {/* Always-centered modal — uses fixed inset 0 + flex center
+              so on mobile (small viewports) the popup never gets cut
+              by the board's edge. The scale-up animation still plays
+              from center, which on small screens reads cleaner than
+              anchoring to a far-corner cell. */}
           <motion.div
             key="question-anchor"
-            className={cn(
-              hasOrigin
-                ? "pointer-events-none absolute inset-0 z-50"
-                : "pointer-events-none fixed inset-0 z-50 flex items-center justify-center p-4",
-            )}
+            className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center p-4"
           >
             <motion.div
               className={cn(
-                "pointer-events-auto w-[min(92vw,38rem)] rounded-3xl border border-amber-200/30",
+                "pointer-events-auto w-[min(92vw,38rem)] max-h-[88vh] overflow-y-auto rounded-3xl border border-amber-200/30",
                 "bg-[rgba(2,6,23,0.94)] p-5 text-slate-100 shadow-2xl",
-                hasOrigin ? "absolute" : "",
               )}
-              // Center the modal on the viewport but launch the scale/opacity
-              // transform from the board cell's position so the reveal feels
-              // anchored to the player's tile.
-              style={
-                hasOrigin
-                  ? {
-                      left: `${originPct!.xPct}%`,
-                      top: `${originPct!.yPct}%`,
-                      translateX: "-50%",
-                      translateY: "-50%",
-                      transformOrigin: "center center",
-                    }
-                  : undefined
-              }
-              initial={{ opacity: 0, scale: 0.15 }}
+              style={{ transformOrigin: "center center" }}
+              initial={{ opacity: 0, scale: 0.85 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.2 }}
+              exit={{ opacity: 0, scale: 0.9 }}
               transition={{ type: "spring", stiffness: 320, damping: 26 }}
               dir="rtl"
             >

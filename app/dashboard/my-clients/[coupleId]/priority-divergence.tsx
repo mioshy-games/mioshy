@@ -1,11 +1,7 @@
 import { Activity } from "lucide-react";
 import { getPartnerDetailsForCouple } from "@/lib/experts/partner-detail";
-import {
-  PRIORITY_KEYS,
-  PRIORITY_LABELS_HE,
-  divergence,
-  type PriorityKey,
-} from "@/lib/journey/priorities";
+import { divergence, type PriorityKey } from "@/lib/journey/priorities";
+import { getPriorityLabels } from "@/lib/journey-content/priority-categories";
 
 /**
  * Joint priority view — both partners' rankings side by side, plus a
@@ -22,7 +18,12 @@ import {
  * automatically: "גילוי מרכזי — שניכם לא מסכימים על מקום של מיניות".
  */
 export async function PriorityDivergence({ coupleId }: { coupleId: string }) {
-  const partners = await getPartnerDetailsForCouple(coupleId).catch(() => []);
+  const [partners, priorityLabels] = await Promise.all([
+    getPartnerDetailsForCouple(coupleId).catch(() => []),
+    getPriorityLabels(),
+  ]);
+  const labelsHe = priorityLabels.labelsHe;
+  const canonicalOrder = priorityLabels.canonicalOrder;
 
   // Need both partners ranked to render the joint view. If only one ranked
   // (or none), short-circuit with a friendly empty state — the per-partner
@@ -46,7 +47,7 @@ export async function PriorityDivergence({ coupleId }: { coupleId: string }) {
 
   if (!a.priorityRanking || !b.priorityRanking) return null; // type narrow
 
-  const rows = divergence(a.priorityRanking, b.priorityRanking);
+  const rows = divergence(a.priorityRanking, b.priorityRanking, canonicalOrder);
 
   // Largest gap drives the headline. divergence() is already sorted by
   // diff DESC, so rows[0] is the biggest. We surface it only when the gap
@@ -61,7 +62,7 @@ export async function PriorityDivergence({ coupleId }: { coupleId: string }) {
           <span className="font-semibold">גילוי מרכזי:</span>{" "}
           שני הצדדים לא מסכימים על מקומו של{" "}
           <em className="not-italic font-semibold">
-            {PRIORITY_LABELS_HE[headline.key]}
+            {labelsHe[headline.key]}
           </em>
           {" "}
           (פער של {headline.diff} מקומות).
@@ -84,18 +85,18 @@ export async function PriorityDivergence({ coupleId }: { coupleId: string }) {
           </thead>
           <tbody>
             {rows
-              // Render in canonical PRIORITY_KEYS order rather than divergence
-              // order — easier to skim. The headline up top already
-              // emphasizes the biggest gap.
+              // Render in canonical (DB sort_order) order rather than
+              // divergence order — easier to skim. The headline up top
+              // already emphasizes the biggest gap.
               .slice()
               .sort(
                 (x, y) =>
-                  PRIORITY_KEYS.indexOf(x.key) - PRIORITY_KEYS.indexOf(y.key),
+                  canonicalOrder.indexOf(x.key) - canonicalOrder.indexOf(y.key),
               )
               .map((row) => (
                 <tr key={row.key} className="border-border border-t">
                   <td className="px-3 py-2 font-medium">
-                    {PRIORITY_LABELS_HE[row.key]}
+                    {labelsHe[row.key]}
                   </td>
                   <td className="px-3 py-2 text-center tabular-nums">
                     {row.aPos}

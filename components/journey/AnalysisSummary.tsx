@@ -4,12 +4,6 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import type { Analysis, Locale } from "@/lib/journey/types";
 import { axisLabel } from "@/lib/journey/analysis";
-import {
-  PRIORITY_LABELS_HE,
-  PRIORITY_LABELS_EN,
-  PRIORITY_KEYS,
-  type PriorityKey,
-} from "@/lib/journey/priorities";
 
 interface AnalysisSummaryProps {
   analysis: Analysis | null;
@@ -87,16 +81,16 @@ export function AnalysisSummary({ analysis, locale, subscriptionActive = false }
       };
 
   // Resolve the focus area for "מוקד לחודש הראשון" / "Focus for the first
-  // month". Priority: user's chosen #1 from ranking → legacy top_gap axis
-  // → null (skip the section entirely).
-  const topPrioritySlug = analysis.summary.top_priority;
-  const isPriorityKey = (k: string | undefined): k is PriorityKey =>
-    !!k && (PRIORITY_KEYS as readonly string[]).includes(k);
-  const focusLabel = isPriorityKey(topPrioritySlug)
-    ? (isHe ? PRIORITY_LABELS_HE[topPrioritySlug] : PRIORITY_LABELS_EN[topPrioritySlug])
-    : analysis.top_gap
-      ? axisLabel(analysis.top_gap, locale)
-      : null;
+  // month". Priority: pre-baked focus_label from analysis.summary
+  // (computed server-side in lib/journey/analysis.ts using DB labels) →
+  // legacy top_gap axis fallback → null. Slice 1 of v3: replaces the
+  // dropped PRIORITY_LABELS_HE/EN constant maps; client never touches DB.
+  const bakedFocus = isHe
+    ? analysis.summary.focus_label_he
+    : analysis.summary.focus_label_en;
+  const focusLabel =
+    bakedFocus ??
+    (analysis.top_gap ? axisLabel(analysis.top_gap, locale) : null);
 
   const startCheckout = async () => {
     setCheckoutBusy(true);

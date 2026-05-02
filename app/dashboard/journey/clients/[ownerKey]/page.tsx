@@ -34,8 +34,11 @@ import {
   adminGetOwnerLabel,
   adminListAssignments,
 } from "@/lib/journey-content/queries";
+import { getUserLiveStats } from "@/lib/journey-content/observability";
+import { isCadenceEligible } from "@/lib/journey-content/cadence-engine";
 import { parseOwnerKey } from "@/lib/journey-content/owner";
 import { deriveStatus } from "@/lib/journey-content/status";
+import { UserLiveStatsPanel } from "@/components/dashboard/journey/UserLiveStatsPanel";
 import type {
   JourneyAssignment,
   JourneyCategory,
@@ -88,7 +91,15 @@ async function loadOwner(ownerKey: string): Promise<LoadedOwner> {
   const admin = createServiceRoleClient();
   if (!admin) throw new Error("service role unavailable");
 
-  const assignments = await adminListAssignments({ ownerKey, limit: 500 });
+  // v3 slice 4: when this is a couple, also pull each partner's
+  // cadence assignment so the couple workspace shows the full
+  // picture. Cadence is per-user (never couple-owned), so without
+  // this opt-in the couple page would silently miss it.
+  const assignments = await adminListAssignments({
+    ownerKey,
+    limit: 500,
+    includeCoupleMembersCadence: true,
+  });
   if (assignments.length === 0) {
     return {
       assignments: [],
@@ -156,6 +167,8 @@ async function loadOwner(ownerKey: string): Promise<LoadedOwner> {
   // Source labels: we need distinct program/category/item ids from the
   // assignments themselves so the card header can say "Program · Clear
   // Communication" instead of just "program · <uuid>".
+  // Cadence assignments carry source_id = user_id (a sentinel — there's
+  // no catalog row to label against), handled separately below.
   const programSourceIds = assignments
     .filter((a) => a.source_kind === "program")
     .map((a) => a.source_id);
@@ -165,6 +178,12 @@ async function loadOwner(ownerKey: string): Promise<LoadedOwner> {
   const itemSourceIds = assignments
     .filter((a) => a.source_kind === "item")
     .map((a) => a.source_id);
+  // For cadence rows we look up the user's email/name so the card
+  // says "Cadence · alice@example.com" — important on the couple
+  // workspace where two cadence rows appear side by side.
+  const cadenceUserIds = assignments
+    .filter((a) => a.source_kind === "cadence" && a.user_id)
+    .map((a) => a.user_id as string);
 
   const [programsRes, extraCategoriesRes, extraItemsRes] = await Promise.all([
     programSourceIds.length > 0
@@ -206,6 +225,41 @@ async function loadOwner(ownerKey: string): Promise<LoadedOwner> {
       Pick<JourneyItem, "id" | "title_he">
     >).map((i) => [i.id, i.title_he]),
   );
+
+  // Cadence partner labels — full_name lives on profiles, email lives
+  // on admin_users_overview. Two parallel queries, merged into one
+  // label per user_id. Same pattern as lib/experts/partner-detail.ts.
+  const cadencePartnerLabelById = new Map<string, string>();
+  if (cadenceUserIds.length > 0) {
+    const [profilesRes, emailsRes] = await Promise.all([
+      admin
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", cadenceUserIds),
+      admin
+        .from("admin_users_overview")
+        .select("user_id, email")
+        .in("user_id", cadenceUserIds),
+    ]);
+    const fullNameById = new Map(
+      ((profilesRes.data ?? []) as Array<{
+        id: string;
+        full_name: string | null;
+      }>).map((p) => [p.id, p.full_name]),
+    );
+    const emailById = new Map(
+      ((emailsRes.data ?? []) as Array<{
+        user_id: string;
+        email: string | null;
+      }>).map((u) => [u.user_id, u.email]),
+    );
+    for (const uid of cadenceUserIds) {
+      cadencePartnerLabelById.set(
+        uid,
+        fullNameById.get(uid) || emailById.get(uid) || `${uid.slice(0, 8)}…`,
+      );
+    }
+  }
 
   const completionsById = new Map(
     ((completionsRes.data ?? []) as JourneyItemCompletion[]).map((c) => [
@@ -268,6 +322,16 @@ async function loadOwner(ownerKey: string): Promise<LoadedOwner> {
         kind: "category",
         label: c?.name_he ?? "(unknown category)",
         href: `/dashboard/journey/categories/${a.source_id}`,
+      };
+    } else if (a.source_kind === "cadence") {
+      const partnerLabel =
+        (a.user_id && cadencePartnerLabelById.get(a.user_id)) ||
+        (a.user_id ? `${a.user_id.slice(0, 8)}…` : "Unknown partner");
+      sourceRef = {
+        kind: "cadence",
+        label: `Cadence · ${partnerLabel}`,
+        // No catalog page to link to — cadence is engine-driven.
+        href: null,
       };
     } else {
       sourceRef = {
@@ -441,6 +505,64 @@ export default async function ManageClientPage({
     loadOwner(ownerKey),
   ]);
 
+  // v3 slice 9 — per-user cadence inspector. For owner.kind='user'
+  // we render one panel; for 'couple' we render one per partner.
+  // Resolves user_ids for each kind, then fetches stats + eligibility
+  // in parallel.
+  const inspectorUserIds: Array<{ user_id: string; label: string }> = [];
+  const admin = createServiceRoleClient();
+  if (admin) {
+    if (owner.kind === "user") {
+      inspectorUserIds.push({ user_id: owner.userId, label: ownerLabel ?? "" });
+    } else if (owner.kind === "couple") {
+      const { data: members } = await admin
+        .from("couple_members")
+        .select("user_id, role")
+        .eq("couple_id", owner.coupleId);
+      const memberRows = (members ?? []) as Array<{
+        user_id: string;
+        role: string;
+      }>;
+      const uids = memberRows.map((m) => m.user_id);
+      const [profilesRes, emailsRes] = await Promise.all([
+        uids.length > 0
+          ? admin.from("profiles").select("id, full_name").in("id", uids)
+          : Promise.resolve({ data: [] as Array<{ id: string; full_name: string | null }> }),
+        uids.length > 0
+          ? admin
+              .from("admin_users_overview")
+              .select("user_id, email")
+              .in("user_id", uids)
+          : Promise.resolve({ data: [] as Array<{ user_id: string; email: string | null }> }),
+      ]);
+      const fullNameById = new Map(
+        ((profilesRes.data ?? []) as Array<{ id: string; full_name: string | null }>).map(
+          (p) => [p.id, p.full_name],
+        ),
+      );
+      const emailById = new Map(
+        ((emailsRes.data ?? []) as Array<{ user_id: string; email: string | null }>).map(
+          (u) => [u.user_id, u.email],
+        ),
+      );
+      for (const m of memberRows) {
+        inspectorUserIds.push({
+          user_id: m.user_id,
+          label:
+            (fullNameById.get(m.user_id) ?? emailById.get(m.user_id) ?? "") +
+            ` · ${m.role}`,
+        });
+      }
+    }
+  }
+  const inspectorPanels = await Promise.all(
+    inspectorUserIds.map(async (u) => ({
+      ...u,
+      stats: await getUserLiveStats(u.user_id),
+      eligibility: await isCadenceEligible(u.user_id),
+    })),
+  );
+
   const state = deriveOwnerState(loaded.totals);
   const toneCls = toneClasses(state.tone);
   const StateIcon = state.icon;
@@ -595,6 +717,40 @@ export default async function ManageClientPage({
           value={fmtDate(loaded.totals.last_activity)}
         />
       </div>
+
+      {/* ── v3 slice 9 cadence inspector ─────────────────────────── */}
+      {inspectorPanels.length > 0 ? (
+        <section className="space-y-4">
+          <div>
+            <h2 className="text-lg font-semibold tracking-tight">
+              Cadence inspector
+            </h2>
+            <p className="text-muted-foreground mt-0.5 text-xs">
+              Per-partner queue + engagement + eligibility verdict.
+              {owner.kind === "couple"
+                ? " Each partner has their own panel — no aggregation."
+                : ""}
+            </p>
+          </div>
+          <div
+            className={cn(
+              "grid gap-4",
+              inspectorPanels.length > 1 ? "lg:grid-cols-2" : "",
+            )}
+          >
+            {inspectorPanels.map((p) => (
+              <UserLiveStatsPanel
+                key={p.user_id}
+                stats={p.stats}
+                eligibility={p.eligibility}
+                partnerLabel={
+                  owner.kind === "couple" ? p.label : undefined
+                }
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {/* ── Active assignments ──────────────────────────────────── */}
       <section className="space-y-3">

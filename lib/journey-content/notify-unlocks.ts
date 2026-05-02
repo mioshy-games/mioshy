@@ -24,6 +24,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { sendBrevoEmail } from "@/lib/email/brevo";
 import { renderJourneyUnlockEmail } from "@/lib/email/templates/journey-unlock";
+import { notifyOnItemUnlocked } from "./notifications";
 
 interface ScheduledRow {
   id: string;
@@ -31,6 +32,9 @@ interface ScheduledRow {
   item_id: string;
   unlock_at: string;
   notified_at: string | null;
+  /** v3 slice 8 — drives the "from your coach" subject branch in
+   *  email rendering when set to 'expert_push'. */
+  source: string | null;
 }
 
 interface ItemRow {
@@ -114,7 +118,7 @@ export async function runJourneyUnlockNotifier(
   // ── 1. Pull due, unnotified scheduled items ─────────────────────────────
   const { data: scheduledRaw, error: sErr } = await supabase
     .from("journey_scheduled_items")
-    .select("id, assignment_id, item_id, unlock_at, notified_at")
+    .select("id, assignment_id, item_id, unlock_at, notified_at, source")
     .is("notified_at", null)
     .lte("unlock_at", nowIso)
     .order("unlock_at", { ascending: true })
@@ -304,6 +308,9 @@ export async function runJourneyUnlockNotifier(
         scheduledId: string;
         title: string;
         categoryName: string | null;
+        /** v3 slice 8 — used to branch the email subject when every
+         *  item in this bucket came from an admin push. */
+        source: string | null;
       }>;
     }
   >();
@@ -352,6 +359,7 @@ export async function runJourneyUnlockNotifier(
           scheduledId: s.id,
           title,
           categoryName,
+          source: s.source,
         });
       }
       if (bucket.items.length > 0) {
@@ -380,12 +388,25 @@ export async function runJourneyUnlockNotifier(
       timelineUrl,
     });
 
+    // v3 slice 8 — when every item in this bucket came from an admin
+    // push, override the subject with "from your coach" copy. Mixed
+    // batches (push + cadence in the same bucket) keep the default
+    // subject so we don't mislead the user.
+    const allFromCoach =
+      recipientItems.length > 0 &&
+      recipientItems.every((it) => it.source === "expert_push");
+    const subject = allFromCoach
+      ? locale === "he"
+        ? "פריט חדש מהמומחה שלכם"
+        : "A new item from your coach"
+      : rendered.subject;
+
     const send = await sendBrevoEmail({
       to: [{ email: recipient.email, name: recipient.name ?? undefined }],
-      subject: rendered.subject,
+      subject,
       htmlContent: rendered.htmlContent,
       textContent: rendered.textContent,
-      tags: ["journey-unlock"],
+      tags: allFromCoach ? ["journey-unlock", "expert-push"] : ["journey-unlock"],
     });
 
     if (!send.ok) {
@@ -399,6 +420,27 @@ export async function runJourneyUnlockNotifier(
         status: "failed",
       });
       continue;
+    }
+
+    // Slice 10 — also write an in-app notification per (recipient ×
+    // scheduled item) so the bell-icon dropdown surfaces the unlock.
+    // Best-effort; failures are logged at warn but don't block the
+    // stamp below.
+    for (const it of recipientItems) {
+      try {
+        await notifyOnItemUnlocked({
+          recipientUserId: recipient.userId,
+          scheduledItemId: it.scheduledId,
+          itemTitle: it.title,
+          source: it.source,
+          locale: recipient.locale,
+        });
+      } catch (notifyErr) {
+        console.warn(
+          "[notify-unlocks] notifyOnItemUnlocked failed",
+          notifyErr,
+        );
+      }
     }
 
     // Stamp notified_at on every scheduled row the recipient was told

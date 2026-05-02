@@ -5,21 +5,12 @@ import {
   adminListPrograms,
   getCategoryById,
   listItems,
+  listSubtopics,
 } from "@/lib/journey-content/queries";
 import { CategoryForm } from "@/components/dashboard/journey/CategoryForm";
-import { RowActions } from "@/components/dashboard/journey/RowActions";
-import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, FileText, Plus } from "lucide-react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { CategoryChildrenManager } from "@/components/dashboard/journey/CategoryChildrenManager";
+import { HintIcon } from "@/components/ui/hint-icon";
+import { ArrowLeft } from "lucide-react";
 import type { JourneyCategoryFormValues } from "@/lib/journey-content/validations";
 
 export const dynamic = "force-dynamic";
@@ -33,10 +24,45 @@ export default async function EditCategoryPage({
   const category = await getCategoryById(params.id);
   if (!category) notFound();
 
-  const [programs, items] = await Promise.all([
-    adminListPrograms(),
-    listItems({ categoryId: category.id }),
-  ]);
+  const [programs, subtopics, allItemsInCategory, directItems] =
+    await Promise.all([
+      adminListPrograms(),
+      listSubtopics({ categoryId: category.id }),
+      // All items in this category — used to compute per-subtopic counts
+      // for the subtopics rail. A single fetch covers both.
+      listItems({ categoryId: category.id }),
+      // Items that hang directly off the category (no subtopic).
+      listItems({ categoryId: category.id, subtopicId: null }),
+    ]);
+
+  // Per-subtopic item counts
+  const itemCountBySubtopic = new Map<string, number>();
+  for (const it of allItemsInCategory) {
+    if (it.subtopic_id) {
+      itemCountBySubtopic.set(
+        it.subtopic_id,
+        (itemCountBySubtopic.get(it.subtopic_id) ?? 0) + 1,
+      );
+    }
+  }
+
+  const subtopicRows = subtopics.map((s) => ({
+    id: s.id,
+    slug: s.slug,
+    name_he: s.name_he,
+    name_en: s.name_en,
+    is_active: s.is_active,
+    item_count: itemCountBySubtopic.get(s.id) ?? 0,
+  }));
+
+  const directItemRows = directItems.map((it) => ({
+    id: it.id,
+    slug: it.slug,
+    title_he: it.title_he,
+    title_en: it.title_en,
+    is_active: it.is_active,
+    default_offset_days: it.default_offset_days,
+  }));
 
   const defaults: JourneyCategoryFormValues = {
     program_id: category.program_id,
@@ -62,6 +88,18 @@ export default async function EditCategoryPage({
         <h1 className="mt-2 text-3xl font-bold tracking-tight">
           {category.name_he}
         </h1>
+        {category.assessment_priority_key ? (
+          <p className="text-muted-foreground mt-1 inline-flex items-center gap-1.5 text-xs">
+            <span>
+              Priority key:{" "}
+              <code className="font-mono">
+                {category.assessment_priority_key}
+              </code>{" "}
+              — used by the assessment ranking step.
+            </span>
+            <HintIcon topic="category.assessment_priority_key" />
+          </p>
+        ) : null}
       </div>
 
       <CategoryForm
@@ -74,85 +112,11 @@ export default async function EditCategoryPage({
         }))}
       />
 
-      {/* Items inside this category */}
-      <section className="bg-card rounded-lg border">
-        <header className="flex items-center justify-between border-b border-border p-4">
-          <div className="flex items-center gap-2">
-            <FileText className="size-4" />
-            <h2 className="font-semibold">Items in this category</h2>
-          </div>
-          <Link
-            href={`/dashboard/journey/items/new?category=${category.id}`}
-            className={cn(
-              buttonVariants({ variant: "outline", size: "sm" }),
-              "inline-flex gap-1.5",
-            )}
-          >
-            <Plus className="size-3.5" /> New item
-          </Link>
-        </header>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Title</TableHead>
-              <TableHead>Slug</TableHead>
-              <TableHead>Offset</TableHead>
-              <TableHead>Sort</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {items.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={6}
-                  className="text-muted-foreground h-20 text-center text-sm"
-                >
-                  No items yet.
-                </TableCell>
-              </TableRow>
-            ) : (
-              items.map((it) => (
-                <TableRow key={it.id}>
-                  <TableCell>
-                    <Link
-                      href={`/dashboard/journey/items/${it.id}`}
-                      className="font-medium hover:underline"
-                    >
-                      {it.title_he}
-                    </Link>
-                    {it.title_en ? (
-                      <div className="text-muted-foreground text-xs">
-                        {it.title_en}
-                      </div>
-                    ) : null}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground font-mono text-xs">
-                    {it.slug}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    +{it.default_offset_days}d
-                  </TableCell>
-                  <TableCell className="text-sm">{it.sort_order}</TableCell>
-                  <TableCell>
-                    <Badge variant={it.is_active ? "default" : "secondary"}>
-                      {it.is_active ? "Active" : "Draft"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <RowActions
-                      kind="item"
-                      id={it.id}
-                      editHref={`/dashboard/journey/items/${it.id}`}
-                    />
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </section>
+      <CategoryChildrenManager
+        categoryId={category.id}
+        subtopics={subtopicRows}
+        directItems={directItemRows}
+      />
     </div>
   );
 }

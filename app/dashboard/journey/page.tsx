@@ -16,6 +16,7 @@ import {
   Route,
   Users as UsersIcon,
 } from "lucide-react";
+import { HintIcon } from "@/components/ui/hint-icon";
 
 export const dynamic = "force-dynamic";
 
@@ -80,9 +81,12 @@ export default async function JourneyDashboardPage() {
     <div className="mx-auto max-w-6xl space-y-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Journey - Content System
-          </h1>
+          <span className="inline-flex items-center gap-1.5">
+            <h1 className="text-3xl font-bold tracking-tight">
+              Journey - Content System
+            </h1>
+            <HintIcon topic="journey.hub_intro" />
+          </span>
           <p className="text-muted-foreground mt-1 max-w-2xl text-sm">
             Time-released roadmaps for couples. Build programs, categories and
             items here; assign to owners (user or couple) in the clients view.

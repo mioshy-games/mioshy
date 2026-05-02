@@ -47,9 +47,11 @@ export interface AssignmentCardItem {
 }
 
 export interface AssignmentCardSourceRef {
-  kind: "program" | "category" | "item";
+  kind: "program" | "category" | "item" | "cadence";
   label: string;
-  href: string;
+  /** Cadence assignments don't have a catalog page to link out to —
+   *  href can be null and the card renders the label without a link. */
+  href: string | null;
 }
 
 interface Stats {
@@ -71,6 +73,9 @@ function fmtDate(iso: string | null | undefined) {
 function sourceIcon(kind: AssignmentCardSourceRef["kind"]) {
   if (kind === "program") return Sparkles;
   if (kind === "category") return FolderOpen;
+  // 'item' and 'cadence' both render as a leaf (cadence is a per-user
+  // engine container, not a catalog row — visually it's still a flat
+  // list of items).
   return FileText;
 }
 
@@ -166,14 +171,24 @@ export function AssignmentCard({
               <Badge variant="outline" className="text-[10px] uppercase">
                 {sourceRef.kind}
               </Badge>
-              <Link
-                href={sourceRef.href}
-                className="group inline-flex max-w-[28ch] items-center gap-1 truncate font-semibold hover:underline"
-              >
-                <SourceIcon className="size-4 text-muted-foreground group-hover:text-foreground" />
-                <span className="truncate">{sourceRef.label}</span>
-                <ExternalLink className="text-muted-foreground/0 group-hover:text-muted-foreground size-3 opacity-0 transition-opacity group-hover:opacity-100" />
-              </Link>
+              {sourceRef.href ? (
+                <Link
+                  href={sourceRef.href}
+                  className="group inline-flex max-w-[28ch] items-center gap-1 truncate font-semibold hover:underline"
+                >
+                  <SourceIcon className="size-4 text-muted-foreground group-hover:text-foreground" />
+                  <span className="truncate">{sourceRef.label}</span>
+                  <ExternalLink className="text-muted-foreground/0 group-hover:text-muted-foreground size-3 opacity-0 transition-opacity group-hover:opacity-100" />
+                </Link>
+              ) : (
+                // Cadence rows have no catalog page to link out to —
+                // render the label without a link so the cell still
+                // shows the source identity.
+                <span className="inline-flex max-w-[28ch] items-center gap-1 truncate font-semibold">
+                  <SourceIcon className="size-4 text-muted-foreground" />
+                  <span className="truncate">{sourceRef.label}</span>
+                </span>
+              )}
               {assignment.is_active ? (
                 <Badge className="bg-emerald-600 hover:bg-emerald-600/90">
                   Active

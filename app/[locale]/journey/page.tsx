@@ -132,6 +132,7 @@ export default async function JourneyMarketingPage({
   let hasInProgressAssessment = false;
   let hasActiveAssignments = false;
   let hasJourneyEntitlement = false;
+  let journeyEntitlementState: import("@/lib/entitlements/getUserEntitlements").JourneyEntitlementState | null = null;
   if (user) {
     const ctx = await getCurrentCoupleContext();
     const status = await getOwnerJourneyStatus({
@@ -143,6 +144,7 @@ export default async function JourneyMarketingPage({
       !hasActiveAssignments && status.hasInProgressAssessment;
     const entitlements = await getUserEntitlements(user.id).catch(() => null);
     hasJourneyEntitlement = !!entitlements?.journey;
+    journeyEntitlementState = entitlements?.journeyState ?? null;
   }
 
   // ─── Locked view for logged-in members without a Journey subscription ──

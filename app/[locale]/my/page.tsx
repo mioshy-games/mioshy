@@ -17,6 +17,7 @@ import {
   toInvitationUiSummary,
 } from "@/lib/between-us/invitations";
 import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
+import { JourneyGraceBanner } from "@/components/my/JourneyGraceBanner";
 import { getOwnerJourneyStatus } from "@/lib/journey-content/owner-status";
 import { countUnreadJourneyItems } from "@/lib/journey-content/unread";
 import { getFreshClinicianReplies } from "@/lib/journey-content/fresh-replies";
@@ -227,6 +228,20 @@ export default async function MyHubPage({
               row at the BOTTOM of the page. Per spec §5.3: the dashboard is
               about products, not admin chrome. Admin lives in /my/account. */}
         </section>
+
+        {/* v3 slice 5 — grace / blocked banner. Renders nothing when
+            journey is active or null. Sits above the membership banner
+            so users in grace immediately see the "your plan ended"
+            message without scrolling. */}
+        {entitlements.journeyState && entitlements.journeyState !== "active" ? (
+          <section className="mt-8">
+            <JourneyGraceBanner
+              isHe={isHe}
+              state={entitlements.journeyState}
+              graceUntil={entitlements.journeyGraceUntil}
+            />
+          </section>
+        ) : null}
 
         {/* ─────── Membership-status banner ───────
             Lights up immediately after the title so a returning user sees

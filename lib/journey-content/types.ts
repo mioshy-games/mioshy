@@ -9,7 +9,11 @@
 
 export type AnchorKind = "assignment" | "purchase" | "fixed";
 export type AssignmentOrigin = "admin_manual" | "purchase" | "trigger";
-export type AssignmentSourceKind = "program" | "category" | "item";
+/** v3 slice 3 / migration 058 added 'cadence' for the per-user engine
+ *  container. Every legacy v2 surface still ignores 'cadence' rows; only
+ *  v3 paths (cadence engine, /my/journey merge, admin couple rollup)
+ *  consume them. */
+export type AssignmentSourceKind = "program" | "category" | "item" | "cadence";
 
 /**
  * Display status derived from unlock_at + completion row.
@@ -57,6 +61,73 @@ export interface JourneyCategory {
   description_en: string | null;
   sort_order: number;
   is_active: boolean;
+  /** v3 slice 1 / migration 055: links a category to one of the seeded
+   *  q_priorities keys (communication / intimacy / emotional_connection /
+   *  friendship / family). NULL for any non-priority category. */
+  assessment_priority_key?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * v3 slice 7 / migration 054: per-binding mode for group ↔ subtopic.
+ *   replace    — auto-cadence skips items in this subtopic for group
+ *                members; admin pushes are the only way items reach
+ *                the user from this subtopic.
+ *   interleave — auto-cadence picks normally from this subtopic;
+ *                admin pushes ALSO surface (additive). Slice 7 wires
+ *                the cadence-side filter; the additive admin-push
+ *                lands in slice 8.
+ */
+export type JourneyGroupBindingMode = "replace" | "interleave";
+
+export interface JourneyGroup {
+  id: string;
+  slug: string;
+  label_he: string;
+  label_en: string | null;
+  description_he: string | null;
+  description_en: string | null;
+  curated_per_week_override: number | null;
+  random_per_week_override: number | null;
+  priority_weights_override: number[] | null;
+  is_active: boolean;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface JourneyGroupMember {
+  group_id: string;
+  user_id: string;
+  added_by: string | null;
+  added_at: string;
+}
+
+export interface JourneyGroupSubtopicBinding {
+  group_id: string;
+  subtopic_id: string;
+  mode: JourneyGroupBindingMode;
+  sort_weight: number;
+  created_at: string;
+}
+
+/**
+ * v3 slice 1 / migration 054: a tier between category and item. Items
+ * either belong to a subtopic (subtopic_id NOT NULL on journey_items)
+ * or hang directly off the category (subtopic_id NULL).
+ */
+export interface JourneySubtopic {
+  id: string;
+  category_id: string;
+  slug: string;
+  name_he: string;
+  name_en: string | null;
+  description_he: string | null;
+  description_en: string | null;
+  sort_order: number;
+  is_active: boolean;
+  created_by: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -115,9 +186,27 @@ export interface JourneyAssessmentPayload {
   outro_en?: string | null;
 }
 
+/**
+ * v3 slice 2 / migration 054: presentational discriminator for items.
+ * Orthogonal to `kind` (which is content/assessment/reflection — the
+ * shape of the response surface). content_type drives icons + filters
+ * in admin only; the cadence engine doesn't read it.
+ */
+export type JourneyItemContentType =
+  | "article"
+  | "exercise"
+  | "video"
+  | "prompt"
+  | "challenge";
+
 export interface JourneyItem {
   id: string;
   category_id: string;
+  /** v3 slice 1 / migration 054: optional subtopic the item lives
+   *  under. NULL means the item hangs directly off the category. The
+   *  trigger journey_items_subtopic_consistency enforces that the
+   *  subtopic, if set, belongs to the same category. */
+  subtopic_id?: string | null;
   slug: string;
   title_he: string;
   title_en: string | null;
@@ -133,6 +222,16 @@ export interface JourneyItem {
   kind?: JourneyItemKind;
   /** Migration 050. Present only when kind != 'content'. */
   assessment_payload?: JourneyAssessmentPayload | null;
+  /** v3 slice 2 / migration 054. Presentational only. */
+  content_type?: JourneyItemContentType;
+  /** v3 slice 2 / migration 054. Estimated minutes shown to users. */
+  est_minutes?: number | null;
+  /** v3 slice 2 / migration 054. Free-form tags. The cadence engine
+   *  reads tag = 'discovery' for the random pool. */
+  tags?: string[];
+  /** v3 slice 2 / migration 054. Items that must be delivered before
+   *  this one (cadence engine respects). */
+  prereq_item_ids?: string[];
   sort_order: number;
   default_offset_days: number;
   is_active: boolean;
@@ -177,6 +276,19 @@ export interface JourneyScheduledItem {
   /** Migration 044: copied from item at materialization. The expert may
    * override this row independently (e.g. via per-couple CSV upload). */
   audience: JourneyAudience;
+  /** v3 slice 1 / migration 055 — first time the user opened this item. */
+  seen_at?: string | null;
+  /** v3 slice 1 / migration 055 — first user message in the per-item
+   *  thread stamps this. The cadence engine's auto-skip rule keys on
+   *  it: rows past auto_skip_after_days with responded_at NULL get
+   *  marked skipped on the next materialization sweep. */
+  responded_at?: string | null;
+  /** v3 slice 1 / migration 055 — set by the cadence engine's
+   *  skip-sweep when this row passed the auto-skip threshold without
+   *  a response. */
+  skipped_at?: string | null;
+  /** v3 slice 1 / migration 055 — origin of this scheduled row. */
+  source?: "cadence" | "expert_push" | "group" | "random" | "admin_manual" | "program" | "category" | "item";
   created_at: string;
   updated_at: string;
 }

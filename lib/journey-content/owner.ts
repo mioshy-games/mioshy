@@ -48,6 +48,12 @@ export function ownersEqual(a: JourneyOwner, b: JourneyOwner): boolean {
  * an active couple id. If the user has paired, the couple is the owner -
  * otherwise the user themselves is the owner. Matches the runtime rule
  * used by the assignment-lookup queries.
+ *
+ * v3 NOTE: this is the LEGACY (v2) resolver — keep using it for
+ * program/category/item assignments which were always couple-scoped
+ * when a couple existed. For v3 surfaces (cadence, expert push v2,
+ * group cohorts) call journeyOwnerForUser() instead, which is strict
+ * per-partner.
  */
 export function preferCoupleOwner(
   userId: string,
@@ -56,6 +62,20 @@ export function preferCoupleOwner(
   return coupleId
     ? { kind: "couple", coupleId }
     : { kind: "user", userId };
+}
+
+/**
+ * v3 per-partner resolver. Always returns a user-owned JourneyOwner
+ * regardless of whether the user is in a couple. Used by the cadence
+ * engine, expert push v2, and group cohorts — every v3 surface where
+ * each partner has their own queue.
+ *
+ * Couple-aggregate views (admin /my-clients/[coupleId], journey
+ * /clients/[ownerKey]) JOIN over couple_members and call this helper
+ * twice (once per partner) to compose the rollup.
+ */
+export function journeyOwnerForUser(userId: string): JourneyOwner {
+  return { kind: "user", userId };
 }
 
 /**

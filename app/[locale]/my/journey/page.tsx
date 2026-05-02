@@ -57,6 +57,7 @@ import { JourneyDesk } from "@/components/my/JourneyDesk";
 import { ClinicianReplyBanner } from "@/components/my/ClinicianReplyBanner";
 import { getFreshClinicianReplies } from "@/lib/journey-content/fresh-replies";
 import { SubscriptionStatusBanner } from "@/components/my/SubscriptionStatusBanner";
+import { JourneyGraceBanner } from "@/components/my/JourneyGraceBanner";
 import { WelcomeProcessingBanner } from "@/components/my/WelcomeProcessingBanner";
 import {
   JourneyActivityHistory,
@@ -66,19 +67,20 @@ import {
   JourneyPriorityRanking,
   type PriorityItem,
 } from "@/components/my/JourneyPriorityRanking";
-import { JourneyExpertMessage } from "@/components/my/JourneyExpertMessage";
+import { GeneralChannelThread } from "@/components/my/GeneralChannelThread";
+import {
+  ensureUserChannel,
+  getGeneralChannelThread,
+} from "@/lib/journey-content/messages";
 import { JourneyDashboardViewTracker } from "@/components/my/JourneyDashboardViewTracker";
 import { getTimelineForOwner } from "@/lib/journey-content/queries";
-import { preferCoupleOwner } from "@/lib/journey-content/owner";
-import type { JourneyOwner } from "@/lib/journey-content/types";
 import {
-  PRIORITY_KEYS,
-  PRIORITY_LABELS_HE,
-  PRIORITY_LABELS_EN,
-  PRIORITY_DESC_HE,
-  PRIORITY_DESC_EN,
-  type PriorityKey,
-} from "@/lib/journey/priorities";
+  journeyOwnerForUser,
+  preferCoupleOwner,
+} from "@/lib/journey-content/owner";
+import type { JourneyOwner } from "@/lib/journey-content/types";
+import { isPriorityKey, type PriorityKey } from "@/lib/journey/priorities";
+import { getPriorityLabels } from "@/lib/journey-content/priority-categories";
 
 export const dynamic = "force-dynamic";
 
@@ -139,8 +141,8 @@ async function getUserTopPriority(userId: string): Promise<{
     if (!Array.isArray(order) || order.length === 0) continue;
     const first = order[0];
     if (typeof first !== "string") continue;
-    if ((PRIORITY_KEYS as readonly string[]).includes(first)) {
-      return { topPriority: first as PriorityKey, hasAnyResponses: true };
+    if (isPriorityKey(first)) {
+      return { topPriority: first, hasAnyResponses: true };
     }
   }
 
@@ -217,18 +219,21 @@ export default async function PrivateJourneyPage({
   }
 
   // Resolve the priority into bilingual labels — defaults if the user
-  // skipped the ranking question.
+  // skipped the ranking question. Labels come from the DB seed in
+  // journey_categories (assessment_priority_key) — replaces the old
+  // PRIORITY_LABELS_HE/EN constant maps.
+  const priorityLabels = await getPriorityLabels();
   const focusLabel = topPriority
     ? isHe
-      ? PRIORITY_LABELS_HE[topPriority]
-      : PRIORITY_LABELS_EN[topPriority]
+      ? priorityLabels.labelsHe[topPriority]
+      : priorityLabels.labelsEn[topPriority]
     : isHe
       ? "חיבור כללי"
       : "Connection";
   const focusDesc = topPriority
     ? isHe
-      ? PRIORITY_DESC_HE[topPriority]
-      : PRIORITY_DESC_EN[topPriority]
+      ? priorityLabels.descsHe[topPriority]
+      : priorityLabels.descsEn[topPriority]
     : "";
 
   // ── Load admin-prescribed content ─────────────────────────────────────────
@@ -240,25 +245,65 @@ export default async function PrivateJourneyPage({
   //
   // Owner resolution: if the user is part of a couple, prefer the
   // couple-owned timeline (admin assignments tend to live at couple
-  // level). Otherwise fall back to user-owned.
+  // level). Otherwise fall back to user-owned. v3 cadence rows live
+  // under a strict per-partner owner — see journeyOwnerForUser() — and
+  // are merged into the legacy v2 timeline below.
   const couple = await getCurrentCoupleContext();
-  const owner: JourneyOwner = preferCoupleOwner(user.id, couple?.couple_id ?? null);
+  const legacyOwner: JourneyOwner = preferCoupleOwner(
+    user.id,
+    couple?.couple_id ?? null,
+  );
+  const cadenceOwner: JourneyOwner = journeyOwnerForUser(user.id);
   const viewerRole =
     couple?.role === "owner" || couple?.role === "partner"
       ? couple.role
       : null;
 
-  let timeline: Awaited<ReturnType<typeof getTimelineForOwner>> = [];
+  // v3 slice 4: TWO timeline fetches.
+  //   * Legacy v2: program/category/item assignments — couple-scoped
+  //     when the user is paired (preserves existing behaviour for any
+  //     pre-v3 admin-assigned content).
+  //   * v3 cadence: cadence-source assignments — strict per-partner so
+  //     each partner has their own queue regardless of couple status.
+  // The merged list drives every downstream surface (rail, activity
+  // history, open/upcoming/completed buckets).
+  let legacyTimeline: Awaited<ReturnType<typeof getTimelineForOwner>> = [];
+  let cadenceTimeline: Awaited<ReturnType<typeof getTimelineForOwner>> = [];
   try {
-    timeline = await getTimelineForOwner({
-      owner,
-      viewerUserId: user.id,
-      viewerCoupleRole: viewerRole,
-    });
+    [legacyTimeline, cadenceTimeline] = await Promise.all([
+      getTimelineForOwner({
+        owner: legacyOwner,
+        viewerUserId: user.id,
+        viewerCoupleRole: viewerRole,
+        sourceKinds: ["program", "category", "item"],
+      }),
+      getTimelineForOwner({
+        owner: cadenceOwner,
+        viewerUserId: user.id,
+        // Cadence assignments are user-owned; the audience filter is
+        // a no-op when owner.kind === 'user', so role doesn't matter.
+        viewerCoupleRole: null,
+        sourceKinds: ["cadence"],
+      }),
+    ]);
   } catch (err) {
     console.error("[/my/journey] failed to load timeline", err);
     // Non-fatal — fall through to placeholder.
   }
+  // Merge by unlock_at ascending. Items from both axes appear in one
+  // chronological list — the rail/buckets don't care about source.
+  const timeline = [...legacyTimeline, ...cadenceTimeline].sort((a, b) => {
+    const ua = new Date(a.scheduled.unlock_at).getTime();
+    const ub = new Date(b.scheduled.unlock_at).getTime();
+    return ua - ub;
+  });
+
+  // v3 slice 6 — load the user's general expert channel thread.
+  // ensureUserChannel is a no-op upsert that creates the row on first
+  // visit (so getGeneralChannelThread doesn't return an empty array
+  // for users who've never opened the channel).
+  await ensureUserChannel(user.id);
+  const channelMessages = await getGeneralChannelThread(user.id, user.id);
 
   const now = Date.now();
   const openItems = timeline.filter((entry) => {
@@ -442,8 +487,11 @@ export default async function PrivateJourneyPage({
 
   console.log("[/my/journey] rendered for", {
     user_id: user.id,
-    owner_kind: owner.kind,
+    legacy_owner_kind: legacyOwner.kind,
+    cadence_owner_kind: cadenceOwner.kind,
     timeline_total: timeline.length,
+    timeline_legacy: legacyTimeline.length,
+    timeline_cadence: cadenceTimeline.length,
     rail_dynamic: railIsDynamic,
     open: openItems.length,
     upcoming: upcomingItems.length,
@@ -498,17 +546,33 @@ export default async function PrivateJourneyPage({
           </p>
         </header>
 
-        {/* ─────── Subscription status — explicit confirmation ───────
-            A calm "your subscription is active" line when entitled,
-            or a recovery banner when the assessment didn't get
-            attached to this account (we don't loop back to it; the
-            user controls when they restart). */}
-        <section className="mt-6">
-          <SubscriptionStatusBanner
-            isHe={isHe}
-            variant={assessmentMissing ? "assessment_missing" : "active"}
-          />
-        </section>
+        {/* ─────── v3 slice 5 — grace / blocked banner ───────
+            Renders nothing when the user is in 'active' state. During
+            grace it's amber with a renewal CTA; on blocked it's rose.
+            Sits above the existing subscription-status banner so the
+            two never compete (active subs don't see grace, grace subs
+            don't see "your subscription is active"). */}
+        {entitlements.journeyState && entitlements.journeyState !== "active" ? (
+          <section className="mt-6">
+            <JourneyGraceBanner
+              isHe={isHe}
+              state={entitlements.journeyState}
+              graceUntil={entitlements.journeyGraceUntil}
+            />
+          </section>
+        ) : (
+          /* ─────── Subscription status — explicit confirmation ───────
+              A calm "your subscription is active" line when entitled,
+              or a recovery banner when the assessment didn't get
+              attached to this account (we don't loop back to it; the
+              user controls when they restart). */
+          <section className="mt-6">
+            <SubscriptionStatusBanner
+              isHe={isHe}
+              variant={assessmentMissing ? "assessment_missing" : "active"}
+            />
+          </section>
+        )}
 
         {/* ─────── Phase 2F — clinician reply banner ───────
             Calm one-liner shown when there's at least one new reply
@@ -574,7 +638,11 @@ export default async function PrivateJourneyPage({
               isHe={isHe}
               initialItems={seededPriorities}
             />
-            <JourneyExpertMessage isHe={isHe} />
+            <GeneralChannelThread
+              initialMessages={channelMessages}
+              viewerUserId={user.id}
+              isHe={isHe}
+            />
           </div>
         </section>
 

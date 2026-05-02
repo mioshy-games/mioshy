@@ -316,7 +316,7 @@ export default async function JourneyClientsIndexPage({
         <div className="border-border bg-muted/30 text-muted-foreground rounded-lg border p-8 text-center text-sm">
           {search
             ? `No clients match “${search}”.`
-            : "No clients yet - bulk-assign a program to someone to see them here."}
+            : "No clients yet — clients appear here once they're assigned a program, category, or item."}
         </div>
       ) : (
         <ul className="divide-border border-border overflow-hidden rounded-lg border divide-y">

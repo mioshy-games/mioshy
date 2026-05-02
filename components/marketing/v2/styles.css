@@ -1208,11 +1208,18 @@
   @media (max-width:640px){
     .container,.media-wrap,.media-press-wrap{padding:0 20px}
     .hero-meta{gap:24px;flex-wrap:wrap}
-    /* Education mobile: tighter stats, smaller numbers */
-    .edu-grid{gap:38px}
-    .edu-stat-grid{grid-template-columns:repeat(2,1fr);gap:28px 16px;padding-top:28px}
-    .edu-stat .num{font-size:36px}
-    .edu-stat .label{font-size:13px}
+    /* Education mobile: tighter stats, larger labels.
+       Cuts the 44px vertical cell padding (which on a 2×2 mobile
+       grid created ~150px of dead air per row) down to a tight 12px.
+       Bumps the label to 15px so it's readable next to the big
+       number, and trims the row-gap so the four metrics feel like
+       one block, not four floating cards in a desert. */
+    .edu-grid{gap:32px}
+    .edu-stat-grid{grid-template-columns:repeat(2,1fr);gap:18px 12px;padding-top:20px}
+    .edu-stat{padding:14px 10px}
+    .edu-stat:not(:last-child)::after{top:16%;bottom:16%}
+    .edu-stat .num{font-size:36px;margin-bottom:8px}
+    .edu-stat .label{font-size:15px;line-height:1.35;max-width:none}
     .reviews-grid{gap:14px}
     section{padding:40px 0}
     .problem,.authority,.media,.media-press,.founder,.journey,.couples-games,.education,.for-whom,.pricing,.final,.faq{padding:40px 0}
@@ -1227,13 +1234,13 @@
     .reviews-load-more{display:flex;margin-top:20px}
 
     /* Media press — tighten mobile */
-    .media-press-eyebrow{margin-bottom:28px}
-    .media-press-card{padding:28px 24px;gap:18px}
+    .media-press-eyebrow{margin-bottom:24px;font-size:16px;letter-spacing:0.14em}
+    .media-press-card{padding:24px 22px;gap:16px}
     .media-press-logo{height:44px}
     .media-press-quote{font-size:19px;line-height:1.45}
-    .media-press-meta{font-size:13px}
-    .media-press-name{font-size:15px}
-    .media-press-cta{font-size:14px}
+    .media-press-meta{font-size:14px}
+    .media-press-name{font-size:16px}
+    .media-press-cta{font-size:16px}
 
     /* Founder mobile spacing */
     .founder-grid{gap:32px}
@@ -1242,17 +1249,17 @@
     .founder-bio{grid-template-columns:repeat(3,1fr);gap:8px;padding:14px 0;margin-bottom:18px;text-align:center}
     .bio-item{flex-direction:column;align-items:center;gap:2px}
     .bio-item::before{display:none}
-    .bio-item-label{font-size:9px;letter-spacing:0.12em;margin-bottom:2px}
-    .bio-item-value{font-size:13px;line-height:1.2}
+    .bio-item-label{font-size:12px;letter-spacing:0.1em;margin-bottom:3px}
+    .bio-item-value{font-size:15px;line-height:1.25}
     .founder-actions{gap:8px}
 
-    /* Journey mobile spacing */
-    .journey-timeline{margin-top:24px}
-    .journey-stages{gap:42px}
-    .journey-num-wrap{margin-bottom:14px}
-    .journey-list{flex-wrap:nowrap;gap:6px;justify-content:center}
-    .journey-list li{padding:6px 10px;font-size:11px;white-space:nowrap}
-    .journey-cta{margin-top:32px;padding:24px 20px;gap:14px}
+    /* Journey mobile spacing — tighter gaps + readable list */
+    .journey-timeline{margin-top:20px}
+    .journey-stages{gap:32px}
+    .journey-num-wrap{margin-bottom:12px}
+    .journey-list{flex-wrap:wrap;gap:8px;justify-content:center}
+    .journey-list li{padding:8px 12px;font-size:14px;white-space:nowrap}
+    .journey-cta{margin-top:24px;padding:22px 18px;gap:12px}
 
     /* Pricing mobile */
     .pricing-grid{gap:18px}
@@ -1265,28 +1272,34 @@
     .cg-actions{fle--wrap:nowrap;gap:8px}
     .cg-actions .btn{flex:1;justify-content:center;font-size:14px;padding:14px 12px;white-space:nowrap}
 
-    /* ADULT GAMES — mobile (private chamber) */
-    .adult-games{padding:64px 0 32px}
+    /* ADULT GAMES — mobile (private chamber)
+       Tightened for readability + finger ergonomics:
+       - All texts above the headline are 16px+ (legibility floor).
+       - Body copy 17px; pillar body 17px (these carry the message).
+       - Pillar padding cut sharply — too much air on phones makes
+         the page feel hollow, not premium.
+       - Inter-section margins trimmed ~40% to bring eye flow back. */
+    .adult-games{padding:48px 0 28px}
     .ag-frame{padding:0 20px}
-    .ag-pills{margin-bottom:24px;padding:5px 4px;flex-wrap:nowrap}
-    .ag-pill{padding:3px 11px;font-size:9.5px;letter-spacing:0.14em;white-space:nowrap}
+    .ag-pills{margin-bottom:18px;padding:4px;flex-wrap:wrap;gap:4px}
+    .ag-pill{padding:4px 10px;font-size:13px;letter-spacing:0.08em;white-space:nowrap}
     .ag-pill+.ag-pill::before{height:11px}
-    .ag-eyebrow{font-size:13px;letter-spacing:0.16em;margin-bottom:16px}
-    .ag-stage h2{font-size:42px;line-height:1.02;letter-spacing:-0.03em;margin-bottom:22px;max-width:none}
-    .ag-lead{font-size:15.5px;line-height:1.65;margin-bottom:48px}
-    .ag-pillars{margin-bottom:48px}
-    .ag-pillar{padding:30px 6px;text-align:right}
-    .ag-pillar-num{font-size:24px;margin-bottom:18px}
-    .ag-pillar-num::after{width:32px}
-    .ag-pillar h4{font-size:21px;margin-bottom:12px}
-    .ag-pillar p{font-size:14.5px;line-height:1.65}
-    .ag-signature{gap:14px;margin-bottom:38px;text-align:center}
+    .ag-eyebrow{font-size:17px;letter-spacing:0.14em;margin-bottom:14px}
+    .ag-stage h2{font-size:42px;line-height:1.02;letter-spacing:-0.03em;margin-bottom:18px;max-width:none}
+    .ag-lead{font-size:17px;line-height:1.6;margin-bottom:28px}
+    .ag-pillars{margin-bottom:28px}
+    .ag-pillar{padding:22px 0;text-align:right}
+    .ag-pillar-num{font-size:22px;margin-bottom:10px}
+    .ag-pillar-num::after{width:28px}
+    .ag-pillar h4{font-size:21px;margin-bottom:8px}
+    .ag-pillar p{font-size:17px;line-height:1.6}
+    .ag-signature{gap:12px;margin-bottom:24px;text-align:center}
     .ag-signature em{font-size:17px;line-height:1.45}
     .ag-signature-line{max-width:40px}
-    .ag-closer-statement{font-size:26px;line-height:1.2;margin-bottom:26px}
-    .ag-closer-cta{padding:16px 30px;font-size:15px}
-    .ag-closer-trust{gap:18px;font-size:10px;letter-spacing:0.14em;margin-top:30px;padding-top:22px;flex-direction:row;justify-content:center;flex-wrap:wrap}
-    .ag-closer-trust span:not(:last-child)::after{left:-10px;width:2px;height:2px}
+    .ag-closer-statement{font-size:26px;line-height:1.2;margin-bottom:22px}
+    .ag-closer-cta{padding:16px 30px;font-size:16px}
+    .ag-closer-trust{gap:14px;font-size:13px;letter-spacing:0.1em;margin-top:24px;padding-top:18px;flex-direction:row;justify-content:center;flex-wrap:wrap}
+    .ag-closer-trust span:not(:last-child)::after{left:-8px;width:2px;height:2px}
 
     /* Hero mobile tighter */
     .hero{padding:40px 0 50px}
@@ -1304,7 +1317,7 @@
     .final h2{margin-bottom:14px}
     .final-choice-grid{gap:14px;margin:0 auto 24px}
     .final-choice{padding:24px 22px}
-    .final-trust{flex-wrap:nowrap;gap:14px;font-size:11px;white-space:nowrap}
+    .final-trust{flex-wrap:wrap;gap:10px 14px;font-size:13px;white-space:nowrap;justify-content:center}
 
     /* FAQ mobile */
     .faq-item summary{padding:18px 0}

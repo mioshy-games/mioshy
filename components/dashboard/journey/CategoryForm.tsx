@@ -136,7 +136,11 @@ export function CategoryForm({
           description="A category groups items topically. Standalone categories can be assigned on their own; program-owned categories ride along with their program."
         >
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Program" className="sm:col-span-2">
+            <Field
+              label="Program"
+              hintTopic="category.program_id"
+              className="sm:col-span-2"
+            >
               <Select
                 value={selectValue}
                 onValueChange={(v) =>

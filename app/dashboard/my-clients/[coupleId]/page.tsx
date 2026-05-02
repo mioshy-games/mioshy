@@ -35,6 +35,10 @@ import {
   buildComparisonMatrix,
   type ComparisonRow,
 } from "@/lib/journey/comparison";
+import {
+  getPriorityCategories,
+  getPriorityLabels,
+} from "@/lib/journey-content/priority-categories";
 import { listFeedbackForCouple } from "@/lib/journey/feedback";
 import type { Response, AnswerValue, Locale } from "@/lib/journey/types";
 import { CoupleComparisonView } from "@/components/dashboard/journey/CoupleComparisonView";
@@ -49,6 +53,9 @@ import { ClientResponsesInbox } from "@/components/dashboard/journey/ClientRespo
 // Phase 4 — user→clinician messages from the dashboard
 import { listClinicianUserMessages } from "@/lib/journey-content/user-messages";
 import { ClientMessagesList } from "@/components/dashboard/journey/ClientMessagesList";
+// PR2 expert-onboarding — bidirectional general-channel reply UI
+import { getGeneralChannelThreadForAdmin } from "@/lib/journey-content/messages";
+import { GeneralChannelAdminReply } from "@/components/dashboard/journey/GeneralChannelAdminReply";
 
 export const dynamic = "force-dynamic";
 
@@ -225,6 +232,15 @@ export default async function CoupleDetailPage({
     limit: 50,
   }).catch(() => []);
 
+  // PR2 expert-onboarding — per-partner general-channel threads.
+  // One fetch per partner; the channel is per-user, never shared.
+  const channelThreadsByUser = await Promise.all(
+    partnerUserIds.map(async (uid) => ({
+      userId: uid,
+      messages: await getGeneralChannelThreadForAdmin(uid).catch(() => []),
+    })),
+  );
+
   // Map user_id → human label (email or "Partner A/B"), used by the
   // inbox component to attribute each response.
   const partnerLabelsById = new Map<string, string>();
@@ -235,9 +251,14 @@ export default async function CoupleDetailPage({
   // missing partners — the matrix builder treats them as "not answered".
   const responsesA = partnerAId ? responsesByUser.get(partnerAId) ?? [] : [];
   const responsesB = partnerBId ? responsesByUser.get(partnerBId) ?? [] : [];
+  // v3 slice 1: priority labels come from the DB (journey_categories
+  // assessment_priority_key seed) rather than the dropped constant maps.
+  const priorityLabels = await getPriorityLabels();
+  const priorityCategories = await getPriorityCategories();
   const comparisonRows: ComparisonRow[] = buildComparisonMatrix(
     responsesA,
     responsesB,
+    priorityLabels,
     { locale: "he" },
   );
 
@@ -369,6 +390,24 @@ export default async function CoupleDetailPage({
         <ClientMessagesList
           rows={journeyUserMessages}
           partners={partnerLabelsById}
+        />
+      </section>
+
+      {/* ── PR2 expert-onboarding ── Per-partner general channel.
+          Threaded view + composer. Each tab is one partner's PRIVATE
+          channel — partners never see each other's. Sits with the
+          same visual weight as the per-item reply UI above so the
+          on-duty clinician can pick the right surface in one glance. */}
+      <section className="space-y-2">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          Reply in private channel
+        </h2>
+        <GeneralChannelAdminReply
+          partners={channelThreadsByUser.map((t) => ({
+            userId: t.userId,
+            label: partnerLabelsById.get(t.userId) ?? "Partner",
+            messages: t.messages,
+          }))}
         />
       </section>
 

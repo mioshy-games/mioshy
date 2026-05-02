@@ -19,13 +19,13 @@
  */
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Lock, MessageCircle, ShieldCheck, Reply } from "lucide-react";
 import {
-  clinicianReply,
   clinicianSetStatus,
   type ClinicianStatus,
-  type ClinicianActionResult,
 } from "@/lib/journey-content/clinician-actions";
+import { postExpertReplyToItem } from "@/app/actions/journey-messages";
 import type { ClinicianResponseRow as ResponseRow } from "@/lib/journey-content/clinician-responses";
 import { StructuredAnswerView } from "./StructuredAnswerView";
 
@@ -42,6 +42,7 @@ export function ClinicianResponseRow({
   partnerLabel: string;
   coupleId: string;
 }) {
+  const router = useRouter();
   const [showReply, setShowReply] = useState(false);
   const [replyText, setReplyText] = useState(row.clinicianReplyText ?? "");
   const [markResolved, setMarkResolved] = useState(true);
@@ -55,18 +56,30 @@ export function ClinicianResponseRow({
   const handleSendReply = () => {
     if (tooShort || tooLong || pending) return;
     startTransition(async () => {
-      const result: ClinicianActionResult = await clinicianReply({
-        responseId: row.id,
-        replyText,
-        coupleId,
-        markResolved,
+      // v3 slice 8 — route through postExpertReplyToItem so the reply
+      // lands as a journey_messages row (canonical thread) AND mirrors
+      // to journey_item_responses.clinician_reply_text via the dual-
+      // write path (preserves the legacy inbox semantics).
+      const result = await postExpertReplyToItem({
+        scheduledItemId: row.scheduledItemId,
+        body: replyText,
       });
       if (result.ok) {
+        // markResolved keeps working through the legacy status path
+        // — postExpertReplyToItem doesn't touch clinician_status.
+        if (markResolved) {
+          await clinicianSetStatus({
+            responseId: row.id,
+            status: "resolved",
+            coupleId,
+          });
+        }
         setShowReply(false);
         setFeedback(isHe ? "התגובה נשמרה" : "Saved");
         setTimeout(() => setFeedback(null), 4000);
+        router.refresh();
       } else {
-        setFeedback(result.message ?? (isHe ? "שגיאה" : "Error"));
+        setFeedback(result.error ?? (isHe ? "שגיאה" : "Error"));
       }
     });
   };

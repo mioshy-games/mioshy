@@ -110,12 +110,31 @@ export async function getPartnerDetailsForCouple(
       .from("journeys")
       .select("id, user_id")
       .in("user_id", userIds),
+    // Couple-scoped assignments (legacy v2 + any future couple-owned).
     admin
       .from("journey_assignments")
       .select("id")
       .eq("couple_id", coupleId)
       .eq("is_active", true),
   ]);
+
+  // v3 slice 4: also fetch each partner's user-scoped cadence
+  // assignment so the per-partner stats below include cadence items.
+  // Cadence rows live under user_id (never couple_id), so the
+  // couple-scoped query above misses them by design.
+  const { data: cadenceAssignRows } = await admin
+    .from("journey_assignments")
+    .select("id, user_id")
+    .in("user_id", userIds)
+    .eq("source_kind", "cadence")
+    .eq("is_active", true);
+  const cadenceAssignIdByUser = new Map<string, string>();
+  for (const row of (cadenceAssignRows ?? []) as Array<{
+    id: string;
+    user_id: string;
+  }>) {
+    cadenceAssignIdByUser.set(row.user_id, row.id);
+  }
 
   const profileById = new Map(
     ((profileRows ?? []) as Array<{
@@ -248,20 +267,26 @@ export async function getPartnerDetailsForCouple(
   }
 
   // ── Per-partner audience-aware scheduled-item counts ────────────────────
-  const assignmentIds = ((assignRows ?? []) as Array<{ id: string }>).map(
+  // Two axes feed each partner's tally:
+  //   1. Couple-scoped legacy v2 assignments (audience-filtered per role)
+  //   2. The partner's own cadence assignment (already per-user, no audience)
+  const couplelegacyIds = ((assignRows ?? []) as Array<{ id: string }>).map(
     (a) => a.id,
   );
-  const scheduledByRole = new Map<
-    "owner" | "partner",
-    { total: number; done: number }
-  >();
-  scheduledByRole.set("owner", { total: 0, done: 0 });
-  scheduledByRole.set("partner", { total: 0, done: 0 });
-  if (assignmentIds.length > 0) {
+  const scheduledByUserId = new Map<string, { total: number; done: number }>();
+  for (const uid of userIds) scheduledByUserId.set(uid, { total: 0, done: 0 });
+
+  // Step 1: legacy couple-scoped rows. We need the role-per-user
+  // resolution to apply audience filtering, so we fetch members
+  // ordered by role and look up each user's role.
+  const roleByUser = new Map<string, "owner" | "partner">();
+  for (const m of members) roleByUser.set(m.user_id, m.role);
+
+  if (couplelegacyIds.length > 0) {
     const { data: schedRows } = await admin
       .from("journey_scheduled_items")
       .select("id, audience")
-      .in("assignment_id", assignmentIds);
+      .in("assignment_id", couplelegacyIds);
     const allSched = (schedRows ?? []) as Array<{
       id: string;
       audience: "both" | "owner" | "partner";
@@ -279,15 +304,54 @@ export async function getPartnerDetailsForCouple(
         ),
       );
     }
-    // For each scheduled item, tally toward each role that can see it.
-    for (const role of ["owner", "partner"] as const) {
-      const slot = scheduledByRole.get(role)!;
+    for (const uid of userIds) {
+      const role = roleByUser.get(uid);
+      if (!role) continue;
+      const slot = scheduledByUserId.get(uid)!;
       for (const s of allSched) {
         if (s.audience === "both" || s.audience === role) {
           slot.total += 1;
           if (completedSet.has(s.id)) slot.done += 1;
         }
       }
+    }
+  }
+
+  // Step 2: per-partner cadence. Each partner's cadence assignment
+  // is a separate query result; tally directly into their slot.
+  const cadenceAssignIds = Array.from(cadenceAssignIdByUser.values());
+  if (cadenceAssignIds.length > 0) {
+    const { data: cadenceSchedRows } = await admin
+      .from("journey_scheduled_items")
+      .select("id, assignment_id")
+      .in("assignment_id", cadenceAssignIds);
+    const cadenceSched = (cadenceSchedRows ?? []) as Array<{
+      id: string;
+      assignment_id: string;
+    }>;
+    const cadenceSchedIds = cadenceSched.map((s) => s.id);
+    let cadenceCompleted = new Set<string>();
+    if (cadenceSchedIds.length > 0) {
+      const { data: doneRows } = await admin
+        .from("journey_item_completions")
+        .select("scheduled_item_id")
+        .in("scheduled_item_id", cadenceSchedIds);
+      cadenceCompleted = new Set(
+        ((doneRows ?? []) as Array<{ scheduled_item_id: string }>).map(
+          (r) => r.scheduled_item_id,
+        ),
+      );
+    }
+    // Reverse map: assignment_id → user_id
+    const userByAssign = new Map<string, string>();
+    for (const [uid, aid] of cadenceAssignIdByUser) userByAssign.set(aid, uid);
+    for (const s of cadenceSched) {
+      const uid = userByAssign.get(s.assignment_id);
+      if (!uid) continue;
+      const slot = scheduledByUserId.get(uid);
+      if (!slot) continue;
+      slot.total += 1;
+      if (cadenceCompleted.has(s.id)) slot.done += 1;
     }
   }
 
@@ -303,7 +367,7 @@ export async function getPartnerDetailsForCouple(
   // ── Stitch ──────────────────────────────────────────────────────────────
   return members.map<PartnerDetail>((m) => {
     const profile = profileById.get(m.user_id);
-    const sched = scheduledByRole.get(m.role) ?? { total: 0, done: 0 };
+    const sched = scheduledByUserId.get(m.user_id) ?? { total: 0, done: 0 };
     const ranking = rankingByUser.get(m.user_id) ?? null;
     return {
       userId: m.user_id,

@@ -39,6 +39,8 @@ import {
 } from "@/lib/journey/questions";
 import { analyze } from "@/lib/journey/analysis";
 import { isValidOrder } from "@/lib/journey/priorities";
+import { getPriorityLabels } from "@/lib/journey-content/priority-categories";
+import { onPriorityRankingSubmitted } from "@/lib/journey-content/cadence-trigger";
 import type { AnswerValue, Locale, Response } from "@/lib/journey/types";
 
 export const runtime = "nodejs";
@@ -268,6 +270,36 @@ export async function POST(req: Request) {
     );
   }
 
+  // ── Side-effect: v3 cadence engine day-1 trigger ───────────────────────────
+  // When the priority ranking is submitted, persist it into
+  // journey_user_priorities and (if the user is journey-entitled)
+  // materialize the first item so it shows up immediately on /my/journey.
+  // Best-effort — failures are logged but don't block the answer save.
+  if (
+    question_id === "q_priorities" &&
+    trusted_user_id &&
+    answer.kind === "ranking"
+  ) {
+    try {
+      const dayOne = await onPriorityRankingSubmitted(
+        trusted_user_id,
+        answer.order,
+      );
+      console.log("[journey/answer] day-1 cadence trigger", {
+        user_id: trusted_user_id,
+        prioritiesSaved: dayOne.prioritiesSaved,
+        materialized: dayOne.materialized?.ok ?? null,
+        skipReason: dayOne.skipReason,
+        error: dayOne.error,
+      });
+    } catch (e) {
+      console.warn(
+        "[journey/answer] day-1 cadence trigger threw — non-fatal",
+        e,
+      );
+    }
+  }
+
   // ── Side-effect: persist gender to profiles when q_gender is answered ──────
   // The questionnaire's q_gender is a forced_choice with option ids that
   // match profiles.gender values ('male' | 'female' | 'other'). If the user
@@ -330,7 +362,8 @@ export async function POST(req: Request) {
       answer:      r.answer as AnswerValue,
       locale:      r.locale as Locale,
     }));
-    analysis = analyze(parsed);
+    const priorityLabels = await getPriorityLabels();
+    analysis = analyze(parsed, priorityLabels);
 
     await admin.from("journey_analysis").insert({
       journey_id:              journeyId,

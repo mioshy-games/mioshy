@@ -45,20 +45,21 @@ export function AdultsManifestoSection({ isHe }: { isHe: boolean }) {
   return (
     <section
       id="manifesto"
-      className="relative overflow-hidden px-4 py-[90px]"
+      className="relative overflow-hidden px-4 py-12 sm:py-[90px]"
     >
       <div className="relative mx-auto max-w-3xl">
-        {/* Eyebrow */}
+        {/* Eyebrow — bumped to 13px on mobile (was 11px, unreadable). */}
         <div className="text-center">
-          <span className="inline-flex items-center gap-2.5 text-[11px] font-semibold uppercase tracking-[0.32em] text-[#8B2638]">
+          <span className="inline-flex items-center gap-2.5 text-[13px] font-semibold uppercase tracking-[0.22em] text-[#8B2638] sm:text-[11px] sm:tracking-[0.32em]">
             <span className="h-1.5 w-1.5 rounded-full bg-[#B83C4D] shadow-[0_0_8px_rgba(184,60,77,0.3)]" />
             {isHe ? "מה זה באמת" : "What this really is"}
           </span>
         </div>
 
-        {/* Headline */}
+        {/* Headline — capped at 30px on mobile so the long Hebrew
+            italic doesn't break each word onto its own line. */}
         <h2
-          className="mt-7 text-balance text-center text-[40px] leading-[1.05] tracking-[-0.02em] text-[#170E14] sm:text-5xl lg:text-[56px]"
+          className="mt-4 text-balance text-center text-[30px] leading-[1.1] tracking-[-0.02em] text-[#170E14] sm:mt-7 sm:text-5xl sm:leading-[1.05] lg:text-[56px]"
           style={{ fontFamily: "'Frank Ruhl Libre', serif", fontWeight: 600 }}
         >
           {isHe ? (
@@ -84,27 +85,29 @@ export function AdultsManifestoSection({ isHe }: { isHe: boolean }) {
           )}
         </h2>
 
-        {/* Body — three editorial paragraphs with vertical accent rule */}
-        <div className="relative mt-12 ps-8 sm:ps-10">
+        {/* Body — three editorial paragraphs with vertical accent rule.
+            Mobile: tighter top margin + tighter inter-paragraph margins
+            so the manifesto reads as one block, not three loose ones. */}
+        <div className="relative mt-6 ps-6 sm:mt-12 sm:ps-10">
           <span
             aria-hidden
             className="absolute inset-y-2 start-0 w-px bg-gradient-to-b from-[#B83C4D]/0 via-[#B83C4D]/50 to-[#B83C4D]/0"
           />
 
-          <p className="text-[20px] leading-[1.7] text-[#170E14] sm:text-[22px]">
+          <p className="text-[17px] leading-[1.6] text-[#170E14] sm:text-[20px] sm:leading-[1.7] md:text-[22px]">
             {isHe
               ? "המומחים של מיאושי בנו עבורכם משחקי מיניות בשלבים — כל שלב הוא פעולה מינית מסוימת שאתם מבצעים יחד. חלק מהמשחקים משלבים צעצועי מין. חלק לא. ההחלטה איתכם."
               : "Mioshy's experts have built you sexual games in stages — each stage is a specific sexual act you perform together. Some games incorporate sex toys. Some don't. The choice is yours."}
           </p>
 
-          <p className="mt-7 text-[18px] leading-[1.75] text-[#4A3A45] sm:text-[19px]">
+          <p className="mt-4 text-[16px] leading-[1.65] text-[#4A3A45] sm:mt-7 sm:text-[18px] sm:leading-[1.75] md:text-[19px]">
             {isHe
               ? "כולם מכוונים למטרה אחת — חוויה מינית בלתי-נשכחת. המשחקים מיניים. אירוטיים. מעוררים. ובנויים בכוונה כך, שלא תרצו להפסיק לשחק."
               : "All of them point to one goal — an unforgettable sexual experience. The games are sexual. Erotic. Arousing. And built — on purpose — so you won't want to stop playing."}
           </p>
 
           <p
-            className="mt-7 text-[18px] leading-[1.7] text-[#8B2638]"
+            className="mt-4 text-[17px] leading-[1.6] text-[#8B2638] sm:mt-7 sm:text-[18px] sm:leading-[1.7]"
             style={{ fontFamily: "'Frank Ruhl Libre', serif", fontStyle: "italic" }}
           >
             {isHe
@@ -125,7 +128,7 @@ export function AdultsProofSection({ isHe }: { isHe: boolean }) {
   return (
     <section
       id="proof"
-      className="relative overflow-hidden px-4 py-[80px]"
+      className="relative overflow-hidden px-4 py-10 sm:py-[80px]"
     >
       {/* Top hairline divider */}
       <div
@@ -134,16 +137,16 @@ export function AdultsProofSection({ isHe }: { isHe: boolean }) {
       />
 
       <div className="relative mx-auto max-w-5xl">
-        {/* Eyebrow */}
+        {/* Eyebrow — bumped to 13px on mobile. */}
         <div className="text-center">
-          <span className="inline-flex items-center gap-2.5 text-[11px] font-semibold uppercase tracking-[0.32em] text-[#8B2638]">
+          <span className="inline-flex items-center gap-2.5 text-[13px] font-semibold uppercase tracking-[0.22em] text-[#8B2638] sm:text-[11px] sm:tracking-[0.32em]">
             <span className="h-1.5 w-1.5 rounded-full bg-[#B83C4D] shadow-[0_0_8px_rgba(184,60,77,0.3)]" />
             {isHe ? "המספרים מדברים" : "The numbers speak"}
           </span>
         </div>
 
         <h2
-          className="mt-6 text-balance text-center text-[36px] leading-[1.1] tracking-[-0.02em] text-[#170E14] sm:text-[44px]"
+          className="mt-3 text-balance text-center text-[28px] leading-[1.15] tracking-[-0.02em] text-[#170E14] sm:mt-6 sm:text-[36px] sm:leading-[1.1] md:text-[44px]"
           style={{ fontFamily: "'Frank Ruhl Libre', serif", fontWeight: 600 }}
         >
           {isHe ? "אחרי משחק אחד — " : "After the first game — "}
@@ -155,8 +158,9 @@ export function AdultsProofSection({ isHe }: { isHe: boolean }) {
           </span>
         </h2>
 
-        {/* Two stat cards */}
-        <div className="mt-14 grid gap-6 sm:grid-cols-2">
+        {/* Two stat cards — tighter top margin on mobile so the
+            "headline → cards" stack feels like one breath. */}
+        <div className="mt-6 grid gap-4 sm:mt-14 sm:gap-6 sm:grid-cols-2">
           {/* Stat 1 — 80% */}
           <div className="rounded-3xl border border-[#EAE0E3] bg-[#FBF5F2] px-10 py-12 text-center shadow-sm">
             <span

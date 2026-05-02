@@ -30,6 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Field, Section } from "./Field";
+import { HintIcon } from "@/components/ui/hint-icon";
 
 import {
   journeyAssignmentSchema,
@@ -209,9 +210,12 @@ export function AssignmentForm({
                 value={sourceKind}
                 onValueChange={(v) => {
                   if (v) {
+                    // Manual assignments are program/category/item only —
+                    // cadence rows are engine-created (slice 3) and never
+                    // reach this form.
                     setValue(
                       "source_kind",
-                      v as AssignmentSourceKind,
+                      v as Exclude<AssignmentSourceKind, "cadence">,
                       { shouldDirty: true },
                     );
                     setValue("source_id", "", { shouldDirty: true });
@@ -270,7 +274,7 @@ export function AssignmentForm({
           description="Anchor determines day 0 - all item offsets are relative to this date."
         >
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Anchor kind">
+            <Field label="Anchor kind" hintTopic="assignment.anchor_kind">
               <Select
                 value={anchorKind}
                 onValueChange={(v) => {
@@ -317,7 +321,7 @@ export function AssignmentForm({
               />
             </Field>
 
-            <Field label="Origin" hint="Tag used for reporting">
+            <Field label="Origin" hintTopic="assignment.origin">
               <Select
                 value={watch("origin")}
                 onValueChange={(v) => {
@@ -354,7 +358,10 @@ export function AssignmentForm({
         <div className="rounded-md border p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <Label className="text-sm">Preview materialization</Label>
+              <span className="inline-flex items-center gap-1.5">
+                <Label className="text-sm">Preview materialization</Label>
+                <HintIcon topic="assignment.preview_materialization" />
+              </span>
               <p className="text-muted-foreground mt-0.5 text-xs">
                 Runs the same catalog expansion that will happen on create.
               </p>
@@ -401,10 +408,13 @@ export function AssignmentForm({
           >
             Cancel
           </Button>
-          <Button type="submit" disabled={saving} className="min-w-[160px]">
-            {saving ? <Loader2 className="me-2 size-4 animate-spin" /> : null}
-            Create + materialize
-          </Button>
+          <span className="inline-flex items-center gap-1.5">
+            <Button type="submit" disabled={saving} className="min-w-[160px]">
+              {saving ? <Loader2 className="me-2 size-4 animate-spin" /> : null}
+              Create + materialize
+            </Button>
+            <HintIcon topic="assignment.create_and_materialize" />
+          </span>
         </div>
       </form>
     </FormProvider>

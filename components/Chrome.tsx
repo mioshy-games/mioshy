@@ -46,6 +46,8 @@ export function Chrome({
   children,
   isAuthed = false,
   entitlements = null,
+  unreadNotifications = 0,
+  locale,
 }: {
   children: ReactNode;
   isAuthed?: boolean;
@@ -53,6 +55,11 @@ export function Chrome({
    *  flags so the header can surface ONLY the products they own (per
    *  spec §11). null = anonymous OR auth fetch failed. */
   entitlements?: Entitlements | null;
+  /** v3 slice 10 — unread journey_notifications count for the bell. */
+  unreadNotifications?: number;
+  /** Required when isAuthed; drives RTL/LTR rendering of the bell
+   *  dropdown. Anonymous visitors don't see the bell. */
+  locale?: string;
 }) {
   const pathname = usePathname();
   const hide = shouldHideChrome(pathname);
@@ -74,7 +81,11 @@ export function Chrome({
       }
     >
       {isAuthed ? <HomeBackground /> : null}
-      <SiteHeader isAuthed={isAuthed} entitlements={entitlements} />
+      <SiteHeader
+        isAuthed={isAuthed}
+        entitlements={entitlements}
+        unreadNotifications={unreadNotifications}
+      />
       <div className="flex-1">{children}</div>
       {/* Footer is marketing surface only — hide it for signed-in users
           so the post-login experience reads as "your space, not a brochure". */}

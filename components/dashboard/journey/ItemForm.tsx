@@ -33,14 +33,26 @@ export interface CategoryOption {
   program_label: string | null;
 }
 
+export interface SubtopicOption {
+  id: string;
+  category_id: string;
+  label: string;
+}
+
+const SUBTOPIC_NONE = "__none__";
+
 export function ItemForm({
   itemId,
   defaultValues,
   categories,
+  subtopics,
 }: {
   itemId: string | null;
   defaultValues: JourneyItemFormValues;
   categories: CategoryOption[];
+  /** Every subtopic across the catalog. The form filters by the
+   *  currently-selected category_id at render time. */
+  subtopics: SubtopicOption[];
 }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
@@ -98,7 +110,18 @@ export function ItemForm({
 
   const isActive = watch("is_active");
   const categoryId = watch("category_id");
+  const subtopicId = watch("subtopic_id") ?? "";
   const audience = watch("audience") ?? "both";
+
+  // Subtopics scoped to the currently-selected category. Switching the
+  // category clears any stale subtopic selection — the DB trigger
+  // would reject a cross-category subtopic anyway.
+  const subtopicsForCategory = subtopics.filter(
+    (s) => s.category_id === categoryId,
+  );
+  const subtopicSelectValue = subtopicId && subtopicId.length > 0
+    ? subtopicId
+    : SUBTOPIC_NONE;
 
   return (
     <FormProvider {...methods}>
@@ -142,6 +165,9 @@ export function ItemForm({
                 onValueChange={(v) => {
                   if (v) {
                     setValue("category_id", v, { shouldDirty: true });
+                    // Switching category invalidates any subtopic
+                    // (the trigger rejects cross-category subtopics).
+                    setValue("subtopic_id", "", { shouldDirty: true });
                   }
                 }}
               >
@@ -159,6 +185,42 @@ export function ItemForm({
               </Select>
             </Field>
 
+            <Field
+              label="Subtopic"
+              hintTopic="item.subtopic_id"
+              className="sm:col-span-2"
+            >
+              <Select
+                value={subtopicSelectValue}
+                onValueChange={(v) => {
+                  setValue(
+                    "subtopic_id",
+                    v === SUBTOPIC_NONE ? "" : v,
+                    { shouldDirty: true },
+                  );
+                }}
+                disabled={!categoryId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={
+                    !categoryId
+                      ? "Pick a category first"
+                      : "None (direct on category)"
+                  } />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={SUBTOPIC_NONE}>
+                    None (direct on category)
+                  </SelectItem>
+                  {subtopicsForCategory.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+
             <Field label="Slug" hint="Unique within category" className="sm:col-span-2">
               <Input
                 {...register("slug")}
@@ -169,7 +231,7 @@ export function ItemForm({
 
             <Field
               label="Default offset (days)"
-              hint="0 = unlocks on anchor day"
+              hintTopic="item.default_offset_days"
             >
               <Input
                 type="number"
@@ -190,7 +252,7 @@ export function ItemForm({
 
             <Field
               label="Audience"
-              hint="Who in the couple sees this item. Solo timelines always see 'both'."
+              hintTopic="item.audience"
               className="sm:col-span-2"
             >
               <Select

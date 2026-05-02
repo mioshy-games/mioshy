@@ -30,6 +30,9 @@ import {
   FolderKanban,
   Stethoscope,
   TrendingDown,
+  UsersRound,
+  Send,
+  Activity,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -56,6 +59,9 @@ type NavLeaf = {
   icon: LucideIcon;
   /** Hide this leaf from non-admin sidebars. Optional. */
   adminOnly?: boolean;
+  /** Native browser tooltip on hover. Use for entries whose label
+   *  isn't self-explanatory to a clinician (Push, Health, etc.). */
+  tooltip?: string;
 };
 
 type NavGroup = {
@@ -110,8 +116,37 @@ const NAV: NavItem[] = [
       { kind: "leaf", href: "/dashboard/journey/programs", label: "Programs", icon: FolderKanban },
       { kind: "leaf", href: "/dashboard/journey/categories", label: "Categories", icon: Tags },
       { kind: "leaf", href: "/dashboard/journey/items", label: "Items", icon: FileText },
-      { kind: "leaf", href: "/dashboard/journey/assignments", label: "Assignments", icon: Link2 },
+      {
+        kind: "leaf",
+        href: "/dashboard/journey/assignments",
+        label: "Assignments",
+        icon: Link2,
+        tooltip: "Programs, categories, and items assigned to specific clients.",
+      },
       { kind: "leaf", href: "/dashboard/journey/clients", label: "Clients", icon: Users },
+      {
+        kind: "leaf",
+        href: "/dashboard/journey/groups",
+        label: "Groups",
+        icon: UsersRound,
+        tooltip: "Cohorts of users bound to specific subtopics.",
+      },
+      {
+        kind: "leaf",
+        href: "/dashboard/journey/push",
+        label: "Push",
+        icon: Send,
+        tooltip:
+          "Send specific items to a user, couple, or group on their next delivery slot.",
+      },
+      {
+        kind: "leaf",
+        href: "/dashboard/journey/health",
+        label: "Health",
+        icon: Activity,
+        adminOnly: true,
+        tooltip: "System status — cron jobs and stuck-user alerts.",
+      },
       { kind: "leaf", href: "/dashboard/journey-analytics", label: "Analytics", icon: TrendingDown, adminOnly: true },
     ],
   },
@@ -206,6 +241,7 @@ function LeafLink({
   return (
     <Link
       href={item.href}
+      title={item.tooltip}
       className={cn(
         "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
         indent && "pl-9",

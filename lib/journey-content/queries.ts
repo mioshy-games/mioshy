@@ -12,12 +12,16 @@ import { createServiceRoleClient } from "@/lib/supabase-admin";
 import type {
   JourneyAssignment,
   JourneyCategory,
+  JourneyGroup,
+  JourneyGroupMember,
+  JourneyGroupSubtopicBinding,
   JourneyItem,
   JourneyItemCompletion,
   JourneyItemResponse,
   JourneyOwner,
   JourneyProgram,
   JourneyScheduledItem,
+  JourneySubtopic,
   ProgramWithContent,
   TimelineEntry,
 } from "./types";
@@ -123,11 +127,70 @@ export async function getCategoryById(id: string): Promise<JourneyCategory | nul
 }
 
 // ------------------------------------------------------------
+// Subtopics (v3 slice 2)
+// ------------------------------------------------------------
+
+export interface ListSubtopicsFilters {
+  categoryId: string;
+  onlyActive?: boolean;
+}
+
+export async function listSubtopics(
+  filters: ListSubtopicsFilters,
+): Promise<JourneySubtopic[]> {
+  const supabase = await createServerSupabaseClient();
+  let q = supabase
+    .from("journey_subtopics")
+    .select("*")
+    .eq("category_id", filters.categoryId)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+  if (filters.onlyActive) q = q.eq("is_active", true);
+  const { data, error } = await q;
+  if (error) throw new Error(error.message);
+  return (data ?? []) as JourneySubtopic[];
+}
+
+/**
+ * Cross-catalog: every subtopic, regardless of category. Used by the
+ * item form to populate its subtopic picker; the form itself filters
+ * by the currently-selected category_id at render time.
+ */
+export async function adminListAllSubtopics(): Promise<JourneySubtopic[]> {
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase
+    .from("journey_subtopics")
+    .select("*")
+    .order("category_id", { ascending: true })
+    .order("sort_order", { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as JourneySubtopic[];
+}
+
+export async function getSubtopicById(
+  id: string,
+): Promise<JourneySubtopic | null> {
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase
+    .from("journey_subtopics")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return (data as JourneySubtopic) ?? null;
+}
+
+// ------------------------------------------------------------
 // Items
 // ------------------------------------------------------------
 
 export interface ListItemsFilters {
   categoryId?: string;
+  /** v3 slice 2: filter by subtopic.
+   *   - undefined → don't filter on subtopic at all (any subtopic, or none)
+   *   - null      → only items with NO subtopic (direct-on-category)
+   *   - string    → items in that exact subtopic */
+  subtopicId?: string | null;
   onlyActive?: boolean;
   search?: string;
 }
@@ -143,6 +206,12 @@ export async function listItems(
     .order("created_at", { ascending: true });
 
   if (filters.categoryId) q = q.eq("category_id", filters.categoryId);
+  if (filters.subtopicId === null) {
+    // Direct-on-category items (no subtopic)
+    q = q.is("subtopic_id", null);
+  } else if (typeof filters.subtopicId === "string") {
+    q = q.eq("subtopic_id", filters.subtopicId);
+  }
   if (filters.onlyActive) q = q.eq("is_active", true);
   if (filters.search && filters.search.trim().length > 0) {
     const term = `%${filters.search.trim()}%`;
@@ -223,7 +292,13 @@ export async function getProgramWithContent(
 
 export async function listAssignmentsForOwner(
   owner: JourneyOwner,
-  opts: { onlyActive?: boolean } = {},
+  opts: {
+    onlyActive?: boolean;
+    /** v3 slice 4: narrow by source_kind. Pass ['cadence'] to fetch
+     *  only the per-user cadence container, or ['program','category',
+     *  'item'] to fetch only legacy v2 sources. Omit for all kinds. */
+    sourceKinds?: Array<"program" | "category" | "item" | "cadence">;
+  } = {},
 ): Promise<JourneyAssignment[]> {
   const supabase = await createServerSupabaseClient();
   const { column, value } = ownerFilter(owner);
@@ -233,6 +308,9 @@ export async function listAssignmentsForOwner(
     .eq(column, value)
     .order("created_at", { ascending: false });
   if (opts.onlyActive) q = q.eq("is_active", true);
+  if (opts.sourceKinds && opts.sourceKinds.length > 0) {
+    q = q.in("source_kind", opts.sourceKinds);
+  }
 
   const { data, error } = await q;
   if (error) throw new Error(error.message);
@@ -269,13 +347,22 @@ export async function getTimelineForOwner(args: {
    * 'couple'. Used to filter out scheduled items targeted at the OTHER
    * partner. Pass null for solo timelines or when role is unknown. */
   viewerCoupleRole?: "owner" | "partner" | null;
+  /** v3 slice 4: narrow the underlying assignments by source_kind.
+   *  Pass ['cadence'] to fetch only the per-user cadence container's
+   *  scheduled rows; pass ['program','category','item'] to fetch only
+   *  legacy v2 rows. /my/journey calls this twice — once per axis —
+   *  and merges the entries by unlock_at. */
+  sourceKinds?: Array<"program" | "category" | "item" | "cadence">;
   now?: Date;
 }): Promise<TimelineEntry[]> {
-  const { owner, viewerUserId, viewerCoupleRole, now } = args;
+  const { owner, viewerUserId, viewerCoupleRole, sourceKinds, now } = args;
   const supabase = await createServerSupabaseClient();
 
-  // 1. Active assignments for this owner
-  const assignments = await listAssignmentsForOwner(owner, { onlyActive: true });
+  // 1. Active assignments for this owner (optionally narrowed by source_kind).
+  const assignments = await listAssignmentsForOwner(owner, {
+    onlyActive: true,
+    sourceKinds,
+  });
   if (assignments.length === 0) return [];
   const assignmentIds = assignments.map((a) => a.id);
 
@@ -508,19 +595,32 @@ export async function adminGetOwnerLabel(
 export async function adminListAssignments(args: {
   ownerKey?: string;
   limit?: number;
+  /** v3 slice 4: when ownerKey identifies a COUPLE, also include
+   *  cadence assignments belonging to either partner (resolved via
+   *  couple_members). Cadence is per-user so it never appears under
+   *  a couple_id; the couple-aggregate admin views opt in via this
+   *  flag to roll both partners' cadence into the couple workspace. */
+  includeCoupleMembersCadence?: boolean;
 } = {}): Promise<JourneyAssignment[]> {
   const supabase = createServiceRoleClient();
   if (!supabase) throw new Error("service role client unavailable");
 
+  const limit = Math.min(args.limit ?? 200, 500);
+
+  // Build the primary owner-scoped query.
   let q = supabase
     .from("journey_assignments")
     .select("*")
     .order("created_at", { ascending: false })
-    .limit(Math.min(args.limit ?? 200, 500));
+    .limit(limit);
 
+  let kind: string | null = null;
+  let id: string | null = null;
   if (args.ownerKey) {
-    const [kind, id] = args.ownerKey.split(":");
-    if (!id) return [];
+    const [k, i] = args.ownerKey.split(":");
+    if (!i) return [];
+    kind = k;
+    id = i;
     if (kind === "user") q = q.eq("user_id", id);
     else if (kind === "couple") q = q.eq("couple_id", id);
     else return [];
@@ -528,7 +628,342 @@ export async function adminListAssignments(args: {
 
   const { data, error } = await q;
   if (error) throw new Error(error.message);
-  return (data ?? []) as JourneyAssignment[];
+  const primary = (data ?? []) as JourneyAssignment[];
+
+  // Slice 4 rollup: pull each partner's cadence assignment when this
+  // is a couple ownerKey AND the caller opted in. Cadence rows live
+  // under user_id, never couple_id, so the primary query above
+  // misses them by design.
+  if (
+    args.includeCoupleMembersCadence &&
+    kind === "couple" &&
+    id
+  ) {
+    const { data: members } = await supabase
+      .from("couple_members")
+      .select("user_id")
+      .eq("couple_id", id);
+    const memberUserIds = (members ?? [])
+      .map((m) => m.user_id as string)
+      .filter(Boolean);
+    if (memberUserIds.length > 0) {
+      const { data: cadenceRows } = await supabase
+        .from("journey_assignments")
+        .select("*")
+        .in("user_id", memberUserIds)
+        .eq("source_kind", "cadence")
+        .order("created_at", { ascending: false })
+        .limit(limit);
+      if (cadenceRows && cadenceRows.length > 0) {
+        // De-dupe defensively (a cadence row should never appear
+        // twice, but a future schema change could wire it both ways).
+        const seen = new Set(primary.map((a) => a.id));
+        for (const row of cadenceRows as JourneyAssignment[]) {
+          if (!seen.has(row.id)) primary.push(row);
+        }
+      }
+    }
+  }
+
+  return primary;
+}
+
+// ------------------------------------------------------------
+// Groups (v3 slice 7)
+// ------------------------------------------------------------
+
+export interface GroupListRow extends JourneyGroup {
+  member_count: number;
+  binding_count: number;
+}
+
+export async function adminListGroups(): Promise<GroupListRow[]> {
+  const supabase = createServiceRoleClient();
+  if (!supabase) throw new Error("service role client unavailable");
+
+  const [groupsRes, memberRes, bindingRes] = await Promise.all([
+    supabase
+      .from("journey_groups")
+      .select("*")
+      .order("created_at", { ascending: false }),
+    supabase.from("journey_group_members").select("group_id"),
+    supabase.from("journey_group_subtopics").select("group_id"),
+  ]);
+
+  if (groupsRes.error) throw new Error(groupsRes.error.message);
+  const groups = (groupsRes.data ?? []) as JourneyGroup[];
+  if (groups.length === 0) return [];
+
+  const memberCountByGroup = new Map<string, number>();
+  for (const m of (memberRes.data ?? []) as Array<{ group_id: string }>) {
+    memberCountByGroup.set(
+      m.group_id,
+      (memberCountByGroup.get(m.group_id) ?? 0) + 1,
+    );
+  }
+  const bindingCountByGroup = new Map<string, number>();
+  for (const b of (bindingRes.data ?? []) as Array<{ group_id: string }>) {
+    bindingCountByGroup.set(
+      b.group_id,
+      (bindingCountByGroup.get(b.group_id) ?? 0) + 1,
+    );
+  }
+
+  return groups.map((g) => ({
+    ...g,
+    member_count: memberCountByGroup.get(g.id) ?? 0,
+    binding_count: bindingCountByGroup.get(g.id) ?? 0,
+  }));
+}
+
+export async function getGroupById(id: string): Promise<JourneyGroup | null> {
+  const supabase = createServiceRoleClient();
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from("journey_groups")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return (data as JourneyGroup) ?? null;
+}
+
+export interface GroupMemberRow extends JourneyGroupMember {
+  email: string | null;
+  full_name: string | null;
+}
+
+/** Members enriched with email + full_name for the picker UI. */
+export async function listGroupMembers(
+  groupId: string,
+): Promise<GroupMemberRow[]> {
+  const supabase = createServiceRoleClient();
+  if (!supabase) return [];
+  const { data: rows, error } = await supabase
+    .from("journey_group_members")
+    .select("*")
+    .eq("group_id", groupId)
+    .order("added_at", { ascending: true });
+  if (error) throw new Error(error.message);
+  const members = (rows ?? []) as JourneyGroupMember[];
+  if (members.length === 0) return [];
+
+  const userIds = members.map((m) => m.user_id);
+  const [profilesRes, emailsRes] = await Promise.all([
+    supabase.from("profiles").select("id, full_name").in("id", userIds),
+    supabase
+      .from("admin_users_overview")
+      .select("user_id, email")
+      .in("user_id", userIds),
+  ]);
+  const fullNameById = new Map(
+    ((profilesRes.data ?? []) as Array<{ id: string; full_name: string | null }>).map(
+      (p) => [p.id, p.full_name],
+    ),
+  );
+  const emailById = new Map(
+    ((emailsRes.data ?? []) as Array<{ user_id: string; email: string | null }>).map(
+      (u) => [u.user_id, u.email],
+    ),
+  );
+
+  return members.map((m) => ({
+    ...m,
+    full_name: fullNameById.get(m.user_id) ?? null,
+    email: emailById.get(m.user_id) ?? null,
+  }));
+}
+
+export interface GroupSubtopicBindingRow extends JourneyGroupSubtopicBinding {
+  subtopic_name_he: string;
+  subtopic_name_en: string | null;
+  category_id: string;
+  category_name_he: string;
+}
+
+/** Bindings enriched with subtopic + category labels. */
+export async function listGroupSubtopicBindings(
+  groupId: string,
+): Promise<GroupSubtopicBindingRow[]> {
+  const supabase = createServiceRoleClient();
+  if (!supabase) return [];
+  const { data: rows, error } = await supabase
+    .from("journey_group_subtopics")
+    .select("*")
+    .eq("group_id", groupId)
+    .order("sort_weight", { ascending: false })
+    .order("created_at", { ascending: true });
+  if (error) throw new Error(error.message);
+  const bindings = (rows ?? []) as JourneyGroupSubtopicBinding[];
+  if (bindings.length === 0) return [];
+
+  const subtopicIds = bindings.map((b) => b.subtopic_id);
+  const { data: subRows } = await supabase
+    .from("journey_subtopics")
+    .select("id, name_he, name_en, category_id")
+    .in("id", subtopicIds);
+  const subtopicById = new Map(
+    ((subRows ?? []) as Array<{
+      id: string;
+      name_he: string;
+      name_en: string | null;
+      category_id: string;
+    }>).map((s) => [s.id, s]),
+  );
+
+  const categoryIds = Array.from(
+    new Set(
+      ((subRows ?? []) as Array<{ category_id: string }>).map(
+        (s) => s.category_id,
+      ),
+    ),
+  );
+  const { data: catRows } =
+    categoryIds.length > 0
+      ? await supabase
+          .from("journey_categories")
+          .select("id, name_he")
+          .in("id", categoryIds)
+      : { data: [] as Array<{ id: string; name_he: string }> };
+  const categoryById = new Map(
+    ((catRows ?? []) as Array<{ id: string; name_he: string }>).map(
+      (c) => [c.id, c.name_he],
+    ),
+  );
+
+  return bindings.map((b) => {
+    const sub = subtopicById.get(b.subtopic_id);
+    return {
+      ...b,
+      subtopic_name_he: sub?.name_he ?? "(unknown)",
+      subtopic_name_en: sub?.name_en ?? null,
+      category_id: sub?.category_id ?? "",
+      category_name_he: sub
+        ? categoryById.get(sub.category_id) ?? "(unknown)"
+        : "(unknown)",
+    };
+  });
+}
+
+/**
+ * Reverse lookup — for a set of subtopic_ids, return the count of
+ * groups bound to each. Used by the items list to show "this
+ * subtopic is bound to N group(s)" so admins know cadence behaves
+ * differently for some users.
+ */
+export async function countGroupBindingsForSubtopics(
+  subtopicIds: string[],
+): Promise<Map<string, number>> {
+  const out = new Map<string, number>();
+  if (subtopicIds.length === 0) return out;
+  const supabase = createServiceRoleClient();
+  if (!supabase) return out;
+  const { data, error } = await supabase
+    .from("journey_group_subtopics")
+    .select("subtopic_id")
+    .in("subtopic_id", subtopicIds);
+  if (error) {
+    console.error("[countGroupBindingsForSubtopics]", error);
+    return out;
+  }
+  for (const r of (data ?? []) as Array<{ subtopic_id: string }>) {
+    out.set(r.subtopic_id, (out.get(r.subtopic_id) ?? 0) + 1);
+  }
+  return out;
+}
+
+/**
+ * Cadence engine helper — for a given user, return the set of
+ * subtopic_ids they're in REPLACE mode for (across all groups).
+ * If the user is in BOTH a replace and an interleave group for the
+ * same subtopic, replace wins (per Itzik's slice 7 brief).
+ *
+ * Two-query implementation: PostgREST nested filters with multi-hop
+ * inner joins are fragile; the user's group count is small (~5) so
+ * the round-trip overhead is negligible.
+ */
+export async function getReplaceSubtopicsForUser(
+  userId: string,
+): Promise<Set<string>> {
+  const out = new Set<string>();
+  const supabase = createServiceRoleClient();
+  if (!supabase) return out;
+
+  // Step 1: active groups the user belongs to.
+  const { data: memberRows, error: mErr } = await supabase
+    .from("journey_group_members")
+    .select("group_id, journey_groups!inner(is_active)")
+    .eq("user_id", userId)
+    .eq("journey_groups.is_active", true);
+  if (mErr) {
+    console.error("[getReplaceSubtopicsForUser:members]", mErr);
+    return out;
+  }
+  const groupIds = ((memberRows ?? []) as Array<{ group_id: string }>).map(
+    (r) => r.group_id,
+  );
+  if (groupIds.length === 0) return out;
+
+  // Step 2: replace-mode bindings on those groups.
+  const { data: bindRows, error: bErr } = await supabase
+    .from("journey_group_subtopics")
+    .select("subtopic_id")
+    .in("group_id", groupIds)
+    .eq("mode", "replace");
+  if (bErr) {
+    console.error("[getReplaceSubtopicsForUser:bindings]", bErr);
+    return out;
+  }
+  for (const r of (bindRows ?? []) as Array<{ subtopic_id: string }>) {
+    out.add(r.subtopic_id);
+  }
+  return out;
+}
+
+/**
+ * Cross-couple "active in cadence: N this week" stat for the groups
+ * list page. Counts distinct member user_ids that received any
+ * cadence-source scheduled_item in the last 7 days.
+ */
+export async function countActiveMembersThisWeek(
+  groupId: string,
+): Promise<number> {
+  const supabase = createServiceRoleClient();
+  if (!supabase) return 0;
+  const { data: members } = await supabase
+    .from("journey_group_members")
+    .select("user_id")
+    .eq("group_id", groupId);
+  const userIds = ((members ?? []) as Array<{ user_id: string }>).map(
+    (m) => m.user_id,
+  );
+  if (userIds.length === 0) return 0;
+
+  const sevenDaysAgo = new Date(Date.now() - 7 * 86_400_000).toISOString();
+  const { data: rows } = await supabase
+    .from("journey_scheduled_items")
+    .select("journey_assignments!inner(user_id, source_kind)")
+    .eq("source", "cadence")
+    .gte("unlock_at", sevenDaysAgo)
+    .in("journey_assignments.user_id", userIds)
+    .eq("journey_assignments.source_kind", "cadence");
+  // PostgREST nested resources come back as arrays even on a !inner
+  // join. We unwrap defensively.
+  const seen = new Set<string>();
+  for (const r of (rows ?? []) as Array<{
+    journey_assignments:
+      | { user_id: string | null }
+      | Array<{ user_id: string | null }>
+      | null;
+  }>) {
+    const a = r.journey_assignments;
+    if (!a) continue;
+    const list = Array.isArray(a) ? a : [a];
+    for (const item of list) {
+      if (item?.user_id) seen.add(item.user_id);
+    }
+  }
+  return seen.size;
 }
 
 export async function adminListCategoriesWithItemCounts(

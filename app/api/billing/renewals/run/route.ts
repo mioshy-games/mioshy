@@ -138,11 +138,17 @@ export async function POST(req: Request) {
       await admin
         .from("subscriptions")
         .update({
-          status:              "active",
-          current_period_end:  periodEnd.toISOString(),
-          next_billing_date:   periodEnd.toISOString(),
-          failed_attempts:     0,
-          grace_until:         null,
+          status:               "active",
+          current_period_end:   periodEnd.toISOString(),
+          next_billing_date:    periodEnd.toISOString(),
+          failed_attempts:      0,
+          grace_until:          null,
+          // v3 slice 5: clear journey grace columns on a successful
+          // renewal so the user re-enters 'active' state and the
+          // cadence engine resumes on the next tick. Harmless on
+          // non-journey products (columns just stay NULL).
+          journey_grace_until:  null,
+          journey_blocked_at:   null,
         })
         .eq("id", subId)
 

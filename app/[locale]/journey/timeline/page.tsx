@@ -36,6 +36,7 @@ import {
 import { routing } from "@/i18n/routing";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getCurrentCoupleContext } from "@/lib/between-us/couples";
+import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
 import { preferCoupleOwner } from "@/lib/journey-content/owner";
 import { getTimelineForOwner } from "@/lib/journey-content/queries";
 import { countStatuses } from "@/lib/journey-content/status";
@@ -43,6 +44,7 @@ import type { TimelineEntry } from "@/lib/journey-content/types";
 import { TimelineList } from "@/components/journey/timeline/TimelineList";
 import { NextUpHero } from "@/components/journey/timeline/NextUpHero";
 import { UserRecentActivity } from "@/components/journey/timeline/UserRecentActivity";
+import { JourneyGraceBanner } from "@/components/my/JourneyGraceBanner";
 
 export const dynamic = "force-dynamic";
 
@@ -79,6 +81,18 @@ export default async function JourneyTimelinePage({
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect(`/${locale}/auth`);
+
+  // ── Entitlement gate ──────────────────────────────────────────────────
+  // v3 slice 5: blocked users (post-grace) get bounced to /journey
+  // where the locked screen takes over. Grace users keep access to
+  // past content and see the grace banner above the timeline. Active
+  // users see no banner.
+  const entitlements = await getUserEntitlements(user.id).catch(() => null);
+  const journeyState = entitlements?.journeyState ?? null;
+  const journeyGraceUntil = entitlements?.journeyGraceUntil ?? null;
+  if (!entitlements?.journey) {
+    redirect(`/${locale}/journey`);
+  }
 
   // ── Resolve owner (solo user OR their couple) ─────────────────────────
   const couple = await getCurrentCoupleContext();
@@ -226,6 +240,16 @@ export default async function JourneyTimelinePage({
           <Arrow className="h-3 w-3 rotate-180" />
           {isHe ? "חזרה למיאושי שלי" : "Back to My Mioshy"}
         </Link>
+
+        {/* v3 slice 5 — grace banner. Renders nothing when journeyState
+            is 'active' or null. */}
+        <div className="mt-5">
+          <JourneyGraceBanner
+            isHe={isHe}
+            state={journeyState}
+            graceUntil={journeyGraceUntil}
+          />
+        </div>
 
         {/* Header - compact on mobile so the hero leads the scroll */}
         <section className="mt-5 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between sm:gap-6">

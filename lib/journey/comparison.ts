@@ -22,12 +22,8 @@
  */
 
 import { QUESTIONS } from "@/lib/journey/questions";
-import {
-  PRIORITY_KEYS,
-  PRIORITY_LABELS_HE,
-  PRIORITY_LABELS_EN,
-  type PriorityKey,
-} from "@/lib/journey/priorities";
+import { isPriorityKey, type PriorityKey } from "@/lib/journey/priorities";
+import type { PriorityLabelsBundle } from "@/lib/journey-content/priority-categories";
 import type { AnswerValue, Locale, Question, Response } from "./types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -151,6 +147,7 @@ function formatAnswer(
   q: Question,
   ans: AnswerValue | null,
   locale: Locale,
+  priorityLabels: PriorityLabelsBundle,
 ): string | null {
   if (!ans) return null;
   const isHe = locale === "he";
@@ -183,13 +180,11 @@ function formatAnswer(
   if (ans.kind === "ranking") {
     const labels = ans.order.map((k, i) => {
       const idx = i + 1;
-      const validKey = (PRIORITY_KEYS as readonly string[]).includes(k)
-        ? (k as PriorityKey)
-        : null;
+      const validKey: PriorityKey | null = isPriorityKey(k) ? k : null;
       const lbl = validKey
         ? isHe
-          ? PRIORITY_LABELS_HE[validKey]
-          : PRIORITY_LABELS_EN[validKey]
+          ? priorityLabels.labelsHe[validKey]
+          : priorityLabels.labelsEn[validKey]
         : k;
       return `${idx}. ${lbl}`;
     });
@@ -246,6 +241,7 @@ function readPrompt(q: Question): { he: string; en: string } {
 export function buildComparisonMatrix(
   responsesA: Response[],
   responsesB: Response[],
+  priorityLabels: PriorityLabelsBundle,
   options: {
     locale?: Locale;
     sortBy?: "question_order" | "divergence";
@@ -300,8 +296,8 @@ export function buildComparisonMatrix(
       type: q.type,
       answer_a: aVal,
       answer_b: bVal,
-      answer_a_display: formatAnswer(q, aVal, locale),
-      answer_b_display: formatAnswer(q, bVal, locale),
+      answer_a_display: formatAnswer(q, aVal, locale, priorityLabels),
+      answer_b_display: formatAnswer(q, bVal, locale, priorityLabels),
       divergence,
       divergence_level: divergenceLevel(divergence),
       one_sided,

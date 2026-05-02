@@ -4,6 +4,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { Link, usePathname } from "@/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { Gamepad2, Heart, Library, LogOut, Menu, Sparkles, X } from "lucide-react";
+import { JourneyNotificationsBell } from "@/components/notifications/JourneyNotificationsBell";
 import { logoutAction } from "@/app/actions/auth-actions";
 
 /**
@@ -88,11 +89,14 @@ interface SiteHeaderEntitlements {
 export function SiteHeader({
   isAuthed = false,
   entitlements = null,
+  unreadNotifications = 0,
 }: {
   isAuthed?: boolean;
   /** Authenticated users see ONLY the pillars they own. Anonymous
    *  users (entitlements === null) see all three marketing pillars. */
   entitlements?: SiteHeaderEntitlements | null;
+  /** v3 slice 10 — drives the bell badge for signed-in users. */
+  unreadNotifications?: number;
 }) {
   // Resolve which pillar links the current visitor sees.
   //
@@ -277,6 +281,10 @@ export function SiteHeader({
                 <Library className="h-4 w-4" />
                 {t("library")}
               </Link>
+              <JourneyNotificationsBell
+                initialUnreadCount={unreadNotifications}
+                isHe={isHe}
+              />
               <button
                 type="button"
                 onClick={handleLogout}
