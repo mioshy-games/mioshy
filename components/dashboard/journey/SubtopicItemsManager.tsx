@@ -97,7 +97,7 @@ export function SubtopicItemsManager({
       <div className="p-3">
         {items.length === 0 ? (
           <div className="text-muted-foreground flex h-20 items-center justify-center text-sm">
-            No items yet. Click "+ New item" to add one.
+            No items yet. Click &quot;+ New item&quot; to add one.
           </div>
         ) : (
           <SortableList

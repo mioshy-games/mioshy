@@ -152,7 +152,7 @@ function ChannelPanel({ partner }: { partner: PartnerChannel }) {
       {/* Thread */}
       {partner.messages.length === 0 ? (
         <div className="rounded-lg border border-dashed border-white/[0.08] bg-white/[0.015] p-4 text-center text-xs text-white/55">
-          {partner.label} hasn't messaged the general channel yet.
+          {partner.label} hasn&apos;t messaged the general channel yet.
           You can still write the first message below — it will open
           their channel.
         </div>

@@ -47,7 +47,6 @@ export function Chrome({
   isAuthed = false,
   entitlements = null,
   unreadNotifications = 0,
-  locale,
 }: {
   children: ReactNode;
   isAuthed?: boolean;

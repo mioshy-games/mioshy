@@ -185,7 +185,7 @@ export function PushComposer({
           </span>
           <p className="text-muted-foreground mt-0.5 inline-flex items-center gap-1.5 text-xs">
             <span>
-              Pushes ride the recipient's next delivery slot — they don't
+              Pushes ride the recipient&apos;s next delivery slot — they don&apos;t
               deliver instantly.
             </span>
             <HintIcon topic="push.delivery_slot_explanation" />
@@ -406,7 +406,7 @@ export function PushComposer({
         <header className="mb-4">
           <h2 className="text-lg font-semibold">3. Reason note (optional)</h2>
           <p className="text-muted-foreground mt-0.5 text-xs">
-            Surfaces only on the dashboard side — users don't see this.
+            Surfaces only on the dashboard side — users don&apos;t see this.
           </p>
         </header>
         <Label htmlFor="reason" className="sr-only">

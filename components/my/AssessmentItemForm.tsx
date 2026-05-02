@@ -52,7 +52,10 @@ export function AssessmentItemForm({
   initialSummary?: string;
   initialPrivate?: boolean;
 }) {
-  const questions = payload.questions ?? [];
+  const questions = useMemo(
+    () => payload.questions ?? [],
+    [payload.questions],
+  );
   const [answers, setAnswers] = useState<Record<string, unknown>>(
     initialAnswers ?? {},
   );

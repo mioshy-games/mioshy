@@ -36,7 +36,6 @@ import {
   type ComparisonRow,
 } from "@/lib/journey/comparison";
 import {
-  getPriorityCategories,
   getPriorityLabels,
 } from "@/lib/journey-content/priority-categories";
 import { listFeedbackForCouple } from "@/lib/journey/feedback";
@@ -254,7 +253,6 @@ export default async function CoupleDetailPage({
   // v3 slice 1: priority labels come from the DB (journey_categories
   // assessment_priority_key seed) rather than the dropped constant maps.
   const priorityLabels = await getPriorityLabels();
-  const priorityCategories = await getPriorityCategories();
   const comparisonRows: ComparisonRow[] = buildComparisonMatrix(
     responsesA,
     responsesB,

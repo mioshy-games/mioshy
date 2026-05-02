@@ -141,7 +141,7 @@ function SubtopicsSection({
       <div className="p-3">
         {subtopics.length === 0 ? (
           <div className="text-muted-foreground flex h-20 items-center justify-center text-sm">
-            No subtopics yet. Use the "+ New subtopic" button to add one.
+            No subtopics yet. Use the &quot;+ New subtopic&quot; button to add one.
           </div>
         ) : (
           <SortableList

@@ -64,7 +64,7 @@ export default async function JourneyHealthPage() {
         <header className="border-b border-border p-4">
           <h2 className="font-semibold">Cron jobs (last 24 h)</h2>
           <p className="text-muted-foreground mt-0.5 inline-flex items-center gap-1.5 text-xs">
-            <span>"Stale" = last run is older than 1.5× the expected interval.</span>
+            <span>&quot;Stale&quot; = last run is older than 1.5× the expected interval.</span>
             <HintIcon topic="health.cron_stale_threshold" />
           </p>
         </header>

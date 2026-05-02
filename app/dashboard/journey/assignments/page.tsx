@@ -92,7 +92,7 @@ export default async function AssignmentsListPage() {
                   colSpan={6}
                   className="text-muted-foreground py-8 text-center text-sm"
                 >
-                  No assignments yet. Create one to start a client's content timeline.
+                  No assignments yet. Create one to start a client&apos;s content timeline.
                 </TableCell>
               </TableRow>
             ) : null}

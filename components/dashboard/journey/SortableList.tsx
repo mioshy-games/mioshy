@@ -141,7 +141,6 @@ export function SortableList<T extends SortableItem>({
             className ?? "flex flex-col gap-2"
           }
           aria-busy={pending || undefined}
-          aria-disabled={isFrozen || undefined}
         >
           {order.map((item) => (
             <SortableRow

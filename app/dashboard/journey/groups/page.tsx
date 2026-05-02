@@ -44,8 +44,8 @@ export default async function GroupsListPage() {
           <h1 className="mt-2 text-3xl font-bold tracking-tight">Groups</h1>
           <p className="text-muted-foreground mt-1 max-w-2xl text-sm">
             Cohorts of users bound to specific subtopics. The cadence engine
-            respects each binding's mode — <strong>replace</strong> hides the
-            subtopic from members' auto-cadence, <strong>interleave</strong>{" "}
+            respects each binding&apos;s mode — <strong>replace</strong> hides the
+            subtopic from members&apos; auto-cadence, <strong>interleave</strong>{" "}
             lets cadence pick from it normally while leaving room for admin
             pushes.
           </p>
@@ -77,7 +77,7 @@ export default async function GroupsListPage() {
                   colSpan={6}
                   className="text-muted-foreground h-20 text-center text-sm"
                 >
-                  No groups yet — click "New group" to create the first cohort.
+                  No groups yet — click &quot;New group&quot; to create the first cohort.
                 </TableCell>
               </TableRow>
             ) : (

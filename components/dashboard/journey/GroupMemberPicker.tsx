@@ -130,7 +130,7 @@ export function GroupMemberPicker({ groupId, initialMembers }: Props) {
       <header className="border-b border-border p-4">
         <h2 className="font-semibold">Members</h2>
         <p className="text-muted-foreground mt-0.5 text-xs">
-          Members are users (not couples). "Add couple" inserts both partners.
+          Members are users (not couples). &quot;Add couple&quot; inserts both partners.
         </p>
       </header>
 

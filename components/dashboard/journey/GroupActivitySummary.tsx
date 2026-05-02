@@ -18,7 +18,6 @@ import {
 } from "@/components/ui/table";
 import type {
   GroupMemberStats,
-  GroupBindingStats,
 } from "@/lib/journey-content/group-stats";
 import type {
   GroupMemberRow,

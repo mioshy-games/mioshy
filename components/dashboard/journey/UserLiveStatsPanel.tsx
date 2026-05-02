@@ -94,7 +94,7 @@ export function UserLiveStatsPanel({
                 </div>
                 {p.reason_note ? (
                   <p className="text-muted-foreground mt-1 italic">
-                    "{p.reason_note}"
+                    &quot;{p.reason_note}&quot;
                   </p>
                 ) : null}
                 {p.pushed_by_label ? (
