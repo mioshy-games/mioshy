@@ -48,6 +48,13 @@ export function BetweenUsStorefront({
   const [selectedCategory, setSelectedCategory] = useState<string | "all">("all");
   const [selectedTag, setSelectedTag] = useState<string | "all">("all");
 
+  // Filter out empty categories and tags (those with no cards)
+  const activeCategoryIds = new Set(cards.flatMap((c) => c.category_ids));
+  const activeTagIds = new Set(cards.flatMap((c) => c.tag_ids));
+
+  const visibleCategories = categories.filter((c) => activeCategoryIds.has(c.id));
+  const visibleTags = tags.filter((t) => activeTagIds.has(t.id));
+
   const filtered = useMemo(() => {
     return cards.filter((c) => {
       if (selectedCategory !== "all" && !c.category_ids.includes(selectedCategory)) return false;
@@ -125,14 +132,14 @@ export function BetweenUsStorefront({
       ) : null}
 
       {/* Filters */}
-      {categories.length > 0 || tags.length > 0 ? (
+      {visibleCategories.length > 0 || visibleTags.length > 0 ? (
         <section className="mt-12 space-y-3">
-          {categories.length > 0 ? (
+          {visibleCategories.length > 0 ? (
             <FilterRow
               label={isHe ? "קטגוריות" : "Categories"}
               items={[
                 { id: "all", label: isHe ? "הכל" : "All", color_hex: null },
-                ...categories.map((c) => ({
+                ...visibleCategories.map((c) => ({
                   id: c.id,
                   label: isHe ? c.name_he : c.name_en || c.name_he,
                   color_hex: c.color_hex,
@@ -142,12 +149,12 @@ export function BetweenUsStorefront({
               onSelect={(v) => setSelectedCategory(v as string)}
             />
           ) : null}
-          {tags.length > 0 ? (
+          {visibleTags.length > 0 ? (
             <FilterRow
               label={isHe ? "תגיות" : "Tags"}
               items={[
                 { id: "all", label: isHe ? "הכל" : "All", color_hex: null },
-                ...tags.map((t) => ({
+                ...visibleTags.map((t) => ({
                   id: t.id,
                   label: isHe ? t.name_he : t.name_en || t.name_he,
                   color_hex: t.color_hex,
@@ -155,6 +162,7 @@ export function BetweenUsStorefront({
               ]}
               selected={selectedTag}
               onSelect={(v) => setSelectedTag(v as string)}
+              isTagRow
             />
           ) : null}
         </section>
@@ -191,15 +199,17 @@ function FilterRow({
   items,
   selected,
   onSelect,
+  isTagRow = false,
 }: {
   label: string;
   items: { id: string; label: string; color_hex: string | null }[];
   selected: string;
   onSelect: (id: string) => void;
+  isTagRow?: boolean;
 }) {
   return (
     <div>
-      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-white/60">
+      <p className={`mb-2 text-xs font-semibold uppercase tracking-wide ${isTagRow ? "text-white" : "text-white/60"}`}>
         {label}
       </p>
       <div className="flex flex-wrap gap-2">
@@ -213,7 +223,9 @@ function FilterRow({
               className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs transition ${
                 isActive
                   ? "border-white/40 bg-white/20 text-white"
-                  : "border-white/15 bg-white/5 text-white/75 hover:bg-white/10"
+                  : isTagRow
+                    ? "border-white/30 bg-white/10 text-white hover:bg-white/15"
+                    : "border-white/15 bg-white/5 text-white/75 hover:bg-white/10"
               }`}
             >
               {it.color_hex ? (

@@ -92,44 +92,33 @@ export function SiteHeader({
   unreadNotifications = 0,
 }: {
   isAuthed?: boolean;
-  /** Authenticated users see ONLY the pillars they own. Anonymous
-   *  users (entitlements === null) see all three marketing pillars. */
+  /** Authenticated users still see all three pillars; entitlements only
+   *  decide whether each pillar links to its private dashboard or to its
+   *  marketing page. Anonymous users always see the marketing pages. */
   entitlements?: SiteHeaderEntitlements | null;
   /** v3 slice 10 — drives the bell badge for signed-in users. */
   unreadNotifications?: number;
 }) {
-  // Resolve which pillar links the current visitor sees.
+  // All three pillars are ALWAYS rendered — for both anonymous and
+  // authenticated visitors, on desktop and mobile. Only the destination
+  // changes based on entitlements:
   //
-  //   - Anonymous → all three marketing pillars.
-  //   - Authenticated, has entitlement for pillar X → /my/X (private).
-  //   - Authenticated, NO entitlement for pillar X → pillar HIDDEN
-  //     entirely (per spec §11 — header should not be a marketing
-  //     surface once the user is signed in).
+  //   - Anonymous OR authenticated without entitlement → marketingHref
+  //     (e.g. /games). The user can still discover the product.
+  //   - Authenticated WITH entitlement → authedHref (e.g. /my/games).
   //
-  // We compute a derived list of `{href, tKey, Icon, accent}` to render,
-  // so the rendering loop further down stays simple.
-  const visiblePillars = PILLARS.flatMap((p) => {
-    if (!isAuthed) {
-      return [
-        {
-          href: p.marketingHref,
-          tKey: p.tKey,
-          Icon: p.Icon,
-          accent: p.accent,
-        },
-      ];
-    }
-    // Authenticated — only render the pillar if the user owns it.
-    const owns = entitlements ? entitlements[p.tKey] : false;
-    if (!owns) return [];
-    return [
-      {
-        href: p.authedHref,
-        tKey: p.tKey,
-        Icon: p.Icon,
-        accent: p.accent,
-      },
-    ];
+  // Hiding pillars from non-entitled users (the previous behaviour)
+  // turned out to make the header feel inconsistent across sessions and
+  // hid the product surface from existing customers who might want to
+  // upgrade.
+  const visiblePillars = PILLARS.map((p) => {
+    const owns = isAuthed && entitlements ? entitlements[p.tKey] : false;
+    return {
+      href: owns ? p.authedHref : p.marketingHref,
+      tKey: p.tKey,
+      Icon: p.Icon,
+      accent: p.accent,
+    };
   });
   const locale = useLocale();
   const pathname = usePathname();
