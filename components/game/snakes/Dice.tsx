@@ -85,7 +85,10 @@ export function Dice({
   disabled,
   result,
   label = "הטל/י קובייה",
-  tumblingFor = 900,
+  // 700ms keeps the tumble unmistakably visible without dragging the rhythm
+  // when paired with the parent's read-pause window in SnakesGameBoard.
+  tumblingFor = 700,
+  presenting = false,
 }: {
   /** Called when the user taps the die. Should eventually cause `result` to change. */
   onRoll: () => void | Promise<void>;
@@ -99,6 +102,10 @@ export function Dice({
   label?: string;
   /** How long to show random faces before snapping to `result`. */
   tumblingFor?: number;
+  /** True during the parent's dice-presentation window. Suppresses the
+   *  misleading "waiting for your turn" disabled-fallback label that would
+   *  otherwise appear during the read pause after the tumble settles. */
+  presenting?: boolean;
 }) {
   const [tumbling, setTumbling] = useState(false);
   const [displayValue, setDisplayValue] = useState<DiceResult>(result ?? 1);
@@ -169,7 +176,15 @@ export function Dice({
       </motion.button>
 
       <div className="text-sm font-semibold tracking-wide text-amber-200/80 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
-        {tumbling ? "…" : canRoll ? label : disabled ? "ממתין לתור שלך" : label}
+        {tumbling
+          ? "…"
+          : presenting
+            ? "" // parent owns the moment; misleading to say "waiting for your turn"
+            : canRoll
+              ? label
+              : disabled
+                ? "ממתין לתור שלך"
+                : label}
       </div>
     </div>
   );

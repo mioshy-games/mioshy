@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
@@ -11,10 +11,18 @@ import { QuestionModal } from "@/components/game/snakes/QuestionModal";
 import { GamePageBackground } from "@/components/game/GamePageBackground";
 import { useSnakesGame } from "@/hooks/useSnakesGame";
 import type { GameAdapter } from "@/lib/snakes/adapter";
-import type { GamePlayer } from "@/lib/snakes/types";
+import type { DiceResult, GamePlayer } from "@/lib/snakes/types";
 import { cellToBoardPercent } from "@/lib/snakes/boardUtils";
 import { playSound } from "@/lib/sounds";
 import { cn } from "@/lib/utils";
+
+// Dice presentation timing. Tumble + read pause must add up to roughly the
+// budget agreed in the redesign brief (~1.2s) — long enough that any player
+// can clearly read the number, short enough that the rhythm doesn't drag
+// after several turns. Bump READ_PAUSE_MS if playtesting shows it's too quick.
+const TUMBLE_MS = 700;
+const READ_PAUSE_MS = 500;
+const PRESENTATION_MS = TUMBLE_MS + READ_PAUSE_MS;
 
 /**
  * SnakesGameBoard - adapter-agnostic game screen.
@@ -79,6 +87,11 @@ export function SnakesGameBoard({
   const [visualPositions, setVisualPositions] = useState<Record<string, number>>({});
   const [isWalking, setIsWalking] = useState(false);
   const [arrivingPlayerId, setArrivingPlayerId] = useState<string | null>(null);
+  // Held during the dice presentation window (tumble + read pause). When
+  // set, the dice is rendered to BOTH the roller and the opponent showing
+  // this value, and the question modal / token walk are suppressed until
+  // the window closes.
+  const [dicePresentation, setDicePresentation] = useState<DiceResult | null>(null);
   // Ref version of isWalking so synchronous effects can read current value
   // without being blocked by React's render cycle.
   const isWalkingRef = useRef(false);
@@ -86,6 +99,43 @@ export function SnakesGameBoard({
   const prevPositionsRef = useRef<Record<string, number> | null>(null);
   // Tracks the last turnCount we animated so we don't replay on re-renders.
   const prevTurnCountRef = useRef<number | null>(null);
+
+  // ── Timer tracking for unmount cleanup ──────────────────────────────────
+  // The walk animation schedules nested setTimeouts (pre-bounce → arrival
+  // bounce → confetti follow-up) that previously fired on unmounted
+  // components when the user exited mid-walk. Every setTimeout / setInterval
+  // we create goes into one of these refs so the unmount cleanup can
+  // cancel the lot.
+  const pendingTimeoutsRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
+  const pendingIntervalsRef = useRef<Set<ReturnType<typeof setInterval>>>(new Set());
+
+  const trackTimeout = useCallback((id: ReturnType<typeof setTimeout>) => {
+    pendingTimeoutsRef.current.add(id);
+    return id;
+  }, []);
+  const clearTrackedTimeout = useCallback((id: ReturnType<typeof setTimeout>) => {
+    clearTimeout(id);
+    pendingTimeoutsRef.current.delete(id);
+  }, []);
+  const trackInterval = useCallback((id: ReturnType<typeof setInterval>) => {
+    pendingIntervalsRef.current.add(id);
+    return id;
+  }, []);
+  const clearTrackedInterval = useCallback((id: ReturnType<typeof setInterval>) => {
+    clearInterval(id);
+    pendingIntervalsRef.current.delete(id);
+  }, []);
+
+  useEffect(() => {
+    const timeouts = pendingTimeoutsRef.current;
+    const intervals = pendingIntervalsRef.current;
+    return () => {
+      timeouts.forEach(clearTimeout);
+      timeouts.clear();
+      intervals.forEach(clearInterval);
+      intervals.clear();
+    };
+  }, []);
 
   // Pass-the-phone toast + gentle turn indicator
   useEffect(() => {
@@ -101,17 +151,36 @@ export function SnakesGameBoard({
           ? `התור של ${currentPlayer.user_name}`
           : `${currentPlayer.user_name}'s turn`;
     setToast(msg);
-    const tm = setTimeout(() => setToast(null), 2000);
-    return () => clearTimeout(tm);
-  }, [currentPlayer, mode, isHe]);
+    const tm = trackTimeout(setTimeout(() => {
+      pendingTimeoutsRef.current.delete(tm);
+      setToast(null);
+    }, 2000));
+    return () => clearTrackedTimeout(tm);
+  }, [currentPlayer, mode, isHe, trackTimeout, clearTrackedTimeout]);
 
   // ── Idle sync: keep visualPositions up to date when NOT walking ──────────
   // On mount or after a walk completes, mirror the authoritative positions so
   // non-moving players (positions unchanged by the walk) stay correct, and so
   // that prevPositionsRef is seeded for the next turn's walk.
+  //
+  // Critical: bail if state.turnCount has advanced past what we've animated.
+  // The walk effect (declared after this one) hasn't run yet at this point,
+  // so prevTurnCountRef still holds the OLD turn count. Without this guard,
+  // we'd snap visualPositions to the post-roll/snake/ladder destination
+  // before the dice presentation even begins — which would visibly skip the
+  // step-by-step walk and the read pause.
   useEffect(() => {
     if (!state?.positions) return;
     if (isWalkingRef.current) return; // walk effect owns positions during walk
+    if (
+      prevTurnCountRef.current !== null &&
+      (state.turnCount ?? 0) > prevTurnCountRef.current
+    ) {
+      // A new turn just landed — leave visualPositions where the walk
+      // effect can pick them up. Otherwise the token would teleport ahead
+      // of (and during) the dice tumble.
+      return;
+    }
     setVisualPositions({ ...state.positions });
     if (prevPositionsRef.current === null) {
       prevPositionsRef.current = { ...state.positions };
@@ -123,6 +192,13 @@ export function SnakesGameBoard({
   }, [state?.positions]);
 
   // ── Walk effect: fires once per new dice roll ─────────────────────────────
+  // Two stages:
+  //   1. Dice presentation (PRESENTATION_MS). The Dice tumbles + settles +
+  //      a brief read pause so the player can clearly see the rolled number.
+  //      During this window the question modal stays closed and the token
+  //      stays put. Both roller and opponent see the same dice value.
+  //   2. Token walk. Step-by-step hop across intermediate tiles, then a
+  //      snap to the final position (which handles snake/ladder teleport).
   useEffect(() => {
     if (!state || !config) return;
     const turnCount = state.turnCount ?? 0;
@@ -150,98 +226,142 @@ export function SnakesGameBoard({
       return;
     }
 
-    const prevPos = prevPositionsRef.current?.[playerId] ?? 1;
-    const finalPos = state.positions[playerId] ?? 1;
-    const boardSize = config.boardSize || 100;
+    // Don't advance prevTurnCountRef yet: in React StrictMode (Next.js dev)
+    // every effect mount/cleanup/remounts. If we advanced it here, the
+    // second mount would see `turnCount <= prevTurnCountRef.current` and
+    // bail — leaving the walk un-scheduled because the cleanup cancelled
+    // the first mount's timer. Instead, advance the ref inside the timer
+    // callback once the walk actually begins, after which a re-fire is
+    // protected by the same comparison.
 
-    // Build the naive walk path (no snake/ladder resolution).
-    // The visual token hops from prevPos+1 … min(prevPos+dice, boardSize).
-    // After the interval finishes we snap to finalPos - if a snake/ladder
-    // is involved, PlayersOverlay's spring glides the token there naturally.
-    const naiveEnd = Math.min(prevPos + (diceResult as number), boardSize);
-    const steps: number[] = [];
-    for (let c = prevPos + 1; c <= naiveEnd; c++) steps.push(c);
+    // ── Stage 1: dice presentation ─────────────────────────────────────────
+    setDicePresentation(diceResult);
 
-    // Advance turn counter early so the guard above doesn't re-fire
-    prevTurnCountRef.current = turnCount;
+    // Local handles for every timer we schedule in this cycle. The cleanup
+    // function below must cancel all of them if the effect re-fires (e.g.
+    // a new turn lands very fast) or if the component unmounts mid-walk.
+    let interval: ReturnType<typeof setInterval> | null = null;
+    let safetyTimer: ReturnType<typeof setTimeout> | null = null;
+    let preBounceTimer: ReturnType<typeof setTimeout> | null = null;
+    let arrivalTimer: ReturnType<typeof setTimeout> | null = null;
+    let confettiFollowUpTimer: ReturnType<typeof setTimeout> | null = null;
 
-    if (steps.length === 0) {
-      // Already at destination - just sync
-      setVisualPositions((prev) => ({ ...prev, [playerId]: finalPos }));
-      prevPositionsRef.current = { ...(prevPositionsRef.current ?? {}), [playerId]: finalPos };
-      return;
-    }
+    const presentationTimer = trackTimeout(setTimeout(() => {
+      pendingTimeoutsRef.current.delete(presentationTimer);
+      // Advance the turn ref only when the walk actually fires. Until this
+      // point a StrictMode remount can re-schedule the same turn; after
+      // this point the early-return guard at the top of the effect will
+      // dedupe any further re-renders.
+      prevTurnCountRef.current = turnCount;
+      setDicePresentation(null);
 
-    const STEP_MS = 370; // ms per tile hop - spring settles in ~200 ms at stiffness 620
-    // Hard upper bound: max 6 steps + 480ms teleport pause + 520ms bounce = ~3.5s.
-    // If something goes wrong the modal must never stay blocked forever.
-    const SAFETY_MS = steps.length * STEP_MS + 1200;
+      // ── Stage 2: token walk ─────────────────────────────────────────────
+      const prevPos = prevPositionsRef.current?.[playerId] ?? 1;
+      const finalPos = state.positions[playerId] ?? 1;
+      const boardSize = config.boardSize || 100;
 
-    isWalkingRef.current = true;
-    setIsWalking(true);
-    setArrivingPlayerId(null);
+      // Build the naive walk path (no snake/ladder resolution).
+      // The visual token hops from prevPos+1 … min(prevPos+dice, boardSize).
+      // After the interval finishes we snap to finalPos - if a snake/ladder
+      // is involved, PlayersOverlay's spring glides the token there naturally.
+      const naiveEnd = Math.min(prevPos + (diceResult as number), boardSize);
+      const steps: number[] = [];
+      for (let c = prevPos + 1; c <= naiveEnd; c++) steps.push(c);
 
-    const safetyTimer = setTimeout(() => {
-      isWalkingRef.current = false;
-      setIsWalking(false);
-      setArrivingPlayerId(null);
-      setVisualPositions((prev) => ({ ...prev, [playerId]: finalPos }));
-      prevPositionsRef.current = { ...(prevPositionsRef.current ?? {}), [playerId]: finalPos };
-    }, SAFETY_MS);
-
-    let stepIdx = 0;
-    const interval = setInterval(() => {
-      if (stepIdx < steps.length) {
-        const cell = steps[stepIdx];
-        setVisualPositions((prev) => ({ ...prev, [playerId]: cell }));
-        playSound("move");
-        stepIdx++;
-      } else {
-        clearInterval(interval);
-        clearTimeout(safetyTimer); // walk completed normally - disarm the watchdog
-
-        // Snap to final position (handles snake/ladder teleport).
-        // The existing spring in PlayersOverlay glides the token there.
+      if (steps.length === 0) {
+        // Already at destination - just sync
         setVisualPositions((prev) => ({ ...prev, [playerId]: finalPos }));
         prevPositionsRef.current = { ...(prevPositionsRef.current ?? {}), [playerId]: finalPos };
-
-        // For snake/ladder, give the spring ~450 ms to visually travel before
-        // the arrival bounce; for a plain landing, a short pause feels right.
-        const hasTeleport = finalPos !== naiveEnd;
-        const preBounceMs = hasTeleport ? 480 : 80;
-
-        setTimeout(() => {
-          setArrivingPlayerId(playerId);
-
-          setTimeout(() => {
-            setArrivingPlayerId(null);
-            isWalkingRef.current = false;
-            setIsWalking(false);
-
-            // Play event sound at the moment the token settles
-            const lastLog = state.log[state.log.length - 1];
-            if (lastLog?.type === "snake") {
-              playSound("snake");
-            } else if (lastLog?.type === "ladder") {
-              playSound("ladder");
-              // Fire the ladder confetti now that the token is at the top
-              if (boardSectionRef.current) {
-                const r = boardSectionRef.current.getBoundingClientRect();
-                const o = {
-                  x: (r.left + r.width / 2) / window.innerWidth,
-                  y: (r.top + r.height * 0.45) / window.innerHeight,
-                };
-                const colors = ["#fde68a", "#fb923c", "#f472b6", "#a78bfa", "#34d399"];
-                confetti({ particleCount: 55, spread: 75, origin: o, colors, startVelocity: 32, gravity: 1.1, scalar: 0.9, ticks: 90 });
-                setTimeout(() => confetti({ particleCount: 35, spread: 55, origin: o, colors, startVelocity: 22, gravity: 1.3, scalar: 0.75, ticks: 70 }), 180);
-              }
-            }
-          }, 520);
-        }, preBounceMs);
+        return;
       }
-    }, STEP_MS);
 
-    return () => { clearInterval(interval); clearTimeout(safetyTimer); };
+      const STEP_MS = 370; // ms per tile hop - spring settles in ~200 ms at stiffness 620
+      // Hard upper bound: max 6 steps + 480ms teleport pause + 520ms bounce = ~3.5s.
+      // If something goes wrong the modal must never stay blocked forever.
+      const SAFETY_MS = steps.length * STEP_MS + 1200;
+
+      isWalkingRef.current = true;
+      setIsWalking(true);
+      setArrivingPlayerId(null);
+
+      safetyTimer = trackTimeout(setTimeout(() => {
+        if (safetyTimer) pendingTimeoutsRef.current.delete(safetyTimer);
+        isWalkingRef.current = false;
+        setIsWalking(false);
+        setArrivingPlayerId(null);
+        setVisualPositions((prev) => ({ ...prev, [playerId]: finalPos }));
+        prevPositionsRef.current = { ...(prevPositionsRef.current ?? {}), [playerId]: finalPos };
+      }, SAFETY_MS));
+
+      let stepIdx = 0;
+      interval = trackInterval(setInterval(() => {
+        if (stepIdx < steps.length) {
+          const cell = steps[stepIdx];
+          setVisualPositions((prev) => ({ ...prev, [playerId]: cell }));
+          playSound("move");
+          stepIdx++;
+        } else {
+          if (interval) clearTrackedInterval(interval);
+          if (safetyTimer) clearTrackedTimeout(safetyTimer); // walk completed normally - disarm the watchdog
+
+          // Snap to final position (handles snake/ladder teleport).
+          // The existing spring in PlayersOverlay glides the token there.
+          setVisualPositions((prev) => ({ ...prev, [playerId]: finalPos }));
+          prevPositionsRef.current = { ...(prevPositionsRef.current ?? {}), [playerId]: finalPos };
+
+          // For snake/ladder, give the spring ~450 ms to visually travel before
+          // the arrival bounce; for a plain landing, a short pause feels right.
+          const hasTeleport = finalPos !== naiveEnd;
+          const preBounceMs = hasTeleport ? 480 : 80;
+
+          preBounceTimer = trackTimeout(setTimeout(() => {
+            if (preBounceTimer) pendingTimeoutsRef.current.delete(preBounceTimer);
+            setArrivingPlayerId(playerId);
+
+            arrivalTimer = trackTimeout(setTimeout(() => {
+              if (arrivalTimer) pendingTimeoutsRef.current.delete(arrivalTimer);
+              setArrivingPlayerId(null);
+              isWalkingRef.current = false;
+              setIsWalking(false);
+
+              // Play event sound at the moment the token settles
+              const lastLog = state.log[state.log.length - 1];
+              if (lastLog?.type === "snake") {
+                playSound("snake");
+              } else if (lastLog?.type === "ladder") {
+                playSound("ladder");
+                // Fire the ladder confetti now that the token is at the top
+                if (boardSectionRef.current) {
+                  const r = boardSectionRef.current.getBoundingClientRect();
+                  const o = {
+                    x: (r.left + r.width / 2) / window.innerWidth,
+                    y: (r.top + r.height * 0.45) / window.innerHeight,
+                  };
+                  const colors = ["#fde68a", "#fb923c", "#f472b6", "#a78bfa", "#34d399"];
+                  confetti({ particleCount: 55, spread: 75, origin: o, colors, startVelocity: 32, gravity: 1.1, scalar: 0.9, ticks: 90 });
+                  confettiFollowUpTimer = trackTimeout(setTimeout(() => {
+                    if (confettiFollowUpTimer) pendingTimeoutsRef.current.delete(confettiFollowUpTimer);
+                    confetti({ particleCount: 35, spread: 55, origin: o, colors, startVelocity: 22, gravity: 1.3, scalar: 0.75, ticks: 70 });
+                  }, 180));
+                }
+              }
+            }, 520));
+          }, preBounceMs));
+        }
+      }, STEP_MS));
+    }, PRESENTATION_MS));
+
+    return () => {
+      // Cancel everything from the current cycle. Component-unmount cleanup
+      // (the empty-deps effect above) is a backstop for anything still in
+      // the tracker sets.
+      clearTrackedTimeout(presentationTimer);
+      if (interval) clearTrackedInterval(interval);
+      if (safetyTimer) clearTrackedTimeout(safetyTimer);
+      if (preBounceTimer) clearTrackedTimeout(preBounceTimer);
+      if (arrivalTimer) clearTrackedTimeout(arrivalTimer);
+      if (confettiFollowUpTimer) clearTrackedTimeout(confettiFollowUpTimer);
+    };
   // Only fire when a new turn has been committed to Supabase
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state?.turnCount]);
@@ -269,14 +389,20 @@ export function SnakesGameBoard({
       const o = getBoardOrigin();
       const colors = ["#fde68a", "#fb923c", "#f472b6", "#a78bfa", "#34d399"];
       confetti({ particleCount: 90, spread: 80, origin: o, colors, scalar: 1.1, startVelocity: 42 });
-      setTimeout(() => confetti({ particleCount: 60, spread: 100, origin: o, colors, scalar: 0.9, startVelocity: 30 }), 300);
-      setTimeout(() => confetti({ particleCount: 40, spread: 60, origin: o, colors, scalar: 1.2, startVelocity: 50 }), 600);
+      const winFollowUp1 = trackTimeout(setTimeout(() => {
+        pendingTimeoutsRef.current.delete(winFollowUp1);
+        confetti({ particleCount: 60, spread: 100, origin: o, colors, scalar: 0.9, startVelocity: 30 });
+      }, 300));
+      const winFollowUp2 = trackTimeout(setTimeout(() => {
+        pendingTimeoutsRef.current.delete(winFollowUp2);
+        confetti({ particleCount: 40, spread: 60, origin: o, colors, scalar: 1.2, startVelocity: 50 });
+      }, 600));
     }
     if (state.phase !== "ended") {
       winFiredRef.current = false;
     }
     lastPhaseRef.current = state.phase;
-  }, [state]);
+  }, [state, trackTimeout]);
 
   // Local confetti burst when any player climbs a ladder.
   // We debounce by tracking log length so the same entry never re-triggers on
@@ -320,8 +446,11 @@ export function SnakesGameBoard({
 
     // Two quick pops - feels punchy without hijacking the whole screen
     confetti({ particleCount: 55, spread: 75, origin: o, colors, startVelocity: 32, gravity: 1.1, scalar: 0.9, ticks: 90 });
-    setTimeout(() => confetti({ particleCount: 35, spread: 55, origin: o, colors, startVelocity: 22, gravity: 1.3, scalar: 0.75, ticks: 70 }), 180);
-  }, [state]);
+    const ladderFollowUp = trackTimeout(setTimeout(() => {
+      pendingTimeoutsRef.current.delete(ladderFollowUp);
+      confetti({ particleCount: 35, spread: 55, origin: o, colors, startVelocity: 22, gravity: 1.3, scalar: 0.75, ticks: 70 });
+    }, 180));
+  }, [state, trackTimeout]);
 
   // Players split into "active" (locked in - has claimed a character) and
   // "pending approval" (joined but not yet confirmed their identity). The
@@ -338,6 +467,20 @@ export function SnakesGameBoard({
     }
     return { activePlayers: active, pendingPlayers: pending };
   }, [players]);
+
+  // Synchronous "is the post-roll animation sequence in progress?" check.
+  // dicePresentation/isWalking are React state, so they're not yet updated
+  // in the very first render after a state commit — leaving a one-frame
+  // window where state.phase === "question" but neither flag is set, which
+  // briefly flashes the question modal open before the dice tumble starts.
+  // prevTurnCountRef is mutated synchronously inside the walk effect, so
+  // comparing it to state.turnCount catches that one-frame race.
+  const turnAnimationActive =
+    isWalking ||
+    dicePresentation !== null ||
+    (state != null &&
+      prevTurnCountRef.current !== null &&
+      (state.turnCount ?? 0) > prevTurnCountRef.current);
 
   if (!room || !state || !config) {
     return (
@@ -440,11 +583,13 @@ export function SnakesGameBoard({
               isWalking={isWalking}
             />
 
-            {/* Question modal - only opens after the walk animation finishes so
-                the player sees the full journey before the question card erupts
-                from their final tile. */}
+            {/* Question modal - only opens once the entire post-roll
+                animation sequence (dice tumble + read pause + token walk +
+                arrival bounce) has finished. The synchronous turnAnimationActive
+                check above prevents a one-frame flash of the modal between
+                the state commit and the walk effect firing. */}
             <QuestionModal
-              open={state.phase === "question" && !isWalking}
+              open={state.phase === "question" && !turnAnimationActive}
               question={state.currentQuestion}
               playerName={currentPlayer?.user_name ?? ""}
               avatar={currentPlayer?.avatar ?? "💜"}
@@ -469,7 +614,7 @@ export function SnakesGameBoard({
           aria-label={t("diceSurfaceLabel")}
         >
           <AnimatePresence mode="wait">
-            {isMyTurn && state.phase === "waiting_flip" ? (
+            {(isMyTurn && state.phase === "waiting_flip") || turnAnimationActive ? (
               <motion.div
                 key="dice-desktop"
                 initial={{ opacity: 0, scale: 0.7 }}
@@ -482,8 +627,19 @@ export function SnakesGameBoard({
                     playSound("dice");
                     await roll();
                   }}
-                  disabled={state.phase !== "waiting_flip"}
-                  result={state.lastDiceResult ?? null}
+                  // Disabled during the presentation window (or when it's not
+                  // your turn) so a roll can't be triggered while we're
+                  // showing the result of the previous one.
+                  disabled={
+                    dicePresentation !== null ||
+                    !isMyTurn ||
+                    state.phase !== "waiting_flip"
+                  }
+                  // During the presentation window, both roller and opponent
+                  // see the same dice value; once the window closes, the
+                  // dice unmounts (or returns to the waiting face).
+                  result={dicePresentation ?? state.lastDiceResult ?? null}
+                  presenting={dicePresentation !== null}
                   playerColor={currentPlayer?.color ?? "#f59e0b"}
                 />
               </motion.div>
@@ -637,7 +793,7 @@ export function SnakesGameBoard({
             it's the user's turn. On desktop the dice lives in the white
             surface above. */}
         <AnimatePresence>
-          {isMyTurn && state.phase === "waiting_flip" ? (
+          {(isMyTurn && state.phase === "waiting_flip") || turnAnimationActive ? (
             <motion.div
               key="dice-dock-mobile"
               initial={{ y: 140, opacity: 0, scale: 0.7 }}
@@ -652,8 +808,13 @@ export function SnakesGameBoard({
                     playSound("dice");
                     await roll();
                   }}
-                  disabled={state.phase !== "waiting_flip"}
-                  result={state.lastDiceResult ?? null}
+                  disabled={
+                    dicePresentation !== null ||
+                    !isMyTurn ||
+                    state.phase !== "waiting_flip"
+                  }
+                  result={dicePresentation ?? state.lastDiceResult ?? null}
+                  presenting={dicePresentation !== null}
                   playerColor={currentPlayer?.color ?? "#f59e0b"}
                 />
               </div>
