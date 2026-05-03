@@ -96,7 +96,7 @@ export function QuestionModal({
 
               <div className="mt-5 text-xl font-bold leading-relaxed">
                 {question?.text_he ?? "—"}
-              </div>-
+              </div>
 
               <div className="mt-6">
                 <button
