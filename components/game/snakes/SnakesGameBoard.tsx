@@ -550,13 +550,16 @@ export function SnakesGameBoard({
               {t("gameSubtitle")}
             </div>
           </div>
-          {/* On mobile the exit lives inline in the header. On desktop the
-              red exit button sits at the bottom of the sidebar (see below). */}
+          {/* On mobile the exit lives inline in the header. On desktop it
+              sits at the bottom of the sidebar (see below). The exit is a
+              tertiary action — tinted to a quiet neutral so it never
+              competes with the dice for attention. */}
           {onExit ? (
             <button
               type="button"
-              className="rounded-full border border-rose-400/40 bg-rose-500/15 px-3 py-1.5 text-xs font-bold text-rose-100 backdrop-blur transition hover:bg-rose-500/25 md:hidden"
+              className="rounded-full px-2.5 py-1 text-xs font-medium text-amber-50/55 transition hover:text-amber-50/90 hover:bg-white/5 md:hidden"
               onClick={() => void onExit()}
+              aria-label={t("leave")}
             >
               {t("leave")}
             </button>
@@ -771,17 +774,17 @@ export function SnakesGameBoard({
             </div>
           ) : null}
 
-          {/* Red zone - exit button (desktop). Tied to the sidebar so the
-              board area stays clean. Mobile gets its exit inside the header. */}
+          {/* Exit button (desktop). Demoted to a tertiary text link so the
+              dice stays the unmistakable primary CTA. Mobile gets its exit
+              inside the header. */}
           {onExit ? (
             <button
               type="button"
               onClick={() => void onExit()}
               className={cn(
-                "mt-auto hidden md:block",
-                "rounded-2xl border border-rose-400/40 bg-rose-500/15 px-4 py-2.5",
-                "text-sm font-extrabold text-rose-100 backdrop-blur transition",
-                "hover:bg-rose-500/25",
+                "mt-auto hidden md:inline-flex self-start",
+                "rounded-lg px-2.5 py-1 text-xs font-medium",
+                "text-slate-400/80 transition hover:text-slate-100 hover:bg-white/5",
               )}
             >
               {t("leave")}
