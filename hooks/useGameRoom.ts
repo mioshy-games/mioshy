@@ -69,7 +69,15 @@ export function useGameRoom(initialRoomCode?: string): UseGameRoom {
   const [error, setError] = useState<string | null>(null);
   const [myPlayerId, setMyPlayerId] = useState<string | null>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Single safety-net refetch scheduled after subscribe; cleared as soon
+  // as any realtime event arrives. NOT a periodic poll.
+  const fallbackRefetchRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Set true the first time a realtime postgres_changes payload lands —
+  // used to skip the fallback refetch when realtime is healthy.
+  const realtimeReceivedRef = useRef(false);
+  // Warn once per page session so production tail can tell us whether the
+  // fallback is dead code or a needed safety net.
+  const fallbackWarnedRef = useRef(false);
 
   // ── Keep the Zustand store in sync with local state ───────────────────────
   const store = useGameRoomStore();
@@ -88,9 +96,9 @@ export function useGameRoom(initialRoomCode?: string): UseGameRoom {
       void supabase.removeChannel(channelRef.current);
       channelRef.current = null;
     }
-    if (pollRef.current) {
-      clearInterval(pollRef.current);
-      pollRef.current = null;
+    if (fallbackRefetchRef.current) {
+      clearTimeout(fallbackRefetchRef.current);
+      fallbackRefetchRef.current = null;
     }
   }, [supabase]);
 
@@ -119,6 +127,8 @@ export function useGameRoom(initialRoomCode?: string): UseGameRoom {
   const subscribe = useCallback(
     async (roomId: string) => {
       cleanupChannel();
+      realtimeReceivedRef.current = false;
+
       const ch = supabase.channel(`room:${roomId}`);
       channelRef.current = ch;
 
@@ -126,6 +136,11 @@ export function useGameRoom(initialRoomCode?: string): UseGameRoom {
         "postgres_changes",
         { event: "*", schema: "public", table: "game_rooms", filter: `id=eq.${roomId}` },
         (payload) => {
+          realtimeReceivedRef.current = true;
+          if (fallbackRefetchRef.current) {
+            clearTimeout(fallbackRefetchRef.current);
+            fallbackRefetchRef.current = null;
+          }
           if (payload.eventType === "DELETE") {
             setRoom(null);
             setPlayers([]);
@@ -140,17 +155,41 @@ export function useGameRoom(initialRoomCode?: string): UseGameRoom {
         "postgres_changes",
         { event: "*", schema: "public", table: "game_players", filter: `room_id=eq.${roomId}` },
         async () => {
+          realtimeReceivedRef.current = true;
+          if (fallbackRefetchRef.current) {
+            clearTimeout(fallbackRefetchRef.current);
+            fallbackRefetchRef.current = null;
+          }
           await refetch(roomId);
         },
       );
 
       await ch.subscribe();
 
-      // Fallback polling in case Realtime isn't delivering events in this environment.
+      // Initial sync — realtime only delivers CHANGES, so we always need
+      // one explicit fetch to seed local state.
       await refetch(roomId);
-      pollRef.current = setInterval(() => {
+
+      // One-shot safety net: if no realtime event lands within 10s, the
+      // channel probably isn't delivering. Refetch once and warn so
+      // production can tell us whether this fallback is ever needed.
+      // Previously this was a 2-second `setInterval` that ran for the
+      // entire room lifetime regardless of realtime health, costing
+      // ~30 round-trips/minute and a full re-render cycle each tick.
+      fallbackRefetchRef.current = setTimeout(() => {
+        fallbackRefetchRef.current = null;
+        if (realtimeReceivedRef.current) return;
+        if (!fallbackWarnedRef.current) {
+          fallbackWarnedRef.current = true;
+          console.warn(
+            "[useGameRoom] realtime fallback engaged — no postgres_changes event " +
+              "received within 10s. If this fires regularly in production, the " +
+              "Supabase realtime channel likely isn't delivering for this room.",
+            { roomId },
+          );
+        }
         void refetch(roomId);
-      }, 2000);
+      }, 10_000);
     },
     [cleanupChannel, refetch, supabase],
   );
