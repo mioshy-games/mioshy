@@ -77,6 +77,11 @@ export async function POST(req: Request) {
 
   // ── Parse body ──────────────────────────────────────────────────────────────
   const body = await req.json().catch(() => ({}))
+  // NOTE: `country_code`, `language`, `is_israeli`, and `vat_rate_percent`
+  // are still accepted in the request body but are advisory only — the
+  // server-trusted values come from `geoFromRequest(req)` below. The
+  // audit log reads them off `body?.*` directly, so we don't destructure
+  // them as locals.
   const {
     email          = auth.user.email ?? "",
     name           = null,
@@ -84,14 +89,6 @@ export async function POST(req: Request) {
     product        = "journey",           // which pillar this purchase unlocks
     purchase_type  = "subscription",       // 'subscription' | 'one_time'
     target_game_id = null,                 // required when purchase_type='one_time'
-    // The four locale/tax fields below are still accepted in the body but
-    // are now ADVISORY ONLY — they're logged for audit so we can detect
-    // spoof attempts, but the values that actually drive pricing/VAT/
-    // language come from `trusted*` (IP-derived) below.
-    country_code   = "",
-    language       = "he",
-    is_israeli     = false,
-    vat_rate_percent = 0,
     lead_id        = null,
     return_path   = null,                  // optional post-payment landing path
   } = body
