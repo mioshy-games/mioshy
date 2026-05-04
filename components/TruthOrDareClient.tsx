@@ -460,7 +460,7 @@ export function TruthOrDareClient({
       {/* Utility buttons - mobile only (desktop uses fixed bottom corners) */}
       <div className="flex w-full items-center justify-between md:hidden">
         <Link
-          href="/products"
+          href="/games"
           className="rounded-full bg-white/15 px-4 py-2 text-sm font-medium text-white backdrop-blur hover:bg-white/25"
         >
           {t("back")}
@@ -696,7 +696,7 @@ export function TruthOrDareClient({
 
       {/* ── Desktop corner buttons — fixed position, hidden on mobile ── */}
       <Link
-        href="/products"
+        href="/games"
         className="hidden md:flex fixed bottom-5 right-5 z-30 rounded-full bg-white/15 px-4 py-2 text-sm font-medium text-white backdrop-blur hover:bg-white/25"
       >
         {t("back")}

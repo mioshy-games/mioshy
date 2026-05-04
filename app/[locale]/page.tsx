@@ -1,5 +1,6 @@
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/navigation";
+import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { GameRow, SiteSettingsRow } from "@/lib/types/database";
 import { unstable_noStore as noStore } from "next/cache";
@@ -69,6 +70,22 @@ export default async function HomePage({
   searchParams?: { [key: string]: string | string[] | undefined };
 }) {
   noStore();
+
+  // ── Authenticated users skip the marketing homepage and land on
+  //    "My Mioshy" (/my) — the personal hub. The marketing home is
+  //    a sales surface; once a user has signed in, returning them to
+  //    it on every visit makes the product feel transactional rather
+  //    than membership-driven. Logout flow redirects back to /${locale},
+  //    which lands here again — but now as anonymous → marketing shows.
+  //    Escape hatch: ?marketing=1 lets admins / QA preview the
+  //    marketing page while signed in.
+  if (searchParams?.marketing !== "1") {
+    const supabaseAuth = await createServerSupabaseClient();
+    const {
+      data: { user },
+    } = await supabaseAuth.auth.getUser();
+    if (user) redirect(`/${params.locale}/my`);
+  }
 
   // ── Feature flag: HomepageV2 is now the DEFAULT.
   //    The legacy homepage stays accessible via ?old=1 for emergency rollback

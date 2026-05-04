@@ -69,7 +69,7 @@ export function SiteFooter() {
                 {tMarketing("footer.linksTitle")}
               </p>
               <ul className="space-y-3 text-[15px] md:space-y-2.5 md:text-[11px]">
-                <li><Link href="/products" className="text-white/75 transition-colors hover:text-white md:text-white/60">{tMarketing("footer.links.games" as never)}</Link></li>
+                <li><Link href="/games" className="text-white/75 transition-colors hover:text-white md:text-white/60">{tMarketing("footer.links.games" as never)}</Link></li>
                 <li><Link href="/articles" className="text-white/75 transition-colors hover:text-white md:text-white/60">{tMarketing("footer.links.articles" as never)}</Link></li>
                 <li><Link href="/account"  className="text-white/75 transition-colors hover:text-white md:text-white/60">{tMarketing("footer.links.account" as never)}</Link></li>
               </ul>
