@@ -15,13 +15,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getOrCreateDeviceId } from "@/lib/device-id";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 // ── Translations ──────────────────────────────────────────────────────────────
 
@@ -119,28 +112,6 @@ const T = {
     },
   },
 } as const;
-
-// ── Country list ──────────────────────────────────────────────────────────────
-
-type CountryOption = { code: string; he: string; en: string };
-const COUNTRIES: CountryOption[] = [
-  { code: "IL", he: "ישראל",       en: "Israel"         },
-  { code: "US", he: "ארצות הברית", en: "United States"  },
-  { code: "GB", he: "בריטניה",     en: "United Kingdom" },
-  { code: "CA", he: "קנדה",        en: "Canada"         },
-  { code: "AU", he: "אוסטרליה",    en: "Australia"      },
-  { code: "DE", he: "גרמניה",      en: "Germany"        },
-  { code: "FR", he: "צרפת",        en: "France"         },
-  { code: "ES", he: "ספרד",        en: "Spain"          },
-  { code: "IT", he: "איטליה",      en: "Italy"          },
-  { code: "NL", he: "הולנד",       en: "Netherlands"    },
-  { code: "SE", he: "שוודיה",      en: "Sweden"         },
-  { code: "NO", he: "נורווגיה",    en: "Norway"         },
-  { code: "DK", he: "דנמרק",       en: "Denmark"        },
-  { code: "BR", he: "ברזיל",       en: "Brazil"         },
-  { code: "MX", he: "מקסיקו",      en: "Mexico"         },
-  { code: "IN", he: "הודו",        en: "India"          },
-];
 
 // ── Plan prices (display only - server resolves the real charge) ─────────────
 
@@ -388,14 +359,13 @@ export function SubscriptionModal({
   const [termsAccepted,    setTermsAccepted]    = useState(false);
 
   // paywall-mode fields
-  // TODO(remove): `stage`, `selectedPlan`, `countryCode`, `countryName`, the
+  // TODO(remove): `stage`, `countryCode`, `countryName`, the
   // reset useEffect, and the ipapi.co auto-detect useEffect below are dead
   // since the confirm stage was removed (clicking a plan now jumps straight
   // to Cardcom). Country/VAT are decided server-side from the request IP in
   // /api/billing/checkout/create — see lib/geo-from-request.ts. Leaving the
   // state in place as a harmless no-op for now to keep this diff minimal.
   const [stage, setStage]             = useState<"select" | "confirm">("select");
-  const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [countryCode, setCountryCode] = useState("");
   const [countryName, setCountryName] = useState("");
 
@@ -407,7 +377,6 @@ export function SubscriptionModal({
   useEffect(() => {
     if (!open) {
       setStage("select");
-      setSelectedPlan(null);
       setError(null);
     }
   }, [open]);
