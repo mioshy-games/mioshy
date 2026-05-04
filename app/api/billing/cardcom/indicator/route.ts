@@ -538,6 +538,13 @@ export async function GET(req: Request) {
   // null (e.g. inline signup without a geo question) we have to default
   // — Israeli purchases are by far the common case and we already know
   // is_israeli from the session.
+  //
+  // IMPORTANT — DO NOT re-derive country/locale from request headers here.
+  // This handler is a Cardcom webhook callback: it runs from Cardcom's
+  // IP, not the user's. The trusted source is the `checkout_sessions`
+  // row, which was populated at /api/billing/checkout/create from
+  // Vercel's `x-vercel-ip-country` (see lib/geo-from-request.ts). Reading
+  // headers here would invalidate the IP-based tax decision.
   const country2 =
     typeof session.country_code === "string" && session.country_code.trim().length === 2
       ? session.country_code.trim().toUpperCase()

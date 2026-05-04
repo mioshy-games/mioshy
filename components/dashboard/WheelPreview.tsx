@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { fitSvgToContainer } from "@/lib/utils";
+import { splitLabelToLines } from "@/components/Wheel";
 import type { WheelSlice } from "@/lib/types/database";
 
 type WheelPreviewProps = {
@@ -262,6 +263,8 @@ export function WheelPreview({
                   strokeOpacity: labelOutline.opacity,
                 }
               : {};
+          // Wrap long slice labels onto two lines (matches Wheel.tsx behaviour).
+          const lines = splitLabelToLines(label, 12);
           return (
             <g
               key={`lbl-${i}`}
@@ -277,7 +280,18 @@ export function WheelPreview({
                 dominantBaseline="middle"
                 style={outlineStyle}
               >
-                {label}
+                {lines.length === 1 ? (
+                  lines[0]
+                ) : (
+                  <>
+                    <tspan x={0} dy="-0.55em">
+                      {lines[0]}
+                    </tspan>
+                    <tspan x={0} dy="1.1em">
+                      {lines[1]}
+                    </tspan>
+                  </>
+                )}
               </text>
             </g>
           );

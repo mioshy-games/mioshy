@@ -165,6 +165,7 @@ export async function POST(req: Request) {
         email:       sub.email ?? "",
         // ISO-2 default: issuer requires exactly 2 chars. We don't
         // carry country on charges/subscriptions, so derive from is_israeli.
+        // is_israeli was IP-validated at /checkout/create — see lib/geo-from-request.ts
         country:     sub.is_israeli ? "IL" : "US",
         amount:      Number(c.amount),
         currency:    String(c.currency || sub.currency || "ILS"),

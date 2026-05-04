@@ -437,11 +437,32 @@ export function SubscriptionModal({
   // ── Upsert lead row ────────────────────────────────────────────────────────
   async function upsertLead(uid: string | null): Promise<string | null> {
     const deviceId = getOrCreateDeviceId();
+
+    // Resolve email: form input (lead mode) → auth user (paywall mode).
+    // In paywall mode the `email` state is empty because there's no input
+    // field; without this fallback /api/leads/upsert rejects with 400
+    // "Invalid email" the first time a logged-in user picks a plan.
+    let resolvedEmail = email.trim().toLowerCase();
+    if (!resolvedEmail || !resolvedEmail.includes("@")) {
+      try {
+        const supa = createBrowserSupabaseClient();
+        const { data: { user } } = await supa.auth.getUser();
+        if (user?.email) resolvedEmail = user.email.trim().toLowerCase();
+      } catch { /* ignore */ }
+    }
+
+    if (!resolvedEmail || !resolvedEmail.includes("@")) {
+      setError(isHe
+        ? "לא ניתן לזהות אימייל. התחבר/י מחדש ונסה/י שוב."
+        : "Could not resolve your email. Please sign in again and retry.");
+      return null;
+    }
+
     const res = await fetch("/api/leads/upsert", {
       method:  "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        email:             email.trim().toLowerCase(),
+        email:             resolvedEmail,
         full_name:         fullName.trim() || null,
         name:              fullName.trim() || null,
         language:          locale,

@@ -264,7 +264,7 @@ export default async function MyAdultsGalleryPage({
               </span>
             </div>
             <p
-              className="mt-2 max-w-2xl text-[14px] leading-[1.65] text-white/65"
+              className="mt-2 max-w-2xl text-[20px] leading-[1.55] text-white/65 sm:text-[15px] sm:leading-[1.65]"
               style={{ fontFamily: BODY_FONT }}
             >
               {isHe
@@ -410,7 +410,7 @@ function OwnedGameCard({ game, isHe }: { game: OwnedGame; isHe: boolean }) {
         </h3>
         {desc ? (
           <p
-            className="mt-2 line-clamp-2 text-[14px] leading-[1.6] text-white/75"
+            className="mt-2 line-clamp-2 text-[20px] leading-[1.5] text-white/75 sm:text-[15px] sm:leading-[1.6]"
             style={{ fontFamily: BODY_FONT }}
           >
             {desc}
@@ -509,7 +509,7 @@ function AvailableGameCard({
         </h3>
         {desc ? (
           <p
-            className="mt-2 line-clamp-2 text-[14px] leading-[1.6] text-white/70"
+            className="mt-2 line-clamp-2 text-[20px] leading-[1.5] text-white/70 sm:text-[15px] sm:leading-[1.6]"
             style={{ fontFamily: BODY_FONT }}
           >
             {desc}

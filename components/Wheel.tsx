@@ -19,6 +19,39 @@ export type WheelSegment = {
   color: string;
 };
 
+/**
+ * Split a wheel-slice label into at most two lines when it's too long to
+ * fit a single line within the slice arc. Picks the split point that
+ * minimises the longer line so the result is visually balanced
+ * (e.g. "Never Have I Ever" → ["Never Have", "I Ever"], not
+ * ["Never", "Have I Ever"]).
+ *
+ * Short labels (≤ threshold) and single-word labels are returned as-is
+ * so the typical case stays a single <text> render and isn't visually
+ * disturbed by an unnecessary line break.
+ */
+export function splitLabelToLines(label: string, threshold = 12): string[] {
+  const trimmed = label.trim();
+  if (trimmed.length <= threshold) return [trimmed];
+  const words = trimmed.split(/\s+/);
+  if (words.length < 2) return [trimmed]; // single word, can't word-wrap
+  let bestSplit = 1;
+  let bestMax = Infinity;
+  for (let i = 1; i < words.length; i++) {
+    const a = words.slice(0, i).join(" ").length;
+    const b = words.slice(i).join(" ").length;
+    const m = Math.max(a, b);
+    if (m < bestMax) {
+      bestMax = m;
+      bestSplit = i;
+    }
+  }
+  return [
+    words.slice(0, bestSplit).join(" "),
+    words.slice(bestSplit).join(" "),
+  ];
+}
+
 export type WheelProps = {
   options: WheelSegment[];
   onSettled: (result: { index: number; type: QuestionType }) => void;
@@ -540,6 +573,10 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
               // Tangential labels: rotate with slice; -90deg aligns tangent direction.
               const rot = (bisector * 180) / Math.PI - 90;
               const isRtl = /[\u0590-\u05FF]/.test(opt.label);
+              // Wrap long labels onto two lines (e.g. "Never Have I Ever" \u2192
+              // "Never Have" / "I Ever"). Short labels stay as a single line
+              // so we don't disturb the typical case.
+              const lines = splitLabelToLines(opt.label, 12);
               return (
                 <text
                   key={`lbl-${i}`}
@@ -564,7 +601,18 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
                   }
                   transform={`rotate(${rot} ${p.x} ${p.y})`}
                 >
-                  {opt.label}
+                  {lines.length === 1 ? (
+                    lines[0]
+                  ) : (
+                    <>
+                      <tspan x={p.x} dy="-0.55em">
+                        {lines[0]}
+                      </tspan>
+                      <tspan x={p.x} dy="1.1em">
+                        {lines[1]}
+                      </tspan>
+                    </>
+                  )}
                 </text>
               );
             })}
