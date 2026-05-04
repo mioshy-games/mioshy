@@ -68,6 +68,23 @@ export async function POST(req: Request) {
   // ── Auth ────────────────────────────────────────────────────────────────────
   const supabase     = await createServerSupabaseClient()
   const { data: auth } = await supabase.auth.getUser()
+
+  // Diagnostic: when this branch returns UNAUTHORIZED for a user who
+  // appears signed-in in the browser, we need to know whether the request
+  // even carried Supabase cookies. We log only cookie NAMES (not values),
+  // an 8-char user-id prefix, and presence flags.
+  const cookieHeader = req.headers.get("cookie") || ""
+  const sbCookieNames = cookieHeader
+    .split(";")
+    .map(c => c.trim().split("=")[0])
+    .filter(name => name.startsWith("sb-"))
+  console.log("[checkout:CREATE] auth_check", {
+    has_user: Boolean(auth?.user),
+    user_id8: auth?.user?.id?.slice(0, 8) ?? null,
+    cookie_count: cookieHeader ? cookieHeader.split(";").length : 0,
+    sb_cookie_names: sbCookieNames,
+  })
+
   if (!auth?.user) {
     return NextResponse.json(
       { success: false, code: "UNAUTHORIZED", message: "Please sign in before paying." },

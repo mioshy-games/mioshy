@@ -388,6 +388,12 @@ export function SubscriptionModal({
   const [termsAccepted,    setTermsAccepted]    = useState(false);
 
   // paywall-mode fields
+  // TODO(remove): `stage`, `selectedPlan`, `countryCode`, `countryName`, the
+  // reset useEffect, and the ipapi.co auto-detect useEffect below are dead
+  // since the confirm stage was removed (clicking a plan now jumps straight
+  // to Cardcom). Country/VAT are decided server-side from the request IP in
+  // /api/billing/checkout/create — see lib/geo-from-request.ts. Leaving the
+  // state in place as a harmless no-op for now to keep this diff minimal.
   const [stage, setStage]             = useState<"select" | "confirm">("select");
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [countryCode, setCountryCode] = useState("");
@@ -397,6 +403,7 @@ export function SubscriptionModal({
   const [error, setError] = useState<string | null>(null);
 
   // Reset paywall stage whenever the modal is re-opened.
+  // TODO(remove): see note above — dead since the confirm stage was removed.
   useEffect(() => {
     if (!open) {
       setStage("select");
@@ -407,7 +414,9 @@ export function SubscriptionModal({
 
   const PRICES = isHe ? PRICES_ILS : PRICES_USD;
 
-  // Auto-detect country (paywall only, on entering confirm stage)
+  // Auto-detect country (paywall only, on entering confirm stage).
+  // TODO(remove): never fires now — `stage` never becomes "confirm" since
+  // the confirm UI was deleted. Server-side IP geo is authoritative.
   useEffect(() => {
     if (mode !== "paywall") return;
     if (stage !== "confirm") return;
@@ -565,6 +574,27 @@ export function SubscriptionModal({
         return;
       }
 
+      // Diagnostic: when /api/billing/checkout/create returns UNAUTHORIZED,
+      // we want to know whether the BROWSER even has a live Supabase session
+      // at this moment. Logs only an 8-char id prefix and a masked email —
+      // never a full identifier or token.
+      try {
+        const supa = createBrowserSupabaseClient();
+        const { data: { user: liveUser }, error: liveErr } = await supa.auth.getUser();
+        console.log("[checkout:CLIENT_DEBUG]", {
+          prop_userId_present: Boolean(userId),
+          prop_userId8: typeof userId === "string" ? userId.slice(0, 8) : null,
+          live_user_present: Boolean(liveUser),
+          live_user_id8: liveUser?.id?.slice(0, 8) ?? null,
+          live_user_email_masked: liveUser?.email
+            ? `${liveUser.email.slice(0, 3)}…@${liveUser.email.split("@")[1] ?? ""}`
+            : null,
+          auth_error: liveErr?.message ?? null,
+        });
+      } catch (e) {
+        console.warn("[checkout:CLIENT_DEBUG] threw", e instanceof Error ? e.message : e);
+      }
+
       const res = await fetch("/api/billing/checkout/create", {
         method:  "POST",
         headers: { "content-type": "application/json" },
@@ -612,19 +642,10 @@ export function SubscriptionModal({
 
   // ── Render ────────────────────────────────────────────────────────────────
 
-  const headerTitle =
-    mode === "lead"
-      ? t.titleLead
-      : stage === "confirm"
-        ? t.titlePaywallConfirm
-        : t.titlePaywallSelect;
-
-  const headerSubtitle =
-    mode === "lead"
-      ? t.subtitleLead
-      : stage === "confirm"
-        ? t.subtitleConfirm
-        : t.subtitlePaywall;
+  // Confirm stage was removed — clicking a plan jumps straight to Cardcom,
+  // so the title/subtitle only need lead vs paywall-select copy.
+  const headerTitle = mode === "lead" ? t.titleLead : t.titlePaywallSelect;
+  const headerSubtitle = mode === "lead" ? t.subtitleLead : t.subtitlePaywall;
 
   return (
     <Dialog open={open} onOpenChange={(v) => (locked ? null : onOpenChange(v))}>
@@ -791,8 +812,13 @@ export function SubscriptionModal({
                 </button>
               </p>
             </div>
-          ) : stage === "select" ? (
-            /* ── Paywall step 1: experiential package picker ────────────── */
+          ) : (
+            /* ── Paywall: experiential package picker ────────────────────
+             * Country and VAT are now decided server-side from the request
+             * IP (lib/geo-from-request.ts), so clicking a plan goes straight
+             * to Cardcom. The old "confirm" stage (country dropdown / VAT
+             * line / "לעמוד התשלום" button) was removed.
+             */
             <div className="mt-5 flex flex-col gap-4">
               {error && (
                 <p className="rounded-lg bg-rose-500/15 px-3 py-2 text-sm font-medium text-rose-200 ring-1 ring-rose-400/40">
@@ -810,10 +836,7 @@ export function SubscriptionModal({
                   accent={palette[2]}
                   busy={busy}
                   ctaText={t.continueCta}
-                  onSelect={() => {
-                    setSelectedPlan("weekly");
-                    setStage("confirm");
-                  }}
+                  onSelect={() => void startPayment("weekly")}
                 />
                 <PlanCardButton
                   id="monthly"
@@ -826,10 +849,7 @@ export function SubscriptionModal({
                   accent={palette[0]}
                   busy={busy}
                   ctaText={t.continueCta}
-                  onSelect={() => {
-                    setSelectedPlan("monthly");
-                    setStage("confirm");
-                  }}
+                  onSelect={() => void startPayment("monthly")}
                 />
                 <PlanCardButton
                   id="annual"
@@ -841,110 +861,11 @@ export function SubscriptionModal({
                   accent={palette[1]}
                   busy={busy}
                   ctaText={t.continueCta}
-                  onSelect={() => {
-                    setSelectedPlan("annual");
-                    setStage("confirm");
-                  }}
+                  onSelect={() => void startPayment("annual")}
                 />
               </div>
 
               <p className="mt-1 text-center text-xs text-white/60">{t.cancelNote}</p>
-            </div>
-          ) : (
-            /* ── Paywall step 2: confirm country + go to checkout ────────── */
-            <div className="mt-5 flex flex-col gap-4">
-              {selectedPlan && (
-                <div
-                  className="rounded-2xl border border-white/15 p-4"
-                  style={{
-                    background:
-                      `linear-gradient(135deg, ${accent}26 0%, rgba(255,255,255,0.05) 100%)`,
-                  }}
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-white/60">
-                        {t.recommended === T[locale].recommended && selectedPlan === "monthly"
-                          ? t.recommended
-                          : selectedPlan === "annual"
-                            ? t.bestValue
-                            : t.period[selectedPlan].label}
-                      </p>
-                      <p className="mt-0.5 text-base font-bold text-white">
-                        {t.period[selectedPlan].label}
-                      </p>
-                    </div>
-                    <div className="text-end">
-                      <div className="text-2xl font-black text-white">
-                        {currency}{PRICES[selectedPlan]}
-                      </div>
-                      <div className="text-xs font-semibold text-white/70">
-                        {t.period[selectedPlan].note}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div className="grid gap-1.5">
-                <Label className="text-sm font-semibold text-white/90">{t.countryLabel}</Label>
-                <Select
-                  value={countryCode}
-                  onValueChange={(v) => {
-                    const code  = String(v ?? "");
-                    const match = COUNTRIES.find((c) => c.code === code);
-                    setCountryCode(code);
-                    setCountryName(match ? match.en : code === "ZZ" ? "Other" : "");
-                  }}
-                >
-                  <SelectTrigger className="w-full border-white/15 bg-white/10 text-white">
-                    <SelectValue placeholder={t.countryPlaceholder} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {COUNTRIES.map((c) => (
-                      <SelectItem key={c.code} value={c.code}>
-                        {isHe ? c.he : c.en}
-                      </SelectItem>
-                    ))}
-                    <SelectItem value="ZZ">{isHe ? "אחר" : "Other"}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {vatRatePercent > 0 && (
-                <p className="text-xs text-white/70">{t.vatNote(vatRatePercent)}</p>
-              )}
-
-              {TEST_PRICE && (
-                <p className="rounded-md bg-amber-500/15 px-3 py-1.5 text-xs font-semibold text-amber-200 ring-1 ring-amber-400/30">
-                  {isHe ? `🧪 מצב בדיקה - מחיר: ${currency}${TEST_PRICE}` : `🧪 Test mode - price: ${currency}${TEST_PRICE}`}
-                </p>
-              )}
-
-              {error && (
-                <p className="rounded-lg bg-rose-500/15 px-3 py-2 text-sm font-medium text-rose-200 ring-1 ring-rose-400/40">
-                  {error}
-                </p>
-              )}
-
-              <Button
-                className="min-h-[52px] w-full rounded-full text-base font-bold text-white shadow-lg"
-                disabled={busy || !selectedPlan}
-                onClick={() => selectedPlan && void startPayment(selectedPlan)}
-                style={{
-                  background: `linear-gradient(135deg, ${palette[0]}, ${palette[1]})`,
-                }}
-              >
-                {busy ? t.saving : t.paymentCta}
-              </Button>
-
-              <button
-                type="button"
-                onClick={() => setStage("select")}
-                className="mx-auto text-xs font-semibold text-white/70 underline-offset-4 hover:text-white hover:underline"
-              >
-                ← {t.backToPackages}
-              </button>
             </div>
           )}
         </div>
