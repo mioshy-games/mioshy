@@ -222,6 +222,22 @@ small, .text-small {
     animation: cta-glow 2.5s ease-in-out infinite;
   }
 
+  /* Adults page-wide animated dark wash. Stronger movement than the
+     subtler `aurora-drift` so the gradient is unmistakably alive on the
+     /adults/[slug] product surface. */
+  @keyframes mio-adults-bg-drift {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+    33%      { transform: translate3d(4%, -3%, 0) scale(1.06); }
+    66%      { transform: translate3d(-3%, 2.5%, 0) scale(1.08); }
+  }
+  .mio-adults-bg {
+    animation: mio-adults-bg-drift 26s ease-in-out infinite;
+    will-change: transform;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .mio-adults-bg { animation: none !important; }
+  }
+
   :root {
     --background: oklch(1 0 0);
     --foreground: oklch(0.145 0 0);

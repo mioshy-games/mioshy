@@ -359,29 +359,40 @@ export function AdultsHeroBuy({
         </button>
       </div>
 
-      {/* Reassurance microcopy */}
-      <p className="mt-4 text-[13px] leading-snug text-white/55">
-        {!loggedIn ? (
-          isHe
-            ? "תחילה הרשמו / התחברו, ואז תועברו לעמוד התשלום, ולאחריו ישר אל המשחק."
-            : "Sign up / sign in first, then complete payment, and we'll take you straight into the game."
-        ) : isHe ? (
-          "תשלום חד-פעמי · נשאר שלכם לצמיתות · מועברים מיד אל המשחק."
-        ) : (
-          "One-time payment · yours forever · taken straight to the game."
-        )}
-      </p>
+      {/* Reassurance microcopy — RENDERED ONLY FOR LOGGED-IN BUYERS.
+          Rationale: on the product page the anonymous visitor is in
+          decision/desire mode. Telling them "sign up / sign in first,
+          then pay, then play" foregrounds friction (3 mental steps)
+          before they've even committed to buying — and harms conversion.
+          The Buy CTA + auth funnel will explain the flow at the moment
+          it's actually needed. For authenticated buyers we DO show the
+          three-pill reassurance ("one-time · yours forever · straight
+          to the game") because it reinforces value and removes
+          purchase anxiety right at the click. */}
+      {loggedIn ? (
+        <p className="mt-4 text-[18px] leading-[1.5] text-white/70 sm:text-[13px] sm:leading-snug sm:text-white/55">
+          {isHe
+            ? "תשלום חד-פעמי · נשאר שלכם לצמיתות · מועברים מיד אל המשחק."
+            : "One-time payment · yours forever · taken straight to the game."}
+        </p>
+      ) : null}
 
       {/* "Got an invite?" entry point — for partners who received a
           pair code from the buyer. Clicking opens the redeem dialog;
-          on succ-ss we route them straight to /adults/[slug]/play
+          on success we route them straight to /adults/[slug]/play
           (instead of the generic /my hub) so they land inside the
           game they were invited to. authNext stays in the public
           gamePath so any auth/profile-completion fallback returns the
           partner to this same page (where they can re-open the redeem
-          dialog) — once finished, the dialog itself routes to /play. */}
-      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px]">
-        <span className="text-white/55">
+          dialog) — once finished, the dialog itself routes to /play.
+
+          Mobile redesign: stacks vertically (label on top, button below)
+          so the outlined button has its own visual weight. Button is now
+          a true secondary action — rounded-full outline, no fill — and
+          ~18px text so it pairs with the reassurance copy above. Desktop
+          keeps the inline single-line treatment that was here before. */}
+      <div className="mt-5 flex flex-col items-start gap-2 sm:mt-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3 sm:gap-y-1">
+        <span className="text-[18px] text-white/70 sm:text-[13px] sm:text-white/55">
           {isHe ? "קיבלת הזמנה למשחק?" : "Got an invite?"}
         </span>
         <RedeemCodeButton
@@ -390,7 +401,7 @@ export function AdultsHeroBuy({
           label={isHe ? "הזינו את הקוד" : "Enter your code"}
           redirectTo={playPath}
           authNext={gamePath}
-          className="text-rose-200 hover:text-white"
+          className="rounded-full border border-rose-200/45 bg-transparent px-5 py-2 text-[18px] text-rose-200 transition hover:border-rose-200/85 hover:bg-rose-200/5 hover:text-white sm:px-4 sm:py-1.5 sm:text-[13px]"
         />
       </div>
 

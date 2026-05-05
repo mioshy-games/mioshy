@@ -20,8 +20,42 @@ interface JourneyClientProps {
     status: string;
     language: Locale;
   } | null;
+  /** Map of question_id → prior AnswerValue, hydrated server-side from
+   *  journey_responses. Used to pre-fill answers when the user navigates
+   *  back to a previously-answered question. UX feedback 2026-05-05. The
+   *  outer Record uses `unknown` because the server can't statically
+   *  prove the JSONB column matches AnswerValue; we cast at the call
+   *  site once before passing into the question components. */
+  initialAnswers?: Record<string, unknown>;
   subscriptionActive?: boolean;
   authenticated?: boolean;
+}
+
+// ── Engagement reveal: per-question "X% of couples answered like you" ──
+// Per product spec (2026-05-05), the assessment shows a brief social-proof
+// reveal between questions to keep visitors curious enough to finish all 32.
+// The percentage is DETERMINISTIC pseudo-random based on the question id +
+// answer — NOT real aggregate data. Once we have enough actual responses
+// the function gets swapped with one that reads from the DB; the calling
+// site (submitAnswer) doesn't change.
+//
+// Range 25–84 keeps every reveal interesting: never the boring 50/50,
+// never the suspicious 95%+. Spread is wide so consecutive questions
+// surface meaningfully different numbers.
+const REVEAL_DWELL_MS = 2500;
+function computeMatchPercent(
+  questionId: string,
+  answer: AnswerValue,
+): number {
+  const answerStr =
+    typeof answer === "object" ? JSON.stringify(answer) : String(answer);
+  let seed = 0;
+  const combined = `${questionId}|${answerStr}`;
+  for (let i = 0; i < combined.length; i++) {
+    seed = (seed * 31 + combined.charCodeAt(i)) | 0;
+  }
+  const positive = ((seed % 60) + 60) % 60; // 0..59
+  return 25 + positive; // 25..84
 }
 
 /**
@@ -37,10 +71,17 @@ interface JourneyClientProps {
 export function JourneyClient({
   locale,
   initialProgress,
+  initialAnswers,
   subscriptionActive = false,
   authenticated = false,
 }: JourneyClientProps) {
   const [index, setIndex] = useState(initialProgress?.current_step ?? 0);
+  // In-memory map of answers, seeded with the server-hydrated set and
+  // updated as the user submits new ones. Lookup by question_id when
+  // we need an `initial` value for QuestionStep / PriorityRankingStep.
+  const [answersById, setAnswersById] = useState<Record<string, AnswerValue>>(
+    () => (initialAnswers ?? {}) as Record<string, AnswerValue>,
+  );
   const [busy, setBusy] = useState(false);
   const [paywallOpen, setPaywallOpen] = useState(false);
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
@@ -48,8 +89,21 @@ export function JourneyClient({
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [deviceId, setDeviceId] = useState<string>("");
+  // Per-question social-proof reveal banner. Set on submit, cleared
+  // 1.5s later when the next question loads. `qid` keys the
+  // AnimatePresence so the panel re-animates between questions instead
+  // of cross-fading on identical content.
+  const [reveal, setReveal] = useState<{ percent: number; qid: string } | null>(
+    null,
+  );
   const confettiFiredRef = useRef(false);
   const analysisFetchAttemptedRef = useRef(false);
+  // Track the furthest question index the user has reached. When they go
+  // back (via the back button) and re-submit a previously-answered question,
+  // we skip the social-proof reveal — they've already seen one for this slot
+  // and replaying it on every back-and-forth feels noisy. Per UX feedback
+  // 2026-05-05.
+  const highWaterRef = useRef<number>(initialProgress?.current_step ?? 0);
 
   // Diagnostic: log what we received from the server and what state the
   // client just initialized to. If "initialProgress" is null but the user
@@ -292,6 +346,13 @@ export function JourneyClient({
     if (!question) return;
     setError(null);
 
+    // Stash the answer locally so an immediate back-then-forward shows
+    // the latest pick (not the stale server-hydrated value). This runs
+    // BEFORE the API call returns — fine, because the local map is
+    // disambiguated by question_id and is only used for `initial`
+    // values, never for scoring.
+    setAnswersById((prev) => ({ ...prev, [question.id]: answer }));
+
     // Auto-advance types (likert, single, forced_choice) feel instant:
     // we jump to the next question NOW and let the API call run async.
     const isAutoAdvance =
@@ -302,8 +363,62 @@ export function JourneyClient({
     const capturedIndex = index; // closure-safe snapshot
     const optimisticNext = capturedIndex + 1;
 
+    // Skip the social-proof reveal when:
+    //   1. The question is the priority ranking step (UX feedback: feels
+    //      out of place at the ranking screen — the user is making a list,
+    //      not picking one option), OR
+    //   2. The user is re-answering a question they already moved past
+    //      (highWater > current). The reveal is a "first impression" hint;
+    //      replaying it on back-and-forth is noisy.
+    const skipReveal =
+      question.type === "ranking" || capturedIndex < highWaterRef.current;
+
+    // Effective dwell — keep zero when the reveal is skipped so the user
+    // doesn't sit on a blank screen waiting for nothing.
+    const dwellMs = skipReveal ? 0 : REVEAL_DWELL_MS;
+
+    // Surface the social-proof reveal NOW (unless suppressed).
+    // It's a UI hint only — does not block API or state machine.
+    const matchPercent = computeMatchPercent(question.id, answer);
+    const __revealStartTs = performance.now();
+    // eslint-disable-next-line no-console
+    console.log("[reveal] set", {
+      ts: __revealStartTs,
+      percent: matchPercent,
+      qid: question.id,
+      flow: isAutoAdvance ? "auto" : "manual",
+      configuredDwellMs: REVEAL_DWELL_MS,
+      skipReveal,
+      reason: skipReveal
+        ? question.type === "ranking"
+          ? "ranking-step"
+          : "back-and-resubmit"
+        : null,
+    });
+    if (!skipReveal) {
+      setReveal({ percent: matchPercent, qid: question.id });
+    }
+
     if (isAutoAdvance) {
-      setIndex(optimisticNext); // jump immediately - no spinner
+      // Delay the jump by REVEAL_DWELL_MS so the user can read the reveal
+      // before the next question slides in. The fetch keeps running async
+      // alongside this timer (started further down) — typical API time is
+      // well under the dwell, so this rarely lengthens total flow.
+      window.setTimeout(() => {
+        // eslint-disable-next-line no-console
+        console.log("[reveal] cleared (auto-advance)", {
+          qid: question.id,
+          actualDwellMs: Math.round(performance.now() - __revealStartTs),
+          configuredDwellMs: dwellMs,
+        });
+        setIndex(optimisticNext);
+        // Bump the high-water mark so a future back-and-resubmit at this
+        // slot is correctly classified as "already-seen".
+        if (optimisticNext > highWaterRef.current) {
+          highWaterRef.current = optimisticNext;
+        }
+        setReveal(null);
+      }, dwellMs);
     } else {
       setBusy(true); // multi_choice / reflection: block until saved
     }
@@ -353,12 +468,38 @@ export function JourneyClient({
         track("journey_completed", { total_steps: total, locale });
 
       if (!isAutoAdvance) {
+        // Hold the reveal on screen for at least dwellMs even if the API
+        // responded faster than the dwell — keeps the social-proof feedback
+        // consistent across question types. When skipReveal is true,
+        // dwellMs is 0 so we advance immediately.
+        if (dwellMs > 0) {
+          await new Promise((r) => window.setTimeout(r, dwellMs));
+        }
+        // eslint-disable-next-line no-console
+        console.log("[reveal] cleared (manual)", {
+          qid: question.id,
+          actualDwellMs: Math.round(performance.now() - __revealStartTs),
+          configuredDwellMs: dwellMs,
+        });
+        setReveal(null);
         setIndex(serverNext);
+        if (serverNext > highWaterRef.current) {
+          highWaterRef.current = serverNext;
+        }
       } else if (serverNext !== optimisticNext) {
-        // Server corrected the index (e.g. skip logic)
-        setIndex(serverNext);
+        // Server corrected the index (e.g. skip logic) — let the dwell
+        // timer running above still clear `reveal`; here we only need to
+        // override the destination index.
+        window.setTimeout(() => {
+          setIndex(serverNext);
+          if (serverNext > highWaterRef.current) {
+            highWaterRef.current = serverNext;
+          }
+        }, dwellMs);
       }
     } catch (err) {
+      // Clear reveal so the user isn't stuck reading a stale percent.
+      setReveal(null);
       if (!isAutoAdvance) {
         setError(err instanceof Error ? err.message : "Unexpected error");
       }
@@ -467,16 +608,6 @@ export function JourneyClient({
       {/* No lock - user can see the full bar at all times */}
       <ProgressBar current={index} total={total} />
 
-      {index === 0 ? (
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="rounded-2xl bg-white/5 p-4 text-sm text-white/80"
-        >
-          {headerText.warmup}
-        </motion.p>
-      ) : null}
-
       <AnimatePresence mode="wait">
         {question ? (
           // Dispatch on question type. Ranking has its own drag-drop UI;
@@ -488,6 +619,7 @@ export function JourneyClient({
               locale={locale}
               onSubmit={submitAnswer}
               busy={busy}
+              initial={answersById[question.id] ?? null}
             />
           ) : (
             <QuestionStep
@@ -496,12 +628,57 @@ export function JourneyClient({
               locale={locale}
               onSubmit={submitAnswer}
               busy={busy}
+              initial={answersById[question.id] ?? null}
             />
           )
         ) : null}
       </AnimatePresence>
 
+      {/* Per-question social-proof reveal banner. Sits BELOW the question
+          so the percent surfaces directly under where the answer was
+          (matches the user's eyeline after click). Keyed AnimatePresence
+          slides cleanly between question transitions instead of cross-
+          fading on identical content. */}
+      <AnimatePresence mode="wait">
+        {reveal ? (
+          <motion.div
+            key={`reveal-${reveal.qid}`}
+            initial={{ opacity: 0, y: -8, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.98 }}
+            transition={{ duration: 0.28, ease: [0.22, 0.61, 0.36, 1] }}
+            className="rounded-2xl border border-emerald-300/40 bg-emerald-400/15 p-4 text-center backdrop-blur-md"
+          >
+            <p className="text-[20px] font-semibold leading-snug text-white">
+              {locale === "he"
+                ? `${reveal.percent}% מהזוגות ענו כמוכם`
+                : `${reveal.percent}% of couples answered like you`}
+            </p>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+
       {error ? <p className="text-sm text-rose-300">{error}</p> : null}
+
+      {/* Back button — pinned to the bottom of the content flow per UX
+          feedback 2026-05-05 ("כפתור חזרה צריך להיות בפינה למטה"). Hidden
+          on the first question. Just decrements the local index; saved
+          answers stay in the DB so going back-and-forth doesn't lose
+          anything. mt-auto pushes it to the bottom of the flex column,
+          even when the question above is short. justify-end keeps it on
+          the inline-end side (left in RTL = where back-arrows naturally
+          live in Hebrew UIs). */}
+      {index > 0 ? (
+        <div className="mt-auto flex justify-end pt-4">
+          <button
+            type="button"
+            onClick={() => setIndex(Math.max(0, index - 1))}
+            className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-sm text-white/75 transition hover:border-white/30 hover:bg-white/10 hover:text-white"
+          >
+            {locale === "he" ? "← חזרה" : "Back ←"}
+          </button>
+        </div>
+      ) : null}
 
       <PaywallGateModal
         open={paywallOpen}

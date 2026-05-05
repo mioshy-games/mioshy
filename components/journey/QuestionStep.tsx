@@ -113,22 +113,30 @@ function LikertControl({
   busy?: boolean;
 }) {
   const current = value?.kind === "likert" ? value.value : null;
+  // Layout — UX feedback 2026-05-05: on phones, the 5-col grid was
+  // squeezing Hebrew labels like "לעיתים רחוקות" (13 chars) into ~57px
+  // cells, wrapping to 3 lines and looking broken. Mobile now stacks the
+  // 5 options as full-width buttons (number + label inline, large tap
+  // target, no wrapping). From sm breakpoint up the original 5-col grid
+  // returns for the compact desktop view.
   return (
-    <div className="grid grid-cols-5 gap-2">
+    <div className="grid grid-cols-1 gap-2 sm:grid-cols-5">
       {([1, 2, 3, 4, 5] as const).map((n) => (
         <button
           type="button"
           key={n}
           onClick={() => !busy && onChange({ kind: "likert", value: n })}
           disabled={busy}
-          className={`flex flex-col items-center rounded-2xl border px-2 py-3 text-sm transition active:scale-95 ${
+          className={`flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 transition active:scale-[0.98] sm:flex-col sm:items-center sm:justify-center sm:px-2 ${
             current === n
               ? "border-fuchsia-400/70 bg-fuchsia-500/25 text-white ring-2 ring-fuchsia-400/50"
               : "border-white/12 bg-slate-800/70 text-white/80 hover:bg-slate-700/70 hover:border-white/20"
           } disabled:cursor-not-allowed disabled:opacity-50`}
         >
-          <span className="text-lg font-semibold">{n}</span>
-          <span className="mt-1 text-sm leading-tight">{likertLabel(n, locale)}</span>
+          <span className="text-[22px] font-semibold sm:text-[20px]">{n}</span>
+          <span className="text-[18px] leading-snug sm:mt-1 sm:text-[14px]">
+            {likertLabel(n, locale)}
+          </span>
         </button>
       ))}
     </div>
@@ -149,23 +157,33 @@ function SingleChoiceControl({
   busy?: boolean;
 }) {
   const current = value?.kind === "single" ? value.option : null;
+  // mx-0 on mobile (start-aligns the column to the inline-start = right in
+  // RTL, per UX feedback 2026-05-05 "ליישר את הכפתורים לימין ולא לאמצע").
+  // md:mx-auto preserves the centered layout on tablet/desktop where the
+  // question card has slack on both sides.
   return (
-    <div className="flex flex-col gap-2">
-      {question.options.map((opt) => (
-        <button
-          type="button"
-          key={opt.id}
-          onClick={() => !busy && onChange({ kind: "single", option: opt.id })}
-          disabled={busy}
-          className={`rounded-2xl border px-4 py-3 text-left transition active:scale-[0.98] ${
-            current === opt.id
-              ? "border-fuchsia-400/70 bg-fuchsia-500/20 text-white ring-2 ring-fuchsia-400/50"
-              : "border-white/12 bg-slate-800/70 text-white/85 hover:bg-slate-700/70 hover:border-white/20"
-          } disabled:cursor-not-allowed disabled:opacity-50`}
-        >
-          {locale === "he" ? opt.he : opt.en}
-        </button>
-      ))}
+    <div className="mx-0 md:mx-auto flex w-full max-w-md flex-col gap-2">
+      {question.options.map((opt) => {
+        const label = locale === "he" ? opt.he : opt.en;
+        const classes = `rounded-2xl border px-4 py-3 text-start text-[20px] transition active:scale-[0.98] ${
+          current === opt.id
+            ? "border-fuchsia-400/70 bg-fuchsia-500/20 text-white ring-2 ring-fuchsia-400/50"
+            : "border-white/12 bg-slate-800/70 text-white/85 hover:bg-slate-700/70 hover:border-white/20"
+        } disabled:cursor-not-allowed disabled:opacity-50`;
+        // eslint-disable-next-line no-console
+        console.log("[QuestionStep/button]", { qid: question.id, label, classes });
+        return (
+          <button
+            type="button"
+            key={opt.id}
+            onClick={() => !busy && onChange({ kind: "single", option: opt.id })}
+            disabled={busy}
+            className={classes}
+          >
+            {label}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -187,22 +205,28 @@ function MultiChoiceControl({
     onChange({ kind: "multi", options: next });
   };
   return (
-    <div className="flex flex-col gap-2">
-      {question.options.map((opt) => (
-        <button
-          type="button"
-          key={opt.id}
-          onClick={() => toggle(opt.id)}
-          className={`rounded-2xl border px-4 py-3 text-left transition active:scale-[0.98] ${
-            current.includes(opt.id)
-              ? "border-fuchsia-400/70 bg-fuchsia-500/20 text-white"
-              : "border-white/12 bg-slate-800/70 text-white/85 hover:bg-slate-700/70 hover:border-white/20"
-          }`}
-        >
-          <span className={`me-2 inline-block h-4 w-4 rounded border align-middle ${current.includes(opt.id) ? "border-fuchsia-400 bg-fuchsia-500" : "border-white/30"}`} />
-          {locale === "he" ? opt.he : opt.en}
-        </button>
-      ))}
+    <div className="mx-0 md:mx-auto flex w-full max-w-md flex-col gap-2">
+      {question.options.map((opt) => {
+        const label = locale === "he" ? opt.he : opt.en;
+        const classes = `rounded-2xl border px-4 py-3 text-start text-[20px] transition active:scale-[0.98] ${
+          current.includes(opt.id)
+            ? "border-fuchsia-400/70 bg-fuchsia-500/20 text-white"
+            : "border-white/12 bg-slate-800/70 text-white/85 hover:bg-slate-700/70 hover:border-white/20"
+        }`;
+        // eslint-disable-next-line no-console
+        console.log("[QuestionStep/button]", { qid: question.id, label, classes });
+        return (
+          <button
+            type="button"
+            key={opt.id}
+            onClick={() => toggle(opt.id)}
+            className={classes}
+          >
+            <span className={`me-2 inline-block h-4 w-4 rounded border align-middle ${current.includes(opt.id) ? "border-fuchsia-400 bg-fuchsia-500" : "border-white/30"}`} />
+            {label}
+          </button>
+        );
+      })}
     </div>
   );
 }

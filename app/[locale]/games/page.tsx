@@ -246,61 +246,6 @@ export default async function GamesHubPage({
             </ul>
           )}
 
-          {/* ── Coming soon (authenticated catalog) ──
-              Quiet editorial row hinting at upcoming products. Same
-              vocabulary as elsewhere on the site (Frank Ruhl Libre
-              italic divider, locked tiles). Migrated here from the
-              now-retired /products page. */}
-          <section className="mt-20">
-            <div className="mb-7 flex items-center gap-4">
-              <span className="h-px flex-1 bg-white/10" />
-              <span
-                className="text-[12px] uppercase tracking-[0.32em] text-white/40"
-                style={{
-                  fontFamily: "'Frank Ruhl Libre', serif",
-                  fontStyle: "italic",
-                  fontWeight: 500,
-                }}
-              >
-                {isHe ? "בקרוב" : "Coming soon"}
-              </span>
-              <span className="h-px flex-1 bg-white/10" />
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              {[
-                { emoji: "🃏", labelHe: "קלפים לזוגות", labelEn: "Couples Cards" },
-                { emoji: "🎭", labelHe: "תפקידים",      labelEn: "Role Play"     },
-                { emoji: "🧩", labelHe: "אתגרים",       labelEn: "Challenges"    },
-              ].map((item) => (
-                <div
-                  key={item.emoji}
-                  className="group relative flex items-center gap-4 overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5 backdrop-blur transition duration-500 hover:-translate-y-0.5 hover:border-rose-300/20"
-                >
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#3D1F3D] via-[#1E0F1E] to-[#0E0810] text-2xl ring-1 ring-white/10">
-                    {item.emoji}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="font-semibold text-white/80">
-                      {isHe ? item.labelHe : item.labelEn}
-                    </div>
-                    <div
-                      className="mt-0.5 text-[12px] uppercase tracking-[0.18em] text-rose-200/55"
-                      style={{ fontFamily: "'Frank Ruhl Libre', serif", fontStyle: "italic" }}
-                    >
-                      {isHe ? "בקרוב" : "Soon"}
-                    </div>
-                  </div>
-                  <span
-                    aria-hidden
-                    className="absolute end-4 top-4 text-base text-white/25 transition group-hover:text-white/50"
-                  >
-                    🔒
-                  </span>
-                </div>
-              ))}
-            </div>
-          </section>
         </main>
       </div>
     );
@@ -520,7 +465,7 @@ export default async function GamesHubPage({
         <section className="relative">
           <nav
             aria-label="breadcrumb"
-            className="relative z-20 mx-auto flex max-w-6xl items-center gap-2 px-4 pt-8 text-xs text-white/60"
+            className="relative z-20 mx-auto hidden max-w-6xl items-center gap-2 px-4 pt-8 text-xs text-white/60 sm:flex"
           >
             <Link href="/" className="transition hover:text-white/90">
               {t("breadcrumbHome")}
@@ -618,7 +563,7 @@ export default async function GamesHubPage({
                       <h3 className="mt-3 font-heading text-[18px] font-bold leading-snug text-[#170E14] sm:mt-4 sm:text-xl">
                         {it.h}
                       </h3>
-                      <p className="mt-1.5 flex-1 text-[16px] leading-[1.55] text-[#4A3A45] sm:mt-2 sm:text-[18px] sm:leading-[1.6]">
+                      <p className="mt-1.5 flex-1 text-[18px] leading-[1.55] text-[#4A3A45] sm:mt-2 sm:leading-[1.6]">
                         {it.p}
                       </p>
                     </div>
@@ -638,7 +583,7 @@ export default async function GamesHubPage({
 
                 {/* Main pull-quote - clean line breaks, no awkward wrapping. */}
                 <p
-                  className="mt-7 text-[26px] leading-[1.45] text-[#170E14] sm:text-[30px] lg:text-[34px]"
+                  className="mt-7 text-[30px] leading-[1.35] text-[#170E14] sm:text-[30px] lg:text-[34px]"
                   style={{
                     fontFamily: "'Frank Ruhl Libre', serif",
                     fontWeight: 500,
@@ -877,7 +822,7 @@ export default async function GamesHubPage({
                             {name}
                           </h3>
                           {desc ? (
-                            <p className="mt-2 line-clamp-3 text-[18px] leading-[1.5] text-[#4A3A45]">
+                            <p className="mt-2 line-clamp-3 text-[20px] leading-[1.5] text-[#4A3A45] sm:text-[18px]">
                               {desc}
                             </p>
                           ) : null}
@@ -930,7 +875,7 @@ export default async function GamesHubPage({
                       <h3 className="font-heading text-xl font-bold leading-tight text-[#170E14]">
                         {isHe ? "נחשים וסולמות" : "Snakes & Ladders"}
                       </h3>
-                      <p className="mt-2 line-clamp-3 text-[18px] leading-[1.5] text-[#4A3A45]">
+                      <p className="mt-2 line-clamp-3 text-[20px] leading-[1.5] text-[#4A3A45] sm:text-[18px]">
                         {isHe
                           ? "לוח קלאסי עם שאלות ואתגרים זוגיים - שחקו על מכשיר אחד או על שני מכשירים שונים"
                           : "Classic board game with couples questions & challenges - play on one device or remotely"}
@@ -948,61 +893,6 @@ export default async function GamesHubPage({
                 </li>
               </ul>
 
-              {/* ── Coming soon (anonymous marketing view) ──
-                  Editorial divider with locked tiles. Migrated here
-                  from the now-retired /products page so the marketing
-                  surface still hints at the upcoming pipeline. Styled
-                  for the light cream catalogue background. */}
-              <div className="mt-20">
-                <div className="mb-7 flex items-center gap-4">
-                  <span className="h-px flex-1 bg-[#EAE0E3]" />
-                  <span
-                    className="text-[12px] uppercase tracking-[0.32em] text-[#8B2638]"
-                    style={{
-                      fontFamily: "'Frank Ruhl Libre', serif",
-                      fontStyle: "italic",
-                      fontWeight: 500,
-                    }}
-                  >
-                    {isHe ? "בקרוב" : "Coming soon"}
-                  </span>
-                  <span className="h-px flex-1 bg-[#EAE0E3]" />
-                </div>
-
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                  {[
-                    { emoji: "🃏", labelHe: "קלפים לזוגות", labelEn: "Couples Cards" },
-                    { emoji: "🎭", labelHe: "תפקידים",      labelEn: "Role Play"     },
-                    { emoji: "🧩", labelHe: "אתגרים",       labelEn: "Challenges"    },
-                  ].map((item) => (
-                    <div
-                      key={item.emoji}
-                      className="group relative flex items-center gap-4 overflow-hidden rounded-2xl border border-[#EAE0E3] bg-[#FBF5F2] p-5 transition duration-500 hover:-translate-y-0.5 hover:border-[#E9C4CA]"
-                    >
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#B83C4D]/20 via-[#8B2638]/15 to-[#3D1F3D]/15 text-2xl ring-1 ring-[#EAE0E3]">
-                        {item.emoji}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="font-semibold text-[#170E14]">
-                          {isHe ? item.labelHe : item.labelEn}
-                        </div>
-                        <div
-                          className="mt-0.5 text-[12px] uppercase tracking-[0.18em] text-[#B83C4D]/70"
-                          style={{ fontFamily: "'Frank Ruhl Libre', serif", fontStyle: "italic" }}
-                        >
-                          {isHe ? "בקרוב" : "Soon"}
-                        </div>
-                      </div>
-                      <span
-                        aria-hidden
-                        className="absolute end-4 top-4 text-base text-[#8B2638]/40 transition group-hover:text-[#8B2638]/70"
-                      >
-                        🔒
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
             </div>
           </section>
           {/* ════════════════════════════════════════════════════════════

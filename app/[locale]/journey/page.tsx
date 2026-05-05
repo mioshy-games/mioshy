@@ -366,7 +366,7 @@ export default async function JourneyMarketingPage({
         <section className="relative">
           <nav
             aria-label="breadcrumb"
-            className="relative z-20 mx-auto flex max-w-6xl items-center gap-2 px-4 pt-8 text-xs text-white/60"
+            className="relative z-20 mx-auto hidden max-w-6xl items-center gap-2 px-4 pt-8 text-xs text-white/60 sm:flex"
           >
             <Link href="/" className="transition hover:text-white/90">
               {t("breadcrumbHome")}
@@ -407,7 +407,7 @@ export default async function JourneyMarketingPage({
             <span className="journey-orbit journey-orbit-12" />
           </div>
 
-          <div className="relative z-10 mx-auto max-w-5xl px-4 pb-32 pt-10 text-center sm:pt-16">
+          <div className="relative z-10 mx-auto max-w-5xl px-4 pb-12 pt-10 text-center sm:pb-32 sm:pt-16">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/25 bg-emerald-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-emerald-100 backdrop-blur-md">
               <Sparkles className="h-3 w-3" />
               {t("badge")}
@@ -518,24 +518,24 @@ export default async function JourneyMarketingPage({
                   return (
                     <div
                       key={i}
-                      className="group relative flex flex-col overflow-hidden rounded-3xl border border-[#EAE0E3] bg-[#FBF5F2] p-7 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-transparent hover:shadow-md"
+                      className="group relative grid grid-cols-[56px_1fr] gap-x-4 gap-y-2 overflow-hidden rounded-3xl border border-[#EAE0E3] bg-[#FBF5F2] p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-transparent hover:shadow-md sm:flex sm:flex-col sm:gap-x-0 sm:gap-y-0 sm:p-7"
                     >
                       <div
                         aria-hidden
                         className="absolute inset-x-0 top-0 h-[3px] origin-right scale-x-0 rounded-t-3xl bg-[#B83C4D] transition-transform duration-400 group-hover:scale-x-100"
                       />
                       <div
-                        className={`inline-flex h-14 w-14 items-center justify-center rounded-2xl ${iconBg} text-white shadow-md`}
+                        className={`row-span-3 self-start inline-flex h-14 w-14 items-center justify-center rounded-2xl sm:row-auto ${iconBg} text-white shadow-md`}
                       >
                         <Icon className="h-7 w-7" />
                       </div>
-                      <span className="mt-4 inline-block self-start rounded-full border border-[#EAE0E3] bg-[#FBE9EC] px-3 py-1 text-[12px] font-semibold uppercase tracking-[0.05em] text-[#8B2638]">
+                      <span className="inline-block self-start justify-self-start rounded-full border border-[#EAE0E3] bg-[#FBE9EC] px-3 py-1 text-[12px] font-semibold uppercase tracking-[0.05em] text-[#8B2638] sm:mt-4 sm:justify-self-auto">
                         {stat}
                       </span>
-                      <h3 className="mt-4 font-heading text-xl font-bold leading-snug text-[#170E14]">
+                      <h3 className="font-heading text-2xl font-bold leading-snug text-[#170E14] sm:mt-4 sm:text-xl">
                         {it.h}
                       </h3>
-                      <p className="mt-2 flex-1 text-[18px] leading-[1.6] text-[#4A3A45]">
+                      <p className="text-[18px] leading-[1.6] text-[#4A3A45] sm:mt-2 sm:flex-1">
                         {it.p}
                       </p>
                     </div>
@@ -554,7 +554,7 @@ export default async function JourneyMarketingPage({
                 </span>
 
                 <p
-                  className="mt-7 text-[26px] leading-[1.45] text-[#170E14] sm:text-[30px] lg:text-[34px]"
+                  className="mt-7 text-[30px] leading-[1.35] text-[#170E14] sm:text-[30px] lg:text-[34px]"
                   style={{
                     fontFamily: "'Frank Ruhl Libre', serif",
                     fontWeight: 500,
@@ -795,13 +795,13 @@ export default async function JourneyMarketingPage({
               </div>
 
               {/* 4-card editorial grid with hairline dividers + per-card icon */}
-              <div className="mt-14 grid gap-y-14 md:grid-cols-2 md:gap-x-10 lg:grid-cols-4 lg:gap-x-8 lg:mt-16">
+              <div className="mt-10 grid gap-y-6 md:grid-cols-2 md:gap-x-10 md:gap-y-14 md:mt-14 lg:grid-cols-4 lg:gap-x-8 lg:mt-16">
                 {insideCards.map((c, i) => {
-                  const { Icon, numeral } = insideMeta[i]!;
+                  const { numeral } = insideMeta[i]!;
                   return (
                     <div
                       key={i}
-                      className={`group relative h-full ${
+                      className={`group relative h-full grid grid-cols-[3rem_1fr] items-start gap-x-4 md:block ${
                         i > 0 ? "lg:border-s lg:ps-8" : ""
                       }`}
                       style={
@@ -810,32 +810,24 @@ export default async function JourneyMarketingPage({
                           : undefined
                       }
                     >
-                      <div className="flex items-center gap-3">
-                        <span
-                          className="text-[22px] tracking-[0.1em] text-[#B83C4D] transition-colors duration-300 group-hover:text-[#E9C4CA]"
-                          style={{
-                            fontFamily: "'Frank Ruhl Libre', serif",
-                            fontStyle: "italic",
-                            fontWeight: 500,
-                          }}
-                        >
-                          {numeral}
-                        </span>
-                        <span
-                          aria-hidden
-                          className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 backdrop-blur-md"
-                        >
-                          <Icon className="h-4 w-4 text-[#E9C4CA]" />
-                        </span>
-                      </div>
+                      <span
+                        className="row-span-3 md:row-auto text-center md:text-start text-[32px] leading-none tracking-[0.1em] text-[#B83C4D] transition-colors duration-300 group-hover:text-[#E9C4CA]"
+                        style={{
+                          fontFamily: "'Frank Ruhl Libre', serif",
+                          fontStyle: "italic",
+                          fontWeight: 500,
+                        }}
+                      >
+                        {numeral}
+                      </span>
 
-                      <h3 className="mt-5 text-[22px] font-bold leading-tight text-white sm:text-[24px]">
+                      <h3 className="text-[24px] font-bold leading-tight text-white md:mt-5">
                         {c.h}
                       </h3>
 
-                      <div className="mt-4 h-[2px] w-12 bg-[#B83C4D] transition-all duration-500 ease-out group-hover:w-24" />
+                      <div className="mt-3 h-[2px] w-12 bg-[#B83C4D] transition-all duration-500 ease-out group-hover:w-24 md:mt-4" />
 
-                      <p className="mt-5 text-[18px] leading-[1.65] text-white/70">
+                      <p className="mt-3 text-[18px] leading-[1.65] text-white/70 md:mt-5">
                         {c.p}
                       </p>
                     </div>

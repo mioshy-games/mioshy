@@ -39,7 +39,14 @@ function formatAmount(amount: number, currency: "ILS" | "USD"): string {
   // Amounts are whole-number-friendly in settings; drop trailing .00 for cleaner UI.
   const whole = Math.round(amount) === amount;
   const body = whole ? amount.toFixed(0) : amount.toFixed(2);
-  return currency === "ILS" ? `₪${body}` : `$${body}`;
+  const symbol = currency === "ILS" ? "₪" : "$";
+  // Per design spec: currency symbol always sits at the visual LEFT of the
+  // number with one space between them ("₪ 127", not "₪127" or "127₪").
+  // We wrap in U+2066 LRI (Left-to-Right Isolate) + U+2069 PDI (Pop Directional
+  // Isolate) so the symbol-then-number ordering is preserved regardless of
+  // surrounding paragraph direction — i.e. even inside RTL Hebrew copy, the
+  // price reads "₪ 127" left-to-right and the symbol stays on the left.
+  return `⁦${symbol} ${body}⁩`;
 }
 
 /**

@@ -167,6 +167,37 @@ function runProbe(label: string) {
     cy,
     found,
   });
+
+  // Bg gradient layers — log presence + computed style so we can confirm
+  // the dark-wash and the animated layer are actually mounted with the
+  // expected animation/transform.
+  const bgBase = document.querySelector(
+    '[data-testid="adults-bg-base"]',
+  ) as HTMLElement | null;
+  const bgAnimated = document.querySelector(
+    '[data-testid="adults-bg-animated"]',
+  ) as HTMLElement | null;
+  log("bg layers", {
+    base: bgBase
+      ? {
+          rect: snapshotRect(bgBase.getBoundingClientRect()),
+          background: window.getComputedStyle(bgBase).background.slice(0, 120),
+        }
+      : "MISSING",
+    animated: bgAnimated
+      ? (() => {
+          const cs = window.getComputedStyle(bgAnimated);
+          return {
+            rect: snapshotRect(bgAnimated.getBoundingClientRect()),
+            background: cs.background.slice(0, 160),
+            animationName: cs.animationName,
+            animationDuration: cs.animationDuration,
+            animationPlayState: cs.animationPlayState,
+            transform: cs.transform,
+          };
+        })()
+      : "MISSING",
+  });
 }
 
 function snapshotRect(r: DOMRect) {

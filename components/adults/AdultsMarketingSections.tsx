@@ -94,20 +94,20 @@ export function AdultsManifestoSection({ isHe }: { isHe: boolean }) {
             className="absolute inset-y-2 start-0 w-px bg-gradient-to-b from-[#B83C4D]/0 via-[#B83C4D]/50 to-[#B83C4D]/0"
           />
 
-          <p className="text-[17px] leading-[1.6] text-[#170E14] sm:text-[20px] sm:leading-[1.7] md:text-[22px]">
+          <p className="text-[20px] leading-[1.55] text-[#170E14] sm:text-[20px] sm:leading-[1.7] md:text-[22px]">
             {isHe
               ? "המומחים של מיאושי בנו עבורכם משחקי מיניות בשלבים — כל שלב הוא פעולה מינית מסוימת שאתם מבצעים יחד. חלק מהמשחקים משלבים צעצועי מין. חלק לא. ההחלטה איתכם."
               : "Mioshy's experts have built you sexual games in stages — each stage is a specific sexual act you perform together. Some games incorporate sex toys. Some don't. The choice is yours."}
           </p>
 
-          <p className="mt-4 text-[16px] leading-[1.65] text-[#4A3A45] sm:mt-7 sm:text-[18px] sm:leading-[1.75] md:text-[19px]">
+          <p className="mt-4 text-[18px] leading-[1.6] text-[#4A3A45] sm:mt-7 sm:text-[18px] sm:leading-[1.75] md:text-[19px]">
             {isHe
               ? "כולם מכוונים למטרה אחת — חוויה מינית בלתי-נשכחת. המשחקים מיניים. אירוטיים. מעוררים. ובנויים בכוונה כך, שלא תרצו להפסיק לשחק."
               : "All of them point to one goal — an unforgettable sexual experience. The games are sexual. Erotic. Arousing. And built — on purpose — so you won't want to stop playing."}
           </p>
 
           <p
-            className="mt-4 text-[17px] leading-[1.6] text-[#8B2638] sm:mt-7 sm:text-[18px] sm:leading-[1.7]"
+            className="mt-4 text-[20px] leading-[1.55] text-[#8B2638] sm:mt-7 sm:text-[18px] sm:leading-[1.7]"
             style={{ fontFamily: "'Frank Ruhl Libre', serif", fontStyle: "italic" }}
           >
             {isHe
@@ -171,7 +171,7 @@ export function AdultsProofSection({ isHe }: { isHe: boolean }) {
             </span>
             <div className="mx-auto mt-4 h-px w-20 bg-[#B83C4D]/30" />
             <p
-              className="mx-auto mt-6 max-w-xs text-[17px] leading-[1.55] text-[#4A3A45]"
+              className="mx-auto mt-6 max-w-xs text-[20px] leading-[1.5] text-[#4A3A45] sm:text-[17px] sm:leading-[1.55]"
               style={{ fontFamily: "'Frank Ruhl Libre', serif", fontWeight: 500 }}
             >
               {isHe
@@ -190,7 +190,7 @@ export function AdultsProofSection({ isHe }: { isHe: boolean }) {
             </span>
             <div className="mx-auto mt-4 h-px w-20 bg-[#B83C4D]/30" />
             <p
-              className="mx-auto mt-6 max-w-xs text-[17px] leading-[1.55] text-[#4A3A45]"
+              className="mx-auto mt-6 max-w-xs text-[20px] leading-[1.5] text-[#4A3A45] sm:text-[17px] sm:leading-[1.55]"
               style={{ fontFamily: "'Frank Ruhl Libre', serif", fontWeight: 500 }}
             >
               {isHe
@@ -202,7 +202,7 @@ export function AdultsProofSection({ isHe }: { isHe: boolean }) {
 
         {/* Closing note */}
         <p
-          className="mx-auto mt-10 max-w-xl text-center text-[15px] text-[#8B2638]/70"
+          className="mx-auto mt-10 max-w-xl text-center text-[20px] leading-[1.5] text-[#8B2638]/85 sm:text-[15px] sm:leading-normal sm:text-[#8B2638]/70"
           style={{ fontFamily: "'Frank Ruhl Libre', serif", fontStyle: "italic" }}
         >
           {isHe
@@ -644,7 +644,7 @@ export function AdultsClosingCta({ isHe }: { isHe: boolean }) {
         </Link>
 
         <p
-          className="mt-6 text-[14px] text-white/45"
+          className="mt-6 text-[18px] text-white/70 sm:text-[14px] sm:text-white/45"
           style={{ fontFamily: "'Frank Ruhl Libre', serif", fontStyle: "italic" }}
         >
           {isHe
@@ -676,7 +676,7 @@ export function AdultsClosingCta({ isHe }: { isHe: boolean }) {
 
 export function AdultsCatalogueIntro({ isHe }: { isHe: boolean }) {
   return (
-    <div id="catalogue-intro" className="relative px-4 pb-2 pt-[80px]">
+    <div id="catalogue-intro" className="relative px-4 pb-2 pt-[32px] sm:pt-[80px]">
       {/* Top hairline */}
       <div
         aria-hidden

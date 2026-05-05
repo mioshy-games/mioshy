@@ -63,13 +63,19 @@ export function AdultsMarketingHero({
         className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-rose-400/40 to-transparent"
       />
 -
-      {/* Local concentrated radial behind the headline — focal pool. */}
+      {/* Animated two-tone DARK gradient pool behind the headline.
+          Two dark radials drift via `animate-aurora-drift` (defined in
+          tailwind.config). Mirrors the journey-page hero treatment but
+          in the wine/plum after-dark palette: deep burgundy on one side,
+          deep violet on the other. Low chroma + low alpha keeps the
+          backdrop feeling like ambient room light, not a poster splash. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 -z-0"
+        className="pointer-events-none absolute inset-0 -z-0 animate-aurora-drift"
         style={{
           background:
-            "radial-gradient(900px 520px at 50% 38%, rgba(244,63,94,0.20), transparent 65%)",
+            "radial-gradient(900px 520px at 28% 32%, rgba(76,29,49,0.65), transparent 60%), " +
+            "radial-gradient(820px 480px at 76% 60%, rgba(46,18,56,0.65), transparent 62%)",
         }}
       />
 -
@@ -77,7 +83,7 @@ export function AdultsMarketingHero({
           padding on mobile to remove the dead air the user flagged. */}
       <nav
         aria-label="breadcrumb"
-        className="relative z-20 mx-auto flex max-w-6xl items-center gap-2 px-4 pt-4 text-[13px] text-white/55 sm:pt-8 sm:text-xs sm:text-white/45"
+        className="relative z-20 mx-auto hidden max-w-6xl items-center gap-2 px-4 pt-4 text-[13px] text-white/55 sm:flex sm:pt-8 sm:text-xs sm:text-white/45"
       >
         <Link href="/" className="transition hover:text-white/80">
           {isHe ? "בית" : "Home"}
@@ -88,23 +94,6 @@ export function AdultsMarketingHero({
         </span>
       </nav>
 -
-      {/* ── MOBILE edge cards — small tarot peeks flanking the
-            headline. Sized ~88×140 and tilted so they read as
-            decorative atmosphere rather than primary content. They
-            use position:absolute so they don't change the document
-            flow, and they tuck partially off the screen edge so a
-            very narrow phone doesn't squeeze the headline. ── */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-[88px] z-0 lg:hidden"
-      >
-        <div className="absolute start-[-14px] top-0 h-[150px] w-[92px] -rotate-[10deg] opacity-90">
-          <MiniPosterCard tone="violet" Icon={Heart} />
-        </div>
-        <div className="absolute end-[-14px] top-[28px] h-[150px] w-[92px] rotate-[10deg] opacity-90">
-          <MiniPosterCard tone="rose" Icon={Flame} />
-        </div>
-      </div>
 
       {/* ── DESKTOP edge cards — two only, brought closer to the headline.
             start/end values bumped from 2% → 8% so the cards read as part
@@ -193,7 +182,7 @@ export function AdultsMarketingHero({
             bug at large display sizes.) */}
         <div className="mt-5 sm:mt-8">
           <h1
-            className="text-balance text-[40px] leading-[1.05] tracking-[-0.025em] sm:text-[66px] sm:leading-[1.02] md:text-[86px] lg:text-[99px]"
+            className="mx-auto max-w-[360px] text-balance text-[58px] leading-[1.02] tracking-[-0.025em] sm:max-w-none sm:text-[66px] sm:leading-[1.02] md:text-[86px] lg:text-[99px]"
             style={{ fontFamily: "'Frank Ruhl Libre', serif", fontWeight: 600 }}
           >
             <span className="block text-white">
@@ -210,7 +199,7 @@ export function AdultsMarketingHero({
 
         {/* Lede — names the product type + the emotional payoff. */}
         <p
-          className="mx-auto mt-4 max-w-xl text-pretty text-[17px] leading-[1.55] text-white/85 sm:mt-7 sm:text-[20px] sm:leading-[1.6] md:text-[22px]"
+          className="mx-auto mt-4 max-w-[300px] text-pretty text-[20px] leading-[1.5] text-white/85 sm:mt-7 sm:max-w-xl sm:text-[20px] sm:leading-[1.6] md:text-[22px]"
           style={{ fontFamily: "'Frank Ruhl Libre', serif", fontWeight: 500 }}
         >
           {isHe ? (
@@ -235,6 +224,34 @@ export function AdultsMarketingHero({
             </>
           )}
         </p>
+
+        {/* Mobile-only inline poster pair — sits between the lede and CTA,
+            in document flow, replacing the prior absolute "edge peeks"
+            that were overlapping the headline. Two cards side-by-side,
+            slightly tilted toward each other, give the section visual
+            atmosphere without competing with the title. Hidden on lg+
+            because desktop already has its own larger floating cards. */}
+        <div
+          aria-hidden
+          className="mt-7 flex justify-center gap-3 lg:hidden"
+        >
+          <div className="h-[180px] w-[120px] -rotate-[6deg]">
+            <MiniPosterCard
+              tone="violet"
+              Icon={Heart}
+              imageSrc="/images/woman-mioshy.webp"
+              imageAlt={isHe ? "מרגש — תמונת המשחק" : "Touching — game artwork"}
+            />
+          </div>
+          <div className="h-[180px] w-[120px] rotate-[6deg]">
+            <MiniPosterCard
+              tone="rose"
+              Icon={Flame}
+              imageSrc="/images/woman-sexy.webp"
+              imageAlt={isHe ? "מעורר — תמונת המשחק" : "Stirring — game artwork"}
+            />
+          </div>
+        </div>
 
         {/* Single primary CTA. Slightly tighter on mobile so the whole
             "headline → CTA" stack fits within one screen. */}
@@ -261,7 +278,7 @@ export function AdultsMarketingHero({
 
         {/* Reassurance line. */}
         <p
-          className="mt-4 text-[14px] text-white/65 sm:mt-7 sm:text-[15px] sm:text-white/55"
+          className="mt-4 text-[18px] text-white/75 sm:mt-7 sm:text-[15px] sm:text-white/55"
           style={{
             fontFamily: "'Frank Ruhl Libre', serif",
             fontStyle: "italic",
@@ -678,9 +695,14 @@ function CornerTicks() {
 function MiniPosterCard({
   tone,
   Icon,
+  imageSrc,
+  imageAlt,
 }: {
   tone: "violet" | "rose";
   Icon: typeof Heart;
+  /** Optional artwork — when present, replaces the dashed placeholder. */
+  imageSrc?: string;
+  imageAlt?: string;
 }) {
   const accent =
     tone === "violet"
@@ -704,8 +726,18 @@ function MiniPosterCard({
           className={`h-1 w-1 rounded-full ${accent.dot} shadow-[0_0_6px_rgba(255,255,255,0.5)]`}
         />
       </div>
-      <div className="mt-1 flex flex-1 items-center justify-center overflow-hidden rounded-md border border-dashed border-white/15 bg-[rgba(255,255,255,0.025)]">
-        <ImageIcon className="h-3.5 w-3.5 stroke-[1.4] text-white/35" />
+      <div className="relative mt-1 flex flex-1 items-center justify-center overflow-hidden rounded-md border border-white/10 bg-[rgba(255,255,255,0.025)]">
+        {imageSrc ? (
+          <Image
+            src={imageSrc}
+            alt={imageAlt ?? ""}
+            fill
+            sizes="92px"
+            className="object-cover"
+          />
+        ) : (
+          <ImageIcon className="h-3.5 w-3.5 stroke-[1.4] text-white/35" />
+        )}
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "@/navigation";
 import {
@@ -107,14 +107,71 @@ export function LiveDemoHero({
   const [cardOpen, setCardOpen] = useState(false);
   const wheelRef = useRef<WheelApi>(null);
   const spinStartedRef = useRef(false);
+  const popupRef = useRef<HTMLDivElement | null>(null);
 
-  const effectiveSlices =
-    slices && slices.length > 0 ? slices : FALLBACK_SLICES;
+  // Diagnostic: when the popup renders, log its bounding rect, its parent's
+  // rect, the viewport width, and any inline transform Framer is applying.
+  // Helps confirm whether centering math actually places the card in view
+  // or whether something (transform: none, overflow, etc.) is shifting it.
+  useEffect(() => {
+    if (phase !== "settled" || !cardOpen) return;
+    const log = () => {
+      const el = popupRef.current;
+      if (!el) {
+        console.log("[LiveDemoHero/popup] popupRef.current is null — element not yet mounted.");
+        return;
+      }
+      const rect = el.getBoundingClientRect();
+      const parent = el.parentElement;
+      const parentRect = parent?.getBoundingClientRect();
+      const cs = window.getComputedStyle(el);
+      console.log("[LiveDemoHero/popup] viewport:", { w: window.innerWidth, h: window.innerHeight });
+      console.log("[LiveDemoHero/popup] popup rect:", { left: rect.left, right: rect.right, top: rect.top, width: rect.width });
+      console.log("[LiveDemoHero/popup] parent rect:", parentRect ? { left: parentRect.left, right: parentRect.right, width: parentRect.width } : "no parent");
+      console.log("[LiveDemoHero/popup] computed transform:", cs.transform, "left:", cs.left, "right:", cs.right, "marginLeft:", cs.marginLeft, "marginRight:", cs.marginRight);
+      console.log("[LiveDemoHero/popup] inline style.transform (Framer-applied):", el.style.transform || "(empty)");
+    };
+    // Wait one frame so Framer's animate has applied its inline transform.
+    const id = requestAnimationFrame(() => requestAnimationFrame(log));
+    return () => cancelAnimationFrame(id);
+  }, [phase, cardOpen]);
+
+  // Marketing demo wheel — intentionally simplified to TWO categories
+  // (Truth + Challenge), repeating. The production game pulls dozens of
+  // slices from the DB; that's reserved for the actual game page. Here
+  // we just want a "taste" wheel with two fixed sample contents that
+  // visitors can spin and feel before committing to a real game.
+  //
+  // Strategy: pull one Truth-typed slice and one Challenge-typed slice
+  // from the production wheel config (so the colors/labels carry over),
+  // then build a 6-segment alternating wheel from those two. Fall back
+  // to FALLBACK_SLICES if production doesn't expose both types.
+  const isChallengeType = (t: string) =>
+    /dare|challenge|אתגר/i.test(t);
+  const isTruthType = (t: string) =>
+    /truth|honest|honesty|כנות|אמת/i.test(t);
+
+  const effectiveSlices = useMemo<WheelSegment[]>(() => {
+    if (!slices || slices.length === 0) return FALLBACK_SLICES;
+    const truth =
+      slices.find((s) => isTruthType(s.type) || isTruthType(s.label));
+    const challenge =
+      slices.find((s) => isChallengeType(s.type) || isChallengeType(s.label));
+    if (!truth || !challenge) return FALLBACK_SLICES;
+    // Preserve the production slice COUNT — if the admin configured a
+    // 12-slice wheel, the demo also shows 12 (alternating). That keeps
+    // the visual rhythm identical to the live game.
+    const count = slices.length;
+    return Array.from({ length: count }, (_, i) =>
+      i % 2 === 0 ? { ...truth } : { ...challenge },
+    );
+  }, [slices]);
 
   // Demo content — fixed wording per slice type. The actual game pulls
   // questions fro- the DB; this is the marketing taste-tester.
   const isChallenge =
-    landedSlice?.type === "Challenge" || landedSlice?.type === "dare";
+    !!landedSlice &&
+    (isChallengeType(landedSlice.type) || isChallengeType(landedSlice.label));
   const displayedQuestion = isChallenge
     ? isHe
       ? "הקלט/י הודעה קולית אירוטית של דקה — שלח/י לי שאשמע מחר בבוקר בדרך לעבודה."
@@ -393,11 +450,12 @@ export function LiveDemoHero({
             <AnimatePresence>
               {phase === "settled" && cardOpen ? (
                 <motion.div
+                  ref={popupRef}
                   initial={{ opacity: 0, y: -16, scale: 0.9 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -12, scale: 0.95 }}
                   transition={{ duration: 0.55, ease: [0.22, 0.61, 0.36, 1] }}
-                  className="absolute left-1/2 top-[-4%] z-30 w-[88%] max-w-[480px] -translate-x-1/2 rounded-[24px] border border-[#E9C4CA]/40 bg-[#FBF5F2] p-5 text-[#170E14] shadow-[0_28px_56px_-12px_rgba(14,8,16,0.7)] sm:p-6"
+                  className="absolute inset-x-0 top-[-4%] z-30 mx-auto w-[78%] max-w-[300px] rounded-[24px] border border-[#E9C4CA]/40 bg-[#FBF5F2] p-5 text-[#170E14] shadow-[0_28px_56px_-12px_rgba(14,8,16,0.7)] sm:p-6 lg:w-[88%] lg:max-w-[480px]"
                 >
                   {/* Close (X) — sits in the corner above the wheel area. */}
                   <button

@@ -1223,7 +1223,43 @@
     .reviews-grid{gap:14px}
     section{padding:40px 0}
     .problem,.authority,.media,.media-press,.founder,.journey,.couples-games,.education,.for-whom,.pricing,.final,.faq{padding:40px 0}
-    .personas-grid{grid-template-columns:1fr;gap:14px}
+    /* ForWhom personas mobile: horizontal card layout.
+       Icon sits beside the text instead of stacked on top, so each card
+       reads as one compact unit instead of four separate blocks.
+       Strategy: enlarge HEADINGS (24px) for visual hierarchy on phones,
+       keep body copy at the base 18px so it doesn't feel inflated. */
+    .personas-grid{grid-template-columns:1fr;gap:12px}
+    .persona{
+      display:grid;
+      grid-template-columns:48px 1fr;
+      column-gap:14px;
+      row-gap:4px;
+      padding:20px 18px;
+      align-items:start;
+    }
+    .persona-icon{
+      grid-column:1;grid-row:1 / span 3;
+      width:48px;height:48px;
+      border-radius:12px;
+      margin-bottom:0;
+      font-size:22px;
+      align-self:start;
+    }
+    .persona h3{
+      grid-column:2;grid-row:1;
+      font-size:24px;line-height:1.25;
+      margin-bottom:6px;
+    }
+    .persona p{
+      grid-column:2;grid-row:2;
+      font-size:18px;line-height:1.55;
+      margin-bottom:8px;
+      flex:none;
+    }
+    .persona-link{
+      grid-column:2;grid-row:3;
+      font-size:18px;
+    }
     .section-head{margin:0 auto 24px}
     .section-head h2{margin-bottom:12px}
     .auth-narrative{margin:0 auto 36px}
@@ -1312,11 +1348,19 @@
     .problem-text h2{margin-bottom:10px}
     .problem-text .lead{margin-bottom:18px}
     .problem-item{padding:18px 0;gap:14px}
+    /* Image: landscape on mobile to cut scroll. Same image, center-cropped
+       (object-fit:cover + object-position:center are already on .problem-img). */
+    .problem-image{aspect-ratio:16/9}
 
     /* Final CTA mobile */
     .final h2{margin-bottom:14px}
     .final-choice-grid{gap:14px;margin:0 auto 24px}
-    .final-choice{padding:24px 22px}
+    .final-choice{padding:24px 22px;gap:12px}
+    /* Final CTA mobile: enlarge HEADING (and the CTA button) for hierarchy.
+       Body copy nudged from 15→17 (still secondary, just no longer cramped). */
+    .final-choice h3{font-size:28px;line-height:1.18}
+    .final-choice p{font-size:17px;line-height:1.55}
+    .final-choice .btn{font-size:16px;padding:15px 22px}
     .final-trust{flex-wrap:wrap;gap:10px 14px;font-size:13px;white-space:nowrap;justify-content:center}
 
     /* FAQ mobile */

@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { motion, Reorder } from "framer-motion";
-import { GripVertical } from "lucide-react";
+import { motion } from "framer-motion";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 import { isValidOrder, type PriorityKey } from "@/lib/journey/priorities";
 import type {
@@ -22,27 +22,31 @@ interface Props {
 }
 
 /**
- * Drag-and-drop ranker for the 5 relationship priority categories.
+ * Reorder the 5 relationship priority categories using ↑/↓ arrow buttons
+ * on each row.
  *
- * Built on framer-motion's `Reorder.Group` / `Reorder.Item` — already in
- * the project, full touch support out of the box (Pointer Events under
- * the hood), works on iOS Safari without us writing any drag math.
+ * Why arrows instead of drag (UX feedback 2026-05-05): the previous
+ * framer-motion `Reorder.Group` implementation set `touch-action: none`
+ * on every row so the page wouldn't try to scroll while the user was
+ * dragging. The side effect was that the page couldn't scroll AT ALL
+ * while a finger was on a card — and on phones the cards take up the
+ * full visible area, so the user got stuck unable to scroll down to the
+ * Continue button. Replacing drag with explicit arrow buttons fixes the
+ * scroll lock and is also a more discoverable interaction for a
+ * non-developer audience.
  *
- * Submission shape: `{ kind: 'ranking', order: PriorityKey[] }`.
- * `order[0]` is highest priority. Server validator in
- * /api/journey/answer enforces it's a permutation of PRIORITY_KEYS.
+ * Submission shape stays: `{ kind: 'ranking', order: PriorityKey[] }`.
+ * Server validator on /api/journey/answer enforces it's a permutation of
+ * PRIORITY_KEYS — unchanged.
  *
- * RTL: the `<section>` inherits `dir` from the parent (JourneyClient
- * sets it on the wrapper). Framer reorder is direction-agnostic — it
- * cares about Y position, not start/end inline axis.
+ * Animation: framer-motion `<motion.li layout>` animates the position
+ * swap so the user sees the cards trade places instead of teleporting.
  *
- * The drag handle (`<GripVertical>`) is always rendered at the inline-end
- * side of the card so RTL/LTR users both see the same visual hint.
- *
- * Accessibility note: drag handles are decorative; the whole card is the
- * draggable surface (Reorder.Item gives every item `tabIndex=0` + arrow-
- * key keyboard reorder by default). Screen readers announce the position
- * via `aria-roledescription="sortable"` on the group.
+ * Accessibility:
+ *  - Each ↑/↓ button has an aria-label with the category and direction.
+ *  - The buttons are real <button> elements, so keyboard users get
+ *    Enter/Space activation for free.
+ *  - Disabled at the boundaries (↑ on idx 0, ↓ on idx N-1).
  */
 export function PriorityRankingStep({
   question,
@@ -54,9 +58,7 @@ export function PriorityRankingStep({
   const isHe = locale === "he";
 
   // Initial order: prior answer if valid, else the order declared in
-  // the questionnaire (which is the spec's "default order, but user
-  // must reorder"). The questionnaire's categories list is the only
-  // fallback — there is no longer a hardcoded PRIORITY_KEYS array.
+  // the questionnaire.
   const initialOrder = useMemo<PriorityKey[]>(() => {
     if (
       initial &&
@@ -67,18 +69,12 @@ export function PriorityRankingStep({
     }
     const declared = question.categories.map((c) => c.key);
     if (isValidOrder(declared)) return declared;
-    // Last-resort fallback: walk the declared categories in order even
-    // if isValidOrder rejects (e.g. count mismatch). Cast is safe
-    // because the questionnaire schema constrains `key` to PriorityKey.
     return declared as PriorityKey[];
   }, [initial, question.categories]);
 
   const [order, setOrder] = useState<PriorityKey[]>(initialOrder);
 
-  // Build O(1) lookup tables from the question's own categories list.
-  // The questionnaire JSON carries he/en/he_desc/en_desc per category,
-  // so the assessment can render entirely from props without touching
-  // the DB or any constant map.
+  // O(1) lookup tables for category labels/descriptions.
   const labelByKey = useMemo(() => {
     const m = new Map<string, QuestionRankingCategory>();
     for (const c of question.categories) m.set(c.key, c);
@@ -96,13 +92,29 @@ export function PriorityRankingStep({
     return isHe ? c.he_desc : c.en_desc;
   };
 
+  // Swap helpers — splice immutably so React re-renders cleanly.
+  const moveUp = (idx: number) => {
+    if (idx <= 0) return;
+    const next = [...order];
+    [next[idx - 1], next[idx]] = [next[idx]!, next[idx - 1]!];
+    if (isValidOrder(next)) setOrder(next);
+  };
+  const moveDown = (idx: number) => {
+    if (idx >= order.length - 1) return;
+    const next = [...order];
+    [next[idx + 1], next[idx]] = [next[idx]!, next[idx + 1]!];
+    if (isValidOrder(next)) setOrder(next);
+  };
+
   const headline = isHe ? question.he_prompt : question.en_prompt;
   const subline = isHe ? question.he_subline : question.en_subline;
   const continueLabel = isHe ? "המשך" : "Continue";
-  const dragHint = isHe ? "גררו לשינוי הסדר" : "Drag to reorder";
+  const arrowsHint = isHe
+    ? "השתמשו בחצים לשינוי הסדר"
+    : "Use the arrows to reorder";
 
   const submit = async () => {
-    if (!isValidOrder(order)) return; // shouldn't happen — defense in depth
+    if (!isValidOrder(order)) return;
     await onSubmit({ kind: "ranking", order });
   };
 
@@ -112,9 +124,6 @@ export function PriorityRankingStep({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       className="flex flex-col gap-6"
-      // Internal direction for the heading; the page wrapper already sets
-      // dir, but we re-assert here so this component stays drop-in if it
-      // ever lives outside JourneyClient.
       dir={isHe ? "rtl" : "ltr"}
     >
       <header className="flex flex-col gap-1.5">
@@ -126,96 +135,99 @@ export function PriorityRankingStep({
         ) : null}
       </header>
 
-      <Reorder.Group
-        axis="y"
-        values={order}
-        onReorder={(next) => {
-          // framer hands back T[]; we trust isValidOrder downstream but
-          // narrow with a runtime check here so a re-render with bad
-          // state can't slip through.
-          if (isValidOrder(next)) setOrder(next);
-        }}
-        as="ul"
+      <ul
         role="list"
-        aria-roledescription="sortable list"
+        aria-roledescription="reorderable list"
         className="flex flex-col gap-2.5"
       >
-        {order.map((key, idx) => (
-          <Reorder.Item
-            key={key}
-            value={key}
-            // touch-action:none lets framer own the gesture so the page
-            // doesn't try to scroll while the user drags.
-            style={{ touchAction: "none" }}
-            // whileDrag lifts the card visually so it's clear which one
-            // the pointer "owns".
-            whileDrag={{
-              scale: 1.02,
-              boxShadow: "0 18px 40px rgba(0,0,0,0.45)",
-              cursor: "grabbing",
-              zIndex: 30,
-            }}
-            // layout=true → Reorder animates siblings as the dragged card
-            // shifts into a new slot.
-            layout
-            className="select-none"
-          >
-            <div
-              className={[
-                "relative flex items-start gap-3 rounded-2xl border p-4 transition-colors",
-                "border-white/10 bg-white/5 backdrop-blur-sm",
-                idx === 0
-                  ? // Position 1 — soft glow, slightly larger title
-                    "ring-1 ring-fuchsia-300/40 bg-gradient-to-r from-fuchsia-500/15 via-rose-500/10 to-transparent"
-                  : "",
-                idx === order.length - 1
-                  ? // Position 5 — dimmer to drive home "least"
-                    "opacity-80"
-                  : "",
-              ].join(" ")}
+        {order.map((key, idx) => {
+          const isFirst = idx === 0;
+          const isLast = idx === order.length - 1;
+          const upDisabled = isFirst || busy;
+          const downDisabled = isLast || busy;
+          const upLabel = isHe
+            ? `העלה את ${labelFor(key)}`
+            : `Move ${labelFor(key)} up`;
+          const downLabel = isHe
+            ? `הורד את ${labelFor(key)}`
+            : `Move ${labelFor(key)} down`;
+          return (
+            <motion.li
+              key={key}
+              layout
+              transition={{ type: "spring", stiffness: 380, damping: 32 }}
             >
-              {/* Position pill */}
               <div
                 className={[
-                  "shrink-0 inline-flex items-center justify-center rounded-full font-bold tabular-nums",
-                  idx === 0
-                    ? "size-9 bg-fuchsia-400 text-fuchsia-950 text-base"
-                    : "size-8 bg-white/10 text-white text-sm",
+                  "relative flex items-start gap-3 rounded-2xl border p-4",
+                  "border-white/10 bg-white/5 backdrop-blur-sm",
+                  isFirst
+                    ? "ring-1 ring-fuchsia-300/40 bg-gradient-to-r from-fuchsia-500/15 via-rose-500/10 to-transparent"
+                    : "",
+                  isLast ? "opacity-80" : "",
                 ].join(" ")}
-                aria-label={
-                  isHe ? `מקום ${idx + 1}` : `Position ${idx + 1}`
-                }
               >
-                {idx + 1}
-              </div>
-
-              <div className="min-w-0 flex-1">
+                {/* Position pill */}
                 <div
                   className={[
-                    "font-semibold text-white",
-                    idx === 0 ? "text-lg" : "text-base",
+                    "shrink-0 inline-flex items-center justify-center rounded-full font-bold tabular-nums",
+                    isFirst
+                      ? "size-9 bg-fuchsia-400 text-fuchsia-950 text-base"
+                      : "size-8 bg-white/10 text-white text-sm",
                   ].join(" ")}
+                  aria-label={
+                    isHe ? `מקום ${idx + 1}` : `Position ${idx + 1}`
+                  }
                 >
-                  {labelFor(key)}
+                  {idx + 1}
                 </div>
-                <p className="mt-0.5 text-xs leading-snug text-white/65">
-                  {descFor(key)}
-                </p>
-              </div>
 
-              {/* Drag handle — purely decorative; whole card is draggable */}
-              <div
-                className="shrink-0 self-center text-white/40"
-                aria-hidden
-              >
-                <GripVertical className="size-5" />
-              </div>
-            </div>
-          </Reorder.Item>
-        ))}
-      </Reorder.Group>
+                {/* Title + description */}
+                <div className="min-w-0 flex-1">
+                  <div
+                    className={[
+                      "font-semibold text-white",
+                      isFirst ? "text-lg" : "text-base",
+                    ].join(" ")}
+                  >
+                    {labelFor(key)}
+                  </div>
+                  <p className="mt-0.5 text-xs leading-snug text-white/65">
+                    {descFor(key)}
+                  </p>
+                </div>
 
-      <p className="text-center text-xs text-white/55">{dragHint}</p>
+                {/* Up/down arrow controls. Stacked vertically — 44px tap
+                    target each, comfortably hittable on a phone, and they
+                    don't fight scroll because they're plain buttons (no
+                    touch-action overrides). */}
+                <div className="flex shrink-0 flex-col items-center gap-1 self-center">
+                  <button
+                    type="button"
+                    onClick={() => moveUp(idx)}
+                    disabled={upDisabled}
+                    aria-label={upLabel}
+                    className="inline-flex size-9 items-center justify-center rounded-lg border border-white/15 bg-white/5 text-white/85 transition active:scale-95 hover:border-white/30 hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+                  >
+                    <ChevronUp className="size-5" aria-hidden />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => moveDown(idx)}
+                    disabled={downDisabled}
+                    aria-label={downLabel}
+                    className="inline-flex size-9 items-center justify-center rounded-lg border border-white/15 bg-white/5 text-white/85 transition active:scale-95 hover:border-white/30 hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+                  >
+                    <ChevronDown className="size-5" aria-hidden />
+                  </button>
+                </div>
+              </div>
+            </motion.li>
+          );
+        })}
+      </ul>
+
+      <p className="text-center text-xs text-white/55">{arrowsHint}</p>
 
       <div className="flex justify-center">
         <Button

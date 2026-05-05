@@ -21,6 +21,8 @@ import { routing } from "@/i18n/routing";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
 import { JourneyClient } from "@/components/journey/JourneyClient";
+import { JourneyAmbience } from "@/components/journey/JourneyAmbience";
+import { AssessmentDiagProbe } from "@/components/journey/AssessmentDiagProbe";
 import { totalQuestions } from "@/lib/journey/questions";
 import type { Locale } from "@/lib/journey/types";
 
@@ -46,6 +48,12 @@ export default async function JourneyAssessmentPage({
 
   let initialProgress: { current_step: number; status: string; language: Locale } | null = null;
   let subscriptionActive = false;
+  // Prior answers, keyed by question_id. Hydrated below for both
+  // authenticated + anon journeys so the client can pre-fill the
+  // selected answer when the user navigates back to a previously-
+  // answered question. UX feedback 2026-05-05: "כשחוזרים אחורה צריך
+  // לראות את מה שנבחר מקודם".
+  const initialAnswers: Record<string, unknown> = {};
 
   const deviceIdForLog = cookieStoreForLog.get("mioshy_device_id")?.value ?? null;
 
@@ -65,6 +73,19 @@ export default async function JourneyAssessmentPage({
         status: journey.status,
         language: (journey.language ?? locale) as Locale,
       };
+
+      // Pull all prior responses so the client can pre-fill answers when
+      // the user navigates back. RLS allows the user to read their own
+      // journey_responses; no admin client needed here.
+      const { data: rows } = await supabase
+        .from("journey_responses")
+        .select("question_id, answer")
+        .eq("journey_id", journey.id);
+      if (rows) {
+        for (const row of rows) {
+          initialAnswers[row.question_id as string] = row.answer;
+        }
+      }
     } else if (deviceIdForLog) {
       // No user-owned journey — possibly the resume call didn't link the
       // anon row. Probe for an orphan anon journey under the same device
@@ -127,7 +148,7 @@ export default async function JourneyAssessmentPage({
       if (admin) {
         const { data: journey } = await admin
           .from("journeys")
-          .select("current_step, status, language")
+          .select("id, current_step, status, language")
           .eq("device_id", deviceId)
           .is("user_id", null)          // only anonymous rows
           .in("status", ["in_progress", "paywall", "completed"])
@@ -141,17 +162,37 @@ export default async function JourneyAssessmentPage({
             status: journey.status,
             language: (journey.language ?? locale) as Locale,
           };
+
+          // Hydrate prior anon answers (admin client — anon rows have no
+          // auth.uid() to drive RLS).
+          const { data: rows } = await admin
+            .from("journey_responses")
+            .select("question_id, answer")
+            .eq("journey_id", journey.id);
+          if (rows) {
+            for (const row of rows) {
+              initialAnswers[row.question_id as string] = row.answer;
+            }
+          }
         }
       }
     }
   }
 
   return (
-    <JourneyClient
-      locale={locale as Locale}
-      initialProgress={initialProgress}
-      subscriptionActive={subscriptionActive}
-      authenticated={!!user}
-    />
+    <div
+      className="relative isolate min-h-screen bg-[#070b18]"
+      data-testid="assessment-bg-base"
+    >
+      <AssessmentDiagProbe />
+      <JourneyAmbience />
+      <JourneyClient
+        locale={locale as Locale}
+        initialProgress={initialProgress}
+        initialAnswers={initialAnswers}
+        subscriptionActive={subscriptionActive}
+        authenticated={!!user}
+      />
+    </div>
   );
 }

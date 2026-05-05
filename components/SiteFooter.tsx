@@ -30,9 +30,19 @@ export function SiteFooter() {
           {/* Brand column — mobile sizes bumped to 16px tagline + 15px email
               for legibility. Was 13px / 12px which forced users to zoom. */}
           <div className="max-w-sm shrink-0 space-y-4">
-            <span className="font-heading text-2xl font-bold tracking-tight text-white">
-              Mioshy
-            </span>
+            {/* Brand logomark — replaces the previous "Mioshy" text-set
+                wordmark so the footer matches SiteHeader and the rest of
+                the site visually. The footer always sits on a dark plate
+                (`bg-[#07040f]`), so the white SVG can paint directly with
+                no filter (unlike the header which inverts on light scroll). */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/mioshy-white.svg"
+              alt="Mioshy"
+              width={171}
+              height={81}
+              className="h-12 w-auto"
+            />
             <p className="text-base leading-relaxed text-white/65 md:text-sm md:text-white/50">
               {t("tagline")}
             </p>

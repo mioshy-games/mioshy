@@ -27,6 +27,26 @@ export type Axis =
   | "passion_play"
   | "passion_context";
 
+/**
+ * Product-level domain a question belongs to. Used by the assessment UI
+ * to present results grouped by relationship area, and by the analysis
+ * layer to compute per-domain scores. The 5 keys mirror the categories
+ * already seeded in journey_categories (see q_priorities.categories in
+ * questionnaire.json) — keeping a single namespace across the system.
+ *
+ * A question MAY be `domain: null` when it doesn't fit a single area —
+ * e.g. demographic context (gender, relationship duration), meta
+ * questions (priority ranking, perceived gap), or open reflections.
+ * `null` keeps these questions in the flow without forcing an
+ * artificial categorization.
+ */
+export type Domain =
+  | "communication"
+  | "intimacy"
+  | "emotional_connection"
+  | "friendship"
+  | "family";
+
 export type LoveLanguage =
   | "love_language_words"
   | "love_language_time"
@@ -60,6 +80,7 @@ export interface QuestionLikert {
   id: string;
   category: QuestionCategory;
   type: "likert5";
+  domain: Domain | null;
   axes: AxisWeight[];
   purpose: string;
   insight?: string;
@@ -71,6 +92,7 @@ export interface QuestionChoice {
   id: string;
   category: QuestionCategory;
   type: "forced_choice" | "single_choice" | "multi_choice";
+  domain: Domain | null;
   axes: AxisWeight[];
   purpose: string;
   insight?: string;
@@ -83,6 +105,7 @@ export interface QuestionReflection {
   id: string;
   category: QuestionCategory;
   type: "reflection";
+  domain: Domain | null;
   axes: AxisWeight[];
   purpose: string;
   insight?: string;
@@ -115,6 +138,7 @@ export interface QuestionRanking {
   id: string;
   category: QuestionCategory;
   type: "ranking";
+  domain: Domain | null;
   axes: AxisWeight[]; // always [] for ranking — kept for shape-compatibility
   purpose: string;
   insight?: string;
