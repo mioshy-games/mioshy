@@ -20,18 +20,36 @@ export type WheelSegment = {
 };
 
 /**
- * Split a wheel-slice label into at most two lines when it's too long to
- * fit a single line within the slice arc. Picks the split point that
- * minimises the longer line so the result is visually balanced
- * (e.g. "Never Have I Ever" → ["Never Have", "I Ever"], not
- * ["Never", "Have I Ever"]).
+ * Split a wheel-slice label into multiple lines.
+ *
+ * Manual breaks (per Itzik 2026-05-06): if the label contains any of
+ *   • `\n`        (real newline)
+ *   • `|`         (pipe)
+ *   • `<br>` / `<br/>` / `<br />`  (HTML-style)
+ * those are honoured first — every fragment becomes its own line, in
+ * order, with no length cap. This lets admins force a break at exactly
+ * the syllable they want, e.g. "מעולם|לא היה לי" → ["מעולם", "לא היה לי"].
+ *
+ * Auto-fallback (no manual break in the string):
+ * if the label is longer than `threshold` it is split into TWO lines at
+ * the word boundary that minimises the longer line — visually balanced
+ * (e.g. "Never Have I Ever" → ["Never Have", "I Ever"]).
  *
  * Short labels (≤ threshold) and single-word labels are returned as-is
  * so the typical case stays a single <text> render and isn't visually
  * disturbed by an unnecessary line break.
  */
-export function splitLabelToLines(label: string, threshold = 12): string[] {
+export function splitLabelToLines(label: string, threshold = 10): string[] {
   const trimmed = label.trim();
+
+  // Manual break: any of \n, |, <br>, <br/>, <br /> wins immediately.
+  if (/(\n|\||<br\s*\/?>)/i.test(trimmed)) {
+    return trimmed
+      .split(/\n|\||<br\s*\/?>/gi)
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+  }
+
   if (trimmed.length <= threshold) return [trimmed];
   const words = trimmed.split(/\s+/);
   if (words.length < 2) return [trimmed]; // single word, can't word-wrap
@@ -157,6 +175,21 @@ export type WheelProps = {
     width: number; // px
   };
   /**
+   * How slice labels orient inside each wedge. Default: "tangential".
+   *
+   * - "tangential" — text reads along the slice's tangent (perpendicular
+   *   to the radius). Compact for short labels; long labels split onto
+   *   two lines stacked radially.
+   * - "radial" — text reads from the wheel's center outward along the
+   *   radius. Better for long names (e.g. player names like
+   *   "Sarah Sanders") because each slice's full radial length is
+   *   available for the text instead of just the chord.
+   *
+   * Admin-controlled via gameSettings.wheel.labelOrientation. Added
+   * 2026-05-05 per Itzik feedback.
+   */
+  labelOrientation?: "tangential" | "radial";
+  /**
    * Wheel container shape. Default: "circle".
    * "square" → rounded rectangle (keeps the circular SVG segments, clips to square).
    */
@@ -204,9 +237,14 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
     outerBorder,
     centerShadow,
     dividerShadow,
-    labelFontSizePx = 12,
+    // Final value 10 (2026-05-05). Iterated 12 → 10 → 8 → back to 10
+    // per Itzik feedback: keep readable font height, compress horizontal
+    // width via SVG `textLength` + `lengthAdjust="spacingAndGlyphs"` on
+    // each <text> element instead of shrinking the font itself.
+    labelFontSizePx = 10,
     labelColor = "#ffffff",
     labelOutline = { enabled: true, color: "#000000", opacity: 0.25, width: 2 },
+    labelOrientation = "tangential",
     wheelShape = "circle",
     pointerSvg,
     pointerSvgWidth = 40,
@@ -222,6 +260,44 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
     const unsub = rotation.on("change", (v) => setDisplayRotation(v));
     return () => unsub();
   }, [rotation]);
+
+  // ── DIAG 2026-05-05 ─────────────────────────────────────────────────────
+  // Confirm what props arrived inside the production Wheel. If these
+  // values match what TruthOrDareClient/DIAG logged, the data pipeline is
+  // intact and any visual issue is purely in this component's math/CSS.
+  // Look for [Wheel/DIAG].
+  useEffect(() => {
+    console.log("[Wheel/DIAG] BUILD=2026-05-05-wheel-trace v1", {
+      received_labelRadiusFraction:    labelRadiusFraction,
+      received_labelOrientation:       labelOrientation,
+      received_labelFontSizePx:        labelFontSizePx,
+      received_innerCircle:            innerCircle,
+      received_innerCircleColor:       innerCircleColor,
+      received_pointerColor:           pointerColor,
+      received_pointerOffsetY:         pointerOffsetY,
+      received_pointerSvg_present:     !!pointerSvg,
+      received_pointerSvgWidth:        pointerSvgWidth,
+      received_pointerSvgHeight:       pointerSvgHeight,
+      received_wheelSizeRem:           wheelSizeRem,
+      received_wheelSizeRemMax:        wheelSizeRemMax,
+      received_viewportBudgetPx:       viewportBudgetPx,
+      received_markerConfig:           markerConfig,
+      received_optionsCount:           options.length,
+      // Computed values that determine visible label position:
+      computed_isRadial:               labelOrientation === "radial",
+      computed_labelRadius_radial:     140 * (1 - labelRadiusFraction),  // r=140 in radial mode
+      computed_labelRadius_tangential: 140 * labelRadiusFraction,        // r=140 in tangential mode
+      computed_innerCircleRadius:      40,
+      // If radial AND labelRadius_radial < innerCircleRadius (=40),
+      // labels render INSIDE the hub and look "squashed".
+      isLabelInsideHub: labelOrientation === "radial" && (140 * (1 - labelRadiusFraction)) < 40,
+    });
+  }, [
+    labelRadiusFraction, labelOrientation, labelFontSizePx,
+    innerCircle, innerCircleColor, pointerColor, pointerOffsetY,
+    pointerSvg, pointerSvgWidth, pointerSvgHeight,
+    wheelSizeRem, wheelSizeRemMax, viewportBudgetPx, markerConfig, options.length,
+  ]);
 
   const segmentAngle = 360 / Math.max(options.length, 1);
 
@@ -253,13 +329,22 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
     return { x: cx + rr * Math.cos(rad), y: cy + rr * Math.sin(rad) };
   }
 
+  // Round to a fixed precision so SSR and CSR serialize identical SVG
+  // paths. Without this, Math.cos/sin can differ by 1 ULP between server
+  // and client (e.g. 75.00000000000003 vs 75.00000000000004), which
+  // triggers React's "Prop `d` did not match" hydration warning.
+  // 4 decimals is plenty for 300×300 viewBox (sub-pixel precision).
+  function fx(n: number) {
+    return Math.round(n * 10000) / 10000;
+  }
+
   function wedgePath(startRad: number, endRad: number) {
     // Paths use rEdge (=150) so segments fill the full rounded-full container,
     // removing the empty ring that appeared between r=140 and the clip circle.
     const a0 = polar(startRad, rEdge);
     const a1 = polar(endRad, rEdge);
     const large = endRad - startRad > Math.PI ? 1 : 0;
-    return `M ${cx} ${cy} L ${a0.x} ${a0.y} A ${rEdge} ${rEdge} 0 ${large} 1 ${a1.x} ${a1.y} Z`;
+    return `M ${cx} ${cy} L ${fx(a0.x)} ${fx(a0.y)} A ${rEdge} ${rEdge} 0 ${large} 1 ${fx(a1.x)} ${fx(a1.y)} Z`;
   }
 
   const markerAngles = useMemo(() => {
@@ -550,8 +635,8 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
                       key={`div-${i}`}
                       x1={cx}
                       y1={cy}
-                      x2={p.x}
-                      y2={p.y}
+                      x2={fx(p.x)}
+                      y2={fx(p.y)}
                       stroke={dividerColor}
                       strokeWidth={dividerWidth}
                       strokeLinecap="round"
@@ -568,24 +653,94 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
             {options.map((opt, i) => {
               // Segment i covers [i*seg, (i+1)*seg] clockwise from top, so bisector is centerline.
               const bisector = -Math.PI / 2 + (i + 0.5) * segRad;
-              const labelRadius = r * labelRadiusFraction;
+              const isRadial = labelOrientation === "radial";
+              // RADIAL placement: text reads from center outward along the
+              // slice's radial line. Anchor pulls toward the centerline so
+              // text fills the radial length, not the chord width. Position
+              // the anchor closer to the center than the rim so the FIRST
+              // character sits near the center and longer names extend
+              // outward (this matches the inspiration screenshot \u2014 names
+              // like "Sarah Sanders" reading center\u2192rim).
+              //
+              // TANGENTIAL placement (default): single radial point at
+              // labelRadiusFraction, text rotated 90\u00B0 from radius.
+              // 2026-05-06: unified mapping — slider value = label radius
+              // fraction in BOTH modes. Higher slider → farther from
+              // center, in tangential AND radial. The earlier inverse
+              // mapping for radial mode was confusing UX: at slider 0.9
+              // labels ended up at r=14 (inside the r=40 inner hub),
+              // making the slider seem broken.
+              //
+              // Trade-off in radial mode: with textAnchor="start" and
+              // text growing outward, very high slider values can push
+              // long labels past the rim. The compression coefficient
+              // (0.55) keeps this within reason for typical labels;
+              // tune the slider down if you have very long words.
+              // 2026-05-06 round 2: anchor at OUTER, grow INWARD.
+              // Slider value = label anchor radius / wheel radius.
+              // Slider 0.95 → first letter just inside the rim, the
+              // rest of the word reads inward. Floor: keep anchor
+              // outside the inner-circle hub. Ceiling: r (rim).
+              let labelRadius = r * labelRadiusFraction;
+              const innerHubR = innerCircle ? 40 : 0;
+              if (labelRadius < innerHubR + 6) labelRadius = innerHubR + 6;
+              if (labelRadius > r) labelRadius = r;
               const p = polar(bisector, labelRadius);
-              // Tangential labels: rotate with slice; -90deg aligns tangent direction.
-              const rot = (bisector * 180) / Math.PI - 90;
+              // Rotation:
+              //   tangential: rotate to slice tangent (subtract 90\u00B0 from radial bisector)
+              //   radial:     rotate to slice radial (no offset). Text reads outward.
+              //               For slices on the LEFT half of the wheel
+              //               (bisector pointing into negative-x territory),
+              //               flip 180\u00B0 so the text doesn't read upside-down.
+              const baseRotDeg = (bisector * 180) / Math.PI;
+              // Round 9 (2026-05-05): isFlipped is now an explicit
+              // boolean used by BOTH the rotation math AND the
+              // textAnchor selection \u2014 without this dual use, flipped
+              // slices' text was growing the wrong direction and
+              // making labels start at varying distances from the
+              // center.
+              // 2026-05-06 round 2: NO 180\u00B0 flip on the left half.
+              // Per Itzik: "don't flip the writing like happens on
+              // the left side." Text orientation now follows the
+              // bisector consistently across the whole wheel; the
+              // bottom half will appear inverted relative to the
+              // top half \u2014 that is acceptable.
+              const rot = isRadial ? baseRotDeg : baseRotDeg - 90;
               const isRtl = /[\u0590-\u05FF]/.test(opt.label);
-              // Wrap long labels onto two lines (e.g. "Never Have I Ever" \u2192
-              // "Never Have" / "I Ever"). Short labels stay as a single line
-              // so we don't disturb the typical case.
-              const lines = splitLabelToLines(opt.label, 12);
+              // Anchor selection \u2014 first visual letter sits at the
+              // outer rim. Hebrew (RTL): textAnchor="start" puts the
+              // first letter (visual-right of the block) at the
+              // anchor, so the rest of the word extends to the left
+              // in local space \u2192 inward after the bisector rotation.
+              // LTR: textAnchor="end" puts the last letter at the
+              // anchor; the body of the word still reads outward-to-
+              // inner. Hebrew is the primary case for this site.
+              const radialAnchor: "start" | "end" = isRtl ? "start" : "end";
+              // Line wrapping: tangential breaks at 10 chars (chord is the
+              // tight axis). Radial gets 18 chars because the radial axis
+              // is much longer than the chord, so most names fit one line.
+              const wrapThreshold = isRadial ? 18 : 10;
+              const lines = splitLabelToLines(opt.label, wrapThreshold);
+              const px = fx(p.x);
+              const py = fx(p.y);
               return (
                 <text
                   key={`lbl-${i}`}
-                  x={p.x}
-                  y={p.y}
+                  x={px}
+                  y={py}
                   fill={labelColor}
                   fontSize={labelFontSizePx}
                   fontWeight={800}
-                  textAnchor="middle"
+                  // Radial mode: text grows outward (rim direction)
+                  // from the FIXED 40%-radius anchor. For unflipped
+                  // (right-half) slices that means textAnchor=start
+                  // (text grows in local +x = absolute outward).
+                  // For flipped (left-half) slices the rotation
+                  // reverses the local-x axis, so we use textAnchor=end
+                  // to keep growth in the SAME outward direction —
+                  // ensuring all labels start at the same distance
+                  // from the center.
+                  textAnchor={isRadial ? radialAnchor : "middle"}
                   dominantBaseline="middle"
                   direction={isRtl ? "rtl" : "ltr"}
                   unicodeBidi="plaintext"
@@ -599,20 +754,61 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
                         }
                       : undefined
                   }
-                  transform={`rotate(${rot} ${p.x} ${p.y})`}
+                  transform={`rotate(${fx(rot)} ${px} ${py})`}
                 >
-                  {lines.length === 1 ? (
-                    lines[0]
-                  ) : (
-                    <>
-                      <tspan x={p.x} dy="-0.55em">
-                        {lines[0]}
-                      </tspan>
-                      <tspan x={p.x} dy="1.1em">
-                        {lines[1]}
-                      </tspan>
-                    </>
-                  )}
+                  {(() => {
+                    // Squeeze each rendered line via SVG textLength +
+                    // lengthAdjust=spacingAndGlyphs. The browser scales both
+                    // letter spacing AND glyph widths — keeps font height
+                    // intact while pulling the horizontal footprint inward.
+                    //
+                    // Coefficient differs by orientation:
+                    //  - tangential 0.42: chord at the label radius is the
+                    //    tight axis; compress aggressively so text fits
+                    //    inside a 30°-wide slice.
+                    //  - radial 0.55: radial axis is generous (almost
+                    //    full r), so we use near-natural width — text
+                    //    just reads at normal proportions.
+                    const compressionCoeff = isRadial ? 0.55 : 0.42;
+                    const widthFor = (text: string) =>
+                      fx(Math.max(text.length * labelFontSizePx * compressionCoeff, 1));
+                    if (lines.length === 1) {
+                      return (
+                        <tspan
+                          textLength={widthFor(lines[0]!)}
+                          lengthAdjust="spacingAndGlyphs"
+                        >
+                          {lines[0]}
+                        </tspan>
+                      );
+                    }
+                    // Multi-line: render each fragment on its own line.
+                    // The first <tspan> shifts UP by half the block
+                    // height so the whole stack stays vertically
+                    // centred on the (px, py) anchor. Subsequent
+                    // <tspan>s use 1.1em line-height.
+                    const lineHeightEm = 1.1;
+                    const firstDy = -((lines.length - 1) * lineHeightEm) / 2;
+                    return (
+                      <>
+                        {lines.map((ln, idx) => (
+                          <tspan
+                            key={`ln-${idx}`}
+                            x={px}
+                            dy={
+                              idx === 0
+                                ? `${firstDy.toFixed(3)}em`
+                                : `${lineHeightEm}em`
+                            }
+                            textLength={widthFor(ln)}
+                            lengthAdjust="spacingAndGlyphs"
+                          >
+                            {ln}
+                          </tspan>
+                        ))}
+                      </>
+                    );
+                  })()}
                 </text>
               );
             })}
@@ -659,8 +855,8 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
                 return (
                   <circle
                     key={`m-${idx}`}
-                    cx={p.x}
-                    cy={p.y}
+                    cx={fx(p.x)}
+                    cy={fx(p.y)}
                     r={markerSize / 2}
                     fill={markerColor}
                   />
@@ -671,7 +867,7 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
               return (
                 <g
                   key={`m-${idx}`}
-                  transform={`translate(${p.x}, ${p.y}) scale(${s}) translate(-12, -12)`}
+                  transform={`translate(${fx(p.x)}, ${fx(p.y)}) scale(${s}) translate(-12, -12)`}
                   fill={markerColor}
                 >
                   <path d={markerPathD} />

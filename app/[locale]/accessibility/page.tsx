@@ -1,7 +1,10 @@
 /**
- * /[locale]/privacy — Privacy Policy.
+ * /[locale]/accessibility — Accessibility Statement.
  *
- * Server component; reads content from `legal.privacy` namespace.
+ * Required under Israeli regulations (תקנות שוויון זכויות לאנשים עם
+ * מוגבלות - התאמות נגישות לשירות, התשע״ג-2013). The "coordinator"
+ * section contains a TODO placeholder Itzik must fill with the real
+ * coordinator name + dedicated phone/email before launch.
  */
 
 import type { Metadata } from "next";
@@ -23,9 +26,9 @@ export async function generateMetadata({
   params: { locale: string };
 }): Promise<Metadata> {
   const { locale } = params;
-  const t = await getTranslations({ locale, namespace: "legal.privacy" });
+  const t = await getTranslations({ locale, namespace: "legal.accessibility" });
   const base = siteUrl();
-  const canonical = `${base}/${locale}/privacy`;
+  const canonical = `${base}/${locale}/accessibility`;
   return {
     title: t("metaTitle"),
     description: t("metaDescription"),
@@ -33,9 +36,9 @@ export async function generateMetadata({
     alternates: {
       canonical,
       languages: {
-        he: `${base}/he/privacy`,
-        en: `${base}/en/privacy`,
-        "x-default": `${base}/en/privacy`,
+        he: `${base}/he/accessibility`,
+        en: `${base}/en/accessibility`,
+        "x-default": `${base}/en/accessibility`,
       },
     },
     openGraph: {
@@ -49,16 +52,15 @@ export async function generateMetadata({
 }
 
 const SECTION_KEYS = [
-  "dataCollected",
-  "cookies",
-  "thirdParties",
-  "rights",
-  "retention",
-  "children",
-  "contact",
+  "commitment",
+  "features",
+  "limitations",
+  "coordinator",
+  "audit",
+  "report",
 ] as const;
 
-export default async function PrivacyPage({
+export default async function AccessibilityPage({
   params,
 }: {
   params: { locale: string };
@@ -69,7 +71,7 @@ export default async function PrivacyPage({
   }
   setRequestLocale(locale);
 
-  const t = await getTranslations({ locale, namespace: "legal.privacy" });
+  const t = await getTranslations({ locale, namespace: "legal.accessibility" });
   const tRoot = await getTranslations({ locale, namespace: "legal" });
 
   const sections: LegalSection[] = SECTION_KEYS.map((key) => {

@@ -133,6 +133,50 @@ export default async function MyGamesGalleryPage({
                   </li>
                 );
               })}
+
+              {/* Virtual snakes & ladders card — Itzik 2026-05-05.
+                  The board game isn't a row in the `games` table (it
+                  has its own /game route, not /games/:slug), so the DB
+                  query above never returns it. Mirror the same hardcoded
+                  card the public /games catalogue uses, so paid users
+                  see EVERY active product on their personal gallery
+                  page too. */}
+              <li className="group overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] backdrop-blur-md transition hover:border-rose-300/40 hover:bg-white/[0.06]">
+                <Link href="/game" className="flex h-full flex-col">
+                  <div className="relative aspect-[16/10] w-full overflow-hidden bg-gradient-to-br from-rose-500/30 via-fuchsia-500/25 to-violet-500/20">
+                    {/* Thumbnail — drop the image file at
+                        /public/images/snakes-couples.webp (16:10 ratio
+                        recommended, e.g. 1280×800). The emoji-gradient
+                        underneath stays as a fallback if the file is
+                        missing. */}
+                    <Image
+                      src="/images/snakes-couples.webp"
+                      alt={isHe ? "נחשים וסולמות" : "Snakes & Ladders"}
+                      fill
+                      sizes="(max-width: 640px) 100vw, 50vw"
+                      className="object-cover transition duration-500 group-hover:scale-[1.04]"
+                    />
+                    <span className="absolute end-3 top-3 rounded-full bg-gradient-to-r from-rose-400 to-fuchsia-400 px-3 py-1 text-xs font-bold text-white shadow-lg">
+                      {isHe ? "חדש 🔥" : "New 🔥"}
+                    </span>
+                    <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/70 to-transparent" />
+                  </div>
+                  <div className="flex flex-1 flex-col p-5">
+                    <h3 className="font-heading text-xl font-bold">
+                      {isHe ? "נחשים וסולמות" : "Snakes & Ladders"}
+                    </h3>
+                    <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-white/75">
+                      {isHe
+                        ? "לוח קלאסי עם שאלות ואתגרים זוגיים — שחקו על מכשיר אחד או על שני מכשירים שונים."
+                        : "Classic board with couples questions & challenges — play on one device or remotely."}
+                    </p>
+                    <span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-rose-300 transition group-hover:text-white">
+                      <Play className="h-4 w-4" />
+                      {isHe ? "שחקו עכשיו" : "Play now"}
+                    </span>
+                  </div>
+                </Link>
+              </li>
             </ul>
           )}
         </section>

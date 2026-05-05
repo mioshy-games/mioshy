@@ -65,24 +65,41 @@ export function LocalGameClient() {
     room: storeRoom,
   } = useLocalSnakesStore();
 
-  const [drafts, setDrafts] = useState<DraftPlayer[]>(() => {
-    // Pre-fill names/avatars/colors if redirected from /game setup page
+  // ── Pre-fill from sessionStorage + auto-start flag ──────────────────────
+  // Coming from /game (the unified setup screen)? Both players are already
+  // configured there. Read them in, and if `local_auto_start` was set by
+  // /game, skip the lobby entirely and start the game on mount. If the
+  // user navigated here directly (no flag), show the lobby as before so
+  // they can still configure 2-6 players manually.
+  //
+  // BOOT MODE — computed synchronously during the very first render so
+  // we KNOW from frame 1 whether to skip the lobby UI. Without this,
+  // the lobby flashes for a moment between mount and the auto-start
+  // useEffect firing (Itzik feedback round 3, 2026-05-05).
+  const [bootSnapshot] = useState(() => {
     try {
       const raw1 = sessionStorage.getItem("local_p1");
       const raw2 = sessionStorage.getItem("local_p2");
+      const auto = sessionStorage.getItem("local_auto_start");
       if (raw1 && raw2) {
         const p1 = JSON.parse(raw1) as { userName: string; avatar: string; color: string };
         const p2 = JSON.parse(raw2) as { userName: string; avatar: string; color: string };
         sessionStorage.removeItem("local_p1");
         sessionStorage.removeItem("local_p2");
-        return [
-          { id: `draft_${Math.random().toString(36).slice(2, 8)}`, userName: p1.userName, avatar: p1.avatar, color: p1.color },
-          { id: `draft_${Math.random().toString(36).slice(2, 8)}`, userName: p2.userName, avatar: p2.avatar, color: p2.color },
-        ];
+        sessionStorage.removeItem("local_auto_start");
+        return {
+          drafts: [
+            { id: `draft_${Math.random().toString(36).slice(2, 8)}`, userName: p1.userName, avatar: p1.avatar, color: p1.color },
+            { id: `draft_${Math.random().toString(36).slice(2, 8)}`, userName: p2.userName, avatar: p2.avatar, color: p2.color },
+          ],
+          autoStart: auto === "1",
+        };
       }
     } catch { /* ignore */ }
-    return [buildDefaults(0), buildDefaults(1)];
+    return { drafts: [buildDefaults(0), buildDefaults(1)], autoStart: false };
   });
+  const [autoStartPending, setAutoStartPending] = useState<boolean>(bootSnapshot.autoStart);
+  const [drafts, setDrafts] = useState<DraftPlayer[]>(bootSnapshot.drafts);
   const [err, setErr] = useState<string | null>(null);
 
   // Build a fresh lobby room when the page loads, so state is clean every visit.
@@ -91,6 +108,37 @@ export function LocalGameClient() {
       storeCreateRoom(DEFAULT_SNAKES_CONFIG);
     }
   }, [storeCreateRoom, storeRoom]);
+
+  // Auto-redirect to the unified /game setup whenever the user lands
+  // here WITHOUT a fresh auto-start payload AND there's no active game
+  // in progress — Itzik 2026-05-05: the standalone local lobby was
+  // confusing on refresh / back-button. The unified /game screen is
+  // now the single setup entry point. We allow this page to stay
+  // visible only when:
+  //   1. autoStartPending (we're in the middle of starting from /game), OR
+  //   2. storeRoom is "playing" / "ended" (an active game is live).
+  // In all other cases — redirect to /game.
+  useEffect(() => {
+    if (autoStartPending) return;
+    if (storeRoom?.status === "playing" || storeRoom?.status === "ended") return;
+    router.replace(`/${locale}/game`);
+  }, [autoStartPending, storeRoom, router, locale]);
+
+  // Auto-start when the unified /game setup primed sessionStorage with
+  // local_auto_start. We wait for the room to exist (above effect creates
+  // it) and the drafts to be valid, then fire handleStart once. The
+  // `autoStartPending` flag is the single source of truth so React
+  // double-mounts in dev mode can't trigger this twice.
+  useEffect(() => {
+    if (!autoStartPending) return;
+    if (!storeRoom) return;
+    handleStart();
+    setAutoStartPending(false);
+    // We intentionally exclude handleStart from deps — it captures fresh
+    // drafts on every render and we only want this to fire once after
+    // mount. autoStartPending is the gate.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoStartPending, storeRoom]);
 
   const updateDraft = (id: string, patch: Partial<DraftPlayer>) => {
     setDrafts((ds) => ds.map((d) => (d.id === id ? { ...d, ...patch } : d)));
@@ -119,7 +167,18 @@ export function LocalGameClient() {
   const handleStart = () => {
     setErr(null);
     if (!canStart) {
-      setErr("ודאו שיש לפחות שני שחקנים עם שמות, ולכל אחד אוואטר וצבע ייחודיים.");
+      // When auto-start fails validation (bad sessionStorage data), don't
+      // show the user a confusing red error — just clear the flag and let
+      // them set things up manually.
+      if (autoStartPending) {
+        setAutoStartPending(false);
+        return;
+      }
+      setErr(
+        locale === "he"
+          ? "ודאו שיש לפחות שני שחקנים עם שמות, ולכל אחד אוואטר וצבע ייחודיים."
+          : "Make sure both players have names and that each has a unique avatar and color.",
+      );
       return;
     }
     unlockAudio(); // iOS AudioContext needs a user-gesture unlock
@@ -181,6 +240,25 @@ export function LocalGameClient() {
   if (storeRoom && (storeRoom.status === "playing" || storeRoom.status === "ended")) {
     return (
       <SnakesGameBoard adapter={adapter} onExit={handleExit} onPlayAgain={handlePlayAgain} />
+    );
+  }
+
+  // Auto-start path — we arrived here from /game with sessionStorage
+  // primed. Don't flash the lobby UI; render a minimal loading state
+  // until the room transitions to "playing" and the branch above takes
+  // over. If something goes wrong during validation, handleStart
+  // clears autoStartPending → falls through to the lobby below so the
+  // user can correct things manually.
+  if (autoStartPending) {
+    return (
+      <main className="flex min-h-[100dvh] items-center justify-center px-4" dir={locale === "he" ? "rtl" : "ltr"}>
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#C9A961]/30 border-t-[#E6CB85]" />
+          <div className="font-['Playfair_Display',Georgia,serif] text-sm text-[#C9A961]/70">
+            {locale === "he" ? "מכינים את המשחק…" : "Preparing the game…"}
+          </div>
+        </div>
+      </main>
     );
   }
 

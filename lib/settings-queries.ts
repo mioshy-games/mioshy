@@ -136,6 +136,20 @@ export async function upsertGameSettings(
   gameId: string,
   newSettings: GameSettings,
 ): Promise<void> {
+  // ── DIAG 2026-05-05 ────────────────────────────────────────────────────
+  // Log what the admin is about to save. Compare this to what the game
+  // page reads later via [/games/[slug]/SERVER-DIAG].
+  console.log("[settings/upsertGameSettings/DIAG] BUILD=2026-05-05-wheel-trace v1", {
+    gameId,
+    incoming_wheel_labelRadiusFraction:    newSettings?.wheel?.labelRadiusFraction,
+    incoming_wheel_labelOrientation:       newSettings?.wheel?.labelOrientation,
+    incoming_wheel_sizeRem:                newSettings?.wheel?.sizeRem,
+    incoming_wheel_innerCircle_enabled:    newSettings?.wheel?.innerCircle?.enabled,
+    incoming_wheel_innerCircle_fillColor:  newSettings?.wheel?.innerCircle?.fillColor,
+    incoming_wheel_pointerColor:           newSettings?.wheel?.pointerColor,
+    incoming_wheel_pointerOffsetY:         newSettings?.wheel?.pointerOffsetY,
+  });
+
   const { data: existing } = await supabase
     .from("game_settings")
     .select("*")

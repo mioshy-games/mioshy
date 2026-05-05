@@ -54,30 +54,44 @@ function PlayerCard({
   index,
   otherDraft,
   onChange,
+  isHe,
 }: {
   draft: PlayerDraft;
   index: number;
   otherDraft?: PlayerDraft;
   onChange: (patch: Partial<PlayerDraft>) => void;
+  isHe: boolean;
 }) {
   const takenAvatars = new Set(otherDraft ? [otherDraft.avatar] : []);
   const takenColors  = new Set(otherDraft ? [otherDraft.color]  : []);
 
   return (
-    <div className="rounded-3xl border border-amber-100/15 bg-stone-950/55 p-4 backdrop-blur" dir="rtl">
-      <div className="mb-3 text-sm font-bold text-amber-50">שחקן {index + 1}</div>
+    <div className="rounded-3xl border border-amber-100/15 bg-stone-950/55 p-4 backdrop-blur" dir={isHe ? "rtl" : "ltr"}>
+      <div className="mb-3 text-sm font-bold text-amber-50">
+        {isHe ? `שחקן ${index + 1}` : `Player ${index + 1}`}
+      </div>
 
       <input
         value={draft.userName}
         onChange={(e) => onChange({ userName: e.target.value })}
-        placeholder={index === 0 ? "השם שלך…" : "שם השחקן השני…"}
+        placeholder={
+          isHe
+            ? index === 0
+              ? "השם שלך…"
+              : "שם השחקן השני…"
+            : index === 0
+              ? "Your name…"
+              : "Second player's name…"
+        }
         maxLength={20}
         className="w-full rounded-2xl border border-amber-100/15 bg-stone-900/60 px-4 py-3 text-lg text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-300/40"
       />
 
       {/* Avatar row */}
       <div className="mt-3">
-        <div className="mb-1.5 text-xs font-semibold text-amber-100/70">אוואטר</div>
+        <div className="mb-1.5 text-xs font-semibold text-amber-100/70">
+          {isHe ? "אוואטר" : "Avatar"}
+        </div>
         <div className="flex flex-wrap gap-2">
           {AVATARS.map((a) => {
             const taken  = takenAvatars.has(a);
@@ -106,7 +120,9 @@ function PlayerCard({
 
       {/* Colour row */}
       <div className="mt-3">
-        <div className="mb-1.5 text-xs font-semibold text-amber-100/70">צבע</div>
+        <div className="mb-1.5 text-xs font-semibold text-amber-100/70">
+          {isHe ? "צבע" : "Color"}
+        </div>
         <div className="flex flex-wrap gap-2">
           {COLORS.map(({ hex, name }) => {
             const taken  = takenColors.has(hex);
@@ -139,16 +155,18 @@ function PlayerCard({
 // ─── Main client ──────────────────────────────────────────────────────────────
 export function GameLobbyClient() {
   const locale  = useLocale();
+  const isHe    = locale === "he";
   const router  = useRouter();
   const [type]  = useState<GameType>("snakes");
 
   // Track page view once on mount
   useEffect(() => { track("game_lobby_opened", { game_type: "snakes" }); }, []);
 
-  // Player drafts: always show Player 1, toggle Player 2
+  // Player drafts — both always visible. Itzik 2026-05-05: merged the
+  // previous "play locally" CTA + "create room" form into a single
+  // 2-player setup with two action buttons. No add-player toggle.
   const [players1, setPlayers1] = useState<PlayerDraft>(() => buildDefault(0));
   const [players2, setPlayers2] = useState<PlayerDraft>(() => buildDefault(1));
-  const [showP2,   setShowP2]   = useState(false);
 
   // Join-room state
   const [joinMode,  setJoinMode]  = useState(false);
@@ -158,8 +176,17 @@ export function GameLobbyClient() {
   const [isStarting, setIsStarting] = useState(false);
   const [regOpen,    setRegOpen]    = useState(false);
 
-  // Pending create payload - held until user registers, then retried
-  const pendingRef = useRef<{ p1: PlayerDraft; p2: PlayerDraft | null } | null>(null);
+  // Pending action — held until the user registers, then retried.
+  // Two flavors: "create" (host opens a room) and "join" (guest enters
+  // an existing room via code). Both flows can hit the not_authenticated
+  // error and need the same registration → retry behavior. Itzik
+  // 2026-05-05: the previous code only handled create; guests joining via
+  // code were stuck on a "must register" message with no UI to do so.
+  const pendingRef = useRef<
+    | { kind: "create"; p1: PlayerDraft; p2: PlayerDraft | null }
+    | { kind: "join"; code: string; userName: string }
+    | null
+  >(null);
 
   const {
     room,
@@ -185,7 +212,8 @@ export function GameLobbyClient() {
     }
   }, [locale, room, router]);
 
-  // After registration: retry the pending create
+  // After registration: retry whatever the user was trying to do — open
+  // a fresh room (create) or join one with a code (join).
   const handleRegistered = useCallback(async () => {
     setRegOpen(false);
     const pending = pendingRef.current;
@@ -193,35 +221,50 @@ export function GameLobbyClient() {
     if (!pending) return;
 
     try {
-      await createRoom(type, {
-        userName: pending.p1.userName.trim(),
-        avatar: pending.p1.avatar,
-        color: pending.p1.color,
-      });
+      if (pending.kind === "create") {
+        await createRoom(type, {
+          userName: pending.p1.userName.trim(),
+          avatar: pending.p1.avatar,
+          color: pending.p1.color,
+        });
+      } else {
+        // kind === "join"
+        await joinRoom(pending.code, { userName: pending.userName });
+      }
     } catch {
-      // errors handled by hook
+      // errors surfaced by the hook
     }
-  }, [createRoom, type]);
+  }, [createRoom, joinRoom, type]);
 
-  // ── Create-room handler ────────────────────────────────────────────────────
-  const handleCreate = async () => {
+  // ── Mode A: play locally (same device) ─────────────────────────────────────
+  // Stash both players in sessionStorage AND a one-shot autostart flag, then
+  // route to /game/local. The local lobby page reads the drafts + auto-starts
+  // immediately so the user doesn't see a second setup screen.
+  const handleStartLocal = () => {
     const p1 = players1;
-    const p2 = showP2 && players2.userName.trim() ? players2 : null;
-
-    if (!p1.userName.trim()) return;
-
-    // If 2 players set up for same device → route to local game with state
-    // (remote createRoom only supports one authenticated user per session)
-    if (p2) {
-      // Store names in sessionStorage so the local game page can pre-fill them
-      try {
-        sessionStorage.setItem("local_p1", JSON.stringify(p1));
-        sessionStorage.setItem("local_p2", JSON.stringify(p2));
-      } catch { /* ignore */ }
-      router.push(`/${locale}/game/local`);
-      return;
+    const p2 = players2;
+    if (!p1.userName.trim() || !p2.userName.trim()) return;
+    try {
+      sessionStorage.setItem("local_p1", JSON.stringify(p1));
+      sessionStorage.setItem("local_p2", JSON.stringify(p2));
+      // One-shot flag — /game/local consumes + clears this on mount.
+      // Without it, refreshing /game/local would auto-start with stale data.
+      sessionStorage.setItem("local_auto_start", "1");
+    } catch {
+      /* ignore — fall back to manual start in /game/local */
     }
+    router.push(`/${locale}/game/local`);
+  };
 
+  // ── Mode B: send code to a partner on another device ───────────────────────
+  // Creates a remote room with player 1's identity. The partner joins later
+  // via the room code on their own device, where THEY pick their own name +
+  // avatar + color. Player 2's local draft is unused here (the partner picks
+  // their own); we keep its setup visible so users who change their mind and
+  // press "play locally" don't lose state.
+  const handleSendCode = async () => {
+    const p1 = players1;
+    if (!p1.userName.trim()) return;
     try {
       await createRoom(type, {
         userName: p1.userName.trim(),
@@ -230,16 +273,30 @@ export function GameLobbyClient() {
       });
     } catch (e: unknown) {
       if (e instanceof Error && e.message === "not_authenticated") {
-        pendingRef.current = { p1, p2 };
+        pendingRef.current = { kind: "create", p1, p2: null };
         setRegOpen(true);
       }
     }
   };
 
   // ── Join-room handler ──────────────────────────────────────────────────────
+  // Catches not_authenticated like handleSendCode: stash params, open
+  // the registration modal (which also exposes a login flow), retry
+  // automatically once the user is authenticated. Itzik 2026-05-05.
   const handleJoin = async () => {
     if (normalizedJoinCode.length !== 4 || !joinName.trim()) return;
-    await joinRoom(normalizedJoinCode, { userName: joinName.trim() });
+    try {
+      await joinRoom(normalizedJoinCode, { userName: joinName.trim() });
+    } catch (e: unknown) {
+      if (e instanceof Error && e.message === "not_authenticated") {
+        pendingRef.current = {
+          kind: "join",
+          code: normalizedJoinCode,
+          userName: joinName.trim(),
+        };
+        setRegOpen(true);
+      }
+    }
   };
 
   // ── GameLobby (after room created) ────────────────────────────────────────
@@ -284,98 +341,81 @@ export function GameLobbyClient() {
   }
 
   // ── Setup form ─────────────────────────────────────────────────────────────
-  const canCreate = players1.userName.trim().length >= 2;
+  const canStartLocal =
+    players1.userName.trim().length >= 2 && players2.userName.trim().length >= 2;
+  const canSendCode = players1.userName.trim().length >= 2;
   const canJoin   = normalizedJoinCode.length === 4 && joinName.trim().length >= 2;
 
   return (
     <>
-      <main className="mx-auto w-full max-w-3xl px-4 py-10" dir="rtl">
+      <main className="mx-auto w-full max-w-3xl px-4 py-10" dir={isHe ? "rtl" : "ltr"}>
         {/* Header */}
         <div className="flex flex-col gap-2">
           <h1 className="text-3xl font-extrabold tracking-tight text-amber-50">
-            נחשים וסולמות 🐍🌈
+            {isHe ? "נחשים וסולמות 🐍🌈" : "Snakes & Ladders 🐍🌈"}
           </h1>
           <p className="text-sm text-slate-300/80">
-            הגדירו שחקנים, בחרו דמות - ואז צרו חדר.
+            {isHe
+              ? "הגדירו את שני השחקנים — ואז בחרו איך לשחק."
+              : "Set up both players — then choose how to play."}
           </p>
         </div>
 
-        {/* Local (same-device) quick-start CTA */}
-        <div className="mt-6">
-          <button
-            type="button"
-            onClick={() => router.push(`/${locale}/game/local`)}
-            className="group flex min-h-[80px] w-full items-center justify-between gap-4 rounded-3xl border border-amber-300/30 bg-gradient-to-br from-amber-500/15 via-rose-500/10 to-amber-500/15 p-5 text-right font-bold text-amber-50 backdrop-blur transition hover:from-amber-500/25 hover:to-rose-500/20"
-          >
-            <div className="flex items-center gap-4">
-              <span className="text-3xl">🎲</span>
-              <div>
-                <div className="text-base">לשחק על מכשיר אחד (מקומי)</div>
-                <div className="mt-0.5 text-xs font-normal text-amber-100/70">
-                  בלי קוד, בלי חשבון - מעבירים את הטלפון
-                </div>
-              </div>
-            </div>
-            <span className="text-xl text-amber-200 transition group-hover:-translate-x-1">←</span>
-          </button>
-        </div>
-
-        {/* Divider */}
-        <div className="my-6 flex items-center gap-3">
-          <div className="h-px flex-1 bg-slate-700/60" />
-          <span className="text-xs font-semibold uppercase tracking-widest text-slate-400">
-            או צרו חדר לשני מכשירים
-          </span>
-          <div className="h-px flex-1 bg-slate-700/60" />
-        </div>
-
-        {/* ── Create-room section ── */}
+        {/* ── Unified setup ── always 2 players, two action buttons. */}
         {!joinMode && (
-          <div className="space-y-4">
-            {/* Player 1 */}
+          <div className="mt-6 space-y-4">
             <PlayerCard
               draft={players1}
               index={0}
-              otherDraft={showP2 ? players2 : undefined}
+              otherDraft={players2}
               onChange={(patch) => setPlayers1((p) => ({ ...p, ...patch }))}
+              isHe={isHe}
+            />
+            <PlayerCard
+              draft={players2}
+              index={1}
+              otherDraft={players1}
+              onChange={(patch) => setPlayers2((p) => ({ ...p, ...patch }))}
+              isHe={isHe}
             />
 
-            {/* Player 2 toggle */}
-            {!showP2 ? (
+            {/* Two action buttons — local (primary) + send-code (secondary).
+                Local is the strongest CTA because it's frictionless: no
+                code, no second device, just hand the phone back and forth. */}
+            <div className="grid gap-3 pt-2 sm:grid-cols-2">
               <button
                 type="button"
-                onClick={() => setShowP2(true)}
-                className="w-full rounded-2xl border border-dashed border-white/20 py-3 text-sm font-semibold text-slate-300 hover:border-amber-300/40 hover:text-amber-200 transition"
+                disabled={!canStartLocal}
+                onClick={handleStartLocal}
+                className="min-h-[56px] rounded-2xl bg-gradient-to-r from-amber-400 to-rose-400 px-5 py-3 text-base font-bold text-stone-900 shadow-lg transition disabled:cursor-not-allowed disabled:opacity-40 hover:brightness-105"
               >
-                + הוסף שחקן שני (לאותו מכשיר)
+                <span className="block">
+                  {isHe ? "🎲 להתחיל לשחק" : "🎲 Start playing"}
+                </span>
+                <span className="mt-0.5 block text-[11px] font-normal text-stone-900/75">
+                  {isHe
+                    ? "על המכשיר הזה — מעבירים את הטלפון"
+                    : "On this device — pass the phone around"}
+                </span>
               </button>
-            ) : (
-              <div className="relative">
-                <PlayerCard
-                  draft={players2}
-                  index={1}
-                  otherDraft={players1}
-                  onChange={(patch) => setPlayers2((p) => ({ ...p, ...patch }))}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowP2(false)}
-                  className="absolute left-4 top-4 text-xs font-bold text-rose-300/80 hover:text-rose-200"
-                >
-                  הסר
-                </button>
-              </div>
-            )}
-
-            {/* Create button */}
-            <button
-              type="button"
-              disabled={!canCreate}
-              onClick={() => void handleCreate()}
-              className="min-h-[52px] w-full rounded-2xl bg-gradient-to-r from-amber-400 to-rose-400 px-5 py-3 text-base font-bold text-stone-900 shadow-lg transition disabled:cursor-not-allowed disabled:opacity-50 hover:brightness-105"
-            >
-              צור חדר וקבל קוד ←
-            </button>
+              <button
+                type="button"
+                disabled={!canSendCode}
+                onClick={() => void handleSendCode()}
+                className="min-h-[56px] rounded-2xl border border-amber-300/40 bg-stone-950/55 px-5 py-3 text-base font-bold text-amber-50 backdrop-blur transition disabled:cursor-not-allowed disabled:opacity-40 hover:border-amber-300/70 hover:bg-stone-900/60"
+              >
+                <span className="block">
+                  {isHe
+                    ? "📱 לשלוח קוד לבן/בת הזוג"
+                    : "📱 Send a code to your partner"}
+                </span>
+                <span className="mt-0.5 block text-[11px] font-normal text-amber-100/65">
+                  {isHe
+                    ? "כל אחד על המכשיר שלו"
+                    : "Each on their own device"}
+                </span>
+              </button>
+            </div>
 
             {/* Switch to join */}
             <button
@@ -383,7 +423,9 @@ export function GameLobbyClient() {
               onClick={() => setJoinMode(true)}
               className="w-full text-center text-sm text-slate-400 hover:text-slate-200 underline underline-offset-4 transition"
             >
-              יש לי קוד חדר - אני רוצה להצטרף
+              {isHe
+                ? "יש לי קוד חדר - אני רוצה להצטרף"
+                : "I have a room code — let me join"}
             </button>
           </div>
         )}
@@ -391,10 +433,14 @@ export function GameLobbyClient() {
         {/* ── Join-room section ── */}
         {joinMode && (
           <div className="space-y-4">
-            <div className="rounded-3xl border border-slate-700/60 bg-slate-950/40 p-5 backdrop-blur" dir="rtl">
-              <div className="mb-3 text-base font-bold text-slate-100">הצטרפות לחדר</div>
+            <div className="rounded-3xl border border-slate-700/60 bg-slate-950/40 p-5 backdrop-blur" dir={isHe ? "rtl" : "ltr"}>
+              <div className="mb-3 text-base font-bold text-slate-100">
+                {isHe ? "הצטרפות לחדר" : "Join a room"}
+              </div>
 
-              <label className="block text-sm font-semibold text-slate-200">קוד חדר (4 תווים)</label>
+              <label className="block text-sm font-semibold text-slate-200">
+                {isHe ? "קוד חדר (4 תווים)" : "Room code (4 chars)"}
+              </label>
               <input
                 value={joinCode}
                 onChange={(e) => setJoinCode(e.target.value)}
@@ -403,11 +449,13 @@ export function GameLobbyClient() {
                 className="mt-2 w-full rounded-2xl border border-slate-700/60 bg-slate-900/40 px-4 py-3 font-mono text-xl uppercase tracking-widest text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
               />
 
-              <label className="mt-4 block text-sm font-semibold text-slate-200">השם שלך</label>
+              <label className="mt-4 block text-sm font-semibold text-slate-200">
+                {isHe ? "השם שלך" : "Your name"}
+              </label>
               <input
                 value={joinName}
                 onChange={(e) => setJoinName(e.target.value)}
-                placeholder="לדוגמה: נועם"
+                placeholder={isHe ? "לדוגמה: נועם" : "e.g. Sarah"}
                 maxLength={20}
                 className="mt-2 w-full rounded-2xl border border-slate-700/60 bg-slate-900/40 px-4 py-3 text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
               />
@@ -418,7 +466,7 @@ export function GameLobbyClient() {
                 onClick={() => void handleJoin()}
                 className="mt-5 min-h-[48px] w-full rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-500 px-4 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
               >
-                הצטרף ←
+                {isHe ? "הצטרף ←" : "Join →"}
               </button>
             </div>
 
@@ -427,14 +475,14 @@ export function GameLobbyClient() {
               onClick={() => setJoinMode(false)}
               className="w-full text-center text-sm text-slate-400 hover:text-slate-200 underline underline-offset-4 transition"
             >
-              ← אני רוצה לפתוח חדר חדש
+              {isHe ? "← אני רוצה לפתוח חדר חדש" : "← I want to open a new room"}
             </button>
           </div>
         )}
 
         {/* Error */}
         {error && error !== "יש להתחבר כדי ליצור חדר" && (
-          <div className="mt-4 rounded-2xl border border-rose-500/30 bg-rose-950/20 p-4 text-sm text-rose-200" dir="rtl">
+          <div className="mt-4 rounded-2xl border border-rose-500/30 bg-rose-950/20 p-4 text-sm text-rose-200" dir={isHe ? "rtl" : "ltr"}>
             {error}
           </div>
         )}

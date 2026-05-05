@@ -130,6 +130,24 @@ export default async function GameBySlugPage({
     fetchGameSettings(supabase, game.id),
   ]);
 
+  // ── DIAG 2026-05-05 ────────────────────────────────────────────────────
+  // Server-side log of the *raw* values fetched from Supabase for this
+  // game. Compare these to what the admin claims to have saved. If the
+  // admin slider is at 0.85 but this prints 0.4, the save isn't reaching
+  // the DB. If it prints 0.85 but the wheel still looks wrong, the
+  // problem is downstream (TruthOrDareClient/Wheel).
+  console.log("[/games/[slug]/SERVER-DIAG] BUILD=2026-05-05-wheel-trace v1", {
+    slug: game.slug,
+    game_id: game.id,
+    wheel_marker_config: wheel?.marker_config,
+    wheel_inner_circle: wheel?.inner_circle,
+    wheel_inner_circle_color: wheel?.inner_circle_color,
+    wheel_pointer_color: wheel?.pointer_color,
+    gs_wheel: gameSettings?.wheel,
+    gs_motion: gameSettings?.motion,
+    gs_shape: gameSettings?.shape,
+  });
+
   if (!wheel) {
     return (
       <div className="mx-auto flex min-h-[70dvh] max-w-xl flex-col items-center justify-center px-6 text-center">

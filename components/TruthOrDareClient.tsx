@@ -112,6 +112,7 @@ export function TruthOrDareClient({
   const labelFontSizePx  = gameSettings?.wheel?.labelFontSizePx ?? 12;
   const labelColor       = gameSettings?.wheel?.labelColor ?? "#ffffff";
   const labelOutline     = gameSettings?.wheel?.labelOutline;
+  const labelOrientation = gameSettings?.wheel?.labelOrientation ?? "tangential";
   const pointerSvg       = gameSettings?.wheel?.pointerSvg;
   const pointerSvgWidth  = gameSettings?.wheel?.pointerSvgWidth;
   const pointerSvgHeight = gameSettings?.wheel?.pointerSvgHeight;
@@ -157,6 +158,52 @@ export function TruthOrDareClient({
         }
       : {}),
   };
+
+  // ── DIAG 2026-05-05 ────────────────────────────────────────────────────
+  // Trace the exact values reaching the production Wheel so we can compare
+  // them to what the admin slider claims to save. If `labelRadiusFraction`
+  // here ≠ what the admin saved, the bug is in the save/load layer, not
+  // in Wheel.tsx. If they match but the wheel still looks wrong, the
+  // issue is in Wheel rendering. Look for [TruthOrDareClient/DIAG].
+  if (typeof window !== "undefined") {
+    console.log("[TruthOrDareClient/DIAG] BUILD=2026-05-05-wheel-trace v1", {
+      gameSlug: game.slug,
+      hasGameSettings: !!gameSettings,
+      // What the admin saved in game_settings.settings.wheel:
+      gs_wheel_sizeRem:                gameSettings?.wheel?.sizeRem,
+      gs_wheel_sizeRemMax:             gameSettings?.wheel?.sizeRemMax,
+      gs_wheel_labelRadiusFraction:    gameSettings?.wheel?.labelRadiusFraction,
+      gs_wheel_labelOrientation:       gameSettings?.wheel?.labelOrientation,
+      gs_wheel_labelFontSizePx:        gameSettings?.wheel?.labelFontSizePx,
+      gs_wheel_innerCircle_enabled:    gameSettings?.wheel?.innerCircle?.enabled,
+      gs_wheel_innerCircle_fillColor:  gameSettings?.wheel?.innerCircle?.fillColor,
+      gs_wheel_innerCircle_borderColor:gameSettings?.wheel?.innerCircle?.borderColor,
+      gs_wheel_pointerColor:           gameSettings?.wheel?.pointerColor,
+      gs_wheel_pointerOffsetY:         gameSettings?.wheel?.pointerOffsetY,
+      gs_wheel_pointerSvg_present:     !!gameSettings?.wheel?.pointerSvg,
+      gs_wheel_pointerSvgWidth:        gameSettings?.wheel?.pointerSvgWidth,
+      gs_wheel_pointerSvgHeight:       gameSettings?.wheel?.pointerSvgHeight,
+      // Legacy values from wheel_configs.marker_config (fallback chain):
+      legacy_wheel_size_rem:           wheelSizeRemFromConfig,
+      legacy_label_radius_fraction:    labelFractionFromConfig,
+      legacy_inner_circle:             wheel.inner_circle,
+      legacy_inner_circle_color:       wheel.inner_circle_color,
+      legacy_inner_circle_border:      wheel.inner_circle_border_color,
+      legacy_pointer_color:            wheel.pointer_color,
+      // RESOLVED — what actually goes into <Wheel>:
+      resolved_sizeRem:                resolvedSizeRem,
+      resolved_sizeRemMax:             resolvedSizeRemMax,
+      resolved_labelRadiusFraction:    resolvedLabelFraction,
+      resolved_labelOrientation:       labelOrientation,
+      resolved_labelFontSizePx:        labelFontSizePx,
+      resolved_innerCircle:            resolvedInnerCircle,
+      resolved_innerCircleColor:       resolvedInnerCircleColor,
+      resolved_innerCircleBorder:      resolvedInnerCircleBorderColor,
+      resolved_pointerColor:           resolvedPointerColor,
+      resolved_pointerOffsetY:         resolvedPointerOffsetY,
+      resolved_markerConfig:           resolvedMarkerConfig,
+    });
+  }
 
   const options = useMemo(() => {
     const base = (wheel.slices ?? []).map((s) => ({
@@ -549,6 +596,7 @@ export function TruthOrDareClient({
             labelFontSizePx={labelFontSizePx}
             labelColor={labelColor}
             labelOutline={labelOutline}
+            labelOrientation={labelOrientation}
             wheelShape={wheelShape}
             pointerSvg={pointerSvg}
             pointerSvgWidth={pointerSvgWidth}

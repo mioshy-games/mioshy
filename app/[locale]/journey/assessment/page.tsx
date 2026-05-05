@@ -42,9 +42,21 @@ export default async function JourneyAssessmentPage({
   }
   setRequestLocale(locale);
 
+  // ⚠️ BUILD MARKER — bumped 2026-04-30 with the Phase-A post-payment
+  // guard. If a paid+completed user hits this page, we redirect them
+  // to /my/journey instead of letting them re-enter the assessment.
+  // Look for the redirect log line below to confirm the guard fired.
+  console.log("[/journey/assessment] BUILD=2026-04-30-phaseA-guard v1");
+
   const cookieStoreForLog = cookies();
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
+
+  console.log("[/journey/assessment] entry", {
+    user_id: user?.id ?? null,
+    user_email: user?.email ?? null,
+    isAuthed: !!user,
+  });
 
   let initialProgress: { current_step: number; status: string; language: Locale } | null = null;
   let subscriptionActive = false;
@@ -127,9 +139,17 @@ export default async function JourneyAssessmentPage({
     // paid yet. We let them see AnalysisSummary with the CTA, as designed.
     const completed =
       !!journey && journey.current_step >= totalQuestions();
+    console.log("[/journey/assessment] guard check", {
+      subscriptionActive,
+      hasJourneyRow: !!journey,
+      currentStep: journey?.current_step ?? null,
+      totalQuestions: totalQuestions(),
+      completed,
+      willRedirect: subscriptionActive && completed,
+    });
     if (subscriptionActive && completed) {
       console.log(
-        "[/journey/assessment] redirecting paid+completed user → /my/journey",
+        "[/journey/assessment] ✅ Phase A guard fired — redirecting to /my/journey",
         { user_id: user.id },
       );
       redirect(`/${locale}/my/journey`);

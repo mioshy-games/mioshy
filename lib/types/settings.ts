@@ -62,6 +62,14 @@ export type WheelSettings = {
     opacity: number; // 0-1
     width: number; // px
   };
+  /**
+   * Slice-label orientation. Default: "tangential" (text reads along
+   * the slice's tangent, perpendicular to the radius — current legacy
+   * behavior). "radial" makes the text read from center outward along
+   * the radius, giving long names (e.g. player names) more horizontal
+   * room. Added 2026-05-05 per Itzik feedback.
+   */
+  labelOrientation: "tangential" | "radial";
 
   // ── Wheel colors & per-game appearance ──────────────────────────────────
   /** Color of the pointer (triangle or SVG currentColor fill). Default: "#ffffff". */

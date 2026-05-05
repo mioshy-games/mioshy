@@ -4,6 +4,9 @@ import { Link } from "@/navigation";
 import {
   ArrowLeft,
   ArrowRight,
+  Compass,
+  Flame,
+  Gamepad2,
   Library,
   Sparkles,
   Users,
@@ -63,8 +66,15 @@ export default async function MyHubPage({
   // to /my?purchased=<game_id> after an Adults purchase, we drop them
   // straight into /my/adults instead of showing a celebration banner.
   // Per spec: "User wants to use, not celebrate."
+  // ⚠️ BUILD MARKER — bump this string whenever you deploy a meaningful
+  // /my redesign so logs make it obvious which version actually rendered.
+  // If you don't see this log in Vercel after a deploy, the new code
+  // didn't ship (build cache, branch mismatch, etc.).
+  console.log("[/my] BUILD=2026-04-30-redesign-phase-B v1");
+
   const purchasedQuery = searchParams?.purchased ?? null;
   if (purchasedQuery) {
+    console.log("[/my] redirecting to /my/adults due to ?purchased=", purchasedQuery);
     redirect(`/${locale}/my/adults`);
   }
 
@@ -335,8 +345,17 @@ export default async function MyHubPage({
             BELOW the pillar cards. Cards come first (the products), partner
             stuff comes second (the relationship plumbing). */}
 
-        {/* ─────── Profile completeness nudge ─────── */}
-        {profileIncomplete ? (
+        {/* ─────── Profile completeness nudge ───────
+            Per Itzik 2026-05-06: this banner is intentionally narrow in
+            scope — it is shown ONLY to users who purchased the Journey
+            (ליווי) plan, because that is the path where pairing a partner
+            is meaningful (the couple subscription is exactly two seats —
+            a third redeem is rejected at the DB level by
+            join_couple_by_pair_code, see migrations/029 line 226).
+            Free / games-only / adults-only users don't need the nudge:
+            their actions don't depend on a complete profile yet, and the
+            nag was creating false friction. */}
+        {entitlements.journey && profileIncomplete ? (
           <section className="mt-8">
             <div className="flex flex-wrap items-start justify-between gap-4 rounded-2xl border border-amber-300/40 bg-amber-400/10 p-5 backdrop-blur">
               <div className="text-sm text-amber-100">
@@ -554,17 +573,98 @@ export default async function MyHubPage({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// EntitledPillar — compact "you have access" card.
+// Pillar visual identity (2026-05-06 redesign per Itzik):
 //
-// MVP version (Day 1):
-//   - StateBadge replaces the old inline "Active" pill
-//   - CTA copy + href come from derivePillarState (single source of truth)
-//   - Optional subtitle line for the Journey card ("תוכנית עבודה אישית")
-//   - Notification dot kept (rose-500). The "white flashing" reported on
-//     the Games card was traced to the badge showing 0/undefined as a
-//     blank pill — fixed by gating on `> 0` only and removing the
-//     accidental shadow that bled through.
+// Each pillar gets its own colour DNA so the three cards read as three
+// distinct products instead of three identical glass panels. The CTA is
+// now a real *button* (filled background, pill-shaped, prominent shadow)
+// rather than a small "→" link buried at the bottom corner.
+//
+// Per pillar:
+//   • games   — fuchsia/rose: the playful, bright, energetic surface
+//   • journey — emerald/teal: the calm, clinical, healing surface
+//   • adults  — amber/rose:   the intimate, warm, candlelit surface
+//
+// The whole card stays clickable (the outer <Link>) for affordance, but
+// the visual button inside is what tells the user "press here". The
+// arrow only translates on hover — no autoplay animations.
 // ─────────────────────────────────────────────────────────────────────────────
+
+const PILLAR_THEMES: Record<
+  PillarKey,
+  {
+    Icon: typeof Gamepad2;
+    iconWrapEntitled: string;   // background colour for the icon plate (entitled)
+    iconWrapMarketing: string;  // softer version for marketing
+    cardEntitled: string;       // outer card border + bg (entitled)
+    cardMarketing: string;      // outer card border + bg (marketing)
+    cardGlow: string;           // soft halo behind the icon (entitled only)
+    button: string;             // CTA button background (entitled)
+    buttonMarketing: string;    // CTA button background (marketing)
+  }
+> = {
+  games: {
+    Icon: Gamepad2,
+    iconWrapEntitled:
+      "bg-gradient-to-br from-fuchsia-500 to-rose-500 text-white shadow-[0_8px_24px_-8px_rgba(232,72,153,0.7)]",
+    iconWrapMarketing:
+      "bg-fuchsia-500/15 text-fuchsia-200 ring-1 ring-fuchsia-300/25",
+    cardEntitled:
+      "border-fuchsia-300/30 bg-gradient-to-br from-fuchsia-500/10 via-white/[0.03] to-rose-500/10 hover:border-fuchsia-300/50",
+    cardMarketing:
+      "border-white/10 bg-white/[0.03] hover:border-fuchsia-300/30 hover:bg-fuchsia-500/[0.06]",
+    cardGlow:
+      "bg-gradient-to-br from-fuchsia-500/40 via-rose-500/20 to-transparent",
+    button:
+      "bg-gradient-to-r from-fuchsia-500 to-rose-500 text-white shadow-[0_10px_28px_-10px_rgba(232,72,153,0.8)] hover:brightness-110",
+    buttonMarketing:
+      "border border-fuchsia-300/40 bg-fuchsia-500/15 text-fuchsia-50 hover:bg-fuchsia-500/25 hover:border-fuchsia-300/60",
+  },
+  journey: {
+    Icon: Compass,
+    iconWrapEntitled:
+      "bg-gradient-to-br from-emerald-500 to-teal-500 text-white shadow-[0_8px_24px_-8px_rgba(16,185,129,0.7)]",
+    iconWrapMarketing:
+      "bg-emerald-500/15 text-emerald-200 ring-1 ring-emerald-300/25",
+    cardEntitled:
+      "border-emerald-300/25 bg-gradient-to-br from-emerald-500/10 via-slate-950/40 to-teal-500/10 hover:border-emerald-300/50",
+    cardMarketing:
+      "border-slate-300/[0.08] bg-slate-950/40 hover:border-emerald-300/25 hover:bg-emerald-500/[0.05]",
+    cardGlow:
+      "bg-gradient-to-br from-emerald-500/40 via-teal-500/20 to-transparent",
+    button:
+      "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-[0_10px_28px_-10px_rgba(16,185,129,0.8)] hover:brightness-110",
+    buttonMarketing:
+      "border border-emerald-300/40 bg-emerald-500/15 text-emerald-50 hover:bg-emerald-500/25 hover:border-emerald-300/60",
+  },
+  adults: {
+    Icon: Flame,
+    iconWrapEntitled:
+      "bg-gradient-to-br from-amber-500 to-rose-600 text-white shadow-[0_8px_24px_-8px_rgba(244,114,182,0.7)]",
+    iconWrapMarketing:
+      "bg-amber-500/15 text-amber-200 ring-1 ring-amber-300/25",
+    cardEntitled:
+      "border-amber-300/25 bg-gradient-to-br from-amber-500/10 via-white/[0.03] to-rose-500/10 hover:border-amber-300/50",
+    cardMarketing:
+      "border-white/10 bg-white/[0.03] hover:border-amber-300/25 hover:bg-amber-500/[0.06]",
+    cardGlow:
+      "bg-gradient-to-br from-amber-500/40 via-rose-500/20 to-transparent",
+    button:
+      "bg-gradient-to-r from-amber-500 to-rose-600 text-white shadow-[0_10px_28px_-10px_rgba(244,114,182,0.8)] hover:brightness-110",
+    buttonMarketing:
+      "border border-amber-300/40 bg-amber-500/15 text-amber-50 hover:bg-amber-500/25 hover:border-amber-300/60",
+  },
+};
+
+// Shared button class — pill-shaped, h-11, used for both entitled and
+// marketing CTAs (the per-pillar `button` / `buttonMarketing` strings
+// only supply colour and shadow). The base gap grows on hover for a
+// direction-agnostic forward-motion feel that works the same in RTL
+// and LTR (without depending on `rtl:` / `ltr:` Tailwind variants).
+const PILLAR_BUTTON_BASE =
+  "inline-flex h-11 items-center justify-center gap-2 rounded-full px-5 text-sm font-bold transition group-hover:gap-3";
+
+// ─── EntitledPillar — "you have access" ──────────────────────────────────────
 
 function EntitledPillar({
   isHe,
@@ -590,66 +690,75 @@ function EntitledPillar({
   const Arrow = isHe ? ArrowLeft : ArrowRight;
   const title = isHe ? titleHe : titleEn;
   const subtitle = subtitleHe || subtitleEn ? (isHe ? subtitleHe : subtitleEn) : null;
-  // STRICT > 0 — a falsy / zero / undefined value here used to render an
-  // empty pill that white-flashed on first paint. Now the element only
-  // renders when there really is a count.
   const hasNotif = typeof notificationCount === "number" && notificationCount > 0;
-
-  // Journey gets a slightly cooler glass treatment (per spec §1.5 — the
-  // calm, clinical feel). Other pillars keep the existing fuchsia-tinted
-  // glass.
-  const surfaceClass =
-    pillar === "journey"
-      ? "border-slate-300/[0.08] bg-slate-950/40 hover:border-slate-300/[0.18]"
-      : "border-white/10 bg-white/[0.04] hover:border-white/25 hover:bg-white/[0.06]";
+  const theme = PILLAR_THEMES[pillar];
+  const Icon = theme.Icon;
 
   return (
     <Link
       href={pillarState.ctaHref}
-      className={[
-        "group relative flex flex-col justify-between gap-5 overflow-hidden rounded-2xl border p-5 transition",
-        surfaceClass,
-      ].join(" ")}
       data-pillar={pillar}
+      className={[
+        "group relative flex flex-col justify-between gap-6 overflow-hidden rounded-3xl border p-6 transition",
+        "min-h-[260px]",
+        theme.cardEntitled,
+      ].join(" ")}
     >
+      {/* halo behind the icon plate, accent-coloured per pillar */}
+      <div
+        aria-hidden
+        className={`pointer-events-none absolute -top-12 end-[-3rem] h-44 w-44 rounded-full opacity-50 blur-3xl ${theme.cardGlow}`}
+      />
+
       {hasNotif ? (
         <span
           aria-label={
             isHe ? `${notificationCount} חדשים` : `${notificationCount} new`
           }
-          className="absolute end-3 top-3 z-10 inline-flex min-w-[22px] items-center justify-center rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-bold text-white"
+          className="absolute end-4 top-4 z-10 inline-flex min-w-[24px] items-center justify-center rounded-full bg-rose-500 px-1.5 py-0.5 text-[11px] font-bold text-white shadow-[0_6px_18px_-4px_rgba(244,63,94,0.7)]"
         >
           {notificationCount}
         </span>
       ) : null}
 
-      <div>
-        <div className="flex flex-wrap items-center gap-2">
-          <StateBadge state={pillarState.state} isHe={isHe} />
-          <h3 className="text-lg font-bold text-white">{title}</h3>
+      <div className="relative">
+        <div className="flex items-start gap-3">
+          <span
+            className={`inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${theme.iconWrapEntitled}`}
+            aria-hidden
+          >
+            <Icon className="h-6 w-6" />
+          </span>
+          <div className="min-w-0 flex-1 pt-0.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <StateBadge state={pillarState.state} isHe={isHe} />
+            </div>
+            <h3 className="mt-1.5 font-heading text-2xl font-bold leading-tight tracking-tight text-white">
+              {title}
+            </h3>
+            {subtitle ? (
+              <p className="mt-1 text-xs font-semibold uppercase tracking-wider text-white/55">
+                {subtitle}
+              </p>
+            ) : null}
+          </div>
         </div>
-        {subtitle ? (
-          <p className="mt-1 text-xs text-white/55">{subtitle}</p>
-        ) : null}
-        <p className="mt-2 line-clamp-2 text-sm text-white/65">{description}</p>
+        <p className="mt-4 line-clamp-3 text-[15px] leading-relaxed text-white/75">
+          {description}
+        </p>
       </div>
 
-      <span className="inline-flex items-center gap-1.5 self-start text-sm font-semibold text-white transition group-hover:gap-2.5">
+      <span
+        className={`${PILLAR_BUTTON_BASE} ${theme.button} self-start`}
+      >
         {pillarState.ctaLabel}
-        <Arrow className="h-3.5 w-3.5" />
+        <Arrow className="h-4 w-4 shrink-0" />
       </span>
     </Link>
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PillarMarketing — compact "you don't have access yet" card.
-//
-// Same shape as EntitledPillar but with a NOT_PURCHASED badge and a
-// CTA to the marketing page. Replaces the bigger ServicePanel that was
-// designed for the homepage; on the dashboard we want all three pillar
-// cards to look uniform.
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── PillarMarketing — "not yet" CTA ─────────────────────────────────────────
 
 function PillarMarketing({
   isHe,
@@ -673,35 +782,51 @@ function PillarMarketing({
   const Arrow = isHe ? ArrowLeft : ArrowRight;
   const title = isHe ? titleHe : titleEn;
   const subtitle = subtitleHe || subtitleEn ? (isHe ? subtitleHe : subtitleEn) : null;
-
-  const surfaceClass =
-    pillar === "journey"
-      ? "border-slate-300/[0.06] bg-slate-950/30 hover:border-slate-300/[0.16]"
-      : "border-white/[0.06] bg-white/[0.02] hover:border-white/15 hover:bg-white/[0.04]";
+  const theme = PILLAR_THEMES[pillar];
+  const Icon = theme.Icon;
 
   return (
     <Link
       href={pillarState.ctaHref}
-      className={[
-        "group relative flex flex-col justify-between gap-5 overflow-hidden rounded-2xl border p-5 transition",
-        surfaceClass,
-      ].join(" ")}
       data-pillar={pillar}
+      className={[
+        "group relative flex flex-col justify-between gap-6 overflow-hidden rounded-3xl border p-6 transition",
+        "min-h-[260px]",
+        theme.cardMarketing,
+      ].join(" ")}
     >
-      <div>
-        <div className="flex flex-wrap items-center gap-2">
-          <StateBadge state={pillarState.state} isHe={isHe} />
-          <h3 className="text-lg font-bold text-white">{title}</h3>
+      <div className="relative">
+        <div className="flex items-start gap-3">
+          <span
+            className={`inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${theme.iconWrapMarketing}`}
+            aria-hidden
+          >
+            <Icon className="h-6 w-6" />
+          </span>
+          <div className="min-w-0 flex-1 pt-0.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <StateBadge state={pillarState.state} isHe={isHe} />
+            </div>
+            <h3 className="mt-1.5 font-heading text-2xl font-bold leading-tight tracking-tight text-white">
+              {title}
+            </h3>
+            {subtitle ? (
+              <p className="mt-1 text-xs font-semibold uppercase tracking-wider text-white/45">
+                {subtitle}
+              </p>
+            ) : null}
+          </div>
         </div>
-        {subtitle ? (
-          <p className="mt-1 text-xs text-white/45">{subtitle}</p>
-        ) : null}
-        <p className="mt-2 line-clamp-3 text-sm text-white/55">{tagline}</p>
+        <p className="mt-4 line-clamp-3 text-[15px] leading-relaxed text-white/65">
+          {tagline}
+        </p>
       </div>
 
-      <span className="inline-flex items-center gap-1.5 self-start text-sm font-semibold text-white/85 transition group-hover:gap-2.5 group-hover:text-white">
+      <span
+        className={`${PILLAR_BUTTON_BASE} ${theme.buttonMarketing} self-start`}
+      >
         {pillarState.ctaLabel}
-        <Arrow className="h-3.5 w-3.5" />
+        <Arrow className="h-4 w-4 shrink-0" />
       </span>
     </Link>
   );

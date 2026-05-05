@@ -98,11 +98,22 @@ export function BillingSuccessContent() {
         ? safeReturnPath
         : `/${locale}${safeReturnPath}`
       : `/${locale}/my`
+    // ⚠️ BUILD MARKER — bumped 2026-04-30 with the Phase-A redirect.
+    // Default target was changed from /journey/timeline to /my so users
+    // never land on the empty timeline placeholder again. If you don't
+    // see this log, the new code didn't ship.
+    console.log("[/billing/success] BUILD=2026-04-30-phaseA-redirect v1", {
+      phase,
+      sessionId,
+      safeReturnPath,
+      target,
+    })
     const t = setTimeout(() => {
+      console.log("[/billing/success] navigating to", target)
       window.location.assign(target)
     }, 1400)
     return () => clearTimeout(t)
-  }, [phase, safeReturnPath, locale])
+  }, [phase, safeReturnPath, locale, sessionId])
 
   const t = isHe
     ? {

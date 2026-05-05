@@ -1,7 +1,8 @@
 /**
- * /[locale]/privacy — Privacy Policy.
+ * /[locale]/refund-policy — Refund Policy.
  *
- * Server component; reads content from `legal.privacy` namespace.
+ * Short, clear elaboration of the no-refund stance from the Terms,
+ * with the cancellation flow + Israeli consumer-law disclaimer.
  */
 
 import type { Metadata } from "next";
@@ -23,9 +24,9 @@ export async function generateMetadata({
   params: { locale: string };
 }): Promise<Metadata> {
   const { locale } = params;
-  const t = await getTranslations({ locale, namespace: "legal.privacy" });
+  const t = await getTranslations({ locale, namespace: "legal.refund" });
   const base = siteUrl();
-  const canonical = `${base}/${locale}/privacy`;
+  const canonical = `${base}/${locale}/refund-policy`;
   return {
     title: t("metaTitle"),
     description: t("metaDescription"),
@@ -33,9 +34,9 @@ export async function generateMetadata({
     alternates: {
       canonical,
       languages: {
-        he: `${base}/he/privacy`,
-        en: `${base}/en/privacy`,
-        "x-default": `${base}/en/privacy`,
+        he: `${base}/he/refund-policy`,
+        en: `${base}/en/refund-policy`,
+        "x-default": `${base}/en/refund-policy`,
       },
     },
     openGraph: {
@@ -49,16 +50,14 @@ export async function generateMetadata({
 }
 
 const SECTION_KEYS = [
-  "dataCollected",
-  "cookies",
-  "thirdParties",
-  "rights",
-  "retention",
-  "children",
-  "contact",
+  "policy",
+  "why",
+  "cancel",
+  "billingErrors",
+  "consumer",
 ] as const;
 
-export default async function PrivacyPage({
+export default async function RefundPolicyPage({
   params,
 }: {
   params: { locale: string };
@@ -69,7 +68,7 @@ export default async function PrivacyPage({
   }
   setRequestLocale(locale);
 
-  const t = await getTranslations({ locale, namespace: "legal.privacy" });
+  const t = await getTranslations({ locale, namespace: "legal.refund" });
   const tRoot = await getTranslations({ locale, namespace: "legal" });
 
   const sections: LegalSection[] = SECTION_KEYS.map((key) => {

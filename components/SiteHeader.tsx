@@ -111,14 +111,33 @@ export function SiteHeader({
   // turned out to make the header feel inconsistent across sessions and
   // hid the product surface from existing customers who might want to
   // upgrade.
-  const visiblePillars = PILLARS.map((p) => {
-    const owns = isAuthed && entitlements ? entitlements[p.tKey] : false;
-    return {
-      href: owns ? p.authedHref : p.marketingHref,
-      tKey: p.tKey,
-      Icon: p.Icon,
-      accent: p.accent,
-    };
+  // Resolve which pillar links the current visitor sees.
+  //   - Anonymous → all three marketing pillars
+  //   - Authenticated, OWNS pillar X → /my/X (private)
+  //   - Authenticated, does NOT own pillar X → pillar HIDDEN (not just
+  //     re-routed). Per spec §11 the header is never a marketing
+  //     surface once the user is signed in.
+  const visiblePillars = PILLARS.flatMap((p) => {
+    if (!isAuthed) {
+      return [
+        {
+          href: p.marketingHref,
+          tKey: p.tKey,
+          Icon: p.Icon,
+          accent: p.accent,
+        },
+      ];
+    }
+    const owns = entitlements ? entitlements[p.tKey] : false;
+    if (!owns) return [];
+    return [
+      {
+        href: p.authedHref,
+        tKey: p.tKey,
+        Icon: p.Icon,
+        accent: p.accent,
+      },
+    ];
   });
   const locale = useLocale();
   const pathname = usePathname();
@@ -128,6 +147,21 @@ export function SiteHeader({
   const [scrolled, setScrolled] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("dark");
   const [isPending, startTransition] = useTransition();
+
+  // ⚠️ BUILD MARKER — fires once per mount, confirms the entitlement-
+  // aware header is the version actually running on the client. If
+  // the log is missing in DevTools after a deploy, the new code
+  // didn't ship.
+  useEffect(() => {
+    console.log("[SiteHeader] BUILD=2026-04-30-phaseD-gating v1", {
+      isAuthed,
+      entitlements,
+      visiblePillarKeys: visiblePillars.map((p) => p.tKey),
+      pillarsHrefs: visiblePillars.map((p) => p.href),
+    });
+    // Empty deps — log once per mount only, not on every scroll tick.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Track scroll + theme on mount and on scroll. We intentionally resample
   // the theme on every scroll tick - switching between dark hero and light

@@ -217,10 +217,16 @@ export default async function GamesHubPage({
                   className="group block overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/10 to-white/5 shadow-xl backdrop-blur transition hover:border-rose-300/40 hover:from-white/20"
                 >
                   <div className="relative aspect-[16/10] w-full overflow-hidden bg-gradient-to-br from-rose-500/30 via-fuchsia-500/25 to-violet-500/20">
-                    <div className="absolute inset-0 flex items-center justify-center gap-3">
-                      <span className="text-5xl drop-shadow-md">🐍</span>
-                      <span className="text-4xl drop-shadow-md">🌈</span>
-                    </div>
+                    {/* Thumbnail — drop the image at
+                        /public/images/snakes-couples.webp (16:10 ratio
+                        recommended, e.g. 1280×800). */}
+                    <Image
+                      src="/images/snakes-couples.webp"
+                      alt={isHe ? "נחשים וסולמות" : "Snakes & Ladders"}
+                      fill
+                      sizes="(max-width: 640px) 100vw, 50vw"
+                      className="object-cover transition duration-500 group-hover:scale-[1.02]"
+                    />
                     <span className="absolute end-3 top-3 rounded-full bg-gradient-to-r from-rose-400 to-fuchsia-400 px-3 py-1 text-xs font-bold text-white shadow-lg">
                       {isHe ? "חדש 🔥" : "New 🔥"}
                     </span>
@@ -850,12 +856,15 @@ export default async function GamesHubPage({
                     href="/game"
                     className="relative flex h-full flex-col overflow-hidden rounded-3xl border border-[#EAE0E3] bg-white shadow-md shadow-[#EAE0E3]/40 transition duration-300 hover:-translate-y-1 hover:border-[#E9C4CA] hover:shadow-[#FBE9EC]/60"
                   >
-                    {/* Thumbnail - V2 warm gradient */}
+                    {/* Thumbnail — see /public/images/snakes-couples.webp */}
                     <div className="relative aspect-[16/10] w-full overflow-hidden bg-gradient-to-br from-[#B83C4D]/20 via-[#8B2638]/15 to-[#3D1F3D]/20">
-                      <div className="absolute inset-0 flex items-center justify-center gap-3">
-                        <span className="text-5xl drop-shadow-md">🐍</span>
-                        <span className="text-4xl drop-shadow-md">🌈</span>
-                      </div>
+                      <Image
+                        src="/images/snakes-couples.webp"
+                        alt={isHe ? "נחשים וסולמות" : "Snakes & Ladders"}
+                        fill
+                        sizes="(max-width: 640px) 100vw, 50vw"
+                        className="object-cover transition duration-500 group-hover:scale-[1.02]"
+                      />
                       {/* New badge */}
                       <span className="absolute end-3 top-3 rounded-full bg-gradient-to-r from-[#B83C4D] to-[#8B2638] px-3 py-1 text-xs font-bold text-white shadow-lg">
                         {isHe ? "חדש 🔥" : "New 🔥"}

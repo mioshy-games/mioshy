@@ -282,7 +282,296 @@
     "languagesTitle": "Languages",
     "hebrew": "Hebrew",
     "english": "English",
-    "tagline": "Mioshy offers two couples games that warm up your connection, plus online couples therapy. Bringing back the warmth, the spark, and the questions left unasked — simply, accessibly, and professionally."
+    "tagline": "Mioshy offers two couples games that warm up your connection, plus online couples therapy. Bringing back the warmth, the spark, and the questions left unasked — simply, accessibly, and professionally.",
+    "legalLinks": {
+      "ariaLabel": "Legal links",
+      "terms": "Terms",
+      "refund": "Refunds",
+      "privacy": "Privacy",
+      "accessibility": "Accessibility",
+      "copyright": "© {year} Mioshy · Bugo Media LTD"
+    }
+  },
+  "legal": {
+    "lastUpdatedLabel": "Last updated",
+    "company": {
+      "label": "Company details",
+      "legalName": "Bugo Media LTD",
+      "regNumber": "Reg. no. 515960508",
+      "address": "Adar 9, Modiin Macabim Reut 7176346, Israel",
+      "email": "mioshyoffice@gmail.com",
+      "footnote": "Mioshy is a brand owned and operated by Bugo Media LTD. Direct any legal inquiries to the email above."
+    },
+    "terms": {
+      "metaTitle": "Terms of Service · Mioshy",
+      "metaDescription": "Mioshy's terms of service – a brand owned by Bugo Media LTD. Governed by the laws of the State of Israel.",
+      "title": "Terms of Service",
+      "lastUpdated": "May 6, 2026",
+      "intro": [
+        "Welcome to Mioshy. The service is operated by Bugo Media LTD (\"the Company\", \"we\", \"us\"). Use of the website and the service is subject to the terms below. Please read them carefully — using the service constitutes acceptance of these terms."
+      ],
+      "sections": {
+        "acceptance": {
+          "heading": "1. Acceptance of Terms",
+          "body": [
+            "By using the Mioshy website, purchasing a subscription, downloading content, or signing in with a user account, you indicate full and irrevocable acceptance of these Terms of Service and of our Privacy Policy. If you disagree with any term, please refrain from using the service.",
+            "You confirm that you are 18 years of age or older, and if the service is used together with a partner, that they too are an adult and consenting."
+          ]
+        },
+        "service": {
+          "heading": "2. Description of Service",
+          "body": [
+            "Mioshy provides digital couples games, content, and guided programs through subscriptions or one-time purchases. The service is delivered via web browser in Hebrew and English."
+          ],
+          "list": [
+            "Online couples games: the Relationship Wheel, Couples Snakes & Ladders and more.",
+            "Adults-only content available via the relevant subscription.",
+            "A personalized couples Journey including an assessment and ongoing guidance content."
+          ]
+        },
+        "account": {
+          "heading": "3. Registration & User Responsibilities",
+          "body": [
+            "Creating an account requires you to supply accurate and truthful information. You are responsible for the security of your credentials, for the activity carried out under your account, and for keeping your password safe.",
+            "You may not transfer your account to another person, share it with anyone other than your partner, or sell access to it."
+          ]
+        },
+        "payment": {
+          "heading": "4. Payment & No-Refund Policy",
+          "body": [
+            "All sales are final. Once payment is processed, no refunds will be issued, including but not limited to: subscription fees, one-time purchases, in-game credits, or any digital content delivered to your account.",
+            "Prices are displayed inclusive of Israeli VAT for purchases from Israel; for purchases from other jurisdictions, prices are displayed in accordance with applicable local tax rules."
+          ]
+        },
+        "cancellation": {
+          "heading": "5. Service Cancellation",
+          "body": [
+            "You may cancel your subscription at any time from your personal account page. Cancellation stops future billing but does not refund past payments.",
+            "After cancelling, you will retain access to subscribed content until the end of the current billing period; access will then be revoked."
+          ]
+        },
+        "liability": {
+          "heading": "6. Limitation of Liability",
+          "body": [
+            "The service is provided \"AS-IS\" with no warranties of any kind, express or implied. We do not guarantee that the service will be available without interruption, free of errors, or fit for any specific purpose.",
+            "Our total liability to you for any claim arising from your use of Mioshy shall not exceed the total amount you have paid to us in the twelve (12) months preceding the claim.",
+            "Mioshy is not a substitute for professional couples counseling, psychological advice or medical treatment. If you are in emotional distress, please contact a qualified professional."
+          ]
+        },
+        "ip": {
+          "heading": "7. Intellectual Property",
+          "body": [
+            "All content on the site — including questions, prompts, dares, graphics, design, code, trademarks and trade names — is the exclusive property of Bugo Media LTD or of its licensors, and is protected by copyright law.",
+            "You may not copy, redistribute, publish, translate, create derivative works from, or commercially exploit any of the content without the Company's prior written consent."
+          ]
+        },
+        "prohibited": {
+          "heading": "8. Prohibited Conduct",
+          "body": "The following uses of the service are prohibited:",
+          "list": [
+            "Harming a minor, exposing content to a minor, or creating an account as a minor.",
+            "Sharing accounts, impersonation, or attempting to bypass payment or authorization.",
+            "Reverse-engineering the service, running automated scripts, or bulk-downloading content.",
+            "Posting offensive, threatening, racist or unlawful content through the service.",
+            "Any use intended to harm the Company, other users or third parties."
+          ]
+        },
+        "changes": {
+          "heading": "9. Changes to These Terms",
+          "body": [
+            "We may update these terms from time to time. The latest version will always be available on this page along with the date of the most recent update. Continued use of the service after a change constitutes acceptance of the updated terms."
+          ]
+        },
+        "governing": {
+          "heading": "10. Governing Law & Jurisdiction",
+          "body": [
+            "These terms are governed by the laws of the State of Israel. Any dispute arising from these terms or your use of Mioshy shall be resolved exclusively in the competent courts of Tel Aviv-Jaffa, Israel, to the exclusion of any other jurisdiction."
+          ]
+        },
+        "consumer": {
+          "heading": "11. Consumer Rights Preserved",
+          "body": [
+            "Nothing in these terms derogates from mandatory consumer protection rights under Israeli law, to the extent applicable to you, including under the Consumer Protection Law, 5741-1981 and its regulations."
+          ]
+        },
+        "contact": {
+          "heading": "12. Contact Us",
+          "body": [
+            "For any question, request or notice of a terms breach — please email us at mioshyoffice@gmail.com. We will do our best to respond within 14 business days."
+          ]
+        }
+      }
+    },
+    "refund": {
+      "metaTitle": "Refund Policy · Mioshy",
+      "metaDescription": "All sales are final. A clear explanation of how to cancel and how Israeli consumer law applies.",
+      "title": "Refund Policy",
+      "lastUpdated": "May 6, 2026",
+      "intro": [
+        "This page explains Mioshy's refund policy. It supplements — and does not replace — our Terms of Service."
+      ],
+      "sections": {
+        "policy": {
+          "heading": "All Sales Are Final",
+          "body": [
+            "Mioshy sells digital content that is made available immediately after payment. Accordingly, and consistent with standard practice for digital services: we do not issue refunds on subscriptions, one-time purchases, or any digital content delivered to your account once payment has been processed."
+          ]
+        },
+        "why": {
+          "heading": "Why?",
+          "body": [
+            "The moment a payment is approved, the content is unlocked in your account. Unlike a physical product that can be returned in sealed packaging, digital content cannot meaningfully be \"returned\" — so our model is forward-looking cancellation rather than retroactive refund."
+          ]
+        },
+        "cancel": {
+          "heading": "How to Cancel a Subscription",
+          "body": [
+            "You can cancel your subscription at any time from your personal account page (\"My Mioshy\" → \"Account\"). A cancellation will:",
+            "• Stop the next recurring charge and prevent any further charges.",
+            "• Not refund payments that have already been made.",
+            "• Keep your access active until the end of the current billing period."
+          ]
+        },
+        "billingErrors": {
+          "heading": "Billing Errors",
+          "body": [
+            "If you believe you were charged in error (a duplicate charge, an incorrect amount, a charge after cancellation, etc.) — that is a billing dispute, not a refund request, and we are happy to look into it.",
+            "Email us at mioshyoffice@gmail.com with the charge details. We will get back to you within 5 business days, and where an actual error is confirmed we will refund the relevant amount."
+          ]
+        },
+        "consumer": {
+          "heading": "Consumer Rights Preserved",
+          "body": [
+            "This policy does not derogate from mandatory consumer protection rights under the Consumer Protection Law, 5741-1981 and its regulations, to the extent applicable to you. If you believe you are entitled to a refund under applicable law, please contact us and we will review the request on its merits."
+          ]
+        }
+      }
+    },
+    "privacy": {
+      "metaTitle": "Privacy Policy · Mioshy",
+      "metaDescription": "What data Mioshy collects, how it is stored, and with whom it is shared.",
+      "title": "Privacy Policy",
+      "lastUpdated": "May 6, 2026",
+      "intro": [
+        "Your privacy matters. This document explains what information we collect, how it is stored, and who may have access to it. For any question, contact us at mioshyoffice@gmail.com."
+      ],
+      "sections": {
+        "dataCollected": {
+          "heading": "Information We Collect",
+          "body": "While using the service, we collect the following information about you:",
+          "list": [
+            "Account details: full name, email address, preferred language and country.",
+            "Payment details: payments are processed by Stripe and Cardcom. We do not store your credit-card data — only a transaction identifier and invoice metadata.",
+            "Service activity: which games you played, questions and answers you saved, sign-in dates, and aggregated usage data.",
+            "Technical information: IP address, browser type, operating system, anonymous device identifiers and language settings."
+          ]
+        },
+        "cookies": {
+          "heading": "Cookies & Analytics",
+          "body": [
+            "We use cookies to remember your language, keep you signed in, and measure aggregated usage of the service. You can block cookies in your browser settings, but doing so may degrade the experience."
+          ]
+        },
+        "thirdParties": {
+          "heading": "Third Parties",
+          "body": "Data is stored and processed with leading infrastructure providers, all subject to strict security and privacy standards:",
+          "list": [
+            "Supabase – user data storage and database hosting.",
+            "Vercel – website and application server hosting.",
+            "Cloudflare – networking and security services.",
+            "Stripe and Cardcom – payment processing only; credit-card data is never sent to us.",
+            "Brevo – transactional email (account confirmations, password resets, account notifications)."
+          ]
+        },
+        "rights": {
+          "heading": "Your Rights",
+          "body": "To the extent we hold personal information about you, you are entitled to:",
+          "list": [
+            "Access the information we hold about you.",
+            "Request correction of inaccurate details.",
+            "Request deletion of your account and the personal data associated with it.",
+            "Object to certain uses of your data, where operationally feasible."
+          ]
+        },
+        "retention": {
+          "heading": "Data Retention",
+          "body": [
+            "We retain personal information for as long as your account is active, or as long as it is required to operate the service, enforce our terms, or comply with legal obligations (such as tax-record retention obligations under Israeli law).",
+            "Once an account is deleted, identifying information is erased or anonymized within a reasonable period; aggregated, non-identifying data may be retained for usage analytics."
+          ]
+        },
+        "children": {
+          "heading": "Minors",
+          "body": [
+            "The service is intended for users aged 18 and over and is not directed at minors. We do not knowingly collect information about minors. If we learn that we have, we will delete it as soon as we identify it."
+          ]
+        },
+        "contact": {
+          "heading": "Contact Us About Privacy",
+          "body": [
+            "For any privacy-related request, question or complaint — please email us at mioshyoffice@gmail.com. We will do our best to respond within 14 business days."
+          ]
+        }
+      }
+    },
+    "accessibility": {
+      "metaTitle": "Accessibility Statement · Mioshy",
+      "metaDescription": "Mioshy's commitment to WCAG 2.1 Level AA and to Israeli accessibility regulations.",
+      "title": "Accessibility Statement",
+      "lastUpdated": "May 6, 2026",
+      "intro": [
+        "Mioshy is committed to making its service accessible to all users, including people with disabilities. We work in line with the Israeli regulations on accessibility for service (Equal Rights for Persons with Disabilities Regulations (Service Accessibility Adjustments), 5773-2013) and with the Israeli standard SI 5568, which is based on WCAG 2.1 Level AA."
+      ],
+      "sections": {
+        "commitment": {
+          "heading": "Our Commitment",
+          "body": [
+            "We treat accessibility as a baseline value. Our team continuously improves accessibility and addresses issues as they are identified. We aim for ongoing compliance with the Israeli web-accessibility standard (WCAG 2.1 AA) and to keep raising the bar over time."
+          ]
+        },
+        "features": {
+          "heading": "Accessibility Features",
+          "body": "To make the site easier to use, the following adjustments have been implemented:",
+          "list": [
+            "Full keyboard navigation, no mouse required.",
+            "Compatibility with common screen readers (NVDA, JAWS, VoiceOver, TalkBack).",
+            "Color contrast meeting the standard (minimum 4.5:1 for body text).",
+            "Browser text scaling supported up to 200% with no loss of content or functionality.",
+            "Semantic heading structure (H1–H4) enabling structured navigation with screen readers.",
+            "Accessible forms with clear labels and explanatory error messages.",
+            "ARIA tagging on buttons, links and interactive elements.",
+            "Full bidirectional support (RTL in Hebrew, LTR in English)."
+          ]
+        },
+        "limitations": {
+          "heading": "Known Limitations",
+          "body": [
+            "Some game content includes animation and sound that are essential to the experience. Wherever possible, an alternative is provided (mute, pause animation). We are continuing to expand these alternatives.",
+            "If you encounter an element that is not accessible — please tell us, and we will address it as quickly as possible."
+          ]
+        },
+        "coordinator": {
+          "heading": "Accessibility Coordinator",
+          "body": [
+            "You can contact Mioshy's accessibility coordinator for any question, request or report:",
+            "{TODO: Itzik — please fill in the accessibility coordinator's name, phone number and dedicated contact email. Temporary fallback: mioshyoffice@gmail.com}"
+          ]
+        },
+        "audit": {
+          "heading": "Last Audit Date",
+          "body": [
+            "The most recent accessibility audit was conducted on May 6, 2026. We perform a periodic review at least once a year."
+          ]
+        },
+        "report": {
+          "heading": "How to Report an Accessibility Issue",
+          "body": [
+            "If you encounter an accessibility issue on the site — please let us know. Email mioshyoffice@gmail.com with a description of the issue, the page on which you encountered it, and any detail that will help us reproduce and resolve it.",
+            "We undertake to respond to accessibility reports within 14 business days, and to remediate substantive issues within a reasonable time."
+          ]
+        }
+      }
+    }
   },
   "dashboard": {
     "title": "Content admin",
@@ -737,11 +1026,11 @@
       "card1Currency": "₪",
       "card1Period": "/ week",
       "card1Original": "Stop any time · <s>₪87 per boxed game</s>",
-      "card1Feat1": "Access to every game on the platform",
-      "card1Feat2": "Variety: relationship wheel, couples snakes & ladders, and more",
-      "card1Feat3": "Play even when you're apart",
-      "card1Feat4": "3 depth levels for every couple",
-      "card1Feat5": "Stop any time",
+      "card1Feat1": "A variety of games — on phone, desktop or tablet, anywhere",
+      "card1Feat2": "Hundreds of questions and prompts crafted by our relationship experts",
+      "card1Feat3": "You pick the game that fits your mood tonight",
+      "card1Feat4": "Apart for the night? Play together and reconnect",
+      "card1Feat5": "Effortless fun, available the moment you want it",
       "card1Cta": "Pick a plan",
       "card2Badge": "Most popular",
       "card2Tag": "Coaching with Mioshy",

@@ -33,21 +33,25 @@ function DieFace({ value }: { value: DiceResult }) {
     <div
       className="relative grid h-full w-full grid-cols-3 grid-rows-3 place-items-center rounded-[22%] p-[14%]"
       style={{
-        // Deep velvet surface - radial highlight simulates light catching the fabric
+        // Intimate-dark velvet — matte black/wine, replaces the previous
+        // emerald felt. Radial highlight at top-left still simulates a
+        // candle catching the fabric, just in a wine palette now.
         background:
-          "radial-gradient(ellipse at 32% 28%, #1e3d28 0%, #0e2017 45%, #070f0b 100%)",
-        // Layered border: outer gold rim + inner shadow for depth
+          "radial-gradient(ellipse at 32% 28%, #2a0810 0%, #150308 45%, #06010a 100%)",
+        // Layered border: outer gold rim (brighter than before) + inner
+        // shadow for depth.
         boxShadow:
-          "inset 0 2px 4px rgba(255,255,255,0.08), inset 0 -2px 6px rgba(0,0,0,0.7), 0 0 0 1.5px rgba(160,120,60,0.55)",
+          "inset 0 2px 4px rgba(201,169,97,0.08), inset 0 -2px 6px rgba(0,0,0,0.8), 0 0 0 1.5px rgba(201,169,97,0.55)",
       }}
       aria-hidden
     >
-      {/* Subtle sheen line across the top-left - light catching velvet nap */}
+      {/* Subtle sheen line across the top-left — gold tint, suggests
+          candlelight catching the velvet nap */}
       <span
-        className="pointer-events-none absolute inset-0 rounded-[22%] opacity-60"
+        className="pointer-events-none absolute inset-0 rounded-[22%] opacity-50"
         style={{
           background:
-            "linear-gradient(135deg, rgba(255,255,255,0.07) 0%, transparent 45%)",
+            "linear-gradient(135deg, rgba(201,169,97,0.10) 0%, transparent 45%)",
         }}
       />
 
@@ -65,11 +69,11 @@ function DieFace({ value }: { value: DiceResult }) {
             style={
               isPip
                 ? {
-                    // Ivory pip with depth: top highlight, bottom shadow
+                    // Gold pip — bright top, deeper antique-gold shadow
                     background:
-                      "radial-gradient(circle at 38% 35%, #f5ede0 0%, #d4c4a8 60%, #b8a88a 100%)",
+                      "radial-gradient(circle at 38% 35%, #F2E4C9 0%, #E6CB85 35%, #C9A961 70%, #8a6630 100%)",
                     boxShadow:
-                      "inset 0 1px 2px rgba(255,255,255,0.6), inset 0 -1px 3px rgba(0,0,0,0.5), 0 2px 4px rgba(0,0,0,0.7)",
+                      "inset 0 1px 2px rgba(255,235,180,0.7), inset 0 -1px 3px rgba(0,0,0,0.55), 0 2px 4px rgba(0,0,0,0.8), 0 0 6px rgba(201,169,97,0.35)",
                   }
                 : {}
             }
@@ -84,8 +88,11 @@ export function Dice({
   onRoll,
   disabled,
   result,
-  label = "הטל/י קובייה",
-  tumblingFor = 900,
+  // Default fallback label — only used if the parent doesn't pass one
+  // (production callsites always do). Empty string keeps it neutral
+  // across locales.
+  label = "",
+  tumblingFor = 2500,
 }: {
   /** Called when the user taps the die. Should eventually cause `result` to change. */
   onRoll: () => void | Promise<void>;
@@ -97,13 +104,20 @@ export function Dice({
   playerColor?: string;
   /** Localized button label shown below the die. */
   label?: string;
-  /** How long to show random faces before snapping to `result`. */
+  /** How long to show random faces before snapping to `result`.
+   *  Bumped 900ms → 2500ms (Itzik 2026-05-05 round 6) so the dice
+   *  visibly cycles through numbers for 2-3 sec like a real die. */
   tumblingFor?: number;
 }) {
   const [tumbling, setTumbling] = useState(false);
   const [displayValue, setDisplayValue] = useState<DiceResult>(result ?? 1);
 
   // When result changes, tumble for a moment then snap to the new result.
+  // The interval cycles through random faces — Itzik's request was for the
+  // numbers to "run" through 2-3 sec like 2-4-6 then 3-4-5, mimicking a
+  // real die rolling. Interval bumped 80ms → 110ms so each face is
+  // readable before flipping (10 fps was too fast to register
+  // individual numbers).
   useEffect(() => {
     if (result == null) {
       setDisplayValue(1);
@@ -123,7 +137,7 @@ export function Dice({
         setDisplayValue(result);
         setTumbling(false);
       }
-    }, 80);
+    }, 110);
     return () => clearInterval(interval);
   }, [result, tumblingFor]);
 
@@ -157,20 +171,34 @@ export function Dice({
         }
         transition={tumbling ? { duration: tumblingFor / 1000, ease: "easeOut" } : rollTransition}
         style={{
-          // Multi-layer shadow: ambient lift + strong directional drop + gold glow edge
+          // Multi-layer shadow: ambient lift + strong directional drop +
+          // warm gold glow edge (brighter than before to read against the
+          // intimate-dark page).
           filter: `
-            drop-shadow(0 2px 2px rgba(0,0,0,0.55))
-            drop-shadow(0 8px 18px rgba(0,0,0,0.65))
-            drop-shadow(0 0 12px rgba(140,100,40,0.30))
+            drop-shadow(0 2px 2px rgba(0,0,0,0.6))
+            drop-shadow(0 10px 22px rgba(0,0,0,0.75))
+            drop-shadow(0 0 14px rgba(201,169,97,0.35))
           `,
         }}
       >
         <DieFace value={displayValue} />
       </motion.button>
 
-      <div className="text-sm font-semibold tracking-wide text-amber-200/80 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
-        {tumbling ? "…" : canRoll ? label : disabled ? "ממתין לתור שלך" : label}
-      </div>
+      {/* Caption — Itzik 2026-05-05: shows ONLY when this user can
+          actually roll. Format is "{name}, תורך" so the player sees
+          their name as a vocative. While tumbling, while disabled
+          (not their turn), or in any non-roll state — caption hidden. */}
+      {canRoll && !tumbling ? (
+        <div
+          className={cn(
+            "text-base font-medium tracking-[0.04em]",
+            "font-['Playfair_Display',Georgia,serif]",
+            "text-[#E6CB85] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]",
+          )}
+        >
+          {label}
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -101,7 +101,53 @@ export function SiteFooter() {
         </div>
       </div>
 
-      {/* ── Bottom bar ──────────────────────────────────────────────────────── */}
+      {/* ── Legal row ─────────────────────────────────────────────────────────
+          Single horizontal row at the bottom of the footer with all 4 legal
+          links. Wraps on narrow viewports; in RTL the visual order reads
+          right→left automatically because the document direction is set on
+          <html>. Items separated by middle-dot. */}
+      <div className="border-t border-white/[0.04]">
+        <nav
+          aria-label={t("legalLinks.ariaLabel")}
+          className="mx-auto w-full max-w-7xl px-4 py-5"
+        >
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-xs text-white/60">
+            <Link
+              href="/terms"
+              className="transition-colors hover:text-white"
+            >
+              {t("legalLinks.terms")}
+            </Link>
+            <span aria-hidden className="text-white/25">·</span>
+            <Link
+              href="/refund-policy"
+              className="transition-colors hover:text-white"
+            >
+              {t("legalLinks.refund")}
+            </Link>
+            <span aria-hidden className="text-white/25">·</span>
+            <Link
+              href="/privacy"
+              className="transition-colors hover:text-white"
+            >
+              {t("legalLinks.privacy")}
+            </Link>
+            <span aria-hidden className="text-white/25">·</span>
+            <Link
+              href="/accessibility"
+              className="transition-colors hover:text-white"
+            >
+              {t("legalLinks.accessibility")}
+            </Link>
+            <span aria-hidden className="text-white/25">·</span>
+            <span className="text-white/45">
+              {t("legalLinks.copyright", { year: new Date().getFullYear() })}
+            </span>
+          </div>
+        </nav>
+      </div>
+
+      {/* ── Bottom bar — language switch + brand line ───────────────────── */}
       <div className="border-t border-white/[0.04]">
         <div className="mx-auto flex w-full max-w-7xl flex-col items-start justify-between gap-3 px-4 py-5 text-[13px] text-white/45 sm:flex-row sm:items-center md:text-xs md:text-white/30">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
