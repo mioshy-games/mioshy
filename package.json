@@ -68,5 +68,16 @@
     "typescript": "^5",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^2.1.8"
-  }
+  },
+  "//browserslist": "Modern targets — every listed engine ships Array.prototype.at, flat/flatMap, Object.fromEntries, Object.hasOwn, String.prototype.trimStart/End natively, so SWC/Next.js can drop the legacy polyfills (Lighthouse 2026-05-06: ~12 KiB savings).",
+  "browserslist": [
+    "Chrome >= 93",
+    "Edge >= 93",
+    "Firefox >= 92",
+    "Safari >= 15.4",
+    "iOS >= 15.4",
+    "not dead",
+    "not IE 11",
+    "not op_mini all"
+  ]
 }

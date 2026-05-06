@@ -6,6 +6,7 @@ import { ArrowLeft, ArrowRight, Gamepad2, Play } from "lucide-react";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
 import type { GameRow } from "@/lib/types/database";
+import { pickGameThumbnail } from "@/lib/games-thumbnail";
 
 export const dynamic = "force-dynamic";
 
@@ -92,6 +93,7 @@ export default async function MyGamesGalleryPage({
               {games.map((g) => {
                 const name = isHe ? g.name_he : g.name_en;
                 const desc = isHe ? g.description_he : g.description_en;
+                const thumb = pickGameThumbnail(g, locale);
                 return (
                   <li
                     key={g.id}
@@ -102,9 +104,9 @@ export default async function MyGamesGalleryPage({
                       className="flex h-full flex-col"
                     >
                       <div className="relative aspect-[16/10] w-full overflow-hidden bg-black/30">
-                        {g.thumbnail_url ? (
+                        {thumb ? (
                           <Image
-                            src={g.thumbnail_url}
+                            src={thumb}
                             alt={name}
                             fill
                             sizes="(max-width: 640px) 100vw, 50vw"

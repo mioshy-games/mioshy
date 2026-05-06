@@ -11,7 +11,6 @@ export const HOMEPAGE_LINK_OPTIONS = [
   { label: "Personal Journey (/journey)", value: "/journey" },
   { label: "Articles (/articles)", value: "/articles" },
   { label: "Pricing (/pricing)", value: "/pricing" },
-  { label: "How it works (/how-it-works)", value: "/how-it-works" },
   { label: "Contact (/contact)", value: "/contact" },
   { label: "Anchor: Games section (#games)", value: "#games" },
   { label: "Anchor: How it works (#how)", value: "#how" },

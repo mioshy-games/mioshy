@@ -375,12 +375,6 @@ export default function FounderStoryPage({
                 <Arrow className="h-4 w-4 transition group-hover:-translate-x-1" />
               </span>
             </Link>
-            <Link
-              href="/how-it-works"
-              className="inline-flex min-h-[52px] items-center gap-1.5 rounded-full border border-stone-300/80 bg-white px-7 text-[15px] font-semibold text-stone-700 transition hover:border-stone-400 hover:text-stone-900"
-            >
-              {isHe ? "איך זה עובד?" : "How it works"}
-            </Link>
           </div>
         </div>
 

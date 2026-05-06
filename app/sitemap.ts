@@ -28,7 +28,6 @@ type DbArticle = {
 type DbGame = {
   slug: string;
   created_at: string;
-  thumbnail_url: string | null;
 };
 type DbAdultsGame = {
   slug: string;
@@ -53,7 +52,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // /adults is the flagship product surface - high priority.
     { path: "/adults", priority: 0.95, changeFrequency: "weekly" },
     { path: "/journey", priority: 0.85, changeFrequency: "weekly" },
-    { path: "/how-it-works", priority: 0.7, changeFrequency: "monthly" },
     { path: "/pricing", priority: 0.7, changeFrequency: "monthly" },
     { path: "/articles", priority: 0.8, changeFrequency: "weekly" },
   ];
@@ -81,7 +79,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           .eq("is_published", true),
         supabase
           .from("games")
-          .select("slug, created_at, thumbnail_url")
+          .select("slug, created_at")
           .eq("is_active", true),
         // Flagship /adults catalogue - published-only experience games.
         supabase

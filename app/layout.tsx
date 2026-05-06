@@ -139,10 +139,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     >
       <head>
         {SUPABASE_ORIGIN ? (
-          <>
-            <link rel="preconnect" href={SUPABASE_ORIGIN} crossOrigin="" />
-            <link rel="dns-prefetch" href={SUPABASE_ORIGIN} />
-          </>
+          // dns-prefetch only — full preconnect held a connection slot
+          // that the marketing homepage never used (Supabase is hit only
+          // on auth-gated pages and the dashboard). Lighthouse 2026-05-06
+          // flagged this as "Unused preconnect"; dropping it frees the
+          // budget for the critical CSS/font requests instead.
+          <link rel="dns-prefetch" href={SUPABASE_ORIGIN} />
         ) : null}
         <meta name="theme-color" content="#1a0a2e" />
         <meta name="format-detection" content="telephone=no" />

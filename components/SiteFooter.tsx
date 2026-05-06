@@ -67,7 +67,6 @@ export function SiteFooter() {
               </p>
               <ul className="space-y-3 text-[15px] md:space-y-2.5 md:text-[11px]">
                 <li><Link href="/"             className="text-white/75 transition-colors hover:text-white md:text-white/60">{t("home")}</Link></li>
-                <li><Link href="/how-it-works" className="text-white/75 transition-colors hover:text-white md:text-white/60">{t("how")}</Link></li>
                 <li><Link href="/journey"      className="text-white/75 transition-colors hover:text-white md:text-white/60">{t("journey")}</Link></li>
                 <li><Link href="/pricing"      className="text-white/75 transition-colors hover:text-white md:text-white/60">{tMarketing("footer.links.pricing" as never)}</Link></li>
               </ul>

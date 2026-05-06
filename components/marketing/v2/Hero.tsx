@@ -77,9 +77,17 @@ export function Hero() {
                 <TrackedLink href="/journey" className="btn btn-primary" ctaId="hero_primary" section="hero">
                   {t("ctaPrimary")} <span className="arrow">←</span>
                 </TrackedLink>
-                <TrackedLink href="/how-it-works" className="btn btn-ghost" ctaId="hero_secondary" section="hero">
-                  {t("ctaSecondary")}
-                </TrackedLink>
+              </div>
+            </RevealOnScroll>
+
+            <RevealOnScroll variant="fade-up" delay={0.30}>
+              <div className="hero-price-from" aria-label={t("priceFromLabel").replace(/<\/?strong>/g, "")}>
+                <span className="dot" aria-hidden></span>
+                <span>
+                  {t.rich("priceFromLabel", {
+                    strong: (chunks) => <strong>{chunks}</strong>,
+                  })}
+                </span>
               </div>
             </RevealOnScroll>
 

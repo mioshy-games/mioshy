@@ -27,6 +27,7 @@ import { LazyLiveDemoHero } from "@/components/marketing/v2/LazyLiveDemoHero";
 import { MediaSlider } from "@/components/marketing/v2/MediaSlider";
 import { Counter } from "@/components/marketing/v2/Counter";
 import { RevealOnScroll } from "@/components/marketing/v2/RevealOnScroll";
+import { pickGameThumbnail } from "@/lib/games-thumbnail";
 
 /**
  * /games - the games category landing page.
@@ -166,6 +167,7 @@ export default async function GamesHubPage({
               {games.map((g) => {
                 const name = isHe ? g.name_he : g.name_en;
                 const desc = isHe ? g.description_he : g.description_en;
+                const thumb = pickGameThumbnail(g, locale);
                 return (
                   <li key={g.id}>
                     <Link
@@ -173,9 +175,9 @@ export default async function GamesHubPage({
                       className="group block overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/10 to-white/5 shadow-xl backdrop-blur transition hover:border-rose-300/40 hover:from-white/20"
                     >
                       <div className="relative aspect-[16/10] w-full overflow-hidden bg-gradient-to-br from-rose-500/30 to-fuchsia-500/20">
-                        {g.thumbnail_url ? (
+                        {thumb ? (
                           <Image
-                            src={g.thumbnail_url}
+                            src={thumb}
                             alt={name ?? ""}
                             width={640}
                             height={400}
@@ -745,30 +747,63 @@ export default async function GamesHubPage({
           {/* ════════════════════════════════════════════════════════════
               4. CATALOGUE - all wheel games + snakes virtual card
           ════════════════════════════════════════════════════════════ */}
-          <section id="catalogue" className="relative bg-white px-4 pb-24 pt-14">
-            {/* Subtle V2-tinted gradient mesh */}
+          <section
+            id="catalogue"
+            className="relative overflow-hidden bg-[#0E0810] px-4 pb-24 pt-14 text-white"
+          >
+            {/* ── Animated atmosphere ──────────────────────────────────────
+                Dark wine gradient base + drifting blobs + floating glow +
+                12 small orbit dots. Mirrors the inner-page (journey)
+                animation language but in the catalogue's wine/burgundy
+                palette so the section feels stitched into the wider site.
+                Lifted from -z-10 to z-0; content above sets z-10. */}
             <div
               aria-hidden
-              className="pointer-events-none absolute inset-0 -z-10 opacity-40"
-              style={{
-                background:
-                  "radial-gradient(800px 600px at 15% 40%, rgba(184,60,77,0.06), transparent 60%), " +
-                  "radial-gradient(700px 500px at 85% 60%, rgba(139,38,56,0.05), transparent 60%)",
-              }}
-            />
+              className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
+            >
+              {/* Aurora wash */}
+              <div
+                className="absolute inset-0"
+                style={{
+                  background:
+                    "radial-gradient(900px 600px at 18% 25%, rgba(184,60,77,0.18), transparent 60%), " +
+                    "radial-gradient(800px 540px at 82% 75%, rgba(61,31,61,0.22), transparent 60%), " +
+                    "linear-gradient(160deg, #1A0A14 0%, #0E0810 60%, #1A0A14 100%)",
+                }}
+              />
+              {/* Converging blobs — wine red ↔ deep burgundy */}
+              <div className="catalogue-blob catalogue-blob-1" />
+              <div className="catalogue-blob catalogue-blob-2" />
+              {/* Soft floating circle */}
+              <div className="catalogue-floating-circle" />
+              {/* 12 drifting orbit dots */}
+              <span className="catalogue-orbit catalogue-orbit-1" />
+              <span className="catalogue-orbit catalogue-orbit-2" />
+              <span className="catalogue-orbit catalogue-orbit-3" />
+              <span className="catalogue-orbit catalogue-orbit-4" />
+              <span className="catalogue-orbit catalogue-orbit-5" />
+              <span className="catalogue-orbit catalogue-orbit-6" />
+              <span className="catalogue-orbit catalogue-orbit-7" />
+              <span className="catalogue-orbit catalogue-orbit-8" />
+              <span className="catalogue-orbit catalogue-orbit-9" />
+              <span className="catalogue-orbit catalogue-orbit-10" />
+              <span className="catalogue-orbit catalogue-orbit-11" />
+              <span className="catalogue-orbit catalogue-orbit-12" />
+            </div>
 
-            <div className="mx-auto max-w-6xl">
-              <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <span className="inline-flex items-center gap-2.5 text-[13px] font-semibold uppercase tracking-[0.2em] text-[#170E14]">
-                    <span className="h-[7px] w-[7px] rounded-sm bg-[#B83C4D] shadow-[0_0_0_3px_rgba(184,60,77,0.18)]" />
-                    {isHe ? "כל המשחקים" : "All Games"}
-                  </span>
-                  <h2 className="mt-4 font-heading text-3xl font-bold leading-[1.05] tracking-[-0.02em] text-[#170E14] sm:text-4xl lg:text-5xl">
-                    {t("catalogueTitle")}
-                  </h2>
-                </div>
-                <p className="max-w-sm text-[18px] leading-[1.6] text-[#4A3A45]">
+            <div className="relative z-10 mx-auto max-w-6xl">
+              {/* Stacked header — eyebrow + title + lead description.
+                  Per Itzik 2026-05-06: lead reads BELOW the title (not on
+                  the side) so the catalogue copy flows top-to-bottom. */}
+              <div className="flex flex-col items-start gap-4">
+                <span className="inline-flex items-center gap-2.5 text-[13px] font-semibold uppercase tracking-[0.2em] text-rose-200">
+                  <span className="h-[7px] w-[7px] rounded-sm bg-[#B83C4D] shadow-[0_0_0_3px_rgba(184,60,77,0.28)]" />
+                  {isHe ? "כל המשחקים" : "All Games"}
+                </span>
+                <h2 className="font-heading text-3xl font-bold leading-[1.05] tracking-[-0.02em] text-white sm:text-4xl lg:text-5xl">
+                  {t("catalogueTitle")}
+                </h2>
+                <p className="max-w-2xl text-[18px] leading-[1.6] text-white/70">
                   {isHe
                     ? "בחרו משחק, פתחו על הטלפון, ומתחילים. בלי הורדות, בלי הכנות."
                     : "Pick one, open it on your phone, and start. No downloads, no prep."}
@@ -776,7 +811,7 @@ export default async function GamesHubPage({
               </div>
 
               {games.length === 0 && (
-                <p className="mt-10 text-[#7A6A75]">-</p>
+                <p className="mt-10 text-white/60">-</p>
               )}
 
               <ul className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -785,6 +820,7 @@ export default async function GamesHubPage({
                   const name = isHe ? g.name_he : g.name_en;
                   const desc = isHe ? g.description_he : g.description_en;
                   const accent = accents[idx % accents.length]!;
+                  const thumb = pickGameThumbnail(g, locale);
                   return (
                     <li key={g.id} className="group relative">
                       {/* Hover glow */}
@@ -794,14 +830,14 @@ export default async function GamesHubPage({
                       />
                       <Link
                         href={`/games/${g.slug}`}
-                        className="relative flex h-full flex-col overflow-hidden rounded-3xl border border-[#EAE0E3] bg-[#FBF5F2] shadow-md shadow-[#EAE0E3]/40 transition duration-300 hover:-translate-y-1 hover:border-[#E9C4CA] hover:shadow-[#FBE9EC]/60"
+                        className="relative flex h-full flex-col overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] shadow-xl shadow-black/30 backdrop-blur-sm transition duration-300 hover:-translate-y-1 hover:border-rose-300/40 hover:bg-white/[0.07]"
                       >
                         {/* Thumbnail */}
                         <div className="relative aspect-[16/10] w-full overflow-hidden">
-                          {g.thumbnail_url ? (
+                          {thumb ? (
                             <>
                               <Image
-                                src={g.thumbnail_url}
+                                src={thumb}
                                 alt={name}
                                 fill
                                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
@@ -809,7 +845,7 @@ export default async function GamesHubPage({
                               />
                               <div
                                 aria-hidden
-                                className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent"
+                                className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"
                               />
                             </>
                           ) : (
@@ -819,20 +855,28 @@ export default async function GamesHubPage({
                               <Gamepad2 className="h-12 w-12 text-white/70" />
                             </div>
                           )}
-                          {/* Admin image-swap overlay */}
-                          {isAdmin && <AdminThumbnailEdit gameId={g.id} />}
+                          {/* Admin image-swap overlay — pre-fills with the
+                              current per-locale URLs so the admin can edit
+                              either or both. */}
+                          {isAdmin && (
+                            <AdminThumbnailEdit
+                              gameId={g.id}
+                              initialHe={g.thumbnail_url_he}
+                              initialEn={g.thumbnail_url_en}
+                            />
+                          )}
                         </div>
 
                         <div className="flex flex-1 flex-col p-6">
-                          <h3 className="font-heading text-xl font-bold leading-tight text-[#170E14]">
+                          <h3 className="font-heading text-xl font-bold leading-tight text-white">
                             {name}
                           </h3>
                           {desc ? (
-                            <p className="mt-2 line-clamp-3 text-[20px] leading-[1.5] text-[#4A3A45] sm:text-[18px]">
+                            <p className="mt-2 line-clamp-3 text-[20px] leading-[1.5] text-white/70 sm:text-[18px]">
                               {desc}
                             </p>
                           ) : null}
-                          <span className="mt-auto inline-flex items-center gap-2 pt-5 text-[18px] font-semibold text-[#B83C4D] transition group-hover:text-[#8B2638]">
+                          <span className="mt-auto inline-flex items-center gap-2 pt-5 text-[18px] font-semibold text-rose-200 transition group-hover:text-white">
                             {t("ctaPrimary")}
                             <ArrowRight
                               className={`h-5 w-5 transition group-hover:translate-x-1 ${
@@ -846,18 +890,18 @@ export default async function GamesHubPage({
                   );
                 })}
 
-                {/* ── Virtual snakes & ladders card - V2 wine palette ── */}
+                {/* ── Virtual snakes & ladders card - dark wine palette ── */}
                 <li className="group relative">
                   <div
                     aria-hidden
-                    className="pointer-events-none absolute -inset-px -z-10 rounded-[28px] bg-gradient-to-br from-[#B83C4D]/30 via-[#8B2638]/20 to-[#3D1F3D]/20 opacity-0 blur-xl transition duration-500 group-hover:opacity-60"
+                    className="pointer-events-none absolute -inset-px -z-10 rounded-[28px] bg-gradient-to-br from-[#B83C4D]/40 via-[#8B2638]/30 to-[#3D1F3D]/30 opacity-0 blur-xl transition duration-500 group-hover:opacity-70"
                   />
                   <Link
                     href="/game"
-                    className="relative flex h-full flex-col overflow-hidden rounded-3xl border border-[#EAE0E3] bg-white shadow-md shadow-[#EAE0E3]/40 transition duration-300 hover:-translate-y-1 hover:border-[#E9C4CA] hover:shadow-[#FBE9EC]/60"
+                    className="relative flex h-full flex-col overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] shadow-xl shadow-black/30 backdrop-blur-sm transition duration-300 hover:-translate-y-1 hover:border-rose-300/40 hover:bg-white/[0.07]"
                   >
                     {/* Thumbnail — see /public/images/snakes-couples.webp */}
-                    <div className="relative aspect-[16/10] w-full overflow-hidden bg-gradient-to-br from-[#B83C4D]/20 via-[#8B2638]/15 to-[#3D1F3D]/20">
+                    <div className="relative aspect-[16/10] w-full overflow-hidden bg-gradient-to-br from-[#B83C4D]/30 via-[#8B2638]/25 to-[#3D1F3D]/30">
                       <Image
                         src="/images/snakes-couples.webp"
                         alt={isHe ? "נחשים וסולמות" : "Snakes & Ladders"}
@@ -871,25 +915,25 @@ export default async function GamesHubPage({
                       </span>
                       <div
                         aria-hidden
-                        className="absolute inset-0 bg-gradient-to-t from-black/15 via-transparent to-transparent"
+                        className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent"
                       />
                     </div>
 
                     <div className="flex flex-1 flex-col p-6">
-                      {/* Multi-player badge - V2 accent-bg */}
-                      <span className="mb-3 inline-flex items-center gap-1.5 self-start rounded-full border border-[#E9C4CA] bg-[#FBE9EC] px-2.5 py-0.5 text-xs font-semibold text-[#8B2638]">
+                      {/* Multi-player badge - on-dark variant */}
+                      <span className="mb-3 inline-flex items-center gap-1.5 self-start rounded-full border border-rose-300/30 bg-rose-500/15 px-2.5 py-0.5 text-xs font-semibold text-rose-100">
                         <Users className="h-3 w-3" />
                         {isHe ? "עד 8 שחקנים" : "Up to 8 players"}
                       </span>
-                      <h3 className="font-heading text-xl font-bold leading-tight text-[#170E14]">
+                      <h3 className="font-heading text-xl font-bold leading-tight text-white">
                         {isHe ? "נחשים וסולמות" : "Snakes & Ladders"}
                       </h3>
-                      <p className="mt-2 line-clamp-3 text-[20px] leading-[1.5] text-[#4A3A45] sm:text-[18px]">
+                      <p className="mt-2 line-clamp-3 text-[20px] leading-[1.5] text-white/70 sm:text-[18px]">
                         {isHe
                           ? "לוח קלאסי עם שאלות ואתגרים זוגיים - שחקו על מכשיר אחד או על שני מכשירים שונים"
                           : "Classic board game with couples questions & challenges - play on one device or remotely"}
                       </p>
-                      <span className="mt-auto inline-flex items-center gap-2 pt-5 text-[18px] font-semibold text-[#B83C4D] transition group-hover:text-[#8B2638]">
+                      <span className="mt-auto inline-flex items-center gap-2 pt-5 text-[18px] font-semibold text-rose-200 transition group-hover:text-white">
                         {isHe ? "שחקו עכשיו" : "Play now"}
                         <ArrowRight
                           className={`h-5 w-5 transition group-hover:translate-x-1 ${
@@ -903,6 +947,104 @@ export default async function GamesHubPage({
               </ul>
 
             </div>
+
+            {/* Inline keyframes/styles for the catalogue atmosphere — kept
+                local so the new pattern doesn't bleed into other dark
+                sections that might want their own palette. */}
+            <style
+              dangerouslySetInnerHTML={{
+                __html: `
+                  /* Large drifting blobs — soft, slow, atmospheric. */
+                  .catalogue-blob {
+                    position: absolute;
+                    border-radius: 50%;
+                    filter: blur(110px);
+                    opacity: 0.55;
+                    pointer-events: none;
+                    will-change: transform;
+                  }
+                  .catalogue-blob-1 {
+                    width: 620px; height: 620px;
+                    top: -160px;
+                    inset-inline-start: -120px;
+                    background: radial-gradient(circle, rgba(184,60,77,0.7) 0%, rgba(184,60,77,0) 70%);
+                    animation: catalogue-blob-1-converge 56s ease-in-out infinite;
+                  }
+                  .catalogue-blob-2 {
+                    width: 560px; height: 560px;
+                    bottom: -140px;
+                    inset-inline-end: -100px;
+                    background: radial-gradient(circle, rgba(139,38,56,0.6) 0%, rgba(139,38,56,0) 70%);
+                    animation: catalogue-blob-2-converge 56s ease-in-out infinite;
+                  }
+                  @keyframes catalogue-blob-1-converge {
+                    0%, 100% { transform: translate(0, 0) scale(1); }
+                    50%      { transform: translate(140px, 100px) scale(1.06); }
+                  }
+                  @keyframes catalogue-blob-2-converge {
+                    0%, 100% { transform: translate(0, 0) scale(1); }
+                    50%      { transform: translate(-140px, -100px) scale(1.06); }
+                  }
+
+                  /* Soft floating circle */
+                  .catalogue-floating-circle {
+                    position: absolute;
+                    width: 220px; height: 220px;
+                    top: 38%;
+                    left: 48%;
+                    border-radius: 50%;
+                    background: radial-gradient(circle, rgba(232,131,148,0.45) 0%, rgba(184,60,77,0) 70%);
+                    filter: blur(40px);
+                    opacity: 0.5;
+                    animation: catalogue-floating-circle-move 32s ease-in-out infinite;
+                    pointer-events: none;
+                  }
+                  @keyframes catalogue-floating-circle-move {
+                    0%, 100% { transform: translate(0, 0) scale(1); }
+                    25%      { transform: translate(-30px, 40px) scale(1.05); }
+                    50%      { transform: translate(40px, -20px) scale(1.1); }
+                    75%      { transform: translate(20px, 30px) scale(1); }
+                  }
+
+                  /* 12 small drifting orbit dots — wine palette, soft halos.
+                     Single smooth fade gradient so the dots feather into
+                     the background instead of looking outlined. */
+                  .catalogue-orbit {
+                    position: absolute;
+                    border-radius: 50%;
+                    pointer-events: none;
+                    will-change: transform, opacity;
+                  }
+                  .catalogue-orbit-1  { width: 8px;  height: 8px;  left: 12%; top: 22%; background: radial-gradient(circle, rgba(232,131,148,0.85) 0%, rgba(232,131,148,0) 70%); box-shadow: 0 0 10px rgba(232,131,148,0.25); animation: catalogue-orbit-a 26s ease-in-out infinite; }
+                  .catalogue-orbit-2  { width: 6px;  height: 6px;  left: 24%; top: 68%; background: radial-gradient(circle, rgba(184,60,77,0.85) 0%, rgba(184,60,77,0) 70%);   box-shadow: 0 0 8px  rgba(184,60,77,0.22);   animation: catalogue-orbit-b 32s ease-in-out infinite; animation-delay: 1s; }
+                  .catalogue-orbit-3  { width: 10px; height: 10px; left: 38%; top: 18%; background: radial-gradient(circle, rgba(251,200,210,0.8)  0%, rgba(251,200,210,0)  70%); box-shadow: 0 0 12px rgba(251,200,210,0.22); animation: catalogue-orbit-c 30s ease-in-out infinite; animation-delay: 2s; }
+                  .catalogue-orbit-4  { width: 5px;  height: 5px;  left: 48%; top: 74%; background: radial-gradient(circle, rgba(245,158,177,0.85) 0%, rgba(245,158,177,0) 70%); box-shadow: 0 0 8px  rgba(245,158,177,0.22); animation: catalogue-orbit-d 36s ease-in-out infinite; animation-delay: 3s; }
+                  .catalogue-orbit-5  { width: 7px;  height: 7px;  left: 62%; top: 30%; background: radial-gradient(circle, rgba(184,60,77,0.8)  0%, rgba(184,60,77,0)  70%);   box-shadow: 0 0 10px rgba(184,60,77,0.22);   animation: catalogue-orbit-e 28s ease-in-out infinite; animation-delay: .8s; }
+                  .catalogue-orbit-6  { width: 7px;  height: 7px;  left: 74%; top: 66%; background: radial-gradient(circle, rgba(139,38,56,0.85) 0%, rgba(139,38,56,0) 70%);   box-shadow: 0 0 10px rgba(139,38,56,0.22);   animation: catalogue-orbit-a 34s ease-in-out infinite; animation-delay: 3.6s; }
+                  .catalogue-orbit-7  { width: 9px;  height: 9px;  left: 86%; top: 24%; background: radial-gradient(circle, rgba(232,131,148,0.85) 0%, rgba(232,131,148,0) 70%); box-shadow: 0 0 12px rgba(232,131,148,0.22); animation: catalogue-orbit-b 30s ease-in-out infinite; animation-delay: 4.2s; }
+                  .catalogue-orbit-8  { width: 6px;  height: 6px;  left: 18%; top: 46%; background: radial-gradient(circle, rgba(245,158,177,0.85) 0%, rgba(245,158,177,0) 70%); box-shadow: 0 0 8px  rgba(245,158,177,0.22); animation: catalogue-orbit-c 38s ease-in-out infinite; animation-delay: 1.6s; }
+                  .catalogue-orbit-9  { width: 8px;  height: 8px;  left: 54%; top: 54%; background: radial-gradient(circle, rgba(184,60,77,0.8)  0%, rgba(184,60,77,0)  70%);   box-shadow: 0 0 10px rgba(184,60,77,0.22);   animation: catalogue-orbit-d 32s ease-in-out infinite; animation-delay: 5s; }
+                  .catalogue-orbit-10 { width: 7px;  height: 7px;  left: 80%; top: 48%; background: radial-gradient(circle, rgba(251,200,210,0.85) 0%, rgba(251,200,210,0) 70%); box-shadow: 0 0 10px rgba(251,200,210,0.22); animation: catalogue-orbit-e 34s ease-in-out infinite; animation-delay: 2.4s; }
+                  .catalogue-orbit-11 { width: 5px;  height: 5px;  left: 30%; top: 38%; background: radial-gradient(circle, rgba(245,158,177,0.8)  0%, rgba(245,158,177,0)  70%); box-shadow: 0 0 8px  rgba(245,158,177,0.2);  animation: catalogue-orbit-a 28s ease-in-out infinite; animation-delay: 4s; }
+                  .catalogue-orbit-12 { width: 8px;  height: 8px;  left: 68%; top: 8%;  background: radial-gradient(circle, rgba(232,131,148,0.8)  0%, rgba(232,131,148,0)  70%); box-shadow: 0 0 10px rgba(232,131,148,0.22); animation: catalogue-orbit-b 30s ease-in-out infinite; animation-delay: .5s; }
+
+                  /* Drift ranges — ambient, not propelled. */
+                  @keyframes catalogue-orbit-a { 0%,100% { transform: translate(0,0); opacity: .25; } 50% { transform: translate(30px,-40px);  opacity: .65; } }
+                  @keyframes catalogue-orbit-b { 0%,100% { transform: translate(0,0); opacity: .25; } 50% { transform: translate(-40px,30px); opacity: .65; } }
+                  @keyframes catalogue-orbit-c { 0%,100% { transform: translate(0,0); opacity: .2; }  33% { transform: translate(40px,18px);  opacity: .55; } 66% { transform: translate(-25px,-30px); opacity: .7; } }
+                  @keyframes catalogue-orbit-d { 0%,100% { transform: translate(0,0); opacity: .25; } 50% { transform: translate(-30px,-45px); opacity: .65; } }
+                  @keyframes catalogue-orbit-e { 0%,100% { transform: translate(0,0); opacity: .25; } 50% { transform: translate(45px,35px);   opacity: .65; } }
+
+                  @media (prefers-reduced-motion: reduce) {
+                    .catalogue-blob,
+                    .catalogue-floating-circle,
+                    .catalogue-orbit {
+                      animation: none !important;
+                    }
+                  }
+                `,
+              }}
+            />
           </section>
           {/* ════════════════════════════════════════════════════════════
               5. PERSONAS - "למי זה מתאים" (magazine chapters on cream)

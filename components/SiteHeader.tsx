@@ -335,9 +335,15 @@ export function SiteHeader({
                 href="/journey"
                 className="group relative inline-flex min-h-[40px] items-center justify-center overflow-hidden rounded-full px-5 text-base font-semibold text-white shadow-lg shadow-fuchsia-500/25 transition hover:brightness-110"
               >
+                {/* GPU-composited gradient sweep — span is 220% wide of
+                    its parent and slides via translateX (instead of the
+                    previous background-position animation, which
+                    Lighthouse flagged as non-composited). The parent
+                    Link already has `overflow-hidden` so the overflow
+                    is clipped. */}
                 <span
                   aria-hidden
-                  className="absolute inset-0 bg-[linear-gradient(110deg,#d946ef_0%,#a855f7_35%,#ec4899_70%,#f59e0b_100%)] bg-[length:220%_100%] mio-nav-cta-shift"
+                  className="absolute top-0 bottom-0 left-0 w-[220%] bg-[linear-gradient(110deg,#d946ef_0%,#a855f7_35%,#ec4899_70%,#f59e0b_100%)] mio-nav-cta-shift"
                 />
                 <span className="relative z-10">
                   {isHe ? "ליווי עם מיאושי" : "Mioshy Journey"}
@@ -499,12 +505,16 @@ export function SiteHeader({
 
       {/* Keyframes for the signup-CTA gradient drift. Defined once, global. */}
       <style jsx global>{`
+        /* GPU-composited keyframe — was animating background-position
+           which can't be composited; switched to translate3d so the
+           browser keeps the work on the compositor thread. */
         @keyframes mio-nav-cta-shift {
-          0%, 100% { background-position: 0% 50%; }
-          50%      { background-position: 100% 50%; }
+          0%, 100% { transform: translate3d(0, 0, 0); }
+          50%      { transform: translate3d(-54.5%, 0, 0); }
         }
         .mio-nav-cta-shift {
           animation: mio-nav-cta-shift 7s ease-in-out infinite;
+          will-change: transform;
         }
       `}</style>
     </header>

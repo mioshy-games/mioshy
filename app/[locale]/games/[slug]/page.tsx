@@ -35,7 +35,7 @@ export async function generateMetadata({
   const { data: game } = await supabase
     .from("games")
     .select(
-      "slug, name_en, name_he, description_en, description_he, thumbnail_url, meta_title_he, meta_title_en, meta_description_he, meta_description_en, og_image_url, keywords",
+      "slug, name_en, name_he, description_en, description_he, thumbnail_url_he, thumbnail_url_en, meta_title_he, meta_title_en, meta_description_he, meta_description_en, og_image_url, keywords",
     )
     .eq("slug", slug)
     .eq("is_active", true)
@@ -52,7 +52,14 @@ export async function generateMetadata({
       ? game?.meta_description_he ?? game?.description_he ?? game?.description_en ?? ""
       : game?.meta_description_en ?? game?.description_en ?? game?.description_he ?? "";
 
-  const ogImage = game?.og_image_url || game?.thumbnail_url || null;
+  // OG image cascade: explicit og_image_url > locale-matching catalogue
+  // thumbnail > the other-locale thumbnail (better wrong-language than no
+  // preview at all).
+  const localeThumb =
+    locale === "he"
+      ? game?.thumbnail_url_he ?? game?.thumbnail_url_en
+      : game?.thumbnail_url_en ?? game?.thumbnail_url_he;
+  const ogImage = game?.og_image_url || localeThumb || null;
   const canonical = `${base}/${locale}/games/${slug}`;
   return {
     title: metaTitle.toLowerCase().startsWith("mioshy")

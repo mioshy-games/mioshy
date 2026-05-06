@@ -22,6 +22,7 @@ import { Reveal } from "@/components/marketing/Reveal";
 import { HeroClassicDark } from "@/components/marketing/HeroClassicDark";
 import { HeroLightGradient } from "@/components/marketing/HeroLightGradient";
 import { HomepageV2 } from "@/components/marketing/v2/HomepageV2";
+import { pickGameThumbnail } from "@/lib/games-thumbnail";
 
 function siteUrl() {
   return (process.env.NEXT_PUBLIC_SITE_URL || "https://mioshy.com").replace(
@@ -266,7 +267,7 @@ export default async function HomePage({
   const ctaSecondaryText = isHe
     ? s.cta_secondary_text_he || "איך זה עובד"
     : s.cta_secondary_text_en || "How it works";
-  const ctaSecondaryHref = s.cta_secondary_href || `/${locale}/how-it-works`;
+  const ctaSecondaryHref = s.cta_secondary_href || `/${locale}/journey`;
 
   const heroTemplate = s.hero_template ?? "classic-dark";
   const socialProofLine =
@@ -1124,23 +1125,27 @@ function GameTile({
             }}
           />
 
-          {game.thumbnail_url || game.og_image_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={(game.thumbnail_url || game.og_image_url) as string}
-              alt={name}
-              className="relative h-full w-full object-cover transition duration-500 group-hover:scale-[1.06]"
-              loading="lazy"
-            />
-          ) : (
-            <div className="relative flex h-full items-center justify-center">
-              <span
-                className="inline-grid h-20 w-20 place-items-center rounded-2xl bg-white/85 text-fuchsia-500 shadow-lg shadow-fuchsia-500/20 ring-1 ring-white/90 transition duration-500 group-hover:rotate-[-6deg] group-hover:scale-110"
-              >
-                <Dices className="h-10 w-10" />
-              </span>
-            </div>
-          )}
+          {(() => {
+            const thumb =
+              pickGameThumbnail(game, locale) ?? game.og_image_url ?? null;
+            return thumb ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={thumb}
+                alt={name}
+                className="relative h-full w-full object-cover transition duration-500 group-hover:scale-[1.06]"
+                loading="lazy"
+              />
+            ) : (
+              <div className="relative flex h-full items-center justify-center">
+                <span
+                  className="inline-grid h-20 w-20 place-items-center rounded-2xl bg-white/85 text-fuchsia-500 shadow-lg shadow-fuchsia-500/20 ring-1 ring-white/90 transition duration-500 group-hover:rotate-[-6deg] group-hover:scale-110"
+                >
+                  <Dices className="h-10 w-10" />
+                </span>
+              </div>
+            );
+          })()}
 
           {/* Bottom soft gradient for legibility */}
           <div

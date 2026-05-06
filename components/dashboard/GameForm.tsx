@@ -61,7 +61,8 @@ export function GameForm({
   // just-saved edits. By anchoring to gameId we keep the form authoritative once
   // it has been populated.
   const lastGameIdRef = useRef<string | null | undefined>(undefined);
-  const [uploading, setUploading] = useState(false);
+  const [uploadingHe, setUploadingHe] = useState(false);
+  const [uploadingEn, setUploadingEn] = useState(false);
   const [uploadingBg, setUploadingBg] = useState(false);
   // Top-level section expand / collapse
   const [formOpenVersion, setFormOpenVersion] = useState(0);
@@ -121,8 +122,15 @@ export function GameForm({
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, [isDirty]);
 
-  async function onUploadThumbnail(file: File) {
-    setUploading(true);
+  // Per-locale thumbnail uploader. The catalogue thumbnails carry baked-in
+  // copy in their own language (e.g. game name in Hebrew on the HE asset),
+  // so each game owns two images. `locale` selects which form field gets
+  // the resulting public URL — the storage bucket is shared.
+  async function onUploadThumbnail(file: File, locale: "he" | "en") {
+    const setBusy = locale === "he" ? setUploadingHe : setUploadingEn;
+    const fieldName =
+      locale === "he" ? "thumbnail_url_he" : "thumbnail_url_en";
+    setBusy(true);
     try {
       const supabase = createBrowserSupabaseClient();
       const ext = file.name.split(".").pop()?.toLowerCase() || "png";
@@ -137,10 +145,12 @@ export function GameForm({
       const {
         data: { publicUrl },
       } = supabase.storage.from("thumbnails").getPublicUrl(path);
-      setValue("thumbnail_url", publicUrl, { shouldDirty: true });
-      toast.success("Thumbnail uploaded");
+      setValue(fieldName, publicUrl, { shouldDirty: true });
+      toast.success(
+        locale === "he" ? "תמונת HE הועלתה" : "EN thumbnail uploaded",
+      );
     } finally {
-      setUploading(false);
+      setBusy(false);
     }
   }
 
@@ -354,39 +364,134 @@ export function GameForm({
                 When enabled, the wheel will be built from player names (entered before the game starts).
               </p>
             </div>
+            {/* Per-locale thumbnails — Hebrew + English uploaders side by
+                side. The catalogue card on /games picks the asset that
+                matches the visitor's locale, falling back to the other
+                language if only one is set. */}
             <div className="space-y-2">
               <Label>Thumbnail</Label>
-              <div className="flex flex-wrap items-center gap-3">
-                <Input
-                  type="file"
-                  accept="image/*"
-                  className="max-w-xs"
-                  disabled={uploading}
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f) void onUploadThumbnail(f);
-                    e.target.value = "";
-                  }}
-                />
-                {uploading ? (
-                  <Loader2 className="text-muted-foreground size-4 animate-spin" />
-                ) : null}
+              <p className="text-muted-foreground text-xs">
+                Upload a separate image per language — each card carries
+                baked-in copy. If only one is set the other locale falls
+                back to it.
+              </p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                {/* HE */}
+                <div className="space-y-1.5 rounded-lg border border-dashed border-muted-foreground/20 p-3">
+                  <Label className="text-xs font-semibold uppercase tracking-wider">
+                    Hebrew (HE)
+                  </Label>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      className="max-w-xs"
+                      disabled={uploadingHe}
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) void onUploadThumbnail(f, "he");
+                        e.target.value = "";
+                      }}
+                    />
+                    {uploadingHe ? (
+                      <Loader2 className="text-muted-foreground size-4 animate-spin" />
+                    ) : null}
+                  </div>
+                  <Controller
+                    control={control}
+                    name="thumbnail_url_he"
+                    render={({ field }) =>
+                      field.value ? (
+                        <div className="space-y-1.5">
+                          {/* Inline preview so the admin can verify the
+                              right asset landed before saving. */}
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={field.value}
+                            alt="HE thumbnail preview"
+                            className="aspect-[16/10] w-full rounded-md border border-muted-foreground/20 object-cover"
+                          />
+                          <p className="text-muted-foreground truncate text-[11px]">
+                            {field.value}
+                          </p>
+                          <button
+                            type="button"
+                            className="text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                            onClick={() =>
+                              setValue("thumbnail_url_he", "", {
+                                shouldDirty: true,
+                              })
+                            }
+                          >
+                            Clear
+                          </button>
+                        </div>
+                      ) : (
+                        <p className="text-muted-foreground text-xs">
+                          No image yet.
+                        </p>
+                      )
+                    }
+                  />
+                </div>
+
+                {/* EN */}
+                <div className="space-y-1.5 rounded-lg border border-dashed border-muted-foreground/20 p-3">
+                  <Label className="text-xs font-semibold uppercase tracking-wider">
+                    English (EN)
+                  </Label>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      className="max-w-xs"
+                      disabled={uploadingEn}
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) void onUploadThumbnail(f, "en");
+                        e.target.value = "";
+                      }}
+                    />
+                    {uploadingEn ? (
+                      <Loader2 className="text-muted-foreground size-4 animate-spin" />
+                    ) : null}
+                  </div>
+                  <Controller
+                    control={control}
+                    name="thumbnail_url_en"
+                    render={({ field }) =>
+                      field.value ? (
+                        <div className="space-y-1.5">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={field.value}
+                            alt="EN thumbnail preview"
+                            className="aspect-[16/10] w-full rounded-md border border-muted-foreground/20 object-cover"
+                          />
+                          <p className="text-muted-foreground truncate text-[11px]">
+                            {field.value}
+                          </p>
+                          <button
+                            type="button"
+                            className="text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                            onClick={() =>
+                              setValue("thumbnail_url_en", "", {
+                                shouldDirty: true,
+                              })
+                            }
+                          >
+                            Clear
+                          </button>
+                        </div>
+                      ) : (
+                        <p className="text-muted-foreground text-xs">
+                          No image yet.
+                        </p>
+                      )
+                    }
+                  />
+                </div>
               </div>
-              <Controller
-                control={control}
-                name="thumbnail_url"
-                render={({ field }) =>
-                  field.value ? (
-                    <p className="text-muted-foreground truncate text-xs">
-                      {field.value}
-                    </p>
-                  ) : (
-                    <p className="text-muted-foreground text-xs">
-                      No image yet.
-                    </p>
-                  )
-                }
-              />
             </div>
 
             <div className="space-y-2">

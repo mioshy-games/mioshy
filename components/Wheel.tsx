@@ -723,12 +723,23 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
               const lines = splitLabelToLines(opt.label, wrapThreshold);
               const px = fx(p.x);
               const py = fx(p.y);
+              // Pin a SINGLE font-family per Itzik 2026-05-06: SVG <text>
+              // with no font-family inherits from the document, but each
+              // browser falls back differently for Hebrew glyphs (some
+              // slices were rendering in Assistant, others in Frank Ruhl,
+              // others in the system Hebrew fallback) which made every
+              // category look like a different typeface. Lock to the
+              // Hebrew body stack — Assistant first, Heebo as a peer
+              // fallback — so the whole wheel reads as one voice.
+              const labelFontStack =
+                "var(--font-body-hebrew), var(--font-heebo), 'Assistant', 'Heebo', system-ui, sans-serif";
               return (
                 <text
                   key={`lbl-${i}`}
                   x={px}
                   y={py}
                   fill={labelColor}
+                  fontFamily={labelFontStack}
                   fontSize={labelFontSizePx}
                   fontWeight={800}
                   // Radial mode: text grows outward (rim direction)
@@ -751,8 +762,9 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
                           stroke: labelOutline.color,
                           strokeWidth: labelOutline.width,
                           strokeOpacity: labelOutline.opacity,
+                          fontFamily: labelFontStack,
                         }
-                      : undefined
+                      : { fontFamily: labelFontStack }
                   }
                   transform={`rotate(${fx(rot)} ${px} ${py})`}
                 >

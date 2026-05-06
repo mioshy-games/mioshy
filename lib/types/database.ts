@@ -16,7 +16,10 @@ export type GameRow = {
   description_he: string;
   description_en: string;
   slug: string;
-  thumbnail_url: string | null;
+  /** Hebrew-locale catalogue thumbnail (carries baked-in Hebrew copy). */
+  thumbnail_url_he: string | null;
+  /** English-locale catalogue thumbnail (carries baked-in English copy). */
+  thumbnail_url_en: string | null;
   is_active: boolean;
   bg_type: "color" | "image";
   bg_value: string;
