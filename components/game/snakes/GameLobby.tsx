@@ -241,8 +241,8 @@ export function GameLobby({
             <span className="text-amber-100/75">
               {" "}
               {isHe
-                ? "במקביל למשחק — Zoom / FaceTime / WhatsApp — שתראו אחד את השני בזמן שאתם משחקים. החוויה שלמה ככה."
-                : "alongside the game — Zoom / FaceTime / WhatsApp — so you can see each other while you play. The experience is complete that way."}
+                ? "במקביל למשחק - Zoom / FaceTime / WhatsApp - שתראו אחד את השני בזמן שאתם משחקים. החוויה שלמה ככה."
+                : "alongside the game - Zoom / FaceTime / WhatsApp - so you can see each other while you play. The experience is complete that way."}
             </span>
           </div>
         </div>

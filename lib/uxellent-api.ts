@@ -38,7 +38,7 @@ export type CreateDocumentResult =
 
 /**
  * Build a stable idempotency key. Falls back to the user_id if no deal
- * number is available (e.g. test paths) — that way retries within the
+ * number is available (e.g. test paths) - that way retries within the
  * same call site still dedupe.
  */
 export function buildIdempotencyKey(input: Pick<CreateDocumentInput, "deal_number" | "user_id">): string {
@@ -67,7 +67,7 @@ export async function createBillingDocument(
 
   const body = {
     ...input,
-    idempotency_key: idempotencyKey, // forward-compatible — issuer may use this to dedupe
+    idempotency_key: idempotencyKey, // forward-compatible - issuer may use this to dedupe
   }
 
   let res: Response
@@ -133,15 +133,15 @@ export async function createBillingDocument(
 /**
  * Retry wrapper. Use this from every production call site.
  * - 3 attempts with exponential back-off (500ms, 1s, 2s).
- * - 4xx (client errors) are NOT retried — there is no point.
+ * - 4xx (client errors) are NOT retried - there is no point.
  * - Every failed attempt is logged to mioshy_billing_failures.
  * - On final failure returns { success: false, errorCode: 'retry_exhausted' }
  *   so the caller can decide what to do (typically: keep going, never block payment).
  */
 export type CreateBillingDocumentWithRetryContext = {
-  /** subscription_charges.id — wired into the failure rows for the repair cron. */
+  /** subscription_charges.id - wired into the failure rows for the repair cron. */
   chargeId?:        string | null
-  /** subscriptions.id — for attribution. */
+  /** subscriptions.id - for attribution. */
   subscriptionId?:  string | null
 }
 
@@ -173,7 +173,7 @@ export async function createBillingDocumentWithRetry(
       payload:        input,
     })
 
-    // 4xx — don't retry. Validation/auth issues won't fix themselves.
+    // 4xx - don't retry. Validation/auth issues won't fix themselves.
     if (res.errorCode === "http_4xx" || res.errorCode === "missing_config") break
 
     // Wait before next attempt (skip on the last iteration).
@@ -183,7 +183,7 @@ export async function createBillingDocumentWithRetry(
     }
   }
 
-  // Final failure — record it under the stable retry_exhausted code so
+  // Final failure - record it under the stable retry_exhausted code so
   // alerting can fire even if the per-attempt rows are noisy.
   await logMioshyBillingFailure({
     userId:         input.user_id,

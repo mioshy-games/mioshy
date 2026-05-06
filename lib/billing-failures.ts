@@ -34,12 +34,12 @@ export type LogMioshyBillingFailureParams = {
   errorMessage:    string
   /** Stable code for alert grouping. Defaults to "unknown". */
   errorCode?:      MioshyBillingErrorCode
-  /** Original request body (PII-light only — never card data). */
+  /** Original request body (PII-light only - never card data). */
   payload?:        unknown
 }
 
 /**
- * Persist a failure row. Always returns — never throws.
+ * Persist a failure row. Always returns - never throws.
  * Returns the inserted row id when known, or null on any error path.
  */
 export async function logMioshyBillingFailure(

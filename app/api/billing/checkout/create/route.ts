@@ -95,7 +95,7 @@ export async function POST(req: Request) {
   // ── Parse body ──────────────────────────────────────────────────────────────
   const body = await req.json().catch(() => ({}))
   // NOTE: `country_code`, `language`, `is_israeli`, and `vat_rate_percent`
-  // are still accepted in the request body but are advisory only — the
+  // are still accepted in the request body but are advisory only - the
   // server-trusted values come from `geoFromRequest(req)` below. The
   // audit log reads them off `body?.*` directly, so we don't destructure
   // them as locals.
@@ -268,7 +268,7 @@ export async function POST(req: Request) {
       currency:         trustedCurrency,
       coin_id:          coinId,
       // Server-trusted values (IP-derived). The client-supplied versions
-      // were destructured above for audit logging only — never persisted.
+      // were destructured above for audit logging only - never persisted.
       country_code:     trustedCountryCode,
       language:         trustedLanguage,
       is_israeli:       trustedIsIsraeli,
@@ -375,7 +375,7 @@ export async function POST(req: Request) {
     })
     .eq("id", sessionId)
 
-  console.log("[checkout:CREATE] DONE — Cardcom redirect ready", {
+  console.log("[checkout:CREATE] DONE - Cardcom redirect ready", {
     session_id: sessionId,
     low_profile_code: cardcomResult.lowProfileCode,
     redirect_url: cardcomResult.redirectUrl,

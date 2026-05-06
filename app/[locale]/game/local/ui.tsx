@@ -72,7 +72,7 @@ export function LocalGameClient() {
   // user navigated here directly (no flag), show the lobby as before so
   // they can still configure 2-6 players manually.
   //
-  // BOOT MODE — computed synchronously during the very first render so
+  // BOOT MODE - computed synchronously during the very first render so
   // we KNOW from frame 1 whether to skip the lobby UI. Without this,
   // the lobby flashes for a moment between mount and the auto-start
   // useEffect firing (Itzik feedback round 3, 2026-05-05).
@@ -111,13 +111,13 @@ export function LocalGameClient() {
 
   // Auto-redirect to the unified /game setup whenever the user lands
   // here WITHOUT a fresh auto-start payload AND there's no active game
-  // in progress — Itzik 2026-05-05: the standalone local lobby was
+  // in progress - Itzik 2026-05-05: the standalone local lobby was
   // confusing on refresh / back-button. The unified /game screen is
   // now the single setup entry point. We allow this page to stay
   // visible only when:
   //   1. autoStartPending (we're in the middle of starting from /game), OR
   //   2. storeRoom is "playing" / "ended" (an active game is live).
-  // In all other cases — redirect to /game.
+  // In all other cases - redirect to /game.
   useEffect(() => {
     if (autoStartPending) return;
     if (storeRoom?.status === "playing" || storeRoom?.status === "ended") return;
@@ -134,7 +134,7 @@ export function LocalGameClient() {
     if (!storeRoom) return;
     handleStart();
     setAutoStartPending(false);
-    // We intentionally exclude handleStart from deps — it captures fresh
+    // We intentionally exclude handleStart from deps - it captures fresh
     // drafts on every render and we only want this to fire once after
     // mount. autoStartPending is the gate.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -168,7 +168,7 @@ export function LocalGameClient() {
     setErr(null);
     if (!canStart) {
       // When auto-start fails validation (bad sessionStorage data), don't
-      // show the user a confusing red error — just clear the flag and let
+      // show the user a confusing red error - just clear the flag and let
       // them set things up manually.
       if (autoStartPending) {
         setAutoStartPending(false);
@@ -243,7 +243,7 @@ export function LocalGameClient() {
     );
   }
 
-  // Auto-start path — we arrived here from /game with sessionStorage
+  // Auto-start path - we arrived here from /game with sessionStorage
   // primed. Don't flash the lobby UI; render a minimal loading state
   // until the room transitions to "playing" and the branch above takes
   // over. If something goes wrong during validation, handleStart

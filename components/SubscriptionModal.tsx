@@ -27,7 +27,7 @@ const T = {
     subtitlePaywall:     "כל חבילה פותחת את כל המשחקים במיאושי - ביטול בקליק אחד",
     paywallGreeting:     (name: string) => `שלום ${name}`,
     paywallGreetingFallback: "שלום",
-    paywallSinglePlanSubtitle: "כל המשחקים במיאושי, פתוחים לכם — ביטול בכל עת בלחיצה אחת.",
+    paywallSinglePlanSubtitle: "כל המשחקים במיאושי, פתוחים לכם - ביטול בכל עת בלחיצה אחת.",
     paywallPriceSuffix:  "/שבוע",
     paywallCancelNote:   "ניתן לעצור בכל עת. ללא חוזה, ללא דמי ביטול.",
     paywallContinueCta:  "מעבר לתשלום",
@@ -83,7 +83,7 @@ const T = {
     subtitlePaywall:     "Every plan unlocks every game on Mioshy - cancel anytime with one click",
     paywallGreeting:     (name: string) => `Hi ${name}`,
     paywallGreetingFallback: "Welcome",
-    paywallSinglePlanSubtitle: "Every Mioshy game, fully unlocked — cancel anytime in one click.",
+    paywallSinglePlanSubtitle: "Every Mioshy game, fully unlocked - cancel anytime in one click.",
     paywallPriceSuffix:  "/week",
     paywallCancelNote:   "Stop any time. No contract, no cancellation fees.",
     paywallContinueCta:  "Continue to payment",
@@ -287,7 +287,7 @@ export function SubscriptionModal({
   // reset useEffect, and the ipapi.co auto-detect useEffect below are dead
   // since the confirm stage was removed (clicking a plan now jumps straight
   // to Cardcom). Country/VAT are decided server-side from the request IP in
-  // /api/billing/checkout/create — see lib/geo-from-request.ts. Leaving the
+  // /api/billing/checkout/create - see lib/geo-from-request.ts. Leaving the
   // state in place as a harmless no-op for now to keep this diff minimal.
   const [stage, setStage]             = useState<"select" | "confirm">("select");
   const [countryCode, setCountryCode] = useState("");
@@ -308,7 +308,7 @@ export function SubscriptionModal({
   const [pickerQuery, setPickerQuery] = useState("");
 
   // Reset paywall stage whenever the modal is re-opened.
-  // TODO(remove): see note above — dead since the confirm stage was removed.
+  // TODO(remove): see note above - dead since the confirm stage was removed.
   useEffect(() => {
     if (!open) {
       setStage("select");
@@ -319,7 +319,7 @@ export function SubscriptionModal({
   }, [open]);
 
   // Fetch the authenticated user's full name when entering paywall mode.
-  // We read auth.users.user_metadata.full_name — RegistrationModal +
+  // We read auth.users.user_metadata.full_name - RegistrationModal +
   // SubscriptionModal's lead flow both save the name there at signup. If
   // the user reached the paywall some other way (no full_name in metadata),
   // we fall back to paywallGreetingFallback ("שלום").
@@ -372,7 +372,7 @@ export function SubscriptionModal({
   const PRICES = isHe ? PRICES_ILS : PRICES_USD;
 
   // Auto-detect country (paywall only, on entering confirm stage).
-  // TODO(remove): never fires now — `stage` never becomes "confirm" since
+  // TODO(remove): never fires now - `stage` never becomes "confirm" since
   // the confirm UI was deleted. Server-side IP geo is authoritative.
   useEffect(() => {
     if (mode !== "paywall") return;
@@ -533,7 +533,7 @@ export function SubscriptionModal({
 
       // Diagnostic: when /api/billing/checkout/create returns UNAUTHORIZED,
       // we want to know whether the BROWSER even has a live Supabase session
-      // at this moment. Logs only an 8-char id prefix and a masked email —
+      // at this moment. Logs only an 8-char id prefix and a masked email -
       // never a full identifier or token.
       try {
         const supa = createBrowserSupabaseClient();
@@ -599,12 +599,12 @@ export function SubscriptionModal({
 
   // ── Render ────────────────────────────────────────────────────────────────
 
-  // Confirm stage was removed — clicking a plan jumps straight to Cardcom,
+  // Confirm stage was removed - clicking a plan jumps straight to Cardcom,
   // so the title/subtitle only need lead vs paywall-select copy.
   const headerTitle = mode === "lead" ? t.titleLead : t.titlePaywallSelect;
   const headerSubtitle = mode === "lead" ? t.subtitleLead : t.subtitlePaywall;
 
-  // Paywall mode is a single-plan checkout — the SinglePlanPaywall
+  // Paywall mode is a single-plan checkout - the SinglePlanPaywall
   // subcomponent supplies its own headline (greeting), so we hide the
   // generic DialogHeader for that mode and shrink the dialog to a sane
   // single-column width. Lead mode keeps its existing wider modal layout.
@@ -637,7 +637,7 @@ export function SubscriptionModal({
 
         <div className="relative z-0 max-h-[85vh] overflow-y-auto px-5 pb-6 pt-7 sm:px-7">
           {/* DialogTitle is required by the dialog primitive for a11y but
-              hidden visually in paywall mode — the SinglePlanPaywall
+              hidden visually in paywall mode - the SinglePlanPaywall
               renders its own greeting headline. */}
           {isPaywall ? (
             <DialogTitle className="sr-only">
@@ -859,7 +859,7 @@ function SinglePlanPaywall({
   price: string;
   palette: [string, string, string];
   accent: string;
-  // Loose typing — the modal owns the canonical translations object and
+  // Loose typing - the modal owns the canonical translations object and
   // we only read a known subset here. Avoids a separate exported type.
   t: {
     paywallGreeting: (name: string) => string;
@@ -929,7 +929,7 @@ function SinglePlanPaywall({
         </p>
       )}
 
-      {/* ── Hero greeting — centred, this IS the title for paywall mode ── */}
+      {/* ── Hero greeting - centred, this IS the title for paywall mode ── */}
       <header className="flex flex-col items-center gap-2.5 text-center">
         <span
           className="inline-flex h-10 w-10 items-center justify-center rounded-full text-white shadow-lg"
@@ -946,7 +946,7 @@ function SinglePlanPaywall({
         </p>
       </header>
 
-      {/* ── Price hero — single bold price card ──────────────────────── */}
+      {/* ── Price hero - single bold price card ──────────────────────── */}
       <div
         className="relative overflow-hidden rounded-3xl border border-white/15 bg-white/[0.04] px-6 py-6 text-center"
         style={{
@@ -970,7 +970,7 @@ function SinglePlanPaywall({
         <p className="relative mt-2 text-sm text-white/70">{t.paywallCancelNote}</p>
       </div>
 
-      {/* ── Country picker — popover-style: floats above content ─────── */}
+      {/* ── Country picker - popover-style: floats above content ─────── */}
       <div className="relative grid gap-1.5">
         <Label className="text-sm font-semibold text-white/90">{t.countryLabel}</Label>
         <button
@@ -1078,7 +1078,7 @@ function SinglePlanPaywall({
         {busy ? t.saving : t.paywallContinueCta}
       </Button>
 
-      {/* Trust line — secure-payment / Cardcom / SSL hint. Kept as plain
+      {/* Trust line - secure-payment / Cardcom / SSL hint. Kept as plain
           text (no icons/logos) to avoid leaking vendor names into the UI;
           the user can read the full terms before paying. */}
       <p className="-mt-1 text-center text-xs text-white/55">

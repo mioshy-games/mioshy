@@ -27,7 +27,7 @@ const VERB_ICON: Record<ActivityEntry["verb"], React.ComponentType<{ className?:
 };
 
 /**
- * Async server component — renders the last ~30 events for the couple.
+ * Async server component - renders the last ~30 events for the couple.
  * Used inside the expert's couple-detail page; gracefully degrades to
  * an empty state when nothing has happened yet.
  */

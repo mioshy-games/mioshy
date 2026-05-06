@@ -1,5 +1,5 @@
 // ============================================================
-// Notification log + dispatch — slice 6 minimum viable.
+// Notification log + dispatch - slice 6 minimum viable.
 //
 // Two responsibilities:
 //   1. Append a row to journey_notifications so the future in-app
@@ -12,7 +12,7 @@
 //        - When the recipient is a single user, send to their auth
 //          email.
 //
-// Brevo errors are logged but never thrown — notifications are a
+// Brevo errors are logged but never thrown - notifications are a
 // secondary effect of the post action and shouldn't fail the post.
 // ============================================================
 
@@ -20,12 +20,12 @@ import "server-only";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
 
 export type NotificationKind =
-  // slice 6 — message events
+  // slice 6 - message events
   | "item_message_user_posted"
   | "item_message_expert_replied"
   | "channel_message_user_posted"
   | "channel_message_expert_replied"
-  // slice 10 — system + reminder events
+  // slice 10 - system + reminder events
   | "item_unlocked"
   | "expert_push_landed"
   | "subscription_grace_started"
@@ -81,7 +81,7 @@ export async function notifyExpertPool(args: NotifyExpertPoolArgs): Promise<void
   const poolEmail = process.env.JOURNEY_EXPERT_POOL_EMAIL?.trim();
   if (!poolEmail) {
     console.warn(
-      "[notifications] JOURNEY_EXPERT_POOL_EMAIL not configured — skipping email send",
+      "[notifications] JOURNEY_EXPERT_POOL_EMAIL not configured - skipping email send",
     );
     return;
   }
@@ -121,7 +121,7 @@ export async function notifyUser(args: NotifyUserArgs): Promise<void> {
     .maybeSingle();
   const to = (emailRow?.email as string | null) ?? null;
   if (!to) {
-    console.warn("[notifications] no email for user — skipping send", {
+    console.warn("[notifications] no email for user - skipping send", {
       user_id: args.recipientUserId,
     });
     return;
@@ -146,15 +146,15 @@ interface EmailArgs {
 /**
  * Best-effort send via Brevo. The project already calls Brevo from
  * other surfaces (couple invitations, notify-unlocks); we re-use
- * the same env var contract — BREVO_API_KEY + the standard endpoint.
+ * the same env var contract - BREVO_API_KEY + the standard endpoint.
  *
- * Failures are logged at warn but never throw to the caller — a
+ * Failures are logged at warn but never throw to the caller - a
  * notification is always a secondary effect.
  */
 async function sendEmailBestEffort(args: EmailArgs): Promise<void> {
   const apiKey = process.env.BREVO_API_KEY;
   if (!apiKey) {
-    console.warn("[notifications] BREVO_API_KEY missing — skipping send");
+    console.warn("[notifications] BREVO_API_KEY missing - skipping send");
     return;
   }
   const fromEmail =
@@ -220,7 +220,7 @@ function renderEmailHtml(payload: BasePayload & Record<string, unknown>): string
 }
 
 // ============================================================
-// Slice 10 — admin pool + system event helpers
+// Slice 10 - admin pool + system event helpers
 // ============================================================
 
 export interface NotifyAdminPoolArgs {
@@ -231,14 +231,14 @@ export interface NotifyAdminPoolArgs {
    *  The journey_notifications row is ALWAYS written; only the email
    *  is suppressed inside the window. Default 6h. Pass 0 to disable. */
   throttleHours?: number;
-  /** Optional discriminator within `kind` — e.g. "cron_failure" rows
+  /** Optional discriminator within `kind` - e.g. "cron_failure" rows
    *  use job_name as the throttle key so separate jobs each get one
    *  email even if both fail in the same hour. */
   throttleKey?: string;
 }
 
 /**
- * Admin pool notification — log row + (throttled) email to
+ * Admin pool notification - log row + (throttled) email to
  * JOURNEY_ADMIN_ALERT_EMAIL. Used for cron failures and the daily
  * stuck-user digest.
  */
@@ -276,7 +276,7 @@ export async function notifyAdminPool(args: NotifyAdminPoolArgs): Promise<void> 
       q = q.contains("payload", { throttle_key: args.throttleKey });
     }
     // Subtract 1 because the insert above already created a row for
-    // this notification — we only want to count PRIOR rows.
+    // this notification - we only want to count PRIOR rows.
     const { count } = await q;
     const priorCount = Math.max(0, (count ?? 0) - 1);
     if (priorCount > 0) {
@@ -290,7 +290,7 @@ export async function notifyAdminPool(args: NotifyAdminPoolArgs): Promise<void> 
   const adminEmail = process.env.JOURNEY_ADMIN_ALERT_EMAIL?.trim();
   if (!adminEmail) {
     console.warn(
-      "[notifications] JOURNEY_ADMIN_ALERT_EMAIL not configured — skipping admin send",
+      "[notifications] JOURNEY_ADMIN_ALERT_EMAIL not configured - skipping admin send",
     );
     return;
   }
@@ -302,7 +302,7 @@ export async function notifyAdminPool(args: NotifyAdminPoolArgs): Promise<void> 
 }
 
 /**
- * Slice 10 — fired from notify-unlocks after each successful email
+ * Slice 10 - fired from notify-unlocks after each successful email
  * dispatch. One in-app row per (recipient × scheduled item). Email is
  * already handled by the unlock notifier itself so we don't double
  * send.
@@ -335,11 +335,11 @@ export async function notifyOnItemUnlocked(args: {
   if (error) {
     console.warn("[notifications] item_unlocked log insert failed", error);
   }
-  // No email — notify-unlocks already sent it.
+  // No email - notify-unlocks already sent it.
 }
 
 /**
- * Slice 10 — fired from grace-watcher pass 1 (active → grace).
+ * Slice 10 - fired from grace-watcher pass 1 (active → grace).
  * Writes a single in-app row + email; banner UI on /my/journey
  * carries the user-facing copy already.
  */
@@ -353,8 +353,8 @@ export async function notifyOnGraceStarted(args: {
     recipientUserId: args.recipientUserId,
     kind: "subscription_grace_started",
     subject: isHe
-      ? "Mioshy: המנוי פג — יש לכם 14 יום"
-      : "Mioshy: your plan ended — 14 days remain",
+      ? "Mioshy: המנוי פג - יש לכם 14 יום"
+      : "Mioshy: your plan ended - 14 days remain",
     payload: {
       href: `/${args.locale}/my/journey`,
       grace_until: args.graceUntil,
@@ -366,7 +366,7 @@ export async function notifyOnGraceStarted(args: {
 }
 
 /**
- * Slice 10 — fired from grace-watcher pass 2 (grace → blocked).
+ * Slice 10 - fired from grace-watcher pass 2 (grace → blocked).
  * Same shape as grace-started but rose-tone copy.
  */
 export async function notifyOnBlocked(args: {
@@ -378,8 +378,8 @@ export async function notifyOnBlocked(args: {
     recipientUserId: args.recipientUserId,
     kind: "subscription_blocked",
     subject: isHe
-      ? "Mioshy: גישת המנוי נחסמה — חידוש מחזיר הכל"
-      : "Mioshy: your access is paused — renew to restore",
+      ? "Mioshy: גישת המנוי נחסמה - חידוש מחזיר הכל"
+      : "Mioshy: your access is paused - renew to restore",
     payload: {
       href: `/${args.locale}/journey`,
       preview: isHe
@@ -390,7 +390,7 @@ export async function notifyOnBlocked(args: {
 }
 
 /**
- * Slice 10 — fired from the daily reminders cron when a user has
+ * Slice 10 - fired from the daily reminders cron when a user has
  * been idle ≥ 5 days with no response on their last delivered item.
  */
 export async function notifyOnReminderInactivity(args: {
@@ -408,16 +408,16 @@ export async function notifyOnReminderInactivity(args: {
       href: args.lastItemHref,
       preview: args.lastItemTitle ?? undefined,
       context_label: isHe
-        ? "5 ימים בלי תגובה — נשמח לשמוע ממכם"
-        : "5 days without a response — we'd love to hear from you",
+        ? "5 ימים בלי תגובה - נשמח לשמוע ממכם"
+        : "5 days without a response - we'd love to hear from you",
     },
   });
 }
 
 /**
- * Slice 10 — fired when the latest expert reply on a per-item thread
+ * Slice 10 - fired when the latest expert reply on a per-item thread
  * is older than 24h and the user hasn't followed up. In-app only
- * (no email — too noisy per the brief).
+ * (no email - too noisy per the brief).
  */
 export async function notifyOnReminderUnfollowedReply(args: {
   recipientUserId: string;

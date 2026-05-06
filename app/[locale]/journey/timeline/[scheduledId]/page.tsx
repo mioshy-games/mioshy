@@ -110,7 +110,7 @@ export default async function JourneyTimelineItemPage({
   }
   if (!ownedByMe) notFound();
 
-  // Audience gate — if this scheduled row is targeted at the OTHER partner,
+  // Audience gate - if this scheduled row is targeted at the OTHER partner,
   // bounce back to the timeline. ('both' is always allowed; user-owned
   // assignments are always 'both' by the migration's invariants but we still
   // check defensively for stored values.)
@@ -162,13 +162,13 @@ export default async function JourneyTimelineItemPage({
     (r) => !r.is_private || r.user_id === user.id,
   );
 
-  // v3 slice 6 — load the threaded messages for this scheduled item.
+  // v3 slice 6 - load the threaded messages for this scheduled item.
   // Drives the new PerItemThread UI; the legacy `responses` list above
   // is kept for the existing ItemDetailClient surfaces during the
   // dual-write transition.
   const threadMessages = await getPerItemThread(scheduled.id, user.id);
 
-  // Phase 3 step 2 — for assessment-kind items, the form pre-fills
+  // Phase 3 step 2 - for assessment-kind items, the form pre-fills
   // from the user's most-recent prior response (if any) so they can
   // revise rather than re-answer from scratch.
   const myExistingResponse =
@@ -193,7 +193,7 @@ export default async function JourneyTimelineItemPage({
   }
 
   // Log item_opened for the unread-count badge on /my. Idempotent on the
-  // user side — multiple visits all count as "opened" and the badge stays
+  // user side - multiple visits all count as "opened" and the badge stays
   // off. Failure-tolerant (logActivity catches its own errors).
   await logActivity({
     userId: user.id,
@@ -244,7 +244,7 @@ export default async function JourneyTimelineItemPage({
                 ? "פרק"
                 : "Chapter"}
           </span>
-          {/* v3 slice 8 — source badge for expert pushes. Subtle chip
+          {/* v3 slice 8 - source badge for expert pushes. Subtle chip
               so the user knows this isn't a regular cadence pick. */}
           {scheduled.source === "expert_push" ? (
             <span className="inline-flex items-center gap-1 rounded-full border border-emerald-300/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-100">
@@ -259,7 +259,7 @@ export default async function JourneyTimelineItemPage({
             / past responses underneath; the assessment form is just
             a richer way to collect a response.
             For 'content' items (the existing default), the form is
-            skipped — ItemDetailClient handles everything. */}
+            skipped - ItemDetailClient handles everything. */}
         {item.kind === "assessment" && item.assessment_payload ? (
           <div className="mt-6">
             <AssessmentItemForm
@@ -285,7 +285,7 @@ export default async function JourneyTimelineItemPage({
           locale={locale}
         />
 
-        {/* v3 slice 6 — threaded messaging. Per Update B "every item
+        {/* v3 slice 6 - threaded messaging. Per Update B "every item
             is a prompt expecting a response": composer is the primary
             affordance, focused on mount, with thread history below.
             For assessment-kind items the AssessmentItemForm above
@@ -303,8 +303,8 @@ export default async function JourneyTimelineItemPage({
               isHe={isHe}
               promptLabel={
                 isHe
-                  ? "כתבו תגובה — המומחים שלנו רואים ומגיבים."
-                  : "Write a response — our experts read and reply."
+                  ? "כתבו תגובה - המומחים שלנו רואים ומגיבים."
+                  : "Write a response - our experts read and reply."
               }
             />
           </section>

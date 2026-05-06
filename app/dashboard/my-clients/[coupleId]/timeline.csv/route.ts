@@ -8,15 +8,15 @@
  * touching SQL.
  *
  * Columns:
- *   scheduled_id     — UUID of the journey_scheduled_items row (REQUIRED for updates)
- *   item_id          — read-only reference to the catalog item
- *   item_title       — read-only (sanity check for the expert)
- *   audience         — both | owner | partner
- *   unlock_at        — ISO date the item becomes available
- *   sort_order       — display order within an assignment
- *   has_unlock_override — true if expert previously moved this row
- *   admin_notes      — free text the expert sees in the dashboard
- *   is_completed     — read-only, derived from journey_item_completions
+ *   scheduled_id     - UUID of the journey_scheduled_items row (REQUIRED for updates)
+ *   item_id          - read-only reference to the catalog item
+ *   item_title       - read-only (sanity check for the expert)
+ *   audience         - both | owner | partner
+ *   unlock_at        - ISO date the item becomes available
+ *   sort_order       - display order within an assignment
+ *   has_unlock_override - true if expert previously moved this row
+ *   admin_notes      - free text the expert sees in the dashboard
+ *   is_completed     - read-only, derived from journey_item_completions
  */
 
 import { requireExpert } from "@/lib/auth/expert";
@@ -63,7 +63,7 @@ export async function GET(
     if (!link) return new Response("not authorized", { status: 403 });
   }
 
-  // Pull all assignments for this couple (active OR cancelled — the expert
+  // Pull all assignments for this couple (active OR cancelled - the expert
   // probably wants the full picture even if they're about to re-activate).
   const { data: assignRows, error: aErr } = await admin
     .from("journey_assignments")

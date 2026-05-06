@@ -10,12 +10,12 @@ import type { GameRow } from "@/lib/types/database";
  * strip, OG image) handles the same fallback chain identically:
  *
  *   1. The exact-locale column (`thumbnail_url_he` for HE, `thumbnail_url_en` for EN)
- *   2. The other locale's image — better to show a wrong-language card
+ *   2. The other locale's image - better to show a wrong-language card
  *      than a coloured-gradient placeholder if only one was uploaded
  *   3. `null` when nothing is set, so the caller can render a fallback
  *
  * Pass either a full GameRow or just `{ thumbnail_url_he, thumbnail_url_en }`
- * — the function reads only those two fields.
+ * - the function reads only those two fields.
  */
 export function pickGameThumbnail(
   game: Pick<GameRow, "thumbnail_url_he" | "thumbnail_url_en">,

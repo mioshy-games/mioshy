@@ -28,13 +28,13 @@ type WheelPreviewProps = {
   /** Label text outline (from game_settings) */
   labelOutline?: { enabled: boolean; color: string; opacity: number; width: number };
   /** Label orientation: "tangential" along slice (default) or "radial"
-   *  from center → rim. Itzik 2026-05-05 — drives how the preview
+   *  from center → rim. Itzik 2026-05-05 - drives how the preview
    *  visualises admin's labelOrientation pick. */
   labelOrientation?: "tangential" | "radial";
   /** Radial fraction of the wheel where labels are anchored. In
    *  tangential mode this is the label center position (typical 0.6).
    *  In radial mode it's interpreted INVERSELY as "distance from outer
-   *  boundary" — slider 0.9 → text starts at 0.1r (room to grow). */
+   *  boundary" - slider 0.9 → text starts at 0.1r (room to grow). */
   labelRadiusFraction?: number;
   /** Outer border ring (from game_settings.border) */
   outerBorder?: { enabled: boolean; color: string; style: "solid" | "dashed" | "none"; width: number; distance: number } | null;
@@ -268,12 +268,12 @@ export function WheelPreview({
           // slice's radial line. For LEFT-half slices we flip 180° so
           // the text reads upright; we also flip the textAnchor below
           // so the text still GROWS outward from the same fixed radius
-          // (otherwise flipped slices' text grows toward the center —
+          // (otherwise flipped slices' text grows toward the center -
           // round 9 fix per Itzik).
           const isRadial = labelOrientation === "radial";
           // 2026-05-06 round 2 (mirrors Wheel.tsx):
           //   • Anchor at OUTER, grow INWARD.
-          //   • No 180° flip — letters keep one consistent rotation.
+          //   • No 180° flip - letters keep one consistent rotation.
           //   • textAnchor selected so first visual letter sits at the
           //     rim: Hebrew RTL → "start", LTR → "end".
           let rr = r * labelRadiusFraction;

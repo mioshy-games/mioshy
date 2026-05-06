@@ -27,7 +27,7 @@ export interface OwnerJourneyStatus {
   hasActiveAssignments: boolean;
   hasInProgressAssessment: boolean;
   /**
-   * The user finished the questionnaire — `journeys.status === 'completed'`
+   * The user finished the questionnaire - `journeys.status === 'completed'`
    * on the most-recent row. Drives the "כניסה לליווי עם מיאושי" CTA copy
    * (see docs/my-page-redesign-spec.md §5).
    */

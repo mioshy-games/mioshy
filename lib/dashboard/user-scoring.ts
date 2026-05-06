@@ -3,10 +3,10 @@ import "server-only";
 /**
  * lib/dashboard/user-scoring.ts
  *
- * Phase 5 — deterministic per-user scoring + edge-case detection.
+ * Phase 5 - deterministic per-user scoring + edge-case detection.
  *
  * What this is (and isn't):
- *   - This is an OPERATIONAL signal layer for the clinician CRM —
+ *   - This is an OPERATIONAL signal layer for the clinician CRM -
  *     "here's how this user is engaging with the program in the
  *     last 30 days". It tells the clinician where to look first.
  *   - It is NOT a clinical assessment. It does not diagnose anything,
@@ -23,7 +23,7 @@ import "server-only";
  *     0..1, flags get derived from thresholds.
  *
  * Output gets persisted into journey_user_scores (migration 053).
- * Truncating that table is always safe — running this again
+ * Truncating that table is always safe - running this again
  * reconstructs it from operational data.
  */
 
@@ -65,7 +65,7 @@ export type UserFlag =
   | "overreactive"    // long responses + conflict signals
   | "non_responsive"  // ≥3 items, zero responses
   | "crisis"          // crisis_keyword_count ≥ 2 OR conflict_signal ≥ 0.7
-  | "highly_engaged"; // engagement_depth ≥ 0.8 + responses ≥ 5 — positive signal too
+  | "highly_engaged"; // engagement_depth ≥ 0.8 + responses ≥ 5 - positive signal too
 
 const WINDOW_DAYS = 30;
 const STUCK_DAYS = 7;
@@ -105,7 +105,7 @@ export async function recomputeUserScore(args: {
       if (!coupleId && a.couple_id) coupleId = a.couple_id;
     }
   }
-  // Couple assignments — resolve coupleId via couple_members if not provided
+  // Couple assignments - resolve coupleId via couple_members if not provided
   if (!coupleId) {
     const { data } = await admin
       .from("couple_members")
@@ -218,7 +218,7 @@ export async function recomputeUserScore(args: {
   const avgDaysToRespond =
     dayDiffCount > 0 ? Math.round((dayDiffSum / dayDiffCount) * 100) / 100 : 0;
 
-  // Active days in window — distinct dates with any response
+  // Active days in window - distinct dates with any response
   const activeDaysSet = new Set<string>();
   for (const r of respRows) {
     activeDaysSet.add(r.created_at.slice(0, 10));
@@ -435,7 +435,7 @@ function computeFlags(input: {
   const out = new Set<UserFlag>();
   const STUCK_MS = STUCK_DAYS * 24 * 60 * 60 * 1000;
 
-  // stuck — at least one available item past STUCK_DAYS without response
+  // stuck - at least one available item past STUCK_DAYS without response
   const respondedItems = new Set(input.respRows.map((r) => r.scheduled_item_id));
   for (const s of input.schedRows) {
     const unlockMs = Date.parse(s.unlock_at);
@@ -448,12 +448,12 @@ function computeFlags(input: {
     }
   }
 
-  // non_responsive — ≥3 items, 0 responses
+  // non_responsive - ≥3 items, 0 responses
   if (input.schedRows.length >= 3 && input.respRows.length === 0) {
     out.add("non_responsive");
   }
 
-  // crisis — explicit signal
+  // crisis - explicit signal
   if (
     input.crisisKeywordCount >= 2 ||
     (input.conflictSignal !== null && input.conflictSignal >= 0.7)
@@ -461,7 +461,7 @@ function computeFlags(input: {
     out.add("crisis");
   }
 
-  // overreactive — heavy + conflict signal at the same time
+  // overreactive - heavy + conflict signal at the same time
   if (
     input.avgResponseChars > 400 &&
     input.conflictSignal !== null &&
@@ -470,7 +470,7 @@ function computeFlags(input: {
     out.add("overreactive");
   }
 
-  // disengaging — engagement_depth dropped >30% in last 14 days vs the
+  // disengaging - engagement_depth dropped >30% in last 14 days vs the
   // prior 14. Compute a quick on-the-fly comparison from the existing
   // respRows: split by midpoint of the window.
   // We approximate engagement_depth as char-substance only (cheap +
@@ -499,7 +499,7 @@ function computeFlags(input: {
     }
   }
 
-  // highly_engaged — positive flag (so the clinician can also see who's
+  // highly_engaged - positive flag (so the clinician can also see who's
   // doing well, not just who's struggling)
   if (
     input.engagementDepth !== null &&

@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * AssessmentEditor — admin/clinician surface for converting a
+ * AssessmentEditor - admin/clinician surface for converting a
  * journey_items row into a structured assessment. Phase 3 step 3.
  *
  * MVP version:
@@ -36,7 +36,7 @@ type Kind = JourneyItemKind;
 const TEMPLATE_ASSESSMENT: JourneyAssessmentPayload = {
   version: 1,
   intro_he:
-    "אבחון קצר לבחינת מצב הקשר — אורך כ-3 דקות. אין תשובה נכונה.",
+    "אבחון קצר לבחינת מצב הקשר - אורך כ-3 דקות. אין תשובה נכונה.",
   questions: [
     {
       id: "freq_connect",
@@ -147,7 +147,7 @@ export function AssessmentEditor({
           setVisualPayload(null);
         }
       } catch {
-        // If JSON is broken we keep the previous visualPayload — the
+        // If JSON is broken we keep the previous visualPayload - the
         // user can fix it in JSON view first.
       }
     }
@@ -212,7 +212,7 @@ export function AssessmentEditor({
           disabled={pending}
           className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
         >
-          <option value="content">content (default — body / video)</option>
+          <option value="content">content (default - body / video)</option>
           <option value="assessment">assessment (structured questions)</option>
           <option value="reflection">reflection (single open prompt)</option>
         </select>
@@ -239,7 +239,7 @@ export function AssessmentEditor({
               Load reflection template
             </button>
 
-            {/* Mode toggle — Visual is the friendly default */}
+            {/* Mode toggle - Visual is the friendly default */}
             <div className="ms-auto inline-flex overflow-hidden rounded-full border border-border">
               <button
                 type="button"
@@ -312,7 +312,7 @@ export function AssessmentEditor({
                 />
               </div>
               <p className="mt-2 text-[11px] italic text-muted-foreground">
-                Preview is live — submitting it would write to a fake
+                Preview is live - submitting it would write to a fake
                 scheduled-item id and silently fail RLS. This is intentional.
               </p>
             </div>

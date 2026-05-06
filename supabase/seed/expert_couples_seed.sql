@@ -1,5 +1,5 @@
 -- ===========================================================================
--- expert_couples_seed.sql — Test seed for the Mioshy Coaching pilot.
+-- expert_couples_seed.sql - Test seed for the Mioshy Coaching pilot.
 -- ===========================================================================
 -- Creates a self-contained, realistic-but-fake test scenario:
 --
@@ -11,8 +11,8 @@
 -- Plus a starter Journey program with 6 items, an assignment per couple,
 -- and pre-marked completions per the spec:
 --
---     Couple 1 → Expert 1 — 3 completed + 2 active scheduled items
---     Couple 2 → Expert 2 — 1 completed + 4 active scheduled items
+--     Couple 1 → Expert 1 - 3 completed + 2 active scheduled items
+--     Couple 2 → Expert 2 - 1 completed + 4 active scheduled items
 --
 -- Idempotent: re-running this script is safe. All passwords are
 -- 'TestPass123!' (bcrypt-hashed via pgcrypto). Deterministic UUIDs make
@@ -25,7 +25,7 @@
 --   psql "$SUPABASE_DB_URL" -f supabase/seed/expert_couples_seed.sql
 --   -- OR via Supabase SQL editor (paste the whole file).
 --
--- TEAR-DOWN — to wipe just this seed without touching real data:
+-- TEAR-DOWN - to wipe just this seed without touching real data:
 --   DELETE FROM auth.users WHERE email LIKE '%@mioshy.test';
 --   -- The cascade does the rest; couple/journey rows go with it.
 -- ===========================================================================
@@ -36,7 +36,7 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 BEGIN;
 
 -- ---------------------------------------------------------------------------
--- 1. auth.users — 9 fake accounts with deterministic ids
+-- 1. auth.users - 9 fake accounts with deterministic ids
 -- ---------------------------------------------------------------------------
 -- All emails end in @mioshy.test (RFC 2606 reserved-style, never deliverable)
 -- so they can't be confused with real users.
@@ -81,14 +81,14 @@ ON CONFLICT (id) DO UPDATE
       raw_user_meta_data = EXCLUDED.raw_user_meta_data,
       updated_at = now();
 
--- auth.identities row — needed for password sign-in to work.
+-- auth.identities row - needed for password sign-in to work.
 --
 -- Two GoTrue contracts that bit us once already (see expert_couples_seed_repair.sql):
 --   1. For provider = 'email', provider_id MUST be the lower-cased email,
 --      not the user_id. GoTrue's sign-in lookup is
 --      `WHERE provider = 'email' AND provider_id = lower($input_email)`.
 --   2. identity_data MUST include email_verified=true (and phone_verified=false
---      is recommended) — otherwise GoTrue treats the identity as half-formed
+--      is recommended) - otherwise GoTrue treats the identity as half-formed
 --      and fails the sign-in with "Database error querying schema".
 INSERT INTO auth.identities (
   id, user_id, provider_id, identity_data, provider, last_sign_in_at,
@@ -117,7 +117,7 @@ WHERE u.email LIKE '%@mioshy.test'
 
 
 -- ---------------------------------------------------------------------------
--- 2. profiles — full_name + role
+-- 2. profiles - full_name + role
 -- ---------------------------------------------------------------------------
 INSERT INTO public.profiles (id, role, full_name, created_at)
 VALUES
@@ -158,7 +158,7 @@ ON CONFLICT (couple_id, user_id) DO NOTHING;
 
 
 -- ---------------------------------------------------------------------------
--- 4. expert_couples — Expert 1 → Couple 1, Expert 2 → Couple 2
+-- 4. expert_couples - Expert 1 → Couple 1, Expert 2 → Couple 2
 -- ---------------------------------------------------------------------------
 INSERT INTO public.expert_couples (
   id, expert_id, couple_id, is_active, notes, created_by, created_at
@@ -168,14 +168,14 @@ VALUES
    '0e0e0e0e-0000-0000-0000-000000000001',
    'cccc1111-0000-0000-0000-000000000001',
    true,
-   'Seed: pilot pairing 1 — communication focus',
+   'Seed: pilot pairing 1 - communication focus',
    '0a0a0a0a-0000-0000-0000-000000000001',
    now() - interval '12 days'),
   ('eecccc22-0000-0000-0000-000000000002',
    '0e0e0e0e-0000-0000-0000-000000000002',
    'cccc2222-0000-0000-0000-000000000002',
    true,
-   'Seed: pilot pairing 2 — intimacy focus',
+   'Seed: pilot pairing 2 - intimacy focus',
    '0a0a0a0a-0000-0000-0000-000000000001',
    now() - interval '10 days')
 ON CONFLICT (expert_id, couple_id) DO UPDATE
@@ -184,7 +184,7 @@ ON CONFLICT (expert_id, couple_id) DO UPDATE
 
 
 -- ---------------------------------------------------------------------------
--- 5. Starter Journey content — 1 program / 1 category / 6 items
+-- 5. Starter Journey content - 1 program / 1 category / 6 items
 -- ---------------------------------------------------------------------------
 INSERT INTO public.journey_programs (
   id, slug, name_he, name_en, description_he, description_en,
@@ -236,7 +236,7 @@ VALUES
    0, 1, true, '0a0a0a0a-0000-0000-0000-000000000001', now() - interval '25 days', now()),
   ('cdcdcdcd-0000-0000-0000-000000000002', 'bbbbbbbb-0000-0000-0000-000000000001', 'seed-item-2',
    'דקה של תודה',                'A Minute of Gratitude',
-   'דקה אחת לפני השינה — כל אחד אומר משהו אחד שהוא מעריך אצל השני היום.',
+   'דקה אחת לפני השינה - כל אחד אומר משהו אחד שהוא מעריך אצל השני היום.',
    2, 2, true, '0a0a0a0a-0000-0000-0000-000000000001', now() - interval '25 days', now()),
   ('cdcdcdcd-0000-0000-0000-000000000003', 'bbbbbbbb-0000-0000-0000-000000000001', 'seed-item-3',
    'מסך כבוי',                   'Screens Off',
@@ -260,7 +260,7 @@ ON CONFLICT (category_id, slug) DO UPDATE
 
 
 -- ---------------------------------------------------------------------------
--- 6. journey_assignments — one program assignment per couple
+-- 6. journey_assignments - one program assignment per couple
 -- ---------------------------------------------------------------------------
 INSERT INTO public.journey_assignments (
   id, user_id, couple_id, source_kind, source_id,
@@ -289,7 +289,7 @@ ON CONFLICT (id) DO UPDATE
 
 
 -- ---------------------------------------------------------------------------
--- 7. journey_scheduled_items — 5 items per assignment (items 1-5)
+-- 7. journey_scheduled_items - 5 items per assignment (items 1-5)
 -- ---------------------------------------------------------------------------
 INSERT INTO public.journey_scheduled_items (
   id, assignment_id, item_id, unlock_at, sort_order, has_unlock_override, created_at, updated_at
@@ -312,17 +312,17 @@ ON CONFLICT (assignment_id, item_id) DO UPDATE
 
 
 -- ---------------------------------------------------------------------------
--- 8. journey_item_completions — match the spec
+-- 8. journey_item_completions - match the spec
 -- ---------------------------------------------------------------------------
 --   Couple 1: items 1-3 done (3 completed), 4-5 still active.
 --   Couple 2: only item 1 done (1 completed), 2-5 still active.
 INSERT INTO public.journey_item_completions (scheduled_item_id, completed_at, completed_by, created_at)
 VALUES
-  -- Couple 1 — partner Noa marks items 1 and 3, partner Tom marks item 2.
+  -- Couple 1 - partner Noa marks items 1 and 3, partner Tom marks item 2.
   ('fbbbbbb1-0000-0000-0000-000000000001', now() - interval '11 days', 'c1c1c1c1-0000-0000-0000-000000000001', now() - interval '11 days'),
   ('fbbbbbb1-0000-0000-0000-000000000002', now() - interval '9 days',  'c1c1c1c1-0000-0000-0000-000000000002', now() - interval '9 days'),
   ('fbbbbbb1-0000-0000-0000-000000000003', now() - interval '5 days',  'c1c1c1c1-0000-0000-0000-000000000001', now() - interval '5 days'),
-  -- Couple 2 — only one completion so far.
+  -- Couple 2 - only one completion so far.
   ('fccccccc-0000-0000-0000-000000000001', now() - interval '6 days',  'c2c2c2c2-0000-0000-0000-000000000001', now() - interval '6 days')
 ON CONFLICT (scheduled_item_id) DO UPDATE
   SET completed_at = EXCLUDED.completed_at,

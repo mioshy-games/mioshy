@@ -28,6 +28,7 @@ import { MediaSlider } from "@/components/marketing/v2/MediaSlider";
 import { Counter } from "@/components/marketing/v2/Counter";
 import { RevealOnScroll } from "@/components/marketing/v2/RevealOnScroll";
 import { pickGameThumbnail } from "@/lib/games-thumbnail";
+import { GamesPageAtmosphere } from "@/components/games/GamesPageAtmosphere";
 
 /**
  * /games - the games category landing page.
@@ -65,9 +66,9 @@ export async function generateMetadata({
     keywords:
       locale === "he"
         ? [
-            "משחקי זוגיות",
+            "משחקי זוגות אונליין",
             "אמת או חובה",
-            "משחקים לזוגות",
+            "משחקי זוגות",
             "שאלות לזוגות",
             "סולמות ונחשים",
             "משחק זוגי בדפדפן",
@@ -98,6 +99,12 @@ export async function generateMetadata({
   };
 }
 
+// Build marker - bumped when we ship significant changes to /games so
+// we can correlate "I don't see the change" reports with the actual
+// build the visitor's browser fetched. Surfaces in both server logs
+// and the client console (see <script> at end of each return tree).
+const GAMES_PAGE_BUILD = "2026-05-06-dark-ambient-v1";
+
 export default async function GamesHubPage({
   params,
 }: {
@@ -110,7 +117,7 @@ export default async function GamesHubPage({
 
   const supabase = await createServerSupabaseClient();
 
-  // Auth gate — same pattern as /adults: members skip the marketing
+  // Auth gate - same pattern as /adults: members skip the marketing
   // wrap and see just the catalog. Anonymous visitors get the full
   // story below.
   const {
@@ -125,25 +132,45 @@ export default async function GamesHubPage({
     .order("created_at", { ascending: false });
   const games = (data ?? []) as GameRow[];
 
+  // Diagnostic log - Itzik 2026-05-06 reported "I don't see the change".
+  // Most common cause: signed-in users hit the AUTHED catalog (line 132)
+  // not the marketing return at the bottom. This print tells us which
+  // path executed and which build was deployed when the request landed.
+  // Visible in `vercel logs <deployment>` and in the local dev console.
+  console.log("[GamesHubPage]", JSON.stringify({
+    build: GAMES_PAGE_BUILD,
+    locale,
+    isAuthed,
+    userId: user?.id ?? null,
+    view: isAuthed ? "authed-catalog" : "marketing",
+    games: games.length,
+  }));
+
   // ─── Logged-in catalog-only view ──────────────────────────────────────
   // Per Itzik 2026-05-02: returning members shouldn't re-read the same
   // marketing page on every visit. They land on a clean, dense grid
   // of every active game with a section title.
   if (isAuthed) {
+    // No bg-color on the wrapper - GamesPageAtmosphere supplies the
+    // base gradient via a child layer. A solid bg here would create a
+    // stacking opaque surface that paints OVER negative-z children
+    // (the gradient at -z-30, the radial wash at -z-20, the floating
+    // blobs/orbits at -z-10) and the whole atmosphere would be
+    // invisible. Itzik 2026-05-06: this is exactly the bug that
+    // made "I don't see the change" reproducible.
     return (
       <div
         dir={isHe ? "rtl" : "ltr"}
-        className="relative min-h-[100dvh] bg-[#0E0810] text-white"
+        className="relative min-h-[100dvh] overflow-hidden text-white"
       >
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[60vh]"
-          style={{
-            background:
-              "radial-gradient(900px 500px at 20% 0%, rgba(196,68,86,0.18), transparent 65%), " +
-              "radial-gradient(800px 440px at 80% 10%, rgba(139,38,56,0.15), transparent 65%)",
+        {/* Build marker - visible in browser console so we can confirm
+            the new build landed for this visitor. Itzik 2026-05-06. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `console.log("[GamesHub/client]", { build: ${JSON.stringify(GAMES_PAGE_BUILD)}, view: "authed-catalog" });`,
           }}
         />
+        <GamesPageAtmosphere />
         <main className="relative mx-auto max-w-6xl px-4 pb-20 pt-12 sm:pt-16">
           <div className="inline-flex items-center gap-2 rounded-full border border-rose-300/30 bg-rose-500/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-rose-100">
             <span className="h-1.5 w-1.5 rounded-full bg-rose-300" />
@@ -192,13 +219,13 @@ export default async function GamesHubPage({
                           {name}
                         </h3>
                         {desc ? (
-                          <p className="mt-2 line-clamp-2 text-sm text-white/70">
+                          <p className="mt-2 line-clamp-2 text-sm text-white/70 transition-[max-height,color] duration-500 ease-in-out group-hover:line-clamp-none">
                             {desc}
                           </p>
                         ) : null}
                         <div className="mt-5 flex items-center justify-between">
                           <span className="text-sm text-rose-200 group-hover:text-white">
-                            {isHe ? "פתחו את המשחק" : "Open the game"} →
+                            {isHe ? "שחקו עכשיו ←" : "Play the game →"}
                           </span>
                         </div>
                       </div>
@@ -210,7 +237,7 @@ export default async function GamesHubPage({
               {/* ── Virtual snakes & ladders card (authenticated view) ──
                   Same hardcoded card the marketing page renders alongside
                   DB-backed wheel games. The board game isn't a row in
-                  `games`, it's a standalone /game route — but logged-in
+                  `games`, it's a standalone /game route - but logged-in
                   members expect to see EVERY active product in their
                   catalogue, not just the wheel-based ones. */}
               <li>
@@ -219,7 +246,7 @@ export default async function GamesHubPage({
                   className="group block overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/10 to-white/5 shadow-xl backdrop-blur transition hover:border-rose-300/40 hover:from-white/20"
                 >
                   <div className="relative aspect-[16/10] w-full overflow-hidden bg-gradient-to-br from-rose-500/30 via-fuchsia-500/25 to-violet-500/20">
-                    {/* Thumbnail — drop the image at
+                    {/* Thumbnail - drop the image at
                         /public/images/snakes-couples.webp (16:10 ratio
                         recommended, e.g. 1280×800). */}
                     <Image
@@ -238,14 +265,14 @@ export default async function GamesHubPage({
                     <h3 className="text-xl font-bold text-white group-hover:text-rose-100">
                       {isHe ? "נחשים וסולמות" : "Snakes & Ladders"}
                     </h3>
-                    <p className="mt-2 line-clamp-2 text-sm text-white/70">
+                    <p className="mt-2 line-clamp-2 text-sm text-white/70 transition-[max-height,color] duration-500 ease-in-out group-hover:line-clamp-none">
                       {isHe
-                        ? "לוח קלאסי עם שאלות ואתגרים זוגיים — שחקו על מכשיר אחד או על שני מכשירים שונים."
-                        : "Classic board with couples questions & challenges — play on one device or remotely."}
+                        ? "לוח קלאסי עם שאלות ואתגרים זוגיים - שחקו על מכשיר אחד או על שני מכשירים שונים."
+                        : "Classic board with couples questions & challenges - play on one device or remotely."}
                     </p>
                     <div className="mt-5 flex items-center justify-between">
                       <span className="text-sm text-rose-200 group-hover:text-white">
-                        {isHe ? "פתחו את המשחק" : "Open the game"} →
+                        {isHe ? "שחקו עכשיו ←" : "Play the game →"}
                       </span>
                     </div>
                   </div>
@@ -444,7 +471,19 @@ export default async function GamesHubPage({
       className="relative min-h-[100dvh] overflow-hidden text-white"
       dir={isHe ? "rtl" : "ltr"}
     >
-      {/* ── Dark hero backdrop (covers only the first viewport) - V2 wine palette ── */}
+      {/* Build marker - visible in browser console so we can confirm
+          the new build landed. Itzik 2026-05-06. */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `console.log("[GamesHub/client]", { build: ${JSON.stringify(GAMES_PAGE_BUILD)}, view: "marketing" });`,
+        }}
+      />
+
+      {/* ── Dark hero backdrop (covers ONLY the first viewport - 110vh).
+          Per Itzik 2026-05-06: revert of the page-wide dark treatment.
+          The dark atmosphere belongs to the hero + the #catalogue section
+          only; the marketing copy in between (Why / Press / Personas /
+          Benefits) reads on the cream surface like the original design. */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 -z-20 h-[110vh] bg-[linear-gradient(180deg,#0E0810_0%,#1A0B14_55%,#1E0F1E_100%)]"
@@ -479,7 +518,7 @@ export default async function GamesHubPage({
               {t("breadcrumbHome")}
             </Link>
             <span aria-hidden>/</span>
-            <span className="text-white/80">{t("breadcrumbGames")}</span>
+            <span className="text-white/85">{t("breadcrumbGames")}</span>
           </nav>
 
           <LazyLiveDemoHero
@@ -510,7 +549,11 @@ export default async function GamesHubPage({
         </section>
 
         {/* ════════════════════════════════════════════════════════════
-            LIGHT SECTIONS - #why + #press + #catalogue
+            LIGHT SECTIONS - #why + #press + #catalogue + #personas
+            Itzik 2026-05-06 revert: the marketing copy below the hero
+            reads on a cream surface (original design). Only the
+            #catalogue section inside this wrapper opts back into a dark
+            surface - see its own bg/style block.
         ════════════════════════════════════════════════════════════ */}
         <div className="bg-[#FAF6F7] pb-[60px] text-slate-900">
 
@@ -523,7 +566,7 @@ export default async function GamesHubPage({
           <section id="why" className="relative bg-[#FAF6F7] px-4 pb-14 pt-10 sm:pb-20 sm:pt-16">
             <div className="mx-auto max-w-6xl">
               <div className="mx-auto max-w-3xl text-center">
-                {/* Eyebrow — bumped to 14px on mobile (16px equivalent
+                {/* Eyebrow - bumped to 14px on mobile (16px equivalent
                     once you account for letter-spacing). */}
                 <span className="inline-flex items-center gap-2.5 text-[14px] font-semibold uppercase tracking-[0.18em] text-[#170E14] sm:text-[13px]">
                   <span className="h-[7px] w-[7px] rounded-sm bg-[#B83C4D] shadow-[0_0_0_3px_rgba(184,60,77,0.18)]" />
@@ -539,7 +582,7 @@ export default async function GamesHubPage({
                 </p>
               </div>
 
-              {/* Unified card design — mobile tightened: padding 20px,
+              {/* Unified card design - mobile tightened: padding 20px,
                   icon + stat chip on the same row (saves a wasted block
                   of vertical space), title 18px, body 16px to keep
                   every card scannable on a single phone scroll. */}
@@ -727,6 +770,10 @@ export default async function GamesHubPage({
                 <div
                   className="absolute top-[18%] -left-[12%] h-[620px] w-[620px] rounded-full mio-press-blob"
                   style={{
+                    /* Peach glow restored - the press section is back on
+                       a cream surface so the original soft-peach drift
+                       fits the editorial mood again (Itzik 2026-05-06
+                       revert). */
                     background:
                       "radial-gradient(circle, rgba(232,193,177,0.6), rgba(232,193,177,0.3) 45%, transparent 75%)",
                     filter: "blur(90px)",
@@ -771,7 +818,7 @@ export default async function GamesHubPage({
                     "linear-gradient(160deg, #1A0A14 0%, #0E0810 60%, #1A0A14 100%)",
                 }}
               />
-              {/* Converging blobs — wine red ↔ deep burgundy */}
+              {/* Converging blobs - wine red ↔ deep burgundy */}
               <div className="catalogue-blob catalogue-blob-1" />
               <div className="catalogue-blob catalogue-blob-2" />
               {/* Soft floating circle */}
@@ -792,7 +839,7 @@ export default async function GamesHubPage({
             </div>
 
             <div className="relative z-10 mx-auto max-w-6xl">
-              {/* Stacked header — eyebrow + title + lead description.
+              {/* Stacked header - eyebrow + title + lead description.
                   Per Itzik 2026-05-06: lead reads BELOW the title (not on
                   the side) so the catalogue copy flows top-to-bottom. */}
               <div className="flex flex-col items-start gap-4">
@@ -855,7 +902,7 @@ export default async function GamesHubPage({
                               <Gamepad2 className="h-12 w-12 text-white/70" />
                             </div>
                           )}
-                          {/* Admin image-swap overlay — pre-fills with the
+                          {/* Admin image-swap overlay - pre-fills with the
                               current per-locale URLs so the admin can edit
                               either or both. */}
                           {isAdmin && (
@@ -872,7 +919,7 @@ export default async function GamesHubPage({
                             {name}
                           </h3>
                           {desc ? (
-                            <p className="mt-2 line-clamp-3 text-[20px] leading-[1.5] text-white/70 sm:text-[18px]">
+                            <p className="mt-2 line-clamp-3 text-[20px] leading-[1.5] text-white/70 transition-[max-height,color] duration-500 ease-in-out group-hover:line-clamp-none sm:text-[18px]">
                               {desc}
                             </p>
                           ) : null}
@@ -900,7 +947,7 @@ export default async function GamesHubPage({
                     href="/game"
                     className="relative flex h-full flex-col overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] shadow-xl shadow-black/30 backdrop-blur-sm transition duration-300 hover:-translate-y-1 hover:border-rose-300/40 hover:bg-white/[0.07]"
                   >
-                    {/* Thumbnail — see /public/images/snakes-couples.webp */}
+                    {/* Thumbnail - see /public/images/snakes-couples.webp */}
                     <div className="relative aspect-[16/10] w-full overflow-hidden bg-gradient-to-br from-[#B83C4D]/30 via-[#8B2638]/25 to-[#3D1F3D]/30">
                       <Image
                         src="/images/snakes-couples.webp"
@@ -928,7 +975,7 @@ export default async function GamesHubPage({
                       <h3 className="font-heading text-xl font-bold leading-tight text-white">
                         {isHe ? "נחשים וסולמות" : "Snakes & Ladders"}
                       </h3>
-                      <p className="mt-2 line-clamp-3 text-[20px] leading-[1.5] text-white/70 sm:text-[18px]">
+                      <p className="mt-2 line-clamp-3 text-[20px] leading-[1.5] text-white/70 transition-[max-height,color] duration-500 ease-in-out group-hover:line-clamp-none sm:text-[18px]">
                         {isHe
                           ? "לוח קלאסי עם שאלות ואתגרים זוגיים - שחקו על מכשיר אחד או על שני מכשירים שונים"
                           : "Classic board game with couples questions & challenges - play on one device or remotely"}
@@ -948,13 +995,13 @@ export default async function GamesHubPage({
 
             </div>
 
-            {/* Inline keyframes/styles for the catalogue atmosphere — kept
+            {/* Inline keyframes/styles for the catalogue atmosphere - kept
                 local so the new pattern doesn't bleed into other dark
                 sections that might want their own palette. */}
             <style
               dangerouslySetInnerHTML={{
                 __html: `
-                  /* Large drifting blobs — soft, slow, atmospheric. */
+                  /* Large drifting blobs - soft, slow, atmospheric. */
                   .catalogue-blob {
                     position: absolute;
                     border-radius: 50%;
@@ -1006,7 +1053,7 @@ export default async function GamesHubPage({
                     75%      { transform: translate(20px, 30px) scale(1); }
                   }
 
-                  /* 12 small drifting orbit dots — wine palette, soft halos.
+                  /* 12 small drifting orbit dots - wine palette, soft halos.
                      Single smooth fade gradient so the dots feather into
                      the background instead of looking outlined. */
                   .catalogue-orbit {
@@ -1028,7 +1075,7 @@ export default async function GamesHubPage({
                   .catalogue-orbit-11 { width: 5px;  height: 5px;  left: 30%; top: 38%; background: radial-gradient(circle, rgba(245,158,177,0.8)  0%, rgba(245,158,177,0)  70%); box-shadow: 0 0 8px  rgba(245,158,177,0.2);  animation: catalogue-orbit-a 28s ease-in-out infinite; animation-delay: 4s; }
                   .catalogue-orbit-12 { width: 8px;  height: 8px;  left: 68%; top: 8%;  background: radial-gradient(circle, rgba(232,131,148,0.8)  0%, rgba(232,131,148,0)  70%); box-shadow: 0 0 10px rgba(232,131,148,0.22); animation: catalogue-orbit-b 30s ease-in-out infinite; animation-delay: .5s; }
 
-                  /* Drift ranges — ambient, not propelled. */
+                  /* Drift ranges - ambient, not propelled. */
                   @keyframes catalogue-orbit-a { 0%,100% { transform: translate(0,0); opacity: .25; } 50% { transform: translate(30px,-40px);  opacity: .65; } }
                   @keyframes catalogue-orbit-b { 0%,100% { transform: translate(0,0); opacity: .25; } 50% { transform: translate(-40px,30px); opacity: .65; } }
                   @keyframes catalogue-orbit-c { 0%,100% { transform: translate(0,0); opacity: .2; }  33% { transform: translate(40px,18px);  opacity: .55; } 66% { transform: translate(-25px,-30px); opacity: .7; } }

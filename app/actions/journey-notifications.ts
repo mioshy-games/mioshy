@@ -80,7 +80,7 @@ export async function listMyNotifications(): Promise<NotificationRow[]> {
 }
 
 // ------------------------------------------------------------
-// Admin pool — health page banner
+// Admin pool - health page banner
 // ------------------------------------------------------------
 
 export async function markAllAdminAlertsRead(): Promise<Result> {

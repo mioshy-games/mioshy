@@ -2,7 +2,7 @@
  * lib/dashboard/auto-tag.ts
  *
  * Pure deterministic tagger for journey responses + user→clinician
- * messages. Phase 4 — no LLM, just rules.
+ * messages. Phase 4 - no LLM, just rules.
  *
  * The clinician inbox surfaces the resulting tags as small chips so
  * the team can triage faster. The taxonomy (defined here) is the
@@ -16,7 +16,7 @@
  *
  * Privacy:
  *   The text passed to this function may contain personal content. We
- *   only inspect it for length and tokens — we do not persist it
+ *   only inspect it for length and tokens - we do not persist it
  *   anywhere besides the `tags` array of the row that owns it.
  */
 
@@ -36,13 +36,13 @@ export type MessageTag =
   | "long"
   | "contains_url"
   | "crisis_keyword"
-  | "question"; // contains '?' — clinician should respond explicitly
+  | "question"; // contains '?' - clinician should respond explicitly
 
-// Soft prompt for the clinician — NOT a clinical triage replacement.
+// Soft prompt for the clinician - NOT a clinical triage replacement.
 // Conservatively short list. Order doesn't matter.
 //
 // Hebrew + English entries. Match is case-insensitive, whole-word-ish
-// (we use a loose includes check on a normalised lowercase string —
+// (we use a loose includes check on a normalised lowercase string -
 // false positives are acceptable; the cost is a calmer "look at this"
 // nudge to the clinician). We err on the side of more flagging.
 const CRISIS_TOKENS = [
@@ -53,7 +53,7 @@ const CRISIS_TOKENS = [
   "לסיים את הכל",
   "לא רוצה לחיות",
   "לפגוע בעצמ",
-  "מכ", // רק יחד עם בקשה — ראה תנאי בהמשך
+  "מכ", // רק יחד עם בקשה - ראה תנאי בהמשך
   // English
   "suicid",
   "kill myself",

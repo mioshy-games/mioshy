@@ -53,7 +53,7 @@ export default async function LocaleLayout({
     journey: boolean;
     adults: boolean;
   } | null = null;
-  // v3 slice 10 — fetch the unread notifications count once per
+  // v3 slice 10 - fetch the unread notifications count once per
   // request so the header bell badge renders without a flash of zero.
   let unreadNotifications = 0;
   try {

@@ -1,5 +1,5 @@
 /**
- * WelcomeProcessingBanner — calm "your experts are working on your
+ * WelcomeProcessingBanner - calm "your experts are working on your
  * details" banner shown to users who recently finished the assessment
  * and don't yet have any active assignments.
  *
@@ -34,8 +34,8 @@ export function WelcomeProcessingBanner({
           </p>
           <p className="mt-1 text-sm leading-relaxed text-white/70">
             {isHe
-              ? "בשעות הקרובות נבנה לכם תוכנית עבודה אישית. המטרה היא להכיר אתכם הכי טוב — ולכן כל פריט תוכן נבחר בקפידה לפי התשובות שלכם, לא מתוך תבנית כללית."
-              : "In the next hours we'll build your personal work program. The goal is to get to know you as well as possible — every item is selected based on your answers, not from a generic template."}
+              ? "בשעות הקרובות נבנה לכם תוכנית עבודה אישית. המטרה היא להכיר אתכם הכי טוב - ולכן כל פריט תוכן נבחר בקפידה לפי התשובות שלכם, לא מתוך תבנית כללית."
+              : "In the next hours we'll build your personal work program. The goal is to get to know you as well as possible - every item is selected based on your answers, not from a generic template."}
           </p>
 
           <ul className="mt-3 grid gap-1.5 text-[12px] text-white/60 sm:grid-cols-2">

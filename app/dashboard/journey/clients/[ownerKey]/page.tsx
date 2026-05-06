@@ -60,7 +60,7 @@ import type {
 export const dynamic = "force-dynamic";
 
 // ------------------------------------------------------------
-// Data loading — one pass that hydrates every assignment with its
+// Data loading - one pass that hydrates every assignment with its
 // scheduled ite-s, items, category labels, and completion state.
 // ------------------------------------------------------------
 
@@ -115,7 +115,7 @@ async function loadOwner(ownerKey: string): Promise<LoadedOwner> {
 
   const assignmentIds = assignments.map((a) => a.id);
 
-  // Scheduled rows for every assignment — active or cancelled. Admins need
+  // Scheduled rows for every assignment - active or cancelled. Admins need
   // visibility into cancelled timelines -oo so they can reason about history.
   const { data: scheduledRows, error: sErr } = await admin
     .from("journey_scheduled_items")
@@ -127,7 +127,7 @@ async function loadOwner(ownerKey: string): Promise<LoadedOwner> {
   const scheduledIds = scheduled.map((s) => s.id);
 
   // Items + categories + completions in parallel. We only load ACTIVE
-  // catalog content for labels — if an admin soft-deleted an item the row
+  // catalog content for labels - if an admin soft-deleted an item the row
   // stays in the timeline, but -ts title will be ambiguous; that's
   // acceptable for now.
   const itemIds = Array.from(new Set(scheduled.map((s) => s.item_id)));
@@ -167,7 +167,7 @@ async function loadOwner(ownerKey: string): Promise<LoadedOwner> {
   // Source labels: we need distinct program/category/item ids from the
   // assignments themselves so the card header can say "Program · Clear
   // Communication" instead of just "program · <uuid>".
-  // Cadence assignments carry source_id = user_id (a sentinel — there's
+  // Cadence assignments carry source_id = user_id (a sentinel - there's
   // no catalog row to label against), handled separately below.
   const programSourceIds = assignments
     .filter((a) => a.source_kind === "program")
@@ -179,7 +179,7 @@ async function loadOwner(ownerKey: string): Promise<LoadedOwner> {
     .filter((a) => a.source_kind === "item")
     .map((a) => a.source_id);
   // For cadence rows we look up the user's email/name so the card
-  // says "Cadence · alice@example.com" — important on the couple
+  // says "Cadence · alice@example.com" - important on the couple
   // workspace where two cadence rows appear side by side.
   const cadenceUserIds = assignments
     .filter((a) => a.source_kind === "cadence" && a.user_id)
@@ -226,7 +226,7 @@ async function loadOwner(ownerKey: string): Promise<LoadedOwner> {
     >).map((i) => [i.id, i.title_he]),
   );
 
-  // Cadence partner labels — full_name lives on profiles, email lives
+  // Cadence partner labels - full_name lives on profiles, email lives
   // on admin_users_overview. Two parallel queries, merged into one
   // label per user_id. Same pattern as lib/experts/partner-detail.ts.
   const cadencePartnerLabelById = new Map<string, string>();
@@ -295,7 +295,7 @@ async function loadOwner(ownerKey: string): Promise<LoadedOwner> {
         return {
           scheduled: s,
           item,
-          category_name: category?.name_he ?? "—",
+          category_name: category?.name_he ?? "-",
           status,
           completed_at: completion?.completed_at ?? null,
         } satisfies AssignmentCardItem;
@@ -330,7 +330,7 @@ async function loadOwner(ownerKey: string): Promise<LoadedOwner> {
       sourceRef = {
         kind: "cadence",
         label: `Cadence · ${partnerLabel}`,
-        // No catalog page to link to — cadence is engine-driven.
+        // No catalog page to link to - cadence is engine-driven.
         href: null,
       };
     } else {
@@ -349,7 +349,7 @@ async function loadOwner(ownerKey: string): Promise<LoadedOwner> {
     };
   });
 
-  // Totals across active assignments only — cancelled items shouldn't
+  // Totals across active assignments only - cancelled items shouldn't
   // colour the owner's "state at a glance"-
   const totals = loaded.reduce(
     (acc, L) => {
@@ -383,7 +383,7 @@ async function loadOwner(ownerKey: string): Promise<LoadedOwner> {
 // ------------------------------------------------------------
 
 function fmtDate(iso: string | null | undefined) {
-  if (!iso) return "—";
+  if (!iso) return "-";
   return new Date(iso).toLocaleDateString(undefined, {
     year: "numeric",
     month: "short",
@@ -422,7 +422,7 @@ function deriveOwnerState(totals: LoadedOwner["totals"]): OwnerState {
     return {
       tone: "sky",
       icon: Compass,
-      title: "Active — but empty",
+      title: "Active - but empty",
       caption:
         "Active assignments exist but have no scheduled items. Try re-materialize.",
     };
@@ -447,7 +447,7 @@ function deriveOwnerState(totals: LoadedOwner["totals"]): OwnerState {
     tone: "sky",
     icon: Clock,
     title: "Active",
-    caption: "Timeline is ready — waiting for the first item to be completed.",
+    caption: "Timeline is ready - waiting for the first item to be completed.",
   };
 }
 
@@ -505,7 +505,7 @@ export default async function ManageClientPage({
     loadOwner(ownerKey),
   ]);
 
-  // v3 slice 9 — per-user cadence inspector. For owner.kind='user'
+  // v3 slice 9 - per-user cadence inspector. For owner.kind='user'
   // we render one panel; for 'couple' we render one per partner.
   // Resolves user_ids for each kind, then fetches stats + eligibility
   // in parallel.
@@ -595,7 +595,7 @@ export default async function ManageClientPage({
         Back to clients
       </Link>
 
-      {/* ── Header — identity + primary CTA ─────────────────────── */}
+      {/* ── Header - identity + primary CTA ─────────────────────── */}
       <header classN-me="flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-start gap-3">
           <div className="bg-muted text-muted-foreground flex size-12 shrink-0 items-center justify-center rounded-full border">
@@ -623,7 +623,7 @@ export default async function ManageClientPage({
         </Link>
       </header>
 
-      {/* ── State banner — immediately legible summary ──────────── */}
+      {/* ── State banner - immediately legible summary ──────────── */}
       <div
         className={cn(
           "flex flex-wrap items-center justify-between gap-4 rounded-xl border p-5",
@@ -728,7 +728,7 @@ export default async function ManageClientPage({
             <p className="text-muted-foreground mt-0.5 text-xs">
               Per-partner queue + engagement + eligibility verdict.
               {owner.kind === "couple"
-                ? " Each partner has their own panel — no aggregation."
+                ? " Each partner has their own panel - no aggregation."
                 : ""}
             </p>
           </div>

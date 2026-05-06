@@ -350,7 +350,7 @@ export async function getTimelineForOwner(args: {
   /** v3 slice 4: narrow the underlying assignments by source_kind.
    *  Pass ['cadence'] to fetch only the per-user cadence container's
    *  scheduled rows; pass ['program','category','item'] to fetch only
-   *  legacy v2 rows. /my/journey calls this twice — once per axis —
+   *  legacy v2 rows. /my/journey calls this twice - once per axis -
    *  and merges the entries by unlock_at. */
   sourceKinds?: Array<"program" | "category" | "item" | "cadence">;
   now?: Date;
@@ -375,7 +375,7 @@ export async function getTimelineForOwner(args: {
   if (sErr) throw new Error(sErr.message);
   let scheduled = (scheduledRows ?? []) as JourneyScheduledItem[];
 
-  // Audience filter — only relevant for couple-owned timelines.
+  // Audience filter - only relevant for couple-owned timelines.
   // 'both' is always shown; 'owner' / 'partner' rows show only to the
   // matching couple_member.role. Unknown role falls back to 'both' only.
   if (owner.kind === "couple") {
@@ -846,7 +846,7 @@ export async function listGroupSubtopicBindings(
 }
 
 /**
- * Reverse lookup — for a set of subtopic_ids, return the count of
+ * Reverse lookup - for a set of subtopic_ids, return the count of
  * groups bound to each. Used by the items list to show "this
  * subtopic is bound to N group(s)" so admins know cadence behaves
  * differently for some users.
@@ -873,7 +873,7 @@ export async function countGroupBindingsForSubtopics(
 }
 
 /**
- * Cadence engine helper — for a given user, return the set of
+ * Cadence engine helper - for a given user, return the set of
  * subtopic_ids they're in REPLACE mode for (across all groups).
  * If the user is in BOTH a replace and an interleave group for the
  * same subtopic, replace wins (per Itzik's slice 7 brief).

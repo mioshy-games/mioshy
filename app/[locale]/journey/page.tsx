@@ -149,7 +149,7 @@ export default async function JourneyMarketingPage({
   // Per Itzik 2026-05-02: anyone signed in but without an active Journey
   // entitlement gets a single dedicated "this is locked, here's why you
   // want it" page instead of the marketing wall. Anonymous visitors keep
-  // seeing the full marketing page below — they're not yet members and
+  // seeing the full marketing page below - they're not yet members and
   // need the broader pitch.
   if (user && !hasJourneyEntitlement) {
     const lockedTrust = [0, 1, 2, 3].map((i) => t(`trust.${i}`));
@@ -180,12 +180,12 @@ export default async function JourneyMarketingPage({
           <h1 className="mt-5 font-heading text-4xl font-bold leading-tight tracking-tight sm:text-5xl">
             {isHe
               ? "המסע נעול - בינתיים."
-              : "The journey is locked — for now."}
+              : "The journey is locked - for now."}
           </h1>
           <p className="mt-5 text-lg text-white/80">
             {isHe
               ? "בשביל הזוגיות שלכם, מגיע לכם משהו שנבנה במיוחד עבורכם. הליווי האישי של מיאושי - תרגולים, אבחון, שיחות ומשימות חודשיות - פתוח רק לחברים במנוי."
-              : "For the sake of your relationship, you deserve something built around you. Mioshy's personal journey — practices, assessment, conversations, and monthly tasks — is open only to members."}
+              : "For the sake of your relationship, you deserve something built around you. Mioshy's personal journey - practices, assessment, conversations, and monthly tasks - is open only to members."}
           </p>
           <p className="mt-3 text-base text-white/65">
             {isHe
@@ -375,7 +375,7 @@ export default async function JourneyMarketingPage({
             <span className="text-white/80">{t("breadcrumbJourney")}</span>
           </nav>
 
-          {/* Animated background — converging emerald ↔ amber blobs, floating
+          {/* Animated background - converging emerald ↔ amber blobs, floating
               orb, and 12 small drifting circles. Mirrors the homepage hero
               animation system but in the journey voyage palette.
               Lifted from -z-10 to z-0 so the layer paints above the aurora
@@ -385,7 +385,7 @@ export default async function JourneyMarketingPage({
             aria-hidden
             className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
           >
-            {/* Converging pair — emerald (left) ↔ amber (right) */}
+            {/* Converging pair - emerald (left) ↔ amber (right) */}
             <div className="journey-blob journey-blob-1" />
             <div className="journey-blob journey-blob-2" />
 
@@ -641,7 +641,7 @@ export default async function JourneyMarketingPage({
                   >
                     <span
                       aria-hidden
-                      className="absolute inset-0 bg-[linear-gradient(110deg,#d946ef_0%,#a855f7_35%,#ec4899_70%,#f59e0b_100%)] bg-[length:220%_100%] mio-nav-cta-shift"
+                      className="absolute inset-0 bg-[linear-gradient(110deg,#d946ef_0%,#a855f7_35%,#ec4899_70%,#f59e0b_100%)]"
                     />
                     <span className="relative z-10 inline-flex items-center">
                       {primaryLabel}
@@ -865,10 +865,7 @@ export default async function JourneyMarketingPage({
               >
                 <span
                   aria-hidden
-                  className="absolute inset-0 bg-[linear-gradient(110deg,#d946ef_0%,#a855f7_35%,#ec4899_70%,#f59e0b_100%)] bg-[length:220%_100%] mio-nav-cta-shift"
-                  style={{
-                    animation: "mio-cta-shift 6s ease-in-out infinite",
-                  }}
+                  className="absolute inset-0 bg-[linear-gradient(110deg,#d946ef_0%,#a855f7_35%,#ec4899_70%,#f59e0b_100%)]"
                 />
                 <span className="relative z-10 inline-flex items-center">
                   {hasActiveAssignments
@@ -962,10 +959,8 @@ export default async function JourneyMarketingPage({
             }
             .mio-journey-gradient-shift { animation: mio-journey-gradient-shift 7s ease-in-out infinite; }
 
-            @keyframes mio-cta-shift {
-              0%, 100% { background-position: 0% 50%; }
-              50%      { background-position: 100% 50%; }
-            }
+            /* mio-cta-shift removed 2026-05-06 - CTAs now use a static
+               gradient. */
 
             @keyframes mio-journey-float {
               0%, 100% { transform: translate3d(0, 0, 0); }
@@ -975,11 +970,11 @@ export default async function JourneyMarketingPage({
             .mio-journey-float-delay { animation: mio-journey-float 10s ease-in-out infinite; animation-delay: -3s; }
             .mio-journey-float-slow  { animation: mio-journey-float 14s ease-in-out infinite; animation-delay: -5s; }
 
-            /* ── Journey hero animated background — voyage palette ──────
+            /* ── Journey hero animated background - voyage palette ──────
                Goal: feel atmospheric, not announced. Ambient drift, not
                a moving billboard. */
 
-            /* Large drifting blobs — soft, slow, atmospheric. */
+            /* Large drifting blobs - soft, slow, atmospheric. */
             .journey-blob {
               position: absolute;
               border-radius: 50%;
@@ -1002,7 +997,7 @@ export default async function JourneyMarketingPage({
               animation: journey-blob-2-converge 56s ease-in-out infinite;
             }
 
-            /* Slow, small drift — converge gently, never crowd the headline */
+            /* Slow, small drift - converge gently, never crowd the headline */
             @keyframes journey-blob-1-converge {
               0%, 100% { transform: translate(0, 0) scale(1); }
               50%      { transform: translate(140px, 100px) scale(1.06); }
@@ -1031,7 +1026,7 @@ export default async function JourneyMarketingPage({
               75%      { transform: translate(60px, -30px) scale(1.07); }
             }
 
-            /* 12 small drifting orbit dots — journey palette.
+            /* 12 small drifting orbit dots - journey palette.
                Single smooth fade gradient (no mid-stop ring) so they feather
                into the bg instead of looking outlined. Glow halo softened
                so the dots blend rather than announce themselves. */
@@ -1055,7 +1050,7 @@ export default async function JourneyMarketingPage({
             .journey-orbit-11 { width: 5px;  height: 5px;  left: 30%; top: 38%; background: radial-gradient(circle, rgba(167,243,208,0.8)  0%, rgba(167,243,208,0)  70%);  box-shadow: 0 0 8px  rgba(167,243,208,0.2);   animation: journey-orbit-a 28s ease-in-out infinite; animation-delay: 4s; }
             .journey-orbit-12 { width: 8px;  height: 8px;  left: 68%; top: 8%;  background: radial-gradient(circle, rgba(253,224,71,0.8)   0%, rgba(253,224,71,0)   70%);  box-shadow: 0 0 10px rgba(253,224,71,0.22);   animation: journey-orbit-b 30s ease-in-out infinite; animation-delay: .5s; }
 
-            /* Drift ranges halved from previous version — feels ambient,
+            /* Drift ranges halved from previous version - feels ambient,
                not propelled. Opacity softer so dots breathe in/out. */
             @keyframes journey-orbit-a { 0%,100% { transform: translate(0,0); opacity: .25; } 50% { transform: translate(30px,-40px);  opacity: .65; } }
             @keyframes journey-orbit-b { 0%,100% { transform: translate(0,0); opacity: .25; } 50% { transform: translate(-40px,30px); opacity: .65; } }

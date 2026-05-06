@@ -60,9 +60,9 @@ type ParticleSpec = {
   duration: number;
   delay: number;
   tintIndex: number;
-  /** Horizontal wander in px (signed — negative = left, positive = right). */
+  /** Horizontal wander in px (signed - negative = left, positive = right). */
   driftX: number;
-  /** Vertical wander in px (signed — negative = up, positive = down). */
+  /** Vertical wander in px (signed - negative = up, positive = down). */
   driftY: number;
   /** Whether this particle should also render on mobile (<sm). 1/3 do. */
   mobileVisible: boolean;
@@ -76,7 +76,7 @@ function makeParticles(): ParticleSpec[] {
   // drifting through it as the user scrolls.
   const out: ParticleSpec[] = [];
   // 11 vertical bands × 5 particles each = 55 particles spread page-wide.
-  // On mobile we render only ~1/3 (every 3rd) — see `mobileVisible` below.
+  // On mobile we render only ~1/3 (every 3rd) - see `mobileVisible` below.
   const tops = [4, 12, 20, 28, 36, 44, 52, 60, 68, 78, 90] as const;
   for (const top of tops) {
     // Five horizontal positions, jittered per row so columns never align.
@@ -84,7 +84,7 @@ function makeParticles(): ParticleSpec[] {
     for (let i = 0; i < cols.length; i++) {
       const col = cols[i]!;
       const left = ((col + (top % 11) * 1.7 + i * 0.9) % 94) + 2;
-      // Larger sizes — bumped ~50% so dots register as visible "orbs"
+      // Larger sizes - bumped ~50% so dots register as visible "orbs"
       // rather than pinpricks. Mix kept varied so they don't look uniform.
       const sizeOpts = [6, 7, 8, 9, 10, 11];
       const size = sizeOpts[(top + i) % sizeOpts.length]!;
@@ -101,7 +101,7 @@ function makeParticles(): ParticleSpec[] {
       const magnitude = 16 + ((top * 2 + i * 7) % 22);
       const driftX = Math.round(Math.cos(angleRad) * magnitude);
       const driftY = Math.round(Math.sin(angleRad) * magnitude);
-      // Mobile keeps every 3rd particle — ~18 dots instead of 55.
+      // Mobile keeps every 3rd particle - ~18 dots instead of 55.
       const mobileVisible = out.length % 3 === 0;
       out.push({
         top,
@@ -258,7 +258,7 @@ export function AdultsAmbience() {
                 }px ${tint.glow}`,
                 animationDuration: `${p.duration}s`,
                 animationDelay: `${p.delay}s`,
-                // CSS custom props consumed by keyframes for 2D drift —
+                // CSS custom props consumed by keyframes for 2D drift -
                 // each particle picks its own bearing (X + Y) so they don't
                 // all rise vertically.
                 ["--drift-x" as never]: `${p.driftX}px`,
@@ -305,7 +305,7 @@ export function AdultsAmbience() {
 
             /* Particles: 2D drift (each picks an angle via --drift-x/--drift-y)
                + opacity fade. With per-particle bearings, the swarm no longer
-               rises in a uniform column — every dot drifts in its own
+               rises in a uniform column - every dot drifts in its own
                direction. */
             @keyframes mio-particle-drift {
               0%   {

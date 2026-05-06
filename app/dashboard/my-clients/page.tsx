@@ -39,7 +39,7 @@ export default async function MyClientsPage() {
           Couples you&apos;re coaching. Click a row to see both partners,
           their assigned content, and prescribe new programs or articles.
           {session.isAdmin
-            ? " (Admin view — listing your linked couples only. Use Experts to manage links.)"
+            ? " (Admin view - listing your linked couples only. Use Experts to manage links.)"
             : ""}
         </p>
       </div>
@@ -48,7 +48,7 @@ export default async function MyClientsPage() {
         <div className="border-border bg-muted/30 text-muted-foreground rounded-lg border p-8 text-center text-sm">
           {session.isAdmin
             ? "You haven't been linked to any couples yet. An admin can add links from "
-            : "No clients yet — an admin will link couples to you from "}
+            : "No clients yet - an admin will link couples to you from "}
           <Link href="/dashboard/experts" className="underline">
             Experts
           </Link>

@@ -1,7 +1,7 @@
 "use client";
 
 // ============================================================
-// CategoryChildrenManager — the two-list drag-reorder UI on the
+// CategoryChildrenManager - the two-list drag-reorder UI on the
 // category-detail page.
 //
 // List A: subtopics inside this category. Drag to reorder, click name
@@ -10,7 +10,7 @@
 //         "direct" group). Items inside subtopics are managed on the
 //         subtopic-detail page so each list maps 1:1 to its parent.
 //
-// Reorder writes go through reorderJourneyChildren() — a single
+// Reorder writes go through reorderJourneyChildren() - a single
 // server action that rewrites every row's sort_order to multiples of
 // 1000 in the new order.
 // ============================================================

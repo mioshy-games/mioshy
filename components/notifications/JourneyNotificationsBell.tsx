@@ -1,7 +1,7 @@
 "use client";
 
 // ============================================================
-// JourneyNotificationsBell — slice 10 user-side notifications
+// JourneyNotificationsBell - slice 10 user-side notifications
 // inbox, dropdown form. Lives in the SiteHeader.
 //
 // Server passes initialUnreadCount + isHe; the bell renders the

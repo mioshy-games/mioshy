@@ -73,7 +73,7 @@ export default async function MyAdultsGalleryPage({
     listActiveGameCards().catch(() => []),
   ]);
 
-  // "More games" — every active Adults game in the catalogue minus
+  // "More games" - every active Adults game in the catalogue minus
   // the ones this couple already owns. Rendered inline at the bottom
   // of the page so the user never leaves the gallery to browse.
   const ownedIds = new Set(owned.map((g) => g.id));
@@ -81,7 +81,7 @@ export default async function MyAdultsGalleryPage({
     .map((c) => c.game)
     .filter((g) => !ownedIds.has(g.id));
 
-  // Monthly Adults bundle (spec §8.4) — Journey subscribers get one
+  // Monthly Adults bundle (spec §8.4) - Journey subscribers get one
   // free game per calendar month. We surface the slot's state at the
   // top of the page so the user knows whether to "use it now" or
   // wait until next month.
@@ -491,7 +491,7 @@ function AvailableGameCard({
           aria-hidden
           className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/75 via-black/30 to-transparent"
         />
-        {/* "New / Locked" badge — distinct from the emerald "Owned" pill
+        {/* "New / Locked" badge - distinct from the emerald "Owned" pill
             on the gallery cards above. Clear visual signal: this is
             still gated. */}
         <span className="absolute end-3 top-3 inline-flex items-center gap-1 rounded-full border border-white/30 bg-black/40 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-[0.18em] text-white backdrop-blur">

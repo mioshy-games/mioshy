@@ -44,7 +44,7 @@ function formatAmount(amount: number, currency: "ILS" | "USD"): string {
   // number with one space between them ("₪ 127", not "₪127" or "127₪").
   // We wrap in U+2066 LRI (Left-to-Right Isolate) + U+2069 PDI (Pop Directional
   // Isolate) so the symbol-then-number ordering is preserved regardless of
-  // surrounding paragraph direction — i.e. even inside RTL Hebrew copy, the
+  // surrounding paragraph direction - i.e. even inside RTL Hebrew copy, the
   // price reads "₪ 127" left-to-right and the symbol stays on the left.
   return `⁦${symbol} ${body}⁩`;
 }

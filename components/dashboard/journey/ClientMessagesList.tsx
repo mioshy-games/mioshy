@@ -1,5 +1,5 @@
 /**
- * ClientMessagesList — read-only list of messages a couple's
+ * ClientMessagesList - read-only list of messages a couple's
  * partners sent through the JourneyExpertMessage UI. Phase 4 wiring.
  *
  * Lives next to ClientResponsesInbox in /dashboard/my-clients/[coupleId].
@@ -7,7 +7,7 @@
  * Display rules:
  *   - Newest first
  *   - Per row: who sent (partner label), text, status pill, time
- *   - No reply UI here (one-way channel by design — see migration 051)
+ *   - No reply UI here (one-way channel by design - see migration 051)
  *
  * The clinician acts via the existing intervention surfaces (assigning
  * content, sending reflections, etc.). This list just makes sure

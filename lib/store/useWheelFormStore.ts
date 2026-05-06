@@ -42,13 +42,13 @@ export type WheelFormPreviewState = {
   /** Label outline settings (from AppearanceTab → game_settings) */
   labelOutline: { enabled: boolean; color: string; opacity: number; width: number };
   /** Label orientation: tangential (along slice) or radial (center→rim).
-   *  Itzik 2026-05-05 — was missing from the preview store, so admin
+   *  Itzik 2026-05-05 - was missing from the preview store, so admin
    *  changes in AppearanceTab didn't propagate to the live preview. */
   labelOrientation: "tangential" | "radial";
   /** Radial fraction of the wheel where labels are anchored.
    *  In tangential mode this is the label center position (typical 0.6).
    *  In radial mode it's interpreted INVERSELY by the renderer as
-   *  "distance from outer boundary" — slider 0.9 → text starts at 0.1r
+   *  "distance from outer boundary" - slider 0.9 → text starts at 0.1r
    *  (close to center, lots of room to grow toward rim). */
   labelRadiusFraction: number;
   /** Outer border ring (from AppearanceTab → game_settings.border) */

@@ -1,12 +1,12 @@
 "use server";
 
 // ============================================================
-// Expert push v2 — slice 8 admin action.
+// Expert push v2 - slice 8 admin action.
 //
 // Pushes a batch of items to a recipient (user / couple / group).
 // Fans out to journey_pending_pushes, ONE row per (target user × item).
 // The cadence engine consumes the oldest pending row on each user's
-// next delivery slot — pushes don't deliver instantly, they ride the
+// next delivery slot - pushes don't deliver instantly, they ride the
 // next slot per Itzik's slice 8 brief.
 //
 // Recipients:
@@ -14,7 +14,7 @@
 //   couple → 2 targets (both partners via couple_members)
 //   group  → N targets (all journey_group_members.user_id)
 //
-// Idempotency: not enforced at the table level — the same item can
+// Idempotency: not enforced at the table level - the same item can
 // be pushed twice with two pending rows. The cadence engine's
 // delivered-items dedup catches it on consumption (the second row
 // becomes a no-op once the first one materializes), so admin can
@@ -85,7 +85,7 @@ export async function pushItemsToRecipient(raw: unknown): Promise<Result> {
   const { db: supabase, adminUserId } = await adminDb();
 
   // Validate every item exists + is active. Bail before any insert
-  // if any id is bogus — better than half-created push rows.
+  // if any id is bogus - better than half-created push rows.
   const { data: itemsRows, error: itemsErr } = await supabase
     .from("journey_items")
     .select("id, is_active")
@@ -138,7 +138,7 @@ export async function pushItemsToRecipient(raw: unknown): Promise<Result> {
 }
 
 // ------------------------------------------------------------
-// Recipient pickers — typeahead used by the push composer.
+// Recipient pickers - typeahead used by the push composer.
 // ------------------------------------------------------------
 
 export interface CouplePickerHit {

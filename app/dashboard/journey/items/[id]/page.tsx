@@ -102,7 +102,7 @@ export default async function EditItemPage({
             subtopics={subtopicOptions}
           />
 
-          {/* Phase 3 step 3 — assessment / reflection editor.
+          {/* Phase 3 step 3 - assessment / reflection editor.
               Available on every item; for content items it just shows the
               kind selector. Setting kind=assessment opens the JSON editor
               + live preview using the same form the end user will see. */}

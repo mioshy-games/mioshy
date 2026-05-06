@@ -1,5 +1,5 @@
 // ============================================================
-// labels.ts — slice 10 UI mapping for notification kinds.
+// labels.ts - slice 10 UI mapping for notification kinds.
 //
 // Each kind gets a tone, an icon name, and bilingual headline copy.
 // The dropdown component consumes this without doing string matching
@@ -29,21 +29,21 @@ export interface NotificationDescriptor {
 }
 
 const DESCRIPTORS: Record<NotificationKind, NotificationDescriptor> = {
-  // Per-item unlock — regular cadence pick
+  // Per-item unlock - regular cadence pick
   item_unlocked: {
     tone: "info",
     icon: Sparkles,
     headlineHe: "פריט חדש מחכה לכם",
     headlineEn: "A new item is waiting for you",
   },
-  // Per-item unlock — admin push
+  // Per-item unlock - admin push
   expert_push_landed: {
     tone: "info",
     icon: Send,
     headlineHe: "פריט חדש מהמומחה שלכם",
     headlineEn: "A new item from your coach",
   },
-  // Per-item user post (expert pool target — won't render in user inbox)
+  // Per-item user post (expert pool target - won't render in user inbox)
   item_message_user_posted: {
     tone: "neutral",
     icon: MessageSquare,
@@ -71,8 +71,8 @@ const DESCRIPTORS: Record<NotificationKind, NotificationDescriptor> = {
   subscription_grace_started: {
     tone: "warn",
     icon: Clock,
-    headlineHe: "המנוי פג — יש לכם 14 יום",
-    headlineEn: "Your plan ended — 14 days remain",
+    headlineHe: "המנוי פג - יש לכם 14 יום",
+    headlineEn: "Your plan ended - 14 days remain",
   },
   subscription_blocked: {
     tone: "danger",
@@ -160,7 +160,7 @@ export function notificationHref(
 }
 
 export function notificationCheckedIcon() {
-  // Used by the "marked as read" path — exported so the dropdown can
+  // Used by the "marked as read" path - exported so the dropdown can
   // render a tick visual change without re-importing lucide.
   return CheckCircle2;
 }

@@ -7,7 +7,7 @@
  *   - reply to a user's response
  *   - change the triage status (open / resolved / concerning)
  *
- * Phase 2D — closes the loop on the response workflow.
+ * Phase 2D - closes the loop on the response workflow.
  *
  * Auth model:
  *   - We re-use the existing `requireExpert()` helper that the
@@ -92,7 +92,7 @@ export async function clinicianReply(args: {
 }
 
 /**
- * Triage-only — change the status without writing a reply. Useful
+ * Triage-only - change the status without writing a reply. Useful
  * when the clinician marks a response as "concerning" to flag it
  * for follow-up later, or "resolved" because the response needs no
  * reply (e.g. a thank-you).

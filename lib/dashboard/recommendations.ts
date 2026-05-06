@@ -1,7 +1,7 @@
 /**
  * lib/dashboard/recommendations.ts
  *
- * Phase 5 — turns a JourneyUserScore into a small set of bilingual
+ * Phase 5 - turns a JourneyUserScore into a small set of bilingual
  * suggestions the clinician sees in the CRM. Pure function, no DB
  * access here.
  *
@@ -13,7 +13,7 @@
  *     boxes.
  *   - Severity comes from the rule, not from the user. "crisis" is
  *     always severity 'high'; "low engagement" is always 'medium'.
- *   - Rules don't overlap-deduplicate aggressively — the clinician
+ *   - Rules don't overlap-deduplicate aggressively - the clinician
  *     gets the full picture and chooses.
  */
 
@@ -29,7 +29,7 @@ export interface JourneyRecommendation {
    *  language). */
   title_he: string;
   title_en: string;
-  /** Why this rule fired — references the actual numbers so the
+  /** Why this rule fired - references the actual numbers so the
    *  clinician can verify. */
   rationale_he: string;
   rationale_en: string;
@@ -43,7 +43,7 @@ export function getUserRecommendations(
 ): JourneyRecommendation[] {
   const out: JourneyRecommendation[] = [];
 
-  // ── crisis — explicit, always first if present ──────────────────
+  // ── crisis - explicit, always first if present ──────────────────
   if (hasFlag(score, "crisis")) {
     out.push({
       id: "crisis",
@@ -57,7 +57,7 @@ export function getUserRecommendations(
     });
   }
 
-  // ── stuck — at least one available item ignored ─────────────────
+  // ── stuck - at least one available item ignored ─────────────────
   if (hasFlag(score, "stuck")) {
     out.push({
       id: "stuck",
@@ -71,7 +71,7 @@ export function getUserRecommendations(
     });
   }
 
-  // ── non_responsive — has items, no responses at all ─────────────
+  // ── non_responsive - has items, no responses at all ─────────────
   if (hasFlag(score, "non_responsive")) {
     out.push({
       id: "non_responsive",
@@ -85,7 +85,7 @@ export function getUserRecommendations(
     });
   }
 
-  // ── disengaging — falling response substance ────────────────────
+  // ── disengaging - falling response substance ────────────────────
   if (hasFlag(score, "disengaging")) {
     out.push({
       id: "disengaging",
@@ -99,7 +99,7 @@ export function getUserRecommendations(
     });
   }
 
-  // ── overreactive — long + tense ────────────────────────────────
+  // ── overreactive - long + tense ────────────────────────────────
   if (hasFlag(score, "overreactive")) {
     out.push({
       id: "overreactive",
@@ -108,8 +108,8 @@ export function getUserRecommendations(
       title_en: "Long, emotionally charged responses",
       rationale_he: `אורך תגובה ממוצע: ${score.avgResponseChars} תווים, conflict_signal: ${(score.conflictSignal ?? 0).toFixed(2)}.`,
       rationale_en: `Avg response chars: ${score.avgResponseChars}, conflict_signal: ${(score.conflictSignal ?? 0).toFixed(2)}.`,
-      suggestion_he: "תוכן הבא — תרגיל מובנה עם גבולות ברורים, לא שאלה פתוחה.",
-      suggestion_en: "Next content — a structured exercise with clear bounds rather than an open prompt.",
+      suggestion_he: "תוכן הבא - תרגיל מובנה עם גבולות ברורים, לא שאלה פתוחה.",
+      suggestion_en: "Next content - a structured exercise with clear bounds rather than an open prompt.",
     });
   }
 
@@ -128,8 +128,8 @@ export function getUserRecommendations(
       title_en: "Slow response velocity",
       rationale_he: `ממוצע ${score.avgDaysToRespond.toFixed(1)} ימים מהפתיחה ועד התגובה.`,
       rationale_en: `Avg ${score.avgDaysToRespond.toFixed(1)} days from unlock to response.`,
-      suggestion_he: "מסלול עם קצב מתון יותר עשוי להתאים — פחות פריטים בשבוע.",
-      suggestion_en: "A gentler cadence may fit better — fewer items per week.",
+      suggestion_he: "מסלול עם קצב מתון יותר עשוי להתאים - פחות פריטים בשבוע.",
+      suggestion_en: "A gentler cadence may fit better - fewer items per week.",
     });
   }
 
@@ -154,7 +154,7 @@ export function getUserRecommendations(
     });
   }
 
-  // ── highly engaged — positive signal ────────────────────────────
+  // ── highly engaged - positive signal ────────────────────────────
   if (hasFlag(score, "highly_engaged")) {
     out.push({
       id: "highly_engaged",
@@ -163,8 +163,8 @@ export function getUserRecommendations(
       title_en: "Highly engaged",
       rationale_he: `engagement_depth: ${(score.engagementDepth ?? 0).toFixed(2)}, ${score.totalResponses} תגובות.`,
       rationale_en: `engagement_depth: ${(score.engagementDepth ?? 0).toFixed(2)}, ${score.totalResponses} responses.`,
-      suggestion_he: "ניתן להאיץ — תוכן עמוק יותר או תרגיל מקדם.",
-      suggestion_en: "Safe to accelerate — go deeper or pull in an advanced exercise.",
+      suggestion_he: "ניתן להאיץ - תוכן עמוק יותר או תרגיל מקדם.",
+      suggestion_en: "Safe to accelerate - go deeper or pull in an advanced exercise.",
     });
   }
 

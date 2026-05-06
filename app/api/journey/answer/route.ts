@@ -66,7 +66,7 @@ function isValidAnswer(qType: string, answer: AnswerValue): boolean {
     case "reflection":
       return answer.kind === "text" && typeof answer.text === "string";
     case "ranking":
-      // Must be an exact permutation of PRIORITY_KEYS — no missing slug,
+      // Must be an exact permutation of PRIORITY_KEYS - no missing slug,
       // no extras, no duplicates. isValidOrder is the same helper the
       // client uses pre-submit, so client and server agree on the shape.
       return answer.kind === "ranking" && isValidOrder(answer.order);
@@ -192,7 +192,7 @@ export async function POST(req: Request) {
         // Backfill profile.gender from a previously-anon q_gender answer.
         // The user just claimed their journey, so any answers stored against
         // it (including q_gender from earlier in the assessment) should be
-        // mirrored onto their fresh profile row. Idempotent — a no-op if
+        // mirrored onto their fresh profile row. Idempotent - a no-op if
         // the user never answered q_gender.
         const { data: genderRow } = await admin
           .from("journey_responses")
@@ -274,7 +274,7 @@ export async function POST(req: Request) {
   // When the priority ranking is submitted, persist it into
   // journey_user_priorities and (if the user is journey-entitled)
   // materialize the first item so it shows up immediately on /my/journey.
-  // Best-effort — failures are logged but don't block the answer save.
+  // Best-effort - failures are logged but don't block the answer save.
   if (
     question_id === "q_priorities" &&
     trusted_user_id &&
@@ -294,7 +294,7 @@ export async function POST(req: Request) {
       });
     } catch (e) {
       console.warn(
-        "[journey/answer] day-1 cadence trigger threw — non-fatal",
+        "[journey/answer] day-1 cadence trigger threw - non-fatal",
         e,
       );
     }

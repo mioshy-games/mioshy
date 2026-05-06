@@ -9,29 +9,29 @@
  * Schema notes (the reason this file is more verbose than its zod
  * schema implies):
  *
- *   sent_messages   — has NO couple_id column. We persist couple
+ *   sent_messages   - has NO couple_id column. We persist couple
  *                     context only via the recipient's couple_members
  *                     row. `to_address` is REQUIRED (the column drives
  *                     real email/SMS delivery in /api/engagement/tick),
  *                     so we look up the recipient's email up-front.
  *                     The 'channel' enum is ('email','sms','whatsapp',
- *                     'task','insight') — we use 'insight' for the
+ *                     'task','insight') - we use 'insight' for the
  *                     in-app coach-message variant.
  *
- *   journey_tasks   — also no couple_id. Has BILINGUAL columns
- *                     (title_he + title_en, body_he + body_en) — the
+ *   journey_tasks   - also no couple_id. Has BILINGUAL columns
+ *                     (title_he + title_en, body_he + body_en) - the
  *                     admin enters one language; we mirror it to both
  *                     so existing user UI (which reads per-locale)
  *                     never renders empty strings.
  *
- *   journey_assignments — XOR (user_id, couple_id). source_kind is a
+ *   journey_assignments - XOR (user_id, couple_id). source_kind is a
  *                         text discriminator ('item'|'category'|'program');
  *                         we always emit 'item' here because the form
  *                         only exposes item picking. anchor_date is
- *                         REQUIRED — we default to "now" when the admin
+ *                         REQUIRED - we default to "now" when the admin
  *                         doesn't pick a scheduled date.
  *
- * Reflection prompts share the journey_tasks table — there's no
+ * Reflection prompts share the journey_tasks table - there's no
  * separate "reflection" table. We tag them with a "[רפלקציה] / [Reflection]"
  * title prefix so the existing user inbox UI can either render them
  * specially OR just treat them as tasks-with-an-open-question.
@@ -149,7 +149,7 @@ async function resolveTargets(
     userIds = [bId];
   } else userIds = [aId, ...(bId ? [bId] : [])];
 
-  // Fetch emails in one round-trip — needed for sent_messages.to_address.
+  // Fetch emails in one round-trip - needed for sent_messages.to_address.
   const { data: profiles } = await admin
     .from("profiles")
     .select("id, email")
@@ -268,7 +268,7 @@ export async function sendIntervention(
   // ── ITEM ASSIGNMENT ─────────────────────────────────────────────────────────
   // journey_assignments enforces XOR(user_id, couple_id). For a "send to
   // both partners" we insert TWO rows (one user_id each), not a single
-  // couple_id row — that way each partner has its own per-user
+  // couple_id row - that way each partner has its own per-user
   // engagement state.
   else if (v.payload.kind === "item_assignment") {
     const itemId = v.payload.itemId;

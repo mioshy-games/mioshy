@@ -56,7 +56,7 @@ export function SnakesBoard({
   const cols = grid[0]?.length ?? 10;
   // `isRtl` is now passed as a PROP from the parent (SnakesGameBoard
   // pulls locale; admin preview defaults to false). Round 9 (2026-05-05)
-  // — was previously read here via useLocale() but that crashed on
+  // - was previously read here via useLocale() but that crashed on
   // /dashboard/snakes?tab=preview which doesn't sit inside an
   // IntlProvider tree.
   // Round 8 (2026-05-05) PERFORMANCE: previously the cell-under-token
@@ -66,7 +66,7 @@ export function SnakesBoard({
   // firing 6+ position updates per turn, the grid re-renders piled up
   // and the user only saw 1 visible hop instead of N. The highlight
   // is now rendered as an absolute overlay element in PlayersOverlay
-  // — its position updates without disturbing the static grid.
+  // - its position updates without disturbing the static grid.
 
   return (
     <div
@@ -83,7 +83,7 @@ export function SnakesBoard({
         className,
       )}
     >
-      {/* Velvet/silk noise texture overlay — barely visible, breaks up
+      {/* Velvet/silk noise texture overlay - barely visible, breaks up
           the gradient banding and gives the board a fabric-like surface. */}
       <div
         className="pointer-events-none absolute inset-0 rounded-3xl opacity-[0.06] mix-blend-overlay"
@@ -94,10 +94,10 @@ export function SnakesBoard({
         aria-hidden
       />
 
-      {/* Gold border sweep — REMOVED 2026-05-05 round 7 (PERFORMANCE).
+      {/* Gold border sweep - REMOVED 2026-05-05 round 7 (PERFORMANCE).
           The conic-gradient + mask-composite + @property animation was
           forcing the browser to repaint the entire 2px ring around the
-          board on every frame — measurable contributor to the 10s+ lag
+          board on every frame - measurable contributor to the 10s+ lag
           Itzik reported. The static gold border on the outer wrapper
           (already there via `border border-[#C9A961]/35`) carries the
           aesthetic without the animation cost. If we want a moving

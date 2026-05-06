@@ -4,7 +4,7 @@
  * lib/journey-content/clinician-responses.ts
  *
  * Server-side helpers for the clinician/expert view of user responses
- * to journey items. Phase 2C — read-only.
+ * to journey items. Phase 2C - read-only.
  *
  * Why service-role: partners only have SELECT on their own rows under
  * RLS (migration 035). The clinician dashboard has a legitimate need
@@ -49,7 +49,7 @@ export interface ClinicianResponseRow {
 
 /**
  * Pulls recent responses for a list of user_ids, ordered newest first.
- * Bounded — we don't paginate this view yet; the clinician should
+ * Bounded - we don't paginate this view yet; the clinician should
  * triage current rows and the inbox should stay short by virtue of
  * their workflow.
  */
@@ -150,7 +150,7 @@ export async function listClinicianResponsesForUsers(args: {
       ? isHe
         ? item.title_he
         : (item.title_en as string | null) || item.title_he
-      : "—";
+      : "-";
     const categoryName = cat
       ? isHe
         ? cat.name_he
@@ -162,7 +162,7 @@ export async function listClinicianResponsesForUsers(args: {
       scheduledItemId: scheduledId,
       userId: String(r.user_id),
       userEmail: userEmailsById.get(String(r.user_id)) ?? null,
-      itemTitle: itemTitle ?? "—",
+      itemTitle: itemTitle ?? "-",
       categoryName,
       responseText: String(r.response_text),
       isPrivate: !!r.is_private,

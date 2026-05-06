@@ -78,7 +78,7 @@ export default async function AdultsLandingPage({
   const { locale } = params;
   const isHe = locale === "he";
 
-  // Auth gate — logged-in visitors skip the marketing wrap and land
+  // Auth gate - logged-in visitors skip the marketing wrap and land
   // straight in the catalogue (categories + tags + cards). Anonymous
   // visitors still get the full Manifesto / Proof / FAQ / Closer story
   // because they're being introduced to the product for the first time.
@@ -157,7 +157,7 @@ export default async function AdultsLandingPage({
         />
         <AdultsAmbience />
         <main className="relative">
-          {/* Compact authed-user header — replaces the full marketing hero. */}
+          {/* Compact authed-user header - replaces the full marketing hero. */}
           <section className="px-4 pt-12 pb-4">
             <div className="mx-auto max-w-6xl">
               <div className="inline-flex items-center gap-2 rounded-full border border-fuchsia-300/30 bg-fuchsia-500/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-fuchsia-100">
@@ -234,7 +234,7 @@ export default async function AdultsLandingPage({
         <AdultsMarketingHero isHe={isHe} hero={hero} ctaHref="#catalogue" />
 
         {/* ════════════════════════════════════════════════════════════
-            LIGHT BAND — marketing sections (Manifesto, Proof, Catalogue
+            LIGHT BAND - marketing sections (Manifesto, Proof, Catalogue
             intro). These were redesigned for cream + dark text and read
             best on a light surface.
         ════════════════════════════════════════════════════════════ */}
@@ -250,7 +250,7 @@ export default async function AdultsLandingPage({
         </div>
 
         {/* ════════════════════════════════════════════════════════════
-            DARK BAND — categories / tags / cards UI is built explicitly
+            DARK BAND - categories / tags / cards UI is built explicitly
             for white-on-dark contrast (text-white/75, bg-white/5,
             border-white/15). On a light wrapper those classes vanish.
             We keep the storefront on the page's dark [#0a0410] surface.
@@ -267,7 +267,7 @@ export default async function AdultsLandingPage({
         </div>
 
         {/* ════════════════════════════════════════════════════════════
-            LIGHT BAND — FAQ (designed in light editorial style).
+            LIGHT BAND - FAQ (designed in light editorial style).
         ════════════════════════════════════════════════════════════ */}
         <div className="relative bg-[#FAF6F7] text-slate-900">
           <AdultsFaqSection isHe={isHe} />

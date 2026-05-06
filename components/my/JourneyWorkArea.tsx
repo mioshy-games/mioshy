@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * JourneyWorkArea — three lightweight tabs at the bottom of /my that
+ * JourneyWorkArea - three lightweight tabs at the bottom of /my that
  * show what the user has done, what's open right now, and what's
  * coming up. Day 3 of the redesign (docs/my-page-redesign-spec.md §0).
  *
@@ -9,9 +9,9 @@
  *   - Pure client-side filter on data the page already fetched.
  *   - No new fetches, no DB schema changes.
  *   - Only the Journey pillar contributes data here. Games and
- *     Adults are intentionally excluded — they are "light, point-in-
+ *     Adults are intentionally excluded - they are "light, point-in-
  *     time" services and don't have a process the user can review.
- *   - When there's no data yet, each tab shows a calm caption — never
+ *   - When there's no data yet, each tab shows a calm caption - never
  *     an error state.
  *
  * Future phases will:
@@ -26,13 +26,13 @@ import { Link } from "@/navigation";
 import { CheckCircle2, Clock, Sparkles, ArrowLeft, ArrowRight } from "lucide-react";
 
 export interface WorkAreaItem {
-  /** Stable id — the journey_scheduled_items.id. */
+  /** Stable id - the journey_scheduled_items.id. */
   id: string;
   /** Item title for the user (already localized server-side). */
   title: string;
   /** Category label, optional but recommended. */
   category: string | null;
-  /** "completed" / "available" / "locked" — derived on the server. */
+  /** "completed" / "available" / "locked" - derived on the server. */
   status: "completed" | "available" | "locked";
   /** Where to go on click. Locked items may pass null to disable. */
   href: string | null;
@@ -252,7 +252,7 @@ function EmptyHint({ tab, isHe }: { tab: TabKey; isHe: boolean }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// Time formatting — relative, never specific calendar dates per spec §4.
+// Time formatting - relative, never specific calendar dates per spec §4.
 // ─────────────────────────────────────────────────────────────────────
 
 function formatWhen(

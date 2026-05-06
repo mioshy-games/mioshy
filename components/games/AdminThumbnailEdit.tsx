@@ -9,8 +9,8 @@ import { updateGameThumbnailAction } from "@/app/actions/game-thumbnail";
  * Visible only on hover (parent card must have `group` class).
  *
  * Per Itzik 2026-05-06: catalogue thumbnails are per-locale because each
- * card carries baked-in copy. The popover therefore has TWO URL fields —
- * one for HE, one for EN — pre-filled with whatever's currently saved so
+ * card carries baked-in copy. The popover therefore has TWO URL fields -
+ * one for HE, one for EN - pre-filled with whatever's currently saved so
  * the admin can edit either independently. Saving sends both fields; the
  * server action only writes keys that actually changed (empty string
  * clears that locale).

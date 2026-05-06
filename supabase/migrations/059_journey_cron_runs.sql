@@ -1,6 +1,6 @@
 -- ============================================================
 -- 059_journey_cron_runs.sql
--- Slice 9 — observability log for the v3 cron family.
+-- Slice 9 - observability log for the v3 cron family.
 --
 -- Each cron writes one row on completion (success OR failure). The
 -- /dashboard/journey/health page reads recent rows to render the

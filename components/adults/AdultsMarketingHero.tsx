@@ -57,7 +57,7 @@ export function AdultsMarketingHero({
 }) {
   return (
     <section className="relative" dir={isHe ? "rt-" : "ltr"}>
-      {/* Hairline gradient rail at the very top — section rhythm. */}
+      {/* Hairline gradient rail at the very top - section rhythm. */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-rose-400/40 to-transparent"
@@ -79,7 +79,7 @@ export function AdultsMarketingHero({
         }}
       />
 -
-      {/* Breadcrumb — quiet, away from the headline. Tighter top
+      {/* Breadcrumb - quiet, away from the headline. Tighter top
           padding on mobile to remove the dead air the user flagged. */}
       <nav
         aria-label="breadcrumb"
@@ -95,7 +95,7 @@ export function AdultsMarketingHero({
       </nav>
 -
 
-      {/* ── DESKTOP edge cards — two only, brought closer to the headline.
+      {/* ── DESKTOP edge cards - two only, brought closer to the headline.
             start/end values bumped from 2% → 8% so the cards read as part
             of the headline cluster, not pinned to the screen edges.
             top values nudged ~30px down so the cards align with the
@@ -104,7 +104,7 @@ export function AdultsMarketingHero({
         aria-hidden
         className="pointer-events-none absolute inset-0 hidden lg:block"
       >-
-        {/* Card peek — start (right in RTL) edge.
+        {/* Card peek - start (right in RTL) edge.
             Position iterations: 8% → 4% (out to edges) → 6.5% (gentle pull
             back toward centre per user feedback). Aligned around the
             headline's vertical centre at top:200px. */}
@@ -121,11 +121,11 @@ export function AdultsMarketingHero({
             hint={isHe ? "שאלות שמפיגות מרחק" : "Prompts that close distance"}
             placeholderLabel={isHe ? "תמונת המשחק" : "Game artwork"}
             imageSrc="/images/woman-mioshy.webp"
-            imageAlt={isHe ? "מרגש — תמונת המשחק" : "Touching — game artwork"}
+            imageAlt={isHe ? "מרגש - תמונת המשחק" : "Touching - game artwork"}
           />
         </motion.div>
 
-        {/* Card peek — end (left in RTL) edge, slightly lower & opposite tilt */}
+        {/* Card peek - end (left in RTL) edge, slightly lower & opposite tilt */}
         <motion.div
           initial={{ y: -10, rotate: 8 }}
           animate={{ y: [-10, 10, -10], rotate: [8, 10, 8] }}
@@ -144,24 +144,24 @@ export function AdultsMarketingHero({
             hint={isHe ? "הזמנות לחוויה משותפת" : "Invitations into play"}
             placeholderLabel={isHe ? "תמונת המשחק" : "Game artwork"}
             imageSrc="/images/woman-sexy.webp"
-            imageAlt={isHe ? "מעורר — תמונת המשחק" : "Stirring — game artwork"}
+            imageAlt={isHe ? "מעורר - תמונת המשחק" : "Stirring - game artwork"}
           />
         </motion.div>
       </div>
 -
-      {/* ── CENTRE STAGE — copy + CTA.
+      {/* ── CENTRE STAGE - copy + CTA.
           Mobile redesign:
           - Top padding cut from pt-10 → pt-4 to remove dead air.
           - Headline capped at 40px on mobile so the long Hebrew
             second line ("חוויה מינית חדשה") doesn't break each
             word onto its own line. The previous 66px forced a 3-line
             wrap that looked broken; 40px keeps it on 1–2 lines.
-          - Kicker bumped to 13px (was 11px — unreadable).
+          - Kicker bumped to 13px (was 11px - unreadable).
           - Lede 17px (was 20px) so it breathes vs. the headline.
           - All vertical margins ~30% tighter to keep the CTA visible
             without scrolling on common phone heights. */}
       <div className="relative z-10 mx-auto max-w-3xl px-4 pb-10 pt-4 text-center sm:pb-14 sm:pt-14">
-        {/* Flagship + 18+ kicker — bigger text + wraps on tiny screens
+        {/* Flagship + 18+ kicker - bigger text + wraps on tiny screens
             so the divider line doesn't push pieces out of view. */}
         <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[13px] font-semibold uppercase tracking-[0.22em] sm:text-[11px] sm:tracking-[0.28em]">
           <span className="inline-flex items-center gap-1.5 text-rose-200/90">
@@ -175,7 +175,7 @@ export function AdultsMarketingHero({
         </div>
 
         {/* The statement. Two lines, second in italic SOLID rose-300.
-            (Was a 3-stop gradient via bg-clip-text — Hebrew italic letters
+            (Was a 3-stop gradient via bg-clip-text - Hebrew italic letters
             with descenders rendered with visible cropping artifacts on
             many browsers, same root cause as the homepage closer fix.
             Solid colour renders identically across UAs and avoids the
@@ -197,7 +197,7 @@ export function AdultsMarketingHero({
           </h1>
         </div>
 
-        {/* Lede — names the product type + the emotional payoff. */}
+        {/* Lede - names the product type + the emotional payoff. */}
         <p
           className="mx-auto mt-4 max-w-[300px] text-pretty text-[20px] leading-[1.5] text-white/85 sm:mt-7 sm:max-w-xl sm:text-[20px] sm:leading-[1.6] md:text-[22px]"
           style={{ fontFamily: "'Frank Ruhl Libre', serif", fontWeight: 500 }}
@@ -225,7 +225,7 @@ export function AdultsMarketingHero({
           )}
         </p>
 
-        {/* Mobile-only inline poster pair — sits between the lede and CTA,
+        {/* Mobile-only inline poster pair - sits between the lede and CTA,
             in document flow, replacing the prior absolute "edge peeks"
             that were overlapping the headline. Two cards side-by-side,
             slightly tilted toward each other, give the section visual
@@ -240,7 +240,7 @@ export function AdultsMarketingHero({
               tone="violet"
               Icon={Heart}
               imageSrc="/images/woman-mioshy.webp"
-              imageAlt={isHe ? "מרגש — תמונת המשחק" : "Touching — game artwork"}
+              imageAlt={isHe ? "מרגש - תמונת המשחק" : "Touching - game artwork"}
             />
           </div>
           <div className="h-[180px] w-[120px] rotate-[6deg]">
@@ -248,7 +248,7 @@ export function AdultsMarketingHero({
               tone="rose"
               Icon={Flame}
               imageSrc="/images/woman-sexy.webp"
-              imageAlt={isHe ? "מעורר — תמונת המשחק" : "Stirring — game artwork"}
+              imageAlt={isHe ? "מעורר - תמונת המשחק" : "Stirring - game artwork"}
             />
           </div>
         </div>
@@ -291,7 +291,7 @@ export function AdultsMarketingHero({
 
         {/* The tiny mobile edge cards now flank the headline at the
             top of the hero (see "MOBILE edge cards" block above), so
-            we no longer stack a large 2-card row under the CTA — that
+            we no longer stack a large 2-card row under the CTA - that
             duplicated space and pushed the catalogue offscreen. */}
       </div>
 
@@ -309,7 +309,7 @@ export function AdultsMarketingHero({
                keyframe gives a fast hot flash, a held bright phase as the
                spark moves outward, then a long fading trail. iteration-count:
                1 (forwards) so the burst-plays exactly once when the page
-               loads. Total duration 4s — matches the user's spec. */
+               loads. Total duration 4s - matches the user's spec. */
             @keyframes mio-hero-spark {
               0%   { transform: translate(0, 0) scale(0.3); opacity: 0; }
               4%   { transform: translate(0, 0) scale(1.4); opacity: 1; }
@@ -334,7 +334,7 @@ export function AdultsMarketingHero({
               animation: mio-hero-spark 4s cubic-bezier(0.18, 0.7, 0.25, 1) 1 forwards;
             }
 -
-            /* Central pulse flash — the bright halo at the burst origin.
+            /* Central pulse flash - the bright halo at the burst origin.
                Pops fast (peak at 6%) then expands + fades over the rest of
                the 4s. Plays once. */
             @keyframes mio-hero-flash {
@@ -351,7 +351,7 @@ export function AdultsMarketingHero({
               filter: blur(2px);
             }
 -
-            /* Reduced-motion fallback — instead of hiding the burst entirely
+            /* Reduced-motion fallback - instead of hiding the burst entirely
                (was opacity: 0 !important), give a brief static fade-in/out
                so the user still gets the visual cue without movement. */
             @keyframes mio-hero-static-flash {
@@ -380,13 +380,13 @@ export function AdultsMarketingHero({
 }
 
 // ──────────────-──────────────────────────────────────────────────────────────
-// HeroFireworks — small one-shot firework burst around the headline.
+// HeroFireworks - small one-shot firework burst around the headline.
 //
 // UX intent
 // ─────────
 // On page load, ~30 tiny coloured sparks burst outward from the headline's
 // centre, travelling up to 200-x before fading to zero. The whole burst lasts
-// 4 seconds and never repeats — it's a punctuation mark, not ambience.
+// 4 seconds and never repeats - it's a punctuation mark, not ambience.
 //
 // Implementation notes
 // ────────────────────
@@ -394,18 +394,18 @@ export function AdultsMarketingHero({
 //   properties (--dx / --dy) for their target offset so all 30 of them share
 //   one keyframe rule.
 // - Spark positions are deterministic (-ndex-based math, not Math.random())
-//   so SSR HTML and hydrated DOM agree — no React mismatch warnings.
+//   so SSR HTML and hydrated DOM agree - no React mismatch warnings.
 // - Honours `prefers-reduced-motion` (the keyframe rule disables itself).
 // ─────────────────────────────────────────────────────────────────────────────
 
-// HeroFireworks is currently unused — the on-load burst was disabled
+// HeroFireworks is currently unused - the on-load burst was disabled
 // when the hero copy was redesigned. Keeping the implementation in place
 // (instead of deleting) so we can re-enable it cheaply if the burst comes
 // back. The eslint-disable below tells lint to allow the dead function.
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function HeroFireworks() {
   const SPARK_COUNT = 36;
-  // Five tints — rose, fuchsia, amber, pink, white — to fit the dark palette.
+  // Five tints - rose, fuchsia, amber, pink, white - to fit the dark palette.
   // Hex literal so inline `box-shadow` colour can't be hijacked by an
   // inherited `currentColor` (the page wrapper sets `text-white`, which
   // would otherwise turn every glow halo white).
@@ -447,7 +447,7 @@ function HeroFireworks() {
       sparks: sparks.length,
       durationSec: 4,
       iteration: 1,
-      // First spark's computed dx/dy/tint — quick sanity check.
+      // First spark's computed dx/dy/tint - quick sanity check.
       firstSpark: sparks[0],
       // The origin in viewport coords is `wrapperRect.x + wrapperRect.width/2`
       // and `wrapperRect.y + wrapperRect.height/2` (because the wrapper itself
@@ -467,7 +467,7 @@ function HeroFireworks() {
       // making the burst near-invisible against its own light.
       className="pointer-events-none absolute left-1/2 top-1/2 z-[2] -translate-x-1/2 -translate-y-1/2"
     >-
-      {/* Central pulse flash — a large soft radial halo that pops bright at
+      {/* Central pulse flash - a large soft radial halo that pops bright at
           burst origin then expands and fades. This makes the firework
           impossible to miss even before individual sparks are noticed. */}
       <span
@@ -485,7 +485,7 @@ function HeroFireworks() {
         }}
       />
 -
-      {/* Individual sparks — fly outward from the same origin. */}
+      {/* Individual sparks - fly outward from the same origin. */}
       {sparks.map((s, i) => (
         <span
           key={i}
@@ -514,7 +514,7 @@ function HeroFireworks() {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// PosterCard — tarot/movie-poster aesthetic. NOT phone-shaped.
+// PosterCard - tarot/movie-poster aesthetic. NOT phone-shaped.
 //
 // Layout from top → bottom:
 //   1. tiny tone-coloured rail (Mioshy mark)
@@ -572,7 +572,7 @@ function PosterCard({
     <article
       className={`group flex h-full flex-col overflow-hidden rounded-[24px] border ${accent.ring} bg-[rgba(8,4,12,0.30)] p-3 backdrop-blur-xl ${accent.glow}`}
     >
-      {/* TOP ROW — single tight line: Mioshy mark + tone icon. No divider
+      {/* TOP ROW - single tight line: Mioshy mark + tone icon. No divider
           (was eating ~10px of vertical real estate that the artwork
           needed). */}
       <div className="flex items-center justify-between px-1 py-0.5">
@@ -585,7 +585,7 @@ function PosterCard({
         <Icon className={`h-3.5 w-3.5 ${accent.iconColor}`} />
       </div>
 
-      {/* ARTWORK ZONE — dominates the card. flex-1 + tight outer chrome
+      {/* ARTWORK ZONE - dominates the card. flex-1 + tight outer chrome
           gives the image roughly 90% of the card's vertical real estate. */}
       {imageSrc ? (
         <div className="relative mt-2 flex-1 overflow-hidden rounded-[16px] border border-white/10 bg-[rgba(255,255,255,0.02)]">
@@ -629,7 +629,7 @@ function PosterCard({
         </div>
       )}
 
-      {/* BOTTOM ROW — level + intensity dots on a single line, hint as a
+      {/* BOTTOM ROW - level + intensity dots on a single line, hint as a
           micro-caption beneath. The hairline divider that used to sit
           here was removed; the artwork edge already provides the visual
           break. */}
@@ -662,7 +662,7 @@ function PosterCard({
   );
 }
 
-// Tiny corner ticks inside the placeholder zone — subtle "frame" marks
+// Tiny corner ticks inside the placeholder zone - subtle "frame" marks
 // borrowed from photography contact sheets / printer crop marks. Helps
 // the placeholder read as "image frame" instead of "screen".
 function CornerTicks() {
@@ -684,11 +684,11 @@ function CornerTicks() {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// MobilePosterCard — same poster aesthetic, smaller, simpler. Replaces the
+// MobilePosterCard - same poster aesthetic, smaller, simpler. Replaces the
 // 3-up mobile row with a 2-up row for parity with desktop.
 // ─────────────────────────────────────────────────────────────────────────────
 
-// MiniPosterCard — mobile-only edge peek used to flank the headline.
+// MiniPosterCard - mobile-only edge peek used to flank the headline.
 // Tiny, decorative, no copy inside. Renders just the framed artwork
 // silhouette + a tone dot + a small icon. Sits behind the text via
 // pointer-events-none so it never blocks taps.
@@ -700,7 +700,7 @@ function MiniPosterCard({
 }: {
   tone: "violet" | "rose";
   Icon: typeof Heart;
-  /** Optional artwork — when present, replaces the dashed placeholder. */
+  /** Optional artwork - when present, replaces the dashed placeholder. */
   imageSrc?: string;
   imageAlt?: string;
 }) {

@@ -11,6 +11,7 @@ import { AdultGames } from "./AdultGames";
 import { Education } from "./Education";
 import { ForWhom } from "./ForWhom";
 import { Pricing } from "./Pricing";
+import { JourneyStages } from "./JourneyStages";
 import { FinalCTA } from "./FinalCTA";
 import { FAQ } from "./FAQ";
 
@@ -50,6 +51,7 @@ export function HomepageV2() {
       <Education />
       <ForWhom />
       <Pricing />
+      <JourneyStages />
       <FinalCTA />
       <FAQ />
     </div>

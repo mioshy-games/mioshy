@@ -18,7 +18,7 @@ import { cellToBoardPercent } from "@/lib/snakes/boardUtils";
  *
  * RTL handling (Itzik 2026-05-05):
  *   The board grid uses CSS dir=rtl in Hebrew so cells visually flip
- *   (cell 1 ends up on the LEFT in HE, on the RIGHT in EN — matching
+ *   (cell 1 ends up on the LEFT in HE, on the RIGHT in EN - matching
  *   reading direction). Absolute children using `left:` don't auto-flip
  *   with dir, so for RTL we mirror xPct as (100 - xPct). This keeps
  *   tokens anchored to the same visual cell in both locales.
@@ -83,7 +83,7 @@ export function PlayersOverlay({
         // never needs flipping (vertical axis isn't affected by dir).
         const visualX = isRtl ? 100 - center.xPct : center.xPct;
 
-        // Token sizing — Itzik 2026-05-05 round 7: previous 9% (alone)
+        // Token sizing - Itzik 2026-05-05 round 7: previous 9% (alone)
         // looked uncentered because the static halo box-shadow added
         // ~16px on every side, and on small cells the halo extended
         // beyond the cell border. Reduced to 7% / 5% so token + halo
@@ -99,7 +99,7 @@ export function PlayersOverlay({
         // ring fills it (so we don't need a per-grid-cell boxShadow that
         // would force the whole grid to re-render every walk step).
         // Badge is centered INSIDE the cell box. Anchor is the cell's
-        // CENTER — using framer-motion's `x: -50%, y: -50%` shorthand
+        // CENTER - using framer-motion's `x: -50%, y: -50%` shorthand
         // which integrates cleanly with motion's internal transforms.
         return (
           <motion.div
@@ -126,7 +126,7 @@ export function PlayersOverlay({
                   : { type: "spring", stiffness: 180, damping: 22, mass: 0.9 }
             }
           >
-            {/* Cell highlight ring — fills the parent cell box. Renders
+            {/* Cell highlight ring - fills the parent cell box. Renders
                 in the overlay, NOT on the grid cells, so the grid stays
                 static while the highlight travels with the token. */}
             <span
@@ -164,7 +164,7 @@ function offsetForIndex(i: number, total: number): { x: number; y: number } {
   if (total <= 1) return { x: 0, y: 0 };
   // Two tokens → side-by-side inside the cell. Each cell is ~10% wide
   // on a 10×10 board, so a horizontal radius of 1.8% places tokens at
-  // -1.8% / +1.8% from cell center — both well inside the same cell.
+  // -1.8% / +1.8% from cell center - both well inside the same cell.
   if (total === 2) {
     return { x: i === 0 ? -1.8 : 1.8, y: 0 };
   }
@@ -202,10 +202,10 @@ function PlayerBadge({
   // (transform-only scale) to mark whose turn it is.
   return (
     <div className="relative h-full w-full" title={name}>
-      {/* Static outer halo — round 7 (2026-05-05): tightened so the
+      {/* Static outer halo - round 7 (2026-05-05): tightened so the
           halo stays inside the cell. Previous 16px outer glow extended
           past the cell border, making the token look "below" the cell
-          instead of centered. Now 6px max — visible but contained. */}
+          instead of centered. Now 6px max - visible but contained. */}
       <span
         aria-hidden
         className="absolute inset-0 rounded-full"
@@ -227,7 +227,7 @@ function PlayerBadge({
         />
       ) : null}
 
-      {/* Heart token — gradient fill, gold rim, deeper shadow.
+      {/* Heart token - gradient fill, gold rim, deeper shadow.
           Replaces the previous flat-color coin per Itzik 2026-05-05. */}
       <div
         className="relative flex h-full w-full items-center justify-center rounded-full border-2 shadow-[0_10px_28px_-6px_rgba(0,0,0,0.75)]"
@@ -238,7 +238,7 @@ function PlayerBadge({
           `,
         }}
       >
-        {/* Inner ring of gold — barely visible, ties the token to the
+        {/* Inner ring of gold - barely visible, ties the token to the
             board's gold accent palette. */}
         <span
           aria-hidden

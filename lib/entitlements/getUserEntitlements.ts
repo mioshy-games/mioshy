@@ -5,7 +5,7 @@
 // Callers: /my hub, gallery pages, header links, middleware-style
 // guards. Keep this purely read-only and fast (≤ 3 queries).
 //
-// v3 slice 5 — added detailed `journeyState` so UI can distinguish
+// v3 slice 5 - added detailed `journeyState` so UI can distinguish
 // active / grace / blocked. The legacy `journey: boolean` is kept
 // as an adapter (true when state ∈ {active, grace}, false otherwise)
 // so older call sites that just need a yes/no continue to work.
@@ -16,20 +16,20 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 export type PillarKey = "games" | "journey" | "adults";
 
 /**
- * v3 slice 5 — three-state journey entitlement (plus null = "never
+ * v3 slice 5 - three-state journey entitlement (plus null = "never
  * subscribed / past-due / frozen / fully cancelled").
  *
- *   'active'  — full access. Cadence engine materializes new items.
- *   'grace'   — 14-day natural-expiry window. Past content stays
+ *   'active'  - full access. Cadence engine materializes new items.
+ *   'grace'   - 14-day natural-expiry window. Past content stays
  *               accessible (read-only completion + threads still
  *               work); cadence engine PAUSES new materialization;
  *               banner asks the user to renew.
- *   'blocked' — grace expired without renewal. Locked screen takes
+ *   'blocked' - grace expired without renewal. Locked screen takes
  *               over /journey, /my/journey, /journey/timeline.
  *               Renewal restores everything from where the user was.
  *
  * `null` means there's no journey-product subscription row at all
- * (or the row is in a non-grace inactive state like past_due) — the
+ * (or the row is in a non-grace inactive state like past_due) - the
  * legacy "המסע נעול - בינתיים" locked screen renders for those users
  * via the existing `if (!entitlements.journey)` gate.
  */
@@ -44,9 +44,9 @@ export interface UserEntitlements {
   games: boolean;
   journey: boolean;
   adults: boolean;
-  /** v3 slice 5 — detailed journey state. Null = no journey sub at all. */
+  /** v3 slice 5 - detailed journey state. Null = no journey sub at all. */
   journeyState: JourneyEntitlementState | null;
-  /** v3 slice 5 — ISO timestamp when grace ends (i.e. when the
+  /** v3 slice 5 - ISO timestamp when grace ends (i.e. when the
    *  grace-watcher cron will stamp journey_blocked_at). The banner
    *  uses this to show "X days remaining". Null when not in grace
    *  AND not blocked. */
@@ -94,7 +94,7 @@ export async function getUserEntitlements(
   // ── Subscriptions per pillar ───────────────────────────────────────────
   // We pull both 'active' and 'grace' rows: 'grace' is the v3 journey
   // soft-expiry window (status stays 'grace' even after journey_blocked_at
-  // is stamped — the blocked-vs-grace distinction lives on the columns,
+  // is stamped - the blocked-vs-grace distinction lives on the columns,
   // not on the status enum, per Itzik's slice 5 brief).
   const { data: subs } = await supabase
     .from("subscriptions")
@@ -136,7 +136,7 @@ export async function getUserEntitlements(
     if (s.status !== "active") continue;
     if (s.current_period_end) {
       const end = new Date(s.current_period_end as string).getTime();
-      if (end <= now) continue; // past period_end without grace flip yet — treat as inactive
+      if (end <= now) continue; // past period_end without grace flip yet - treat as inactive
     }
     journeyState = "active";
     break;
@@ -155,7 +155,7 @@ export async function getUserEntitlements(
     }
   }
 
-  // Coaching subscription ("journey") implicitly grants games access — per
+  // Coaching subscription ("journey") implicitly grants games access - per
   // the product spec, paying for the higher-tier coaching includes the
   // lower-tier games library at no extra cost. During the 14-day grace
   // window we keep that bonus active too (read-only experience matches

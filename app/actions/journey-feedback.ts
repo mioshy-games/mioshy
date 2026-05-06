@@ -6,7 +6,7 @@
  * Server actions for the clinical-feedback layer (journey_feedback).
  * All actions are admin-gated. Writes go through the service-role
  * client because the table's RLS policy requires admin_author_id
- * to equal auth.uid() — which Supabase RLS evaluates against the
+ * to equal auth.uid() - which Supabase RLS evaluates against the
  * cookie session, not the service-role JWT. So we VERIFY the admin
  * via the cookie session, then write via service role with the
  * verified user id stamped onto admin_author_id.
@@ -130,7 +130,7 @@ export async function createFeedback(
 
   if (error) return { ok: false, error: error.message };
 
-  // Re-render the most likely consumers — list page + couple workspace.
+  // Re-render the most likely consumers - list page + couple workspace.
   revalidatePath("/dashboard/journey/feedback");
   if (v.coupleId) revalidatePath(`/dashboard/my-clients/${v.coupleId}`);
   if (v.userId) revalidatePath(`/dashboard/users/${v.userId}`);
@@ -161,7 +161,7 @@ export async function updateFeedback(
   const admin = createServiceRoleClient();
   if (!admin) return { ok: false, error: "service_role_unavailable" };
 
-  // Build a partial update — only fields the caller actually passed.
+  // Build a partial update - only fields the caller actually passed.
   const patch: Record<string, unknown> = {};
   if (v.shortSummary !== undefined) patch.short_summary = v.shortSummary.trim();
   if (v.extendedText !== undefined)
@@ -172,11 +172,11 @@ export async function updateFeedback(
   if (v.questionId !== undefined) patch.question_id = v.questionId;
 
   if (Object.keys(patch).length === 0) {
-    // Nothing to update — treat as success (UI calls onClose anyway)
+    // Nothing to update - treat as success (UI calls onClose anyway)
     return { ok: true };
   }
 
-  // We need couple_id / user_id to revalidate the right pages — pull
+  // We need couple_id / user_id to revalidate the right pages - pull
   // them in the same round trip as the update.
   const { data: row, error } = await admin
     .from("journey_feedback")

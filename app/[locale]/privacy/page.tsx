@@ -1,5 +1,5 @@
 /**
- * /[locale]/privacy — Privacy Policy.
+ * /[locale]/privacy - Privacy Policy.
  *
  * Server component; reads content from `legal.privacy` namespace.
  */

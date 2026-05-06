@@ -1,4 +1,4 @@
-# Journey Content System — Discovery Report (v3 spec)
+# Journey Content System - Discovery Report (v3 spec)
 
 **Status:** Discovery only. No code or schema changes proposed for execution yet.
 **Author:** Claude, 2026-05-02.
@@ -9,7 +9,7 @@
 
 ## 0. TL;DR
 
-The codebase is **much further along than the spec assumes**. Programs / categories / items / assignments / scheduled-items / completions / responses / clinician-feedback / per-couple inspector / KPI page / CSV import + export / hourly unlock-notification cron — **all shipped**. Sidebar entries under `/dashboard/journey` are wired and styled. Drag-and-drop is the only "missing pillar" people will see at a glance.
+The codebase is **much further along than the spec assumes**. Programs / categories / items / assignments / scheduled-items / completions / responses / clinician-feedback / per-couple inspector / KPI page / CSV import + export / hourly unlock-notification cron - **all shipped**. Sidebar entries under `/dashboard/journey` are wired and styled. Drag-and-drop is the only "missing pillar" people will see at a glance.
 
 The real gaps are conceptual, not surface area:
 
@@ -24,7 +24,7 @@ The real gaps are conceptual, not surface area:
 9. **Grace period is 7 days, not 14, and only fires on payment failure.** [`lib/billing.ts:82`](lib/billing.ts:82) sets `GRACE_PERIOD_DAYS = 7`; `subscriptions.grace_until` is touched only by the renewal cron. No "subscription expiry → pause cadence + 14-day grace" path exists.
 10. **No threaded per-item chat or general expert channel.** [`journey_item_responses`](supabase/migrations/035_journey_content_system.sql) is append-only with a single optional `clinician_reply_text` field (migration 049). [`journey_user_messages`](supabase/migrations/051_journey_user_messages.sql) is one-way fire-and-forget. The spec wants two-way threaded conversations on both surfaces.
 11. **Five categories are hardcoded** in [`lib/journey/priorities.ts:14`](lib/journey/priorities.ts:14) (`PRIORITY_KEYS = ["communication","intimacy","emotional_connection","friendship","family"]`). They must move into `journey_categories` as seed data so admin can edit/translate them.
-12. **No live stats sidebar in catalog editor.** [`/dashboard/journey-analytics`](app/dashboard/journey-analytics/page.tsx) gives platform-wide KPIs. Per-item "queued / delivered / completion rate" while editing — not yet.
+12. **No live stats sidebar in catalog editor.** [`/dashboard/journey-analytics`](app/dashboard/journey-analytics/page.tsx) gives platform-wide KPIs. Per-item "queued / delivered / completion rate" while editing - not yet.
 
 The good news: every gap is additive on top of a clean foundation. **No throwaway needed**, no parallel system, no rewrite. We extend the existing schema, swap couple-centric resolution for per-partner resolution, and bolt on a queue-generator + cadence cron + drag-reorder UI + groups + threaded chat.
 
@@ -32,7 +32,7 @@ The good news: every gap is additive on top of a clean foundation. **No throwawa
 
 ## 1. Branch & worktree note (read first)
 
-The harness placed me in worktree `claude/jolly-volhard-2decee` at `faf92e6` — that branch is rooted in a near-empty 2-commit history and does **not** contain any of the journey work. The live `game` branch is at `c5fe1bb` with all the migrations and admin pages this report inventories. All discovery was performed against `/Users/uxellent/mioshy` (the main checkout). Before any implementation lands, the worktree must be reset onto `game`'s tip, or implementation should happen directly in main. Flagging now so this doesn't bite us at PR time.
+The harness placed me in worktree `claude/jolly-volhard-2decee` at `faf92e6` - that branch is rooted in a near-empty 2-commit history and does **not** contain any of the journey work. The live `game` branch is at `c5fe1bb` with all the migrations and admin pages this report inventories. All discovery was performed against `/Users/uxellent/mioshy` (the main checkout). Before any implementation lands, the worktree must be reset onto `game`'s tip, or implementation should happen directly in main. Flagging now so this doesn't bite us at PR time.
 
 ---
 
@@ -62,13 +62,13 @@ For each area: **what exists / where / maturity**. Maturity is `production` (shi
 | `053_journey_user_scores.sql` | Derived per-user adaptive signals | partial (no recompute job in vercel.json yet) |
 
 Couple model (verbatim):
-- [`couples`](supabase/migrations/029_between_us_section.sql) — `id, pair_code, created_by, display_name, is_active`.
-- [`couple_members`](supabase/migrations/029_between_us_section.sql) — `couple_id, user_id, role ∈ {owner, partner}`, UNIQUE(couple_id, user_id).
+- [`couples`](supabase/migrations/029_between_us_section.sql) - `id, pair_code, created_by, display_name, is_active`.
+- [`couple_members`](supabase/migrations/029_between_us_section.sql) - `couple_id, user_id, role ∈ {owner, partner}`, UNIQUE(couple_id, user_id).
 - Two distinct `auth.users` rows linked through `couple_members`. **Per-partner queues are schema-friendly today** (assignments can be `user_id`-scoped); the application layer is what biases toward couple resolution.
 
 Subscription / entitlement schema:
-- [`subscriptions`](supabase/migrations/012_leads_and_subscriptions.sql) carries `status ∈ {active, paused, canceled, cancelled, expired, past_due, blocked}`, `current_period_end`, `next_billing_date`, `grace_until` (set on payment failure only — *not* on natural expiry), `failed_attempts`, `product`.
-- [`getUserEntitlements()`](lib/entitlements/getUserEntitlements.ts) returns `{ games, journey, adults, anyPillar, pillarCount }`. It only checks `status='active' AND current_period_end > now()`. **No grace-window logic in the entitlement check** — once `current_period_end` passes, the user is dropped immediately.
+- [`subscriptions`](supabase/migrations/012_leads_and_subscriptions.sql) carries `status ∈ {active, paused, canceled, cancelled, expired, past_due, blocked}`, `current_period_end`, `next_billing_date`, `grace_until` (set on payment failure only - *not* on natural expiry), `failed_attempts`, `product`.
+- [`getUserEntitlements()`](lib/entitlements/getUserEntitlements.ts) returns `{ games, journey, adults, anyPillar, pillarCount }`. It only checks `status='active' AND current_period_end > now()`. **No grace-window logic in the entitlement check** - once `current_period_end` passes, the user is dropped immediately.
 
 **Maturity overall: production for the core relational schema, missing for subtopics/groups/threads/per-partner-cadence/grace.**
 
@@ -80,15 +80,15 @@ Routes under [`app/dashboard/journey/`](app/dashboard/journey/):
 |---|---|---|---|
 | `/dashboard/journey` | `page.tsx` | Landing with KPI cards + program/category previews + import/export tools | production |
 | `/dashboard/journey/programs` | `programs/page.tsx` | Programs table | production |
-| `/dashboard/journey/programs/new`, `/[id]` | — | Create / edit program | production |
+| `/dashboard/journey/programs/new`, `/[id]` | - | Create / edit program | production |
 | `/dashboard/journey/categories` | `categories/page.tsx` | Categories table with item counts | production |
-| `/dashboard/journey/categories/new`, `/[id]` | — | Create / edit category | production |
+| `/dashboard/journey/categories/new`, `/[id]` | - | Create / edit category | production |
 | `/dashboard/journey/items` | `items/page.tsx` | Items table + category filter pills | production |
-| `/dashboard/journey/items/new`, `/[id]` | — | Create / edit item | production |
+| `/dashboard/journey/items/new`, `/[id]` | - | Create / edit item | production |
 | `/dashboard/journey/assignments` | `assignments/page.tsx` | All assignments table | production |
-| `/dashboard/journey/assignments/new`, `/[id]` | — | Create / inspect assignment | production |
+| `/dashboard/journey/assignments/new`, `/[id]` | - | Create / inspect assignment | production |
 | `/dashboard/journey/clients` | `clients/page.tsx` | Searchable per-owner roster with stats | production |
-| `/dashboard/journey/clients/[ownerKey]` | — | Per-owner control panel: timeline + nudge/cancel actions | production |
+| `/dashboard/journey/clients/[ownerKey]` | - | Per-owner control panel: timeline + nudge/cancel actions | production |
 | `/dashboard/journey/feedback` | `feedback/page.tsx` | Admin clinical notes inbox with filters | production |
 | `/dashboard/journey/import` (POST) | `import/route.ts` | Multipart CSV upload, three-tier parse (programs/categories/items) | production |
 | `/dashboard/journey/export` (GET) | `export/route.ts` | Returns ZIP of 4 CSVs with full fidelity | production |
@@ -97,11 +97,11 @@ Routes under [`app/dashboard/journey/`](app/dashboard/journey/):
 
 Admin chrome: [`app/dashboard/layout.tsx`](app/dashboard/layout.tsx) calls `requireExpert()`; per-page `requireAdmin()` enforces admin-only routes via [`lib/auth/admin.ts`](lib/auth/admin.ts). Sidebar in [`components/dashboard/Sidebar.tsx`](components/dashboard/Sidebar.tsx) has a Journey group with all six children.
 
-Form pattern (representative): [`CategoryForm.tsx`](components/dashboard/journey/CategoryForm.tsx) — `react-hook-form` + `zodResolver(journeyCategorySchema)` + Sonner toasts + server action `saveJourneyCategory()`. All forms follow this template.
+Form pattern (representative): [`CategoryForm.tsx`](components/dashboard/journey/CategoryForm.tsx) - `react-hook-form` + `zodResolver(journeyCategorySchema)` + Sonner toasts + server action `saveJourneyCategory()`. All forms follow this template.
 
 CSV layer: [`lib/csv-journey.ts`](lib/csv-journey.ts) defines `parsePrograms/Categories/ItemsCsv()` (auto-detects the first column header to dispatch) and `buildPrograms/Categories/Items/AssignmentsCsv()`. Already returns a `JourneyImportSummary` with row-level skip reasons.
 
-Per-couple inspector: [`/dashboard/my-clients/[coupleId]/page.tsx`](app/dashboard/my-clients/[coupleId]/page.tsx) shows partner split + recent activity + assignment form + [`SendInterventionModule`](components/dashboard/journey/SendInterventionModule.tsx) (push message/task/reflection/item to one or both partners — but lands instantly, not on next delivery day).
+Per-couple inspector: [`/dashboard/my-clients/[coupleId]/page.tsx`](app/dashboard/my-clients/[coupleId]/page.tsx) shows partner split + recent activity + assignment form + [`SendInterventionModule`](components/dashboard/journey/SendInterventionModule.tsx) (push message/task/reflection/item to one or both partners - but lands instantly, not on next delivery day).
 
 **Missing under `/dashboard` (verified by Explore):** subtopic CRUD, drag-reorder UI (any axis), groups CRUD, group bulk-assign / broadcast, push-with-delivery-slot, live per-item stats sidebar, scheduler health board, manual "unlock now" button.
 
@@ -126,7 +126,7 @@ Component leaderboard:
 
 Per-partner separation today: [`lib/journey-content/owner.ts:52`](lib/journey-content/owner.ts:52) `preferCoupleOwner()` resolves to the couple if one exists, else to the user. This is the call that the v3 spec wants reversed: **always per-partner**, with couple as a *view*.
 
-`scheduled_items.audience ∈ {both, owner, partner}` already partitions visibility, so the schema can support per-partner queues without churn — we just stop materializing couple-owned assignments for the new product.
+`scheduled_items.audience ∈ {both, owner, partner}` already partitions visibility, so the schema can support per-partner queues without churn - we just stop materializing couple-owned assignments for the new product.
 
 ### 2.4 Assessment flow + ranking
 
@@ -148,12 +148,12 @@ I recommend **A**: zero churn for users mid-flow, the data already exists, and t
 
 - Two `auth.users` rows linked through `couple_members` with explicit owner/partner roles.
 - Invitation flow: [`inviteCouplePartnerByEmail()`](app/actions/couple-invitations.ts) emits a Brevo email with a `/[locale]/invite/[token]` link; partner claims via [`claimInviteAsNewUser()` or `claimInviteAsExistingUser()`](app/actions/invite-claim.ts), then RPC `acceptInvitationForCurrentUser` writes the partner row.
-- [`profiles`](supabase/migrations/001_admin_schema.sql) has **no** `partner_id`, **no** locale preference, **no** schedule/delivery-day preferences. The v3 spec wants user-chosen Mon/Wed defaults — that's a new column or sidecar table.
+- [`profiles`](supabase/migrations/001_admin_schema.sql) has **no** `partner_id`, **no** locale preference, **no** schedule/delivery-day preferences. The v3 spec wants user-chosen Mon/Wed defaults - that's a new column or sidecar table.
 
 ### 2.6 Subscription, billing, entitlements, grace
 
 - Cardcom callback handler [`app/api/billing/cardcom/indicator/route.ts`](app/api/billing/cardcom/indicator/route.ts) updates `subscriptions` rows on payment success / failure. Sets `grace_until = now + 7 days` only on charge failure.
-- Daily renewal cron [`app/api/billing/renewals/run/route.ts`](app/api/billing/renewals/run/route.ts) (06:00 UTC, secured with `CARDCOM_BILLING_CRON_SECRET`) charges due subscriptions, sets/clears `grace_until` based on outcome. **No code path expires a subscription on `current_period_end` without a failed charge attempt** — i.e., a subscription that simply isn't renewed because the payment method was removed or the user cancelled never gets a "soft expiry → grace → block" treatment.
+- Daily renewal cron [`app/api/billing/renewals/run/route.ts`](app/api/billing/renewals/run/route.ts) (06:00 UTC, secured with `CARDCOM_BILLING_CRON_SECRET`) charges due subscriptions, sets/clears `grace_until` based on outcome. **No code path expires a subscription on `current_period_end` without a failed charge attempt** - i.e., a subscription that simply isn't renewed because the payment method was removed or the user cancelled never gets a "soft expiry → grace → block" treatment.
 - [`getUserEntitlements()`](lib/entitlements/getUserEntitlements.ts) does a naïve `current_period_end > now()` check. No grace handling.
 
 **Spec gap.** The v3 spec wants:
@@ -162,16 +162,16 @@ I recommend **A**: zero churn for users mid-flow, the data already exists, and t
 - After 14 days, full block.
 - Renewal restores; queue is preserved (frozen, not deleted).
 
-This means three additions: (a) an "expiry watcher" that sets `grace_until = now + 14d` when `current_period_end` passes without renewal, (b) a `journey_pause_until` flag (or compute from `grace_until`) that the cadence cron respects, (c) entitlement gate that returns three states — `active / grace / blocked` — not just a boolean.
+This means three additions: (a) an "expiry watcher" that sets `grace_until = now + 14d` when `current_period_end` passes without renewal, (b) a `journey_pause_until` flag (or compute from `grace_until`) that the cadence cron respects, (c) entitlement gate that returns three states - `active / grace / blocked` - not just a boolean.
 
 ### 2.7 Delivery / scheduling engine
 
-- Hourly Vercel cron `/api/journey/notify-unlocks` (at `:15`) → [`notify-unlocks.ts`](lib/journey-content/notify-unlocks.ts) — scans `journey_scheduled_items` where `unlock_at <= now AND notified_at IS NULL`, sends Brevo emails, sets `notified_at`.
+- Hourly Vercel cron `/api/journey/notify-unlocks` (at `:15`) → [`notify-unlocks.ts`](lib/journey-content/notify-unlocks.ts) - scans `journey_scheduled_items` where `unlock_at <= now AND notified_at IS NULL`, sends Brevo emails, sets `notified_at`.
 - Daily renewal cron at 06:00 UTC.
 - Daily invoice repair at 06:30 UTC.
 - 5-minute engagement tick at [`/api/engagement/tick`](app/api/engagement/tick/route.ts) (NOT in `vercel.json`; expects external trigger). Processes `engagement_schedules`.
 
-**No queue advancer** — i.e., nothing reads "what should this user receive on their next delivery day?" and inserts a new `scheduled_items` row. Today the entire schedule is materialized at assignment time using `default_offset_days` per item.
+**No queue advancer** - i.e., nothing reads "what should this user receive on their next delivery day?" and inserts a new `scheduled_items` row. Today the entire schedule is materialized at assignment time using `default_offset_days` per item.
 
 The v3 spec needs a **rolling cadence engine**:
 - Every X interval (probably daily near each user's preferred delivery hour), look at users whose next delivery day is today.
@@ -207,7 +207,7 @@ Spec gap: in-app notifications + reminder rules + admin failure alerts are all m
 - `next-intl` v4. Locales `he` (default) + `en`. Locale prefix `always`. Geolocation-aware redirect from `/`.
 - Messages in single big `messages/he.json` + `messages/en.json` (851 lines each), 19 namespaces. `journeyHub` namespace has ~413 keys for the marketing page.
 - **Convention:** Database content uses *separate `_he` / `_en` columns* (not jsonb). Every journey table follows this.
-- Most assessment/dashboard inline strings are `isHe ? "..." : "..."` rather than `t()` calls — workable, but new admin UI strings should join `messages/*.json` under a `dashboardJourney` namespace for consistency.
+- Most assessment/dashboard inline strings are `isHe ? "..." : "..."` rather than `t()` calls - workable, but new admin UI strings should join `messages/*.json` under a `dashboardJourney` namespace for consistency.
 - RTL handled per-component via `dir={isHe ? "rtl" : "ltr"}` and CSS `[dir="rtl"]` font-family overrides in [`app/globals.css`](app/globals.css).
 
 ### 2.11 Existing content materials (non-DB)
@@ -238,7 +238,7 @@ The Google Sheet is unreferenced from code. Per spec, it must become an importab
 | Spec point | Status | Notes / file |
 |---|---|---|
 | Items in a generic pool (one category, optional subtopic, type, est. minutes, prereqs, tags, HE+EN body) | ~ partial | Items exist but **no subtopic FK, no est. minutes, no prereqs, no tag array, no `kind` of "type"**. `kind` already exists (content/assessment/reflection) but it's content shape, not the "type" the spec means. |
-| Versioning (edits don't mutate delivered copies) | ✓ exists in spirit | Per the v2 design, scheduled_items references `items.id` (FK, no copy). Edits flow through. Spec says "versioning" but we currently have *retroactive update* — Itzik to confirm whether immutable snapshots are needed. |
+| Versioning (edits don't mutate delivered copies) | ✓ exists in spirit | Per the v2 design, scheduled_items references `items.id` (FK, no copy). Edits flow through. Spec says "versioning" but we currently have *retroactive update* - Itzik to confirm whether immutable snapshots are needed. |
 | CSV import endpoint with upsert + error report | ✓ exists | [`/dashboard/journey/import`](app/dashboard/journey/import/route.ts) with `JourneyImportSummary`. Three-tier (programs/categories/items). Needs subtopic tier + new fields. |
 | CSV export endpoint | ✓ exists | [`/dashboard/journey/export`](app/dashboard/journey/export/route.ts) returns ZIP. |
 | Stable `item_id` for upsert | ✓ exists | Items have UUID primary key, exported. |
@@ -252,7 +252,7 @@ The Google Sheet is unreferenced from code. Per spec, it must become an importab
 | Items inside subtopic, drag-reorder | ✗ missing | Items live directly under categories today. |
 | Two-level drag-and-drop (subtopics within category, items within subtopic) | ✗ missing | No DnD library installed for admin (`framer-motion` exists but unused there). |
 | Reorder affects only future queue picks | ~ depends on engine | Today's "queue" is materialized at assignment time; the dedup-on-skip rule only matters once the rolling engine exists. |
-| Filterable admin table with inline editing | ~ partial | Tables exist, filter pills exist on items page, **inline editing does not** — edits go to a separate `[id]` page. |
+| Filterable admin table with inline editing | ~ partial | Tables exist, filter pills exist on items page, **inline editing does not** - edits go to a separate `[id]` page. |
 | Bulk import / export | ✓ exists | See A above. |
 | Live stats sidebar per item (queued / delivered / completion / skip rate) | ✗ missing | KPIs page exists but is platform-wide, not per-item. |
 
@@ -285,7 +285,7 @@ Entirely new infrastructure. Schema sketch in §4.
 |---|---|---|
 | Admin pushes item(s) to user / couple / group | ~ partial | Per-couple via [`SendInterventionModule`](components/dashboard/journey/SendInterventionModule.tsx). No per-user (without couple), no per-group. |
 | Push lands at recipient's next scheduled day, not instantly | ✗ missing | Current flow inserts assignment + scheduled_item with `unlock_at = now`. |
-| Surface marked "from your coach / מהמומחה שלכם" | ✗ missing | No UI tag for push origin. (Schema has `assignment.origin` — usable.) |
+| Surface marked "from your coach / מהמומחה שלכם" | ✗ missing | No UI tag for push origin. (Schema has `assignment.origin` - usable.) |
 | Push is additive (doesn't replace cadence) | ~ depends on engine | Trivial once the engine exists. |
 
 ### F. Feedback & expert chat
@@ -313,7 +313,7 @@ Entirely new infrastructure. Schema sketch in §4.
 | Pause cadence on expiry | ✗ missing | No expiry watcher; cadence engine doesn't exist either. |
 | Past content accessible during 14d grace | ~ partial | Past content is accessible while subscription is active; entitlement gate flips to false the moment `current_period_end` passes. No grace window. |
 | 14d block | ✗ missing | Current grace is 7d, only on payment failure. |
-| Banner everywhere ("מנוי פג — חידוש פותח את הכל") | ✗ missing | `SubscriptionStatusBanner` exists for assessment-missing recovery, not for expiry. |
+| Banner everywhere ("מנוי פג - חידוש פותח את הכל") | ✗ missing | `SubscriptionStatusBanner` exists for assessment-missing recovery, not for expiry. |
 | Renewal restores from where user was | ~ schema-ready | Queue + history preserved by virtue of being separate tables; cadence resumption logic is what's missing. |
 
 ### I. Admin monitoring
@@ -489,9 +489,9 @@ ALTER TABLE public.subscriptions
 
 **Library choice.** `@dnd-kit/core` + `@dnd-kit/sortable`. Reasons over framer-motion `Reorder`: nested sortables (subtopics within category; items within subtopic), accessible by default (keyboard + screen reader), small bundle, RTL-aware. `framer-motion` stays in the user-facing `PriorityRankingStep`.
 
-**Storage.** `sort_order` (existing) `int4`. We store sparse spacing — initialize at multiples of 1000 — and reorder by recomputing the moved row's value as the average of its new neighbors. When the gap collapses, a server action rebalances the whole list (rare). This avoids cascading row updates on every drag.
+**Storage.** `sort_order` (existing) `int4`. We store sparse spacing - initialize at multiples of 1000 - and reorder by recomputing the moved row's value as the average of its new neighbors. When the gap collapses, a server action rebalances the whole list (rare). This avoids cascading row updates on every drag.
 
-**Atomicity.** Single server action `reorderJourneyChildren({ parentKind, parentId, childKind, orderedIds })` — wraps the rebalance in a transaction, validates ownership, returns the new order.
+**Atomicity.** Single server action `reorderJourneyChildren({ parentKind, parentId, childKind, orderedIds })` - wraps the rebalance in a transaction, validates ownership, returns the new order.
 
 **Computing "next item for user X at slot Y."** Engine pseudocode (per-partner):
 
@@ -519,7 +519,7 @@ Three crons in `vercel.json`:
 | `/api/journey/grace-watcher` *(new)* | `0 * * * *` | For each subscription where `current_period_end < now AND status='active'`: set `status='expired'`, `journey_grace_until = now + 14d`. For each where `journey_grace_until < now AND journey_blocked_at IS NULL`: set `journey_blocked_at = now`. |
 | `/api/journey/scores/recompute` *(promote existing)* | `0 4 * * *` | Recompute `journey_user_scores`. Currently lacks a cron entry. |
 
-**Defense.** Vercel cron is what's already in use; reliability is fine for "every 15 min" granularity; `notified_at` and `journey_user_delivered_items` PRIMARY KEY make every job idempotent. Supabase `pg_cron` is an option but the codebase has zero precedent and the queries are cheap enough to keep app-side. Edge runtime is *not* a fit (DB-heavy, batch-oriented) — Node functions, 5-min timeout, Bearer-token-secured exactly like the existing crons.
+**Defense.** Vercel cron is what's already in use; reliability is fine for "every 15 min" granularity; `notified_at` and `journey_user_delivered_items` PRIMARY KEY make every job idempotent. Supabase `pg_cron` is an option but the codebase has zero precedent and the queries are cheap enough to keep app-side. Edge runtime is *not* a fit (DB-heavy, batch-oriented) - Node functions, 5-min timeout, Bearer-token-secured exactly like the existing crons.
 
 **Health board.** Add `journey_cron_runs(job_name, started_at, finished_at, ok, error_text, rows_processed)` table; every cron writes a row. Render at `/dashboard/journey/health`.
 
@@ -556,13 +556,13 @@ item_id,category_slug,subtopic_slug,slug,kind,content_type,est_minutes,tags,titl
 ```
 
 Subtopics CSV: `subtopic_id, category_slug, slug, name_he, name_en, description_he, description_en, sort_order, is_active`.
-Categories CSV: extended with `program_id` (nullable; programs become legacy) and `assessment_priority_key` (the key that links a `journey_categories` row to the assessment ranking — replaces the hardcoded `PRIORITY_KEYS`).
+Categories CSV: extended with `program_id` (nullable; programs become legacy) and `assessment_priority_key` (the key that links a `journey_categories` row to the assessment ranking - replaces the hardcoded `PRIORITY_KEYS`).
 Programs CSV and assignments CSV: unchanged.
 
 ### 4.6 Migration plan (from the Sheet to the DB)
 
 1. Itzik exports each tab of the Sheet to CSV (one per tab: categories, subtopics, items).
-2. Itzik uploads each CSV via the extended `/dashboard/journey/import` page. Or pastes the Sheet URL — the import endpoint's new "fetch from Sheet" mode hits `https://docs.google.com/spreadsheets/d/.../export?format=csv&gid=...` for each known tab gid and runs the same upserts.
+2. Itzik uploads each CSV via the extended `/dashboard/journey/import` page. Or pastes the Sheet URL - the import endpoint's new "fetch from Sheet" mode hits `https://docs.google.com/spreadsheets/d/.../export?format=csv&gid=...` for each known tab gid and runs the same upserts.
 3. For items already in the DB (none today for this v3 product), upsert by `item_id`; for new rows, `item_id` is empty and the importer mints a UUID.
 4. Categories seed migration runs once with the 5 priorities (`communication`, `intimacy`, `emotional_connection`, `friendship`, `family`) + their HE/EN labels and an `assessment_priority_key` value matching the existing assessment.
 5. We delete the hardcoded `PRIORITY_KEYS` array and have the assessment fetch categories from the DB.
@@ -571,7 +571,7 @@ The `.xlsx` files at the repo root should be converted to CSV by Itzik (Excel �
 
 ### 4.7 Per-partner re-resolution
 
-Mechanically minimal: replace [`preferCoupleOwner()`](lib/journey-content/owner.ts:52) call sites *for the v3 product* with a per-partner resolver that always returns `{ kind: 'user', id: userId }`. Existing couple-owned assignments continue to render in the legacy paths. New assignments created by the cadence engine, expert push, and group cohorts are user-owned exclusively. Couple-aggregate views in admin become a `JOIN couple_members` over user-scoped data — a *view*, not a *primary key*.
+Mechanically minimal: replace [`preferCoupleOwner()`](lib/journey-content/owner.ts:52) call sites *for the v3 product* with a per-partner resolver that always returns `{ kind: 'user', id: userId }`. Existing couple-owned assignments continue to render in the legacy paths. New assignments created by the cadence engine, expert push, and group cohorts are user-owned exclusively. Couple-aggregate views in admin become a `JOIN couple_members` over user-scoped data - a *view*, not a *primary key*.
 
 ---
 
@@ -599,12 +599,12 @@ Roughly the order I'd land PRs, each independently shippable behind a `JOURNEY_V
 3. **Versioning vs retroactive edits.** v2 chose retroactive (edits flow through to delivered items). v3 spec mentions "Versioning: editing an item doesn't mutate copies already delivered." Which do you want? Retroactive is what's shipped; immutable snapshots require a new `journey_item_versions` table and copying content into `scheduled_items`.
 4. **Random/discovery item.** What's "random"? Pure uniform sample from un-delivered items across all categories? Restricted to user's #1–#3? Tag-driven (e.g., `tags @> '{"discovery"}'`)?
 5. **Weighted interleave defaults.** Spec mentions `50/25/15/7/3` as an example. Confirm the actual numbers. Should the weights be admin-configurable per couple/group, or just globally?
-6. **Expert pool boundaries.** Pool model is the default — any expert can reply. Confirm. And: should experts be siloed by category (e.g., a "sexuality expert" only sees sexuality threads)?
+6. **Expert pool boundaries.** Pool model is the default - any expert can reply. Confirm. And: should experts be siloed by category (e.g., a "sexuality expert" only sees sexuality threads)?
 7. **Per-partner privacy default for general channel.** Confirm partners can never see each other's general expert chat by default; should there be an opt-in to share?
-8. **Push UX when recipient is a couple.** The spec says "both partners receive it on their next day." Each partner has their own delivery days — does that mean the item appears on partner-A's next day AND partner-B's next day independently? (Recommend yes, with a single `pending_pushes` row per partner.)
+8. **Push UX when recipient is a couple.** The spec says "both partners receive it on their next day." Each partner has their own delivery days - does that mean the item appears on partner-A's next day AND partner-B's next day independently? (Recommend yes, with a single `pending_pushes` row per partner.)
 9. **Groups: members stored as users or couples?** Spec says "users/couples" but mixed membership is messy. Recommend: members are *users* only; "couple membership" is sugar for "add both partners."
 10. **CSV: paste-Sheet-URL or upload-only?** The spec implies "or paste a Sheet URL." Confirm we should implement that (requires the Sheet to be world-readable or service-account-shared).
-11. **Grace banner copy.** "מנוי פג — חידוש פותח את הכל" is the spec's example. Any updates / EN copy?
+11. **Grace banner copy.** "מנוי פג - חידוש פותח את הכל" is the spec's example. Any updates / EN copy?
 12. **Worktree mismatch.** Per §1, the worktree this report was written in is on a stale base. Should I rebase it onto `game` for implementation, or work directly in `/Users/uxellent/mioshy`?
 13. **Subscription `status` enum extension.** Today's enum is `{active, paused, canceled, cancelled, expired, past_due, blocked}`. I need to add explicit `grace` so the watcher can distinguish "expired but in grace" from "expired and blocked." OK to extend?
 14. **Excel files at repo root.** Should I treat them as authoritative content (convert to CSV and import) or leave them as Itzik's working docs and rely on the Sheet being the single source?
@@ -619,7 +619,7 @@ To make the scope explicit:
 - Not removing `journey_programs` or any v2 concept. Programs become *optional* for v3.
 - Not redesigning the user-facing `/[locale]/journey/timeline` rendering. Adding subtopic group chips and "from your coach" badges, but the layout stays.
 - Not migrating articles, wheel games, or any non-journey content.
-- Not rewriting `getUserEntitlements()` callers — I'm extending the return shape additively and routing journey-specific consumers through a new `getJourneyEntitlement()` helper.
+- Not rewriting `getUserEntitlements()` callers - I'm extending the return shape additively and routing journey-specific consumers through a new `getJourneyEntitlement()` helper.
 - Not building a new auth / invitation flow. Per-partner resolution uses the existing `couple_members` rows.
 
 ---

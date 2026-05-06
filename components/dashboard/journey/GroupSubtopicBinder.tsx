@@ -1,7 +1,7 @@
 "use client";
 
 // ============================================================
-// GroupSubtopicBinder — slice 7 admin UI for binding a group to
+// GroupSubtopicBinder - slice 7 admin UI for binding a group to
 // subtopics with per-row mode (replace | interleave).
 //
 // Edit-then-save model: changes are local until the admin clicks
@@ -90,7 +90,7 @@ export function GroupSubtopicBinder({
     return m;
   }, [subtopicOptions]);
 
-  // Subtopics not yet bound — feed for the "+ Add binding" picker.
+  // Subtopics not yet bound - feed for the "+ Add binding" picker.
   const availableOptions = subtopicOptions.filter(
     (o) => !draftIdSet.has(o.id),
   );

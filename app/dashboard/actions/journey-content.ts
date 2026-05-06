@@ -304,7 +304,7 @@ export async function deleteJourneySubtopic(subtopicId: string) {
 export async function createAndRedirectNewSubtopic(categoryId: string) {
   if (!categoryId) throw new Error("categoryId is required");
   const supabase = await adminDb();
-  // New subtopics go to the end of the list — pick max(sort_order) + 1000.
+  // New subtopics go to the end of the list - pick max(sort_order) + 1000.
   const { data: maxRow } = await supabase
     .from("journey_subtopics")
     .select("sort_order")
@@ -338,7 +338,7 @@ export async function createAndRedirectNewSubtopic(categoryId: string) {
 // of child IDs; the action validates that exactly those children
 // belong to the parent (no missing, no extras), then issues per-row
 // updates via the service-role client. Atomicity isn't critical since
-// any partial state still represents a valid total ordering — re-
+// any partial state still represents a valid total ordering - re-
 // triggering the reorder fixes drift.
 // ============================================================
 
@@ -580,7 +580,7 @@ export async function createAndRedirectNewItem(
       slug,
       title_he: "פריט חדש",
       title_en: "New Item",
-      body_he: "טיוטה — מלאו את התוכן ושמרו",
+      body_he: "טיוטה - מלאו את התוכן ושמרו",
       sort_order: nextOrder,
       default_offset_days: 0,
       is_active: false,

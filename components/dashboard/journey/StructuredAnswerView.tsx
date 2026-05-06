@@ -1,5 +1,5 @@
 /**
- * StructuredAnswerView — renders a user's answers to an assessment
+ * StructuredAnswerView - renders a user's answers to an assessment
  * item in a clinician-friendly format. Phase 3 step 4.
  *
  * For each question in the assessment_payload, we look up the user's
@@ -126,7 +126,7 @@ function AnswerCell({
           </span>
           {(minLabel || maxLabel) && (
             <span className="text-[11px] text-white/45">
-              ({min}={minLabel ?? "—"}, {max}={maxLabel ?? "—"})
+              ({min}={minLabel ?? "-"}, {max}={maxLabel ?? "-"})
             </span>
           )}
         </span>

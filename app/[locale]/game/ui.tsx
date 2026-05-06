@@ -162,7 +162,7 @@ export function GameLobbyClient() {
   // Track page view once on mount
   useEffect(() => { track("game_lobby_opened", { game_type: "snakes" }); }, []);
 
-  // Player drafts — both always visible. Itzik 2026-05-05: merged the
+  // Player drafts - both always visible. Itzik 2026-05-05: merged the
   // previous "play locally" CTA + "create room" form into a single
   // 2-player setup with two action buttons. No add-player toggle.
   const [players1, setPlayers1] = useState<PlayerDraft>(() => buildDefault(0));
@@ -176,7 +176,7 @@ export function GameLobbyClient() {
   const [isStarting, setIsStarting] = useState(false);
   const [regOpen,    setRegOpen]    = useState(false);
 
-  // Pending action — held until the user registers, then retried.
+  // Pending action - held until the user registers, then retried.
   // Two flavors: "create" (host opens a room) and "join" (guest enters
   // an existing room via code). Both flows can hit the not_authenticated
   // error and need the same registration → retry behavior. Itzik
@@ -212,7 +212,7 @@ export function GameLobbyClient() {
     }
   }, [locale, room, router]);
 
-  // After registration: retry whatever the user was trying to do — open
+  // After registration: retry whatever the user was trying to do - open
   // a fresh room (create) or join one with a code (join).
   const handleRegistered = useCallback(async () => {
     setRegOpen(false);
@@ -247,11 +247,11 @@ export function GameLobbyClient() {
     try {
       sessionStorage.setItem("local_p1", JSON.stringify(p1));
       sessionStorage.setItem("local_p2", JSON.stringify(p2));
-      // One-shot flag — /game/local consumes + clears this on mount.
+      // One-shot flag - /game/local consumes + clears this on mount.
       // Without it, refreshing /game/local would auto-start with stale data.
       sessionStorage.setItem("local_auto_start", "1");
     } catch {
-      /* ignore — fall back to manual start in /game/local */
+      /* ignore - fall back to manual start in /game/local */
     }
     router.push(`/${locale}/game/local`);
   };
@@ -356,8 +356,8 @@ export function GameLobbyClient() {
           </h1>
           <p className="text-sm text-slate-300/80">
             {isHe
-              ? "הגדירו את שני השחקנים — ואז בחרו איך לשחק."
-              : "Set up both players — then choose how to play."}
+              ? "הגדירו את שני השחקנים - ואז בחרו איך לשחק."
+              : "Set up both players - then choose how to play."}
           </p>
         </div>
 
@@ -379,7 +379,7 @@ export function GameLobbyClient() {
               isHe={isHe}
             />
 
-            {/* Two action buttons — local (primary) + send-code (secondary).
+            {/* Two action buttons - local (primary) + send-code (secondary).
                 Local is the strongest CTA because it's frictionless: no
                 code, no second device, just hand the phone back and forth. */}
             <div className="grid gap-3 pt-2 sm:grid-cols-2">
@@ -394,8 +394,8 @@ export function GameLobbyClient() {
                 </span>
                 <span className="mt-0.5 block text-[11px] font-normal text-stone-900/75">
                   {isHe
-                    ? "על המכשיר הזה — מעבירים את הטלפון"
-                    : "On this device — pass the phone around"}
+                    ? "על המכשיר הזה - מעבירים את הטלפון"
+                    : "On this device - pass the phone around"}
                 </span>
               </button>
               <button
@@ -425,7 +425,7 @@ export function GameLobbyClient() {
             >
               {isHe
                 ? "יש לי קוד חדר - אני רוצה להצטרף"
-                : "I have a room code — let me join"}
+                : "I have a room code - let me join"}
             </button>
           </div>
         )}

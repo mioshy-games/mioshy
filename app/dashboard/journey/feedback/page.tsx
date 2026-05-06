@@ -1,7 +1,7 @@
 /**
  * /dashboard/journey/feedback
  *
- * Clinical feedback browser. The PRD's "feedback intelligence layer" —
+ * Clinical feedback browser. The PRD's "feedback intelligence layer" -
  * the central analytical surface where coaches author and review notes
  * about users / couples.
  *
@@ -51,7 +51,7 @@ export default async function FeedbackPage({
   const page = Number.parseInt(sp.page ?? "1", 10) || 1;
   const view: "list" | "timeline" = sp.view === "timeline" ? "timeline" : "list";
 
-  // Hydrate filter values from URL — only pass the ones that are set.
+  // Hydrate filter values from URL - only pass the ones that are set.
   const filter = {
     coupleId: sp.coupleId,
     userId: sp.userId,
@@ -76,7 +76,7 @@ export default async function FeedbackPage({
 
   const totalPages = Math.max(1, Math.ceil(total / 50));
 
-  // The form components want exactly { id, name_he, name_en } — strip
+  // The form components want exactly { id, name_he, name_en } - strip
   // the heavier JourneyCategory shape down to that for safe transfer
   // across the server→client boundary.
   const categoriesForForm = categories.map((c) => ({
@@ -101,7 +101,7 @@ export default async function FeedbackPage({
           </h1>
           <p className="text-muted-foreground mt-1 max-w-2xl text-sm">
             Coach-authored interpretations on users and couples. Distinct
-            from user-authored item responses — these are NEVER shown to
+            from user-authored item responses - these are NEVER shown to
             the subject.
           </p>
         </div>

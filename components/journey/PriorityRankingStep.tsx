@@ -29,7 +29,7 @@ interface Props {
  * framer-motion `Reorder.Group` implementation set `touch-action: none`
  * on every row so the page wouldn't try to scroll while the user was
  * dragging. The side effect was that the page couldn't scroll AT ALL
- * while a finger was on a card — and on phones the cards take up the
+ * while a finger was on a card - and on phones the cards take up the
  * full visible area, so the user got stuck unable to scroll down to the
  * Continue button. Replacing drag with explicit arrow buttons fixes the
  * scroll lock and is also a more discoverable interaction for a
@@ -37,7 +37,7 @@ interface Props {
  *
  * Submission shape stays: `{ kind: 'ranking', order: PriorityKey[] }`.
  * Server validator on /api/journey/answer enforces it's a permutation of
- * PRIORITY_KEYS — unchanged.
+ * PRIORITY_KEYS - unchanged.
  *
  * Animation: framer-motion `<motion.li layout>` animates the position
  * swap so the user sees the cards trade places instead of teleporting.
@@ -92,7 +92,7 @@ export function PriorityRankingStep({
     return isHe ? c.he_desc : c.en_desc;
   };
 
-  // Swap helpers — splice immutably so React re-renders cleanly.
+  // Swap helpers - splice immutably so React re-renders cleanly.
   const moveUp = (idx: number) => {
     if (idx <= 0) return;
     const next = [...order];
@@ -197,7 +197,7 @@ export function PriorityRankingStep({
                   </p>
                 </div>
 
-                {/* Up/down arrow controls. Stacked vertically — 44px tap
+                {/* Up/down arrow controls. Stacked vertically - 44px tap
                     target each, comfortably hittable on a phone, and they
                     don't fight scroll because they're plain buttons (no
                     touch-action overrides). */}

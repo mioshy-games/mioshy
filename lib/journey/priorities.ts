@@ -40,10 +40,10 @@ export type PriorityKey =
   | "family";
 
 /**
- * Internal-only set used by validators below. Not exported — callers
+ * Internal-only set used by validators below. Not exported - callers
  * that need to enumerate keys should fetch from the DB
  * (`getPriorityCategories()`). Kept as a Set rather than an array so
- * it can't be misused as a "canonical order" — order belongs to the
+ * it can't be misused as a "canonical order" - order belongs to the
  * DB's `sort_order` column.
  */
 const _INTERNAL_PRIORITY_KEY_SET: ReadonlySet<PriorityKey> = new Set<PriorityKey>([
@@ -91,7 +91,7 @@ export function isValidOrder(order: unknown): order is PriorityKey[] {
  * (sort_order ascending, fetched via `getPriorityCategories()`); this
  * keeps divergence framing stable as the admin reorders categories.
  * If omitted, falls back to the internal slug set in arbitrary order
- * — fine for the diff math itself, but callers that *render* by
+ * - fine for the diff math itself, but callers that *render* by
  * canonical order should pass the DB list.
  */
 export type PriorityDivergence = Array<{

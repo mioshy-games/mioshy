@@ -1,7 +1,7 @@
 /**
  * POST /api/billing/repair-missing-invoices
  *
- * Daily cron — heals subscriptions that paid successfully but never got
+ * Daily cron - heals subscriptions that paid successfully but never got
  * an invoice URL from the issuer.
  *
  * Auth: Bearer token in Authorization header, must equal
@@ -14,7 +14,7 @@
  *
  * For each row:
  *   1. Compose the same payload the original call used.
- *   2. Run createBillingDocumentWithRetry — which already retries 3x
+ *   2. Run createBillingDocumentWithRetry - which already retries 3x
  *      with back-off and logs every failure to mioshy_billing_failures.
  *   3. On success → update subscription_charges.invoice_url AND
  *      subscriptions.invoice_url.
@@ -113,7 +113,7 @@ export async function POST(req: Request) {
     raw_response:     unknown
     created_at:       string
     // Supabase typings sometimes return a joined relation as either an
-    // array or a single object depending on the query shape — we narrow
+    // array or a single object depending on the query shape - we narrow
     // it ourselves below.
     subscriptions:    SubscriptionJoin | SubscriptionJoin[] | null
   }
@@ -165,7 +165,7 @@ export async function POST(req: Request) {
         email:       sub.email ?? "",
         // ISO-2 default: issuer requires exactly 2 chars. We don't
         // carry country on charges/subscriptions, so derive from is_israeli.
-        // is_israeli was IP-validated at /checkout/create — see lib/geo-from-request.ts
+        // is_israeli was IP-validated at /checkout/create - see lib/geo-from-request.ts
         country:     sub.is_israeli ? "IL" : "US",
         amount:      Number(c.amount),
         currency:    String(c.currency || sub.currency || "ILS"),
@@ -199,7 +199,7 @@ export async function POST(req: Request) {
       repaired++
       rows.push({ ...baseRow, outcome: "repaired" })
     } catch (e: unknown) {
-      // Issuer succeeded but our local update failed — count it as a
+      // Issuer succeeded but our local update failed - count it as a
       // failure so we re-run next cycle. Idempotent issuer means no
       // duplicate invoice; the local UPDATE will retry tomorrow.
       const msg = e instanceof Error ? e.message : String(e)

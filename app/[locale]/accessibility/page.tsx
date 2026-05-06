@@ -1,5 +1,5 @@
 /**
- * /[locale]/accessibility — Accessibility Statement.
+ * /[locale]/accessibility - Accessibility Statement.
  *
  * Required under Israeli regulations (תקנות שוויון זכויות לאנשים עם
  * מוגבלות - התאמות נגישות לשירות, התשע״ג-2013). The "coordinator"

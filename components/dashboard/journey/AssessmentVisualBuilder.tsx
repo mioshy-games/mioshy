@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * AssessmentVisualBuilder — drag-free WYSIWYG editor for the
+ * AssessmentVisualBuilder - drag-free WYSIWYG editor for the
  * questions inside an assessment_payload. Phase 3 step 5.
  *
  * Why drag-free: drag-and-drop on the web has cross-browser quirks
@@ -14,7 +14,7 @@
  *     The parent (AssessmentEditor) decides when to save.
  *
  * Keeps the existing JSON editor as a power-user fallback in
- * AssessmentEditor — this component is the friendly default.
+ * AssessmentEditor - this component is the friendly default.
  */
 
 import { useId } from "react";
@@ -110,7 +110,7 @@ export function AssessmentVisualBuilder({
             onChange={(e) => updateMeta({ intro_he: e.target.value || null })}
             rows={2}
             className="mt-1 w-full rounded-md border border-border bg-background p-2 text-sm"
-            placeholder="טקסט פתיחה — אופציונלי"
+            placeholder="טקסט פתיחה - אופציונלי"
           />
         </div>
         <div>
@@ -122,7 +122,7 @@ export function AssessmentVisualBuilder({
             onChange={(e) => updateMeta({ outro_he: e.target.value || null })}
             rows={2}
             className="mt-1 w-full rounded-md border border-border bg-background p-2 text-sm"
-            placeholder="טקסט סיום — אופציונלי"
+            placeholder="טקסט סיום - אופציונלי"
           />
         </div>
       </div>

@@ -1,7 +1,7 @@
 /**
  * POST /api/admin/journey/recompute-scores
  *
- * Phase 5 — admin trigger that recomputes the journey_user_scores
+ * Phase 5 - admin trigger that recomputes the journey_user_scores
  * table for every user with recent activity. Idempotent; safe to run
  * on a schedule (Vercel Cron @daily 02:00) or manually from a button.
  *

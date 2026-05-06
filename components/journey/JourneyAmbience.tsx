@@ -3,7 +3,7 @@
 /**
  * Page-wide cinematic ambience for /[locale]/journey/assessment.
  *
- * Tone is intentionally quieter than AdultsAmbience — the assessment is a
+ * Tone is intentionally quieter than AdultsAmbience - the assessment is a
  * vulnerable, introspective moment, not a marketing surface. Palette:
  * emerald + sky + indigo (cool, "morning sky / deep water" feel). Particle
  * count and motion are deliberately sparse so the questionnaire stays the
@@ -22,7 +22,7 @@
 import { useEffect, useMemo, useRef } from "react";
 
 // Alpha tuning round 3: bumped UP from 0.22 (round 1) to 0.55 (round 2)
-// to 0.36 here — round 2 was over-corrected ("too solid, too obvious")
+// to 0.36 here - round 2 was over-corrected ("too solid, too obvious")
 // and round 3 is the goldilocks: visible enough to register on a glance
 // but transparent enough that the dots feel like room dust catching
 // light, not stage spotlights. Glow halo cut harder than the core
@@ -46,7 +46,7 @@ type ParticleSpec = {
 };
 
 function makeParticles(): ParticleSpec[] {
-  // 21 particles total — 7 vertical bands × 3 horizontal cols. Earlier
+  // 21 particles total - 7 vertical bands × 3 horizontal cols. Earlier
   // 6×2 = 12 produced two clear vertical "lines" of dots that read as
   // a grid; spreading to 3 cols breaks the column illusion and gives
   // visible activity across the full width on phone and desktop alike.
@@ -61,7 +61,7 @@ function makeParticles(): ParticleSpec[] {
       const left = ((col + (top % 7) * 1.3 + i * 0.7) % 90) + 4;
       const sizeOpts = [6, 7, 8, 9, 10];
       const size = sizeOpts[(top + i) % sizeOpts.length]!;
-      // 12 → 22s loops — perceptibly slower than AdultsAmbience (8-22s)
+      // 12 → 22s loops - perceptibly slower than AdultsAmbience (8-22s)
       // but fast enough that motion registers within a 5-10s glance
       // (the previous 18-32s range made motion imperceptible to users
       // on the page for less than ~30s).
@@ -125,7 +125,7 @@ export function JourneyAmbience() {
       data-testid="journey-ambience"
       className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
     >
-      {/* ── Fog blobs — 4 large, very soft, slow-drifting. Lower alpha than
+      {/* ── Fog blobs - 4 large, very soft, slow-drifting. Lower alpha than
               AdultsAmbience so they read as ambient atmosphere, not objects. ── */}
       <div
         className="mio-j-fog mio-j-fog-1 absolute -start-[12%] top-[6%] h-[560px] w-[560px] rounded-full blur-[110px]"
@@ -144,7 +144,7 @@ export function JourneyAmbience() {
         style={{ background: "rgba(16, 185, 129, 0.38)" }}
       />
 
-      {/* ── Particles — 12 dots, very transparent, drifting slowly. ── */}
+      {/* ── Particles - 12 dots, very transparent, drifting slowly. ── */}
       <div className="absolute inset-0">
         {particles.map((p, i) => {
           const tint = PARTICLE_TINTS[p.tintIndex]!;
@@ -172,7 +172,7 @@ export function JourneyAmbience() {
         })}
       </div>
 
-      {/* ── Grain overlay — keeps gradients from banding. ── */}
+      {/* ── Grain overlay - keeps gradients from banding. ── */}
       <div
         className="absolute inset-0 opacity-[0.05] mix-blend-overlay"
         style={{
@@ -185,7 +185,7 @@ export function JourneyAmbience() {
       <style
         dangerouslySetInnerHTML={{
           __html: `
-            /* Translate magnitudes bumped to 36-44px (was 14-28px) — at the
+            /* Translate magnitudes bumped to 36-44px (was 14-28px) - at the
                smaller values motion was ≤2px/s and registered as static.
                Durations cut to 18-24s (was 26-34s) so a glance of 5-10s
                actually catches motion. Scales go to 1.08-1.10 in mid-cycle

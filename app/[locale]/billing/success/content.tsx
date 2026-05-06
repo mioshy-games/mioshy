@@ -81,10 +81,10 @@ export function BillingSuccessContent() {
   // Auto-redirect once the session flips to paid.
   //
   // Two destinations are possible:
-  //   1. `safeReturnPath` — when /api/billing/checkout/create was given an
+  //   1. `safeReturnPath` - when /api/billing/checkout/create was given an
   //      explicit return_path (typically Adults one-time purchases asking
   //      to land back on the product page).
-  //   2. `/[locale]/my` — the default for subscription purchases (Journey,
+  //   2. `/[locale]/my` - the default for subscription purchases (Journey,
   //      Games, etc.). Used to be `/journey/timeline` (which was an empty
   //      placeholder and broke the post-payment UX, see
   //      docs/post-purchase-experience-spec.md §4).
@@ -98,7 +98,7 @@ export function BillingSuccessContent() {
         ? safeReturnPath
         : `/${locale}${safeReturnPath}`
       : `/${locale}/my`
-    // ⚠️ BUILD MARKER — bumped 2026-04-30 with the Phase-A redirect.
+    // ⚠️ BUILD MARKER - bumped 2026-04-30 with the Phase-A redirect.
     // Default target was changed from /journey/timeline to /my so users
     // never land on the empty timeline placeholder again. If you don't
     // see this log, the new code didn't ship.

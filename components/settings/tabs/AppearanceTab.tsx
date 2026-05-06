@@ -475,7 +475,7 @@ export function AppearanceTab() {
             />
           </div>
 
-          {/* Label orientation — Itzik 2026-05-05.
+          {/* Label orientation - Itzik 2026-05-05.
               Round 9 update: switched from a Base UI Select dropdown
               (which silently failed to fire onChange inside the
               EditGameSidebar's portal context) to two big toggle
@@ -483,7 +483,7 @@ export function AppearanceTab() {
               and a native <button> is bulletproof against any
               primitive/portal weirdness.
               "Tangential" (default): text reads along the slice's curve.
-              "Radial": text reads from the wheel center outward —
+              "Radial": text reads from the wheel center outward -
               better for long names. */}
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium text-muted-foreground">

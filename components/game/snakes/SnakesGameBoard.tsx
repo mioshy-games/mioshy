@@ -14,7 +14,7 @@ import type { GamePlayer } from "@/lib/snakes/types";
 import { cellToBoardPercent } from "@/lib/snakes/boardUtils";
 import { playSound } from "@/lib/sounds";
 import { cn } from "@/lib/utils";
-// Gating (mirrors TruthOrDareClient — same lead/paywall flow per Itzik
+// Gating (mirrors TruthOrDareClient - same lead/paywall flow per Itzik
 // 2026-05-06): non-subscribers get FREE_PLAYS_PER_GAME (=3) dice rolls
 // before the lead modal pops, and another batch after signup before the
 // hard paywall.
@@ -33,8 +33,8 @@ import { RegistrationModal } from "@/components/RegistrationModal";
 import { SubscriptionModal } from "@/components/SubscriptionModal";
 
 // Slug used for snakes & ladders in the per-game play counter. The snakes
-// game has no row in the `games` table — it lives at /game, not /games/:slug
-// — so we mint a stable slug here to namespace its play counter alongside
+// game has no row in the `games` table - it lives at /game, not /games/:slug
+// - so we mint a stable slug here to namespace its play counter alongside
 // every wheel-based game's slug.
 const SNAKES_PLAYS_SLUG = "snakes-ladders";
 
@@ -147,7 +147,7 @@ export function SnakesGameBoard({
   //   • Guests roll free until FREE_PLAYS_PER_GAME, then see the lead modal.
   //   • Logged-in non-subscribers roll free until FREE_PLAYS_PER_GAME, then
   //     hit the hard paywall.
-  // The counter increments AFTER a successful roll — the user always
+  // The counter increments AFTER a successful roll - the user always
   // gets the FREE_PLAYS_PER_GAME-th roll, and the modal opens right after
   // (matching the wheel's UX where the budget is "you used N of your free
   // plays" rather than "you tried to use one beyond N").
@@ -226,7 +226,7 @@ export function SnakesGameBoard({
   const prevTurnCountRef = useRef<number | null>(null);
   // Round 8 (2026-05-05) BUGFIX: explicit gate for modal opening.
   // Holds the turnCount of the most-recently-COMPLETED walk. The modal
-  // is allowed to open only when state.turnCount === walkDoneForTurn —
+  // is allowed to open only when state.turnCount === walkDoneForTurn -
   // i.e. only after the walk actually finished. Without this, the modal
   // could flash open the instant state.phase became "question" but
   // BEFORE the walk effect ran (since `isWalking` is set in a useEffect
@@ -235,7 +235,7 @@ export function SnakesGameBoard({
   // moving in the background of the popup."
   const [walkDoneForTurn, setWalkDoneForTurn] = useState<number>(-1);
 
-  // Diagnostic — log every change to the modal-open state so the
+  // Diagnostic - log every change to the modal-open state so the
   // walk → modal sequence is visible in DevTools console.
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -279,7 +279,7 @@ export function SnakesGameBoard({
   // CRITICAL ROUND 7 BUGFIX (2026-05-05): also bail when state.turnCount has
   // advanced past what we've processed. Without this guard, after a roll,
   // both the idle sync (deps: positions) and the walk effect (deps: turnCount)
-  // fire — and React doesn't guarantee order. If idle sync wins the race, it
+  // fire - and React doesn't guarantee order. If idle sync wins the race, it
   // sets visualPositions to the FINAL post-roll position, making the token
   // visibly teleport to the destination, then the walk effect runs against
   // a corrupted prevPositionsRef and the token rewinds + re-walks. Itzik's
@@ -288,7 +288,7 @@ export function SnakesGameBoard({
     if (!state?.positions) return;
     if (isWalkingRef.current) return; // walk effect owns positions during walk
     // A new turn has been committed but the walk hasn't been scheduled yet.
-    // Hold off — the walk effect is about to take over; jumping to the
+    // Hold off - the walk effect is about to take over; jumping to the
     // final position now would create the rewind-then-walk-again artifact.
     if (
       prevTurnCountRef.current !== null &&
@@ -387,7 +387,7 @@ export function SnakesGameBoard({
     console.log("[snk-walk] steps planned", { turnCount, steps, naiveEnd, finalPos, willTeleport: finalPos !== naiveEnd });
 
     // ms per tile hop. Round 6 (2026-05-05): tightened 370 → 200 so
-    // the walk feels snappy — the previous pacing made the token
+    // the walk feels snappy - the previous pacing made the token
     // crawl. Spring inside PlayersOverlay settles in ~200ms at
     // stiffness 620, so 200ms is the floor before hops overlap.
     const STEP_MS = 200;
@@ -400,7 +400,7 @@ export function SnakesGameBoard({
     setArrivingPlayerId(null);
 
     // Delay before the token starts walking. Round 6 (2026-05-05):
-    // dice tumble is 2500ms. Walk starts 200ms after tumble settles —
+    // dice tumble is 2500ms. Walk starts 200ms after tumble settles -
     // tight enough to feel snappy, long enough to read the number
     // since the dice STAYS VISIBLE during the walk (Itzik round 5).
     // Total click→walk-start ≈ 2.7s.
@@ -449,7 +449,7 @@ export function SnakesGameBoard({
         stepIdx++;
       } else {
         // eslint-disable-next-line no-console
-        console.log("[snk-walk] all steps done — preparing bounce", {
+        console.log("[snk-walk] all steps done - preparing bounce", {
           turnCount,
           elapsedSinceEffect: Math.round(performance.now() - t0),
         });
@@ -480,7 +480,7 @@ export function SnakesGameBoard({
             setArrivingPlayerId(null);
             isWalkingRef.current = false;
             setIsWalking(false);
-            // Modal gate — only NOW (after token has fully settled and
+            // Modal gate - only NOW (after token has fully settled and
             // the bounce has played) do we mark this turn as ready for
             // the question popup. The modal is gated on this matching
             // state.turnCount.
@@ -655,7 +655,7 @@ export function SnakesGameBoard({
         )}
         dir={isHe ? "rtl" : "ltr"}
       >
-        {/* ───────────────────── Header — intimate-dark redesign 2026-05-05.
+        {/* ───────────────────── Header - intimate-dark redesign 2026-05-05.
               Glass-morphism over the burgundy/black page, gold hairline
               border, serif gold title with letter-spacing, lower-opacity
               subtitle. */}
@@ -737,8 +737,8 @@ export function SnakesGameBoard({
               // Round 8 (2026-05-05) gate: open ONLY when the walk for
               // the current turn has fully completed. Without the
               // walkDoneForTurn check, the modal could flash open the
-              // instant state.phase became "question" — before the walk
-              // even started — because isWalking is set inside a
+              // instant state.phase became "question" - before the walk
+              // even started - because isWalking is set inside a
               // useEffect that runs AFTER the first paint of the new
               // state. See walkDoneForTurn declaration above for full
               // reasoning and the user-reported symptom.
@@ -757,7 +757,7 @@ export function SnakesGameBoard({
           </div>
         </section>
 
-        {/* ───────────────────── Dice surface (desktop) — intimate-dark
+        {/* ───────────────────── Dice surface (desktop) - intimate-dark
               2026-05-05. Deep wine→black felt with gold hairline border. */}
         <section
           className={cn(
@@ -772,7 +772,7 @@ export function SnakesGameBoard({
         >
           <AnimatePresence mode="wait">
             {isMyTurn ? (
-              // Dice stays visible for the WHOLE turn — Itzik 2026-05-05
+              // Dice stays visible for the WHOLE turn - Itzik 2026-05-05
               // round 5. Previously the dice disappeared the moment phase
               // changed from "waiting_flip", so the player never got to
               // see the number they rolled before the modal popped. Now
@@ -791,12 +791,12 @@ export function SnakesGameBoard({
               >
                 <Dice
                   onRoll={handleDiceRoll}
-                  // Disabled while walking / question phase — but the
+                  // Disabled while walking / question phase - but the
                   // dice still renders showing the result face.
                   disabled={state.phase !== "waiting_flip" || isWalking}
                   result={state.lastDiceResult ?? null}
                   playerColor={currentPlayer?.color ?? "#f59e0b"}
-                  // Vocative caption: "{name}, תורך" — only shown when
+                  // Vocative caption: "{name}, תורך" - only shown when
                   // it's actually time to roll (handled inside Dice).
                   label={
                     currentPlayer
@@ -845,7 +845,7 @@ export function SnakesGameBoard({
           </AnimatePresence>
         </section>
 
-        {/* ───────────────────── Players list — intimate-dark glass-morphism
+        {/* ───────────────────── Players list - intimate-dark glass-morphism
               with gold accents. Replaces the previous sky-blue panel. */}
         <section
           className={cn(
@@ -1107,7 +1107,7 @@ export function SnakesGameBoard({
           ) : null}
         </AnimatePresence>
 
-        {/* ── Gating modals — same pair as the wheel game ────────────── */}
+        {/* ── Gating modals - same pair as the wheel game ────────────── */}
         <RegistrationModal
           open={regOpen}
           onOpenChange={(v) => setRegOpen(v)}
@@ -1147,7 +1147,7 @@ export function SnakesGameBoard({
             setSubLocked(false);
             setSubOpen(false);
           }}
-          // "lead" mode while we still don't know who the user is —
+          // "lead" mode while we still don't know who the user is -
           // first-budget-exhausted guests land here and can sign up for
           // the +3 post-signup bonus. Once they have a user id (or a
           // local lead), we switch to "paywall".
@@ -1188,17 +1188,17 @@ export function SnakesGameBoard({
 // generic GamePageBackground (themed via gameSlug) with a fixed dark-
 // candlelight aesthetic per Itzik's redesign brief 2026-05-05:
 //
-//   "mature, intimate, romantic-dark — candlelit bedroom, late night,
+//   "mature, intimate, romantic-dark - candlelit bedroom, late night,
 //    sensual. Background: deep midnight gradient (dark burgundy → black
 //    → deep purple). NO cartoon elements."
 //
 // Layered stack (bottom→top):
 //   1. Solid near-black base (#08020c).
 //   2. Soft burgundy + deep-purple radial blobs that drift very slowly.
-//   3. Velvet noise grain (mix-blend-overlay) — keeps the gradient from
+//   3. Velvet noise grain (mix-blend-overlay) - keeps the gradient from
 //      banding on phones with limited bit-depth.
-//   4. Floating dust particles — slow, sparse, warm gold, like dust
-//      caught in candlelight (NOT party lights — explicitly no flashes).
+//   4. Floating dust particles - slow, sparse, warm gold, like dust
+//      caught in candlelight (NOT party lights - explicitly no flashes).
 //   5. Strong vignette pulling the eye to the board.
 //
 // The component imports framer-motion only for the slow blob drift; the
@@ -1209,7 +1209,7 @@ function SnakesIntimateBackground({ children }: { children: React.ReactNode }) {
   // gold orbs below provide the same atmospheric texture; running both
   // arrays (28 total animated DOM elements) was unnecessary GPU load.
 
-  // Floating particles — Itzik 2026-05-05 round 7
+  // Floating particles - Itzik 2026-05-05 round 7
   // PERFORMANCE FIX: previous round had 28 particles + 14 dust specks
   // = 42 animated elements + 3 animated blurred blobs. That was
   // causing the 10+ second gameplay lag because the GPU was
@@ -1227,17 +1227,17 @@ function SnakesIntimateBackground({ children }: { children: React.ReactNode }) {
       driftY: number;
       opacity: number;
     }> = [];
-    // 14 particles — half the previous count. Still feels populated
+    // 14 particles - half the previous count. Still feels populated
     // but cuts compositing work in half.
     for (let i = 0; i < 14; i++) {
       // Deterministic spread (matches FloatingParticles.buildParticles
-      // pattern — pseudo-random integer arithmetic so SSR + client
+      // pattern - pseudo-random integer arithmetic so SSR + client
       // agree on positions).
       const t = (3 + (i * 53 + i * 7 + 17) % 88);
       const l = (3 + (i * 37 + i * i * 13) % 94);
-      // 4-12px diameter — small distinct dots, like wheels.
+      // 4-12px diameter - small distinct dots, like wheels.
       const size = 4 + ((i * 5) % 9);
-      // 8-16s drift — faster than the previous orbs.
+      // 8-16s drift - faster than the previous orbs.
       const duration = 8 + ((i * 3) % 9);
       const delay = -((i * 0.4) % 4);
       // 8-direction quadrant pattern (same as FloatingParticles)
@@ -1255,7 +1255,7 @@ function SnakesIntimateBackground({ children }: { children: React.ReactNode }) {
         case 6: driftX = -magnitude; break;
         case 7: driftX = -magnitude; driftY = -magnitude * 0.6; break;
       }
-      // High alpha (0.55-0.85) so each dot is visible — but small
+      // High alpha (0.55-0.85) so each dot is visible - but small
       // size keeps them subtle individually.
       const opacity = 0.55 + ((i * 7) % 30) / 100;
       out.push({ top: t, left: l, size, duration, delay, driftX, driftY, opacity });
@@ -1263,11 +1263,11 @@ function SnakesIntimateBackground({ children }: { children: React.ReactNode }) {
     return out;
   }, []);
 
-  // (Diagnostic console.log removed in round 7 — performance pass.)
+  // (Diagnostic console.log removed in round 7 - performance pass.)
 
   return (
     <div className="relative min-h-[100dvh] w-full overflow-hidden bg-[#08020c]">
-      {/* Background gradient blobs — Itzik 2026-05-05 round 7
+      {/* Background gradient blobs - Itzik 2026-05-05 round 7
           PERFORMANCE FIX: previous round had 3 huge (80vw × 80vh)
           blurred blobs animating x+y with `filter: blur(80-110px)` on
           each. Animating large blurred filters repaints a massive GPU
@@ -1306,7 +1306,7 @@ function SnakesIntimateBackground({ children }: { children: React.ReactNode }) {
         }}
       />
 
-      {/* Velvet noise grain — purely decorative texture */}
+      {/* Velvet noise grain - purely decorative texture */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 opacity-[0.035] mix-blend-overlay"
@@ -1316,7 +1316,7 @@ function SnakesIntimateBackground({ children }: { children: React.ReactNode }) {
         }}
       />
 
-      {/* Floating gold particles — small distinct dots like the wheel
+      {/* Floating gold particles - small distinct dots like the wheel
           pages' FloatingParticles. Round 6 (2026-05-05) replaces the
           previous big blurred blobs (which felt rough). Each dot has
           its own drift direction; collectively they look like ambient
@@ -1344,7 +1344,7 @@ function SnakesIntimateBackground({ children }: { children: React.ReactNode }) {
         ))}
       </div>
 
-      {/* Edge vignette — pushes the eye to the board */}
+      {/* Edge vignette - pushes the eye to the board */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0"
@@ -1356,7 +1356,7 @@ function SnakesIntimateBackground({ children }: { children: React.ReactNode }) {
 
       <div className="relative min-h-[100dvh]">{children}</div>
 
-      {/* Keyframes — round 7 (2026-05-05) PERFORMANCE.
+      {/* Keyframes - round 7 (2026-05-05) PERFORMANCE.
           TRANSFORM-ONLY animation, no opacity/filter changes. GPU
           compositor handles transform without rasterization. */}
       <style

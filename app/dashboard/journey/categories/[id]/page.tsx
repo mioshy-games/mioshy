@@ -28,7 +28,7 @@ export default async function EditCategoryPage({
     await Promise.all([
       adminListPrograms(),
       listSubtopics({ categoryId: category.id }),
-      // All items in this category — used to compute per-subtopic counts
+      // All items in this category - used to compute per-subtopic counts
       // for the subtopics rail. A single fetch covers both.
       listItems({ categoryId: category.id }),
       // Items that hang directly off the category (no subtopic).
@@ -95,7 +95,7 @@ export default async function EditCategoryPage({
               <code className="font-mono">
                 {category.assessment_priority_key}
               </code>{" "}
-              — used by the assessment ranking step.
+              - used by the assessment ranking step.
             </span>
             <HintIcon topic="category.assessment_priority_key" />
           </p>

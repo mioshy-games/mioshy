@@ -1,7 +1,7 @@
 "use client";
 
 // ============================================================
-// SortableList — reusable drag-and-drop wrapper around @dnd-kit.
+// SortableList - reusable drag-and-drop wrapper around @dnd-kit.
 //
 // v3 slice 2: powers the two-level reorder UI on the category-detail
 // page (subtopics within a category, items within a subtopic). The
@@ -54,7 +54,7 @@ export interface SortableListProps<T extends SortableItem> {
    *  Should perform the server write and resolve to ok / error. */
   onReorder: (orderedIds: string[]) => Promise<{ ok: true } | { ok: false; error: string }>;
   /** Render the row body. The drag handle is rendered separately
-   *  (always at the inline-end side) — don't include it here. */
+   *  (always at the inline-end side) - don't include it here. */
   renderRow: (item: T, opts: { isDragging: boolean }) => ReactNode;
   /** Optional className for each row's outer wrapper. */
   rowClassName?: string;
@@ -77,7 +77,7 @@ export function SortableList<T extends SortableItem>({
 
   // Re-sync local order when the parent passes a new `items` (e.g. after
   // router.refresh). We track the previous server-canonical id list
-  // and only overwrite local state when it actually changes — this
+  // and only overwrite local state when it actually changes - this
   // way an in-flight optimistic order isn't clobbered mid-drop.
   const lastServerIdsRef = useRef<string>(items.map((i) => i.id).join("|"));
   useEffect(() => {

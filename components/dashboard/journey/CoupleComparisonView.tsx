@@ -3,7 +3,7 @@
 /**
  * CoupleComparisonView
  *
- * The clinical "question matrix" view — for every question the
+ * The clinical "question matrix" view - for every question the
  * couple answered, show Partner A's answer and Partner B's answer
  * side-by-side, with a divergence indicator that lets a coach
  * scan dozens of questions in seconds and spot the gaps.
@@ -19,7 +19,7 @@
  *     under time pressure.
  *   - Filter pill row: one per divergence level. Lets the coach
  *     hide "match" rows when scanning for problems.
- *   - One-sided rows are tagged with a neutral badge — they're
+ *   - One-sided rows are tagged with a neutral badge - they're
  *     informative (someone skipped) but never sorted to the top.
  *   - Annotate button per row: opens FeedbackForm pre-bound with
  *     the couple, partner-A user, AND question_id. This is the
@@ -200,10 +200,10 @@ export function CoupleComparisonView({
                   </button>
                 </td>
                 <td className="text-muted-foreground px-3 py-2 align-top">
-                  {r.answer_a_display ?? <em className="opacity-50">—</em>}
+                  {r.answer_a_display ?? <em className="opacity-50">-</em>}
                 </td>
                 <td className="text-muted-foreground px-3 py-2 align-top">
-                  {r.answer_b_display ?? <em className="opacity-50">—</em>}
+                  {r.answer_b_display ?? <em className="opacity-50">-</em>}
                 </td>
                 <td className="px-3 py-2 align-top">
                   <span

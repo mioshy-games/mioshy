@@ -71,7 +71,7 @@ export function SubtopicForm({
     toast.error(
       fields.length === 0
         ? "Form invalid"
-        : `Cannot save — ${fields.slice(0, 3).join(" · ")}${
+        : `Cannot save - ${fields.slice(0, 3).join(" · ")}${
             fields.length > 3 ? ` (+${fields.length - 3} more)` : ""
           }`,
     );
@@ -112,7 +112,7 @@ export function SubtopicForm({
 
         <Section
           title="Identity"
-          description="A subtopic groups items inside a category. Items can also hang directly off the category — subtopics are optional."
+          description="A subtopic groups items inside a category. Items can also hang directly off the category - subtopics are optional."
         >
           <div className="grid gap-4 sm:grid-cols-2">
             <Field

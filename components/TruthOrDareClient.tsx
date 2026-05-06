@@ -190,7 +190,7 @@ export function TruthOrDareClient({
       legacy_inner_circle_color:       wheel.inner_circle_color,
       legacy_inner_circle_border:      wheel.inner_circle_border_color,
       legacy_pointer_color:            wheel.pointer_color,
-      // RESOLVED — what actually goes into <Wheel>:
+      // RESOLVED - what actually goes into <Wheel>:
       resolved_sizeRem:                resolvedSizeRem,
       resolved_sizeRemMax:             resolvedSizeRemMax,
       resolved_labelRadiusFraction:    resolvedLabelFraction,
@@ -635,7 +635,7 @@ export function TruthOrDareClient({
 
           {/* Main content area */}
           <div className="flex flex-1 flex-col items-center gap-6 md:flex-row md:items-center md:gap-10">
-            {/* Left column: wheel only — the logo lives inside `topBar`
+            {/* Left column: wheel only - the logo lives inside `topBar`
                 above (rendered at line ~586), so we don't render it
                 again here. The earlier `{logo}` reference was a stale
                 pointer left behind when the logo moved into topBar. */}
@@ -675,23 +675,35 @@ export function TruthOrDareClient({
             >
               {gameTitle}
             </h1>
-          </div>-
+          </div>
 
-          {/* Fixed spacer above wheel — clears pointer tip overflow */}
+          {/* Fixed spacer above wheel - clears pointer tip overflow */}
           <div className="shrink-0" style={{ height: wheelGapPx }} />
 
           {/* Wheel */}
-          <div className="w-full flex j-stify-center">{wheelOrSetup}</div>
+          <div className="w-full flex justify-center">{wheelOrSetup}</div>
 
-          {/* Fixed spacer below wheel — clears marker dot overflow */}
-          <div className="-hrink-0" style={{ height: wheelGapPx }} />
+          {/* Fixed spacer below wheel - clears marker dot overflow */}
+          <div className="shrink-0" style={{ height: wheelGapPx }} />
 
-          {/* Spin button — shrink-0 so it's never squished */}
-          <div className="w-full shrink-0 flex justify-center">{spinControls}</div>
+          {/* Spin button - sticky to the bottom of the viewport so it
+              ALWAYS stays visible, even when the wheel + spacers push
+              the natural-flow position below the fold. Itzik 2026-05-06:
+              previously the button was getting clipped on shorter
+              laptop viewports while the less-important Back / Sound
+              buttons (corner-fixed) remained visible. */}
+          <div
+            className="sticky bottom-3 z-20 mt-auto flex w-full shrink-0 justify-center pb-[max(0px,env(safe-area-inset-bottom))]"
+            style={{ pointerEvents: "none" }}
+          >
+            <div style={{ pointerEvents: "auto" }} className="w-full max-w-md">
+              {spinControls}
+            </div>
+          </div>
         </div>
-      )}-
+      )}
 
-      {/* ── Question popup — rendered fixed over everything ── */}
+      {/* ── Question popup - rendered fixed over everything ── */}
       {(() => {
         const sliceColor =
           options.find((o) => o.type === current?.type)?.color ??
@@ -740,9 +752,9 @@ export function TruthOrDareClient({
           authWaiterRef.current = null;
           setRegOpen(false);
         }}
-      />-
+      />
 
-      {/* ── Desktop corner buttons — fixed position, hidden on mobile ── */}
+      {/* ── Desktop corner buttons - fixed position, hidden on mobile ── */}
       <Link
         href="/games"
         className="hidden md:flex fixed bottom-5 right-5 z-30 rounded-full bg-white/15 px-4 py-2 text-sm font-medium text-white backdrop-blur hover:bg-white/25"
@@ -778,7 +790,7 @@ export function TruthOrDareClient({
           setSubOpen(false);
         }}
         // ── Mode selection ─────────────────────────────────────────────────
-        // "lead" while the user has never provided their details — guests on
+        // "lead" while the user has never provided their details - guests on
         //   play 4+ land here, giving them a chance to sign up for +3 more.
         // "paywall" once they have a lead / are logged-in / bonus consumed.
         mode={
@@ -801,7 +813,7 @@ export function TruthOrDareClient({
                 await grantPostSignupBonus(supabase, game.slug);
                 setBonusConsumed(true);
               }
-              // Re-read — this is the authoritative counter from here on.
+              // Re-read - this is the authoritative counter from here on.
               const plays = await getUserGamePlays(supabase, game.slug);
               setCompletedSpins(plays.plays_used);
               setBonusConsumed(plays.post_signup_bonus_used);

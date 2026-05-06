@@ -1,5 +1,5 @@
 // ============================================================
-// Cadence triggers — slice 3.
+// Cadence triggers - slice 3.
 //
 // Two entry points fire the cadence engine outside the cron loop:
 //
@@ -41,7 +41,7 @@ interface UpsertResult {
  * "communication") to category UUIDs, using the
  * assessment_priority_key seed. Order is preserved.
  *
- * Returns null if any slug fails to resolve — the caller should
+ * Returns null if any slug fails to resolve - the caller should
  * treat that as "ranking is not actionable" and skip materialization
  * rather than persist a partial ranking.
  */
@@ -79,7 +79,7 @@ async function resolveRankingToCategoryIds(
     const id = idByKey.get(k);
     if (!id) {
       console.warn(
-        `[cadence-trigger.resolve] no journey_categories row for assessment_priority_key='${k}' — slug may have been dropped from the seed`,
+        `[cadence-trigger.resolve] no journey_categories row for assessment_priority_key='${k}' - slug may have been dropped from the seed`,
       );
       return null;
     }
@@ -183,7 +183,7 @@ export async function onPriorityRankingSubmitted(
   const result = await materializeNextItemForUser(userId, {
     unlockAt: new Date(),
     source: "cadence",
-    // First-ever materialization — nothing to skip-sweep.
+    // First-ever materialization - nothing to skip-sweep.
     skipSweep: true,
   });
   return { prioritiesSaved: true, materialized: result };
@@ -192,7 +192,7 @@ export async function onPriorityRankingSubmitted(
 /**
  * Fires when the user reorders their ranking from /my/journey
  * (JourneyPriorityRanking edit). Updates the persisted ranking;
- * does NOT trigger materialization — the next slot will use the
+ * does NOT trigger materialization - the next slot will use the
  * new order. History is frozen by the dedup table.
  */
 export async function onPriorityRankingChanged(

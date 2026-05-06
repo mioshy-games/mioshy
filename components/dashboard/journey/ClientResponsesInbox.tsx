@@ -1,5 +1,5 @@
 /**
- * ClientResponsesInbox — interactive list of recent journey responses
+ * ClientResponsesInbox - interactive list of recent journey responses
  * for ONE couple (= ≤2 partners). Phase 2C + 2D of the redesign.
  *
  * What it shows:
@@ -28,7 +28,7 @@ export function ClientResponsesInbox({
    *  partner's first name). Falls back to a truncated user_id when
    *  no label is provided. */
   partners: Map<string, string>;
-  /** Couple id — used for path revalidation after server actions. */
+  /** Couple id - used for path revalidation after server actions. */
   coupleId: string;
 }) {
   return (

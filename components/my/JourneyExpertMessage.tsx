@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * JourneyExpertMessage — free-text channel from the user to their
- * clinician. Phase 4 — UI scaffolding only.
+ * JourneyExpertMessage - free-text channel from the user to their
+ * clinician. Phase 4 - UI scaffolding only.
  *
  * When wired up, the submission will land in the clinician's
  * /dashboard/my-clients/[coupleId] page (next to the existing

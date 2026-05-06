@@ -125,7 +125,7 @@ export function GameForm({
   // Per-locale thumbnail uploader. The catalogue thumbnails carry baked-in
   // copy in their own language (e.g. game name in Hebrew on the HE asset),
   // so each game owns two images. `locale` selects which form field gets
-  // the resulting public URL — the storage bucket is shared.
+  // the resulting public URL - the storage bucket is shared.
   async function onUploadThumbnail(file: File, locale: "he" | "en") {
     const setBusy = locale === "he" ? setUploadingHe : setUploadingEn;
     const fieldName =
@@ -364,14 +364,14 @@ export function GameForm({
                 When enabled, the wheel will be built from player names (entered before the game starts).
               </p>
             </div>
-            {/* Per-locale thumbnails — Hebrew + English uploaders side by
+            {/* Per-locale thumbnails - Hebrew + English uploaders side by
                 side. The catalogue card on /games picks the asset that
                 matches the visitor's locale, falling back to the other
                 language if only one is set. */}
             <div className="space-y-2">
               <Label>Thumbnail</Label>
               <p className="text-muted-foreground text-xs">
-                Upload a separate image per language — each card carries
+                Upload a separate image per language - each card carries
                 baked-in copy. If only one is set the other locale falls
                 back to it.
               </p>

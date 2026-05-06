@@ -26,7 +26,7 @@ import { AssessmentDiagProbe } from "@/components/journey/AssessmentDiagProbe";
 import { totalQuestions } from "@/lib/journey/questions";
 import type { Locale } from "@/lib/journey/types";
 
-// Force fresh render on EVERY request — never cache. Critical for an
+// Force fresh render on EVERY request - never cache. Critical for an
 // auth-aware page: we don't want a stale Cookie+user pair to be served
 // to a different visitor.
 export const dynamic = "force-dynamic";
@@ -42,7 +42,7 @@ export default async function JourneyAssessmentPage({
   }
   setRequestLocale(locale);
 
-  // ⚠️ BUILD MARKER — bumped 2026-04-30 with the Phase-A post-payment
+  // ⚠️ BUILD MARKER - bumped 2026-04-30 with the Phase-A post-payment
   // guard. If a paid+completed user hits this page, we redirect them
   // to /my/journey instead of letting them re-enter the assessment.
   // Look for the redirect log line below to confirm the guard fired.
@@ -99,7 +99,7 @@ export default async function JourneyAssessmentPage({
         }
       }
     } else if (deviceIdForLog) {
-      // No user-owned journey — possibly the resume call didn't link the
+      // No user-owned journey - possibly the resume call didn't link the
       // anon row. Probe for an orphan anon journey under the same device
       // and surface it on the page log so we can see what should have
       // been linked.
@@ -113,7 +113,7 @@ export default async function JourneyAssessmentPage({
           .limit(1)
           .maybeSingle();
         console.warn(
-          "[/journey/assessment] NO journey for this user — possible unlinked anon row:",
+          "[/journey/assessment] NO journey for this user - possible unlinked anon row:",
           orphan,
         );
       }
@@ -134,7 +134,7 @@ export default async function JourneyAssessmentPage({
     // can dump them right back here on refresh / browser back, which was
     // the worst UX issue reported.
     //
-    // Edge case we're tolerant to: completed=true but no subscription —
+    // Edge case we're tolerant to: completed=true but no subscription -
     // that's the natural state of an anon → registered user who hasn't
     // paid yet. We let them see AnalysisSummary with the CTA, as designed.
     const completed =
@@ -149,7 +149,7 @@ export default async function JourneyAssessmentPage({
     });
     if (subscriptionActive && completed) {
       console.log(
-        "[/journey/assessment] ✅ Phase A guard fired — redirecting to /my/journey",
+        "[/journey/assessment] ✅ Phase A guard fired - redirecting to /my/journey",
         { user_id: user.id },
       );
       redirect(`/${locale}/my/journey`);
@@ -183,7 +183,7 @@ export default async function JourneyAssessmentPage({
             language: (journey.language ?? locale) as Locale,
           };
 
-          // Hydrate prior anon answers (admin client — anon rows have no
+          // Hydrate prior anon answers (admin client - anon rows have no
           // auth.uid() to drive RLS).
           const { data: rows } = await admin
             .from("journey_responses")

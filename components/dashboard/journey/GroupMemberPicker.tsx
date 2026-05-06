@@ -1,7 +1,7 @@
 "use client";
 
 // ============================================================
-// GroupMemberPicker — slice 7 v3 admin UI for managing group
+// GroupMemberPicker - slice 7 v3 admin UI for managing group
 // membership.
 //
 // Layout:

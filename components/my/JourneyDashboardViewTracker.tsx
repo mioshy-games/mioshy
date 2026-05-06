@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * JourneyDashboardViewTracker — fires a single `journey_dashboard_viewed`
+ * JourneyDashboardViewTracker - fires a single `journey_dashboard_viewed`
  * analytics event the first time the page mounts in a session. Renders
  * nothing.
  *

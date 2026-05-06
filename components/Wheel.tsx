@@ -26,13 +26,13 @@ export type WheelSegment = {
  *   • `\n`        (real newline)
  *   • `|`         (pipe)
  *   • `<br>` / `<br/>` / `<br />`  (HTML-style)
- * those are honoured first — every fragment becomes its own line, in
+ * those are honoured first - every fragment becomes its own line, in
  * order, with no length cap. This lets admins force a break at exactly
  * the syllable they want, e.g. "מעולם|לא היה לי" → ["מעולם", "לא היה לי"].
  *
  * Auto-fallback (no manual break in the string):
  * if the label is longer than `threshold` it is split into TWO lines at
- * the word boundary that minimises the longer line — visually balanced
+ * the word boundary that minimises the longer line - visually balanced
  * (e.g. "Never Have I Ever" → ["Never Have", "I Ever"]).
  *
  * Short labels (≤ threshold) and single-word labels are returned as-is
@@ -177,10 +177,10 @@ export type WheelProps = {
   /**
    * How slice labels orient inside each wedge. Default: "tangential".
    *
-   * - "tangential" — text reads along the slice's tangent (perpendicular
+   * - "tangential" - text reads along the slice's tangent (perpendicular
    *   to the radius). Compact for short labels; long labels split onto
    *   two lines stacked radially.
-   * - "radial" — text reads from the wheel's center outward along the
+   * - "radial" - text reads from the wheel's center outward along the
    *   radius. Better for long names (e.g. player names like
    *   "Sarah Sanders") because each slice's full radial length is
    *   available for the text instead of just the chord.
@@ -664,7 +664,7 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
               //
               // TANGENTIAL placement (default): single radial point at
               // labelRadiusFraction, text rotated 90\u00B0 from radius.
-              // 2026-05-06: unified mapping — slider value = label radius
+              // 2026-05-06: unified mapping - slider value = label radius
               // fraction in BOTH modes. Higher slider → farther from
               // center, in tangential AND radial. The earlier inverse
               // mapping for radial mode was confusing UX: at slider 0.9
@@ -729,8 +729,8 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
               // slices were rendering in Assistant, others in Frank Ruhl,
               // others in the system Hebrew fallback) which made every
               // category look like a different typeface. Lock to the
-              // Hebrew body stack — Assistant first, Heebo as a peer
-              // fallback — so the whole wheel reads as one voice.
+              // Hebrew body stack - Assistant first, Heebo as a peer
+              // fallback - so the whole wheel reads as one voice.
               const labelFontStack =
                 "var(--font-body-hebrew), var(--font-heebo), 'Assistant', 'Heebo', system-ui, sans-serif";
               return (
@@ -748,7 +748,7 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
                   // (text grows in local +x = absolute outward).
                   // For flipped (left-half) slices the rotation
                   // reverses the local-x axis, so we use textAnchor=end
-                  // to keep growth in the SAME outward direction —
+                  // to keep growth in the SAME outward direction -
                   // ensuring all labels start at the same distance
                   // from the center.
                   textAnchor={isRadial ? radialAnchor : "middle"}
@@ -771,7 +771,7 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
                   {(() => {
                     // Squeeze each rendered line via SVG textLength +
                     // lengthAdjust=spacingAndGlyphs. The browser scales both
-                    // letter spacing AND glyph widths — keeps font height
+                    // letter spacing AND glyph widths - keeps font height
                     // intact while pulling the horizontal footprint inward.
                     //
                     // Coefficient differs by orientation:
@@ -779,7 +779,7 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
                     //    tight axis; compress aggressively so text fits
                     //    inside a 30°-wide slice.
                     //  - radial 0.55: radial axis is generous (almost
-                    //    full r), so we use near-natural width — text
+                    //    full r), so we use near-natural width - text
                     //    just reads at normal proportions.
                     const compressionCoeff = isRadial ? 0.55 : 0.42;
                     const widthFor = (text: string) =>

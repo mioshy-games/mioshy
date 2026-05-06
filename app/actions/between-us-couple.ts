@@ -83,9 +83,9 @@ export async function joinCoupleByPairCode(
   if (error || !coupleId) {
     const msg = error?.message ?? "";
     // SQL contract (migrations/029_between_us_section.sql §1.7):
-    //   • 'pair_code not found'     — code typo / inactive couple
-    //   • 'user already belongs'    — caller is already paired with someone
-    //   • 'couple is full'          — couple already has 2 members; a third
+    //   • 'pair_code not found'     - code typo / inactive couple
+    //   • 'user already belongs'    - caller is already paired with someone
+    //   • 'couple is full'          - couple already has 2 members; a third
     //                                  redeem is rejected at the DB level
     //                                  so a single subscription always
     //                                  stays a two-seat couple.
@@ -96,7 +96,7 @@ export async function joinCoupleByPairCode(
         : msg.includes("already a member")
           ? "You're already a member of this couple"
           : msg.includes("couple is full")
-            ? "This couple already has two members — a subscription covers two people only"
+            ? "This couple already has two members - a subscription covers two people only"
             : msg || "Could not join couple";
     return { ok: false, error: friendly };
   }

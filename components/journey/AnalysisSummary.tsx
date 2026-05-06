@@ -38,7 +38,7 @@ export function AnalysisSummary({ analysis, locale, subscriptionActive = false }
   // Copy approved by Itzik 2026-05-05. Tone: professional + urgency-results
   // (combination A+C). The offer card now leads with the expert-mentorship
   // promise (private room, weekly content, ongoing dialogue) instead of
-  // generic feature bullets — because that's the actual product.
+  // generic feature bullets - because that's the actual product.
   const t = isHe
     ? {
         title: "הניתוח שלכם",
@@ -47,16 +47,16 @@ export function AnalysisSummary({ analysis, locale, subscriptionActive = false }
         passion: "סיכון לירידה בתשוקה",
         topGap: "מוקד לחודש הראשון",
         recs: "התוכנית המותאמת שלכם",
-        offerHero: "ליווי צמוד של מומחה זוגיות — בתוך חשבון פרטי, רק אתם והוא.",
+        offerHero: "ליווי צמוד של מומחה זוגיות - בתוך חשבון פרטי, רק אתם והוא.",
         offerSub: "תוך 30 יום תרגישו שינוי אמיתי.",
         feat1Title: "חדר אישי סגור עם המומחה שלכם",
-        feat1Body: "שולחים שאלות מתי שצריך, מקבלים מענה אמיתי — לא בוט, לא תור.",
+        feat1Body: "שולחים שאלות מתי שצריך, מקבלים מענה אמיתי - לא בוט, לא תור.",
         feat2Title: "תוכן שבועי שמותאם לסיפור שלכם",
         feat2Body:
           "לא קורס מוכן. כל שבוע תוכן שנבנה לפי מה שמילאתם והשיחות שלכם עם המומחה.",
         feat3Title: "שיחה שמתפתחת איתכם",
         feat3Body:
-          "אתם מגיבים על כל תוכן, המומחה עונה, וזה ממשיך לבנות את התהליך — שבוע אחר שבוע.",
+          "אתם מגיבים על כל תוכן, המומחה עונה, וזה ממשיך לבנות את התהליך - שבוע אחר שבוע.",
         price: "57₪ / שבוע · ניתן לעצור בכל עת",
         cta: "פתחו את החדר הפרטי שלכם",
         ctaLoading: "מכין תשלום…",
@@ -73,17 +73,17 @@ export function AnalysisSummary({ analysis, locale, subscriptionActive = false }
         topGap: "Focus for the first month",
         recs: "Your personalized program",
         offerHero:
-          "Dedicated guidance from a relationship expert — inside a private account, just the two of you and them.",
+          "Dedicated guidance from a relationship expert - inside a private account, just the two of you and them.",
         offerSub: "In 30 days you'll feel a real change.",
         feat1Title: "A private, closed room with your expert",
         feat1Body:
-          "Send questions whenever you need to, get a real reply — no bot, no queue.",
+          "Send questions whenever you need to, get a real reply - no bot, no queue.",
         feat2Title: "Weekly content tailored to your story",
         feat2Body:
           "Not an off-the-shelf course. Each week's content is built around what you filled in and your conversations with the expert.",
         feat3Title: "A dialogue that grows with you",
         feat3Body:
-          "You respond to every piece of content, your expert replies, and the process keeps building — week after week.",
+          "You respond to every piece of content, your expert replies, and the process keeps building - week after week.",
         price: "$19 / week · cancel anytime",
         cta: "Open your private room",
         ctaLoading: "Preparing checkout…",
@@ -164,7 +164,7 @@ export function AnalysisSummary({ analysis, locale, subscriptionActive = false }
       </p>
 
       {/* ── Score cards ──
-          Stack vertically on phones — the third Hebrew label
+          Stack vertically on phones - the third Hebrew label
           ("סיכון לירידה בתשוקה", 21 chars) was wrapping to 3+ lines
           and clipping at 360px. From sm breakpoint up, 3-col grid
           stays for the original side-by-side comparison. */}
@@ -174,7 +174,7 @@ export function AnalysisSummary({ analysis, locale, subscriptionActive = false }
         {scoreCard(t.passion, analysis.passion_risk, true)}
       </div>
 
-      {/* ── Love-language card removed 2026-05-05 per Itzik —
+      {/* ── Love-language card removed 2026-05-05 per Itzik -
           a single-line label felt too thin and the expanded version
           was deferred. Will revisit with a different relationship-
           insight panel later. The underlying scoring (analysis.
@@ -183,12 +183,12 @@ export function AnalysisSummary({ analysis, locale, subscriptionActive = false }
 
       {/* ── Focus for the first month ──
           Source priority:
-          1. summary.top_priority — the user's #1 ranking pick (preferred)
-          2. analysis.top_gap — legacy fallback (axis with lowest score)
+          1. summary.top_priority - the user's #1 ranking pick (preferred)
+          2. analysis.top_gap - legacy fallback (axis with lowest score)
           The card is hidden entirely when neither source has data.
 
           Copy reframed 2026-05-05 (approved by Itzik): the card no longer
-          shows just the priority label — it now reflects the choice back
+          shows just the priority label - it now reflects the choice back
           to the user, validates it, names what the first month will look
           like, and closes with a doing→results frame. Per-priority copy
           lives in lib/journey/focus-month-copy.ts; falls back to the bare
@@ -218,7 +218,7 @@ export function AnalysisSummary({ analysis, locale, subscriptionActive = false }
       })()}
 
       {/* ── Recommendations ──
-          Bumped from text-sm to text-[18px] per UX feedback 2026-05-05 —
+          Bumped from text-sm to text-[18px] per UX feedback 2026-05-05 -
           recommendations are action-oriented copy the user should actually
           read, not legal fine print. */}
       <div>
@@ -249,7 +249,7 @@ export function AnalysisSummary({ analysis, locale, subscriptionActive = false }
             </a>
           </div>
         ) : (
-          // Offer card — restructured 2026-05-05 (approved by Itzik). The
+          // Offer card - restructured 2026-05-05 (approved by Itzik). The
           // old generic feature bullets ("full access", "more questionnaires")
           // are replaced by the actual product: weekly expert-led mentorship
           // inside a private account. Three feature tiles, each with an
@@ -264,7 +264,7 @@ export function AnalysisSummary({ analysis, locale, subscriptionActive = false }
               </p>
             </div>
 
-            {/* Feature tiles — stack on mobile, grid on tablet+. */}
+            {/* Feature tiles - stack on mobile, grid on tablet+. */}
             <div className="flex flex-col gap-3 sm:grid sm:grid-cols-3">
               <FeatureTile
                 icon={<Lock className="size-5" />}

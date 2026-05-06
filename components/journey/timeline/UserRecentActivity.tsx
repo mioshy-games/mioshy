@@ -59,7 +59,7 @@ export async function UserRecentActivity({
       <div className="border-white/10 bg-white/5 text-white/70 rounded-2xl border p-5 text-sm">
         {isHe
           ? "עוד לא נרשמה פעילות. תתחילו עם המשימה הבאה למעלה."
-          : "No activity yet — start with the next chapter above."}
+          : "No activity yet - start with the next chapter above."}
       </div>
     );
   }

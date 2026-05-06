@@ -1,5 +1,5 @@
 /**
- * LegalPageShell — shared layout for /terms, /refund-policy, /privacy
+ * LegalPageShell - shared layout for /terms, /refund-policy, /privacy
  * and /accessibility.
  *
  * Reads its content from a structured payload so each page can stay a
@@ -11,7 +11,7 @@
  * Visual direction matches the rest of the site: deep midnight base,
  * faint accent gradient at the top of the hero so legal pages feel
  * part of the product instead of a stripped-down legal annex. The body
- * is intentionally low-style — generous line-height + comfortable
+ * is intentionally low-style - generous line-height + comfortable
  * measure (max-w-3xl ≈ 65ch) so people can actually read.
  */
 

@@ -1,13 +1,13 @@
 /**
- * Animated dark backdrop for /my — same purple ↔ rose converging-blob
+ * Animated dark backdrop for /my - same purple ↔ rose converging-blob
  * language as the HomepageV2 hero so the post-login surface reads as
  * "your premium home" rather than a separate visual world.
  *
  * Self-contained: the CSS lives in this file under home-bg-* class names
- * (not .hero-* — those are scoped to .home-v2 over in v2/styles.css and
+ * (not .hero-* - those are scoped to .home-v2 over in v2/styles.css and
  * we don't want to inherit that whole stylesheet here). The keyframes
  * shipped in this component are independent copies; tweak the hero
- * homepage and /my will not auto-follow, which is intentional —
+ * homepage and /my will not auto-follow, which is intentional -
  * different surfaces, same family.
  *
  * Server component (no JS). RTL-agnostic; layout is purely transform-based.
@@ -27,7 +27,7 @@ export function HomeBackground() {
         aria-hidden
         className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-gradient-to-b from-[#0E0810] via-[#150812] to-[#0a0610]"
       >
-        {/* Converging pair — red top-right, purple bottom-left, 32s synced loop */}
+        {/* Converging pair - red top-right, purple bottom-left, 32s synced loop */}
         <div className="home-bg-blob home-bg-blob-1" />
         <div className="home-bg-blob home-bg-blob-2" />
 
@@ -57,14 +57,14 @@ export function HomeBackground() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CSS — kept in this file so the component is drop-in. All selectors are
+// CSS - kept in this file so the component is drop-in. All selectors are
 // home-bg- prefixed; @keyframes names are home-bg-* so they don't collide
 // with the homepage hero's hero-* keyframes.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const HOME_BG_CSS = `
-  /* Converging blobs — red top-right ↔ purple bottom-left.
-     Durations chosen to feel "ambient" rather than "moving" — slow enough
+  /* Converging blobs - red top-right ↔ purple bottom-left.
+     Durations chosen to feel "ambient" rather than "moving" - slow enough
      that the user reads the bg as atmosphere on focus-heavy pages
      (assessment, timeline) without it pulling attention. */
   .home-bg-blob{position:absolute;border-radius:50%;filter:blur(90px);opacity:0.78;mix-blend-mode:screen;will-change:transform}
@@ -91,7 +91,7 @@ const HOME_BG_CSS = `
     50%      { transform: translate(-110px,50px) scale(1.2); }
   }
 
-  /* Floating circle — cyan-tinted, slow ambient drift */
+  /* Floating circle - cyan-tinted, slow ambient drift */
   .home-bg-floating-circle{
     position:absolute;width:160px;height:160px;left:60%;top:30%;
     border-radius:50%;
@@ -107,7 +107,7 @@ const HOME_BG_CSS = `
     80%      { transform: translate(-40px, -80px) scale(1.08); }
   }
 
-  /* 12 small translucent orbit dots — durations roughly doubled vs first
+  /* 12 small translucent orbit dots - durations roughly doubled vs first
      pass. Still drifting, but slow enough that you don't catch any of
      them mid-flight while reading. */
   .home-bg-orbit{position:absolute;border-radius:50%;z-index:2;pointer-events:none;will-change:transform,opacity;opacity:0.5}

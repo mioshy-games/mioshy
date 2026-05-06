@@ -10,7 +10,7 @@ import { fetchGameSettings } from "@/lib/settings-queries";
 //   - `noStore()` (called below) disables Next's per-request fetch cache.
 //   - `dynamic = "force-dynamic"` is the route-level switch that
 //     prevents Vercel's CDN from holding a stale prerender of /games/<slug>.
-//     Without it we saw stale renders served — e.g. /games/truth-or-dare
+//     Without it we saw stale renders served - e.g. /games/truth-or-dare
 //     resolving to a previously-built page that contained another game's
 //     content, even after the DB had been corrected. With it, every
 //     request re-runs the server component against fresh DB data.

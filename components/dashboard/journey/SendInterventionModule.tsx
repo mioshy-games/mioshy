@@ -5,9 +5,9 @@
  *
  * The "prescription" surface inside /dashboard/my-clients/[coupleId].
  * Lets the coach pick:
- *   1. WHO   — both partners | only A | only B
- *   2. WHAT  — message | task | reflection_prompt | item_assignment
- *   3. CONTENT — fields specific to the chosen WHAT
+ *   1. WHO   - both partners | only A | only B
+ *   2. WHAT  - message | task | reflection_prompt | item_assignment
+ *   3. CONTENT - fields specific to the chosen WHAT
  *
  * Designed for fast workflow (≤2 clicks to send a templated note).
  * Sits inside the couple workspace so the coach never leaves
@@ -87,7 +87,7 @@ export function SendInterventionModule({
     setSuccess(null);
 
     // Build the discriminated payload per kind. We do the validation
-    // here friendliness-wise — the server-action zod schema will
+    // here friendliness-wise - the server-action zod schema will
     // re-validate and reject anything bad anyway.
     let payload: InterventionInput["payload"];
 
@@ -161,7 +161,7 @@ export function SendInterventionModule({
         <h2 className="text-base font-semibold">שליחת התערבות</h2>
       </header>
       <p className="text-muted-foreground mt-0.5 text-xs">
-        ברגע שהשליחה נסגרת — המקבל יראה את התוכן בפיד שלו. ההערה מטה
+        ברגע שהשליחה נסגרת - המקבל יראה את התוכן בפיד שלו. ההערה מטה
         נשמרת לאודיט ואינה גלויה למשתמש.
       </p>
 
@@ -224,7 +224,7 @@ export function SendInterventionModule({
           </div>
         </fieldset>
 
-        {/* CONTENT — kind-dependent */}
+        {/* CONTENT - kind-dependent */}
         <div className="space-y-3 border-t pt-3">
           {kind === "item_assignment" ? (
             <>
@@ -236,7 +236,7 @@ export function SendInterventionModule({
                   required
                   className="bg-background mt-1 h-9 w-full rounded-md border px-3 text-sm"
                 >
-                  <option value="">— בחרו —</option>
+                  <option value="">- בחרו -</option>
                   {items.map((it) => (
                     <option key={it.id} value={it.id}>
                       {it.title_he ?? it.title_en ?? it.id}

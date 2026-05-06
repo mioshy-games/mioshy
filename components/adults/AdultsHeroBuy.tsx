@@ -51,12 +51,12 @@ import { RedeemCodeButton } from "@/components/between-us/RedeemCodeButton";
 type Ctx = {
   user_id: string;
   couple_id: string | null;
-  /** "owner" | "partner" — only owners can invite. */
+  /** "owner" | "partner" - only owners can invite. */
   role: "owner" | "partner" | null;
-  /** Six-character couple pair_code — the owner shares this with their
+  /** Six-character couple pair_code - the owner shares this with their
    *  partner via any channel (WhatsApp, in person, message). The partner
    *  redeems it via <RedeemCodeButton /> to join the couple and unlock
-   *  every game the couple owns — no extra payment. */
+   *  every game the couple owns - no extra payment. */
   pair_code: string | null;
   partner_count: number;
   entitled: boolean;
@@ -86,7 +86,7 @@ export function AdultsHeroBuy({
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  // Guard the auto-resume effect — fire AT MOST once per mount so a
+  // Guard the auto-resume effect - fire AT MOST once per mount so a
   // stuck/refreshed page can neve- double-charge the user.
   const continueFiredRef = useRef(false);
 
@@ -97,7 +97,7 @@ export function AdultsHeroBuy({
   // When the visitor arrives back here with `?continuePurchase=1` (set by
   // the click-while-logged-out branch below), we re-fire the purchase
   // action they tried before signing in. Adults is now one-time
-  // single-game purchase only — no tier query param needed.
+  // single-game purchase only - no tier query param needed.
   useEffect(() => {
     if (continueFiredRef.current) return;
     if (!loggedIn) return;
@@ -105,7 +105,7 @@ export function AdultsHeroBuy({
     if (searchParams.get("continuePurchase") !== "1") return;
     continueFiredRef.current = true;
     void runPurchase();
-    // We intentionally don't list runPurchase / router in deps — refs +
+    // We intentionally don't list runPurchase / router in deps - refs +
     // closures keep this stable, and we only ever want this to fire on
     // the first render after auth-return.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -134,7 +134,7 @@ export function AdultsHeroBuy({
       //                       (source='paid') and bounces the user back to
       //                       /[locale]/adults/[slug] so the entitled state
       //                       renders with the pair code visible.
-      // We narrow the discriminated union via the `bypassed` field — that's
+      // We narrow the discriminated union via the `bypassed` field - that's
       // why this branch checks `res.bypassed` instead of `res.redirect_url`
       // (the latter doesn't exist on the bypass variant and TS rejects it).
       const res = await startAdultsSinglePurchase({
@@ -151,7 +151,7 @@ export function AdultsHeroBuy({
             error: res.error,
           }),
         );
-        // Auth/profile gates — gracefully redirect with `next=` so the
+        // Auth/profile gates - gracefully redirect with `next=` so the
         // visitor returns to this very page and re-fires automatically.
         if (res.error === "login_required") {
           const next = `${gamePath}?continuePurchase=1`;
@@ -179,7 +179,7 @@ export function AdultsHeroBuy({
         return;
       }
 
-      // ── Branch 1: admin bypass — entitlement already exists ─────────
+      // ── Branch 1: admin bypass - entitlement already exists ─────────
       if (res.bypassed) {
         console.log(
           "[AdultsHeroBuy] bypass.success → product page",
@@ -201,7 +201,7 @@ export function AdultsHeroBuy({
         JSON.stringify({
           game_id: gameId,
           checkout_session_id: res.checkout_session_id,
-          // Don't log the full URL — it has the LowProfileCode in it which
+          // Don't log the full URL - it has the LowProfileCode in it which
           // is sensitive. Just log the host so we can confirm the right env.
           redirect_host: tryParseHost(res.redirect_url),
         }),
@@ -233,7 +233,7 @@ export function AdultsHeroBuy({
     void runPurchase();
   }
 
-  /** Pulls th- host out of a URL string for safe logging — never throws. */
+  /** Pulls th- host out of a URL string for safe logging - never throws. */
   function tryParseHost(u: string): string | null {
     try {
       return new URL(u).host;
@@ -243,10 +243,10 @@ export function AdultsHeroBuy({
   }
 
   // ─────────────────────────────────────────────────────────────────────
-  // Branch 1 — already entitled.
+  // Branch 1 - already entitled.
   // ─────────────────────────────────────────────────────────────────────
   // Owners see (a) the primary "Open game" CTA, and (b) the pair code
-  // box. The code is the entire share mechanism — one tap on the copy
+  // box. The code is the entire share mechanism - one tap on the copy
   // icon places a fully-formed invite (greeting + product link + code)
   // on the clipboard so the buyer can paste it into ANY channel. We
   // deliberately do NOT collect the partner's email here: the spec is
@@ -277,7 +277,7 @@ export function AdultsHeroBuy({
           </span>
         </Link>
 
-        {/* Couple share — single visible pair code + smart copy button.
+        {/* Couple share - single visible pair code + smart copy button.
             Partner-side flow:
               1. Receives the WhatsApp/SMS/email message the buyer pasted
               2. Taps the link → arrives at /adults/[slug] (this page)
@@ -299,7 +299,7 @@ export function AdultsHeroBuy({
   }
 
   // ─────────────────────────────────────────────────────────────────────
-  // Branch 2 — not entitled. BIG price + single one-time buy CTA.
+  // Branch 2 - not entitled. BIG price + single one-time buy CTA.
   // ─────────────────────────────────────────────────────────────────────
   // Per spec: Adults is ONE-TIME purchase only. Site-wide access via
   // monthly/annual subscriptions belongs to Journey, not here. The
@@ -359,11 +359,11 @@ export function AdultsHeroBuy({
         </button>
       </div>
 
-      {/* Reassurance microcopy — RENDERED ONLY FOR LOGGED-IN BUYERS.
+      {/* Reassurance microcopy - RENDERED ONLY FOR LOGGED-IN BUYERS.
           Rationale: on the product page the anonymous visitor is in
           decision/desire mode. Telling them "sign up / sign in first,
           then pay, then play" foregrounds friction (3 mental steps)
-          before they've even committed to buying — and harms conversion.
+          before they've even committed to buying - and harms conversion.
           The Buy CTA + auth funnel will explain the flow at the moment
           it's actually needed. For authenticated buyers we DO show the
           three-pill reassurance ("one-time · yours forever · straight
@@ -377,18 +377,18 @@ export function AdultsHeroBuy({
         </p>
       ) : null}
 
-      {/* "Got an invite?" entry point — for partners who received a
+      {/* "Got an invite?" entry point - for partners who received a
           pair code from the buyer. Clicking opens the redeem dialog;
           on success we route them straight to /adults/[slug]/play
           (instead of the generic /my hub) so they land inside the
           game they were invited to. authNext stays in the public
           gamePath so any auth/profile-completion fallback returns the
           partner to this same page (where they can re-open the redeem
-          dialog) — once finished, the dialog itself routes to /play.
+          dialog) - once finished, the dialog itself routes to /play.
 
           Mobile redesign: stacks vertically (label on top, button below)
           so the outlined button has its own visual weight. Button is now
-          a true secondary action — rounded-full outline, no fill — and
+          a true secondary action - rounded-full outline, no fill - and
           ~18px text so it pairs with the reassurance copy above. Desktop
           keeps the inline single-line treatment that was here before. */}
       <div className="mt-5 flex flex-col items-start gap-2 sm:mt-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3 sm:gap-y-1">
@@ -405,7 +405,7 @@ export function AdultsHeroBuy({
         />
       </div>
 
-      {/* Cross-pillar tease — Journey gives full-site access (incl. all
+      {/* Cross-pillar tease - Journey gives full-site access (incl. all
           Adults games) for a monthly fee. Soft, single line. Goes only
           to authenticated buyers; logged-out users have enough to
           process already with the Buy + Got-an-invite affordances. */}
@@ -417,8 +417,8 @@ export function AdultsHeroBuy({
           >
             <Sparkles className="h-3.5 w-3.5 text-amber-300" />
             {isHe
-              ? "רוצים גישה לכל המשחקים? נסו את ליווי מיאושי — מנוי חודשי, גישה לכל האתר."
-              : "Want access to everything? Try Mioshy Journey — monthly subscription, full site access."}
+              ? "רוצים גישה לכל המשחקים? נסו את ליווי מיאושי - מנוי חודשי, גישה לכל האתר."
+              : "Want access to everything? Try Mioshy Journey - monthly subscription, full site access."}
           </Link>
         </div>
       ) : null}
@@ -428,7 +428,7 @@ export function AdultsHeroBuy({
           role="alert"
           className="mt-4 rounded-2xl border border-rose-300/30 bg-rose-500/15 px-4 py-2.5 text-sm text-rose-100"
         >
-          {isHe ? "משהו השתבש — " : "Something went wrong — "}
+          {isHe ? "משהו השתבש - " : "Something went wrong - "}
           {error}
         </p>
       ) : null}
@@ -451,7 +451,7 @@ export function AdultsHeroBuy({
 // ──────────────────────────────────────────────────────────────────-──────────
 
 /**
- * PairCodeBlock — visible 6-character couple pair code + smart copy
+ * PairCodeBlock - visible 6-character couple pair code + smart copy
  * button. Tapping copy puts a fully-formed invite message on the
  * clipboard so the buyer can paste it into ANY channel (WhatsApp,
  * iMessage, email, Telegram) and the recipient gets context, link,
@@ -486,7 +486,7 @@ function PairCodeBlock({
    *  derive the absolute origin from `window.location` at click-time
    *  (this is a "use client" component, so window is available). When
    *  origin is missing for any reason we still produce a usable
-   *  message — the share text degrades gracefully to a relative path. */
+   *  message - the share text degrades gracefully to a relative path. */
   function buildPayload(): string {
     const origin =
       typeof window !== "undefined" ? window.location.origin : "";
@@ -514,7 +514,7 @@ function PairCodeBlock({
       setCopied(true);
       setTimeout(() => setCopied(false), 2200);
     } catch {
-      // Clipboard API may fail on insecure origins / older browsers —
+      // Clipboard API may fail on insecure origins / older browsers -
       // fall back to a manual selection prompt instead of crashing.
       try {
         window.prompt(
@@ -522,7 +522,7 @@ function PairCodeBlock({
           payload,
         );
       } catch {
-        /* swallow — last-resort fallback only */
+        /* swallow - last-resort fallback only */
       }
       setCopied(false);
     }
@@ -538,8 +538,8 @@ function PairCodeBlock({
           </h3>
           <p className="mt-1 text-[12.5px] leading-snug text-white/70">
             {isHe
-              ? "זה הקוד ששייך אתכם. לחצו על העתקה — נשמור ללוח גם את הקוד וגם קישור הזמנה מוכן לשליחה בוואטסאפ או מייל. בן/בת הזוג נכנס/ת לקישור, מתחבר/ת, מזין/ה את הקוד — ויש להם גישה."
-              : "This is the code that pairs you. Tap copy — we'll put both the code and a ready-to-send invite (link + greeting) on your clipboard. Your partner opens the link, signs in, enters the code, and gets access."}
+              ? "זה הקוד ששייך אתכם. לחצו על העתקה - נשמור ללוח גם את הקוד וגם קישור הזמנה מוכן לשליחה בוואטסאפ או מייל. בן/בת הזוג נכנס/ת לקישור, מתחבר/ת, מזין/ה את הקוד - ויש להם גישה."
+              : "This is the code that pairs you. Tap copy - we'll put both the code and a ready-to-send invite (link + greeting) on your clipboard. Your partner opens the link, signs in, enters the code, and gets access."}
           </p>
         </div>
       </div>

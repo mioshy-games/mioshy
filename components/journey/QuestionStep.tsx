@@ -113,7 +113,7 @@ function LikertControl({
   busy?: boolean;
 }) {
   const current = value?.kind === "likert" ? value.value : null;
-  // Layout — UX feedback 2026-05-05: on phones, the 5-col grid was
+  // Layout - UX feedback 2026-05-05: on phones, the 5-col grid was
   // squeezing Hebrew labels like "לעיתים רחוקות" (13 chars) into ~57px
   // cells, wrapping to 3 lines and looking broken. Mobile now stacks the
   // 5 options as full-width buttons (number + label inline, large tap

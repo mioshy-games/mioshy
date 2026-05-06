@@ -4,7 +4,7 @@
  * lib/journey-content/responses.ts
  *
  * Server action that lets a Journey user post a response to one of
- * their unlocked items. Phase 2B of the redesign — see
+ * their unlocked items. Phase 2B of the redesign - see
  * docs/my-page-redesign-spec.md §21.
  *
  * Hard rules:
@@ -60,7 +60,7 @@ export async function submitJourneyResponse(args: {
     };
   }
 
-  // Phase 4 — deterministic auto-tags so the clinician CRM can
+  // Phase 4 - deterministic auto-tags so the clinician CRM can
   // filter "needs attention" rows without scanning every row's text.
   const tags = computeResponseTags({
     text,

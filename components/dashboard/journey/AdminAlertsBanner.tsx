@@ -1,7 +1,7 @@
 "use client";
 
 // ============================================================
-// AdminAlertsBanner — slice 10 surface on /dashboard/journey/health.
+// AdminAlertsBanner - slice 10 surface on /dashboard/journey/health.
 // Shows unread admin_pool notifications (cron failures + stuck-user
 // digests) at the top of the page, with a one-click "mark all read".
 // ============================================================

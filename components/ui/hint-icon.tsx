@@ -1,14 +1,14 @@
 "use client";
 
 // ============================================================
-// HintIcon — slice "expert onboarding" PR2.
+// HintIcon - slice "expert onboarding" PR2.
 //
 // Tiny "?" button that opens a popover with explanatory copy.
 // Reads from lib/journey-content/hint-catalog.ts by stable topic
 // id. Hebrew is canonical; renders RTL by default. EN body is
 // optional and shown in a muted tone below the HE body if present.
 //
-// No new deps — self-contained popover with click-outside + Esc
+// No new deps - self-contained popover with click-outside + Esc
 // dismiss + small portal-less positioning. Same pattern as the
 // JourneyNotificationsBell dropdown.
 //
@@ -16,7 +16,7 @@
 //       (place inline next to the field label)
 //
 // If the topic id isn't in the catalog, renders nothing in
-// production (would be a missing-translation bug — surfaces in dev
+// production (would be a missing-translation bug - surfaces in dev
 // via a console warning).
 // ============================================================
 

@@ -1,17 +1,17 @@
 "use client";
 
 /**
- * ResponseBox — a calm, single-purpose form a user fills in to share
+ * ResponseBox - a calm, single-purpose form a user fills in to share
  * how an item landed for them. Phase 2B of the redesign.
  *
  * UX choices (per spec §21 + tone guidelines §1.5):
  *   - Single textarea + submit button. No modal, no rich text.
  *   - Optimistic visual: on submit, we clear the textarea and show
  *     a quiet "תגובה נשלחה" line above the form for 5 seconds.
- *   - "פרטי" checkbox lets the user mark the response as private —
+ *   - "פרטי" checkbox lets the user mark the response as private -
  *     visible only to themselves and the clinician.
  *   - Errors surface inline; we never throw a toast over the page.
- *   - Follows the existing professional voice — no emoji, no
+ *   - Follows the existing professional voice - no emoji, no
  *     exclamation marks, no "" type encouragement.
  */
 
@@ -98,8 +98,8 @@ export function ResponseBox({
       </label>
       <p className="mt-1 text-[12px] leading-relaxed text-white/55">
         {isHe
-          ? "המומחה שלכם יקרא את התגובה ויחזור אליכם בתוכן ההמשך. אין כאן תשובה נכונה — רק מה שאתם מרגישים."
-          : "Your clinician reads every response and uses it to shape what comes next. There's no right answer — just what you feel."}
+          ? "המומחה שלכם יקרא את התגובה ויחזור אליכם בתוכן ההמשך. אין כאן תשובה נכונה - רק מה שאתם מרגישים."
+          : "Your clinician reads every response and uses it to shape what comes next. There's no right answer - just what you feel."}
       </p>
 
       <textarea
@@ -126,8 +126,8 @@ export function ResponseBox({
             className="h-3.5 w-3.5 rounded border-white/20 bg-slate-950/40 accent-emerald-400"
           />
           {isHe
-            ? "פרטי — רק אני והמלווה רואים"
-            : "Private — only the clinician and I can see"}
+            ? "פרטי - רק אני והמלווה רואים"
+            : "Private - only the clinician and I can see"}
         </label>
         <span
           className={[

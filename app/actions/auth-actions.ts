@@ -135,7 +135,7 @@ export async function loginAction(formData: FormData): Promise<LoginResult> {
     });
 
     if (error) {
-      // Surface the full GoTrue payload — name / status / code / message —
+      // Surface the full GoTrue payload - name / status / code / message -
       // so we can tell apart "Invalid credentials" from "Database error
       // querying schema" (which means a column GoTrue queries on auth.users
       // is in an unreadable state, NOT a wrong password).

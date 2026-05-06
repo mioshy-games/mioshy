@@ -135,7 +135,7 @@ export async function listExpertClients(opts: {
     }
   }
 
-  // 4. Assignments — active only, for stats
+  // 4. Assignments - active only, for stats
   const { data: assignRows, error: aErr } = await admin
     .from("journey_assignments")
     .select("id, couple_id, is_active, created_at")
@@ -336,7 +336,7 @@ export async function getExpertClientDetail(opts: {
 
   // Assignments + scheduled stats. Two axes:
   //   1. Couple-scoped legacy v2 (program / category / item).
-  //   2. Per-partner cadence (v3) — user-owned, never couple_id, so
+  //   2. Per-partner cadence (v3) - user-owned, never couple_id, so
   //      we fetch by user_id IN (members…) and merge.
   const [coupleAssignRes, cadenceAssignRes] = await Promise.all([
     admin
@@ -469,7 +469,7 @@ export async function getExpertClientDetail(opts: {
     }
   }
 
-  // Cadence partner labels — full_name on profiles + email on
+  // Cadence partner labels - full_name on profiles + email on
   // admin_users_overview, same pattern as partner-detail.ts.
   const cadenceUserIdsForLabels = assignRows
     .filter((a) => a.source_kind === "cadence" && a.user_id)

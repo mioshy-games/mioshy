@@ -8,7 +8,7 @@ import type { HintTopic } from "@/lib/journey-content/hint-catalog";
  *
  * `hintTopic` opens a Hebrew clinical-tone popover from the hint
  * catalog (PR2 of the expert-onboarding guide). When set, the inline
- * `hint` text is suppressed — the popover replaces it.
+ * `hint` text is suppressed - the popover replaces it.
  */
 export function Field({
   label,

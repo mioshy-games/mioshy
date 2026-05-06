@@ -158,14 +158,14 @@ export async function POST(req: Request) {
       // default by is_israeli (matches the issuer schema requirement
       // of exactly 2 chars).
       //
-      // Feature flag UXELLENT_BILLING_DISABLED — see indicator route
+      // Feature flag UXELLENT_BILLING_DISABLED - see indicator route
       // for full rationale. When set, renewals charge but skip invoice.
       const billingDisabled =
         String(process.env.UXELLENT_BILLING_DISABLED || "").toLowerCase() === "true"
 
       const invoiceResult = billingDisabled
         ? (() => {
-            console.warn("[renewals] UXELLENT_BILLING_DISABLED=true — skipping invoice creation", {
+            console.warn("[renewals] UXELLENT_BILLING_DISABLED=true - skipping invoice creation", {
               sub_id: subId, charge_id: chargeId, asmachta,
             })
             return {

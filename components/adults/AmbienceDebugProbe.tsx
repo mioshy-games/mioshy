@@ -168,7 +168,7 @@ function runProbe(label: string) {
     found,
   });
 
-  // Bg gradient layers — log presence + computed style so we can confirm
+  // Bg gradient layers - log presence + computed style so we can confirm
   // the dark-wash and the animated layer are actually mounted with the
   // expected animation/transform.
   const bgBase = document.querySelector(

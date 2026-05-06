@@ -117,7 +117,7 @@ export type JourneyGroupSubtopicBindingInput = z.infer<
 >;
 
 // ------------------------------------------------------------
-// Expert push (v3 slice 8) — admin pushes a batch of items to a
+// Expert push (v3 slice 8) - admin pushes a batch of items to a
 // recipient (user / couple / group). The action fans out to
 // journey_pending_pushes, one row per (target user × item).
 // ------------------------------------------------------------
@@ -187,9 +187,9 @@ export const journeyItemSchema = z.object({
   default_offset_days: z.number().int().min(0).max(3650),
   is_active: z.boolean(),
   /** Migration 044: who in the couple sees this item.
-   *   'both'    — both partners (default, mirrors prior behavior)
-   *   'owner'   — only the couple_members.role='owner' partner
-   *   'partner' — only the couple_members.role='partner' partner
+   *   'both'    - both partners (default, mirrors prior behavior)
+   *   'owner'   - only the couple_members.role='owner' partner
+   *   'partner' - only the couple_members.role='partner' partner
    * Solo (user-owned) assignments behave as 'both' regardless. */
   audience: z.enum(["both", "owner", "partner"]),
 });

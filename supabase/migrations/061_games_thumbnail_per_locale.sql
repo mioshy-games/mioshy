@@ -4,7 +4,7 @@
 --
 -- Why: the catalogue thumbnails carry baked-in copy (e.g. the game's name
 -- written into the artwork), so a single asset cannot serve both Hebrew
--- and English visitors — they need their own image. Per Itzik 2026-05-06,
+-- and English visitors - they need their own image. Per Itzik 2026-05-06,
 -- pre-launch and the new catalogue isn't fully marketed yet, so we make
 -- the schema clean instead of stacking a third nullable column on top of
 -- the legacy field:

@@ -31,7 +31,7 @@ describe("focus month copy", () => {
       const en = getFocusMonthCopy(priority, "en");
       expect(he, `${priority} HE copy missing`).not.toBeNull();
       expect(en, `${priority} EN copy missing`).not.toBeNull();
-      // All three sections are populated — the card looks broken if any
+      // All three sections are populated - the card looks broken if any
       // of these are empty, so the test doubles as a content guard.
       expect(he!.reflection.length).toBeGreaterThan(20);
       expect(he!.plan.length).toBeGreaterThan(20);

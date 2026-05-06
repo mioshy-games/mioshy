@@ -26,7 +26,7 @@ function answerToText(qId: string, answer: unknown, locale: "he" | "en" = "en"):
   const a = answer as { kind?: string; value?: number; option?: string; options?: string[]; text?: string; order?: string[] };
   if (a.kind === "likert") return `${a.value}/5`;
   // Narrow to choice-shaped questions before reading .options. The Question
-  // union now includes QuestionRanking (no .options) — that variant is
+  // union now includes QuestionRanking (no .options) - that variant is
   // handled by the kind === "ranking" branch below.
   const hasOptions = q.type === "forced_choice" || q.type === "single_choice" || q.type === "multi_choice";
   if (a.kind === "single" && hasOptions) {

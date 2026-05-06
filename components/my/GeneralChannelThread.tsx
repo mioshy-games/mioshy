@@ -1,12 +1,12 @@
 "use client";
 
 // ============================================================
-// GeneralChannelThread — slice 6 v3 two-way thread between the user
+// GeneralChannelThread - slice 6 v3 two-way thread between the user
 // and the expert pool, on /my/journey. Replaces the fire-and-forget
 // JourneyExpertMessage widget.
 //
 // Layout: thread history (oldest → newest) on top, composer at the
-// bottom — opposite to PerItemThread because this is a persistent
+// bottom - opposite to PerItemThread because this is a persistent
 // inbox, not a one-shot prompt response.
 //
 // Privacy: per Itzik #7 these messages are partner-private by
@@ -152,7 +152,7 @@ export function GeneralChannelThread({
         )}
       </ol>
 
-      {/* Composer (bottom — channel is persistent inbox, not one-shot) */}
+      {/* Composer (bottom - channel is persistent inbox, not one-shot) */}
       <form onSubmit={handlePost} className="space-y-2">
         <Textarea
           ref={composerRef}

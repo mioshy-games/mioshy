@@ -1,7 +1,7 @@
 "use client";
 
 // ============================================================
-// GeneralChannelAdminReply — slice "expert onboarding" PR2.
+// GeneralChannelAdminReply - slice "expert onboarding" PR2.
 //
 // Per-couple workspace surface for replying inside each partner's
 // PRIVATE general channel. The general channel is the catch-all
@@ -11,7 +11,7 @@
 // should I do?").
 //
 // Per Itzik #4 (PR2 brief):
-//   * Per-partner tabs (or sections) — alice's channel and bob's
+//   * Per-partner tabs (or sections) - alice's channel and bob's
 //     channel are SEPARATE, never merged. Each tab owns one user_id.
 //   * Composer at the bottom of each tab → postExpertReplyToChannel.
 //   * Sits next to the per-item ClinicianResponseRow column on
@@ -23,7 +23,7 @@
 // rendered top-to-bottom.
 //
 // Empty state copy clarifies that the channel is per-partner and
-// private — it is NOT a "couple shared chat".
+// private - it is NOT a "couple shared chat".
 // ============================================================
 
 import * as React from "react";
@@ -58,7 +58,7 @@ export function GeneralChannelAdminReply({
   if (partners.length === 0) {
     return (
       <div className="rounded-xl border border-white/[0.08] bg-white/[0.025] p-4 text-sm text-white/60">
-        No partner accounts on this couple yet — the general channel
+        No partner accounts on this couple yet - the general channel
         opens once a partner signs in.
       </div>
     );
@@ -153,7 +153,7 @@ function ChannelPanel({ partner }: { partner: PartnerChannel }) {
       {partner.messages.length === 0 ? (
         <div className="rounded-lg border border-dashed border-white/[0.08] bg-white/[0.015] p-4 text-center text-xs text-white/55">
           {partner.label} hasn&apos;t messaged the general channel yet.
-          You can still write the first message below — it will open
+          You can still write the first message below - it will open
           their channel.
         </div>
       ) : (

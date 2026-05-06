@@ -31,9 +31,9 @@ import { logoutAction } from "@/app/actions/auth-actions";
 type PillarKey = "games" | "journey" | "adults";
 
 type PillarLink = {
-  /** Where anonymous visitors land — the marketing page. */
+  /** Where anonymous visitors land - the marketing page. */
   marketingHref: string;
-  /** Where authenticated visitors land — their private dashboard. */
+  /** Where authenticated visitors land - their private dashboard. */
   authedHref: string;
   tKey: PillarKey;
   Icon: typeof Gamepad2;
@@ -64,9 +64,9 @@ const PILLARS: PillarLink[] = [
   },
 ];
 
-// Header theme detection — kept as an opt-in only.
+// Header theme detection - kept as an opt-in only.
 // Background-flipping while scrolling (light-glass over cream sections vs
-// dark-glass over the hero) made the mobile experience feel unstable —
+// dark-glass over the hero) made the mobile experience feel unstable -
 // the bar repainted on every scroll tick. We now LOCK to dark glass once
 // scrolled, on every page, unless the page explicitly sets
 // `<html data-header-theme="light">`. That gives editorial pages a way to
@@ -96,10 +96,10 @@ export function SiteHeader({
    *  decide whether each pillar links to its private dashboard or to its
    *  marketing page. Anonymous users always see the marketing pages. */
   entitlements?: SiteHeaderEntitlements | null;
-  /** v3 slice 10 — drives the bell badge for signed-in users. */
+  /** v3 slice 10 - drives the bell badge for signed-in users. */
   unreadNotifications?: number;
 }) {
-  // All three pillars are ALWAYS rendered — for both anonymous and
+  // All three pillars are ALWAYS rendered - for both anonymous and
   // authenticated visitors, on desktop and mobile. Only the destination
   // changes based on entitlements:
   //
@@ -148,7 +148,7 @@ export function SiteHeader({
   const [theme, setTheme] = useState<"light" | "dark">("dark");
   const [isPending, startTransition] = useTransition();
 
-  // ⚠️ BUILD MARKER — fires once per mount, confirms the entitlement-
+  // ⚠️ BUILD MARKER - fires once per mount, confirms the entitlement-
   // aware header is the version actually running on the client. If
   // the log is missing in DevTools after a deploy, the new code
   // didn't ship.
@@ -159,7 +159,7 @@ export function SiteHeader({
       visiblePillarKeys: visiblePillars.map((p) => p.tKey),
       pillarsHrefs: visiblePillars.map((p) => p.href),
     });
-    // Empty deps — log once per mount only, not on every scroll tick.
+    // Empty deps - log once per mount only, not on every scroll tick.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -335,15 +335,12 @@ export function SiteHeader({
                 href="/journey"
                 className="group relative inline-flex min-h-[40px] items-center justify-center overflow-hidden rounded-full px-5 text-base font-semibold text-white shadow-lg shadow-fuchsia-500/25 transition hover:brightness-110"
               >
-                {/* GPU-composited gradient sweep — span is 220% wide of
-                    its parent and slides via translateX (instead of the
-                    previous background-position animation, which
-                    Lighthouse flagged as non-composited). The parent
-                    Link already has `overflow-hidden` so the overflow
-                    is clipped. */}
+                {/* Static gradient - animation removed per Itzik
+                    2026-05-06 (the shifting gradient looked off in
+                    the header). */}
                 <span
                   aria-hidden
-                  className="absolute top-0 bottom-0 left-0 w-[220%] bg-[linear-gradient(110deg,#d946ef_0%,#a855f7_35%,#ec4899_70%,#f59e0b_100%)] mio-nav-cta-shift"
+                  className="absolute inset-0 bg-[linear-gradient(110deg,#d946ef_0%,#a855f7_35%,#ec4899_70%,#f59e0b_100%)]"
                 />
                 <span className="relative z-10">
                   {isHe ? "ליווי עם מיאושי" : "Mioshy Journey"}
@@ -373,7 +370,7 @@ export function SiteHeader({
               <span>{t("library")}</span>
             </Link>
           ) : (
-            // Mobile primary CTA — same swap as desktop: "ליווי עם מיאושי"
+            // Mobile primary CTA - same swap as desktop: "ליווי עם מיאושי"
             // → /journey instead of "Sign up" → /auth/signup. Slightly
             // more compact label so it fits in the cramped mobile header
             // alongside the hamburger.
@@ -383,7 +380,7 @@ export function SiteHeader({
             >
               <span
                 aria-hidden
-                className="absolute inset-0 bg-[linear-gradient(110deg,#d946ef_0%,#a855f7_35%,#ec4899_70%,#f59e0b_100%)] bg-[length:220%_100%] mio-nav-cta-shift"
+                className="absolute inset-0 bg-[linear-gradient(110deg,#d946ef_0%,#a855f7_35%,#ec4899_70%,#f59e0b_100%)]"
               />
               <span className="relative z-10">
                 {isHe ? "ליווי מיאושי" : "Journey"}
@@ -486,7 +483,7 @@ export function SiteHeader({
                 >
                   {t("signIn")}
                 </Link>
-                {/* Drawer primary CTA — Journey, matching the desktop +
+                {/* Drawer primary CTA - Journey, matching the desktop +
                     mobile header buttons. Replaces the previous Sign-up
                     button so the entire site funnels new visitors into
                     the flagship product first. */}
@@ -504,19 +501,8 @@ export function SiteHeader({
       ) : null}
 
       {/* Keyframes for the signup-CTA gradient drift. Defined once, global. */}
-      <style jsx global>{`
-        /* GPU-composited keyframe — was animating background-position
-           which can't be composited; switched to translate3d so the
-           browser keeps the work on the compositor thread. */
-        @keyframes mio-nav-cta-shift {
-          0%, 100% { transform: translate3d(0, 0, 0); }
-          50%      { transform: translate3d(-54.5%, 0, 0); }
-        }
-        .mio-nav-cta-shift {
-          animation: mio-nav-cta-shift 7s ease-in-out infinite;
-          will-change: transform;
-        }
-      `}</style>
+      {/* Header CTA gradient is now static (no animation) - keyframes
+          intentionally removed 2026-05-06. */}
     </header>
   );
 }

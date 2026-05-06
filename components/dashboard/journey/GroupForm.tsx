@@ -1,7 +1,7 @@
 "use client";
 
 // ============================================================
-// GroupForm — slice 7 v3 group identity editor.
+// GroupForm - slice 7 v3 group identity editor.
 // Mirrors CategoryForm / SubtopicForm: react-hook-form + zod +
 // Sonner toast + sticky save header. Membership and subtopic
 // bindings are handled by separate components below the form.
@@ -73,7 +73,7 @@ export function GroupForm({
     toast.error(
       fields.length === 0
         ? "Form invalid"
-        : `Cannot save — ${fields.slice(0, 3).join(" · ")}${
+        : `Cannot save - ${fields.slice(0, 3).join(" · ")}${
             fields.length > 3 ? ` (+${fields.length - 3} more)` : ""
           }`,
     );

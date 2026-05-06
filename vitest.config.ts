@@ -13,7 +13,7 @@
  * keep tests in `tests/` rather than alongside source so the build
  * surface stays clean for the Next.js compiler.
  *
- * Environment: `node` for now — none of the current tests need a
+ * Environment: `node` for now - none of the current tests need a
  * DOM. When component tests are added, individual files can opt-in
  * to `jsdom` via a `// @vitest-environment jsdom` directive at the
  * top of the test file.
@@ -32,6 +32,6 @@ export default defineConfig({
     // The build-time assertion in lib/journey/questions.ts throws
     // synchronously when the questionnaire shape drifts. We want to
     // see those failures as red tests, not as silent module-load
-    // crashes — Vitest reports thrown module init errors clearly.
+    // crashes - Vitest reports thrown module init errors clearly.
   },
 });

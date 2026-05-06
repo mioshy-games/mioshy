@@ -51,7 +51,7 @@ export default async function ItemsListPage({
     adminListCategoriesWithItemCounts(),
     adminListPrograms(),
     // Only show the subtopic filter strip when the admin has narrowed
-    // to one category — otherwise it'd be a wall of pills.
+    // to one category - otherwise it'd be a wall of pills.
     searchParams.category
       ? listSubtopics({ categoryId: searchParams.category })
       : Promise.resolve([]),
@@ -59,14 +59,14 @@ export default async function ItemsListPage({
   const programNameById = new Map(programs.map((p) => [p.id, p.name_he] as const));
   const categoryById = new Map(categories.map((c) => [c.id, c] as const));
 
-  // v3 slice 7 — group-binding counts per visible subtopic. Surfaces
+  // v3 slice 7 - group-binding counts per visible subtopic. Surfaces
   // a "bound to N group(s)" hint on each pill so admins see why
   // cadence might behave differently for some users.
   const subtopicGroupCounts = await countGroupBindingsForSubtopics(
     subtopicsForCategory.map((s) => s.id),
   );
 
-  // v3 slice 9 — live stats per visible item, in one round-trip. The
+  // v3 slice 9 - live stats per visible item, in one round-trip. The
   // compact pill format is "Q5 / D120 / 78%C / 4%S" per Itzik's brief.
   const liveStatsByItem = await getItemLiveStatsBatch(items.map((i) => i.id));
 
@@ -127,7 +127,7 @@ export default async function ItemsListPage({
         </div>
       ) : null}
 
-      {/* Subtopic sub-filter — only when a category is selected. */}
+      {/* Subtopic sub-filter - only when a category is selected. */}
       {searchParams.category && subtopicsForCategory.length > 0 ? (
         <div className="flex flex-wrap gap-2 text-xs">
           <span className="text-muted-foreground self-center">Subtopic:</span>
@@ -167,7 +167,7 @@ export default async function ItemsListPage({
                 )}
                 title={
                   groupCount > 0
-                    ? `Bound to ${groupCount} group${groupCount === 1 ? "" : "s"} — cadence behaves differently for those members.`
+                    ? `Bound to ${groupCount} group${groupCount === 1 ? "" : "s"} - cadence behaves differently for those members.`
                     : undefined
                 }
               >
@@ -216,12 +216,12 @@ export default async function ItemsListPage({
                   className="text-muted-foreground h-24 text-center"
                 >
                   {subtopicFilterRaw === "__none__"
-                    ? "No items hang directly off this category yet — every item is in a subtopic."
+                    ? "No items hang directly off this category yet - every item is in a subtopic."
                     : subtopicFilterRaw
                       ? "No items in this subtopic yet."
                       : searchParams.category
                         ? "No items in this category yet."
-                        : "No items yet — click \"New item\" to add one."}
+                        : "No items yet - click \"New item\" to add one."}
                 </TableCell>
               </TableRow>
             ) : (
@@ -282,12 +282,12 @@ export default async function ItemsListPage({
                       {stats ? (
                         <span title={`Queued ${stats.queued} · Delivered ${stats.delivered} · Completed ${stats.completed} (${completionRate ?? 0}%) · Skipped ${stats.skipped} (${skipRate ?? 0}%)`}>
                           Q{stats.queued}/D{stats.delivered}/
-                          {completionRate !== null ? `${completionRate}%C` : "—C"}
+                          {completionRate !== null ? `${completionRate}%C` : "-C"}
                           /
-                          {skipRate !== null ? `${skipRate}%S` : "—S"}
+                          {skipRate !== null ? `${skipRate}%S` : "-S"}
                         </span>
                       ) : (
-                        "—"
+                        "-"
                       )}
                     </TableCell>
                     <TableCell className="text-right">

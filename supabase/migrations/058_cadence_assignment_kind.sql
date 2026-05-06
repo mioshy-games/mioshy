@@ -12,7 +12,7 @@
 --   * source_id   = the user's own auth.users.id (a stable sentinel
 --                   that satisfies the existing NOT NULL constraint
 --                   without coupling cadence to any catalog row)
---   * user_id     = the same auth.users.id (couple_id NULL — cadence
+--   * user_id     = the same auth.users.id (couple_id NULL - cadence
 --                   is per-partner from day one, even if the user is
 --                   in a couple; the per-partner resolver in slice 4
 --                   makes that visible on /my/journey)

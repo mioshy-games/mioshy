@@ -12,7 +12,7 @@
 --   5. Re-insert from the new seed (paste below, or run new seed file after)
 --
 -- SAFETY:
---   - Wrapped in a single transaction — if anything fails, nothing is committed
+--   - Wrapped in a single transaction - if anything fails, nothing is committed
 --   - Run on staging first
 --   - Take a Supabase snapshot before running on prod
 -- =====================================================================
@@ -26,7 +26,7 @@ CREATE TEMP TABLE wheel_game_ids ON COMMIT DROP AS
 SELECT DISTINCT game_id
 FROM public.wheel_configs;
 
--- Sanity check — log how many wheels we're about to wipe
+-- Sanity check - log how many wheels we're about to wipe
 DO $$
 DECLARE
   cnt int;

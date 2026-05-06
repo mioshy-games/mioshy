@@ -1,7 +1,7 @@
 "use client";
 
 // ============================================================
-// PerItemThread — slice 6 v3 threading on a single item.
+// PerItemThread - slice 6 v3 threading on a single item.
 //
 // Layout follows Update B ("every item is a prompt expecting a
 // response"):
@@ -106,7 +106,7 @@ export function PerItemThread({
   }
 
   async function handleReact(messageId: string, emoji: string) {
-    // Optimistic — patch the local message's reactions.
+    // Optimistic - patch the local message's reactions.
     setMessages((prev) =>
       prev.map((m) => {
         if (m.id !== messageId) return m;
@@ -132,7 +132,7 @@ export function PerItemThread({
 
   return (
     <div className="space-y-6" dir={isHe ? "rtl" : "ltr"}>
-      {/* Composer — primary affordance, open by default */}
+      {/* Composer - primary affordance, open by default */}
       <form onSubmit={handlePost} className="space-y-3">
         {promptLabel ? (
           <div className="flex items-center gap-2 text-xs text-white/55">
@@ -169,7 +169,7 @@ export function PerItemThread({
               {isPrivate ? (
                 <span className="inline-flex items-center gap-1.5">
                   <ShieldCheck className="size-3.5" aria-hidden />
-                  {isHe ? "פרטי — רק אתם והמומחים" : "Private — only you + experts"}
+                  {isHe ? "פרטי - רק אתם והמומחים" : "Private - only you + experts"}
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1.5">

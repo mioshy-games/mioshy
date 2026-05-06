@@ -62,11 +62,11 @@ export default async function MyHubPage({
   const { locale } = params;
   const isHe = locale === "he";
 
-  // Post-purchase shortcut — when the billing-success page sends users back
+  // Post-purchase shortcut - when the billing-success page sends users back
   // to /my?purchased=<game_id> after an Adults purchase, we drop them
   // straight into /my/adults instead of showing a celebration banner.
   // Per spec: "User wants to use, not celebrate."
-  // ⚠️ BUILD MARKER — bump this string whenever you deploy a meaningful
+  // ⚠️ BUILD MARKER - bump this string whenever you deploy a meaningful
   // /my redesign so logs make it obvious which version actually rendered.
   // If you don't see this log in Vercel after a deploy, the new code
   // didn't ship (build cache, branch mismatch, etc.).
@@ -85,16 +85,16 @@ export default async function MyHubPage({
   if (!entitlements) redirect(`/${locale}/auth`);
 
   // (Removed temporary diagnostic logs from the billing-debug session.
-  // The pillar logic is now derived from a pure helper —
-  // lib/dashboard/pillar-state.ts — so we don't need to dump raw
+  // The pillar logic is now derived from a pure helper -
+  // lib/dashboard/pillar-state.ts - so we don't need to dump raw
   // subscription rows from this page anymore.)
 
-  // Coaching pillar notification — TWO sources combined:
+  // Coaching pillar notification - TWO sources combined:
   //   a. unread content items (countUnreadJourneyItems)
   //   b. recent clinician replies (getFreshClinicianReplies, 30-day window)
   //
   // We sum both into a single dot on the pillar card. The user just
-  // wants to know "is there something new for me?" — not "of what kind?".
+  // wants to know "is there something new for me?" - not "of what kind?".
   // The detail (item vs. reply) shows up inside /my/journey.
   const [unreadJourneyCount, freshReplies] = await Promise.all([
     countUnreadJourneyItems({
@@ -165,10 +165,10 @@ export default async function MyHubPage({
     isHe,
   });
 
-  // ─── Diagnostic log — prints once per render, server-side only ────
+  // ─── Diagnostic log - prints once per render, server-side only ────
   // Surfaces in Vercel logs the exact state we're showing the user.
   // Helps reproduce reports like "I subscribed but the page treats
-  // me as a guest" — we can correlate user_id to the resolved state.
+  // me as a guest" - we can correlate user_id to the resolved state.
   console.log("[/my:RENDER]", {
     user_id: ctx.user_id,
     email: entitlements.email,
@@ -239,7 +239,7 @@ export default async function MyHubPage({
               about products, not admin chrome. Admin lives in /my/account. */}
         </section>
 
-        {/* v3 slice 5 — grace / blocked banner. Renders nothing when
+        {/* v3 slice 5 - grace / blocked banner. Renders nothing when
             journey is active or null. Sits above the membership banner
             so users in grace immediately see the "your plan ended"
             message without scrolling. */}
@@ -271,7 +271,7 @@ export default async function MyHubPage({
                 <p className="mt-2 text-sm font-semibold text-white">
                   {isHe
                     ? "החשבון שלך פעיל - אין עדיין מנוי בתשלום."
-                    : "Your account is active — no paid plan yet."}
+                    : "Your account is active - no paid plan yet."}
                 </p>
                 <p className="mt-1 text-sm text-white/70">
                   {isHe
@@ -296,7 +296,7 @@ export default async function MyHubPage({
                 <p className="mt-2 text-sm font-semibold text-white">
                   {isHe
                     ? "המנוי שלך מקיף את כל מיאושי - משחקים, ליווי, ולמבוגרים בלבד."
-                    : "Your plan covers all of Mioshy — games, journey, and adults only."}
+                    : "Your plan covers all of Mioshy - games, journey, and adults only."}
                 </p>
                 <p className="mt-1 text-sm text-emerald-100/85">
                   {isHe ? "תהנו." : "Enjoy."}
@@ -341,15 +341,15 @@ export default async function MyHubPage({
           )}
         </section>
 
-        {/* Per spec §5.2 — the "Got a code from partner?" panel was moved
+        {/* Per spec §5.2 - the "Got a code from partner?" panel was moved
             BELOW the pillar cards. Cards come first (the products), partner
             stuff comes second (the relationship plumbing). */}
 
         {/* ─────── Profile completeness nudge ───────
             Per Itzik 2026-05-06: this banner is intentionally narrow in
-            scope — it is shown ONLY to users who purchased the Journey
+            scope - it is shown ONLY to users who purchased the Journey
             (ליווי) plan, because that is the path where pairing a partner
-            is meaningful (the couple subscription is exactly two seats —
+            is meaningful (the couple subscription is exactly two seats -
             a third redeem is rejected at the DB level by
             join_couple_by_pair_code, see migrations/029 line 226).
             Free / games-only / adults-only users don't need the nudge:
@@ -388,8 +388,8 @@ export default async function MyHubPage({
               isHe={isHe}
               pillar="games"
               pillarState={gamesPillar}
-              titleHe="משחקים לזוגות"
-              titleEn="Games for couples"
+              titleHe="משחקי זוגות אונליין"
+              titleEn="Online couples games"
               description={
                 isHe
                   ? "כנות ואתגר, גלגל הזוגיות, סולמות ונחשים."
@@ -401,12 +401,12 @@ export default async function MyHubPage({
               isHe={isHe}
               pillar="games"
               pillarState={gamesPillar}
-              titleHe="משחקים לזוגות"
-              titleEn="Games for couples"
+              titleHe="משחקי זוגות אונליין"
+              titleEn="Online couples games"
               tagline={
                 isHe
-                  ? "כנות ואתגר, גלגל הזוגיות, סולמות ונחשים — משחקים שמרעננים את הקשר בערב אחד."
-                  : "Truth & dare, the wheel, snakes & ladders — couples games that refresh your connection in a single evening."
+                  ? "כנות ואתגר, גלגל הזוגיות, סולמות ונחשים - משחקים שמרעננים את הקשר בערב אחד."
+                  : "Truth & dare, the wheel, snakes & ladders - couples games that refresh your connection in a single evening."
               }
             />
           )}
@@ -423,8 +423,8 @@ export default async function MyHubPage({
               subtitleEn="Personal work program"
               description={
                 isHe
-                  ? "הקליניקה המכווננת שלכם — תוכן שמסודר לפי מה שחשוב לכם, כל אחד עם הסדר שלו."
-                  : "Your tuned clinic — content ordered by what matters to you, each partner sees their own ranking."
+                  ? "הקליניקה המכווננת שלכם - תוכן שמסודר לפי מה שחשוב לכם, כל אחד עם הסדר שלו."
+                  : "Your tuned clinic - content ordered by what matters to you, each partner sees their own ranking."
               }
               notificationCount={journeyNotificationCount}
             />
@@ -470,14 +470,14 @@ export default async function MyHubPage({
               titleEn="Adults Only"
               tagline={
                 isHe
-                  ? "משחקי זוגיות אינטימיים יותר — תכנים מותאמים, פרטיות מלאה."
-                  : "More intimate couples games — curated content, full privacy."
+                  ? "משחקי זוגיות אינטימיים יותר - תכנים מותאמים, פרטיות מלאה."
+                  : "More intimate couples games - curated content, full privacy."
               }
             />
           )}
         </section>
 
-        {/* ─────── Partner section — only when relevant ───────
+        {/* ─────── Partner section - only when relevant ───────
             Per spec §5.2: invite-partner shows ONLY if user has no
             partner yet. Once a partner has joined, the whole block
             disappears. Above the "got code from partner" alert because
@@ -505,7 +505,7 @@ export default async function MyHubPage({
               </div>
             </div>
 
-            {/* Pair code — for cross-device play. Shown alongside the
+            {/* Pair code - for cross-device play. Shown alongside the
                 invite (not as a separate section) so the "couple plumbing"
                 lives in one place. */}
             {ctx.pair_code ? (
@@ -527,7 +527,7 @@ export default async function MyHubPage({
           </section>
         ) : null}
 
-        {/* ─────── "Got a code from partner?" — only for users without
+        {/* ─────── "Got a code from partner?" - only for users without
             a couple yet. Compact version, below the cards per spec §5.2. */}
         {!hasCouple ? (
           <section className="mt-8">
@@ -555,7 +555,7 @@ export default async function MyHubPage({
             One link to the existing /account page, which already bundles
             subscription details + charges/invoices + profile + partner
             management. Per spec §9 the user wanted this surface to
-            consolidate the admin-y bits — and /account already does. */}
+            consolidate the admin-y bits - and /account already does. */}
         <footer className="mt-12 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 border-t border-white/5 pt-8 text-sm">
           <Link
             href="/account"
@@ -581,13 +581,13 @@ export default async function MyHubPage({
 // rather than a small "→" link buried at the bottom corner.
 //
 // Per pillar:
-//   • games   — fuchsia/rose: the playful, bright, energetic surface
-//   • journey — emerald/teal: the calm, clinical, healing surface
-//   • adults  — amber/rose:   the intimate, warm, candlelit surface
+//   • games   - fuchsia/rose: the playful, bright, energetic surface
+//   • journey - emerald/teal: the calm, clinical, healing surface
+//   • adults  - amber/rose:   the intimate, warm, candlelit surface
 //
 // The whole card stays clickable (the outer <Link>) for affordance, but
 // the visual button inside is what tells the user "press here". The
-// arrow only translates on hover — no autoplay animations.
+// arrow only translates on hover - no autoplay animations.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const PILLAR_THEMES: Record<
@@ -656,7 +656,7 @@ const PILLAR_THEMES: Record<
   },
 };
 
-// Shared button class — pill-shaped, h-11, used for both entitled and
+// Shared button class - pill-shaped, h-11, used for both entitled and
 // marketing CTAs (the per-pillar `button` / `buttonMarketing` strings
 // only supply colour and shadow). The base gap grows on hover for a
 // direction-agnostic forward-motion feel that works the same in RTL
@@ -664,7 +664,7 @@ const PILLAR_THEMES: Record<
 const PILLAR_BUTTON_BASE =
   "inline-flex h-11 items-center justify-center gap-2 rounded-full px-5 text-sm font-bold transition group-hover:gap-3";
 
-// ─── EntitledPillar — "you have access" ──────────────────────────────────────
+// ─── EntitledPillar - "you have access" ──────────────────────────────────────
 
 function EntitledPillar({
   isHe,
@@ -758,7 +758,7 @@ function EntitledPillar({
   );
 }
 
-// ─── PillarMarketing — "not yet" CTA ─────────────────────────────────────────
+// ─── PillarMarketing - "not yet" CTA ─────────────────────────────────────────
 
 function PillarMarketing({
   isHe,

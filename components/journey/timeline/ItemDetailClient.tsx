@@ -515,7 +515,7 @@ function ResponseList({
             <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-white/90">
               {r.response_text}
             </p>
-            {/* Phase 2E — clinician's reply, when present.
+            {/* Phase 2E - clinician's reply, when present.
                 Calm slate panel inset under the user's message,
                 clearly attributed and timestamped. Never auto-marks
                 as read; the toast on /my/journey handles "new". */}
@@ -534,7 +534,7 @@ function ResponseList({
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// ClinicianReplyPanel — read-only inset showing the clinician's reply.
+// ClinicianReplyPanel - read-only inset showing the clinician's reply.
 // ─────────────────────────────────────────────────────────────────────
 
 function ClinicianReplyPanel({

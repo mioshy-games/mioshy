@@ -5,7 +5,7 @@ import type { GameConfig } from "@/lib/snakes/types";
 import { cellToBoardPercent } from "@/lib/snakes/boardUtils";
 
 /**
- * SnakesLaddersSVG — draws snakes & ladders across the board.
+ * SnakesLaddersSVG - draws snakes & ladders across the board.
  *
  * Redesigned 2026-05-05 per Itzik's brief: replace the cartoon green
  * snakes + orange wood ladders with an intimate-dark, art-nouveau /
@@ -17,7 +17,7 @@ import { cellToBoardPercent } from "@/lib/snakes/boardUtils";
  *   • Sinuous Mucha-inspired curve (cubic bezier with offset control points)
  *   • Tapered tail (thicker at head, thinner at tip)
  *   • Subtle drop-shadow underneath for "lifts off the board" depth
- *   • Crimson tongue, gold-rimmed eye — minimal, no cartoon face
+ *   • Crimson tongue, gold-rimmed eye - minimal, no cartoon face
  *
  * Ladders:
  *   • Aged-brass / rose-gold metallic gradient (linear, not flat)
@@ -41,7 +41,7 @@ export function SnakesLaddersSVG({
   const uid = useId().replace(/:/g, "");
   const size = config.boardSize || 100;
 
-  // Apply the RTL mirror once at the data layer — cleaner than threading
+  // Apply the RTL mirror once at the data layer - cleaner than threading
   // it through every Snake/Ladder sub-component.
   const mirrorX = (xPct: number) => (isRtl ? 100 - xPct : xPct);
 
@@ -84,13 +84,13 @@ export function SnakesLaddersSVG({
       aria-hidden
     >
       <defs>
-        {/* ── Snake — matte black body with crimson belly accent ── */}
+        {/* ── Snake - matte black body with crimson belly accent ── */}
         <linearGradient id={`snakeBody-${uid}`} x1="0" x2="0" y1="0" y2="1">
           <stop offset="0%" stopColor="#1a0508" />
           <stop offset="50%" stopColor="#0c0204" />
           <stop offset="100%" stopColor="#1a0508" />
         </linearGradient>
-        {/* Crimson belly stripe — runs alongside the body */}
+        {/* Crimson belly stripe - runs alongside the body */}
         <linearGradient id={`snakeBelly-${uid}`} x1="0" x2="0" y1="0" y2="1">
           <stop offset="0%" stopColor="#5b081c" stopOpacity="0" />
           <stop offset="50%" stopColor="#9b2235" stopOpacity="0.85" />
@@ -108,13 +108,13 @@ export function SnakesLaddersSVG({
           <rect width="1.5" height="1.5" fill="transparent" />
           <circle cx="0.75" cy="0.75" r="0.18" fill="rgba(201,169,97,0.4)" />
         </pattern>
-        {/* Glow halo beneath the snake — soft gold/crimson */}
+        {/* Glow halo beneath the snake - soft gold/crimson */}
         <radialGradient id={`snakeGlow-${uid}`} cx="0.5" cy="0.5" r="0.5">
           <stop offset="0%" stopColor="rgba(155,34,53,0.35)" />
           <stop offset="100%" stopColor="rgba(155,34,53,0)" />
         </radialGradient>
 
-        {/* ── Ladder — aged brass / rose-gold metallic ── */}
+        {/* ── Ladder - aged brass / rose-gold metallic ── */}
         <linearGradient id={`ladderRail-${uid}`} x1="0" x2="1" y1="0" y2="0">
           <stop offset="0%" stopColor="#7a5a2e" />
           <stop offset="35%" stopColor="#C9A961" />
@@ -133,7 +133,7 @@ export function SnakesLaddersSVG({
         </radialGradient>
       </defs>
 
-      {/* Ladders first — snakes render on top of them so a snake's head
+      {/* Ladders first - snakes render on top of them so a snake's head
           sitting on a ladder cell still reads correctly. */}
       {ladderPaths.map((lp, i) => (
         <Ladder
@@ -196,12 +196,12 @@ function Snake({
   const px = -dy / len;
   const py = dx / len;
 
-  // Curve amplitude proportional to length — longer snakes coil more
+  // Curve amplitude proportional to length - longer snakes coil more
   // pronouncedly. Slightly more dramatic than the previous version
   // (0.40 vs 0.35) for an art-nouveau "swooping" feel.
   const amp = Math.min(20, Math.max(7, len * 0.40));
 
-  // Two control points flipping sides — classic S-curve
+  // Two control points flipping sides - classic S-curve
   const cp1x = fromX + dx * 0.33 + px * amp;
   const cp1y = fromY + dy * 0.33 + py * amp;
   const cp2x = fromX + dx * 0.66 - px * amp;
@@ -209,13 +209,13 @@ function Snake({
 
   const d = `M ${fromX} ${fromY} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${toX} ${toY}`;
 
-  // Soft glow halo placed at head position — a crimson "embers" effect
+  // Soft glow halo placed at head position - a crimson "embers" effect
   // that hints the snake is more than just a line.
   const glowR = Math.max(6, len * 0.18);
 
   return (
     <g style={{ filter: "drop-shadow(0 0.6px 1.2px rgba(0,0,0,0.65))" }}>
-      {/* Crimson glow halo at head — under the body */}
+      {/* Crimson glow halo at head - under the body */}
       <circle
         cx={fromX}
         cy={fromY}
@@ -224,7 +224,7 @@ function Snake({
         opacity={0.7}
       />
 
-      {/* Body underlay — slightly thicker matte black for outline depth */}
+      {/* Body underlay - slightly thicker matte black for outline depth */}
       <path
         d={d}
         fill="none"
@@ -233,7 +233,7 @@ function Snake({
         strokeLinecap="round"
         opacity={0.85}
       />
-      {/* Body main fill — black-on-black gradient gives subtle volume */}
+      {/* Body main fill - black-on-black gradient gives subtle volume */}
       <path
         d={d}
         fill="none"
@@ -241,7 +241,7 @@ function Snake({
         strokeWidth={3.0}
         strokeLinecap="round"
       />
-      {/* Crimson belly stripe — narrower than body, runs along same path
+      {/* Crimson belly stripe - narrower than body, runs along same path
           but shifted slightly so it reads as a side-stripe accent */}
       <path
         d={d}
@@ -251,7 +251,7 @@ function Snake({
         strokeLinecap="round"
         opacity={0.8}
       />
-      {/* Gold scale dots — barely visible, give the body texture
+      {/* Gold scale dots - barely visible, give the body texture
           without becoming "scales". Vintage-tattoo subtle. */}
       <path
         d={d}
@@ -261,7 +261,7 @@ function Snake({
         strokeLinecap="round"
         opacity={0.55}
       />
-      {/* Top highlight stripe — thin, dim white to suggest reflected
+      {/* Top highlight stripe - thin, dim white to suggest reflected
           candlelight on the snake's spine */}
       <path
         d={d}
@@ -271,7 +271,7 @@ function Snake({
         strokeLinecap="round"
       />
 
-      {/* Head — minimal, no cartoon face */}
+      {/* Head - minimal, no cartoon face */}
       <SnakeHead
         x={fromX}
         y={fromY}
@@ -290,14 +290,14 @@ function SnakeHead({ x, y, angle }: { x: number; y: number; angle: number }) {
   // Tongue extends from the front of the head (away from body)
   const tongueX = x - Math.cos(angle) * (headR + tongueLen);
   const tongueY = y - Math.sin(angle) * (headR + tongueLen);
-  // Single eye on the visible side of the head — minimalist
+  // Single eye on the visible side of the head - minimalist
   const eyeOffset = 0.7;
   const eyeX = x - Math.cos(angle) * 0.4 + Math.cos(angle + Math.PI / 2) * eyeOffset;
   const eyeY = y - Math.sin(angle) * 0.4 + Math.sin(angle + Math.PI / 2) * eyeOffset;
 
   return (
     <g>
-      {/* Forked tongue — crimson, thin, suggestive */}
+      {/* Forked tongue - crimson, thin, suggestive */}
       <line
         x1={x - Math.cos(angle) * headR * 0.7}
         y1={y - Math.sin(angle) * headR * 0.7}
@@ -326,7 +326,7 @@ function SnakeHead({ x, y, angle }: { x: number; y: number; angle: number }) {
         strokeLinecap="round"
       />
 
-      {/* Head — matte black with subtle gold edge */}
+      {/* Head - matte black with subtle gold edge */}
       <circle
         cx={x}
         cy={y}
@@ -336,14 +336,14 @@ function SnakeHead({ x, y, angle }: { x: number; y: number; angle: number }) {
         strokeWidth={0.18}
         strokeOpacity={0.55}
       />
-      {/* Inner highlight dot — suggests volume under candlelight */}
+      {/* Inner highlight dot - suggests volume under candlelight */}
       <circle
         cx={x - Math.cos(angle - Math.PI / 4) * 0.4}
         cy={y - Math.sin(angle - Math.PI / 4) * 0.4}
         r={0.5}
         fill="rgba(155,34,53,0.45)"
       />
-      {/* Single gold-rimmed eye — replaces the previous cartoon two-eyes */}
+      {/* Single gold-rimmed eye - replaces the previous cartoon two-eyes */}
       <circle cx={eyeX} cy={eyeY} r={0.42} fill="#0a0204" />
       <circle
         cx={eyeX}
@@ -378,7 +378,7 @@ function Ladder({
   rungGradId: string;
   glowGradId: string;
 }) {
-  // Perpendicular unit vector — used to offset the two parallel rails.
+  // Perpendicular unit vector - used to offset the two parallel rails.
   const dx = toX - fromX;
   const dy = toY - fromY;
   const len = Math.hypot(dx, dy) || 1;
@@ -393,7 +393,7 @@ function Ladder({
   const rightFrom = { x: fromX - px * halfW, y: fromY - py * halfW };
   const rightTo = { x: toX - px * halfW, y: toY - py * halfW };
 
-  // Rungs — every ~3.5 vb units along the line
+  // Rungs - every ~3.5 vb units along the line
   const rungCount = Math.max(3, Math.round(len / 3.5));
   const rungs: Array<{ a: { x: number; y: number }; b: { x: number; y: number } }> = [];
   for (let i = 1; i < rungCount; i++) {
@@ -410,7 +410,7 @@ function Ladder({
     });
   }
 
-  // Soft gold halo at midpoint — gives the ladder a "lift" feel
+  // Soft gold halo at midpoint - gives the ladder a "lift" feel
   const midX = (fromX + toX) / 2;
   const midY = (fromY + toY) / 2;
   const haloR = Math.max(5, len * 0.16);
@@ -426,7 +426,7 @@ function Ladder({
         opacity={0.6}
       />
 
-      {/* Left rail — outline + main + highlight stripe for metallic feel */}
+      {/* Left rail - outline + main + highlight stripe for metallic feel */}
       <line
         x1={leftFrom.x}
         y1={leftFrom.y}
@@ -465,7 +465,7 @@ function Ladder({
         strokeLinecap="round"
       />
 
-      {/* Rungs — with subtle dark underlay so they look chunky / cast a
+      {/* Rungs - with subtle dark underlay so they look chunky / cast a
           shadow on the rails */}
       {rungs.map((r, i) => (
         <g key={i}>

@@ -102,7 +102,7 @@ export default async function BetweenUsGameDetailPage({
       listCategories(true),
       listTags(true),
       // Pulled here to compute the bottom-of-page "Next game" CTA.
-      // Cards arrive sorted by sort_weight DESC, created_at DESC — same
+      // Cards arrive sorted by sort_weight DESC, created_at DESC - same
       // canonical order users see in the catalogue grid.
       listActiveGameCards().catch(() => []),
     ]);
@@ -175,13 +175,13 @@ export default async function BetweenUsGameDetailPage({
   // visitors discovering via this CTA always cycle through the full
   // catalogue rather than a category-narrowed subset. A category-only
   // loop was the previous behavior but it dropped any game that didn't
-  // share the current game's category — leaving the user bouncing
+  // share the current game's category - leaving the user bouncing
   // between the same 2-3 titles forever even when more existed in the
   // catalogue. Per design feedback (2026-05-05) the loop now spans
   // the whole catalogue.
   // Algorithm:
   //   1. Use the canonical listActiveGameCards order
-  //      (sort_weight DESC, created_at DESC) — same order as the
+  //      (sort_weight DESC, created_at DESC) - same order as the
   //      catalogue grid, so users move "forward" in the same direction
   //      they'd browse manually.
   //   2. Find current game's index, hop one forward, wrap to start.
@@ -195,7 +195,7 @@ export default async function BetweenUsGameDetailPage({
       nextGame = allGameCards[nextIdx]!.game;
     } else {
       // Current game isn't in its own filtered list (edge case if
-      // is_active flipped between fetches) — pick the first available.
+      // is_active flipped between fetches) - pick the first available.
       nextGame = allGameCards[0]!.game;
     }
   }
@@ -328,7 +328,7 @@ export default async function BetweenUsGameDetailPage({
           blobs synthesize new colours where they meet (rose + fuchsia →
           magenta etc). For that to paint correctly, we DON'T set
           `isolation: isolate` anywhere between the blobs and the base wash. */}
-      {/* Static dark base — fallback so the wrapper is never empty even
+      {/* Static dark base - fallback so the wrapper is never empty even
           if the animated layer pauses (prefers-reduced-motion). Pulled to
           deeper near-black tones per design feedback so the page reads
           properly "after-dark" rather than dusty wine. */}
@@ -339,7 +339,7 @@ export default async function BetweenUsGameDetailPage({
       />
       {/* Animated two-tone dark wash that drifts on top of the base.
           Uses the dedicated `mio-adults-bg` keyframe (defined in
-          globals.css) — stronger translate + scale than the subtle
+          globals.css) - stronger translate + scale than the subtle
           aurora-drift so the dark plate is visibly alive. Colour pair
           DARKENED per round of design feedback: deep burgundy + deep
           plum at higher alpha so the swirl reads on a near-black plate. */}
@@ -367,7 +367,7 @@ export default async function BetweenUsGameDetailPage({
           RTL on every screen. Content blocks below still cap themselves
           (max-w-3xl on the benefits column, etc.) for reading comfort. */}
       <main className="relative mx-auto max-w-7xl px-4 py-10">
-        {/* Back link removed per UX redesign — moved to the BOTTOM of the
+        {/* Back link removed per UX redesign - moved to the BOTTOM of the
             page and reframed as a "Next game" carousel CTA so the visitor
             keeps discovering products instead of being asked to go back
             to a list right after landing on the page. See the
@@ -434,7 +434,7 @@ export default async function BetweenUsGameDetailPage({
             </div>
             {/* Game name uses Frank Ruhl Libre directly (not the
                 `font-heading` token) because in RTL `--font-heading`
-                resolves to IBM Plex Sans Hebrew — sans-serif. We want
+                resolves to IBM Plex Sans Hebrew - sans-serif. We want
                 serif in BOTH locales for a unified editorial feel that
                 matches every other heading on the site (personas h3,
                 why h3, /adults flagship h1, etc.). Frank Ruhl Libre
@@ -452,7 +452,7 @@ export default async function BetweenUsGameDetailPage({
               </p>
             ) : null}
 
-            {/* Mobile-only cover artwork — placed AFTER the short description
+            {/* Mobile-only cover artwork - placed AFTER the short description
                 rather than before it. Reasoning: the natural reading flow on
                 mobile is title → context (desc) → visual. Putting the image
                 first pushed the description below the fold; putting it after
@@ -460,7 +460,7 @@ export default async function BetweenUsGameDetailPage({
                 land as a confirmation of what they just read. Desktop has its
                 own cover in the right column (the `hidden md:block` sibling
                 further below) so this mobile copy is hidden there.
-                Aspect bumped from 4/3 → 16/10 to drop ~17% of the height —
+                Aspect bumped from 4/3 → 16/10 to drop ~17% of the height -
                 the image still has presence but doesn't push price/CTA off-
                 screen on common phone heights. */}
             <div className="relative mt-5 aspect-[16/10] w-full overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-fuchsia-500/30 to-violet-500/20 shadow-2xl md:hidden">
@@ -488,7 +488,7 @@ export default async function BetweenUsGameDetailPage({
               // Mobile-only reorder: pricing/CTA pushed to the bottom of the
               // left column via `order-1` so the meta block (levels + tags)
               // gets to build perceived value BEFORE the price reveal. On
-              // desktop the price still sits directly under shortDesc — the
+              // desktop the price still sits directly under shortDesc - the
               // wider layout makes early price disclosure non-disruptive.
               <div className="order-1 md:order-none">
                 <AdultsHeroBuy
@@ -585,7 +585,7 @@ export default async function BetweenUsGameDetailPage({
             {allBenefits.length > 0 ? (
               <div>
                 {/* Section heading 24px (above the 20px floor). Body
-                    bullets bumped to 18px on every size — these are
+                    bullets bumped to 18px on every size - these are
                     high-importance value bullets and the user explicitly
                     flagged the previous 16px as too small. */}
                 <h2 className="text-2xl font-semibold text-white/95">

@@ -56,7 +56,7 @@ export async function GET(req: Request) {
   // user re-arrives at a previously-answered question with empty state
   // even though their answer is already in the DB.
   //
-  // Shape returned: `{ [question_id]: AnswerValue }` — easy for the
+  // Shape returned: `{ [question_id]: AnswerValue }` - easy for the
   // client to look up by question id. We don't return locale here because
   // the client knows the page locale and would just discard it.
   const responses: Record<string, unknown> = {};

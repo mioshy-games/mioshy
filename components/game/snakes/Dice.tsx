@@ -33,7 +33,7 @@ function DieFace({ value }: { value: DiceResult }) {
     <div
       className="relative grid h-full w-full grid-cols-3 grid-rows-3 place-items-center rounded-[22%] p-[14%]"
       style={{
-        // Intimate-dark velvet — matte black/wine, replaces the previous
+        // Intimate-dark velvet - matte black/wine, replaces the previous
         // emerald felt. Radial highlight at top-left still simulates a
         // candle catching the fabric, just in a wine palette now.
         background:
@@ -45,7 +45,7 @@ function DieFace({ value }: { value: DiceResult }) {
       }}
       aria-hidden
     >
-      {/* Subtle sheen line across the top-left — gold tint, suggests
+      {/* Subtle sheen line across the top-left - gold tint, suggests
           candlelight catching the velvet nap */}
       <span
         className="pointer-events-none absolute inset-0 rounded-[22%] opacity-50"
@@ -69,7 +69,7 @@ function DieFace({ value }: { value: DiceResult }) {
             style={
               isPip
                 ? {
-                    // Gold pip — bright top, deeper antique-gold shadow
+                    // Gold pip - bright top, deeper antique-gold shadow
                     background:
                       "radial-gradient(circle at 38% 35%, #F2E4C9 0%, #E6CB85 35%, #C9A961 70%, #8a6630 100%)",
                     boxShadow:
@@ -88,7 +88,7 @@ export function Dice({
   onRoll,
   disabled,
   result,
-  // Default fallback label — only used if the parent doesn't pass one
+  // Default fallback label - only used if the parent doesn't pass one
   // (production callsites always do). Empty string keeps it neutral
   // across locales.
   label = "",
@@ -100,7 +100,7 @@ export function Dice({
   disabled?: boolean;
   /** The canonical dice value from game state. Changing this triggers a tumble. */
   result: DiceResult | null;
-  /** Pip color — used to personalize the die to the current player. */
+  /** Pip color - used to personalize the die to the current player. */
   playerColor?: string;
   /** Localized button label shown below the die. */
   label?: string;
@@ -113,7 +113,7 @@ export function Dice({
   const [displayValue, setDisplayValue] = useState<DiceResult>(result ?? 1);
 
   // When result changes, tumble for a moment then snap to the new result.
-  // The interval cycles through random faces — Itzik's request was for the
+  // The interval cycles through random faces - Itzik's request was for the
   // numbers to "run" through 2-3 sec like 2-4-6 then 3-4-5, mimicking a
   // real die rolling. Interval bumped 80ms → 110ms so each face is
   // readable before flipping (10 fps was too fast to register
@@ -184,10 +184,10 @@ export function Dice({
         <DieFace value={displayValue} />
       </motion.button>
 
-      {/* Caption — Itzik 2026-05-05: shows ONLY when this user can
+      {/* Caption - Itzik 2026-05-05: shows ONLY when this user can
           actually roll. Format is "{name}, תורך" so the player sees
           their name as a vocative. While tumbling, while disabled
-          (not their turn), or in any non-roll state — caption hidden. */}
+          (not their turn), or in any non-roll state - caption hidden. */}
       {canRoll && !tumbling ? (
         <div
           className={cn(

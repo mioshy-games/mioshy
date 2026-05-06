@@ -30,7 +30,7 @@ export function QuestionModal({
   avatar: string;
   onAnswer: (didAnswer: boolean) => void;
   penalty: Pick<GameConfig, "penaltyType" | "penaltySteps">;
-  /** Previously used to anchor the popup to a board cell. Removed —
+  /** Previously used to anchor the popup to a board cell. Removed -
    *  on small screens the board fills the viewport and any cell-based
    *  positioning pushed the modal off the edge. The modal is now
    *  always centered. Prop kept in the type so existing callers don't
@@ -39,7 +39,7 @@ export function QuestionModal({
 }) {
   const locale = useLocale();
   const isHe = locale === "he";
-  // Skip/penalty text removed — the modal now has only one action (close)
+  // Skip/penalty text removed - the modal now has only one action (close)
   // so there is no "skip" path-and therefore no penalty to warn about.
 
   // Round 7 (2026-05-05) redesign per Itzik:
@@ -108,7 +108,7 @@ export function QuestionModal({
                 </span>
               </div>
 
-              {/* Question body — bumped from 22px → 28-32px per Itzik
+              {/* Question body - bumped from 22px → 28-32px per Itzik
                   round 8. Black bg makes white text easy to read at the
                   larger size. Player's name in a warm gold (their color
                   was overriding to a hex string anyway). */}
@@ -122,13 +122,13 @@ export function QuestionModal({
                 <span className="text-white">
                   {", "}
                   {/* Pick the user's language version of the prompt
-                      (text_he vs text_en). DB content is NOT modified —
+                      (text_he vs text_en). DB content is NOT modified -
                       this is purely the locale-aware selection. Itzik
                       2026-05-05: keep task wording untouched, only
                       route to the right language column. */}
                   {(isHe ? question?.text_he : question?.text_en) ??
                     question?.text_he ??
-                    "—"}
+                    "-"}
                 </span>
               </div>
 

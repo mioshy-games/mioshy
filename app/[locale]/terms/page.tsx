@@ -1,5 +1,5 @@
 /**
- * /[locale]/terms — Terms of Service.
+ * /[locale]/terms - Terms of Service.
  *
  * Server component; reads the entire content from the `legal.terms`
  * namespace via `t.raw()` so the marketing/legal team can edit copy

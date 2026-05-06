@@ -2,7 +2,7 @@ import { useTranslations } from "next-intl";
 import { TrackedLink } from "./TrackedLink";
 
 /**
- * FinalCTA — closing section with animated background blobs, dramatic
+ * FinalCTA - closing section with animated background blobs, dramatic
  * headline, and two-column choice grid (online vs adults).
  */
 export function FinalCTA() {

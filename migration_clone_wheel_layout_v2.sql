@@ -1,14 +1,14 @@
 -- =====================================================================
 -- MIGRATION v2: Clone FULL wheel layout (sizes/positions/border/spin)
---               from canonical to two targets — preserving colors+text.
+--               from canonical to two targets - preserving colors+text.
 -- =====================================================================
 -- This SUPERSEDES migration_clone_wheel_layout.sql (v1 only touched
 -- wheel_configs and missed the game_settings table where border width,
 -- pointer style, spin speed, inner circle size, particles & shape live).
 --
 -- Touched tables:
---   public.wheel_configs   — slices/marker/divider structure
---   public.game_settings   — border, motion, shape, particles, wheel.*
+--   public.wheel_configs   - slices/marker/divider structure
+--   public.game_settings   - border, motion, shape, particles, wheel.*
 --                            (size/shadow/outline structure, no colors)
 --
 -- Canonical (source of layout):
@@ -24,7 +24,7 @@
 BEGIN;
 
 -- ============================================================
--- PART 1: wheel_configs (same as v1) — slices, marker, divider
+-- PART 1: wheel_configs (same as v1) - slices, marker, divider
 -- ============================================================
 DO $$
 DECLARE
@@ -71,7 +71,7 @@ BEGIN
       FROM public.wheel_configs WHERE game_id = v_target_id;
 
     IF NOT FOUND THEN
-      RAISE WARNING 'wheel_configs target % NOT FOUND — skipping', v_target_id;
+      RAISE WARNING 'wheel_configs target % NOT FOUND - skipping', v_target_id;
       CONTINUE;
     END IF;
 
@@ -147,7 +147,7 @@ BEGIN
 END $$;
 
 -- ============================================================
--- PART 2: game_settings — border, motion, shape, particles,
+-- PART 2: game_settings - border, motion, shape, particles,
 --         wheel.* (size/shadow/outline/inner/divider/marker structure)
 -- ============================================================
 -- Strategy: take canonical's settings JSONB as the base, then surgically
@@ -171,7 +171,7 @@ BEGIN
     FROM public.game_settings WHERE game_id = v_canonical_game_id;
 
   IF v_c_settings IS NULL THEN
-    RAISE WARNING 'No game_settings row for canonical % — skipping PART 2',
+    RAISE WARNING 'No game_settings row for canonical % - skipping PART 2',
                   v_canonical_game_id;
     RETURN;
   END IF;
@@ -239,7 +239,7 @@ BEGIN
       v_new := jsonb_set(v_new, '{wheel,markers,color}', v_t_settings #> '{wheel,markers,color}', true);
     END IF;
 
-    -- particles.color (if present — particles structure inherits from canonical)
+    -- particles.color (if present - particles structure inherits from canonical)
     IF v_t_settings #> '{particles,color}' IS NOT NULL THEN
       v_new := jsonb_set(v_new, '{particles,color}', v_t_settings #> '{particles,color}', true);
     END IF;
@@ -295,5 +295,5 @@ SELECT 'game_settings' AS src,
  ORDER BY gs.game_id;
 
 -- All numeric/structural columns should match across the 3 rows.
--- If they do — leave COMMIT. If something's off — change to ROLLBACK.
+-- If they do - leave COMMIT. If something's off - change to ROLLBACK.
 COMMIT;

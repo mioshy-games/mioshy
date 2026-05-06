@@ -139,7 +139,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     >
       <head>
         {SUPABASE_ORIGIN ? (
-          // dns-prefetch only — full preconnect held a connection slot
+          // dns-prefetch only - full preconnect held a connection slot
           // that the marketing homepage never used (Supabase is hit only
           // on auth-gated pages and the dashboard). Lighthouse 2026-05-06
           // flagged this as "Unused preconnect"; dropping it frees the

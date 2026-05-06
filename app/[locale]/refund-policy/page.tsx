@@ -1,5 +1,5 @@
 /**
- * /[locale]/refund-policy — Refund Policy.
+ * /[locale]/refund-policy - Refund Policy.
  *
  * Short, clear elaboration of the no-refund stance from the Terms,
  * with the cancellation flow + Israeli consumer-law disclaimer.

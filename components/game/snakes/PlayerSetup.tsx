@@ -38,7 +38,7 @@ export function PlayerSetup({
       <div className="mt-1 text-sm text-slate-300/80">
         {isHe
           ? "הזן/י שם - דמות וצבע ייבחרו בלובי המשחק."
-          : "Enter your name — character and color are chosen in the game lobby."}
+          : "Enter your name - character and color are chosen in the game lobby."}
       </div>
 
       <label className="mt-4 block text-sm font-semibold text-slate-200">

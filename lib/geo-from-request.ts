@@ -6,7 +6,7 @@ export type GeoFromRequest = {
   source: "vercel-header" | "fallback-env" | "unknown"
 }
 
-const FALLBACK_COUNTRY_DEV = "IL" // dev only — do NOT trust in prod
+const FALLBACK_COUNTRY_DEV = "IL" // dev only - do NOT trust in prod
 
 export function geoFromRequest(req: Request): GeoFromRequest {
   const headerCountry = (req.headers.get("x-vercel-ip-country") || "").trim().toUpperCase()
@@ -17,7 +17,7 @@ export function geoFromRequest(req: Request): GeoFromRequest {
       source: "vercel-header",
     }
   }
-  // Local dev / non-Vercel — allow opt-in via env. Never auto-default in prod.
+  // Local dev / non-Vercel - allow opt-in via env. Never auto-default in prod.
   const isProd = process.env.VERCEL_ENV === "production" || process.env.NODE_ENV === "production"
   if (!isProd) {
     return {

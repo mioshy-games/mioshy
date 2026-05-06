@@ -69,16 +69,16 @@ export default async function MyGamesGalleryPage({
             </span>
           </div>
           <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
-            {isHe ? "משחקים לזוגות" : "Games for couples"}
+            {isHe ? "משחקי זוגות אונליין" : "Online couples games"}
           </h1>
           <p className="mt-2 max-w-2xl text-white/70">
             {isHe
-              ? "כנות ואתגר, גלגל הזוגיות, סולמות ונחשים — מוכנים להפעלה."
-              : "Truth or dare, the wheel, snakes & ladders — ready to play."}
+              ? "כנות ואתגר, גלגל הזוגיות, סולמות ונחשים - מוכנים להפעלה."
+              : "Truth or dare, the wheel, snakes & ladders - ready to play."}
           </p>
         </section>
 
-        {/* ─────── Games grid — 2 per row per spec §7.2 ───────
+        {/* ─────── Games grid - 2 per row per spec §7.2 ───────
             Removed the Quick-start tiles section (it duplicated cards
             from the grid below). Removed the 3-column desktop variant
             in favour of a clean 2-up layout that matches the marketing
@@ -136,7 +136,7 @@ export default async function MyGamesGalleryPage({
                 );
               })}
 
-              {/* Virtual snakes & ladders card — Itzik 2026-05-05.
+              {/* Virtual snakes & ladders card - Itzik 2026-05-05.
                   The board game isn't a row in the `games` table (it
                   has its own /game route, not /games/:slug), so the DB
                   query above never returns it. Mirror the same hardcoded
@@ -146,7 +146,7 @@ export default async function MyGamesGalleryPage({
               <li className="group overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] backdrop-blur-md transition hover:border-rose-300/40 hover:bg-white/[0.06]">
                 <Link href="/game" className="flex h-full flex-col">
                   <div className="relative aspect-[16/10] w-full overflow-hidden bg-gradient-to-br from-rose-500/30 via-fuchsia-500/25 to-violet-500/20">
-                    {/* Thumbnail — drop the image file at
+                    {/* Thumbnail - drop the image file at
                         /public/images/snakes-couples.webp (16:10 ratio
                         recommended, e.g. 1280×800). The emoji-gradient
                         underneath stays as a fallback if the file is
@@ -169,8 +169,8 @@ export default async function MyGamesGalleryPage({
                     </h3>
                     <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-white/75">
                       {isHe
-                        ? "לוח קלאסי עם שאלות ואתגרים זוגיים — שחקו על מכשיר אחד או על שני מכשירים שונים."
-                        : "Classic board with couples questions & challenges — play on one device or remotely."}
+                        ? "לוח קלאסי עם שאלות ואתגרים זוגיים - שחקו על מכשיר אחד או על שני מכשירים שונים."
+                        : "Classic board with couples questions & challenges - play on one device or remotely."}
                     </p>
                     <span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-rose-300 transition group-hover:text-white">
                       <Play className="h-4 w-4" />

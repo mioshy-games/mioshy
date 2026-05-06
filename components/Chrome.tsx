@@ -54,7 +54,7 @@ export function Chrome({
    *  flags so the header can surface ONLY the products they own (per
    *  spec §11). null = anonymous OR auth fetch failed. */
   entitlements?: Entitlements | null;
-  /** v3 slice 10 — unread journey_notifications count for the bell. */
+  /** v3 slice 10 - unread journey_notifications count for the bell. */
   unreadNotifications?: number;
   /** Required when isAuthed; drives RTL/LTR rendering of the bell
    *  dropdown. Anonymous visitors don't see the bell. */
@@ -71,7 +71,7 @@ export function Chrome({
     <div
       className={
         isAuthed
-          ? // Authenticated layout — premium dark backdrop locked to the
+          ? // Authenticated layout - premium dark backdrop locked to the
             // viewport, only the content scrolls. Per the post-login spec
             // we want the homepage hero's purple↔rose blob language to
             // travel with the user across every page they land on.
@@ -86,7 +86,7 @@ export function Chrome({
         unreadNotifications={unreadNotifications}
       />
       <div className="flex-1">{children}</div>
-      {/* Footer is marketing surface only — hide it for signed-in users
+      {/* Footer is marketing surface only - hide it for signed-in users
           so the post-login experience reads as "your space, not a brochure". */}
       {!isAuthed && <SiteFooter />}
     </div>

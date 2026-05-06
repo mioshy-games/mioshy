@@ -1,5 +1,5 @@
 // ============================================================
-// group-stats.ts — slice 9 read-only aggregates for a single group:
+// group-stats.ts - slice 9 read-only aggregates for a single group:
 //   - per-member delivered/completed/skipped counts
 //   - per-binding "delivered to N members" counts
 //

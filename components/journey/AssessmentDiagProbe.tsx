@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Diagnostic-only probe for /journey/assessment. Renders nothing — only
+ * Diagnostic-only probe for /journey/assessment. Renders nothing - only
  * logs once on mount so we can confirm the wrapper actually renders with
  * the expected bg + child structure. Remove once Phase 1 ambience is
  * verified visually.

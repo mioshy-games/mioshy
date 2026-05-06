@@ -8,7 +8,7 @@
 /* ─────────────────────────────────────────────────────────────
    Per-section para-raph size overrides on the homepage.
    We tried a universal `.home-v2 p { 20px !important }` rule
-   earlier and walked it back — too blunt, breaks editorial
+   earlier and walked it back - too blunt, breaks editorial
    density that section-l-vel rules set deliberately (15–19px
    per card type). Instead we treat each section's <p> as
    designer-set, and only override individual classes when the
@@ -21,7 +21,7 @@
                                 tight enough-to read as a list.
 
    Add new entries here when a section's default size doesn't
-   serve the surface. Don't bring back a universal floor — it
+   serve the surface. Don't bring back a universal floor - it
    loses more than it gains.
    ───────────────────────────────────────────────────────────── */
 .home-v2 p.media-press-quote   { font-size: 28px !important; line-height: 1.4 !important; }
@@ -42,7 +42,7 @@
 
   .container{max-width:var(--max);margin:0 auto;padding:0 40px}
 
-  /* TYPE — driven by tokens */
+  /* TYPE - driven by tokens */
   .display{font-family:'Noto Serif Hebrew','Frank Ruhl Libre',serif;font-size:var(--fs-display);line-height:var(--lh-display);letter-spacing:var(--ls-display);font-weight:900}
   .serif{font-family:'Frank Ruhl Libre',serif;letter-spacing:-0.015em}
   h1{font-family:'Noto Serif Hebrew','Frank Ruhl Libre',serif;font-size:var(--fs-display);line-height:var(--lh-display);font-weight:900;letter-spacing:var(--ls-display);color:var(--ink)}
@@ -61,7 +61,7 @@
      ACCESSIBIL-TY (תקן ישראלי 5568 / WCAG 2.1 AA)
      ============================================ */
 
-  /* Skip link — appears on focus, lets keyboard users jump to main */
+  /* Skip link - appears on focus, lets keyboard users jump to main */
   .skip-link{
     position:absolute;
     top:-100px;
@@ -78,7 +78,7 @@
   }
   .skip-link:focus{top:14px;outline:2px solid #fff;outline-offset:2px}
 
-  /* Visible focus ring for keyboard users — invisible for mouse users */
+  /* Visible focus ring for keyboard users - invisible for mouse users */
   *:focus{outline:none}
   *:focus-visible{
     outline:2px solid var(--accent);
@@ -92,7 +92,7 @@
     outline-offset:4px;
   }
 
-  /* Respect reduced-motion preference — required by IS 5568 */
+  /* Respect reduced-motion preference - required by IS 5568 */
   @media (prefers-reduced-motion: reduce){
     *,*::before,*::after{
       animation-duration:0.01ms !important;
@@ -141,7 +141,7 @@
   .nav-cta{display:inline-flex;align-items:center;gap:8px;background:var(--ink);color:#fff;padding:12px 24px;border-radius:999px;font-size:14px;font-weight:500;transition:transform .2s ease}
   .nav-cta:hover{transform:translateY(-1px);background:var(--accent)}
 
-  /* HERO — DARK ANIMATED
+  /* HERO - DARK ANIMATED
      Background palette aligned with the /adults marketing surface:
      rose / fuchsia / violet / warm-amber drifting blobs over a deep
      wine-black base, plus a layer of slow-drifting sparkle particles.
@@ -158,7 +158,7 @@
   .hero-blob-4{width:380px;height:380px;background:radial-gradient(circle,#7C3AED 0%,rgba(124,58,237,0) 70%);bottom:15%;right:25%;animation:hero-blob-4 24s ease-in-out infinite}
   .hero-blob-5{width:320px;height:320px;background:radial-gradient(circle,#FBBF24 0%,rgba(251,191,36,0) 70%);top:55%;right:8%;opacity:0.55;animation:hero-blob-5 28s ease-in-out infinite}
   .hero-grain{position:absolute;inset:0;background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400'><defs><filter id='n'><feTurbulence baseFrequency='0.85' numOctaves='2'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.4 0'/></filter></defs><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");opacity:0.06;mix-blend-mode:overlay;pointer-events:none;z-index:1}
-  /* Red and Purple converge near centre and drift back — much wider travel
+  /* Red and Purple converge near centre and drift back - much wider travel
      so the motion is clearly visible. Synced 32s loop. */
   .hero-blob-1 { animation: hero-blob-1-close 32s ease-in-out infinite !important; }
   .hero-blob-2 { animation: hero-blob-2-close 32s ease-in-out infinite !important; }
@@ -217,7 +217,7 @@
   @keyframes hero-blob--{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-110px,50px) scale(1.2)}}
   @keyframes hero-blob-5{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(60px,-70px) scale(1.1)}}
 
-  /* Drifting sparkles — pure CSS field. 18 spans share 6 size/duration
+  /* Drifting sparkles - pure CSS field. 18 spans share 6 size/duration
      variants via nth-child(6n+i). Each rises slowly, fades in/out, and
      drifts horizontally so the page feels alive without the heavy
      framer-motion dependency. Pauses for prefers-reduced-motion. */
@@ -260,40 +260,32 @@
   .hero h1 em::af-er{content:"";position:absolute;left:-4px;right:-4px;bottom:8px;height:14px;background:rgba(184,60,77,0.4);z-index:-1;border-radius:4px}
   .hero p.lead{margin-bottom:44px;max-width:540px;color:rgba(255,255,255,0.85)}
   .hero-actions{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:56px}
-  /* "Starts at ₪9" label — sits directly under the primary CTA. Negative
+  /* "Starts at ₪9" label - sits directly under the primary CTA. Negative
      top margin tucks it under the buttons without modifying the existing
      hero-actions margin so the legacy spacing chain stays intact. */
   .hero-price-from{display:inline-flex;align-items:center;gap:10px;margin-top:-40px;margin-bottom:48px;font-size:14px;color:rgba(255,255,255,0.75);font-weight:500;letter-spacing:0.02em}
   .hero-price-from .dot{width:6px;height:6px;border-radius:50%;background:var(--accent-soft);box-shadow:0 0 8px rgba(241,200,207,0.55);flex-shrink:0}
   .hero-price-from strong{color:#F1C8CF;font-weight:700;letter-spacing:0.04em;font-size:15px}
-  /* Primary CTA — matches the animated rose→fuchsia→violet gradient
+  /* Primary CTA - matches the animated rose→fuchsia→violet gradient
      used on /adults (mio-adults-buy-shift). The white-bg variant from
      the global .btn-primary clashed with the dark hero; this gradient
      ties the homepage CTA into the same family as the product pages. */
-  /* Composited variant per Lighthouse 2026-05-06: the previous build
-     animated `background-position` which is not GPU-composited and got
-     flagged as a CLS contributor. The gradient now lives on an ::after
-     layer that's wider than the button (220%) and slides via
-     `transform: translateX()` — same visual sweep, fully composited. */
+  /* Static gradient - Itzik 2026-05-06: the gradient-shift animation
+     looked off (kept attracting the eye away from the headline), so the
+     CTA is now a fixed gradient with the white shimmer sweep retained
+     for hover only. Side-benefit: zero animation cost on this element,
+     contributes to TBT cleanup on mobile. */
   .hero .btn-primary{
     position:relative;color:#fff;border:none;
-    background:#EC4899; /* solid fallback while ::after paints over it */
+    background:linear-gradient(110deg,#F43F5E 0%,#EC4899 45%,#A855F7 100%);
     box-shadow:0 18px 36px rgba(244,63,94,0.35),0 4px 12px rgba(168,85,247,0.25);
     overflow:hidden;
     isolation:isolate
-  }
-  .hero .btn-primary::after{
-    content:"";position:absolute;inset:0;width:220%;left:0;
-    background:linear-gradient(110deg,#F43F5E 0%,#EC4899 45%,#A855F7 100%);
-    animation:hero-cta-shift 7s ease-in-out infinite;
-    will-change:transform;
-    z-index:0
   }
   .hero .btn-primary::before{content:"";position:absolute;inset:0;background:linear-gradient(120deg,transparent 0%,rgba(255,255,255,0.18) 50%,transparent 100%);transform:translateX(-100%);transition:transform .9s ease;z-index:1}
   .hero .btn-primary:hover{transform:translateY(-2px);box-shadow:0 22px 48px rgba(244,63,94,0.55),0 6px 18px rgba(168,85,247,0.4)}
   .hero .btn-primary:hover::before{transform:translateX(100%)}
   .hero .btn-primary > *{position:relative;z-index:2}
-  @keyframes hero-cta-shift{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(-54.5%,0,0)}}
   .hero .btn-ghost{background:rgba(255,255,255,0.04);color:#fff;border-color:rgba(255,255,255,0.28);backdrop-filter:blur(10px)}
   .hero .btn-ghost:hover{border-color:rgba(255,255,255,0.7);background:rgba(255,255,255,0.10)}
   .hero-meta{display:flex;align-items:center;gap:48px;padding-top:36px;border-top:1px solid rgba(255,255,255,0.15)}
@@ -309,7 +301,7 @@
     box-shadow:var(---hadow-lg);
     display:block;
   }
-  /* Floating badges — glass-morphism with rose/fuchsia gradient halo
+  /* Floating badges - glass-morphism with rose/fuchsia gradient halo
      ring. Float path is no longer a simple Y-bob: each badge now
      traces a slow figure-eight (translateX + translateY + tiny
      rotate) so the motion reads as airy and weightless instead of
@@ -355,7 +347,7 @@
     75%{transform:translate(-8-x,4px) rotate(0.5deg)}
   }
   @keyframes badge-aura{0%,100%{opacity:0.65;transform:scale(1)}50%{opacity:1;transform:scale(1.08)}}
-  /* Legacy bobbing animation — kept for callers outside the hero
+  /* Legacy bobbing animation - kept for callers outside the hero
      (e.g. .founder-badge etc.) that may still reference @keyframes float. */
   @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
   .badge-icon{
@@ -378,7 +370,7 @@
   .section-head h2{margin-bottom:24px}
   .section-head p{color:var(--ink-3);font-size:var(--fs-lead);font-weight:300;line-height:var(--lh-relaxed)}
 
-  /* TEXT MARKER UTILITY — black band beneath a word, doesn't hide the text */
+  /* TEXT MARKER UTILITY - black band beneath a word, doesn't hide the text */
   .text-mark{text-decoration:underline solid var(--ink);text-decoration-thickness:10px;text-underline-offset:8px;text-decoration-skip-ink:none}
 
   /* PROBLEM */
@@ -431,14 +423,14 @@
   .reviews-load-mor- button{padding:14px 28px;background:transparent;border:1px solid var(--line-strong);color:var(--ink);border-radius:999px;font-size:15px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .25s var(--t);display:inline-flex;align-items:center;gap:8px}
   .reviews-load-more button:hover{background:var(--ink);color:#fff;border-color:var(--ink)}
 
-  /* MEDIA / PRESS — editorial table. Right-aligned RTL header, stacked
+  /* MEDIA / PRESS - editorial table. Right-aligned RTL header, stacked
      rows of [logo | quote | CTA] divided by hairlines. White-radial drift
      layers underneath the cream surface for soft, page-of-magazine depth.
      Outer page section provides the bg colour + vertical padding. */
   .media-press{padding:0;back-round:transparent;position:relative}
   .media-press-wrap{max-width:var(--max);margin:0 auto;padding:0 40px;position:relative}
 
-  /* Single peach blob drift — heavy blur, gentle L↔R sway.
+  /* Single peach blob drift - heavy blur, gentle L↔R sway.
      The blob element itself is rendered inline in the page section so its
      position/size can be styled there; this animation drives its motion. */
   @keyframes mio-press-blob-drift { 0%,100%{transform:translate3d(0,0,0)} 50%{transform:translate3d(50px,-12px,0)} }
@@ -448,14 +440,14 @@
     .mio-press-blob{an-mation:none}
   }
 
-  /* Editorial header — centered */
+  /* Editorial header - centered */
   .media-press-head{margin-bottom:40px;text-align:center}
   .media-press-eyebrow{display:inline-flex;align-items:center;gap:10px;font-size:var(--fs-label,13px);letter-spacing:0.22em;text-transform:uppercase;color:var(--ink);font-weight:600;margin-bottom:20px}
   .media-press-dot{width:7px;height:7px;background:var(--accent);border-radius:1px;box-shadow:0 0 0 3px rgba(184,60,77,0.18)}
   .media-press-title{font-family:'Frank Ruhl Libre',serif;font-size:clamp(40px,5vw,60px);line-height:1.05;letter-spacing:-0.02em;color:var(--ink);font-weight:600;margin:0}
   .media-press-title em{color:var(--accent);font-style:italic;font-weight:500}
 
-  /* Editorial table — 2-column rows divided by hairlines */
+  /* Editorial table - 2-column rows divided by hairlines */
   .media-press-rows{list-style:none;padding:0;margin:0}
   .media-press-row{display:grid;grid-template-columns:1fr;gap:18px;padding:30px 0;border-top:1px solid var(--line);transition:border-top-color .35s var(--t)}
   .media-press-row:hover{border-top-color:rgba(184,60,77,0.4)}
@@ -473,7 +465,7 @@
   .media--ress-sep{color:var(--ink-4,#7A6A75)}
   .media-press-date{color:var(--ink-3,#4A3A45)}
 
-  /* CTA — italic serif, no border, no bg. Pure editorial link.
+  /* CTA - italic serif, no border, no bg. Pure editorial link.
      Inline within content column, right-aligned (RTL start = right side
      of the quote text). */
   .media-press-row-cta{display:inline-flex;align-self:flex-start;align-items:center;gap:8px;font-family:'Frank Ruhl Libre',serif;font-size:17px;font-style:italic;font-weight:600;color:var(--accent);transition:color .25s var(--t),gap .25s var(--t);text-decoration:none;background:transparent}
@@ -481,7 +473,7 @@
   .media-press-row-c-a .arrow{transition:transform .25s var(--t);display:inline-block;font-style:normal}
   .media-press-row-cta:hover .arrow{transform:translateX(-4px)}
 
-  /* Desktop layout — 2-column grid: [Logo | Content] */
+  /* Desktop layout - 2-column grid: [Logo | Content] */
   @media (min-width:768px){
     .media-press-row{grid-template-columns:160px 1fr;gap:36px;align-items:start}
   }
@@ -513,7 +505,7 @@
   .bio-item-v-lue{font-family:'Frank Ruhl Libre',serif;font-size:18px;font-weight:600;color:var(--ink)}
   .founder-actions{display:flex;gap:16px;flex-wrap:wrap}
 
-  /* JOURNEY — EDITORIAL TIMELINE */
+  /* JOURNEY - EDITORIAL TIMELINE */
   .journey{padding:95px 0;background:var(--bg-soft)}
   .journey-head h2 em{color:var(--accent);font-style:italic;font-family:'Frank Ruhl Libre',serif;font-weight:700}
 
@@ -540,7 +532,7 @@
   .journey-cta{text-align:center;margin-top:100px;padding-top:64px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:center;gap:32px;flex-wrap:wrap}
   .journey-cta-text{font-family:'Frank Ruhl Libre',serif;font-size:22px;font-weight:500;color:var(--ink)}
 
-  /* COUPLES GAMES — energetic spotlight */
+  /* COUPLES GAMES - energetic spotlight */
   .couples-games{
     padding:95px 0;
     position:relative;
@@ -551,7 +543,7 @@
       radial-gradient(ellipse-55% 50% at 85% 90%, #F1ECF8 0%, transparent 60%),
       linear-gradient(135deg, #FBF6F4 0%, #FBEEEE 45%, #F4F0F9 100%);
   }
-  /* Subtle dot grid overlay — adds texture, barely visible */
+  /* Subtle dot grid overlay - adds texture, barely visible */
   .couples-games::before{
     content:"";
     position:absolute;
@@ -607,9 +599,9 @@
   .cg-card-title{font-family:'Frank Ruhl Libre',serif;font-size:22px;font-weight:700;line-height:1.15}
   .cg-card-noise{position:absolute;inset:0;background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='280' height='400'><defs><filter id='nn'><feTurbulence baseFrequency='0.9' numOctaves='2'/></filter></defs><rect width='100%25' height='100%25' filter='url(%23nn)' opacity='.1'/></svg>");mix-blend-mode:overlay;pointer-events:none}
 
-  /* ADULT GAMES — light editorial, modern, clear in 2 seconds */
+  /* ADULT GAMES - light editorial, modern, clear in 2 seconds */
   /* ========================================================
-     ADULT GAMES — "החדר הסגור" (private chamber, dark cinematic)
+     ADULT GAMES - "החדר הסגור" (private chamber, dark cinematic)
      Palette aligned with Hero: deep wine-black base, rose-500
      (#F43F5E / rgba 244,63,94) and amber-400 (#FBBF24 / rgba
      251,191,36) accents. Both colors already live on the Hero's
@@ -668,7 +660,7 @@
   }
   .ag-stage{position:relative;text-align:center}
 
-  /* Pills — naked, no wrapper border */
+  /* Pills - naked, no wrapper border */
   .ag-pills{
     display:inline-flex;
     align-items:center;
@@ -740,7 +732,7 @@
   }
   .ag-lead strong{color:#FBF3F0;font-weight:500}
 
-  /* Three pillars — curation manifesto */
+  /* Three pillars - curation manifesto */
   .ag-pillars{
     display:grid;
     grid-template-columns:repeat(3,1fr);
@@ -792,7 +784,7 @@
     font-weight:300;
   }
 
-  /* Signature line — italic whisper between pillars and closer */
+  /* Signature line - italic whisper between pillars and closer */
   .ag-signature{
     display:flex;
     align-items:center;
@@ -840,16 +832,16 @@
     -webkit-text-fill-color:transparent;
     color:transparent;
   }
-  /* Adult Games closer CTA — matches the homepage hero button:
+  /* Adult Games closer CTA - matches the homepage hero button:
      animated rose → fuchsia → violet gradient, white text, soft shimmer
      sweep on hover. Same family as .hero .btn-primary. */
   .ag-closer-cta{
     display:inline-flex;
     align-items:center;
     padding:18px 34px;
-    /* Solid fallback — animated gradient now lives on ::after for GPU
-       compositing (see Lighthouse 2026-05-06 fix). */
-    background:#EC4899;
+    /* Static gradient - animation removed per Itzik 2026-05-06 (the
+       moving gradient was distracting). Hover sweep below stays. */
+    background:linear-gradient(110deg,#F43F5E 0%,#EC4899 45%,#A855F7 100%);
     color:#fff;
     border-radius:999px;
     font-size:16px;
@@ -864,14 +856,6 @@
     isolation:isolate;
     white-space:nowrap;
     border:none;
-  }
-  .ag-closer-cta::after{
-    content:"";
-    position:absolute;inset:0;width:220%;left:0;
-    background:linear-gradient(110deg,#F43F5E 0%,#EC4899 45%,#A855F7 100%);
-    animation:hero-cta-shift 7s ease-in-out infinite;
-    will-change:transform;
-    z-index:0;
   }
   .ag-closer-cta::before{
     content:"";
@@ -916,17 +900,17 @@
   }
 
   /* EDUCATION */
-  /* ====== EDUCATION — LIGHT EDITORIAL ======
+  /* ====== EDUCATION - LIGHT EDITORIAL ======
      Warm cream + textured background, dark ink type,
      single column with statement above + 4 dramatic stats below
      ============================================ */
   .education{
     background-color:#FAF6F1;
     background-image:
-      /* corner accents-— warm wine glows, very subtle */
+      /* corner accents-- warm wine glows, very subtle */
       radial-gradient(ellipse 700px 420px at 100% -8%, rgba(184,60,77,0.08) 0%, transparent 70%),
       radial-gradient(ellipse 580px 400px at 0% 108%, rgba(74,23,33,0.06) 0%, transparent 70%),
-      /* fine dot grid — adds tactile texture */
+      /* fine dot grid - adds tactile texture */
       radial-gradient(circle, rgba(74,23,33,0.05) 1px, transparent 1.4px);
     background-size: auto, auto, 26px 26px;
     background-position: 0 0, 0 0, 0 0;
@@ -935,7 +919,7 @@
     position:relative;
     overflow:hidden;
   }
-  /* Mask the dot grid so it fades at edges — feels organic, not mechanical */
+  /* Mask the dot grid so it fades at edges - feels organic, not mechanical */
   .education::before{
     content:"";
     position:absolute;inset:0;
@@ -978,7 +962,7 @@
     padding:44px 28px;
     text-align:center;
   }
-  /* Hairline divider between cells — like a magazine */
+  /* Hairline divider between cells - like a magazine */
   .edu-stat:not(:last-child)::after{
     content:"";
     position:absolute;
@@ -1090,7 +1074,7 @@
   .pricing-tr-st span::before{content:"✓";color:var(--accent);font-weight:700}
 
   /* ─────────────────────────────────────────────────────────────
-     PRICING — readability floor (per product spec).
+     PRICING - readability floor (per product spec).
      Every text element inside #pricing renders at ≥18px; CTAs
      render at 20px. Override the section-level rules above with
      stronger specificity (class+id, 0,2,0) so this stays a single
@@ -1101,7 +1085,7 @@
   #pricing.pricing .pric--original    { font-size: 18px; }
   #pricing.pricing .price-features li { font-size: 18px; line-height: 1.55; }
   #pricing.pricing .pricing-trust     { font-size: 18px; }
-  /* CTAs explicit 20px — both ghost (sides) and primary (featured). */
+  /* CTAs explicit 20px - both ghost (sides) and primary (featured). */
   #pricing.pricing .price-card .btn   { font-size: 20px; padding: 18px 24px; }
 
   /* FINAL CTA */
@@ -1207,7 +1191,7 @@
     .for-whom-cta .-tn{width:100%;justify-content:center;padding:16px;font-size:16px;white-space:normal;line-height:1.3}
     .faq-grid{grid-template-columns:1fr;gap:60px}
     .faq-side{position:static}
-    /* ADULT GAMES — tablet */
+    /* ADULT GAMES - tablet */
     .adult-games{padding:90px 0 36px}
     .ag-frame{padding:0 24px}
     .ag-pillars{grid-template-columns:1fr;border-top:1px solid rgba(251,191,36,0.2)}
@@ -1296,7 +1280,7 @@
     .reviews-grid:n-t(.expanded) .review-card:nth-child(n+4){display:none}
     .reviews-load-more{display:flex;margin-top:20px}
 
-    /* Media press — tighten mobile */
+    /* Media press - tighten mobile */
     .media-press-eyebrow{margin-bottom:24px;font-size:16px;letter-spacing:0.14em}
     .media-press-card{padding:24px 22px;gap:16px}
     .media-press-logo{height:44px}
@@ -1316,7 +1300,7 @@
     .bio-item-value{font-size:15px;line-height:1.25}
     .founder-actions{gap:8px}
 
-    /* Journey mobile spacing — tighter gaps + readable list */
+    /* Journey mobile spacing - tighter gaps + readable list */
     .journey-timeline{margin-top:20px}
     .journey-stages{gap:32px}
     .journey-num-wrap{margin-bottom:12px}
@@ -1335,11 +1319,11 @@
     .cg-actions{fle--wrap:nowrap;gap:8px}
     .cg-actions .btn{flex:1;justify-content:center;font-size:14px;padding:14px 12px;white-space:nowrap}
 
-    /* ADULT GAMES — mobile (private chamber)
+    /* ADULT GAMES - mobile (private chamber)
        Tightened for readability + finger ergonomics:
        - All texts above the headline are 16px+ (legibility floor).
        - Body copy 17px; pillar body 17px (these carry the message).
-       - Pillar padding cut sharply — too much air on phones makes
+       - Pillar padding cut sharply - too much air on phones makes
          the page feel hollow, not premium.
        - Inter-section margins trimmed ~40% to bring eye flow back. */
     .adult-games{padding:48px 0 28px}
@@ -1372,7 +1356,7 @@
        decorative ambient elements (5 blobs, 1 floating circle, 18
        sparkles, 12 orbit dots). At <640px the screen is too small to
        perceive most of them and they each hold a compositor layer
-       courtesy of `filter: blur` / `box-shadow` glows — so we hide the
+       courtesy of `filter: blur` / `box-shadow` glows - so we hide the
        outer half. The first 3 blobs + ~half the orbits + 8 of the 18
        sparkles still carry the same visual rhythm. */
     .hero-blob-4,
@@ -1414,7 +1398,7 @@
     .faq-item summary{padding:18px 0}
     .faq-answer{padding:0 0 20px}
 
-    /* Footer mobile — single column */
+    /* Footer mobile - single column */
     .footer-grid{grid-template-columns:1fr;gap:36px}
     .cg-visual{height:340px;width:100%;max-width:320px;margin:0 auto;overflow:visible}
     .cg-card{width:150px}
@@ -1425,7 +1409,7 @@
 }
 
 /* ════════════════════════════════════════════════════════════
-   TOP-LEVEL @keyframes — must NOT be nested inside .home-v2 { … }
+   TOP-LEVEL @keyframes - must NOT be nested inside .home-v2 { … }
    because the CSS spec disallows nested @keyframes; nested ones
    are silently dropped, leaving the animation registered but
    inert (computed transform: none). All HomepageV2 hero/section
@@ -1491,8 +1475,8 @@
   50%      { opacity: 1;  transform: scale(1.4); }
 }
 
-/* CTAs / badges / utility — used by other v2 sections */
-@keyframes hero-cta-shift { 0%,100%{transform:translate3d(0,0,0)} 50%{transform:translate3d(-54.5%,0,0)} }
+/* CTAs / badges / utility - used by other v2 sections */
+/* hero-cta-shift removed 2026-05-06 - see .hero .btn-primary / .ag-closer-cta */
 @keyframes badge-aura     { 0%,100%{opacity:.65;transform:scale(1)} 50%{opacity:1;transform:scale(1.08)} }
 @keyframes float          { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
 @keyframes blob-float     { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(60px,40px) scale(1.1)} 66%{transform:translate(-40px,30px) scale(0.95)} }
@@ -1505,8 +1489,8 @@
    (originally `dir="rtl" lang="he"` was hardcoded on .home-v2).
    When the same markup serves the English LTR locale, a handful of
    directional properties need to flip. Rather than refactoring the
-   base CSS to logical properties — which carries regression risk
-   for the validated Hebrew layout — we keep the base intact and
+   base CSS to logical properties - which carries regression risk
+   for the validated Hebrew layout - we keep the base intact and
    append a small set of LTR-only overrides here.
 
    Anything that "points" or "aligns" in a direction is fixed below;

@@ -178,7 +178,7 @@ export function ScheduledItemRow({
         </div>
       </div>
 -
-      {/* Unlock date — click to edit */}
+      {/* Unlock date - click to edit */}
       <button
         type="button"
         onClick={() => setEditOpen(true)}
@@ -192,7 +192,7 @@ export function ScheduledItemRow({
         {fmtDate(scheduled.unlock_at)}
       </button>
 -
-      {/* Secondary controls — compact, revealed on hover for less noise */}
+      {/* Secondary controls - compact, revealed on hover for less noise */}
       <div className="flex items-center gap-1 opacity-70 transition-opacity group-hover:opacity-100">
         {scheduled.has_unlock_override ? (
           <Button

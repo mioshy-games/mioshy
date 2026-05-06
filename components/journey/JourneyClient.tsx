@@ -35,7 +35,7 @@ interface JourneyClientProps {
 // Per product spec (2026-05-05), the assessment shows a brief social-proof
 // reveal between questions to keep visitors curious enough to finish all 32.
 // The percentage is DETERMINISTIC pseudo-random based on the question id +
-// answer — NOT real aggregate data. Once we have enough actual responses
+// answer - NOT real aggregate data. Once we have enough actual responses
 // the function gets swapped with one that reads from the DB; the calling
 // site (submitAnswer) doesn't change.
 //
@@ -100,7 +100,7 @@ export function JourneyClient({
   const analysisFetchAttemptedRef = useRef(false);
   // Track the furthest question index the user has reached. When they go
   // back (via the back button) and re-submit a previously-answered question,
-  // we skip the social-proof reveal — they've already seen one for this slot
+  // we skip the social-proof reveal - they've already seen one for this slot
   // and replaying it on every back-and-forth feels noisy. Per UX feedback
   // 2026-05-05.
   const highWaterRef = useRef<number>(initialProgress?.current_step ?? 0);
@@ -142,7 +142,7 @@ export function JourneyClient({
   // Whether we've completed all questions.
   const isDone = index >= total;
 
-  // 🎉 Confetti — fires ONCE EVER when the questionnaire is done.
+  // 🎉 Confetti - fires ONCE EVER when the questionnaire is done.
   //
   // Earlier this used only `useRef` which resets on every mount, so every
   // refresh of /journey/assessment would re-fire the burst. Per user
@@ -159,7 +159,7 @@ export function JourneyClient({
 
     const STORAGE_KEY_PREFIX = "mioshy_journey_confetti_fired";
     // deviceId is set by an earlier useEffect; falls back to "anon" until
-    // it lands. We treat "anon" as a non-persistent placeholder — when
+    // it lands. We treat "anon" as a non-persistent placeholder - when
     // the deviceId arrives a re-render will happen and we'll recheck.
     const key = `${STORAGE_KEY_PREFIX}:${deviceId || "anon"}`;
 
@@ -167,13 +167,13 @@ export function JourneyClient({
     try {
       alreadyFired = window.localStorage.getItem(key) === "1";
     } catch {
-      // Private mode / storage disabled — fall through and fire. The
+      // Private mode / storage disabled - fall through and fire. The
       // user-experience cost of re-firing here is trivial; data loss is
       // worse than a redundant celebration.
     }
 
     if (alreadyFired) {
-      console.log("[JourneyClient] confetti suppressed — already fired for this device", { key });
+      console.log("[JourneyClient] confetti suppressed - already fired for this device", { key });
       confettiFiredRef.current = true;
       return;
     }
@@ -182,7 +182,7 @@ export function JourneyClient({
     try {
       window.localStorage.setItem(key, "1");
     } catch {
-      // ignored — see comment above
+      // ignored - see comment above
     }
 
     void import("canvas-confetti").then((m) => {
@@ -212,7 +212,7 @@ export function JourneyClient({
     //   - we're not currently fetching
     if (!isDone) return;
     if (!authenticated) {
-      console.log("[JourneyClient] analysis fetch skipped — not authenticated");
+      console.log("[JourneyClient] analysis fetch skipped - not authenticated");
       return;
     }
     if (analysis) {
@@ -238,7 +238,7 @@ export function JourneyClient({
       setAnalysisError(null);
 
       try {
-        // 1. Try GET first — fast path: an analysis row already exists from
+        // 1. Try GET first - fast path: an analysis row already exists from
         //    the last question's submitAnswer write.
         console.log("[JourneyClient] GET /api/journey/analyze");
         const getRes = await fetch("/api/journey/analyze", {
@@ -252,7 +252,7 @@ export function JourneyClient({
 
         if (getRes.status === 401) {
           setAnalysisError("unauthorized");
-          console.warn("[JourneyClient] GET 401 — auth lost between page load and fetch");
+          console.warn("[JourneyClient] GET 401 - auth lost between page load and fetch");
           return;
         }
 
@@ -348,7 +348,7 @@ export function JourneyClient({
 
     // Stash the answer locally so an immediate back-then-forward shows
     // the latest pick (not the stale server-hydrated value). This runs
-    // BEFORE the API call returns — fine, because the local map is
+    // BEFORE the API call returns - fine, because the local map is
     // disambiguated by question_id and is only used for `initial`
     // values, never for scoring.
     setAnswersById((prev) => ({ ...prev, [question.id]: answer }));
@@ -365,7 +365,7 @@ export function JourneyClient({
 
     // Skip the social-proof reveal when:
     //   1. The question is the priority ranking step (UX feedback: feels
-    //      out of place at the ranking screen — the user is making a list,
+    //      out of place at the ranking screen - the user is making a list,
     //      not picking one option), OR
     //   2. The user is re-answering a question they already moved past
     //      (highWater > current). The reveal is a "first impression" hint;
@@ -373,12 +373,12 @@ export function JourneyClient({
     const skipReveal =
       question.type === "ranking" || capturedIndex < highWaterRef.current;
 
-    // Effective dwell — keep zero when the reveal is skipped so the user
+    // Effective dwell - keep zero when the reveal is skipped so the user
     // doesn't sit on a blank screen waiting for nothing.
     const dwellMs = skipReveal ? 0 : REVEAL_DWELL_MS;
 
     // Surface the social-proof reveal NOW (unless suppressed).
-    // It's a UI hint only — does not block API or state machine.
+    // It's a UI hint only - does not block API or state machine.
     const matchPercent = computeMatchPercent(question.id, answer);
     const __revealStartTs = performance.now();
     // eslint-disable-next-line no-console
@@ -402,7 +402,7 @@ export function JourneyClient({
     if (isAutoAdvance) {
       // Delay the jump by REVEAL_DWELL_MS so the user can read the reveal
       // before the next question slides in. The fetch keeps running async
-      // alongside this timer (started further down) — typical API time is
+      // alongside this timer (started further down) - typical API time is
       // well under the dwell, so this rarely lengthens total flow.
       window.setTimeout(() => {
         // eslint-disable-next-line no-console
@@ -469,7 +469,7 @@ export function JourneyClient({
 
       if (!isAutoAdvance) {
         // Hold the reveal on screen for at least dwellMs even if the API
-        // responded faster than the dwell — keeps the social-proof feedback
+        // responded faster than the dwell - keeps the social-proof feedback
         // consistent across question types. When skipReveal is true,
         // dwellMs is 0 so we advance immediately.
         if (dwellMs > 0) {
@@ -487,7 +487,7 @@ export function JourneyClient({
           highWaterRef.current = serverNext;
         }
       } else if (serverNext !== optimisticNext) {
-        // Server corrected the index (e.g. skip logic) — let the dwell
+        // Server corrected the index (e.g. skip logic) - let the dwell
         // timer running above still clear `reveal`; here we only need to
         // override the destination index.
         window.setTimeout(() => {
@@ -555,7 +555,7 @@ export function JourneyClient({
     });
 
     // Surface error so the user isn't stuck on a generic loading message
-    // when the fetch actually failed — they'll know to retry/contact us.
+    // when the fetch actually failed - they'll know to retry/contact us.
     if (analysisError && !analysis) {
       return (
         <div
@@ -660,7 +660,7 @@ export function JourneyClient({
 
       {error ? <p className="text-sm text-rose-300">{error}</p> : null}
 
-      {/* Back button — pinned to the bottom of the content flow per UX
+      {/* Back button - pinned to the bottom of the content flow per UX
           feedback 2026-05-05 ("כפתור חזרה צריך להיות בפינה למטה"). Hidden
           on the first question. Just decrements the local index; saved
           answers stay in the DB so going back-and-forth doesn't lose

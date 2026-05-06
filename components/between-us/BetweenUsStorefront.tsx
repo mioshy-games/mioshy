@@ -302,7 +302,7 @@ function GameCard({
       </div>
 
       <div className="p-5">
-        {/* Card title — Frank Ruhl Libre directly (not the `font-heading`
+        {/* Card title - Frank Ruhl Libre directly (not the `font-heading`
             token) so the typeface stays SERIF in BOTH locales. The token
             resolves to IBM Plex Sans Hebrew in RTL, which is sans-serif
             and breaks visual continuity with every other heading on the

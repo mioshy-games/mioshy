@@ -1,11 +1,11 @@
 /**
  * Tests for the priority validators that gate the ranking step's
- * answer payload — both client-side (PriorityRankingStep submits)
+ * answer payload - both client-side (PriorityRankingStep submits)
  * and server-side (api/journey/answer accepts).
  *
  * If isValidOrder ever silently accepts something it shouldn't, the
  * server's answer validator stops protecting the JSONB column from
- * malformed data — so this is one of the two highest-leverage things
+ * malformed data - so this is one of the two highest-leverage things
  * to test in the journey module.
  */
 

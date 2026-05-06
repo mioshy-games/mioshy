@@ -11,7 +11,7 @@ import { requireAdmin } from "@/lib/auth/admin";
  * clear a slot (it becomes NULL in Postgres and the UI falls back to the
  * other locale's image).
  *
- * Admin-only — requireAdmin() throws a redirect if the caller isn't admin.
+ * Admin-only - requireAdmin() throws a redirect if the caller isn't admin.
  *
  * Per Itzik 2026-05-06: catalogue thumbnails carry baked-in copy in their
  * own language, so each game has TWO images. The legacy `thumbnail_url`
@@ -25,7 +25,7 @@ export async function updateGameThumbnailAction(
   const { supabase } = await requireAdmin();
 
   // Build the update payload only with keys the caller explicitly provided
-  // — passing `undefined` leaves the existing value intact.
+  // - passing `undefined` leaves the existing value intact.
   const payload: Record<string, string | null> = {};
   if (urls.he !== undefined) {
     const trimmed = (urls.he ?? "").trim();

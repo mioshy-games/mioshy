@@ -3,7 +3,7 @@ import "server-only";
 /**
  * lib/dashboard/journey-kpis.ts
  *
- * Phase 4 — product analytics rollup. Pure DB reads, no calculations
+ * Phase 4 - product analytics rollup. Pure DB reads, no calculations
  * over external services. The page renders these into a small KPI
  * dashboard for admins.
  *
@@ -17,7 +17,7 @@ import "server-only";
  *     → at least one response submitted
  *     → at least one clinician reply received
  *
- * We deliberately don't compute everything — just the conversion
+ * We deliberately don't compute everything - just the conversion
  * markers that tell us where the funnel collapses.
  */
 
@@ -54,7 +54,7 @@ export async function getJourneyKPIs(
     Date.now() - windowDays * 24 * 60 * 60 * 1000,
   ).toISOString();
 
-  // ── Entitled users — active Journey subscriptions ────────────────
+  // ── Entitled users - active Journey subscriptions ────────────────
   const { count: entitledUsers } = await admin
     .from("subscriptions")
     .select("user_id", { head: true, count: "exact" })

@@ -1,5 +1,5 @@
 // ============================================================
-// Priority categories — DB-backed source of truth for the five
+// Priority categories - DB-backed source of truth for the five
 // q_priorities categories that drive the assessment ranking.
 //
 // Replaces the constant maps that used to live in
@@ -9,7 +9,7 @@
 //
 // Read pattern: server-side fetch on the page that needs the labels,
 // then pass through as props to client components. Per-request caching
-// only — Server Components recompute per render anyway, and the row
+// only - Server Components recompute per render anyway, and the row
 // count is tiny (5).
 //
 // All functions are async and server-only. RLS lets any signed-in
@@ -25,9 +25,9 @@ import type { PriorityKey } from "@/lib/journey/priorities";
 export interface PriorityCategory {
   /** journey_categories.id */
   id: string;
-  /** assessment_priority_key — one of the five q_priorities slugs. */
+  /** assessment_priority_key - one of the five q_priorities slugs. */
   key: PriorityKey;
-  /** journey_categories.slug — equal to key for the seeded five. */
+  /** journey_categories.slug - equal to key for the seeded five. */
   slug: string;
   name_he: string;
   name_en: string | null;
@@ -38,7 +38,7 @@ export interface PriorityCategory {
 
 /**
  * Returns the five priority categories ordered by sort_order. Throws if
- * the seed is missing or partial — that's an installation error and we
+ * the seed is missing or partial - that's an installation error and we
  * want to fail loudly, not render a silently-broken assessment.
  */
 export async function getPriorityCategories(): Promise<PriorityCategory[]> {
@@ -120,7 +120,7 @@ export interface PriorityLabelsBundle {
   labelsEn: Record<PriorityKey, string>;
   descsHe: Record<PriorityKey, string>;
   descsEn: Record<PriorityKey, string>;
-  /** Canonical sort order — sort_order ascending. Use this for
+  /** Canonical sort order - sort_order ascending. Use this for
    *  ordering tables / lists by the admin-defined canonical sequence. */
   canonicalOrder: PriorityKey[];
 }

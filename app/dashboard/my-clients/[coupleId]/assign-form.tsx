@@ -83,7 +83,7 @@ export function AssignContentForm({
             className="border-input bg-background focus-visible:ring-ring w-full rounded-md border px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2"
             required
           >
-            <option value="">— pick a {sourceKind} —</option>
+            <option value="">- pick a {sourceKind} -</option>
             {filtered.map((s) => (
               <option key={`${s.kind}:${s.id}`} value={s.id}>
                 {s.title}

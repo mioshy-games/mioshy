@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "title": "Mioshy — Couples Games",
+    "title": "Mioshy - Couples Games",
     "description": "Couples games for grown-ups. Browser-based. No install."
   },
   "nav": {
@@ -46,7 +46,7 @@
       "joining": "Join {count} couples already playing",
       "rating": "{value} stars • {count} reviews",
       "quotes": {
-        "0": "It got us talking — and laughing — within minutes.",
+        "0": "It got us talking - and laughing - within minutes.",
         "1": "Bold, intimate, and feels seriously well-made.",
         "2": "The wheel makes it effortless to keep the heat going."
       }
@@ -55,11 +55,11 @@
       "title": "This is for you if…",
       "cards": {
         "renew": "You want a fresh spark",
-        "renewDesc": "Prompts that feel grown-up — not silly.",
+        "renewDesc": "Prompts that feel grown-up - not silly.",
         "therapy": "You're in couples therapy",
         "therapyDesc": "A safe space to practice closeness and honesty.",
         "flirt": "You're craving flirtation and play",
-        "flirtDesc": "Turn tension into chemistry — with confidence.",
+        "flirtDesc": "Turn tension into chemistry - with confidence.",
         "deepen": "You want to deepen the connection",
         "deepenDesc": "Get past the small talk. Stay there."
       }
@@ -69,7 +69,7 @@
       "subtitle": "Live games, no installs, no downloads. Just open and play.",
       "playNow": "Play now",
       "comingSoonTitle": "More games coming soon",
-      "comingSoonDesc": "New experiences on the way — hotter, deeper, better."
+      "comingSoonDesc": "New experiences on the way - hotter, deeper, better."
     },
     "how": {
       "title": "How it works",
@@ -91,12 +91,12 @@
       "title": "Our expert",
       "name": "Itzik Berlav",
       "titleLine": "Couples relationships expert | Coaching couples since 2001",
-      "bio": "Mioshy was built on real couples work — clear structure, emotional intelligence, and a bold playful edge. Designed to ignite intimacy without making it a joke.",
+      "bio": "Mioshy was built on real couples work - clear structure, emotional intelligence, and a bold playful edge. Designed to ignite intimacy without making it a joke.",
       "credibility": "Hundreds of couples have improved their intimate life with our method."
     },
     "pricing": {
       "title": "Memberships",
-      "subtitle": "Unlimited access. Cancel anytime — no drama.",
+      "subtitle": "Unlimited access. Cancel anytime - no drama.",
       "popular": "Most popular",
       "cancelAnytime": "Cancel anytime",
       "features": {
@@ -135,7 +135,7 @@
         },
         "2": {
           "title": "The intimacy reset",
-          "excerpt": "Three minutes that shift the whole night — without pressure."
+          "excerpt": "Three minutes that shift the whole night - without pressure."
         }
       }
     },
@@ -144,7 +144,7 @@
       "items": {
         "0": {
           "q": "Is it for every couple?",
-          "a": "Yes — from new couples to long-term partners. You set the pace and the vibe."
+          "a": "Yes - from new couples to long-term partners. You set the pace and the vibe."
         },
         "1": {
           "q": "How does the subscription work?",
@@ -152,11 +152,11 @@
         },
         "2": {
           "q": "Can I cancel anytime?",
-          "a": "Yes. Cancel from your account in one click — no questions asked."
+          "a": "Yes. Cancel from your account in one click - no questions asked."
         },
         "3": {
           "q": "What languages are supported?",
-          "a": "English and Hebrew, fully — every prompt, every dare."
+          "a": "English and Hebrew, fully - every prompt, every dare."
         },
         "4": {
           "q": "What's the difference between plans?",
@@ -164,7 +164,7 @@
         },
         "5": {
           "q": "Is there a group mode?",
-          "a": "Not yet — it's planned. For now, Mioshy is built for couples."
+          "a": "Not yet - it's planned. For now, Mioshy is built for couples."
         }
       }
     },
@@ -173,7 +173,7 @@
       "linksTitle": "Links",
       "socialTitle": "Social",
       "noteTitle": "Tone",
-      "note": "Bold. Hot. Professional. Built for real couples — not for kids.",
+      "note": "Bold. Hot. Professional. Built for real couples - not for kids.",
       "links": {
         "games": "Games",
         "pricing": "Pricing",
@@ -187,7 +187,7 @@
   },
   "products": {
     "title": "Choose a game",
-    "subtitle": "One live game today — more on the way.",
+    "subtitle": "One live game today - more on the way.",
     "todName": "Truth or Dare",
     "todBlurb": "Spin the wheel for prompts and dares made for couples.",
     "snakesName": "Snakes & Ladders",
@@ -224,7 +224,7 @@
     "yearlyPrice": "₪570",
     "yearlyDesc": "Best value if you play often",
     "cta": "Continue (coming soon)",
-    "placeholder": "Payments will be enabled later — this is a preview only.",
+    "placeholder": "Payments will be enabled later - this is a preview only.",
     "back": "Back to games"
   },
   "auth": {
@@ -239,11 +239,11 @@
     "missingEnv": "Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to enable auth.",
     "success": "Signed in successfully.",
     "confirmEmail": "Check your email to confirm your account before signing in.",
-    "signedInNonAdmin": "You're signed in. This account isn't an admin — sending you home.",
+    "signedInNonAdmin": "You're signed in. This account isn't an admin - sending you home.",
     "loginTitle": "Welcome back",
     "loginSubtitle": "Sign in to keep playing",
     "signupTitle": "Create your account",
-    "signupSubtitle": "Free — no card required",
+    "signupSubtitle": "Free - no card required",
     "signupTagline": "Your couples journey starts here.",
     "loginTagline": "Play together. Grow together.",
     "namePlaceholder": "Your name",
@@ -282,11 +282,11 @@
     "languagesTitle": "Languages",
     "hebrew": "Hebrew",
     "english": "English",
-    "tagline": "Mioshy offers two couples games that warm up your connection, plus online couples therapy. Bringing back the warmth, the spark, and the questions left unasked — simply, accessibly, and professionally."
+    "tagline": "Mioshy offers two couples games that warm up your connection, plus online couples therapy. Bringing back the warmth, the spark, and the questions left unasked - simply, accessibly, and professionally."
   },
   "dashboard": {
     "title": "Content admin",
-    "subtitle": "Preview UI — server persistence comes later.",
+    "subtitle": "Preview UI - server persistence comes later.",
     "listTitle": "Questions",
     "type": "Type",
     "empty": "No questions yet.",
@@ -305,7 +305,7 @@
     "feature2": "New games added regularly",
     "feature3": "Cancel anytime",
     "cta": "Continue (Stripe coming soon)",
-    "disclaimer": "Payments are not enabled yet — this is UI only.",
+    "disclaimer": "Payments are not enabled yet - this is UI only.",
     "account": "Account"
   },
   "account": {
@@ -315,7 +315,7 @@
     "plan": "Plan",
     "renewal": "Renews",
     "noPlan": "No active subscription",
-    "noRenewal": "—",
+    "noRenewal": "-",
     "status": "Status",
     "statusActive": "Active",
     "statusCancelled": "Canceled",
@@ -338,7 +338,7 @@
     "invoiceSucceeded": "Paid",
     "invoiceFailed": "Failed",
     "paymentMethod": "Payment method",
-    "paymentMethodNone": "—",
+    "paymentMethodNone": "-",
     "paymentMethodEndsWith": "Card ···· {last4}",
     "graceNotice": "Your last charge failed. Update your payment method soon, or access will be paused.",
     "blockedNotice": "Access is blocked due to billing failures. Please update your payment method.",
@@ -366,7 +366,7 @@
     "loading": "Loading…"
   },
   "snakesGame": {
-    "title": "Snakes & Ladders — Room",
+    "title": "Snakes & Ladders - Room",
     "gameName": "Snakes & Ladders",
     "gameSubtitle": "An interactive couples game",
     "loading": "Loading…",
@@ -389,7 +389,7 @@
     "title": "Tips & Articles",
     "subtitle": "Real talk on intimacy, communication, and ideas for tonight.",
     "readMore": "Read more",
-    "empty": "No articles yet — check back soon.",
+    "empty": "No articles yet - check back soon.",
     "untitled": "Untitled"
   },
   "articlePage": {
@@ -402,23 +402,23 @@
     "langEnglish": "English"
   },
   "gamesHub": {
-    "title": "Couples Games — All Games",
-    "subtitle": "Mioshy's interactive collection: truth-or-dare wheels, snakes & ladders with deep questions, challenges, and more — in your browser, on one device or two.",
+    "title": "Couples Games - All Games",
+    "subtitle": "Mioshy's interactive collection: truth-or-dare wheels, snakes & ladders with deep questions, challenges, and more - in your browser, on one device or two.",
     "h1": "Interactive couples games",
-    "lede": "Pick a game, spin the wheel, or play snakes & ladders with personal questions. No installs, no code — just open and play.",
+    "lede": "Pick a game, spin the wheel, or play snakes & ladders with personal questions. No installs, no code - just open and play.",
     "whyTitle": "Why Mioshy?",
     "whyItems": {
       "0": {
         "h": "Thousands of prompts and challenges",
-        "p": "A growing library of deep conversations, flirty prompts, and playful challenges — in English and Hebrew."
+        "p": "A growing library of deep conversations, flirty prompts, and playful challenges - in English and Hebrew."
       },
       "1": {
-        "h": "Play together — even apart",
+        "h": "Play together - even apart",
         "p": "Same game, one device or two. Mioshy keeps you in sync in real time."
       },
       "2": {
         "h": "Beautiful, fluid design",
-        "p": "Smooth animations, atmospheric backgrounds, subtle sound — the moment is yours."
+        "p": "Smooth animations, atmospheric backgrounds, subtle sound - the moment is yours."
       },
       "3": {
         "h": "Fully private",
@@ -433,15 +433,15 @@
     "breadcrumbGames": "Games"
   },
   "journeyHub": {
-    "metaTitle": "Mioshy Journey — A Couples Journey Made for You",
-    "metaDescription": "A short assessment, instant insights, and a personalized roadmap of practices and conversations — delivered over time. Together, at your own pace.",
+    "metaTitle": "Mioshy Journey - A Couples Journey Made for You",
+    "metaDescription": "A short assessment, instant insights, and a personalized roadmap of practices and conversations - delivered over time. Together, at your own pace.",
     "badge": "Couples Journey · Mioshy Journey",
     "h1": "A couples journey, made for you",
-    "lede": "Generic relationship advice never quite fits your relationship. Take a 5-minute assessment and get a personalized roadmap — short practices, real conversations, and weekly challenges that move you from \"we should work on us\" to actually doing it. Five minutes a day.",
+    "lede": "Generic relationship advice never quite fits your relationship. Take a 5-minute assessment and get a personalized roadmap - short practices, real conversations, and weekly challenges that move you from \"we should work on us\" to actually doing it. Five minutes a day.",
     "ctaPrimary": "Start your relationship assessment",
     "ctaSecondary": "How it works",
     "ctaResume": "Continue your relationship assessment",
-    "resumeHint": "You've got a relationship assessment in progress — pick up where you left off.",
+    "resumeHint": "You've got a relationship assessment in progress - pick up where you left off.",
     "trust": {
       "0": "5-minute assessment",
       "1": "Instant insights",
@@ -454,19 +454,19 @@
       "items": {
         "0": {
           "h": "Built around you",
-          "p": "A short assessment maps your relationship across 7 dimensions. Your roadmap starts exactly where it needs to — not where a generic course says to start."
+          "p": "A short assessment maps your relationship across 7 dimensions. Your roadmap starts exactly where it needs to - not where a generic course says to start."
         },
         "1": {
           "h": "Human pace",
-          "p": "No content dumps. A new chapter opens each week — a practice, a challenge, or a shared conversation. Enough room to feel it, try it, come back to it."
+          "p": "No content dumps. A new chapter opens each week - a practice, a challenge, or a shared conversation. Enough room to feel it, try it, come back to it."
         },
         "2": {
           "h": "Written by experts",
-          "p": "Every piece is co-written with couples therapists. Practical, research-based, actually doable — not Instagram quotes."
+          "p": "Every piece is co-written with couples therapists. Practical, research-based, actually doable - not Instagram quotes."
         },
         "3": {
           "h": "Together, for real",
-          "p": "Both partners see the same journey. Mark conversations, write reflections, and watch how you grow — together, for real."
+          "p": "Both partners see the same journey. Mark conversations, write reflections, and watch how you grow - together, for real."
         }
       }
     },
@@ -476,7 +476,7 @@
       "steps": {
         "0": {
           "title": "Map your relationship in 5 minutes",
-          "body": "15 quick questions on communication, conflict, intimacy, and routine. By the end you'll see exactly where you stand — no jargon, no filler."
+          "body": "15 quick questions on communication, conflict, intimacy, and routine. By the end you'll see exactly where you stand - no jargon, no filler."
         },
         "1": {
           "title": "Get a diagnostic you can actually use",
@@ -484,7 +484,7 @@
         },
         "2": {
           "title": "Small practices, your pace",
-          "body": "Short practices that add up to about an hour a week — depending on your time and bandwidth. Try them, check in together, and feel the shift at a pace that fits your life."
+          "body": "Short practices that add up to about an hour a week - depending on your time and bandwidth. Try them, check in together, and feel the shift at a pace that fits your life."
         }
       }
     },
@@ -494,7 +494,7 @@
       "cards": {
         "0": {
           "h": "Daily practices",
-          "p": "Little connection moments — 5 minutes a day that build the couples muscle."
+          "p": "Little connection moments - 5 minutes a day that build the couples muscle."
         },
         "1": {
           "h": "Deep conversations",
@@ -502,7 +502,7 @@
         },
         "2": {
           "h": "Weekly challenges",
-          "p": "One thing each week — an outing, a gesture, an experiment — that pulls you out of the routine."
+          "p": "One thing each week - an outing, a gesture, an experiment - that pulls you out of the routine."
         },
         "3": {
           "h": "Video + reflection",
@@ -513,7 +513,7 @@
     "ctaBlock": {
       "badge": "Free to try",
       "title": "The assessment is free. The journey starts when you're in.",
-      "sub": "Take 5 minutes, answer the questionnaire, and get your diagnostic. No commitment — just direction.",
+      "sub": "Take 5 minutes, answer the questionnaire, and get your diagnostic. No commitment - just direction.",
       "primary": "Start your relationship assessment"
     },
     "faq": {
@@ -522,19 +522,19 @@
       "items": {
         "0": {
           "q": "How long is the assessment?",
-          "a": "Less than 5 minutes. You can pause and come back — we save your spot."
+          "a": "Less than 5 minutes. You can pause and come back - we save your spot."
         },
         "1": {
           "q": "Can we do this together?",
-          "a": "Yes — that's the whole idea. You each answer separately, then see the joint diagnostic and start the journey together."
+          "a": "Yes - that's the whole idea. You each answer separately, then see the joint diagnostic and start the journey together."
         },
         "2": {
           "q": "What if we start and don't keep going?",
-          "a": "Totally fine. Every chapter that has opened stays open — come back any time. No pressure, no countdown."
+          "a": "Totally fine. Every chapter that has opened stays open - come back any time. No pressure, no countdown."
         },
         "3": {
           "q": "Are our answers private?",
-          "a": "Yes. Your answers aren't shared — only the two of you and the system see them. We never use them for marketing."
+          "a": "Yes. Your answers aren't shared - only the two of you and the system see them. We never use them for marketing."
         },
         "4": {
           "q": "How much does it cost?",
@@ -548,8 +548,8 @@
   "homeV2": {
     "hero": {
       "tag": "Working with couples since 2021",
-      "headline": "Relationships — just with a little more <em>spice</em>.",
-      "lead": "Couples games, intimate experiences, and personal coaching — one place that brings the spark back. No gutting your wallet, no tissues — relationships are made with love.",
+      "headline": "Relationships - just with a little more <em>spice</em>.",
+      "lead": "Couples games, intimate experiences, and personal coaching - one place that brings the spark back. No gutting your wallet, no tissues - relationships are made with love.",
       "ctaPrimary": "Start your journey",
       "ctaSecondary": "How does it work?",
       "statCouplesLabel": "Active couples",
@@ -562,16 +562,16 @@
       "badge2Body": "The spark came back tonight"
     },
     "problem": {
-      "imageAlt": "A woman sitting at emotional distance in the living room — a moment of routine and fatigue",
+      "imageAlt": "A woman sitting at emotional distance in the living room - a moment of routine and fatigue",
       "eyebrow": "The reality nobody talks about",
       "headline": "You're not broken. You just forgot how <em>to be a couple.</em>",
-      "lead": "Here are the 3 signs to catch in time — and reignite your relationship.",
+      "lead": "Here are the 3 signs to catch in time - and reignite your relationship.",
       "item1Title": "Conversations turned into a to-do list",
       "item1Body": "When was the last time you created intimacy through a real conversation?<br/>About what you dream of, crave, want more of?",
       "item2Title": "It used to be fire. Now it's scheduled.",
       "item2Body": "It used to be full of desire. Now we're stuffed with chores and tasks.",
-      "item3Title": "The desire is there — but routine is winning.",
-      "item3Body": "Commitments piled up, but the longing stayed. When was the last time you chose your relationship — instead of just maintaining it?"
+      "item3Title": "The desire is there - but routine is winning.",
+      "item3Body": "Commitments piled up, but the longing stayed. When was the last time you chose your relationship - instead of just maintaining it?"
     },
     "authority": {
       "eyebrow": "Since 2021",
@@ -579,7 +579,7 @@
       "headlinePart2": "The same ",
       "headlineEm": "result",
       "headlinePart3": ".",
-      "narrative": "Since 2021 we've been working with couples. <strong>We've heard thousands of stories</strong> — couples laughing, crying, making up, finding their way back to each other. Everything we do was born from them. From the conversations, the feedback, the tears, the smiles. That's why Mioshy doesn't stay the same. It changes, grows, evolves. <strong>Just like a healthy relationship.</strong>",
+      "narrative": "Since 2021 we've been working with couples. <strong>We've heard thousands of stories</strong> - couples laughing, crying, making up, finding their way back to each other. Everything we do was born from them. From the conversations, the feedback, the tears, the smiles. That's why Mioshy doesn't stay the same. It changes, grows, evolves. <strong>Just like a healthy relationship.</strong>",
       "statCouplesLabel": "Couples who chose Mioshy",
       "since": "Since 2021",
       "sinceLabel": "In Israel and around the world",
@@ -592,21 +592,21 @@
       "readArticle": "Read the article",
       "item1Name": "Israel Hayom",
       "item1Date": "Editor's picks",
-      "item1Quote": "Mioshy is helping hundreds of couples bring back lost desire — instead of breaking up.",
+      "item1Quote": "Mioshy is helping hundreds of couples bring back lost desire - instead of breaking up.",
       "item1LogoAlt": "Israel Hayom",
       "item2Name": "walla!",
       "item2Date": "TLD · Lifestyle magazine",
-      "item2Quote": "Games and challenges that save relationships — with personal professional coaching for every couple.",
+      "item2Quote": "Games and challenges that save relationships - with personal professional coaching for every couple.",
       "item2LogoAlt": "Walla!"
     },
     "founder": {
-      "imageAlt": "Itzik Berlev — founder of Mioshy",
+      "imageAlt": "Itzik Berlev - founder of Mioshy",
       "badgeIcon": "I",
       "badgeTitle": "Founder of Mioshy",
       "badgeName": "Itzik Berlev",
       "eyebrow": "Meet the founder · Itzik Berlev",
       "headline": "Changed the relationships of thousands of couples.<br/><em>Through play.</em>",
-      "lead": "The relationships expert behind Mioshy — and your guide every step of the way. For years, Itzik has reshaped the relationship lives of thousands of couples in Israel and worldwide — through games, intimate communication, and just one more way to talk. His vision is simple: <strong>break the routine. Bring back closeness.</strong>",
+      "lead": "The relationships expert behind Mioshy - and your guide every step of the way. For years, Itzik has reshaped the relationship lives of thousands of couples in Israel and worldwide - through games, intimate communication, and just one more way to talk. His vision is simple: <strong>break the routine. Bring back closeness.</strong>",
       "bioRoleLabel": "Role",
       "bioRoleValue": "Founder of Mioshy",
       "bioExpertiseLabel": "Expertise",
@@ -617,20 +617,20 @@
     },
     "journey": {
       "eyebrow": "Monthly coaching · No commitment",
-      "headline": "Every month that passes —<br/>your relationship <em>gets stronger.</em>",
+      "headline": "Every month that passes -<br/>your relationship <em>gets stronger.</em>",
       "description": "We're with you month after month, working on the relationship together. No commitment, no long-term contract. Stop any time. Here's what it actually looks like.",
       "stage1Title": "Meet again",
-      "stage1Description": "A short personal assessment, questions you never asked — and suddenly you're talking about what really matters.",
+      "stage1Description": "A short personal assessment, questions you never asked - and suddenly you're talking about what really matters.",
       "stage1Bullet1": "Tailored assessment",
       "stage1Bullet2": "Personal plan",
       "stage1Bullet3": "Opening questions",
       "stage2Title": "Breaking the bedroom boredom",
-      "stage2Description": "Tasks, challenges and new experiences — and suddenly you remember exactly why you fell in love. In the bedroom too.",
+      "stage2Description": "Tasks, challenges and new experiences - and suddenly you remember exactly why you fell in love. In the bedroom too.",
       "stage2Bullet1": "Weekly tasks",
       "stage2Bullet2": "Couple challenges",
       "stage2Bullet3": "New experiences",
       "stage3Title": "Deep connection",
-      "stage3Description": "Intimacy comes back. Conversations get deeper. You're partners again — and connecting in the bedroom too.",
+      "stage3Description": "Intimacy comes back. Conversations get deeper. You're partners again - and connecting in the bedroom too.",
       "stage3Bullet1": "Emotional closeness",
       "stage3Bullet2": "Real intimacy",
       "stage3Bullet3": "Deep conversations",
@@ -647,8 +647,8 @@
       "headlinePart1": "The games that already",
       "headlineMark": "got the country talking",
       "headlinePart2": ".",
-      "lead": "Want to open up? Connect? Discover each other again? Thousands of couples in Israel are already recommending — from the couch, from the bed, even when one of you is overseas. You're up next.",
-      "callout": "\"Bring in desire. Reconnect. Fall in love again and bring back the butterflies — especially if you're in a long relationship with kids and feel the burnout doing its thing.\"",
+      "lead": "Want to open up? Connect? Discover each other again? Thousands of couples in Israel are already recommending - from the couch, from the bed, even when one of you is overseas. You're up next.",
+      "callout": "\"Bring in desire. Reconnect. Fall in love again and bring back the butterflies - especially if you're in a long relationship with kids and feel the burnout doing its thing.\"",
       "statTasks": "+500",
       "statTasksLabel": "Tasks and challenges",
       "statRecs": "+100",
@@ -673,13 +673,13 @@
       "pill3": "Total privacy",
       "eyebrow": "- The private chamber -",
       "headline": "Not for everyone.<br/><em>For the brave only.</em>",
-      "lead": "A collection of couples games written by <strong>the world's leading experts</strong> in intimacy, sexology, and couples therapy — designed precisely for your bedroom. Not internet tips, not generic lists. Whole, structured, polished experiences. <strong>For the brave. For the indulgent. For couples ready to discover what else they can be.</strong>",
+      "lead": "A collection of couples games written by <strong>the world's leading experts</strong> in intimacy, sexology, and couples therapy - designed precisely for your bedroom. Not internet tips, not generic lists. Whole, structured, polished experiences. <strong>For the brave. For the indulgent. For couples ready to discover what else they can be.</strong>",
       "pillar1Title": "Written by experts",
       "pillar1Body": "Senior sexologists, academic couples therapists, and intimacy researchers.",
       "pillar2Title": "Designed for the bedroom",
-      "pillar2Body": "Not tips, not lists. Every game is a complete experience — with a beginning, building tension, and a peak you'll remember.",
+      "pillar2Body": "Not tips, not lists. Every game is a complete experience - with a beginning, building tension, and a peak you'll remember.",
       "pillar3Title": "Just yours. Just together.",
-      "pillar3Body": "Total privacy, no data sharing, no history. One purchase — and both of you in, for life.",
+      "pillar3Body": "Total privacy, no data sharing, no history. One purchase - and both of you in, for life.",
       "signature": "Sex games for the brave only.",
       "closer": "Maybe it's time<br/><em>to talk differently.</em>",
       "cta": "Enter the private chamber",
@@ -690,11 +690,11 @@
     "education": {
       "eyebrow": "Why this happens",
       "headline": "Relationships don't break in one night.<br/>They erode slowly.",
-      "body": "Routine, kids, career, fatigue — they're not bad. They just <strong>push the relationship into a corner</strong>. And the day you realize you've become strangers, the erosion happened years ago.",
+      "body": "Routine, kids, career, fatigue - they're not bad. They just <strong>push the relationship into a corner</strong>. And the day you realize you've become strangers, the erosion happened years ago.",
       "stat1Suffix": "%",
       "stat1Label": "of couples report a drop in emotional closeness after 5 years",
       "stat2Suffix": " min",
-      "stat2Label": "a day are enough to shift the dynamic — if you invest right",
+      "stat2Label": "a day are enough to shift the dynamic - if you invest right",
       "stat3Prefix": "×",
       "stat3Label": "improvement in satisfaction for couples who actively work on the relationship",
       "stat4Suffix": " days",
@@ -703,35 +703,35 @@
     "forWhom": {
       "eyebrow": "Who it's for",
       "headlinePart1": "If you recognize yourself",
-      "headlinePart2": "in one of these — Mioshy is ",
+      "headlinePart2": "in one of these - Mioshy is ",
       "headlineEm": "for you.",
       "description": "Mioshy's coaching isn't for everyone. It's for couples ready to choose a different kind of relationship.",
       "persona1Title": "You want the spark back",
       "persona1Desc": "Routine took over and you miss the looks, the wanting to be together, the spontaneous smile.",
       "persona1Link": "The guided couples journey",
       "persona2Title": "You want real couple time",
-      "persona2Desc": "Kids, work, the house — and the relationship ended up last. You want it back at the top.",
+      "persona2Desc": "Kids, work, the house - and the relationship ended up last. You want it back at the top.",
       "persona2Link": "Flexible monthly coaching",
       "persona3Title": "You're looking for an expert",
-      "persona3Desc": "You've been to a therapist. It helped, partly. You're looking for something different — experiential, lighter, more together.",
+      "persona3Desc": "You've been to a therapist. It helped, partly. You're looking for something different - experiential, lighter, more together.",
       "persona3Link": "Coaching with our experts",
       "persona4Title": "You want to reconnect",
-      "persona4Desc": "The relationship is good. You just want to take it up a notch — new experiences, new conversations, new intimacy.",
+      "persona4Desc": "The relationship is good. You just want to take it up a notch - new experiences, new conversations, new intimacy.",
       "persona4Link": "Connection and communication games",
       "persona5Title": "You want a fun intimate night",
       "persona5Desc": "You want to swap the Netflix series for a fun evening that actually connects you. No prep, no pressure.",
       "persona5Link": "Online games",
       "persona6Title": "You want to spice up your sex life",
-      "persona6Desc": "You're up for a little adventure — bring desire back, discover a new side, develop the intimacy.",
+      "persona6Desc": "You're up for a little adventure - bring desire back, discover a new side, develop the intimacy.",
       "persona6Link": "Adults-only games",
       "ctaSmall": "Free · 90 seconds · No signup",
-      "ctaBig": "Discover things about your relationship you never knew — completely free.",
+      "ctaBig": "Discover things about your relationship you never knew - completely free.",
       "cta": "Find out what's going on in your relationship"
     },
     "pricing": {
       "eyebrow": "Our pricing",
       "headline": "Full transparency.<br/>No surprises, no commitment.",
-      "description": "Three services, three ways to connect. Pick what fits — and stop any time you want.",
+      "description": "Three services, three ways to connect. Pick what fits - and stop any time you want.",
       "card1Tag": "Online couples games",
       "card1Amount": "9",
       "card1Currency": "₪",
@@ -754,10 +754,10 @@
       "card2Feat2Title": "Everything included",
       "card2Feat2Sub": "Online couples games + adults-only games",
       "card2Feat3Title": "Personal targeted assessment",
-      "card2Feat3Sub": "Our experts get to know you uniquely — something other couples won't get",
+      "card2Feat3Sub": "Our experts get to know you uniquely - something other couples won't get",
       "card2Feat4Title": "Shared couples training space",
       "card2Feat4Sub": "An environment built for the two of you, your own private space",
-      "card2Feat5": "The experts ask the hard questions, you answer — and they build a personal relationship strategy for you",
+      "card2Feat5": "The experts ask the hard questions, you answer - and they build a personal relationship strategy for you",
       "card2Feat6": "Direct chat with the experts",
       "card2Cta": "Start now",
       "card3Tag": "Adults-only games",
@@ -765,9 +765,9 @@
       "card3Currency": "₪",
       "card3Period": "/ game",
       "card3Original": "One-time purchase · <s>₪200 per game</s>",
-      "card3Feat1": "Guided experience — we walk you through, step by step",
+      "card3Feat1": "Guided experience - we walk you through, step by step",
       "card3Feat2": "Original Mioshy games",
-      "card3Feat3": "One purchase — free access for your partner",
+      "card3Feat3": "One purchase - free access for your partner",
       "card3Feat4": "One-time, no subscription",
       "card3Feat5": "Full privacy",
       "card3Cta": "Pick a game",
@@ -782,11 +782,11 @@
       "description": "Joining thousands of couples who've already taken the first step. Choose how to begin:",
       "choice1Tag": "Most popular",
       "choice1Title": "Online couples games",
-      "choice1Body": "Break the ice, enjoy a fun night together. Questions, challenges, and games that spark a real conversation — from the couch, no prep needed.",
+      "choice1Body": "Break the ice, enjoy a fun night together. Questions, challenges, and games that spark a real conversation - from the couch, no prep needed.",
       "choice1Cta": "Start now",
       "choice2Tag": "Adults only",
       "choice2Title": "Games for adventurers",
-      "choice2Body": "For those ready and willing to break the routine — in bed too. Bold games we designed for our most adventurous couples.",
+      "choice2Body": "For those ready and willing to break the routine - in bed too. Bold games we designed for our most adventurous couples.",
       "choice2Cta": "Explore the games",
       "trust1": "No commitment",
       "trust2": "Full privacy",
@@ -798,27 +798,27 @@
       "description": "We've gathered the questions couples ask us most. Still didn't find your answer?",
       "contactCta": "Talk to us",
       "item1Q": "What is Mioshy, exactly?",
-      "item1A": "<p>Mioshy is a platform for couples, backed by an international team of experts — couples therapists, psychologists, sexologists, and relationship coaches from around the world, with <strong>centuries</strong> of combined experience working with couples, intimacy, and connection.</p><p>Together they built an experiential way to bring relationships back to life — not in therapy, not in a course, but in the most natural way there is: games, assessments, and personal coaching tailored to you. With one clear goal — to build you a new relationship, full of intimacy, sex, and love. To bring back the butterflies you thought you'd lost.</p>",
+      "item1A": "<p>Mioshy is a platform for couples, backed by an international team of experts - couples therapists, psychologists, sexologists, and relationship coaches from around the world, with <strong>centuries</strong> of combined experience working with couples, intimacy, and connection.</p><p>Together they built an experiential way to bring relationships back to life - not in therapy, not in a course, but in the most natural way there is: games, assessments, and personal coaching tailored to you. With one clear goal - to build you a new relationship, full of intimacy, sex, and love. To bring back the butterflies you thought you'd lost.</p>",
       "item2Q": "Is this a substitute for couples therapy?",
-      "item2A": "<p>Not exactly. We're a preventive solution — for couples who feel something has eroded but aren't ready to jump into therapy. If there are real crises, we'll also recommend a licensed therapist, and on some plans we'll even connect you with one of our experts.</p>",
+      "item2A": "<p>Not exactly. We're a preventive solution - for couples who feel something has eroded but aren't ready to jump into therapy. If there are real crises, we'll also recommend a licensed therapist, and on some plans we'll even connect you with one of our experts.</p>",
       "item3Q": "How does it actually work?",
-      "item3A": "<p>Depends on the plan you pick. If it's a game — you get online access and start your first night together. If it's the close coaching — you start with a 10-minute assessment and get a personal plan with monthly tasks. You continue month by month, no contract — and stop whenever you want.</p>",
+      "item3A": "<p>Depends on the plan you pick. If it's a game - you get online access and start your first night together. If it's the close coaching - you start with a 10-minute assessment and get a personal plan with monthly tasks. You continue month by month, no contract - and stop whenever you want.</p>",
       "item4Q": "How long until we feel a change?",
-      "item4A": "<p>Couples report a change after the very first night — mostly in the conversation and openness. A meaningful, lasting change is usually felt after 30 days of consistent work. In short: faster than you'd think.</p>",
+      "item4A": "<p>Couples report a change after the very first night - mostly in the conversation and openness. A meaningful, lasting change is usually felt after 30 days of consistent work. In short: faster than you'd think.</p>",
       "item5Q": "Is my privacy protected?",
-      "item5A": "<p>Absolutely. All your data is encrypted and never shared with anyone — ever. We don't sell data and we don't show ads. Your privacy — and your partner's — is sacred to us.</p>",
+      "item5A": "<p>Absolutely. All your data is encrypted and never shared with anyone - ever. We don't sell data and we don't show ads. Your privacy - and your partner's - is sacred to us.</p>",
       "item6Q": "What if my partner isn't on board?",
-      "item6A": "<p>This is way more common than you'd think. Our suggestion: start with a light, fun game — without framing it as \"therapy\" or \"a fix.\" Just \"a fun night together.\" Most couples who start that way naturally keep going together.</p>",
+      "item6A": "<p>This is way more common than you'd think. Our suggestion: start with a light, fun game - without framing it as \"therapy\" or \"a fix.\" Just \"a fun night together.\" Most couples who start that way naturally keep going together.</p>",
       "item7Q": "What's the difference between the three plans?",
-      "item7A": "<p><strong>Online couples games:</strong> easy entry, access to all games on the platform, flexible monthly subscription. <strong>Close coaching with the experts:</strong> our most comprehensive plan — <em>everything included</em>: all games (including adults-only), personal assessment, tailored plan, monthly tasks, and direct support from the team. <strong>Adults-only games:</strong> exclusive bedroom games, purchased separately per game. You can mix — and many do.</p>",
-      "item8Q": "\"Close coaching with the experts\" — is everything really included?",
-      "item8A": "<p>Yes. On purpose. We built this plan for couples who want <strong>someone really with them</strong> — so we ditched the \"paid add-on on top of paid add-on\" model. <strong>Everything included:</strong> full access to all games on the platform (adults-only too), a 10-minute personal assessment with a relationship expert, a personalized plan, refreshed monthly tasks, and <strong>direct chat support from the team</strong> — for questions, hesitations, and the moments you need someone to say a word. No contract, no penalties, stop at any stage. We wanted to walk the whole way with you — because we <em>really</em> want you happy, in love, and with tools that work. This is the service we'd want offered to us.</p>",
+      "item7A": "<p><strong>Online couples games:</strong> easy entry, access to all games on the platform, flexible monthly subscription. <strong>Close coaching with the experts:</strong> our most comprehensive plan - <em>everything included</em>: all games (including adults-only), personal assessment, tailored plan, monthly tasks, and direct support from the team. <strong>Adults-only games:</strong> exclusive bedroom games, purchased separately per game. You can mix - and many do.</p>",
+      "item8Q": "\"Close coaching with the experts\" - is everything really included?",
+      "item8A": "<p>Yes. On purpose. We built this plan for couples who want <strong>someone really with them</strong> - so we ditched the \"paid add-on on top of paid add-on\" model. <strong>Everything included:</strong> full access to all games on the platform (adults-only too), a 10-minute personal assessment with a relationship expert, a personalized plan, refreshed monthly tasks, and <strong>direct chat support from the team</strong> - for questions, hesitations, and the moments you need someone to say a word. No contract, no penalties, stop at any stage. We wanted to walk the whole way with you - because we <em>really</em> want you happy, in love, and with tools that work. This is the service we'd want offered to us.</p>",
       "item9Q": "Can I cancel at any stage?",
       "item9A": "<p>Absolutely. No commitment, no penalties. Cancellation is one click in your account, or a quick message to support. No questions, no hassle.</p>",
-      "item10Q": "We're not married — does this still fit?",
-      "item10A": "<p>Of course. Mioshy fits every couple in a romantic relationship — married, partners, engaged. The only criterion is that you want to deepen the connection.</p>",
+      "item10Q": "We're not married - does this still fit?",
+      "item10A": "<p>Of course. Mioshy fits every couple in a romantic relationship - married, partners, engaged. The only criterion is that you want to deepen the connection.</p>",
       "item11Q": "Who is this content for, exactly?",
-      "item11A": "<p>For now, our content and tasks are tailored to heterosexual couples — a man and a woman. We're working on expanding the content to all kinds of relationships, and hope to share an update soon.</p>"
+      "item11A": "<p>For now, our content and tasks are tailored to heterosexual couples - a man and a woman. We're working on expanding the content to all kinds of relationships, and hope to share an update soon.</p>"
     },
     "reviews": {
       "loadMore": "Load more reviews",
@@ -826,7 +826,7 @@
       "item1Initial": "S",
       "item1Name": "Shira Levi",
       "item1Source": "Married 11 years",
-      "item2Text": "\"We tried couples therapy before — it helped for a moment, but every session felt heavy. The minute we joined Mioshy's coaching, everything got light. Sharing and tending to the relationship became fun. Strongly recommend...\"",
+      "item2Text": "\"We tried couples therapy before - it helped for a moment, but every session felt heavy. The minute we joined Mioshy's coaching, everything got light. Sharing and tending to the relationship became fun. Strongly recommend...\"",
       "item2Initial": "D",
       "item2Name": "Daniel K.",
       "item2Source": "Married 13 years",
@@ -834,7 +834,7 @@
       "item3Initial": "R",
       "item3Name": "Roni & Yuval",
       "item3Source": "Together 16 years",
-      "item4Text": "\"I'll put it like this — Monday-night talk in our house is now: 'what's the task this time?' Idan races to check Mioshy first. Something I never thought could happen with us.\"",
+      "item4Text": "\"I'll put it like this - Monday-night talk in our house is now: 'what's the task this time?' Idan races to check Mioshy first. Something I never thought could happen with us.\"",
       "item4Initial": "M",
       "item4Name": "Michal & Idan",
       "item4Source": "Married 8 years",

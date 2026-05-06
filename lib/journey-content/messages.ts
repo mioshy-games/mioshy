@@ -1,5 +1,5 @@
 // ============================================================
-// Threaded message reads + types — slice 6.
+// Threaded message reads + types - slice 6.
 //
 // journey_messages is the canonical store for all message bodies on
 // per-item threads (scheduled_item_id NOT NULL) and the general
@@ -63,7 +63,7 @@ export async function getPerItemThread(
 
 /**
  * General expert channel fetch. Per Itzik #7 these are partner-
- * private by default — the channel belongs to one user and only
+ * private by default - the channel belongs to one user and only
  * that user + the expert pool sees it. We still apply a defensive
  * is_private filter (default true on the column) so a future
  * "shared with partner" toggle wouldn't accidentally leak.
@@ -87,14 +87,14 @@ export async function getGeneralChannelThread(
     (m) =>
       // The channel owner sees everything in their channel.
       // Anyone else (this only matters when an expert is the viewer
-      // — the RLS policy already prevents cross-user reads) sees
+      // - the RLS policy already prevents cross-user reads) sees
       // only non-private rows.
       channelUserId === viewerUserId ? true : !m.is_private,
   );
 }
 
 /**
- * Admin/expert variant of getGeneralChannelThread — returns every
+ * Admin/expert variant of getGeneralChannelThread - returns every
  * row in a channel WITHOUT the privacy filter. The user-facing
  * variant hides partner-private rows from non-owners; the admin
  * surface (per-couple workspace) needs to see everything the user
@@ -121,7 +121,7 @@ export async function getGeneralChannelThreadForAdmin(
 }
 
 /**
- * Channel ensure helper — used by server actions (and the UI on
+ * Channel ensure helper - used by server actions (and the UI on
  * empty state) to make sure the user has a journey_user_channels
  * row before posting / fetching. Safe to call repeatedly.
  */

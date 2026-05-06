@@ -1,7 +1,7 @@
 /**
  * POST /api/journey/grace-watcher
  *
- * v3 slice 5 cron — two-pass sweep over journey subscriptions:
+ * v3 slice 5 cron - two-pass sweep over journey subscriptions:
  *
  *   PASS 1: Active journey subs whose `current_period_end` has passed
  *           without a successful renewal flip to status='grace' and
@@ -13,18 +13,18 @@
  *   PASS 2: Subs that are already in grace AND past their
  *           journey_grace_until AND haven't been stamped yet get
  *           journey_blocked_at = now(). status STAYS 'grace' on
- *           purpose — Itzik's slice 5 brief: "transition to
+ *           purpose - Itzik's slice 5 brief: "transition to
  *           'blocked' would conflate with billing-failure blocked".
  *           getUserEntitlements() distinguishes blocked-vs-grace
  *           via the journey_blocked_at column, not the status enum.
  *
  * The existing 7-day `grace_until` column (payment-failure window
- * set by the renewal cron) is UNTOUCHED — different lifecycle,
+ * set by the renewal cron) is UNTOUCHED - different lifecycle,
  * different code path.
  *
  * On a successful renewal, the Cardcom indicator + renewal cron
  * clear journey_grace_until + journey_blocked_at (added in this slice
- * — see app/api/billing/cardcom/indicator/route.ts and
+ * - see app/api/billing/cardcom/indicator/route.ts and
  * app/api/billing/renewals/run/route.ts) so the user re-enters
  * 'active' state on the next entitlement read.
  *
@@ -39,7 +39,7 @@
  *        -H "authorization: Bearer $JOURNEY_GRACE_CRON_SECRET"
  *
  * Optional `?dry=1` returns the rows that WOULD be updated without
- * writing — useful to inspect from a test account.
+ * writing - useful to inspect from a test account.
  */
 
 export const runtime = "nodejs";
@@ -156,7 +156,7 @@ async function handle(req: Request): Promise<Response> {
         .update({
           status: "grace",
           journey_grace_until: graceUntilIso,
-          // journey_blocked_at stays NULL — pass 2 stamps it 14 days later.
+          // journey_blocked_at stays NULL - pass 2 stamps it 14 days later.
         })
         .eq("id", row.id);
       if (updErr) {
@@ -169,7 +169,7 @@ async function handle(req: Request): Promise<Response> {
         continue;
       }
       summary.pass1_to_grace++;
-      // Slice 10 — notify the user about the grace start (in-app + email).
+      // Slice 10 - notify the user about the grace start (in-app + email).
       // Best-effort; a notify failure doesn't roll back the state flip.
       if (row.user_id) {
         try {
@@ -248,7 +248,7 @@ async function handle(req: Request): Promise<Response> {
     }
   }
 
-  // Slice 9 — log the run (skipped on dry-run).
+  // Slice 9 - log the run (skipped on dry-run).
   if (!dryRun) {
     await runWithCronLog("grace_watcher", async () => ({
       rowsProcessed: summary.pass1_to_grace + summary.pass2_to_blocked,

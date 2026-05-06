@@ -46,13 +46,13 @@ import {
   FeedbackList,
   FeedbackNewButton,
 } from "@/components/dashboard/journey/feedback/FeedbackList";
-// Phase 2C — read-only inbox of user responses to journey items
+// Phase 2C - read-only inbox of user responses to journey items
 import { listClinicianResponsesForUsers } from "@/lib/journey-content/clinician-responses";
 import { ClientResponsesInbox } from "@/components/dashboard/journey/ClientResponsesInbox";
-// Phase 4 — user→clinician messages from the dashboard
+// Phase 4 - user→clinician messages from the dashboard
 import { listClinicianUserMessages } from "@/lib/journey-content/user-messages";
 import { ClientMessagesList } from "@/components/dashboard/journey/ClientMessagesList";
-// PR2 expert-onboarding — bidirectional general-channel reply UI
+// PR2 expert-onboarding - bidirectional general-channel reply UI
 import { getGeneralChannelThreadForAdmin } from "@/lib/journey-content/messages";
 import { GeneralChannelAdminReply } from "@/components/dashboard/journey/GeneralChannelAdminReply";
 
@@ -62,7 +62,7 @@ export const dynamic = "force-dynamic";
  * Loads both partners' journey_responses keyed by user_id, then
  * shapes them into the Response[] format that buildComparisonMatrix
  * expects. Service role because partners only have SELECT on their
- * own rows under RLS — admin bypass is intentional here.
+ * own rows under RLS - admin bypass is intentional here.
  *
  * Done in two queries because PostgREST's filter-on-nested-join is
  * inconsistent across Supabase client versions for `.in()` on a
@@ -78,7 +78,7 @@ async function loadPartnerResponses(
   const admin = createServiceRoleClient();
   if (!admin) return out;
 
-  // Step 1 — find every journey owned by any of these users. A user
+  // Step 1 - find every journey owned by any of these users. A user
   // can have multiple journey rows over time; we want all of them so
   // the comparison reflects the full assessment history.
   const { data: journeys } = await admin
@@ -92,7 +92,7 @@ async function loadPartnerResponses(
   for (const j of journeys) journeyToUser.set(j.id, j.user_id);
   const journeyIds = Array.from(journeyToUser.keys());
 
-  // Step 2 — pull the responses tied to those journeys.
+  // Step 2 - pull the responses tied to those journeys.
   const { data: rows } = await admin
     .from("journey_responses")
     .select("journey_id, question_id, answer, locale")
@@ -116,7 +116,7 @@ async function loadPartnerResponses(
 
 /**
  * Pulls every active journey_item for the intervention picker. We
- * filter to active items only — admin can re-activate retired items
+ * filter to active items only - admin can re-activate retired items
  * via /dashboard/journey/items if they need to be assignable here.
  */
 async function loadAssignableItems() {
@@ -131,7 +131,7 @@ async function loadAssignableItems() {
   return data ?? [];
 }
 
-/** Couples list — used by the per-question feedback dialog dropdown. */
+/** Couples list - used by the per-question feedback dialog dropdown. */
 async function loadAllCouples() {
   const admin = createServiceRoleClient();
   if (!admin)
@@ -214,7 +214,7 @@ export default async function CoupleDetailPage({
       rows: [],
       total: 0,
     })),
-    // Phase 2C — read-only inbox of journey-item responses by both partners
+    // Phase 2C - read-only inbox of journey-item responses by both partners
     listClinicianResponsesForUsers({
       userIds: partnerUserIds,
       limit: 50,
@@ -222,7 +222,7 @@ export default async function CoupleDetailPage({
     }),
   ]);
 
-  // Phase 4 — free-text messages from JourneyExpertMessage. Loaded
+  // Phase 4 - free-text messages from JourneyExpertMessage. Loaded
   // separately (not in the big Promise.all) to keep the diff clean
   // and to make it easy to fail-soft if the migration isn't applied
   // yet on this environment.
@@ -231,7 +231,7 @@ export default async function CoupleDetailPage({
     limit: 50,
   }).catch(() => []);
 
-  // PR2 expert-onboarding — per-partner general-channel threads.
+  // PR2 expert-onboarding - per-partner general-channel threads.
   // One fetch per partner; the channel is per-user, never shared.
   const channelThreadsByUser = await Promise.all(
     partnerUserIds.map(async (uid) => ({
@@ -247,7 +247,7 @@ export default async function CoupleDetailPage({
   if (partnerBId) partnerLabelsById.set(partnerBId, partnerBLabel);
 
   // Build the comparison matrix once, server-side. Empty arrays for
-  // missing partners — the matrix builder treats them as "not answered".
+  // missing partners - the matrix builder treats them as "not answered".
   const responsesA = partnerAId ? responsesByUser.get(partnerAId) ?? [] : [];
   const responsesB = partnerBId ? responsesByUser.get(partnerBId) ?? [] : [];
   // v3 slice 1: priority labels come from the DB (journey_categories
@@ -302,7 +302,7 @@ export default async function CoupleDetailPage({
         </div>
       </div>
 
-      {/* Per-partner split view — left/right with separate demographics,
+      {/* Per-partner split view - left/right with separate demographics,
           priority ranking, diagnostic, audience-filtered progress, and
           activity history. */}
       <section className="space-y-2">
@@ -312,7 +312,7 @@ export default async function CoupleDetailPage({
         <PartnersSplit coupleId={detail.coupleId} />
       </section>
 
-      {/* Priority alignment — both partners' rankings side by side with
+      {/* Priority alignment - both partners' rankings side by side with
           a gap badge per category. Renders an empty state when only one
           partner has ranked so far. */}
       <section className="space-y-2">
@@ -344,7 +344,7 @@ export default async function CoupleDetailPage({
       </section>
 
       {/* ── NEW ── Send Intervention module.
-          The "prescription" surface — message / task / reflection-prompt
+          The "prescription" surface - message / task / reflection-prompt
           / item-assignment to BOTH | only A | only B in 1-2 clicks. Sits
           on top of "Prescribe content" (which is the older program/
           category bulk-assign form) so the coach picks granular
@@ -379,7 +379,7 @@ export default async function CoupleDetailPage({
       </section>
 
       {/* ── Phase 4 ── Free-text messages the clients typed via
-          JourneyExpertMessage on /my/journey. One-way channel —
+          JourneyExpertMessage on /my/journey. One-way channel -
           the clinician acts via assignments + interventions. */}
       <section className="space-y-2">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
@@ -393,7 +393,7 @@ export default async function CoupleDetailPage({
 
       {/* ── PR2 expert-onboarding ── Per-partner general channel.
           Threaded view + composer. Each tab is one partner's PRIVATE
-          channel — partners never see each other's. Sits with the
+          channel - partners never see each other's. Sits with the
           same visual weight as the per-item reply UI above so the
           on-duty clinician can pick the right surface in one glance. */}
       <section className="space-y-2">
@@ -417,7 +417,7 @@ export default async function CoupleDetailPage({
         <AssignContentForm coupleId={detail.coupleId} sources={sources} />
       </section>
 
-      {/* Per-couple timeline CSV — download / upload */}
+      {/* Per-couple timeline CSV - download / upload */}
       <section className="space-y-2">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           Custom timeline (CSV)
@@ -432,7 +432,7 @@ export default async function CoupleDetailPage({
         </h2>
         {detail.assignments.length === 0 ? (
           <div className="border-border bg-muted/30 text-muted-foreground rounded-lg border p-6 text-center text-sm">
-            No content assigned yet — use the form above to prescribe a
+            No content assigned yet - use the form above to prescribe a
             program, category, or single item.
           </div>
         ) : (

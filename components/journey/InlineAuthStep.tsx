@@ -69,11 +69,11 @@ export function InlineAuthStep({ locale, deviceId, onAuthenticated }: InlineAuth
       console.log("[InlineAuthStep] submit", { mode, deviceId });
 
       // One server-side call does it all atomically:
-      //   • admin.createUser({email_confirm:true})  — no email, no rate limit
-      //   • signInWithPassword                      — sets the auth cookie
-      //   • createSession + writeSessionCookie      — single-session record
-      //   • link_journey_to_user RPC                — links anon → user
-      //   • returns the linked journey row          — client jumps straight in
+      //   • admin.createUser({email_confirm:true})  - no email, no rate limit
+      //   • signInWithPassword                      - sets the auth cookie
+      //   • createSession + writeSessionCookie      - single-session record
+      //   • link_journey_to_user RPC                - links anon → user
+      //   • returns the linked journey row          - client jumps straight in
       const result = await journeyInlineSignup({
         email,
         password,
@@ -110,14 +110,14 @@ export function InlineAuthStep({ locale, deviceId, onAuthenticated }: InlineAuth
     } catch (err) {
       // Log the FULL error envelope so we can see what Supabase is
       // actually returning (status, code, message, name, plus the full
-      // object if it's a SupabaseAuthError). This is what was missing —
+      // object if it's a SupabaseAuthError). This is what was missing -
       // the previous code only surfaced the .message string.
       console.error("[InlineAuthStep] submit failed", {
         mode,
         email,
         errorName: err instanceof Error ? err.name : typeof err,
         errorMessage: err instanceof Error ? err.message : String(err),
-        // SupabaseAuthError carries .status and .code — log them explicitly.
+        // SupabaseAuthError carries .status and .code - log them explicitly.
         errorStatus: (err as { status?: number })?.status,
         errorCode: (err as { code?: string })?.code,
         rawError: err,

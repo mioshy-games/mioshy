@@ -3,7 +3,7 @@
 /**
  * Filter bar for /dashboard/journey/feedback.
  *
- * Pure URL-driven — every change of a filter pushes a new URL via
+ * Pure URL-driven - every change of a filter pushes a new URL via
  * router.replace. The page is a server component that reads from
  * the URL, so the round-trip is trivial. No client state to keep
  * in sync.
@@ -12,7 +12,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useTransition } from "react";
 import { Search, X } from "lucide-react";
-// Import from feedback-shared (NOT feedback.ts) — feedback.ts pulls in
+// Import from feedback-shared (NOT feedback.ts) - feedback.ts pulls in
 // next/headers via the server Supabase client, which would break this
 // client component's build with a "components that need next/headers"
 // error. feedback-shared has zero server deps.
@@ -29,7 +29,7 @@ interface CoupleOption {
 }
 interface CategoryOption {
   id: string;
-  // journey_categories uses name_he/name_en (NOT title — that's items).
+  // journey_categories uses name_he/name_en (NOT title - that's items).
   name_he: string | null;
   name_en: string | null;
 }

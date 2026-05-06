@@ -145,7 +145,7 @@ const NAV: NavItem[] = [
         label: "Health",
         icon: Activity,
         adminOnly: true,
-        tooltip: "System status — cron jobs and stuck-user alerts.",
+        tooltip: "System status - cron jobs and stuck-user alerts.",
       },
       { kind: "leaf", href: "/dashboard/journey-analytics", label: "Analytics", icon: TrendingDown, adminOnly: true },
     ],
@@ -413,7 +413,7 @@ function useExpandedGroups(pathname: string) {
   return { expanded, toggle };
 }
 
-// Admin-only sidebar groups — experts (non-admin) don't see these. Keep this
+// Admin-only sidebar groups - experts (non-admin) don't see these. Keep this
 // list explicit so a non-admin signing in only sees Coaching.
 const ADMIN_ONLY_GROUP_IDS = new Set([
   "games",

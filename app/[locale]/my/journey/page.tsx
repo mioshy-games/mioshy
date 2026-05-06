@@ -1,11 +1,11 @@
 /**
- * /[locale]/my/journey — "החדר הפרטי שלך"
+ * /[locale]/my/journey - "החדר הפרטי שלך"
  *
  * Post-purchase private space for an active Journey subscriber.
  *
  * What this page is NOT (anymore):
  *   - It is NOT the assessment. A paying user must NEVER land back on
- *     the questionnaire — that was the worst UX issue documented in
+ *     the questionnaire - that was the worst UX issue documented in
  *     docs/post-purchase-experience-spec.md §1.
  *   - It is NOT a marketing page. "40 questions, personal report,
  *     practical guidance" copy does not appear here.
@@ -18,7 +18,7 @@
  *     anything yet, a default category card stands in.
  *   - A "Coming up" rail with locked placeholders so the page never
  *     looks empty even on day one.
- *   - Footer reassurance — "we'll keep you posted, just check back".
+ *   - Footer reassurance - "we'll keep you posted, just check back".
  *
  * Routing logic:
  *   - No journey subscription → redirect to /journey marketing.
@@ -203,13 +203,13 @@ export default async function PrivateJourneyPage({
   // looked complete during onboarding, but the responses table is empty
   // for this user_id (anon journey wasn't linked, or RLS blocked the
   // read). Bouncing back to /journey/assessment in this case loops the
-  // user. Instead we render the page with a recovery banner — the user
+  // user. Instead we render the page with a recovery banner - the user
   // sees their dashboard, knows their subscription is active, and gets
   // a one-click "complete the assessment" CTA. No infinite loop.
   const assessmentMissing = !hasAnyResponses;
   if (assessmentMissing) {
     console.warn(
-      "[/my/journey:GATE] paid user has no responses — rendering recovery banner instead of redirecting",
+      "[/my/journey:GATE] paid user has no responses - rendering recovery banner instead of redirecting",
       {
         user_id: user.id,
         email: user.email,
@@ -218,9 +218,9 @@ export default async function PrivateJourneyPage({
     );
   }
 
-  // Resolve the priority into bilingual labels — defaults if the user
+  // Resolve the priority into bilingual labels - defaults if the user
   // skipped the ranking question. Labels come from the DB seed in
-  // journey_categories (assessment_priority_key) — replaces the old
+  // journey_categories (assessment_priority_key) - replaces the old
   // PRIORITY_LABELS_HE/EN constant maps.
   const priorityLabels = await getPriorityLabels();
   const focusLabel = topPriority
@@ -246,7 +246,7 @@ export default async function PrivateJourneyPage({
   // Owner resolution: if the user is part of a couple, prefer the
   // couple-owned timeline (admin assignments tend to live at couple
   // level). Otherwise fall back to user-owned. v3 cadence rows live
-  // under a strict per-partner owner — see journeyOwnerForUser() — and
+  // under a strict per-partner owner - see journeyOwnerForUser() - and
   // are merged into the legacy v2 timeline below.
   const couple = await getCurrentCoupleContext();
   const legacyOwner: JourneyOwner = preferCoupleOwner(
@@ -260,10 +260,10 @@ export default async function PrivateJourneyPage({
       : null;
 
   // v3 slice 4: TWO timeline fetches.
-  //   * Legacy v2: program/category/item assignments — couple-scoped
+  //   * Legacy v2: program/category/item assignments - couple-scoped
   //     when the user is paired (preserves existing behaviour for any
   //     pre-v3 admin-assigned content).
-  //   * v3 cadence: cadence-source assignments — strict per-partner so
+  //   * v3 cadence: cadence-source assignments - strict per-partner so
   //     each partner has their own queue regardless of couple status.
   // The merged list drives every downstream surface (rail, activity
   // history, open/upcoming/completed buckets).
@@ -288,17 +288,17 @@ export default async function PrivateJourneyPage({
     ]);
   } catch (err) {
     console.error("[/my/journey] failed to load timeline", err);
-    // Non-fatal — fall through to placeholder.
+    // Non-fatal - fall through to placeholder.
   }
   // Merge by unlock_at ascending. Items from both axes appear in one
-  // chronological list — the rail/buckets don't care about source.
+  // chronological list - the rail/buckets don't care about source.
   const timeline = [...legacyTimeline, ...cadenceTimeline].sort((a, b) => {
     const ua = new Date(a.scheduled.unlock_at).getTime();
     const ub = new Date(b.scheduled.unlock_at).getTime();
     return ua - ub;
   });
 
-  // v3 slice 6 — load the user's general expert channel thread.
+  // v3 slice 6 - load the user's general expert channel thread.
   // ensureUserChannel is a no-op upsert that creates the row on first
   // visit (so getGeneralChannelThread doesn't return an empty array
   // for users who've never opened the channel).
@@ -319,7 +319,7 @@ export default async function PrivateJourneyPage({
   );
 
   // ── Rail + work-area data ────────────────────────────────────────────
-  // The /my/journey page is the therapeutic surface — past / present /
+  // The /my/journey page is the therapeutic surface - past / present /
   // future of the work plan. Rail at the top gives the orientation,
   // WorkArea below gives the per-tab detail. Both reuse the same
   // tokens as the /my pillar cards (slate-950/40 dark glass).
@@ -344,7 +344,7 @@ export default async function PrivateJourneyPage({
           timeline,
           assessmentCompleted: journeyStatus.hasCompletedAssessment,
           viewerUserId: user.id,
-          // itemSeenAt: not yet wired — until we have a seen-state
+          // itemSeenAt: not yet wired - until we have a seen-state
           // table, every clinician reply is considered "unread"
           // until the user clicks into the item.
         })
@@ -353,7 +353,7 @@ export default async function PrivateJourneyPage({
           assessmentStage,
         });
 
-  // Phase 5 — adaptive ordering. Pull THIS viewer's priority ranking
+  // Phase 5 - adaptive ordering. Pull THIS viewer's priority ranking
   // (each partner has their own) and reorder the rail accordingly so
   // their #1 priority surfaces first. Categories whose slug isn't in
   // the priority taxonomy keep their natural position after the
@@ -373,12 +373,12 @@ export default async function PrivateJourneyPage({
   );
   const railIsDynamic = timeline.length > 0;
 
-  // Phase 2F — surface a calm banner when the clinician has replied
+  // Phase 2F - surface a calm banner when the clinician has replied
   // since the user's last visit. Client-side localStorage handles the
   // "since last visit" part; server fetches the latest reply only.
   const freshReplies = await getFreshClinicianReplies(user.id);
 
-  // ── Phase 4 — dashboard data ────────────────────────────────────────
+  // ── Phase 4 - dashboard data ────────────────────────────────────────
   // Activity history: derived from data we already have on the page.
   // In a follow-up phase we'll add a dedicated event-log table; for
   // now we synthesise a believable timeline from the assessment +
@@ -442,7 +442,7 @@ export default async function PrivateJourneyPage({
     });
   }
 
-  // Priority ranking — seeds from the user's assessment ranking when
+  // Priority ranking - seeds from the user's assessment ranking when
   // available, otherwise from the canonical six topics. Server passes
   // the seed; the client component owns the reorder/add UI.
   const seededPriorities: PriorityItem[] = topPriority
@@ -477,7 +477,7 @@ export default async function PrivateJourneyPage({
         { id: "p-family", label: isHe ? "משפחה ולחצים פנימיים" : "Family & internal stress" },
       ];
 
-  // Decide whether to show the "experts are reviewing" banner — only
+  // Decide whether to show the "experts are reviewing" banner - only
   // for users who finished the assessment but don't yet have any
   // assigned content. It would be misleading otherwise.
   const showWelcomeProcessingBanner =
@@ -501,7 +501,7 @@ export default async function PrivateJourneyPage({
 
   return (
     <div dir={isHe ? "rtl" : "ltr"} className="min-h-[100dvh] text-white">
-      {/* Phase 2E — fire one analytics event per session when the user
+      {/* Phase 2E - fire one analytics event per session when the user
           lands on the dashboard. Pure side-effect; renders nothing. */}
       <JourneyDashboardViewTracker
         hasJourneyEntitlement={true}
@@ -511,7 +511,7 @@ export default async function PrivateJourneyPage({
         railIsDynamic={railIsDynamic}
         freshReplyCount={freshReplies.recentReplyCount}
       />
-      {/* Solid slate frame around the entire therapeutic surface — sets
+      {/* Solid slate frame around the entire therapeutic surface - sets
           this room apart from the global gradient backdrop. Width matches
           /my (max-w-6xl) so the user sees the same canvas across pages. */}
       <div className="mx-auto mt-6 max-w-6xl px-3 sm:px-4">
@@ -542,11 +542,11 @@ export default async function PrivateJourneyPage({
           <p className="mt-2 max-w-xl text-white/65">
             {isHe
               ? "תוכן שמסודר לפי מה שחשוב לכם. כל אחד רואה את השלבים בסדר שמתאים למה שביקש באבחון."
-              : "Content ordered by what matters to you. Each partner sees their own ranking — your priorities lead."}
+              : "Content ordered by what matters to you. Each partner sees their own ranking - your priorities lead."}
           </p>
         </header>
 
-        {/* ─────── v3 slice 5 — grace / blocked banner ───────
+        {/* ─────── v3 slice 5 - grace / blocked banner ───────
             Renders nothing when the user is in 'active' state. During
             grace it's amber with a renewal CTA; on blocked it's rose.
             Sits above the existing subscription-status banner so the
@@ -561,7 +561,7 @@ export default async function PrivateJourneyPage({
             />
           </section>
         ) : (
-          /* ─────── Subscription status — explicit confirmation ───────
+          /* ─────── Subscription status - explicit confirmation ───────
               A calm "your subscription is active" line when entitled,
               or a recovery banner when the assessment didn't get
               attached to this account (we don't loop back to it; the
@@ -574,7 +574,7 @@ export default async function PrivateJourneyPage({
           </section>
         )}
 
-        {/* ─────── Phase 2F — clinician reply banner ───────
+        {/* ─────── Phase 2F - clinician reply banner ───────
             Calm one-liner shown when there's at least one new reply
             from the clinician since the user's last visit (tracked
             client-side via localStorage). Self-dismisses on click. */}
@@ -613,18 +613,18 @@ export default async function PrivateJourneyPage({
           </section>
         ) : null}
 
-        {/* ─────── The desk — vertical rail + content panel ───────
+        {/* ─────── The desk - vertical rail + content panel ───────
             The rail (right in RTL, top on mobile) acts as the menu;
             clicking a step swaps the panel content on the left. The
             rail order has been re-sorted per the viewer's ranking
-            (Phase 5 — sortRailByPriorities). */}
+            (Phase 5 - sortRailByPriorities). */}
         <section className="mt-8">
           <JourneyDesk isHe={isHe} entries={railEntries} />
         </section>
 
         {/* ─────── Secondary dashboard ───────
             The desk above answers "what am I working on now". This
-            grid answers "what's the bigger picture" — history,
+            grid answers "what's the bigger picture" - history,
             priorities, and the message channel to the clinician. */}
         <section className="mt-10 grid gap-6 lg:grid-cols-12">
           <div className="lg:col-span-7">

@@ -5,12 +5,12 @@
 -- Introduces a unified threaded-message model. Two surfaces share
 -- one storage table:
 --
---   * Per-item threads — every delivered scheduled_item is a prompt
+--   * Per-item threads - every delivered scheduled_item is a prompt
 --     that expects a response (Update B). The thread under the item
 --     holds the user's response(s), the expert pool's reply/replies,
 --     and reactions on each message.
 --
---   * General expert channel — one persistent two-way thread per
+--   * General expert channel - one persistent two-way thread per
 --     user, independent of any item. The user can ask anything;
 --     experts in the pool can respond. Each user has their own
 --     channel; partners cannot see each other's general thread by
@@ -18,13 +18,13 @@
 --
 -- DESIGN NOTES:
 --
---   1. journey_messages.scheduled_item_id XOR channel_user_id —
+--   1. journey_messages.scheduled_item_id XOR channel_user_id -
 --      every row belongs to exactly one surface (CHECK constraint).
 --   2. is_private defaults differ by surface:
---        per-item:  default FALSE — partners CAN see each other's
+--        per-item:  default FALSE - partners CAN see each other's
 --                   responses (matches existing journey_item_responses
 --                   semantics; per-row override still allowed).
---        general:   default TRUE  — general-channel posts are solo
+--        general:   default TRUE  - general-channel posts are solo
 --                   by design; partner cannot see them. The defaults
 --                   are enforced at the application layer (the trigger
 --                   below validates author against owner).
@@ -32,17 +32,17 @@
 --      the toggleReaction server action just appends/removes the
 --      author_user_id. Avoids per-reaction rows for v1.
 --   4. Coexistence with legacy tables (slice 6 ships dual-write):
---        - journey_item_responses — still authoritative for the
+--        - journey_item_responses - still authoritative for the
 --          existing clinician inbox queries until a future slice
 --          migrates them. journey_messages.legacy_response_id links
 --          back when a journey_messages row was created from a
 --          legacy response.
---        - journey_user_messages — same pattern via legacy_user_message_id.
+--        - journey_user_messages - same pattern via legacy_user_message_id.
 --      New posts write to BOTH tables; the dashboard inbox keeps
 --      working unchanged. Slice 6 back-fill below imports every
 --      historical row into journey_messages so the new thread UI
 --      shows complete history from day one.
---   5. journey_notifications log — minimal "ping" table (slice 10
+--   5. journey_notifications log - minimal "ping" table (slice 10
 --      builds the proper inbox; here we just record the events so the
 --      data is there when the inbox lands).
 -- ============================================================
@@ -53,7 +53,7 @@ create extension if not exists pgcrypto;
 
 
 -- ============================================================
--- SECTION 1 — General-channel container (one row per user)
+-- SECTION 1 - General-channel container (one row per user)
 -- Lazily created the first time a user posts in their channel OR
 -- the first time an expert replies to them. Holds last_message_at
 -- so the dashboard can surface "who has unread chatter" without
@@ -72,7 +72,7 @@ create index if not exists journey_user_channels_recent_idx
 
 
 -- ============================================================
--- SECTION 2 — Unified messages table
+-- SECTION 2 - Unified messages table
 -- ============================================================
 
 create table if not exists public.journey_messages (
@@ -84,7 +84,7 @@ create table if not exists public.journey_messages (
   -- predate clinician_id capture (migration 049 added that column;
   -- earlier clinician_reply_text rows have no recorded author). For
   -- every new insert from server actions, author_user_id MUST be set
-  -- — enforced by the partial CHECK below.
+  -- - enforced by the partial CHECK below.
   author_user_id           uuid        references auth.users(id) on delete set null,
   author_kind              text        not null,
   -- Content
@@ -93,7 +93,7 @@ create table if not exists public.journey_messages (
                                               and length(body) <= 4000),
   reactions                jsonb       not null default '{}'::jsonb,
   is_private               boolean     not null default false,
-  -- Optional links back into the legacy tables — only set on rows
+  -- Optional links back into the legacy tables - only set on rows
   -- created via the dual-write path. Stable so we can reconcile if
   -- the clinician dashboard ever updates a legacy row out-of-band.
   legacy_response_id       uuid        references public.journey_item_responses(id) on delete set null,
@@ -137,7 +137,7 @@ create index if not exists journey_messages_channel_idx
 create index if not exists journey_messages_author_idx
   on public.journey_messages (author_user_id, created_at desc);
 
--- One mirror message per (legacy row, author_kind) — for legacy
+-- One mirror message per (legacy row, author_kind) - for legacy
 -- responses we may have BOTH a user mirror (from response_text) and
 -- an expert mirror (from clinician_reply_text). Splitting the index
 -- by author_kind keeps both back-fills idempotent: re-running
@@ -166,7 +166,7 @@ end $$;
 
 
 -- ============================================================
--- SECTION 3 — Notification log
+-- SECTION 3 - Notification log
 -- A minimal append-only log of "something happened that should
 -- ping someone". Slice 10 builds the proper in-app inbox + email
 -- delivery; this table just preserves the events so the inbox can
@@ -219,7 +219,7 @@ create index if not exists journey_notifications_unread_idx
 
 
 -- ============================================================
--- SECTION 4 — RLS
+-- SECTION 4 - RLS
 -- Same pattern as 035: SELECT-only policies; writes flow through
 -- the service-role admin client in server actions.
 -- ============================================================
@@ -228,7 +228,7 @@ alter table public.journey_user_channels enable row level security;
 alter table public.journey_messages       enable row level security;
 alter table public.journey_notifications  enable row level security;
 
--- Channels — a user reads their own row; experts/admins read all.
+-- Channels - a user reads their own row; experts/admins read all.
 drop policy if exists journey_user_channels_read on public.journey_user_channels;
 create policy journey_user_channels_read on public.journey_user_channels
   for select using (
@@ -237,7 +237,7 @@ create policy journey_user_channels_read on public.journey_user_channels
     or public.is_expert()
   );
 
--- Messages — visibility splits by surface:
+-- Messages - visibility splits by surface:
 --   * channel rows: only the channel owner + experts/admins (general
 --     channel is solo per Itzik #7).
 --   * per-item rows: owner-scope (same path as journey_item_responses
@@ -271,7 +271,7 @@ create policy journey_messages_read on public.journey_messages
     )
   );
 
--- Notifications — recipient-only reads, plus admin/expert visibility.
+-- Notifications - recipient-only reads, plus admin/expert visibility.
 drop policy if exists journey_notifications_read on public.journey_notifications;
 create policy journey_notifications_read on public.journey_notifications
   for select using (
@@ -282,7 +282,7 @@ create policy journey_notifications_read on public.journey_notifications
 
 
 -- ============================================================
--- SECTION 5 — BACK-FILL
+-- SECTION 5 - BACK-FILL
 -- Idempotent via the partial unique indexes on legacy_*_id. Re-runs
 -- skip rows that already have a journey_messages mirror.
 -- ============================================================
@@ -305,7 +305,7 @@ where m.id is null;
 -- 5b. Back-fill clinician_reply_text rows as paired expert messages.
 -- One expert message per legacy response that has a reply (the
 -- legacy schema only allows one reply per response; new model
--- supports many — future expert messages on the same item just go
+-- supports many - future expert messages on the same item just go
 -- direct to journey_messages).
 -- author_user_id is left NULL when the legacy clinician_id is missing
 -- (rows that pre-date migration 049 didn't capture it). The
@@ -357,7 +357,7 @@ where m.id is null;
 
 
 -- ============================================================
--- SECTION 6 — Invariant maintenance: keep journey_user_channels
+-- SECTION 6 - Invariant maintenance: keep journey_user_channels
 -- last_message_at fresh on every new journey_messages insert.
 -- ============================================================
 

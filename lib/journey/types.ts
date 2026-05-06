@@ -32,9 +32,9 @@ export type Axis =
  * to present results grouped by relationship area, and by the analysis
  * layer to compute per-domain scores. The 5 keys mirror the categories
  * already seeded in journey_categories (see q_priorities.categories in
- * questionnaire.json) — keeping a single namespace across the system.
+ * questionnaire.json) - keeping a single namespace across the system.
  *
- * A question MAY be `domain: null` when it doesn't fit a single area —
+ * A question MAY be `domain: null` when it doesn't fit a single area -
  * e.g. demographic context (gender, relationship duration), meta
  * questions (priority ranking, perceived gap), or open reflections.
  * `null` keeps these questions in the flow without forcing an
@@ -115,14 +115,14 @@ export interface QuestionReflection {
 }
 
 /**
- * Ranking question — user reorders a fixed set of 5 categories by personal
+ * Ranking question - user reorders a fixed set of 5 categories by personal
  * priority. Each category has a stable English `key` that is what gets
  * stored in the answer; HE/EN labels and short descriptions live alongside
  * for the renderer. Doesn't drive any axis (`axes: []`).
  *
  * The `key`s here MUST match the seeded
  * journey_categories.assessment_priority_key values (see migration
- * 055) — and the PriorityKey literal-union in lib/journey/priorities.ts.
+ * 055) - and the PriorityKey literal-union in lib/journey/priorities.ts.
  * The validator on /api/journey/answer enforces that the answer is
  * exactly a permutation of those keys.
  */
@@ -139,7 +139,7 @@ export interface QuestionRanking {
   category: QuestionCategory;
   type: "ranking";
   domain: Domain | null;
-  axes: AxisWeight[]; // always [] for ranking — kept for shape-compatibility
+  axes: AxisWeight[]; // always [] for ranking - kept for shape-compatibility
   purpose: string;
   insight?: string;
   he_prompt: string;

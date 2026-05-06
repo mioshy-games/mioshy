@@ -102,7 +102,7 @@ export function ItemForm({
     toast.error(
       fields.length === 0
         ? "Form invalid"
-        : `Cannot save — ${fields.slice(0, 3).join(" · ")}${
+        : `Cannot save - ${fields.slice(0, 3).join(" · ")}${
             fields.length > 3 ? ` (+${fields.length - 3} more)` : ""
           }`,
     );
@@ -114,7 +114,7 @@ export function ItemForm({
   const audience = watch("audience") ?? "both";
 
   // Subtopics scoped to the currently-selected category. Switching the
-  // category clears any stale subtopic selection — the DB trigger
+  // category clears any stale subtopic selection - the DB trigger
   // would reject a cross-category subtopic anyway.
   const subtopicsForCategory = subtopics.filter(
     (s) => s.category_id === categoryId,

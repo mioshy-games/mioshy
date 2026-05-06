@@ -3,22 +3,22 @@
 -- Slice 1 of the v3 per-partner content delivery system.
 --
 -- Adds a 14-day natural-expiry grace window on top of the existing
--- 7-day payment-failure grace (which is unchanged — `grace_until`
+-- 7-day payment-failure grace (which is unchanged - `grace_until`
 -- column from migration 016 still belongs to the renewal cron's
 -- failure path).
 --
 -- This migration is ADDITIVE and does NOT change any existing logic:
---   * grace_until      — untouched. Set by /api/billing/renewals/run
+--   * grace_until      - untouched. Set by /api/billing/renewals/run
 --                        when a charge fails. Window = 7 days.
---   * journey_grace_until — NEW. Set by the journey grace-watcher cron
+--   * journey_grace_until - NEW. Set by the journey grace-watcher cron
 --                        (slice 5) when current_period_end passes for
 --                        an active subscription that didn't renew.
 --                        Window = 14 days. After it elapses,
 --                        journey_blocked_at is stamped and entitlement
 --                        flips to "blocked".
---   * journey_blocked_at  — NEW. Set when the 14-day window has
+--   * journey_blocked_at  - NEW. Set when the 14-day window has
 --                        passed without renewal. Cleared on renewal.
---   * status enum         — adds 'grace'. Slice 5 transitions
+--   * status enum         - adds 'grace'. Slice 5 transitions
 --                        active -> grace (when current_period_end
 --                        passes) and grace -> expired (when
 --                        journey_grace_until passes without renewal).
@@ -35,7 +35,7 @@ alter table public.subscriptions
   add column if not exists journey_blocked_at  timestamptz;
 
 -- Extend the status enum to add 'grace'. Keep the prior set intact
--- (mirrors migration 025's pattern — drop + add).
+-- (mirrors migration 025's pattern - drop + add).
 alter table public.subscriptions
   drop constraint if exists subscriptions_status_check;
 

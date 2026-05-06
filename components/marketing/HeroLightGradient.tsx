@@ -38,7 +38,7 @@ export function HeroLightGradient({
   privacyLabel,
 }: HeroLightGradientProps) {
   useEffect(() => {
-    console.log("[HeroLightGradient] mounted v2 — purple↔red converge + particles");
+    console.log("[HeroLightGradient] mounted v2 - purple↔red converge + particles");
   }, []);
 
   return (

@@ -44,7 +44,7 @@ export async function POST(req: Request) {
     const limitParam = url.searchParams.get("limit");
     const limit = limitParam ? Number.parseInt(limitParam, 10) : undefined;
 
-    // Slice 9 — wrap in runWithCronLog so the health board can show
+    // Slice 9 - wrap in runWithCronLog so the health board can show
     // recent runs. The notifier returns its own ok/errors shape so
     // we surface that to the log helper.
     type NotifierResult = Awaited<ReturnType<typeof runJourneyUnlockNotifier>>;

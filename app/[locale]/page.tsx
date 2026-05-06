@@ -73,11 +73,11 @@ export default async function HomePage({
   noStore();
 
   // ── Authenticated users skip the marketing homepage and land on
-  //    "My Mioshy" (/my) — the personal hub. The marketing home is
+  //    "My Mioshy" (/my) - the personal hub. The marketing home is
   //    a sales surface; once a user has signed in, returning them to
   //    it on every visit makes the product feel transactional rather
   //    than membership-driven. Logout flow redirects back to /${locale},
-  //    which lands here again — but now as anonymous → marketing shows.
+  //    which lands here again - but now as anonymous → marketing shows.
   //    Escape hatch: ?marketing=1 lets admins / QA preview the
   //    marketing page while signed in.
   if (searchParams?.marketing !== "1") {

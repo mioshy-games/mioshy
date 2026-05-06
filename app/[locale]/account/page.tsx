@@ -59,7 +59,7 @@ export default async function AccountPage({
 }) {
   const { locale } = await params;
   const sp = (await searchParams) ?? {};
-  // Two-tab layout (profile + billing) on a single URL — per spec a single
+  // Two-tab layout (profile + billing) on a single URL - per spec a single
   // "החשבון שלי" header item houses both. Default = profile.
   const activeTab: "profile" | "billing" =
     sp.tab === "billing" ? "billing" : "profile";
@@ -183,7 +183,7 @@ export default async function AccountPage({
         </div>
       )}
 
-      {/* ── Tab nav — two URLs (?tab=profile|billing) under one menu item ── */}
+      {/* ── Tab nav - two URLs (?tab=profile|billing) under one menu item ── */}
       <nav
         role="tablist"
         className="mt-6 inline-flex rounded-full border border-white/15 bg-white/5 p-1 text-sm"

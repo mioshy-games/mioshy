@@ -1,5 +1,5 @@
 // ============================================================
-// UserLiveStatsPanel — slice 9 read-only inspector for a single
+// UserLiveStatsPanel - slice 9 read-only inspector for a single
 // journey user. Renders queue snapshot, engagement bundle,
 // eligibility verdict, recent skips. Server component.
 //
@@ -25,8 +25,8 @@ import { cn } from "@/lib/utils";
 
 const ELIGIBILITY_LABEL: Record<NonNullable<EligibilityResult["reason"]>, string> = {
   no_journey_subscription: "No active journey subscription",
-  in_grace: "In grace window — cadence paused",
-  blocked: "Blocked — grace expired without renewal",
+  in_grace: "In grace window - cadence paused",
+  blocked: "Blocked - grace expired without renewal",
   no_priorities: "No priority ranking yet",
   manually_paused: "Manually paused (profiles.journey_paused_at)",
 };
@@ -38,7 +38,7 @@ export function UserLiveStatsPanel({
 }: {
   stats: UserLiveStats;
   eligibility: EligibilityResult;
-  /** Optional label shown in the header — used on the couple workspace
+  /** Optional label shown in the header - used on the couple workspace
    *  to disambiguate "Partner A" vs "Partner B". */
   partnerLabel?: string;
 }) {
@@ -71,7 +71,7 @@ export function UserLiveStatsPanel({
       </header>
 
       <div className="grid gap-4 p-4 md:grid-cols-2">
-        {/* Pending pushes — with reason notes finally rendered */}
+        {/* Pending pushes - with reason notes finally rendered */}
         <Section
           title={`Pending pushes (${stats.pendingPushes.length})`}
           icon={Send}
@@ -130,7 +130,7 @@ export function UserLiveStatsPanel({
                   </span>
                 </div>
                 <p className="text-muted-foreground mt-1 text-[10px]">
-                  source: {u.source ?? "—"}
+                  source: {u.source ?? "-"}
                 </p>
               </li>
             ))}
@@ -176,7 +176,7 @@ export function UserLiveStatsPanel({
                   </div>
                   <p className="text-muted-foreground mt-1 text-[10px]">
                     {new Date(d.unlock_at).toLocaleDateString()} · source:{" "}
-                    {d.source ?? "—"}
+                    {d.source ?? "-"}
                   </p>
                 </li>
               );
@@ -204,7 +204,7 @@ export function UserLiveStatsPanel({
                   <span className="text-muted-foreground tabular-nums">
                     {d.skipped_at
                       ? new Date(d.skipped_at).toLocaleDateString()
-                      : "—"}
+                      : "-"}
                   </span>
                 </div>
                 <p className="text-muted-foreground mt-1 text-[10px]">

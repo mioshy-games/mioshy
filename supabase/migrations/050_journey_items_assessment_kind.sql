@@ -1,5 +1,5 @@
 -- ============================================================
--- 050 — journey_items: support multiple assessments alongside content
+-- 050 - journey_items: support multiple assessments alongside content
 -- ============================================================
 -- Purpose:
 --   Phase 3 of the redesign: clinicians want to attach NEW assessments
@@ -15,7 +15,7 @@
 --   - 'assessment' = a structured set of questions the user answers
 --   - 'reflection' = a single-question prompt (open-ended)
 --   - The questions live in a JSONB column on the same row.
---   - User responses keep flowing through `journey_item_responses` —
+--   - User responses keep flowing through `journey_item_responses` -
 --     the textarea is replaced with a structured form on the client,
 --     but the underlying row shape is identical.
 --
@@ -73,7 +73,7 @@ create index if not exists journey_items_kind_idx
 alter table public.journey_items
   add column if not exists assessment_payload jsonb;
 
--- 3. A response shape hint on journey_item_responses — for non-textarea
+-- 3. A response shape hint on journey_item_responses - for non-textarea
 -- assessments the client serializes the structured answer here.
 -- The existing `response_text` keeps the prose for reflection items
 -- and content-feedback items.

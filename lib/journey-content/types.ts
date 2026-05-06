@@ -71,10 +71,10 @@ export interface JourneyCategory {
 
 /**
  * v3 slice 7 / migration 054: per-binding mode for group ↔ subtopic.
- *   replace    — auto-cadence skips items in this subtopic for group
+ *   replace    - auto-cadence skips items in this subtopic for group
  *                members; admin pushes are the only way items reach
  *                the user from this subtopic.
- *   interleave — auto-cadence picks normally from this subtopic;
+ *   interleave - auto-cadence picks normally from this subtopic;
  *                admin pushes ALSO surface (additive). Slice 7 wires
  *                the cadence-side filter; the additive admin-push
  *                lands in slice 8.
@@ -135,7 +135,7 @@ export interface JourneySubtopic {
 export type JourneyAudience = "both" | "owner" | "partner";
 
 /**
- * Migration 050 — discriminator for items that aren't plain content:
+ * Migration 050 - discriminator for items that aren't plain content:
  *   - 'content'    → the original kind (articles / exercises / video)
  *   - 'assessment' → a structured questionnaire the user fills in
  *   - 'reflection' → a single open-ended prompt
@@ -188,7 +188,7 @@ export interface JourneyAssessmentPayload {
 
 /**
  * v3 slice 2 / migration 054: presentational discriminator for items.
- * Orthogonal to `kind` (which is content/assessment/reflection — the
+ * Orthogonal to `kind` (which is content/assessment/reflection - the
  * shape of the response surface). content_type drives icons + filters
  * in admin only; the cadence engine doesn't read it.
  */
@@ -276,18 +276,18 @@ export interface JourneyScheduledItem {
   /** Migration 044: copied from item at materialization. The expert may
    * override this row independently (e.g. via per-couple CSV upload). */
   audience: JourneyAudience;
-  /** v3 slice 1 / migration 055 — first time the user opened this item. */
+  /** v3 slice 1 / migration 055 - first time the user opened this item. */
   seen_at?: string | null;
-  /** v3 slice 1 / migration 055 — first user message in the per-item
+  /** v3 slice 1 / migration 055 - first user message in the per-item
    *  thread stamps this. The cadence engine's auto-skip rule keys on
    *  it: rows past auto_skip_after_days with responded_at NULL get
    *  marked skipped on the next materialization sweep. */
   responded_at?: string | null;
-  /** v3 slice 1 / migration 055 — set by the cadence engine's
+  /** v3 slice 1 / migration 055 - set by the cadence engine's
    *  skip-sweep when this row passed the auto-skip threshold without
    *  a response. */
   skipped_at?: string | null;
-  /** v3 slice 1 / migration 055 — origin of this scheduled row. */
+  /** v3 slice 1 / migration 055 - origin of this scheduled row. */
   source?: "cadence" | "expert_push" | "group" | "random" | "admin_manual" | "program" | "category" | "item";
   created_at: string;
   updated_at: string;
@@ -315,7 +315,7 @@ export interface JourneyItemResponse {
   clinician_id?: string | null;
   clinician_reply_text?: string | null;
   clinician_replied_at?: string | null;
-  /** Migration 050 — for assessment/reflection items, the user's
+  /** Migration 050 - for assessment/reflection items, the user's
    *  serialized structured answer keyed by question id. Null for
    *  content items (which keep using `response_text`). */
   structured_answer?: Record<string, unknown> | null;

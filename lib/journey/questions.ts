@@ -55,7 +55,7 @@ export function requiresPaywallAt(index: number): boolean {
 // the priority ranking, and the future domain-aware analysis layer all
 // share one namespace.
 //
-// `getQuestionsByDomain` returns ALL questions in a domain — including
+// `getQuestionsByDomain` returns ALL questions in a domain - including
 // demographic context items mapped into `family`, which don't carry axes.
 // Use `getDiagnosticQuestionsByDomain` when you need only the items that
 // contribute to scoring.
@@ -106,14 +106,14 @@ export function getDiagnosticDomainCount(): Record<Domain, number> {
 // --- Build-time assertion ---------------------------------------------------
 //
 // Locks in the current distribution. As of 2026-05-05 the flow is
-// 32 questions (down from 35 — the three forced-choice love-language
+// 32 questions (down from 35 - the three forced-choice love-language
 // pairs q04/q05/q06 were removed when the love-language card was
 // dropped from the analysis summary; see
 // docs/journey-ux-followups-2026-05-05.md).
 //
 // The breakdown remains uneven by design (Gottman's 4-Horsemen + repair
 // + influence + pso fill `communication` with 7 items, while `family`
-// reaches 7 by folding in demographic context — kids count, kids age,
+// reaches 7 by folding in demographic context - kids count, kids age,
 // household employment, work field). Other domains now land at 3.
 //
 // If a future edit to questionnaire.json reshuffles the distribution,

@@ -25,7 +25,7 @@ export interface AdultsMonthlyStatus {
   available: boolean;
   /** Set when the slot is currently CONSUMED. ISO string. */
   used_at: string | null;
-  /** First moment the slot becomes available again — always the 1st of
+  /** First moment the slot becomes available again - always the 1st of
    *  the next month. UI shows "available on Jun 1" using this. */
   next_available_at: string | null;
   /** True when the user has the Journey subscription that bundles the
@@ -39,7 +39,7 @@ function startOfCurrentMonthUtc(now = new Date()): Date {
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0));
 }
 
-/** First moment of the NEXT calendar month — when a consumed slot
+/** First moment of the NEXT calendar month - when a consumed slot
  *  flips back to available. */
 function startOfNextMonthUtc(now = new Date()): Date {
   return new Date(
@@ -105,7 +105,7 @@ export async function getAdultsMonthlyStatus(
 
 /**
  * Marks the user's monthly slot as consumed. Callers MUST verify the
- * slot is currently available before invoking this — the function
+ * slot is currently available before invoking this - the function
  * intentionally does not re-check, so a misuse (double-consume in the
  * same month) is loud.
  *
