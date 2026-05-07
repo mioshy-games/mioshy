@@ -49,8 +49,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPaths: Array<{ path: string; priority: number; changeFrequency: MetadataRoute.Sitemap[number]["changeFrequency"] }> = [
     { path: "", priority: 1.0, changeFrequency: "weekly" },
     { path: "/games", priority: 0.95, changeFrequency: "weekly" },
-    // /adults is the flagship product surface - high priority.
-    { path: "/adults", priority: 0.95, changeFrequency: "weekly" },
+    // /mioshy-sex is the flagship product surface - high priority.
+    { path: "/mioshy-sex", priority: 0.95, changeFrequency: "weekly" },
     { path: "/journey", priority: 0.85, changeFrequency: "weekly" },
     { path: "/pricing", priority: 0.7, changeFrequency: "monthly" },
     { path: "/articles", priority: 0.8, changeFrequency: "weekly" },

@@ -70,11 +70,13 @@ export function derivePillarState(input: PillarStateInputs): PillarStateOutput {
 function deriveJourneyState(input: PillarStateInputs): PillarStateOutput {
   const { entitlement, hasActiveAssignments, assessmentStage, isHe } = input
 
-  // No subscription → marketing entry
+  // No subscription → marketing entry. Per Itzik 2026-05-06 the
+  // generic "Discover" was too vague — replaced with action-language
+  // that signals what happens next on click.
   if (!entitlement) {
     return {
       state: "not_purchased",
-      ctaLabel: isHe ? "לגלות" : "Discover",
+      ctaLabel: isHe ? "להתחיל את הליווי" : "Start coaching",
       ctaHref: "/journey",
     }
   }
@@ -123,7 +125,7 @@ function deriveGamesState(input: PillarStateInputs): PillarStateOutput {
   if (!entitlement) {
     return {
       state: "not_purchased",
-      ctaLabel: isHe ? "לגלות" : "Discover",
+      ctaLabel: isHe ? "לפתוח את המשחקים" : "Open the games",
       ctaHref: "/games",
     }
   }
@@ -143,8 +145,8 @@ function deriveAdultsState(input: PillarStateInputs): PillarStateOutput {
   if (!entitlement) {
     return {
       state: "not_purchased",
-      ctaLabel: isHe ? "לגלות" : "Discover",
-      ctaHref: "/adults",
+      ctaLabel: isHe ? "לבחור משחק" : "Pick a game",
+      ctaHref: "/mioshy-sex",
     }
   }
   return {

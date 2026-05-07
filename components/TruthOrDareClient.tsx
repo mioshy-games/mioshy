@@ -488,8 +488,11 @@ export function TruthOrDareClient({
 
   // ── Shared JSX pieces ───────────────────────────────────────────────────────
 
-  /** Top bar: logo full-width centred (big), utility buttons row below on mobile only.
-   *  On desktop the back/sound buttons live in the fixed bottom corners - see below. */
+  /** Top bar: full-width centred logo. Per Itzik 2026-05-06 the mobile
+   *  utility buttons (Back / Sound) moved from above the wheel to BELOW
+   *  the spin button — see `mobileUtilityButtons` below. On desktop the
+   *  Back/Sound buttons live in the fixed bottom corners (rendered at
+   *  the bottom of this component). */
   const topBar = (
     <div className="flex w-full shrink-0 flex-col items-center gap-2 px-1">
       {/* Logo - full-width centred, prominent */}
@@ -503,23 +506,28 @@ export function TruthOrDareClient({
           priority
         />
       </div>
+    </div>
+  );
 
-      {/* Utility buttons - mobile only (desktop uses fixed bottom corners) */}
-      <div className="flex w-full items-center justify-between md:hidden">
-        <Link
-          href="/games"
-          className="rounded-full bg-white/15 px-4 py-2 text-sm font-medium text-white backdrop-blur hover:bg-white/25"
-        >
-          {t("back")}
-        </Link>
-        <button
-          type="button"
-          onClick={() => setSpinSoundOn((m) => !m)}
-          className="rounded-full bg-white/15 px-4 py-2 text-sm font-medium text-white backdrop-blur hover:bg-white/25"
-        >
-          {spinSoundOn ? t("spinSoundOn") : t("spinSoundOff")}
-        </button>
-      </div>
+  /** Mobile-only utility buttons (Back + Sound). Rendered UNDER the spin
+   *  button on mobile so the visual hierarchy is logo → wheel → spin →
+   *  secondary actions. Per Itzik 2026-05-06. Desktop has its own
+   *  fixed-corner versions, so this block is `md:hidden`. */
+  const mobileUtilityButtons = (
+    <div className="flex w-full items-center justify-between md:hidden">
+      <Link
+        href="/games"
+        className="rounded-full bg-white/15 px-4 py-2 text-sm font-medium text-white backdrop-blur hover:bg-white/25"
+      >
+        {t("back")}
+      </Link>
+      <button
+        type="button"
+        onClick={() => setSpinSoundOn((m) => !m)}
+        className="rounded-full bg-white/15 px-4 py-2 text-sm font-medium text-white backdrop-blur hover:bg-white/25"
+      >
+        {spinSoundOn ? t("spinSoundOn") : t("spinSoundOff")}
+      </button>
     </div>
   );
 
@@ -643,7 +651,7 @@ export function TruthOrDareClient({
               {wheelOrSetup}
             </div>
 
-            {/* Right column: game title (big) + spin controls */}
+            {/* Right column: game title (big) + spin controls + mobile utilities */}
             <div className="flex w-full flex-col items-center justify-center gap-6 md:flex-1 md:items-start">
               <div className="text-center md:text-start">
                 <h1
@@ -654,6 +662,8 @@ export function TruthOrDareClient({
                 </h1>
               </div>
               {spinControls}
+              {/* Back/Sound — mobile only, below spin */}
+              {mobileUtilityButtons}
             </div>
           </div>
         </div>
@@ -693,11 +703,17 @@ export function TruthOrDareClient({
               laptop viewports while the less-important Back / Sound
               buttons (corner-fixed) remained visible. */}
           <div
-            className="sticky bottom-3 z-20 mt-auto flex w-full shrink-0 justify-center pb-[max(0px,env(safe-area-inset-bottom))]"
+            className="sticky bottom-3 z-20 mt-auto flex w-full shrink-0 flex-col items-center gap-2 pb-[max(0px,env(safe-area-inset-bottom))]"
             style={{ pointerEvents: "none" }}
           >
             <div style={{ pointerEvents: "auto" }} className="w-full max-w-md">
               {spinControls}
+            </div>
+            {/* Back/Sound — mobile only, below spin. pointer-events:auto
+                so taps register; the empty wrapper above this block is
+                pointer-events:none to let the wheel scroll through. */}
+            <div style={{ pointerEvents: "auto" }} className="w-full max-w-md">
+              {mobileUtilityButtons}
             </div>
           </div>
         </div>

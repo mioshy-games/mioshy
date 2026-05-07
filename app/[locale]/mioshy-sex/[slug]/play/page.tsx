@@ -1,5 +1,5 @@
 /**
- * /[locale]/adults/[slug]/play - POST-PURCHASE GAME SURFACE.
+ * /[locale]/mioshy-sex/[slug]/play - POST-PURCHASE GAME SURFACE.
  *
  * Reusable game-experience template. Designed once, fits every game
  * we add to the catalogue - the structure adapts to whatever
@@ -16,8 +16,8 @@
  * Access checks (in order)
  * ────────────────────────
  *   1. signed-in user → otherwise → /[locale]/auth?next=…
- *   2. user has couple_id → otherwise → /[locale]/adults/[slug]
- *   3. couple owns THIS game → otherwise → /[locale]/adults/[slug]
+ *   2. user has couple_id → otherwise → /[locale]/mioshy-sex/[slug]
+ *   3. couple owns THIS game → otherwise → /[locale]/mioshy-sex/[slug]
  */
 
 import type { Metadata } from "next";
@@ -125,16 +125,16 @@ export default async function PlayExperienceGamePage({
   if (!ctx) {
     redirect(
       `/${locale}/auth?next=${encodeURIComponent(
-        `/${locale}/adults/${slug}/play`,
+        `/${locale}/mioshy-sex/${slug}/play`,
       )}`,
     );
   }
   if (!ctx.couple_id) {
-    redirect(`/${locale}/adults/${slug}`);
+    redirect(`/${locale}/mioshy-sex/${slug}`);
   }
   const entitled = ctx.entitled_game_ids.has(game.id);
   if (!entitled) {
-    redirect(`/${locale}/adults/${slug}`);
+    redirect(`/${locale}/mioshy-sex/${slug}`);
   }
 
   // ── Gated payload ───────────────────────────────────────────────────────

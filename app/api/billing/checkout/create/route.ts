@@ -201,7 +201,21 @@ export async function POST(req: Request) {
   let currency: string
   let coinId: number | undefined
   if (purchase_type === "subscription") {
-    const planPrice = getPlanPrice(plan, trustedIsIsraeli)
+    // Subscription pricing is product-aware (Itzik 2026-05-06):
+    //   games → 9/37/369 ILS
+    //   journey → 57/219/2199 ILS
+    //   adults pillar isn't a subscription (one-time only) — guard.
+    if (product === "adults") {
+      return NextResponse.json(
+        {
+          success: false,
+          code: "INVALID_PRODUCT",
+          message: "Mioshy's Sex (adults) is one-time only, not subscription",
+        },
+        { status: 400 },
+      )
+    }
+    const planPrice = getPlanPrice(plan, trustedIsIsraeli, product as "games" | "journey")
     amount = planPrice.amount
     currency = planPrice.currency
     coinId = planPrice.coinId

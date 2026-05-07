@@ -227,10 +227,14 @@ export default async function MyHubPage({
               <Library className="h-8 w-8 text-fuchsia-300 sm:h-10 sm:w-10" />
               {isHe ? "מיאושי שלי" : "My Mioshy"}
             </h1>
-            <p className="mt-3 max-w-xl text-white/70">
+            {/* Welcome line — bumped from text-sm (default) to base 18px
+                per Itzik 2026-05-06. The free-tier user reads this as their
+                first sentence after signup, so it has to feel like a
+                proper welcome, not a status caption. */}
+            <p className="mt-3 max-w-xl text-[18px] leading-[1.55] text-white/80">
               {isHe
-                ? "שלושה שירותים, כל אחד בנפרד. פותחים את מה שרכשתם - ומכאן אפשר לגלות את השאר."
-                : "Three services, each on its own. Open what you own - and discover the rest from here."}
+                ? "שלושה שירותים, כל אחד עומד בפני עצמו. בחרו את הוויב שלכם הערב — ערב מצחיק עם משחק, סקס שכתבו מומחים, או ליווי שבועי שמכוון את הזוגיות שלכם."
+                : "Three services, each one standalone. Pick tonight's vibe — a fun couples-game evening, sex written by experts, or weekly coaching that tunes your relationship."}
             </p>
           </div>
 
@@ -268,20 +272,23 @@ export default async function MyHubPage({
                   <span className="h-1.5 w-1.5 rounded-full bg-white/70" />
                   {isHe ? "סטטוס: חינם" : "Status: Free"}
                 </div>
-                <p className="mt-2 text-sm font-semibold text-white">
+                <p className="mt-2 text-[18px] font-semibold text-white">
                   {isHe
-                    ? "החשבון שלך פעיל - אין עדיין מנוי בתשלום."
-                    : "Your account is active - no paid plan yet."}
+                    ? "החשבון פעיל. עדיין בלי מנוי."
+                    : "Your account is active. No subscription yet."}
                 </p>
-                <p className="mt-1 text-sm text-white/70">
+                <p className="mt-1 text-[16px] leading-[1.55] text-white/75">
                   {isHe
-                    ? "בחרו מסלול והתחילו לשחק, ללוות, או להזמין משחק למבוגרים בלבד."
-                    : "Pick a plan and start playing, get coached, or order an adults-only game."}
+                    ? "אפשר להתחיל בקטן עם משחק שבועי, להוסיף סקס שכתבו מומחים, או ללכת על ליווי-הכל-כלול."
+                    : "Start small with a weekly game, add expert-written sex, or go all-in with the coaching plan."}
                 </p>
               </div>
+              {/* CTA bumped from h-10/text-sm to h-12/text-base + bolder
+                  shadow per Itzik 2026-05-06 — the free-tier user needs
+                  one obvious next step, not a quiet pill. */}
               <Link
                 href="/pricing"
-                className="inline-flex min-h-[40px] items-center justify-center rounded-full bg-white px-5 text-sm font-semibold text-fuchsia-700 shadow hover:bg-white/90"
+                className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-white px-6 text-[16px] font-semibold text-fuchsia-700 shadow-lg hover:bg-white/95 hover:shadow-xl transition"
               >
                 {isHe ? "לראות מחירים" : "See pricing"}
               </Link>
@@ -405,8 +412,8 @@ export default async function MyHubPage({
               titleEn="Online couples games"
               tagline={
                 isHe
-                  ? "כנות ואתגר, גלגל הזוגיות, סולמות ונחשים - משחקים שמרעננים את הקשר בערב אחד."
-                  : "Truth & dare, the wheel, snakes & ladders - couples games that refresh your connection in a single evening."
+                  ? "ערב שלם של חיבור — שאלות שמובילות לשיחות אמיתיות, אתגרים שמחזירים תשוקה, וצחוק שאתם לא יודעים שהזוגיות שלכם זקוקה לו. מנוי שבועי אחד פותח את כל המשחקים."
+                  : "A whole evening of connection — questions that spark real conversation, challenges that bring desire back, and laughter your relationship didn't know it needed. One weekly subscription opens every game."
               }
             />
           )}
@@ -439,8 +446,8 @@ export default async function MyHubPage({
               subtitleEn="Personal work program"
               tagline={
                 isHe
-                  ? "אבחון אישי + ליווי מומחים מבוסס על שבעת עקרונות הקשר הבריא."
-                  : "Personal assessment + expert guidance built on seven principles of healthy partnership."
+                  ? "מומחה ממיאושי שלומד אתכם בעומק, בונה לכם תוכנית אישית, וזמין לכם בצ'אט. שני בני הזוג עוטפים את הקשר בעבודה אמיתית — הכל כלול במנוי השבועי."
+                  : "A Mioshy expert who learns you in depth, builds you a personal plan, and is there in chat. Both of you wrap your relationship in real work — everything included in the weekly subscription."
               }
             />
           )}
@@ -466,12 +473,12 @@ export default async function MyHubPage({
               isHe={isHe}
               pillar="adults"
               pillarState={adultsPillar}
-              titleHe="למבוגרים בלבד"
-              titleEn="Adults Only"
+              titleHe="הסקס של מיאושי"
+              titleEn="Mioshy's Sex"
               tagline={
                 isHe
-                  ? "משחקי זוגיות אינטימיים יותר - תכנים מותאמים, פרטיות מלאה."
-                  : "More intimate couples games - curated content, full privacy."
+                  ? "משחקים שכתבו הבכירים בעולם בסקסולוגיה ובטיפול זוגי. חוויה שלמה לחדר המיטות שלכם — לא טיפים, לא רשימות. רכישה אחת פר משחק, פתוח לשניכם לתמיד."
+                  : "Games written by the world's leading sexologists and couples therapists. A whole experience for your bedroom — not tips, not lists. One purchase per game, open to both of you forever."
               }
             />
           )}
@@ -661,8 +668,11 @@ const PILLAR_THEMES: Record<
 // only supply colour and shadow). The base gap grows on hover for a
 // direction-agnostic forward-motion feel that works the same in RTL
 // and LTR (without depending on `rtl:` / `ltr:` Tailwind variants).
+// Per Itzik 2026-05-06: pillar CTA was "getting lost" on the dashboard.
+// Bumped from h-11/text-sm/font-bold to h-12/text-base/font-semibold +
+// shadow on hover so the discover-the-rest action is unmistakable.
 const PILLAR_BUTTON_BASE =
-  "inline-flex h-11 items-center justify-center gap-2 rounded-full px-5 text-sm font-bold transition group-hover:gap-3";
+  "inline-flex h-12 items-center justify-center gap-2 rounded-full px-6 text-base font-semibold transition group-hover:gap-3 shadow-md group-hover:shadow-lg";
 
 // ─── EntitledPillar - "you have access" ──────────────────────────────────────
 
@@ -817,7 +827,9 @@ function PillarMarketing({
             ) : null}
           </div>
         </div>
-        <p className="mt-4 line-clamp-3 text-[15px] leading-relaxed text-white/65">
+        {/* Tagline: bumped from 15px to 18px per Itzik 2026-05-06 — body
+            text floor on the dashboard is the same as the homepage. */}
+        <p className="mt-4 text-[18px] leading-[1.55] text-white/80">
           {tagline}
         </p>
       </div>
@@ -826,7 +838,7 @@ function PillarMarketing({
         className={`${PILLAR_BUTTON_BASE} ${theme.buttonMarketing} self-start`}
       >
         {pillarState.ctaLabel}
-        <Arrow className="h-4 w-4 shrink-0" />
+        <Arrow className="h-5 w-5 shrink-0" />
       </span>
     </Link>
   );

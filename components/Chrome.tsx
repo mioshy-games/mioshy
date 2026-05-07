@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
+import { MobileServicesBar } from "@/components/MobileServicesBar";
 import { HomeBackground } from "@/components/my/HomeBackground";
 
 function shouldHideChrome(pathname: string) {
@@ -85,10 +86,21 @@ export function Chrome({
         entitlements={entitlements}
         unreadNotifications={unreadNotifications}
       />
-      <div className="flex-1">{children}</div>
+      {/* Reserve space at the bottom on mobile (when the bar is shown)
+          so the last section of every page isn't permanently hidden
+          under the fixed <MobileServicesBar/>. The bar is ~76px tall
+          including safe-area; we round up to 80px. lg+ has no bar so
+          no padding. */}
+      <div className={`flex-1 ${!isAuthed ? "pb-[80px] lg:pb-0" : ""}`}>
+        {children}
+      </div>
       {/* Footer is marketing surface only - hide it for signed-in users
           so the post-login experience reads as "your space, not a brochure". */}
       {!isAuthed && <SiteFooter />}
+      {/* Persistent bottom tab-bar — mobile only, anonymous only. Same
+          gate as the footer: when the user is signed in, the dashboard
+          chrome takes over and this surface gets out of the way. */}
+      {!isAuthed && <MobileServicesBar />}
     </div>
   );
 }

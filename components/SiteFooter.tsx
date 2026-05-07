@@ -88,7 +88,7 @@ export function SiteFooter() {
               <ul className="space-y-3 text-[15px] md:space-y-2.5 md:text-[11px]">
                 <li><Link href="/games"   className="text-white/75 transition-colors hover:text-white md:text-white/60">{tNav("games")}</Link></li>
                 <li><Link href="/journey" className="text-white/75 transition-colors hover:text-white md:text-white/60">{tNav("journey")}</Link></li>
-                <li><Link href="/adults"  className="text-white/75 transition-colors hover:text-white md:text-white/60">{tNav("adults")}</Link></li>
+                <li><Link href="/mioshy-sex"  className="text-white/75 transition-colors hover:text-white md:text-white/60">{tNav("adults")}</Link></li>
               </ul>
             </div>
 

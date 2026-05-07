@@ -123,7 +123,7 @@ export function AdultsPricingPanel({
           // Route the owner straight into THIS game's gated play surface,
           // not the global hub. They came here for one specific game; one
           // click away from the actual product is the correct UX.
-          href={`/adults/${gameSlug}/play`}
+          href={`/mioshy-sex/${gameSlug}/play`}
           className="flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-rose-500 via-red-500 to-amber-500 px-6 py-3 text-base font-semibold text-white shadow-lg shadow-rose-500/30 transition hover:brightness-110"
         >
           <Play className="h-5 w-5" />

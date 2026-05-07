@@ -566,7 +566,7 @@ export default async function HomePage({
 
           <div className="mt-10 text-center">
             <Link
-              href="/adults"
+              href="/mioshy-sex"
               className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-rose-500 via-fuchsia-500 to-violet-500 px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-fuchsia-500/25 transition hover:brightness-110 hover:shadow-xl hover:shadow-fuchsia-500/40"
             >
               {isHe ? "לכל משחקי למבוגרים בלבד" : "Explore all Adults Only games"}
@@ -843,7 +843,7 @@ export default async function HomePage({
                 />
               </Link>
               <Link
-                href="/adults"
+                href="/mioshy-sex"
                 className="inline-flex min-h-[52px] items-center gap-2 rounded-full border border-slate-300/80 bg-white/90 px-8 text-sm font-semibold text-slate-800 shadow-sm backdrop-blur transition hover:bg-white"
               >
                 {isHe ? "משחקי חדר המיטות" : "Bedroom games"}
@@ -1221,7 +1221,7 @@ function BuCard({
     : game.short_desc_en || game.short_desc_he;
   return (
     <Link
-      href={`/adults/${game.slug}`}
+      href={`/mioshy-sex/${game.slug}`}
       className="group relative block rounded-3xl p-[1.5px] transition hover:-translate-y-0.5"
     >
       <span

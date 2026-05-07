@@ -177,33 +177,48 @@ export default async function JourneyMarketingPage({
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
             {isHe ? "ליווי עם מיאושי" : "Journey with Mioshy"}
           </div>
+          {/* Locked-state H1 — applies the Mioshy design language: bold
+              anchor + wine-color em + light tail. Per Itzik 2026-05-06. */}
           <h1 className="mt-5 font-heading text-4xl font-bold leading-tight tracking-tight sm:text-5xl">
-            {isHe
-              ? "המסע נעול - בינתיים."
-              : "The journey is locked - for now."}
+            {isHe ? (
+              <>
+                המסע <em className="not-italic font-semibold text-emerald-300">נעול</em>{" "}
+                <span className="font-light text-white/80">— בינתיים.</span>
+              </>
+            ) : (
+              <>
+                The journey is <em className="not-italic font-semibold text-emerald-300">locked</em>{" "}
+                <span className="font-light text-white/80">— for now.</span>
+              </>
+            )}
           </h1>
-          <p className="mt-5 text-lg text-white/80">
+          {/* Lede — bumped to text-[20px] (was text-lg ≈ 18px) so the
+              promise reads first, prompts second. */}
+          <p className="mt-6 text-[20px] leading-[1.55] text-white/85">
             {isHe
-              ? "בשביל הזוגיות שלכם, מגיע לכם משהו שנבנה במיוחד עבורכם. הליווי האישי של מיאושי - תרגולים, אבחון, שיחות ומשימות חודשיות - פתוח רק לחברים במנוי."
-              : "For the sake of your relationship, you deserve something built around you. Mioshy's personal journey - practices, assessment, conversations, and monthly tasks - is open only to members."}
+              ? "מגיע לכם ליווי שנבנה במיוחד עבורכם — תרגולים, אבחון, שיחות, ומשימות חודשיות מהמומחים שלנו. הכל כלול במנוי שבועי אחד."
+              : "You deserve coaching built around you — practices, assessment, conversations, and monthly tasks from our experts. All included in one weekly subscription."}
           </p>
-          <p className="mt-3 text-base text-white/65">
+          <p className="mt-3 text-[18px] leading-[1.55] text-white/70">
             {isHe
               ? "אנחנו לא רוצים שתפספסו את זה."
               : "We don't want you to miss this."}
           </p>
 
+          {/* Primary CTA bumped to h-14/text-base + bigger shadow per
+              Itzik 2026-05-06 — this is the only meaningful action on a
+              locked screen, so it can't be the same size as the secondary. */}
           <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
             <Link
               href="/pricing"
-              className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-white px-7 text-sm font-semibold text-emerald-700 shadow-lg shadow-emerald-500/20 hover:bg-emerald-50"
+              className="inline-flex min-h-[56px] items-center justify-center rounded-full bg-white px-9 text-[18px] font-semibold text-emerald-700 shadow-2xl shadow-emerald-500/30 hover:bg-emerald-50 hover:shadow-emerald-500/40 transition"
             >
               {isHe ? "להצטרף לליווי" : "Join the journey"}
-              <ArrowRight className={`ms-2 h-4 w-4 ${isHe ? "rotate-180" : ""}`} />
+              <ArrowRight className={`ms-2 h-5 w-5 ${isHe ? "rotate-180" : ""}`} />
             </Link>
             <Link
               href="/my"
-              className="inline-flex min-h-[48px] items-center justify-center rounded-full border border-white/20 bg-white/10 px-6 text-sm font-medium text-white backdrop-blur hover:bg-white/20"
+              className="inline-flex min-h-[56px] items-center justify-center rounded-full border border-white/20 bg-white/10 px-7 text-[16px] font-medium text-white backdrop-blur hover:bg-white/20 transition"
             >
               {isHe ? "חזרה למיאושי שלי" : "Back to My Mioshy"}
             </Link>

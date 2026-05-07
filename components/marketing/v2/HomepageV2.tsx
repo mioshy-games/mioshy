@@ -10,7 +10,10 @@ import { CouplesGames } from "./CouplesGames";
 import { AdultGames } from "./AdultGames";
 import { Education } from "./Education";
 import { ForWhom } from "./ForWhom";
-import { Pricing } from "./Pricing";
+// `Pricing` (./Pricing.tsx) was removed from the homepage per Itzik
+// 2026-05-06. JourneyStages — rewritten as a "mood swiper" — is now
+// the single pricing surface on the homepage. The file is no longer
+// imported anywhere and can be deleted.
 import { JourneyStages } from "./JourneyStages";
 import { FinalCTA } from "./FinalCTA";
 import { FAQ } from "./FAQ";
@@ -50,7 +53,6 @@ export function HomepageV2() {
       <AdultGames />
       <Education />
       <ForWhom />
-      <Pricing />
       <JourneyStages />
       <FinalCTA />
       <FAQ />

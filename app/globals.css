@@ -119,14 +119,26 @@ small, .text-small {
 
     /* TYPE TOKENS - sizes */
     --fs-display: clamp(46px, 6.6vw, 96px);
-    --fs-h2: clamp(28px, 4.4vw, 56px);
-    --fs-h3: clamp(22px, 2.2vw, 30px);
-    --fs-h4: 22px;
-    --fs-lead: 21px;
-    --fs-body-lg: 18px;
-    --fs-body: 17px;
+    /* H2 token. Was clamp(28px, 4.4vw, 56px) — too small on mobile, and
+       individual sections were overriding upward (.ag-stage h2 was 46-96,
+       .final h2 was 44-76) which made the homepage feel inconsistent. Per
+       Itzik 2026-05-06 every H2 should match the AdultGames headline
+       ("לא לכל אחד. לאמיצים בלבד") size, so the token now equals what
+       .ag-stage h2 used to override to. All per-section overrides have
+       been stripped — color/weight may still vary, size is global. */
+    --fs-h2: clamp(42px, 7vw, 96px);
+    /* H3 sized BETWEEN h4 (28) and h2 (42-96): clamp 32-40px keeps
+       hierarchy obvious at every viewport. Per Itzik 2026-05-06. */
+    --fs-h3: clamp(32px, 3.5vw, 40px);
+    --fs-h4: 28px;
+    --fs-lead: 22px;
+    /* Body sizes — important text floor is 18, secondary floor is 14.
+       Anything below 14px on the homepage is forbidden and the css
+       audit (#A) will flag overrides. */
+    --fs-body-lg: 20px;
+    --fs-body: 18px;
     --fs-small: 14px;
-    --fs-tag: 11px;
+    --fs-tag: 12px;
     --fs-label: 13px;
 
     /* TYPE TOKENS - line-heights */

@@ -53,16 +53,16 @@ export async function generateMetadata({
     title,
     description,
     alternates: {
-      canonical: `${base}/${locale}/adults`,
+      canonical: `${base}/${locale}/mioshy-sex`,
       languages: {
-        en: `${base}/en/adults`,
-        he: `${base}/he/adults`,
-        "x-default": `${base}/en/adults`,
+        en: `${base}/en/mioshy-sex`,
+        he: `${base}/he/mioshy-sex`,
+        "x-default": `${base}/en/mioshy-sex`,
       },
     },
     openGraph: {
       type: "website",
-      url: `${base}/${locale}/adults`,
+      url: `${base}/${locale}/mioshy-sex`,
       title,
       description,
       siteName: "Mioshy",

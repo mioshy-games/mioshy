@@ -2,7 +2,7 @@
 
 import { useLocale, useTranslations } from "next-intl";
 import { Link, usePathname } from "@/navigation";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { Gamepad2, Heart, Library, LogOut, Menu, Sparkles, X } from "lucide-react";
 import { JourneyNotificationsBell } from "@/components/notifications/JourneyNotificationsBell";
 import { logoutAction } from "@/app/actions/auth-actions";
@@ -56,7 +56,7 @@ const PILLARS: PillarLink[] = [
     accent: "from-teal-300 via-indigo-400 to-purple-400",
   },
   {
-    marketingHref: "/adults",
+    marketingHref: "/mioshy-sex",
     authedHref: "/my/adults",
     tKey: "adults",
     Icon: Heart,
@@ -147,6 +147,12 @@ export function SiteHeader({
   const [scrolled, setScrolled] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("dark");
   const [isPending, startTransition] = useTransition();
+  // Mobile-only: auto-hide the header on scroll-down, restore on scroll-up.
+  // Pairs with <MobileServicesBar/> at the bottom — together they read like
+  // a native mobile-app chrome (top bar collapses while reading, bottom
+  // pillars stay reachable). Desktop never hides.
+  const [hiddenOnMobile, setHiddenOnMobile] = useState(false);
+  const lastScrollY = useRef(0);
 
   // ⚠️ BUILD MARKER - fires once per mount, confirms the entitlement-
   // aware header is the version actually running on the client. If
@@ -166,15 +172,44 @@ export function SiteHeader({
   // Track scroll + theme on mount and on scroll. We intentionally resample
   // the theme on every scroll tick - switching between dark hero and light
   // sections should flip the header tone live.
+  //
+  // Direction tracking (mobile-only auto-hide):
+  //   - Past a small threshold, scrolling DOWN hides the header.
+  //   - Scrolling UP — even one pixel — brings it back.
+  //   - At/near the top of the page (<40px) we always force visible, so
+  //     pulling all the way up never leaves a stranded "hidden" state.
   useEffect(() => {
     const onScroll = () => {
-      setScrolled(window.scrollY > 40);
+      const y = window.scrollY;
+      setScrolled(y > 40);
       setTheme(detectTheme());
+
+      const prev = lastScrollY.current;
+      const delta = y - prev;
+      // Ignore micro-movements (rubber-banding, trackpad jitter).
+      if (Math.abs(delta) < 4) return;
+      if (y < 40) {
+        setHiddenOnMobile(false);
+      } else if (delta > 0) {
+        // Scrolling down past the threshold → hide.
+        setHiddenOnMobile(true);
+      } else {
+        // Scrolling up → show.
+        setHiddenOnMobile(false);
+      }
+      lastScrollY.current = y;
     };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  // If the user opens the mobile drawer mid-scroll, force the header to
+  // stay visible — otherwise the drawer would seem to detach from the
+  // top of the viewport.
+  useEffect(() => {
+    if (open) setHiddenOnMobile(false);
+  }, [open]);
 
   const handleLogout = () => {
     startTransition(async () => {
@@ -227,9 +262,14 @@ export function SiteHeader({
       ? "invert(1) hue-rotate(180deg) saturate(1.2) brightness(0.85)"
       : "none";
 
+  // Mobile auto-hide: only applies under lg (1024px). Desktop ignores.
+  // We pair `transition-transform` with the existing `transition-all` so
+  // both the slide and the bg flip animate smoothly together.
+  const hideClass = hiddenOnMobile ? "max-lg:-translate-y-full" : "translate-y-0";
+
   return (
     <header
-      className={`sticky top-0 z-50 border-b backdrop-blur-xl transition-all duration-300 ${barBg}`}
+      className={`sticky top-0 z-50 border-b backdrop-blur-xl transition-all duration-300 ${barBg} ${hideClass}`}
     >
       {/* Top-of-page gradient hair - only when transparent, to keep identity. */}
       {!scrolled ? (
@@ -326,24 +366,21 @@ export function SiteHeader({
               >
                 {t("signIn")}
               </Link>
-              {/* Primary CTA in the header is now "ליווי עם מיאושי" → /journey
-                  rather than the generic "Sign up" → /auth/signup. The
-                  flagship product is Journey and the header is its biggest
-                  conversion surface. New visitors who click discover the
-                  product first; signup happens naturally during purchase. */}
+              {/* Primary header CTA. Was → /journey ("ליווי עם מיאושי")
+                  per the previous "lead with the flagship" thinking. Per
+                  Itzik 2026-05-06 → /auth/signup ("הצטרפות בחינם"). The
+                  funnel is now: free signup → /my → choose pillar →
+                  /pricing → Cardcom. Lower commitment for first click. */}
               <Link
-                href="/journey"
+                href="/auth/signup"
                 className="group relative inline-flex min-h-[40px] items-center justify-center overflow-hidden rounded-full px-5 text-base font-semibold text-white shadow-lg shadow-fuchsia-500/25 transition hover:brightness-110"
               >
-                {/* Static gradient - animation removed per Itzik
-                    2026-05-06 (the shifting gradient looked off in
-                    the header). */}
                 <span
                   aria-hidden
                   className="absolute inset-0 bg-[linear-gradient(110deg,#d946ef_0%,#a855f7_35%,#ec4899_70%,#f59e0b_100%)]"
                 />
                 <span className="relative z-10">
-                  {isHe ? "ליווי עם מיאושי" : "Mioshy Journey"}
+                  {isHe ? "אני רוצה להצטרף" : "Join now"}
                 </span>
               </Link>
             </>
@@ -370,12 +407,11 @@ export function SiteHeader({
               <span>{t("library")}</span>
             </Link>
           ) : (
-            // Mobile primary CTA - same swap as desktop: "ליווי עם מיאושי"
-            // → /journey instead of "Sign up" → /auth/signup. Slightly
-            // more compact label so it fits in the cramped mobile header
-            // alongside the hamburger.
+            // Mobile primary CTA — matches the desktop primary: free
+            // signup. Slightly compact label so it fits next to the
+            // hamburger on cramped mobile headers.
             <Link
-              href="/journey"
+              href="/auth/signup"
               className="group relative inline-flex min-h-[36px] items-center justify-center overflow-hidden rounded-full px-4 text-sm font-semibold text-white shadow-md shadow-fuchsia-500/25 transition hover:brightness-110 md:hidden"
             >
               <span
@@ -383,7 +419,7 @@ export function SiteHeader({
                 className="absolute inset-0 bg-[linear-gradient(110deg,#d946ef_0%,#a855f7_35%,#ec4899_70%,#f59e0b_100%)]"
               />
               <span className="relative z-10">
-                {isHe ? "ליווי מיאושי" : "Journey"}
+                {isHe ? "אני רוצה להצטרף" : "Join now"}
               </span>
             </Link>
           )}
@@ -483,16 +519,14 @@ export function SiteHeader({
                 >
                   {t("signIn")}
                 </Link>
-                {/* Drawer primary CTA - Journey, matching the desktop +
-                    mobile header buttons. Replaces the previous Sign-up
-                    button so the entire site funnels new visitors into
-                    the flagship product first. */}
+                {/* Drawer primary CTA — free signup, matching the
+                    desktop + mobile header buttons. */}
                 <Link
-                  href="/journey"
+                  href="/auth/signup"
                   onClick={() => setOpen(false)}
                   className="mt-1 inline-flex min-h-[44px] items-center justify-center rounded-full bg-gradient-to-r from-fuchsia-500 via-purple-500 to-pink-500 px-5 text-base font-semibold text-white shadow-lg shadow-fuchsia-500/25"
                 >
-                  {isHe ? "ליווי עם מיאושי" : "Mioshy Journey"}
+                  {isHe ? "אני רוצה להצטרף" : "Join now"}
                 </Link>
               </>
             )}

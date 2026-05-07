@@ -37,7 +37,7 @@ export function FinalCTA() {
             <span className="final-choice-tag">{t("choice2Tag")}</span>
             <h3>{t("choice2Title")}</h3>
             <p>{t("choice2Body")}</p>
-            <TrackedLink href="/adults" className="btn btn-ghost" ctaId="final_secondary" section="final">
+            <TrackedLink href="/mioshy-sex" className="btn btn-ghost" ctaId="final_secondary" section="final">
               {t("choice2Cta")} <span className="arrow">←</span>
             </TrackedLink>
           </div>

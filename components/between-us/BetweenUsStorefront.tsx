@@ -267,7 +267,7 @@ function GameCard({
 
   return (
     <Link
-      href={`/adults/${game.slug}`}
+      href={`/mioshy-sex/${game.slug}`}
       className="group block overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/10 to-white/5 shadow-xl backdrop-blur transition hover:border-fuchsia-300/40 hover:from-white/20"
     >
       <div className="relative aspect-[5/3] overflow-hidden bg-gradient-to-br from-fuchsia-500/30 to-violet-500/20 sm:aspect-[4/3]">

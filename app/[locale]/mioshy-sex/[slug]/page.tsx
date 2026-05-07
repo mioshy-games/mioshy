@@ -60,16 +60,16 @@ export async function generateMetadata({
     title: `Mioshy - ${title}`,
     description,
     alternates: {
-      canonical: `${base}/${locale}/adults/${slug}`,
+      canonical: `${base}/${locale}/mioshy-sex/${slug}`,
       languages: {
-        en: `${base}/en/adults/${slug}`,
-        he: `${base}/he/adults/${slug}`,
-        "x-default": `${base}/en/adults/${slug}`,
+        en: `${base}/en/mioshy-sex/${slug}`,
+        he: `${base}/he/mioshy-sex/${slug}`,
+        "x-default": `${base}/en/mioshy-sex/${slug}`,
       },
     },
     openGraph: {
       type: "article",
-      url: `${base}/${locale}/adults/${slug}`,
+      url: `${base}/${locale}/mioshy-sex/${slug}`,
       title,
       description,
       siteName: "Mioshy",
@@ -120,7 +120,7 @@ export default async function BetweenUsGameDetailPage({
     ? game.short_desc_he
     : game.short_desc_en || game.short_desc_he;
   // NOTE: `full_desc` is the actual purchased product. It must NEVER appear
-  // on this public marketing page - it belongs on /adults/[slug]/play behind
+  // on this public marketing page - it belongs on /mioshy-sex/[slug]/play behind
   // the entitlement gate. We intentionally do not destructure it here.
   const benefits = isHe ? game.benefits_he : game.benefits_en ?? game.benefits_he;
   const targets = isHe
@@ -206,7 +206,7 @@ export default async function BetweenUsGameDetailPage({
     : null;
 
   // ── Structured data - Product + BreadcrumbList ─────────────────────────
-  // Without this, /adults/[slug] is the only public route on the site
+  // Without this, /mioshy-sex/[slug] is the only public route on the site
   // missing JSON-LD. Product schema lets Google show rich shopping snippets
   // (price, availability, breadcrumbs) on result pages, which is high-value
   // for a flagship commerce surface like this. Schema is conservative -
@@ -226,7 +226,7 @@ export default async function BetweenUsGameDetailPage({
       price: tierAmount(pricing.single).toFixed(2),
       priceCurrency: productCurrency,
       availability: "https://schema.org/InStock",
-      url: `${base}/${locale}/adults/${slug}`,
+      url: `${base}/${locale}/mioshy-sex/${slug}`,
     });
   }
   if (pricing?.monthly?.enabled) {
@@ -236,7 +236,7 @@ export default async function BetweenUsGameDetailPage({
       price: tierAmount(pricing.monthly).toFixed(2),
       priceCurrency: productCurrency,
       availability: "https://schema.org/InStock",
-      url: `${base}/${locale}/adults/${slug}`,
+      url: `${base}/${locale}/mioshy-sex/${slug}`,
     });
   }
   if (pricing?.annual?.enabled) {
@@ -246,7 +246,7 @@ export default async function BetweenUsGameDetailPage({
       price: tierAmount(pricing.annual).toFixed(2),
       priceCurrency: productCurrency,
       availability: "https://schema.org/InStock",
-      url: `${base}/${locale}/adults/${slug}`,
+      url: `${base}/${locale}/mioshy-sex/${slug}`,
     });
   }
   const jsonLd = {
@@ -265,13 +265,13 @@ export default async function BetweenUsGameDetailPage({
             "@type": "ListItem",
             position: 2,
             name: isHe ? "למבוגרים בלבד" : "Adults Only",
-            item: `${base}/${locale}/adults`,
+            item: `${base}/${locale}/mioshy-sex`,
           },
           {
             "@type": "ListItem",
             position: 3,
             name: title,
-            item: `${base}/${locale}/adults/${slug}`,
+            item: `${base}/${locale}/mioshy-sex/${slug}`,
           },
         ],
       },
@@ -279,7 +279,7 @@ export default async function BetweenUsGameDetailPage({
         "@type": "Product",
         name: title,
         description: shortDesc,
-        url: `${base}/${locale}/adults/${slug}`,
+        url: `${base}/${locale}/mioshy-sex/${slug}`,
         ...(game.cover_image_url ? { image: game.cover_image_url } : {}),
         brand: { "@type": "Brand", name: "Mioshy" },
         category: gameCats
@@ -379,7 +379,7 @@ export default async function BetweenUsGameDetailPage({
             page they don't need anymore. */}
         {entitled ? (
           <Link
-            href={`/adults/${slug}/play`}
+            href={`/mioshy-sex/${slug}/play`}
             className="mt-4 inline-flex items-center gap-2 rounded-full border border-emerald-300/40 bg-emerald-400/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-100 backdrop-blur transition hover:bg-emerald-400/15"
           >
             <Sparkles className="h-3.5 w-3.5" />
@@ -574,7 +574,7 @@ export default async function BetweenUsGameDetailPage({
 
         {/* Below-the-fold details: benefits + target audience.
             full_desc DELIBERATELY OMITTED - that's purchased product and
-            lives on /adults/[slug]/play behind the entitlement gate.
+            lives on /mioshy-sex/[slug]/play behind the entitlement gate.
 
             Layout: same start-aligned column as the hero copy (NOT
             mx-auto centred), so the title row + bullet rows share the
@@ -657,7 +657,7 @@ export default async function BetweenUsGameDetailPage({
                  template, so the cards shown here didn't necessarily match
                  the actual purchased product - confusing for buyers.
               2. The full purchased content (including any preview cards)
-                 belongs exclusively on the gated /adults/[slug]/play
+                 belongs exclusively on the gated /mioshy-sex/[slug]/play
                  surface; leaking even "preview" cards onto the public
                  marketing page muddles that boundary.
             The public page now shows only image, short_desc, levels,
@@ -688,7 +688,7 @@ export default async function BetweenUsGameDetailPage({
                 </h3>
               </div>
               <Link
-                href={`/adults/${nextGame.slug}`}
+                href={`/mioshy-sex/${nextGame.slug}`}
                 className="group inline-flex items-center justify-center gap-2 self-start rounded-full bg-gradient-to-r from-rose-500 via-fuchsia-500 to-violet-500 px-7 py-3 text-[16px] font-semibold text-white shadow-xl shadow-rose-600/30 transition hover:brightness-110 sm:self-auto"
               >
                 <span>{isHe ? "המשך לגלות" : "Keep exploring"}</span>
