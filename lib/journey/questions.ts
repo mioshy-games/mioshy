@@ -105,16 +105,15 @@ export function getDiagnosticDomainCount(): Record<Domain, number> {
 
 // --- Build-time assertion ---------------------------------------------------
 //
-// Locks in the current distribution. As of 2026-05-05 the flow is
-// 32 questions (down from 35 - the three forced-choice love-language
-// pairs q04/q05/q06 were removed when the love-language card was
-// dropped from the analysis summary; see
-// docs/journey-ux-followups-2026-05-05.md).
+// Locks in the current distribution. As of 2026-05-07 the flow is
+// 29 questions (down from 32 - q_kids_age, q_household_employment,
+// and q_work_field were removed from the family domain to reduce
+// questionnaire length; see B7.3 /journey/assessment overhaul).
 //
 // The breakdown remains uneven by design (Gottman's 4-Horsemen + repair
-// + influence + pso fill `communication` with 7 items, while `family`
-// reaches 7 by folding in demographic context - kids count, kids age,
-// household employment, work field). Other domains now land at 3.
+// + influence + pso fill `communication` with 7 items). `family` now
+// has 4 items (kids count + 3 demographic items kept after the trim).
+// Other domains land at 3-5.
 //
 // If a future edit to questionnaire.json reshuffles the distribution,
 // this throws at module load so the mismatch surfaces in dev/build
@@ -124,7 +123,7 @@ const EXPECTED_DOMAIN_COUNTS: Record<Domain, number> = {
   intimacy: 3,
   emotional_connection: 3,
   friendship: 5,
-  family: 7,
+  family: 4,
 };
 const EXPECTED_NULL_COUNT = 7;
 

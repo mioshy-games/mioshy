@@ -79,18 +79,18 @@ export function AdultsMarketingHero({
         }}
       />
 -
-      {/* Breadcrumb - quiet, away from the headline. Tighter top
-          padding on mobile to remove the dead air the user flagged. */}
+      {/* Breadcrumb integrated into the hero gradient — same treatment
+          as /games and /journey. No separate dark band. */}
       <nav
         aria-label="breadcrumb"
-        className="relative z-20 mx-auto hidden max-w-6xl items-center gap-2 px-4 pt-4 text-[13px] text-white/55 sm:flex sm:pt-8 sm:text-xs sm:text-white/45"
+        className="relative z-20 mx-auto hidden max-w-6xl items-center gap-2 px-4 pt-4 text-[13px] text-white/45 sm:flex"
       >
-        <Link href="/" className="transition hover:text-white/80">
+        <Link href="/" className="transition hover:text-white/75">
           {isHe ? "בית" : "Home"}
         </Link>
-        <span aria-hidden>/</span>
-        <span className="text-white/80 sm:text-white/70">
-          {isHe ? "למבוגרים בלבד" : "Adults only"}
+        <span aria-hidden className="text-white/30">/</span>
+        <span className="text-white/65">
+          {isHe ? "הסקס של מיאושי" : "Mioshy's Sex"}
         </span>
       </nav>
 -

@@ -264,6 +264,13 @@
     "createFree": "Create one free",
     "hasAccount": "Already have an account?",
     "signInLink": "Sign in",
+    "forgotPassword": "Forgot password",
+    "forgotTitle": "Reset your password",
+    "forgotSubtitle": "Type the email you signed up with — we'll send you a reset link.",
+    "forgotEmailPlaceholder": "you@example.com",
+    "forgotSubmit": "Send reset link",
+    "forgotSent": "We sent a reset link to your email. Check your inbox.",
+    "forgotBackToLogin": "Back to sign in",
     "termsPrefix": "By signing up you agree to our ",
     "terms": "Terms",
     "termsSep": " and ",
@@ -715,7 +722,7 @@
         "p": "Your conversations aren't saved. You stay in charge of everything on screen."
       }
     },
-    "catalogueTitle": "All games",
+    "catalogueTitle": "What are we playing tonight?",
     "ctaTitle": "Ready to play?",
     "ctaSub": "Pick a game and dive in. Free to try.",
     "ctaPrimary": "Pick a game",
@@ -723,20 +730,22 @@
     "breadcrumbGames": "Games"
   },
   "journeyHub": {
-    "metaTitle": "Mioshy Journey - A Couples Journey Made for You",
-    "metaDescription": "A short assessment, instant insights, and a personalized roadmap of practices and conversations - delivered over time. Together, at your own pace.",
-    "badge": "Couples Journey · Mioshy Journey",
-    "h1": "A couples journey, made for you",
-    "lede": "Generic relationship advice never quite fits your relationship. Take a 5-minute assessment and get a personalized roadmap - short practices, real conversations, and weekly challenges that move you from \"we should work on us\" to actually doing it. Five minutes a day.",
-    "ctaPrimary": "Start your relationship assessment",
+    "metaTitle": "Journey with Mioshy - Personal Coaching from the Experts",
+    "metaDescription": "A relationship assessment, an expert who learns the two of you, and a personal plan that updates with you. Journey with Mioshy - both partners, every tool, all included.",
+    "badge": "Journey with Mioshy · Personalised coaching",
+    "h1": "Journey with Mioshy",
+    "h1Sub": "personalised",
+    "preheader": "A Mioshy expert paired with every couple",
+    "lede": "Some of our content is pre-tuned to your assessment. From the moment you sign up, our experts follow your answers, ask you new questions over time, and build a new relationship dynamic for you. Psychologists and couples counselors from our team — you get the full package, all of it tuned to you.",
+    "ctaPrimary": "Start the assessment",
     "ctaSecondary": "How it works",
-    "ctaResume": "Continue your relationship assessment",
-    "resumeHint": "You've got a relationship assessment in progress - pick up where you left off.",
+    "ctaResume": "Continue the assessment",
+    "resumeHint": "You've got an assessment in progress — the path is waiting.",
     "trust": {
       "0": "5-minute assessment",
-      "1": "Instant insights",
-      "2": "Personal roadmap",
-      "3": "English & Hebrew"
+      "1": "Personal expert",
+      "2": "Custom plan",
+      "3": "No credit card"
     },
     "why": {
       "badge": "Why this journey",
@@ -762,19 +771,19 @@
     },
     "how": {
       "badge": "How it works",
-      "title": "Three steps to your roadmap",
+      "title": "Three steps to your plan",
       "steps": {
         "0": {
           "title": "Map your relationship in 5 minutes",
-          "body": "15 quick questions on communication, conflict, intimacy, and routine. By the end you'll see exactly where you stand - no jargon, no filler."
+          "body": "A short assessment of communication, intimacy, emotional connection, friendship, and family. By the end you'll see exactly where you stand - no jargon, no filler."
         },
         "1": {
-          "title": "Get a diagnostic you can actually use",
+          "title": "Get your personal diagnostic",
           "body": "Instant results: your 3 strongest areas, your 2 biggest friction points, and the one thing most worth working on first."
         },
         "2": {
-          "title": "Small practices, your pace",
-          "body": "Short practices that add up to about an hour a week - depending on your time and bandwidth. Try them, check in together, and feel the shift at a pace that fits your life."
+          "title": "An expert + weekly practice",
+          "body": "Your Mioshy expert learns your relationship, builds a custom plan, and follows you in private chat. Short practices that add up to about an hour a week — at your pace."
         }
       }
     },
@@ -801,39 +810,79 @@
       }
     },
     "ctaBlock": {
-      "badge": "Free to try",
+      "badge": "No credit card",
       "title": "The assessment is free. The journey starts when you're in.",
-      "sub": "Take 5 minutes, answer the questionnaire, and get your diagnostic. No commitment - just direction.",
-      "primary": "Start your relationship assessment"
+      "sub": "5 minutes, a professional diagnostic, and a personal plan waiting. No commitment, no credit card — just direction.",
+      "primary": "Start the assessment"
+    },
+    "forWhom": {
+      "badge": "Who it's for",
+      "title": "Is this coaching for you?",
+      "lead": "It's not for everyone — by design. It's built for couples who feel something's off and know they want to do real work.",
+      "items": {
+        "0": {
+          "icon": "💞",
+          "title": "Couples a year+ in",
+          "body": "Who want to maintain a good relationship over time and get couple-tools at a steady pace — not only in crisis."
+        },
+        "1": {
+          "icon": "👶",
+          "title": "Parents of small kids",
+          "body": "Who have no time for their relationship, feel something is missing, and need a frame that brings them back to each other without adding hours to their day."
+        },
+        "2": {
+          "icon": "🏡",
+          "title": "Married 20+ years",
+          "body": "Who feel apart even when they're together. You've been through a lot. This coaching is a way to stop, see each other again, and find what was lost."
+        },
+        "3": {
+          "icon": "🌱",
+          "title": "Anyone who wants better",
+          "body": "You don't have to be in a crisis to want it to be better. If something's been bothering you — this is the time to handle it."
+        },
+        "4": {
+          "icon": "✨",
+          "title": "Those who believe it can be different",
+          "body": "If you feel your relationship can look different, feel different — and that it's up to you — this coaching is for you."
+        }
+      }
     },
     "faq": {
       "badge": "FAQ",
       "title": "You asked. We answered.",
       "items": {
         "0": {
-          "q": "How long is the assessment?",
-          "a": "Less than 5 minutes. You can pause and come back - we save your spot."
+          "q": "What do we actually get with the coaching?",
+          "a": "A 10-minute personal assessment, a work plan refreshed monthly, full access to every game on Mioshy (including Mioshy's Sex), and direct chat with our experts. Everything's included in the weekly subscription — no add-ons, no surprises."
         },
         "1": {
-          "q": "Can we do this together?",
-          "a": "Yes - that's the whole idea. You each answer separately, then see the joint diagnostic and start the journey together."
+          "q": "Who are the experts following us?",
+          "a": "Couples psychologists, family counselors, and couples therapists with 10+ years of experience. Each couple is paired with a personal expert who learns you over time and builds your plan — not a chatbot, not a template."
         },
         "2": {
-          "q": "What if we start and don't keep going?",
-          "a": "Totally fine. Every chapter that has opened stays open - come back any time. No pressure, no countdown."
+          "q": "What problems does the coaching actually solve?",
+          "a": "Emotional distance, communication that escalates to fights, lack of intimacy, recurring friction, the feeling of \"we lost ourselves\". We don't promise a fix for everything — but 90% of couples see meaningful improvement within 6 weeks."
         },
         "3": {
-          "q": "Are our answers private?",
-          "a": "Yes. Your answers aren't shared - only the two of you and the system see them. We never use them for marketing."
+          "q": "How much time does it take per week?",
+          "a": "About an hour a week total — based on your bandwidth. A short practice every day or two, one longer conversation a week. Your pace, not ours."
         },
         "4": {
-          "q": "How much does it cost?",
-          "a": "The assessment and diagnostic are free. If you want to continue to the full journey, you'll get the option at the end of the diagnostic."
+          "q": "Are our answers private?",
+          "a": "Yes. Data is encrypted. Only your personal expert sees the answers. We don't sell information, no ads, no third party. Billing shows only as Mioshy."
+        },
+        "5": {
+          "q": "Can we pause or cancel anytime?",
+          "a": "Anytime, one click. No contract, no penalties. After cancellation no further charges — and your content stays accessible until the end of the current billing period."
+        },
+        "6": {
+          "q": "What if one of us isn't ready?",
+          "a": "Start alone. Most couples start that way — the other partner joins within two-three weeks once they see something's moving. The assessment can start with one person and build from there."
         }
       }
     },
     "breadcrumbHome": "Home",
-    "breadcrumbJourney": "Journey"
+    "breadcrumbJourney": "Journey with Mioshy"
   },
   "homeV2": {
     "hero": {
@@ -843,7 +892,7 @@
       "ctaPrimary": "Start your journey",
       "ctaSecondary": "How does it work?",
       "priceFromLabel": "From <strong>₪9</strong>",
-      "statCouplesLabel": "Active couples",
+      "statCouplesLabel": "Mioshy customers",
       "statExpertsLabel": "Experts on your side",
       "statRatingLabel": "Average rating",
       "imageAlt": "A couple laughing together in a warm everyday moment",
@@ -1105,12 +1154,12 @@
       "choice1Body": "Break the ice, enjoy a fun night together. Questions, challenges, and games that spark a real conversation - from the couch, no prep needed.",
       "choice1Cta": "Start now",
       "choice2Tag": "Mioshy's Sex",
-      "choice2Title": "Games for adventurers",
+      "choice2Title": "Mioshy's Sex",
       "choice2Body": "For those ready and willing to break the routine - in bed too. Bold games we designed for our most adventurous couples.",
       "choice2Cta": "Explore the games",
       "trust1": "No commitment",
       "trust2": "Full privacy",
-      "trust3": "Cancel any time"
+      "trust3": "100% pleasure"
     },
     "faq": {
       "eyebrow": "Questions couples ask",

@@ -327,15 +327,34 @@ export function JourneyStages() {
             .js-mood-track::-webkit-scrollbar{display:none}
 
             @media (min-width:900px){
+              /* Per Itzik 2026-05-07: the desktop layout was breaking
+                 because grid-auto-flow:initial resolves back to row
+                 but the previously-set grid-auto-columns:85% was
+                 still being honored alongside the new
+                 grid-template-columns, producing extra implicit
+                 columns at 85% width and pushing cards off the right.
+                 The fix: explicit grid-auto-flow:row + reset the
+                 implicit columns to auto. Also force-reset
+                 scroll-padding-inline so a centered grid lays out
+                 cleanly. */
               .js-mood-track{
-                grid-auto-flow:initial;
+                display:grid;
+                grid-auto-flow:row;
                 grid-template-columns:repeat(3,1fr);
-                grid-auto-columns:initial;
+                grid-auto-columns:auto;
                 gap:32px;
                 overflow:visible;
                 scroll-snap-type:none;
+                scroll-padding-inline:0;
                 padding:24px 0;
                 perspective:1200px;
+              }
+              .js-mood-card{
+                /* Make sure cards take their full grid-column width on
+                   desktop instead of inheriting any mobile snap-align
+                   sizing. */
+                scroll-snap-align:none;
+                width:auto;
               }
             }
 

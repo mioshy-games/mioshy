@@ -20,9 +20,12 @@ type Err = { ok: false; error: string };
 export async function createCoupleForSelf(
   displayName?: string,
 ): Promise<Ok<{ couple_id: string; pair_code: string }> | Err> {
-  const gate = await requireCompleteProfile();
-  if (!gate.ok) return { ok: false, error: gate.error };
-
+  // Per Itzik 2026-05-07: a single user can create a couple-of-one and
+  // invite their partner LATER (from /my). The previous
+  // requireCompleteProfile() gate here forced the user to fill in
+  // mobile + password before they could even own anything, which broke
+  // the purchase flow. Auth alone is enough; pairing-specific actions
+  // (joinCoupleByPairCode) keep the full-profile gate.
   const supabase = await createServerSupabaseClient();
   const {
     data: { user },
@@ -150,9 +153,9 @@ export async function startAdultsSinglePurchase({
 > {
   if (!gameId) return { ok: false, error: "missing gameId" };
 
-  const gate = await requireCompleteProfile();
-  if (!gate.ok) return { ok: false, error: gate.error };
-
+  // Per Itzik 2026-05-07: purchase MUST NOT require a complete profile.
+  // Pairing a partner is optional (and gated separately on
+  // joinCoupleByPairCode). Auth alone is enough to buy.
   const supabase = await createServerSupabaseClient();
   const {
     data: { user },

@@ -56,7 +56,7 @@ export function QuestionStep({ question, locale, onSubmit, initial, busy }: Ques
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -12 }}
-      transition={{ duration: 0.18 }}
+      transition={{ duration: 0.09 }}
       className="flex w-full max-w-2xl flex-col gap-6"
       dir={isHe ? "rtl" : "ltr"}
     >
@@ -133,8 +133,13 @@ function LikertControl({
               : "border-white/12 bg-slate-800/70 text-white/80 hover:bg-slate-700/70 hover:border-white/20"
           } disabled:cursor-not-allowed disabled:opacity-50`}
         >
-          <span className="text-[22px] font-semibold sm:text-[20px]">{n}</span>
-          <span className="text-[18px] leading-snug sm:mt-1 sm:text-[14px]">
+          {/* Per Itzik 2026-05-07: response text was too small (numbers
+              20-22px, labels 14-18px) — bumped numbers to 28px and the
+              accompanying label to 17-18px so they read clearly on
+              both phone and desktop. Removed the slight transparency
+              on the labels too. */}
+          <span className="text-[28px] font-semibold sm:text-[26px]">{n}</span>
+          <span className="text-[18px] font-medium leading-snug sm:mt-1.5 sm:text-[17px]">
             {likertLabel(n, locale)}
           </span>
         </button>
@@ -165,7 +170,7 @@ function SingleChoiceControl({
     <div className="mx-0 md:mx-auto flex w-full max-w-md flex-col gap-2">
       {question.options.map((opt) => {
         const label = locale === "he" ? opt.he : opt.en;
-        const classes = `rounded-2xl border px-4 py-3 text-start text-[20px] transition active:scale-[0.98] ${
+        const classes = `rounded-2xl border px-4 py-4 text-start text-[20px] font-medium transition active:scale-[0.98] ${
           current === opt.id
             ? "border-fuchsia-400/70 bg-fuchsia-500/20 text-white ring-2 ring-fuchsia-400/50"
             : "border-white/12 bg-slate-800/70 text-white/85 hover:bg-slate-700/70 hover:border-white/20"
@@ -208,7 +213,7 @@ function MultiChoiceControl({
     <div className="mx-0 md:mx-auto flex w-full max-w-md flex-col gap-2">
       {question.options.map((opt) => {
         const label = locale === "he" ? opt.he : opt.en;
-        const classes = `rounded-2xl border px-4 py-3 text-start text-[20px] transition active:scale-[0.98] ${
+        const classes = `rounded-2xl border px-4 py-4 text-start text-[20px] font-medium transition active:scale-[0.98] ${
           current.includes(opt.id)
             ? "border-fuchsia-400/70 bg-fuchsia-500/20 text-white"
             : "border-white/12 bg-slate-800/70 text-white/85 hover:bg-slate-700/70 hover:border-white/20"

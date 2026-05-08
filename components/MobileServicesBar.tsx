@@ -80,16 +80,17 @@ export function MobileServicesBar() {
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
       }}
     >
-      {/* Background + top accent. Per Itzik 2026-05-06 — moved off the
-          flat near-black to a wine→deep-purple gradient that matches the
-          site palette (#B83C4D → #3D1F3D). Top hairline is a wine
-          highlight, not white, so the bar reads as part of the brand
-          rather than as generic mobile chrome. */}
+      {/* Background + top accent. Per Itzik 2026-05-06 — wine→deep-purple
+          gradient that matches the site palette. Performance: removed
+          backdrop-blur-xl (audit found it was forcing GPU re-blur on
+          every scroll tick). The gradient is now fully opaque, so blur
+          isn't needed for legibility — and the bar is far cheaper to
+          paint while scrolling. */}
       <div
-        className="border-t border-[rgba(248,200,206,0.18)] backdrop-blur-xl"
+        className="border-t border-[rgba(248,200,206,0.18)]"
         style={{
           background:
-            "linear-gradient(180deg, rgba(74,23,33,0.96) 0%, rgba(61,31,61,0.96) 100%)",
+            "linear-gradient(180deg, #4A1721 0%, #3D1F3D 100%)",
           boxShadow:
             "0 -12px 32px -8px rgba(184,60,77,0.35), inset 0 1px 0 rgba(248,200,206,0.12)",
         }}

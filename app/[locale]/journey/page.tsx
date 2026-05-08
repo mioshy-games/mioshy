@@ -379,15 +379,17 @@ export default async function JourneyMarketingPage({
             1. HERO - dark voyage palette (kept)
         ════════════════════════════════════════════════════════════ */}
         <section className="relative">
+          {/* Breadcrumb integrated into the hero — see games/page.tsx
+              for the rationale. Same treatment for visual consistency. */}
           <nav
             aria-label="breadcrumb"
-            className="relative z-20 mx-auto hidden max-w-6xl items-center gap-2 px-4 pt-8 text-xs text-white/60 sm:flex"
+            className="relative z-20 mx-auto hidden max-w-6xl items-center gap-2 px-4 pt-4 text-[13px] text-white/45 sm:flex"
           >
-            <Link href="/" className="transition hover:text-white/90">
+            <Link href="/" className="transition hover:text-white/75">
               {t("breadcrumbHome")}
             </Link>
-            <span aria-hidden>/</span>
-            <span className="text-white/80">{t("breadcrumbJourney")}</span>
+            <span aria-hidden className="text-white/30">/</span>
+            <span className="text-white/65">{t("breadcrumbJourney")}</span>
           </nav>
 
           {/* Animated background - converging emerald ↔ amber blobs, floating
@@ -407,28 +409,34 @@ export default async function JourneyMarketingPage({
             {/* Soft floating circle */}
             <div className="journey-floating-circle" />
 
-            {/* 12 wheels-game-style drifting dots, journey palette */}
+            {/* 6 drifting dots (was 12). Performance: orbit count halved
+                per Itzik 2026-05-06 — the journey hero was running 12
+                animated dots on top of 2 blobs + an aurora-drift layer. */}
             <span className="journey-orbit journey-orbit-1" />
             <span className="journey-orbit journey-orbit-2" />
             <span className="journey-orbit journey-orbit-3" />
             <span className="journey-orbit journey-orbit-4" />
             <span className="journey-orbit journey-orbit-5" />
             <span className="journey-orbit journey-orbit-6" />
-            <span className="journey-orbit journey-orbit-7" />
-            <span className="journey-orbit journey-orbit-8" />
-            <span className="journey-orbit journey-orbit-9" />
-            <span className="journey-orbit journey-orbit-10" />
-            <span className="journey-orbit journey-orbit-11" />
-            <span className="journey-orbit journey-orbit-12" />
           </div>
 
           <div className="relative z-10 mx-auto max-w-5xl px-4 pb-12 pt-10 text-center sm:pb-32 sm:pt-16">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/25 bg-emerald-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-emerald-100 backdrop-blur-md">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/25 bg-emerald-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-emerald-100">
               <Sparkles className="h-3 w-3" />
               {t("badge")}
             </span>
+
+            {/* Preheader — calls out the personal-coaching value
+                proposition above the headline. Per Itzik 2026-05-07. */}
+            <p className="mt-5 text-[15px] font-medium uppercase tracking-[0.18em] text-amber-200/80">
+              {t("preheader")}
+            </p>
+
+            {/* Headline — H1 + italic light-weight subtitle so the
+                two-word lockup ("ליווי עם מיאושי" + "מותאם אישית")
+                reads as one branded statement. */}
             <h1
-              className="mx-auto mt-6 max-w-3xl text-balance text-4xl font-bold leading-[1.08] sm:text-5xl lg:text-6xl"
+              className="mx-auto mt-4 max-w-3xl text-balance text-4xl font-bold leading-[1.08] sm:text-5xl lg:text-6xl"
               style={{
                 fontFamily: "'Frank Ruhl Libre', serif",
                 fontWeight: 600,
@@ -437,8 +445,40 @@ export default async function JourneyMarketingPage({
               <span className="bg-gradient-to-br from-white via-emerald-100 to-amber-200 bg-clip-text text-transparent">
                 {t("h1")}
               </span>
+              <span
+                className="mt-2 block text-[0.7em] font-light text-emerald-100/75"
+                style={{ fontStyle: "italic" }}
+              >
+                {t("h1Sub")}
+              </span>
             </h1>
-            <p className="mx-auto mt-6 max-w-2xl text-pretty text-[18px] leading-relaxed text-white/80 sm:text-[19px]">
+
+            {/* Visual placeholder — per Itzik 2026-05-07 the journey
+                hero needed something to look at, not just text. This
+                is a calm gradient panel with a soft outline; a real
+                photograph or illustration can swap in later by
+                replacing the inner content. */}
+            <div className="mx-auto mt-8 hidden max-w-3xl sm:block">
+              <div
+                aria-hidden
+                className="relative h-[180px] overflow-hidden rounded-3xl border border-emerald-300/20"
+                style={{
+                  background:
+                    "linear-gradient(135deg, rgba(16,185,129,0.16) 0%, rgba(56,189,248,0.10) 50%, rgba(251,191,36,0.14) 100%)",
+                }}
+              >
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="flex flex-col items-center gap-2 text-emerald-100/40">
+                    <Sparkles className="h-7 w-7" />
+                    <span className="text-[12px] uppercase tracking-[0.3em]">
+                      {isHe ? "תמונה תתווסף בקרוב" : "Image coming soon"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <p className="mx-auto mt-8 max-w-2xl text-pretty text-[19px] leading-[1.65] text-white/80 sm:text-[20px]">
               {t("lede")}
             </p>
 

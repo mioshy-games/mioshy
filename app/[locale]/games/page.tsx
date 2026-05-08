@@ -174,7 +174,7 @@ export default async function GamesHubPage({
         <main className="relative mx-auto max-w-6xl px-4 pb-20 pt-12 sm:pt-16">
           <div className="inline-flex items-center gap-2 rounded-full border border-rose-300/30 bg-rose-500/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-rose-100">
             <span className="h-1.5 w-1.5 rounded-full bg-rose-300" />
-            {isHe ? "כל המשחקים" : "All Games"}
+            {isHe ? "הקטלוג" : "Catalogue"}
           </div>
           <h1 className="mt-3 font-heading text-3xl font-bold leading-tight tracking-tight sm:text-4xl">
             {t("catalogueTitle")}
@@ -190,7 +190,10 @@ export default async function GamesHubPage({
               {isHe ? "עדיין אין משחקים פעילים." : "No active games yet."}
             </p>
           ) : (
-            <ul className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            // Catalogue grid — 2 per row (was 3) per Itzik 2026-05-07.
+            // Bigger card footprint reads as fewer "products" and more
+            // "experiences".
+            <ul className="mt-10 grid gap-7 sm:grid-cols-2">
               {games.map((g) => {
                 const name = isHe ? g.name_he : g.name_en;
                 const desc = isHe ? g.description_he : g.description_en;
@@ -510,25 +513,33 @@ export default async function GamesHubPage({
             1. HERO - dark, animated
         ════════════════════════════════════════════════════════════ */}
         <section className="relative">
+          {/* Breadcrumb sits over the hero gradient — no separate band.
+              Padding tightened (pt-8 → pt-4) and opacity lowered so it
+              integrates into the atmosphere instead of reading as its own
+              row. Per Itzik 2026-05-07. */}
           <nav
             aria-label="breadcrumb"
-            className="relative z-20 mx-auto hidden max-w-6xl items-center gap-2 px-4 pt-8 text-xs text-white/60 sm:flex"
+            className="relative z-20 mx-auto hidden max-w-6xl items-center gap-2 px-4 pt-4 text-[13px] text-white/45 sm:flex"
           >
-            <Link href="/" className="transition hover:text-white/90">
+            <Link href="/" className="transition hover:text-white/75">
               {t("breadcrumbHome")}
             </Link>
-            <span aria-hidden>/</span>
-            <span className="text-white/85">{t("breadcrumbGames")}</span>
+            <span aria-hidden className="text-white/30">/</span>
+            <span className="text-white/65">{t("breadcrumbGames")}</span>
           </nav>
 
+          {/* Per Itzik 2026-05-07: secondary CTA "למה מיאושי?" removed
+              from the hero — the section "Why Mioshy" lives just below
+              and is reached by scrolling. The hero now has one primary
+              CTA only ("All games") for less visual noise. */}
           <LazyLiveDemoHero
             isHe={isHe}
             title={t("h1")}
             lede={t("lede")}
             ctaPrimary={t("ctaPrimary")}
             ctaPrimaryHref="#catalogue"
-            ctaSecondary={isHe ? "למה מיאושי?" : "Why Mioshy?"}
-            ctaSecondaryHref="#why"
+            ctaSecondary={undefined}
+            ctaSecondaryHref={undefined}
             badge={isHe ? "טעימה חיה · Mioshy" : "Live taste · Mioshy"}
             trust={trust}
             gameHref={demoGame ? `/games/${demoGame.slug}` : "#catalogue"}
@@ -563,7 +574,11 @@ export default async function GamesHubPage({
           {/* ════════════════════════════════════════════════════════════
               2. WHY MIOSHY - light bg, big cards with stat chips
           ════════════════════════════════════════════════════════════ */}
-          <section id="why" className="relative bg-[#FAF6F7] px-4 pb-14 pt-10 sm:pb-20 sm:pt-16">
+          {/* #why bottom padding tightened (sm:pb-20 → sm:pb-[60px])
+              per Itzik 2026-05-07 — combined with press's pt-[60px]
+              below, the gap from "Why" content to "במילים שלהם" is
+              exactly 60+60=120px on desktop instead of 160px. */}
+          <section id="why" className="relative bg-[#FAF6F7] px-4 pb-12 pt-10 sm:pb-[60px] sm:pt-16">
             <div className="mx-auto max-w-6xl">
               <div className="mx-auto max-w-3xl text-center">
                 {/* Eyebrow - bumped to 14px on mobile (16px equivalent
@@ -760,7 +775,7 @@ export default async function GamesHubPage({
           {isHe ? (
             <section
               id="press"
-              className="relative overflow-hidden bg-[#FAF6F7] px-4 py-8 sm:py-20"
+              className="relative overflow-hidden bg-[#FAF6F7] px-4 py-8 sm:py-[60px]"
             >
               {/* Drifting peach blob - heavy blur, enters from screen-left */}
               <div
@@ -845,7 +860,7 @@ export default async function GamesHubPage({
               <div className="flex flex-col items-start gap-4">
                 <span className="inline-flex items-center gap-2.5 text-[13px] font-semibold uppercase tracking-[0.2em] text-rose-200">
                   <span className="h-[7px] w-[7px] rounded-sm bg-[#B83C4D] shadow-[0_0_0_3px_rgba(184,60,77,0.28)]" />
-                  {isHe ? "כל המשחקים" : "All Games"}
+                  {isHe ? "הקטלוג" : "Catalogue"}
                 </span>
                 <h2 className="font-heading text-3xl font-bold leading-[1.05] tracking-[-0.02em] text-white sm:text-4xl lg:text-5xl">
                   {t("catalogueTitle")}
@@ -861,7 +876,10 @@ export default async function GamesHubPage({
                 <p className="mt-10 text-white/60">-</p>
               )}
 
-              <ul className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {/* Catalogue grid — 2 per row (was 3) per Itzik 2026-05-07.
+                Bigger card footprint reads as fewer "products" and more
+                "experiences". */}
+            <ul className="mt-10 grid gap-7 sm:grid-cols-2">
                 {/* ── Regular wheel games from DB ── */}
                 {games.map((g, idx) => {
                   const name = isHe ? g.name_he : g.name_en;
@@ -915,7 +933,13 @@ export default async function GamesHubPage({
                         </div>
 
                         <div className="flex flex-1 flex-col p-6">
-                          <h3 className="font-heading text-xl font-bold leading-tight text-white">
+                          {/* Per Itzik 2026-05-07: game card titles in
+                              the catalogue serif (Frank Ruhl Libre) so
+                              they read as named things, not labels. */}
+                          <h3
+                            className="text-[26px] font-bold leading-[1.15] tracking-[-0.01em] text-white"
+                            style={{ fontFamily: "var(--font-frank-ruhl), 'Frank Ruhl Libre', serif" }}
+                          >
                             {name}
                           </h3>
                           {desc ? (
@@ -972,7 +996,10 @@ export default async function GamesHubPage({
                         <Users className="h-3 w-3" />
                         {isHe ? "עד 8 שחקנים" : "Up to 8 players"}
                       </span>
-                      <h3 className="font-heading text-xl font-bold leading-tight text-white">
+                      <h3
+                        className="text-[26px] font-bold leading-[1.15] tracking-[-0.01em] text-white"
+                        style={{ fontFamily: "var(--font-frank-ruhl), 'Frank Ruhl Libre', serif" }}
+                      >
                         {isHe ? "נחשים וסולמות" : "Snakes & Ladders"}
                       </h3>
                       <p className="mt-2 line-clamp-3 text-[20px] leading-[1.5] text-white/70 transition-[max-height,color] duration-500 ease-in-out group-hover:line-clamp-none sm:text-[18px]">

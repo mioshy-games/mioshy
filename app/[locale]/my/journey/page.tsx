@@ -60,6 +60,10 @@ import { SubscriptionStatusBanner } from "@/components/my/SubscriptionStatusBann
 import { JourneyGraceBanner } from "@/components/my/JourneyGraceBanner";
 import { WelcomeProcessingBanner } from "@/components/my/WelcomeProcessingBanner";
 import {
+  JourneyKickoffCards,
+  type JourneyKickoffStartItem,
+} from "@/components/my/JourneyKickoffCards";
+import {
   JourneyActivityHistory,
   type JourneyActivityEntry,
 } from "@/components/my/JourneyActivityHistory";
@@ -595,7 +599,18 @@ export default async function PrivateJourneyPage({
             compete with the rail/content layout below. */}
         {showWelcomeProcessingBanner ? (
           <section className="mt-6">
-            <WelcomeProcessingBanner isHe={isHe} />
+            {/* v2 (Itzik 2026-05-07): the banner now shows the user's
+                actual top focus from their assessment ranking + an
+                optional "start with the opening exercise" link when
+                the day-1 override has unlocked one. firstItemHref is
+                left null here because the rail+desk below already
+                renders unlocked items prominently — keeping it null
+                avoids duplicating a CTA. */}
+            <WelcomeProcessingBanner
+              isHe={isHe}
+              focusLabel={topPriority ? focusLabel : null}
+              firstItemHref={null}
+            />
           </section>
         ) : null}
 
@@ -612,6 +627,45 @@ export default async function PrivateJourneyPage({
             </p>
           </section>
         ) : null}
+
+        {/* ─────── #66 Post-purchase kickoff cards ───────
+            Two recap cards near the top of the dashboard:
+            (a) assessment results — top focus + program size,
+            (b) start-here — first available item from the day-1 unlock.
+            Both render conditionally — the section disappears when
+            neither is meaningful. */}
+        {(() => {
+          const first = openItems[0] ?? null;
+          const startItem: JourneyKickoffStartItem | null = first
+            ? {
+                scheduledId: first.scheduled.id,
+                title:
+                  (isHe
+                    ? first.item.title_he
+                    : first.item.title_en || first.item.title_he) ?? "",
+                categoryName:
+                  (isHe
+                    ? first.category.name_he
+                    : first.category.name_en || first.category.name_he) ??
+                  null,
+                snippet:
+                  (isHe
+                    ? first.item.body_he
+                    : first.item.body_en || first.item.body_he) ?? null,
+              }
+            : null;
+          return (
+            <JourneyKickoffCards
+              isHe={isHe}
+              focusLabel={topPriority ? focusLabel : null}
+              focusDesc={topPriority ? focusDesc : null}
+              totalItems={timeline.length}
+              openItemCount={openItems.length}
+              completedItemCount={completedItems.length}
+              startItem={startItem}
+            />
+          );
+        })()}
 
         {/* ─────── The desk - vertical rail + content panel ───────
             The rail (right in RTL, top on mobile) acts as the menu;

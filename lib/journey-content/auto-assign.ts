@@ -185,6 +185,46 @@ export async function assignJourneyOnPurchase(
       supabase,
     });
 
+    // ──────────────────────────────────────────────────────────────────
+    // Day-1 override (Itzik 2026-05-07).
+    //
+    // Items in a program normally schedule via `default_offset_days`
+    // (the cadence engine drips one per Monday from the anchor date).
+    // For a freshly-purchased Journey, the user expects to see SOMETHING
+    // unlocked immediately — anything else feels broken even if it's
+    // technically "working as designed".
+    //
+    // We force the EARLIEST scheduled item (lowest sort_order) to
+    // unlock right now, and mark `has_unlock_override=true` so the
+    // expert dashboard can see it was a system-driven shift, not a
+    // mistake. Best-effort: failure here doesn't fail the assignment.
+    if (inserted > 0) {
+      try {
+        // `materializeAssignment` returns the count, not the rows, so we
+        // requery to find the first scheduled item by sort_order.
+        const { data: firstItem } = await supabase
+          .from("journey_scheduled_items")
+          .select("id, sort_order")
+          .eq("assignment_id", (assignment as JourneyAssignment).id)
+          .order("sort_order", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+
+        if (firstItem?.id) {
+          const nowIso = new Date().toISOString();
+          await supabase
+            .from("journey_scheduled_items")
+            .update({ unlock_at: nowIso, has_unlock_override: true })
+            .eq("id", firstItem.id as string);
+        }
+      } catch (overrideErr) {
+        console.warn(
+          "[assignJourneyOnPurchase] day-1 unlock override failed (non-fatal)",
+          overrideErr,
+        );
+      }
+    }
+
     return {
       ok: true,
       outcome: "created",

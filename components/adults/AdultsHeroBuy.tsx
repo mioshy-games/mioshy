@@ -90,8 +90,8 @@ export function AdultsHeroBuy({
   // stuck/refreshed page can neve- double-charge the user.
   const continueFiredRef = useRef(false);
 
-  const gamePath = `/adults/${gameSlug}`;
-  const playPath = `/adults/${gameSlug}/play`;
+  const gamePath = `/mioshy-sex/${gameSlug}`;
+  const playPath = `/mioshy-sex/${gameSlug}/play`;
 
   // ── Auto-resume after auth ─────────────────────────────────────────────
   // When the visitor arrives back here with `?continuePurchase=1` (set by
@@ -315,7 +315,9 @@ export function AdultsHeroBuy({
           <span
             classN-me="block text-[12px] font-semibold uppercase tracking-[0.22em] text-rose-200/75"
           >
-            {isHe ? "רכישה אישית · לצמיתות" : "Personal purchase · forever"}
+            {isHe
+              ? "רכישה זוגית · לצמיתות · גישה לשני בני הזוג"
+              : "Couple purchase · forever · access for both partners"}
           </span>
           <span
             className="mt-1 block bg-gradient-to-br from-white via-rose-100 to-amber-200 bg-clip-text text-[56px] leading-none tracking-tight text-transparent sm:text-[64px]"
@@ -490,7 +492,7 @@ function PairCodeBlock({
   function buildPayload(): string {
     const origin =
       typeof window !== "undefined" ? window.location.origin : "";
-    const productUrl = `${origin}/${locale}/adults/${gameSlug}`;
+    const productUrl = `${origin}/${locale}/mioshy-sex/${gameSlug}`;
     if (isHe) {
       return [
         `הוזמנת לשחק יחד ב"${gameTitle}" 💕`,

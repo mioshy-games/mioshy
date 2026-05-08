@@ -365,27 +365,43 @@ export default async function AccountPage({
       {/* ── Plan + controls ──────────────────────────────────────────────── */}
       <div className="mt-4 rounded-2xl border p-5">
         <div className="grid gap-4 sm:grid-cols-2">
+          {/* Per Itzik 2026-05-07: account labels were `text-sm
+              font-semibold` and values `text-sm text-muted-foreground`
+              — both faded into the dark gradient bg of the page. The
+              "סטטוס: פעיל" line was nearly invisible. Bumped labels to
+              13px uppercase tracking-wide white/55 (clear "field
+              label" feel), and values to 18px font-semibold white
+              (full opacity). The combination is the SaaS-readable
+              spec-row pattern. */}
           <div>
-            <div className="text-sm font-semibold">{t("plan")}</div>
-            <div className="mt-1 text-sm text-muted-foreground">
+            <div className="text-[12px] font-semibold uppercase tracking-[0.12em] text-white/60">
+              {t("plan")}
+            </div>
+            <div className="mt-1.5 text-[18px] font-semibold text-white">
               {plan ? t(`plans.${plan}` as never) : t("noPlan")}
             </div>
           </div>
           <div>
-            <div className="text-sm font-semibold">{t("status")}</div>
-            <div className="mt-1 text-sm text-muted-foreground">
+            <div className="text-[12px] font-semibold uppercase tracking-[0.12em] text-white/60">
+              {t("status")}
+            </div>
+            <div className="mt-1.5 text-[18px] font-semibold text-white">
               {statusLabel ?? "-"}
             </div>
           </div>
           <div>
-            <div className="text-sm font-semibold">{t("renewal")}</div>
-            <div className="mt-1 text-sm text-muted-foreground">
+            <div className="text-[12px] font-semibold uppercase tracking-[0.12em] text-white/60">
+              {t("renewal")}
+            </div>
+            <div className="mt-1.5 text-[18px] font-semibold text-white">
               {renewal ?? t("noRenewal")}
             </div>
           </div>
           <div>
-            <div className="text-sm font-semibold">{t("paymentMethod")}</div>
-            <div className="mt-1 text-sm text-muted-foreground">
+            <div className="text-[12px] font-semibold uppercase tracking-[0.12em] text-white/60">
+              {t("paymentMethod")}
+            </div>
+            <div className="mt-1.5 text-[18px] font-semibold text-white">
               {pm && pm.status === "active" && pm.last4
                 ? t("paymentMethodEndsWith", { last4: pm.last4 })
                 : t("paymentMethodNone")}

@@ -24,6 +24,7 @@ import { RegistrationModal } from "@/components/RegistrationModal";
 import { SubscriptionModal } from "@/components/SubscriptionModal";
 import { stopSpinSound } from "@/lib/sounds";
 import { QuestionPopup } from "@/components/game/QuestionPopup";
+import { TutorialPopup } from "@/components/game/TutorialPopup";
 
 export function TruthOrDareClient({
   game,
@@ -632,6 +633,9 @@ export function TruthOrDareClient({
       backgroundSrc={transparent ? false : undefined}
       showVignette={!transparent}
     >
+      {/* First-visit tutorial — shows once per device, then never again.
+          Self-gates on localStorage so safe to mount unconditionally. */}
+      <TutorialPopup isHe={locale === "he"} />
       {pageLayout === "side-by-side" ? (
         /* ── SIDE-BY-SIDE LAYOUT ─────────────────────────────────────────────
            Desktop (≥ md): wheel on the left, controls on the right.

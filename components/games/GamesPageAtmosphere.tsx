@@ -37,7 +37,10 @@ export function GamesPageAtmosphere() {
             "radial-gradient(800px 500px at 80% 90%, rgba(74,23,33,0.16), transparent 60%)",
         }}
       />
-      {/* Drifting blobs + floating glows + 16 orbit dots. */}
+      {/* Drifting blobs + floating glow + 8 orbit dots. Performance:
+          orbit count halved (was 16) and one blob/floating-circle pair
+          dropped (was 4 blobs + 2 circles) per Itzik 2026-05-06 audit
+          — the dense field was a major GPU consumer on /games. */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
@@ -45,9 +48,7 @@ export function GamesPageAtmosphere() {
         <div className="games-blob games-blob-1" />
         <div className="games-blob games-blob-2" />
         <div className="games-blob games-blob-3" />
-        <div className="games-blob games-blob-4" />
         <div className="games-floating-circle games-floating-circle-1" />
-        <div className="games-floating-circle games-floating-circle-2" />
         <span className="games-orbit games-orbit-1" />
         <span className="games-orbit games-orbit-2" />
         <span className="games-orbit games-orbit-3" />
@@ -56,14 +57,6 @@ export function GamesPageAtmosphere() {
         <span className="games-orbit games-orbit-6" />
         <span className="games-orbit games-orbit-7" />
         <span className="games-orbit games-orbit-8" />
-        <span className="games-orbit games-orbit-9" />
-        <span className="games-orbit games-orbit-10" />
-        <span className="games-orbit games-orbit-11" />
-        <span className="games-orbit games-orbit-12" />
-        <span className="games-orbit games-orbit-13" />
-        <span className="games-orbit games-orbit-14" />
-        <span className="games-orbit games-orbit-15" />
-        <span className="games-orbit games-orbit-16" />
       </div>
 
       <style

@@ -227,14 +227,20 @@ export function PriorityRankingStep({
         })}
       </ul>
 
-      <p className="text-center text-xs text-white/55">{arrowsHint}</p>
+      {/* Per Itzik 2026-05-07: the hint and Continue button were both
+          near-invisible (text-xs / white/55). Hint bumped to 15px /
+          white/85 and Continue button gets a primary treatment so the
+          user sees their next step clearly. */}
+      <p className="text-center text-[15px] font-medium text-white/85">
+        {arrowsHint}
+      </p>
 
       <div className="flex justify-center">
         <Button
           type="button"
           onClick={submit}
           disabled={busy}
-          className="min-w-[180px]"
+          className="min-w-[220px] min-h-[56px] text-[18px] font-semibold shadow-xl shadow-fuchsia-500/30"
         >
           {continueLabel}
         </Button>

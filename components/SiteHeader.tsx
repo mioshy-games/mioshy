@@ -128,6 +128,11 @@ export function SiteHeader({
         },
       ];
     }
+    // After login, the header surfaces only the two SUBSCRIPTION pillars
+    // (games + journey). Mioshy's Sex (adults) is one-time per game and
+    // doesn't belong in primary nav once the user is inside — it lives
+    // on /my and inside the journey track. Per Itzik 2026-05-07.
+    if (p.tKey === "adults") return [];
     const owns = entitlements ? entitlements[p.tKey] : false;
     if (!owns) return [];
     return [
@@ -250,11 +255,6 @@ export function SiteHeader({
   const ghostBorder =
     mode === "light" ? "border-slate-300/70" : "border-white/15";
 
-  const ghostBg =
-    mode === "light"
-      ? "bg-white/60 hover:bg-white/80"
-      : "bg-white/5 hover:bg-white/10";
-
   // Logo swap: the project only ships mioshy-white.svg. On light-scrolled
   // state we darken it via a CSS filter (invert + slight hue correction).
   const logoFilter =
@@ -268,8 +268,13 @@ export function SiteHeader({
   const hideClass = hiddenOnMobile ? "max-lg:-translate-y-full" : "translate-y-0";
 
   return (
+    /* Performance: backdrop-blur-xl on a sticky header forces Chrome to
+       re-blur the whole viewport on every scroll tick — the #1 GPU
+       offender flagged in the 2026-05-06 audit. We removed it; the
+       header bgs in `barBg` now use opaque solids/strong-alpha
+       gradients instead, which read identically without the blur. */
     <header
-      className={`sticky top-0 z-50 border-b backdrop-blur-xl transition-all duration-300 ${barBg} ${hideClass}`}
+      className={`sticky top-0 z-50 border-b transition-all duration-300 ${barBg} ${hideClass}`}
     >
       {/* Top-of-page gradient hair - only when transparent, to keep identity. */}
       {!scrolled ? (
@@ -337,12 +342,22 @@ export function SiteHeader({
         <div className="hidden items-center gap-2 md:flex">
           {isAuthed ? (
             <>
+              {/* "מיאושי שלי" — primary CTA after login. Same gradient
+                  treatment as the pre-login "Join now" button so the
+                  user has one obvious next-action regardless of state.
+                  Per Itzik 2026-05-07. */}
               <Link
                 href="/my"
-                className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-base font-semibold transition ${ghostBorder} ${ghostBg} ${textFg}`}
+                className="group relative inline-flex min-h-[40px] items-center justify-center gap-1.5 overflow-hidden rounded-full px-5 text-base font-semibold text-white shadow-lg shadow-fuchsia-500/25 transition hover:brightness-110"
               >
-                <Library className="h-4 w-4" />
-                {t("library")}
+                <span
+                  aria-hidden
+                  className="absolute inset-0 bg-[linear-gradient(110deg,#d946ef_0%,#a855f7_35%,#ec4899_70%,#f59e0b_100%)]"
+                />
+                <span className="relative z-10 inline-flex items-center gap-1.5">
+                  <Library className="h-4 w-4" />
+                  {t("library")}
+                </span>
               </Link>
               <JourneyNotificationsBell
                 initialUnreadCount={unreadNotifications}
@@ -360,9 +375,14 @@ export function SiteHeader({
             </>
           ) : (
             <>
+              {/* Sign-in (secondary) button. Per Itzik 2026-05-07 — same
+                  size + padding as the primary "Join now" CTA but with a
+                  dark header-matching background, so the two buttons read
+                  as a clear primary/secondary pair instead of a button +
+                  a text link. */}
               <Link
                 href="/auth"
-                className={`text-base font-medium transition ${linkBase}`}
+                className="inline-flex min-h-[40px] items-center justify-center rounded-full border border-white/15 bg-[#170E14] px-5 text-base font-semibold text-white/90 transition hover:bg-[#231619] hover:border-white/25 hover:text-white"
               >
                 {t("signIn")}
               </Link>
@@ -398,13 +418,21 @@ export function SiteHeader({
             still lives inside the drawer. */}
         <div className="flex items-center gap-2 lg:hidden">
           {isAuthed ? (
+            // Mobile primary — matching the desktop My-Mioshy gradient
+            // treatment. Compact size to fit beside the hamburger.
             <Link
               href="/my"
-              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-semibold transition md:hidden ${ghostBorder} ${ghostBg} ${textFg}`}
+              className="group relative inline-flex min-h-[36px] items-center justify-center gap-1.5 overflow-hidden rounded-full px-4 text-sm font-semibold text-white shadow-md shadow-fuchsia-500/25 transition hover:brightness-110 md:hidden"
               aria-label={t("library")}
             >
-              <Library className="h-4 w-4" />
-              <span>{t("library")}</span>
+              <span
+                aria-hidden
+                className="absolute inset-0 bg-[linear-gradient(110deg,#d946ef_0%,#a855f7_35%,#ec4899_70%,#f59e0b_100%)]"
+              />
+              <span className="relative z-10 inline-flex items-center gap-1.5">
+                <Library className="h-4 w-4" />
+                <span>{t("library")}</span>
+              </span>
             </Link>
           ) : (
             // Mobile primary CTA — matches the desktop primary: free
@@ -436,12 +464,15 @@ export function SiteHeader({
       </div>
 
       {/* ─────── Mobile drawer ─────── */}
+      {/* Performance: removed backdrop-blur-xl — the drawer is rendered
+          on top of the page anyway, so a solid background reads better
+          and is far cheaper than blurring everything beneath it. */}
       {open ? (
         <div
-          className={`border-t backdrop-blur-xl lg:hidden ${
+          className={`border-t lg:hidden ${
             theme === "light"
-              ? "border-slate-200 bg-white/95 text-slate-900"
-              : "border-white/10 bg-black/75 text-white"
+              ? "border-slate-200 bg-white text-slate-900"
+              : "border-white/10 bg-[#0E0810] text-white"
           }`}
           dir={isHe ? "rtl" : "ltr"}
         >

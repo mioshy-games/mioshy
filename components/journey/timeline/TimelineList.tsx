@@ -190,7 +190,9 @@ function TimelineCard({
         <article
           className={cn(
             "relative rounded-2xl border backdrop-blur transition",
-            isHe ? "me-12" : "ms-12",
+            // Rail is always on the inline-start side (right in RTL, left in LTR),
+            // so the card needs an inline-start margin to clear it.
+            "ms-12",
             // Completed: green accent but reduced emphasis - ink fades so
             // the eye doesn't re-read every "done" row on every scroll.
             status === "completed" &&

@@ -119,17 +119,15 @@ small, .text-small {
 
     /* TYPE TOKENS - sizes */
     --fs-display: clamp(46px, 6.6vw, 96px);
-    /* H2 token. Was clamp(28px, 4.4vw, 56px) — too small on mobile, and
-       individual sections were overriding upward (.ag-stage h2 was 46-96,
-       .final h2 was 44-76) which made the homepage feel inconsistent. Per
-       Itzik 2026-05-06 every H2 should match the AdultGames headline
-       ("לא לכל אחד. לאמיצים בלבד") size, so the token now equals what
-       .ag-stage h2 used to override to. All per-section overrides have
-       been stripped — color/weight may still vary, size is global. */
-    --fs-h2: clamp(42px, 7vw, 96px);
-    /* H3 sized BETWEEN h4 (28) and h2 (42-96): clamp 32-40px keeps
-       hierarchy obvious at every viewport. Per Itzik 2026-05-06. */
-    --fs-h3: clamp(32px, 3.5vw, 40px);
+    /* H2 token. Mobile floor 42 stays (legibility on phones), desktop
+       cap reduced 25% per Itzik 2026-05-07: was 96px max, now 72px max.
+       The vw factor is also dialed down (7vw → 5.6vw) so mid-desktop
+       sizes scale ~20-25% smaller too — not just the cap. */
+    --fs-h2: clamp(42px, 5.6vw, 72px);
+    /* H3 reduced 25% on desktop per Itzik 2026-05-07. Was clamp(32,
+       3.5vw, 40); now clamp(28, 2.5vw, 30). Mobile is slightly smaller
+       too (32 → 28) so the hierarchy with h4 (28px) stays clean. */
+    --fs-h3: clamp(28px, 2.5vw, 30px);
     --fs-h4: 28px;
     --fs-lead: 22px;
     /* Body sizes — important text floor is 18, secondary floor is 14.
@@ -193,13 +191,17 @@ small, .text-small {
     --font-display: var(--font-noto-serif-hebrew);
   }
 
-  /* Honor prefers-reduced-motion globally - applies to all CSS animations
-     in the v2 homepage (hero blobs, particle floats, blob-float, etc.).
-     Framer-motion components honor this via useReducedMotion() in JS. */
+  /* Honor prefers-reduced-motion globally — applies to ALL animations on
+     the entire site (was scoped to `.home-v2` only). Per Itzik
+     2026-05-06: the marketing-pages performance audit found 36+ blobs
+     animating on the hero, 22+ on /games — disabling them for users
+     who set "Reduce motion" in macOS/iOS gives them instant relief AND
+     drops GPU load to near-zero. Framer-motion honors this via
+     useReducedMotion() in JS. */
   @media (prefers-reduced-motion: reduce) {
-    .home-v2 *,
-    .home-v2 *::before,
-    .home-v2 *::after {
+    *,
+    *::before,
+    *::after {
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;

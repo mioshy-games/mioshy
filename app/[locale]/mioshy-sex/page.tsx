@@ -244,18 +244,18 @@ export default async function AdultsLandingPage({
 
           {/* 3. PROOF - 80% / 50% stat cards */}
           <AdultsProofSection isHe={isHe} />
-
-          {/* 4. CATALOGUE INTRO - hands off to the live grid */}
-          <AdultsCatalogueIntro isHe={isHe} />
         </div>
 
         {/* ════════════════════════════════════════════════════════════
-            DARK BAND - categories / tags / cards UI is built explicitly
-            for white-on-dark contrast (text-white/75, bg-white/5,
-            border-white/15). On a light wrapper those classes vanish.
-            We keep the storefront on the page's dark [#0a0410] surface.
+            DARK BAND - the catalogue intro NOW LIVES INSIDE this dark
+            wrapper alongside the storefront grid (Itzik 2026-05-07).
+            The previous cream-wrapped intro felt disconnected from the
+            products below; pulling it onto the same dark surface makes
+            the heading read as the title OF the grid, not as a
+            transition section.
         ════════════════════════════════════════════════════════════ */}
         <div id="catalogue" className="relative">
+          <AdultsCatalogueIntro isHe={isHe} />
           <BetweenUsStorefront
             locale={locale}
             hero={hero}

@@ -2,7 +2,15 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Lock, CalendarDays, MessageCircle } from "lucide-react";
+import {
+  Lock,
+  CalendarDays,
+  MessageCircle,
+  CheckCircle2,
+  Sparkles,
+  ArrowLeft,
+  ArrowRight,
+} from "lucide-react";
 import type { Analysis, Locale } from "@/lib/journey/types";
 import { axisLabel } from "@/lib/journey/analysis";
 import {
@@ -17,63 +25,83 @@ interface AnalysisSummaryProps {
 }
 
 /**
- * Post-completion screen.
- * - Shows the personalized relationship analysis.
- * - If the user doesn't have an active subscription, shows the service CTA.
- * - If they're already subscribed, shows a "you're all set" message.
+ * Post-completion screen — premium edition (Itzik #62).
+ *
+ * Three sections:
+ *   1. Hero — title + 3 score cards in a tight row.
+ *   2. Insight — narrative + focus-month + recommendation bullets,
+ *      laid out as a single readable column with consistent rhythm.
+ *   3. CTA — wine-palette offer card matching /pricing and the rest
+ *      of the site (no fuchsia rainbow).
+ *
+ * Redesigned 2026-05-07 — replaces the wall-of-text pattern with
+ * clearly-bulleted, scannable copy and a single brand-consistent
+ * conversion path.
  */
-export function AnalysisSummary({ analysis, locale, subscriptionActive = false }: AnalysisSummaryProps) {
+export function AnalysisSummary({
+  analysis,
+  locale,
+  subscriptionActive = false,
+}: AnalysisSummaryProps) {
   const [checkoutBusy, setCheckoutBusy] = useState(false);
-
   const isHe = locale === "he";
 
   if (!analysis) {
     return (
-      <div dir={isHe ? "rtl" : "ltr"} className="mx-auto max-w-2xl p-10 text-center text-white/80">
+      <div
+        dir={isHe ? "rtl" : "ltr"}
+        className="mx-auto max-w-2xl p-10 text-center text-white/80"
+      >
         {isHe ? "מכינים את הניתוח שלכם…" : "Preparing your analysis…"}
       </div>
     );
   }
 
-  // Copy approved by Itzik 2026-05-05. Tone: professional + urgency-results
-  // (combination A+C). The offer card now leads with the expert-mentorship
-  // promise (private room, weekly content, ongoing dialogue) instead of
-  // generic feature bullets - because that's the actual product.
   const t = isHe
     ? {
-        title: "הניתוח שלכם",
+        sectionLabel: "התוצאות שלכם",
+        title: "הניתוח האישי שלכם",
+        subtitle: "מה ראינו, ולאן ממשיכים מכאן",
         friendship: "חברות זוגית",
-        conflict: "שקט בוויכוחים",
+        conflict: "התמודדות עם קשיים",
         passion: "סיכון לירידה בתשוקה",
-        topGap: "מוקד לחודש הראשון",
+        narrativeLabel: "תמצית",
+        topGap: "מוקד החודש הראשון",
         recs: "התוכנית המותאמת שלכם",
-        offerHero: "ליווי צמוד של מומחה זוגיות - בתוך חשבון פרטי, רק אתם והוא.",
+        offerLabel: "השלב הבא",
+        offerHero: "ליווי צמוד של מומחה זוגיות, בחדר פרטי שלכם בלבד.",
         offerSub: "תוך 30 יום תרגישו שינוי אמיתי.",
         feat1Title: "חדר אישי סגור עם המומחה שלכם",
-        feat1Body: "שולחים שאלות מתי שצריך, מקבלים מענה אמיתי - לא בוט, לא תור.",
+        feat1Body:
+          "שולחים שאלות מתי שצריך, מקבלים מענה אמיתי - לא בוט, לא תור.",
         feat2Title: "תוכן שבועי שמותאם לסיפור שלכם",
         feat2Body:
           "לא קורס מוכן. כל שבוע תוכן שנבנה לפי מה שמילאתם והשיחות שלכם עם המומחה.",
         feat3Title: "שיחה שמתפתחת איתכם",
         feat3Body:
           "אתם מגיבים על כל תוכן, המומחה עונה, וזה ממשיך לבנות את התהליך - שבוע אחר שבוע.",
-        price: "57₪ / שבוע · ניתן לעצור בכל עת",
-        cta: "פתחו את החדר הפרטי שלכם",
+        price: "57₪ / שבוע",
+        priceNote: "ניתן לעצור בכל עת",
+        cta: "המומחים שלנו מחכים לכם",
         ctaLoading: "מכין תשלום…",
-        activeTitle: "אתם כבר חלק מהמסע! 🎉",
+        activeTitle: "אתם כבר חלק מהמסע",
         activeSub:
           "התוכנית האישית שלכם פעילה. המשימות השבועיות יגיעו ישירות אליכם.",
-        goAccount: "לחשבון שלי",
+        goAccount: "מיאושי שלי",
       }
     : {
-        title: "Your analysis",
+        sectionLabel: "Your results",
+        title: "Your personal analysis",
+        subtitle: "What we found, and where we go from here",
         friendship: "Friendship",
-        conflict: "Conflict health",
+        conflict: "Handling friction",
         passion: "Passion at risk",
+        narrativeLabel: "Summary",
         topGap: "Focus for the first month",
         recs: "Your personalized program",
+        offerLabel: "What's next",
         offerHero:
-          "Dedicated guidance from a relationship expert - inside a private account, just the two of you and them.",
+          "Dedicated guidance from a relationship expert, inside a private room — just the two of you and them.",
         offerSub: "In 30 days you'll feel a real change.",
         feat1Title: "A private, closed room with your expert",
         feat1Body:
@@ -84,26 +112,24 @@ export function AnalysisSummary({ analysis, locale, subscriptionActive = false }
         feat3Title: "A dialogue that grows with you",
         feat3Body:
           "You respond to every piece of content, your expert replies, and the process keeps building - week after week.",
-        price: "$19 / week · cancel anytime",
-        cta: "Open your private room",
+        price: "$19 / week",
+        priceNote: "Cancel anytime",
+        cta: "Our experts are ready",
         ctaLoading: "Preparing checkout…",
-        activeTitle: "You're all set! 🎉",
+        activeTitle: "You're already on the journey",
         activeSub:
           "Your personal plan is active. Weekly tasks will be delivered to you soon.",
-        goAccount: "My account",
+        goAccount: "Open My Mioshy",
       };
 
-  // Resolve the focus area for "מוקד לחודש הראשון" / "Focus for the first
-  // month". Priority: pre-baked focus_label from analysis.summary
-  // (computed server-side in lib/journey/analysis.ts using DB labels) →
-  // legacy top_gap axis fallback → null. Slice 1 of v3: replaces the
-  // dropped PRIORITY_LABELS_HE/EN constant maps; client never touches DB.
   const bakedFocus = isHe
     ? analysis.summary.focus_label_he
     : analysis.summary.focus_label_en;
   const focusLabel =
     bakedFocus ??
     (analysis.top_gap ? axisLabel(analysis.top_gap, locale) : null);
+
+  const Arrow = isHe ? ArrowLeft : ArrowRight;
 
   const startCheckout = async () => {
     setCheckoutBusy(true);
@@ -112,7 +138,8 @@ export function AnalysisSummary({ analysis, locale, subscriptionActive = false }
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          plan: "monthly",
+          plan: "weekly",
+          product: "journey",
           source: "analysis_summary",
           language: locale,
           is_israeli: locale === "he",
@@ -129,185 +156,325 @@ export function AnalysisSummary({ analysis, locale, subscriptionActive = false }
     }
   };
 
-  const scoreCard = (label: string, value: number, invert = false) => (
-    <div className="rounded-2xl border border-white/15 bg-white/5 p-4">
-      <div className="text-sm text-white/80">{label}</div>
-      <div
-        className={`mt-1 text-2xl font-bold ${
-          invert
-            ? value >= 60 ? "text-rose-300" : "text-emerald-300"
-            : value >= 60 ? "text-emerald-300" : "text-amber-300"
-        }`}
-      >
-        {value}
-        <span className="text-sm text-white/50">/100</span>
-      </div>
-    </div>
-  );
-
   return (
     <motion.div
       dir={isHe ? "rtl" : "ltr"}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-10"
+      className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 py-10"
     >
-      {/* ── Analysis header ── */}
-      <h1 className="text-3xl font-bold text-white">{t.title}</h1>
+      {/* ── Hero ─────────────────────────────────────────────────────── */}
+      <header className="flex flex-col gap-2.5">
+        <span className="inline-flex items-center gap-2 self-start rounded-full border border-white/15 bg-white/[0.04] px-3 py-1 text-[12px] font-semibold uppercase tracking-wider text-white/70">
+          <Sparkles className="h-3.5 w-3.5" />
+          {t.sectionLabel}
+        </span>
+        <h1 className="font-heading text-[34px] font-extrabold leading-tight text-white sm:text-[42px]">
+          {t.title}
+        </h1>
+        <p className="text-[17px] text-white/65">{t.subtitle}</p>
+      </header>
 
-      {/* ── Narrative ──
-          text-[18px] per UX feedback 2026-05-05: previous text-base (16px)
-          was too small for the summary's primary body copy. Leading-relaxed
-          stays so the larger size doesn't crowd. */}
-      <p className="rounded-2xl border border-white/15 bg-white/5 p-5 text-[18px] leading-relaxed text-white/95">
-        {isHe ? analysis.summary.narrative_he : analysis.summary.narrative_en}
-      </p>
-
-      {/* ── Score cards ──
-          Stack vertically on phones - the third Hebrew label
-          ("סיכון לירידה בתשוקה", 21 chars) was wrapping to 3+ lines
-          and clipping at 360px. From sm breakpoint up, 3-col grid
-          stays for the original side-by-side comparison. */}
+      {/* ── Score cards ──────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        {scoreCard(t.friendship, analysis.friendship_score)}
-        {scoreCard(t.conflict, analysis.conflict_health)}
-        {scoreCard(t.passion, analysis.passion_risk, true)}
+        <ScoreCard label={t.friendship} value={analysis.friendship_score} />
+        <ScoreCard label={t.conflict} value={analysis.conflict_health} />
+        <ScoreCard
+          label={t.passion}
+          value={analysis.passion_risk}
+          invert
+        />
       </div>
 
-      {/* ── Love-language card removed 2026-05-05 per Itzik -
-          a single-line label felt too thin and the expanded version
-          was deferred. Will revisit with a different relationship-
-          insight panel later. The underlying scoring (analysis.
-          primary_love_language) still computes; nothing is rendering
-          it for now. */}
+      {/* ── Narrative ────────────────────────────────────────────────── */}
+      <section className="rounded-3xl border border-white/10 bg-white/[0.025] p-6">
+        <div className="text-[12px] font-semibold uppercase tracking-wider text-[#B83C4D]/80">
+          {t.narrativeLabel}
+        </div>
+        <p className="mt-2 text-[18px] leading-[1.7] text-white/90">
+          {isHe ? analysis.summary.narrative_he : analysis.summary.narrative_en}
+        </p>
+      </section>
 
-      {/* ── Focus for the first month ──
-          Source priority:
-          1. summary.top_priority - the user's #1 ranking pick (preferred)
-          2. analysis.top_gap - legacy fallback (axis with lowest score)
-          The card is hidden entirely when neither source has data.
-
-          Copy reframed 2026-05-05 (approved by Itzik): the card no longer
-          shows just the priority label - it now reflects the choice back
-          to the user, validates it, names what the first month will look
-          like, and closes with a doing→results frame. Per-priority copy
-          lives in lib/journey/focus-month-copy.ts; falls back to the bare
-          label when top_priority isn't a known PriorityKey (legacy rows). */}
+      {/* ── Focus for the first month ────────────────────────────────── */}
       {focusLabel && (() => {
         const priority = isPriorityKey(analysis.summary.top_priority)
           ? analysis.summary.top_priority
           : null;
         const focus = getFocusMonthCopy(priority, locale);
         return (
-          <div className="rounded-2xl border border-fuchsia-400/40 bg-gradient-to-br from-fuchsia-500/[0.12] via-fuchsia-500/[0.06] to-transparent p-5">
-            <div className="text-xs uppercase tracking-wider text-fuchsia-200/85">
-              {t.topGap}
-            </div>
-            <div className="mt-1 text-2xl font-semibold text-white">
-              {focusLabel}
-            </div>
-            {focus ? (
-              <div className="mt-3 flex flex-col gap-2.5 text-[18px] leading-relaxed text-white/90">
-                <p>{focus.reflection}</p>
-                <p>{focus.plan}</p>
-                <p className="text-fuchsia-100/95 font-medium">{focus.close}</p>
+          <section
+            className="relative overflow-hidden rounded-3xl border p-6 sm:p-7"
+            style={{
+              borderColor: "rgba(184,60,77,0.35)",
+              background:
+                "linear-gradient(135deg, rgba(184,60,77,0.18) 0%, rgba(108,46,64,0.10) 60%, rgba(255,255,255,0.02) 100%)",
+            }}
+          >
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -end-20 -top-20 h-56 w-56 rounded-full opacity-30 blur-3xl"
+              style={{ background: "#B83C4D" }}
+            />
+            <div className="relative">
+              <div className="text-[12px] font-semibold uppercase tracking-wider text-[#FAF6F7]/70">
+                {t.topGap}
               </div>
-            ) : null}
-          </div>
+              <div className="mt-1.5 font-heading text-[26px] font-extrabold leading-tight text-white sm:text-[30px]">
+                {focusLabel}
+              </div>
+              {focus ? (
+                <ul className="mt-4 flex flex-col gap-2.5">
+                  {[focus.reflection, focus.plan, focus.close].map((line, i) => (
+                    <li
+                      key={i}
+                      className="flex items-start gap-3 text-[17px] leading-[1.7] text-white/90"
+                    >
+                      <CheckCircle2
+                        className="mt-1 h-4 w-4 shrink-0 text-[#B83C4D]"
+                        aria-hidden
+                      />
+                      <span className={i === 2 ? "font-semibold text-[#FAF6F7]" : ""}>
+                        {line}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+          </section>
         );
       })()}
 
-      {/* ── Recommendations ──
-          Bumped from text-sm to text-[18px] per UX feedback 2026-05-05 -
-          recommendations are action-oriented copy the user should actually
-          read, not legal fine print. */}
-      <div>
-        <h2 className="mb-2 text-xl font-semibold text-white">{t.recs}</h2>
-        <ul className="flex flex-col gap-2">
+      {/* ── Recommendations as bullets ───────────────────────────────── */}
+      <section>
+        <h2 className="font-heading text-[22px] font-extrabold text-white sm:text-[26px]">
+          {t.recs}
+        </h2>
+        <ul className="mt-4 flex flex-col gap-2.5">
           {analysis.summary.recommendations.map((rec) => (
             <li
               key={rec.id}
-              className="rounded-2xl border border-white/15 bg-white/5 p-4 text-[18px] leading-relaxed text-white/90"
+              className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.025] px-5 py-3.5"
             >
-              {isHe ? rec.he : rec.en}
+              <span
+                className="mt-1.5 inline-block h-2 w-2 shrink-0 rounded-full"
+                style={{ background: "#B83C4D" }}
+                aria-hidden
+              />
+              <span className="text-[17px] leading-[1.65] text-white/90">
+                {isHe ? rec.he : rec.en}
+              </span>
             </li>
           ))}
         </ul>
-      </div>
+      </section>
 
-      {/* ── CTA / Active subscriber ── */}
-      <div className="rounded-2xl border border-fuchsia-500/40 bg-fuchsia-950/40 p-6">
-        {subscriptionActive ? (
-          <div className="flex flex-col gap-3 text-center">
-            <h2 className="text-2xl font-bold text-white">{t.activeTitle}</h2>
-            <p className="text-white/75">{t.activeSub}</p>
-            <a
-              href={`/${locale}/account`}
-              className="mx-auto mt-2 rounded-2xl bg-fuchsia-600 px-6 py-3 text-sm font-semibold text-white hover:bg-fuchsia-700 transition"
-            >
-              {t.goAccount}
-            </a>
-          </div>
-        ) : (
-          // Offer card - restructured 2026-05-05 (approved by Itzik). The
-          // old generic feature bullets ("full access", "more questionnaires")
-          // are replaced by the actual product: weekly expert-led mentorship
-          // inside a private account. Three feature tiles, each with an
-          // icon + concrete promise + supporting copy.
-          <div className="flex flex-col gap-5">
-            <div>
-              <h2 className="text-[22px] font-bold leading-snug text-white sm:text-2xl">
-                {t.offerHero}
-              </h2>
-              <p className="mt-2 text-[18px] font-semibold text-fuchsia-100">
-                {t.offerSub}
-              </p>
-            </div>
-
-            {/* Feature tiles - stack on mobile, grid on tablet+. */}
-            <div className="flex flex-col gap-3 sm:grid sm:grid-cols-3">
-              <FeatureTile
-                icon={<Lock className="size-5" />}
-                title={t.feat1Title}
-                body={t.feat1Body}
-              />
-              <FeatureTile
-                icon={<CalendarDays className="size-5" />}
-                title={t.feat2Title}
-                body={t.feat2Body}
-              />
-              <FeatureTile
-                icon={<MessageCircle className="size-5" />}
-                title={t.feat3Title}
-                body={t.feat3Body}
-              />
-            </div>
-
-            <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-center text-[16px] text-white/95 font-medium">
-              {t.price}
-            </div>
-
-            <button
-              type="button"
-              onClick={startCheckout}
-              disabled={checkoutBusy}
-              className="w-full rounded-2xl bg-fuchsia-600 px-6 py-4 text-[18px] font-semibold text-white transition hover:bg-fuchsia-700 active:scale-[0.98] disabled:opacity-60"
-            >
-              {checkoutBusy ? t.ctaLoading : t.cta}
-            </button>
-          </div>
-        )}
-      </div>
+      {/* ── CTA / Active subscriber ──────────────────────────────────── */}
+      {subscriptionActive ? (
+        <ActiveSubscriberCard
+          title={t.activeTitle}
+          sub={t.activeSub}
+          ctaLabel={t.goAccount}
+          locale={locale}
+        />
+      ) : (
+        <OfferCard
+          t={t}
+          checkoutBusy={checkoutBusy}
+          onCheckout={startCheckout}
+          Arrow={Arrow}
+        />
+      )}
     </motion.div>
   );
 }
 
-/**
- * Single feature tile inside the offer card. Icon + bold title + supporting
- * line. Local to AnalysisSummary because it isn't used anywhere else and
- * carries the offer's specific styling (fuchsia accent on icon, white
- * gradient panel).
- */
+// ─────────────────────────────────────────────────────────────────────
+// Score card — solid surface, big numeric, label above. Invert flips
+// the colour mapping for "risk" axes (high=bad, low=good).
+// ─────────────────────────────────────────────────────────────────────
+
+function ScoreCard({
+  label,
+  value,
+  invert = false,
+}: {
+  label: string;
+  value: number;
+  invert?: boolean;
+}) {
+  const tone = invert
+    ? value >= 60
+      ? "text-rose-300"
+      : "text-emerald-300"
+    : value >= 60
+      ? "text-emerald-300"
+      : "text-amber-300";
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 transition hover:border-white/15">
+      <div className="text-[13px] font-medium text-white/70">{label}</div>
+      <div className={`mt-1 text-[28px] font-extrabold leading-none ${tone}`}>
+        {value}
+        <span className="ms-1 text-[14px] font-semibold text-white/45">
+          /100
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────
+
+function ActiveSubscriberCard({
+  title,
+  sub,
+  ctaLabel,
+  locale,
+}: {
+  title: string;
+  sub: string;
+  ctaLabel: string;
+  locale: string;
+}) {
+  return (
+    <section
+      className="flex flex-col items-center gap-3 rounded-3xl border p-7 text-center"
+      style={{
+        borderColor: "rgba(184,60,77,0.35)",
+        background:
+          "linear-gradient(135deg, rgba(184,60,77,0.18) 0%, rgba(108,46,64,0.08) 100%)",
+      }}
+    >
+      <div
+        className="flex h-14 w-14 items-center justify-center rounded-full"
+        style={{
+          background: "linear-gradient(135deg, #B83C4D 0%, #6C2E40 100%)",
+          boxShadow: "0 12px 30px -10px rgba(184,60,77,0.55)",
+        }}
+      >
+        <CheckCircle2 className="h-7 w-7 text-[#FAF6F7]" />
+      </div>
+      <h2 className="font-heading text-[26px] font-extrabold text-white">
+        {title}
+      </h2>
+      <p className="max-w-md text-[16px] text-white/75">{sub}</p>
+      <a
+        href={`/${locale}/my`}
+        className="mt-2 inline-flex min-h-[52px] items-center justify-center rounded-full px-7 text-[15px] font-bold text-white transition hover:brightness-110"
+        style={{
+          background: "linear-gradient(135deg, #B83C4D 0%, #6C2E40 100%)",
+        }}
+      >
+        {ctaLabel}
+      </a>
+    </section>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────
+
+function OfferCard({
+  t,
+  checkoutBusy,
+  onCheckout,
+  Arrow,
+}: {
+  t: {
+    offerLabel: string;
+    offerHero: string;
+    offerSub: string;
+    feat1Title: string;
+    feat1Body: string;
+    feat2Title: string;
+    feat2Body: string;
+    feat3Title: string;
+    feat3Body: string;
+    price: string;
+    priceNote: string;
+    cta: string;
+    ctaLoading: string;
+  };
+  checkoutBusy: boolean;
+  onCheckout: () => void;
+  Arrow: typeof ArrowLeft;
+}) {
+  return (
+    <section
+      className="relative overflow-hidden rounded-3xl border p-7 sm:p-8"
+      style={{
+        borderColor: "rgba(184,60,77,0.45)",
+        background:
+          "linear-gradient(160deg, #1a0f15 0%, #0E0810 60%, #0E0810 100%)",
+        boxShadow: "0 30px 80px -30px rgba(184,60,77,0.5)",
+      }}
+    >
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -start-24 -top-24 h-64 w-64 rounded-full opacity-30 blur-3xl"
+        style={{ background: "#B83C4D" }}
+      />
+
+      <div className="relative">
+        <span className="inline-flex items-center gap-2 rounded-full border border-[#B83C4D]/40 bg-[#B83C4D]/15 px-3 py-1 text-[12px] font-semibold uppercase tracking-wider text-[#FAF6F7]">
+          {t.offerLabel}
+        </span>
+        <h2 className="mt-3 font-heading text-[26px] font-extrabold leading-snug text-white sm:text-[30px]">
+          {t.offerHero}
+        </h2>
+        <p className="mt-2 text-[17px] font-semibold text-[#FAF6F7]/85">
+          {t.offerSub}
+        </p>
+
+        <div className="mt-6 flex flex-col gap-3 sm:grid sm:grid-cols-3">
+          <FeatureTile
+            icon={<Lock className="size-5" />}
+            title={t.feat1Title}
+            body={t.feat1Body}
+          />
+          <FeatureTile
+            icon={<CalendarDays className="size-5" />}
+            title={t.feat2Title}
+            body={t.feat2Body}
+          />
+          <FeatureTile
+            icon={<MessageCircle className="size-5" />}
+            title={t.feat3Title}
+            body={t.feat3Body}
+          />
+        </div>
+
+        <div className="mt-6 flex flex-col items-center gap-1.5 sm:flex-row sm:justify-between sm:gap-4">
+          <div className="flex items-baseline gap-2">
+            <span className="font-heading text-[34px] font-extrabold text-white">
+              {t.price}
+            </span>
+            <span className="text-[14px] text-white/55">· {t.priceNote}</span>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={onCheckout}
+          disabled={checkoutBusy}
+          className="group mt-5 inline-flex min-h-[58px] w-full items-center justify-center gap-3 rounded-full px-8 text-[17px] font-bold text-white transition hover:brightness-110 disabled:opacity-60"
+          style={{
+            background: "linear-gradient(135deg, #B83C4D 0%, #6C2E40 100%)",
+            boxShadow: "0 18px 40px -12px rgba(184,60,77,0.55)",
+          }}
+        >
+          {checkoutBusy ? t.ctaLoading : t.cta}
+          {!checkoutBusy ? (
+            <Arrow className="h-4 w-4 transition-transform group-hover:translate-x-[-3px]" />
+          ) : null}
+        </button>
+      </div>
+    </section>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────
+
 function FeatureTile({
   icon,
   title,
@@ -318,14 +485,18 @@ function FeatureTile({
   body: string;
 }) {
   return (
-    <div className="flex flex-col gap-2 rounded-xl border border-white/15 bg-white/[0.04] p-4">
-      <div className="flex items-center gap-2 text-fuchsia-200">
-        <span aria-hidden>{icon}</span>
-      </div>
-      <div className="text-[18px] font-semibold leading-snug text-white">
+    <div className="flex flex-col gap-2 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+      <span
+        className="flex h-9 w-9 items-center justify-center rounded-full text-[#FAF6F7]"
+        style={{ background: "rgba(184,60,77,0.25)" }}
+        aria-hidden
+      >
+        {icon}
+      </span>
+      <div className="text-[16px] font-bold leading-snug text-white">
         {title}
       </div>
-      <p className="text-[16px] leading-relaxed text-white/85">{body}</p>
+      <p className="text-[14px] leading-[1.55] text-white/70">{body}</p>
     </div>
   );
 }

@@ -352,40 +352,9 @@ export default async function MyHubPage({
             BELOW the pillar cards. Cards come first (the products), partner
             stuff comes second (the relationship plumbing). */}
 
-        {/* ─────── Profile completeness nudge ───────
-            Per Itzik 2026-05-06: this banner is intentionally narrow in
-            scope - it is shown ONLY to users who purchased the Journey
-            (ליווי) plan, because that is the path where pairing a partner
-            is meaningful (the couple subscription is exactly two seats -
-            a third redeem is rejected at the DB level by
-            join_couple_by_pair_code, see migrations/029 line 226).
-            Free / games-only / adults-only users don't need the nudge:
-            their actions don't depend on a complete profile yet, and the
-            nag was creating false friction. */}
-        {entitlements.journey && profileIncomplete ? (
-          <section className="mt-8">
-            <div className="flex flex-wrap items-start justify-between gap-4 rounded-2xl border border-amber-300/40 bg-amber-400/10 p-5 backdrop-blur">
-              <div className="text-sm text-amber-100">
-                <p className="font-semibold">
-                  {isHe ? "השלימו את הפרופיל" : "Complete your profile"}
-                </p>
-                <p className="mt-1 text-amber-100/85">
-                  {isHe
-                    ? "כדי לצמד פרטנר/ית, להזין קוד או להתחיל משחק - צריך שם מלא, נייד וסיסמה."
-                    : "To pair a partner, redeem a code or start a game, add your full name, mobile, and password."}
-                </p>
-              </div>
-              <Link
-                href={`/account/profile?reason=profile_incomplete&next=${encodeURIComponent(
-                  "/my",
-                )}`}
-                className="inline-flex min-h-[40px] items-center justify-center rounded-full bg-white px-5 text-sm font-semibold text-amber-700 shadow hover:bg-amber-50"
-              >
-                {isHe ? "להשלמה" : "Complete now"}
-              </Link>
-            </div>
-          </section>
-        ) : null}
+        {/* Profile-completion + redeem-code banners moved BELOW the
+            pillar grid per Itzik 2026-05-07 — see the section right
+            after the pillar grid ends (line ~490+). */}
 
         {/* ─────── The three pillars ─────── */}
         <section className="mt-8 grid gap-6 lg:grid-cols-3">
@@ -534,27 +503,57 @@ export default async function MyHubPage({
           </section>
         ) : null}
 
-        {/* ─────── "Got a code from partner?" - only for users without
-            a couple yet. Compact version, below the cards per spec §5.2. */}
-        {!hasCouple ? (
-          <section className="mt-8">
-            <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4 backdrop-blur">
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-white">
-                  {isHe ? "קיבלתם קוד מבן/בת הזוג?" : "Got a code from your partner?"}
-                </p>
-                <p className="mt-0.5 text-xs text-white/60">
-                  {isHe
-                    ? "הזינו את הקוד והחשבון יתחבר אליהם מיד."
-                    : "Enter the code and your account links to theirs instantly."}
-                </p>
+        {/* ─────── Profile-completion + redeem-code (Itzik 2026-05-07) ───
+            These two banners now sit in ONE row directly under the
+            services pillars — two equal columns on desktop, stacked
+            on mobile. Each column renders only when its condition is
+            met:
+              • Profile-completion → only journey customers (pairing
+                a partner is the action that requires it).
+              • "Got a code from partner?" → only users without a
+                couple yet.
+            If neither condition holds, the section renders nothing. */}
+        {(entitlements.journey && profileIncomplete) || !hasCouple ? (
+          <section className="mt-8 grid gap-4 sm:grid-cols-2">
+            {entitlements.journey && profileIncomplete ? (
+              <div className="flex flex-col justify-between gap-3 rounded-2xl border border-amber-300/40 bg-amber-400/10 p-5">
+                <div>
+                  <p className="text-[16px] font-semibold text-amber-100">
+                    {isHe ? "השלימו את הפרופיל" : "Complete your profile"}
+                  </p>
+                  <p className="mt-1.5 text-[14px] leading-[1.55] text-amber-100/85">
+                    {isHe
+                      ? "כדי לצמד פרטנר/ית או להזין קוד — צריך שם מלא, נייד וסיסמה."
+                      : "To pair a partner or redeem a code, add your full name, mobile, and password."}
+                  </p>
+                </div>
+                <Link
+                  href={`/account/profile?reason=profile_incomplete&next=${encodeURIComponent("/my")}`}
+                  className="inline-flex min-h-[44px] items-center justify-center self-start rounded-full bg-white px-5 text-[15px] font-semibold text-amber-700 shadow hover:bg-amber-50 transition"
+                >
+                  {isHe ? "להשלמה" : "Complete now"}
+                </Link>
               </div>
-              <RedeemCodeButton
-                isHe={isHe}
-                variant="primary"
-                redirectTo={`/${locale}/my`}
-              />
-            </div>
+            ) : null}
+            {!hasCouple ? (
+              <div className="flex flex-col justify-between gap-3 rounded-2xl border border-white/15 bg-white/[0.05] p-5">
+                <div>
+                  <p className="text-[16px] font-semibold text-white">
+                    {isHe ? "קיבלתם קוד מבן/בת הזוג?" : "Got a code from your partner?"}
+                  </p>
+                  <p className="mt-1.5 text-[14px] leading-[1.55] text-white/75">
+                    {isHe
+                      ? "הזינו את הקוד והחשבון יתחבר אליהם מיד."
+                      : "Enter the code and your account links to theirs instantly."}
+                  </p>
+                </div>
+                <RedeemCodeButton
+                  isHe={isHe}
+                  variant="primary"
+                  redirectTo={`/${locale}/my`}
+                />
+              </div>
+            ) : null}
           </section>
         ) : null}
 
@@ -616,8 +615,11 @@ const PILLAR_THEMES: Record<
       "bg-gradient-to-br from-fuchsia-500 to-rose-500 text-white shadow-[0_8px_24px_-8px_rgba(232,72,153,0.7)]",
     iconWrapMarketing:
       "bg-fuchsia-500/15 text-fuchsia-200 ring-1 ring-fuchsia-300/25",
+    /* Entitled gradient bumped 10/3/10 → 22/8/22 per Itzik 2026-05-07 —
+       owned pillars now have a clearly stronger fill so the user sees
+       "I have this" at a glance, not just "this is a card". */
     cardEntitled:
-      "border-fuchsia-300/30 bg-gradient-to-br from-fuchsia-500/10 via-white/[0.03] to-rose-500/10 hover:border-fuchsia-300/50",
+      "border-fuchsia-300/45 bg-gradient-to-br from-fuchsia-500/[0.22] via-white/[0.08] to-rose-500/[0.22] hover:border-fuchsia-300/60",
     cardMarketing:
       "border-white/10 bg-white/[0.03] hover:border-fuchsia-300/30 hover:bg-fuchsia-500/[0.06]",
     cardGlow:
@@ -634,7 +636,7 @@ const PILLAR_THEMES: Record<
     iconWrapMarketing:
       "bg-emerald-500/15 text-emerald-200 ring-1 ring-emerald-300/25",
     cardEntitled:
-      "border-emerald-300/25 bg-gradient-to-br from-emerald-500/10 via-slate-950/40 to-teal-500/10 hover:border-emerald-300/50",
+      "border-emerald-300/45 bg-gradient-to-br from-emerald-500/[0.22] via-slate-900/45 to-teal-500/[0.22] hover:border-emerald-300/60",
     cardMarketing:
       "border-slate-300/[0.08] bg-slate-950/40 hover:border-emerald-300/25 hover:bg-emerald-500/[0.05]",
     cardGlow:
@@ -651,7 +653,7 @@ const PILLAR_THEMES: Record<
     iconWrapMarketing:
       "bg-amber-500/15 text-amber-200 ring-1 ring-amber-300/25",
     cardEntitled:
-      "border-amber-300/25 bg-gradient-to-br from-amber-500/10 via-white/[0.03] to-rose-500/10 hover:border-amber-300/50",
+      "border-amber-300/45 bg-gradient-to-br from-amber-500/[0.22] via-white/[0.08] to-rose-500/[0.22] hover:border-amber-300/60",
     cardMarketing:
       "border-white/10 bg-white/[0.03] hover:border-amber-300/25 hover:bg-amber-500/[0.06]",
     cardGlow:

@@ -32,6 +32,33 @@ export type CreateDocumentInput = {
   deal_number?:     string | null
 }
 
+/**
+ * VAT exemption flag — Itzik 2026-05-07.
+ *
+ * The mioshy advertised price is the FINAL price the customer pays
+ * (e.g. ₪57/wk *includes* VAT). The uxellent issuer accepts a single
+ * `is_vat_free` flag per Itzik:
+ *
+ *   • is_vat_free: true   → VAT-exempt (export to non-Israeli, no VAT
+ *                            charged or split)
+ *   • is_vat_free: false  → standard Israeli sale, the `amount` is
+ *                            the gross/inclusive total — the issuer
+ *                            splits VAT out backwards
+ *                            (base = amount/1.17, vat = amount * 0.17/1.17).
+ *
+ * Without this field, the issuer was defaulting to "add 17% on top",
+ * which is why a ₪1.00 charge produced a 1.17 line item.
+ *
+ * Mapping rule: Israeli customer → not VAT-free; non-Israeli → VAT-free.
+ * Geo is server-trusted (Vercel edge headers), so we read it off the
+ * `is_israeli` field that's already on the input.
+ */
+function deriveIsVatFree(isIsraeli: boolean): boolean {
+  // Israeli customer = NOT VAT-free (VAT applies, included in amount).
+  // Non-Israeli (export) = VAT-free (no VAT charged or split).
+  return !isIsraeli
+}
+
 export type CreateDocumentResult =
   | { success: true;  document_url: string; document_id: string }
   | { success: false; message: string; errorCode: MioshyBillingErrorCode }
@@ -68,6 +95,11 @@ export async function createBillingDocument(
   const body = {
     ...input,
     idempotency_key: idempotencyKey, // forward-compatible - issuer may use this to dedupe
+    /* Tell the issuer whether this transaction is VAT-exempt. For
+       Israeli customers (the default) the amount we send already
+       includes 17% VAT, so the issuer must split it backwards instead
+       of adding 17% on top. */
+    is_vat_free: deriveIsVatFree(input.is_israeli),
   }
 
   let res: Response

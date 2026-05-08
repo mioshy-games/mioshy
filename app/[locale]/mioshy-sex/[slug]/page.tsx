@@ -687,9 +687,13 @@ export default async function BetweenUsGameDetailPage({
                   {nextGameTitle}
                 </h3>
               </div>
+              {/* Per Itzik 2026-05-07: this is a SECONDARY CTA (the
+                  primary purchase action lives in the hero). Outline-
+                  only treatment so it doesn't compete with the buy
+                  button. */}
               <Link
                 href={`/mioshy-sex/${nextGame.slug}`}
-                className="group inline-flex items-center justify-center gap-2 self-start rounded-full bg-gradient-to-r from-rose-500 via-fuchsia-500 to-violet-500 px-7 py-3 text-[16px] font-semibold text-white shadow-xl shadow-rose-600/30 transition hover:brightness-110 sm:self-auto"
+                className="group inline-flex items-center justify-center gap-2 self-start rounded-full border border-white/30 bg-transparent px-7 py-3 text-[16px] font-semibold text-white/85 transition hover:border-white/60 hover:bg-white/[0.04] hover:text-white sm:self-auto"
               >
                 <span>{isHe ? "המשך לגלות" : "Keep exploring"}</span>
                 <ArrowRight

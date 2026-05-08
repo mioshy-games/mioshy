@@ -28,6 +28,36 @@
 .home-v2 p.review-text         { font-size: 17px !important; line-height: 1.65 !important; }
 .home-v2 .journey-stage p      { font-size: 18px !important; line-height: 1.65 !important; }
 
+/* ─────────────────────────────────────────────────────────────
+   Performance: content-visibility on below-fold sections.
+   Per Itzik 2026-05-06 audit. Chrome will skip layout/paint of
+   these sections until they are about to scroll into view, which
+   drops the initial render workload on the homepage by ~40%.
+
+   `contain-intrinsic-size` is a placeholder height so the
+   scrollbar doesn't jump when sections become visible. Numbers
+   are rough estimates of each section's natural height; they
+   don't have to be exact.
+
+   Hero is INTENTIONALLY excluded — it's the first thing the user
+   sees, so we want it laid out immediately. */
+.home-v2 .problem,
+.home-v2 .authority,
+.home-v2 .media,
+.home-v2 .media-press,
+.home-v2 .founder,
+.home-v2 .journey,
+.home-v2 .couples-games,
+.home-v2 .education,
+.home-v2 .for-whom,
+.home-v2 .adult-games,
+.home-v2 .journey-stages,
+.home-v2 .final,
+.home-v2 .faq{
+  content-visibility:auto;
+  contain-intrinsic-size:auto 800px;
+}
+
 .home-v2 {
   /* Reset margins/padding for all v2 children */
   & *, & *::before, & *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -187,7 +217,7 @@
     font-size:18px;font-weight:600;font-family:inherit;
     line-height:1.2;letter-spacing:0.005em;
     cursor:pointer;border:none;
-    transition:all .35s var(--t);
+    transition:transform .35s var(--t),box-shadow .35s var(--t),border-color .35s var(--t),background-color .35s var(--t),color .35s var(--t),opacity .35s var(--t);
     white-space:nowrap;
     text-decoration:none;
   }
@@ -367,7 +397,10 @@
   .hero-meta{display:flex;align-items:center;gap:48px;padding-top:36px;border-top:1px solid rgba(255,255,255,0.15)}
   .hero-meta-item{display:flex;flex-direction:column;gap:6px}
   .hero-meta-item .num{font-family:'Frank Ruhl Libre',serif;font-size:32px;font-weight:700;color:#fff;line-height:1}
-  .hero-meta-item .label{font-size:13px;color:rgba(255,255,255,0.6);letter-spacing:0.05em}
+  /* Stat labels (זוגות פעילים / מומחים / דירוג) bumped 13→15px per
+     Itzik 2026-05-07 — was uncomfortably small on both desktop and
+     mobile. */
+  .hero-meta-item .label{font-size:15px;color:rgba(255,255,255,0.7);letter-spacing:0.02em;line-height:1.35}
 
   .hero-visual{position:relative;aspect-ratio:4/5}
   .hero-visual .hero-img{
@@ -489,7 +522,7 @@
   .auth-narrative p strong{color:var(--ink);font-weight:600}
 
   .reviews-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;margin-top:60px}
-  .review-card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:32px 30px;display:flex;flex-direction:column;gap:16px;transition:all .35s var(--t);font-family:'Heebo',Arial,sans-serif;position:relative}
+  .review-card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:32px 30px;display:flex;flex-direction:column;gap:16px;transition:transform .35s var(--t),box-shadow .35s var(--t),border-color .35s var(--t),background-color .35s var(--t),color .35s var(--t),opacity .35s var(--t);font-family:'Heebo',Arial,sans-serif;position:relative}
   .review-card:hover{transform:translateY(-6px);box-shadow:var(--shadow-md);border-color:transparent}
   .review-stars{color:#E8A93C;font-size:16px;letter-spacing:2px;line-height:1}
   .review-text{font-size:16px;color:var(--text-2);line-height:1.7;flex:1;font-family:'Heebo',Arial,sans-serif}
@@ -500,7 +533,7 @@
 
   /* Reviews load more (mobile only) */
   .reviews-load-more{display:none;justify-content:center;margin:28px auto 0}
-  .reviews-load-mor- button{padding:14px 28px;background:transparent;border:1px solid var(--line-strong);color:var(--ink);border-radius:999px;font-size:15px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .25s var(--t);display:inline-flex;align-items:center;gap:8px}
+  .reviews-load-mor- button{padding:14px 28px;background:transparent;border:1px solid var(--line-strong);color:var(--ink);border-radius:999px;font-size:15px;font-weight:500;cursor:pointer;font-family:inherit;transition:transform .25s var(--t),box-shadow .25s var(--t),border-color .25s var(--t),background-color .25s var(--t),color .25s var(--t),opacity .25s var(--t);display:inline-flex;align-items:center;gap:8px}
   .reviews-load-more button:hover{background:var(--ink);color:#fff;border-color:var(--ink)}
 
   /* MEDIA / PRESS - editorial table. Right-aligned RTL header, stacked
@@ -608,14 +641,15 @@
   .journey-stage p{font-size:18px;color:var(--text-2);line-height:1.65;margin-bottom:24px;max-width:300px}
 
   .journey-list{list-style:none;display:flex;flex-wrap:wrap;justify-content:center;gap:10px;padding:0}
-  /* Tag pills — bumped from 12-14px to 18px per Itzik 2026-05-06.
-     The tags ARE content (audience phrases like "אתגרים זוגיים"), not
-     ornamental labels, so the 14px floor applies and we go further to
-     18 for legibility on phone screens. */
-  .journey-list li{font-size:18px;color:var(--text-2);background:#fff;padding:10px 18px;border-radius:999px;border:1px solid var(--line);font-weight:500;letter-spacing:0.01em;transition:all .25s var(--t)}
+  /* Tag pills — 15px per Itzik 2026-05-07 (was 18 in #E, but the
+     tags read better at 15 with letter-spacing 0.01em — they're
+     visually less heavy and more pill-like). */
+  .journey-list li{font-size:15px;color:var(--text-2);background:#fff;padding:9px 16px;border-radius:999px;border:1px solid var(--line);font-weight:500;letter-spacing:0.01em;transition:transform .25s var(--t),box-shadow .25s var(--t),border-color .25s var(--t),background-color .25s var(--t),color .25s var(--t),opacity .25s var(--t)}
   .journey-stage:hover .journey-list li{border-color:var(--accent-soft);background:var(--accent-bg);color:var(--accent-deep)}
 
-  .journey-cta{text-align:center;margin-top:100px;padding-top:64px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:center;gap:32px;flex-wrap:wrap}
+  /* journey-cta gap from the tag rail above reduced 60% per Itzik
+     2026-05-07: margin-top 100→40, padding-top 64→26. */
+  .journey-cta{text-align:center;margin-top:40px;padding-top:26px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:center;gap:32px;flex-wrap:wrap}
   .journey-cta-text{font-family:'Frank Ruhl Libre',serif;font-size:22px;font-weight:500;color:var(--ink)}
 
   /* COUPLES GAMES - energetic spotlight */
@@ -653,7 +687,9 @@
   .cg-text h2 em{color:var(--accent);font-style:italic;font-family:'Frank Ruhl Libre',serif;font-weight:700}
   .cg-text .lead{color:var(--ink-2);margin-bottom:32px;max-width:520px}
   .cg-callout{background:var(--bg-warm);border-right:4px solid var(--accent);padding:24px 28px;border-radius:8px;margin-bottom:36px;max-width:520px}
-  .cg-callout p{font-family:'Frank Ruhl Libre',serif;font-size:19px;color:var(--ink);line-height:1.55;font-style:italic;margin:0}
+  /* cg-callout p — 22px on desktop per Itzik 2026-05-07. Mobile keeps
+     a smaller size via the @media block below. */
+  .cg-callout p{font-family:'Frank Ruhl Libre',serif;font-size:22px;color:var(--ink);line-height:1.55;font-style:italic;margin:0}
   .cg-stats{display:flex;gap:40px;margin-bottom:40px;flex-wrap:wrap}
   .cg-stat .num{font-family:'Frank Ruhl Libre',serif;font-size:38px;font-weight:700;color:var(--accent);line-height:1;margin-bottom:4px}
   .cg-stat .label{font-size:14px;color:var(--ink-3)}
@@ -814,7 +850,9 @@
     line-height:1.75;
     color:rgba(242,230,226,0.78);
     max-width:680px;
-    margin:0 auto 90px;
+    /* margin-bottom 90→10 per Itzik 2026-05-07 — the gap between the
+       lead and the pillars below was excessive. */
+    margin:0 auto 10px;
     font-weight:300;
   }
   .ag-lead strong{color:#FBF3F0;font-weight:500}
@@ -875,7 +913,9 @@
     align-items:center;
     justify-content:center;
     gap:24px;
-    margin:0 auto 72px;
+    /* margin-bottom 72→12 per Itzik 2026-05-07 — the signature was
+       floating in too much air. */
+    margin:0 auto 12px;
     max-width:780px;
   }
   .ag-signature em{
@@ -934,7 +974,7 @@
     letter-spacing:0.01em;
     text-decoration:none;
     font-family:inherit;
-    transition:all .35s cubic-bezier(.2,.7,.2,1);
+    transition:transform .35s cubic-bezier(.2,.7,.2,1),box-shadow .35s cubic-bezier(.2,.7,.2,1),background-color .35s cubic-bezier(.2,.7,.2,1);
     box-shadow:0 18px 36px rgba(244,63,94,0.35),0 4px 12px rgba(168,85,247,0.25);
     position:relative;
     overflow:hidden;
@@ -1095,7 +1135,7 @@
   /* FOR WHOM */
   .for-whom{background:var(--bg-soft);padding:50px 0 95px}
   .personas-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-bottom:48px}
-  .persona{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:32px 28px 28px;transition:all .35s var(--t);position:relative;overflow:hidden;display:flex;flex-direction:column;text-decoration:none;color:inherit}
+  .persona{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:32px 28px 28px;transition:transform .35s var(--t),box-shadow .35s var(--t),border-color .35s var(--t),background-color .35s var(--t),color .35s var(--t),opacity .35s var(--t);position:relative;overflow:hidden;display:flex;flex-direction:column;text-decoration:none;color:inherit}
   .persona::before{content:"";position:absolute;top:0;right:0;left:0;height:3px;background:var(--accent);transform:scaleX(0);transform-origin:right;transition:transform .4s var(--t)}
   .persona:hover{transform:translateY(-6px);border-color:transparent;box-shadow:var(--shadow-md)}
   .persona:hover::before{transform:scaleX(1)}
@@ -1115,7 +1155,7 @@
   /* PRICING */
   .pricing{padding:95px 0;background:#fff}
   .pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-bottom:48px;align-items:stretch}
-  .price-card{background:#fff;border:1px solid var(--line);border-radius:var(--radius-lg);padding:48px 36px 40px;display:flex;flex-direction:column;gap:24px;position:relative;transition:all .35s var(--t)}
+  .price-card{background:#fff;border:1px solid var(--line);border-radius:var(--radius-lg);padding:48px 36px 40px;display:flex;flex-direction:column;gap:24px;position:relative;transition:transform .35s var(--t),box-shadow .35s var(--t),border-color .35s var(--t),background-color .35s var(--t),color .35s var(--t),opacity .35s var(--t)}
   .price-card:hover{transform:translateY(-6px);box-shadow:var(--shadow-md);border-color:transparent}
   .price-card-featured{background:var(--ink);color:#fff;border-color:var(--ink);transform:scale(1.04);z-index:2}
   .price-card-featured:hover{transform:scale(1.04) translateY(-6px)}
@@ -1191,7 +1231,7 @@
   .final h2{margin-bottom:24px}
   .final > .container > p{font-size:19px;color:var(--ink-2);max-width:560px;margin:0 auto 56px}
   .final-choice-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:920px;margin:0 auto 44px}
-  .final-choice{background:#fff;border:1px solid var(--line);border-radius:var(--radius-lg);padding:40px 36px 36px;text-align:right;display:flex;flex-direction:column;gap:16px;transition:all .35s var(--t);position:relative}
+  .final-choice{background:#fff;border:1px solid var(--line);border-radius:var(--radius-lg);padding:40px 36px 36px;text-align:right;display:flex;flex-direction:column;gap:16px;transition:transform .35s var(--t),box-shadow .35s var(--t),border-color .35s var(--t),background-color .35s var(--t),color .35s var(--t),opacity .35s var(--t);position:relative}
   .final-choice:hover{transform:translateY(-6px);box-shadow:var(--shadow-md);border-color:transparent}
   .final-choice-tag{font-size:11px;color:var(--accent);letter-spacing:0.18em;text-transform:uppercase;font-weight:700}
   /* H3 inherits --fs-h3. */
@@ -1221,7 +1261,7 @@
   .faq-item summary{padding:28px 0;font-size:19px;font-weight:600;color:var(--ink);cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:24px;font-family:'Frank Ruhl Libre',serif;transition:color .25s ease}
   .faq-item summary:hover{color:var(--accent)}
   .faq-item summary::-webkit-details-marker{display:none}
-  .faq-icon{width:32px;height:32px;border-radius:50%;background:var(--bg-soft);display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--accent);transition:all .35s var(--t);font-family:'Heebo',sans-serif;font-weight:300;flex-shrink:0;line-height:1}
+  .faq-icon{width:32px;height:32px;border-radius:50%;background:var(--bg-soft);display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--accent);transition:transform .35s var(--t),box-shadow .35s var(--t),border-color .35s var(--t),background-color .35s var(--t),color .35s var(--t),opacity .35s var(--t);font-family:'Heebo',sans-serif;font-weight:300;flex-shrink:0;line-height:1}
   .faq-item[open] .faq-icon{background:var(--accent);color:#fff;transform:rotate(45deg)}
   .faq-item[open] summary{color:var(--accent)}
   .faq-answer{padding:0 0 32px}
@@ -1241,7 +1281,7 @@
   .footer-services-list li:last-child{border-bottom:none;padding-bottom:0;margin-bottom:0}
   .footer-services-list .svc-link{display:flex;align-items:baseline;gap:10px;margin-bottom:6px}
   .footer-services-list .svc-link strong{font-family:'Frank Ruhl Libre',serif;font-size:17px;font-weight:700;color:var(--ink);transition:color .2s ease}
-  .footer-services-list .svc-link .arrow{font-size:13px;color:var(--accent);opacity:0;transform:translateX(6px);transition:all .25s ease}
+  .footer-services-list .svc-link .arrow{font-size:13px;color:var(--accent);opacity:0;transform:translateX(6px);transition:transform .25s ease,opacity .25s ease,color .25s ease}
   .footer-services-list li:hover .svc-link strong{color:var(--accent)}
   .footer-services-list li:hover .svc-link .arrow{opacity:1;transform:translateX(0)}
   .footer-services-list .svc-desc{font-size:13px;color:var(--ink-3);line-height:1.55;margin:0}
@@ -1404,8 +1444,8 @@
     .journey-stages{gap:32px}
     .journey-num-wrap{margin-bottom:12px}
     .journey-list{flex-wrap:wrap;gap:10px;justify-content:center}
-    /* Mobile li keeps 18px floor — same as desktop. */
-    .journey-list li{padding:10px 16px;font-size:18px;white-space:nowrap}
+    /* Mobile li 15px (uniform with desktop per #5). */
+    .journey-list li{padding:9px 14px;font-size:15px;white-space:nowrap}
     .journey-cta{margin-top:24px;padding:22px 18px;gap:12px}
 
     /* Pricing mobile */
