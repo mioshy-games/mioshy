@@ -345,7 +345,7 @@ export default async function HomePage({
             <AuroraValueCell
               accent="from-violet-500 via-indigo-500 to-sky-500"
               icon={<ClipboardList className="h-5 w-5 text-white" />}
-              title={isHe ? "שאלון מלווה אישי" : "Personal questionnaire"}
+              title={isHe ? "אבחון מלווה אישי" : "Personal assessment"}
               body={
                 isHe
                   ? "אבחון זוגי שמוליד תובנות חודשיות ותוכנית אימון מותאמת."
@@ -404,8 +404,8 @@ export default async function HomePage({
           eyebrow={isHe ? "אימון זוגי חודשי" : "Monthly couple coaching"}
           title={
             isHe
-              ? "שאלון שלומד אתכם - ומביא תובנות כל חודש"
-              : "A questionnaire that learns you - and delivers monthly insights"
+              ? "אבחון שלומד אתכם - ומביא תובנות כל חודש"
+              : "An assessment that learns you - and delivers monthly insights"
           }
           subtitle={
             isHe
@@ -460,7 +460,7 @@ export default async function HomePage({
                   href="/journey"
                   className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-rose-500 via-fuchsia-500 to-violet-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-fuchsia-500/25 transition hover:brightness-110 hover:shadow-xl hover:shadow-fuchsia-500/40"
                 >
-                  {isHe ? "להתחיל את השאלון" : "Start the questionnaire"}
+                  {isHe ? "להתחיל את האבחון" : "Start the assessment"}
                   <ArrowRight
                     className={`h-4 w-4 ${isHe ? "rotate-180" : ""}`}
                   />
@@ -496,8 +496,8 @@ export default async function HomePage({
                 </p>
                 <p className="relative mt-4 text-sm text-slate-600">
                   {isHe
-                    ? "לא עוד עצות כלליות. השאלון מתאים את עצמו למה שקורה אצלכם עכשיו, ואנחנו בונים איתכם מסע."
-                    : "No generic advice. The questionnaire adapts to what's going on with you now - and we build the journey together."}
+                    ? "לא עוד עצות כלליות. האבחון מתאים את עצמו למה שקורה אצלכם עכשיו, ואנחנו בונים איתכם מסע."
+                    : "No generic advice. The assessment adapts to what's going on with you now - and we build the journey together."}
                 </p>
 
                 <dl className="relative mt-6 grid grid-cols-3 gap-2 border-t border-slate-200/70 pt-5 text-center">

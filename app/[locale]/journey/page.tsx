@@ -48,6 +48,7 @@ import { routing } from "@/i18n/routing";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getOwnerJourneyStatus } from "@/lib/journey-content/owner-status";
 import { getCurrentCoupleContext } from "@/lib/between-us/couples";
+import { JourneyCheckoutButton } from "@/components/journey/JourneyCheckoutButton";
 import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
 // FAQ uses the same scoped CSS as the homepage v2 FAQ - wrapper class .home-v2
 import "@/components/marketing/v2/styles.css";
@@ -77,7 +78,6 @@ export async function generateMetadata({
       locale === "he"
         ? [
             "מסע זוגי",
-            "שאלון זוגי",
             "אבחון זוגי",
             "ייעוץ זוגי",
             "תרגולים לזוגות",
@@ -209,13 +209,16 @@ export default async function JourneyMarketingPage({
               Itzik 2026-05-06 — this is the only meaningful action on a
               locked screen, so it can't be the same size as the secondary. */}
           <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
-            <Link
-              href="/pricing"
-              className="inline-flex min-h-[56px] items-center justify-center rounded-full bg-white px-9 text-[18px] font-semibold text-emerald-700 shadow-2xl shadow-emerald-500/30 hover:bg-emerald-50 hover:shadow-emerald-500/40 transition"
-            >
-              {isHe ? "להצטרף לליווי" : "Join the journey"}
-              <ArrowRight className={`ms-2 h-5 w-5 ${isHe ? "rotate-180" : ""}`} />
-            </Link>
+            {/* W1.1 — clicks the real Cardcom checkout instead of /pricing.
+                The previous Link bounced through a marketing page with no
+                clear path to payment; users hit a dead end. */}
+            <JourneyCheckoutButton
+              isHe={isHe}
+              label={isHe ? "להצטרפות עכשיו" : "Join now"}
+              variant="white"
+              source="journey_landing_locked"
+              returnPath={`/${isHe ? "he" : "en"}/my/journey`}
+            />
             <Link
               href="/my"
               className="inline-flex min-h-[56px] items-center justify-center rounded-full border border-white/20 bg-white/10 px-7 text-[16px] font-medium text-white backdrop-blur hover:bg-white/20 transition"
@@ -317,8 +320,8 @@ export default async function JourneyMarketingPage({
     title: t(`how.steps.${i}.title`),
     body: t(`how.steps.${i}.body`),
     tag: isHe
-      ? ["השאלון", "האבחון", "המסלול"][i]
-      : ["The questionnaire", "The diagnostic", "The path"][i],
+      ? ["האבחון", "הניתוח", "המסלול"][i]
+      : ["The diagnostic", "The analysis", "The path"][i],
   }));
 
   const insideCards = [0, 1, 2, 3].map((i) => ({
@@ -682,8 +685,8 @@ export default async function JourneyMarketingPage({
                     }}
                   >
                     {isHe
-                      ? "השאלון פתוח לכולם"
-                      : "the questionnaire is open"}
+                      ? "האבחון פתוח לכולם"
+                      : "the assessment is open"}
                   </p>
                   <span aria-hidden className="h-px w-16 bg-[#B83C4D]/40" />
                 </div>

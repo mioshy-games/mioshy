@@ -142,7 +142,7 @@ export function ClinicianResponseRow({
         </div>
       ) : null}
 
-      {row.responseText && row.responseText !== "[שאלון מלא - מובנה בלבד]" ? (
+      {row.responseText && row.responseText !== "[אבחון מלא - מובנה בלבד]" && row.responseText !== "[שאלון מלא - מובנה בלבד]" ? (
         <div className="mt-2 flex items-start gap-2">
           <MessageCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-white/40" aria-hidden="true" />
           <p className="whitespace-pre-wrap text-sm leading-relaxed text-white/80">

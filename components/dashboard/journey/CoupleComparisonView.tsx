@@ -147,7 +147,7 @@ export function CoupleComparisonView({
             className="hover:bg-accent inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs"
           >
             {sortBy === "order" ? <ArrowDownUp className="size-3" /> : <ArrowDown className="size-3" />}
-            {sortBy === "order" ? "סדר השאלון" : "פער → תואם"}
+            {sortBy === "order" ? "סדר האבחון" : "פער → תואם"}
           </button>
         </div>
       </div>

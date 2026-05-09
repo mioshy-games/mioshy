@@ -30,7 +30,7 @@ export function InlineAuthStep({ locale, deviceId, onAuthenticated }: InlineAuth
 
   const t = isHe
     ? {
-        heading: "סיימתם את השאלון! 🎉",
+        heading: "סיימתם את האבחון! 🎉",
         sub: "הניתוח האישי שלכם מוכן - צרו חשבון חינמי כדי לקבל אותו.",
         fullName: "שם מלא",
         email: "אימייל",

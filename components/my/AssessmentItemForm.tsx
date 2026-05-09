@@ -235,7 +235,7 @@ export function AssessmentItemForm({
           <span className="text-[12px] text-rose-300">{feedback.message}</span>
         ) : feedback?.kind === "saved" ? (
           <span className="text-[12px] text-emerald-300">
-            {isHe ? "השאלון נשלח" : "Submitted"}
+            {isHe ? "האבחון נשלח" : "Submitted"}
           </span>
         ) : null}
 

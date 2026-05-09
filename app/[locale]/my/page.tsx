@@ -272,12 +272,12 @@ export default async function MyHubPage({
                   <span className="h-1.5 w-1.5 rounded-full bg-white/70" />
                   {isHe ? "סטטוס: חינם" : "Status: Free"}
                 </div>
-                <p className="mt-2 text-[18px] font-semibold text-white">
+                <p className="mt-2 text-[20px] font-semibold text-white sm:text-[19px]">
                   {isHe
                     ? "החשבון פעיל. עדיין בלי מנוי."
                     : "Your account is active. No subscription yet."}
                 </p>
-                <p className="mt-1 text-[16px] leading-[1.55] text-white/75">
+                <p className="mt-1 text-[18px] leading-[1.55] text-white/75 sm:text-[16px]">
                   {isHe
                     ? "אפשר להתחיל בקטן עם משחק שבועי, להוסיף סקס שכתבו מומחים, או ללכת על ליווי-הכל-כלול."
                     : "Start small with a weekly game, add expert-written sex, or go all-in with the coaching plan."}
@@ -300,12 +300,12 @@ export default async function MyHubPage({
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
                   {isHe ? "סטטוס: הכל פתוח" : "Status: Full access"}
                 </div>
-                <p className="mt-2 text-sm font-semibold text-white">
+                <p className="mt-2 text-[18px] font-semibold text-white sm:text-[16px]">
                   {isHe
                     ? "המנוי שלך מקיף את כל מיאושי - משחקים, ליווי, ולמבוגרים בלבד."
                     : "Your plan covers all of Mioshy - games, journey, and adults only."}
                 </p>
-                <p className="mt-1 text-sm text-emerald-100/85">
+                <p className="mt-1 text-[16px] text-emerald-100/85 sm:text-sm">
                   {isHe ? "תהנו." : "Enjoy."}
                 </p>
               </div>
@@ -317,12 +317,12 @@ export default async function MyHubPage({
                   <span className="h-1.5 w-1.5 rounded-full bg-fuchsia-300" />
                   {isHe ? "סטטוס: מנוי פעיל" : "Status: Active member"}
                 </div>
-                <p className="mt-2 text-sm font-semibold text-white">
+                <p className="mt-2 text-[18px] font-semibold text-white sm:text-[16px]">
                   {isHe
                     ? `יש לכם גישה ל-${entitlements.pillarCount} מתוך 3 השירותים שלנו.`
                     : `You have access to ${entitlements.pillarCount} of our 3 services.`}
                 </p>
-                <p className="mt-1 text-sm text-fuchsia-100/80">
+                <p className="mt-1 text-[16px] text-fuchsia-100/80 sm:text-sm">
                   {(() => {
                     const owned: string[] = [];
                     const missing: string[] = [];
@@ -745,7 +745,7 @@ function EntitledPillar({
             <div className="flex flex-wrap items-center gap-2">
               <StateBadge state={pillarState.state} isHe={isHe} />
             </div>
-            <h3 className="mt-1.5 font-heading text-2xl font-bold leading-tight tracking-tight text-white">
+            <h3 className="mt-1.5 font-heading text-[34px] font-bold leading-tight tracking-tight text-white sm:text-[28px]">
               {title}
             </h3>
             {subtitle ? (
@@ -755,7 +755,7 @@ function EntitledPillar({
             ) : null}
           </div>
         </div>
-        <p className="mt-4 line-clamp-3 text-[15px] leading-relaxed text-white/75">
+        <p className="mt-4 line-clamp-3 text-[18px] leading-relaxed text-white/75 sm:text-[16px]">
           {description}
         </p>
       </div>
@@ -819,7 +819,7 @@ function PillarMarketing({
             <div className="flex flex-wrap items-center gap-2">
               <StateBadge state={pillarState.state} isHe={isHe} />
             </div>
-            <h3 className="mt-1.5 font-heading text-2xl font-bold leading-tight tracking-tight text-white">
+            <h3 className="mt-1.5 font-heading text-[34px] font-bold leading-tight tracking-tight text-white sm:text-[28px]">
               {title}
             </h3>
             {subtitle ? (

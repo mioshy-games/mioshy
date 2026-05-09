@@ -390,13 +390,22 @@ export function JourneyClient({
 
     // Skip the social-proof reveal when:
     //   1. The question is the priority ranking step (UX feedback: feels
-    //      out of place at the ranking screen - the user is making a list,
+    //      out of place at the ranking screen — the user is making a list,
     //      not picking one option), OR
     //   2. The user is re-answering a question they already moved past
     //      (highWater > current). The reveal is a "first impression" hint;
     //      replaying it on back-and-forth is noisy.
+    //   3. (W2.4 / Itzik #6) The user is in the early part of the flow
+    //      (before the auth gate). The percentage frames the question
+    //      socially before we've even earned the right to do that.
+    //   4. (W2.4 / Itzik #7) The question is an open-text reflection.
+    //      A "% of couples answered like you" headline doesn't make sense
+    //      after a free-text answer.
     const skipReveal =
-      question.type === "ranking" || capturedIndex < highWaterRef.current;
+      question.type === "ranking" ||
+      question.type === "reflection" ||
+      capturedIndex <= gating.auth_after_index ||
+      capturedIndex < highWaterRef.current;
 
     // Effective dwell - keep zero when the reveal is skipped so the user
     // doesn't sit on a blank screen waiting for nothing.
@@ -417,7 +426,11 @@ export function JourneyClient({
       reason: skipReveal
         ? question.type === "ranking"
           ? "ranking-step"
-          : "back-and-resubmit"
+          : question.type === "reflection"
+            ? "open-text"
+            : capturedIndex <= gating.auth_after_index
+              ? "early-flow"
+              : "back-and-resubmit"
         : null,
     });
     if (!skipReveal) {
@@ -623,15 +636,20 @@ export function JourneyClient({
   return (
     <div
       dir={locale === "he" ? "rtl" : "ltr"}
-      className="mx-auto flex min-h-[80vh] w-full max-w-3xl flex-col gap-8 px-4 py-10"
+      className="mx-auto flex min-h-[80vh] w-full max-w-3xl flex-col gap-6 px-4 py-6 sm:gap-8 sm:py-10"
     >
-      <header className="flex flex-col gap-2">
-        <h1 className="text-2xl font-bold text-white md:text-3xl">{headerText.title}</h1>
-        <p className="text-sm text-white/70">{headerText.subtitle}</p>
-      </header>
+      {/* W2.3 — progress bar pinned at the top so the percentage is
+          always above the fold on mobile (Itzik #4). On desktop the
+          stickiness is harmless because the bar lives inside the
+          assessment column anyway. */}
+      <div className="sticky top-2 z-20 -mx-4 px-4 pb-1 backdrop-blur supports-[backdrop-filter]:bg-[#070b18]/85 sm:static sm:bg-transparent sm:px-0">
+        <ProgressBar current={index} total={total} />
+      </div>
 
-      {/* No lock - user can see the full bar at all times */}
-      <ProgressBar current={index} total={total} />
+      <header className="flex flex-col gap-2 text-start">
+        <h1 className="text-2xl font-bold text-white md:text-3xl">{headerText.title}</h1>
+        <p className="text-sm text-white/70 sm:text-base">{headerText.subtitle}</p>
+      </header>
 
       <AnimatePresence mode="wait">
         {interstitialIndex !== null ? (

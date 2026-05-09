@@ -42,6 +42,15 @@ export function MobileServicesBar() {
   const pathname = usePathname();
   const [footerVisible, setFooterVisible] = useState(false);
 
+  // W2.1 — hide on the assessment flow. The bottom bar sits on top of
+  // the submit CTA + competing pillar links during a focused diagnostic
+  // (#2). Path check covers /[locale]/journey/assessment and its nested
+  // /intro route. We early-return null AFTER all hooks have been declared
+  // to keep the hook order stable.
+  const isAssessment =
+    pathname === "/journey/assessment" ||
+    pathname.startsWith("/journey/assessment/");
+
   // ── Footer occlusion guard ──────────────────────────────────────────
   // When the user scrolls all the way down, the page footer comes into
   // view. We slide the bar off-screen so the footer is fully visible —
@@ -67,6 +76,8 @@ export function MobileServicesBar() {
     observer.observe(footer);
     return () => observer.disconnect();
   }, [pathname]);
+
+  if (isAssessment) return null;
 
   return (
     <nav

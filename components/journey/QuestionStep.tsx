@@ -82,9 +82,19 @@ export function QuestionStep({ question, locale, onSubmit, initial, busy }: Ques
 
       {error ? <p className="text-sm text-rose-300">{error}</p> : null}
 
-      {/* Show Continue button only for non-auto-advance types */}
+      {/* Show Continue button only for non-auto-advance types.
+          W2.5 (Itzik #8) — explicit min-height 50px + 18px text so the
+          submit button below an open-text/multi-choice field is
+          unmistakable on mobile (was getting lost). Full-width across
+          all breakpoints because there's no good reason for it to be
+          half-empty on desktop either. */}
       {!isAutoAdvance ? (
-        <Button onClick={submit} disabled={busy} size="lg" className="w-full md:w-auto">
+        <Button
+          onClick={submit}
+          disabled={busy}
+          size="lg"
+          className="min-h-[50px] w-full text-[18px] font-semibold"
+        >
           {busy
             ? isHe ? "שומר/ת…" : "Saving…"
             : isHe ? "המשך" : "Continue"}
@@ -166,17 +176,17 @@ function SingleChoiceControl({
   // RTL, per UX feedback 2026-05-05 "ליישר את הכפתורים לימין ולא לאמצע").
   // md:mx-auto preserves the centered layout on tablet/desktop where the
   // question card has slack on both sides.
+  // W2.2 (Itzik #5) — bumped mobile text 20→22px and padding 4→5 so the
+  // tap targets feel substantial on a phone.
   return (
     <div className="mx-0 md:mx-auto flex w-full max-w-md flex-col gap-2">
       {question.options.map((opt) => {
         const label = locale === "he" ? opt.he : opt.en;
-        const classes = `rounded-2xl border px-4 py-4 text-start text-[20px] font-medium transition active:scale-[0.98] ${
+        const classes = `rounded-2xl border px-4 py-5 text-start text-[22px] font-medium leading-snug transition active:scale-[0.98] sm:py-4 sm:text-[20px] ${
           current === opt.id
             ? "border-fuchsia-400/70 bg-fuchsia-500/20 text-white ring-2 ring-fuchsia-400/50"
             : "border-white/12 bg-slate-800/70 text-white/85 hover:bg-slate-700/70 hover:border-white/20"
         } disabled:cursor-not-allowed disabled:opacity-50`;
-        // eslint-disable-next-line no-console
-        console.log("[QuestionStep/button]", { qid: question.id, label, classes });
         return (
           <button
             type="button"
@@ -209,17 +219,16 @@ function MultiChoiceControl({
     const next = current.includes(id) ? current.filter((x) => x !== id) : [...current, id];
     onChange({ kind: "multi", options: next });
   };
+  // W2.2 (Itzik #5) — same mobile text/padding bump as SingleChoice.
   return (
     <div className="mx-0 md:mx-auto flex w-full max-w-md flex-col gap-2">
       {question.options.map((opt) => {
         const label = locale === "he" ? opt.he : opt.en;
-        const classes = `rounded-2xl border px-4 py-4 text-start text-[20px] font-medium transition active:scale-[0.98] ${
+        const classes = `rounded-2xl border px-4 py-5 text-start text-[22px] font-medium leading-snug transition active:scale-[0.98] sm:py-4 sm:text-[20px] ${
           current.includes(opt.id)
             ? "border-fuchsia-400/70 bg-fuchsia-500/20 text-white"
             : "border-white/12 bg-slate-800/70 text-white/85 hover:bg-slate-700/70 hover:border-white/20"
         }`;
-        // eslint-disable-next-line no-console
-        console.log("[QuestionStep/button]", { qid: question.id, label, classes });
         return (
           <button
             type="button"

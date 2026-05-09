@@ -72,7 +72,7 @@ export async function submitAssessmentResponse(args: {
   const responseText =
     summaryText.length > 0
       ? summaryText
-      : "[שאלון מלא - מובנה בלבד]"; // "Structured-only response"
+      : "[אבחון מלא - מובנה בלבד]"; // "Structured-only response"
 
   // Try insert first; on unique-conflict fall back to update.
   // (We don't have a unique index on (scheduled_item_id, user_id) yet;

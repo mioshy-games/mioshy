@@ -155,10 +155,10 @@ function makeAssessmentItem(isHe: boolean, status: RailStepStatus): PillItemRef 
     body: isHe
       ? status === "completed"
         ? "סיימתם את האבחון. תוכלו לחזור אליו בכל עת לרענון התשובות."
-        : "השאלון הראשוני שמכוון את עבודת המומחה איתכם. עונים לפי הקצב שלכם - אפשר לחזור אליו בהמשך."
+        : "האבחון הראשוני שמכוון את עבודת המומחה איתכם. עונים לפי הקצב שלכם - אפשר לחזור אליו בהמשך."
       : status === "completed"
         ? "You completed the assessment. Re-open it any time to refresh your answers."
-        : "The initial questionnaire that guides your clinician's work with you. Take it at your own pace.",
+        : "The initial assessment that guides your clinician's work with you. Take it at your own pace.",
     imageUrl: null,
     videoUrl: null,
     status: "assessment",

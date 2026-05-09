@@ -166,15 +166,18 @@ export function AssessmentInterstitial({ isHe, def, onContinue }: Props) {
           >
             <Sparkles className="h-3.5 w-3.5" />
           </span>
-          <span className="text-[11px] font-bold uppercase tracking-wider text-[#FAF6F7]/75">
+          <span className="text-[13px] font-bold uppercase tracking-wider text-[#FAF6F7]/75">
             {isHe ? `שלב ${def.step} / 4` : `Step ${def.step} / 4`}
           </span>
         </div>
 
-        <h2 className="mt-4 font-heading text-[26px] font-extrabold leading-tight text-white sm:text-[30px]">
+        {/* W2.5 (Itzik #9) — title + body bumped on mobile so the
+            stage-completion modal feels like a moment, not a footnote.
+            Title now starts at 28px (was 26), body at 19px (was 16). */}
+        <h2 className="mt-4 font-heading text-[28px] font-extrabold leading-tight text-white sm:text-[32px]">
           {t.title}
         </h2>
-        <p className="mt-2 max-w-prose text-[16px] leading-[1.6] text-white/80">
+        <p className="mt-3 max-w-prose text-[19px] leading-[1.55] text-white/85 sm:text-[20px]">
           {t.body}
         </p>
 
@@ -182,7 +185,7 @@ export function AssessmentInterstitial({ isHe, def, onContinue }: Props) {
           <Button
             type="button"
             onClick={onContinue}
-            className="min-h-[48px] rounded-full px-7 text-[15px] font-bold"
+            className="min-h-[50px] rounded-full px-7 text-[18px] font-bold"
             style={{
               background: "linear-gradient(135deg, #B83C4D 0%, #6C2E40 100%)",
             }}
