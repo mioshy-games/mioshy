@@ -32,9 +32,26 @@ import { Gamepad2, Sparkles, Heart } from "lucide-react";
  */
 
 const PILLARS = [
-  { href: "/games", tKey: "games", Icon: Gamepad2 },
-  { href: "/journey", tKey: "journey", Icon: Sparkles },
-  { href: "/mioshy-sex", tKey: "adults", Icon: Heart },
+  {
+    href: "/games",
+    tKey: "games",
+    Icon: Gamepad2,
+    // F9 — per-pillar accent so each tap target reads as its own button
+    // (not just an icon on a coloured strip).
+    accent: "linear-gradient(135deg, #F59E0B 0%, #F97316 100%)",
+  },
+  {
+    href: "/journey",
+    tKey: "journey",
+    Icon: Sparkles,
+    accent: "linear-gradient(135deg, #A855F7 0%, #6366F1 100%)",
+  },
+  {
+    href: "/mioshy-sex",
+    tKey: "adults",
+    Icon: Heart,
+    accent: "linear-gradient(135deg, #F43F5E 0%, #B83C4D 100%)",
+  },
 ] as const;
 
 export function MobileServicesBar() {
@@ -91,68 +108,50 @@ export function MobileServicesBar() {
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
       }}
     >
-      {/* Background + top accent. Per Itzik 2026-05-06 — wine→deep-purple
-          gradient that matches the site palette. Performance: removed
-          backdrop-blur-xl (audit found it was forcing GPU re-blur on
-          every scroll tick). The gradient is now fully opaque, so blur
-          isn't needed for legibility — and the bar is far cheaper to
-          paint while scrolling. */}
+      {/* F9 — bar background uses the same fuchsia → purple → pink
+          gradient as the header CTA so the strip pulls the eye and
+          immediately reads as "an action surface". Each pillar is
+          wrapped in a translucent card with a coloured icon plate so
+          users can tell each item is independently clickable. */}
       <div
-        className="border-t border-[rgba(248,200,206,0.18)]"
+        className="border-t border-white/20"
         style={{
           background:
-            "linear-gradient(180deg, #4A1721 0%, #3D1F3D 100%)",
+            "linear-gradient(110deg, #d946ef 0%, #a855f7 35%, #ec4899 70%, #f59e0b 100%)",
           boxShadow:
-            "0 -12px 32px -8px rgba(184,60,77,0.35), inset 0 1px 0 rgba(248,200,206,0.12)",
+            "0 -14px 36px -10px rgba(217,70,239,0.45), inset 0 1px 0 rgba(255,255,255,0.18)",
         }}
       >
-        <ul className="mx-auto flex max-w-md items-stretch">
-          {PILLARS.map(({ href, tKey, Icon }) => {
-            // Active when the path starts with the pillar's marketing
-            // route. e.g. /he/games → games active; /he/games/some-slug
-            // is gameplay (Chrome hidden) so this never fires there.
+        <ul className="mx-auto flex max-w-md items-stretch gap-2 px-2 py-2">
+          {PILLARS.map(({ href, tKey, Icon, accent }) => {
             const isActive = pathname === href || pathname.startsWith(href + "/");
             return (
               <li key={href} className="flex-1">
                 <Link
                   href={href}
-                  className={`group flex h-full flex-col items-center justify-center gap-1.5 px-2 py-2.5 text-center transition-colors ${
-                    isActive ? "text-white" : "text-white/85 hover:text-white"
-                  }`}
                   aria-current={isActive ? "page" : undefined}
+                  className={`group flex h-full flex-col items-center justify-center gap-1.5 rounded-2xl px-2 py-2.5 text-center transition active:scale-[0.97] ${
+                    isActive
+                      ? "bg-white text-[#170E14] shadow-[0_8px_22px_-8px_rgba(0,0,0,0.45)]"
+                      : "bg-white/15 text-white hover:bg-white/25"
+                  }`}
                 >
-                  {/* Active indicator pill behind the icon. The active
-                      pill uses the site's signature wine→pink gradient
-                      and a soft glow ring; idle pills sit on a faint
-                      cream tint so they read against the wine ground. */}
+                  {/* Coloured icon plate per pillar. Stays the pillar's
+                      accent on both active and idle so users see the
+                      colour cue without us having to invert. */}
                   <span
-                    className={`relative grid h-10 w-10 place-items-center rounded-full transition-all ${
-                      isActive
-                        ? "shadow-[0_6px_18px_rgba(248,200,206,0.45),0_0_0_2px_rgba(248,200,206,0.35)]"
-                        : "bg-white/[0.10] group-hover:bg-white/[0.18]"
-                    }`}
-                    style={
-                      isActive
-                        ? {
-                            background:
-                              "linear-gradient(135deg,#F43F5E 0%,#B83C4D 100%)",
-                          }
-                        : undefined
-                    }
+                    className="relative grid h-10 w-10 place-items-center rounded-full ring-1 ring-white/40 transition-all"
+                    style={{
+                      background: accent,
+                      boxShadow: "0 4px 12px -4px rgba(0,0,0,0.35)",
+                    }}
                   >
                     <Icon
-                      className={`h-[20px] w-[20px] ${
-                        isActive ? "text-white" : ""
-                      }`}
+                      className="h-[20px] w-[20px] text-white"
                       strokeWidth={2}
                       aria-hidden
                     />
                   </span>
-                  {/* Label bumped 11→13px per Itzik 2026-05-06 — 14px is
-                      the secondary-text floor; 13 here is acceptable
-                      because it pairs with a 20px icon (visual anchor) and
-                      goes on a saturated wine background where small text
-                      reads cleaner. font-weight 600 holds it up. */}
                   <span
                     className="line-clamp-2 max-w-[96px] text-[13px] font-semibold leading-[1.15]"
                     style={{ letterSpacing: "0.005em" }}

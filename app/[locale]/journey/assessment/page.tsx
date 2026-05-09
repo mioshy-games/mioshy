@@ -63,6 +63,8 @@ export default async function JourneyAssessmentPage({
   if (user) {
     const existingPact = await getCurrentUserPact();
     if (!existingPact) {
+      // Primary lookup — journeys owned by THIS user via the session
+      // client (RLS-aware).
       const { data: existingJourney } = await supabase
         .from("journeys")
         .select("current_step")
@@ -70,9 +72,44 @@ export default async function JourneyAssessmentPage({
         .order("last_activity_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-      const startedAlready =
+      let startedAlready =
         ((existingJourney as { current_step: number } | null)?.current_step ??
           0) > 0;
+
+      // F10 — fallback for the post-signup race. After the inline-auth
+      // step the journey link RPC sometimes hasn't propagated to RLS by
+      // the time this server component runs (cookie set, but auth.uid
+      // hasn't reached the new row yet). Without this fallback the user
+      // gets redirected to /intro as if they never started — even
+      // though they just completed all 29 questions as anon.
+      // We check the device_id cookie via service-role: if there's an
+      // anonymous (or freshly-linked) journey on this device with
+      // progress, treat them as "started" and let them through.
+      if (!startedAlready) {
+        const deviceId = cookieStoreForLog.get("mioshy_device_id")?.value;
+        if (deviceId) {
+          const adminProbe = createServiceRoleClient();
+          if (adminProbe) {
+            const { data: anonJ } = await adminProbe
+              .from("journeys")
+              .select("current_step")
+              .eq("device_id", deviceId)
+              .order("last_activity_at", { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            const anonProgress =
+              ((anonJ as { current_step: number } | null)?.current_step ?? 0) > 0;
+            if (anonProgress) {
+              startedAlready = true;
+              console.log(
+                "[/journey/assessment] device_id fallback found progress, skipping /intro redirect",
+                { deviceId, anonProgress },
+              );
+            }
+          }
+        }
+      }
+
       if (!startedAlready) {
         console.log(
           "[/journey/assessment] no pact + no progress → /journey/assessment/intro",
@@ -100,6 +137,41 @@ export default async function JourneyAssessmentPage({
   const deviceIdForLog = cookieStoreForLog.get("mioshy_device_id")?.value ?? null;
 
   if (user) {
+    // F10 — self-heal: if the user has no journey under their id but
+    // the device cookie points at an anonymous one, link it now. The
+    // inline-signup action does this in the same request, but on slow
+    // connections / mobile flakes the cookie can land before the RPC
+    // result, so we make the page idempotent and re-link if needed.
+    {
+      const { data: hasOwnJourney } = await supabase
+        .from("journeys")
+        .select("id")
+        .eq("user_id", user.id)
+        .limit(1)
+        .maybeSingle();
+      if (!hasOwnJourney && deviceIdForLog) {
+        const adminLink = createServiceRoleClient();
+        if (adminLink) {
+          const { data: linked } = await adminLink
+            .from("journeys")
+            .update({
+              user_id: user.id,
+              last_activity_at: new Date().toISOString(),
+            })
+            .eq("device_id", deviceIdForLog)
+            .is("user_id", null)
+            .select("id")
+            .maybeSingle();
+          if (linked) {
+            console.log(
+              "[/journey/assessment] self-heal: linked anon journey to user",
+              { user_id: user.id, journey_id: linked.id },
+            );
+          }
+        }
+      }
+    }
+
     // ── Authenticated user: restore progress + check subscription ────────
     const { data: journey } = await supabase
       .from("journeys")

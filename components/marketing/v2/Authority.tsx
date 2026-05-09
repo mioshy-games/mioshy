@@ -18,17 +18,24 @@ export function Authority() {
             <h2>
               {t("headlinePart1")}
               <br />
-              {t("headlinePart2")}
-              <em
-                style={{
-                  color: "var(--accent)",
-                  fontStyle: "italic",
-                  fontFamily: "'Frank Ruhl Libre', serif",
-                }}
-              >
-                {t("headlineEm")}
-              </em>
-              {t("headlinePart3")}
+              {/* Wrap line 2 ("אותה תוצאה.") in a non-breaking span so
+                  the italic-serif <em> doesn't push "תוצאה" onto its
+                  own line on mobile. With this, the heading reliably
+                  reads as two lines: "5 שנים. 500+ זוגות." then
+                  "אותה תוצאה." */}
+              <span style={{ whiteSpace: "nowrap" }}>
+                {t("headlinePart2")}
+                <em
+                  style={{
+                    color: "var(--accent)",
+                    fontStyle: "italic",
+                    fontFamily: "'Frank Ruhl Libre', serif",
+                  }}
+                >
+                  {t("headlineEm")}
+                </em>
+                {t("headlinePart3")}
+              </span>
             </h2>
           </div>
         </RevealOnScroll>
