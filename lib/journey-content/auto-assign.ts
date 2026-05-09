@@ -25,6 +25,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { materializeAssignment } from "./materialize";
+import { resolveRuleId } from "./match-rules";
 import { resolveAnchorDate } from "./schedule";
 import type {
   JourneyAssignment,
@@ -183,6 +184,9 @@ export async function assignJourneyOnPurchase(
     const { inserted } = await materializeAssignment({
       assignment: assignment as JourneyAssignment,
       supabase,
+      // Every row inherits the default-program rule until the day-1
+      // override below promotes the first row to 'day_one_kickoff'.
+      defaultRuleSlug: "default_program_kickoff",
     });
 
     // ──────────────────────────────────────────────────────────────────
@@ -212,15 +216,42 @@ export async function assignJourneyOnPurchase(
 
         if (firstItem?.id) {
           const nowIso = new Date().toISOString();
+          // Promote the first item's rule attribution to day_one_kickoff
+          // so the user sees "First step of your journey" rather than
+          // the default "part of your starting program" line.
+          const dayOneRuleId = await resolveRuleId("day_one_kickoff");
           await supabase
             .from("journey_scheduled_items")
-            .update({ unlock_at: nowIso, has_unlock_override: true })
+            .update({
+              unlock_at: nowIso,
+              has_unlock_override: true,
+              ...(dayOneRuleId ? { matched_by_rule_id: dayOneRuleId } : {}),
+            })
             .eq("id", firstItem.id as string);
         }
       } catch (overrideErr) {
         console.warn(
           "[assignJourneyOnPurchase] day-1 unlock override failed (non-fatal)",
           overrideErr,
+        );
+      }
+    }
+
+    // Layer-5 — stamp couples.started_journey_at on first purchase
+    // so the anniversary milestones (30 / 90 / 365 days) anchor to
+    // the moment the couple actually started, not to couple creation.
+    // Best-effort: failure here doesn't fail the assignment.
+    if (owner.kind === "couple") {
+      try {
+        await supabase
+          .from("couples")
+          .update({ started_journey_at: anchorIso })
+          .eq("id", owner.coupleId)
+          .is("started_journey_at", null);
+      } catch (err) {
+        console.warn(
+          "[assignJourneyOnPurchase] started_journey_at stamp failed (non-fatal)",
+          err,
         );
       }
     }

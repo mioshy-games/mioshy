@@ -11,6 +11,12 @@ import { PriorityRankingStep } from "./PriorityRankingStep";
 import { InlineAuthStep } from "./InlineAuthStep";
 import { PaywallGateModal } from "./PaywallGateModal";
 import { AnalysisSummary } from "./AnalysisSummary";
+import {
+  AssessmentInterstitial,
+  INTERSTITIALS,
+  wasInterstitialShown,
+  markInterstitialShown,
+} from "./AssessmentInterstitial";
 import { track } from "@/lib/analytics";
 
 interface JourneyClientProps {
@@ -98,6 +104,11 @@ export function JourneyClient({
   );
   const confettiFiredRef = useRef(false);
   const analysisFetchAttemptedRef = useRef(false);
+  // Layer-1 mid-flow interstitial. When set to a non-null index, the
+  // questionnaire is paused and the matching reflection card renders
+  // in place of the question. Continuing dismisses it (and stamps the
+  // session-storage flag so it doesn't reappear on back-and-forth).
+  const [interstitialIndex, setInterstitialIndex] = useState<number | null>(null);
   // Track the furthest question index the user has reached. When they go
   // back (via the back button) and re-submit a previously-answered question,
   // we skip the social-proof reveal - they've already seen one for this slot
@@ -122,6 +133,20 @@ export function JourneyClient({
   useEffect(() => {
     setDeviceId(getOrCreateDeviceId());
   }, []);
+
+  // Layer-1 interstitial trigger. Runs after every index change.
+  // Fires the interstitial if (a) the new index is a registered break
+  // point, (b) we haven't shown it this session, and (c) we're not
+  // already viewing one. Crucially: the user must have *reached* the
+  // break point through forward motion; back-button revisits don't
+  // re-trigger because of the sessionStorage flag.
+  useEffect(() => {
+    const def = INTERSTITIALS.find((i) => i.atIndex === index);
+    if (!def) return;
+    if (wasInterstitialShown(index)) return;
+    if (interstitialIndex !== null) return;
+    setInterstitialIndex(index);
+  }, [index, interstitialIndex]);
 
   // Track journey start (once, on first question)
   useEffect(() => {
@@ -609,7 +634,25 @@ export function JourneyClient({
       <ProgressBar current={index} total={total} />
 
       <AnimatePresence mode="wait">
-        {question ? (
+        {interstitialIndex !== null ? (
+          // Layer-1 mid-flow reflection. Pauses the questionnaire
+          // until the user clicks Continue.
+          (() => {
+            const def = INTERSTITIALS.find((i) => i.atIndex === interstitialIndex);
+            if (!def) return null;
+            return (
+              <AssessmentInterstitial
+                key={`interstitial-${def.atIndex}`}
+                isHe={locale === "he"}
+                def={def}
+                onContinue={() => {
+                  markInterstitialShown(def.atIndex);
+                  setInterstitialIndex(null);
+                }}
+              />
+            );
+          })()
+        ) : question ? (
           // Dispatch on question type. Ranking has its own drag-drop UI;
           // every other type goes through the legacy QuestionStep.
           question.type === "ranking" ? (

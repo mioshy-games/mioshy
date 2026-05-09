@@ -6,6 +6,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { MobileServicesBar } from "@/components/MobileServicesBar";
 import { HomeBackground } from "@/components/my/HomeBackground";
+import { PerfDebugHud } from "@/components/dev/PerfDebugHud";
 
 function shouldHideChrome(pathname: string) {
   // Hide chrome on gameplay pages (full-screen), including after login.
@@ -65,7 +66,12 @@ export function Chrome({
   const hide = shouldHideChrome(pathname);
 
   if (hide) {
-    return <>{children}</>;
+    return (
+      <>
+        {children}
+        <PerfDebugHud />
+      </>
+    );
   }
 
   return (
@@ -101,6 +107,7 @@ export function Chrome({
           gate as the footer: when the user is signed in, the dashboard
           chrome takes over and this surface gets out of the way. */}
       {!isAuthed && <MobileServicesBar />}
+      <PerfDebugHud />
     </div>
   );
 }

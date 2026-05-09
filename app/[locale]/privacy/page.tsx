@@ -73,16 +73,20 @@ export default async function PrivacyPage({
   const tRoot = await getTranslations({ locale, namespace: "legal" });
 
   const sections: LegalSection[] = SECTION_KEYS.map((key) => {
-    const heading = t(`sections.${key}.heading`);
-    const body = t.raw(`sections.${key}.body`) as string | string[];
-    let list: string[] | undefined;
-    try {
-      const raw = t.raw(`sections.${key}.list`);
-      if (Array.isArray(raw)) list = raw as string[];
-    } catch {
-      list = undefined;
-    }
-    return { heading, body, list };
+    // Read the whole section object once — avoids next-intl logging
+    // MISSING_MESSAGE for sections that legitimately don't carry a
+    // `list` (e.g. cookies, retention). The previous try/catch caught
+    // the throw but next-intl's onError logged before the throw.
+    const section = t.raw(`sections.${key}`) as {
+      heading: string;
+      body:    string | string[];
+      list?:   string[];
+    };
+    return {
+      heading: section.heading,
+      body:    section.body,
+      list:    Array.isArray(section.list) ? section.list : undefined,
+    };
   });
 
   const intro = t.raw("intro") as string[];

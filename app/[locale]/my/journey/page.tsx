@@ -63,6 +63,24 @@ import {
   JourneyKickoffCards,
   type JourneyKickoffStartItem,
 } from "@/components/my/JourneyKickoffCards";
+import { JourneyFirstSession } from "@/components/my/JourneyFirstSession";
+import { getCoachPersonaForUser } from "@/lib/journey/coach";
+import { getActiveViewAs } from "@/lib/journey/view-as";
+import { ViewAsBanner } from "@/components/my/ViewAsBanner";
+import { getDriftBannerForCurrentUser } from "@/lib/journey/drift-user";
+import { DriftAwarenessBanner } from "@/components/my/DriftAwarenessBanner";
+import { getCurrentUserPauseState } from "@/lib/billing/pause-state";
+import { PausedStateScreen } from "@/components/my/PausedStateScreen";
+import { getLatestRecapForCurrentUser } from "@/lib/journey/recap-read";
+import { WeeklyRecapCard } from "@/components/my/WeeklyRecapCard";
+import {
+  getPendingMilestoneForCurrentUser,
+  getMilestoneDef,
+} from "@/lib/journey/milestones";
+import { MilestoneRevealModal } from "@/components/my/MilestoneRevealModal";
+import { generateCoupleStoryNarrative } from "@/lib/journey/story-narrative";
+import { getScoreHistoryForUser } from "@/lib/journey/score-history";
+import { ScoreEvolutionChart } from "@/components/my/ScoreEvolutionChart";
 import {
   JourneyActivityHistory,
   type JourneyActivityEntry,
@@ -177,6 +195,40 @@ export default async function PrivateJourneyPage({
     redirect(`/${locale}/auth`);
   }
 
+  // Layer-2 view-as: when active, surface the banner AND substitute
+  // every read to use the impersonated user. The coach sees the
+  // user's actual dashboard (timeline, channel, priorities, score
+  // history, etc.) — not their own. Writes (markFirstSessionCompleted,
+  // ensureUserChannel write paths) keep `user.id` so a coach can never
+  // mutate the user's profile by accident. The banner stays so
+  // impersonation is always observable.
+  const viewAsContext = await getActiveViewAs();
+  // FU6.S3 — read substitution. Falls back to the auth user when no
+  // impersonation is active, so behaviour is unchanged for normal users.
+  const effectiveUserId = viewAsContext?.viewedUserId ?? user.id;
+  let viewAsLabel: string | null = null;
+  if (viewAsContext) {
+    const adminClient = createServiceRoleClient();
+    if (adminClient) {
+      const { data: viewedRow } = await adminClient
+        .from("profiles")
+        .select("full_name, id")
+        .eq("id", viewAsContext.viewedUserId)
+        .maybeSingle();
+      const fullName =
+        (viewedRow as { full_name: string | null } | null)?.full_name ?? null;
+      const { data: viewedAuth } = await adminClient.auth.admin.getUserById(
+        viewAsContext.viewedUserId,
+      );
+      viewAsLabel =
+        fullName ||
+        viewedAuth.user?.email ||
+        viewAsContext.viewedUserId.slice(0, 8);
+    } else {
+      viewAsLabel = viewAsContext.viewedUserId.slice(0, 8);
+    }
+  }
+
   const entitlements = await getUserEntitlements();
   console.log("[/my/journey:GATE] entitlements", {
     user_id: user.id,
@@ -195,8 +247,147 @@ export default async function PrivateJourneyPage({
     redirect(`/${locale}/journey`);
   }
 
+  // Layer-3 follow-up — if the user has an active pause, replace
+  // the entire dashboard with a calm "you're on pause" screen.
+  // This is the read-side gate; the cadence engine has its own
+  // defensive guard that skips paused users from materialization.
+  const pauseState = await getCurrentUserPauseState();
+  if (pauseState.isActive && pauseState.pausedUntil) {
+    return (
+      <PausedStateScreen isHe={isHe} pausedUntil={pauseState.pausedUntil} />
+    );
+  }
+
+  // ── Layer-1 first-session branch ─────────────────────────────────────────
+  // A brand-new paying user who has not yet opened their day-1 item sees
+  // a single-purpose screen with one goal: tap into that first item.
+  // Once they open it, journey_first_session_completed_at flips and
+  // subsequent visits render the full dashboard below.
+  const { data: profileRow } = await supabase
+    .from("profiles")
+    .select("journey_first_session_completed_at")
+    .eq("id", effectiveUserId)
+    .maybeSingle();
+  const firstSessionDone =
+    !!(profileRow as { journey_first_session_completed_at: string | null } | null)
+      ?.journey_first_session_completed_at;
+
+  if (!firstSessionDone) {
+    // Fetch the day-1 unlocked item (if any) for the assigned program.
+    // We do a lightweight lookup: find the user's active assignment,
+    // then the earliest scheduled item that's already unlocked.
+    let firstItem: {
+      scheduledId: string;
+      title: string;
+      bodySnippet: string | null;
+      categoryName: string | null;
+    } | null = null;
+
+    const { data: anyAssignment } = await createServiceRoleClient()!
+      .from("journey_assignments")
+      .select("id, couple_id, user_id")
+      .or(`user_id.eq.${effectiveUserId},couple_id.in.(${(await (async () => {
+        // Resolve the couples this user belongs to so we can OR them
+        // into the assignment query. Empty result -> just user-owned.
+        const { data: cm } = await createServiceRoleClient()!
+          .from("couple_members")
+          .select("couple_id")
+          .eq("user_id", effectiveUserId);
+        const ids = (cm ?? []).map((r) => (r as { couple_id: string }).couple_id);
+        return ids.length > 0 ? ids.join(",") : "00000000-0000-0000-0000-000000000000";
+      })())})`)
+      .eq("is_active", true)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (anyAssignment) {
+      const admin = createServiceRoleClient()!;
+      const nowIso = new Date().toISOString();
+      const { data: scheduledRow } = await admin
+        .from("journey_scheduled_items")
+        .select("id, item_id")
+        .eq("assignment_id", (anyAssignment as { id: string }).id)
+        .lte("unlock_at", nowIso)
+        .order("sort_order", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+      if (scheduledRow) {
+        const sr = scheduledRow as { id: string; item_id: string };
+        const { data: itemRow } = await admin
+          .from("journey_items")
+          .select("title_he, title_en, body_he, body_en, category_id")
+          .eq("id", sr.item_id)
+          .maybeSingle();
+
+        if (itemRow) {
+          const ir = itemRow as {
+            title_he: string;
+            title_en: string | null;
+            body_he: string;
+            body_en: string | null;
+            category_id: string;
+          };
+          const { data: catRow } = await admin
+            .from("journey_categories")
+            .select("name_he, name_en")
+            .eq("id", ir.category_id)
+            .maybeSingle();
+          const cr = catRow as { name_he: string; name_en: string | null } | null;
+
+          firstItem = {
+            scheduledId: sr.id,
+            title:
+              (isHe ? ir.title_he : ir.title_en || ir.title_he) ?? "",
+            bodySnippet:
+              (isHe ? ir.body_he : ir.body_en || ir.body_he) ?? null,
+            categoryName:
+              (isHe
+                ? cr?.name_he
+                : cr?.name_en || cr?.name_he) ?? null,
+          };
+        }
+      }
+    }
+
+    // Layer 2 — resolve the assigned coach's persona. Returns null
+    // when the user has no couple yet, no expert assigned, or the
+    // expert hasn't filled out their persona yet — JourneyFirstSession
+    // falls through to its generic "your coach" copy in any of those.
+    const coachPersona = await getCoachPersonaForUser(effectiveUserId);
+
+    return (
+      <>
+        {viewAsContext && viewAsLabel ? (
+          <ViewAsBanner viewedLabel={viewAsLabel} isHe={isHe} />
+        ) : null}
+        <JourneyFirstSession
+          isHe={isHe}
+          firstItem={firstItem}
+          expertPersona={
+            coachPersona
+              ? {
+                  displayName:
+                    (isHe
+                      ? coachPersona.displayNameHe
+                      : coachPersona.displayNameEn) ||
+                    coachPersona.displayNameHe ||
+                    "",
+                  avatarUrl: coachPersona.avatarUrl,
+                  shortBio: isHe
+                    ? coachPersona.shortBioHe
+                    : coachPersona.shortBioEn,
+                }
+              : null
+          }
+        />
+      </>
+    );
+  }
+
   // ── Did they actually take the assessment? ────────────────────────────────
-  const { topPriority, hasAnyResponses } = await getUserTopPriority(user.id);
+  const { topPriority, hasAnyResponses } = await getUserTopPriority(effectiveUserId);
   console.log("[/my/journey:GATE] assessment probe", {
     user_id: user.id,
     topPriority,
@@ -254,10 +445,10 @@ export default async function PrivateJourneyPage({
   // are merged into the legacy v2 timeline below.
   const couple = await getCurrentCoupleContext();
   const legacyOwner: JourneyOwner = preferCoupleOwner(
-    user.id,
+    effectiveUserId,
     couple?.couple_id ?? null,
   );
-  const cadenceOwner: JourneyOwner = journeyOwnerForUser(user.id);
+  const cadenceOwner: JourneyOwner = journeyOwnerForUser(effectiveUserId);
   const viewerRole =
     couple?.role === "owner" || couple?.role === "partner"
       ? couple.role
@@ -277,13 +468,13 @@ export default async function PrivateJourneyPage({
     [legacyTimeline, cadenceTimeline] = await Promise.all([
       getTimelineForOwner({
         owner: legacyOwner,
-        viewerUserId: user.id,
+        viewerUserId: effectiveUserId,
         viewerCoupleRole: viewerRole,
         sourceKinds: ["program", "category", "item"],
       }),
       getTimelineForOwner({
         owner: cadenceOwner,
-        viewerUserId: user.id,
+        viewerUserId: effectiveUserId,
         // Cadence assignments are user-owned; the audience filter is
         // a no-op when owner.kind === 'user', so role doesn't matter.
         viewerCoupleRole: null,
@@ -305,9 +496,16 @@ export default async function PrivateJourneyPage({
   // v3 slice 6 - load the user's general expert channel thread.
   // ensureUserChannel is a no-op upsert that creates the row on first
   // visit (so getGeneralChannelThread doesn't return an empty array
-  // for users who've never opened the channel).
-  await ensureUserChannel(user.id);
-  const channelMessages = await getGeneralChannelThread(user.id, user.id);
+  // for users who've never opened the channel). When viewing-as we
+  // skip the upsert (don't write on the user's behalf) but still
+  // read their channel; if it doesn't exist yet we just see no msgs.
+  if (!viewAsContext) {
+    await ensureUserChannel(user.id);
+  }
+  const channelMessages = await getGeneralChannelThread(
+    effectiveUserId,
+    effectiveUserId,
+  );
 
   const now = Date.now();
   const openItems = timeline.filter((entry) => {
@@ -328,7 +526,7 @@ export default async function PrivateJourneyPage({
   // WorkArea below gives the per-tab detail. Both reuse the same
   // tokens as the /my pillar cards (slate-950/40 dark glass).
   const journeyStatus = await getOwnerJourneyStatus({
-    userId: user.id,
+    userId: effectiveUserId,
     coupleId: couple?.couple_id ?? null,
   });
   const assessmentStage: AssessmentStage = journeyStatus.hasCompletedAssessment
@@ -347,7 +545,7 @@ export default async function PrivateJourneyPage({
           isHe,
           timeline,
           assessmentCompleted: journeyStatus.hasCompletedAssessment,
-          viewerUserId: user.id,
+          viewerUserId: effectiveUserId,
           // itemSeenAt: not yet wired - until we have a seen-state
           // table, every clinician reply is considered "unread"
           // until the user clicks into the item.
@@ -362,7 +560,7 @@ export default async function PrivateJourneyPage({
   // their #1 priority surfaces first. Categories whose slug isn't in
   // the priority taxonomy keep their natural position after the
   // priority block.
-  const viewerPriorities = await getViewerPriorityOrder(user.id);
+  const viewerPriorities = await getViewerPriorityOrder(effectiveUserId);
   // Build the rail-key → category-slug lookup from the live timeline.
   // For dynamic categories the slug comes from journey_categories;
   // for the empty/static rails we pull slugs from the bucket data.
@@ -380,7 +578,58 @@ export default async function PrivateJourneyPage({
   // Phase 2F - surface a calm banner when the clinician has replied
   // since the user's last visit. Client-side localStorage handles the
   // "since last visit" part; server fetches the latest reply only.
-  const freshReplies = await getFreshClinicianReplies(user.id);
+  const freshReplies = await getFreshClinicianReplies(effectiveUserId);
+
+  // Layer-3 drift awareness — banner only renders when the coach
+  // has actually reached out. Pure user-facing read; cron + coach
+  // action keep the underlying drift_alerts row up to date.
+  const driftBanner = await getDriftBannerForCurrentUser();
+  // Layer-4 weekly recap — most recent one the user is allowed to see.
+  // Falls through silently when no recap row exists yet.
+  const latestRecap = await getLatestRecapForCurrentUser();
+
+  // Layer-4 milestone reveal — only renders when there's a pending
+  // (revealed_at IS NULL) milestone for this couple.
+  const pendingMilestone = await getPendingMilestoneForCurrentUser();
+  const pendingMilestoneDef = pendingMilestone
+    ? getMilestoneDef(pendingMilestone.slug)
+    : null;
+
+  // FU6.S5 — build the "your story so far" narrative for the
+  // ten/twenty thresholds. Returns null when the milestone doesn't
+  // qualify or there's not enough data yet — the modal hides the
+  // CTA in that case.
+  let pendingMilestoneStory: Awaited<
+    ReturnType<typeof generateCoupleStoryNarrative>
+  > = null;
+  if (
+    pendingMilestone &&
+    (pendingMilestone.slug === "ten_items" ||
+      pendingMilestone.slug === "twenty_items")
+  ) {
+    pendingMilestoneStory = await generateCoupleStoryNarrative({
+      coupleId:  couple?.couple_id ?? null,
+      userId:    effectiveUserId,
+      isHe,
+      threshold: pendingMilestone.slug === "ten_items" ? 10 : 20,
+    });
+  }
+
+  // Layer-4 score evolution chart — visible after the user has had
+  // at least two analysis rows (i.e. after a retake). Renders nothing
+  // for week-1 users.
+  const scoreHistory = await getScoreHistoryForUser(effectiveUserId);
+
+  // Layer-5 — surface the "together" link only when the user is
+  // actually paired. Solo users never see it.
+  const isPaired = !!couple?.couple_id;
+  const coachPersonaForBanner = await getCoachPersonaForUser(effectiveUserId);
+  const coachNameForBanner = coachPersonaForBanner
+    ? (isHe
+        ? coachPersonaForBanner.displayNameHe
+        : coachPersonaForBanner.displayNameEn) ||
+      coachPersonaForBanner.displayNameHe
+    : null;
 
   // ── Phase 4 - dashboard data ────────────────────────────────────────
   // Activity history: derived from data we already have on the page.
@@ -505,6 +754,18 @@ export default async function PrivateJourneyPage({
 
   return (
     <div dir={isHe ? "rtl" : "ltr"} className="min-h-[100dvh] text-white">
+      {viewAsContext && viewAsLabel ? (
+        <ViewAsBanner viewedLabel={viewAsLabel} isHe={isHe} />
+      ) : null}
+      {pendingMilestone && pendingMilestoneDef ? (
+        <MilestoneRevealModal
+          isHe={isHe}
+          milestoneId={pendingMilestone.id}
+          slug={pendingMilestone.slug}
+          def={pendingMilestoneDef}
+          storyNarrative={pendingMilestoneStory}
+        />
+      ) : null}
       {/* Phase 2E - fire one analytics event per session when the user
           lands on the dashboard. Pure side-effect; renders nothing. */}
       <JourneyDashboardViewTracker
@@ -591,6 +852,63 @@ export default async function PrivateJourneyPage({
               href={freshReplies.latestReplyHref ?? undefined}
             />
           </section>
+        ) : null}
+
+        {/* Layer-3 drift awareness banner — surfaces only after the
+            coach has actually reached out. Stays subtle. */}
+        {driftBanner ? (
+          <DriftAwarenessBanner
+            isHe={isHe}
+            coachName={coachNameForBanner}
+            daysSilent={driftBanner.daysSilent}
+          />
+        ) : null}
+
+        {/* Layer-4 weekly recap — auto-generated by the Sunday cron.
+            Auto-hides when no recap row exists (week-1 users). */}
+        {latestRecap ? (
+          <WeeklyRecapCard
+            isHe={isHe}
+            weekStarting={latestRecap.weekStarting}
+            summaryHe={latestRecap.summaryHe}
+            summaryEn={latestRecap.summaryEn}
+            notableSignals={
+              latestRecap.notableSignals as {
+                items_completed?:    number;
+                responses_posted?:   number;
+                reactions_received?: number;
+                expert_replies?:     number;
+                top_item_title?:     string | null;
+              }
+            }
+          />
+        ) : null}
+
+        {/* Layer-4 score evolution — only renders when ≥2 analysis
+            rows exist (i.e. after a retake at week 8+). */}
+        {scoreHistory.length >= 2 ? (
+          <ScoreEvolutionChart isHe={isHe} points={scoreHistory} />
+        ) : null}
+
+        {/* Layer-5 — paired users get a soft link to the shared "we"
+            surface. Solo users never see this. */}
+        {isPaired ? (
+          <Link
+            href="/my/journey/together"
+            className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-[#B83C4D]/30 bg-[#B83C4D]/[0.06] px-4 py-3 transition hover:bg-[#B83C4D]/[0.10]"
+          >
+            <div className="min-w-0">
+              <div className="text-[12px] font-bold uppercase tracking-wider text-[#FAF6F7]/75">
+                {isHe ? "המקום המשותף שלכם" : "Your shared space"}
+              </div>
+              <p className="mt-1 text-[14px] leading-snug text-white/75">
+                {isHe
+                  ? "מה שעשיתם ביחד, השיחה ביניכם, וההודעות מהמומחה לשניכם."
+                  : "What you've done together, your shared thread, and messages addressed to both of you."}
+              </p>
+            </div>
+            <Arrow className="h-4 w-4 shrink-0 text-white/55" />
+          </Link>
         ) : null}
 
         {/* ─────── "Experts are reviewing" banner ───────
@@ -694,7 +1012,7 @@ export default async function PrivateJourneyPage({
             />
             <GeneralChannelThread
               initialMessages={channelMessages}
-              viewerUserId={user.id}
+              viewerUserId={effectiveUserId}
               isHe={isHe}
             />
           </div>

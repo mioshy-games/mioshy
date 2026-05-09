@@ -26,7 +26,11 @@ import type {
   JourneyAssessmentPayload,
 } from "@/lib/journey-content/types";
 import { AssessmentItemForm } from "@/components/my/AssessmentItemForm";
-import { AssessmentVisualBuilder } from "./AssessmentVisualBuilder";
+import {
+  AssessmentVisualBuilder,
+  ValidationSummary,
+  validateAssessmentPayload,
+} from "./AssessmentVisualBuilder";
 import { HintIcon } from "@/components/ui/hint-icon";
 
 type EditorMode = "visual" | "json";
@@ -180,9 +184,18 @@ export function AssessmentEditor({
     });
   };
 
+  // Phase 5 V2 — block save when the visual payload has validation
+  // issues. JSON mode trusts the JSON; visual mode runs the structured
+  // check. Content mode never validates (no payload).
+  const validationIssues =
+    kind === "content" || mode !== "visual"
+      ? []
+      : validateAssessmentPayload(parsed.payload);
+
   const canSave =
     !pending &&
-    (kind === "content" || (parsed.payload !== null && !parsed.error));
+    (kind === "content" || (parsed.payload !== null && !parsed.error)) &&
+    validationIssues.length === 0;
 
   return (
     <section className="rounded-2xl border border-border bg-card/30 p-5">
@@ -297,6 +310,13 @@ export function AssessmentEditor({
               </div>
             )}
           </div>
+
+          {/* Phase 5 V2 — validation summary (visual mode only) */}
+          {mode === "visual" ? (
+            <div className="mt-4">
+              <ValidationSummary issues={validationIssues} />
+            </div>
+          ) : null}
 
           {/* Live preview */}
           {parsed.payload ? (

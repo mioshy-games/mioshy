@@ -272,6 +272,29 @@ function TimelineCard({
                 {body}
               </p>
 
+              {/* Layer 1 (#1) — Why this item attribution.
+                  One subtle line, locale-resolved. Hidden when no
+                  rule attribution (legacy rows) so cards don't grow
+                  taller for unattributed items. */}
+              {entry.matchRule ? (
+                <p
+                  className={cn(
+                    "mt-1.5 inline-flex items-start gap-1 text-[11px] leading-snug",
+                    "text-[#FAF6F7]/65",
+                  )}
+                >
+                  <Sparkles
+                    aria-hidden
+                    className="mt-0.5 h-2.5 w-2.5 shrink-0 text-[#B83C4D]"
+                  />
+                  <span className="line-clamp-1">
+                    {isHe
+                      ? entry.matchRule.rationale_he
+                      : entry.matchRule.rationale_en}
+                  </span>
+                </p>
+              ) : null}
+
               {/* Footer meta: responses count + partner hint + arrow */}
               <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-white/55">
                 <div className="flex items-center gap-3">

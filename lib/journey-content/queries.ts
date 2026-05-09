@@ -390,9 +390,24 @@ export async function getTimelineForOwner(args: {
 
   const itemIds = Array.from(new Set(scheduled.map((s) => s.item_id)));
   const scheduledIds = scheduled.map((s) => s.id);
+  // Migration 066 — collect rule ids in this batch so we can resolve
+  // them in one tiny lookup. Skips nulls (legacy unattributed rows).
+  const ruleIds = Array.from(
+    new Set(
+      scheduled
+        .map((s) => s.matched_by_rule_id)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  );
+  type RuleSlim = {
+    id: string;
+    slug: string;
+    rationale_he: string;
+    rationale_en: string;
+  };
 
-  // 3. Items + categories in parallel
-  const [itemsRes, completionsRes, responsesRes] = await Promise.all([
+  // 3. Items + completions + responses + rules in parallel
+  const [itemsRes, completionsRes, responsesRes, rulesRes] = await Promise.all([
     supabase.from("journey_items").select("*").in("id", itemIds),
     supabase
       .from("journey_item_completions")
@@ -403,11 +418,21 @@ export async function getTimelineForOwner(args: {
       .select("*")
       .in("scheduled_item_id", scheduledIds)
       .order("created_at", { ascending: true }),
+    ruleIds.length === 0
+      ? Promise.resolve({ data: [] as RuleSlim[], error: null })
+      : supabase
+          .from("journey_match_rules")
+          .select("id, slug, rationale_he, rationale_en")
+          .in("id", ruleIds),
   ]);
 
   if (itemsRes.error) throw new Error(itemsRes.error.message);
   if (completionsRes.error) throw new Error(completionsRes.error.message);
   if (responsesRes.error) throw new Error(responsesRes.error.message);
+  // Rules failure is non-fatal — UI degrades to "no rationale" gracefully.
+  const rulesById = new Map<string, RuleSlim>(
+    ((rulesRes.data ?? []) as RuleSlim[]).map((r) => [r.id, r]),
+  );
 
   const items = (itemsRes.data ?? []) as JourneyItem[];
   const itemsById = new Map(items.map((it) => [it.id, it]));
@@ -450,6 +475,9 @@ export async function getTimelineForOwner(args: {
       const category = categoriesById.get(item.category_id);
       if (!category) return null;
       const completion = completionsById.get(s.id) ?? null;
+      const rule = s.matched_by_rule_id
+        ? rulesById.get(s.matched_by_rule_id) ?? null
+        : null;
       return {
         scheduled: s,
         item,
@@ -466,6 +494,7 @@ export async function getTimelineForOwner(args: {
         }),
         completion,
         responses: responsesByScheduled.get(s.id) ?? [],
+        matchRule: rule,
       };
     })
     .filter((x): x is TimelineEntry => x !== null);

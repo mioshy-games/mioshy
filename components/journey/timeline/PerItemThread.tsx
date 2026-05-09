@@ -244,11 +244,19 @@ function MessageRow({
       ? "border-white/15 bg-white/[0.06] text-white"
       : "border-amber-300/25 bg-amber-400/[0.06] text-white";
 
-  // Sender label & avatar glyph.
+  // Sender label & avatar — Layer 2 surfaces the specific coach's
+  // persona (display name + avatar) when expert_persona is present.
+  // Falls back to a generic "מיאושי" only for legacy unattributed
+  // expert messages.
+  const expertPersona = message.expert_persona ?? null;
+  const expertDisplayName = expertPersona
+    ? (isHe
+        ? expertPersona.display_name_he
+        : expertPersona.display_name_en) ||
+      expertPersona.display_name_he
+    : null;
   const senderLabel = isExpert
-    ? isHe
-      ? "מיאושי"
-      : "Mioshy"
+    ? expertDisplayName ?? (isHe ? "מיאושי" : "Mioshy")
     : isMine
       ? isHe
         ? "אתם"
@@ -256,7 +264,12 @@ function MessageRow({
       : isHe
         ? "בן/בת הזוג"
         : "Your partner";
-  const avatarInitial = isExpert ? "מ" : isMine ? "·" : "ז";
+  const avatarInitial = isExpert
+    ? (expertDisplayName ?? (isHe ? "מ" : "M")).slice(0, 1)
+    : isMine
+      ? "·"
+      : "ז";
+  const expertAvatarUrl = expertPersona?.avatar_url ?? null;
 
   const reactions = message.reactions ?? {};
   const reactionEntries = Object.entries(reactions).filter(
@@ -267,16 +280,25 @@ function MessageRow({
     <li className={cn("flex gap-2", align)}>
       {/* Expert avatar — only shown on the start side */}
       {isExpert ? (
-        <span
-          aria-hidden
-          className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center self-start rounded-full text-[15px] font-bold text-[#FAF6F7]"
-          style={{
-            background: "linear-gradient(135deg, #B83C4D 0%, #6C2E40 100%)",
-            boxShadow: "0 8px 20px -8px rgba(184,60,77,0.6)",
-          }}
-        >
-          {avatarInitial}
-        </span>
+        expertAvatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={expertAvatarUrl}
+            alt={senderLabel}
+            className="mt-1 h-9 w-9 shrink-0 self-start rounded-full border-2 border-[#B83C4D]/40 object-cover"
+          />
+        ) : (
+          <span
+            aria-hidden
+            className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center self-start rounded-full text-[15px] font-bold text-[#FAF6F7]"
+            style={{
+              background: "linear-gradient(135deg, #B83C4D 0%, #6C2E40 100%)",
+              boxShadow: "0 8px 20px -8px rgba(184,60,77,0.6)",
+            }}
+          >
+            {avatarInitial}
+          </span>
+        )
       ) : null}
 
       <div className={cn("max-w-[80%] sm:max-w-[72%]", isExpert ? "" : "text-end")}>

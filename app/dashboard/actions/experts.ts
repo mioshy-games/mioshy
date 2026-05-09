@@ -207,6 +207,9 @@ export async function assignContentToCouple(
   await materializeAssignment({
     assignment: data as JourneyAssignment,
     supabase,
+    // Coach-pushed content surfaces "your coach hand-picked this" in the
+    // user's "Why this item?" disclosure (see migration 066).
+    defaultRuleSlug: "expert_recommendation",
   });
 
   revalidatePath(`/dashboard/my-clients/${v.coupleId}`, "layout");

@@ -20,6 +20,7 @@ import { notFound, redirect } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
+import { getCurrentUserPact } from "@/lib/journey/pacts";
 import { JourneyClient } from "@/components/journey/JourneyClient";
 import { JourneyAmbience } from "@/components/journey/JourneyAmbience";
 import { AssessmentDiagProbe } from "@/components/journey/AssessmentDiagProbe";
@@ -51,6 +52,35 @@ export default async function JourneyAssessmentPage({
   const cookieStoreForLog = cookies();
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
+
+  // Layer-1 pact gate: an authenticated user with NO pact AND no
+  // existing progress sees the intro screen first. Mid-flow users
+  // (progress > 0) skip the gate so we don't yank them out of a
+  // questionnaire they're already in. Anonymous users skip too —
+  // they need to enter the funnel first; the pact is captured after
+  // sign-up via the same intro page (which getCurrentUserPact will
+  // route them to once they're authenticated).
+  if (user) {
+    const existingPact = await getCurrentUserPact();
+    if (!existingPact) {
+      const { data: existingJourney } = await supabase
+        .from("journeys")
+        .select("current_step")
+        .eq("user_id", user.id)
+        .order("last_activity_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const startedAlready =
+        ((existingJourney as { current_step: number } | null)?.current_step ??
+          0) > 0;
+      if (!startedAlready) {
+        console.log(
+          "[/journey/assessment] no pact + no progress → /journey/assessment/intro",
+        );
+        redirect(`/${locale}/journey/assessment/intro`);
+      }
+    }
+  }
 
   console.log("[/journey/assessment] entry", {
     user_id: user?.id ?? null,

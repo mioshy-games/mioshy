@@ -119,11 +119,13 @@ small, .text-small {
 
     /* TYPE TOKENS - sizes */
     --fs-display: clamp(46px, 6.6vw, 96px);
-    /* H2 token. Mobile floor 42 stays (legibility on phones), desktop
-       cap reduced 25% per Itzik 2026-05-07: was 96px max, now 72px max.
-       The vw factor is also dialed down (7vw → 5.6vw) so mid-desktop
-       sizes scale ~20-25% smaller too — not just the cap. */
-    --fs-h2: clamp(42px, 5.6vw, 72px);
+    /* H2 token. Reduced another 25% across the board per Itzik
+       2026-05-08: was clamp(42, 5.6vw, 72), now clamp(32, 4.2vw, 54).
+       Mobile floor 32px is still readable on phones; desktop cap 54px
+       feels editorial rather than billboard. Token is sweeping — every
+       <h2> inside .home-v2 inherits, including all marketing sections,
+       FAQ, FinalCTA etc. */
+    --fs-h2: clamp(32px, 4.2vw, 54px);
     /* H3 reduced 25% on desktop per Itzik 2026-05-07. Was clamp(32,
        3.5vw, 40); now clamp(28, 2.5vw, 30). Mobile is slightly smaller
        too (32 → 28) so the hierarchy with h4 (28px) stays clean. */

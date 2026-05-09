@@ -15,6 +15,8 @@ import {
   freezeSubscription,
   resumeSubscription,
 } from "./actions";
+import { getCurrentUserPauseState } from "@/lib/billing/pause-state";
+import { PauseSubscription } from "@/components/account/PauseSubscription";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { RedeemCodeButton } from "@/components/between-us/RedeemCodeButton";
 import { InvitePartnerByEmail } from "@/components/between-us/InvitePartnerByEmail";
@@ -66,6 +68,9 @@ export default async function AccountPage({
   const t = await getTranslations({ locale, namespace: "account" });
   const supabase = await createServerSupabaseClient();
   const isHe = locale === "he";
+
+  // Layer-3 pause state — read once, pass into the new pause component.
+  const pauseState = await getCurrentUserPauseState();
 
   const {
     data: { user },
@@ -408,6 +413,18 @@ export default async function AccountPage({
             </div>
           </div>
         </div>
+
+        {/* Layer-3 pause flow — surfaced ABOVE freeze/cancel so the
+            user sees "step away" before "shut down." */}
+        {sub?.status === "active" || pauseState.isActive ? (
+          <div className="mt-5">
+            <PauseSubscription
+              isHe={isHe}
+              hasActivePause={pauseState.isActive}
+              pausedUntil={pauseState.pausedUntil}
+            />
+          </div>
+        ) : null}
 
         <div className="mt-5 flex flex-wrap gap-2">
           {sub?.status === "active" && (

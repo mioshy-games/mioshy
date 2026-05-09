@@ -614,6 +614,27 @@ export async function isCadenceEligible(
     }
   }
 
+  // Layer-3 user-initiated pause via subscription_pauses. Belt-and-
+  // suspenders alongside the /my/journey UI gate so even if the
+  // page route is bypassed, the cadence engine never materialises
+  // for a paused user.
+  const { data: pauseRow } = await admin
+    .from("subscription_pauses")
+    .select("paused_until")
+    .eq("user_id", userId)
+    .is("resumed_at", null)
+    .order("paused_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (pauseRow) {
+    const until = new Date(
+      (pauseRow as { paused_until: string }).paused_until,
+    ).getTime();
+    if (Number.isFinite(until) && until > Date.now()) {
+      return { eligible: false, reason: "manually_paused" };
+    }
+  }
+
   // Must have a ranking row.
   const { data: priorities } = await admin
     .from("journey_user_priorities")

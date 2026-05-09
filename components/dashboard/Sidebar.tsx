@@ -33,6 +33,8 @@ import {
   UsersRound,
   Send,
   Activity,
+  BookMarked,
+  HelpCircle,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -44,6 +46,10 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { t } from "@/lib/admin/i18n";
+import type { AdminLocale } from "@/lib/admin/locale";
+type Loc = AdminLocale;
+import { AdminLocaleToggle } from "./AdminLocaleToggle";
 
 // ── Navigation model ────────────────────────────────────────────────────────
 // The sidebar is a tree of NavItems. Groups are items that optionally have an
@@ -55,19 +61,20 @@ import {
 type NavLeaf = {
   kind: "leaf";
   href: string;
-  label: string;
+  /** i18n key for the label. */
+  labelKey: string;
   icon: LucideIcon;
   /** Hide this leaf from non-admin sidebars. Optional. */
   adminOnly?: boolean;
-  /** Native browser tooltip on hover. Use for entries whose label
-   *  isn't self-explanatory to a clinician (Push, Health, etc.). */
-  tooltip?: string;
+  /** i18n key for the tooltip. Optional. */
+  tooltipKey?: string;
 };
 
 type NavGroup = {
   kind: "group";
   id: string; // stable id for persistence
-  label: string;
+  /** i18n key for the label. */
+  labelKey: string;
   icon: LucideIcon;
   /** Optional landing href for the group (e.g. Adults → /dashboard/adults). */
   href?: string;
@@ -79,121 +86,103 @@ type NavGroup = {
 type NavItem = NavLeaf | NavGroup;
 
 const NAV: NavItem[] = [
-  { kind: "leaf", href: "/dashboard", label: "Overview", icon: LayoutDashboard },
+  { kind: "leaf", href: "/dashboard", labelKey: "nav.overview", icon: LayoutDashboard },
 
   {
     kind: "group",
     id: "coaching",
-    label: "Coaching",
+    labelKey: "nav.coaching",
     icon: Stethoscope,
     children: [
-      { kind: "leaf", href: "/dashboard/clinician", label: "Today's queue", icon: Stethoscope },
-      { kind: "leaf", href: "/dashboard/my-clients", label: "My Clients", icon: HeartHandshake },
-      { kind: "leaf", href: "/dashboard/experts", label: "Experts", icon: UserCog },
+      { kind: "leaf", href: "/dashboard/help",           labelKey: "nav.help",           icon: HelpCircle },
+      { kind: "leaf", href: "/dashboard/coaching-guide", labelKey: "nav.coaching_guide", icon: BookMarked, tooltipKey: "tip.coaching_guide" },
+      { kind: "leaf", href: "/dashboard/clinician",      labelKey: "nav.todays_queue",   icon: Stethoscope },
+      { kind: "leaf", href: "/dashboard/my-clients",     labelKey: "nav.my_clients",     icon: HeartHandshake },
+      { kind: "leaf", href: "/dashboard/coach-profile",  labelKey: "nav.my_profile",     icon: UserCog, tooltipKey: "tip.my_profile" },
+      { kind: "leaf", href: "/dashboard/coach-library",  labelKey: "nav.my_library",     icon: BookOpenText, tooltipKey: "tip.my_library" },
+      { kind: "leaf", href: "/dashboard/experts",        labelKey: "nav.experts",        icon: UserCog, adminOnly: true },
     ],
   },
 
   {
     kind: "group",
     id: "games",
-    label: "Games",
+    labelKey: "nav.games",
     icon: Gamepad2,
     children: [
-      { kind: "leaf", href: "/dashboard/games", label: "Wheels 🎡", icon: RefreshCw },
-      { kind: "leaf", href: "/dashboard/questions", label: "Wheel Questions", icon: MessageSquareText },
-      { kind: "leaf", href: "/dashboard/snakes", label: "Snakes 🐍", icon: Gamepad2 },
-      { kind: "leaf", href: "/dashboard/between-us", label: "Adults Only", icon: HeartHandshake },
+      { kind: "leaf", href: "/dashboard/games",      labelKey: "nav.wheels",          icon: RefreshCw },
+      { kind: "leaf", href: "/dashboard/questions",  labelKey: "nav.wheel_questions", icon: MessageSquareText },
+      { kind: "leaf", href: "/dashboard/snakes",     labelKey: "nav.snakes",          icon: Gamepad2 },
+      { kind: "leaf", href: "/dashboard/between-us", labelKey: "nav.adults_only",     icon: HeartHandshake },
     ],
   },
 
   {
     kind: "group",
     id: "journey",
-    label: "Journey",
+    labelKey: "nav.journey",
     icon: Route,
     href: "/dashboard/journey",
     children: [
-      { kind: "leaf", href: "/dashboard/journey/programs", label: "Programs", icon: FolderKanban },
-      { kind: "leaf", href: "/dashboard/journey/categories", label: "Categories", icon: Tags },
-      { kind: "leaf", href: "/dashboard/journey/items", label: "Items", icon: FileText },
-      {
-        kind: "leaf",
-        href: "/dashboard/journey/assignments",
-        label: "Assignments",
-        icon: Link2,
-        tooltip: "Programs, categories, and items assigned to specific clients.",
-      },
-      { kind: "leaf", href: "/dashboard/journey/clients", label: "Clients", icon: Users },
-      {
-        kind: "leaf",
-        href: "/dashboard/journey/groups",
-        label: "Groups",
-        icon: UsersRound,
-        tooltip: "Cohorts of users bound to specific subtopics.",
-      },
-      {
-        kind: "leaf",
-        href: "/dashboard/journey/push",
-        label: "Push",
-        icon: Send,
-        tooltip:
-          "Send specific items to a user, couple, or group on their next delivery slot.",
-      },
-      {
-        kind: "leaf",
-        href: "/dashboard/journey/health",
-        label: "Health",
-        icon: Activity,
-        adminOnly: true,
-        tooltip: "System status - cron jobs and stuck-user alerts.",
-      },
-      { kind: "leaf", href: "/dashboard/journey-analytics", label: "Analytics", icon: TrendingDown, adminOnly: true },
+      { kind: "leaf", href: "/dashboard/journey/programs",       labelKey: "nav.programs",       icon: FolderKanban },
+      { kind: "leaf", href: "/dashboard/journey/categories",     labelKey: "nav.categories",     icon: Tags },
+      { kind: "leaf", href: "/dashboard/journey/items",          labelKey: "nav.items",          icon: FileText },
+      { kind: "leaf", href: "/dashboard/journey/assignments",    labelKey: "nav.assignments",    icon: Link2, tooltipKey: "tip.assignments" },
+      { kind: "leaf", href: "/dashboard/journey/clients",        labelKey: "nav.clients",        icon: Users },
+      { kind: "leaf", href: "/dashboard/journey/groups",         labelKey: "nav.groups",         icon: UsersRound, tooltipKey: "tip.groups" },
+      { kind: "leaf", href: "/dashboard/journey/push",           labelKey: "nav.push",           icon: Send, tooltipKey: "tip.push" },
+      { kind: "leaf", href: "/dashboard/journey/match-rules",    labelKey: "nav.match_rules",    icon: Sparkles },
+      { kind: "leaf", href: "/dashboard/journey/feedback",       labelKey: "nav.feedback",       icon: MessageSquareText },
+      { kind: "leaf", href: "/dashboard/journey/expert-messages",labelKey: "nav.expert_messages",icon: MessageSquareText },
+      { kind: "leaf", href: "/dashboard/journey/metrics",        labelKey: "nav.metrics",        icon: Activity },
+      { kind: "leaf", href: "/dashboard/journey/health",         labelKey: "nav.health",         icon: Activity, adminOnly: true, tooltipKey: "tip.health" },
+      { kind: "leaf", href: "/dashboard/journey-analytics",      labelKey: "nav.analytics",      icon: TrendingDown, adminOnly: true },
     ],
   },
 
   {
     kind: "group",
     id: "adults",
-    label: "Adults",
+    labelKey: "nav.adults",
     icon: Sparkles,
     href: "/dashboard/adults",
     children: [
-      { kind: "leaf", href: "/dashboard/adults/games", label: "Games", icon: Gamepad2 },
-      { kind: "leaf", href: "/dashboard/adults/categories", label: "Categories", icon: Tags },
-      { kind: "leaf", href: "/dashboard/adults/tags", label: "Tags", icon: Tags },
-      { kind: "leaf", href: "/dashboard/adults/promotions", label: "Promotions", icon: Megaphone },
-      { kind: "leaf", href: "/dashboard/adults/settings", label: "Settings", icon: Settings },
+      { kind: "leaf", href: "/dashboard/adults/games",      labelKey: "nav.adults_games",      icon: Gamepad2 },
+      { kind: "leaf", href: "/dashboard/adults/categories", labelKey: "nav.adults_categories", icon: Tags },
+      { kind: "leaf", href: "/dashboard/adults/tags",       labelKey: "nav.adults_tags",       icon: Tags },
+      { kind: "leaf", href: "/dashboard/adults/promotions", labelKey: "nav.adults_promotions", icon: Megaphone },
+      { kind: "leaf", href: "/dashboard/adults/settings",   labelKey: "nav.adults_settings",   icon: Settings },
     ],
   },
 
   {
     kind: "group",
     id: "users",
-    label: "Users",
+    labelKey: "nav.users",
     icon: Users,
     children: [
-      { kind: "leaf", href: "/dashboard/users", label: "Journey users", icon: UserCog },
-      { kind: "leaf", href: "/dashboard/leads", label: "Leads", icon: Users },
-      { kind: "leaf", href: "/dashboard/subscriptions", label: "Subscriptions", icon: CreditCard },
+      { kind: "leaf", href: "/dashboard/users",         labelKey: "nav.users_journey",       icon: UserCog },
+      { kind: "leaf", href: "/dashboard/leads",         labelKey: "nav.users_leads",         icon: Users },
+      { kind: "leaf", href: "/dashboard/subscriptions", labelKey: "nav.users_subscriptions", icon: CreditCard },
     ],
   },
 
   {
     kind: "group",
     id: "marketing",
-    label: "Marketing",
+    labelKey: "nav.marketing",
     icon: Megaphone,
     children: [
-      { kind: "leaf", href: "/dashboard/homepage", label: "Homepage", icon: Home },
-      { kind: "leaf", href: "/dashboard/articles", label: "Articles", icon: BookOpenText },
-      { kind: "leaf", href: "/dashboard/templates", label: "Templates", icon: Mail },
+      { kind: "leaf", href: "/dashboard/homepage",  labelKey: "nav.homepage",  icon: Home },
+      { kind: "leaf", href: "/dashboard/articles",  labelKey: "nav.articles",  icon: BookOpenText },
+      { kind: "leaf", href: "/dashboard/templates", labelKey: "nav.templates", icon: Mail },
     ],
   },
 
   {
     kind: "group",
     id: "report",
-    label: "Report",
+    labelKey: "nav.report",
     icon: BarChart3,
     // Placeholder - no report pages shipped yet; the group is visible so admins
     // know analytics is a first-class area we plan to fill. Remove this TODO
@@ -204,11 +193,11 @@ const NAV: NavItem[] = [
   {
     kind: "group",
     id: "system",
-    label: "System",
+    labelKey: "nav.system",
     icon: Settings,
     children: [
-      { kind: "leaf", href: "/dashboard/automation", label: "Automation", icon: Zap },
-      { kind: "leaf", href: "/dashboard/settings", label: "Settings", icon: Settings },
+      { kind: "leaf", href: "/dashboard/automation", labelKey: "nav.automation", icon: Zap },
+      { kind: "leaf", href: "/dashboard/settings",   labelKey: "nav.settings",   icon: Settings },
     ],
   },
 ];
@@ -231,27 +220,29 @@ function LeafLink({
   item,
   pathname,
   indent,
+  locale,
 }: {
   item: NavLeaf;
   pathname: string;
   indent?: boolean;
+  locale: Loc;
 }) {
   const active = isHrefActive(pathname, item.href);
   const Icon = item.icon;
   return (
     <Link
       href={item.href}
-      title={item.tooltip}
+      title={item.tooltipKey ? t(locale, item.tooltipKey) : undefined}
       className={cn(
         "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-        indent && "pl-9",
+        indent && "ps-9",
         active
           ? "bg-sidebar-accent text-sidebar-accent-foreground"
           : "text-sidebar-foreground/80 hover:bg-sidebar-accent/50",
       )}
     >
       <Icon className={cn("size-4 shrink-0", indent && "opacity-70")} />
-      <span className="truncate">{item.label}</span>
+      <span className="truncate">{t(locale, item.labelKey)}</span>
     </Link>
   );
 }
@@ -261,11 +252,13 @@ function GroupNav({
   pathname,
   expanded,
   onToggle,
+  locale,
 }: {
   group: NavGroup;
   pathname: string;
   expanded: boolean;
   onToggle: () => void;
+  locale: Loc;
 }) {
   const active = isGroupActive(pathname, group);
   const Icon = group.icon;
@@ -286,9 +279,11 @@ function GroupNav({
   const labelContent = (
     <>
       <Icon className="size-4 shrink-0" />
-      <span className="flex-1 truncate">{group.label}</span>
+      <span className="flex-1 truncate">{t(locale, group.labelKey)}</span>
     </>
   );
+
+  const groupLabel = t(locale, group.labelKey);
 
   return (
     <div className="flex flex-col">
@@ -296,7 +291,7 @@ function GroupNav({
         {group.href ? (
           <Link
             href={group.href}
-            className="flex flex-1 min-w-0 items-center gap-3 rounded-l-lg px-3 py-2"
+            className="flex flex-1 min-w-0 items-center gap-3 rounded-s-lg px-3 py-2"
           >
             {labelContent}
           </Link>
@@ -304,7 +299,7 @@ function GroupNav({
           <button
             type="button"
             onClick={onToggle}
-            className="flex flex-1 min-w-0 items-center gap-3 rounded-l-lg px-3 py-2 text-left"
+            className="flex flex-1 min-w-0 items-center gap-3 rounded-s-lg px-3 py-2 text-start"
             aria-expanded={expanded}
           >
             {labelContent}
@@ -315,28 +310,33 @@ function GroupNav({
           <button
             type="button"
             onClick={onToggle}
-            aria-label={expanded ? `Collapse ${group.label}` : `Expand ${group.label}`}
+            aria-label={
+              expanded
+                ? `${t(locale, "btn.close")} ${groupLabel}`
+                : `${t(locale, "btn.open")} ${groupLabel}`
+            }
             aria-expanded={expanded}
-            className="p-2 rounded-r-lg hover:bg-sidebar-accent/30"
+            className="p-2 rounded-e-lg hover:bg-sidebar-accent/30"
           >
-            <Chevron className="size-3.5 opacity-60" />
+            <Chevron className="size-3.5 opacity-60 rtl:scale-x-[-1]" />
           </button>
         ) : (
-          <span className="pr-3 text-[10px] uppercase tracking-wide opacity-40">
-            soon
+          <span className="pe-3 text-[10px] uppercase tracking-wide opacity-40">
+            {t(locale, "nav.soon")}
           </span>
         )}
       </div>
 
       {/* Children */}
       {expanded && hasChildren && (
-        <div className="mt-0.5 flex flex-col gap-0.5 border-l border-sidebar-border/60 ml-[18px] pl-1.5">
+        <div className="mt-0.5 flex flex-col gap-0.5 border-s border-sidebar-border/60 ms-[18px] ps-1.5">
           {group.children.map((child) => (
             <LeafLink
               key={child.href}
               item={child}
               pathname={pathname}
               indent
+              locale={locale}
             />
           ))}
         </div>
@@ -443,7 +443,13 @@ function filterNav(items: NavItem[], isAdmin: boolean): NavItem[] {
   });
 }
 
-export function Sidebar({ isAdmin = true }: { isAdmin?: boolean }) {
+export function Sidebar({
+  isAdmin = true,
+  locale = "en",
+}: {
+  isAdmin?: boolean;
+  locale?: Loc;
+}) {
   const pathname = usePathname();
   const { expanded, toggle } = useExpandedGroups(pathname);
   const visibleNav = useMemo(() => filterNav(NAV, isAdmin), [isAdmin]);
@@ -452,7 +458,7 @@ export function Sidebar({ isAdmin = true }: { isAdmin?: boolean }) {
     <nav className="flex flex-col gap-1">
       {visibleNav.map((item) =>
         item.kind === "leaf" ? (
-          <LeafLink key={item.href} item={item} pathname={pathname} />
+          <LeafLink key={item.href} item={item} pathname={pathname} locale={locale} />
         ) : (
           <GroupNav
             key={item.id}
@@ -460,36 +466,50 @@ export function Sidebar({ isAdmin = true }: { isAdmin?: boolean }) {
             pathname={pathname}
             expanded={expanded.has(item.id)}
             onToggle={() => toggle(item.id)}
+            locale={locale}
           />
         ),
       )}
     </nav>
   );
 
+  // Side a/b honour RTL — sidebar pinned to start (right in Hebrew, left in English).
   return (
     <>
-      <aside className="bg-sidebar text-sidebar-foreground hidden w-60 shrink-0 border-r border-sidebar-border md:flex md:flex-col">
-        <div className="p-4 text-lg font-semibold tracking-tight">
-          {isAdmin ? "Mioshy Admin" : "Mioshy Coaching"}
+      <aside className="bg-sidebar text-sidebar-foreground hidden w-60 shrink-0 border-e border-sidebar-border md:flex md:flex-col">
+        <div className="flex items-center justify-between gap-2 p-4">
+          <div className="text-lg font-semibold tracking-tight">
+            {isAdmin
+              ? t(locale, "brand.admin")
+              : t(locale, "brand.coaching")}
+          </div>
+          <AdminLocaleToggle current={locale} />
         </div>
         <div className="px-2 pb-4 overflow-y-auto">{nav}</div>
       </aside>
-      <div className="border-border bg-background flex items-center justify-between border-b p-3 md:hidden">
-        <span className="font-semibold">Admin</span>
-        <Sheet>
-          <SheetTrigger
-            className={cn(buttonVariants({ variant: "outline", size: "icon" }))}
-            aria-label="Menu"
-          >
-            <Menu className="size-5" />
-          </SheetTrigger>
-          <SheetContent side="left" className="w-72">
-            <SheetHeader>
-              <SheetTitle>Menu</SheetTitle>
-            </SheetHeader>
-            <div className="mt-6 overflow-y-auto">{nav}</div>
-          </SheetContent>
-        </Sheet>
+      <div className="border-border bg-background flex items-center justify-between gap-2 border-b p-3 md:hidden">
+        <span className="font-semibold">
+          {isAdmin
+            ? t(locale, "brand.admin")
+            : t(locale, "brand.coaching")}
+        </span>
+        <div className="flex items-center gap-2">
+          <AdminLocaleToggle current={locale} />
+          <Sheet>
+            <SheetTrigger
+              className={cn(buttonVariants({ variant: "outline", size: "icon" }))}
+              aria-label={t(locale, "nav.menu")}
+            >
+              <Menu className="size-5" />
+            </SheetTrigger>
+            <SheetContent side={locale === "he" ? "right" : "left"} className="w-72">
+              <SheetHeader>
+                <SheetTitle>{t(locale, "nav.menu")}</SheetTitle>
+              </SheetHeader>
+              <div className="mt-6 overflow-y-auto">{nav}</div>
+            </SheetContent>
+          </Sheet>
+        </div>
       </div>
     </>
   );

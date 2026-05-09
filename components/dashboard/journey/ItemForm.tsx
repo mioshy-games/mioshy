@@ -26,6 +26,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Field, Section } from "./Field";
+import { t } from "@/lib/admin/i18n";
+import type { AdminLocale } from "@/lib/admin/locale";
 
 export interface CategoryOption {
   id: string;
@@ -46,6 +48,7 @@ export function ItemForm({
   defaultValues,
   categories,
   subtopics,
+  locale = "en",
 }: {
   itemId: string | null;
   defaultValues: JourneyItemFormValues;
@@ -53,6 +56,7 @@ export function ItemForm({
   /** Every subtopic across the catalog. The form filters by the
    *  currently-selected category_id at render time. */
   subtopics: SubtopicOption[];
+  locale?: AdminLocale;
 }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
@@ -155,8 +159,35 @@ export function ItemForm({
         </div>
 
         <Section
-          title="Placement"
-          description="Where this item lives and when it unlocks relative to the assignment anchor."
+          title={t(locale, "form.section.stage")}
+          description={t(locale, "form.section.stage_hint")}
+        >
+          <div className="grid gap-4 sm:grid-cols-4">
+            <Field label="Stage (1-4)">
+              <Select
+                value={String(watch("stage") ?? 0)}
+                onValueChange={(v) => {
+                  setValue("stage", Number(v), { shouldDirty: true });
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Not set" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">— None —</SelectItem>
+                  <SelectItem value="1">1 · יסודות</SelectItem>
+                  <SelectItem value="2">2 · העמקה</SelectItem>
+                  <SelectItem value="3">3 · אינטגרציה</SelectItem>
+                  <SelectItem value="4">4 · הבשלה</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+          </div>
+        </Section>
+
+        <Section
+          title={t(locale, "form.section.placement")}
+          description={t(locale, "form.section.placement_hint")}
         >
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Category" className="sm:col-span-2">
@@ -279,8 +310,8 @@ export function ItemForm({
         </Section>
 
         <Section
-          title="Content"
-          description="Markdown-friendly. Edits propagate to every existing assignment automatically."
+          title={t(locale, "form.section.content")}
+          description={t(locale, "form.section.content_hint")}
         >
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Title (HE)">
@@ -313,8 +344,8 @@ export function ItemForm({
         </Section>
 
         <Section
-          title="Practice"
-          description="Optional: a short task they can do this week, plus an optional stretch challenge."
+          title={t(locale, "form.section.practice")}
+          description={t(locale, "form.section.practice_hint")}
         >
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Task (HE)">
@@ -351,7 +382,184 @@ export function ItemForm({
           </div>
         </Section>
 
-        <Section title="Media" description="Optional video embed URL and cover image.">
+        <Section
+          title={t(locale, "form.section.lesson_insight")}
+          description={t(locale, "form.section.lesson_insight_hint")}
+        >
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Expert insight (HE)" className="sm:col-span-2">
+              <Textarea
+                {...register("expert_insight_he")}
+                dir="rtl"
+                rows={4}
+                placeholder="ההיגיון מאחורי..."
+              />
+            </Field>
+            <Field label="Expert insight (EN)" className="sm:col-span-2">
+              <Textarea
+                {...register("expert_insight_en")}
+                rows={4}
+                placeholder="The thinking behind..."
+              />
+            </Field>
+          </div>
+        </Section>
+
+        <Section
+          title={t(locale, "form.section.lesson_mistakes")}
+          description={t(locale, "form.section.lesson_mistakes_hint")}
+        >
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Common mistakes (HE)" className="sm:col-span-2">
+              <Textarea
+                {...register("common_mistakes_he")}
+                dir="rtl"
+                rows={3}
+                placeholder="טעות נפוצה: ..."
+              />
+            </Field>
+            <Field label="Common mistakes (EN)" className="sm:col-span-2">
+              <Textarea
+                {...register("common_mistakes_en")}
+                rows={3}
+                placeholder="Common mistake: ..."
+              />
+            </Field>
+          </div>
+        </Section>
+
+        <Section
+          title={t(locale, "form.section.lesson_metaphor")}
+          description={t(locale, "form.section.lesson_metaphor_hint")}
+        >
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Metaphor (HE)" className="sm:col-span-2">
+              <Textarea
+                {...register("metaphor_he")}
+                dir="rtl"
+                rows={3}
+                placeholder="כמו ..."
+              />
+            </Field>
+            <Field label="Metaphor (EN)" className="sm:col-span-2">
+              <Textarea
+                {...register("metaphor_en")}
+                rows={3}
+                placeholder="Like ..."
+              />
+            </Field>
+          </div>
+        </Section>
+
+        <Section
+          title={t(locale, "form.section.lesson_measurement")}
+          description={t(locale, "form.section.lesson_measurement_hint")}
+        >
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Measurement (HE)" className="sm:col-span-2">
+              <Textarea
+                {...register("measurement_he")}
+                dir="rtl"
+                rows={2}
+                placeholder="ספרו השבוע: כמה פעמים..."
+              />
+            </Field>
+            <Field label="Measurement (EN)" className="sm:col-span-2">
+              <Textarea
+                {...register("measurement_en")}
+                rows={2}
+                placeholder="Count this week: how many times..."
+              />
+            </Field>
+          </div>
+        </Section>
+
+        <Section
+          title={t(locale, "form.section.lesson_doDont")}
+          description={t(locale, "form.section.lesson_doDont_hint")}
+        >
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Do this week (HE)">
+              <Textarea
+                {...register("do_this_week_he")}
+                dir="rtl"
+                rows={3}
+                placeholder="תרגלו..."
+              />
+            </Field>
+            <Field label="Do this week (EN)">
+              <Textarea
+                {...register("do_this_week_en")}
+                rows={3}
+                placeholder="Practice..."
+              />
+            </Field>
+            <Field label="Don't this week (HE)">
+              <Textarea
+                {...register("dont_this_week_he")}
+                dir="rtl"
+                rows={3}
+                placeholder="אל תוותרו על..."
+              />
+            </Field>
+            <Field label="Don't this week (EN)">
+              <Textarea
+                {...register("dont_this_week_en")}
+                rows={3}
+                placeholder="Don't skip..."
+              />
+            </Field>
+          </div>
+        </Section>
+
+        <Section
+          title={t(locale, "form.section.lesson_progress")}
+          description={t(locale, "form.section.lesson_progress_hint")}
+        >
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Progress marker (HE)" className="sm:col-span-2">
+              <Textarea
+                {...register("progress_marker_he")}
+                dir="rtl"
+                rows={2}
+                placeholder="את/ה תופס/ת את עצמך ש..."
+              />
+            </Field>
+            <Field label="Progress marker (EN)" className="sm:col-span-2">
+              <Textarea
+                {...register("progress_marker_en")}
+                rows={2}
+                placeholder="You catch yourself..."
+              />
+            </Field>
+          </div>
+        </Section>
+
+        <Section
+          title={t(locale, "form.section.lesson_source")}
+          description={t(locale, "form.section.lesson_source_hint")}
+        >
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Source (HE)">
+              <Input
+                {...register("source_attribution_he")}
+                dir="rtl"
+                placeholder="Gary Chapman, The 5 Love Languages"
+              />
+            </Field>
+            <Field label="Source (EN)">
+              <Input
+                {...register("source_attribution_en")}
+                placeholder="Gary Chapman, The 5 Love Languages"
+              />
+            </Field>
+          </div>
+        </Section>
+
+        <Section
+          title={t(locale, "form.section.media")}
+          description={t(locale, "form.section.media_hint")}
+        >
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Video URL">
               <Input

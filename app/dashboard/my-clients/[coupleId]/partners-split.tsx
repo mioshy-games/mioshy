@@ -8,6 +8,7 @@ import {
 import { getPriorityLabels } from "@/lib/journey-content/priority-categories";
 import type { PriorityKey } from "@/lib/journey/priorities";
 import { Badge } from "@/components/ui/badge";
+import { ViewAsButton } from "@/components/dashboard/coach/ViewAsButton";
 
 /**
  * Side-by-side per-partner panel for the expert couple-detail page.
@@ -47,6 +48,7 @@ export async function PartnersSplit({ coupleId }: { coupleId: string }) {
           key={p.userId}
           partner={p}
           labelsHe={priorityLabels.labelsHe}
+          coupleId={coupleId}
         />
       ))}
       {partners.length === 1 ? (
@@ -61,9 +63,11 @@ export async function PartnersSplit({ coupleId }: { coupleId: string }) {
 function PartnerColumn({
   partner: p,
   labelsHe,
+  coupleId,
 }: {
   partner: PartnerDetail;
   labelsHe: Record<PriorityKey, string>;
+  coupleId: string;
 }) {
   const pct =
     p.scheduledTotal > 0
@@ -105,6 +109,14 @@ function PartnerColumn({
           <ExternalLink className="size-4" />
         </Link>
       </header>
+
+      {/* Layer 2 — coach impersonation. Audit-logged on every start. */}
+      <ViewAsButton
+        userId={p.userId}
+        coupleId={coupleId}
+        label={p.fullName?.split(" ")[0] || p.email?.split("@")[0] || "partner"}
+      />
+
 
       {/* Demographics */}
       <section>

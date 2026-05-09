@@ -44,7 +44,6 @@ export function HomepageV2() {
   return (
     <div className="home-v2 bg-white" dir={dir} lang={locale}>
       <Hero />
-      <Problem />
       <Authority />
       <MediaSlider />
       <Founder />
@@ -56,6 +55,11 @@ export function HomepageV2() {
       <JourneyStages />
       <FinalCTA />
       <FAQ />
+      {/* <Problem /> moved from second-position (right under Hero) to
+          end of page per Itzik 2026-05-08. The section also got
+          re-toned from "you're not broken..." to a more optimistic
+          frame — see messages/he.json:homeV2.problem. */}
+      <Problem />
     </div>
   );
 }

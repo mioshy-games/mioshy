@@ -26,7 +26,14 @@ import { AssignContentForm } from "./assign-form";
 import { CoupleTimelineCsv } from "./timeline-csv";
 import { RecentActivity } from "./recent-activity";
 import { PartnersSplit } from "./partners-split";
+import { CoupleMessageCompose } from "@/components/dashboard/coach/CoupleMessageCompose";
+import { SmartSuggestionsPanel } from "@/components/dashboard/coach/SmartSuggestionsPanel";
+import { CoupleStepGuide } from "@/components/dashboard/coach/CoupleStepGuide";
+import { CoupleHistoryPanel } from "@/components/dashboard/coach/CoupleHistoryPanel";
+import { AdHocItemCreator } from "@/components/dashboard/coach/AdHocItemCreator";
+import { TrackSwitchTrigger } from "@/components/dashboard/coach/TrackSwitchTrigger";
 import { PriorityDivergence } from "./priority-divergence";
+import { getCoupleHistory } from "@/lib/journey/couple-history";
 
 // ── New clinical-layer modules (2026-Q2 upgrade) ──
 import { createServiceRoleClient } from "@/lib/supabase-admin";
@@ -231,6 +238,14 @@ export default async function CoupleDetailPage({
     limit: 50,
   }).catch(() => []);
 
+  // Phase 13 — full chronological history grouped by day. Aggregates
+  // messages, completions, and pushes from 4 tables. Fail-soft so
+  // the page still renders if any source errors.
+  const coupleHistory = await getCoupleHistory({
+    coupleId: detail.coupleId,
+    days: 60,
+  }).catch(() => []);
+
   // PR2 expert-onboarding - per-partner general-channel threads.
   // One fetch per partner; the channel is per-user, never shared.
   const channelThreadsByUser = await Promise.all(
@@ -305,11 +320,28 @@ export default async function CoupleDetailPage({
       {/* Per-partner split view - left/right with separate demographics,
           priority ranking, diagnostic, audience-filtered progress, and
           activity history. */}
+      {/* Phase 13 — workflow step guide pinned at top: tells the coach
+          EXACTLY what to do for THIS couple right now. Re-evaluates on
+          every page render so any action surfaces the next step. */}
+      <CoupleStepGuide
+        coupleId={detail.coupleId}
+        coupleLabel={"הזוג"}
+      />
+
       <section className="space-y-2">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           Partners (split view)
         </h2>
         <PartnersSplit coupleId={detail.coupleId} />
+      </section>
+
+      {/* Layer-5 — couple-addressed message compose. Posts to the
+          shared couple channel; both partners see, signed by coach. */}
+      <section className="space-y-2">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          Couple message
+        </h2>
+        <CoupleMessageCompose coupleId={detail.coupleId} />
       </section>
 
       {/* Priority alignment - both partners' rankings side by side with
@@ -409,6 +441,29 @@ export default async function CoupleDetailPage({
         />
       </section>
 
+      {/* Phase 4 — Smart suggestions (above the assignment form so the
+          coach sees recommendations BEFORE deciding what to push). */}
+      <section className="space-y-2">
+        <SmartSuggestionsPanel coupleId={detail.coupleId} />
+      </section>
+
+      {/* Phase 13 — ad-hoc one-off lesson creator. Sits next to Smart
+          Suggestions because the coach lands here when the catalog
+          doesn't have what THIS couple needs. Output is is_one_off=true
+          so the new item never pollutes the global catalog. */}
+      <section className="space-y-2">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          תוכן מותאם אישית
+        </h2>
+        <AdHocItemCreator
+          coupleId={detail.coupleId}
+          partnerALabel={partnerALabel}
+          partnerBLabel={partnerBLabel}
+          hasPartnerB={!!partnerBId}
+          categories={categoriesForForms}
+        />
+      </section>
+
       {/* Assign content */}
       <section className="space-y-2">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
@@ -489,6 +544,19 @@ export default async function CoupleDetailPage({
                       {pct}% done
                     </div>
                   </div>
+                  {a.isActive && a.sourceKind === "program" ? (
+                    <TrackSwitchTrigger
+                      coupleId={detail.coupleId}
+                      fromAssignmentId={a.id}
+                      fromProgramName={
+                        a.sourceTitle ??
+                        `program:${a.sourceId.slice(0, 8)}`
+                      }
+                      programOptions={sources
+                        .filter((s) => s.kind === "program" && s.id !== a.sourceId)
+                        .map((s) => ({ id: s.id, name_he: s.title }))}
+                    />
+                  ) : null}
                 </li>
               );
             })}
@@ -502,6 +570,17 @@ export default async function CoupleDetailPage({
           Recent activity
         </h2>
         <RecentActivity coupleId={detail.coupleId} />
+      </section>
+
+      {/* Phase 13 — full chronological history (collapsible per day).
+          Below "Recent activity" because that's the quick-glance feed;
+          this is the deep-dive one a coach opens when re-orienting on
+          a couple they haven't seen in a while. */}
+      <section className="space-y-2">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          Couple history
+        </h2>
+        <CoupleHistoryPanel history={coupleHistory} />
       </section>
 
       {/* ── NEW ── Clinical feedback timeline (couple-scoped).

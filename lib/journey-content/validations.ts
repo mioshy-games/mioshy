@@ -192,6 +192,29 @@ export const journeyItemSchema = z.object({
    *   'partner' - only the couple_members.role='partner' partner
    * Solo (user-owned) assignments behave as 'both' regardless. */
   audience: z.enum(["both", "owner", "partner"]),
+
+  // ── Lesson blocks (migration 077) ────────────────────────────
+  // Each block is optional from the form's perspective — the action
+  // layer maps empty strings to NULL on save. Empty strings (not
+  // null) so react-hook-form can register them directly.
+  /** Curriculum stage 1-4. 0 = unset (form sentinel → NULL). */
+  stage: z.number().int().min(0).max(10),
+  source_attribution_he: z.string().trim().max(500),
+  source_attribution_en: z.string().trim().max(500),
+  expert_insight_he: z.string().trim().max(4000),
+  expert_insight_en: z.string().trim().max(4000),
+  common_mistakes_he: z.string().trim().max(4000),
+  common_mistakes_en: z.string().trim().max(4000),
+  metaphor_he: z.string().trim().max(2000),
+  metaphor_en: z.string().trim().max(2000),
+  measurement_he: z.string().trim().max(2000),
+  measurement_en: z.string().trim().max(2000),
+  do_this_week_he: z.string().trim().max(2000),
+  do_this_week_en: z.string().trim().max(2000),
+  dont_this_week_he: z.string().trim().max(2000),
+  dont_this_week_en: z.string().trim().max(2000),
+  progress_marker_he: z.string().trim().max(2000),
+  progress_marker_en: z.string().trim().max(2000),
 });
 
 export type JourneyItemFormValues = z.infer<typeof journeyItemSchema>;

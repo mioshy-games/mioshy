@@ -232,6 +232,39 @@ export interface JourneyItem {
   /** v3 slice 2 / migration 054. Items that must be delivered before
    *  this one (cadence engine respects). */
   prereq_item_ids?: string[];
+
+  // ── Lesson blocks (migration 077) ────────────────────────────
+  // Each item is a structured lesson, not a wall of text. The 9 fields
+  // below render as their own micro-sections in LessonView. NULL on
+  // legacy rows is fine — LessonView falls back to body_he/task_he/
+  // challenge_he when the lesson blocks aren't populated.
+  /** Curriculum stage 1-4 (יסודות / העמקה / אינטגרציה / הבשלה). */
+  stage?: number | null;
+  /** Researcher / book attribution shown at lesson foot. */
+  source_attribution_he?: string | null;
+  source_attribution_en?: string | null;
+  /** Opening insight, ~60-150 words. */
+  expert_insight_he?: string | null;
+  expert_insight_en?: string | null;
+  /** What most couples get wrong. */
+  common_mistakes_he?: string | null;
+  common_mistakes_en?: string | null;
+  /** Visual anchor metaphor. */
+  metaphor_he?: string | null;
+  metaphor_en?: string | null;
+  /** What to observe / measure during the week. */
+  measurement_he?: string | null;
+  measurement_en?: string | null;
+  /** Explicit "do this week". */
+  do_this_week_he?: string | null;
+  do_this_week_en?: string | null;
+  /** Explicit "don't this week". */
+  dont_this_week_he?: string | null;
+  dont_this_week_en?: string | null;
+  /** Single observable sign that progress is happening. */
+  progress_marker_he?: string | null;
+  progress_marker_en?: string | null;
+
   sort_order: number;
   default_offset_days: number;
   is_active: boolean;
@@ -289,6 +322,11 @@ export interface JourneyScheduledItem {
   skipped_at?: string | null;
   /** v3 slice 1 / migration 055 - origin of this scheduled row. */
   source?: "cadence" | "expert_push" | "group" | "random" | "admin_manual" | "program" | "category" | "item";
+  /** Migration 066 - the match rule that produced this scheduled item.
+   *  Drives the user-facing "Why this item?" disclosure and admin traces.
+   *  NULL for rows created before migration 066 that the backfill couldn't
+   *  attribute. */
+  matched_by_rule_id?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -352,6 +390,14 @@ export interface TimelineEntry {
   completion: JourneyItemCompletion | null;
   /** Responses visible to the current viewer (private filtering applied). */
   responses: JourneyItemResponse[];
+  /** Migration 066 — the bilingual rationale for "Why this item?".
+   *  Null when the row predates rule attribution (legacy backfill miss). */
+  matchRule: {
+    id: string;
+    slug: string;
+    rationale_he: string;
+    rationale_en: string;
+  } | null;
 }
 
 /**

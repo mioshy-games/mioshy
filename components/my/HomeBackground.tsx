@@ -67,7 +67,13 @@ const HOME_BG_CSS = `
      Durations chosen to feel "ambient" rather than "moving" - slow enough
      that the user reads the bg as atmosphere on focus-heavy pages
      (assessment, timeline) without it pulling attention. */
-  .home-bg-blob{position:absolute;border-radius:50%;filter:blur(90px);opacity:0.78;mix-blend-mode:screen;will-change:transform}
+  /* PERF 2026-05-08 — was: filter:blur(90px); mix-blend-mode:screen;
+     will-change:transform. mix-blend-mode forces a compositor readback
+     for every animated frame — and this backdrop is mounted on EVERY
+     authed page (dashboard, journey, my, …) so the cost paid on every
+     route. blur 90→70, mix-blend dropped, will-change dropped (transform
+     animations auto-promote). */
+  .home-bg-blob{position:absolute;border-radius:50%;filter:blur(70px);opacity:0.78}
   .home-bg-blob-1{width:680px;height:680px;background:radial-gradient(circle,#F43F5E 0%,rgba(244,63,94,0) 70%);top:-180px;right:-120px;animation:home-bg-converge-1 64s ease-in-out infinite}
   .home-bg-blob-2{width:560px;height:560px;background:radial-gradient(circle,#A855F7 0%,rgba(168,85,247,0) 70%);bottom:-120px;left:5%;animation:home-bg-converge-2 64s ease-in-out infinite}
   .home-bg-blob-3{width:440px;height:440px;background:radial-gradient(circle,#EC4899 0%,rgba(236,72,153,0) 70%);top:25%;left:35%;animation:home-bg-drift-3 60s ease-in-out infinite}
@@ -110,7 +116,10 @@ const HOME_BG_CSS = `
   /* 12 small translucent orbit dots - durations roughly doubled vs first
      pass. Still drifting, but slow enough that you don't catch any of
      them mid-flight while reading. */
-  .home-bg-orbit{position:absolute;border-radius:50%;z-index:2;pointer-events:none;will-change:transform,opacity;opacity:0.5}
+  /* PERF 2026-05-08 — dropped will-change:transform,opacity. 12 always-
+     mounted layers on every authed page was eating GPU memory; transform
+     animations auto-promote when actually needed. */
+  .home-bg-orbit{position:absolute;border-radius:50%;z-index:2;pointer-events:none;opacity:0.5}
   .home-bg-orbit-1 {width:10px;height:10px;left:12%;top:22%;background:radial-gradient(circle,rgba(244,114,182,0.85) 0%,rgba(244,114,182,0) 70%);box-shadow:0 0 14px 2px rgba(244,114,182,0.45);animation:home-bg-orbit-a 24s ease-in-out infinite}
   .home-bg-orbit-2 {width:7px;height:7px;left:24%;top:68%;background:radial-gradient(circle,rgba(167,139,250,0.85) 0%,rgba(167,139,250,0) 70%);box-shadow:0 0 12px 2px rgba(167,139,250,0.4);animation:home-bg-orbit-b 30s ease-in-out infinite;animation-delay:.6s}
   .home-bg-orbit-3 {width:12px;height:12px;left:38%;top:18%;background:radial-gradient(circle,rgba(244,63,94,0.8) 0%,rgba(244,63,94,0) 70%);box-shadow:0 0 16px 3px rgba(244,63,94,0.4);animation:home-bg-orbit-c 28s ease-in-out infinite;animation-delay:1.2s}

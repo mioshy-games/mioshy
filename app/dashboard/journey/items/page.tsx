@@ -21,6 +21,9 @@ import {
 import { RowActions } from "@/components/dashboard/journey/RowActions";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
+import { SectionHelp } from "@/components/dashboard/SectionHelp";
+import { getAdminLocale } from "@/lib/admin/locale";
+import { t } from "@/lib/admin/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +33,7 @@ export default async function ItemsListPage({
   searchParams: { category?: string; subtopic?: string };
 }) {
   await requireAdmin();
+  const locale = getAdminLocale();
 
   // Subtopic filter sentinels:
   //   ?subtopic=<uuid>    → only items in that subtopic
@@ -78,21 +82,57 @@ export default async function ItemsListPage({
             href="/dashboard/journey"
             className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-sm"
           >
-            <ArrowLeft className="size-4" />
-            Back to Journey overview
+            <ArrowLeft className="size-4 rtl:scale-x-[-1]" />
+            {t(locale, "btn.back")}
           </Link>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight">Items</h1>
+          <span className="mt-2 inline-flex items-center gap-1.5">
+            <h1 className="text-3xl font-bold tracking-tight">{t(locale, "journey.items.title")}</h1>
+            <SectionHelp
+              title="פריטי המסע — הקטלוג"
+              body={
+                <>
+                  <p>
+                    כל 250 השיעורים בקטלוג. כל פריט שייך לקטגוריה אחת ונושא
+                    אופסט unlock ברירת־מחדל. <strong>עריכות מתעדכנות
+                    אוטומטית בכל שורת scheduled שיש בפרודקשן</strong> — אין
+                    צורך לעדכן ידנית.
+                  </p>
+                  <p>
+                    <strong>חלוקה:</strong> 4 שלבים (יסודות / העמקה /
+                    אינטגרציה / הבשלה) × 5 קטגוריות = 50 / 75 / 75 / 50.
+                    <br />
+                    <strong>מקורות:</strong> 130 חוקרים שונים — Gottman,
+                    Chapman, Sue Johnson, Esther Perel, Brené Brown ועוד.
+                  </p>
+                  <p>
+                    <strong>פילטרים:</strong> לפי קטגוריה / תת־נושא. לחיצה
+                    על שורה → עורך השיעור עם 9 בלוקים מובנים.
+                  </p>
+                  <p>
+                    <strong>+ פריט חדש:</strong> מוסיף פריט לקטלוג שייהיה
+                    זמין כהמלצה לכל הזוגות. לתוכן ad-hoc לזוג בודד — V2
+                    (override mechanic).
+                  </p>
+                </>
+              }
+              aiNote={
+                <p>
+                  ה-AI לא נוגע בעריכה. אבל פידבק שלילי על פריט מצטבר:
+                  פריט עם 3+ &quot;לא בשבילנו&quot; / &quot;החמיר&quot;
+                  ייסתר אוטומטית מ-Smart Suggestions עד שתבדקו אותו ידנית.
+                </p>
+              }
+            />
+          </span>
           <p className="text-muted-foreground mt-1 max-w-2xl text-sm">
-            The content catalog. Each item lives in exactly one category and
-            carries a default unlock offset. Edits propagate to every
-            scheduled row automatically.
+            {t(locale, "journey.items.subtitle")}
           </p>
         </div>
         <Link
           href="/dashboard/journey/items/new"
           className={cn(buttonVariants({ variant: "default" }), "inline-flex gap-1.5")}
         >
-          <Plus className="size-4" /> New item
+          <Plus className="size-4" /> {t(locale, "journey.hub.new_item")}
         </Link>
       </div>
 

@@ -41,6 +41,7 @@ import {
   notifyUser,
 } from "@/lib/journey-content/notifications";
 import { logActivity } from "@/lib/journey/activity";
+import { classifyAndStampMessage } from "@/lib/ai/classify-message";
 import type {
   JourneyAssignment,
   JourneyScheduledItem,
@@ -232,6 +233,14 @@ export async function postPerItemMessage(args: {
     },
   });
 
+  // Phase 4 — fire-and-forget AI classification. Failures don't
+  // block the user's response — the message is already persisted.
+  void classifyAndStampMessage({
+    table: "journey_messages",
+    messageId: msgRow.id as string,
+    body: trimmed,
+  });
+
   revalidateMessageSurfaces();
   return { ok: true, messageId: msgRow.id as string };
 }
@@ -243,6 +252,9 @@ export async function postPerItemMessage(args: {
 export async function postExpertReplyToItem(args: {
   scheduledItemId: string;
   body: string;
+  /** Optional: when the body came from a saved library row, pass its
+   *  id so we can stamp tags onto the message for admin tracking. */
+  libraryId?: string | null;
 }): Promise<Ok<{ messageId: string }> | Err> {
   if (!args.scheduledItemId) return { ok: false, error: "missing_id" };
   const trimmed = (args.body ?? "").trim();
@@ -255,6 +267,18 @@ export async function postExpertReplyToItem(args: {
   if (!expert.ok) return { ok: false, error: "unauthorized" };
 
   const admin = await createAdminClient();
+
+  // Layer-3 admin tracker — pull tags from the library row if any.
+  let topicTags: string[] = [];
+  if (args.libraryId) {
+    const { data: libRow } = await admin
+      .from("journey_expert_library")
+      .select("tags")
+      .eq("id", args.libraryId)
+      .maybeSingle();
+    const tags = (libRow as { tags: string[] | null } | null)?.tags;
+    if (Array.isArray(tags)) topicTags = tags;
+  }
 
   // Find the latest user response on this scheduled_item - that's the
   // "ticket" the legacy clinician inbox tracks. We mirror the reply
@@ -288,11 +312,15 @@ export async function postExpertReplyToItem(args: {
       scheduled_item_id: args.scheduledItemId,
       author_user_id: expert.userId,
       author_kind: "expert",
+      // Layer 2 — stamp the specific coach so the user sees their
+      // persona on the reply (not generic "מיאושי").
+      expert_signed_by: expert.userId,
       body: trimmed,
       // Expert replies on per-item are partner-visible by default
       // (matches the historical clinician_reply_text behaviour).
       is_private: false,
       legacy_response_id: latestUserResponse?.id ?? null,
+      topic_tags: topicTags,
     })
     .select("id")
     .single();
@@ -420,6 +448,13 @@ export async function postGeneralChannelMessage(args: {
     },
   });
 
+  // Phase 4 — fire-and-forget AI classification.
+  void classifyAndStampMessage({
+    table: "journey_messages",
+    messageId: msgRow.id as string,
+    body: trimmed,
+  });
+
   revalidateMessageSurfaces();
   return { ok: true, messageId: msgRow.id as string };
 }
@@ -431,6 +466,7 @@ export async function postGeneralChannelMessage(args: {
 export async function postExpertReplyToChannel(args: {
   channelUserId: string;
   body: string;
+  libraryId?: string | null;
 }): Promise<Ok<{ messageId: string }> | Err> {
   if (!args.channelUserId) return { ok: false, error: "missing_id" };
   const trimmed = (args.body ?? "").trim();
@@ -445,16 +481,33 @@ export async function postExpertReplyToChannel(args: {
   await ensureUserChannel(args.channelUserId);
 
   const admin = await createAdminClient();
+
+  // Layer-3 admin tracker — pull tags from library row if any.
+  let topicTags: string[] = [];
+  if (args.libraryId) {
+    const { data: libRow } = await admin
+      .from("journey_expert_library")
+      .select("tags")
+      .eq("id", args.libraryId)
+      .maybeSingle();
+    const tags = (libRow as { tags: string[] | null } | null)?.tags;
+    if (Array.isArray(tags)) topicTags = tags;
+  }
+
   const { data: msgRow, error: msgErr } = await admin
     .from("journey_messages")
     .insert({
       channel_user_id: args.channelUserId,
       author_user_id: expert.userId,
       author_kind: "expert",
+      // Layer 2 — coach signature so the user sees the named expert
+      // who replied, not the generic "מיאושי".
+      expert_signed_by: expert.userId,
       body: trimmed,
       // Channel is solo by definition - expert reply visible only to
       // the channel owner (and the expert pool / admin).
       is_private: true,
+      topic_tags: topicTags,
     })
     .select("id")
     .single();
