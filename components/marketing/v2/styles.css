@@ -242,9 +242,11 @@
   .btn .arrow{display:inline-block;transition:transform .35s var(--t)}
   .btn:hover .arrow{transform:translateX(-6px)}
   [dir="rtl"] .btn:hover .arrow{transform:translateX(6px)}
-  /* Mobile size — slightly smaller min-height. Padding/text unchanged. */
+  /* Mobile size — slightly smaller min-height. Padding/text unchanged.
+     F7 (Itzik #8) — bumped 17→18px to keep all buttons across mobile +
+     desktop at the same 18px semi-bold floor. */
   @media (max-width:640px){
-    .btn{min-height:48px;padding:13px 24px;font-size:17px}
+    .btn{min-height:48px;padding:13px 24px;font-size:18px;font-weight:600}
   }
 
   /* NAV */
@@ -637,7 +639,10 @@
   .founder::before{content:"";position:absolute;top:-100px;left:-100px;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,var(--accent-bg) 0%,transparent 70%);z-index:0}
   .founder .container{position:relative;z-index:1}
   .founder-grid{display:grid;grid-template-columns:0.95fr 1.05fr;gap:80px;align-items:center}
-  .founder-image{position:relative;aspect-ratio:4/5}
+  /* F5 (#4) — wider, shorter founder portrait. 4/5 (tall) → 5/4
+     (landscape) preserves the column width but trims the height,
+     reducing the over-tall feel on both desktop and mobile. */
+  .founder-image{position:relative;aspect-ratio:5/4}
   .founder-image .founder-img{
     width:100%;height:100%;
     object-fit:cover;object-position:center;
@@ -1474,8 +1479,12 @@
 
     /* Founder mobile spacing */
     .founder-grid{gap:32px}
-    .founder-content h2{margin-bottom:14px}
-    .founder-content .lead{margin-bottom:18px;font-size:15px;line-height:1.6}
+    /* F4 (#6) — keep the founder headline on a single line up to a
+       wider phone (≤420). On smaller screens we let it wrap normally. */
+    .founder-content h2{margin-bottom:14px;font-size:32px;line-height:1.1}
+    /* F4 (#7) — lead bumped 15→18px so the about copy reads at body
+       floor on mobile per the typography pass. */
+    .founder-content .lead{margin-bottom:18px;font-size:18px;line-height:1.65}
     .founder-bio{grid-template-columns:repeat(3,1fr);gap:8px;padding:14px 0;margin-bottom:18px;text-align:center}
     .bio-item{flex-direction:column;align-items:center;gap:2px}
     .bio-item::before{display:none}
@@ -1520,7 +1529,9 @@
        but inherit font-size from --fs-h2 token, which now resolves to
        42px on mobile (same number this override used to set). */
     .ag-stage h2{line-height:1.02;margin-bottom:18px;max-width:none}
-    .ag-lead{font-size:17px;line-height:1.6;margin-bottom:28px}
+    /* F4 (#9) — adult-games "rules of sex" lead bumped 17→20px on
+       mobile so the body matches the typography floor. */
+    .ag-lead{font-size:20px;line-height:1.55;margin-bottom:28px}
     .ag-pillars{margin-bottom:28px}
     .ag-pillar{padding:22px 0;text-align:right}
     .ag-pillar-num{font-size:22px;margin-bottom:10px}
@@ -1585,6 +1596,9 @@
     /* FAQ mobile */
     .faq-item summary{padding:18px 0}
     .faq-answer{padding:0 0 20px}
+    /* F4 (#11) — answers bumped to 20px on mobile so the body reads
+       at the larger floor Itzik asked for. Desktop stays at 18. */
+    .faq-answer p{font-size:20px;line-height:1.65}
 
     /* Footer mobile - single column */
     .footer-grid{grid-template-columns:1fr;gap:36px}

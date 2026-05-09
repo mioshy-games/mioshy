@@ -48,7 +48,7 @@ export function Authority() {
             <div className="auth-stat">
               <div className="num">
                 <em>
-                  <Counter to={1000} prefix="+" />
+                  <Counter to={500} prefix="+" />
                 </em>
               </div>
               <div className="label">{t("statCouplesLabel")}</div>

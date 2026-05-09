@@ -71,12 +71,19 @@ export function JourneyCheckoutButton({
       // Auth gate — most common silent-failure cause. Push the user to
       // the signup flow with a redirect back to /journey so they
       // continue exactly where they were.
+      //
+      // F1 fix: window.location.pathname already includes the active
+      // locale (e.g. "/he/journey"), and the signup page wraps `next`
+      // again with /he/, so the user landed on /he/he/journey/...
+      // Strip the leading "/he/" or "/en/" before encoding so signup
+      // can re-prepend it cleanly.
       if (res.status === 401 || data?.code === "UNAUTHORIZED") {
-        const back = encodeURIComponent(
+        const rawPath =
           typeof window !== "undefined"
             ? window.location.pathname + window.location.search
-            : "/journey",
-        );
+            : "/journey";
+        const localelessPath = rawPath.replace(/^\/(he|en)(?=\/|$)/, "") || "/journey";
+        const back = encodeURIComponent(localelessPath);
         router.push(`/${isHe ? "he" : "en"}/auth/signup?next=${back}`);
         return;
       }

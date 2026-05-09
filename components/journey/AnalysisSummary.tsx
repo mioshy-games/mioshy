@@ -190,12 +190,18 @@ export function AnalysisSummary({
       // 401 fell through into the silent setCheckoutBusy(false). Push
       // the user to signup with a return path back to the assessment
       // so they continue exactly where they were.
+      //
+      // F1 fix: strip /he|/en prefix from pathname before encoding —
+      // signup re-prepends the locale, so leaving it in caused the
+      // /he/he/journey/... 404.
       if (res.status === 401 || data?.code === "UNAUTHORIZED") {
-        const back = encodeURIComponent(
+        const rawPath =
           typeof window !== "undefined"
             ? window.location.pathname + window.location.search
-            : `/${locale}/journey/assessment`,
-        );
+            : `/journey/assessment`;
+        const localeless =
+          rawPath.replace(/^\/(he|en)(?=\/|$)/, "") || "/journey/assessment";
+        const back = encodeURIComponent(localeless);
         window.location.href = `/${locale}/auth/signup?next=${back}`;
         return;
       }
@@ -412,16 +418,19 @@ export function AnalysisSummary({
         />
       )}
 
-      {/* W3.1 (Itzik #11) — sticky bottom CTA on mobile only. The
-          OfferCard above sits ~600px below the hero on a phone, so a
-          user reading the analysis from the top has no visible call to
-          action. This bar is always within thumb reach. lg:hidden so
-          desktop keeps the embedded card as the only CTA. */}
+      {/* W3.1 (Itzik #11) — sticky bottom CTA on mobile only.
+          F3 (#1) — bar background itself is now the wine gradient so
+          the whole strip pulls the eye, not just a button on a black
+          plate. The button reads as a clean lighter-tinted overlay on
+          top of the wine field. */}
       {!subscriptionActive ? (
         <div
-          className="fixed inset-x-0 bottom-0 z-30 border-t border-white/10 bg-[#0E0810]/95 px-4 py-3 backdrop-blur lg:hidden"
+          className="fixed inset-x-0 bottom-0 z-30 border-t border-white/10 px-4 py-3 lg:hidden"
           style={{
             paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)",
+            background:
+              "linear-gradient(180deg, rgba(184,60,77,0.95) 0%, rgba(108,46,64,0.98) 100%)",
+            boxShadow: "0 -16px 40px -12px rgba(184,60,77,0.55)",
           }}
           dir={isHe ? "rtl" : "ltr"}
         >
@@ -429,10 +438,9 @@ export function AnalysisSummary({
             type="button"
             onClick={startCheckout}
             disabled={checkoutBusy}
-            className="flex h-[50px] w-full items-center justify-center gap-2 rounded-full text-[18px] font-bold text-white transition disabled:opacity-60"
+            className="flex h-[50px] w-full items-center justify-center gap-2 rounded-full bg-white text-[18px] font-bold text-[#6C2E40] transition disabled:opacity-60"
             style={{
-              background: "linear-gradient(135deg, #B83C4D 0%, #6C2E40 100%)",
-              boxShadow: "0 14px 32px -10px rgba(184,60,77,0.6)",
+              boxShadow: "0 8px 24px -8px rgba(0,0,0,0.5)",
             }}
           >
             {checkoutBusy

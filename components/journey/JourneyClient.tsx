@@ -351,15 +351,18 @@ export function JourneyClient({
 
   const headerText = useMemo(
     () =>
+      // F2 (#12) — duplicate "~7 minutes / autosaves" line removed.
+      // The intro page (/journey/assessment/intro) already says this.
+      // Subtitle now empty so the header pulls focus to the question.
       locale === "he"
         ? {
             title: "מסע הזוגיות שלכם",
-            subtitle: "לוקח כ-7 דקות • כל תשובה נשמרת אוטומטית",
+            subtitle: "",
             warmup: "נתחיל בחמש שאלות קצרות - ואז נעצור ונכין עבורכם ניתוח אישי.",
           }
         : {
             title: "Your relationship journey",
-            subtitle: "~7 minutes • every answer auto-saves",
+            subtitle: "",
             warmup: "We'll start with five quick questions - then we'll prepare your personal analysis.",
           },
     [locale],
@@ -556,7 +559,15 @@ export function JourneyClient({
 
   // ── Render: Completed + not authenticated → registration gate ───────────────
   // Must come BEFORE the isDone→AnalysisSummary check so auth happens first.
-  if (isDone && needsAuth) {
+  //
+  // F8 (Itzik #15) — gate on `!authenticated` directly, not on
+  // `needsAuth`. `needsAuth` keys off `gating.auth_after_index = 30`,
+  // and the questionnaire only has 29 questions, so the mid-flow gate
+  // never fired and anonymous users were dropped into AnalysisSummary
+  // (which then 401'd on the analysis fetch). The gate now matches
+  // the spec: finish all questions → register before seeing the
+  // summary.
+  if (isDone && !authenticated) {
     return (
       <div
         dir={locale === "he" ? "rtl" : "ltr"}
@@ -639,16 +650,20 @@ export function JourneyClient({
       className="mx-auto flex min-h-[80vh] w-full max-w-3xl flex-col gap-6 px-4 py-6 sm:gap-8 sm:py-10"
     >
       {/* W2.3 — progress bar pinned at the top so the percentage is
-          always above the fold on mobile (Itzik #4). On desktop the
-          stickiness is harmless because the bar lives inside the
-          assessment column anyway. */}
-      <div className="sticky top-2 z-20 -mx-4 px-4 pb-1 backdrop-blur supports-[backdrop-filter]:bg-[#070b18]/85 sm:static sm:bg-transparent sm:px-0">
+          always above the fold on mobile (Itzik #4).
+          F3 (#13) — dropped the opaque #070b18/85 backdrop because it
+          painted a black strip over the page bg. The bar floats on
+          the page bg now; backdrop-blur with no fill keeps it readable
+          against the questions sliding underneath. */}
+      <div className="sticky top-2 z-20 -mx-4 px-4 pb-1 sm:static sm:px-0">
         <ProgressBar current={index} total={total} />
       </div>
 
       <header className="flex flex-col gap-2 text-start">
         <h1 className="text-2xl font-bold text-white md:text-3xl">{headerText.title}</h1>
-        <p className="text-sm text-white/70 sm:text-base">{headerText.subtitle}</p>
+        {headerText.subtitle ? (
+          <p className="text-sm text-white/70 sm:text-base">{headerText.subtitle}</p>
+        ) : null}
       </header>
 
       <AnimatePresence mode="wait">

@@ -89,7 +89,7 @@ export function Hero() {
               <div className="hero-meta">
                 <div className="hero-meta-item">
                   <span className="num">
-                    <Counter to={1000} prefix="+" />
+                    <Counter to={500} prefix="+" />
                   </span>
                   <span className="label">{t("statCouplesLabel")}</span>
                 </div>

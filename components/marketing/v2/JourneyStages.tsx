@@ -73,11 +73,13 @@ export function JourneyStages() {
   const t = useTranslations("homeV2.journeyStages");
   const sectionRef = useRef<HTMLElement>(null);
 
-  // Bidirectional accordion: scroll opens stops as they reach the
-  // upper trigger band AND closes them as they leave it. Click on a
-  // stop's head also toggles it manually — both modes can coexist.
-  // The trigger band is rootMargin "-10% 0px -55% 0px", a 35%-tall
-  // strip near the top of the viewport.
+  // F6 (Itzik #10) — switched from bidirectional to one-way reveal.
+  // The previous "open in band, close out of band" behaviour was
+  // pushing stop 2 closed the moment the user scrolled toward stop 3,
+  // so the description had no time to be read on mobile. Now: once a
+  // stop is in the trigger band it stays open, and we widen the band
+  // upward (-25% top) so the next stop reveals only after the previous
+  // one has been comfortably read.
   useEffect(() => {
     const section = sectionRef.current;
     if (!section) return;
@@ -88,16 +90,16 @@ export function JourneyStages() {
     const io = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          const el = entry.target as HTMLElement;
           if (entry.isIntersecting) {
-            el.setAttribute("data-revealed", "true");
-          } else {
-            el.removeAttribute("data-revealed");
+            (entry.target as HTMLElement).setAttribute(
+              "data-revealed",
+              "true",
+            );
           }
         });
       },
       {
-        rootMargin: "-10% 0px -55% 0px",
+        rootMargin: "-25% 0px -45% 0px",
         threshold: 0,
       },
     );
@@ -608,9 +610,12 @@ const STYLES = `
     .mood-timeline .js-stop-numeral{font-size:64px}
     .mood-timeline .js-stop-hook{font-size:26px;line-height:1.2}
 
-    .mood-timeline .js-stop-desc{font-size:18px;line-height:1.6;margin:20px 0 24px}
-    .mood-timeline .js-stop-block-body{font-size:18px;line-height:1.6}
-    .mood-timeline .js-stop-block-includes{font-size:16px}
+    /* F6 (Itzik #10) — descriptions and "what you get / when" body
+       bumped to 20px on mobile so each stop reads at the body floor. */
+    .mood-timeline .js-stop-desc{font-size:20px;line-height:1.55;margin:20px 0 24px}
+    .mood-timeline .js-stop-block-body{font-size:20px;line-height:1.55}
+    .mood-timeline .js-stop-block-includes{font-size:17px}
+    .mood-timeline .js-stop-block-title{font-size:13px;letter-spacing:0.16em}
 
     .mood-timeline .js-stop-foot{
       flex-direction:column;align-items:stretch;
