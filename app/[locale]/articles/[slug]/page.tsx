@@ -342,7 +342,7 @@ export default async function ArticleDetailPage({
                   {a.tags.slice(0, 3).map((tag: string) => (
                     <span
                       key={tag}
-                      className="rounded-full bg-rose-50 px-3 py-0.5 text-xs font-medium text-rose-600"
+                      className="rounded-full bg-rose-50 px-3 py-0.5 text-xs font-medium text-rose-700"
                     >
                       {tag}
                     </span>
