@@ -1,5 +1,12 @@
 "use client";
 
+// Markdown editor styles are imported here (only with the editor component)
+// instead of in app/globals.css so they don't ship in every page bundle —
+// they were the dominant contributor to the unused-css-rules audit failure
+// (~37 KB of editor styles loaded on every public page).
+import "@uiw/react-md-editor/markdown-editor.css";
+import "@uiw/react-markdown-preview/markdown.css";
+
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
