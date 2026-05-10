@@ -6,7 +6,7 @@ _Run started 2026-05-10. Branch: `claude/optimistic-rubin-687c12`._
 ## Status
 
 - **Batch A (Critical / Low Risk) — complete.** 8 commits landed, `next build` exited 0.
-- **Batch B (Med Risk) — partially complete.** #8, #9, #12 landed. #13 and #17 stop here for per-element approval.
+- **Batch B (Med Risk) — complete.** #8, #9, #10 first pass, #12, #13 (closed without changes after bilingual analysis), #17 (4 element fixes C1–C4). Full axe re-run on `/he/articles/...` came back 0 real violations; `/en` came back 0 real violations (Authority `RevealOnScroll` mid-fade noise still appears, flagged as F1–F3 — not a code-level fix unless PSI catches the same mid-animation moment).
 
 ## Commits — Batch A
 
@@ -28,7 +28,11 @@ _Run started 2026-05-10. Branch: `claude/optimistic-rubin-687c12`._
 | `5f6df6f` | #8 Security headers | Moderate CSP + HSTS + XFO DENY + XCTO + Referrer-Policy + Permissions-Policy in `next.config.mjs`. CSP includes `https://*.cardcom.solutions` and `https://*.cardcom.co.il` for the payment frame; verify in dev with the real flow before production. |
 | `1f86767` | #9 Redirect chain | Root → locale is now a `NextResponse.rewrite()` — zero extra hop. The `www → apex` redirect stays in `next.config.mjs` for now (see Manual follow-ups post-launch). |
 | `52f68d8` | #12 `noStore()` on homepage | Replaced with `export const revalidate = 60`. Verified beforehand: HomepageV2 + every child component contains zero `cookies()` / `headers()` / Supabase / fetch calls — safe to cache. |
-| `081973a` | #10 LCP first pass | `next.config.mjs` sets `images.formats: ["image/avif","image/webp"]` so the optimizer prefers AVIF (25-35% smaller than WebP at same visual quality). `ParallaxImage` accepts a `sizes` prop forwarded to `next/image`; Hero passes `sizes="(max-width: 1024px) 100vw, 720px"` matching the `.hero-grid` breakpoint. **Not yet observable in preview** — visual / Lighthouse verification deferred until either deploy preview or local dev is unblocked. |
+| `081973a` | #10 LCP first pass | `next.config.mjs` sets `images.formats: ["image/avif","image/webp"]` so the optimizer prefers AVIF (25-35% smaller than WebP at same visual quality). `ParallaxImage` accepts a `sizes` prop forwarded to `next/image`; Hero passes `sizes="(max-width: 1024px) 100vw, 720px"` matching the `.hero-grid` breakpoint. **Visual / Lighthouse verification still deferred** — dev does not run the image optimizer, real LCP measurement needs a production build (`next build && next start`) or a deploy preview. |
+| `9632b98` | #17/C1 Footer headings + bottom bar | Three uppercase section headings (Explore / Products / Info) and the bottom-bar wrapper move from `text-white/45` to `text-white/60` (≈ 6.0:1, comfortably above WCAG AA 4.5). The `md:text-white/30` desktop-darken variant is removed on all four. |
+| `d91bf13` | #17/C2 Footer locale switcher | Inactive Hebrew/English link moves from `text-white/40` to `text-white/60` (≈ 6.0:1). Active state stays `text-white/80` with underline so the secondary-vs-primary hierarchy survives. |
+| `68511bf` | #17/C3 Article "back" link | `text-rose-500` (3.67:1) → `text-rose-600` (≈ 5.5:1). Hover bumps from rose-600 to rose-700 to keep the affordance. |
+| `3f70b2f` | #17/C4 Article tag pills | `text-rose-600` on `bg-rose-50` (4.27:1) → `text-rose-700` on the same background (5.74:1). Same brand family, one step deeper on the rose scale. Visual approval delivered via static `/public/c4-preview.html` screenshot (live page redirected to `/journey/assessment` due to dev-session auth state surviving every client-side clear). |
 
 ### Why `'unsafe-eval'` stays in CSP for now
 
@@ -192,9 +196,9 @@ If Lighthouse / PSI flags these because their headless-Chrome run also samples m
 |---|---|---|
 | 5 | `/.well-known/ai.json` | Out of scope this turn |
 | 6 | `/brand.json` | Out of scope this turn |
-| 10 | LCP mobile — hero image | **First pass landed (`081973a`).** AVIF + responsive sizes. Verification pending preview. |
+| 10 | LCP mobile — hero image | **First pass landed (`081973a`).** AVIF + responsive sizes wired. Real measurement needs `next build && next start` or a deploy preview — dev does not run the image optimizer. |
 | 13 | Font cleanup | **Closed — no drop.** Bilingual analysis showed both Latin fonts are live on every `/en/*` non-V2 page. |
-| 17 | `color-contrast` | **axe ran on the four target pages** (HE+EN home, HE+EN article — `/en/articles/*` redirected mid-test, findings inferred). Four real violations identified (C1-C4 in the #17 section), animation false-positives flagged separately (F1-F3). Awaiting per-element approval before any colour change. |
+| 17 | `color-contrast` | **Closed.** Four real violations addressed across four small commits (C1–C4). Re-run axe after the fixes returned **0 real violations** on `/he`, `/en`, and `/he/articles/truth-or-dare-questions-couples`. The Authority `RevealOnScroll` mid-fade noise (F1–F3) still appears in axe; settled-state contrast is ~19:1 on white so it's not a code-level issue unless PSI samples mid-animation in production. |
 | 18 | Cardcom indicator rate limit | Out of scope this turn |
 | RLS deep audit | Recommended before launch; separate session |
 
