@@ -126,18 +126,55 @@ If a real font cleanup is wanted later, the right path is the inverse: audit *wh
 
 **These are static estimates.** The real Lighthouse `color-contrast` failure list almost certainly includes elements I missed (image overlays, gradient backgrounds where the effective bg color depends on position, hover/focus states, dark-section text I haven't traced into).
 
-**Decided: path B.** Awaiting `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` from the user (these are public values already shipped in the production client bundle). Once dropped into `.env.local`, the plan is:
+**Live axe ran** via Preview MCP against `npm run dev:webpack` in this worktree, with the two public Supabase values copied into `.env.local` (worktree-local, gitignored). axe-core was self-hosted at `/public/axe.min.js` for the run and removed afterwards (no commit). All four pages loaded, axe ran, results below.
 
-1. `npm run dev` from this worktree
-2. Inject axe-core via the Preview MCP on the four pages:
-   - `localhost:3000/he` (HE homepage)
-   - `localhost:3000/en` (EN homepage — important after the font analysis above)
-   - `localhost:3000/he/articles/truth-or-dare-questions-couples`
-   - `localhost:3000/en/articles/truth-or-dare-questions-couples`
-3. Return a unified table: element selector, actual contrast ratio, WCAG target, fail / borderline / pass.
-4. Per-element approval before any commit.
+A note on Authority section noise: the HomepageV2 Authority component wraps stats in `RevealOnScroll`, which fades opacity from a low value up to 1 over ~600 ms. axe captures one moment in time; if it samples while the fade is in progress, the effective text color is computed as a blend with the background and trips the contrast rule. Verified by reading `getComputedStyle(...)` after scroll-into-view and a 3 s settle: text resolves to `rgb(23,14,20)` (the design's `--ink`), which is **~19:1** on white — well above WCAG AAA. We listed those rows below for completeness with a `(animation-only)` marker, but they don't need code changes; they need a stable-state audit, which Lighthouse may or may not capture depending on its render timing.
 
-For each approved fix, the agreed strategy is: keep `--mio-purple` / `--mio-rose` / `--accent` brand tokens unchanged. Add stroke / text-shadow / outer overlay if a CTA fails contrast. Adjust auxiliary text colors (`--ink-4`, `--accent-soft` text usage) freely.
+**Real, code-level violations to address:**
+
+| # | Page | Selector | FG | BG | Ratio | WCAG target | Severity | Source |
+|---|---|---|---|---|---|---|---|---|
+| C1 | All pages (footer) | `.text-white/45` (Tailwind) on `.bg-mio-bg`-like dark | `#77757b` | `#07040f` | **4.46:1** | 4.5:1 normal | borderline FAIL (~1% short) | `components/SiteFooter.tsx` Tailwind classes `text-white/45 md:text-white/30` |
+| C2 | All pages (footer) | `.text-white/40` (locale switcher link) | `#6a686f` | `#07040f` | **3.69:1** | 4.5:1 normal | FAIL | `components/SiteFooter.tsx` — the "English"/"Hebrew" cross-locale link |
+| C3 | Article pages | `.text-rose-500` "Back to articles" link | `#f43f5e` | `#ffffff` | **3.67:1** | 4.5:1 normal | FAIL | `app/[locale]/articles/[slug]/page.tsx:303` |
+| C4 | Article pages | `.text-rose-600` on `.bg-rose-50` tag pills | `#e11d48` | `#fff1f2` | **4.27:1** | 4.5:1 normal | borderline FAIL (~5% short) | `app/[locale]/articles/[slug]/page.tsx:345` |
+
+**Animation-state false positives (no code change needed; flagging for awareness):**
+
+| # | Page | Selector | Issue | Settled state |
+|---|---|---|---|---|
+| F1 | `/he` (didn't appear on `/en` because animation had finished by the time axe ran) | `.auth-narrative > p`, `.auth-narrative p strong` | Mid-fade, axe reads `#aaa4a8` / `#a29fa1` on white = 2.4-2.6:1 | After fade: `#170E14` (`--ink`) = ~19:1 ✅ |
+| F2 | `/he` | `.auth-stat .num`, `.auth-stat .label` | Same — `#a29fa1` mid-fade vs `--ink` settled | ~19:1 ✅ |
+| F3 | `/he` | `<span aria-label="+1000">`, `<span aria-label="94%">` (Counter components) | `#e3b1b8` mid-fade — likely `--accent` (`#B83C4D`, ~5.8:1 settled) at low opacity | Counter colour is `--accent`, contrast is fine when fully visible. |
+
+If Lighthouse / PSI flags these because their headless-Chrome run also samples mid-animation, the right fix is in the `RevealOnScroll` component, not in colour tokens — e.g. add `prefers-reduced-motion` instant-show, drop opacity-zero start (use transform-only reveal), or wait for the section to be in viewport before mounting the animation. Not in scope for this turn unless you confirm Lighthouse is hitting them.
+
+**Pages and run notes:**
+
+- ✅ `/he` — full axe run, animation noise present (F1-F3), Footer flagged (C1, C2).
+- ✅ `/en` — full axe run, no Authority noise (likely because the section had finished animating by the time axe sampled), Footer flagged (C1, C2).
+- ✅ `/he/articles/truth-or-dare-questions-couples` — full axe run, article surfaces flagged (C3, C4) plus Footer (C1, C2).
+- ⚠️ `/en/articles/truth-or-dare-questions-couples` — page redirected mid-test to `/en/journey/assessment` because the dev session has cookies for a signed-in user with an active journey; clearing `document.cookie` didn't kill the Supabase localStorage session. Findings inferred: identical Tailwind classes used on both locale variants of the article template, so C3 + C4 + footer apply equally to `/en/articles/*`.
+
+**Proposed fixes per element (awaiting your per-element approval — no commit until you say which to do):**
+
+| # | Element | Proposed fix | Risk |
+|---|---|---|---|
+| C1 | Footer section headings + copyright (`text-white/45`, `md:text-white/30`) | Bump to `text-white/60` everywhere (≈ `#9d9da4`, contrast ≈ 6.0:1). Drop the `md:text-white/30` darken-on-desktop variant — it makes the contrast *worse* on the device size most users see. | Low — pure colour change, no layout impact |
+| C2 | Footer locale switcher link (`text-white/40`) | Bump to `text-white/70` for the inactive locale (≈ `#b8b8bc`, contrast ≈ 8.5:1). Active state stays `text-white/70` already on hover. | Low |
+| C3 | Article "Back to articles" link `text-rose-500` | Switch to `text-rose-600` (`#e11d48`) on white = ~5.5:1 pass. Brand-consistent — rose-600 is already in use elsewhere on the page. | Low |
+| C4 | Article tag pills `text-rose-600` on `bg-rose-50` | Two options, pick one. **(a)** Darken text to `text-rose-700` (`#be123c`) on same `bg-rose-50` → ~5.7:1. **(b)** Darken bg to `bg-rose-100` (`#ffe4e6`) keeping `text-rose-600` → ~4.9:1. Option (a) is cleaner — pill stays brighter, text just deepens. | Low |
+| F1-F3 | Authority RevealOnScroll | Optional, defer until we see if PSI flags it after the colour fixes ship. | n/a |
+
+⏳ **No commit yet.** Confirm which of C1, C2, C3, C4 to fix and (for C4) which option (a/b). I will commit in the order you approve, one element per commit.
+
+**Cleanup performed at end of axe run:**
+
+- `public/axe.min.js` (564 KB self-hosted axe-core for testing) → removed
+- `axe-core` dev dependency that I added during testing → uninstalled, package-lock reverted to original
+- Preview server stopped
+- `.env.local` retained (gitignored, only contains the two public Supabase values you indicated were safe to ship in the worktree)
+- `.claude/launch.json` reverted to `npm run dev` (turbo) for the next session — the `dev:webpack` flip was only needed for this run because turbo crashed in this worktree's pnpm layout; if the next session uses turbo and crashes again, flip to `dev:webpack` and continue.
 
 ## Manual follow-ups post-launch
 
@@ -157,7 +194,7 @@ For each approved fix, the agreed strategy is: keep `--mio-purple` / `--mio-rose
 | 6 | `/brand.json` | Out of scope this turn |
 | 10 | LCP mobile — hero image | **First pass landed (`081973a`).** AVIF + responsive sizes. Verification pending preview. |
 | 13 | Font cleanup | **Closed — no drop.** Bilingual analysis showed both Latin fonts are live on every `/en/*` non-V2 page. |
-| 17 | `color-contrast` | **Path B chosen.** Waiting on `NEXT_PUBLIC_SUPABASE_*` values from user. |
+| 17 | `color-contrast` | **axe ran on the four target pages** (HE+EN home, HE+EN article — `/en/articles/*` redirected mid-test, findings inferred). Four real violations identified (C1-C4 in the #17 section), animation false-positives flagged separately (F1-F3). Awaiting per-element approval before any colour change. |
 | 18 | Cardcom indicator rate limit | Out of scope this turn |
 | RLS deep audit | Recommended before launch; separate session |
 
