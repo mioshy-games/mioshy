@@ -1,5 +1,10 @@
 import "./styles.css";
 import { useLocale } from "next-intl";
+import {
+  organizationJsonLd,
+  safeJsonLd,
+  webSiteJsonLd,
+} from "@/lib/seo/jsonLd";
 import { Hero } from "./Hero";
 import { Problem } from "./Problem";
 import { Authority } from "./Authority";
@@ -37,8 +42,19 @@ import { FAQ } from "./FAQ";
 export function HomepageV2() {
   const locale = useLocale();
   const dir = locale === "he" ? "rtl" : "ltr";
+  const localeKey: "he" | "en" = locale === "en" ? "en" : "he";
   return (
     <div className="home-v2 bg-white" dir={dir} lang={locale}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(organizationJsonLd()) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: safeJsonLd(webSiteJsonLd(localeKey)),
+        }}
+      />
       <Hero />
       <Problem />
       <Authority />
