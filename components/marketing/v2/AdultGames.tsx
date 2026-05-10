@@ -43,17 +43,17 @@ export function AdultGames() {
           <div className="ag-pillars">
             <article className="ag-pillar">
               <span className="ag-pillar-num">I</span>
-              <h4>{t("pillar1Title")}</h4>
+              <h3>{t("pillar1Title")}</h3>
               <p>{t("pillar1Body")}</p>
             </article>
             <article className="ag-pillar">
               <span className="ag-pillar-num">II</span>
-              <h4>{t("pillar2Title")}</h4>
+              <h3>{t("pillar2Title")}</h3>
               <p>{t("pillar2Body")}</p>
             </article>
             <article className="ag-pillar">
               <span className="ag-pillar-num">III</span>
-              <h4>{t("pillar3Title")}</h4>
+              <h3>{t("pillar3Title")}</h3>
               <p>{t("pillar3Body")}</p>
             </article>
           </div>
