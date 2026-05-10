@@ -12,6 +12,10 @@ import {
 } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
+import {
+  GoogleTagManager,
+  GoogleTagManagerNoscript,
+} from "@/components/analytics/GoogleTagManager";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Root metadata - inherited by every page, with per-page metadata overriding
@@ -167,8 +171,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         ) : null}
         <meta name="theme-color" content="#1a0a2e" />
         <meta name="format-detection" content="telephone=no" />
+        <GoogleTagManager />
       </head>
-      <body className="min-h-[100dvh] antialiased">{children}</body>
+      <body className="min-h-[100dvh] antialiased">
+        <GoogleTagManagerNoscript />
+        {children}
+      </body>
     </html>
   );
 }
