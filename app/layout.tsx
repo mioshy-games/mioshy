@@ -149,6 +149,16 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       )}
     >
       <head>
+        {/* Preconnect to Google Fonts CDN. next/font self-hosts most font
+            files but the initial CSS request still hits Google, and PSI's
+            network-dependency-tree audit flags the chain when the
+            connection isn't warmed in advance. */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin=""
+        />
         {SUPABASE_ORIGIN ? (
           <>
             <link rel="preconnect" href={SUPABASE_ORIGIN} crossOrigin="" />
