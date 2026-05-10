@@ -300,7 +300,7 @@ export default async function ArticleDetailPage({
           <Reveal>
             <Link
               href="/articles"
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-rose-500 hover:text-rose-600 transition-colors"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-rose-600 hover:text-rose-700 transition-colors"
             >
               <span aria-hidden>{isRtl ? "→" : "←"}</span>
               {t("back")}
