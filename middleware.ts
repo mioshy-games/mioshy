@@ -104,16 +104,20 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // ── Root path: redirect to /he or /en based on location / language ───────
-  // With localePrefix:"always" next-intl would also handle this, but we want
-  // geolocation to take priority over the default locale setting.
+  // ── Root path: REWRITE to /he or /en (no extra hop) ──────────────────────
+  // Previously this was a 302 redirect, which combined with the
+  // www → apex redirect produced a two-hop chain on the very first
+  // request and tanked PSI's `redirects` audit. A rewrite renders the
+  // localized page directly under "/" — same SEO surface (the per-page
+  // metadata canonicals already point at /he or /en explicitly), zero
+  // extra round-trip.
   if (request.nextUrl.pathname === "/") {
     const locale = detectLocale(request);
     const url = request.nextUrl.clone();
     url.pathname = `/${locale}`;
-    const redirect = NextResponse.redirect(url, { status: 302 });
-    copyAuthCookiesToResponse(supabaseResponse, redirect);
-    return redirect;
+    const rewritten = NextResponse.rewrite(url);
+    copyAuthCookiesToResponse(supabaseResponse, rewritten);
+    return rewritten;
   }
 
   const intlResponse = intlMiddleware(request);
