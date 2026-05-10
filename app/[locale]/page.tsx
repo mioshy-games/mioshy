@@ -2,7 +2,6 @@ import { getTranslations } from "next-intl/server";
 import { Link } from "@/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { GameRow, SiteSettingsRow } from "@/lib/types/database";
-import { unstable_noStore as noStore } from "next/cache";
 import type { Metadata } from "next";
 import Image from "next/image";
 import {
@@ -61,6 +60,13 @@ export async function generateMetadata({
   };
 }
 
+// ISR: re-render at most once per minute. site_settings (touched only via
+// the dashboard) propagates to visitors within 60 s; HomepageV2 itself is
+// data-less and caches indefinitely. Replaced an unconditional `noStore()`
+// that forced SSR-per-request and was contributing to the desktop
+// document-latency-insight regression.
+export const revalidate = 60;
+
 export default async function HomePage({
   params,
   searchParams,
@@ -68,8 +74,6 @@ export default async function HomePage({
   params: { locale: string };
   searchParams?: { [key: string]: string | string[] | undefined };
 }) {
-  noStore();
-
   // ── Feature flag: HomepageV2 is now the DEFAULT.
   //    The legacy homepage stays accessible via ?old=1 for emergency rollback
   //    or for comparing before/after. Once V2 is fully validated in production
