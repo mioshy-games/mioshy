@@ -15,6 +15,11 @@ function supabaseHost() {
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
+    // AVIF first so the optimizer prefers it when the browser advertises
+    // support — typically 25-35% smaller than the same WebP at the same
+    // visual quality, which directly cuts hero LCP bytes on mobile.
+    // WebP stays as the fallback for older browsers.
+    formats: ["image/avif", "image/webp"],
     remotePatterns: [
       {
         protocol: "https",

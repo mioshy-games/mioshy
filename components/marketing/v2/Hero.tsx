@@ -115,6 +115,15 @@ export function Hero() {
               height={900}
               className="hero-img"
               priority
+              // The hero image is the LCP element on mobile. Without `sizes`
+              // Next picks the widest srcset entry on every viewport, which
+              // shipped a ~720px image to phones rendering it at ~340px and
+              // pushed mobile LCP past 4 s. The breakpoint matches the
+              // single-column → two-column flip in styles.css (the .hero-grid
+              // collapses to one column below 1024 px and the image fills the
+              // viewport; on desktop it tops out near 720 px in the right
+              // column).
+              sizes="(max-width: 1024px) 100vw, 720px"
               range={16}
             />
             <div className="badge-floating badge-1">
