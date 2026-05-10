@@ -105,7 +105,7 @@ export function SiteFooter() {
                 className={`transition-colors hover:text-white/70 ${
                   locale === "he"
                     ? "text-white/80 underline underline-offset-4 decoration-white/40"
-                    : "text-white/40"
+                    : "text-white/60"
                 }`}
               >
                 {t("hebrew")}
@@ -117,7 +117,7 @@ export function SiteFooter() {
                 className={`transition-colors hover:text-white/70 ${
                   locale === "en"
                     ? "text-white/80 underline underline-offset-4 decoration-white/40"
-                    : "text-white/40"
+                    : "text-white/60"
                 }`}
               >
                 {t("english")}
