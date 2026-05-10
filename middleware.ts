@@ -31,6 +31,19 @@ function detectLocale(request: NextRequest): "he" | "en" {
   return "he";
 }
 
+/**
+ * Resolve the locale for an incoming request. URL prefix wins over geo/lang
+ * detection so once we're inside `/en/...` or `/he/...` the choice is stable.
+ * The result is exposed to server components as the `x-mioshy-locale` request
+ * header so the root layout can render `<html lang dir>` server-side
+ * (without it the HTML is shipped lang-less and Lighthouse / SEO rules fail).
+ */
+function resolveLocale(request: NextRequest): "he" | "en" {
+  const m = /^\/(en|he)(?:\/|$)/.exec(request.nextUrl.pathname);
+  if (m) return m[1] as "he" | "en";
+  return detectLocale(request);
+}
+
 /** Routes where a valid single-session token is required */
 function isSessionProtected(pathname: string) {
   return (
@@ -40,6 +53,10 @@ function isSessionProtected(pathname: string) {
 }
 
 export async function middleware(request: NextRequest) {
+  // Stamp the resolved locale on the request so the root layout can read it
+  // via `headers()` and emit `<html lang dir>` server-side.
+  request.headers.set("x-mioshy-locale", resolveLocale(request));
+
   const { supabase, response: supabaseResponse, user } =
     await updateSession(request);
 

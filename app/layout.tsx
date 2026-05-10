@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import {
   Assistant,
   Frank_Ruhl_Libre,
@@ -123,8 +124,18 @@ const SUPABASE_ORIGIN = (() => {
 })();
 
 export default function RootLayout({ children }: { children: ReactNode }) {
+  // Locale is stamped on the request by `middleware.ts` (header
+  // `x-mioshy-locale`). Reading it here lets us render `<html lang dir>` on
+  // the server — without this, the initial HTML had no `lang` attribute and
+  // the locale was patched in client-side via a `useEffect`, which Lighthouse
+  // / Google flag as a SEO + a11y failure (`tech.html_lang_present`).
+  const locale = headers().get("x-mioshy-locale") === "en" ? "en" : "he";
+  const dir = locale === "he" ? "rtl" : "ltr";
+
   return (
     <html
+      lang={locale}
+      dir={dir}
       suppressHydrationWarning
       className={cn(
         "font-sans",

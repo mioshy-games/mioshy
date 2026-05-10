@@ -4,7 +4,6 @@ import { getMessages, setRequestLocale } from "next-intl/server";
 import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
-import { LocaleAttributes } from "@/components/LocaleAttributes";
 import { Chrome } from "@/components/Chrome";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
@@ -83,7 +82,6 @@ export default async function LocaleLayout({
 
   return (
     <NextIntlClientProvider messages={messages}>
-      <LocaleAttributes />
       <Chrome
         isAuthed={isAuthed}
         entitlements={entitlements}
