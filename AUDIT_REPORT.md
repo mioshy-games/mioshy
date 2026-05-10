@@ -28,6 +28,7 @@ _Run started 2026-05-10. Branch: `claude/optimistic-rubin-687c12`._
 | `5f6df6f` | #8 Security headers | Moderate CSP + HSTS + XFO DENY + XCTO + Referrer-Policy + Permissions-Policy in `next.config.mjs`. CSP includes `https://*.cardcom.solutions` and `https://*.cardcom.co.il` for the payment frame; verify in dev with the real flow before production. |
 | `1f86767` | #9 Redirect chain | Root → locale is now a `NextResponse.rewrite()` — zero extra hop. The `www → apex` redirect stays in `next.config.mjs` for now (see Manual follow-ups post-launch). |
 | `52f68d8` | #12 `noStore()` on homepage | Replaced with `export const revalidate = 60`. Verified beforehand: HomepageV2 + every child component contains zero `cookies()` / `headers()` / Supabase / fetch calls — safe to cache. |
+| `081973a` | #10 LCP first pass | `next.config.mjs` sets `images.formats: ["image/avif","image/webp"]` so the optimizer prefers AVIF (25-35% smaller than WebP at same visual quality). `ParallaxImage` accepts a `sizes` prop forwarded to `next/image`; Hero passes `sizes="(max-width: 1024px) 100vw, 720px"` matching the `.hero-grid` breakpoint. **Not yet observable in preview** — visual / Lighthouse verification deferred until either deploy preview or local dev is unblocked. |
 
 ### Why `'unsafe-eval'` stays in CSP for now
 
@@ -59,27 +60,47 @@ Removing `'unsafe-eval'` is doable but requires either (a) replacing Framer Moti
   - LCP mobile: 4107 ms → still TBD (hero image work `#10` not yet started)
   - `color-contrast`: depends on #17 (below)
 
-## #13 — Font usage (research, no commit)
+## #13 — Font usage (BILINGUAL re-analysis, NO commit, NO drop)
 
-Seven font families are loaded in `app/layout.tsx`. Below is every CSS variable that references each, where it's used, and whether it appears in the **first paint** of the active homepage (HomepageV2) or only in deeper pages.
+Initial recommendation to drop Inter + Playfair_Display was **wrong**. After running the user's requested deeper grep (`var(--font-body-latin|--font-heading-latin|--font-inter|--font-playfair`) and tracing the alias chain through `globals.css`, both fonts are alive on every English non-V2 page.
 
-| Family | Variable | Where it's referenced | First-paint on HomepageV2? | Decision |
+**Alias chain (the critical bit):**
+
+`globals.css:74-89` defines:
+
+```
+:root {
+  --font-body: var(--font-body-latin);     /* Inter */
+  --font-heading: var(--font-heading-latin); /* Playfair_Display */
+}
+
+[dir="rtl"] {
+  --font-body: var(--font-body-hebrew);     /* Assistant */
+  --font-heading: var(--font-heading-hebrew); /* IBM_Plex_Sans_Hebrew */
+}
+```
+
+`globals.css:18` sets `body { font-family: var(--font-body) ... }` so every `<body>` inherits the locale-resolved font. `globals.css:195-197` defines `.font-heading { font-family: var(--font-heading) ... }` and **`.font-heading` is used in 60 places** across `app/`, `components/marketing/`, `components/SiteFooter.tsx`, the legacy homepage path, and every article and policy page.
+
+**Bilingual usage table:**
+
+| Family | Variable | Hebrew (RTL) usage | English (LTR) usage | Drop possible? |
 |---|---|---|---|---|
-| `Heebo` | `--font-heebo` | `.home-v2` body font (`styles.css:39`, `:162`, `:176`) | **Yes** — every paragraph in HomepageV2 | **Keep** |
-| `Frank_Ruhl_Libre` | `--font-frank-ruhl` | `.home-v2` heading font (`styles.css:163`, `:177`) | **Yes** — every h2/h3/h4 in HomepageV2 | **Keep** |
-| `Noto_Serif_Hebrew` | `--font-noto-serif-hebrew` | `.home-v2` display font (`styles.css:164`, `:178`) | **Yes** — Hero h1 + section displays | **Keep** |
-| `Assistant` | `--font-body-hebrew` | 17+ direct refs in `app/[locale]/adults/[slug]/play/page.tsx`, `about/founder/page.tsx`, `my/adults/page.tsx`, `TruthOrDareClient.tsx` | **No** — V2 home uses Heebo. But it IS first-paint on `/he/about/founder`, `/he/my/adults`, `/he/adults/[slug]/play`, and the truth-or-dare game UI. | **Keep** — used heavily on Hebrew pages outside the homepage. |
-| `IBM_Plex_Sans_Hebrew` | `--font-heading-hebrew` | `TruthOrDareClient.tsx:567`, `:603`, `:626`. Aliased into `--font-heading` for `[dir="rtl"]` legacy paths via `globals.css:91` | **No** — V2 home uses Frank_Ruhl. Used on truth-or-dare UI + as the legacy heading font for any non-V2 Hebrew page. | **Probably keep** — needs an audit of which Hebrew pages still render via the legacy stack. Risk: removing it leaves heading text rendering in fallback (system Hebrew). |
-| `Inter` | `--font-body-latin` | Aliased into `--font-body` for `:root` via `globals.css:75`. No direct refs found in code. | **No** | **Candidate to drop** — only used as a fallback for the (rare) LTR pages that don't enter `.home-v2`. Test: any `/en/...` page outside HomepageV2 that uses default body font would lose Inter and fall back to system. |
-| `Playfair_Display` | `--font-heading-latin` | `TruthOrDareClient.tsx:567`, `:603`, `:626` (as Latin fallback alongside `--font-heading-hebrew`). Aliased into `--font-heading` for `:root` via `globals.css:76`. | **No** | **Candidate to drop** — but truth-or-dare game UI has it as a stacked fallback; if removed, fallback is system serif. Visual change small but real on game cards. |
+| `Heebo` | `--font-heebo` | HomepageV2 `.home-v2` body, all paragraph copy | HomepageV2 body (Heebo's Latin subset is loaded) | No |
+| `Frank_Ruhl_Libre` | `--font-frank-ruhl` | HomepageV2 headings | HomepageV2 headings (Latin subset loaded) | No |
+| `Noto_Serif_Hebrew` | `--font-noto-serif-hebrew` | HomepageV2 `h1` display, hero | Falls back to next family in stack (`Frank Ruhl Libre`) — not loaded for English glyphs because subset is Hebrew-only | No |
+| `Assistant` | `--font-body-hebrew` | Body of every legacy `/he/*` page (via `[dir="rtl"]` alias) + 17+ direct refs in play, founder, my/adults, TruthOrDare | Not used | No |
+| `IBM_Plex_Sans_Hebrew` | `--font-heading-hebrew` | `.font-heading` (60 locations: articles, footer, legacy home, contact, terms, etc.) when locale is Hebrew | Not used | No |
+| **`Inter`** | `--font-body-latin` | Not used | **Body of every legacy `/en/*` page** — `/en/articles/*`, `/en/contact`, `/en/privacy`, `/en/terms`, `/en/products`, `/en/about/*`, `/en/how-it-works`, `/en/games`, `/en/adults` legacy paths, `/en/?old=1`, every footer + nav | **NO — would be a visual regression on every English non-V2 page** |
+| **`Playfair_Display`** | `--font-heading-latin` | Stacked fallback inside TruthOrDareClient inline `font-family` | **Every `.font-heading` instance on `/en/*` pages**: `app/[locale]/articles/page.tsx:99,143`, `articles/[slug]/page.tsx:312,406,427`, `contact/page.tsx:30`, `privacy/page.tsx:31,39`, `terms/page.tsx:31,39`, `products/page.tsx:111`, plus 30+ in legacy `app/[locale]/page.tsx`, plus `SiteFooter.tsx:33`, plus `not-found.tsx:64` | **NO — every English article H1/H2 + every English policy page H1 + footer brand text would fall back to system serif** |
 
-Two real bug findings while grepping:
+**Decision: do not drop any font.** The original mental model (`var(--font-body-latin)` had no direct references therefore was unused) missed that the variable is consumed via the `--font-body` alias on `body` and via `.font-heading` on 60 elements. Removing either Latin font would visibly degrade the entire English surface outside HomepageV2.
 
-- `app/[locale]/dashboard/page.tsx:28` and `app/[locale]/paywall/page.tsx:8` both reference `var(--font-geist-sans)` — but **no Geist font is loaded**. Those CSS values resolve to nothing and inherit body font. Either remove the Tailwind `font-[family-name:var(--font-geist-sans)]` class, or add Geist to root layout. Likely a leftover from a Next.js template. Out of scope for this turn but worth a follow-up.
+If a real font cleanup is wanted later, the right path is the inverse: audit *which English pages can move to `.home-v2`'s Heebo+Frank-Ruhl stack* and migrate them, **then** drop Inter and Playfair. That's a multi-page migration, not a font-removal.
 
-**Recommendation:** drop `Inter` and `Playfair_Display` only — saves two HTTP/2 streams on every locale-LTR page. The Hebrew-only and V2-only families stay. Keep `Assistant` and `IBM_Plex_Sans_Hebrew` until you do an audit of the legacy Hebrew pages outside `.home-v2`.
+**Real bug spotted while researching (out of scope, follow-up only):**
 
-⏳ Awaiting your approval. Suggested commit shape: one commit removing Inter, one removing Playfair_Display, so either can be reverted independently.
+`app/[locale]/dashboard/page.tsx:28` and `app/[locale]/paywall/page.tsx:8` both apply Tailwind's `font-[family-name:var(--font-geist-sans)]` — but **no Geist font is loaded** anywhere in `app/layout.tsx`. The CSS resolves to nothing and the elements inherit the locale body font. Stale from a Next.js template scaffold. Listed in Manual follow-ups.
 
 ## #17 — color-contrast (research, no commit, blocked on browser)
 
@@ -105,13 +126,18 @@ Two real bug findings while grepping:
 
 **These are static estimates.** The real Lighthouse `color-contrast` failure list almost certainly includes elements I missed (image overlays, gradient backgrounds where the effective bg color depends on position, hover/focus states, dark-section text I haven't traced into).
 
-⏳ Three options for proceeding with #17 — pick one:
+**Decided: path B.** Awaiting `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` from the user (these are public values already shipped in the production client bundle). Once dropped into `.env.local`, the plan is:
 
-- **(A)** Install the Claude in Chrome extension (one-time setup); I'll then run axe-core via JS injection on `https://mioshy.com/he`, `/en`, and the four article URLs from the audit, and return a precise element-by-element list.
-- **(B)** Share `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` (drop a `.env.local` in this worktree); I'll start the dev server here and run axe via the Preview MCP.
-- **(C)** Take the static list above as the starting point — pick which of the borderline / failing entries you want addressed and I'll commit fixes per-element. Less complete than A or B, but ships immediately.
+1. `npm run dev` from this worktree
+2. Inject axe-core via the Preview MCP on the four pages:
+   - `localhost:3000/he` (HE homepage)
+   - `localhost:3000/en` (EN homepage — important after the font analysis above)
+   - `localhost:3000/he/articles/truth-or-dare-questions-couples`
+   - `localhost:3000/en/articles/truth-or-dare-questions-couples`
+3. Return a unified table: element selector, actual contrast ratio, WCAG target, fail / borderline / pass.
+4. Per-element approval before any commit.
 
-For each fix, the agreed strategy is: keep `--mio-purple` / `--mio-rose` / `--accent` brand tokens unchanged. Add stroke / text-shadow / outer overlay if a CTA fails contrast. Adjust auxiliary text colors (`--ink-4`, `--accent-soft` text usage) freely.
+For each approved fix, the agreed strategy is: keep `--mio-purple` / `--mio-rose` / `--accent` brand tokens unchanged. Add stroke / text-shadow / outer overlay if a CTA fails contrast. Adjust auxiliary text colors (`--ink-4`, `--accent-soft` text usage) freely.
 
 ## Manual follow-ups post-launch
 
@@ -129,9 +155,9 @@ For each fix, the agreed strategy is: keep `--mio-purple` / `--mio-rose` / `--ac
 |---|---|---|
 | 5 | `/.well-known/ai.json` | Out of scope this turn |
 | 6 | `/brand.json` | Out of scope this turn |
-| 10 | LCP mobile 4107 ms — hero image | **Not started.** Waiting until #17 lands; both touch the hero. |
-| 13 | Font cleanup | Stopped for approval (see table above) |
-| 17 | `color-contrast` | Stopped for approval — blocked on live browser; static first pass above |
+| 10 | LCP mobile — hero image | **First pass landed (`081973a`).** AVIF + responsive sizes. Verification pending preview. |
+| 13 | Font cleanup | **Closed — no drop.** Bilingual analysis showed both Latin fonts are live on every `/en/*` non-V2 page. |
+| 17 | `color-contrast` | **Path B chosen.** Waiting on `NEXT_PUBLIC_SUPABASE_*` values from user. |
 | 18 | Cardcom indicator rate limit | Out of scope this turn |
 | RLS deep audit | Recommended before launch; separate session |
 
