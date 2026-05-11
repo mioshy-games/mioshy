@@ -1,11 +1,11 @@
 "use client";
 
 /**
- * ClinicianReplyBanner — calm one-line banner at the top of the
+ * ClinicianReplyBanner - calm one-line banner at the top of the
  * /my/journey page when the clinician has replied to one or more of
  * the user's responses since the user's last visit.
  *
- * Phase 2F. No DB tracking — we use localStorage to remember the
+ * Phase 2F. No DB tracking - we use localStorage to remember the
  * user's last visit timestamp client-side. Server provides the most
  * recent reply timestamp; client compares.
  *
@@ -52,7 +52,7 @@ export function ClinicianReplyBanner({
         setShow(true);
       }
     } catch {
-      // localStorage unavailable (private mode etc.) — show once,
+      // localStorage unavailable (private mode etc.) - show once,
       // dismiss takes us back to hidden but we won't be persistent.
       setShow(true);
     }

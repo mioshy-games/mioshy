@@ -7,6 +7,17 @@ import { unstable_noStore as noStore } from "next/cache";
 import type { Metadata } from "next";
 import { fetchGameSettings } from "@/lib/settings-queries";
 
+// Disable any form of static caching for this route.
+//   - `noStore()` (called below) disables Next's per-request fetch cache.
+//   - `dynamic = "force-dynamic"` is the route-level switch that
+//     prevents Vercel's CDN from holding a stale prerender of /games/<slug>.
+//     Without it we saw stale renders served - e.g. /games/truth-or-dare
+//     resolving to a previously-built page that contained another game's
+//     content, even after the DB had been corrected. With it, every
+//     request re-runs the server component against fresh DB data.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 function siteUrl() {
   return (process.env.NEXT_PUBLIC_SITE_URL || "https://mioshy.com").replace(
     /\/+$/,
@@ -25,7 +36,7 @@ export async function generateMetadata({
   const { data: game } = await supabase
     .from("games")
     .select(
-      "slug, name_en, name_he, description_en, description_he, thumbnail_url, meta_title_he, meta_title_en, meta_description_he, meta_description_en, og_image_url, keywords",
+      "slug, name_en, name_he, description_en, description_he, thumbnail_url_he, thumbnail_url_en, meta_title_he, meta_title_en, meta_description_he, meta_description_en, og_image_url, keywords",
     )
     .eq("slug", slug)
     .eq("is_active", true)
@@ -42,7 +53,14 @@ export async function generateMetadata({
       ? game?.meta_description_he ?? game?.description_he ?? game?.description_en ?? ""
       : game?.meta_description_en ?? game?.description_en ?? game?.description_he ?? "";
 
-  const ogImage = game?.og_image_url || game?.thumbnail_url || null;
+  // OG image cascade: explicit og_image_url > locale-matching catalogue
+  // thumbnail > the other-locale thumbnail (better wrong-language than no
+  // preview at all).
+  const localeThumb =
+    locale === "he"
+      ? game?.thumbnail_url_he ?? game?.thumbnail_url_en
+      : game?.thumbnail_url_en ?? game?.thumbnail_url_he;
+  const ogImage = game?.og_image_url || localeThumb || null;
   const canonical = `${base}/${locale}/games/${slug}`;
   return {
     title: metaTitle.toLowerCase().startsWith("mioshy")
@@ -119,6 +137,24 @@ export default async function GameBySlugPage({
       .order("created_at", { ascending: true }),
     fetchGameSettings(supabase, game.id),
   ]);
+
+  // ── DIAG 2026-05-05 ────────────────────────────────────────────────────
+  // Server-side log of the *raw* values fetched from Supabase for this
+  // game. Compare these to what the admin claims to have saved. If the
+  // admin slider is at 0.85 but this prints 0.4, the save isn't reaching
+  // the DB. If it prints 0.85 but the wheel still looks wrong, the
+  // problem is downstream (TruthOrDareClient/Wheel).
+  console.log("[/games/[slug]/SERVER-DIAG] BUILD=2026-05-05-wheel-trace v1", {
+    slug: game.slug,
+    game_id: game.id,
+    wheel_marker_config: wheel?.marker_config,
+    wheel_inner_circle: wheel?.inner_circle,
+    wheel_inner_circle_color: wheel?.inner_circle_color,
+    wheel_pointer_color: wheel?.pointer_color,
+    gs_wheel: gameSettings?.wheel,
+    gs_motion: gameSettings?.motion,
+    gs_shape: gameSettings?.shape,
+  });
 
   if (!wheel) {
     return (

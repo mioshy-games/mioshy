@@ -47,15 +47,32 @@ export async function generateMetadata({
   };
 }
 
-function formatDate(iso: string | null) {
+function formatDate(iso: string | null, locale: string) {
   if (!iso) return "-";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "-";
-  return d.toLocaleDateString(undefined, {
+  if (locale === "he") {
+    return new Intl.DateTimeFormat("he-IL", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    }).format(d);
+  }
+  return d.toLocaleDateString("en-US", {
     year: "numeric",
     month: "short",
     day: "numeric",
   });
+}
+
+/** Localise the article author display. See [slug]/page.tsx for the
+ *  canonical implementation. Per Itzik 2026-05-07: HE → "יצחק ברלב". */
+function localiseAuthor(author: string | null, locale: string): string {
+  if (!author) return "Mioshy";
+  if (locale === "he" && /itzik\s+berlav/i.test(author)) {
+    return "יצחק ברלב";
+  }
+  return author;
 }
 
 export default async function ArticlesListPage({
@@ -125,7 +142,8 @@ export default async function ArticlesListPage({
                   he: a.excerpt_he,
                   en: a.excerpt_en,
                 }).value;
-                const date = formatDate(a.published_at ?? a.created_at);
+                const date = formatDate(a.published_at ?? a.created_at, locale);
+                const authorDisplay = localiseAuthor(a.author, locale);
                 return (
                   <Reveal key={a.id} delay={idx * 0.04}>
                     <article className="group overflow-hidden rounded-2xl border border-purple-500/20 bg-[var(--mio-card)] backdrop-blur-md transition hover:border-purple-400/30 hover:shadow-[0_0_0_1px_rgba(232,121,249,0.18)]">
@@ -147,7 +165,7 @@ export default async function ArticlesListPage({
                           {excerpt}
                         </p>
                         <div className="mt-5 flex items-center justify-between gap-3 text-xs text-white/55">
-                          <span className="truncate">{a.author}</span>
+                          <span className="truncate">{authorDisplay}</span>
                           <span className="shrink-0">{date}</span>
                         </div>
                         <div className="mt-5">

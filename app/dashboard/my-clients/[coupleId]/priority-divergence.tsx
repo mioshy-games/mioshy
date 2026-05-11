@@ -4,7 +4,7 @@ import { divergence, type PriorityKey } from "@/lib/journey/priorities";
 import { getPriorityLabels } from "@/lib/journey-content/priority-categories";
 
 /**
- * Joint priority view — both partners' rankings side by side, plus a
+ * Joint priority view - both partners' rankings side by side, plus a
  * per-category gap badge so the expert can read the divergence pattern
  * in <5 seconds. Lives below the per-partner split on the couple
  * detail page.
@@ -12,10 +12,10 @@ import { getPriorityLabels } from "@/lib/journey-content/priority-categories";
  * Color rules (matches the spec we agreed on):
  *   diff = 0  → green   ("aligned")
  *   diff = 1–2 → amber  ("small/moderate gap")
- *   diff ≥ 3   → red    ("large gap" — the actionable insight)
+ *   diff ≥ 3   → red    ("large gap" - the actionable insight)
  *
  * The headline summary at the top surfaces the single biggest gap
- * automatically: "גילוי מרכזי — שניכם לא מסכימים על מקום של מיניות".
+ * automatically: "גילוי מרכזי - שניכם לא מסכימים על מקום של מיניות".
  */
 export async function PriorityDivergence({ coupleId }: { coupleId: string }) {
   const [partners, priorityLabels] = await Promise.all([
@@ -26,7 +26,7 @@ export async function PriorityDivergence({ coupleId }: { coupleId: string }) {
   const canonicalOrder = priorityLabels.canonicalOrder;
 
   // Need both partners ranked to render the joint view. If only one ranked
-  // (or none), short-circuit with a friendly empty state — the per-partner
+  // (or none), short-circuit with a friendly empty state - the per-partner
   // split panel above already shows whatever individual data we have.
   const ranked = partners.filter((p) => p.priorityRanking);
   if (ranked.length < 2) {
@@ -86,7 +86,7 @@ export async function PriorityDivergence({ coupleId }: { coupleId: string }) {
           <tbody>
             {rows
               // Render in canonical (DB sort_order) order rather than
-              // divergence order — easier to skim. The headline up top
+              // divergence order - easier to skim. The headline up top
               // already emphasizes the biggest gap.
               .slice()
               .sort(

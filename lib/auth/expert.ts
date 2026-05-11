@@ -5,11 +5,11 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
  * Auth helpers for the "Mioshy Coaching" expert role.
  *
  * Roles:
- *   - 'admin'  — full dashboard access (existing). Implicitly an expert
- *                — can see/manage every couple's coaching path.
- *   - 'expert' — limited dashboard access. Can only see couples linked to
+ *   - 'admin'  - full dashboard access (existing). Implicitly an expert
+ *                - can see/manage every couple's coaching path.
+ *   - 'expert' - limited dashboard access. Can only see couples linked to
  *                them via the `expert_couples` table.
- *   - 'user'   — no dashboard access.
+ *   - 'user'   - no dashboard access.
  */
 
 export type ExpertSession = {

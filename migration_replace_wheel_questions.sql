@@ -2,15 +2,15 @@
 -- MIGRATION: Replace QUESTIONS only (wheels)
 -- =====================================================================
 -- Scope: Only the questions table, only for wheel-type games.
--- Games (public.games)             — UNCHANGED
--- Wheel configs (wheel_configs)    — UNCHANGED (colors, slices, categories)
--- Questions (public.questions)     — REPLACED with new content
+-- Games (public.games)             - UNCHANGED
+-- Wheel configs (wheel_configs)    - UNCHANGED (colors, slices, categories)
+-- Questions (public.questions)     - REPLACED with new content
 --
 -- This means the wheel layout, colors, slug, and metadata stay the same;
 -- only the pool of questions that come out when the wheel lands changes.
 --
 -- SAFETY:
---   - Single transaction. If anything fails — full rollback automatically.
+--   - Single transaction. If anything fails - full rollback automatically.
 --   - Run on staging first.
 --   - Take a Supabase snapshot before running on prod.
 -- =====================================================================
@@ -56,7 +56,7 @@ DELETE FROM public.questions
 --   SELECT g.id, 'category_key', 'level', 'עוד שאלה', 'Another', true
 --     FROM public.games g WHERE g.slug = 'first-date-spin';
 --
--- Or — bulk pattern using a CTE per game:
+-- Or - bulk pattern using a CTE per game:
 --   WITH g AS (SELECT id FROM public.games WHERE slug = 'first-date-spin')
 --   INSERT INTO public.questions (game_id, type, level, text_he, text_en, is_active)
 --   SELECT g.id, t.type, t.level, t.text_he, t.text_en, true
@@ -109,5 +109,5 @@ BEGIN
   RAISE NOTICE 'Wheel games that have at least 1 question: %', game_cnt;
 END $$;
 
--- If the numbers above look wrong — replace COMMIT with ROLLBACK.
+-- If the numbers above look wrong - replace COMMIT with ROLLBACK.
 COMMIT;

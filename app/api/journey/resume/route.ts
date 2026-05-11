@@ -24,7 +24,7 @@ export async function POST(req: Request) {
   });
 
   if (!user) {
-    console.warn("[/api/journey/resume] UNAUTHORIZED — auth cookie not propagated yet");
+    console.warn("[/api/journey/resume] UNAUTHORIZED - auth cookie not propagated yet");
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 

@@ -8,6 +8,7 @@ import {
 import { getPriorityLabels } from "@/lib/journey-content/priority-categories";
 import type { PriorityKey } from "@/lib/journey/priorities";
 import { Badge } from "@/components/ui/badge";
+import { ViewAsButton } from "@/components/dashboard/coach/ViewAsButton";
 
 /**
  * Side-by-side per-partner panel for the expert couple-detail page.
@@ -34,7 +35,7 @@ export async function PartnersSplit({ coupleId }: { coupleId: string }) {
   if (partners.length === 0) {
     return (
       <div className="border-border bg-muted/30 text-muted-foreground rounded-lg border p-4 text-sm">
-        No partners in this couple yet — wait for the invitee to redeem the
+        No partners in this couple yet - wait for the invitee to redeem the
         pair code.
       </div>
     );
@@ -47,6 +48,7 @@ export async function PartnersSplit({ coupleId }: { coupleId: string }) {
           key={p.userId}
           partner={p}
           labelsHe={priorityLabels.labelsHe}
+          coupleId={coupleId}
         />
       ))}
       {partners.length === 1 ? (
@@ -61,9 +63,11 @@ export async function PartnersSplit({ coupleId }: { coupleId: string }) {
 function PartnerColumn({
   partner: p,
   labelsHe,
+  coupleId,
 }: {
   partner: PartnerDetail;
   labelsHe: Record<PriorityKey, string>;
+  coupleId: string;
 }) {
   const pct =
     p.scheduledTotal > 0
@@ -106,6 +110,14 @@ function PartnerColumn({
         </Link>
       </header>
 
+      {/* Layer 2 — coach impersonation. Audit-logged on every start. */}
+      <ViewAsButton
+        userId={p.userId}
+        coupleId={coupleId}
+        label={p.fullName?.split(" ")[0] || p.email?.split("@")[0] || "partner"}
+      />
+
+
       {/* Demographics */}
       <section>
         <div className="text-muted-foreground mb-1.5 text-[11px] font-semibold uppercase tracking-wide">
@@ -121,7 +133,7 @@ function PartnerColumn({
               <div key={k} className="flex flex-col">
                 <dt className="text-muted-foreground">{prettyKey(k)}</dt>
                 <dd className="font-medium">
-                  {v ? HE_LABELS[k]?.[v] ?? v : "—"}
+                  {v ? HE_LABELS[k]?.[v] ?? v : "-"}
                 </dd>
               </div>
             ))}
@@ -129,7 +141,7 @@ function PartnerColumn({
         )}
       </section>
 
-      {/* Priority ranking — what the partner declared as most important */}
+      {/* Priority ranking - what the partner declared as most important */}
       <section>
         <div className="text-muted-foreground mb-1.5 flex items-center justify-between text-[11px] font-semibold uppercase tracking-wide">
           <span>Priority ranking</span>
@@ -198,10 +210,10 @@ function PartnerColumn({
             />
             <Stat
               label="Love language"
-              value={p.analysis.primaryLoveLanguage ?? "—"}
+              value={p.analysis.primaryLoveLanguage ?? "-"}
               wide
             />
-            <Stat label="Top gap" value={p.analysis.topGap ?? "—"} wide />
+            <Stat label="Top gap" value={p.analysis.topGap ?? "-"} wide />
             {p.analysis.fourHorsemenFlag ? (
               <Stat label="4 horsemen" value="⚠" tone="warn" />
             ) : null}
@@ -295,7 +307,7 @@ function Stat({
 }
 
 function fmt(n: number | null): string {
-  if (n === null) return "—";
+  if (n === null) return "-";
   return (Math.round(n * 100) / 100).toString();
 }
 
@@ -319,7 +331,7 @@ function prettyKey(k: string): string {
     .replace(/^./, (c) => c.toUpperCase());
 }
 
-/** "ranked 3 days ago" / "דורג לפני 3 ימים" — short form, Hebrew default
+/** "ranked 3 days ago" / "דורג לפני 3 ימים" - short form, Hebrew default
  *  matches the rest of this surface. */
 function relativeTime(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime();

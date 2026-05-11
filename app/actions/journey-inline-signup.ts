@@ -1,7 +1,7 @@
 "use server";
 
 /**
- * Journey-flow signup — server action used by InlineAuthStep when the user
+ * Journey-flow signup - server action used by InlineAuthStep when the user
  * hits the auth gate mid-questionnaire (~q34).
  *
  * Why this exists separately from /actions/auth-actions.ts → signupAction:
@@ -18,7 +18,7 @@
  *      to the new user → on reload the page restarted from q1.
  *
  * This server action sidesteps both:
- *   - Uses `admin.auth.admin.createUser({ email_confirm: true })` —
+ *   - Uses `admin.auth.admin.createUser({ email_confirm: true })` -
  *     no email sent, no rate limit.
  *   - Then signs in via the session client which writes the cookie
  *     server-side BEFORE we return → the cookie is in place by the
@@ -47,7 +47,7 @@ export type JourneyDebug = {
   mode: "register" | "login";
   email: string;
   deviceId: string;
-  // What was found BEFORE we ran the link RPC — tells us whether the
+  // What was found BEFORE we ran the link RPC - tells us whether the
   // anon journey actually exists in the DB.
   preRpc: {
     anonJourney: {
@@ -58,7 +58,7 @@ export type JourneyDebug = {
       last_activity_at: string;
     } | null;
   };
-  // The link RPC's return value — uuid of the linked journey or null.
+  // The link RPC's return value - uuid of the linked journey or null.
   rpc: {
     linkedJourneyId: string | null;
     error: string | null;
@@ -96,7 +96,7 @@ export async function journeyInlineSignup(args: {
   phone?: string;
   language?: "he" | "en";
   deviceId: string;
-  /** "register" or "login" — login path skips createUser. */
+  /** "register" or "login" - login path skips createUser. */
   mode: "register" | "login";
 }): Promise<JourneyInlineSignupResult> {
   const email = args.email.trim();
@@ -117,7 +117,7 @@ export async function journeyInlineSignup(args: {
     };
   }
   if (!args.deviceId || args.deviceId.length < 8) {
-    return { success: false, error: "Missing device id — refresh and retry." };
+    return { success: false, error: "Missing device id - refresh and retry." };
   }
 
   console.log("[journeyInlineSignup] start", {
@@ -127,7 +127,7 @@ export async function journeyInlineSignup(args: {
     deviceId: args.deviceId,
   });
 
-  // Diagnostic envelope — every step writes here, returned to client
+  // Diagnostic envelope - every step writes here, returned to client
   // even on failure paths so the browser console gets the full trace.
   const debug: JourneyDebug = {
     step: "start",
@@ -246,7 +246,7 @@ export async function journeyInlineSignup(args: {
     // FALLBACK: the link_journey_to_user RPC uses auth.uid() under
     // SECURITY DEFINER. If for any reason the cookie hasn't propagated
     // even within this same request, the RPC throws "not authenticated".
-    // We therefore ALSO try a service-role direct UPDATE as a backup —
+    // We therefore ALSO try a service-role direct UPDATE as a backup -
     // it sees no auth context but trusts the userId we just signed in
     // with. That guarantees the link happens.
     const { data: linkedId, error: linkErr } = await supabase.rpc(
@@ -262,7 +262,7 @@ export async function journeyInlineSignup(args: {
         "[journeyInlineSignup] RPC didn't link, falling back to service-role UPDATE",
         { rpcError: linkErr?.message, linkedId },
       );
-      // Service-role direct UPDATE — bypasses the auth.uid() check by
+      // Service-role direct UPDATE - bypasses the auth.uid() check by
       // explicitly setting user_id from the just-signed-in session.
       const { data: fallback, error: fallbackErr } = await admin
         .from("journeys")
@@ -306,7 +306,7 @@ export async function journeyInlineSignup(args: {
     // Diagnostic: also count journey_responses for the resolved journey,
     // because that's what /my/journey gates on. If the journey is linked
     // but responses are 0, /my/journey will show the "assessment_missing"
-    // recovery banner — and we want to know about it from the signup logs.
+    // recovery banner - and we want to know about it from the signup logs.
     let responsesCount = 0;
     if (journey?.id) {
       const { count } = await admin

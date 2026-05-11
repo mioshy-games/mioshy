@@ -1,7 +1,7 @@
 /**
  * POST /api/journey/cadence/advance
  *
- * v3 slice 3 cron — scans every user with an active cadence assignment,
+ * v3 slice 3 cron - scans every user with an active cadence assignment,
  * checks whether their effective delivery slot has fired (per their
  * profile overrides + journey_settings defaults), respects the weekly
  * cap, and materializes one item per eligible user.
@@ -15,7 +15,7 @@
  *
  * Auth: Bearer token. Prefers JOURNEY_CADENCE_CRON_SECRET; falls back
  * to JOURNEY_UNLOCK_CRON_SECRET, then CARDCOM_BILLING_CRON_SECRET. This
- * keeps deploy-time setup minimal — operators can run all three crons
+ * keeps deploy-time setup minimal - operators can run all three crons
  * with one shared secret until they're ready to split them out.
  *
  * Schedule: vercel.json runs this every 15 minutes (`*​/15 * * * *`).
@@ -25,7 +25,7 @@
  *        -H "authorization: Bearer $JOURNEY_CADENCE_CRON_SECRET"
  *
  * Optional `?dry=1` returns the eligibility decision per user without
- * inserting any rows — useful for inspecting the engine on a test
+ * inserting any rows - useful for inspecting the engine on a test
  * account without touching state.
  *
  * Optional `?user=<uuid>` restricts the run to a single user, again
@@ -264,7 +264,7 @@ async function handle(req: Request): Promise<Response> {
     }
   }
 
-  // Slice 9 — log the run to journey_cron_runs (skipped on dry-run
+  // Slice 9 - log the run to journey_cron_runs (skipped on dry-run
   // so the health board reflects real execution). Wrapped in a
   // synchronous wrapper since the heavy lifting already happened.
   if (!dryRun) {

@@ -20,6 +20,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { useLocale } from "next-intl";
 import { cn } from "@/lib/utils";
 import {
   useGameRoomStore,
@@ -137,6 +138,9 @@ export function GameLobby({
   onStartGame,
   isStarting = false,
 }: GameLobbyProps) {
+  const locale = useLocale();
+  const isHe = locale === "he";
+
   // ── Store ─────────────────────────────────────────────────────────────────
   const players      = useGameRoomStore((s) => s.players);
   const takenAvatars = useGameRoomStore((s) => s.takenAvatars);
@@ -200,14 +204,19 @@ export function GameLobby({
 
   // ─────────────────────────────────────────────────────────────────────────
   return (
-    <div className="flex w-full flex-col gap-5" dir="rtl">
+    <div className="flex w-full flex-col gap-5" dir={isHe ? "rtl" : "ltr"}>
 
       {/* ── Room code banner ─────────────────────────────────────────────── */}
       <div className="flex items-center justify-between rounded-2xl border border-slate-700/50 bg-slate-900/50 px-5 py-3">
         <div>
-          <div className="text-xs text-slate-400">קוד חדר</div>
+          <div className="text-xs text-slate-400">{isHe ? "קוד חדר" : "Room code"}</div>
           <div className="mt-0.5 text-3xl font-black tracking-widest text-white">
             {roomCode}
+          </div>
+          <div className="mt-1 text-[11px] text-slate-400/80">
+            {isHe
+              ? "שתפו את הקוד עם בן/בת הזוג שיצטרפ/ו"
+              : "Share the code with your partner so they can join"}
           </div>
         </div>
         <button
@@ -215,8 +224,28 @@ export function GameLobby({
           onClick={copyCode}
           className="rounded-xl border border-slate-600 bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-200 hover:bg-slate-700"
         >
-          {copied ? "הועתק ✓" : "העתק"}
+          {copied
+            ? isHe ? "הועתק ✓" : "Copied ✓"
+            : isHe ? "העתק" : "Copy"}
         </button>
+      </div>
+
+      {/* ── Video-chat tip ─ Itzik 2026-05-05 ─ bilingual */}
+      <div className="rounded-2xl border border-amber-300/25 bg-gradient-to-br from-amber-500/[0.06] to-rose-500/[0.04] px-5 py-3.5 backdrop-blur">
+        <div className="flex items-start gap-3">
+          <span className="mt-0.5 text-xl" aria-hidden>📹</span>
+          <div className="flex-1 text-sm leading-relaxed text-amber-100/90">
+            <span className="font-semibold text-amber-100">
+              {isHe ? "טיפ: פותחים שיחת וידאו" : "Tip: open a video call"}
+            </span>
+            <span className="text-amber-100/75">
+              {" "}
+              {isHe
+                ? "במקביל למשחק - Zoom / FaceTime / WhatsApp - שתראו אחד את השני בזמן שאתם משחקים. החוויה שלמה ככה."
+                : "alongside the game - Zoom / FaceTime / WhatsApp - so you can see each other while you play. The experience is complete that way."}
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* ── Main two-column layout ───────────────────────────────────────── */}
@@ -263,10 +292,10 @@ export function GameLobby({
               )}
             >
               {isStarting
-                ? "מתחיל…"
+                ? isHe ? "מתחיל…" : "Starting…"
                 : allLocked
-                ? "🚀 התחל משחק"
-                : "התחל משחק (לא כולם נעלו)"}
+                  ? isHe ? "🚀 התחל משחק" : "🚀 Start game"
+                  : isHe ? "התחל משחק (לא כולם נעלו)" : "Start game (not everyone locked in)"}
             </button>
           )}
         </div>
@@ -405,9 +434,11 @@ export function GameLobby({
               </div>
               <div className="flex-1">
                 <div className="text-sm font-semibold text-slate-200">
-                  {myPlayer?.user_name ?? "אתה/את"}
+                  {myPlayer?.user_name ?? (isHe ? "אתה/את" : "You")}
                 </div>
-                <div className="text-xs text-slate-400">בחירה נוכחית</div>
+                <div className="text-xs text-slate-400">
+                  {isHe ? "בחירה נוכחית" : "Current selection"}
+                </div>
               </div>
             </div>
           )}
@@ -432,7 +463,9 @@ export function GameLobby({
                 "disabled:cursor-not-allowed disabled:opacity-60",
               )}
             >
-              {isLocking ? "נועל…" : "🔒 נעל בחירה"}
+              {isLocking
+                ? isHe ? "נועל…" : "Locking…"
+                : isHe ? "🔒 נעל בחירה" : "🔒 Lock in choice"}
             </button>
           )}
         </div>

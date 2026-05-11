@@ -1,5 +1,5 @@
 -- ============================================================
--- 048 — Mioshy billing failures (issuer-side: app.uxellent.com)
+-- 048 - Mioshy billing failures (issuer-side: app.uxellent.com)
 -- ============================================================
 -- Purpose:
 --   Persist EVERY post-payment failure when Mioshy calls the external
@@ -17,7 +17,7 @@
 --     (e.g. 'network_error', 'http_502', 'invalid_json',
 --     'provider_error', 'retry_exhausted').
 --   - `payload` stores the request body we sent (PII-light: email,
---     amount — no card data ever).
+--     amount - no card data ever).
 -- ============================================================
 
 create extension if not exists pgcrypto;
@@ -66,4 +66,4 @@ comment on table public.mioshy_billing_failures is
 comment on column public.mioshy_billing_failures.error_code is
   'Stable short code for alert grouping (network_error, http_5xx, invalid_json, provider_error, retry_exhausted, etc.).';
 comment on column public.mioshy_billing_failures.payload is
-  'Request body sent to the issuer (no card data — only email/amount/plan).';
+  'Request body sent to the issuer (no card data - only email/amount/plan).';

@@ -21,36 +21,30 @@ export function Hero() {
   const t = useTranslations("homeV2.hero");
   return (
     <section className="hero">
+      {/* Performance: hero animation count cut nearly in half per Itzik
+          2026-05-06. Was 36 simultaneous animated layers (5 blobs + 1
+          circle + 18 sparkles + 12 orbits) — the audit found this was
+          a major source of GPU pressure. Now 16 (3 blobs + 1 circle +
+          6 sparkles + 6 orbits) — same atmosphere, half the cost. */}
       <div className="hero-bg">
         <div className="hero-blob hero-blob-1"></div>
         <div className="hero-blob hero-blob-2"></div>
         <div className="hero-blob hero-blob-3"></div>
-        <div className="hero-blob hero-blob-4"></div>
-        <div className="hero-blob hero-blob-5"></div>
-        {/* New floating circle, softly blurred, floating in a loop */}
+        {/* Floating soft-blurred circle. */}
         <div className="hero-floating-circle"></div>
-        {/* Drifting sparkles - same vibe as the /adults ambience.
-            CSS-only (see .hero-spark in styles.css). Each spark gets a
-            different size / position / drift duration via nth-child so
-            the field never repeats in lockstep. */}
+        {/* Drifting sparkles — 6 (was 18). Same look at half the cost. */}
         <div className="hero-particles" aria-hidden>
-          {Array.from({ length: 18 }).map((_, i) => (
+          {Array.from({ length: 6 }).map((_, i) => (
             <span key={i} className={`hero-spark hero-spark-${(i % 6) + 1}`}></span>
           ))}
         </div>
-        {/* Wheels-game style small floating circles - solid colour drift */}
+        {/* Wheels-game-style orbit dots — 6 (was 12). */}
         <span className="hero-orbit hero-orbit-1" aria-hidden></span>
         <span className="hero-orbit hero-orbit-2" aria-hidden></span>
         <span className="hero-orbit hero-orbit-3" aria-hidden></span>
         <span className="hero-orbit hero-orbit-4" aria-hidden></span>
         <span className="hero-orbit hero-orbit-5" aria-hidden></span>
         <span className="hero-orbit hero-orbit-6" aria-hidden></span>
-        <span className="hero-orbit hero-orbit-7" aria-hidden></span>
-        <span className="hero-orbit hero-orbit-8" aria-hidden></span>
-        <span className="hero-orbit hero-orbit-9" aria-hidden></span>
-        <span className="hero-orbit hero-orbit-10" aria-hidden></span>
-        <span className="hero-orbit hero-orbit-11" aria-hidden></span>
-        <span className="hero-orbit hero-orbit-12" aria-hidden></span>
       </div>
       <div className="hero-grain"></div>
       <div className="container">
@@ -77,9 +71,17 @@ export function Hero() {
                 <TrackedLink href="/journey" className="btn btn-primary" ctaId="hero_primary" section="hero">
                   {t("ctaPrimary")} <span className="arrow">←</span>
                 </TrackedLink>
-                <TrackedLink href="/how-it-works" className="btn btn-ghost" ctaId="hero_secondary" section="hero">
-                  {t("ctaSecondary")}
-                </TrackedLink>
+              </div>
+            </RevealOnScroll>
+
+            <RevealOnScroll variant="fade-up" delay={0.30}>
+              <div className="hero-price-from" aria-label={t("priceFromLabel").replace(/<\/?strong>/g, "")}>
+                <span className="dot" aria-hidden></span>
+                <span>
+                  {t.rich("priceFromLabel", {
+                    strong: (chunks) => <strong>{chunks}</strong>,
+                  })}
+                </span>
               </div>
             </RevealOnScroll>
 
@@ -87,7 +89,7 @@ export function Hero() {
               <div className="hero-meta">
                 <div className="hero-meta-item">
                   <span className="num">
-                    <Counter to={1000} prefix="+" />
+                    <Counter to={500} prefix="+" />
                   </span>
                   <span className="label">{t("statCouplesLabel")}</span>
                 </div>

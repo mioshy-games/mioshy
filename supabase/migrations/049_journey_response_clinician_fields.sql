@@ -1,5 +1,5 @@
 -- ============================================================
--- 049 — Journey response clinician fields (Phase 2B)
+-- 049 - Journey response clinician fields (Phase 2B)
 -- ============================================================
 -- Purpose: extend public.journey_item_responses so a clinician can
 -- triage and reply to user responses without a separate table. The
@@ -26,7 +26,7 @@ alter table public.journey_item_responses
   add column if not exists clinician_replied_at timestamptz,
   add column if not exists updated_at timestamptz default now();
 
--- Open-status index — daily clinician inbox query: "what hasn't been
+-- Open-status index - daily clinician inbox query: "what hasn't been
 -- triaged yet?". Partial index keeps it small.
 create index if not exists journey_item_responses_clinician_open_idx
   on public.journey_item_responses (created_at desc)

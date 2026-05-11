@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { fitSvgToContainer } from "@/lib/utils";
+import { splitLabelToLines } from "@/components/Wheel";
 import type { WheelSlice } from "@/lib/types/database";
 
 type WheelPreviewProps = {
@@ -26,6 +27,15 @@ type WheelPreviewProps = {
   labelColor?: string;
   /** Label text outline (from game_settings) */
   labelOutline?: { enabled: boolean; color: string; opacity: number; width: number };
+  /** Label orientation: "tangential" along slice (default) or "radial"
+   *  from center → rim. Itzik 2026-05-05 - drives how the preview
+   *  visualises admin's labelOrientation pick. */
+  labelOrientation?: "tangential" | "radial";
+  /** Radial fraction of the wheel where labels are anchored. In
+   *  tangential mode this is the label center position (typical 0.6).
+   *  In radial mode it's interpreted INVERSELY as "distance from outer
+   *  boundary" - slider 0.9 → text starts at 0.1r (room to grow). */
+  labelRadiusFraction?: number;
   /** Outer border ring (from game_settings.border) */
   outerBorder?: { enabled: boolean; color: string; style: "solid" | "dashed" | "none"; width: number; distance: number } | null;
   /** Custom SVG markup for the pointer (replaces triangle). */
@@ -78,6 +88,8 @@ export function WheelPreview({
   labelFontSizePx = 12,
   labelColor = "#ffffff",
   labelOutline,
+  labelOrientation = "tangential",
+  labelRadiusFraction = 0.6,
   outerBorder,
   pointerSvg,
   pointerSvgWidth = 40,
@@ -250,9 +262,29 @@ export function WheelPreview({
           : null}
 
         {labels.map(({ i, bisector, label }) => {
-          const rr = r * 0.6; // ~60% of radius for label placement
+          // Tangential default: anchor at 60% of radius, rotate to slice
+          // tangent (-90° from radial). Radial mode: anchor at a FIXED
+          // distance from center (40% of radius) and rotate along the
+          // slice's radial line. For LEFT-half slices we flip 180° so
+          // the text reads upright; we also flip the textAnchor below
+          // so the text still GROWS outward from the same fixed radius
+          // (otherwise flipped slices' text grows toward the center -
+          // round 9 fix per Itzik).
+          const isRadial = labelOrientation === "radial";
+          // 2026-05-06 round 2 (mirrors Wheel.tsx):
+          //   • Anchor at OUTER, grow INWARD.
+          //   • No 180° flip - letters keep one consistent rotation.
+          //   • textAnchor selected so first visual letter sits at the
+          //     rim: Hebrew RTL → "start", LTR → "end".
+          let rr = r * labelRadiusFraction;
+          const innerHubR = innerCircle ? 40 : 0;
+          if (rr < innerHubR + 6) rr = innerHubR + 6;
+          if (rr > r) rr = r;
           const p = polar(cx, cy, rr, bisector);
-          const rot = (bisector * 180) / Math.PI - 90;
+          const baseRotDeg = (bisector * 180) / Math.PI;
+          const rot = isRadial ? baseRotDeg : baseRotDeg - 90;
+          const isRtl = /[֐-׿]/.test(label);
+          const radialAnchor: "start" | "end" = isRtl ? "start" : "end";
           const outlineStyle: React.CSSProperties =
             labelOutline?.enabled
               ? {
@@ -262,6 +294,10 @@ export function WheelPreview({
                   strokeOpacity: labelOutline.opacity,
                 }
               : {};
+          // Manual breaks (\n, |, <br>) honoured by splitLabelToLines.
+          const lines = splitLabelToLines(label, isRadial ? 18 : 12);
+          const lineHeightEm = 1.1;
+          const firstDy = -((lines.length - 1) * lineHeightEm) / 2;
           return (
             <g
               key={`lbl-${i}`}
@@ -273,11 +309,31 @@ export function WheelPreview({
                 fill={labelColor}
                 fontSize={labelFontSizePx}
                 fontWeight="700"
-                textAnchor="middle"
+                textAnchor={isRadial ? radialAnchor : "middle"}
                 dominantBaseline="middle"
+                direction={isRtl ? "rtl" : "ltr"}
+                unicodeBidi="plaintext"
                 style={outlineStyle}
               >
-                {label}
+                {lines.length === 1 ? (
+                  lines[0]
+                ) : (
+                  <>
+                    {lines.map((ln, idx) => (
+                      <tspan
+                        key={`ln-${idx}`}
+                        x={0}
+                        dy={
+                          idx === 0
+                            ? `${firstDy.toFixed(3)}em`
+                            : `${lineHeightEm}em`
+                        }
+                      >
+                        {ln}
+                      </tspan>
+                    ))}
+                  </>
+                )}
               </text>
             </g>
           );

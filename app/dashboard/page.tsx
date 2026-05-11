@@ -1,5 +1,19 @@
+/**
+ * /dashboard
+ *
+ * Role-aware landing page.
+ *  - admin role: games + content overview (the historical view).
+ *  - expert role: coaching-first orientation (Phase 8) — greeting,
+ *    onboarding checklist, today's queue counters, quick navigation.
+ *
+ * Both branches are server components rendered at the top level so a
+ * coach hitting /dashboard sees their workspace, not the games table.
+ */
+
 import Link from "next/link";
-import { requireAdmin } from "@/lib/auth/admin";
+import { requireExpert } from "@/lib/auth/expert";
+import { createServiceRoleClient } from "@/lib/supabase-admin";
+import { CoachOverviewPanel } from "@/components/dashboard/coach/CoachOverviewPanel";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -20,20 +34,44 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { GameActions } from "@/components/dashboard/GameActions";
 
+export const dynamic = "force-dynamic";
+
 export default async function DashboardHomePage() {
-  const { supabase } = await requireAdmin();
+  const session = await requireExpert();
+
+  // ── Coach branch (Phase 8) ───────────────────────────────────
+  if (!session.isAdmin) {
+    return (
+      <div className="mx-auto max-w-6xl">
+        <CoachOverviewPanel expertId={session.user.id} />
+      </div>
+    );
+  }
+
+  // ── Admin branch (original games view) ───────────────────────
+  const admin = createServiceRoleClient();
+  if (!admin) {
+    return (
+      <div className="mx-auto max-w-6xl space-y-4">
+        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        <p className="text-muted-foreground text-sm">
+          Service role unavailable — check Supabase env vars.
+        </p>
+      </div>
+    );
+  }
 
   const [{ count: totalGames }, { count: totalQuestions }, { count: activeGames }] =
     await Promise.all([
-      supabase.from("games").select("*", { count: "exact", head: true }),
-      supabase.from("questions").select("*", { count: "exact", head: true }),
-      supabase
+      admin.from("games").select("*", { count: "exact", head: true }),
+      admin.from("questions").select("*", { count: "exact", head: true }),
+      admin
         .from("games")
         .select("*", { count: "exact", head: true })
         .eq("is_active", true),
     ]);
 
-  const { data: games } = await supabase
+  const { data: games } = await admin
     .from("games")
     .select("id, name_en, name_he, slug, is_active, created_at")
     .order("created_at", { ascending: false })

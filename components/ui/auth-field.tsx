@@ -52,13 +52,17 @@ export function AuthField({
 
   return (
     <div>
+      {/* Label per Itzik 2026-05-07: was text-xs uppercase white/40 —
+          unreadable. Bumped to 14px, sentence-case, fully white. The
+          "optional" hint is slightly muted (white/65) but still
+          legible. */}
       <label
         htmlFor={id}
-        className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-white/40"
+        className="flex items-center gap-1.5 text-[14px] font-semibold tracking-wide text-white"
       >
         {label}
         {optional && (
-          <span className="normal-case tracking-normal text-white/25">(אופציונלי)</span>
+          <span className="font-normal text-white/65">(אופציונלי)</span>
         )}
       </label>
 

@@ -60,9 +60,19 @@ export function LoginForm({ kicked = false, next }: Props) {
       transition={{ duration: 0.5, ease: "easeOut" }}
       className="w-full max-w-md"
     >
-      <div className="mb-8 text-center">
-        <span className="text-4xl font-black tracking-tight text-white drop-shadow-lg">mioshy</span>
-        <p className="mt-2 text-sm text-white/60">{t("loginTagline")}</p>
+      {/* Logo replaces the previous text "mioshy" lockup per Itzik
+          2026-05-07. The SVG is the official wordmark; same drop-shadow
+          treatment so the visual weight is preserved. */}
+      <div className="mb-8 flex flex-col items-center text-center">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/mioshy-white.svg"
+          alt="Mioshy"
+          width={171}
+          height={81}
+          className="h-14 w-auto drop-shadow-lg sm:h-16"
+        />
+        <p className="mt-3 text-[15px] text-white/70">{t("loginTagline")}</p>
       </div>
 
       {kicked && (
@@ -77,7 +87,7 @@ export function LoginForm({ kicked = false, next }: Props) {
 
       <AuthCard>
         <h1 className="text-2xl font-bold text-white">{t("loginTitle")}</h1>
-        <p className="mt-1 text-sm text-white/50">{t("loginSubtitle")}</p>
+        <p className="mt-1 text-[15px] text-white/85">{t("loginSubtitle")}</p>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <AuthField id="login_email"    label={t("emailLabel")}    type="email"    value={email}    onChange={setEmail}    autoComplete="email"            required placeholder={t("emailPlaceholder")} />
@@ -93,9 +103,21 @@ export function LoginForm({ kicked = false, next }: Props) {
           <AuthSubmitButton loading={isPending} label={t("signInButton")} loadingLabel={t("signingIn")} />
         </form>
 
-        <div className="mt-6 text-center text-sm text-white/50">
+        {/* Forgot-password link per Itzik 2026-05-07. Routes to a
+            dedicated /auth/forgot page that sends a reset link to
+            the user's email via Supabase auth.resetPasswordForEmail. */}
+        <div className="mt-4 text-center">
+          <Link
+            href="/auth/forgot"
+            className="text-[14px] font-medium text-white/85 underline-offset-4 hover:text-white hover:underline"
+          >
+            {t("forgotPassword")}
+          </Link>
+        </div>
+
+        <div className="mt-5 text-center text-[15px] text-white/85">
           {t("noAccount")}{" "}
-          <Link href={signupHref} className="text-fuchsia-300 underline underline-offset-4 hover:text-fuchsia-200">
+          <Link href={signupHref} className="font-semibold text-fuchsia-300 underline underline-offset-4 hover:text-fuchsia-200">
             {t("createFree")}
           </Link>
         </div>

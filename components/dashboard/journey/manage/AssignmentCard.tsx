@@ -49,7 +49,7 @@ export interface AssignmentCardItem {
 export interface AssignmentCardSourceRef {
   kind: "program" | "category" | "item" | "cadence";
   label: string;
-  /** Cadence assignments don't have a catalog page to link out to —
+  /** Cadence assignments don't have a catalog page to link out to -
    *  href can be null and the card renders the label without a link. */
   href: string | null;
 }
@@ -74,7 +74,7 @@ function sourceIcon(kind: AssignmentCardSourceRef["kind"]) {
   if (kind === "program") return Sparkles;
   if (kind === "category") return FolderOpen;
   // 'item' and 'cadence' both render as a leaf (cadence is a per-user
-  // engine container, not a catalog row — visually it's still a flat
+  // engine container, not a catalog row - visually it's still a flat
   // list of items).
   return FileText;
 }
@@ -181,7 +181,7 @@ export function AssignmentCard({
                   <ExternalLink className="text-muted-foreground/0 group-hover:text-muted-foreground size-3 opacity-0 transition-opacity group-hover:opacity-100" />
                 </Link>
               ) : (
-                // Cadence rows have no catalog page to link out to —
+                // Cadence rows have no catalog page to link out to -
                 // render the label without a link so the cell still
                 // shows the source identity.
                 <span className="inline-flex max-w-[28ch] items-center gap-1 truncate font-semibold">

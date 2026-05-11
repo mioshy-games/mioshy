@@ -55,14 +55,23 @@ export function SignupForm({ next }: Props) {
       transition={{ duration: 0.5, ease: "easeOut" }}
       className="w-full max-w-md"
     >
-      <div className="mb-8 text-center">
-        <span className="text-4xl font-black tracking-tight text-white drop-shadow-lg">mioshy</span>
-        <p className="mt-2 text-sm text-white/60">{t("signupTagline")}</p>
+      {/* Logo replaces the previous text "mioshy" lockup per Itzik
+          2026-05-07. Same SVG and treatment as LoginForm. */}
+      <div className="mb-8 flex flex-col items-center text-center">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/mioshy-white.svg"
+          alt="Mioshy"
+          width={171}
+          height={81}
+          className="h-14 w-auto drop-shadow-lg sm:h-16"
+        />
+        <p className="mt-3 text-[15px] text-white/70">{t("signupTagline")}</p>
       </div>
 
       <AuthCard>
         <h1 className="text-2xl font-bold text-white">{t("signupTitle")}</h1>
-        <p className="mt-1 text-sm text-white/50">{t("signupSubtitle")}</p>
+        <p className="mt-1 text-[15px] text-white/85">{t("signupSubtitle")}</p>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <AuthField id="signup_name"     label={t("nameLabel")}     value={fullName} onChange={setFullName} autoComplete="name"         required placeholder={t("namePlaceholder")} />
@@ -83,15 +92,19 @@ export function SignupForm({ next }: Props) {
           <AuthSubmitButton loading={isPending} label={t("createAccountButton")} loadingLabel={t("creatingAccount")} />
         </form>
 
-        <p className="mt-4 text-center text-xs text-white/30">
+        {/* Per Itzik 2026-05-07: terms text was tiny (xs / white/30)
+            and the inline links collided with the Hebrew text because
+            of missing spaces. Bumped to 14px / white/75 + spacing
+            fixed in i18n keys. */}
+        <p className="mt-5 text-center text-[14px] leading-[1.6] text-white/75">
           {t("termsPrefix")}
-          <Link href="/terms" className="underline underline-offset-4 hover:text-white/60">{t("terms")}</Link>
+          <Link href="/terms" className="font-medium text-white underline underline-offset-4 hover:text-fuchsia-200">{t("terms")}</Link>
           {t("termsSep")}
-          <Link href="/privacy" className="underline underline-offset-4 hover:text-white/60">{t("privacy")}</Link>
+          <Link href="/privacy" className="font-medium text-white underline underline-offset-4 hover:text-fuchsia-200">{t("privacy")}</Link>
           {t("termsSuffix")}
         </p>
 
-        <div className="mt-4 text-center text-sm text-white/50">
+        <div className="mt-5 text-center text-[15px] text-white/85">
           {t("hasAccount")}{" "}
           <Link href={loginHref} className="text-fuchsia-300 underline underline-offset-4 hover:text-fuchsia-200">
             {t("signInLink")}

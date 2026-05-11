@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * AssessmentEditor — admin/clinician surface for converting a
+ * AssessmentEditor - admin/clinician surface for converting a
  * journey_items row into a structured assessment. Phase 3 step 3.
  *
  * MVP version:
@@ -26,7 +26,11 @@ import type {
   JourneyAssessmentPayload,
 } from "@/lib/journey-content/types";
 import { AssessmentItemForm } from "@/components/my/AssessmentItemForm";
-import { AssessmentVisualBuilder } from "./AssessmentVisualBuilder";
+import {
+  AssessmentVisualBuilder,
+  ValidationSummary,
+  validateAssessmentPayload,
+} from "./AssessmentVisualBuilder";
 import { HintIcon } from "@/components/ui/hint-icon";
 
 type EditorMode = "visual" | "json";
@@ -36,7 +40,7 @@ type Kind = JourneyItemKind;
 const TEMPLATE_ASSESSMENT: JourneyAssessmentPayload = {
   version: 1,
   intro_he:
-    "אבחון קצר לבחינת מצב הקשר — אורך כ-3 דקות. אין תשובה נכונה.",
+    "אבחון קצר לבחינת מצב הקשר - אורך כ-3 דקות. אין תשובה נכונה.",
   questions: [
     {
       id: "freq_connect",
@@ -147,7 +151,7 @@ export function AssessmentEditor({
           setVisualPayload(null);
         }
       } catch {
-        // If JSON is broken we keep the previous visualPayload — the
+        // If JSON is broken we keep the previous visualPayload - the
         // user can fix it in JSON view first.
       }
     }
@@ -180,9 +184,18 @@ export function AssessmentEditor({
     });
   };
 
+  // Phase 5 V2 — block save when the visual payload has validation
+  // issues. JSON mode trusts the JSON; visual mode runs the structured
+  // check. Content mode never validates (no payload).
+  const validationIssues =
+    kind === "content" || mode !== "visual"
+      ? []
+      : validateAssessmentPayload(parsed.payload);
+
   const canSave =
     !pending &&
-    (kind === "content" || (parsed.payload !== null && !parsed.error));
+    (kind === "content" || (parsed.payload !== null && !parsed.error)) &&
+    validationIssues.length === 0;
 
   return (
     <section className="rounded-2xl border border-border bg-card/30 p-5">
@@ -212,7 +225,7 @@ export function AssessmentEditor({
           disabled={pending}
           className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
         >
-          <option value="content">content (default — body / video)</option>
+          <option value="content">content (default - body / video)</option>
           <option value="assessment">assessment (structured questions)</option>
           <option value="reflection">reflection (single open prompt)</option>
         </select>
@@ -239,7 +252,7 @@ export function AssessmentEditor({
               Load reflection template
             </button>
 
-            {/* Mode toggle — Visual is the friendly default */}
+            {/* Mode toggle - Visual is the friendly default */}
             <div className="ms-auto inline-flex overflow-hidden rounded-full border border-border">
               <button
                 type="button"
@@ -298,6 +311,13 @@ export function AssessmentEditor({
             )}
           </div>
 
+          {/* Phase 5 V2 — validation summary (visual mode only) */}
+          {mode === "visual" ? (
+            <div className="mt-4">
+              <ValidationSummary issues={validationIssues} />
+            </div>
+          ) : null}
+
           {/* Live preview */}
           {parsed.payload ? (
             <div className="mt-5">
@@ -312,7 +332,7 @@ export function AssessmentEditor({
                 />
               </div>
               <p className="mt-2 text-[11px] italic text-muted-foreground">
-                Preview is live — submitting it would write to a fake
+                Preview is live - submitting it would write to a fake
                 scheduled-item id and silently fail RLS. This is intentional.
               </p>
             </div>

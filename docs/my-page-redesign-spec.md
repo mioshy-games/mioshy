@@ -1,25 +1,25 @@
-# /my Page Redesign — Spec & Implementation Plan
+# /my Page Redesign - Spec & Implementation Plan
 
-**Status**: MVP scope locked — 3-day build
+**Status**: MVP scope locked - 3-day build
 **Owner**: itzik
 **Last updated**: 2026-05-01
 
-## 0. MVP — the 3-day plan (LOCKED)
+## 0. MVP - the 3-day plan (LOCKED)
 
 > **One sentence**: turn a noisy dashboard into a clear coaching path
-> — without building a new system underneath.
+> - without building a new system underneath.
 >
 > **Hard rules for the MVP**:
 > - **No DB migrations**. Use only the schema we already have.
 > - **No clinician / admin features**. No Inbox, no "view as user".
 > - **No notifications system**. No sparkles, no toasts, no dots.
 > - **No analytics, no KPIs**. Just ship the visual change.
-> - **Journey only**. Games and Adults stay simple — they get the
+> - **Journey only**. Games and Adults stay simple - they get the
 >   open/locked badge and nothing else.
 
-### Day 1 — "Clear statuses"
+### Day 1 - "Clear statuses"
 
-1. **Pillars** — add a single state badge to each card. One of:
+1. **Pillars** - add a single state badge to each card. One of:
    - 🔓 פתוח
    - ⏳ בתהליך
    - 🔒 לא נרכש
@@ -27,7 +27,7 @@
    Implementation: replace the leading emoji icon with the badge.
    Don't touch the entitlement / billing logic.
 
-2. **Journey CTA** — 3 derived labels:
+2. **Journey CTA** - 3 derived labels:
    - assessment not started → "להתחיל אבחון"
    - assessment in progress → "להמשיך"
    - assessment completed → "כניסה לליווי עם מיאושי"
@@ -35,12 +35,12 @@
    Implementation: a derived label inside `EntitledPillar` and the
    marketing-mode `ServicePanel`. No state machine, no new tables.
 
-3. **Games card flashing fix** — find the offending element in dev
+3. **Games card flashing fix** - find the offending element in dev
    tools, remove the `animate-pulse` / overlay. One commit.
 
-### Day 2 — "Process feeling"
+### Day 2 - "Process feeling"
 
-4. **Static rail above the pillar grid** — exactly six pills,
+4. **Static rail above the pillar grid** - exactly six pills,
    left-to-right (or right-to-left in RTL):
 
    ```
@@ -64,23 +64,23 @@
      the rail is purely a sense-of-progression UI, not a content
      scheduler.
 
-### Day 3 — "Order & cleanliness"
+### Day 3 - "Order & cleanliness"
 
-6. **Bottom tabs** — three tabs: נעשה · פעיל עכשיו · בדרך.
+6. **Bottom tabs** - three tabs: נעשה · פעיל עכשיו · בדרך.
    - Filtered locally on the client from data the page already has.
    - No new fetches, no status engine.
    - Day-1 version: read from the existing `getTimelineForOwner`
      helper. If it returns nothing yet, the tab body is a quiet
-     "אין עדיין כלום באזור הזה" caption — never an error.
+     "אין עדיין כלום באזור הזה" caption - never an error.
 
 7. **UI cleanup**:
    - Remove marketing voice strings on the dashboard ("מגניב!",
      game-style copy on Journey card, etc.). Tone moves toward
      calm/professional everywhere on Journey. Games and Adults
-     stay light — but no exclamation marks.
+     stay light - but no exclamation marks.
    - Unify RTL spacing on the new components.
    - Remove the diagnostic `console.log("[/my] DEBUG", ...)` block
-     and `[/my] PILLAR DECISIONS` log — they were for the billing
+     and `[/my] PILLAR DECISIONS` log - they were for the billing
      debug session, not production code.
 
 ### What we are NOT doing in MVP (worth saying out loud)
@@ -93,7 +93,7 @@
 - ❌ Sync between admin's calendar and user's rail
 - ❌ Per-user dynamic timelines (synthetic days from registration)
 
-These are all in **Part II** of this document — the roadmap for
+These are all in **Part II** of this document - the roadmap for
 later phases.
 
 ### What you ship at end of day 3
@@ -107,22 +107,22 @@ That's the MVP.
 
 ---
 
-## 0.5 Future direction — multiple assessments (Phase 2)
+## 0.5 Future direction - multiple assessments (Phase 2)
 
 The user said clearly: "the journey isn't only about the initial
 assessment. We will add **more** assessments that admins assign to
 clients, and the client responds, and we see in their account the
 tools they got and what's coming and arrange everything together."
 
-This document already accommodates this — the rail and tabs treat
+This document already accommodates this - the rail and tabs treat
 "assessment" as just one type of journey item. To enable multiple
 assessments later, we will:
 
 1. Add an `assessment` discriminator on `journey_items` (or use the
-   existing `task_he` / response model — TBD).
+   existing `task_he` / response model - TBD).
 2. The rail items naturally include any item with a "diagnostic" kind
    alongside content items.
-3. Admin tooling to author and assign new assessments — separate
+3. Admin tooling to author and assign new assessments - separate
    PR, post-MVP.
 
 The MVP doesn't need any of this. The architecture just doesn't
@@ -154,14 +154,14 @@ Visual problems on the live page today (from user feedback 2026-05-01):
 
 This document fixes all of the above.
 
-## 1.5 Tone & authority — ה-Journey הוא לא משחק
+## 1.5 Tone & authority - ה-Journey הוא לא משחק
 
 This is the most important part of the redesign and it shapes every
 visual choice below.
 
 When a user clicks into "ליווי עם מיאושי", they are crossing a threshold
 that matters. They've decided **the time has come to do something real**
-about their relationship — and that decision deserves a setting that
+about their relationship - and that decision deserves a setting that
 reflects it. Everything in the Journey surface (the card on `/my`, the
 rail above the cards, the tabs below, the `/my/journey` private space)
 should feel like **a clinical, expert-led program**:
@@ -179,7 +179,7 @@ should feel like **a clinical, expert-led program**:
 | Typography weight on titles | regular / semibold | semibold / bold + slightly larger leading |
 | Color accents | fuchsia / rose (warmth, fun) | cool teal / slate-blue (focus, trust) |
 | Iconography | playful (sparkles, hearts) | clinical (steady ✓, calendar, journal) |
-| Imagery | none | none — empty space is part of the calm |
+| Imagery | none | none - empty space is part of the calm |
 | Animation | hover-scale, color pulses | static, no motion. Only state changes. |
 | Microcopy verbs | "לגלות", "להתחיל לשחק" | "להמשיך", "לפתוח", "לקרוא", "לרשום" |
 | What it should remind users of | a curated app store | a therapist's journal / case file |
@@ -195,9 +195,9 @@ Examples that pass:
 
 Examples that **fail** the tone (rewrite required):
 
-> ✗ "מגניב! יש לך 3 דברים חדשים 🎉" — too playful
-> ✗ "תפוס את ההזדמנות עכשיו!" — sales pressure
-> ✗ "התחל את ההרפתקה שלך" — game framing
+> ✗ "מגניב! יש לך 3 דברים חדשים 🎉" - too playful
+> ✗ "תפוס את ההזדמנות עכשיו!" - sales pressure
+> ✗ "התחל את ההרפתקה שלך" - game framing
 
 When in doubt, ask: "would a clinical-psychology practice send this
 sentence to a client?" If no, rewrite.
@@ -207,7 +207,7 @@ sentence to a client?" If no, rewrite.
 The reassurance line under the rail (was generic) becomes:
 
 > "אנחנו עובדים על התובנות האישיות שלכם. כל פגישה כאן בנויה על
-> התשובות שלך — הן מטופלות ביד מקצועית. אין הפתעות, אין מסחר. רק
+> התשובות שלך - הן מטופלות ביד מקצועית. אין הפתעות, אין מסחר. רק
 > תוכן שנכתב במיוחד עבורכם."
 
 This explicitly does three things:
@@ -215,7 +215,7 @@ This explicitly does three things:
 2. Promises calm, not surprise (אין הפתעות).
 3. Disowns the marketing register (אין מסחר).
 
-### Visual mood — the surface itself
+### Visual mood - the surface itself
 
 The Journey-specific surfaces use a different ambient treatment than
 the rest of the dashboard:
@@ -225,7 +225,7 @@ the rest of the dashboard:
 games  panel  → bg-white/[0.04] over the global gradient backdrop
 adults panel  → bg-white/[0.04] over the global gradient backdrop
 
-/* Journey panels get a deeper, cooler glass — feels like entering
+/* Journey panels get a deeper, cooler glass - feels like entering
    a quieter room within the same building */
 journey panel → bg-slate-950/40 border border-slate-300/[0.08]
                 backdrop-blur-md ring-1 ring-inset ring-white/[0.02]
@@ -239,7 +239,7 @@ walked into a different mode without us shouting.
 Stop calling the Journey card "ליווי" by itself. The full name on the
 card title is:
 
-> **ליווי עם מיאושי** — *תוכנית עבודה אישית*
+> **ליווי עם מיאושי** - *תוכנית עבודה אישית*
 
 The subtitle ("תוכנית עבודה אישית") is small, white/55, sits directly
 under the main title. It positions the offering as a program, not a
@@ -252,7 +252,7 @@ feature.
 ### Goals
 
 - Every pillar card communicates its state visually (open / locked /
-  not-purchased) using a clear badge — no decoding required.
+  not-purchased) using a clear badge - no decoding required.
 - A dedicated **journey rail** between the title and the pillar cards
   showing 4 upcoming milestones for users who registered (2 days, 6
   days, 10 days, 14 days), even before admin content is assigned.
@@ -265,11 +265,11 @@ feature.
 - Building a new admin tool to add content. Current admin
   (`/[locale]/dashboard/admin/...`) is reused as-is. We only sync to it.
 - Push notifications / emails when a milestone unlocks. The
-  `notify-unlocks` cron is already running — this PR is UI only.
+  `notify-unlocks` cron is already running - this PR is UI only.
 - Changing the entitlement / billing logic. Pillar visibility rules
   stay the same (`getUserEntitlements`).
 
-## 3. States — the four pillar states
+## 3. States - the four pillar states
 
 Every pillar card on `/my` is in exactly **one** of these states. The
 state determines the badge, the CTA copy, and the click behavior.
@@ -277,24 +277,24 @@ state determines the badge, the CTA copy, and the click behavior.
 | State | When | Badge | Card body | CTA |
 |---|---|---|---|---|
 | **OPEN** | User has active subscription/entitlement, content is ready | 🔓 *פתוח עבורך* (emerald) | what's inside in plain language | "כניסה" → live route |
-| **IN_PROGRESS** | User has access but isn't done yet (assessment started, not completed) | ⏳ *באמצע מסלול* (amber) | "המשך מהמקום שעצרת" — never "התחל" | "להמשיך" → resume route |
+| **IN_PROGRESS** | User has access but isn't done yet (assessment started, not completed) | ⏳ *באמצע מסלול* (amber) | "המשך מהמקום שעצרת" - never "התחל" | "להמשיך" → resume route |
 | **NOT_PURCHASED** | Logged-in user that hasn't bought this pillar | 🔒 *עדיין לא רכשת* (zinc) | brief tagline | "לגלות" → marketing |
 
-> **Important — what we removed**: an earlier draft had a fourth pillar
+> **Important - what we removed**: an earlier draft had a fourth pillar
 > state "COMING_SOON". We removed it because **every pillar we ship is
 > available** (Games, Journey, Adults). Putting "בקרוב" on a pillar the
 > user can buy right now is misleading. "בקרוב" only ever appears on
-> **individual content items inside the Journey rail** — never on the
+> **individual content items inside the Journey rail** - never on the
 > three pillar cards themselves.
 
 ### Badge rules (tokens)
 
 ```css
-/* Tailwind utility shorthand — verbatim copy-paste */
+/* Tailwind utility shorthand - verbatim copy-paste */
 OPEN          → bg-emerald-500/15 text-emerald-300 border border-emerald-400/30
 IN_PROGRESS   → bg-amber-400/15   text-amber-200   border border-amber-300/30
 NOT_PURCHASED → bg-white/5        text-white/60    border border-white/10
-/* For rail items only — see §4 */
+/* For rail items only - see §4 */
 ITEM_LOCKED   → bg-slate-500/10   text-slate-300   border border-slate-400/20
 ```
 
@@ -306,7 +306,7 @@ Current code has emoji icons (🎮, 🧭, 💜) in the pillar header. Per user
 spec §1, replace these with the state badge above the title. The icon
 real-estate becomes the badge real-estate. Cleaner, communicates state.
 
-## 4. The journey rail — "what's coming"
+## 4. The journey rail - "what's coming"
 
 This is the core new component. **Goal**: never show an empty Journey
 card again.
@@ -326,7 +326,7 @@ is ~190px wide. RTL-aware.
 
 **Critical**: pills NEVER show specific calendar dates ("ב-3 במאי"
 etc.) for content the user hasn't reached yet. The journey is a
-multi-month, individualized path — promising specific dates when the
+multi-month, individualized path - promising specific dates when the
 clinician hasn't decided yet would erode trust the moment a date
 shifts. Locked pills say "**ייפתח בהמשך**" or, when the admin has
 already set a `display_at` date in the next 7 days, "**ייפתח בקרוב**".
@@ -341,7 +341,7 @@ That's it. Never a specific date.
 | `coming_soon` (within 7 days) | `Clock` | amber | tooltip with general timeframe | "ייפתח בקרוב" |
 | `planned` (more than 7 days, or admin hasn't fixed a date) | dimmed dot `•` | slate | inert tooltip | "ייפתח בהמשך" |
 
-### Timeline source — admin-driven, not synthetic
+### Timeline source - admin-driven, not synthetic
 
 **Revised from earlier draft.** I'm killing the "synthetic timeline
 based on registration date" idea. It's tempting but wrong: it makes
@@ -380,7 +380,7 @@ for any user who's logged in:
 
 > אבחון ראשוני · תקשורת זוגית · מיניות ואינטימיות · אהבה וחיבור רגשי · חברות ושותפות יומיומית · משפחה הורות ולחצים פנימיים
 
-This isn't fake. These six topics ARE the program — admins are pre-
+This isn't fake. These six topics ARE the program - admins are pre-
 authorising us to show them. Item bodies/dates are filled in by the
 clinical team for each individual user as they get to know them.
 
@@ -389,7 +389,7 @@ clinical team for each individual user as they get to know them.
 Below the rail (small caption-text, white/60):
 
 > "המומחים שלנו עובדים על התשובות שלך. בכל שלב נעלה לך תוכן אישי
-> חדש. אין הפתעות — אנחנו כאן."
+> חדש. אין הפתעות - אנחנו כאן."
 
 This line explicitly addresses the user's request: "they need to know
 that experts are working on their answers".
@@ -435,7 +435,7 @@ function journeyCtaLabel(args: {
 
 **Notes**:
 
-- "להתחיל אבחון אישי" replaced "להתחיל אבחון חינם" — we don't lead
+- "להתחיל אבחון אישי" replaced "להתחיל אבחון חינם" - we don't lead
   with the price tag on the dashboard. The price was a marketing
   hook on `/journey`; here we're past that.
 - `in_progress` users get welcomed back, never asked to "start". This
@@ -485,7 +485,7 @@ record the class names. Then:
 - If presence dot: move it to `bottom-2 left-2` and make it muted
   (`bg-emerald-400/40` not `bg-white`).
 
-Phase B for this — needs reproduction. We instrument first, fix
+Phase B for this - needs reproduction. We instrument first, fix
 second. (Spec §10.4.)
 
 ## 7. The "work-tool" lower section
@@ -497,28 +497,28 @@ tabbed work-area with three tabs:
 [ ✓ נעשה ]  [ ▶ פעיל עכשיו ]  [ ⏳ בדרך ]
 ```
 
-### Tab 1 — נעשה ("Done")
+### Tab 1 - נעשה ("Done")
 
 List of items the user has completed (`journey_item_completions`),
 ordered by `completed_at desc`. Each row: title + date + small "↩
 לחזור" link to revisit.
 
-### Tab 2 — פעיל עכשיו ("Active")
+### Tab 2 - פעיל עכשיו ("Active")
 
 Items where `unlock_at <= now AND no completion row`. These are
 "available". Click goes straight into the item.
 
-### Tab 3 — בדרך ("Upcoming")
+### Tab 3 - בדרך ("Upcoming")
 
 Items where `unlock_at > now`. Show countdown (X days, Y hours).
-Click does nothing — disabled state with tooltip showing the unlock
+Click does nothing - disabled state with tooltip showing the unlock
 date.
 
 Visual: dark glass card (`bg-white/[0.035] border border-white/10
 backdrop-blur-md`), one tab active at a time, tab buttons same style
 as the badge tokens above.
 
-## 8. Admin sync — what's the contract
+## 8. Admin sync - what's the contract
 
 The user wants to ensure that "what the admin adds shows up". This is
 **already wired** through `journey_assignments` →
@@ -541,31 +541,31 @@ QA. Gated on `system_admins`. (Phase D.)
 
 | Decision | Why |
 |---|---|
-| Synthetic rail when no assignments | "Never empty" — user explicitly asked for a sense of progression even before admin attaches anything. |
+| Synthetic rail when no assignments | "Never empty" - user explicitly asked for a sense of progression even before admin attaches anything. |
 | Cadence: 0/2/6/10/14 days | Matches user spec ("first in 2 days, then every 4 days") with day-0 anchored on registration. |
 | Badge replaces emoji icon | User said "במקום האייקונים מעל הכותרת". |
 | Tabs (done/active/upcoming) replace footer links | Page becomes a work tool, not a settings page. |
 | No localStorage for tab selection | Server-rendered page; default tab = "פעיל עכשיו". |
-| Reuse existing entitlement / status helpers | They work — we only redress the UI. |
+| Reuse existing entitlement / status helpers | They work - we only redress the UI. |
 
 ## 10. Implementation phases
 
-### Phase A — Spec sign-off (this document)
+### Phase A - Spec sign-off (this document)
 
 ✅ → User reviews this file and confirms the four states + the rail
 cadence + the CTA copy rules.
 
-### Phase B — Quick wins (1-2 hours)
+### Phase B - Quick wins (1-2 hours)
 
-- B.1 Smart CTA copy on Journey card — code in §5 above.
-- B.2 Replace emoji icons with state badges — code in §3 above.
-- B.3 Investigate + fix flashing white on Games card — instrument
+- B.1 Smart CTA copy on Journey card - code in §5 above.
+- B.2 Replace emoji icons with state badges - code in §3 above.
+- B.3 Investigate + fix flashing white on Games card - instrument
   first (browser dev tools) then fix.
 
 These are isolated to `/my/page.tsx` and `EntitledPillar`. No new
 queries.
 
-### Phase C — Journey rail (3-5 hours)
+### Phase C - Journey rail (3-5 hours)
 
 - C.1 New component `components/my/JourneyRail.tsx` with:
   - props: `entries: RailEntry[]`, `mode: 'synthetic' | 'real'`,
@@ -578,32 +578,32 @@ queries.
 
 No DB changes, no migrations.
 
-### Phase D — Work-tool tabs (4-6 hours)
+### Phase D - Work-tool tabs (4-6 hours)
 
 - D.1 New component `components/my/JourneyWorkArea.tsx` with three
   tabs (§7).
 - D.2 Server-side tab data: pull completions, available items, upcoming
   items via `getTimelineForOwner` (already exists).
-- D.3 "View as user" admin shortcut — Phase D-2 separately.
+- D.3 "View as user" admin shortcut - Phase D-2 separately.
 
-### Phase E — Polish & QA
+### Phase E - Polish & QA
 
-- E.1 RTL audit — every new component tested in `dir="rtl"`.
-- E.2 Mobile layout — rail becomes a horizontal carousel
+- E.1 RTL audit - every new component tested in `dir="rtl"`.
+- E.2 Mobile layout - rail becomes a horizontal carousel
   (`overflow-x-auto snap-x`).
-- E.3 Empty / failure states — every fetch has a fallback that doesn't
+- E.3 Empty / failure states - every fetch has a fallback that doesn't
   break the layout.
-- E.4 Dark/light contrast — WCAG AA on every badge.
+- E.4 Dark/light contrast - WCAG AA on every badge.
 
 ## 11. Files we'll touch
 
 ```
-app/[locale]/my/page.tsx               (modify — add rail + work-area, smart CTA)
+app/[locale]/my/page.tsx               (modify - add rail + work-area, smart CTA)
 components/my/JourneyRail.tsx          (NEW)
 components/my/JourneyWorkArea.tsx      (NEW)
-components/my/PillarBadge.tsx          (NEW — extracted from EntitledPillar)
+components/my/PillarBadge.tsx          (NEW - extracted from EntitledPillar)
 lib/journey-content/synthetic-rail.ts  (NEW)
-lib/journey-content/owner-status.ts    (modify — also return `hasAssessmentCompleted`)
+lib/journey-content/owner-status.ts    (modify - also return `hasAssessmentCompleted`)
 ```
 
 No DB migrations. No new tables. No env-var changes.
@@ -616,7 +616,7 @@ A reviewer should be able to verify each of these on staging:
 - [ ] User who paid for Journey but never took the assessment sees: rail
       with day 0 in `available` state ("התחל אבחון"), days 2/6/10/14 locked.
 - [ ] User who finished assessment, no admin content yet: rail is in
-      synthetic mode showing "התובנות הראשונות שלך — בעוד 2 ימים", and
+      synthetic mode showing "התובנות הראשונות שלך - בעוד 2 ימים", and
       so on. Footer reassurance line is visible.
 - [ ] After admin attaches a program (test seed): rail switches to real
       content, dates align with `unlock_at` from `journey_scheduled_items`.
@@ -630,7 +630,7 @@ When all 9 are ✅, we ship.
 
 ---
 
-# Part II — Roadmap (post-MVP)
+# Part II - Roadmap (post-MVP)
 
 > **Important**: nothing in Part II is in the MVP scope (§0). These
 > sections are the **target architecture** we're building toward over
@@ -643,12 +643,12 @@ are what eventually makes this a SaaS, not a website: data contracts,
 state machines, edge cases, performance, observability, and the
 clinician side. They're for **Phase 2** and beyond.
 
-## 13. Data contract — single source of truth per state
+## 13. Data contract - single source of truth per state
 
 For every UI state you see on `/my`, there is **exactly one** SQL
 function that derives it. UI never invents state. If the page renders
 a badge as "OPEN", it's because `viewer_state(user, pillar)` returned
-the literal string `'open'` — nothing more, nothing less.
+the literal string `'open'` - nothing more, nothing less.
 
 ### 13.1 The pillar state function
 
@@ -678,7 +678,7 @@ This is a pure function. Tested with table-driven unit tests. **Every
 caller** of pillar state goes through this function. We delete every
 `if (entitlements.X) { ... } else { ... }` ad-hoc branch elsewhere.
 
-### 13.2 Journey rail entries — the link table
+### 13.2 Journey rail entries - the link table
 
 We need a new lightweight table to represent "this category is on
 this user's plan, even if items haven't been materialized yet".
@@ -710,7 +710,7 @@ create index on public.journey_user_planned_categories (display_at)
 
 alter table public.journey_user_planned_categories enable row level security;
 
--- service role only — admins write, scheduler reads
+-- service role only - admins write, scheduler reads
 create policy "planned categories: service_role full access"
   on public.journey_user_planned_categories
   for all to service_role using (true) with check (true);
@@ -727,7 +727,7 @@ create policy "planned categories: viewer reads own"
   );
 ```
 
-**On signup trigger** — the existing `assignJourneyOnPurchase` flow
+**On signup trigger** - the existing `assignJourneyOnPurchase` flow
 already creates the right `journey_assignments`. We extend it to also
 seed the planned-categories table with the six standard topics so
 the rail is populated from minute one (§4).
@@ -823,21 +823,21 @@ The CTA logic in §5 is the SURFACE of this state machine. Every label
 choice maps to exactly one state. If we ever add a new state, we add
 exactly one new arm to `journeyCtaLabel`. No drift.
 
-## 15. Edge cases — exhaustive list
+## 15. Edge cases - exhaustive list
 
 | # | Case | Handling |
 |---|---|---|
-| 15.1 | User has no `created_at` (auth row corrupted) | Rail still renders — synthetic anchor falls back to `now()`. Log incident to `journey_state_anomalies`. |
+| 15.1 | User has no `created_at` (auth row corrupted) | Rail still renders - synthetic anchor falls back to `now()`. Log incident to `journey_state_anomalies`. |
 | 15.2 | User in non-IL timezone | All timestamps stored UTC. UI renders relative ("ייפתח בעוד 3 ימים"), never localized DD/MM. Dates shown only in detail view, formatted to user's `Accept-Language`. |
 | 15.3 | User had old "journey" subscription, switched to new program | `journey_assignments` are scoped per-user; old ones are simply deactivated (`is_active=false`). Rail filters by `is_active`. |
 | 15.4 | Admin adds item mid-program | Materializer creates a `journey_scheduled_item` with `unlock_at`. If `unlock_at <= now()`, sparkle on user's next visit. If future, slots into rail as `coming_soon`. |
 | 15.5 | Partial entitlement (paid Games only) | Each pillar evaluates independently; no cross-pillar coupling. Journey rail only renders if user has Journey entitlement; otherwise it's hidden entirely. |
-| 15.6 | User deleted then re-signed up | `auth.users.id` changes — new row, new state. Old `journeys`/`journey_assignments` rows have FK with ON DELETE CASCADE, so they vanish. Fresh start. |
+| 15.6 | User deleted then re-signed up | `auth.users.id` changes - new row, new state. Old `journeys`/`journey_assignments` rows have FK with ON DELETE CASCADE, so they vanish. Fresh start. |
 | 15.7 | Couple separated (one partner removed) | `couple_id` retained, removed partner's view falls back to `user_id`-scoped state. Their rail entries become solo. |
-| 15.8 | Admin deletes a category | Cascades to `journey_user_planned_categories` and `journey_scheduled_items`. Rail re-renders without that pill. No error toast — silent. |
+| 15.8 | Admin deletes a category | Cascades to `journey_user_planned_categories` and `journey_scheduled_items`. Rail re-renders without that pill. No error toast - silent. |
 | 15.9 | Two devices open simultaneously | Both fetch independently. State is read-only on the user side; no conflict. Sparkle dedupe via `notified_at` column on `journey_scheduled_items` (already exists from migration 036). |
 | 15.10 | `notified_at` updated by one tab, other tab still shows sparkle | Acceptable. Sparkle is a one-shot animation on page load; if it plays once on either tab, mission accomplished. |
-| 15.11 | Admin sets `display_at` to a date in the past | Treat as "now" — pill becomes `available` immediately on next page load. |
+| 15.11 | Admin sets `display_at` to a date in the past | Treat as "now" - pill becomes `available` immediately on next page load. |
 | 15.12 | Admin uses a category that has zero items | Pill renders as `planned`, click is inert. Tooltip: "התוכן בהכנה." |
 | 15.13 | Subscription cancelled mid-rail | All future unlocks halt. Rail entries freeze at their last state. User sees a banner: "המנוי שלך פג. כדי להמשיך את המסע, יש לחדש." |
 | 15.14 | Rail query times out | Render skeleton for 3 s, then a quiet "טוענים את התוכן שלכם…" line. After 10 s, render the rail collapsed with a "Try again" link. |
@@ -858,7 +858,7 @@ exactly one new arm to `journeyCtaLabel`. No drift.
 
 - `getUserEntitlements`: already memoized per request via `cache()`.
 - `getOwnerJourneyStatus`: same.
-- `buildRailForOwner`: SAME — wrap in `cache()` so multiple components
+- `buildRailForOwner`: SAME - wrap in `cache()` so multiple components
   on the same page share one fetch.
 
 No HTTP-level caching (`revalidate`); per-user data with personal
@@ -892,9 +892,9 @@ drift across pages.
 
 ```
 components/ui/
-├─ StateBadge.tsx       (§3 — exhaustive variants)
+├─ StateBadge.tsx       (§3 - exhaustive variants)
 ├─ Pillar.tsx           (the dark glass card primitive)
-├─ JourneyRailPill.tsx  (§4 — single rail item)
+├─ JourneyRailPill.tsx  (§4 - single rail item)
 ├─ NotificationDot.tsx  (§22)
 ├─ SparkleBurst.tsx     (§22)
 └─ ResponseBox.tsx      (§21)
@@ -911,7 +911,7 @@ components/ui/
   description="…"
   cta={{ label, href, variant: "primary" | "ghost" }}
   notificationCount={3}                   // optional
-  // Journey only — composes the rail INSIDE the card on mobile
+  // Journey only - composes the rail INSIDE the card on mobile
   embedded={<JourneyRailMobile entries={...} />}
 />
 ```
@@ -963,7 +963,7 @@ Idempotent. Safe to re-run.
 ### 18.2 In-flight users
 
 Users mid-assessment OR with an active assignment **see no change in
-behavior** on day 1 — the rail merges existing scheduled items with
+behavior** on day 1 - the rail merges existing scheduled items with
 the new planned categories. The only new visual is the rail; nothing
 about `/my/journey` itself changes.
 
@@ -1016,7 +1016,7 @@ small fixed overlay at the bottom-right:
 │ pillar.journey: in_progress            │
 │ rail.mode: planned_only                │
 │ rail.entries: 6 (0 available, 0 next)  │
-│ next unlock: —                         │
+│ next unlock: -                         │
 │ render_ms: 412                         │
 └────────────────────────────────────────┘
 ```
@@ -1040,7 +1040,7 @@ create table public.journey_state_anomalies (
 Any time `derivePillarState` falls into a default branch it shouldn't,
 or `buildRailForOwner` sees inconsistent data, we insert a row here.
 A daily cron emails the on-call clinician an aggregate. This is the
-"smoke detector" of the SaaS — silent in success, loud in failure.
+"smoke detector" of the SaaS - silent in success, loud in failure.
 
 ## 20. Admin / clinician workflow
 
@@ -1049,7 +1049,7 @@ coaches. The admin surface must let them work fast: read clients,
 respond to clients, schedule content. Today the admin is at
 `/[locale]/dashboard/admin/...`. We expand it.
 
-### 20.1 Client list — daily landing
+### 20.1 Client list - daily landing
 
 Top-level tab shows every client (or every couple) with a row per
 client. Columns:
@@ -1064,7 +1064,7 @@ client. Columns:
 Sortable by pending responses (default). The clinician's first job
 each morning is "who needs a reply?"
 
-### 20.2 Client detail — journey tab
+### 20.2 Client detail - journey tab
 
 Inside the client view, the Journey tab shows three columns:
 
@@ -1080,7 +1080,7 @@ The clinician composes the user's journey here. Drag a category from
 "Planned" to "Active Items"; choose items inside; set `unlock_at`.
 Save. The user's rail picks it up on next page load.
 
-### 20.3 Inbox — recent responses across all clients
+### 20.3 Inbox - recent responses across all clients
 
 A separate tab that is the **clinical heartbeat** of the app:
 real-time list of `journey_item_responses` rows from any client,
@@ -1124,7 +1124,7 @@ component, same UX:
 │ │                                             │ │
 │ └─────────────────────────────────────────────┘ │
 │                                                 │
-│ □ פרטי — רק אני והמלווה רואים                    │
+│ □ פרטי - רק אני והמלווה רואים                    │
 │                                       [שלח →]   │
 └─────────────────────────────────────────────────┘
 ```
@@ -1205,7 +1205,7 @@ limit 100;
 ### 22.3 Sparkle visual
 
 A 600 ms animation: 5 small white dots radiating from the center of
-the rail pill, fading out. Respects `prefers-reduced-motion` —
+the rail pill, fading out. Respects `prefers-reduced-motion` -
 motion-reduced users see a static `Sparkles` icon instead.
 
 ## 23. KPIs / definition of "shipped"
@@ -1234,10 +1234,10 @@ each with an owner and resolve before Phase D ships:
 | # | Question | Suggested default | Decide who |
 |---|---|---|---|
 | 24.1 | Are couple-level responses shown to both partners? | Yes if `is_private=false`, no otherwise | Product |
-| 24.2 | When a clinician marks a response "concerning", does the user know? | No — internal flag only | Product / Clinical |
+| 24.2 | When a clinician marks a response "concerning", does the user know? | No - internal flag only | Product / Clinical |
 | 24.3 | Do we show the rail to users on `cancelled` subscriptions? | Yes, frozen, with "renew" CTA on the pillar card | Product |
 | 24.4 | Mobile: rail above pillars, OR rail tucked inside the journey pillar card? | Above (consistent across breakpoints) | Design |
-| 24.5 | Internationalization — when do we ship the English version? | After the Hebrew version proves out (post-launch) | Product |
+| 24.5 | Internationalization - when do we ship the English version? | After the Hebrew version proves out (post-launch) | Product |
 | 24.6 | Is there a length cap on `response_text`? | 2000 chars, soft warning at 1500 | Product |
 | 24.7 | Should clinicians see auth user email in the Inbox? | Yes, clinicians have signed clinical-care agreements | Legal / Compliance |
 

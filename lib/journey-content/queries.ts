@@ -350,7 +350,7 @@ export async function getTimelineForOwner(args: {
   /** v3 slice 4: narrow the underlying assignments by source_kind.
    *  Pass ['cadence'] to fetch only the per-user cadence container's
    *  scheduled rows; pass ['program','category','item'] to fetch only
-   *  legacy v2 rows. /my/journey calls this twice — once per axis —
+   *  legacy v2 rows. /my/journey calls this twice - once per axis -
    *  and merges the entries by unlock_at. */
   sourceKinds?: Array<"program" | "category" | "item" | "cadence">;
   now?: Date;
@@ -375,7 +375,7 @@ export async function getTimelineForOwner(args: {
   if (sErr) throw new Error(sErr.message);
   let scheduled = (scheduledRows ?? []) as JourneyScheduledItem[];
 
-  // Audience filter — only relevant for couple-owned timelines.
+  // Audience filter - only relevant for couple-owned timelines.
   // 'both' is always shown; 'owner' / 'partner' rows show only to the
   // matching couple_member.role. Unknown role falls back to 'both' only.
   if (owner.kind === "couple") {
@@ -390,9 +390,24 @@ export async function getTimelineForOwner(args: {
 
   const itemIds = Array.from(new Set(scheduled.map((s) => s.item_id)));
   const scheduledIds = scheduled.map((s) => s.id);
+  // Migration 066 — collect rule ids in this batch so we can resolve
+  // them in one tiny lookup. Skips nulls (legacy unattributed rows).
+  const ruleIds = Array.from(
+    new Set(
+      scheduled
+        .map((s) => s.matched_by_rule_id)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  );
+  type RuleSlim = {
+    id: string;
+    slug: string;
+    rationale_he: string;
+    rationale_en: string;
+  };
 
-  // 3. Items + categories in parallel
-  const [itemsRes, completionsRes, responsesRes] = await Promise.all([
+  // 3. Items + completions + responses + rules in parallel
+  const [itemsRes, completionsRes, responsesRes, rulesRes] = await Promise.all([
     supabase.from("journey_items").select("*").in("id", itemIds),
     supabase
       .from("journey_item_completions")
@@ -403,11 +418,21 @@ export async function getTimelineForOwner(args: {
       .select("*")
       .in("scheduled_item_id", scheduledIds)
       .order("created_at", { ascending: true }),
+    ruleIds.length === 0
+      ? Promise.resolve({ data: [] as RuleSlim[], error: null })
+      : supabase
+          .from("journey_match_rules")
+          .select("id, slug, rationale_he, rationale_en")
+          .in("id", ruleIds),
   ]);
 
   if (itemsRes.error) throw new Error(itemsRes.error.message);
   if (completionsRes.error) throw new Error(completionsRes.error.message);
   if (responsesRes.error) throw new Error(responsesRes.error.message);
+  // Rules failure is non-fatal — UI degrades to "no rationale" gracefully.
+  const rulesById = new Map<string, RuleSlim>(
+    ((rulesRes.data ?? []) as RuleSlim[]).map((r) => [r.id, r]),
+  );
 
   const items = (itemsRes.data ?? []) as JourneyItem[];
   const itemsById = new Map(items.map((it) => [it.id, it]));
@@ -450,6 +475,9 @@ export async function getTimelineForOwner(args: {
       const category = categoriesById.get(item.category_id);
       if (!category) return null;
       const completion = completionsById.get(s.id) ?? null;
+      const rule = s.matched_by_rule_id
+        ? rulesById.get(s.matched_by_rule_id) ?? null
+        : null;
       return {
         scheduled: s,
         item,
@@ -466,6 +494,7 @@ export async function getTimelineForOwner(args: {
         }),
         completion,
         responses: responsesByScheduled.get(s.id) ?? [],
+        matchRule: rule,
       };
     })
     .filter((x): x is TimelineEntry => x !== null);
@@ -846,7 +875,7 @@ export async function listGroupSubtopicBindings(
 }
 
 /**
- * Reverse lookup — for a set of subtopic_ids, return the count of
+ * Reverse lookup - for a set of subtopic_ids, return the count of
  * groups bound to each. Used by the items list to show "this
  * subtopic is bound to N group(s)" so admins know cadence behaves
  * differently for some users.
@@ -873,7 +902,7 @@ export async function countGroupBindingsForSubtopics(
 }
 
 /**
- * Cadence engine helper — for a given user, return the set of
+ * Cadence engine helper - for a given user, return the set of
  * subtopic_ids they're in REPLACE mode for (across all groups).
  * If the user is in BOTH a replace and an interleave group for the
  * same subtopic, replace wins (per Itzik's slice 7 brief).

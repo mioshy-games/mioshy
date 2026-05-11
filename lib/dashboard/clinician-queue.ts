@@ -3,7 +3,7 @@ import "server-only";
 /**
  * lib/dashboard/clinician-queue.ts
  *
- * Phase 4 — the clinician's daily work queue.
+ * Phase 4 - the clinician's daily work queue.
  *
  * Reads many existing tables and produces ONE shape per couple, with
  * the workflow signals the clinician needs to triage:
@@ -53,7 +53,7 @@ export interface ClinicianQueueRow {
   completedItems: number;
   /** Days since the couple was created, for the "new" bucket. */
   daysSinceCreated: number;
-  /** Derived primary signal — what the row should be grouped under. */
+  /** Derived primary signal - what the row should be grouped under. */
   signal: ClinicianSignal;
 }
 
@@ -201,7 +201,7 @@ export async function getClinicianWorkQueue(args: {
     if (cid) sched_to_couple.set(s.id, cid);
   }
 
-  // Index: per-user latest response per scheduled_item — used to
+  // Index: per-user latest response per scheduled_item - used to
   // detect "available item with no response" (stuck) without
   // double-counting revisions.
   const latestResponseByItemUser = new Map<string, RespRow>();
@@ -359,7 +359,7 @@ export async function getClinicianWorkQueue(args: {
       ? Math.max(0, Math.floor((reference - createdMs) / (24 * 60 * 60 * 1000)))
       : 0;
 
-    // Derive primary signal — first match wins.
+    // Derive primary signal - first match wins.
     let signal: ClinicianSignal = "idle";
     if (a.concerningCount > 0) signal = "urgent";
     else if (a.stuckCount > 0) signal = "stuck";

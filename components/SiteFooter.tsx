@@ -7,6 +7,10 @@ import { Sparkles, Mail, Globe } from "lucide-react";
 export function SiteFooter() {
   const tMarketing = useTranslations("marketingHome");
   const t = useTranslations("footer");
+  // Pillar labels are owned by the `nav` namespace (so they stay in sync
+  // with the header). Reusing them here avoids duplicating "Online couples
+  // games" / "ליווי עם מיאושי" / "למבוגרים בלבד" in two places.
+  const tNav = useTranslations("nav");
   const locale = useLocale();
   const pathname = usePathname();
 
@@ -27,12 +31,22 @@ export function SiteFooter() {
       <div className="mx-auto w-full max-w-7xl px-4 py-16">
         <div className="flex flex-col gap-12 lg:flex-row lg:items-start lg:justify-start lg:gap-24">
 
-          {/* Brand column — mobile sizes bumped to 16px tagline + 15px email
+          {/* Brand column - mobile sizes bumped to 16px tagline + 15px email
               for legibility. Was 13px / 12px which forced users to zoom. */}
           <div className="max-w-sm shrink-0 space-y-4">
-            <span className="font-heading text-2xl font-bold tracking-tight text-white">
-              Mioshy
-            </span>
+            {/* Brand logomark - replaces the previous "Mioshy" text-set
+                wordmark so the footer matches SiteHeader and the rest of
+                the site visually. The footer always sits on a dark plate
+                (`bg-[#07040f]`), so the white SVG can paint directly with
+                no filter (unlike the header which inverts on light scroll). */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/mioshy-white.svg"
+              alt="Mioshy"
+              width={171}
+              height={81}
+              className="h-12 w-auto"
+            />
             <p className="text-base leading-relaxed text-white/65 md:text-sm md:text-white/50">
               {t("tagline")}
             </p>
@@ -47,7 +61,10 @@ export function SiteFooter() {
             </a>
           </div>
 
-          {/* Links grid */}
+          {/* Links grid - 3 columns. The middle Services column is new
+              (Itzik 2026-05-06: the footer was missing a clear "what we
+              sell" block). Pillar labels are pulled from the `nav`
+              namespace so they stay in lockstep with the header. */}
           <div className="grid grid-cols-2 gap-x-10 gap-y-8 sm:grid-cols-3">
 
             {/* Explore */}
@@ -56,26 +73,26 @@ export function SiteFooter() {
                 {t("exploreTitle")}
               </p>
               <ul className="space-y-3 text-[15px] md:space-y-2.5 md:text-[11px]">
-                <li><Link href="/"             className="text-white/75 transition-colors hover:text-white md:text-white/60">{t("home")}</Link></li>
-                <li><Link href="/how-it-works" className="text-white/75 transition-colors hover:text-white md:text-white/60">{t("how")}</Link></li>
-                <li><Link href="/journey"      className="text-white/75 transition-colors hover:text-white md:text-white/60">{t("journey")}</Link></li>
-                <li><Link href="/pricing"      className="text-white/75 transition-colors hover:text-white md:text-white/60">{tMarketing("footer.links.pricing" as never)}</Link></li>
+                <li><Link href="/"          className="text-white/75 transition-colors hover:text-white md:text-white/60">{t("home")}</Link></li>
+                <li><Link href="/pricing"   className="text-white/75 transition-colors hover:text-white md:text-white/60">{tMarketing("footer.links.pricing" as never)}</Link></li>
+                <li><Link href="/articles"  className="text-white/75 transition-colors hover:text-white md:text-white/60">{tMarketing("footer.links.articles" as never)}</Link></li>
+                <li><Link href="/account"   className="text-white/75 transition-colors hover:text-white md:text-white/60">{tMarketing("footer.links.account" as never)}</Link></li>
               </ul>
             </div>
 
-            {/* Products */}
+            {/* Services - the three pillars, mirrors the header nav. */}
             <div className="space-y-3">
               <p className="text-[13px] font-semibold uppercase tracking-widest text-white/60 md:text-xs">
-                {tMarketing("footer.linksTitle")}
+                {t("servicesTitle")}
               </p>
               <ul className="space-y-3 text-[15px] md:space-y-2.5 md:text-[11px]">
-                <li><Link href="/products" className="text-white/75 transition-colors hover:text-white md:text-white/60">{tMarketing("footer.links.games" as never)}</Link></li>
-                <li><Link href="/articles" className="text-white/75 transition-colors hover:text-white md:text-white/60">{tMarketing("footer.links.articles" as never)}</Link></li>
-                <li><Link href="/account"  className="text-white/75 transition-colors hover:text-white md:text-white/60">{tMarketing("footer.links.account" as never)}</Link></li>
+                <li><Link href="/games"   className="text-white/75 transition-colors hover:text-white md:text-white/60">{tNav("games")}</Link></li>
+                <li><Link href="/journey" className="text-white/75 transition-colors hover:text-white md:text-white/60">{tNav("journey")}</Link></li>
+                <li><Link href="/mioshy-sex"  className="text-white/75 transition-colors hover:text-white md:text-white/60">{tNav("adults")}</Link></li>
               </ul>
             </div>
 
-            {/* Legal */}
+            {/* Legal / info */}
             <div className="space-y-3">
               <p className="text-[13px] font-semibold uppercase tracking-widest text-white/60 md:text-xs">
                 {t("infoTitle")}
@@ -91,7 +108,53 @@ export function SiteFooter() {
         </div>
       </div>
 
-      {/* ── Bottom bar ──────────────────────────────────────────────────────── */}
+      {/* ── Legal row ─────────────────────────────────────────────────────────
+          Single horizontal row at the bottom of the footer with all 4 legal
+          links. Wraps on narrow viewports; in RTL the visual order reads
+          right→left automatically because the document direction is set on
+          <html>. Items separated by middle-dot. */}
+      <div className="border-t border-white/[0.04]">
+        <nav
+          aria-label={t("legalLinks.ariaLabel")}
+          className="mx-auto w-full max-w-7xl px-4 py-5"
+        >
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-xs text-white/60">
+            <Link
+              href="/terms"
+              className="transition-colors hover:text-white"
+            >
+              {t("legalLinks.terms")}
+            </Link>
+            <span aria-hidden className="text-white/25">·</span>
+            <Link
+              href="/refund-policy"
+              className="transition-colors hover:text-white"
+            >
+              {t("legalLinks.refund")}
+            </Link>
+            <span aria-hidden className="text-white/25">·</span>
+            <Link
+              href="/privacy"
+              className="transition-colors hover:text-white"
+            >
+              {t("legalLinks.privacy")}
+            </Link>
+            <span aria-hidden className="text-white/25">·</span>
+            <Link
+              href="/accessibility"
+              className="transition-colors hover:text-white"
+            >
+              {t("legalLinks.accessibility")}
+            </Link>
+            <span aria-hidden className="text-white/25">·</span>
+            <span className="text-white/45">
+              {t("legalLinks.copyright", { year: new Date().getFullYear() })}
+            </span>
+          </div>
+        </nav>
+      </div>
+
+      {/* ── Bottom bar - language switch + brand line ───────────────────── */}
       <div className="border-t border-white/[0.04]">
         <div className="mx-auto flex w-full max-w-7xl flex-col items-start justify-between gap-3 px-4 py-5 text-[13px] text-white/60 sm:flex-row sm:items-center md:text-xs">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1">

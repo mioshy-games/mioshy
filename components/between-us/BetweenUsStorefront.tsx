@@ -255,19 +255,22 @@ function GameCard({
   const desc = isHe
     ? game.short_desc_he
     : game.short_desc_en || game.short_desc_he;
+  // Currency symbol on the visual LEFT with a space, isolated LTR so it
+  // doesn't get reordered by the surrounding RTL flow ("₪ 127", not "127₪").
+  // U+2066 = LRI (Left-to-Right Isolate), U+2069 = PDI (Pop Directional Isolate).
   const priceLabel =
     isHe && game.price_ils != null
-      ? `₪${Number(game.price_ils).toFixed(0)}`
+      ? `⁦₪ ${Number(game.price_ils).toFixed(0)}⁩`
       : game.price_usd != null
-        ? `$${Number(game.price_usd).toFixed(0)}`
+        ? `⁦$ ${Number(game.price_usd).toFixed(0)}⁩`
         : null;
 
   return (
     <Link
-      href={`/adults/${game.slug}`}
+      href={`/mioshy-sex/${game.slug}`}
       className="group block overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/10 to-white/5 shadow-xl backdrop-blur transition hover:border-fuchsia-300/40 hover:from-white/20"
     >
-      <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-fuchsia-500/30 to-violet-500/20">
+      <div className="relative aspect-[5/3] overflow-hidden bg-gradient-to-br from-fuchsia-500/30 to-violet-500/20 sm:aspect-[4/3]">
         {game.cover_image_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -299,11 +302,21 @@ function GameCard({
       </div>
 
       <div className="p-5">
-        <h3 className="text-xl font-bold text-white group-hover:text-fuchsia-100">
+        {/* Card title - Frank Ruhl Libre directly (not the `font-heading`
+            token) so the typeface stays SERIF in BOTH locales. The token
+            resolves to IBM Plex Sans Hebrew in RTL, which is sans-serif
+            and breaks visual continuity with every other heading on the
+            site. Mobile size bumped +20% (text-xl → text-2xl); desktop
+            keeps text-xl since the catalogue grid renders multiple cards
+            per row and a bigger title there throws off the rhythm. */}
+        <h3
+          className="text-2xl text-white group-hover:text-fuchsia-100 sm:text-xl"
+          style={{ fontFamily: "'Frank Ruhl Libre', serif", fontWeight: 700 }}
+        >
           {title}
         </h3>
         {desc ? (
-          <p className="mt-2 line-clamp-2 text-sm text-white/70">{desc}</p>
+          <p className="mt-2 line-clamp-2 text-[18px] leading-[1.5] text-white/75 sm:text-sm sm:leading-normal">{desc}</p>
         ) : null}
 
         {/* Level badges */}

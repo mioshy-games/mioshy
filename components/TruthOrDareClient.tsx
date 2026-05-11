@@ -24,6 +24,7 @@ import { RegistrationModal } from "@/components/RegistrationModal";
 import { SubscriptionModal } from "@/components/SubscriptionModal";
 import { stopSpinSound } from "@/lib/sounds";
 import { QuestionPopup } from "@/components/game/QuestionPopup";
+import { TutorialPopup } from "@/components/game/TutorialPopup";
 
 export function TruthOrDareClient({
   game,
@@ -112,6 +113,7 @@ export function TruthOrDareClient({
   const labelFontSizePx  = gameSettings?.wheel?.labelFontSizePx ?? 12;
   const labelColor       = gameSettings?.wheel?.labelColor ?? "#ffffff";
   const labelOutline     = gameSettings?.wheel?.labelOutline;
+  const labelOrientation = gameSettings?.wheel?.labelOrientation ?? "tangential";
   const pointerSvg       = gameSettings?.wheel?.pointerSvg;
   const pointerSvgWidth  = gameSettings?.wheel?.pointerSvgWidth;
   const pointerSvgHeight = gameSettings?.wheel?.pointerSvgHeight;
@@ -157,6 +159,52 @@ export function TruthOrDareClient({
         }
       : {}),
   };
+
+  // ── DIAG 2026-05-05 ────────────────────────────────────────────────────
+  // Trace the exact values reaching the production Wheel so we can compare
+  // them to what the admin slider claims to save. If `labelRadiusFraction`
+  // here ≠ what the admin saved, the bug is in the save/load layer, not
+  // in Wheel.tsx. If they match but the wheel still looks wrong, the
+  // issue is in Wheel rendering. Look for [TruthOrDareClient/DIAG].
+  if (typeof window !== "undefined") {
+    console.log("[TruthOrDareClient/DIAG] BUILD=2026-05-05-wheel-trace v1", {
+      gameSlug: game.slug,
+      hasGameSettings: !!gameSettings,
+      // What the admin saved in game_settings.settings.wheel:
+      gs_wheel_sizeRem:                gameSettings?.wheel?.sizeRem,
+      gs_wheel_sizeRemMax:             gameSettings?.wheel?.sizeRemMax,
+      gs_wheel_labelRadiusFraction:    gameSettings?.wheel?.labelRadiusFraction,
+      gs_wheel_labelOrientation:       gameSettings?.wheel?.labelOrientation,
+      gs_wheel_labelFontSizePx:        gameSettings?.wheel?.labelFontSizePx,
+      gs_wheel_innerCircle_enabled:    gameSettings?.wheel?.innerCircle?.enabled,
+      gs_wheel_innerCircle_fillColor:  gameSettings?.wheel?.innerCircle?.fillColor,
+      gs_wheel_innerCircle_borderColor:gameSettings?.wheel?.innerCircle?.borderColor,
+      gs_wheel_pointerColor:           gameSettings?.wheel?.pointerColor,
+      gs_wheel_pointerOffsetY:         gameSettings?.wheel?.pointerOffsetY,
+      gs_wheel_pointerSvg_present:     !!gameSettings?.wheel?.pointerSvg,
+      gs_wheel_pointerSvgWidth:        gameSettings?.wheel?.pointerSvgWidth,
+      gs_wheel_pointerSvgHeight:       gameSettings?.wheel?.pointerSvgHeight,
+      // Legacy values from wheel_configs.marker_config (fallback chain):
+      legacy_wheel_size_rem:           wheelSizeRemFromConfig,
+      legacy_label_radius_fraction:    labelFractionFromConfig,
+      legacy_inner_circle:             wheel.inner_circle,
+      legacy_inner_circle_color:       wheel.inner_circle_color,
+      legacy_inner_circle_border:      wheel.inner_circle_border_color,
+      legacy_pointer_color:            wheel.pointer_color,
+      // RESOLVED - what actually goes into <Wheel>:
+      resolved_sizeRem:                resolvedSizeRem,
+      resolved_sizeRemMax:             resolvedSizeRemMax,
+      resolved_labelRadiusFraction:    resolvedLabelFraction,
+      resolved_labelOrientation:       labelOrientation,
+      resolved_labelFontSizePx:        labelFontSizePx,
+      resolved_innerCircle:            resolvedInnerCircle,
+      resolved_innerCircleColor:       resolvedInnerCircleColor,
+      resolved_innerCircleBorder:      resolvedInnerCircleBorderColor,
+      resolved_pointerColor:           resolvedPointerColor,
+      resolved_pointerOffsetY:         resolvedPointerOffsetY,
+      resolved_markerConfig:           resolvedMarkerConfig,
+    });
+  }
 
   const options = useMemo(() => {
     const base = (wheel.slices ?? []).map((s) => ({
@@ -441,8 +489,11 @@ export function TruthOrDareClient({
 
   // ── Shared JSX pieces ───────────────────────────────────────────────────────
 
-  /** Top bar: logo full-width centred (big), utility buttons row below on mobile only.
-   *  On desktop the back/sound buttons live in the fixed bottom corners - see below. */
+  /** Top bar: full-width centred logo. Per Itzik 2026-05-06 the mobile
+   *  utility buttons (Back / Sound) moved from above the wheel to BELOW
+   *  the spin button — see `mobileUtilityButtons` below. On desktop the
+   *  Back/Sound buttons live in the fixed bottom corners (rendered at
+   *  the bottom of this component). */
   const topBar = (
     <div className="flex w-full shrink-0 flex-col items-center gap-2 px-1">
       {/* Logo - full-width centred, prominent */}
@@ -456,23 +507,28 @@ export function TruthOrDareClient({
           priority
         />
       </div>
+    </div>
+  );
 
-      {/* Utility buttons - mobile only (desktop uses fixed bottom corners) */}
-      <div className="flex w-full items-center justify-between md:hidden">
-        <Link
-          href="/products"
-          className="rounded-full bg-white/15 px-4 py-2 text-sm font-medium text-white backdrop-blur hover:bg-white/25"
-        >
-          {t("back")}
-        </Link>
-        <button
-          type="button"
-          onClick={() => setSpinSoundOn((m) => !m)}
-          className="rounded-full bg-white/15 px-4 py-2 text-sm font-medium text-white backdrop-blur hover:bg-white/25"
-        >
-          {spinSoundOn ? t("spinSoundOn") : t("spinSoundOff")}
-        </button>
-      </div>
+  /** Mobile-only utility buttons (Back + Sound). Rendered UNDER the spin
+   *  button on mobile so the visual hierarchy is logo → wheel → spin →
+   *  secondary actions. Per Itzik 2026-05-06. Desktop has its own
+   *  fixed-corner versions, so this block is `md:hidden`. */
+  const mobileUtilityButtons = (
+    <div className="flex w-full items-center justify-between md:hidden">
+      <Link
+        href="/games"
+        className="rounded-full bg-white/15 px-4 py-2 text-sm font-medium text-white backdrop-blur hover:bg-white/25"
+      >
+        {t("back")}
+      </Link>
+      <button
+        type="button"
+        onClick={() => setSpinSoundOn((m) => !m)}
+        className="rounded-full bg-white/15 px-4 py-2 text-sm font-medium text-white backdrop-blur hover:bg-white/25"
+      >
+        {spinSoundOn ? t("spinSoundOn") : t("spinSoundOff")}
+      </button>
     </div>
   );
 
@@ -549,6 +605,7 @@ export function TruthOrDareClient({
             labelFontSizePx={labelFontSizePx}
             labelColor={labelColor}
             labelOutline={labelOutline}
+            labelOrientation={labelOrientation}
             wheelShape={wheelShape}
             pointerSvg={pointerSvg}
             pointerSvgWidth={pointerSvgWidth}
@@ -576,6 +633,9 @@ export function TruthOrDareClient({
       backgroundSrc={transparent ? false : undefined}
       showVignette={!transparent}
     >
+      {/* First-visit tutorial — shows once per device, then never again.
+          Self-gates on localStorage so safe to mount unconditionally. */}
+      <TutorialPopup isHe={locale === "he"} />
       {pageLayout === "side-by-side" ? (
         /* ── SIDE-BY-SIDE LAYOUT ─────────────────────────────────────────────
            Desktop (≥ md): wheel on the left, controls on the right.
@@ -587,7 +647,7 @@ export function TruthOrDareClient({
 
           {/* Main content area */}
           <div className="flex flex-1 flex-col items-center gap-6 md:flex-row md:items-center md:gap-10">
-            {/* Left column: wheel only — the logo lives inside `topBar`
+            {/* Left column: wheel only - the logo lives inside `topBar`
                 above (rendered at line ~586), so we don't render it
                 again here. The earlier `{logo}` reference was a stale
                 pointer left behind when the logo moved into topBar. */}
@@ -595,7 +655,7 @@ export function TruthOrDareClient({
               {wheelOrSetup}
             </div>
 
-            {/* Right column: game title (big) + spin controls */}
+            {/* Right column: game title (big) + spin controls + mobile utilities */}
             <div className="flex w-full flex-col items-center justify-center gap-6 md:flex-1 md:items-start">
               <div className="text-center md:text-start">
                 <h1
@@ -606,6 +666,8 @@ export function TruthOrDareClient({
                 </h1>
               </div>
               {spinControls}
+              {/* Back/Sound — mobile only, below spin */}
+              {mobileUtilityButtons}
             </div>
           </div>
         </div>
@@ -627,23 +689,41 @@ export function TruthOrDareClient({
             >
               {gameTitle}
             </h1>
-          </div>-
+          </div>
 
-          {/* Fixed spacer above wheel — clears pointer tip overflow */}
+          {/* Fixed spacer above wheel - clears pointer tip overflow */}
           <div className="shrink-0" style={{ height: wheelGapPx }} />
 
           {/* Wheel */}
-          <div className="w-full flex j-stify-center">{wheelOrSetup}</div>
+          <div className="w-full flex justify-center">{wheelOrSetup}</div>
 
-          {/* Fixed spacer below wheel — clears marker dot overflow */}
-          <div className="-hrink-0" style={{ height: wheelGapPx }} />
+          {/* Fixed spacer below wheel - clears marker dot overflow */}
+          <div className="shrink-0" style={{ height: wheelGapPx }} />
 
-          {/* Spin button — shrink-0 so it's never squished */}
-          <div className="w-full shrink-0 flex justify-center">{spinControls}</div>
+          {/* Spin button - sticky to the bottom of the viewport so it
+              ALWAYS stays visible, even when the wheel + spacers push
+              the natural-flow position below the fold. Itzik 2026-05-06:
+              previously the button was getting clipped on shorter
+              laptop viewports while the less-important Back / Sound
+              buttons (corner-fixed) remained visible. */}
+          <div
+            className="sticky bottom-3 z-20 mt-auto flex w-full shrink-0 flex-col items-center gap-2 pb-[max(0px,env(safe-area-inset-bottom))]"
+            style={{ pointerEvents: "none" }}
+          >
+            <div style={{ pointerEvents: "auto" }} className="w-full max-w-md">
+              {spinControls}
+            </div>
+            {/* Back/Sound — mobile only, below spin. pointer-events:auto
+                so taps register; the empty wrapper above this block is
+                pointer-events:none to let the wheel scroll through. */}
+            <div style={{ pointerEvents: "auto" }} className="w-full max-w-md">
+              {mobileUtilityButtons}
+            </div>
+          </div>
         </div>
-      )}-
+      )}
 
-      {/* ── Question popup — rendered fixed over everything ── */}
+      {/* ── Question popup - rendered fixed over everything ── */}
       {(() => {
         const sliceColor =
           options.find((o) => o.type === current?.type)?.color ??
@@ -692,11 +772,11 @@ export function TruthOrDareClient({
           authWaiterRef.current = null;
           setRegOpen(false);
         }}
-      />-
+      />
 
-      {/* ── Desktop corner buttons — fixed position, hidden on mobile ── */}
+      {/* ── Desktop corner buttons - fixed position, hidden on mobile ── */}
       <Link
-        href="/products"
+        href="/games"
         className="hidden md:flex fixed bottom-5 right-5 z-30 rounded-full bg-white/15 px-4 py-2 text-sm font-medium text-white backdrop-blur hover:bg-white/25"
       >
         {t("back")}
@@ -730,7 +810,7 @@ export function TruthOrDareClient({
           setSubOpen(false);
         }}
         // ── Mode selection ─────────────────────────────────────────────────
-        // "lead" while the user has never provided their details — guests on
+        // "lead" while the user has never provided their details - guests on
         //   play 4+ land here, giving them a chance to sign up for +3 more.
         // "paywall" once they have a lead / are logged-in / bonus consumed.
         mode={
@@ -753,7 +833,7 @@ export function TruthOrDareClient({
                 await grantPostSignupBonus(supabase, game.slug);
                 setBonusConsumed(true);
               }
-              // Re-read — this is the authoritative counter from here on.
+              // Re-read - this is the authoritative counter from here on.
               const plays = await getUserGamePlays(supabase, game.slug);
               setCompletedSpins(plays.plays_used);
               setBonusConsumed(plays.post_signup_bonus_used);

@@ -1,5 +1,6 @@
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/navigation";
+import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
 import type { GameRow, SiteSettingsRow } from "@/lib/types/database";
@@ -21,6 +22,7 @@ import { Reveal } from "@/components/marketing/Reveal";
 import { HeroClassicDark } from "@/components/marketing/HeroClassicDark";
 import { HeroLightGradient } from "@/components/marketing/HeroLightGradient";
 import { HomepageV2 } from "@/components/marketing/v2/HomepageV2";
+import { pickGameThumbnail } from "@/lib/games-thumbnail";
 
 function siteUrl() {
   return (process.env.NEXT_PUBLIC_SITE_URL || "https://mioshy.com").replace(
@@ -61,13 +63,6 @@ export async function generateMetadata({
   };
 }
 
-// ISR: re-render at most once per minute. site_settings (touched only via
-// the dashboard) propagates to visitors within 60 s; HomepageV2 itself is
-// data-less and caches indefinitely. Replaced an unconditional `noStore()`
-// that forced SSR-per-request and was contributing to the desktop
-// document-latency-insight regression.
-export const revalidate = 60;
-
 export default async function HomePage({
   params,
   searchParams,
@@ -75,6 +70,24 @@ export default async function HomePage({
   params: { locale: string };
   searchParams?: { [key: string]: string | string[] | undefined };
 }) {
+  noStore();
+
+  // ── Authenticated users skip the marketing homepage and land on
+  //    "My Mioshy" (/my) - the personal hub. The marketing home is
+  //    a sales surface; once a user has signed in, returning them to
+  //    it on every visit makes the product feel transactional rather
+  //    than membership-driven. Logout flow redirects back to /${locale},
+  //    which lands here again - but now as anonymous → marketing shows.
+  //    Escape hatch: ?marketing=1 lets admins / QA preview the
+  //    marketing page while signed in.
+  if (searchParams?.marketing !== "1") {
+    const supabaseAuth = await createServerSupabaseClient();
+    const {
+      data: { user },
+    } = await supabaseAuth.auth.getUser();
+    if (user) redirect(`/${params.locale}/my`);
+  }
+
   // ── Feature flag: HomepageV2 is now the DEFAULT.
   //    The legacy homepage stays accessible via ?old=1 for emergency rollback
   //    or for comparing before/after. Once V2 is fully validated in production
@@ -254,7 +267,7 @@ export default async function HomePage({
   const ctaSecondaryText = isHe
     ? s.cta_secondary_text_he || "איך זה עובד"
     : s.cta_secondary_text_en || "How it works";
-  const ctaSecondaryHref = s.cta_secondary_href || `/${locale}/how-it-works`;
+  const ctaSecondaryHref = s.cta_secondary_href || `/${locale}/journey`;
 
   const heroTemplate = s.hero_template ?? "classic-dark";
   const socialProofLine =
@@ -332,7 +345,7 @@ export default async function HomePage({
             <AuroraValueCell
               accent="from-violet-500 via-indigo-500 to-sky-500"
               icon={<ClipboardList className="h-5 w-5 text-white" />}
-              title={isHe ? "שאלון מלווה אישי" : "Personal questionnaire"}
+              title={isHe ? "אבחון מלווה אישי" : "Personal assessment"}
               body={
                 isHe
                   ? "אבחון זוגי שמוליד תובנות חודשיות ותוכנית אימון מותאמת."
@@ -391,8 +404,8 @@ export default async function HomePage({
           eyebrow={isHe ? "אימון זוגי חודשי" : "Monthly couple coaching"}
           title={
             isHe
-              ? "שאלון שלומד אתכם - ומביא תובנות כל חודש"
-              : "A questionnaire that learns you - and delivers monthly insights"
+              ? "אבחון שלומד אתכם - ומביא תובנות כל חודש"
+              : "An assessment that learns you - and delivers monthly insights"
           }
           subtitle={
             isHe
@@ -447,7 +460,7 @@ export default async function HomePage({
                   href="/journey"
                   className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-rose-500 via-fuchsia-500 to-violet-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-fuchsia-500/25 transition hover:brightness-110 hover:shadow-xl hover:shadow-fuchsia-500/40"
                 >
-                  {isHe ? "להתחיל את השאלון" : "Start the questionnaire"}
+                  {isHe ? "להתחיל את האבחון" : "Start the assessment"}
                   <ArrowRight
                     className={`h-4 w-4 ${isHe ? "rotate-180" : ""}`}
                   />
@@ -483,8 +496,8 @@ export default async function HomePage({
                 </p>
                 <p className="relative mt-4 text-sm text-slate-600">
                   {isHe
-                    ? "לא עוד עצות כלליות. השאלון מתאים את עצמו למה שקורה אצלכם עכשיו, ואנחנו בונים איתכם מסע."
-                    : "No generic advice. The questionnaire adapts to what's going on with you now - and we build the journey together."}
+                    ? "לא עוד עצות כלליות. האבחון מתאים את עצמו למה שקורה אצלכם עכשיו, ואנחנו בונים איתכם מסע."
+                    : "No generic advice. The assessment adapts to what's going on with you now - and we build the journey together."}
                 </p>
 
                 <dl className="relative mt-6 grid grid-cols-3 gap-2 border-t border-slate-200/70 pt-5 text-center">
@@ -553,7 +566,7 @@ export default async function HomePage({
 
           <div className="mt-10 text-center">
             <Link
-              href="/adults"
+              href="/mioshy-sex"
               className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-rose-500 via-fuchsia-500 to-violet-500 px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-fuchsia-500/25 transition hover:brightness-110 hover:shadow-xl hover:shadow-fuchsia-500/40"
             >
               {isHe ? "לכל משחקי למבוגרים בלבד" : "Explore all Adults Only games"}
@@ -830,7 +843,7 @@ export default async function HomePage({
                 />
               </Link>
               <Link
-                href="/adults"
+                href="/mioshy-sex"
                 className="inline-flex min-h-[52px] items-center gap-2 rounded-full border border-slate-300/80 bg-white/90 px-8 text-sm font-semibold text-slate-800 shadow-sm backdrop-blur transition hover:bg-white"
               >
                 {isHe ? "משחקי חדר המיטות" : "Bedroom games"}
@@ -1112,23 +1125,27 @@ function GameTile({
             }}
           />
 
-          {game.thumbnail_url || game.og_image_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={(game.thumbnail_url || game.og_image_url) as string}
-              alt={name}
-              className="relative h-full w-full object-cover transition duration-500 group-hover:scale-[1.06]"
-              loading="lazy"
-            />
-          ) : (
-            <div className="relative flex h-full items-center justify-center">
-              <span
-                className="inline-grid h-20 w-20 place-items-center rounded-2xl bg-white/85 text-fuchsia-500 shadow-lg shadow-fuchsia-500/20 ring-1 ring-white/90 transition duration-500 group-hover:rotate-[-6deg] group-hover:scale-110"
-              >
-                <Dices className="h-10 w-10" />
-              </span>
-            </div>
-          )}
+          {(() => {
+            const thumb =
+              pickGameThumbnail(game, locale) ?? game.og_image_url ?? null;
+            return thumb ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={thumb}
+                alt={name}
+                className="relative h-full w-full object-cover transition duration-500 group-hover:scale-[1.06]"
+                loading="lazy"
+              />
+            ) : (
+              <div className="relative flex h-full items-center justify-center">
+                <span
+                  className="inline-grid h-20 w-20 place-items-center rounded-2xl bg-white/85 text-fuchsia-500 shadow-lg shadow-fuchsia-500/20 ring-1 ring-white/90 transition duration-500 group-hover:rotate-[-6deg] group-hover:scale-110"
+                >
+                  <Dices className="h-10 w-10" />
+                </span>
+              </div>
+            );
+          })()}
 
           {/* Bottom soft gradient for legibility */}
           <div
@@ -1204,7 +1221,7 @@ function BuCard({
     : game.short_desc_en || game.short_desc_he;
   return (
     <Link
-      href={`/adults/${game.slug}`}
+      href={`/mioshy-sex/${game.slug}`}
       className="group relative block rounded-3xl p-[1.5px] transition hover:-translate-y-0.5"
     >
       <span

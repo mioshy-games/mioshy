@@ -13,7 +13,7 @@
 
 
 -- ---------------------------------------------------------------------------
--- 1. expert_couples — join table linking experts to their assigned couples
+-- 1. expert_couples - join table linking experts to their assigned couples
 -- ---------------------------------------------------------------------------
 -- A row means: this expert is responsible for this couple's coaching path.
 -- An expert may have many couples; a couple may (in theory) have multiple
@@ -57,7 +57,7 @@ AS $$
   );
 $$;
 
--- "Is the current user an expert linked to this couple?" — used by RLS on
+-- "Is the current user an expert linked to this couple?" - used by RLS on
 -- downstream tables (assignments visibility, notes, content, etc.).
 CREATE OR REPLACE FUNCTION public.is_expert_for_couple(p_couple_id uuid)
 RETURNS boolean
@@ -113,7 +113,7 @@ CREATE POLICY "expert_couples_admin_write"
 
 
 -- ---------------------------------------------------------------------------
--- 4. Comments — DB-level documentation
+-- 4. Comments - DB-level documentation
 -- ---------------------------------------------------------------------------
 COMMENT ON TABLE public.expert_couples IS
   'Links a coaching expert (profiles.role=expert|admin) to a couple they manage.';

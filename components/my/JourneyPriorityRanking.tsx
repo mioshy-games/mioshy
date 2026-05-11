@@ -1,15 +1,15 @@
 "use client";
 
 /**
- * JourneyPriorityRanking — the central piece of /my/journey: a
+ * JourneyPriorityRanking - the central piece of /my/journey: a
  * reorderable list of the user's relationship priorities, plus a
  * way to add a custom priority that didn't exist in the assessment.
  *
- * Phase 4 — UI scaffolding only. State lives in component state;
+ * Phase 4 - UI scaffolding only. State lives in component state;
  * persistence (server action + DB row) is a follow-up.
  *
  * Tone: clinical. The user reorders to tell the clinician
- * "this is what I need first". No drag library — we use ↑↓ buttons
+ * "this is what I need first". No drag library - we use ↑↓ buttons
  * for cross-browser reliability and accessibility.
  */
 
@@ -167,7 +167,7 @@ export function JourneyPriorityRanking({
         )}
       </div>
 
-      {/* Footer hint — honest about scope. Persistence is Phase 5; for
+      {/* Footer hint - honest about scope. Persistence is Phase 5; for
           now the order lives in the session and the clinician acts on
           what's discussed in the message channel + assessments. */}
       <p className="mt-3 text-[11px] italic text-white/40">

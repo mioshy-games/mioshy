@@ -190,7 +190,9 @@ function TimelineCard({
         <article
           className={cn(
             "relative rounded-2xl border backdrop-blur transition",
-            isHe ? "me-12" : "ms-12",
+            // Rail is always on the inline-start side (right in RTL, left in LTR),
+            // so the card needs an inline-start margin to clear it.
+            "ms-12",
             // Completed: green accent but reduced emphasis - ink fades so
             // the eye doesn't re-read every "done" row on every scroll.
             status === "completed" &&
@@ -269,6 +271,29 @@ function TimelineCard({
               >
                 {body}
               </p>
+
+              {/* Layer 1 (#1) — Why this item attribution.
+                  One subtle line, locale-resolved. Hidden when no
+                  rule attribution (legacy rows) so cards don't grow
+                  taller for unattributed items. */}
+              {entry.matchRule ? (
+                <p
+                  className={cn(
+                    "mt-1.5 inline-flex items-start gap-1 text-[11px] leading-snug",
+                    "text-[#FAF6F7]/65",
+                  )}
+                >
+                  <Sparkles
+                    aria-hidden
+                    className="mt-0.5 h-2.5 w-2.5 shrink-0 text-[#B83C4D]"
+                  />
+                  <span className="line-clamp-1">
+                    {isHe
+                      ? entry.matchRule.rationale_he
+                      : entry.matchRule.rationale_en}
+                  </span>
+                </p>
+              ) : null}
 
               {/* Footer meta: responses count + partner hint + arrow */}
               <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-white/55">

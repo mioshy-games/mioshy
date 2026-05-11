@@ -236,6 +236,8 @@ export function AppearanceTab() {
       labelFontSizePx:  w.labelFontSizePx ?? 12,
       labelColor:       w.labelColor ?? "#ffffff",
       labelOutline:     w.labelOutline ?? { enabled: true, color: "#000000", opacity: 0.25, width: 2 },
+      labelOrientation: w.labelOrientation ?? "tangential",
+      labelRadiusFraction: w.labelRadiusFraction ?? 0.72,
       // Outer border ring (from draft.border, separate from wheel settings)
       outerBorder: b,
     });
@@ -244,7 +246,7 @@ export function AppearanceTab() {
     w.divider?.enabled, w.divider?.color, w.divider?.width,
     w.innerCircle?.enabled, w.innerCircle?.fillColor, w.innerCircle?.borderColor,
     w.markers,
-    w.labelFontSizePx, w.labelColor, w.labelOutline,
+    w.labelFontSizePx, w.labelColor, w.labelOutline, w.labelOrientation, w.labelRadiusFraction,
     b,
     setWheelPreview,
   ]);
@@ -445,7 +447,7 @@ export function AppearanceTab() {
             label="Text position"
             value={draft.wheel.labelRadiusFraction}
             min={0.45}
-            max={0.9}
+            max={1}
             step={0.01}
             onChange={(v) => patch({ wheel: { ...draft.wheel, labelRadiusFraction: v } })}
           />
@@ -471,6 +473,56 @@ export function AppearanceTab() {
               value={draft.wheel.labelColor ?? "#ffffff"}
               onChange={(c) => patch({ wheel: { ...draft.wheel, labelColor: c } })}
             />
+          </div>
+
+          {/* Label orientation - Itzik 2026-05-05.
+              Round 9 update: switched from a Base UI Select dropdown
+              (which silently failed to fire onChange inside the
+              EditGameSidebar's portal context) to two big toggle
+              buttons. Two options doesn't justify a dropdown anyway,
+              and a native <button> is bulletproof against any
+              primitive/portal weirdness.
+              "Tangential" (default): text reads along the slice's curve.
+              "Radial": text reads from the wheel center outward -
+              better for long names. */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-muted-foreground">
+              Label orientation
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {(
+                [
+                  { value: "tangential", label: "Tangential", desc: "Along the slice" },
+                  { value: "radial", label: "Radial", desc: "Center → rim" },
+                ] as const
+              ).map((opt) => {
+                const current =
+                  (draft.wheel.labelOrientation ?? "tangential") === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => {
+                      patch({
+                        wheel: {
+                          ...draft.wheel,
+                          labelOrientation: opt.value,
+                        },
+                      });
+                    }}
+                    className={cn(
+                      "rounded-md border px-3 py-2 text-left transition",
+                      current
+                        ? "border-primary bg-primary/10 text-foreground"
+                        : "border-border bg-background text-muted-foreground hover:border-primary/40 hover:bg-accent/30",
+                    )}
+                  >
+                    <div className="text-sm font-semibold">{opt.label}</div>
+                    <div className="text-[11px] opacity-70">{opt.desc}</div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Outline */}

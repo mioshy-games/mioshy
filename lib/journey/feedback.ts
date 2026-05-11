@@ -1,5 +1,5 @@
 /**
- * lib/journey/feedback.ts — SERVER-ONLY.
+ * lib/journey/feedback.ts - SERVER-ONLY.
  *
  * Read queries + admin-auth gate for the journey_feedback table.
  *
@@ -10,14 +10,14 @@
  * next/headers" error.
  *
  * If a client component needs feedback types or severity labels, import
- * them from `./feedback-shared` instead — that file is dependency-free
+ * them from `./feedback-shared` instead - that file is dependency-free
  * and safe to ship to the browser.
  *
  * Two firm rules to keep in mind when working in this file:
  *
  *   1. journey_feedback is ADMIN-AUTHORED. Anything in here that
  *      reads or writes the table must be guarded by admin auth.
- *      RLS is the last line of defence — server-action code is the
+ *      RLS is the last line of defence - server-action code is the
  *      first.
  *
  *   2. journey_feedback ≠ journey_item_responses. The latter is
@@ -30,7 +30,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 // Re-export everything client-safe so existing imports of this module
 // keep working without an extra import line. New code SHOULD import
-// types directly from "./feedback-shared" — but breaking back-compat
+// types directly from "./feedback-shared" - but breaking back-compat
 // across the whole codebase to enforce that is more churn than payoff.
 export type {
   FeedbackSeverity,
@@ -104,7 +104,7 @@ export async function listFeedback(
     .from("journey_feedback")
     .select(
       // Note: journey_categories uses name_he/name_en (different from
-      // journey_items which uses title_he/title_en — schema asymmetry
+      // journey_items which uses title_he/title_en - schema asymmetry
       // we live with, see migration 035).
       `id, user_id, couple_id, category_id, item_id, question_id,
        short_summary, extended_text, severity, admin_author_id,
@@ -198,7 +198,7 @@ export async function listFeedback(
   return { rows, total: count ?? rows.length };
 }
 
-/** Convenience wrapper — admin gate is in listFeedback. */
+/** Convenience wrapper - admin gate is in listFeedback. */
 export async function listFeedbackForCouple(coupleId: string) {
   return listFeedback({ coupleId, pageSize: 200 });
 }

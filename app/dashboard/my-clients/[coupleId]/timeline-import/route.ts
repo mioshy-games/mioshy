@@ -24,7 +24,7 @@ import { createServiceRoleClient } from "@/lib/supabase-admin";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-// Minimal CSV parser — handles quoted fields with embedded commas/quotes/newlines.
+// Minimal CSV parser - handles quoted fields with embedded commas/quotes/newlines.
 function parseCsv(text: string): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
@@ -136,7 +136,7 @@ export async function POST(
   const idx = (col: string) => header.indexOf(col);
   const get = (row: string[], col: string) => (row[idx(col)] ?? "").trim();
 
-  // Pre-load the set of scheduled_ids that belong to this couple — anything
+  // Pre-load the set of scheduled_ids that belong to this couple - anything
   // else is rejected even if the expert is admin.
   const { data: assignRows } = await admin
     .from("journey_assignments")
@@ -223,7 +223,7 @@ export async function POST(
     }
 
     if (Object.keys(patch).length === 0) {
-      // Row exists but expert changed nothing — skip silently.
+      // Row exists but expert changed nothing - skip silently.
       continue;
     }
 

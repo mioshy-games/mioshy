@@ -19,7 +19,7 @@
  *   We deliberately don't wrap steps 4+5 in a transaction. If the
  *   entitlement insert succeeds but the slot stamp fails, the user
  *   keeps the game and might (very briefly, on race) get a SECOND
- *   game this month. We accept that vs. the alternative — a stamp
+ *   game this month. We accept that vs. the alternative - a stamp
  *   that fires without the entitlement existing, which would lock
  *   the user out of their bundle for the whole month. Belt-and-
  *   suspenders fix can come later if it becomes a real issue.
@@ -124,7 +124,7 @@ export async function redeemAdultsMonthly(
 
   const consumed = await consumeAdultsMonthlySlot(user.id);
   if (!consumed) {
-    // Soft warning — user got the game; we just couldn't stamp the slot.
+    // Soft warning - user got the game; we just couldn't stamp the slot.
     console.error(
       "[adults-redeem-monthly] slot stamp failed (game still granted)",
       { user_id: user.id, entitlement_id: inserted.id },

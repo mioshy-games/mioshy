@@ -1,8 +1,8 @@
 /**
- * JourneyActivityHistory — vertical timeline of everything the user
+ * JourneyActivityHistory - vertical timeline of everything the user
  * has done so far on the Journey, plus what experts have done back.
  *
- * Phase 4 — UI-only. We render whatever we already have on the page
+ * Phase 4 - UI-only. We render whatever we already have on the page
  * (no new server fetch). Activity types shown:
  *
  *   - assessment_completed    → "השלמתם את האבחון"
@@ -33,7 +33,7 @@ export type ActivityKind =
 export interface JourneyActivityEntry {
   id: string;
   kind: ActivityKind;
-  /** Localized title — caller computes. */
+  /** Localized title - caller computes. */
   title: string;
   /** Optional sub-line: category, item title etc. */
   detail?: string | null;
@@ -70,7 +70,7 @@ export function JourneyActivityHistory({
         </p>
       ) : (
         <ol className="relative flex flex-col gap-3">
-          {/* Vertical line — purely decorative */}
+          {/* Vertical line - purely decorative */}
           <span
             aria-hidden="true"
             className="absolute bottom-2 top-2 w-px bg-white/[0.06]"

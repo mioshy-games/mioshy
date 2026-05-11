@@ -90,7 +90,7 @@ export function CategoryForm({
     toast.error(
       fields.length === 0
         ? "Form invalid"
-        : `Cannot save — ${fields.slice(0, 3).join(" · ")}${
+        : `Cannot save - ${fields.slice(0, 3).join(" · ")}${
             fields.length > 3 ? ` (+${fields.length - 3} more)` : ""
           }`,
     );

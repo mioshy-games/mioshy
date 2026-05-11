@@ -1,14 +1,14 @@
 // ============================================================
-// Journey settings — singleton row in journey_settings (id=1) holding
+// Journey settings - singleton row in journey_settings (id=1) holding
 // platform-wide defaults for cadence, random rate, delivery days,
 // priority weights, and the auto-skip threshold.
 //
 // These defaults are read by:
-//   * Slice 3 cadence engine — to know how often to materialize items.
-//   * /my/journey banner — to render the user's effective schedule
+//   * Slice 3 cadence engine - to know how often to materialize items.
+//   * /my/journey banner - to render the user's effective schedule
 //     when they haven't customized.
-//   * Group cadence resolution — group overrides shadow these defaults.
-//   * Per-user profile overrides — NULL on profiles means "use these".
+//   * Group cadence resolution - group overrides shadow these defaults.
+//   * Per-user profile overrides - NULL on profiles means "use these".
 //
 // Server-only fetcher. RLS allows any authenticated read.
 // ============================================================
@@ -46,7 +46,7 @@ const DEFAULT_FALLBACK: JourneySettings = {
 /**
  * Returns the singleton journey_settings row. If the row is missing
  * (which would mean migration 055 didn't run / seed didn't insert),
- * returns the in-code defaults rather than throwing — the cadence
+ * returns the in-code defaults rather than throwing - the cadence
  * engine should still function with sane defaults during a deploy
  * window where the migration ran but the seed somehow failed.
  *
@@ -65,13 +65,13 @@ export async function getJourneySettings(): Promise<JourneySettings> {
 
   if (error) {
     console.warn(
-      `[journey-settings] read failed (${error.code}): ${error.message} — using fallback defaults`,
+      `[journey-settings] read failed (${error.code}): ${error.message} - using fallback defaults`,
     );
     return DEFAULT_FALLBACK;
   }
   if (!data) {
     console.warn(
-      "[journey-settings] singleton row missing — using fallback defaults. Run migration 055.",
+      "[journey-settings] singleton row missing - using fallback defaults. Run migration 055.",
     );
     return DEFAULT_FALLBACK;
   }

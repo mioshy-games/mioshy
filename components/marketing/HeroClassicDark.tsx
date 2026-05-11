@@ -154,7 +154,7 @@ export function HeroClassicDark({
   foundedLine,
 }: HeroClassicDarkProps) {
   useEffect(() => {
-    console.log("[HeroClassicDark] mounted v2 — orbs converge/diverge + particles");
+    console.log("[HeroClassicDark] mounted v2 - orbs converge/diverge + particles");
   }, []);
 
   return (

@@ -49,6 +49,7 @@ import { routing } from "@/i18n/routing";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getOwnerJourneyStatus } from "@/lib/journey-content/owner-status";
 import { getCurrentCoupleContext } from "@/lib/between-us/couples";
+import { JourneyCheckoutButton } from "@/components/journey/JourneyCheckoutButton";
 import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
 // FAQ uses the same scoped CSS as the homepage v2 FAQ - wrapper class .home-v2
 import "@/components/marketing/v2/styles.css";
@@ -78,7 +79,6 @@ export async function generateMetadata({
       locale === "he"
         ? [
             "מסע זוגי",
-            "שאלון זוגי",
             "אבחון זוגי",
             "ייעוץ זוגי",
             "תרגולים לזוגות",
@@ -150,7 +150,7 @@ export default async function JourneyMarketingPage({
   // Per Itzik 2026-05-02: anyone signed in but without an active Journey
   // entitlement gets a single dedicated "this is locked, here's why you
   // want it" page instead of the marketing wall. Anonymous visitors keep
-  // seeing the full marketing page below — they're not yet members and
+  // seeing the full marketing page below - they're not yet members and
   // need the broader pitch.
   if (user && !hasJourneyEntitlement) {
     const lockedTrust = [0, 1, 2, 3].map((i) => t(`trust.${i}`));
@@ -178,33 +178,51 @@ export default async function JourneyMarketingPage({
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
             {isHe ? "ליווי עם מיאושי" : "Journey with Mioshy"}
           </div>
+          {/* Locked-state H1 — applies the Mioshy design language: bold
+              anchor + wine-color em + light tail. Per Itzik 2026-05-06. */}
           <h1 className="mt-5 font-heading text-4xl font-bold leading-tight tracking-tight sm:text-5xl">
-            {isHe
-              ? "המסע נעול - בינתיים."
-              : "The journey is locked — for now."}
+            {isHe ? (
+              <>
+                המסע <em className="not-italic font-semibold text-emerald-300">נעול</em>{" "}
+                <span className="font-light text-white/80">— בינתיים.</span>
+              </>
+            ) : (
+              <>
+                The journey is <em className="not-italic font-semibold text-emerald-300">locked</em>{" "}
+                <span className="font-light text-white/80">— for now.</span>
+              </>
+            )}
           </h1>
-          <p className="mt-5 text-lg text-white/80">
+          {/* Lede — bumped to text-[20px] (was text-lg ≈ 18px) so the
+              promise reads first, prompts second. */}
+          <p className="mt-6 text-[20px] leading-[1.55] text-white/85">
             {isHe
-              ? "בשביל הזוגיות שלכם, מגיע לכם משהו שנבנה במיוחד עבורכם. הליווי האישי של מיאושי - תרגולים, אבחון, שיחות ומשימות חודשיות - פתוח רק לחברים במנוי."
-              : "For the sake of your relationship, you deserve something built around you. Mioshy's personal journey — practices, assessment, conversations, and monthly tasks — is open only to members."}
+              ? "מגיע לכם ליווי שנבנה במיוחד עבורכם — תרגולים, אבחון, שיחות, ומשימות חודשיות מהמומחים שלנו. הכל כלול במנוי שבועי אחד."
+              : "You deserve coaching built around you — practices, assessment, conversations, and monthly tasks from our experts. All included in one weekly subscription."}
           </p>
-          <p className="mt-3 text-base text-white/65">
+          <p className="mt-3 text-[18px] leading-[1.55] text-white/70">
             {isHe
               ? "אנחנו לא רוצים שתפספסו את זה."
               : "We don't want you to miss this."}
           </p>
 
+          {/* Primary CTA bumped to h-14/text-base + bigger shadow per
+              Itzik 2026-05-06 — this is the only meaningful action on a
+              locked screen, so it can't be the same size as the secondary. */}
           <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
-            <Link
-              href="/pricing"
-              className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-white px-7 text-sm font-semibold text-emerald-700 shadow-lg shadow-emerald-500/20 hover:bg-emerald-50"
-            >
-              {isHe ? "להצטרף לליווי" : "Join the journey"}
-              <ArrowRight className={`ms-2 h-4 w-4 ${isHe ? "rotate-180" : ""}`} />
-            </Link>
+            {/* W1.1 — clicks the real Cardcom checkout instead of /pricing.
+                The previous Link bounced through a marketing page with no
+                clear path to payment; users hit a dead end. */}
+            <JourneyCheckoutButton
+              isHe={isHe}
+              label={isHe ? "להצטרפות עכשיו" : "Join now"}
+              variant="white"
+              source="journey_landing_locked"
+              returnPath={`/${isHe ? "he" : "en"}/my/journey`}
+            />
             <Link
               href="/my"
-              className="inline-flex min-h-[48px] items-center justify-center rounded-full border border-white/20 bg-white/10 px-6 text-sm font-medium text-white backdrop-blur hover:bg-white/20"
+              className="inline-flex min-h-[56px] items-center justify-center rounded-full border border-white/20 bg-white/10 px-7 text-[16px] font-medium text-white backdrop-blur hover:bg-white/20 transition"
             >
               {isHe ? "חזרה למיאושי שלי" : "Back to My Mioshy"}
             </Link>
@@ -303,8 +321,8 @@ export default async function JourneyMarketingPage({
     title: t(`how.steps.${i}.title`),
     body: t(`how.steps.${i}.body`),
     tag: isHe
-      ? ["השאלון", "האבחון", "המסלול"][i]
-      : ["The questionnaire", "The diagnostic", "The path"][i],
+      ? ["האבחון", "הניתוח", "המסלול"][i]
+      : ["The diagnostic", "The analysis", "The path"][i],
   }));
 
   const insideCards = [0, 1, 2, 3].map((i) => ({
@@ -365,18 +383,20 @@ export default async function JourneyMarketingPage({
             1. HERO - dark voyage palette (kept)
         ════════════════════════════════════════════════════════════ */}
         <section className="relative">
+          {/* Breadcrumb integrated into the hero — see games/page.tsx
+              for the rationale. Same treatment for visual consistency. */}
           <nav
             aria-label="breadcrumb"
-            className="relative z-20 mx-auto flex max-w-6xl items-center gap-2 px-4 pt-8 text-xs text-white/60"
+            className="relative z-20 mx-auto hidden max-w-6xl items-center gap-2 px-4 pt-4 text-[13px] text-white/45 sm:flex"
           >
-            <Link href="/" className="transition hover:text-white/90">
+            <Link href="/" className="transition hover:text-white/75">
               {t("breadcrumbHome")}
             </Link>
-            <span aria-hidden>/</span>
-            <span className="text-white/80">{t("breadcrumbJourney")}</span>
+            <span aria-hidden className="text-white/30">/</span>
+            <span className="text-white/65">{t("breadcrumbJourney")}</span>
           </nav>
 
-          {/* Animated background — converging emerald ↔ amber blobs, floating
+          {/* Animated background - converging emerald ↔ amber blobs, floating
               orb, and 12 small drifting circles. Mirrors the homepage hero
               animation system but in the journey voyage palette.
               Lifted from -z-10 to z-0 so the layer paints above the aurora
@@ -386,35 +406,41 @@ export default async function JourneyMarketingPage({
             aria-hidden
             className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
           >
-            {/* Converging pair — emerald (left) ↔ amber (right) */}
+            {/* Converging pair - emerald (left) ↔ amber (right) */}
             <div className="journey-blob journey-blob-1" />
             <div className="journey-blob journey-blob-2" />
 
             {/* Soft floating circle */}
             <div className="journey-floating-circle" />
 
-            {/* 12 wheels-game-style drifting dots, journey palette */}
+            {/* 6 drifting dots (was 12). Performance: orbit count halved
+                per Itzik 2026-05-06 — the journey hero was running 12
+                animated dots on top of 2 blobs + an aurora-drift layer. */}
             <span className="journey-orbit journey-orbit-1" />
             <span className="journey-orbit journey-orbit-2" />
             <span className="journey-orbit journey-orbit-3" />
             <span className="journey-orbit journey-orbit-4" />
             <span className="journey-orbit journey-orbit-5" />
             <span className="journey-orbit journey-orbit-6" />
-            <span className="journey-orbit journey-orbit-7" />
-            <span className="journey-orbit journey-orbit-8" />
-            <span className="journey-orbit journey-orbit-9" />
-            <span className="journey-orbit journey-orbit-10" />
-            <span className="journey-orbit journey-orbit-11" />
-            <span className="journey-orbit journey-orbit-12" />
           </div>
 
-          <div className="relative z-10 mx-auto max-w-5xl px-4 pb-32 pt-10 text-center sm:pt-16">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/25 bg-emerald-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-emerald-100 backdrop-blur-md">
+          <div className="relative z-10 mx-auto max-w-5xl px-4 pb-12 pt-10 text-center sm:pb-32 sm:pt-16">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/25 bg-emerald-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-emerald-100">
               <Sparkles className="h-3 w-3" />
               {t("badge")}
             </span>
+
+            {/* Preheader — calls out the personal-coaching value
+                proposition above the headline. Per Itzik 2026-05-07. */}
+            <p className="mt-5 text-[15px] font-medium uppercase tracking-[0.18em] text-amber-200/80">
+              {t("preheader")}
+            </p>
+
+            {/* Headline — H1 + italic light-weight subtitle so the
+                two-word lockup ("ליווי עם מיאושי" + "מותאם אישית")
+                reads as one branded statement. */}
             <h1
-              className="mx-auto mt-6 max-w-3xl text-balance text-4xl font-bold leading-[1.08] sm:text-5xl lg:text-6xl"
+              className="mx-auto mt-4 max-w-3xl text-balance text-4xl font-bold leading-[1.08] sm:text-5xl lg:text-6xl"
               style={{
                 fontFamily: "'Frank Ruhl Libre', serif",
                 fontWeight: 600,
@@ -423,8 +449,40 @@ export default async function JourneyMarketingPage({
               <span className="bg-gradient-to-br from-white via-emerald-100 to-amber-200 bg-clip-text text-transparent">
                 {t("h1")}
               </span>
+              <span
+                className="mt-2 block text-[0.7em] font-light text-emerald-100/75"
+                style={{ fontStyle: "italic" }}
+              >
+                {t("h1Sub")}
+              </span>
             </h1>
-            <p className="mx-auto mt-6 max-w-2xl text-pretty text-[18px] leading-relaxed text-white/80 sm:text-[19px]">
+
+            {/* Visual placeholder — per Itzik 2026-05-07 the journey
+                hero needed something to look at, not just text. This
+                is a calm gradient panel with a soft outline; a real
+                photograph or illustration can swap in later by
+                replacing the inner content. */}
+            <div className="mx-auto mt-8 hidden max-w-3xl sm:block">
+              <div
+                aria-hidden
+                className="relative h-[180px] overflow-hidden rounded-3xl border border-emerald-300/20"
+                style={{
+                  background:
+                    "linear-gradient(135deg, rgba(16,185,129,0.16) 0%, rgba(56,189,248,0.10) 50%, rgba(251,191,36,0.14) 100%)",
+                }}
+              >
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="flex flex-col items-center gap-2 text-emerald-100/40">
+                    <Sparkles className="h-7 w-7" />
+                    <span className="text-[12px] uppercase tracking-[0.3em]">
+                      {isHe ? "תמונה תתווסף בקרוב" : "Image coming soon"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <p className="mx-auto mt-8 max-w-2xl text-pretty text-[19px] leading-[1.65] text-white/80 sm:text-[20px]">
               {t("lede")}
             </p>
 
@@ -519,24 +577,24 @@ export default async function JourneyMarketingPage({
                   return (
                     <div
                       key={i}
-                      className="group relative flex flex-col overflow-hidden rounded-3xl border border-[#EAE0E3] bg-[#FBF5F2] p-7 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-transparent hover:shadow-md"
+                      className="group relative grid grid-cols-[56px_1fr] gap-x-4 gap-y-2 overflow-hidden rounded-3xl border border-[#EAE0E3] bg-[#FBF5F2] p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-transparent hover:shadow-md sm:flex sm:flex-col sm:gap-x-0 sm:gap-y-0 sm:p-7"
                     >
                       <div
                         aria-hidden
                         className="absolute inset-x-0 top-0 h-[3px] origin-right scale-x-0 rounded-t-3xl bg-[#B83C4D] transition-transform duration-400 group-hover:scale-x-100"
                       />
                       <div
-                        className={`inline-flex h-14 w-14 items-center justify-center rounded-2xl ${iconBg} text-white shadow-md`}
+                        className={`row-span-3 self-start inline-flex h-14 w-14 items-center justify-center rounded-2xl sm:row-auto ${iconBg} text-white shadow-md`}
                       >
                         <Icon className="h-7 w-7" />
                       </div>
-                      <span className="mt-4 inline-block self-start rounded-full border border-[#EAE0E3] bg-[#FBE9EC] px-3 py-1 text-[12px] font-semibold uppercase tracking-[0.05em] text-[#8B2638]">
+                      <span className="inline-block self-start justify-self-start rounded-full border border-[#EAE0E3] bg-[#FBE9EC] px-3 py-1 text-[12px] font-semibold uppercase tracking-[0.05em] text-[#8B2638] sm:mt-4 sm:justify-self-auto">
                         {stat}
                       </span>
-                      <h3 className="mt-4 font-heading text-xl font-bold leading-snug text-[#170E14]">
+                      <h3 className="font-heading text-2xl font-bold leading-snug text-[#170E14] sm:mt-4 sm:text-xl">
                         {it.h}
                       </h3>
-                      <p className="mt-2 flex-1 text-[18px] leading-[1.6] text-[#4A3A45]">
+                      <p className="text-[18px] leading-[1.6] text-[#4A3A45] sm:mt-2 sm:flex-1">
                         {it.p}
                       </p>
                     </div>
@@ -555,7 +613,7 @@ export default async function JourneyMarketingPage({
                 </span>
 
                 <p
-                  className="mt-7 text-[26px] leading-[1.45] text-[#170E14] sm:text-[30px] lg:text-[34px]"
+                  className="mt-7 text-[30px] leading-[1.35] text-[#170E14] sm:text-[30px] lg:text-[34px]"
                   style={{
                     fontFamily: "'Frank Ruhl Libre', serif",
                     fontWeight: 500,
@@ -628,8 +686,8 @@ export default async function JourneyMarketingPage({
                     }}
                   >
                     {isHe
-                      ? "השאלון פתוח לכולם"
-                      : "the questionnaire is open"}
+                      ? "האבחון פתוח לכולם"
+                      : "the assessment is open"}
                   </p>
                   <span aria-hidden className="h-px w-16 bg-[#B83C4D]/40" />
                 </div>
@@ -642,7 +700,7 @@ export default async function JourneyMarketingPage({
                   >
                     <span
                       aria-hidden
-                      className="absolute inset-0 bg-[linear-gradient(110deg,#d946ef_0%,#a855f7_35%,#ec4899_70%,#f59e0b_100%)] bg-[length:220%_100%] mio-nav-cta-shift"
+                      className="absolute inset-0 bg-[linear-gradient(110deg,#d946ef_0%,#a855f7_35%,#ec4899_70%,#f59e0b_100%)]"
                     />
                     <span className="relative z-10 inline-flex items-center">
                       {primaryLabel}
@@ -796,13 +854,13 @@ export default async function JourneyMarketingPage({
               </div>
 
               {/* 4-card editorial grid with hairline dividers + per-card icon */}
-              <div className="mt-14 grid gap-y-14 md:grid-cols-2 md:gap-x-10 lg:grid-cols-4 lg:gap-x-8 lg:mt-16">
+              <div className="mt-10 grid gap-y-6 md:grid-cols-2 md:gap-x-10 md:gap-y-14 md:mt-14 lg:grid-cols-4 lg:gap-x-8 lg:mt-16">
                 {insideCards.map((c, i) => {
-                  const { Icon, numeral } = insideMeta[i]!;
+                  const { numeral } = insideMeta[i]!;
                   return (
                     <div
                       key={i}
-                      className={`group relative h-full ${
+                      className={`group relative h-full grid grid-cols-[3rem_1fr] items-start gap-x-4 md:block ${
                         i > 0 ? "lg:border-s lg:ps-8" : ""
                       }`}
                       style={
@@ -811,32 +869,24 @@ export default async function JourneyMarketingPage({
                           : undefined
                       }
                     >
-                      <div className="flex items-center gap-3">
-                        <span
-                          className="text-[22px] tracking-[0.1em] text-[#B83C4D] transition-colors duration-300 group-hover:text-[#E9C4CA]"
-                          style={{
-                            fontFamily: "'Frank Ruhl Libre', serif",
-                            fontStyle: "italic",
-                            fontWeight: 500,
-                          }}
-                        >
-                          {numeral}
-                        </span>
-                        <span
-                          aria-hidden
-                          className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 backdrop-blur-md"
-                        >
-                          <Icon className="h-4 w-4 text-[#E9C4CA]" />
-                        </span>
-                      </div>
+                      <span
+                        className="row-span-3 md:row-auto text-center md:text-start text-[32px] leading-none tracking-[0.1em] text-[#B83C4D] transition-colors duration-300 group-hover:text-[#E9C4CA]"
+                        style={{
+                          fontFamily: "'Frank Ruhl Libre', serif",
+                          fontStyle: "italic",
+                          fontWeight: 500,
+                        }}
+                      >
+                        {numeral}
+                      </span>
 
-                      <h3 className="mt-5 text-[22px] font-bold leading-tight text-white sm:text-[24px]">
+                      <h3 className="text-[24px] font-bold leading-tight text-white md:mt-5">
                         {c.h}
                       </h3>
 
-                      <div className="mt-4 h-[2px] w-12 bg-[#B83C4D] transition-all duration-500 ease-out group-hover:w-24" />
+                      <div className="mt-3 h-[2px] w-12 bg-[#B83C4D] transition-all duration-500 ease-out group-hover:w-24 md:mt-4" />
 
-                      <p className="mt-5 text-[18px] leading-[1.65] text-white/70">
+                      <p className="mt-3 text-[18px] leading-[1.65] text-white/70 md:mt-5">
                         {c.p}
                       </p>
                     </div>
@@ -874,10 +924,7 @@ export default async function JourneyMarketingPage({
               >
                 <span
                   aria-hidden
-                  className="absolute inset-0 bg-[linear-gradient(110deg,#d946ef_0%,#a855f7_35%,#ec4899_70%,#f59e0b_100%)] bg-[length:220%_100%] mio-nav-cta-shift"
-                  style={{
-                    animation: "mio-cta-shift 6s ease-in-out infinite",
-                  }}
+                  className="absolute inset-0 bg-[linear-gradient(110deg,#d946ef_0%,#a855f7_35%,#ec4899_70%,#f59e0b_100%)]"
                 />
                 <span className="relative z-10 inline-flex items-center">
                   {hasActiveAssignments
@@ -971,10 +1018,8 @@ export default async function JourneyMarketingPage({
             }
             .mio-journey-gradient-shift { animation: mio-journey-gradient-shift 7s ease-in-out infinite; }
 
-            @keyframes mio-cta-shift {
-              0%, 100% { background-position: 0% 50%; }
-              50%      { background-position: 100% 50%; }
-            }
+            /* mio-cta-shift removed 2026-05-06 - CTAs now use a static
+               gradient. */
 
             @keyframes mio-journey-float {
               0%, 100% { transform: translate3d(0, 0, 0); }
@@ -984,11 +1029,11 @@ export default async function JourneyMarketingPage({
             .mio-journey-float-delay { animation: mio-journey-float 10s ease-in-out infinite; animation-delay: -3s; }
             .mio-journey-float-slow  { animation: mio-journey-float 14s ease-in-out infinite; animation-delay: -5s; }
 
-            /* ── Journey hero animated background — voyage palette ──────
+            /* ── Journey hero animated background - voyage palette ──────
                Goal: feel atmospheric, not announced. Ambient drift, not
                a moving billboard. */
 
-            /* Large drifting blobs — soft, slow, atmospheric. */
+            /* Large drifting blobs - soft, slow, atmospheric. */
             .journey-blob {
               position: absolute;
               border-radius: 50%;
@@ -1011,7 +1056,7 @@ export default async function JourneyMarketingPage({
               animation: journey-blob-2-converge 56s ease-in-out infinite;
             }
 
-            /* Slow, small drift — converge gently, never crowd the headline */
+            /* Slow, small drift - converge gently, never crowd the headline */
             @keyframes journey-blob-1-converge {
               0%, 100% { transform: translate(0, 0) scale(1); }
               50%      { transform: translate(140px, 100px) scale(1.06); }
@@ -1040,7 +1085,7 @@ export default async function JourneyMarketingPage({
               75%      { transform: translate(60px, -30px) scale(1.07); }
             }
 
-            /* 12 small drifting orbit dots — journey palette.
+            /* 12 small drifting orbit dots - journey palette.
                Single smooth fade gradient (no mid-stop ring) so they feather
                into the bg instead of looking outlined. Glow halo softened
                so the dots blend rather than announce themselves. */
@@ -1064,7 +1109,7 @@ export default async function JourneyMarketingPage({
             .journey-orbit-11 { width: 5px;  height: 5px;  left: 30%; top: 38%; background: radial-gradient(circle, rgba(167,243,208,0.8)  0%, rgba(167,243,208,0)  70%);  box-shadow: 0 0 8px  rgba(167,243,208,0.2);   animation: journey-orbit-a 28s ease-in-out infinite; animation-delay: 4s; }
             .journey-orbit-12 { width: 8px;  height: 8px;  left: 68%; top: 8%;  background: radial-gradient(circle, rgba(253,224,71,0.8)   0%, rgba(253,224,71,0)   70%);  box-shadow: 0 0 10px rgba(253,224,71,0.22);   animation: journey-orbit-b 30s ease-in-out infinite; animation-delay: .5s; }
 
-            /* Drift ranges halved from previous version — feels ambient,
+            /* Drift ranges halved from previous version - feels ambient,
                not propelled. Opacity softer so dots breathe in/out. */
             @keyframes journey-orbit-a { 0%,100% { transform: translate(0,0); opacity: .25; } 50% { transform: translate(30px,-40px);  opacity: .65; } }
             @keyframes journey-orbit-b { 0%,100% { transform: translate(0,0); opacity: .25; } 50% { transform: translate(-40px,30px); opacity: .65; } }

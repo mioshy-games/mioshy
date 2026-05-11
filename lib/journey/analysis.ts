@@ -134,7 +134,7 @@ export function scoreResponses(responses: Response[]): {
     if ((q.type === "forced_choice" || q.type === "single_choice") && r.answer.kind === "single") {
       // Extract the option id BEFORE the find() callback. Inside the
       // callback, TypeScript can't preserve the narrowing of `r.answer`
-      // to the single variant — a callback might (in theory) be called
+      // to the single variant - a callback might (in theory) be called
       // after `r.answer` has changed type, so TS forbids `.option`
       // access there. Pulling it out into a local const captures the
       // narrowed value at this point and the callback only sees a string.
@@ -241,7 +241,7 @@ function fourHorsemenFlag(scores: AxisScoreMap): boolean {
  * Pulls the user's #1 priority slug out of their `q_priorities` ranking
  * answer. Returns null if the question wasn't answered or the answer is
  * malformed. The validator on /api/journey/answer normally guarantees
- * order is a full permutation of PRIORITY_KEYS — but the analysis layer
+ * order is a full permutation of PRIORITY_KEYS - but the analysis layer
  * never trusts that and re-validates here.
  */
 function extractTopPriority(responses: Response[]): PriorityKey | null {
@@ -267,7 +267,7 @@ function generateSummary(params: {
   priorityLabels: PriorityLabelsBundle;
 }): AnalysisSummaryBilingual {
   // The new narrative leans on the chosen priority + love language
-  // instead of leading with raw friendship/conflict/passion scores —
+  // instead of leading with raw friendship/conflict/passion scores -
   // those still surface as their own card row in AnalysisSummary.tsx
   // so we don't repeat them in prose. Hence the smaller param surface.
   const { topPriority, primary, horsemenFlag, priorityLabels } = params;
@@ -293,21 +293,21 @@ function generateSummary(params: {
   // raw scores (those have their own card UI further down). Centres the
   // story around the priority the user JUST told us they care about.
   const narrativeHeParts = [
-    `אנחנו רואים בתשובות שלכם זוגיות אמיתית — עם היכרות, חום, ורצון להתחבר עוד יותר.`,
-    `העדיפות הראשונה שבחרתם היא ${focusHe}${focusDescHe ? ` — ${focusDescHe}` : ""}, ושם אנחנו מתחילים.`,
+    `אנחנו רואים בתשובות שלכם זוגיות אמיתית - עם היכרות, חום, ורצון להתחבר עוד יותר.`,
+    `העדיפות הראשונה שבחרתם היא ${focusHe}${focusDescHe ? ` - ${focusDescHe}` : ""}, ושם אנחנו מתחילים.`,
     primaryHe
-      ? `שפת האהבה שמאירה אצלכם הכי חזק היא ${primaryHe} — דרכה אפשר לבן/בת הזוג להרגיש את האהבה שלכם בלי מאמץ.`
+      ? `שפת האהבה שמאירה אצלכם הכי חזק היא ${primaryHe} - דרכה אפשר לבן/בת הזוג להרגיש את האהבה שלכם בלי מאמץ.`
       : "",
     horsemenFlag
-      ? "זיהינו דפוסי תקשורת שמומחי הזוגיות שלנו יודעים בדיוק איך לעבוד איתם — נתחיל שם, ברוגע ובעדינות."
+      ? "זיהינו דפוסי תקשורת שמומחי הזוגיות שלנו יודעים בדיוק איך לעבוד איתם - נתחיל שם, ברוגע ובעדינות."
       : "בסיס התקשורת ביניכם איתן, מה שמאפשר לנו לצלול מיד לעומק החיבור.",
   ].filter(Boolean);
 
   const narrativeEnParts = [
-    `Your answers describe a real, living relationship — with depth, warmth, and a real wish to connect more.`,
-    `The #1 priority you chose is ${focusEn}${focusDescEn ? ` — ${focusDescEn}` : ""}, and that's where we begin.`,
+    `Your answers describe a real, living relationship - with depth, warmth, and a real wish to connect more.`,
+    `The #1 priority you chose is ${focusEn}${focusDescEn ? ` - ${focusDescEn}` : ""}, and that's where we begin.`,
     primaryEn
-      ? `Your strongest love language is ${primaryEn} — through it, your partner feels your love effortlessly.`
+      ? `Your strongest love language is ${primaryEn} - through it, your partner feels your love effortlessly.`
       : "",
     horsemenFlag
       ? "We noticed a few communication patterns our experts know exactly how to soften. We'll start there, gently."
@@ -333,13 +333,13 @@ function generateSummary(params: {
     he:
       `נתחיל בעדיפות ${focusHe} שבחרתם. ` +
       "בעזרת כלים מעולם הפסיכולוגיה הזוגית, הניסיון של מאות זוגות שעברו אצלנו, " +
-      "ועם המומחים שלנו בתחום — בנינו תוכן מעמיק שיעבוד בדיוק איפה שאתם רוצים. " +
+      "ועם המומחים שלנו בתחום - בנינו תוכן מעמיק שיעבוד בדיוק איפה שאתם רוצים. " +
       "הכי חשוב: השירות אישי לחלוטין. אנחנו לומדים אתכם, " +
       "והמומחים שלנו מתאימים את התוכן עבורכם לאורך כל הדרך.",
     en:
       `We'll start with the priority you chose: ${focusEn}. ` +
       "Using tools from couples psychology, the experience of hundreds of couples who walked this path with us, " +
-      "and our in-house experts — we've built deep content that works exactly where you want it to. " +
+      "and our in-house experts - we've built deep content that works exactly where you want it to. " +
       "Most importantly: this service is fully personal. " +
       "We learn you, and our experts adapt the content for you, every step of the way.",
   });
@@ -399,7 +399,7 @@ export function axisLabel(axis: Axis, locale: "he" | "en"): string {
   return locale === "he" ? AXIS_LABEL_HE[axis] : AXIS_LABEL_EN[axis];
 }
 
-/** For quick debugging / tests — exposed so admin can inspect raw math. */
+/** For quick debugging / tests - exposed so admin can inspect raw math. */
 export const __analysisInternals = {
   FRIENDSHIP_AXES,
   HORSEMEN_AXES,

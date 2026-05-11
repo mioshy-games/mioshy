@@ -1,5 +1,5 @@
 /**
- * JourneyProgressRail — horizontal progress strip above the pillar
+ * JourneyProgressRail - horizontal progress strip above the pillar
  * grid that tells the user "I am inside a process" at a glance.
  *
  * MVP day 2 + Phase 2A:
@@ -8,7 +8,7 @@
  *     topics) for users with no assigned content, and a DYNAMIC
  *     version that aggregates the user's real journey timeline.
  *   - This component only renders. It doesn't fetch or compute the
- *     statuses — that lives in lib/dashboard/journey-rail.ts.
+ *     statuses - that lives in lib/dashboard/journey-rail.ts.
  *   - Static, no animation. The only visual cues are the per-pill
  *     icon, color, and the small hint line.
  */
@@ -33,12 +33,12 @@ export function JourneyProgressRail({
    *  caption above the rail. */
   isDynamic: boolean;
 }) {
-  // Logged-in users without a Journey purchase still see the rail —
+  // Logged-in users without a Journey purchase still see the rail -
   // it's the clearest "what you'd get" preview. We dim it slightly
   // and label it as a preview.
   const previewMode = !hasJourneyEntitlement;
 
-  // Don't render anything if there's nothing to show — protects the
+  // Don't render anything if there's nothing to show - protects the
   // page when an unexpected empty array slips through.
   if (entries.length === 0) return null;
 
@@ -88,8 +88,8 @@ export function JourneyProgressRail({
       <p className="mt-3 text-[12px] leading-relaxed text-white/55">
         {previewMode
           ? isHe
-            ? "תוכנית עבודה שמותאמת אישית לכם — מתחילה באבחון ונבנית סביב הנושאים שעולים מהתשובות שלכם."
-            : "A personalized work program — starts with the assessment and is built around topics emerging from your answers."
+            ? "תוכנית עבודה שמותאמת אישית לכם - מתחילה באבחון ונבנית סביב הנושאים שעולים מהתשובות שלכם."
+            : "A personalized work program - starts with the assessment and is built around topics emerging from your answers."
           : isHe
             ? "אנחנו עובדים על התשובות שלכם. כל פעם שיש תוכן חדש, הוא ייפתח כאן. אין הפתעות."
             : "We're working on your answers. New content opens here when it's ready. No surprises."}
@@ -130,7 +130,7 @@ function RailPill({ entry }: { entry: RailEntry }) {
       ].join(" ")}
       title={entry.hint}
     >
-      {/* One-shot sparkle when this entry just became "current" — only
+      {/* One-shot sparkle when this entry just became "current" - only
           fires the first time the user sees it (localStorage tracked). */}
       <SparkleBurst sparkleKey={entry.key} active={entry.status === "current"} />
       <div className="flex items-center gap-1.5">

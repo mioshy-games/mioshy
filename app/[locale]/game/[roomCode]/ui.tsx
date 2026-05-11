@@ -121,7 +121,11 @@ export function RoomClient({ locale, roomCode }: { locale: string; roomCode: str
 
                 await startGame(initial, config as unknown as Record<string, unknown>);
               } catch {
-                setStartErr("לא ניתן להתחיל משחק. בדקו הרשאות/קונפיג פעיל.");
+                setStartErr(
+                  locale === "he"
+                    ? "לא ניתן להתחיל משחק. בדקו הרשאות/קונפיג פעיל."
+                    : "Couldn't start the game. Check permissions / active config.",
+                );
               }
             }}
           >

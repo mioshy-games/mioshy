@@ -76,7 +76,7 @@ export async function GET(req: Request) {
 
   // Always respond 200 to Cardcom immediately
   if (!lowProfileCode) {
-    console.warn("[indicator:NO_CODE] missing LowProfileCode — exiting", {
+    console.warn("[indicator:NO_CODE] missing LowProfileCode - exiting", {
       query: url.search,
     })
     return new Response("ok", { status: 200 })
@@ -105,7 +105,7 @@ export async function GET(req: Request) {
   })
 
   if (existing?.processed) {
-    console.log("[indicator:IDEMPOTENT_SKIP] already processed — returning early", {
+    console.log("[indicator:IDEMPOTENT_SKIP] already processed - returning early", {
       idempotency_key: idempotencyKey,
       existing_id:     existing.id,
       existing_created_at: existing.created_at,
@@ -541,7 +541,7 @@ export async function GET(req: Request) {
       // (Cardcom retried its callback after we already issued), skip.
       if (charge?.invoice_url) {
         await admin.from("billing_events").update({ processed: true }).eq("idempotency_key", idempotencyKey)
-        console.log("[indicator:IDEMPOTENT_INVOICE] charge already has invoice_url — skipping issuance", {
+        console.log("[indicator:IDEMPOTENT_INVOICE] charge already has invoice_url - skipping issuance", {
           session_id: sessionId, charge_id: chargeId,
         })
         return new Response("ok", { status: 200 })
@@ -552,8 +552,15 @@ export async function GET(req: Request) {
   // ISO-2 country fallback. The issuer schema requires exactly 2 chars
   // (`z.string().min(2).max(2)`); if checkout_sessions.country_code is
   // null (e.g. inline signup without a geo question) we have to default
-  // — Israeli purchases are by far the common case and we already know
+  // - Israeli purchases are by far the common case and we already know
   // is_israeli from the session.
+  //
+  // IMPORTANT - DO NOT re-derive country/locale from request headers here.
+  // This handler is a Cardcom webhook callback: it runs from Cardcom's
+  // IP, not the user's. The trusted source is the `checkout_sessions`
+  // row, which was populated at /api/billing/checkout/create from
+  // Vercel's `x-vercel-ip-country` (see lib/geo-from-request.ts). Reading
+  // headers here would invalidate the IP-based tax decision.
   const country2 =
     typeof session.country_code === "string" && session.country_code.trim().length === 2
       ? session.country_code.trim().toUpperCase()
@@ -575,14 +582,14 @@ export async function GET(req: Request) {
   //
   // Tax compliance note: in Israel, official invoices/receipts are
   // legally required for purchases. This flag is acceptable only as a
-  // short-term operational workaround — never as a permanent state.
+  // short-term operational workaround - never as a permanent state.
   // ─────────────────────────────────────────────────────────────────
   const billingDisabled =
     String(process.env.UXELLENT_BILLING_DISABLED || "").toLowerCase() === "true"
 
   const invoiceResult = billingDisabled
     ? (() => {
-        console.warn("[indicator] UXELLENT_BILLING_DISABLED=true — skipping invoice creation", {
+        console.warn("[indicator] UXELLENT_BILLING_DISABLED=true - skipping invoice creation", {
           session_id: sessionId,
           user_id:    userId,
           deal_number: indicator.dealNumber ?? null,
@@ -625,7 +632,7 @@ export async function GET(req: Request) {
     }
   } else {
     // Note: per-attempt and final failures are already logged by the
-    // retry wrapper. We do NOT block the response — Cardcom must get 200
+    // retry wrapper. We do NOT block the response - Cardcom must get 200
     // and the user keeps their subscription. The daily repair cron at
     // /api/billing/repair-missing-invoices will retry.
     console.error("[indicator] invoice creation failed (after retries)", {

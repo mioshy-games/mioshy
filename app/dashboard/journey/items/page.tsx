@@ -21,6 +21,9 @@ import {
 import { RowActions } from "@/components/dashboard/journey/RowActions";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
+import { SectionHelp } from "@/components/dashboard/SectionHelp";
+import { getAdminLocale } from "@/lib/admin/locale";
+import { t } from "@/lib/admin/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +33,7 @@ export default async function ItemsListPage({
   searchParams: { category?: string; subtopic?: string };
 }) {
   await requireAdmin();
+  const locale = getAdminLocale();
 
   // Subtopic filter sentinels:
   //   ?subtopic=<uuid>    → only items in that subtopic
@@ -51,7 +55,7 @@ export default async function ItemsListPage({
     adminListCategoriesWithItemCounts(),
     adminListPrograms(),
     // Only show the subtopic filter strip when the admin has narrowed
-    // to one category — otherwise it'd be a wall of pills.
+    // to one category - otherwise it'd be a wall of pills.
     searchParams.category
       ? listSubtopics({ categoryId: searchParams.category })
       : Promise.resolve([]),
@@ -59,14 +63,14 @@ export default async function ItemsListPage({
   const programNameById = new Map(programs.map((p) => [p.id, p.name_he] as const));
   const categoryById = new Map(categories.map((c) => [c.id, c] as const));
 
-  // v3 slice 7 — group-binding counts per visible subtopic. Surfaces
+  // v3 slice 7 - group-binding counts per visible subtopic. Surfaces
   // a "bound to N group(s)" hint on each pill so admins see why
   // cadence might behave differently for some users.
   const subtopicGroupCounts = await countGroupBindingsForSubtopics(
     subtopicsForCategory.map((s) => s.id),
   );
 
-  // v3 slice 9 — live stats per visible item, in one round-trip. The
+  // v3 slice 9 - live stats per visible item, in one round-trip. The
   // compact pill format is "Q5 / D120 / 78%C / 4%S" per Itzik's brief.
   const liveStatsByItem = await getItemLiveStatsBatch(items.map((i) => i.id));
 
@@ -78,21 +82,57 @@ export default async function ItemsListPage({
             href="/dashboard/journey"
             className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-sm"
           >
-            <ArrowLeft className="size-4" />
-            Back to Journey overview
+            <ArrowLeft className="size-4 rtl:scale-x-[-1]" />
+            {t(locale, "btn.back")}
           </Link>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight">Items</h1>
+          <span className="mt-2 inline-flex items-center gap-1.5">
+            <h1 className="text-3xl font-bold tracking-tight">{t(locale, "journey.items.title")}</h1>
+            <SectionHelp
+              title="פריטי המסע — הקטלוג"
+              body={
+                <>
+                  <p>
+                    כל 250 השיעורים בקטלוג. כל פריט שייך לקטגוריה אחת ונושא
+                    אופסט unlock ברירת־מחדל. <strong>עריכות מתעדכנות
+                    אוטומטית בכל שורת scheduled שיש בפרודקשן</strong> — אין
+                    צורך לעדכן ידנית.
+                  </p>
+                  <p>
+                    <strong>חלוקה:</strong> 4 שלבים (יסודות / העמקה /
+                    אינטגרציה / הבשלה) × 5 קטגוריות = 50 / 75 / 75 / 50.
+                    <br />
+                    <strong>מקורות:</strong> 130 חוקרים שונים — Gottman,
+                    Chapman, Sue Johnson, Esther Perel, Brené Brown ועוד.
+                  </p>
+                  <p>
+                    <strong>פילטרים:</strong> לפי קטגוריה / תת־נושא. לחיצה
+                    על שורה → עורך השיעור עם 9 בלוקים מובנים.
+                  </p>
+                  <p>
+                    <strong>+ פריט חדש:</strong> מוסיף פריט לקטלוג שייהיה
+                    זמין כהמלצה לכל הזוגות. לתוכן ad-hoc לזוג בודד — V2
+                    (override mechanic).
+                  </p>
+                </>
+              }
+              aiNote={
+                <p>
+                  ה-AI לא נוגע בעריכה. אבל פידבק שלילי על פריט מצטבר:
+                  פריט עם 3+ &quot;לא בשבילנו&quot; / &quot;החמיר&quot;
+                  ייסתר אוטומטית מ-Smart Suggestions עד שתבדקו אותו ידנית.
+                </p>
+              }
+            />
+          </span>
           <p className="text-muted-foreground mt-1 max-w-2xl text-sm">
-            The content catalog. Each item lives in exactly one category and
-            carries a default unlock offset. Edits propagate to every
-            scheduled row automatically.
+            {t(locale, "journey.items.subtitle")}
           </p>
         </div>
         <Link
           href="/dashboard/journey/items/new"
           className={cn(buttonVariants({ variant: "default" }), "inline-flex gap-1.5")}
         >
-          <Plus className="size-4" /> New item
+          <Plus className="size-4" /> {t(locale, "journey.hub.new_item")}
         </Link>
       </div>
 
@@ -127,7 +167,7 @@ export default async function ItemsListPage({
         </div>
       ) : null}
 
-      {/* Subtopic sub-filter — only when a category is selected. */}
+      {/* Subtopic sub-filter - only when a category is selected. */}
       {searchParams.category && subtopicsForCategory.length > 0 ? (
         <div className="flex flex-wrap gap-2 text-xs">
           <span className="text-muted-foreground self-center">Subtopic:</span>
@@ -167,7 +207,7 @@ export default async function ItemsListPage({
                 )}
                 title={
                   groupCount > 0
-                    ? `Bound to ${groupCount} group${groupCount === 1 ? "" : "s"} — cadence behaves differently for those members.`
+                    ? `Bound to ${groupCount} group${groupCount === 1 ? "" : "s"} - cadence behaves differently for those members.`
                     : undefined
                 }
               >
@@ -216,12 +256,12 @@ export default async function ItemsListPage({
                   className="text-muted-foreground h-24 text-center"
                 >
                   {subtopicFilterRaw === "__none__"
-                    ? "No items hang directly off this category yet — every item is in a subtopic."
+                    ? "No items hang directly off this category yet - every item is in a subtopic."
                     : subtopicFilterRaw
                       ? "No items in this subtopic yet."
                       : searchParams.category
                         ? "No items in this category yet."
-                        : "No items yet — click \"New item\" to add one."}
+                        : "No items yet - click \"New item\" to add one."}
                 </TableCell>
               </TableRow>
             ) : (
@@ -282,12 +322,12 @@ export default async function ItemsListPage({
                       {stats ? (
                         <span title={`Queued ${stats.queued} · Delivered ${stats.delivered} · Completed ${stats.completed} (${completionRate ?? 0}%) · Skipped ${stats.skipped} (${skipRate ?? 0}%)`}>
                           Q{stats.queued}/D{stats.delivered}/
-                          {completionRate !== null ? `${completionRate}%C` : "—C"}
+                          {completionRate !== null ? `${completionRate}%C` : "-C"}
                           /
-                          {skipRate !== null ? `${skipRate}%S` : "—S"}
+                          {skipRate !== null ? `${skipRate}%S` : "-S"}
                         </span>
                       ) : (
-                        "—"
+                        "-"
                       )}
                     </TableCell>
                     <TableCell className="text-right">

@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * ClinicianResponseRow — one entry in the clinician's response inbox.
- * Phase 2D: now interactive — reply form + triage status buttons.
+ * ClinicianResponseRow - one entry in the clinician's response inbox.
+ * Phase 2D: now interactive - reply form + triage status buttons.
  *
  * Flow:
  *   1. Clinician sees the user's response (read-only block at top).
@@ -56,7 +56,7 @@ export function ClinicianResponseRow({
   const handleSendReply = () => {
     if (tooShort || tooLong || pending) return;
     startTransition(async () => {
-      // v3 slice 8 — route through postExpertReplyToItem so the reply
+      // v3 slice 8 - route through postExpertReplyToItem so the reply
       // lands as a journey_messages row (canonical thread) AND mirrors
       // to journey_item_responses.clinician_reply_text via the dual-
       // write path (preserves the legacy inbox semantics).
@@ -66,7 +66,7 @@ export function ClinicianResponseRow({
       });
       if (result.ok) {
         // markResolved keeps working through the legacy status path
-        // — postExpertReplyToItem doesn't touch clinician_status.
+        // - postExpertReplyToItem doesn't touch clinician_status.
         if (markResolved) {
           await clinicianSetStatus({
             responseId: row.id,
@@ -107,7 +107,7 @@ export function ClinicianResponseRow({
 
   return (
     <article className="rounded-xl border border-white/[0.08] bg-white/[0.025] p-4">
-      {/* Header — item title, category, status pill, timestamp */}
+      {/* Header - item title, category, status pill, timestamp */}
       <header className="flex flex-wrap items-baseline justify-between gap-2">
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-white">{row.itemTitle}</p>
@@ -129,7 +129,7 @@ export function ClinicianResponseRow({
         </div>
       </header>
 
-      {/* Body — assessment answers (Phase 3 step 4) when present;
+      {/* Body - assessment answers (Phase 3 step 4) when present;
           otherwise the user's prose response_text. Both can co-exist
           if the user typed a summary alongside a structured answer. */}
       {row.itemKind !== "content" && row.assessmentPayload && row.structuredAnswer ? (
@@ -142,7 +142,7 @@ export function ClinicianResponseRow({
         </div>
       ) : null}
 
-      {row.responseText && row.responseText !== "[שאלון מלא — מובנה בלבד]" ? (
+      {row.responseText && row.responseText !== "[אבחון מלא - מובנה בלבד]" && row.responseText !== "[שאלון מלא - מובנה בלבד]" ? (
         <div className="mt-2 flex items-start gap-2">
           <MessageCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-white/40" aria-hidden="true" />
           <p className="whitespace-pre-wrap text-sm leading-relaxed text-white/80">
@@ -233,7 +233,7 @@ export function ClinicianResponseRow({
         </div>
       ) : null}
 
-      {/* Footer — partner label, private flag, action buttons */}
+      {/* Footer - partner label, private flag, action buttons */}
       <footer className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[11px]">
         <div className="flex items-center gap-2 text-white/55">
           <span className="inline-flex items-center gap-1">

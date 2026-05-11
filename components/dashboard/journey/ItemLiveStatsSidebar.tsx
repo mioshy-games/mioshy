@@ -1,9 +1,9 @@
 // ============================================================
-// ItemLiveStatsSidebar — slice 9 read-only stats panel for the
+// ItemLiveStatsSidebar - slice 9 read-only stats panel for the
 // catalog item editor. Server-rendered, no interactivity.
 //
-// Layout: a card of 5 stats — queued / delivered / completed / skipped
-// / avg-days-to-first-response — each with a hint of what drives them.
+// Layout: a card of 5 stats - queued / delivered / completed / skipped
+// / avg-days-to-first-response - each with a hint of what drives them.
 // ============================================================
 
 import {
@@ -70,7 +70,7 @@ export function ItemLiveStatsSidebar({ stats }: { stats: ItemLiveStats }) {
           value={
             stats.avgDaysToFirstResponse !== null
               ? `${stats.avgDaysToFirstResponse} d`
-              : "—"
+              : "-"
           }
           hint="From unlock_at to the user's first message in the thread."
           wide

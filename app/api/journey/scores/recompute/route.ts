@@ -1,7 +1,7 @@
 /**
  * POST /api/journey/scores/recompute
  *
- * Slice 9 — Bearer-secured cron entry that recomputes
+ * Slice 9 - Bearer-secured cron entry that recomputes
  * journey_user_scores for every user with recent activity.
  *
  * The existing /api/admin/journey/recompute-scores route stays for

@@ -173,7 +173,7 @@ export async function removeGroupMember(args: {
 
 /**
  * Couple-as-group sugar: resolves the couple to its two member
- * user_ids and inserts both. Idempotent — already-member rows
+ * user_ids and inserts both. Idempotent - already-member rows
  * silently succeed. Returns the count of NEW members added.
  */
 export async function addCoupleAsGroupMembers(args: {
@@ -221,14 +221,14 @@ export async function addCoupleAsGroupMembers(args: {
 /**
  * Replace the entire set of bindings for a group with `bindings`.
  * Atomic-ish: delete-all + bulk insert. Caller passes the COMPLETE
- * desired list — anything missing from it is removed.
+ * desired list - anything missing from it is removed.
  */
 export async function setGroupSubtopicBindings(args: {
   groupId: string;
   bindings: JourneyGroupSubtopicBindingInput[];
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   if (!args.groupId) return { ok: false, error: "missing_id" };
-  // Validate every binding upfront — bail before any DB write if shape
+  // Validate every binding upfront - bail before any DB write if shape
   // is wrong so we don't end up with a half-cleared group.
   const validated: JourneyGroupSubtopicBindingInput[] = [];
   for (const b of args.bindings ?? []) {

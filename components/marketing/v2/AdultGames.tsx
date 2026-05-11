@@ -6,9 +6,14 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/navigation";
 
 /**
- * AdultGames - "The private chamber". Premium private-chamber section with midnight
- * wine + bronze palette, 3 manifesto pillars, signature whisper, and dramatic
- * closer CTA.
+ * AdultGames — "Mioshy's Sex Rules" (renamed from "The private chamber"
+ * per Itzik 2026-05-06). Premium manifesto section with midnight wine +
+ * bronze palette, 3 manifesto pillars (I/II/III), signature whisper,
+ * and dramatic closer CTA → /mioshy-sex.
+ *
+ * The English/Hebrew product brand was also renamed:
+ *   "Adults Only" / "למבוגרים בלבד" → "Mioshy's Sex" / "הסקס של מיאושי"
+ * URL: /adults → /mioshy-sex
  */
 export function AdultGames() {
   const t = useTranslations("homeV2.adultGames");
@@ -71,7 +76,7 @@ export function AdultGames() {
                 br: () => <br />,
               })}
             </h3>
-            <Link href="/adults" className="ag-closer-cta">
+            <Link href="/mioshy-sex" className="ag-closer-cta">
               {t("cta")}
             </Link>
             <div className="ag-closer-trust">

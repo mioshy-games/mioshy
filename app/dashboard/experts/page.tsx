@@ -1,5 +1,5 @@
 /**
- * /dashboard/experts — admin-only.
+ * /dashboard/experts - admin-only.
  *
  * Manage expert ↔ couple links. Each row is a couple; the admin can:
  *   - See which expert(s) are currently linked.

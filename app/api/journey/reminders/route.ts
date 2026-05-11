@@ -1,16 +1,16 @@
 /**
  * POST /api/journey/reminders
  *
- * Slice 10 — daily reminder cron at 08:00 UTC. Three sweeps:
+ * Slice 10 - daily reminder cron at 08:00 UTC. Three sweeps:
  *
  *   1. INACTIVITY: cadence-eligible users whose last delivered item
- *      is ≥5 days old AND has no response — and who haven't already
+ *      is ≥5 days old AND has no response - and who haven't already
  *      received a reminder_inactivity in the last 5 days. Sends both
  *      in-app + email.
  *
  *   2. UNFOLLOWED REPLY: per-item threads where the latest expert
  *      reply is >24h old AND the user hasn't followed up. In-app
- *      only (no email — too noisy).
+ *      only (no email - too noisy).
  *
  *   3. STUCK USERS DIGEST: one email per day to the admin pool
  *      summarising getStuckUsers() output. Throttled by the
@@ -92,7 +92,7 @@ async function handle(req: Request): Promise<Response> {
     dryRun,
   };
 
-  // ── Sweep 1 — INACTIVITY ──────────────────────────────────────────
+  // ── Sweep 1 - INACTIVITY ──────────────────────────────────────────
   // Find every user with an active cadence assignment whose latest
   // cadence delivery is ≥5 days old and has no response. Also gate
   // on "no reminder in the last 5 days" so we don't spam.
@@ -183,7 +183,7 @@ async function handle(req: Request): Promise<Response> {
     }
   }
 
-  // ── Sweep 2 — UNFOLLOWED EXPERT REPLY ─────────────────────────────
+  // ── Sweep 2 - UNFOLLOWED EXPERT REPLY ─────────────────────────────
   // Find per-item threads where:
   //   * the latest message in the thread is from the expert
   //   * its created_at is older than 24h
@@ -217,7 +217,7 @@ async function handle(req: Request): Promise<Response> {
   if (latestByItem.size > 0) {
     const itemIds = Array.from(latestByItem.keys());
     // Find any USER posts on these items more recent than the expert
-    // reply — if any, the user already followed up; skip.
+    // reply - if any, the user already followed up; skip.
     const { data: userMsgRows } = await admin
       .from("journey_messages")
       .select("scheduled_item_id, created_at")
@@ -292,7 +292,7 @@ async function handle(req: Request): Promise<Response> {
     }
   }
 
-  // ── Sweep 3 — STUCK USERS DIGEST ─────────────────────────────────
+  // ── Sweep 3 - STUCK USERS DIGEST ─────────────────────────────────
   const stuck = await getStuckUsers(7, 100);
   summary.stuck_users = stuck.length;
   if (stuck.length > 0 && !dryRun) {
@@ -301,13 +301,13 @@ async function handle(req: Request): Promise<Response> {
         .slice(0, 50)
         .map(
           (u) =>
-            `• ${u.full_name || u.email || u.user_id.slice(0, 8)} — ${u.days_since_delivery >= 999 ? "never" : `${u.days_since_delivery} days idle`}`,
+            `• ${u.full_name || u.email || u.user_id.slice(0, 8)} - ${u.days_since_delivery >= 999 ? "never" : `${u.days_since_delivery} days idle`}`,
         )
         .join("<br>");
       await notifyAdminPool({
         kind: "stuck_users_digest",
         subject: `Mioshy admin: ${stuck.length} stuck user(s) this week`,
-        // Once-per-day collapse — admin only ever gets one digest in
+        // Once-per-day collapse - admin only ever gets one digest in
         // any 24h window.
         throttleHours: 24,
         throttleKey: "stuck_users_digest",

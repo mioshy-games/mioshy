@@ -7,8 +7,8 @@
  * (JourneyExpertMessage component). Phase 4 wiring.
  *
  * Two surfaces:
- *   - submitExpertMessage(text)        — user-side, RLS-aware insert
- *   - listClinicianMessagesForUsers()  — admin-side, service-role bulk
+ *   - submitExpertMessage(text)        - user-side, RLS-aware insert
+ *   - listClinicianMessagesForUsers()  - admin-side, service-role bulk
  *
  * Tone of API: never throws to the caller. Return typed result.
  */

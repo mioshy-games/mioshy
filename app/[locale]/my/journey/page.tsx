@@ -1,11 +1,11 @@
 /**
- * /[locale]/my/journey — "החדר הפרטי שלך"
+ * /[locale]/my/journey - "החדר הפרטי שלך"
  *
  * Post-purchase private space for an active Journey subscriber.
  *
  * What this page is NOT (anymore):
  *   - It is NOT the assessment. A paying user must NEVER land back on
- *     the questionnaire — that was the worst UX issue documented in
+ *     the questionnaire - that was the worst UX issue documented in
  *     docs/post-purchase-experience-spec.md §1.
  *   - It is NOT a marketing page. "40 questions, personal report,
  *     practical guidance" copy does not appear here.
@@ -18,7 +18,7 @@
  *     anything yet, a default category card stands in.
  *   - A "Coming up" rail with locked placeholders so the page never
  *     looks empty even on day one.
- *   - Footer reassurance — "we'll keep you posted, just check back".
+ *   - Footer reassurance - "we'll keep you posted, just check back".
  *
  * Routing logic:
  *   - No journey subscription → redirect to /journey marketing.
@@ -59,6 +59,28 @@ import { getFreshClinicianReplies } from "@/lib/journey-content/fresh-replies";
 import { SubscriptionStatusBanner } from "@/components/my/SubscriptionStatusBanner";
 import { JourneyGraceBanner } from "@/components/my/JourneyGraceBanner";
 import { WelcomeProcessingBanner } from "@/components/my/WelcomeProcessingBanner";
+import {
+  JourneyKickoffCards,
+  type JourneyKickoffStartItem,
+} from "@/components/my/JourneyKickoffCards";
+import { JourneyFirstSession } from "@/components/my/JourneyFirstSession";
+import { getCoachPersonaForUser } from "@/lib/journey/coach";
+import { getActiveViewAs } from "@/lib/journey/view-as";
+import { ViewAsBanner } from "@/components/my/ViewAsBanner";
+import { getDriftBannerForCurrentUser } from "@/lib/journey/drift-user";
+import { DriftAwarenessBanner } from "@/components/my/DriftAwarenessBanner";
+import { getCurrentUserPauseState } from "@/lib/billing/pause-state";
+import { PausedStateScreen } from "@/components/my/PausedStateScreen";
+import { getLatestRecapForCurrentUser } from "@/lib/journey/recap-read";
+import { WeeklyRecapCard } from "@/components/my/WeeklyRecapCard";
+import {
+  getPendingMilestoneForCurrentUser,
+  getMilestoneDef,
+} from "@/lib/journey/milestones";
+import { MilestoneRevealModal } from "@/components/my/MilestoneRevealModal";
+import { generateCoupleStoryNarrative } from "@/lib/journey/story-narrative";
+import { getScoreHistoryForUser } from "@/lib/journey/score-history";
+import { ScoreEvolutionChart } from "@/components/my/ScoreEvolutionChart";
 import {
   JourneyActivityHistory,
   type JourneyActivityEntry,
@@ -173,6 +195,40 @@ export default async function PrivateJourneyPage({
     redirect(`/${locale}/auth`);
   }
 
+  // Layer-2 view-as: when active, surface the banner AND substitute
+  // every read to use the impersonated user. The coach sees the
+  // user's actual dashboard (timeline, channel, priorities, score
+  // history, etc.) — not their own. Writes (markFirstSessionCompleted,
+  // ensureUserChannel write paths) keep `user.id` so a coach can never
+  // mutate the user's profile by accident. The banner stays so
+  // impersonation is always observable.
+  const viewAsContext = await getActiveViewAs();
+  // FU6.S3 — read substitution. Falls back to the auth user when no
+  // impersonation is active, so behaviour is unchanged for normal users.
+  const effectiveUserId = viewAsContext?.viewedUserId ?? user.id;
+  let viewAsLabel: string | null = null;
+  if (viewAsContext) {
+    const adminClient = createServiceRoleClient();
+    if (adminClient) {
+      const { data: viewedRow } = await adminClient
+        .from("profiles")
+        .select("full_name, id")
+        .eq("id", viewAsContext.viewedUserId)
+        .maybeSingle();
+      const fullName =
+        (viewedRow as { full_name: string | null } | null)?.full_name ?? null;
+      const { data: viewedAuth } = await adminClient.auth.admin.getUserById(
+        viewAsContext.viewedUserId,
+      );
+      viewAsLabel =
+        fullName ||
+        viewedAuth.user?.email ||
+        viewAsContext.viewedUserId.slice(0, 8);
+    } else {
+      viewAsLabel = viewAsContext.viewedUserId.slice(0, 8);
+    }
+  }
+
   const entitlements = await getUserEntitlements();
   console.log("[/my/journey:GATE] entitlements", {
     user_id: user.id,
@@ -191,8 +247,147 @@ export default async function PrivateJourneyPage({
     redirect(`/${locale}/journey`);
   }
 
+  // Layer-3 follow-up — if the user has an active pause, replace
+  // the entire dashboard with a calm "you're on pause" screen.
+  // This is the read-side gate; the cadence engine has its own
+  // defensive guard that skips paused users from materialization.
+  const pauseState = await getCurrentUserPauseState();
+  if (pauseState.isActive && pauseState.pausedUntil) {
+    return (
+      <PausedStateScreen isHe={isHe} pausedUntil={pauseState.pausedUntil} />
+    );
+  }
+
+  // ── Layer-1 first-session branch ─────────────────────────────────────────
+  // A brand-new paying user who has not yet opened their day-1 item sees
+  // a single-purpose screen with one goal: tap into that first item.
+  // Once they open it, journey_first_session_completed_at flips and
+  // subsequent visits render the full dashboard below.
+  const { data: profileRow } = await supabase
+    .from("profiles")
+    .select("journey_first_session_completed_at")
+    .eq("id", effectiveUserId)
+    .maybeSingle();
+  const firstSessionDone =
+    !!(profileRow as { journey_first_session_completed_at: string | null } | null)
+      ?.journey_first_session_completed_at;
+
+  if (!firstSessionDone) {
+    // Fetch the day-1 unlocked item (if any) for the assigned program.
+    // We do a lightweight lookup: find the user's active assignment,
+    // then the earliest scheduled item that's already unlocked.
+    let firstItem: {
+      scheduledId: string;
+      title: string;
+      bodySnippet: string | null;
+      categoryName: string | null;
+    } | null = null;
+
+    const { data: anyAssignment } = await createServiceRoleClient()!
+      .from("journey_assignments")
+      .select("id, couple_id, user_id")
+      .or(`user_id.eq.${effectiveUserId},couple_id.in.(${(await (async () => {
+        // Resolve the couples this user belongs to so we can OR them
+        // into the assignment query. Empty result -> just user-owned.
+        const { data: cm } = await createServiceRoleClient()!
+          .from("couple_members")
+          .select("couple_id")
+          .eq("user_id", effectiveUserId);
+        const ids = (cm ?? []).map((r) => (r as { couple_id: string }).couple_id);
+        return ids.length > 0 ? ids.join(",") : "00000000-0000-0000-0000-000000000000";
+      })())})`)
+      .eq("is_active", true)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (anyAssignment) {
+      const admin = createServiceRoleClient()!;
+      const nowIso = new Date().toISOString();
+      const { data: scheduledRow } = await admin
+        .from("journey_scheduled_items")
+        .select("id, item_id")
+        .eq("assignment_id", (anyAssignment as { id: string }).id)
+        .lte("unlock_at", nowIso)
+        .order("sort_order", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+      if (scheduledRow) {
+        const sr = scheduledRow as { id: string; item_id: string };
+        const { data: itemRow } = await admin
+          .from("journey_items")
+          .select("title_he, title_en, body_he, body_en, category_id")
+          .eq("id", sr.item_id)
+          .maybeSingle();
+
+        if (itemRow) {
+          const ir = itemRow as {
+            title_he: string;
+            title_en: string | null;
+            body_he: string;
+            body_en: string | null;
+            category_id: string;
+          };
+          const { data: catRow } = await admin
+            .from("journey_categories")
+            .select("name_he, name_en")
+            .eq("id", ir.category_id)
+            .maybeSingle();
+          const cr = catRow as { name_he: string; name_en: string | null } | null;
+
+          firstItem = {
+            scheduledId: sr.id,
+            title:
+              (isHe ? ir.title_he : ir.title_en || ir.title_he) ?? "",
+            bodySnippet:
+              (isHe ? ir.body_he : ir.body_en || ir.body_he) ?? null,
+            categoryName:
+              (isHe
+                ? cr?.name_he
+                : cr?.name_en || cr?.name_he) ?? null,
+          };
+        }
+      }
+    }
+
+    // Layer 2 — resolve the assigned coach's persona. Returns null
+    // when the user has no couple yet, no expert assigned, or the
+    // expert hasn't filled out their persona yet — JourneyFirstSession
+    // falls through to its generic "your coach" copy in any of those.
+    const coachPersona = await getCoachPersonaForUser(effectiveUserId);
+
+    return (
+      <>
+        {viewAsContext && viewAsLabel ? (
+          <ViewAsBanner viewedLabel={viewAsLabel} isHe={isHe} />
+        ) : null}
+        <JourneyFirstSession
+          isHe={isHe}
+          firstItem={firstItem}
+          expertPersona={
+            coachPersona
+              ? {
+                  displayName:
+                    (isHe
+                      ? coachPersona.displayNameHe
+                      : coachPersona.displayNameEn) ||
+                    coachPersona.displayNameHe ||
+                    "",
+                  avatarUrl: coachPersona.avatarUrl,
+                  shortBio: isHe
+                    ? coachPersona.shortBioHe
+                    : coachPersona.shortBioEn,
+                }
+              : null
+          }
+        />
+      </>
+    );
+  }
+
   // ── Did they actually take the assessment? ────────────────────────────────
-  const { topPriority, hasAnyResponses } = await getUserTopPriority(user.id);
+  const { topPriority, hasAnyResponses } = await getUserTopPriority(effectiveUserId);
   console.log("[/my/journey:GATE] assessment probe", {
     user_id: user.id,
     topPriority,
@@ -203,13 +398,13 @@ export default async function PrivateJourneyPage({
   // looked complete during onboarding, but the responses table is empty
   // for this user_id (anon journey wasn't linked, or RLS blocked the
   // read). Bouncing back to /journey/assessment in this case loops the
-  // user. Instead we render the page with a recovery banner — the user
+  // user. Instead we render the page with a recovery banner - the user
   // sees their dashboard, knows their subscription is active, and gets
   // a one-click "complete the assessment" CTA. No infinite loop.
   const assessmentMissing = !hasAnyResponses;
   if (assessmentMissing) {
     console.warn(
-      "[/my/journey:GATE] paid user has no responses — rendering recovery banner instead of redirecting",
+      "[/my/journey:GATE] paid user has no responses - rendering recovery banner instead of redirecting",
       {
         user_id: user.id,
         email: user.email,
@@ -218,9 +413,9 @@ export default async function PrivateJourneyPage({
     );
   }
 
-  // Resolve the priority into bilingual labels — defaults if the user
+  // Resolve the priority into bilingual labels - defaults if the user
   // skipped the ranking question. Labels come from the DB seed in
-  // journey_categories (assessment_priority_key) — replaces the old
+  // journey_categories (assessment_priority_key) - replaces the old
   // PRIORITY_LABELS_HE/EN constant maps.
   const priorityLabels = await getPriorityLabels();
   const focusLabel = topPriority
@@ -246,24 +441,24 @@ export default async function PrivateJourneyPage({
   // Owner resolution: if the user is part of a couple, prefer the
   // couple-owned timeline (admin assignments tend to live at couple
   // level). Otherwise fall back to user-owned. v3 cadence rows live
-  // under a strict per-partner owner — see journeyOwnerForUser() — and
+  // under a strict per-partner owner - see journeyOwnerForUser() - and
   // are merged into the legacy v2 timeline below.
   const couple = await getCurrentCoupleContext();
   const legacyOwner: JourneyOwner = preferCoupleOwner(
-    user.id,
+    effectiveUserId,
     couple?.couple_id ?? null,
   );
-  const cadenceOwner: JourneyOwner = journeyOwnerForUser(user.id);
+  const cadenceOwner: JourneyOwner = journeyOwnerForUser(effectiveUserId);
   const viewerRole =
     couple?.role === "owner" || couple?.role === "partner"
       ? couple.role
       : null;
 
   // v3 slice 4: TWO timeline fetches.
-  //   * Legacy v2: program/category/item assignments — couple-scoped
+  //   * Legacy v2: program/category/item assignments - couple-scoped
   //     when the user is paired (preserves existing behaviour for any
   //     pre-v3 admin-assigned content).
-  //   * v3 cadence: cadence-source assignments — strict per-partner so
+  //   * v3 cadence: cadence-source assignments - strict per-partner so
   //     each partner has their own queue regardless of couple status.
   // The merged list drives every downstream surface (rail, activity
   // history, open/upcoming/completed buckets).
@@ -273,13 +468,13 @@ export default async function PrivateJourneyPage({
     [legacyTimeline, cadenceTimeline] = await Promise.all([
       getTimelineForOwner({
         owner: legacyOwner,
-        viewerUserId: user.id,
+        viewerUserId: effectiveUserId,
         viewerCoupleRole: viewerRole,
         sourceKinds: ["program", "category", "item"],
       }),
       getTimelineForOwner({
         owner: cadenceOwner,
-        viewerUserId: user.id,
+        viewerUserId: effectiveUserId,
         // Cadence assignments are user-owned; the audience filter is
         // a no-op when owner.kind === 'user', so role doesn't matter.
         viewerCoupleRole: null,
@@ -288,22 +483,29 @@ export default async function PrivateJourneyPage({
     ]);
   } catch (err) {
     console.error("[/my/journey] failed to load timeline", err);
-    // Non-fatal — fall through to placeholder.
+    // Non-fatal - fall through to placeholder.
   }
   // Merge by unlock_at ascending. Items from both axes appear in one
-  // chronological list — the rail/buckets don't care about source.
+  // chronological list - the rail/buckets don't care about source.
   const timeline = [...legacyTimeline, ...cadenceTimeline].sort((a, b) => {
     const ua = new Date(a.scheduled.unlock_at).getTime();
     const ub = new Date(b.scheduled.unlock_at).getTime();
     return ua - ub;
   });
 
-  // v3 slice 6 — load the user's general expert channel thread.
+  // v3 slice 6 - load the user's general expert channel thread.
   // ensureUserChannel is a no-op upsert that creates the row on first
   // visit (so getGeneralChannelThread doesn't return an empty array
-  // for users who've never opened the channel).
-  await ensureUserChannel(user.id);
-  const channelMessages = await getGeneralChannelThread(user.id, user.id);
+  // for users who've never opened the channel). When viewing-as we
+  // skip the upsert (don't write on the user's behalf) but still
+  // read their channel; if it doesn't exist yet we just see no msgs.
+  if (!viewAsContext) {
+    await ensureUserChannel(user.id);
+  }
+  const channelMessages = await getGeneralChannelThread(
+    effectiveUserId,
+    effectiveUserId,
+  );
 
   const now = Date.now();
   const openItems = timeline.filter((entry) => {
@@ -319,12 +521,12 @@ export default async function PrivateJourneyPage({
   );
 
   // ── Rail + work-area data ────────────────────────────────────────────
-  // The /my/journey page is the therapeutic surface — past / present /
+  // The /my/journey page is the therapeutic surface - past / present /
   // future of the work plan. Rail at the top gives the orientation,
   // WorkArea below gives the per-tab detail. Both reuse the same
   // tokens as the /my pillar cards (slate-950/40 dark glass).
   const journeyStatus = await getOwnerJourneyStatus({
-    userId: user.id,
+    userId: effectiveUserId,
     coupleId: couple?.couple_id ?? null,
   });
   const assessmentStage: AssessmentStage = journeyStatus.hasCompletedAssessment
@@ -343,8 +545,8 @@ export default async function PrivateJourneyPage({
           isHe,
           timeline,
           assessmentCompleted: journeyStatus.hasCompletedAssessment,
-          viewerUserId: user.id,
-          // itemSeenAt: not yet wired — until we have a seen-state
+          viewerUserId: effectiveUserId,
+          // itemSeenAt: not yet wired - until we have a seen-state
           // table, every clinician reply is considered "unread"
           // until the user clicks into the item.
         })
@@ -353,12 +555,12 @@ export default async function PrivateJourneyPage({
           assessmentStage,
         });
 
-  // Phase 5 — adaptive ordering. Pull THIS viewer's priority ranking
+  // Phase 5 - adaptive ordering. Pull THIS viewer's priority ranking
   // (each partner has their own) and reorder the rail accordingly so
   // their #1 priority surfaces first. Categories whose slug isn't in
   // the priority taxonomy keep their natural position after the
   // priority block.
-  const viewerPriorities = await getViewerPriorityOrder(user.id);
+  const viewerPriorities = await getViewerPriorityOrder(effectiveUserId);
   // Build the rail-key → category-slug lookup from the live timeline.
   // For dynamic categories the slug comes from journey_categories;
   // for the empty/static rails we pull slugs from the bucket data.
@@ -373,12 +575,63 @@ export default async function PrivateJourneyPage({
   );
   const railIsDynamic = timeline.length > 0;
 
-  // Phase 2F — surface a calm banner when the clinician has replied
+  // Phase 2F - surface a calm banner when the clinician has replied
   // since the user's last visit. Client-side localStorage handles the
   // "since last visit" part; server fetches the latest reply only.
-  const freshReplies = await getFreshClinicianReplies(user.id);
+  const freshReplies = await getFreshClinicianReplies(effectiveUserId);
 
-  // ── Phase 4 — dashboard data ────────────────────────────────────────
+  // Layer-3 drift awareness — banner only renders when the coach
+  // has actually reached out. Pure user-facing read; cron + coach
+  // action keep the underlying drift_alerts row up to date.
+  const driftBanner = await getDriftBannerForCurrentUser();
+  // Layer-4 weekly recap — most recent one the user is allowed to see.
+  // Falls through silently when no recap row exists yet.
+  const latestRecap = await getLatestRecapForCurrentUser();
+
+  // Layer-4 milestone reveal — only renders when there's a pending
+  // (revealed_at IS NULL) milestone for this couple.
+  const pendingMilestone = await getPendingMilestoneForCurrentUser();
+  const pendingMilestoneDef = pendingMilestone
+    ? getMilestoneDef(pendingMilestone.slug)
+    : null;
+
+  // FU6.S5 — build the "your story so far" narrative for the
+  // ten/twenty thresholds. Returns null when the milestone doesn't
+  // qualify or there's not enough data yet — the modal hides the
+  // CTA in that case.
+  let pendingMilestoneStory: Awaited<
+    ReturnType<typeof generateCoupleStoryNarrative>
+  > = null;
+  if (
+    pendingMilestone &&
+    (pendingMilestone.slug === "ten_items" ||
+      pendingMilestone.slug === "twenty_items")
+  ) {
+    pendingMilestoneStory = await generateCoupleStoryNarrative({
+      coupleId:  couple?.couple_id ?? null,
+      userId:    effectiveUserId,
+      isHe,
+      threshold: pendingMilestone.slug === "ten_items" ? 10 : 20,
+    });
+  }
+
+  // Layer-4 score evolution chart — visible after the user has had
+  // at least two analysis rows (i.e. after a retake). Renders nothing
+  // for week-1 users.
+  const scoreHistory = await getScoreHistoryForUser(effectiveUserId);
+
+  // Layer-5 — surface the "together" link only when the user is
+  // actually paired. Solo users never see it.
+  const isPaired = !!couple?.couple_id;
+  const coachPersonaForBanner = await getCoachPersonaForUser(effectiveUserId);
+  const coachNameForBanner = coachPersonaForBanner
+    ? (isHe
+        ? coachPersonaForBanner.displayNameHe
+        : coachPersonaForBanner.displayNameEn) ||
+      coachPersonaForBanner.displayNameHe
+    : null;
+
+  // ── Phase 4 - dashboard data ────────────────────────────────────────
   // Activity history: derived from data we already have on the page.
   // In a follow-up phase we'll add a dedicated event-log table; for
   // now we synthesise a believable timeline from the assessment +
@@ -442,7 +695,7 @@ export default async function PrivateJourneyPage({
     });
   }
 
-  // Priority ranking — seeds from the user's assessment ranking when
+  // Priority ranking - seeds from the user's assessment ranking when
   // available, otherwise from the canonical six topics. Server passes
   // the seed; the client component owns the reorder/add UI.
   const seededPriorities: PriorityItem[] = topPriority
@@ -477,7 +730,7 @@ export default async function PrivateJourneyPage({
         { id: "p-family", label: isHe ? "משפחה ולחצים פנימיים" : "Family & internal stress" },
       ];
 
-  // Decide whether to show the "experts are reviewing" banner — only
+  // Decide whether to show the "experts are reviewing" banner - only
   // for users who finished the assessment but don't yet have any
   // assigned content. It would be misleading otherwise.
   const showWelcomeProcessingBanner =
@@ -501,7 +754,19 @@ export default async function PrivateJourneyPage({
 
   return (
     <div dir={isHe ? "rtl" : "ltr"} className="min-h-[100dvh] text-white">
-      {/* Phase 2E — fire one analytics event per session when the user
+      {viewAsContext && viewAsLabel ? (
+        <ViewAsBanner viewedLabel={viewAsLabel} isHe={isHe} />
+      ) : null}
+      {pendingMilestone && pendingMilestoneDef ? (
+        <MilestoneRevealModal
+          isHe={isHe}
+          milestoneId={pendingMilestone.id}
+          slug={pendingMilestone.slug}
+          def={pendingMilestoneDef}
+          storyNarrative={pendingMilestoneStory}
+        />
+      ) : null}
+      {/* Phase 2E - fire one analytics event per session when the user
           lands on the dashboard. Pure side-effect; renders nothing. */}
       <JourneyDashboardViewTracker
         hasJourneyEntitlement={true}
@@ -511,7 +776,7 @@ export default async function PrivateJourneyPage({
         railIsDynamic={railIsDynamic}
         freshReplyCount={freshReplies.recentReplyCount}
       />
-      {/* Solid slate frame around the entire therapeutic surface — sets
+      {/* Solid slate frame around the entire therapeutic surface - sets
           this room apart from the global gradient backdrop. Width matches
           /my (max-w-6xl) so the user sees the same canvas across pages. */}
       <div className="mx-auto mt-6 max-w-6xl px-3 sm:px-4">
@@ -542,11 +807,11 @@ export default async function PrivateJourneyPage({
           <p className="mt-2 max-w-xl text-white/65">
             {isHe
               ? "תוכן שמסודר לפי מה שחשוב לכם. כל אחד רואה את השלבים בסדר שמתאים למה שביקש באבחון."
-              : "Content ordered by what matters to you. Each partner sees their own ranking — your priorities lead."}
+              : "Content ordered by what matters to you. Each partner sees their own ranking - your priorities lead."}
           </p>
         </header>
 
-        {/* ─────── v3 slice 5 — grace / blocked banner ───────
+        {/* ─────── v3 slice 5 - grace / blocked banner ───────
             Renders nothing when the user is in 'active' state. During
             grace it's amber with a renewal CTA; on blocked it's rose.
             Sits above the existing subscription-status banner so the
@@ -561,7 +826,7 @@ export default async function PrivateJourneyPage({
             />
           </section>
         ) : (
-          /* ─────── Subscription status — explicit confirmation ───────
+          /* ─────── Subscription status - explicit confirmation ───────
               A calm "your subscription is active" line when entitled,
               or a recovery banner when the assessment didn't get
               attached to this account (we don't loop back to it; the
@@ -574,7 +839,7 @@ export default async function PrivateJourneyPage({
           </section>
         )}
 
-        {/* ─────── Phase 2F — clinician reply banner ───────
+        {/* ─────── Phase 2F - clinician reply banner ───────
             Calm one-liner shown when there's at least one new reply
             from the clinician since the user's last visit (tracked
             client-side via localStorage). Self-dismisses on click. */}
@@ -589,13 +854,81 @@ export default async function PrivateJourneyPage({
           </section>
         ) : null}
 
+        {/* Layer-3 drift awareness banner — surfaces only after the
+            coach has actually reached out. Stays subtle. */}
+        {driftBanner ? (
+          <DriftAwarenessBanner
+            isHe={isHe}
+            coachName={coachNameForBanner}
+            daysSilent={driftBanner.daysSilent}
+          />
+        ) : null}
+
+        {/* Layer-4 weekly recap — auto-generated by the Sunday cron.
+            Auto-hides when no recap row exists (week-1 users). */}
+        {latestRecap ? (
+          <WeeklyRecapCard
+            isHe={isHe}
+            weekStarting={latestRecap.weekStarting}
+            summaryHe={latestRecap.summaryHe}
+            summaryEn={latestRecap.summaryEn}
+            notableSignals={
+              latestRecap.notableSignals as {
+                items_completed?:    number;
+                responses_posted?:   number;
+                reactions_received?: number;
+                expert_replies?:     number;
+                top_item_title?:     string | null;
+              }
+            }
+          />
+        ) : null}
+
+        {/* Layer-4 score evolution — only renders when ≥2 analysis
+            rows exist (i.e. after a retake at week 8+). */}
+        {scoreHistory.length >= 2 ? (
+          <ScoreEvolutionChart isHe={isHe} points={scoreHistory} />
+        ) : null}
+
+        {/* Layer-5 — paired users get a soft link to the shared "we"
+            surface. Solo users never see this. */}
+        {isPaired ? (
+          <Link
+            href="/my/journey/together"
+            className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-[#B83C4D]/30 bg-[#B83C4D]/[0.06] px-4 py-3 transition hover:bg-[#B83C4D]/[0.10]"
+          >
+            <div className="min-w-0">
+              <div className="text-[12px] font-bold uppercase tracking-wider text-[#FAF6F7]/75">
+                {isHe ? "המקום המשותף שלכם" : "Your shared space"}
+              </div>
+              <p className="mt-1 text-[14px] leading-snug text-white/75">
+                {isHe
+                  ? "מה שעשיתם ביחד, השיחה ביניכם, וההודעות מהמומחה לשניכם."
+                  : "What you've done together, your shared thread, and messages addressed to both of you."}
+              </p>
+            </div>
+            <Arrow className="h-4 w-4 shrink-0 text-white/55" />
+          </Link>
+        ) : null}
+
         {/* ─────── "Experts are reviewing" banner ───────
             Shown for users who completed the assessment but don't yet
             have assigned content. Stays above the desk so it doesn't
             compete with the rail/content layout below. */}
         {showWelcomeProcessingBanner ? (
           <section className="mt-6">
-            <WelcomeProcessingBanner isHe={isHe} />
+            {/* v2 (Itzik 2026-05-07): the banner now shows the user's
+                actual top focus from their assessment ranking + an
+                optional "start with the opening exercise" link when
+                the day-1 override has unlocked one. firstItemHref is
+                left null here because the rail+desk below already
+                renders unlocked items prominently — keeping it null
+                avoids duplicating a CTA. */}
+            <WelcomeProcessingBanner
+              isHe={isHe}
+              focusLabel={topPriority ? focusLabel : null}
+              firstItemHref={null}
+            />
           </section>
         ) : null}
 
@@ -613,18 +946,57 @@ export default async function PrivateJourneyPage({
           </section>
         ) : null}
 
-        {/* ─────── The desk — vertical rail + content panel ───────
+        {/* ─────── #66 Post-purchase kickoff cards ───────
+            Two recap cards near the top of the dashboard:
+            (a) assessment results — top focus + program size,
+            (b) start-here — first available item from the day-1 unlock.
+            Both render conditionally — the section disappears when
+            neither is meaningful. */}
+        {(() => {
+          const first = openItems[0] ?? null;
+          const startItem: JourneyKickoffStartItem | null = first
+            ? {
+                scheduledId: first.scheduled.id,
+                title:
+                  (isHe
+                    ? first.item.title_he
+                    : first.item.title_en || first.item.title_he) ?? "",
+                categoryName:
+                  (isHe
+                    ? first.category.name_he
+                    : first.category.name_en || first.category.name_he) ??
+                  null,
+                snippet:
+                  (isHe
+                    ? first.item.body_he
+                    : first.item.body_en || first.item.body_he) ?? null,
+              }
+            : null;
+          return (
+            <JourneyKickoffCards
+              isHe={isHe}
+              focusLabel={topPriority ? focusLabel : null}
+              focusDesc={topPriority ? focusDesc : null}
+              totalItems={timeline.length}
+              openItemCount={openItems.length}
+              completedItemCount={completedItems.length}
+              startItem={startItem}
+            />
+          );
+        })()}
+
+        {/* ─────── The desk - vertical rail + content panel ───────
             The rail (right in RTL, top on mobile) acts as the menu;
             clicking a step swaps the panel content on the left. The
             rail order has been re-sorted per the viewer's ranking
-            (Phase 5 — sortRailByPriorities). */}
+            (Phase 5 - sortRailByPriorities). */}
         <section className="mt-8">
           <JourneyDesk isHe={isHe} entries={railEntries} />
         </section>
 
         {/* ─────── Secondary dashboard ───────
             The desk above answers "what am I working on now". This
-            grid answers "what's the bigger picture" — history,
+            grid answers "what's the bigger picture" - history,
             priorities, and the message channel to the clinician. */}
         <section className="mt-10 grid gap-6 lg:grid-cols-12">
           <div className="lg:col-span-7">
@@ -640,7 +1012,7 @@ export default async function PrivateJourneyPage({
             />
             <GeneralChannelThread
               initialMessages={channelMessages}
-              viewerUserId={user.id}
+              viewerUserId={effectiveUserId}
               isHe={isHe}
             />
           </div>

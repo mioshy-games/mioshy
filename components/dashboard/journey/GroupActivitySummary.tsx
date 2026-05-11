@@ -1,5 +1,5 @@
 // ============================================================
-// GroupActivitySummary — slice 9 read-only summary panel for a
+// GroupActivitySummary - slice 9 read-only summary panel for a
 // single group. Surfaces per-member completion + skip stats and
 // per-binding "delivered to N members" counts. Sits ABOVE the
 // editable GroupMemberPicker / GroupSubtopicBinder so admins see

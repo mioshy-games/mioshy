@@ -57,7 +57,7 @@ export default async function JourneyPushPage() {
         <h1 className="mt-2 text-3xl font-bold tracking-tight">Push</h1>
         <p className="text-muted-foreground mt-1 max-w-2xl text-sm">
           Push curated items to a user, couple, or group. Pushes ride the
-          recipient&apos;s next delivery slot — they don&apos;t deliver instantly. The
+          recipient&apos;s next delivery slot - they don&apos;t deliver instantly. The
           cadence engine drains pending pushes one item per slot, before
           falling through to the regular ranked picker.
         </p>

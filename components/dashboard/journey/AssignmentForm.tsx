@@ -210,7 +210,7 @@ export function AssignmentForm({
                 value={sourceKind}
                 onValueChange={(v) => {
                   if (v) {
-                    // Manual assignments are program/category/item only —
+                    // Manual assignments are program/category/item only -
                     // cadence rows are engine-created (slice 3) and never
                     // reach this form.
                     setValue(

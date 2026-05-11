@@ -1,6 +1,6 @@
 -- ============================================================
 -- 060_journey_notifications_v2.sql
--- Slice 10 — extend journey_notifications for the in-app inbox,
+-- Slice 10 - extend journey_notifications for the in-app inbox,
 -- reminder cron, admin alerts, and stuck-user digest.
 --
 -- Migration 056 created the table with 4 message-related kinds and

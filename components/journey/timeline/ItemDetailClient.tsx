@@ -54,6 +54,11 @@ interface Props {
   responses: JourneyItemResponse[];
   viewerUserId: string;
   locale: string;
+  /** Phase 1 lesson view — when true, suppress this component's
+   *  body/task/challenge sections because LessonView already rendered
+   *  them upstream. The complete-toggle, response thread, and
+   *  celebration modal still render. */
+  hideContent?: boolean;
 }
 
 export function ItemDetailClient({
@@ -64,6 +69,7 @@ export function ItemDetailClient({
   responses: initialResponses,
   viewerUserId,
   locale,
+  hideContent = false,
 }: Props) {
   const isHe = locale === "he";
   const router = useRouter();
@@ -197,34 +203,41 @@ export function ItemDetailClient({
       {/* Video (inline simple embed fallback for youtube / mp4) */}
       {item.video_url ? <VideoBlock url={item.video_url} isHe={isHe} /> : null}
 
-      {/* Body - preserve paragraphs from the admin textarea */}
-      <section
-        dir={isHe ? "rtl" : "ltr"}
-        className="whitespace-pre-wrap text-base leading-relaxed text-white/85"
-      >
-        {body}
-      </section>
+      {/* Body / Task / Challenge — suppressed when LessonView is
+          mounted upstream (Phase 1 — every block rendered there
+          with structured pedagogy). Fallback for legacy items. */}
+      {!hideContent ? (
+        <>
+          {/* Body - preserve paragraphs from the admin textarea */}
+          <section
+            dir={isHe ? "rtl" : "ltr"}
+            className="whitespace-pre-wrap text-base leading-relaxed text-white/85"
+          >
+            {body}
+          </section>
 
-      {/* Task */}
-      {task ? (
-        <Callout
-          icon={<Target className="h-4 w-4" />}
-          title={isHe ? "המשימה שלכם" : "Your task"}
-          tone="emerald"
-        >
-          {task}
-        </Callout>
-      ) : null}
+          {/* Task */}
+          {task ? (
+            <Callout
+              icon={<Target className="h-4 w-4" />}
+              title={isHe ? "המשימה שלכם" : "Your task"}
+              tone="emerald"
+            >
+              {task}
+            </Callout>
+          ) : null}
 
-      {/* Challenge */}
-      {challenge ? (
-        <Callout
-          icon={<Play className="h-4 w-4" />}
-          title={isHe ? "אתגר נוסף" : "Bonus challenge"}
-          tone="amber"
-        >
-          {challenge}
-        </Callout>
+          {/* Challenge */}
+          {challenge ? (
+            <Callout
+              icon={<Play className="h-4 w-4" />}
+              title={isHe ? "אתגר נוסף" : "Bonus challenge"}
+              tone="amber"
+            >
+              {challenge}
+            </Callout>
+          ) : null}
+        </>
       ) : null}
 
       {/* Complete toggle */}
@@ -515,7 +528,7 @@ function ResponseList({
             <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-white/90">
               {r.response_text}
             </p>
-            {/* Phase 2E — clinician's reply, when present.
+            {/* Phase 2E - clinician's reply, when present.
                 Calm slate panel inset under the user's message,
                 clearly attributed and timestamped. Never auto-marks
                 as read; the toast on /my/journey handles "new". */}
@@ -534,7 +547,7 @@ function ResponseList({
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// ClinicianReplyPanel — read-only inset showing the clinician's reply.
+// ClinicianReplyPanel - read-only inset showing the clinician's reply.
 // ─────────────────────────────────────────────────────────────────────
 
 function ClinicianReplyPanel({

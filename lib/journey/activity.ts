@@ -7,7 +7,7 @@ import { createServiceRoleClient } from "@/lib/supabase-admin";
  * "recent activity" view + the expert's couple-detail timeline preview
  * have a single source of truth.
  *
- * Failure is non-fatal — if the insert errors we log to the server console
+ * Failure is non-fatal - if the insert errors we log to the server console
  * and return; we never want a logging failure to abort the actual user
  * action it's tracking.
  */
@@ -117,7 +117,7 @@ export async function listCoupleActivity(
 }
 
 /**
- * Same query but scoped to a single user — powers the user-facing
+ * Same query but scoped to a single user - powers the user-facing
  * "recent activity" panel on /journey/timeline.
  */
 export async function listUserActivity(

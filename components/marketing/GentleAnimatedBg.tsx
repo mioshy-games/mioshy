@@ -7,7 +7,7 @@ import { FloatingParticles } from "@/components/game/FloatingParticles";
 /**
  * Light-theme animated backdrop. A purple and a red orb slowly drift toward
  * each other near centre and back (synced "attraction"), with small floating
- * circles drifting on top — same particle system the wheels game uses.
+ * circles drifting on top - same particle system the wheels game uses.
  *
  * Designed for `position: absolute; inset-0` placement inside a relatively
  * positioned hero/section.
@@ -20,7 +20,7 @@ export function GentleAnimatedBg({
   const op = intensity === "soft" ? 0.55 : 0.85;
 
   useEffect(() => {
-    console.log("[GentleAnimatedBg] mounted v2 — converge + particles");
+    console.log("[GentleAnimatedBg] mounted v2 - converge + particles");
   }, []);
 
   return (

@@ -32,7 +32,7 @@ interface ScheduledRow {
   item_id: string;
   unlock_at: string;
   notified_at: string | null;
-  /** v3 slice 8 — drives the "from your coach" subject branch in
+  /** v3 slice 8 - drives the "from your coach" subject branch in
    *  email rendering when set to 'expert_push'. */
   source: string | null;
 }
@@ -308,7 +308,7 @@ export async function runJourneyUnlockNotifier(
         scheduledId: string;
         title: string;
         categoryName: string | null;
-        /** v3 slice 8 — used to branch the email subject when every
+        /** v3 slice 8 - used to branch the email subject when every
          *  item in this bucket came from an admin push. */
         source: string | null;
       }>;
@@ -388,7 +388,7 @@ export async function runJourneyUnlockNotifier(
       timelineUrl,
     });
 
-    // v3 slice 8 — when every item in this bucket came from an admin
+    // v3 slice 8 - when every item in this bucket came from an admin
     // push, override the subject with "from your coach" copy. Mixed
     // batches (push + cadence in the same bucket) keep the default
     // subject so we don't mislead the user.
@@ -422,7 +422,7 @@ export async function runJourneyUnlockNotifier(
       continue;
     }
 
-    // Slice 10 — also write an in-app notification per (recipient ×
+    // Slice 10 - also write an in-app notification per (recipient ×
     // scheduled item) so the bell-icon dropdown surfaces the unlock.
     // Best-effort; failures are logged at warn but don't block the
     // stamp below.

@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * AssessmentItemForm — renders a structured questionnaire for an
+ * AssessmentItemForm - renders a structured questionnaire for an
  * assessment-kind journey item and handles submission. Phase 3 step 2.
  *
  * Supported question kinds:
@@ -12,7 +12,7 @@
  *   - ranking          (drag-or-arrow-reorder list)
  *
  * UX choices:
- *   - One-page form. Long assessments scroll. We do NOT paginate —
+ *   - One-page form. Long assessments scroll. We do NOT paginate -
  *     completion rate goes up when the user can see "how much is left".
  *   - Live progress indicator on top: X / Y answered.
  *   - "פרטי" checkbox at the bottom (matches ResponseBox).
@@ -221,8 +221,8 @@ export function AssessmentItemForm({
             className="h-3.5 w-3.5 rounded border-white/20 bg-slate-950/40 accent-emerald-400 disabled:opacity-60"
           />
           {isHe
-            ? "פרטי — רק אני והמלווה"
-            : "Private — only the clinician and I"}
+            ? "פרטי - רק אני והמלווה"
+            : "Private - only the clinician and I"}
         </label>
 
         {feedback?.kind === "validation" ? (
@@ -235,7 +235,7 @@ export function AssessmentItemForm({
           <span className="text-[12px] text-rose-300">{feedback.message}</span>
         ) : feedback?.kind === "saved" ? (
           <span className="text-[12px] text-emerald-300">
-            {isHe ? "השאלון נשלח" : "Submitted"}
+            {isHe ? "האבחון נשלח" : "Submitted"}
           </span>
         ) : null}
 
@@ -276,7 +276,7 @@ export function AssessmentItemForm({
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// QuestionInput — kind-aware atomic renderer
+// QuestionInput - kind-aware atomic renderer
 // ─────────────────────────────────────────────────────────────────────
 
 function QuestionInput({

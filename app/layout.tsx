@@ -1,15 +1,7 @@
 import type { ReactNode } from "react";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import {
-  Assistant,
-  Frank_Ruhl_Libre,
-  Heebo,
-  IBM_Plex_Sans_Hebrew,
-  Inter,
-  Noto_Serif_Hebrew,
-  Playfair_Display,
-} from "next/font/google";
+import { Assistant, Frank_Ruhl_Libre } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import {
@@ -64,38 +56,29 @@ export const metadata: Metadata = {
   },
 };
 
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-body-latin",
-  display: "swap",
-});
-
-const playfair = Playfair_Display({
-  subsets: ["latin"],
-  variable: "--font-heading-latin",
-  display: "swap",
-});
-
-const ibmPlexHebrew = IBM_Plex_Sans_Hebrew({
-  subsets: ["hebrew"],
-  weight: ["400", "600", "700"],
-  variable: "--font-heading-hebrew",
-  display: "swap",
-});
-
+// ─────────────────────────────────────────────────────────────────────────────
+// FONT SYSTEM (Itzik 2026-05-07)
+// ─────────────────────────────────────────────────────────────────────────────
+// The whole site uses TWO Google fonts only — both with built-in Hebrew +
+// Latin subsets so the same files cover both locales. Previous setup loaded
+// SEVEN distinct font families (Inter, Playfair, IBM Plex Hebrew, Heebo,
+// Noto Serif Hebrew, Frank Ruhl, Assistant) which was an enormous
+// first-paint cost and a brand-consistency hazard.
+//
+//   • Frank Ruhl Libre   →  serif display + serif body for headings
+//   • Assistant          →  sans body
+//
+// Both fonts ship Hebrew + Latin — no need to fork by locale. Existing CSS
+// variables (`--font-heebo`, `--font-noto-serif-hebrew`, `--font-heading-*`,
+// `--font-body-*`) are still emitted so legacy stylesheets keep working,
+// but they all point at one of these two fonts. That's a deliberate
+// backwards-compat shim — when stylesheets are rewritten to reference the
+// canonical pair directly, we can delete the aliases.
+// ─────────────────────────────────────────────────────────────────────────────
 const assistant = Assistant({
   subsets: ["hebrew", "latin"],
   weight: ["400", "600", "700"],
-  variable: "--font-body-hebrew",
-  display: "swap",
-});
-
-// New homepage v2 fonts - body, accent serif, and display serif.
-// Loaded alongside the existing fonts so legacy pages stay untouched.
-const heebo = Heebo({
-  subsets: ["hebrew", "latin"],
-  weight: ["300", "400", "500", "600", "700", "800", "900"],
-  variable: "--font-heebo",
+  variable: "--font-assistant",
   display: "swap",
 });
 
@@ -103,13 +86,6 @@ const frankRuhl = Frank_Ruhl_Libre({
   subsets: ["hebrew", "latin"],
   weight: ["400", "500", "700", "900"],
   variable: "--font-frank-ruhl",
-  display: "swap",
-});
-
-const notoSerifHebrew = Noto_Serif_Hebrew({
-  subsets: ["hebrew"],
-  weight: ["400", "700", "900"],
-  variable: "--font-noto-serif-hebrew",
   display: "swap",
 });
 
@@ -143,14 +119,24 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       suppressHydrationWarning
       className={cn(
         "font-sans",
-        inter.variable,
-        playfair.variable,
-        ibmPlexHebrew.variable,
         assistant.variable,
-        heebo.variable,
         frankRuhl.variable,
-        notoSerifHebrew.variable,
       )}
+      // Backwards-compat alias variables. Old CSS still references
+      // --font-body-latin / --font-heading-latin / --font-heading-hebrew /
+      // --font-body-hebrew / --font-heebo / --font-noto-serif-hebrew. Map
+      // them all to one of the two fonts loaded above so visuals don't
+      // break while we migrate stylesheets to the canonical pair.
+      style={
+        {
+          "--font-body-latin":         "var(--font-assistant)",
+          "--font-body-hebrew":        "var(--font-assistant)",
+          "--font-heebo":              "var(--font-assistant)",
+          "--font-heading-latin":      "var(--font-frank-ruhl)",
+          "--font-heading-hebrew":     "var(--font-frank-ruhl)",
+          "--font-noto-serif-hebrew":  "var(--font-frank-ruhl)",
+        } as React.CSSProperties
+      }
     >
       <head>
         {/* Preconnect to Google Fonts CDN. next/font self-hosts most font
@@ -164,10 +150,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           crossOrigin=""
         />
         {SUPABASE_ORIGIN ? (
-          <>
-            <link rel="preconnect" href={SUPABASE_ORIGIN} crossOrigin="" />
-            <link rel="dns-prefetch" href={SUPABASE_ORIGIN} />
-          </>
+          // dns-prefetch only - full preconnect held a connection slot
+          // that the marketing homepage never used (Supabase is hit only
+          // on auth-gated pages and the dashboard). Lighthouse 2026-05-06
+          // flagged this as "Unused preconnect"; dropping it frees the
+          // budget for the critical CSS/font requests instead.
+          <link rel="dns-prefetch" href={SUPABASE_ORIGIN} />
         ) : null}
         <meta name="theme-color" content="#1a0a2e" />
         <meta name="format-detection" content="telephone=no" />

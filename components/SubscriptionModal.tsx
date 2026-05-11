@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useLocale } from "next-intl";
-import { Check, Crown, Infinity as InfinityIcon, Sparkles, X } from "lucide-react";
+import { Check, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -15,13 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getOrCreateDeviceId } from "@/lib/device-id";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { listCountries, findCountry, type Country } from "@/lib/countries";
 
 // ── Translations ──────────────────────────────────────────────────────────────
 
@@ -31,6 +25,16 @@ const T = {
     subtitleLead:        "שתי דקות, ואתם בדרך להמשך המשחק",
     titlePaywallSelect:  "בחרו את החבילה שמתאימה לכם",
     subtitlePaywall:     "כל חבילה פותחת את כל המשחקים במיאושי - ביטול בקליק אחד",
+    paywallGreeting:     (name: string) => `שלום ${name}`,
+    paywallGreetingFallback: "שלום",
+    paywallSinglePlanSubtitle: "כל המשחקים במיאושי, פתוחים לכם - ביטול בכל עת בלחיצה אחת.",
+    paywallPriceSuffix:  "/שבוע",
+    paywallCancelNote:   "ניתן לעצור בכל עת. ללא חוזה, ללא דמי ביטול.",
+    paywallContinueCta:  "מעבר לתשלום",
+    countrySearchPlaceholder: "חיפוש מדינה…",
+    countryDetectedLabel: "המדינה שזיהינו",
+    countryAllLabel:     "כל המדינות",
+    countryNoResults:    "לא נמצאו תוצאות",
     titlePaywallConfirm: "עוד צעד קטן לתשלום",
     subtitleConfirm:     "נאשר את המדינה ואת המע״מ ונעביר לעמוד הסליקה המאובטח",
     fullNameLabel:       "שם מלא",
@@ -77,6 +81,16 @@ const T = {
     subtitleLead:        "Two minutes, and you're back in the game",
     titlePaywallSelect:  "Pick the plan that fits you",
     subtitlePaywall:     "Every plan unlocks every game on Mioshy - cancel anytime with one click",
+    paywallGreeting:     (name: string) => `Hi ${name}`,
+    paywallGreetingFallback: "Welcome",
+    paywallSinglePlanSubtitle: "Every Mioshy game, fully unlocked - cancel anytime in one click.",
+    paywallPriceSuffix:  "/week",
+    paywallCancelNote:   "Stop any time. No contract, no cancellation fees.",
+    paywallContinueCta:  "Continue to payment",
+    countrySearchPlaceholder: "Search country…",
+    countryDetectedLabel: "Detected country",
+    countryAllLabel:     "All countries",
+    countryNoResults:    "No matches",
     titlePaywallConfirm: "One small step to payment",
     subtitleConfirm:     "We'll confirm your country + VAT and send you to the secure checkout",
     fullNameLabel:       "Full name",
@@ -119,28 +133,6 @@ const T = {
     },
   },
 } as const;
-
-// ── Country list ──────────────────────────────────────────────────────────────
-
-type CountryOption = { code: string; he: string; en: string };
-const COUNTRIES: CountryOption[] = [
-  { code: "IL", he: "ישראל",       en: "Israel"         },
-  { code: "US", he: "ארצות הברית", en: "United States"  },
-  { code: "GB", he: "בריטניה",     en: "United Kingdom" },
-  { code: "CA", he: "קנדה",        en: "Canada"         },
-  { code: "AU", he: "אוסטרליה",    en: "Australia"      },
-  { code: "DE", he: "גרמניה",      en: "Germany"        },
-  { code: "FR", he: "צרפת",        en: "France"         },
-  { code: "ES", he: "ספרד",        en: "Spain"          },
-  { code: "IT", he: "איטליה",      en: "Italy"          },
-  { code: "NL", he: "הולנד",       en: "Netherlands"    },
-  { code: "SE", he: "שוודיה",      en: "Sweden"         },
-  { code: "NO", he: "נורווגיה",    en: "Norway"         },
-  { code: "DK", he: "דנמרק",       en: "Denmark"        },
-  { code: "BR", he: "ברזיל",       en: "Brazil"         },
-  { code: "MX", he: "מקסיקו",      en: "Mexico"         },
-  { code: "IN", he: "הודו",        en: "India"          },
-];
 
 // ── Plan prices (display only - server resolves the real charge) ─────────────
 
@@ -242,107 +234,10 @@ function ModalBackdrop({ palette }: { palette: [string, string, string] }) {
   );
 }
 
-// ── Plan card (experiential) ──────────────────────────────────────────────────
-
-function PlanCardButton({
-  id,
-  price,
-  currency,
-  labels,
-  features,
-  featured,
-  tag,
-  accent,
-  onSelect,
-  busy,
-  ctaText,
-}: {
-  id: Plan;
-  price: string;
-  currency: string;
-  labels: { label: string; note: string; blurb: string };
-  features: readonly string[];
-  featured?: boolean;
-  tag?: string;
-  accent: string;
-  onSelect: () => void;
-  busy: boolean;
-  ctaText: string;
-}) {
-  const icon =
-    id === "weekly" ? <Sparkles className="h-5 w-5" /> :
-    id === "monthly" ? <InfinityIcon className="h-5 w-5" /> :
-    <Crown className="h-5 w-5" />;
-
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      disabled={busy}
-      aria-label={`${labels.label} ${currency}${price}`}
-      className={`group relative flex w-full flex-col items-stretch gap-3 rounded-2xl border p-5 text-start transition-all focus:outline-none focus:ring-2 focus:ring-white/40 disabled:cursor-not-allowed disabled:opacity-60 ${
-        featured
-          ? "border-transparent shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)]"
-          : "border-white/15 bg-white/5 hover:border-white/30 hover:bg-white/10"
-      }`}
-      style={
-        featured
-          ? {
-              background:
-                `linear-gradient(135deg, ${accent}40 0%, rgba(255,255,255,0.07) 100%)`,
-              boxShadow: `0 0 0 1px ${accent}66, 0 20px 60px -20px ${accent}77`,
-            }
-          : undefined
-      }
-    >
-      {tag && (
-        <span
-          className="absolute top-3 end-3 rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white shadow"
-          style={{ background: accent }}
-        >
-          {tag}
-        </span>
-      )}
-
-      <div className="flex items-center gap-2.5">
-        <span
-          className="flex h-10 w-10 items-center justify-center rounded-xl text-white shadow-inner"
-          style={{ background: `${accent}33`, color: accent }}
-        >
-          {icon}
-        </span>
-        <span className="text-base font-extrabold leading-none text-white">
-          {labels.label}
-        </span>
-      </div>
-
-      <div className="flex items-baseline gap-1">
-        <span className="text-4xl font-black tracking-tight text-white">
-          {currency}{price}
-        </span>
-        <span className="text-sm font-semibold text-white/70">{labels.note}</span>
-      </div>
-
-      <p className="text-sm text-white/80">{labels.blurb}</p>
-
-      <ul className="mt-1 space-y-1.5 text-sm text-white/85">
-        {features.map((f) => (
-          <li key={f} className="flex items-center gap-2">
-            <Check className="h-4 w-4 shrink-0" style={{ color: accent }} />
-            <span>{f}</span>
-          </li>
-        ))}
-      </ul>
-
-      <span
-        className="mt-2 inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-bold text-white shadow-md transition group-hover:brightness-110"
-        style={{ background: accent }}
-      >
-        {ctaText}
-      </span>
-    </button>
-  );
-}
+// PlanCardButton (3-plan picker) was removed 2026-05-06 when the paywall
+// was redesigned to a single-plan flow. The SinglePlanPaywall component
+// at the bottom of this file replaces it. If you ever need the 3-plan
+// variant again, restore from git history before that date.
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -388,26 +283,97 @@ export function SubscriptionModal({
   const [termsAccepted,    setTermsAccepted]    = useState(false);
 
   // paywall-mode fields
+  // TODO(remove): `stage`, `countryCode`, `countryName`, the
+  // reset useEffect, and the ipapi.co auto-detect useEffect below are dead
+  // since the confirm stage was removed (clicking a plan now jumps straight
+  // to Cardcom). Country/VAT are decided server-side from the request IP in
+  // /api/billing/checkout/create - see lib/geo-from-request.ts. Leaving the
+  // state in place as a harmless no-op for now to keep this diff minimal.
   const [stage, setStage]             = useState<"select" | "confirm">("select");
-  const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [countryCode, setCountryCode] = useState("");
   const [countryName, setCountryName] = useState("");
 
   const [busy,  setBusy]  = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // ── Single-plan paywall extras (2026-05-06 Itzik redesign) ──────────────
+  // Greeting: shows "שלום {full_name}" once the user is authenticated. We
+  // fetch the name from auth.users.user_metadata.full_name (the same key
+  // RegistrationModal saves) the first time the paywall opens.
+  const [userFullName, setUserFullName] = useState<string | null>(null);
+  // Country: pinned-top is whatever the IP geolookup returned; the user can
+  // still pick anything else from the searchable list.
+  const [detectedCountry, setDetectedCountry] = useState<Country | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerQuery, setPickerQuery] = useState("");
+
   // Reset paywall stage whenever the modal is re-opened.
+  // TODO(remove): see note above - dead since the confirm stage was removed.
   useEffect(() => {
     if (!open) {
       setStage("select");
-      setSelectedPlan(null);
       setError(null);
+      setPickerOpen(false);
+      setPickerQuery("");
     }
   }, [open]);
 
+  // Fetch the authenticated user's full name when entering paywall mode.
+  // We read auth.users.user_metadata.full_name - RegistrationModal +
+  // SubscriptionModal's lead flow both save the name there at signup. If
+  // the user reached the paywall some other way (no full_name in metadata),
+  // we fall back to paywallGreetingFallback ("שלום").
+  useEffect(() => {
+    if (mode !== "paywall") return;
+    if (!open) return;
+    if (userFullName) return;
+    let cancelled = false;
+    void (async () => {
+      const supabase = createBrowserSupabaseClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (cancelled) return;
+      const meta = (user?.user_metadata ?? {}) as { full_name?: string };
+      const fromMeta = meta.full_name?.trim() ?? "";
+      if (fromMeta) setUserFullName(fromMeta);
+    })();
+    return () => { cancelled = true; };
+  }, [mode, open, userFullName]);
+
+  // IP-detect the country whenever the paywall opens. We resolve from
+  // ipapi.co just like the old `confirm` stage did, but now it drives the
+  // pinned-top entry of the country combobox below.
+  useEffect(() => {
+    if (mode !== "paywall") return;
+    if (!open) return;
+    if (countryCode) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch("https://ipapi.co/json/", { headers: { Accept: "application/json" } });
+        if (!res.ok) return;
+        const j = (await res.json()) as { country?: string; country_name?: string };
+        if (cancelled) return;
+        const code = (j.country ?? "").toUpperCase();
+        if (!code) return;
+        const found = findCountry(code);
+        if (!found) {
+          setCountryCode(code);
+          setCountryName(j.country_name ?? "");
+          return;
+        }
+        setCountryCode(found.code);
+        setCountryName(locale === "he" ? found.he : found.en);
+        setDetectedCountry(found);
+      } catch { /* ignore */ }
+    })();
+    return () => { cancelled = true; };
+  }, [mode, open, countryCode, locale]);
+
   const PRICES = isHe ? PRICES_ILS : PRICES_USD;
 
-  // Auto-detect country (paywall only, on entering confirm stage)
+  // Auto-detect country (paywall only, on entering confirm stage).
+  // TODO(remove): never fires now - `stage` never becomes "confirm" since
+  // the confirm UI was deleted. Server-side IP geo is authoritative.
   useEffect(() => {
     if (mode !== "paywall") return;
     if (stage !== "confirm") return;
@@ -437,11 +403,32 @@ export function SubscriptionModal({
   // ── Upsert lead row ────────────────────────────────────────────────────────
   async function upsertLead(uid: string | null): Promise<string | null> {
     const deviceId = getOrCreateDeviceId();
+
+    // Resolve email: form input (lead mode) → auth user (paywall mode).
+    // In paywall mode the `email` state is empty because there's no input
+    // field; without this fallback /api/leads/upsert rejects with 400
+    // "Invalid email" the first time a logged-in user picks a plan.
+    let resolvedEmail = email.trim().toLowerCase();
+    if (!resolvedEmail || !resolvedEmail.includes("@")) {
+      try {
+        const supa = createBrowserSupabaseClient();
+        const { data: { user } } = await supa.auth.getUser();
+        if (user?.email) resolvedEmail = user.email.trim().toLowerCase();
+      } catch { /* ignore */ }
+    }
+
+    if (!resolvedEmail || !resolvedEmail.includes("@")) {
+      setError(isHe
+        ? "לא ניתן לזהות אימייל. התחבר/י מחדש ונסה/י שוב."
+        : "Could not resolve your email. Please sign in again and retry.");
+      return null;
+    }
+
     const res = await fetch("/api/leads/upsert", {
       method:  "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        email:             email.trim().toLowerCase(),
+        email:             resolvedEmail,
         full_name:         fullName.trim() || null,
         name:              fullName.trim() || null,
         language:          locale,
@@ -544,6 +531,27 @@ export function SubscriptionModal({
         return;
       }
 
+      // Diagnostic: when /api/billing/checkout/create returns UNAUTHORIZED,
+      // we want to know whether the BROWSER even has a live Supabase session
+      // at this moment. Logs only an 8-char id prefix and a masked email -
+      // never a full identifier or token.
+      try {
+        const supa = createBrowserSupabaseClient();
+        const { data: { user: liveUser }, error: liveErr } = await supa.auth.getUser();
+        console.log("[checkout:CLIENT_DEBUG]", {
+          prop_userId_present: Boolean(userId),
+          prop_userId8: typeof userId === "string" ? userId.slice(0, 8) : null,
+          live_user_present: Boolean(liveUser),
+          live_user_id8: liveUser?.id?.slice(0, 8) ?? null,
+          live_user_email_masked: liveUser?.email
+            ? `${liveUser.email.slice(0, 3)}…@${liveUser.email.split("@")[1] ?? ""}`
+            : null,
+          auth_error: liveErr?.message ?? null,
+        });
+      } catch (e) {
+        console.warn("[checkout:CLIENT_DEBUG] threw", e instanceof Error ? e.message : e);
+      }
+
       const res = await fetch("/api/billing/checkout/create", {
         method:  "POST",
         headers: { "content-type": "application/json" },
@@ -591,25 +599,26 @@ export function SubscriptionModal({
 
   // ── Render ────────────────────────────────────────────────────────────────
 
-  const headerTitle =
-    mode === "lead"
-      ? t.titleLead
-      : stage === "confirm"
-        ? t.titlePaywallConfirm
-        : t.titlePaywallSelect;
+  // Confirm stage was removed - clicking a plan jumps straight to Cardcom,
+  // so the title/subtitle only need lead vs paywall-select copy.
+  const headerTitle = mode === "lead" ? t.titleLead : t.titlePaywallSelect;
+  const headerSubtitle = mode === "lead" ? t.subtitleLead : t.subtitlePaywall;
 
-  const headerSubtitle =
-    mode === "lead"
-      ? t.subtitleLead
-      : stage === "confirm"
-        ? t.subtitleConfirm
-        : t.subtitlePaywall;
+  // Paywall mode is a single-plan checkout - the SinglePlanPaywall
+  // subcomponent supplies its own headline (greeting), so we hide the
+  // generic DialogHeader for that mode and shrink the dialog to a sane
+  // single-column width. Lead mode keeps its existing wider modal layout.
+  const isPaywall = mode === "paywall";
 
   return (
     <Dialog open={open} onOpenChange={(v) => (locked ? null : onOpenChange(v))}>
       <DialogContent
         showCloseButton={false}
-        className="overflow-hidden border-white/10 bg-transparent p-0 text-white shadow-2xl sm:max-w-lg md:max-w-3xl lg:max-w-4xl"
+        className={`overflow-hidden border-white/10 bg-transparent p-0 text-white shadow-2xl ${
+          isPaywall
+            ? "sm:max-w-md"
+            : "sm:max-w-lg md:max-w-3xl lg:max-w-4xl"
+        }`}
       >
         {/* Animated gradient backdrop */}
         <ModalBackdrop palette={palette} />
@@ -627,24 +636,33 @@ export function SubscriptionModal({
         )}
 
         <div className="relative z-0 max-h-[85vh] overflow-y-auto px-5 pb-6 pt-7 sm:px-7">
-          <DialogHeader
-            className={`items-start gap-1.5 text-start ${
-              mode === "lead" ? "mx-auto w-full max-w-sm" : ""
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              <span
-                className="inline-flex h-7 w-7 items-center justify-center rounded-full text-white shadow"
-                style={{ background: accent }}
-              >
-                <Sparkles className="h-4 w-4" />
-              </span>
-              <DialogTitle className="text-xl font-extrabold leading-tight sm:text-2xl">
-                {headerTitle}
-              </DialogTitle>
-            </div>
-            <p className="max-w-prose text-sm text-white/75">{headerSubtitle}</p>
-          </DialogHeader>
+          {/* DialogTitle is required by the dialog primitive for a11y but
+              hidden visually in paywall mode - the SinglePlanPaywall
+              renders its own greeting headline. */}
+          {isPaywall ? (
+            <DialogTitle className="sr-only">
+              {userFullName ? t.paywallGreeting(userFullName) : t.paywallGreetingFallback}
+            </DialogTitle>
+          ) : (
+            <DialogHeader
+              className={`items-start gap-1.5 text-start ${
+                mode === "lead" ? "mx-auto w-full max-w-sm" : ""
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <span
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-full text-white shadow"
+                  style={{ background: accent }}
+                >
+                  <Sparkles className="h-4 w-4" />
+                </span>
+                <DialogTitle className="text-xl font-extrabold leading-tight sm:text-2xl">
+                  {headerTitle}
+                </DialogTitle>
+              </div>
+              <p className="max-w-prose text-sm text-white/75">{headerSubtitle}</p>
+            </DialogHeader>
+          )}
 
           {mode === "lead" ? (
             /* ── Lead registration ──────────────────────────────────────── */
@@ -770,164 +788,339 @@ export function SubscriptionModal({
                 </button>
               </p>
             </div>
-          ) : stage === "select" ? (
-            /* ── Paywall step 1: experiential package picker ────────────── */
-            <div className="mt-5 flex flex-col gap-4">
-              {error && (
-                <p className="rounded-lg bg-rose-500/15 px-3 py-2 text-sm font-medium text-rose-200 ring-1 ring-rose-400/40">
-                  {error}
-                </p>
-              )}
-
-              <div className="grid gap-3 md:grid-cols-3">
-                <PlanCardButton
-                  id="weekly"
-                  price={PRICES.weekly}
-                  currency={currency}
-                  labels={t.period.weekly}
-                  features={t.features}
-                  accent={palette[2]}
-                  busy={busy}
-                  ctaText={t.continueCta}
-                  onSelect={() => {
-                    setSelectedPlan("weekly");
-                    setStage("confirm");
-                  }}
-                />
-                <PlanCardButton
-                  id="monthly"
-                  price={PRICES.monthly}
-                  currency={currency}
-                  labels={t.period.monthly}
-                  features={t.features}
-                  featured
-                  tag={t.recommended}
-                  accent={palette[0]}
-                  busy={busy}
-                  ctaText={t.continueCta}
-                  onSelect={() => {
-                    setSelectedPlan("monthly");
-                    setStage("confirm");
-                  }}
-                />
-                <PlanCardButton
-                  id="annual"
-                  price={PRICES.annual}
-                  currency={currency}
-                  labels={t.period.annual}
-                  features={t.features}
-                  tag={t.bestValue}
-                  accent={palette[1]}
-                  busy={busy}
-                  ctaText={t.continueCta}
-                  onSelect={() => {
-                    setSelectedPlan("annual");
-                    setStage("confirm");
-                  }}
-                />
-              </div>
-
-              <p className="mt-1 text-center text-xs text-white/60">{t.cancelNote}</p>
-            </div>
           ) : (
-            /* ── Paywall step 2: confirm country + go to checkout ────────── */
-            <div className="mt-5 flex flex-col gap-4">
-              {selectedPlan && (
-                <div
-                  className="rounded-2xl border border-white/15 p-4"
-                  style={{
-                    background:
-                      `linear-gradient(135deg, ${accent}26 0%, rgba(255,255,255,0.05) 100%)`,
-                  }}
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-white/60">
-                        {t.recommended === T[locale].recommended && selectedPlan === "monthly"
-                          ? t.recommended
-                          : selectedPlan === "annual"
-                            ? t.bestValue
-                            : t.period[selectedPlan].label}
-                      </p>
-                      <p className="mt-0.5 text-base font-bold text-white">
-                        {t.period[selectedPlan].label}
-                      </p>
-                    </div>
-                    <div className="text-end">
-                      <div className="text-2xl font-black text-white">
-                        {currency}{PRICES[selectedPlan]}
-                      </div>
-                      <div className="text-xs font-semibold text-white/70">
-                        {t.period[selectedPlan].note}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div className="grid gap-1.5">
-                <Label className="text-sm font-semibold text-white/90">{t.countryLabel}</Label>
-                <Select
-                  value={countryCode}
-                  onValueChange={(v) => {
-                    const code  = String(v ?? "");
-                    const match = COUNTRIES.find((c) => c.code === code);
-                    setCountryCode(code);
-                    setCountryName(match ? match.en : code === "ZZ" ? "Other" : "");
-                  }}
-                >
-                  <SelectTrigger className="w-full border-white/15 bg-white/10 text-white">
-                    <SelectValue placeholder={t.countryPlaceholder} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {COUNTRIES.map((c) => (
-                      <SelectItem key={c.code} value={c.code}>
-                        {isHe ? c.he : c.en}
-                      </SelectItem>
-                    ))}
-                    <SelectItem value="ZZ">{isHe ? "אחר" : "Other"}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {vatRatePercent > 0 && (
-                <p className="text-xs text-white/70">{t.vatNote(vatRatePercent)}</p>
-              )}
-
-              {TEST_PRICE && (
-                <p className="rounded-md bg-amber-500/15 px-3 py-1.5 text-xs font-semibold text-amber-200 ring-1 ring-amber-400/30">
-                  {isHe ? `🧪 מצב בדיקה - מחיר: ${currency}${TEST_PRICE}` : `🧪 Test mode - price: ${currency}${TEST_PRICE}`}
-                </p>
-              )}
-
-              {error && (
-                <p className="rounded-lg bg-rose-500/15 px-3 py-2 text-sm font-medium text-rose-200 ring-1 ring-rose-400/40">
-                  {error}
-                </p>
-              )}
-
-              <Button
-                className="min-h-[52px] w-full rounded-full text-base font-bold text-white shadow-lg"
-                disabled={busy || !selectedPlan}
-                onClick={() => selectedPlan && void startPayment(selectedPlan)}
-                style={{
-                  background: `linear-gradient(135deg, ${palette[0]}, ${palette[1]})`,
-                }}
-              >
-                {busy ? t.saving : t.paymentCta}
-              </Button>
-
-              <button
-                type="button"
-                onClick={() => setStage("select")}
-                className="mx-auto text-xs font-semibold text-white/70 underline-offset-4 hover:text-white hover:underline"
-              >
-                ← {t.backToPackages}
-              </button>
-            </div>
+            /* ── Paywall: single-plan checkout (2026-05-06 Itzik redesign)
+             *   • Greeting: "שלום {full_name}" so the user knows we
+             *     remember them.
+             *   • One price: 9₪/week (single weekly plan).
+             *   • Country combobox with search, IP-detected country
+             *     pinned to the top.
+             *   • One CTA → Cardcom. After success, /billing/success
+             *     polls and routes the user back to play.
+             */
+            <SinglePlanPaywall
+              error={error}
+              busy={busy}
+              currency={currency}
+              price={PRICES.weekly}
+              palette={palette}
+              accent={accent}
+              t={t}
+              locale={locale}
+              userFullName={userFullName}
+              detectedCountry={detectedCountry}
+              countryCode={countryCode}
+              setCountryCode={setCountryCode}
+              setCountryName={setCountryName}
+              pickerOpen={pickerOpen}
+              setPickerOpen={setPickerOpen}
+              pickerQuery={pickerQuery}
+              setPickerQuery={setPickerQuery}
+              onPay={() => void startPayment("weekly")}
+            />
           )}
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// ── SinglePlanPaywall (2026-05-06 Itzik) ─────────────────────────────────
+//
+// One-plan checkout: greeting + 9₪/week price + searchable country picker +
+// single CTA → Cardcom. Replaces the prior 3-plan PlanCardButton grid.
+//
+// The component receives state from the parent so the parent stays the
+// single owner of `countryCode` (still consumed by `startPayment` /
+// `upsertLead` exactly as before).
+function SinglePlanPaywall({
+  error,
+  busy,
+  currency,
+  price,
+  palette,
+  accent,
+  t,
+  locale,
+  userFullName,
+  detectedCountry,
+  countryCode,
+  setCountryCode,
+  setCountryName,
+  pickerOpen,
+  setPickerOpen,
+  pickerQuery,
+  setPickerQuery,
+  onPay,
+}: {
+  error: string | null;
+  busy: boolean;
+  currency: string;
+  price: string;
+  palette: [string, string, string];
+  accent: string;
+  // Loose typing - the modal owns the canonical translations object and
+  // we only read a known subset here. Avoids a separate exported type.
+  t: {
+    paywallGreeting: (name: string) => string;
+    paywallGreetingFallback: string;
+    paywallSinglePlanSubtitle: string;
+    paywallPriceSuffix: string;
+    paywallCancelNote: string;
+    paywallContinueCta: string;
+    countryLabel: string;
+    countryPlaceholder: string;
+    countrySearchPlaceholder: string;
+    countryDetectedLabel: string;
+    countryAllLabel: string;
+    countryNoResults: string;
+    saving: string;
+  };
+  locale: "he" | "en";
+  userFullName: string | null;
+  detectedCountry: Country | null;
+  countryCode: string;
+  setCountryCode: (v: string) => void;
+  setCountryName: (v: string) => void;
+  pickerOpen: boolean;
+  setPickerOpen: (v: boolean) => void;
+  pickerQuery: string;
+  setPickerQuery: (v: string) => void;
+  onPay: () => void;
+}) {
+  const isHe = locale === "he";
+  const greeting = userFullName
+    ? t.paywallGreeting(userFullName)
+    : t.paywallGreetingFallback;
+
+  const selected = useMemo<Country | null>(() => {
+    if (!countryCode) return null;
+    return findCountry(countryCode);
+  }, [countryCode]);
+
+  const { pinned, rest } = useMemo(
+    () =>
+      listCountries({
+        locale,
+        pinTopCode: detectedCountry?.code ?? null,
+        query: pickerQuery,
+      }),
+    [locale, detectedCountry, pickerQuery],
+  );
+
+  const selectedDisplay = selected
+    ? isHe
+      ? selected.he
+      : selected.en
+    : t.countryPlaceholder;
+
+  const onPick = (c: Country) => {
+    setCountryCode(c.code);
+    setCountryName(isHe ? c.he : c.en);
+    setPickerOpen(false);
+    setPickerQuery("");
+  };
+
+  return (
+    <div className="mx-auto flex w-full max-w-sm flex-col gap-5 pt-2 sm:pt-3">
+      {error && (
+        <p className="rounded-lg bg-rose-500/15 px-3 py-2 text-sm font-medium text-rose-200 ring-1 ring-rose-400/40">
+          {error}
+        </p>
+      )}
+
+      {/* ── Hero greeting - centred, this IS the title for paywall mode ── */}
+      <header className="flex flex-col items-center gap-2.5 text-center">
+        <span
+          className="inline-flex h-10 w-10 items-center justify-center rounded-full text-white shadow-lg"
+          style={{ background: `linear-gradient(135deg, ${palette[0]}, ${palette[1]})` }}
+          aria-hidden
+        >
+          <Sparkles className="h-5 w-5" />
+        </span>
+        <h3 className="font-heading text-2xl font-extrabold leading-tight text-white sm:text-[28px]">
+          {greeting}
+        </h3>
+        <p className="max-w-[28ch] text-sm leading-snug text-white/70">
+          {t.paywallSinglePlanSubtitle}
+        </p>
+      </header>
+
+      {/* ── Price hero - single bold price card ──────────────────────── */}
+      <div
+        className="relative overflow-hidden rounded-3xl border border-white/15 bg-white/[0.04] px-6 py-6 text-center"
+        style={{
+          boxShadow: `inset 0 1px 0 rgba(255,255,255,0.10), 0 24px 60px -28px ${accent}aa`,
+        }}
+      >
+        {/* glow halo behind the price */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-12 top-0 h-24 rounded-full opacity-50 blur-3xl"
+          style={{ background: accent }}
+        />
+        <div className="relative flex items-baseline justify-center gap-1">
+          <span className="text-6xl font-black tracking-tight text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.4)]">
+            {currency}{price}
+          </span>
+          <span className="text-base font-semibold text-white/70">
+            {t.paywallPriceSuffix}
+          </span>
+        </div>
+        <p className="relative mt-2 text-sm text-white/70">{t.paywallCancelNote}</p>
+      </div>
+
+      {/* ── Country picker - popover-style: floats above content ─────── */}
+      <div className="relative grid gap-1.5">
+        <Label className="text-sm font-semibold text-white/90">{t.countryLabel}</Label>
+        <button
+          type="button"
+          onClick={() => setPickerOpen(!pickerOpen)}
+          className={`flex h-12 items-center justify-between rounded-xl border bg-white/5 px-4 text-start text-sm text-white transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40 ${
+            pickerOpen ? "border-white/30 bg-white/10" : "border-white/15"
+          }`}
+          aria-haspopup="listbox"
+          aria-expanded={pickerOpen}
+        >
+          <span className="flex items-center gap-2">
+            {selected ? (
+              <span
+                className="rounded-md bg-white/10 px-1.5 py-0.5 text-[11px] font-bold tracking-wider text-white/70"
+                aria-hidden
+              >
+                {selected.code}
+              </span>
+            ) : null}
+            <span className={selected ? "text-white" : "text-white/40"}>
+              {selectedDisplay}
+            </span>
+          </span>
+          <span className="text-white/50">{pickerOpen ? "▴" : "▾"}</span>
+        </button>
+
+        {pickerOpen ? (
+          <>
+            {/* click-outside catch */}
+            <button
+              type="button"
+              aria-hidden
+              tabIndex={-1}
+              className="fixed inset-0 z-20 cursor-default"
+              onClick={() => setPickerOpen(false)}
+            />
+            <div
+              className="absolute inset-x-0 top-full z-30 mt-1.5 overflow-hidden rounded-xl border border-white/15 bg-[rgba(8,4,16,0.97)] shadow-2xl backdrop-blur"
+              role="listbox"
+            >
+              <div className="border-b border-white/10 p-2">
+                <Input
+                  autoFocus
+                  value={pickerQuery}
+                  onChange={(e) => setPickerQuery(e.target.value)}
+                  placeholder={t.countrySearchPlaceholder}
+                  className="h-9 border-white/15 bg-white/10 text-sm text-white placeholder:text-white/40 focus-visible:ring-white/40"
+                />
+              </div>
+              <div className="max-h-72 overflow-y-auto py-1">
+                {pinned ? (
+                  <>
+                    <div className="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wider text-white/50">
+                      {t.countryDetectedLabel}
+                    </div>
+                    <CountryRow
+                      country={pinned}
+                      selected={selected?.code === pinned.code}
+                      isHe={isHe}
+                      accent={accent}
+                      onClick={() => onPick(pinned)}
+                    />
+                    {rest.length > 0 ? (
+                      <>
+                        <div className="my-1 h-px bg-white/10" />
+                        <div className="px-3 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-wider text-white/50">
+                          {t.countryAllLabel}
+                        </div>
+                      </>
+                    ) : null}
+                  </>
+                ) : null}
+                {rest.length === 0 && !pinned ? (
+                  <div className="px-3 py-6 text-center text-sm text-white/55">
+                    {t.countryNoResults}
+                  </div>
+                ) : (
+                  rest.map((c) => (
+                    <CountryRow
+                      key={c.code}
+                      country={c}
+                      selected={selected?.code === c.code}
+                      isHe={isHe}
+                      accent={accent}
+                      onClick={() => onPick(c)}
+                    />
+                  ))
+                )}
+              </div>
+            </div>
+          </>
+        ) : null}
+      </div>
+
+      {/* CTA */}
+      <Button
+        className="min-h-[54px] w-full rounded-full text-base font-extrabold text-white shadow-[0_18px_40px_-12px_rgba(0,0,0,0.6)] transition hover:brightness-110 disabled:opacity-50"
+        disabled={busy || !countryCode}
+        onClick={onPay}
+        style={{
+          background: `linear-gradient(135deg, ${palette[0]}, ${palette[1]})`,
+        }}
+      >
+        {busy ? t.saving : t.paywallContinueCta}
+      </Button>
+
+      {/* Trust line - secure-payment / Cardcom / SSL hint. Kept as plain
+          text (no icons/logos) to avoid leaking vendor names into the UI;
+          the user can read the full terms before paying. */}
+      <p className="-mt-1 text-center text-xs text-white/55">
+        {isHe
+          ? "תשלום מאובטח · ביטול בקליק אחד מהחשבון שלכם"
+          : "Secure payment · Cancel from your account in one click"}
+      </p>
+    </div>
+  );
+}
+
+function CountryRow({
+  country,
+  selected,
+  isHe,
+  accent,
+  onClick,
+}: {
+  country: Country;
+  selected: boolean;
+  isHe: boolean;
+  accent: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex w-full items-center justify-between gap-2 px-3 py-2 text-start text-sm transition hover:bg-white/10 ${
+        selected ? "bg-white/10" : ""
+      }`}
+      role="option"
+      aria-selected={selected}
+    >
+      <span className="text-white">{isHe ? country.he : country.en}</span>
+      {selected ? (
+        <Check className="h-4 w-4 shrink-0" style={{ color: accent }} />
+      ) : (
+        <span className="text-xs font-semibold tracking-wider text-white/40">
+          {country.code}
+        </span>
+      )}
+    </button>
   );
 }

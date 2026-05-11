@@ -52,7 +52,7 @@ export default async function JourneyHealthPage() {
         <h1 className="mt-2 text-3xl font-bold tracking-tight">Health</h1>
         <p className="text-muted-foreground mt-1 max-w-2xl text-sm">
           Cron status, stuck-user alerts, and pending push backlog. All
-          read-only — no actions on this page.
+          read-only - no actions on this page.
         </p>
       </div>
 
@@ -110,7 +110,7 @@ export default async function JourneyHealthPage() {
           />
           <StatTile
             label="Oldest age (days)"
-            value={pending.oldestAgeDays ?? "—"}
+            value={pending.oldestAgeDays ?? "-"}
             tone={
               pending.oldestAgeDays && pending.oldestAgeDays > 14
                 ? "warn"
@@ -132,7 +132,7 @@ export default async function JourneyHealthPage() {
             <h2 className="font-semibold">Stuck users (≥7 days idle, no pending push)</h2>
             <p className="text-muted-foreground mt-0.5 text-xs">
               The cadence engine should be picking for them. Empty queue
-              usually means the picker found no candidates — check
+              usually means the picker found no candidates - check
               priority ranking + active items in their categories.
             </p>
           </div>
@@ -145,7 +145,7 @@ export default async function JourneyHealthPage() {
         </header>
         {stuck.length === 0 ? (
           <div className="text-muted-foreground flex h-20 items-center justify-center text-sm">
-            All clear — nobody is stuck.
+            All clear - nobody is stuck.
           </div>
         ) : (
           <Table>
@@ -180,7 +180,7 @@ export default async function JourneyHealthPage() {
                   <TableCell className="text-muted-foreground text-xs">
                     {u.last_delivery_at
                       ? new Date(u.last_delivery_at).toLocaleString()
-                      : "—"}
+                      : "-"}
                   </TableCell>
                 </TableRow>
               ))}
@@ -219,7 +219,7 @@ function CronRow({ row }: { row: CronHealthRow }) {
             {new Date(row.lastRunAt).toLocaleString()}
           </span>
         ) : (
-          "—"
+          "-"
         )}
       </TableCell>
       <TableCell className="text-end tabular-nums">{row.lastRunRows}</TableCell>

@@ -176,6 +176,26 @@ export async function markScheduledItemComplete(
     verb: "item_completed",
   });
 
+  // Layer-4 milestone detection. Best-effort: failure here doesn't
+  // fail the completion. The unique index on milestone rows means
+  // re-runs are free. Only fires for couple-owned assignments —
+  // solo journeys don't get milestone reveals in this layer.
+  if (scope.assignment.couple_id) {
+    try {
+      const { checkAndAwardMilestones } = await import(
+        "@/lib/journey/milestones"
+      );
+      await checkAndAwardMilestones({
+        coupleId: scope.assignment.couple_id,
+      });
+    } catch (err) {
+      console.warn(
+        "[markScheduledItemComplete] milestone check failed (non-fatal)",
+        err,
+      );
+    }
+  }
+
   revalidateTimeline();
   return {
     ok: true,

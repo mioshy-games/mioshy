@@ -8,13 +8,35 @@ import confetti from "canvas-confetti";
 import { SnakesBoard } from "@/components/game/snakes/SnakesBoard";
 import { Dice } from "@/components/game/snakes/Dice";
 import { QuestionModal } from "@/components/game/snakes/QuestionModal";
-import { GamePageBackground } from "@/components/game/GamePageBackground";
 import { useSnakesGame } from "@/hooks/useSnakesGame";
 import type { GameAdapter } from "@/lib/snakes/adapter";
 import type { GamePlayer } from "@/lib/snakes/types";
 import { cellToBoardPercent } from "@/lib/snakes/boardUtils";
 import { playSound } from "@/lib/sounds";
 import { cn } from "@/lib/utils";
+// Gating (mirrors TruthOrDareClient - same lead/paywall flow per Itzik
+// 2026-05-06): non-subscribers get FREE_PLAYS_PER_GAME (=3) dice rolls
+// before the lead modal pops, and another batch after signup before the
+// hard paywall.
+import { createBrowserSupabaseClient } from "@/lib/supabase/client";
+import { hasActiveSubscription } from "@/lib/subscriptions";
+import {
+  FREE_PLAYS_PER_GAME,
+  getGuestGamePlays,
+  getUserGamePlays,
+  grantPostSignupBonus,
+  hasGuestLeadCaptured,
+  incrementGuestGamePlays,
+  incrementUserGamePlays,
+} from "@/lib/spins";
+import { RegistrationModal } from "@/components/RegistrationModal";
+import { SubscriptionModal } from "@/components/SubscriptionModal";
+
+// Slug used for snakes & ladders in the per-game play counter. The snakes
+// game has no row in the `games` table - it lives at /game, not /games/:slug
+// - so we mint a stable slug here to namespace its play counter alongside
+// every wheel-based game's slug.
+const SNAKES_PLAYS_SLUG = "snakes-ladders";
 
 /**
  * SnakesGameBoard - adapter-agnostic game screen.
@@ -71,6 +93,122 @@ export function SnakesGameBoard({
   // Ref on the board section so we can compute viewport origin for confetti
   const boardSectionRef = useRef<HTMLElement>(null);
 
+  // ── Gating state (mirrors TruthOrDareClient) ────────────────────────────
+  // 1. subscribed              → unlimited
+  // 2. guest, rolls < 3        → free
+  // 3. guest, rolls >= 3, no lead yet → lead modal
+  // 4. guest, lead captured + not logged in → paywall
+  // 5. logged-in, rolls < 3    → free
+  // 6. logged-in, rolls >= 3   → paywall
+  const [authReady, setAuthReady] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [subscribed, setSubscribed] = useState(false);
+  const [completedRolls, setCompletedRolls] = useState(0);
+  const [bonusConsumed, setBonusConsumed] = useState(false);
+  const [leadCaptured, setLeadCaptured] = useState(false);
+  const [regOpen, setRegOpen] = useState(false);
+  const [subOpen, setSubOpen] = useState(false);
+  const [subLocked, setSubLocked] = useState(false);
+  const authWaiterRef = useRef<{
+    resolve: (uid: string | null) => void;
+  } | null>(null);
+
+  // Load auth + subscription + plays counter on mount.
+  useEffect(() => {
+    const supabase = createBrowserSupabaseClient();
+    let cancelled = false;
+    (async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (cancelled) return;
+      const uid = user?.id ?? null;
+      setUserId(uid);
+      if (uid) {
+        const active = await hasActiveSubscription(supabase, uid);
+        if (!cancelled) setSubscribed(active);
+        const plays = await getUserGamePlays(supabase, SNAKES_PLAYS_SLUG);
+        if (!cancelled) {
+          setCompletedRolls(plays.plays_used);
+          setBonusConsumed(plays.post_signup_bonus_used);
+        }
+      } else {
+        setCompletedRolls(getGuestGamePlays(SNAKES_PLAYS_SLUG));
+      }
+      setAuthReady(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Wrap the dice roll with the same gate as the wheel:
+  //   • Subscribers always pass through to roll().
+  //   • Guests roll free until FREE_PLAYS_PER_GAME, then see the lead modal.
+  //   • Logged-in non-subscribers roll free until FREE_PLAYS_PER_GAME, then
+  //     hit the hard paywall.
+  // The counter increments AFTER a successful roll - the user always
+  // gets the FREE_PLAYS_PER_GAME-th roll, and the modal opens right after
+  // (matching the wheel's UX where the budget is "you used N of your free
+  // plays" rather than "you tried to use one beyond N").
+  const handleDiceRoll = async () => {
+    if (!authReady) return;
+
+    // 1. Subscribed → unlimited.
+    if (subscribed) {
+      playSound("dice");
+      await roll();
+      return;
+    }
+
+    // 2/5. Free budget still available → roll, then count.
+    if (!userId) {
+      const used = getGuestGamePlays(SNAKES_PLAYS_SLUG);
+      if (used < FREE_PLAYS_PER_GAME) {
+        playSound("dice");
+        await roll();
+        const next = incrementGuestGamePlays(SNAKES_PLAYS_SLUG);
+        setCompletedRolls(next);
+        // Just hit the budget → pop the lead modal so the next click finds
+        // it already open.
+        if (next >= FREE_PLAYS_PER_GAME && !hasGuestLeadCaptured() && !leadCaptured) {
+          setSubLocked(false);
+          setSubOpen(true);
+        }
+        return;
+      }
+      // 3. Guest budget spent, no lead yet → lead modal.
+      if (!hasGuestLeadCaptured() && !leadCaptured) {
+        setSubLocked(false);
+        setSubOpen(true);
+        return;
+      }
+      // 4. Lead captured but never registered → hard paywall.
+      setSubLocked(true);
+      setSubOpen(true);
+      return;
+    }
+
+    // Logged-in non-subscriber.
+    if (completedRolls < FREE_PLAYS_PER_GAME) {
+      playSound("dice");
+      await roll();
+      const supabase = createBrowserSupabaseClient();
+      void incrementUserGamePlays(supabase, SNAKES_PLAYS_SLUG);
+      const nextRolls = completedRolls + 1;
+      setCompletedRolls(nextRolls);
+      if (nextRolls >= FREE_PLAYS_PER_GAME) {
+        setSubLocked(true);
+        setSubOpen(true);
+      }
+      return;
+    }
+
+    // 6. Logged-in budget spent → paywall.
+    setSubLocked(true);
+    setSubOpen(true);
+  };
+
   // ── Step-by-step walk animation ─────────────────────────────────────────
   // `visualPositions` drives what PlayersOverlay actually renders.
   // It starts equal to state.positions and is updated one cell at a time
@@ -86,6 +224,34 @@ export function SnakesGameBoard({
   const prevPositionsRef = useRef<Record<string, number> | null>(null);
   // Tracks the last turnCount we animated so we don't replay on re-renders.
   const prevTurnCountRef = useRef<number | null>(null);
+  // Round 8 (2026-05-05) BUGFIX: explicit gate for modal opening.
+  // Holds the turnCount of the most-recently-COMPLETED walk. The modal
+  // is allowed to open only when state.turnCount === walkDoneForTurn -
+  // i.e. only after the walk actually finished. Without this, the modal
+  // could flash open the instant state.phase became "question" but
+  // BEFORE the walk effect ran (since `isWalking` is set in a useEffect
+  // that fires AFTER the first paint of the new state). User-reported
+  // symptom: "I see one hop, popup pops up, then the token continues
+  // moving in the background of the popup."
+  const [walkDoneForTurn, setWalkDoneForTurn] = useState<number>(-1);
+
+  // Diagnostic - log every change to the modal-open state so the
+  // walk → modal sequence is visible in DevTools console.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const open =
+      state?.phase === "question" &&
+      !isWalking &&
+      walkDoneForTurn === (state?.turnCount ?? 0);
+    // eslint-disable-next-line no-console
+    console.log("[snk-modal] gate", {
+      open,
+      phase: state?.phase,
+      isWalking,
+      walkDoneForTurn,
+      turnCount: state?.turnCount,
+    });
+  }, [state?.phase, isWalking, walkDoneForTurn, state?.turnCount]);
 
   // Pass-the-phone toast + gentle turn indicator
   useEffect(() => {
@@ -109,9 +275,27 @@ export function SnakesGameBoard({
   // On mount or after a walk completes, mirror the authoritative positions so
   // non-moving players (positions unchanged by the walk) stay correct, and so
   // that prevPositionsRef is seeded for the next turn's walk.
+  //
+  // CRITICAL ROUND 7 BUGFIX (2026-05-05): also bail when state.turnCount has
+  // advanced past what we've processed. Without this guard, after a roll,
+  // both the idle sync (deps: positions) and the walk effect (deps: turnCount)
+  // fire - and React doesn't guarantee order. If idle sync wins the race, it
+  // sets visualPositions to the FINAL post-roll position, making the token
+  // visibly teleport to the destination, then the walk effect runs against
+  // a corrupted prevPositionsRef and the token rewinds + re-walks. Itzik's
+  // observed symptom: "player moves, comes back, then moves again."
   useEffect(() => {
     if (!state?.positions) return;
     if (isWalkingRef.current) return; // walk effect owns positions during walk
+    // A new turn has been committed but the walk hasn't been scheduled yet.
+    // Hold off - the walk effect is about to take over; jumping to the
+    // final position now would create the rewind-then-walk-again artifact.
+    if (
+      prevTurnCountRef.current !== null &&
+      (state.turnCount ?? 0) > prevTurnCountRef.current
+    ) {
+      return;
+    }
     setVisualPositions({ ...state.positions });
     if (prevPositionsRef.current === null) {
       prevPositionsRef.current = { ...state.positions };
@@ -124,21 +308,33 @@ export function SnakesGameBoard({
 
   // ── Walk effect: fires once per new dice roll ─────────────────────────────
   useEffect(() => {
+    const t0 = performance.now();
     if (!state || !config) return;
     const turnCount = state.turnCount ?? 0;
 
     // Seed refs on first render without triggering animation
     if (prevTurnCountRef.current === null) {
+      // eslint-disable-next-line no-console
+      console.log("[snk-walk] seed", { turnCount, positions: state.positions });
       prevTurnCountRef.current = turnCount;
       prevPositionsRef.current = { ...state.positions };
       setVisualPositions({ ...state.positions });
       return;
     }
     // No new turn yet
-    if (turnCount <= prevTurnCountRef.current) return;
+    if (turnCount <= prevTurnCountRef.current) {
+      // eslint-disable-next-line no-console
+      console.log("[snk-walk] skip (no new turn)", {
+        turnCount,
+        prevTurnCount: prevTurnCountRef.current,
+      });
+      return;
+    }
 
     const diceResult = state.lastDiceResult;
     if (!diceResult) {
+      // eslint-disable-next-line no-console
+      console.log("[snk-walk] skip (no dice)", { turnCount });
       prevTurnCountRef.current = turnCount;
       return;
     }
@@ -146,6 +342,8 @@ export function SnakesGameBoard({
     // currentPlayer is still the roller (currentPlayerIndex changes only after answer())
     const playerId = currentPlayer?.id;
     if (!playerId) {
+      // eslint-disable-next-line no-console
+      console.log("[snk-walk] skip (no playerId)", { turnCount });
       prevTurnCountRef.current = turnCount;
       return;
     }
@@ -153,6 +351,18 @@ export function SnakesGameBoard({
     const prevPos = prevPositionsRef.current?.[playerId] ?? 1;
     const finalPos = state.positions[playerId] ?? 1;
     const boardSize = config.boardSize || 100;
+    // eslint-disable-next-line no-console
+    console.log("[snk-walk] START", {
+      turnCount,
+      playerId,
+      playerName: currentPlayer?.user_name,
+      diceResult,
+      prevPos,
+      finalPos,
+      phase: state.phase,
+      walkDoneForTurn,
+      effectStartTimestamp: Math.round(t0),
+    });
 
     // Build the naive walk path (no snake/ladder resolution).
     // The visual token hops from prevPos+1 … min(prevPos+dice, boardSize).
@@ -166,13 +376,21 @@ export function SnakesGameBoard({
     prevTurnCountRef.current = turnCount;
 
     if (steps.length === 0) {
-      // Already at destination - just sync
+      // eslint-disable-next-line no-console
+      console.log("[snk-walk] zero-step (already at finalPos)", { turnCount, finalPos });
       setVisualPositions((prev) => ({ ...prev, [playerId]: finalPos }));
       prevPositionsRef.current = { ...(prevPositionsRef.current ?? {}), [playerId]: finalPos };
+      setWalkDoneForTurn(turnCount);
       return;
     }
+    // eslint-disable-next-line no-console
+    console.log("[snk-walk] steps planned", { turnCount, steps, naiveEnd, finalPos, willTeleport: finalPos !== naiveEnd });
 
-    const STEP_MS = 370; // ms per tile hop - spring settles in ~200 ms at stiffness 620
+    // ms per tile hop. Round 6 (2026-05-05): tightened 370 → 200 so
+    // the walk feels snappy - the previous pacing made the token
+    // crawl. Spring inside PlayersOverlay settles in ~200ms at
+    // stiffness 620, so 200ms is the floor before hops overlap.
+    const STEP_MS = 200;
     // Hard upper bound: max 6 steps + 480ms teleport pause + 520ms bounce = ~3.5s.
     // If something goes wrong the modal must never stay blocked forever.
     const SAFETY_MS = steps.length * STEP_MS + 1200;
@@ -181,22 +399,60 @@ export function SnakesGameBoard({
     setIsWalking(true);
     setArrivingPlayerId(null);
 
+    // Delay before the token starts walking. Round 6 (2026-05-05):
+    // dice tumble is 2500ms. Walk starts 200ms after tumble settles -
+    // tight enough to feel snappy, long enough to read the number
+    // since the dice STAYS VISIBLE during the walk (Itzik round 5).
+    // Total click→walk-start ≈ 2.7s.
+    const DICE_REVEAL_DELAY_MS = 2700;
+
     const safetyTimer = setTimeout(() => {
+      // eslint-disable-next-line no-console
+      console.warn("[snk-walk] SAFETY TIMER fired (walk took too long)", {
+        turnCount,
+        elapsed: Math.round(performance.now() - t0),
+      });
       isWalkingRef.current = false;
       setIsWalking(false);
       setArrivingPlayerId(null);
       setVisualPositions((prev) => ({ ...prev, [playerId]: finalPos }));
       prevPositionsRef.current = { ...(prevPositionsRef.current ?? {}), [playerId]: finalPos };
-    }, SAFETY_MS);
+      setWalkDoneForTurn(turnCount);
+    }, SAFETY_MS + DICE_REVEAL_DELAY_MS);
 
+    // Wait for the dice to settle, THEN start stepping. The interval
+    // is set up after the delay so the token doesn't twitch early.
+    // `clearInterval` accepts Timeout | undefined but NOT null in current
+    // @types/node, so we keep the slot undefined-typed and rely on the
+    // closure-captured value being set before any tick fires.
+    let interval: ReturnType<typeof setInterval> | undefined;
     let stepIdx = 0;
-    const interval = setInterval(() => {
+    const startWalk = () => {
+      // eslint-disable-next-line no-console
+      console.log("[snk-walk] startWalk fired", {
+        turnCount,
+        elapsedSinceEffect: Math.round(performance.now() - t0),
+      });
+      interval = setInterval(() => {
       if (stepIdx < steps.length) {
         const cell = steps[stepIdx];
+        // eslint-disable-next-line no-console
+        console.log("[snk-walk] step", {
+          turnCount,
+          stepIdx,
+          cell,
+          totalSteps: steps.length,
+          elapsedSinceEffect: Math.round(performance.now() - t0),
+        });
         setVisualPositions((prev) => ({ ...prev, [playerId]: cell }));
         playSound("move");
         stepIdx++;
       } else {
+        // eslint-disable-next-line no-console
+        console.log("[snk-walk] all steps done - preparing bounce", {
+          turnCount,
+          elapsedSinceEffect: Math.round(performance.now() - t0),
+        });
         clearInterval(interval);
         clearTimeout(safetyTimer); // walk completed normally - disarm the watchdog
 
@@ -205,18 +461,30 @@ export function SnakesGameBoard({
         setVisualPositions((prev) => ({ ...prev, [playerId]: finalPos }));
         prevPositionsRef.current = { ...(prevPositionsRef.current ?? {}), [playerId]: finalPos };
 
-        // For snake/ladder, give the spring ~450 ms to visually travel before
-        // the arrival bounce; for a plain landing, a short pause feels right.
+        // For snake/ladder, give the spring ~340 ms to visually travel
+        // before the arrival bounce; for a plain landing, a near-zero
+        // pause feels right. Tightened round 6 (2026-05-05): 480/80
+        // → 340/40 so the modal pops faster after the token settles.
         const hasTeleport = finalPos !== naiveEnd;
-        const preBounceMs = hasTeleport ? 480 : 80;
+        const preBounceMs = hasTeleport ? 340 : 40;
 
         setTimeout(() => {
           setArrivingPlayerId(playerId);
 
           setTimeout(() => {
+            // eslint-disable-next-line no-console
+            console.log("[snk-walk] DONE → modal will open", {
+              turnCount,
+              totalElapsed: Math.round(performance.now() - t0),
+            });
             setArrivingPlayerId(null);
             isWalkingRef.current = false;
             setIsWalking(false);
+            // Modal gate - only NOW (after token has fully settled and
+            // the bounce has played) do we mark this turn as ready for
+            // the question popup. The modal is gated on this matching
+            // state.turnCount.
+            setWalkDoneForTurn(turnCount);
 
             // Play event sound at the moment the token settles
             const lastLog = state.log[state.log.length - 1];
@@ -236,12 +504,20 @@ export function SnakesGameBoard({
                 setTimeout(() => confetti({ particleCount: 35, spread: 55, origin: o, colors, startVelocity: 22, gravity: 1.3, scalar: 0.75, ticks: 70 }), 180);
               }
             }
-          }, 520);
+          }, 280);
         }, preBounceMs);
       }
     }, STEP_MS);
+    };
 
-    return () => { clearInterval(interval); clearTimeout(safetyTimer); };
+    // Kick off the walk after the dice reveal pause.
+    const startTimer = setTimeout(startWalk, DICE_REVEAL_DELAY_MS);
+
+    return () => {
+      clearTimeout(startTimer);
+      if (interval) clearInterval(interval);
+      clearTimeout(safetyTimer);
+    };
   // Only fire when a new turn has been committed to Supabase
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state?.turnCount]);
@@ -341,13 +617,16 @@ export function SnakesGameBoard({
 
   if (!room || !state || !config) {
     return (
-      <GamePageBackground gameSlug="snakes-couples" primaryColor="#16a34a">
+      <SnakesIntimateBackground>
         <main className="flex min-h-[100dvh] items-center justify-center px-4 py-10">
-          <div className="text-amber-50" dir={isHe ? "rtl" : "ltr"}>
+          <div
+            className="font-['Playfair_Display',Georgia,serif] text-[#C9A961]/85"
+            dir={isHe ? "rtl" : "ltr"}
+          >
             {t("loading")}
           </div>
         </main>
-      </GamePageBackground>
+      </SnakesIntimateBackground>
     );
   }
 
@@ -363,7 +642,7 @@ export function SnakesGameBoard({
     : null;
 
   return (
-    <GamePageBackground gameSlug="snakes-couples" primaryColor="#16a34a">
+    <SnakesIntimateBackground>
       <main
         className={cn(
           "relative min-h-[100dvh] w-full",
@@ -376,7 +655,10 @@ export function SnakesGameBoard({
         )}
         dir={isHe ? "rtl" : "ltr"}
       >
-        {/* ───────────────────── Green zone - header (logo + game title) */}
+        {/* ───────────────────── Header - intimate-dark redesign 2026-05-05.
+              Glass-morphism over the burgundy/black page, gold hairline
+              border, serif gold title with letter-spacing, lower-opacity
+              subtitle. */}
         <motion.header
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -384,26 +666,33 @@ export function SnakesGameBoard({
           className={cn(
             "order-1 md:order-none",
             "md:col-start-1 md:row-start-1",
-            "flex items-center gap-3 rounded-3xl border border-emerald-400/25",
-            "bg-gradient-to-br from-emerald-900/60 via-slate-900/50 to-emerald-900/50",
-            "px-4 py-3 backdrop-blur-md shadow-[0_10px_30px_-12px_rgba(16,185,129,0.45)]",
+            "flex items-center gap-3 rounded-3xl border border-[#C9A961]/25",
+            "bg-[rgba(20,4,12,0.55)] backdrop-blur-xl",
+            "px-4 py-3 shadow-[0_18px_50px_-18px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(201,169,97,0.10)]",
           )}
         >
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/8 ring-1 ring-white/15">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[rgba(201,169,97,0.10)] ring-1 ring-[#C9A961]/30">
             <Image
               src="/mioshy-white.svg"
               alt="Mioshy"
               width={36}
               height={36}
-              className="opacity-95"
+              className="opacity-90"
               priority
             />
           </div>
           <div className="min-w-0 flex-1 text-start">
-            <div className="truncate text-base font-extrabold tracking-tight text-amber-50">
+            <div
+              className={cn(
+                "truncate text-lg font-semibold leading-tight",
+                "font-['Playfair_Display','Cormorant_Garamond',Georgia,serif]",
+                "text-[#E6CB85] tracking-[0.02em]",
+              )}
+              style={{ letterSpacing: "0.04em" }}
+            >
               {t("gameName")}
             </div>
-            <div className="truncate text-xs text-amber-50/70">
+            <div className="truncate text-[12px] text-[#E6CB85]/55 font-light">
               {t("gameSubtitle")}
             </div>
           </div>
@@ -412,7 +701,7 @@ export function SnakesGameBoard({
           {onExit ? (
             <button
               type="button"
-              className="rounded-full border border-rose-400/40 bg-rose-500/15 px-3 py-1.5 text-xs font-bold text-rose-100 backdrop-blur transition hover:bg-rose-500/25 md:hidden"
+              className="rounded-full border border-[#9b2235]/50 bg-[#9b2235]/15 px-3 py-1.5 text-xs font-semibold text-[#f0c4cc] backdrop-blur transition hover:bg-[#9b2235]/25 md:hidden"
               onClick={() => void onExit()}
             >
               {t("leave")}
@@ -438,13 +727,26 @@ export function SnakesGameBoard({
               visualPositions={visualPositions}
               arrivingPlayerId={arrivingPlayerId}
               isWalking={isWalking}
+              isRtl={isHe}
             />
 
             {/* Question modal - only opens after the walk animation finishes so
                 the player sees the full journey before the question card erupts
                 from their final tile. */}
             <QuestionModal
-              open={state.phase === "question" && !isWalking}
+              // Round 8 (2026-05-05) gate: open ONLY when the walk for
+              // the current turn has fully completed. Without the
+              // walkDoneForTurn check, the modal could flash open the
+              // instant state.phase became "question" - before the walk
+              // even started - because isWalking is set inside a
+              // useEffect that runs AFTER the first paint of the new
+              // state. See walkDoneForTurn declaration above for full
+              // reasoning and the user-reported symptom.
+              open={
+                state.phase === "question" &&
+                !isWalking &&
+                walkDoneForTurn === (state.turnCount ?? 0)
+              }
               question={state.currentQuestion}
               playerName={currentPlayer?.user_name ?? ""}
               avatar={currentPlayer?.avatar ?? "💜"}
@@ -455,21 +757,31 @@ export function SnakesGameBoard({
           </div>
         </section>
 
-        {/* ───────────────────── White zone - dice surface (desktop) */}
+        {/* ───────────────────── Dice surface (desktop) - intimate-dark
+              2026-05-05. Deep wine→black felt with gold hairline border. */}
         <section
           className={cn(
             "hidden md:flex",
             "md:col-start-1 md:row-start-2",
             "items-center justify-center rounded-3xl",
-            "border border-[#a07040]/30",
-            // Premium dark table surface - deep felt / baize
-            "bg-[radial-gradient(ellipse_at_50%_30%,_#152b1e_0%,_#0a1810_55%,_#060d09_100%)]",
-            "p-5 shadow-[0_14px_40px_-14px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.04)]",
+            "border border-[#C9A961]/25",
+            "bg-[radial-gradient(ellipse_at_50%_30%,#2a0810_0%,#150308_55%,#08020c_100%)]",
+            "p-5 shadow-[0_18px_50px_-18px_rgba(0,0,0,0.9),inset_0_1px_1px_rgba(201,169,97,0.08)]",
           )}
           aria-label={t("diceSurfaceLabel")}
         >
           <AnimatePresence mode="wait">
-            {isMyTurn && state.phase === "waiting_flip" ? (
+            {isMyTurn ? (
+              // Dice stays visible for the WHOLE turn - Itzik 2026-05-05
+              // round 5. Previously the dice disappeared the moment phase
+              // changed from "waiting_flip", so the player never got to
+              // see the number they rolled before the modal popped. Now
+              // the dice renders for every active phase of MY turn:
+              //   waiting_flip → interactive (clickable to roll)
+              //   walking / question → read-only, showing the result
+              //                         face so the user can read it.
+              // It's only replaced by the "turn of X" placeholder when
+              // it's NOT my turn (i.e. someone else is rolling).
               <motion.div
                 key="dice-desktop"
                 initial={{ opacity: 0, scale: 0.7 }}
@@ -478,13 +790,21 @@ export function SnakesGameBoard({
                 transition={{ type: "spring", stiffness: 360, damping: 26 }}
               >
                 <Dice
-                  onRoll={async () => {
-                    playSound("dice");
-                    await roll();
-                  }}
-                  disabled={state.phase !== "waiting_flip"}
+                  onRoll={handleDiceRoll}
+                  // Disabled while walking / question phase - but the
+                  // dice still renders showing the result face.
+                  disabled={state.phase !== "waiting_flip" || isWalking}
                   result={state.lastDiceResult ?? null}
                   playerColor={currentPlayer?.color ?? "#f59e0b"}
+                  // Vocative caption: "{name}, תורך" - only shown when
+                  // it's actually time to roll (handled inside Dice).
+                  label={
+                    currentPlayer
+                      ? isHe
+                        ? `${currentPlayer.user_name}, תורך`
+                        : `${currentPlayer.user_name}, your turn`
+                      : ""
+                  }
                 />
               </motion.div>
             ) : (
@@ -493,36 +813,60 @@ export function SnakesGameBoard({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="text-center text-sm font-semibold text-slate-600"
+                className={cn(
+                  "text-center font-light",
+                  "font-['Playfair_Display',Georgia,serif]",
+                  "tracking-wide",
+                )}
               >
                 {currentPlayer ? (
                   <>
-                    <div className="text-3xl">{currentPlayer.avatar}</div>
-                    <div className="mt-1">{t("turnOf", { name: currentPlayer.user_name })}</div>
+                    <div className="text-4xl">{currentPlayer.avatar}</div>
+                    {/* Round 7 (2026-05-05): "turn of" label small, but the
+                        PLAYER NAME 2× bigger so it's the focal point of
+                        the dice surface when waiting between turns. */}
+                    <div className="mt-2 text-sm text-[#C9A961]/65">
+                      {isHe ? "התור של" : "Turn of"}
+                    </div>
+                    <div
+                      className="mt-0.5 text-2xl font-semibold text-[#E6CB85]"
+                      style={{ color: currentPlayer.color }}
+                    >
+                      {currentPlayer.user_name}
+                    </div>
                   </>
                 ) : (
-                  t("waiting")
+                  <span className="text-sm text-[#C9A961]/75">
+                    {t("waiting")}
+                  </span>
                 )}
               </motion.div>
             )}
           </AnimatePresence>
         </section>
 
-        {/* ───────────────────── Blue zone - players list */}
+        {/* ───────────────────── Players list - intimate-dark glass-morphism
+              with gold accents. Replaces the previous sky-blue panel. */}
         <section
           className={cn(
             "order-3 md:order-none",
             "md:col-start-1 md:row-start-3",
-            "flex flex-col gap-3 rounded-3xl border border-sky-400/25",
-            "bg-gradient-to-br from-sky-950/55 via-slate-900/55 to-sky-900/55",
-            "p-4 backdrop-blur-md shadow-[0_10px_30px_-12px_rgba(56,189,248,0.45)]",
+            "flex flex-col gap-3 rounded-3xl border border-[#C9A961]/22",
+            "bg-[rgba(20,4,12,0.55)] backdrop-blur-xl",
+            "p-4 shadow-[0_18px_50px_-18px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(201,169,97,0.08)]",
           )}
         >
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-extrabold tracking-tight text-sky-100">
+            <h2
+              className={cn(
+                "text-sm font-medium tracking-[0.08em] uppercase",
+                "font-['Playfair_Display',Georgia,serif]",
+                "text-[#E6CB85]",
+              )}
+            >
               {t("playersActive")}
             </h2>
-            <span className="rounded-full bg-sky-500/20 px-2 py-0.5 text-xs font-bold text-sky-100">
+            <span className="rounded-full border border-[#C9A961]/30 bg-[#C9A961]/12 px-2 py-0.5 text-xs font-semibold text-[#E6CB85]">
               {activePlayers.length}
             </span>
           </div>
@@ -537,8 +881,8 @@ export function SnakesGameBoard({
                   className={cn(
                     "flex items-center gap-3 rounded-2xl border px-3 py-2 transition",
                     isCurrent
-                      ? "border-amber-300/60 bg-amber-400/10"
-                      : "border-white/10 bg-white/[0.04]",
+                      ? "border-[#C9A961]/55 bg-[#C9A961]/10 shadow-[inset_0_0_18px_rgba(201,169,97,0.10)]"
+                      : "border-white/8 bg-white/[0.025]",
                   )}
                 >
                   {/* Avatar icon on the leading edge of the line (visually
@@ -555,20 +899,20 @@ export function SnakesGameBoard({
                     {p.avatar}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-semibold text-slate-100">
+                    <div className="truncate text-sm font-medium text-[#F2E4C9]">
                       {p.user_name}
                       {isMe ? (
-                        <span className="ms-2 rounded-full bg-white/10 px-1.5 py-0.5 text-xs font-bold text-slate-200">
+                        <span className="ms-2 rounded-full bg-[#C9A961]/20 px-1.5 py-0.5 text-[10px] font-semibold text-[#E6CB85]">
                           {t("you")}
                         </span>
                       ) : null}
                     </div>
-                    <div className="truncate text-xs text-slate-400">
+                    <div className="truncate text-xs text-[#C9A961]/55">
                       {p.is_host ? t("host") : `#${p.order_index + 1}`}
                     </div>
                   </div>
                   {isCurrent ? (
-                    <span className="ms-auto h-2 w-2 shrink-0 animate-pulse rounded-full bg-amber-300 shadow-[0_0_10px_#fcd34d]" />
+                    <span className="ms-auto h-2 w-2 shrink-0 animate-pulse rounded-full bg-[#E6CB85] shadow-[0_0_10px_#C9A961]" />
                   ) : null}
                 </li>
               );
@@ -633,11 +977,13 @@ export function SnakesGameBoard({
           ) : null}
         </section>
 
-        {/* Floating dice popup - MOBILE ONLY. Slides up from the bottom when
-            it's the user's turn. On desktop the dice lives in the white
-            surface above. */}
+        {/* Floating dice popup - MOBILE ONLY. Same lifecycle as the
+            desktop dice (round 5, 2026-05-05): visible for the entire
+            turn (waiting_flip → walking → question), so the player can
+            actually see the rolled number rather than the dice
+            disappearing the moment they tap. */}
         <AnimatePresence>
-          {isMyTurn && state.phase === "waiting_flip" ? (
+          {isMyTurn ? (
             <motion.div
               key="dice-dock-mobile"
               initial={{ y: 140, opacity: 0, scale: 0.7 }}
@@ -646,42 +992,28 @@ export function SnakesGameBoard({
               transition={{ type: "spring", stiffness: 320, damping: 28 }}
               className="fixed bottom-4 left-1/2 z-30 -translate-x-1/2 md:hidden"
             >
-              <div className="rounded-3xl border border-[#a07040]/35 bg-[radial-gradient(ellipse_at_50%_25%,_#152b1e_0%,_#0a1810_60%,_#060d09_100%)] p-3 shadow-[0_18px_40px_-10px_rgba(0,0,0,0.85),inset_0_1px_1px_rgba(255,255,255,0.04)]">
+              <div className="rounded-3xl border border-[#C9A961]/35 bg-[radial-gradient(ellipse_at_50%_25%,#2a0810_0%,#150308_60%,#08020c_100%)] p-3 shadow-[0_18px_40px_-10px_rgba(0,0,0,0.85),inset_0_1px_1px_rgba(201,169,97,0.08)]">
                 <Dice
-                  onRoll={async () => {
-                    playSound("dice");
-                    await roll();
-                  }}
-                  disabled={state.phase !== "waiting_flip"}
+                  onRoll={handleDiceRoll}
+                  disabled={state.phase !== "waiting_flip" || isWalking}
                   result={state.lastDiceResult ?? null}
                   playerColor={currentPlayer?.color ?? "#f59e0b"}
+                  label={
+                    currentPlayer
+                      ? isHe
+                        ? `${currentPlayer.user_name}, תורך`
+                        : `${currentPlayer.user_name}, your turn`
+                      : ""
+                  }
                 />
               </div>
             </motion.div>
           ) : null}
         </AnimatePresence>
 
-        {/* Waiting hint for non-turn players on mobile only */}
-        <AnimatePresence>
-          {!isMyTurn && state.phase === "waiting_flip" ? (
-            <motion.div
-              key="waiting-hint"
-              initial={{ y: 40, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 40, opacity: 0 }}
-              transition={{ type: "spring", stiffness: 280, damping: 26 }}
-              className="pointer-events-none fixed bottom-6 left-1/2 z-30 -translate-x-1/2 rounded-full border border-white/15 bg-black/55 px-4 py-2 text-xs font-semibold text-amber-50 backdrop-blur md:hidden"
-            >
-              {mode === "local"
-                ? isHe
-                  ? `העבירו את המכשיר ל-${currentPlayer?.user_name ?? ""} ${currentPlayer?.avatar ?? ""}`
-                  : `Pass the device to ${currentPlayer?.user_name ?? ""} ${currentPlayer?.avatar ?? ""}`
-                : isHe
-                  ? `ממתינים ל-${currentPlayer?.user_name ?? ""}…`
-                  : `Waiting for ${currentPlayer?.user_name ?? ""}…`}
-            </motion.div>
-          ) : null}
-        </AnimatePresence>
+        {/* Waiting hint REMOVED 2026-05-05 per Itzik: when it's not
+            the current user's turn, show NOTHING. The dice surface only
+            displays "{name}, תורך" when it's actually their turn. */}
 
         {/* Error toast */}
         {error ? (
@@ -774,7 +1106,278 @@ export function SnakesGameBoard({
             </motion.div>
           ) : null}
         </AnimatePresence>
+
+        {/* ── Gating modals - same pair as the wheel game ────────────── */}
+        <RegistrationModal
+          open={regOpen}
+          onOpenChange={(v) => setRegOpen(v)}
+          onSuccess={async () => {
+            const supabase = createBrowserSupabaseClient();
+            const {
+              data: { user },
+            } = await supabase.auth.getUser();
+            const uid = user?.id ?? null;
+            setUserId(uid);
+            if (uid) {
+              const plays = await getUserGamePlays(supabase, SNAKES_PLAYS_SLUG);
+              setCompletedRolls(plays.plays_used);
+              setBonusConsumed(plays.post_signup_bonus_used);
+            }
+            authWaiterRef.current?.resolve(uid);
+            authWaiterRef.current = null;
+            setRegOpen(false);
+          }}
+        />
+
+        <SubscriptionModal
+          open={subOpen}
+          onOpenChange={(v) => setSubOpen(v)}
+          locked={subLocked}
+          userId={userId}
+          gameSlug={SNAKES_PLAYS_SLUG}
+          onRequireAuth={async () => {
+            if (userId) return userId;
+            setRegOpen(true);
+            return await new Promise<string | null>((resolve) => {
+              authWaiterRef.current = { resolve };
+            });
+          }}
+          onSubscribed={() => {
+            setSubscribed(true);
+            setSubLocked(false);
+            setSubOpen(false);
+          }}
+          // "lead" mode while we still don't know who the user is -
+          // first-budget-exhausted guests land here and can sign up for
+          // the +3 post-signup bonus. Once they have a user id (or a
+          // local lead), we switch to "paywall".
+          mode={
+            !userId && !leadCaptured && !hasGuestLeadCaptured()
+              ? "lead"
+              : "paywall"
+          }
+          onLeadSaved={(_, newUserId) => {
+            setLeadCaptured(true);
+            setSubOpen(false);
+            if (newUserId && !userId) {
+              setUserId(newUserId);
+              (async () => {
+                const supabase = createBrowserSupabaseClient();
+                if (!bonusConsumed) {
+                  await grantPostSignupBonus(supabase, SNAKES_PLAYS_SLUG);
+                  setBonusConsumed(true);
+                }
+                const plays = await getUserGamePlays(
+                  supabase,
+                  SNAKES_PLAYS_SLUG,
+                );
+                setCompletedRolls(plays.plays_used);
+                setBonusConsumed(plays.post_signup_bonus_used);
+              })();
+            }
+          }}
+        />
       </main>
-    </GamePageBackground>
+    </SnakesIntimateBackground>
+  );
+}
+
+// ─── SnakesIntimateBackground ──────────────────────────────────────────────────
+//
+// Page-level wrapper for the Snakes & Ladders couples game. Replaces the
+// generic GamePageBackground (themed via gameSlug) with a fixed dark-
+// candlelight aesthetic per Itzik's redesign brief 2026-05-05:
+//
+//   "mature, intimate, romantic-dark - candlelit bedroom, late night,
+//    sensual. Background: deep midnight gradient (dark burgundy → black
+//    → deep purple). NO cartoon elements."
+//
+// Layered stack (bottom→top):
+//   1. Solid near-black base (#08020c).
+//   2. Soft burgundy + deep-purple radial blobs that drift very slowly.
+//   3. Velvet noise grain (mix-blend-overlay) - keeps the gradient from
+//      banding on phones with limited bit-depth.
+//   4. Floating dust particles - slow, sparse, warm gold, like dust
+//      caught in candlelight (NOT party lights - explicitly no flashes).
+//   5. Strong vignette pulling the eye to the board.
+//
+// The component imports framer-motion only for the slow blob drift; the
+// dust particles are pure CSS animations to keep this layer cheap on
+// mobile.
+function SnakesIntimateBackground({ children }: { children: React.ReactNode }) {
+  // Dust particles REMOVED 2026-05-05 round 7 (performance). The 14
+  // gold orbs below provide the same atmospheric texture; running both
+  // arrays (28 total animated DOM elements) was unnecessary GPU load.
+
+  // Floating particles - Itzik 2026-05-05 round 7
+  // PERFORMANCE FIX: previous round had 28 particles + 14 dust specks
+  // = 42 animated elements + 3 animated blurred blobs. That was
+  // causing the 10+ second gameplay lag because the GPU was
+  // perpetually compositing, leaving little budget for click handlers
+  // / state updates / walk timers. Cut the count + simplify the
+  // animation (transform only, no `filter: brightness` repaints).
+  const goldOrbs = useMemo(() => {
+    const out: Array<{
+      top: number;
+      left: number;
+      size: number;
+      duration: number;
+      delay: number;
+      driftX: number;
+      driftY: number;
+      opacity: number;
+    }> = [];
+    // 14 particles - half the previous count. Still feels populated
+    // but cuts compositing work in half.
+    for (let i = 0; i < 14; i++) {
+      // Deterministic spread (matches FloatingParticles.buildParticles
+      // pattern - pseudo-random integer arithmetic so SSR + client
+      // agree on positions).
+      const t = (3 + (i * 53 + i * 7 + 17) % 88);
+      const l = (3 + (i * 37 + i * i * 13) % 94);
+      // 4-12px diameter - small distinct dots, like wheels.
+      const size = 4 + ((i * 5) % 9);
+      // 8-16s drift - faster than the previous orbs.
+      const duration = 8 + ((i * 3) % 9);
+      const delay = -((i * 0.4) % 4);
+      // 8-direction quadrant pattern (same as FloatingParticles)
+      const sector = i % 8;
+      const magnitude = 22 + (i % 3) * 14;
+      let driftX = 0;
+      let driftY = 0;
+      switch (sector) {
+        case 0: driftY = -magnitude; break;
+        case 1: driftX = magnitude; driftY = -magnitude * 0.6; break;
+        case 2: driftX = magnitude; break;
+        case 3: driftX = magnitude; driftY = magnitude * 0.6; break;
+        case 4: driftY = magnitude; break;
+        case 5: driftX = -magnitude; driftY = magnitude * 0.6; break;
+        case 6: driftX = -magnitude; break;
+        case 7: driftX = -magnitude; driftY = -magnitude * 0.6; break;
+      }
+      // High alpha (0.55-0.85) so each dot is visible - but small
+      // size keeps them subtle individually.
+      const opacity = 0.55 + ((i * 7) % 30) / 100;
+      out.push({ top: t, left: l, size, duration, delay, driftX, driftY, opacity });
+    }
+    return out;
+  }, []);
+
+  // (Diagnostic console.log removed in round 7 - performance pass.)
+
+  return (
+    <div className="relative min-h-[100dvh] w-full overflow-hidden bg-[#08020c]">
+      {/* Background gradient blobs - Itzik 2026-05-05 round 7
+          PERFORMANCE FIX: previous round had 3 huge (80vw × 80vh)
+          blurred blobs animating x+y with `filter: blur(80-110px)` on
+          each. Animating large blurred filters repaints a massive GPU
+          texture every frame and was the prime suspect for the 10s+
+          gameplay lag. New approach: blobs are SMALLER (50vw × 50vh),
+          blur is HALVED (40-50px), and instead of animating x/y on a
+          BLURRED element we use a static blob with a `radial-gradient`
+          that doesn't repaint. The atmosphere effect comes from the
+          floating particles + grain overlay; the blobs are
+          set-and-forget background color washes. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -start-[10%] -top-[15%] h-[55vh] w-[55vw] rounded-full"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(91,8,28,0.55) 0%, rgba(91,8,28,0.0) 70%)",
+          filter: "blur(40px)",
+        }}
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -end-[8%] -bottom-[10%] h-[50vh] w-[50vw] rounded-full"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(46,16,68,0.60) 0%, rgba(46,16,68,0.0) 70%)",
+          filter: "blur(45px)",
+        }}
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute start-[20%] top-[35%] h-[40vh] w-[40vw] rounded-full"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(70,12,56,0.40) 0%, rgba(70,12,56,0.0) 70%)",
+          filter: "blur(50px)",
+        }}
+      />
+
+      {/* Velvet noise grain - purely decorative texture */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-[0.035] mix-blend-overlay"
+        style={{
+          backgroundImage:
+            "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>\")",
+        }}
+      />
+
+      {/* Floating gold particles - small distinct dots like the wheel
+          pages' FloatingParticles. Round 6 (2026-05-05) replaces the
+          previous big blurred blobs (which felt rough). Each dot has
+          its own drift direction; collectively they look like ambient
+          gold sparks. Solid color (no blur) so they read as crisp
+          points of light. */}
+      <div aria-hidden className="pointer-events-none absolute inset-0">
+        {goldOrbs.map((o, i) => (
+          <span
+            key={`orb-${i}`}
+            className="snk-orb absolute rounded-full"
+            style={{
+              top: `${o.top}%`,
+              insetInlineStart: `${o.left}%`,
+              width: `${o.size}px`,
+              height: `${o.size}px`,
+              background: "rgba(230,203,133,1)",
+              boxShadow: `0 0 ${o.size * 2}px rgba(230,203,133,0.6), 0 0 ${o.size * 4}px rgba(201,169,97,0.3)`,
+              opacity: o.opacity,
+              animationDuration: `${o.duration}s`,
+              animationDelay: `${o.delay}s`,
+              ["--snk-orb-drift-x" as never]: `${o.driftX}px`,
+              ["--snk-orb-drift-y" as never]: `${o.driftY}px`,
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Edge vignette - pushes the eye to the board */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(ellipse at 50% 50%, transparent 35%, rgba(0,0,0,0.85) 100%)",
+        }}
+      />
+
+      <div className="relative min-h-[100dvh]">{children}</div>
+
+      {/* Keyframes - round 7 (2026-05-05) PERFORMANCE.
+          TRANSFORM-ONLY animation, no opacity/filter changes. GPU
+          compositor handles transform without rasterization. */}
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+            @keyframes snk-orb-drift {
+              0%, 100% { transform: translate3d(calc(var(--snk-orb-drift-x) *  0.5), calc(var(--snk-orb-drift-y) *  0.5), 0); }
+              50%      { transform: translate3d(calc(var(--snk-orb-drift-x) * -0.5), calc(var(--snk-orb-drift-y) * -0.5), 0); }
+            }
+            .snk-orb {
+              animation-name: snk-orb-drift;
+              animation-iteration-count: infinite;
+              animation-timing-function: ease-in-out;
+              will-change: transform;
+            }
+            @media (prefers-reduced-motion: reduce) {
+              .snk-orb { animation: none !important; }
+            }
+          `,
+        }}
+      />
+    </div>
   );
 }

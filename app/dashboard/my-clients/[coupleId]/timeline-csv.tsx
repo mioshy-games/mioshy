@@ -9,9 +9,9 @@ import { Button } from "@/components/ui/button";
 /**
  * Couple-scoped CSV editor.
  *
- *   Download → GET ../timeline.csv (server route) — produces one row per
+ *   Download → GET ../timeline.csv (server route) - produces one row per
  *              materialized scheduled item, columns the expert can edit.
- *   Upload   → POST ../timeline-import (multipart) — applies edits in
+ *   Upload   → POST ../timeline-import (multipart) - applies edits in
  *              batch, reports row-level errors.
  *
  * The CSV is the only place the expert can override audience or unlock_at
@@ -53,7 +53,7 @@ export function CoupleTimelineCsv({ coupleId }: { coupleId: string }) {
         toast.success(`Updated ${json.updated} rows`);
       } else {
         toast.warning(
-          `Updated ${json.updated} · ${json.failed} failed — see console`,
+          `Updated ${json.updated} · ${json.failed} failed - see console`,
         );
         console.warn("[CoupleTimelineCsv] partial import", json.errors);
       }

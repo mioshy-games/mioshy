@@ -501,7 +501,7 @@ function SendCard({
             <Label>Template</Label>
             <Select value={templateId} onV-lueCha-ge={onPickTemplate}>
               <SelectTrigger>
-                <SelectValue placeholder="— none —" />
+                <SelectValue placeholder="- none -" />
               </SelectTrigger>
               <SelectContent>
                 {templates.map((t) => (
@@ -574,10 +574,10 @@ function MessagesCard({ messages }: { messages: AdminMessage[] }) {
                     {new Date(m.created_at).toLocaleString()}
                   </span>-
                 </div>
-                <span className="text-xs text-muted-foreground">by {m.sent_by ?? "—"}</span>
+                <span className="text-xs text-muted-foreground">by {m.sent_by ?? "-"}</span>
               </div>-
               <div className="mt-1">
-                <div className="text-xs text-muted-foreground">to {m.to_address ?? "—"}</div>
+                <div className="text-xs text-muted-foreground">to {m.to_address ?? "-"}</div>
                 {m.subject ? <div className="font-medium">{m.subject}</div> : null}
               </div>
             </li>

@@ -1,6 +1,6 @@
 -- =====================================================================
 -- MIGRATION: Clone wheel LAYOUT (sizes & positions) from canonical
---            to two target wheels — preserving each target's
+--            to two target wheels - preserving each target's
 --            colors and text labels.
 -- =====================================================================
 -- Canonical (source of layout):
@@ -95,7 +95,7 @@ BEGIN
      WHERE game_id = v_target_id;
 
     IF NOT FOUND THEN
-      RAISE WARNING 'Target wheel_config NOT FOUND for game_id % — skipping',
+      RAISE WARNING 'Target wheel_config NOT FOUND for game_id % - skipping',
                     v_target_id;
       CONTINUE;
     END IF;
@@ -224,6 +224,6 @@ SELECT game_id,
  ORDER BY game_id;
 
 -- All numbers above should match between canonical and the two targets.
--- If they do — COMMIT. If anything looks off — replace COMMIT with ROLLBACK.
+-- If they do - COMMIT. If anything looks off - replace COMMIT with ROLLBACK.
 
 COMMIT;

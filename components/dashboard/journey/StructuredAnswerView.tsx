@@ -1,5 +1,5 @@
 /**
- * StructuredAnswerView — renders a user's answers to an assessment
+ * StructuredAnswerView - renders a user's answers to an assessment
  * item in a clinician-friendly format. Phase 3 step 4.
  *
  * For each question in the assessment_payload, we look up the user's
@@ -33,7 +33,7 @@ export function StructuredAnswerView({
   return (
     <div className="rounded-lg border border-white/[0.08] bg-slate-950/40 p-3">
       <p className="text-[11px] font-semibold uppercase tracking-wider text-white/55">
-        {isHe ? "תשובות לשאלון" : "Assessment answers"}
+        {isHe ? "תשובות לאבחון" : "Assessment answers"}
       </p>
       <ol className="mt-2 flex flex-col gap-3">
         {questions.map((q, idx) => (
@@ -126,7 +126,7 @@ function AnswerCell({
           </span>
           {(minLabel || maxLabel) && (
             <span className="text-[11px] text-white/45">
-              ({min}={minLabel ?? "—"}, {max}={maxLabel ?? "—"})
+              ({min}={minLabel ?? "-"}, {max}={maxLabel ?? "-"})
             </span>
           )}
         </span>

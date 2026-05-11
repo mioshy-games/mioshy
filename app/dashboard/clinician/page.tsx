@@ -1,11 +1,11 @@
 /**
  * /dashboard/clinician
  *
- * Phase 4 — clinician CRM. The "what's on my plate today" page.
+ * Phase 4 - clinician CRM. The "what's on my plate today" page.
  *
  * Sources:
- *   - listExpertClients()       — couples this clinician is linked to
- *   - getClinicianWorkQueue()   — workflow signals per couple
+ *   - listExpertClients()       - couples this clinician is linked to
+ *   - getClinicianWorkQueue()   - workflow signals per couple
  *
  * Tabs:
  *   - All
@@ -101,7 +101,7 @@ export default async function ClinicianQueuePage({
         </p>
       </header>
 
-      {/* Top stats — calm summary band */}
+      {/* Top stats - calm summary band */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
         <SummaryStat
           label="Couples"
@@ -173,7 +173,7 @@ export default async function ClinicianQueuePage({
         <div className="rounded-lg border border-dashed border-border bg-card/30 p-8 text-center text-sm text-muted-foreground">
           {queue.length === 0
             ? "No clients yet. An admin can link couples to you under Experts."
-            : "Nothing matches this filter — try a different tab."}
+            : "Nothing matches this filter - try a different tab."}
         </div>
       ) : (
         <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
@@ -388,7 +388,7 @@ function SignalNumber({
 
 function formatRel(iso: string): string {
   const ts = Date.parse(iso);
-  if (!Number.isFinite(ts)) return "—";
+  if (!Number.isFinite(ts)) return "-";
   const diff = Date.now() - ts;
   const m = Math.round(diff / 60000);
   if (m < 60) return `${m}m ago`;

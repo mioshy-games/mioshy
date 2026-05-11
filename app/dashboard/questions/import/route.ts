@@ -31,7 +31,7 @@ async function resolveOrCreateGames(
 ): Promise<Map<string, string>> {
   // Array.from(new Set(...)) instead of [...new Set(...)] because the
   // tsconfig target predates ES2015 iterators on built-ins. Functionally
-  // identical — produces the deduped string array — but compiles cleanly
+  // identical - produces the deduped string array - but compiles cleanly
   // without needing `downlevelIteration` on the project.
   const uniqueNames = Array.from(new Set(names.filter(Boolean)));
   const map = new Map<string, string>();
@@ -65,7 +65,7 @@ async function resolveOrCreateGames(
       .single();
 
     if (gameErr || !newGame) {
-      // Slug conflict — try with a timestamp suffix
+      // Slug conflict - try with a timestamp suffix
       const slugTs = `${slug}-${Date.now()}`;
       const { data: retried } = await supabase
         .from("games")
@@ -80,7 +80,7 @@ async function resolveOrCreateGames(
         .select("id")
         .single();
 
-      if (!retried) continue; // skip — can't create
+      if (!retried) continue; // skip - can't create
       map.set(name, retried.id);
 
       // Create default wheel_configs
@@ -108,7 +108,7 @@ export type ImportSummary = {
 export async function POST(request: Request): Promise<Response> {
   // ── Auth ──────────────────────────────────────────────────────────────────
   // Verify caller is admin via session client, then use service-role client
-  // for all DB operations — same pattern as saveGame to avoid SSR/RLS flakiness.
+  // for all DB operations - same pattern as saveGame to avoid SSR/RLS flakiness.
   await requireAdmin();
   const supabase = createAdminSupabaseClient();
 
@@ -192,7 +192,7 @@ export async function POST(request: Request): Promise<Response> {
   // in production. For those rows we fall back to creating the game by name
   // (game_name_he / game_name_en captured by the parser), or skip with a clear
   // error message instead of a cryptic FK constraint violation.
-  // Array.from(new Set(...)) instead of [...new Set(...)] — see the
+  // Array.from(new Set(...)) instead of [...new Set(...)] - see the
   // earlier resolveOrCreateGames helper in this file for the same pattern.
   // tsconfig target predates ES2015 iterators on built-ins, so spreading
   // a Set fails to compile without `downlevelIteration`. Array.from is
@@ -239,7 +239,7 @@ export async function POST(request: Request): Promise<Response> {
             // Swap the stale UUID for the resolved / newly-created one
             r.game_id = newId;
           } else {
-            // No name available — skip with an actionable error
+            // No name available - skip with an actionable error
             skipped.push({
               row: 0,
               field: "game_id",
@@ -283,7 +283,7 @@ export async function POST(request: Request): Promise<Response> {
       .insert(insertPayload);
 
     if (error) {
-      // Batch failed — try row-by-row to capture partial success
+      // Batch failed - try row-by-row to capture partial success
       for (const r of toInsert) {
         const { error: rowErr } = await supabase.from("questions").insert({
           game_id: r.game_id,

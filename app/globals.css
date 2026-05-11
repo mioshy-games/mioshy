@@ -116,14 +116,26 @@ small, .text-small {
 
     /* TYPE TOKENS - sizes */
     --fs-display: clamp(46px, 6.6vw, 96px);
-    --fs-h2: clamp(28px, 4.4vw, 56px);
-    --fs-h3: clamp(22px, 2.2vw, 30px);
-    --fs-h4: 22px;
-    --fs-lead: 21px;
-    --fs-body-lg: 18px;
-    --fs-body: 17px;
+    /* H2 token. Reduced another 25% across the board per Itzik
+       2026-05-08: was clamp(42, 5.6vw, 72), now clamp(32, 4.2vw, 54).
+       Mobile floor 32px is still readable on phones; desktop cap 54px
+       feels editorial rather than billboard. Token is sweeping — every
+       <h2> inside .home-v2 inherits, including all marketing sections,
+       FAQ, FinalCTA etc. */
+    --fs-h2: clamp(32px, 4.2vw, 54px);
+    /* H3 reduced 25% on desktop per Itzik 2026-05-07. Was clamp(32,
+       3.5vw, 40); now clamp(28, 2.5vw, 30). Mobile is slightly smaller
+       too (32 → 28) so the hierarchy with h4 (28px) stays clean. */
+    --fs-h3: clamp(28px, 2.5vw, 30px);
+    --fs-h4: 28px;
+    --fs-lead: 22px;
+    /* Body sizes — important text floor is 18, secondary floor is 14.
+       Anything below 14px on the homepage is forbidden and the css
+       audit (#A) will flag overrides. */
+    --fs-body-lg: 20px;
+    --fs-body: 18px;
     --fs-small: 14px;
-    --fs-tag: 11px;
+    --fs-tag: 12px;
     --fs-label: 13px;
 
     /* TYPE TOKENS - line-heights */
@@ -178,13 +190,17 @@ small, .text-small {
     --font-display: var(--font-noto-serif-hebrew);
   }
 
-  /* Honor prefers-reduced-motion globally - applies to all CSS animations
-     in the v2 homepage (hero blobs, particle floats, blob-float, etc.).
-     Framer-motion components honor this via useReducedMotion() in JS. */
+  /* Honor prefers-reduced-motion globally — applies to ALL animations on
+     the entire site (was scoped to `.home-v2` only). Per Itzik
+     2026-05-06: the marketing-pages performance audit found 36+ blobs
+     animating on the hero, 22+ on /games — disabling them for users
+     who set "Reduce motion" in macOS/iOS gives them instant relief AND
+     drops GPU load to near-zero. Framer-motion honors this via
+     useReducedMotion() in JS. */
   @media (prefers-reduced-motion: reduce) {
-    .home-v2 *,
-    .home-v2 *::before,
-    .home-v2 *::after {
+    *,
+    *::before,
+    *::after {
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
@@ -217,6 +233,22 @@ small, .text-small {
   }
   .cta-glow {
     animation: cta-glow 2.5s ease-in-out infinite;
+  }
+
+  /* Adults page-wide animated dark wash. Stronger movement than the
+     subtler `aurora-drift` so the gradient is unmistakably alive on the
+     /adults/[slug] product surface. */
+  @keyframes mio-adults-bg-drift {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+    33%      { transform: translate3d(4%, -3%, 0) scale(1.06); }
+    66%      { transform: translate3d(-3%, 2.5%, 0) scale(1.08); }
+  }
+  .mio-adults-bg {
+    animation: mio-adults-bg-drift 26s ease-in-out infinite;
+    will-change: transform;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .mio-adults-bg { animation: none !important; }
   }
 
   :root {

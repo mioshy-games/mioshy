@@ -41,14 +41,16 @@ import { useEffect, useMemo, useRef } from "react";
 // Particle tints - explicit RGBA so the inline `box-shadow` glow uses the
 // intended hue and is NOT coerced to white via inherited `currentColor`.
 // `core` is the dot itself; `glow` is the halo (slightly more transparent).
+// Alphas pulled down ~25-30% per round of design feedback so dots feel
+// like room dust catching ambient light instead of stage spotlights.
 const PARTICLE_TINTS = [
-  { core: "rgba(253,164,175,0.95)", glow: "rgba(253,164,175,0.75)" }, // rose-300
-  { core: "rgba(251,113,133,0.90)", glow: "rgba(251,113,133,0.70)" }, // rose-400
-  { core: "rgba(240,171,252,0.90)", glow: "rgba(240,171,252,0.70)" }, // fuchsia-300
-  { core: "rgba(232,121,249,0.85)", glow: "rgba(232,121,249,0.65)" }, // fuchsia-400
-  { core: "rgba(253,224,71,0.90)",  glow: "rgba(253,224,71,0.70)"  }, // amber-200
-  { core: "rgba(196,181,253,0.85)", glow: "rgba(196,181,253,0.65)" }, // violet-300
-  { core: "rgba(249,168,212,0.90)", glow: "rgba(249,168,212,0.70)" }, // pink-300
+  { core: "rgba(253,164,175,0.30)", glow: "rgba(253,164,175,0.15)" }, // rose-300
+  { core: "rgba(251,113,133,0.28)", glow: "rgba(251,113,133,0.13)" }, // rose-400
+  { core: "rgba(240,171,252,0.28)", glow: "rgba(240,171,252,0.13)" }, // fuchsia-300
+  { core: "rgba(232,121,249,0.26)", glow: "rgba(232,121,249,0.12)" }, // fuchsia-400
+  { core: "rgba(253,224,71,0.28)",  glow: "rgba(253,224,71,0.13)"  }, // amber-200
+  { core: "rgba(196,181,253,0.26)", glow: "rgba(196,181,253,0.12)" }, // violet-300
+  { core: "rgba(249,168,212,0.28)", glow: "rgba(249,168,212,0.13)" }, // pink-300
 ] as const;
 
 type ParticleSpec = {
@@ -58,7 +60,12 @@ type ParticleSpec = {
   duration: number;
   delay: number;
   tintIndex: number;
-  drift: number;
+  /** Horizontal wander in px (signed - negative = left, positive = right). */
+  driftX: number;
+  /** Vertical wander in px (signed - negative = up, positive = down). */
+  driftY: number;
+  /** Whether this particle should also render on mobile (<sm). 1/3 do. */
+  mobileVisible: boolean;
 };
 
 // Deterministic "spread" - looks random but is reproducible, so the SSR
@@ -68,28 +75,45 @@ function makeParticles(): ParticleSpec[] {
   // Density is intentionally high so EVERY section visibly has particles
   // drifting through it as the user scrolls.
   const out: ParticleSpec[] = [];
-  // 9 vertical bands × 4 particles each = 36 particles spread page-wide.
-  // Density was halved (was 80) - felt overwhelming once the fog blobs
-  // were visible. 36 dots is enough to register as "always something
-  // moving" without competing with the colour layer for attention.
-  const tops = [5, 14, 23, 32, 41, 53, 65, 78, 90] as const;
+  // 11 vertical bands × 5 particles each = 55 particles spread page-wide.
+  // On mobile we render only ~1/3 (every 3rd) - see `mobileVisible` below.
+  const tops = [4, 12, 20, 28, 36, 44, 52, 60, 68, 78, 90] as const;
   for (const top of tops) {
-    // Four horizontal positions, jittered per row so columns never align.
-    const cols = [12, 36, 60, 84] as const;
+    // Five horizontal positions, jittered per row so columns never align.
+    const cols = [8, 28, 48, 68, 88] as const;
     for (let i = 0; i < cols.length; i++) {
       const col = cols[i]!;
       const left = ((col + (top % 11) * 1.7 + i * 0.9) % 94) + 2;
-      // Slightly larger sizes - small dots get lost against blurred fog.
-      const sizeOpts = [4, 4, 5, 5, 6, 7];
+      // Larger sizes - bumped ~50% so dots register as visible "orbs"
+      // rather than pinpricks. Mix kept varied so they don't look uniform.
+      const sizeOpts = [6, 7, 8, 9, 10, 11];
       const size = sizeOpts[(top + i) % sizeOpts.length]!;
       // 8 → 22s loops, varied so they never sync up.
       const duration = 8 + ((top * 2 + i * 5) % 15);
       // negative ok = mid-loop start; staggers across the spread.
       const delay = ((top * 0.41 + i * 0.83) % 9) - 1.5;
       const tintIndex = (top + i * 3) % PARTICLE_TINTS.length;
-      // 16 → 38px vertical wander - bigger drift = more visible motion.
-      const drift = 16 + ((top * 2 + i * 7) % 22);
-      out.push({ top, left, size, duration, delay, tintIndex, drift });
+      // Random direction per particle: derive an angle (0–360°) from a
+      // deterministic seed, project onto X/Y. Gives every particle its
+      // own bearing instead of all rising in a uniform vertical column.
+      const angleDeg = (top * 7 + i * 13) % 360;
+      const angleRad = (angleDeg * Math.PI) / 180;
+      const magnitude = 16 + ((top * 2 + i * 7) % 22);
+      const driftX = Math.round(Math.cos(angleRad) * magnitude);
+      const driftY = Math.round(Math.sin(angleRad) * magnitude);
+      // Mobile keeps every 3rd particle - ~18 dots instead of 55.
+      const mobileVisible = out.length % 3 === 0;
+      out.push({
+        top,
+        left,
+        size,
+        duration,
+        delay,
+        tintIndex,
+        driftX,
+        driftY,
+        mobileVisible,
+      });
     }
   }
   return out;
@@ -109,14 +133,50 @@ export function AdultsAmbience() {
   useEffect(() => {
     const el = rootRef.current;
     if (typeof window === "undefined") return;
+    const mobileCount = particles.filter((p) => p.mobileVisible).length;
+    const directionStats = particles.reduce(
+      (acc, p) => {
+        if (p.driftY < -2) acc.up++;
+        else if (p.driftY > 2) acc.down++;
+        else acc.lateral++;
+        if (p.driftX < -2) acc.leftish++;
+        else if (p.driftX > 2) acc.rightish++;
+        return acc;
+      },
+      { up: 0, down: 0, lateral: 0, leftish: 0, rightish: 0 },
+    );
     // eslint-disable-next-line no-console
     console.log("[AdultsAmbience] mounted", {
       particles: particles.length,
+      mobileVisible: mobileCount,
+      desktopOnly: particles.length - mobileCount,
       tints: PARTICLE_TINTS.length,
+      directionStats,
       containerRect: el?.getBoundingClientRect(),
+      viewportWidth: window.innerWidth,
       // First couple particles' computed inline styles, for sanity-check.
-      sampleSpecs: particles.slice(0, 3),
+      sampleSpecs: particles.slice(0, 3).map((p) => ({
+        top: p.top,
+        left: p.left,
+        driftX: p.driftX,
+        driftY: p.driftY,
+        size: p.size,
+        mobileVisible: p.mobileVisible,
+      })),
     });
+    // Log fog blob bounding rects so we can verify they actually paint
+    // visible regions and aren't clipped to zero by an unexpected ancestor.
+    const fogs = el?.querySelectorAll(".mio-fog");
+    if (fogs) {
+      // eslint-disable-next-line no-console
+      console.log(
+        "[AdultsAmbience] fog blobs:",
+        Array.from(fogs).map((f, i) => ({
+          idx: i + 1,
+          rect: f.getBoundingClientRect(),
+        })),
+      );
+    }
   }, [particles]);
   // ────────────────────────────────────────────────────────────────────
 
@@ -180,10 +240,12 @@ export function AdultsAmbience() {
       <div className="absolute inset-0" data-testid="adults-particle-layer">
         {particles.map((p, i) => {
           const tint = PARTICLE_TINTS[p.tintIndex]!;
+          // Mobile keeps ~1/3 of particles; the rest hide via `hidden sm:block`.
+          const visibilityCls = p.mobileVisible ? "" : " hidden sm:block";
           return (
             <span
               key={i}
-              className="mio-particle absolute rounded-full"
+              className={`mio-particle absolute rounded-full${visibilityCls}`}
               style={{
                 top: `${p.top}%`,
                 insetInlineStart: `${p.left}%`,
@@ -196,8 +258,11 @@ export function AdultsAmbience() {
                 }px ${tint.glow}`,
                 animationDuration: `${p.duration}s`,
                 animationDelay: `${p.delay}s`,
-                // CSS custom prop consumed by keyframes for individual drift.
-                ["--drift" as never]: `${p.drift}px`,
+                // CSS custom props consumed by keyframes for 2D drift -
+                // each particle picks its own bearing (X + Y) so they don't
+                // all rise vertically.
+                ["--drift-x" as never]: `${p.driftX}px`,
+                ["--drift-y" as never]: `${p.driftY}px`,
               }}
             />
           );
@@ -238,13 +303,25 @@ export function AdultsAmbience() {
             .mio-fog-5 { animation: mio-fog-drift-b 24s ease-in-out infinite; animation-delay: -5s; }
             .mio-fog-6 { animation: mio-fog-drift-c 26s ease-in-out infinite; animation-delay: -12s; }
 
-            /* Particles: vertical drift + opacity fade. Each picks up its own --drift. */
+            /* Particles: 2D drift (each picks an angle via --drift-x/--drift-y)
+               + opacity fade. With per-particle bearings, the swarm no longer
+               rises in a uniform column - every dot drifts in its own
+               direction. */
             @keyframes mio-particle-drift {
-              0%   { transform: translate3d(0, calc(var(--drift) * 0.5), 0); opacity: 0; }
+              0%   {
+                transform: translate3d(calc(var(--drift-x) * 0.5), calc(var(--drift-y) * 0.5), 0);
+                opacity: 0;
+              }
               15%  { opacity: 0.85; }
-              50%  { transform: translate3d(0, calc(var(--drift) * -0.5), 0); opacity: 1; }
+              50%  {
+                transform: translate3d(calc(var(--drift-x) * -0.5), calc(var(--drift-y) * -0.5), 0);
+                opacity: 1;
+              }
               85%  { opacity: 0.85; }
-              100% { transform: translate3d(0, calc(var(--drift) * -1), 0); opacity: 0; }
+              100% {
+                transform: translate3d(calc(var(--drift-x) * -1), calc(var(--drift-y) * -1), 0);
+                opacity: 0;
+              }
             }
             .mio-particle {
               animation-name: mio-particle-drift;

@@ -10,7 +10,7 @@
  * RLS note: we use the session client. Migration 035 lets the user
  * SELECT their own journey_item_responses rows, and we filter on
  * user_id = auth.uid() implicitly via the policy. The clinician_*
- * columns are returned to the user — they're not sensitive (the user
+ * columns are returned to the user - they're not sensitive (the user
  * already has a right to see what their clinician wrote about their
  * own responses).
  */

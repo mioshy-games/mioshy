@@ -1,7 +1,7 @@
 "use client";
 
 // ============================================================
-// SubtopicItemsManager — drag-reorder list of items inside a subtopic.
+// SubtopicItemsManager - drag-reorder list of items inside a subtopic.
 // Lives on /dashboard/journey/categories/[id]/subtopics/[subId].
 // Same shape as the DirectItemsSection in CategoryChildrenManager but
 // scoped to subtopic_id = this subtopic.

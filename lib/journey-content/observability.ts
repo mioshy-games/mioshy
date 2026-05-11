@@ -1,5 +1,5 @@
 // ============================================================
-// observability.ts — slice 9 read-only queries powering the
+// observability.ts - slice 9 read-only queries powering the
 // /dashboard/journey/health board, per-item stats sidebar,
 // per-user inspector, and per-group aggregate.
 //
@@ -13,7 +13,7 @@ import { createServiceRoleClient } from "@/lib/supabase-admin";
 import type { CronJobName } from "./cron-log";
 
 // ------------------------------------------------------------
-// Per-item stats — drives the catalog editor sidebar AND the
+// Per-item stats - drives the catalog editor sidebar AND the
 // compact pills on the items list.
 // ------------------------------------------------------------
 
@@ -110,7 +110,7 @@ export async function getItemLiveStats(
 }
 
 /**
- * Batch variant — used by the items list to avoid N+1 round trips.
+ * Batch variant - used by the items list to avoid N+1 round trips.
  * Returns a Map keyed by item_id with the full stats per item.
  */
 export async function getItemLiveStatsBatch(
@@ -211,7 +211,7 @@ export async function getItemLiveStatsBatch(
 }
 
 // ------------------------------------------------------------
-// Per-user live stats — drives the per-user inspector queue
+// Per-user live stats - drives the per-user inspector queue
 // snapshot, engagement bundle, recent skips.
 // ------------------------------------------------------------
 
@@ -469,7 +469,7 @@ export async function getUserLiveStats(
 }
 
 // ------------------------------------------------------------
-// Cron health snapshot — last 24h per job.
+// Cron health snapshot - last 24h per job.
 // ------------------------------------------------------------
 
 export interface CronHealthRow {
@@ -583,7 +583,7 @@ export async function getCronHealthSnapshot(): Promise<CronHealthRow[]> {
 }
 
 // ------------------------------------------------------------
-// Stuck users — empty-queue alert source.
+// Stuck users - empty-queue alert source.
 // ------------------------------------------------------------
 
 export interface StuckUser {
@@ -600,7 +600,7 @@ export interface StuckUser {
  *   - are journey-entitled (have an active cadence assignment)
  *   - have been quiet for >= minIdleDays (no cadence delivery)
  *   - have no pending pushes (so the cadence engine SHOULD be picking
- *     for them, but isn't — usually a "no candidates" or eligibility
+ *     for them, but isn't - usually a "no candidates" or eligibility
  *     issue).
  *
  * The health board surfaces this list so admins can investigate.
@@ -756,7 +756,7 @@ export async function getPendingPushesSummary(): Promise<PendingPushesSummary> {
   //                          (a pair of rows with the same item_id +
   //                          created_at + null group is a couple push).
   //                          For the health board summary, "by kind"
-  //                          counts ROWS not original-pushes — clearer
+  //                          counts ROWS not original-pushes - clearer
   //                          than guessing.
   let groupRows = 0;
   let userOrCoupleRows = 0;
@@ -770,7 +770,7 @@ export async function getPendingPushesSummary(): Promise<PendingPushesSummary> {
     totalUnconsumed: list.length,
     oldestAgeDays: Math.max(0, Math.round(oldestMs / 86_400_000)),
     byKind: {
-      // Rough split — we surface the row count, not the push count.
+      // Rough split - we surface the row count, not the push count.
       // The health board labels it explicitly so admins know.
       user: userOrCoupleRows,
       couple: 0,

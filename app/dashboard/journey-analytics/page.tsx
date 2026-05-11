@@ -1,7 +1,7 @@
 /**
  * /dashboard/journey-analytics
  *
- * Phase 4 — admin product analytics. Single-page funnel + KPI rollup
+ * Phase 4 - admin product analytics. Single-page funnel + KPI rollup
  * for the Journey product.
  *
  * Authorization: admin only. Reuses requireExpert() and checks isAdmin.
@@ -28,7 +28,7 @@ export default async function JourneyAnalyticsPage({
 }) {
   const session = await requireExpert();
   if (!session.isAdmin) {
-    // Non-admin clinicians don't see global KPIs — redirect them home.
+    // Non-admin clinicians don't see global KPIs - redirect them home.
     redirect("/dashboard/clinician");
   }
 
@@ -90,7 +90,7 @@ export default async function JourneyAnalyticsPage({
           label="Avg reply latency"
           value={
             kpis.averageReplyLatencyHours === null
-              ? "—"
+              ? "-"
               : `${kpis.averageReplyLatencyHours}h`
           }
           icon={<MessageSquare className="size-4" aria-hidden />}
@@ -185,7 +185,7 @@ export default async function JourneyAnalyticsPage({
             value={kpis.responsesShort}
             base={kpis.responsesSubmitted}
             tone="amber"
-            hint="< 25 chars — possibly low engagement"
+            hint="< 25 chars - possibly low engagement"
           />
           <TagStat
             label="Crisis keyword"

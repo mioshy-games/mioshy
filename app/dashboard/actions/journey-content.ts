@@ -304,7 +304,7 @@ export async function deleteJourneySubtopic(subtopicId: string) {
 export async function createAndRedirectNewSubtopic(categoryId: string) {
   if (!categoryId) throw new Error("categoryId is required");
   const supabase = await adminDb();
-  // New subtopics go to the end of the list — pick max(sort_order) + 1000.
+  // New subtopics go to the end of the list - pick max(sort_order) + 1000.
   const { data: maxRow } = await supabase
     .from("journey_subtopics")
     .select("sort_order")
@@ -338,7 +338,7 @@ export async function createAndRedirectNewSubtopic(categoryId: string) {
 // of child IDs; the action validates that exactly those children
 // belong to the parent (no missing, no extras), then issues per-row
 // updates via the service-role client. Atomicity isn't critical since
-// any partial state still represents a valid total ordering — re-
+// any partial state still represents a valid total ordering - re-
 // triggering the reorder fixes drift.
 // ============================================================
 
@@ -486,6 +486,25 @@ export async function saveJourneyItem(
     default_offset_days: v.default_offset_days,
     is_active: v.is_active,
     audience: v.audience,
+
+    // Lesson blocks (migration 077). 0 / empty string sentinels → NULL.
+    stage: v.stage > 0 ? v.stage : null,
+    source_attribution_he: normalizeOptional(v.source_attribution_he),
+    source_attribution_en: normalizeOptional(v.source_attribution_en),
+    expert_insight_he: normalizeOptional(v.expert_insight_he),
+    expert_insight_en: normalizeOptional(v.expert_insight_en),
+    common_mistakes_he: normalizeOptional(v.common_mistakes_he),
+    common_mistakes_en: normalizeOptional(v.common_mistakes_en),
+    metaphor_he: normalizeOptional(v.metaphor_he),
+    metaphor_en: normalizeOptional(v.metaphor_en),
+    measurement_he: normalizeOptional(v.measurement_he),
+    measurement_en: normalizeOptional(v.measurement_en),
+    do_this_week_he: normalizeOptional(v.do_this_week_he),
+    do_this_week_en: normalizeOptional(v.do_this_week_en),
+    dont_this_week_he: normalizeOptional(v.dont_this_week_he),
+    dont_this_week_en: normalizeOptional(v.dont_this_week_en),
+    progress_marker_he: normalizeOptional(v.progress_marker_he),
+    progress_marker_en: normalizeOptional(v.progress_marker_en),
   };
 
   let savedId = itemId;
@@ -580,7 +599,7 @@ export async function createAndRedirectNewItem(
       slug,
       title_he: "פריט חדש",
       title_en: "New Item",
-      body_he: "טיוטה — מלאו את התוכן ושמרו",
+      body_he: "טיוטה - מלאו את התוכן ושמרו",
       sort_order: nextOrder,
       default_offset_days: 0,
       is_active: false,

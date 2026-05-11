@@ -1,11 +1,11 @@
 // ============================================================
-// notifications-read.ts — slice 10 read side of journey_notifications.
+// notifications-read.ts - slice 10 read side of journey_notifications.
 //
 // Three audiences:
 //   - User: bell icon dropdown on the site header (own rows only).
 //   - Admin pool: red banner on /dashboard/journey/health.
 //   - (Expert pool reads land on the same surface as admin pool for
-//      now — no dedicated expert UI yet.)
+//      now - no dedicated expert UI yet.)
 //
 // Read helpers are server-only. Mark-read mutations are server actions
 // in actions/journey-notifications.ts.

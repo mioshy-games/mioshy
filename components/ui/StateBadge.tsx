@@ -1,5 +1,5 @@
 /**
- * StateBadge — a single, calm pill that communicates the state of a
+ * StateBadge - a single, calm pill that communicates the state of a
  * pillar card on /my (Day 1 of the redesign, see docs/my-page-redesign-spec.md §0).
  *
  * One of three variants:
@@ -8,7 +8,7 @@
  *   - "not_purchased" → 🔒 לא נרכש / Not yet
  *
  * Replaces the leading emoji icon (🎮 / 🧭 / 💜) on EntitledPillar +
- * ServicePanel cards. The badge itself doesn't link to anything — it
+ * ServicePanel cards. The badge itself doesn't link to anything - it
  * just signals state. The card body still owns the click target.
  *
  * Why a separate component (and not inline classes):
@@ -29,11 +29,11 @@ const COPY: Record<PillarStateKind, { he: string; en: string }> = {
 }
 
 const VARIANT_CLASSES: Record<PillarStateKind, string> = {
-  // Cool emerald — paid + active
+  // Cool emerald - paid + active
   open:           "bg-emerald-500/15 text-emerald-200 border-emerald-400/30",
-  // Warm amber — mid-flight
+  // Warm amber - mid-flight
   in_progress:    "bg-amber-400/15 text-amber-100 border-amber-300/30",
-  // Quiet zinc — not yours yet
+  // Quiet zinc - not yours yet
   not_purchased:  "bg-white/5 text-white/60 border-white/10",
 }
 
@@ -64,7 +64,7 @@ export function StateBadge({
         VARIANT_CLASSES[state],
         className,
       ].join(" ")}
-      // Static — no animations on this badge per the "Static by default" rule
+      // Static - no animations on this badge per the "Static by default" rule
       // in the spec. Even the in_progress variant doesn't spin; the icon
       // shape alone signals "things are moving".
     >

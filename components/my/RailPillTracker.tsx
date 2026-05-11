@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * RailPillTracker — invisible wrapper that fires an analytics event
+ * RailPillTracker - invisible wrapper that fires an analytics event
  * when the user clicks a clickable rail pill. Phase 4 (E).
  *
  * Pure pass-through; renders children inside a span with onClick.

@@ -2,7 +2,7 @@
 
 import { useLocale, useTranslations } from "next-intl";
 import { Link, usePathname } from "@/navigation";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { Gamepad2, Heart, Library, LogOut, Menu, Sparkles, X } from "lucide-react";
 import { JourneyNotificationsBell } from "@/components/notifications/JourneyNotificationsBell";
 import { logoutAction } from "@/app/actions/auth-actions";
@@ -31,9 +31,9 @@ import { logoutAction } from "@/app/actions/auth-actions";
 type PillarKey = "games" | "journey" | "adults";
 
 type PillarLink = {
-  /** Where anonymous visitors land — the marketing page. */
+  /** Where anonymous visitors land - the marketing page. */
   marketingHref: string;
-  /** Where authenticated visitors land — their private dashboard. */
+  /** Where authenticated visitors land - their private dashboard. */
   authedHref: string;
   tKey: PillarKey;
   Icon: typeof Gamepad2;
@@ -56,7 +56,7 @@ const PILLARS: PillarLink[] = [
     accent: "from-teal-300 via-indigo-400 to-purple-400",
   },
   {
-    marketingHref: "/adults",
+    marketingHref: "/mioshy-sex",
     authedHref: "/my/adults",
     tKey: "adults",
     Icon: Heart,
@@ -64,9 +64,9 @@ const PILLARS: PillarLink[] = [
   },
 ];
 
-// Header theme detection — kept as an opt-in only.
+// Header theme detection - kept as an opt-in only.
 // Background-flipping while scrolling (light-glass over cream sections vs
-// dark-glass over the hero) made the mobile experience feel unstable —
+// dark-glass over the hero) made the mobile experience feel unstable -
 // the bar repainted on every scroll tick. We now LOCK to dark glass once
 // scrolled, on every page, unless the page explicitly sets
 // `<html data-header-theme="light">`. That gives editorial pages a way to
@@ -96,10 +96,10 @@ export function SiteHeader({
    *  decide whether each pillar links to its private dashboard or to its
    *  marketing page. Anonymous users always see the marketing pages. */
   entitlements?: SiteHeaderEntitlements | null;
-  /** v3 slice 10 — drives the bell badge for signed-in users. */
+  /** v3 slice 10 - drives the bell badge for signed-in users. */
   unreadNotifications?: number;
 }) {
-  // All three pillars are ALWAYS rendered — for both anonymous and
+  // All three pillars are ALWAYS rendered - for both anonymous and
   // authenticated visitors, on desktop and mobile. Only the destination
   // changes based on entitlements:
   //
@@ -111,14 +111,38 @@ export function SiteHeader({
   // turned out to make the header feel inconsistent across sessions and
   // hid the product surface from existing customers who might want to
   // upgrade.
-  const visiblePillars = PILLARS.map((p) => {
-    const owns = isAuthed && entitlements ? entitlements[p.tKey] : false;
-    return {
-      href: owns ? p.authedHref : p.marketingHref,
-      tKey: p.tKey,
-      Icon: p.Icon,
-      accent: p.accent,
-    };
+  // Resolve which pillar links the current visitor sees.
+  //   - Anonymous → all three marketing pillars
+  //   - Authenticated, OWNS pillar X → /my/X (private)
+  //   - Authenticated, does NOT own pillar X → pillar HIDDEN (not just
+  //     re-routed). Per spec §11 the header is never a marketing
+  //     surface once the user is signed in.
+  const visiblePillars = PILLARS.flatMap((p) => {
+    if (!isAuthed) {
+      return [
+        {
+          href: p.marketingHref,
+          tKey: p.tKey,
+          Icon: p.Icon,
+          accent: p.accent,
+        },
+      ];
+    }
+    // After login, the header surfaces only the two SUBSCRIPTION pillars
+    // (games + journey). Mioshy's Sex (adults) is one-time per game and
+    // doesn't belong in primary nav once the user is inside — it lives
+    // on /my and inside the journey track. Per Itzik 2026-05-07.
+    if (p.tKey === "adults") return [];
+    const owns = entitlements ? entitlements[p.tKey] : false;
+    if (!owns) return [];
+    return [
+      {
+        href: p.authedHref,
+        tKey: p.tKey,
+        Icon: p.Icon,
+        accent: p.accent,
+      },
+    ];
   });
   const locale = useLocale();
   const pathname = usePathname();
@@ -128,19 +152,69 @@ export function SiteHeader({
   const [scrolled, setScrolled] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("dark");
   const [isPending, startTransition] = useTransition();
+  // Mobile-only: auto-hide the header on scroll-down, restore on scroll-up.
+  // Pairs with <MobileServicesBar/> at the bottom — together they read like
+  // a native mobile-app chrome (top bar collapses while reading, bottom
+  // pillars stay reachable). Desktop never hides.
+  const [hiddenOnMobile, setHiddenOnMobile] = useState(false);
+  const lastScrollY = useRef(0);
+
+  // ⚠️ BUILD MARKER - fires once per mount, confirms the entitlement-
+  // aware header is the version actually running on the client. If
+  // the log is missing in DevTools after a deploy, the new code
+  // didn't ship.
+  useEffect(() => {
+    console.log("[SiteHeader] BUILD=2026-04-30-phaseD-gating v1", {
+      isAuthed,
+      entitlements,
+      visiblePillarKeys: visiblePillars.map((p) => p.tKey),
+      pillarsHrefs: visiblePillars.map((p) => p.href),
+    });
+    // Empty deps - log once per mount only, not on every scroll tick.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Track scroll + theme on mount and on scroll. We intentionally resample
   // the theme on every scroll tick - switching between dark hero and light
   // sections should flip the header tone live.
+  //
+  // Direction tracking (mobile-only auto-hide):
+  //   - Past a small threshold, scrolling DOWN hides the header.
+  //   - Scrolling UP — even one pixel — brings it back.
+  //   - At/near the top of the page (<40px) we always force visible, so
+  //     pulling all the way up never leaves a stranded "hidden" state.
   useEffect(() => {
     const onScroll = () => {
-      setScrolled(window.scrollY > 40);
+      const y = window.scrollY;
+      setScrolled(y > 40);
       setTheme(detectTheme());
+
+      const prev = lastScrollY.current;
+      const delta = y - prev;
+      // Ignore micro-movements (rubber-banding, trackpad jitter).
+      if (Math.abs(delta) < 4) return;
+      if (y < 40) {
+        setHiddenOnMobile(false);
+      } else if (delta > 0) {
+        // Scrolling down past the threshold → hide.
+        setHiddenOnMobile(true);
+      } else {
+        // Scrolling up → show.
+        setHiddenOnMobile(false);
+      }
+      lastScrollY.current = y;
     };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  // If the user opens the mobile drawer mid-scroll, force the header to
+  // stay visible — otherwise the drawer would seem to detach from the
+  // top of the viewport.
+  useEffect(() => {
+    if (open) setHiddenOnMobile(false);
+  }, [open]);
 
   const handleLogout = () => {
     startTransition(async () => {
@@ -181,11 +255,6 @@ export function SiteHeader({
   const ghostBorder =
     mode === "light" ? "border-slate-300/70" : "border-white/15";
 
-  const ghostBg =
-    mode === "light"
-      ? "bg-white/60 hover:bg-white/80"
-      : "bg-white/5 hover:bg-white/10";
-
   // Logo swap: the project only ships mioshy-white.svg. On light-scrolled
   // state we darken it via a CSS filter (invert + slight hue correction).
   const logoFilter =
@@ -193,9 +262,19 @@ export function SiteHeader({
       ? "invert(1) hue-rotate(180deg) saturate(1.2) brightness(0.85)"
       : "none";
 
+  // Mobile auto-hide: only applies under lg (1024px). Desktop ignores.
+  // We pair `transition-transform` with the existing `transition-all` so
+  // both the slide and the bg flip animate smoothly together.
+  const hideClass = hiddenOnMobile ? "max-lg:-translate-y-full" : "translate-y-0";
+
   return (
+    /* Performance: backdrop-blur-xl on a sticky header forces Chrome to
+       re-blur the whole viewport on every scroll tick — the #1 GPU
+       offender flagged in the 2026-05-06 audit. We removed it; the
+       header bgs in `barBg` now use opaque solids/strong-alpha
+       gradients instead, which read identically without the blur. */
     <header
-      className={`sticky top-0 z-50 border-b backdrop-blur-xl transition-all duration-300 ${barBg}`}
+      className={`sticky top-0 z-50 border-b transition-all duration-300 ${barBg} ${hideClass}`}
     >
       {/* Top-of-page gradient hair - only when transparent, to keep identity. */}
       {!scrolled ? (
@@ -263,12 +342,22 @@ export function SiteHeader({
         <div className="hidden items-center gap-2 md:flex">
           {isAuthed ? (
             <>
+              {/* "מיאושי שלי" — primary CTA after login. Same gradient
+                  treatment as the pre-login "Join now" button so the
+                  user has one obvious next-action regardless of state.
+                  Per Itzik 2026-05-07. */}
               <Link
                 href="/my"
-                className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-base font-semibold transition ${ghostBorder} ${ghostBg} ${textFg}`}
+                className="group relative inline-flex min-h-[40px] items-center justify-center gap-1.5 overflow-hidden rounded-full px-5 text-base font-semibold text-white shadow-lg shadow-fuchsia-500/25 transition hover:brightness-110"
               >
-                <Library className="h-4 w-4" />
-                {t("library")}
+                <span
+                  aria-hidden
+                  className="absolute inset-0 bg-[linear-gradient(110deg,#d946ef_0%,#a855f7_35%,#ec4899_70%,#f59e0b_100%)]"
+                />
+                <span className="relative z-10 inline-flex items-center gap-1.5">
+                  <Library className="h-4 w-4" />
+                  {t("library")}
+                </span>
               </Link>
               <JourneyNotificationsBell
                 initialUnreadCount={unreadNotifications}
@@ -286,27 +375,32 @@ export function SiteHeader({
             </>
           ) : (
             <>
+              {/* Sign-in (secondary) button. Per Itzik 2026-05-07 — same
+                  size + padding as the primary "Join now" CTA but with a
+                  dark header-matching background, so the two buttons read
+                  as a clear primary/secondary pair instead of a button +
+                  a text link. */}
               <Link
                 href="/auth"
-                className={`text-base font-medium transition ${linkBase}`}
+                className="inline-flex min-h-[40px] items-center justify-center rounded-full border border-white/15 bg-[#170E14] px-5 text-base font-semibold text-white/90 transition hover:bg-[#231619] hover:border-white/25 hover:text-white"
               >
                 {t("signIn")}
               </Link>
-              {/* Primary CTA in the header is now "ליווי עם מיאושי" → /journey
-                  rather than the generic "Sign up" → /auth/signup. The
-                  flagship product is Journey and the header is its biggest
-                  conversion surface. New visitors who click discover the
-                  product first; signup happens naturally during purchase. */}
+              {/* Primary header CTA. Was → /journey ("ליווי עם מיאושי")
+                  per the previous "lead with the flagship" thinking. Per
+                  Itzik 2026-05-06 → /auth/signup ("הצטרפות בחינם"). The
+                  funnel is now: free signup → /my → choose pillar →
+                  /pricing → Cardcom. Lower commitment for first click. */}
               <Link
-                href="/journey"
+                href="/auth/signup"
                 className="group relative inline-flex min-h-[40px] items-center justify-center overflow-hidden rounded-full px-5 text-base font-semibold text-white shadow-lg shadow-fuchsia-500/25 transition hover:brightness-110"
               >
                 <span
                   aria-hidden
-                  className="absolute inset-0 bg-[linear-gradient(110deg,#d946ef_0%,#a855f7_35%,#ec4899_70%,#f59e0b_100%)] bg-[length:220%_100%] mio-nav-cta-shift"
+                  className="absolute inset-0 bg-[linear-gradient(110deg,#d946ef_0%,#a855f7_35%,#ec4899_70%,#f59e0b_100%)]"
                 />
                 <span className="relative z-10">
-                  {isHe ? "ליווי עם מיאושי" : "Mioshy Journey"}
+                  {isHe ? "אני רוצה להצטרף" : "Join now"}
                 </span>
               </Link>
             </>
@@ -324,29 +418,36 @@ export function SiteHeader({
             still lives inside the drawer. */}
         <div className="flex items-center gap-2 lg:hidden">
           {isAuthed ? (
+            // Mobile primary — matching the desktop My-Mioshy gradient
+            // treatment. Compact size to fit beside the hamburger.
             <Link
               href="/my"
-              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-semibold transition md:hidden ${ghostBorder} ${ghostBg} ${textFg}`}
+              className="group relative inline-flex min-h-[36px] items-center justify-center gap-1.5 overflow-hidden rounded-full px-4 text-sm font-semibold text-white shadow-md shadow-fuchsia-500/25 transition hover:brightness-110 md:hidden"
               aria-label={t("library")}
             >
-              <Library className="h-4 w-4" />
-              <span>{t("library")}</span>
+              <span
+                aria-hidden
+                className="absolute inset-0 bg-[linear-gradient(110deg,#d946ef_0%,#a855f7_35%,#ec4899_70%,#f59e0b_100%)]"
+              />
+              <span className="relative z-10 inline-flex items-center gap-1.5">
+                <Library className="h-4 w-4" />
+                <span>{t("library")}</span>
+              </span>
             </Link>
           ) : (
-            // Mobile primary CTA — same swap as desktop: "ליווי עם מיאושי"
-            // → /journey instead of "Sign up" → /auth/signup. Slightly
-            // more compact label so it fits in the cramped mobile header
-            // alongside the hamburger.
+            // Mobile primary CTA — matches the desktop primary: free
+            // signup. Slightly compact label so it fits next to the
+            // hamburger on cramped mobile headers.
             <Link
-              href="/journey"
+              href="/auth/signup"
               className="group relative inline-flex min-h-[36px] items-center justify-center overflow-hidden rounded-full px-4 text-sm font-semibold text-white shadow-md shadow-fuchsia-500/25 transition hover:brightness-110 md:hidden"
             >
               <span
                 aria-hidden
-                className="absolute inset-0 bg-[linear-gradient(110deg,#d946ef_0%,#a855f7_35%,#ec4899_70%,#f59e0b_100%)] bg-[length:220%_100%] mio-nav-cta-shift"
+                className="absolute inset-0 bg-[linear-gradient(110deg,#d946ef_0%,#a855f7_35%,#ec4899_70%,#f59e0b_100%)]"
               />
               <span className="relative z-10">
-                {isHe ? "ליווי מיאושי" : "Journey"}
+                {isHe ? "אני רוצה להצטרף" : "Join now"}
               </span>
             </Link>
           )}
@@ -363,12 +464,15 @@ export function SiteHeader({
       </div>
 
       {/* ─────── Mobile drawer ─────── */}
+      {/* Performance: removed backdrop-blur-xl — the drawer is rendered
+          on top of the page anyway, so a solid background reads better
+          and is far cheaper than blurring everything beneath it. */}
       {open ? (
         <div
-          className={`border-t backdrop-blur-xl lg:hidden ${
+          className={`border-t lg:hidden ${
             theme === "light"
-              ? "border-slate-200 bg-white/95 text-slate-900"
-              : "border-white/10 bg-black/75 text-white"
+              ? "border-slate-200 bg-white text-slate-900"
+              : "border-white/10 bg-[#0E0810] text-white"
           }`}
           dir={isHe ? "rtl" : "ltr"}
         >
@@ -446,16 +550,14 @@ export function SiteHeader({
                 >
                   {t("signIn")}
                 </Link>
-                {/* Drawer primary CTA — Journey, matching the desktop +
-                    mobile header buttons. Replaces the previous Sign-up
-                    button so the entire site funnels new visitors into
-                    the flagship product first. */}
+                {/* Drawer primary CTA — free signup, matching the
+                    desktop + mobile header buttons. */}
                 <Link
-                  href="/journey"
+                  href="/auth/signup"
                   onClick={() => setOpen(false)}
                   className="mt-1 inline-flex min-h-[44px] items-center justify-center rounded-full bg-gradient-to-r from-fuchsia-500 via-purple-500 to-pink-500 px-5 text-base font-semibold text-white shadow-lg shadow-fuchsia-500/25"
                 >
-                  {isHe ? "ליווי עם מיאושי" : "Mioshy Journey"}
+                  {isHe ? "אני רוצה להצטרף" : "Join now"}
                 </Link>
               </>
             )}
@@ -464,15 +566,8 @@ export function SiteHeader({
       ) : null}
 
       {/* Keyframes for the signup-CTA gradient drift. Defined once, global. */}
-      <style jsx global>{`
-        @keyframes mio-nav-cta-shift {
-          0%, 100% { background-position: 0% 50%; }
-          50%      { background-position: 100% 50%; }
-        }
-        .mio-nav-cta-shift {
-          animation: mio-nav-cta-shift 7s ease-in-out infinite;
-        }
-      `}</style>
+      {/* Header CTA gradient is now static (no animation) - keyframes
+          intentionally removed 2026-05-06. */}
     </header>
   );
 }

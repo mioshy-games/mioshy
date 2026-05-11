@@ -1,12 +1,12 @@
 "use client";
 
 // ============================================================
-// GeneralChannelThread — slice 6 v3 two-way thread between the user
+// GeneralChannelThread - slice 6 v3 two-way thread between the user
 // and the expert pool, on /my/journey. Replaces the fire-and-forget
 // JourneyExpertMessage widget.
 //
 // Layout: thread history (oldest → newest) on top, composer at the
-// bottom — opposite to PerItemThread because this is a persistent
+// bottom - opposite to PerItemThread because this is a persistent
 // inbox, not a one-shot prompt response.
 //
 // Privacy: per Itzik #7 these messages are partner-private by
@@ -152,7 +152,7 @@ export function GeneralChannelThread({
         )}
       </ol>
 
-      {/* Composer (bottom — channel is persistent inbox, not one-shot) */}
+      {/* Composer (bottom - channel is persistent inbox, not one-shot) */}
       <form onSubmit={handlePost} className="space-y-2">
         <Textarea
           ref={composerRef}
@@ -199,16 +199,29 @@ function ChannelRow({
   onReact: (messageId: string, emoji: string) => void;
 }) {
   const isExpert = message.author_kind === "expert";
-  const tone = isExpert
-    ? "border-emerald-300/30 bg-emerald-500/[0.08]"
-    : "border-fuchsia-300/30 bg-fuchsia-500/[0.06]";
-  const authorLabel = isExpert
-    ? isHe
-      ? "המומחה שלנו"
-      : "Mioshy expert"
+
+  // Chat-bubble layout (Itzik #68 2026-05-07): expert anchored to
+  // inline-start with a coach-persona avatar, user anchored to inline-end.
+  const align = isExpert ? "justify-start" : "justify-end";
+  const bubbleTone = isExpert
+    ? "border-[#B83C4D]/40 bg-gradient-to-br from-[#B83C4D]/15 via-[#B83C4D]/8 to-transparent text-white"
+    : "border-white/15 bg-white/[0.06] text-white";
+
+  // Layer 2 — actual coach persona, with generic fallback for legacy.
+  const expertPersona = message.expert_persona ?? null;
+  const expertDisplayName = expertPersona
+    ? (isHe
+        ? expertPersona.display_name_he
+        : expertPersona.display_name_en) ||
+      expertPersona.display_name_he
+    : null;
+  const senderLabel = isExpert
+    ? expertDisplayName ?? (isHe ? "מיאושי" : "Mioshy")
     : isHe
       ? "אתם"
       : "You";
+  const expertAvatarUrl = expertPersona?.avatar_url ?? null;
+  const avatarInitial = (expertDisplayName ?? (isHe ? "מ" : "M")).slice(0, 1);
 
   const reactions = message.reactions ?? {};
   const reactionEntries = Object.entries(reactions).filter(
@@ -216,50 +229,101 @@ function ChannelRow({
   );
 
   return (
-    <li className={cn("rounded-xl border p-3 backdrop-blur-sm", tone)}>
-      <header className="mb-1.5 flex flex-wrap items-baseline justify-between gap-2 text-[11px]">
-        <span className="font-semibold text-white/90">{authorLabel}</span>
-        <time className="text-white/45" dateTime={message.created_at}>
-          {new Date(message.created_at).toLocaleString(isHe ? "he-IL" : "en-US", {
-            month: "short",
-            day: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
+    <li className={cn("flex gap-2", align)}>
+      {isExpert ? (
+        expertAvatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={expertAvatarUrl}
+            alt={senderLabel}
+            className="mt-1 h-8 w-8 shrink-0 self-start rounded-full border-2 border-[#B83C4D]/40 object-cover"
+          />
+        ) : (
+          <span
+            aria-hidden
+            className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center self-start rounded-full text-[14px] font-bold text-[#FAF6F7]"
+            style={{
+              background: "linear-gradient(135deg, #B83C4D 0%, #6C2E40 100%)",
+              boxShadow: "0 6px 16px -6px rgba(184,60,77,0.6)",
+            }}
+          >
+            {avatarInitial}
+          </span>
+        )
+      ) : null}
+
+      <div className={cn("max-w-[78%] sm:max-w-[70%]", isExpert ? "" : "text-end")}>
+        <div
+          className={cn(
+            "mb-1 flex items-center gap-2 text-[10px]",
+            isExpert ? "" : "justify-end",
+          )}
+        >
+          <span
+            className={cn(
+              "font-bold uppercase tracking-wider",
+              isExpert ? "text-[#FAF6F7]/85" : "text-white/55",
+            )}
+          >
+            {senderLabel}
+          </span>
+        </div>
+
+        <div
+          className={cn(
+            "rounded-2xl border px-3.5 py-2 backdrop-blur-sm",
+            bubbleTone,
+            isExpert ? "rounded-ss-md" : "rounded-se-md",
+          )}
+        >
+          <p className="whitespace-pre-wrap text-[14px] leading-[1.55] text-white/95">
+            {message.body}
+          </p>
+        </div>
+
+        <footer
+          className={cn(
+            "mt-1 flex flex-wrap items-center gap-1",
+            isExpert ? "" : "justify-end",
+          )}
+        >
+          <time className="text-[10px] text-white/40" dateTime={message.created_at}>
+            {new Date(message.created_at).toLocaleString(isHe ? "he-IL" : "en-US", {
+              month: "short",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </time>
+          {reactionEntries.map(([emoji, ids]) => {
+            const mine = ids.includes(viewerUserId);
+            return (
+              <button
+                key={emoji}
+                type="button"
+                onClick={() => onReact(message.id, emoji)}
+                className={cn(
+                  "inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[11px] transition",
+                  mine
+                    ? "border-[#B83C4D]/40 bg-[#B83C4D]/15 text-white"
+                    : "border-white/10 bg-white/5 text-white/70 hover:bg-white/10",
+                )}
+                aria-pressed={mine}
+              >
+                <span>{EMOJI_GLYPH.get(emoji) ?? emoji}</span>
+                <span className="tabular-nums">{ids.length}</span>
+              </button>
+            );
           })}
-        </time>
-      </header>
-      <p className="whitespace-pre-wrap text-sm leading-relaxed text-white/85">
-        {message.body}
-      </p>
-      <footer className="mt-2 flex flex-wrap items-center gap-1">
-        {reactionEntries.map(([emoji, ids]) => {
-          const mine = ids.includes(viewerUserId);
-          return (
-            <button
-              key={emoji}
-              type="button"
-              onClick={() => onReact(message.id, emoji)}
-              className={cn(
-                "inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[11px] transition",
-                mine
-                  ? "border-fuchsia-300/40 bg-fuchsia-500/15 text-white"
-                  : "border-white/10 bg-white/5 text-white/70 hover:bg-white/10",
-              )}
-              aria-pressed={mine}
-            >
-              <span>{EMOJI_GLYPH.get(emoji) ?? emoji}</span>
-              <span className="tabular-nums">{ids.length}</span>
-            </button>
-          );
-        })}
-        <ChannelReactionPicker
-          messageId={message.id}
-          existing={reactions}
-          viewerUserId={viewerUserId}
-          onPick={(emoji) => onReact(message.id, emoji)}
-          isHe={isHe}
-        />
-      </footer>
+          <ChannelReactionPicker
+            messageId={message.id}
+            existing={reactions}
+            viewerUserId={viewerUserId}
+            onPick={(emoji) => onReact(message.id, emoji)}
+            isHe={isHe}
+          />
+        </footer>
+      </div>
     </li>
   );
 }

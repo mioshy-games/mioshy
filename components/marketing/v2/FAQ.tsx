@@ -10,7 +10,7 @@ export function FAQ() {
 
   // 11 FAQ entries; only the first is open by default.
   // `defaultOpen` is set on every row (false where not opened) so the
-  // `as const` tuple types stay homogeneous — otherwise the union
+  // `as const` tuple types stay homogeneous - otherwise the union
   // narrows defaultOpen out of the non-first entries and tsc rejects
   // the access in the JSX below.
   const FAQS = [

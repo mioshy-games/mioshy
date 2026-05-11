@@ -1,26 +1,26 @@
 // ============================================================
-// Cadence engine — slice 3 of the v3 per-partner content delivery
+// Cadence engine - slice 3 of the v3 per-partner content delivery
 // system.
 //
 // Responsibilities (everything in this file is server-only):
 //
 //   1. pickNextItemForUser(userId)
-//        — Read user's ranking + delivered set + active candidates.
+//        - Read user's ranking + delivered set + active candidates.
 //          Apply weighted-interleave (largest-deficit) across the
 //          ranked categories, with admin order (subtopic.sort_order
 //          → item.sort_order) inside the chosen category.
 //
 //   2. markStaleAsSkipped(userId, autoSkipDays)
-//        — Bulk UPDATE: every cadence scheduled_items row owned by
+//        - Bulk UPDATE: every cadence scheduled_items row owned by
 //          this user that's past auto_skip_after_days with no
 //          response gets skipped_at = now(). Idempotent.
 //
 //   3. ensureCadenceAssignment(userId, anchorDate?)
-//        — Idempotent get-or-create of the per-user cadence
+//        - Idempotent get-or-create of the per-user cadence
 //          assignment (migration 058). Returns the assignment_id.
 //
 //   4. materializeNextItemForUser(userId, opts)
-//        — High-level entrypoint:
+//        - High-level entrypoint:
 //            a. Skip-sweep
 //            b. Resolve cadence assignment id
 //            c. Pick next item
@@ -31,7 +31,7 @@
 //          { ok: false, reason }.
 //
 //   5. isCadenceEligible(userId)
-//        — Combined gate: journey entitlement is active, not in
+//        - Combined gate: journey entitlement is active, not in
 //          grace, not blocked, has a journey_user_priorities row,
 //          not manually paused (profiles.journey_paused_at IS NULL).
 //
@@ -40,7 +40,7 @@
 // (notably journey_user_delivered_items + journey_scheduled_items).
 //
 // Group-cohort awareness (slice 7) plugs into pickNextItemForUser
-// at the marked extension point — each ranked category can be
+// at the marked extension point - each ranked category can be
 // shadowed by a group's REPLACE-mode subtopic, and INTERLEAVE-mode
 // items can be merged into the candidate pool.
 //
@@ -183,11 +183,11 @@ export async function pickNextItemForUser(
     ),
   );
 
-  // v3 slice 7 — group cohort filter. Replace-mode bindings hide the
+  // v3 slice 7 - group cohort filter. Replace-mode bindings hide the
   // bound subtopic from this user's auto-cadence entirely; admin
   // pushes (slice 8) are the only path to surface items in those
   // subtopics for the user. Interleave-mode bindings have no effect
-  // here — items still flow normally; the additive admin-push lands
+  // here - items still flow normally; the additive admin-push lands
   // in slice 8.
   const replaceSubtopicIds = await getReplaceSubtopicsForUser(userId);
 
@@ -234,11 +234,11 @@ export async function pickNextItemForUser(
   // ---------------------------------------------------------------
   // GROUP COHORTS (slice 7):
   //   Replace-mode bindings already filtered above (replaceSubtopicIds).
-  //   Interleave mode is a no-op in the picker — items in those
+  //   Interleave mode is a no-op in the picker - items in those
   //   subtopics flow normally; the additive admin-push surfaces
   //   group-curated items via slice 8 (expert push v2).
   //
-  // SLICE N EXTENSION POINT — random/discovery pool:
+  // SLICE N EXTENSION POINT - random/discovery pool:
   //   When settings.defaultRandomPerWeek > 0 and (delivered cadence
   //   count modulo curated:random ratio) selects a random slot:
   //     - Skip the ranked queue and pick uniformly from items where
@@ -359,7 +359,7 @@ export async function ensureCadenceAssignment(
     .single();
 
   // Race: another process inserted between our read and insert. The
-  // partial unique index throws 23505 — re-read.
+  // partial unique index throws 23505 - re-read.
   if (error) {
     if (error.code === "23505") {
       const { data: raced } = await admin
@@ -415,11 +415,11 @@ export async function materializeNextItemForUser(
     return { ok: false, reason: "no_assignment" };
   }
 
-  // v3 slice 8 — drain pending expert pushes BEFORE the regular
+  // v3 slice 8 - drain pending expert pushes BEFORE the regular
   // picker. The oldest unconsumed push for this user wins; replace-
   // mode subtopic filters from slice 7 are bypassed because pushes
   // carry an explicit item_id (no picker involved). One push consumed
-  // per slot — multi-item batches drain over multiple slots.
+  // per slot - multi-item batches drain over multiple slots.
   let pendingPushId: string | null = null;
   let chosenItemId: string;
   let chosenSource: CadenceSource = defaultSource;
@@ -435,7 +435,7 @@ export async function materializeNextItemForUser(
     .maybeSingle();
   if (pendingErr) {
     console.warn(
-      "[cadence-engine.materialize] pending-push read failed — falling through to picker",
+      "[cadence-engine.materialize] pending-push read failed - falling through to picker",
       pendingErr,
     );
   }
@@ -453,7 +453,7 @@ export async function materializeNextItemForUser(
   }
 
   // Step 1: insert dedup row first. Its PK on (user_id, item_id)
-  // acts as a lock — concurrent materializers (cron + day-1 trigger)
+  // acts as a lock - concurrent materializers (cron + day-1 trigger)
   // can't both succeed on the same item.
   const { error: dedupErr } = await admin
     .from("journey_user_delivered_items")
@@ -464,7 +464,7 @@ export async function materializeNextItemForUser(
     });
   if (dedupErr) {
     if (dedupErr.code === "23505") {
-      // Already delivered — another concurrent process won the race,
+      // Already delivered - another concurrent process won the race,
       // OR the same item was already pushed and delivered earlier.
       // For pushes: mark this row consumed too so it doesn't queue
       // forever; the user already got the item via the prior path.
@@ -482,7 +482,7 @@ export async function materializeNextItemForUser(
 
   // Step 2: insert the scheduled row.
   // For the audience field: cadence + push rows are per-user (assignment
-  // is user-owned), so 'both' is the only sensible value — a couple-
+  // is user-owned), so 'both' is the only sensible value - a couple-
   // partition matters only on couple-owned assignments.
   const { data: schedRow, error: schedErr } = await admin
     .from("journey_scheduled_items")
@@ -503,7 +503,7 @@ export async function materializeNextItemForUser(
       schedErr,
     );
     // Roll back the dedup row so the item is reachable next time.
-    // This is best-effort — if delete also fails we leak a row but
+    // This is best-effort - if delete also fails we leak a row but
     // never deliver twice (the picker filters by delivered).
     await admin
       .from("journey_user_delivered_items")
@@ -584,7 +584,7 @@ export async function isCadenceEligible(
     if (graceUntil > Date.now()) {
       return { eligible: false, reason: "in_grace" };
     }
-    // Grace passed without renewal — the grace-watcher cron should
+    // Grace passed without renewal - the grace-watcher cron should
     // have flipped journey_blocked_at by now. Treat as blocked
     // defensively.
     return { eligible: false, reason: "blocked" };
@@ -596,7 +596,7 @@ export async function isCadenceEligible(
     sub.current_period_end &&
     new Date(sub.current_period_end as string).getTime() < Date.now()
   ) {
-    // Period ended without grace flag — should not happen if the
+    // Period ended without grace flag - should not happen if the
     // grace-watcher (slice 5) is running. Treat as inactive.
     return { eligible: false, reason: "no_journey_subscription" };
   }
@@ -610,6 +610,27 @@ export async function isCadenceEligible(
   if (profile?.journey_paused_at) {
     const pausedAt = new Date(profile.journey_paused_at as string).getTime();
     if (pausedAt <= Date.now()) {
+      return { eligible: false, reason: "manually_paused" };
+    }
+  }
+
+  // Layer-3 user-initiated pause via subscription_pauses. Belt-and-
+  // suspenders alongside the /my/journey UI gate so even if the
+  // page route is bypassed, the cadence engine never materialises
+  // for a paused user.
+  const { data: pauseRow } = await admin
+    .from("subscription_pauses")
+    .select("paused_until")
+    .eq("user_id", userId)
+    .is("resumed_at", null)
+    .order("paused_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (pauseRow) {
+    const until = new Date(
+      (pauseRow as { paused_until: string }).paused_until,
+    ).getTime();
+    if (Number.isFinite(until) && until > Date.now()) {
       return { eligible: false, reason: "manually_paused" };
     }
   }
@@ -635,7 +656,7 @@ export async function isCadenceEligible(
  * slot they should receive an item in.
  *
  * Timezone caveat: profiles has no tz column today. We treat
- * delivery_local_hour as UTC. Default 9 UTC ≈ noon Israel — close
+ * delivery_local_hour as UTC. Default 9 UTC ≈ noon Israel - close
  * enough for v3 launch. A future migration can add profiles.timezone
  * and wire it in here.
  */
@@ -658,7 +679,7 @@ export function isDeliverySlotNow(
 }
 
 /**
- * Has this user already received a cadence item today (UTC) — and
+ * Has this user already received a cadence item today (UTC) - and
  * are they at or above their weekly cap?
  *
  * Returns:

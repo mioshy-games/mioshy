@@ -5,18 +5,18 @@
 --
 --   1. Per-item / per-scheduled-item AUDIENCE
 --      Each item (and each materialized scheduled row) targets one of:
---          'both'     — visible to both partners (default, keeps current
+--          'both'     - visible to both partners (default, keeps current
 --                       behavior for everything already in the DB)
---          'owner'    — only the couple_members.role='owner' partner sees it
---          'partner'  — only the couple_members.role='partner' partner sees it
+--          'owner'    - only the couple_members.role='owner' partner sees it
+--          'partner'  - only the couple_members.role='partner' partner sees it
 --      Solo (user-owned) assignments always behave as 'both'.
 --
 --   2. profiles.gender (optional, free-form: 'male'|'female'|'other'|NULL)
 --      Lets the expert label which partner is which when designing audience-
---      aware content. Display only — the audience filter is structural,
+--      aware content. Display only - the audience filter is structural,
 --      driven by couple_members.role.
 --
---   3. journey_user_activity — append-only log of meaningful user actions on
+--   3. journey_user_activity - append-only log of meaningful user actions on
 --      the journey timeline (completion, response posted, item opened).
 --      Powers the "history of actions" + "what to do now" surface and gives
 --      experts a real audit log of what the couple actually did.
@@ -60,7 +60,7 @@ CREATE INDEX IF NOT EXISTS journey_scheduled_items_audience_idx
 
 
 -- ---------------------------------------------------------------------------
--- 2. profiles.gender — display label for the expert UI
+-- 2. profiles.gender - display label for the expert UI
 -- ---------------------------------------------------------------------------
 ALTER TABLE public.profiles
   ADD COLUMN IF NOT EXISTS gender text;
@@ -73,7 +73,7 @@ ALTER TABLE public.profiles
 
 
 -- ---------------------------------------------------------------------------
--- 3. journey_user_activity — audit log of timeline actions
+-- 3. journey_user_activity - audit log of timeline actions
 -- ---------------------------------------------------------------------------
 -- Append-only. Every meaningful interaction the user has with the timeline
 -- writes a row. Reads surface in two places:
@@ -118,7 +118,7 @@ CREATE INDEX IF NOT EXISTS journey_user_activity_scheduled_idx
   ON public.journey_user_activity (scheduled_item_id);
 
 
--- RLS — users see their own + partner's events; experts see their couples';
+-- RLS - users see their own + partner's events; experts see their couples';
 -- admins see everything; nobody but service-role inserts (server actions
 -- write through the service-role client).
 ALTER TABLE public.journey_user_activity ENABLE ROW LEVEL SECURITY;

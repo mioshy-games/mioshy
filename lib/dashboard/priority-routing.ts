@@ -3,7 +3,7 @@ import "server-only";
 /**
  * lib/dashboard/priority-routing.ts
  *
- * Phase 5 — adaptive content ordering based on the user's own
+ * Phase 5 - adaptive content ordering based on the user's own
  * priority ranking from the assessment.
  *
  * The product principle:
@@ -16,8 +16,8 @@ import "server-only";
  *     because they ranked things differently.
  *
  * What this file owns:
- *   - getViewerPriorityOrder(userId) — returns the user's ranking
- *   - sortRailByPriorities(rail, order) — pure reorder of rail entries
+ *   - getViewerPriorityOrder(userId) - returns the user's ranking
+ *   - sortRailByPriorities(rail, order) - pure reorder of rail entries
  *
  * Mapping rules:
  *   - Categories whose slug matches a PriorityKey (i.e. one of the
@@ -29,9 +29,9 @@ import "server-only";
  *     keep their natural sort_order, after the priority categories.
  *
  * What this file does NOT do:
- *   - It does not filter content out — every assigned item still
+ *   - It does not filter content out - every assigned item still
  *     appears in the rail. We only reorder.
- *   - It does not change WHICH items go to whom — that's the
+ *   - It does not change WHICH items go to whom - that's the
  *     existing `audience` filter in journey_scheduled_items.
  */
 
@@ -42,7 +42,7 @@ import type { RailEntry } from "@/lib/dashboard/journey-rail";
 /**
  * Pull the user's most recent priority ranking from
  * journey_responses.answer.kind === 'ranking'. Returns null when the
- * user has not completed the priority question — caller falls back
+ * user has not completed the priority question - caller falls back
  * to natural sort_order.
  */
 export async function getViewerPriorityOrder(

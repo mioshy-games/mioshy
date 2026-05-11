@@ -4,7 +4,9 @@ import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
+import { MobileServicesBar } from "@/components/MobileServicesBar";
 import { HomeBackground } from "@/components/my/HomeBackground";
+import { PerfDebugHud } from "@/components/dev/PerfDebugHud";
 
 function shouldHideChrome(pathname: string) {
   // Hide chrome on gameplay pages (full-screen), including after login.
@@ -54,7 +56,7 @@ export function Chrome({
    *  flags so the header can surface ONLY the products they own (per
    *  spec §11). null = anonymous OR auth fetch failed. */
   entitlements?: Entitlements | null;
-  /** v3 slice 10 — unread journey_notifications count for the bell. */
+  /** v3 slice 10 - unread journey_notifications count for the bell. */
   unreadNotifications?: number;
   /** Required when isAuthed; drives RTL/LTR rendering of the bell
    *  dropdown. Anonymous visitors don't see the bell. */
@@ -64,14 +66,19 @@ export function Chrome({
   const hide = shouldHideChrome(pathname);
 
   if (hide) {
-    return <>{children}</>;
+    return (
+      <>
+        {children}
+        <PerfDebugHud />
+      </>
+    );
   }
 
   return (
     <div
       className={
         isAuthed
-          ? // Authenticated layout — premium dark backdrop locked to the
+          ? // Authenticated layout - premium dark backdrop locked to the
             // viewport, only the content scrolls. Per the post-login spec
             // we want the homepage hero's purple↔rose blob language to
             // travel with the user across every page they land on.
@@ -85,10 +92,22 @@ export function Chrome({
         entitlements={entitlements}
         unreadNotifications={unreadNotifications}
       />
-      <div className="flex-1">{children}</div>
-      {/* Footer is marketing surface only — hide it for signed-in users
+      {/* Reserve space at the bottom on mobile (when the bar is shown)
+          so the last section of every page isn't permanently hidden
+          under the fixed <MobileServicesBar/>. The bar is ~76px tall
+          including safe-area; we round up to 80px. lg+ has no bar so
+          no padding. */}
+      <div className={`flex-1 ${!isAuthed ? "pb-[80px] lg:pb-0" : ""}`}>
+        {children}
+      </div>
+      {/* Footer is marketing surface only - hide it for signed-in users
           so the post-login experience reads as "your space, not a brochure". */}
       {!isAuthed && <SiteFooter />}
+      {/* Persistent bottom tab-bar — mobile only, anonymous only. Same
+          gate as the footer: when the user is signed in, the dashboard
+          chrome takes over and this surface gets out of the way. */}
+      {!isAuthed && <MobileServicesBar />}
+      <PerfDebugHud />
     </div>
   );
 }

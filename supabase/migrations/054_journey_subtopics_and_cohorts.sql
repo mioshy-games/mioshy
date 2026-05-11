@@ -5,14 +5,14 @@
 -- This migration introduces three new things on top of the v2
 -- programs/categories/items model from migration 035:
 --
---   1. journey_subtopics — a tier between category and item, so the
+--   1. journey_subtopics - a tier between category and item, so the
 --      hierarchy becomes Category -> Subtopic -> Item. Items may also
 --      hang directly off a category (subtopic_id NULL).
---   2. journey_items extensions — content_type, est_minutes, tags,
+--   2. journey_items extensions - content_type, est_minutes, tags,
 --      prereq_item_ids; plus the new subtopic_id FK. The cadence
 --      engine (slice 3) reads tags to find 'discovery' items for the
 --      random pool. content_type/est_minutes are admin-facing metadata.
---   3. journey_groups + members + bound subtopics — cohort
+--   3. journey_groups + members + bound subtopics - cohort
 --      infrastructure for slice 7 (group-bound subtopics, replace vs
 --      interleave with the personalized queue). Tables exist now so
 --      slice 7 only adds engine awareness, not schema churn.
@@ -82,7 +82,7 @@ create index if not exists journey_subtopics_category_sort_idx
 --                            engine respects this when picking the next item.
 --
 -- Note: the existing items.kind column (added in 050) discriminates
--- content / assessment / reflection. content_type is a SECOND axis —
+-- content / assessment / reflection. content_type is a SECOND axis -
 -- presentational, not behavioural. They're orthogonal.
 -- ============================================================
 
@@ -99,7 +99,7 @@ alter table public.journey_items
   add constraint journey_items_content_type_check
   check (content_type in ('article','exercise','video','prompt','challenge'));
 
--- Subtopic must belong to the same category as the item — enforced via
+-- Subtopic must belong to the same category as the item - enforced via
 -- a trigger because cross-row CHECK constraints aren't supported.
 create or replace function public.tg_journey_items_subtopic_consistency()
 returns trigger
@@ -150,7 +150,7 @@ create index if not exists journey_items_prereqs_gin
 -- the personalized picks (mode column on the binding).
 --
 -- Group cadence overrides (curated_per_week_override etc.) are NULL
--- by default — meaning "use the platform default from journey_settings"
+-- by default - meaning "use the platform default from journey_settings"
 -- (added in migration 055). Non-NULL values shadow the platform setting
 -- for members of this group.
 --

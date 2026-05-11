@@ -241,7 +241,7 @@ export default async function JourneyTimelinePage({
           {isHe ? "חזרה למיאושי שלי" : "Back to My Mioshy"}
         </Link>
 
-        {/* v3 slice 5 — grace banner. Renders nothing when journeyState
+        {/* v3 slice 5 - grace banner. Renders nothing when journeyState
             is 'active' or null. */}
         <div className="mt-5">
           <JourneyGraceBanner
@@ -309,7 +309,7 @@ export default async function JourneyTimelinePage({
           />
         </section>
 
-        {/* Recent activity — the user's own audit trail */}
+        {/* Recent activity - the user's own audit trail */}
         <section className="mt-10 sm:mt-12">
           <div className="mb-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-white/55">
             <span className="h-px flex-1 bg-gradient-to-r from-transparent via-white/15 to-transparent" />

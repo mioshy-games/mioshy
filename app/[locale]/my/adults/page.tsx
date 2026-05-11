@@ -73,7 +73,7 @@ export default async function MyAdultsGalleryPage({
     listActiveGameCards().catch(() => []),
   ]);
 
-  // "More games" — every active Adults game in the catalogue minus
+  // "More games" - every active Adults game in the catalogue minus
   // the ones this couple already owns. Rendered inline at the bottom
   // of the page so the user never leaves the gallery to browse.
   const ownedIds = new Set(owned.map((g) => g.id));
@@ -81,7 +81,7 @@ export default async function MyAdultsGalleryPage({
     .map((c) => c.game)
     .filter((g) => !ownedIds.has(g.id));
 
-  // Monthly Adults bundle (spec §8.4) — Journey subscribers get one
+  // Monthly Adults bundle (spec §8.4) - Journey subscribers get one
   // free game per calendar month. We surface the slot's state at the
   // top of the page so the user knows whether to "use it now" or
   // wait until next month.
@@ -189,7 +189,7 @@ export default async function MyAdultsGalleryPage({
                   </p>
                 </div>
                 <Link
-                  href="/adults"
+                  href="/mioshy-sex"
                   className="inline-flex items-center gap-1.5 rounded-full bg-amber-400 px-4 py-2 text-sm font-semibold text-black transition hover:bg-amber-300"
                 >
                   {isHe ? "לבחירת משחק" : "Pick a game"}
@@ -264,7 +264,7 @@ export default async function MyAdultsGalleryPage({
               </span>
             </div>
             <p
-              className="mt-2 max-w-2xl text-[14px] leading-[1.65] text-white/65"
+              className="mt-2 max-w-2xl text-[20px] leading-[1.55] text-white/65 sm:text-[15px] sm:leading-[1.65]"
               style={{ fontFamily: BODY_FONT }}
             >
               {isHe
@@ -312,7 +312,7 @@ function EmptyGallery({ isHe }: { isHe: boolean }) {
             : "Pick your first experience and unlock a world built just for the two of you. Everything you own appears here - automatically for your partner too."}
         </p>
         <Link
-          href="/adults"
+          href="/mioshy-sex"
           className="relative mt-7 inline-flex min-h-[48px] items-center gap-2 overflow-hidden rounded-full px-7 text-sm font-semibold text-white shadow-2xl shadow-rose-600/40 transition hover:brightness-110"
         >
           <span
@@ -352,7 +352,7 @@ function OwnedGameCard({ game, isHe }: { game: OwnedGame; isHe: boolean }) {
       // Owners go straight to the gated play surface, NOT the public
       // marketing page. The play page renders full_desc + role panels
       // with the on-load sparkle burst.
-      href={`/adults/${game.slug}/play`}
+      href={`/mioshy-sex/${game.slug}/play`}
       className="group relative block overflow-hidden rounded-[24px] border border-white/10 bg-gradient-to-br from-white/[0.07] via-white/[0.04] to-white/[0.02] shadow-[0_24px_60px_-25px_rgba(244,63,94,0.45)] backdrop-blur-md transition hover:-translate-y-1 hover:border-rose-300/50 hover:shadow-[0_32px_80px_-20px_rgba(244,63,94,0.6)]"
     >
       {/* Gradient halo on hover - sits behind the card content. The
@@ -410,7 +410,7 @@ function OwnedGameCard({ game, isHe }: { game: OwnedGame; isHe: boolean }) {
         </h3>
         {desc ? (
           <p
-            className="mt-2 line-clamp-2 text-[14px] leading-[1.6] text-white/75"
+            className="mt-2 line-clamp-2 text-[20px] leading-[1.5] text-white/75 sm:text-[15px] sm:leading-[1.6]"
             style={{ fontFamily: BODY_FONT }}
           >
             {desc}
@@ -470,7 +470,7 @@ function AvailableGameCard({
     <Link
       // Non-owners go to the public marketing page where they can read
       // the full pitch and purchase. Owners never reach this card.
-      href={`/adults/${game.slug}`}
+      href={`/mioshy-sex/${game.slug}`}
       className="group relative block overflow-hidden rounded-[24px] border border-white/10 bg-gradient-to-br from-white/[0.05] via-white/[0.03] to-transparent backdrop-blur-md transition hover:-translate-y-1 hover:border-rose-300/40 hover:shadow-[0_24px_60px_-25px_rgba(244,63,94,0.4)]"
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-rose-500/20 via-fuchsia-500/15 to-violet-500/15">
@@ -491,7 +491,7 @@ function AvailableGameCard({
           aria-hidden
           className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/75 via-black/30 to-transparent"
         />
-        {/* "New / Locked" badge — distinct from the emerald "Owned" pill
+        {/* "New / Locked" badge - distinct from the emerald "Owned" pill
             on the gallery cards above. Clear visual signal: this is
             still gated. */}
         <span className="absolute end-3 top-3 inline-flex items-center gap-1 rounded-full border border-white/30 bg-black/40 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-[0.18em] text-white backdrop-blur">
@@ -509,7 +509,7 @@ function AvailableGameCard({
         </h3>
         {desc ? (
           <p
-            className="mt-2 line-clamp-2 text-[14px] leading-[1.6] text-white/70"
+            className="mt-2 line-clamp-2 text-[20px] leading-[1.5] text-white/70 sm:text-[15px] sm:leading-[1.6]"
             style={{ fontFamily: BODY_FONT }}
           >
             {desc}

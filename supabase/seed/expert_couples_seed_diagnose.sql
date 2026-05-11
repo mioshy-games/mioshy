@@ -6,7 +6,7 @@
 -- joined identity row) and finds NULL/missing data where it expects an
 -- empty string / boolean / jsonb structure.
 --
--- The error doesn't bubble to our app — it's between GoTrue and Postgres.
+-- The error doesn't bubble to our app - it's between GoTrue and Postgres.
 -- The only way to find the root cause is to look at the actual row state
 -- and spot what's wrong.
 --
@@ -16,7 +16,7 @@
 --   3. A focused list of the columns GoTrue typically queries on sign-in
 --      and flags any that are NULL.
 --
--- USAGE — paste into Supabase SQL editor (service-role) and run.
+-- USAGE - paste into Supabase SQL editor (service-role) and run.
 --         Output appears as multiple result tables.
 -- ===========================================================================
 
@@ -92,7 +92,7 @@ WHERE user_id = (SELECT id FROM auth.users WHERE email = 'noa.levi@mioshy.test')
 
 
 -- 6. Compare GoTrue's expected schema vs. what we actually have -------------
--- This is the most useful query — it lists every NOT NULL column on
+-- This is the most useful query - it lists every NOT NULL column on
 -- auth.users that has a NULL value in our seed row. Empty result = the
 -- row is structurally fine and the error is elsewhere.
 SELECT

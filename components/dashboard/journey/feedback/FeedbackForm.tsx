@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * FeedbackForm — create / edit dialog for journey_feedback rows.
+ * FeedbackForm - create / edit dialog for journey_feedback rows.
  *
  * Kept deliberately minimal:
  *   - target picker (couple OR user-by-id)
@@ -15,7 +15,7 @@
  */
 
 import { useState, useTransition } from "react";
-// Client-safe imports only — see comment in FeedbackFilterBar.tsx.
+// Client-safe imports only - see comment in FeedbackFilterBar.tsx.
 import {
   FEEDBACK_SEVERITIES,
   SEVERITY_LABEL_HE,
@@ -153,7 +153,7 @@ export function FeedbackForm({
           {mode === "create" ? "New clinical note" : "Edit clinical note"}
         </h2>
         <p className="text-muted-foreground mt-1 text-xs">
-          Visible to admins only — never to the subject.
+          Visible to admins only - never to the subject.
         </p>
 
         <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -166,7 +166,7 @@ export function FeedbackForm({
               disabled={mode === "edit"}
               className="bg-background mt-1 h-9 w-full rounded-md border px-3 text-sm"
             >
-              <option value="">— None —</option>
+              <option value="">- None -</option>
               {couples.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.display_name ?? `Couple ${c.pair_code}`}
@@ -175,7 +175,7 @@ export function FeedbackForm({
             </select>
           </label>
 
-          {/* User id (manual paste — admin pulls from /dashboard/users) */}
+          {/* User id (manual paste - admin pulls from /dashboard/users) */}
           <label className="text-xs font-medium">
             User ID (optional)
             <input
@@ -196,7 +196,7 @@ export function FeedbackForm({
               onChange={(e) => setCategoryId(e.target.value)}
               className="bg-background mt-1 h-9 w-full rounded-md border px-3 text-sm"
             >
-              <option value="">— None —</option>
+              <option value="">- None -</option>
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name_he ?? c.name_en ?? c.id}

@@ -34,6 +34,8 @@ export function WheelPreviewPanel() {
     labelFontSizePx,
     labelColor,
     labelOutline,
+    labelOrientation,
+    labelRadiusFraction,
     outerBorder,
   } = useWheelFormStore();
 
@@ -72,6 +74,8 @@ export function WheelPreviewPanel() {
         labelFontSizePx={labelFontSizePx}
         labelColor={labelColor}
         labelOutline={labelOutline}
+        labelOrientation={labelOrientation}
+        labelRadiusFraction={labelRadiusFraction}
         outerBorder={outerBorder}
         pointerSvg={pointerSvg}
         pointerSvgWidth={pointerSvgWidth}

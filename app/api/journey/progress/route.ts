@@ -50,10 +50,33 @@ export async function GET(req: Request) {
     subscriptionActive = !!sub;
   }
 
+  // Pull all prior responses for this journey so the client can pre-fill
+  // answers when the user navigates back. UX feedback 2026-05-05:
+  // "כשחוזרים אחורה צריך לראות את מה שנבחר מקודם". Without this, the
+  // user re-arrives at a previously-answered question with empty state
+  // even though their answer is already in the DB.
+  //
+  // Shape returned: `{ [question_id]: AnswerValue }` - easy for the
+  // client to look up by question id. We don't return locale here because
+  // the client knows the page locale and would just discard it.
+  const responses: Record<string, unknown> = {};
+  if (journey?.id) {
+    const { data: rows } = await supabase
+      .from("journey_responses")
+      .select("question_id, answer")
+      .eq("journey_id", journey.id);
+    if (rows) {
+      for (const row of rows) {
+        responses[row.question_id as string] = row.answer;
+      }
+    }
+  }
+
   return NextResponse.json({
     total: totalQuestions(),
     gating: QUESTIONNAIRE.gating,
     journey: journey ?? null,
     subscriptionActive,
+    responses,
   });
 }

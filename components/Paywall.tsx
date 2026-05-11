@@ -64,7 +64,7 @@ export function Paywall() {
       </p>
       <div className="sm:col-span-3 text-center">
         <Link
-          href="/products"
+          href="/games"
           className="text-sm font-medium text-white underline-offset-4 hover:underline"
         >
           {t("back")}

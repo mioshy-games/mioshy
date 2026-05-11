@@ -35,7 +35,7 @@ export type PillItemStatus = "available" | "completed" | "locked" | "assessment"
  *  a synthetic entry for the assessment pill that just routes to
  *  /journey/assessment. */
 export interface PillItemRef {
-  /** Stable id — scheduled_item.id for real items, sentinel for assessment. */
+  /** Stable id - scheduled_item.id for real items, sentinel for assessment. */
   id: string;
   /** journey_items.id, or null for the synthetic assessment entry. */
   itemId: string | null;
@@ -63,7 +63,7 @@ export interface PillItemRef {
   clinicianStatus: "open" | "resolved" | "concerning" | null;
   /** True when there's a clinician reply that arrived AFTER the
    *  user's last visit. Computed against `journey_item_seen` (or
-   *  whatever heuristic the page chooses) — the rail uses this to
+   *  whatever heuristic the page chooses) - the rail uses this to
    *  show a small notification dot on the pill. */
   hasUnreadReply: boolean;
 }
@@ -76,20 +76,20 @@ export interface RailEntry {
   status: RailStepStatus;
   /** Tiny line above the label ("הושלם" / "השלב הנוכחי" / "ייפתח בקרוב" / ...). */
   hint: string;
-  /** Phase 2 step B — when present, the pill becomes a Link.
+  /** Phase 2 step B - when present, the pill becomes a Link.
    *  Dynamic entries: deep-link to the most relevant scheduled item
    *  in the category (current available, or the most recent completed).
    *  Static entries: special routes ("/journey/assessment" for אבחון). */
   href?: string | null;
-  /** Phase 5 — items belonging to this pill, surfaced in the
+  /** Phase 5 - items belonging to this pill, surfaced in the
    *  JourneyDesk content panel when the pill is selected. May be
    *  empty (e.g. DB-backed empty rail before the clinician schedules
-   *  any content) — the panel renders a "preparing" state in that case. */
+   *  any content) - the panel renders a "preparing" state in that case. */
   items?: PillItemRef[];
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// Static fallback — six baseline topics, in narrative order
+// Static fallback - six baseline topics, in narrative order
 // ─────────────────────────────────────────────────────────────────────
 
 const STATIC_STEPS: Array<{ key: string; label_he: string; label_en: string }> = [
@@ -134,7 +134,7 @@ export function buildStaticRail(args: {
       status: statuses[idx],
       hint: hintFor(statuses[idx], isHe, /* unlockSoon */ false),
       // Step B: only the "אבחון" pill is meaningfully clickable in the
-      // static fallback — it routes to the assessment. The other static
+      // static fallback - it routes to the assessment. The other static
       // steps don't have content yet, so they stay informational.
       href:
         isAssessment && statuses[idx] !== "pending"
@@ -145,7 +145,7 @@ export function buildStaticRail(args: {
   });
 }
 
-// Synthetic item used by the assessment pill — not a real
+// Synthetic item used by the assessment pill - not a real
 // scheduled_item, but the desk panel needs *something* to render.
 function makeAssessmentItem(isHe: boolean, status: RailStepStatus): PillItemRef {
   return {
@@ -155,10 +155,10 @@ function makeAssessmentItem(isHe: boolean, status: RailStepStatus): PillItemRef 
     body: isHe
       ? status === "completed"
         ? "סיימתם את האבחון. תוכלו לחזור אליו בכל עת לרענון התשובות."
-        : "השאלון הראשוני שמכוון את עבודת המומחה איתכם. עונים לפי הקצב שלכם — אפשר לחזור אליו בהמשך."
+        : "האבחון הראשוני שמכוון את עבודת המומחה איתכם. עונים לפי הקצב שלכם - אפשר לחזור אליו בהמשך."
       : status === "completed"
         ? "You completed the assessment. Re-open it any time to refresh your answers."
-        : "The initial questionnaire that guides your clinician's work with you. Take it at your own pace.",
+        : "The initial assessment that guides your clinician's work with you. Take it at your own pace.",
     imageUrl: null,
     videoUrl: null,
     status: "assessment",
@@ -176,7 +176,7 @@ function makeAssessmentItem(isHe: boolean, status: RailStepStatus): PillItemRef 
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// Dynamic — aggregate the user's real timeline into category-level entries
+// Dynamic - aggregate the user's real timeline into category-level entries
 // ─────────────────────────────────────────────────────────────────────
 
 export function buildDynamicRail(args: {
@@ -192,7 +192,7 @@ export function buildDynamicRail(args: {
   /** Per-item "last seen" timestamps from journey_item_seen (or any other
    *  source). When a clinician_replied_at is newer than the seen time
    *  for that item, the rail shows an "unread reply" dot. Pass an empty
-   *  Map if the page hasn't loaded seen-state — items will then default
+   *  Map if the page hasn't loaded seen-state - items will then default
    *  to "unread" only if there's a reply at all. */
   itemSeenAt?: Map<string, string>;
   now?: Date;
@@ -249,7 +249,7 @@ export function buildDynamicRail(args: {
   //   completed → every item in this category is completed
   //   current   → at least one item is currently 'available'
   //   pending   → all items locked (none available, none completed yet)
-  // If a category mixes completed + locked, treat as "current" — it's
+  // If a category mixes completed + locked, treat as "current" - it's
   // mid-flight from the user's perspective.
   const dynamicEntries: RailEntry[] = orderedBuckets.map((bucket) => {
     const allCompleted = bucket.items.every((e) => e.status === "completed");
@@ -321,7 +321,7 @@ export function buildDynamicRail(args: {
       const myLatest = myResponses[0] ?? null;
 
       // Find the latest clinician reply on any of this item's
-      // responses (including the partner's, if shared) — the user
+      // responses (including the partner's, if shared) - the user
       // benefits from seeing the clinician's voice on the thread even
       // when it was technically attached to the partner's response.
       // Sort by clinician_replied_at desc.
@@ -379,7 +379,7 @@ export function buildDynamicRail(args: {
   });
 
   // Prepend the implicit "אבחון" pill so the rail always starts with
-  // the questionnaire step — keeps the narrative consistent across
+  // the questionnaire step - keeps the narrative consistent across
   // both static and dynamic modes.
   const assessmentStatus: RailStepStatus = assessmentCompleted
     ? "completed"
@@ -389,7 +389,7 @@ export function buildDynamicRail(args: {
     label: isHe ? "אבחון" : "Assessment",
     status: assessmentStatus,
     hint: hintFor(assessmentStatus, isHe, false),
-    // Always clickable — completed assessments take the user to a
+    // Always clickable - completed assessments take the user to a
     // recap, in-progress to resume.
     href: "/journey/assessment",
     items: [makeAssessmentItem(isHe, assessmentStatus)],
@@ -399,7 +399,7 @@ export function buildDynamicRail(args: {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// DB-backed empty state — Phase 2 step C.
+// DB-backed empty state - Phase 2 step C.
 //
 // When the user is entitled to Journey but has zero scheduled items,
 // we still render the rail. Instead of the hardcoded six-topic
@@ -429,7 +429,7 @@ export async function buildDbBackedEmptyRail(args: {
 
   try {
     // Find the canonical 'journey' program. We don't hardcode the
-    // program id — admins create programs by slug, and the journey
+    // program id - admins create programs by slug, and the journey
     // program is conventionally slug='journey'.
     const { data: program } = await admin
       .from("journey_programs")
@@ -461,7 +461,7 @@ export async function buildDbBackedEmptyRail(args: {
       });
     }
 
-    // Lead with the assessment pill (it's not a category — it's the
+    // Lead with the assessment pill (it's not a category - it's the
     // questionnaire), then every active category from the program in
     // 'pending' state. Status comes from real assignments later when
     // the timeline grows; this is the empty fallback only.
@@ -499,7 +499,7 @@ export async function buildDbBackedEmptyRail(args: {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// Progress aggregation — Phase 5
+// Progress aggregation - Phase 5
 //
 // Pure summary of the rail entries used by the JourneyDesk "progress
 // strip" above the rail+content. The shape is deliberately small so
@@ -516,7 +516,7 @@ export interface JourneyProgressSummary {
   /** Items the user has NOT responded to yet, but are currently
    *  available. The "what's waiting on me" number. */
   awaitingResponseItems: number;
-  /** Items where the user has been "stuck" — available for >7 days
+  /** Items where the user has been "stuck" - available for >7 days
    *  with no response yet. Surfaced as a soft alert. */
   stuckItems: number;
   /** Total clinician replies the user hasn't acknowledged yet
@@ -542,7 +542,7 @@ export function aggregateProgress(
   for (const entry of entries) {
     if (!entry.items) continue;
     for (const item of entry.items) {
-      // Skip the synthetic assessment-link item — it's not a real
+      // Skip the synthetic assessment-link item - it's not a real
       // scheduled item with a completion lifecycle.
       if (item.status === "assessment") continue;
       total += 1;

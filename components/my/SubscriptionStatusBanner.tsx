@@ -1,10 +1,10 @@
 /**
- * SubscriptionStatusBanner — calm, deliberate confirmation that the
+ * SubscriptionStatusBanner - calm, deliberate confirmation that the
  * paid surface is, indeed, available to the user.
  *
  * Why this exists: the user reported "אני לא משוכנע שאכן אנחנו מציינים
  * ויודעים [שיש לי גישה]". Without an explicit signal, paying users
- * can land on /my/journey and not realize they crossed the threshold —
+ * can land on /my/journey and not realize they crossed the threshold -
  * especially after a billing flow that bounced through Cardcom.
  *
  * Two variants:
@@ -51,7 +51,7 @@ export function SubscriptionStatusBanner({
     );
   }
 
-  // assessment_missing — recovery flow
+  // assessment_missing - recovery flow
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-400/25 bg-amber-500/[0.06] p-4 backdrop-blur-md">
       <div className="flex min-w-0 items-center gap-3">

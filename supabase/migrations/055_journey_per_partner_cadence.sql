@@ -5,28 +5,28 @@
 -- Adds the infrastructure the cadence engine (slice 3) and per-partner
 -- resolver (slice 4) will read against:
 --
---   1. journey_settings — singleton row with platform-wide defaults
+--   1. journey_settings - singleton row with platform-wide defaults
 --      for cadence, random rate, delivery days, priority weights, and
 --      auto-skip threshold. Group rows (in 054) and profile rows (in
 --      this migration) can override.
---   2. profiles cadence overrides — journey_delivery_days,
+--   2. profiles cadence overrides - journey_delivery_days,
 --      journey_delivery_local_hour, journey_paused_at. NULL means
 --      "use journey_settings default".
---   3. profiles.expert_specialties text[] — empty for now (Itzik #6).
---   4. journey_categories.assessment_priority_key — links a DB category
+--   3. profiles.expert_specialties text[] - empty for now (Itzik #6).
+--   4. journey_categories.assessment_priority_key - links a DB category
 --      row to one of the five q_priorities keys in journey/questionnaire.json.
 --      Replaces lib/journey/priorities.ts as the source of truth.
 --   5. Seed of the five priority categories with assessment_priority_key
 --      set so the assessment <-> category linkage works end-to-end.
---   6. journey_user_priorities — per-user ranking + weights. Cadence
+--   6. journey_user_priorities - per-user ranking + weights. Cadence
 --      engine reads this; reactive re-prioritization (slice 3) will
 --      regenerate the queue plan when this row is updated.
---   7. journey_user_delivered_items — strict dedup table. Every
+--   7. journey_user_delivered_items - strict dedup table. Every
 --      delivery (cadence / expert_push / group / random) inserts here
 --      so we never deliver the same item twice to the same user.
---   8. journey_pending_pushes — admin pushes wait here until the
+--   8. journey_pending_pushes - admin pushes wait here until the
 --      recipient's next delivery slot fires (slice 8 wires the engine).
---   9. journey_scheduled_items new columns — seen_at, responded_at,
+--   9. journey_scheduled_items new columns - seen_at, responded_at,
 --      skipped_at, source. Slice 6 (threaded messaging) sets
 --      responded_at on first user message; slice 3 sets skipped_at
 --      when the engine finds a slot fired with no response.

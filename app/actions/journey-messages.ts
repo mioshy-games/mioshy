@@ -14,7 +14,7 @@
 //     response so the existing clinician inbox stays in sync.
 //   * User channel posts → journey_messages + journey_user_messages
 //   * Expert channel replies → journey_messages only (no legacy
-//     equivalent — the channel's expert-reply path is brand new).
+//     equivalent - the channel's expert-reply path is brand new).
 //
 // Side effects:
 //   * The first user message in a per-item thread stamps
@@ -26,7 +26,7 @@
 // Auth model:
 //   * User actions go through resolveViewer() (session client →
 //     identity, admin client for writes).
-//   * Expert actions go through requireExpert() — same pattern as
+//   * Expert actions go through requireExpert() - same pattern as
 //     the existing clinicianReply server action.
 // ============================================================
 
@@ -41,6 +41,7 @@ import {
   notifyUser,
 } from "@/lib/journey-content/notifications";
 import { logActivity } from "@/lib/journey/activity";
+import { classifyAndStampMessage } from "@/lib/ai/classify-message";
 import type {
   JourneyAssignment,
   JourneyScheduledItem,
@@ -161,7 +162,7 @@ export async function postPerItemMessage(args: {
   const admin = await createAdminClient();
   const isPrivate = !!args.isPrivate;
 
-  // Step 1 — write the legacy row first. The clinician inbox queries
+  // Step 1 - write the legacy row first. The clinician inbox queries
   // pivot on journey_item_responses; if this insert fails we don't
   // want to leak a journey_messages row that's invisible to the inbox.
   const { data: legacyRow, error: legacyErr } = await admin
@@ -182,7 +183,7 @@ export async function postPerItemMessage(args: {
   }
   const legacyResponseId = legacyRow.id as string;
 
-  // Step 2 — write the canonical journey_messages row, linked back.
+  // Step 2 - write the canonical journey_messages row, linked back.
   const { data: msgRow, error: msgErr } = await admin
     .from("journey_messages")
     .insert({
@@ -196,14 +197,14 @@ export async function postPerItemMessage(args: {
     .select("id")
     .single();
   if (msgErr || !msgRow) {
-    // The legacy row is already in — log and continue. The inbox sees
+    // The legacy row is already in - log and continue. The inbox sees
     // the post; the new thread UI just won't show this one until the
     // back-fill runs again.
     console.error("[postPerItemMessage] journey_messages insert failed", msgErr);
     return { ok: false, error: msgErr?.message ?? "messages_insert_failed" };
   }
 
-  // Step 3 — stamp scheduled_items.responded_at on the FIRST user
+  // Step 3 - stamp scheduled_items.responded_at on the FIRST user
   // post in this thread. Cadence engine's auto-skip rule keys on this.
   if (!scope.scheduled.responded_at) {
     await admin
@@ -213,7 +214,7 @@ export async function postPerItemMessage(args: {
       .is("responded_at", null);
   }
 
-  // Step 4 — activity log + notification (best effort).
+  // Step 4 - activity log + notification (best effort).
   await logActivity({
     userId: viewer.userId,
     coupleId: scope.assignment.couple_id ?? null,
@@ -232,6 +233,14 @@ export async function postPerItemMessage(args: {
     },
   });
 
+  // Phase 4 — fire-and-forget AI classification. Failures don't
+  // block the user's response — the message is already persisted.
+  void classifyAndStampMessage({
+    table: "journey_messages",
+    messageId: msgRow.id as string,
+    body: trimmed,
+  });
+
   revalidateMessageSurfaces();
   return { ok: true, messageId: msgRow.id as string };
 }
@@ -243,6 +252,9 @@ export async function postPerItemMessage(args: {
 export async function postExpertReplyToItem(args: {
   scheduledItemId: string;
   body: string;
+  /** Optional: when the body came from a saved library row, pass its
+   *  id so we can stamp tags onto the message for admin tracking. */
+  libraryId?: string | null;
 }): Promise<Ok<{ messageId: string }> | Err> {
   if (!args.scheduledItemId) return { ok: false, error: "missing_id" };
   const trimmed = (args.body ?? "").trim();
@@ -256,7 +268,19 @@ export async function postExpertReplyToItem(args: {
 
   const admin = await createAdminClient();
 
-  // Find the latest user response on this scheduled_item — that's the
+  // Layer-3 admin tracker — pull tags from the library row if any.
+  let topicTags: string[] = [];
+  if (args.libraryId) {
+    const { data: libRow } = await admin
+      .from("journey_expert_library")
+      .select("tags")
+      .eq("id", args.libraryId)
+      .maybeSingle();
+    const tags = (libRow as { tags: string[] | null } | null)?.tags;
+    if (Array.isArray(tags)) topicTags = tags;
+  }
+
+  // Find the latest user response on this scheduled_item - that's the
   // "ticket" the legacy clinician inbox tracks. We mirror the reply
   // there so dashboards keep working.
   const { data: latestUserResponse } = await admin
@@ -281,18 +305,22 @@ export async function postExpertReplyToItem(args: {
     .maybeSingle();
   if (!assignRow) return { ok: false, error: "not_found" };
 
-  // Step 1 — insert the canonical expert message.
+  // Step 1 - insert the canonical expert message.
   const { data: msgRow, error: msgErr } = await admin
     .from("journey_messages")
     .insert({
       scheduled_item_id: args.scheduledItemId,
       author_user_id: expert.userId,
       author_kind: "expert",
+      // Layer 2 — stamp the specific coach so the user sees their
+      // persona on the reply (not generic "מיאושי").
+      expert_signed_by: expert.userId,
       body: trimmed,
       // Expert replies on per-item are partner-visible by default
       // (matches the historical clinician_reply_text behaviour).
       is_private: false,
       legacy_response_id: latestUserResponse?.id ?? null,
+      topic_tags: topicTags,
     })
     .select("id")
     .single();
@@ -303,7 +331,7 @@ export async function postExpertReplyToItem(args: {
     };
   }
 
-  // Step 2 — mirror to the legacy clinician_reply_text on the latest
+  // Step 2 - mirror to the legacy clinician_reply_text on the latest
   // user response so the existing clinician inbox shows the reply.
   // Skipped when there's no user response yet (shouldn't happen via
   // the UI but the engine could push a "broadcast" reply later).
@@ -319,7 +347,7 @@ export async function postExpertReplyToItem(args: {
       .eq("id", latestUserResponse.id);
   }
 
-  // Step 3 — notify the user. For couple-owned legacy assignments we
+  // Step 3 - notify the user. For couple-owned legacy assignments we
   // notify both partners; for cadence (user-owned) we notify just
   // the partner who owns the cadence row.
   const recipients: string[] = [];
@@ -373,7 +401,7 @@ export async function postGeneralChannelMessage(args: {
   // shape (it has couple_id for inbox grouping).
   const coupleId = viewer.coupleIds[0] ?? null;
 
-  // Step 1 — legacy row first.
+  // Step 1 - legacy row first.
   const { data: legacyRow, error: legacyErr } = await admin
     .from("journey_user_messages")
     .insert({
@@ -390,7 +418,7 @@ export async function postGeneralChannelMessage(args: {
     };
   }
 
-  // Step 2 — canonical journey_messages row.
+  // Step 2 - canonical journey_messages row.
   const { data: msgRow, error: msgErr } = await admin
     .from("journey_messages")
     .insert({
@@ -420,6 +448,13 @@ export async function postGeneralChannelMessage(args: {
     },
   });
 
+  // Phase 4 — fire-and-forget AI classification.
+  void classifyAndStampMessage({
+    table: "journey_messages",
+    messageId: msgRow.id as string,
+    body: trimmed,
+  });
+
   revalidateMessageSurfaces();
   return { ok: true, messageId: msgRow.id as string };
 }
@@ -431,6 +466,7 @@ export async function postGeneralChannelMessage(args: {
 export async function postExpertReplyToChannel(args: {
   channelUserId: string;
   body: string;
+  libraryId?: string | null;
 }): Promise<Ok<{ messageId: string }> | Err> {
   if (!args.channelUserId) return { ok: false, error: "missing_id" };
   const trimmed = (args.body ?? "").trim();
@@ -445,16 +481,33 @@ export async function postExpertReplyToChannel(args: {
   await ensureUserChannel(args.channelUserId);
 
   const admin = await createAdminClient();
+
+  // Layer-3 admin tracker — pull tags from library row if any.
+  let topicTags: string[] = [];
+  if (args.libraryId) {
+    const { data: libRow } = await admin
+      .from("journey_expert_library")
+      .select("tags")
+      .eq("id", args.libraryId)
+      .maybeSingle();
+    const tags = (libRow as { tags: string[] | null } | null)?.tags;
+    if (Array.isArray(tags)) topicTags = tags;
+  }
+
   const { data: msgRow, error: msgErr } = await admin
     .from("journey_messages")
     .insert({
       channel_user_id: args.channelUserId,
       author_user_id: expert.userId,
       author_kind: "expert",
+      // Layer 2 — coach signature so the user sees the named expert
+      // who replied, not the generic "מיאושי".
+      expert_signed_by: expert.userId,
       body: trimmed,
-      // Channel is solo by definition — expert reply visible only to
+      // Channel is solo by definition - expert reply visible only to
       // the channel owner (and the expert pool / admin).
       is_private: true,
+      topic_tags: topicTags,
     })
     .select("id")
     .single();

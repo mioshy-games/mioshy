@@ -1,7 +1,7 @@
 "use client";
 
 // ============================================================
-// PerItemThread — slice 6 v3 threading on a single item.
+// PerItemThread - slice 6 v3 threading on a single item.
 //
 // Layout follows Update B ("every item is a prompt expecting a
 // response"):
@@ -106,7 +106,7 @@ export function PerItemThread({
   }
 
   async function handleReact(messageId: string, emoji: string) {
-    // Optimistic — patch the local message's reactions.
+    // Optimistic - patch the local message's reactions.
     setMessages((prev) =>
       prev.map((m) => {
         if (m.id !== messageId) return m;
@@ -132,7 +132,7 @@ export function PerItemThread({
 
   return (
     <div className="space-y-6" dir={isHe ? "rtl" : "ltr"}>
-      {/* Composer — primary affordance, open by default */}
+      {/* Composer - primary affordance, open by default */}
       <form onSubmit={handlePost} className="space-y-3">
         {promptLabel ? (
           <div className="flex items-center gap-2 text-xs text-white/55">
@@ -169,7 +169,7 @@ export function PerItemThread({
               {isPrivate ? (
                 <span className="inline-flex items-center gap-1.5">
                   <ShieldCheck className="size-3.5" aria-hidden />
-                  {isHe ? "פרטי — רק אתם והמומחים" : "Private — only you + experts"}
+                  {isHe ? "פרטי - רק אתם והמומחים" : "Private - only you + experts"}
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1.5">
@@ -231,15 +231,32 @@ function MessageRow({
 }) {
   const isExpert = message.author_kind === "expert";
   const isMine = message.author_user_id === viewerUserId;
-  const tone = isExpert
-    ? "border-emerald-300/30 bg-emerald-500/[0.08]"
+
+  // Chat-bubble layout (Itzik #68 2026-05-07):
+  //   • Expert messages anchor to the inline-start (RTL: right, LTR: left)
+  //     with a "מיאושי" badge so the source is unmistakable.
+  //   • User messages anchor to the inline-end and are visually softer.
+  // The layout is RTL-aware via flexbox justify-* (which respects `dir`).
+  const align = isExpert ? "justify-start" : "justify-end";
+  const bubbleTone = isExpert
+    ? "border-[#B83C4D]/40 bg-gradient-to-br from-[#B83C4D]/15 via-[#B83C4D]/8 to-transparent text-white"
     : isMine
-      ? "border-fuchsia-300/30 bg-fuchsia-500/[0.06]"
-      : "border-white/10 bg-white/[0.04]";
-  const authorLabel = isExpert
-    ? isHe
-      ? "המומחה שלנו"
-      : "Mioshy expert"
+      ? "border-white/15 bg-white/[0.06] text-white"
+      : "border-amber-300/25 bg-amber-400/[0.06] text-white";
+
+  // Sender label & avatar — Layer 2 surfaces the specific coach's
+  // persona (display name + avatar) when expert_persona is present.
+  // Falls back to a generic "מיאושי" only for legacy unattributed
+  // expert messages.
+  const expertPersona = message.expert_persona ?? null;
+  const expertDisplayName = expertPersona
+    ? (isHe
+        ? expertPersona.display_name_he
+        : expertPersona.display_name_en) ||
+      expertPersona.display_name_he
+    : null;
+  const senderLabel = isExpert
+    ? expertDisplayName ?? (isHe ? "מיאושי" : "Mioshy")
     : isMine
       ? isHe
         ? "אתם"
@@ -247,6 +264,12 @@ function MessageRow({
       : isHe
         ? "בן/בת הזוג"
         : "Your partner";
+  const avatarInitial = isExpert
+    ? (expertDisplayName ?? (isHe ? "מ" : "M")).slice(0, 1)
+    : isMine
+      ? "·"
+      : "ז";
+  const expertAvatarUrl = expertPersona?.avatar_url ?? null;
 
   const reactions = message.reactions ?? {};
   const reactionEntries = Object.entries(reactions).filter(
@@ -254,59 +277,114 @@ function MessageRow({
   );
 
   return (
-    <li className={cn("rounded-xl border p-4 backdrop-blur-sm", tone)}>
-      <header className="mb-2 flex flex-wrap items-baseline justify-between gap-2 text-xs">
-        <span className="font-semibold text-white/90">
-          {authorLabel}
+    <li className={cn("flex gap-2", align)}>
+      {/* Expert avatar — only shown on the start side */}
+      {isExpert ? (
+        expertAvatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={expertAvatarUrl}
+            alt={senderLabel}
+            className="mt-1 h-9 w-9 shrink-0 self-start rounded-full border-2 border-[#B83C4D]/40 object-cover"
+          />
+        ) : (
+          <span
+            aria-hidden
+            className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center self-start rounded-full text-[15px] font-bold text-[#FAF6F7]"
+            style={{
+              background: "linear-gradient(135deg, #B83C4D 0%, #6C2E40 100%)",
+              boxShadow: "0 8px 20px -8px rgba(184,60,77,0.6)",
+            }}
+          >
+            {avatarInitial}
+          </span>
+        )
+      ) : null}
+
+      <div className={cn("max-w-[80%] sm:max-w-[72%]", isExpert ? "" : "text-end")}>
+        {/* Sender label — small, above bubble */}
+        <div
+          className={cn(
+            "mb-1 flex items-center gap-2 text-[11px]",
+            isExpert ? "" : "justify-end",
+          )}
+        >
+          <span
+            className={cn(
+              "font-bold uppercase tracking-wider",
+              isExpert ? "text-[#FAF6F7]/85" : "text-white/55",
+            )}
+          >
+            {senderLabel}
+          </span>
           {message.is_private ? (
-            <span className="ms-2 inline-flex items-center gap-1 rounded-full bg-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wide text-white/65">
+            <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-white/65">
               <ShieldCheck className="size-3" aria-hidden />
               {isHe ? "פרטי" : "Private"}
             </span>
           ) : null}
-        </span>
-        <time className="text-white/45" dateTime={message.created_at}>
-          {new Date(message.created_at).toLocaleString(isHe ? "he-IL" : "en-US", {
-            month: "short",
-            day: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
+        </div>
+
+        {/* Bubble */}
+        <div
+          className={cn(
+            "rounded-2xl border px-4 py-2.5 backdrop-blur-sm",
+            bubbleTone,
+            // Soften the corner that points toward the avatar so the
+            // bubble feels attached to the speaker, like iMessage.
+            isExpert ? "rounded-ss-md" : "rounded-se-md",
+          )}
+        >
+          <p className="whitespace-pre-wrap text-[15px] leading-[1.55] text-white/95">
+            {message.body}
+          </p>
+        </div>
+
+        {/* Footer: timestamp + reactions */}
+        <footer
+          className={cn(
+            "mt-1.5 flex flex-wrap items-center gap-1.5",
+            isExpert ? "" : "justify-end",
+          )}
+        >
+          <time className="text-[10px] text-white/40" dateTime={message.created_at}>
+            {new Date(message.created_at).toLocaleString(isHe ? "he-IL" : "en-US", {
+              month: "short",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </time>
+          {reactionEntries.map(([emoji, ids]) => {
+            const mine = ids.includes(viewerUserId);
+            return (
+              <button
+                key={emoji}
+                type="button"
+                onClick={() => onReact(message.id, emoji)}
+                className={cn(
+                  "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition",
+                  mine
+                    ? "border-[#B83C4D]/40 bg-[#B83C4D]/15 text-white"
+                    : "border-white/10 bg-white/5 text-white/70 hover:bg-white/10",
+                )}
+                aria-pressed={mine}
+                aria-label={`${emoji} (${ids.length})`}
+              >
+                <span>{EMOJI_GLYPH.get(emoji) ?? emoji}</span>
+                <span className="tabular-nums">{ids.length}</span>
+              </button>
+            );
           })}
-        </time>
-      </header>
-      <p className="whitespace-pre-wrap text-sm leading-relaxed text-white/85">
-        {message.body}
-      </p>
-      <footer className="mt-3 flex flex-wrap items-center gap-1.5">
-        {reactionEntries.map(([emoji, ids]) => {
-          const mine = ids.includes(viewerUserId);
-          return (
-            <button
-              key={emoji}
-              type="button"
-              onClick={() => onReact(message.id, emoji)}
-              className={cn(
-                "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition",
-                mine
-                  ? "border-fuchsia-300/40 bg-fuchsia-500/15 text-white"
-                  : "border-white/10 bg-white/5 text-white/70 hover:bg-white/10",
-              )}
-              aria-pressed={mine}
-              aria-label={`${emoji} (${ids.length})`}
-            >
-              <span>{EMOJI_GLYPH.get(emoji) ?? emoji}</span>
-              <span className="tabular-nums">{ids.length}</span>
-            </button>
-          );
-        })}
-        <ReactionPicker
-          messageId={message.id}
-          existing={reactions}
-          viewerUserId={viewerUserId}
-          onPick={(emoji) => onReact(message.id, emoji)}
-          isHe={isHe}
-        />
-      </footer>
+          <ReactionPicker
+            messageId={message.id}
+            existing={reactions}
+            viewerUserId={viewerUserId}
+            onPick={(emoji) => onReact(message.id, emoji)}
+            isHe={isHe}
+          />
+        </footer>
+      </div>
     </li>
   );
 }

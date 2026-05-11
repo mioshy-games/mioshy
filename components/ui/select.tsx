@@ -7,9 +7,9 @@ import { cn } from "@/lib/utils"
 import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from "lucide-react"
 
 /**
- * Select — thin wrapper around Base UI's primitive Root.
+ * Select - thin wrapper around Base UI's primitive Root.
  *
- * Base UI types `onValueChange` as `(value: string | null, ...) => void` —
+ * Base UI types `onValueChange` as `(value: string | null, ...) => void` -
  * the `null` represents a cleared selection. Our entire codebase keeps
  * `Select`-bound state as plain `string`, treating "" as "no value", so
  * every call site previously had to coerce: `onValueChange={v => set(v ?? "")}`.

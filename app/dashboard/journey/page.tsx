@@ -9,12 +9,18 @@ import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { JourneyDataTools } from "@/components/dashboard/journey/DataTools";
+import { getAdminLocale } from "@/lib/admin/locale";
+import { t } from "@/lib/admin/i18n";
+import { SectionHelp } from "@/components/dashboard/SectionHelp";
 import {
   Layers,
   FolderTree,
   FileText,
   Route,
   Users as UsersIcon,
+  Filter,
+  MessageSquare,
+  Activity,
 } from "lucide-react";
 import { HintIcon } from "@/components/ui/hint-icon";
 
@@ -70,6 +76,7 @@ async function getCounts() {
 
 export default async function JourneyDashboardPage() {
   await requireAdmin();
+  const locale = getAdminLocale();
 
   const [counts, programs, standaloneCats] = await Promise.all([
     getCounts(),
@@ -83,14 +90,41 @@ export default async function JourneyDashboardPage() {
         <div>
           <span className="inline-flex items-center gap-1.5">
             <h1 className="text-3xl font-bold tracking-tight">
-              Journey - Content System
+              {t(locale, "journey.hub.title")}
             </h1>
             <HintIcon topic="journey.hub_intro" />
+            <SectionHelp
+              title="מסע — מערכת תוכן"
+              body={
+                <>
+                  <p>
+                    מרכז ניהול התוכן של מוצר Journey. הבית של 250 השיעורים
+                    הקיימים, חמש קטגוריות הליבה (תקשורת / מיניות / אהבה /
+                    חברות / משפחה), וההצמדות לזוגות.
+                  </p>
+                  <p>
+                    <strong>4 הקלפים העליונים</strong> — קליקבילים. הם
+                    מובילים לרשימת התוכן או לרשימת ההצמדות.
+                  </p>
+                  <p>
+                    <strong>4 השורטקאטים מתחת</strong> — &quot;כללי התאמה&quot;
+                    מסביר למה פריט נשלח, &quot;פידבק&quot; מציג איזה תוכן
+                    עובד, &quot;הודעות מומחים&quot; היא מעקב חוצה־מאמנים,
+                    ו-&quot;מטריקות&quot; היא הדשבורד הכללי.
+                  </p>
+                </>
+              }
+              aiNote={
+                <p>
+                  ה-AI מפעיל את &quot;Smart Suggestions&quot; שאתם רואים
+                  בעמוד הזוג הספציפי. כאן בעמוד ההאב ה-AI לא מתערב — זה ניהול
+                  תוכן ידני.
+                </p>
+              }
+            />
           </span>
           <p className="text-muted-foreground mt-1 max-w-2xl text-sm">
-            Time-released roadmaps for couples. Build programs, categories and
-            items here; assign to owners (user or couple) in the clients view.
-            Content edits propagate retroactively.
+            {t(locale, "journey.hub.subtitle")}
           </p>
         </div>
         <div className="flex flex-col gap-3 sm:items-end">
@@ -100,19 +134,19 @@ export default async function JourneyDashboardPage() {
               href="/dashboard/journey/programs/new"
               className={cn(buttonVariants({ variant: "default" }))}
             >
-              + New program
+              {t(locale, "journey.hub.new_program")}
             </Link>
             <Link
               href="/dashboard/journey/items/new"
               className={cn(buttonVariants({ variant: "outline" }))}
             >
-              + New item
+              {t(locale, "journey.hub.new_item")}
             </Link>
             <Link
               href="/dashboard/journey/assignments/new"
               className={cn(buttonVariants({ variant: "outline" }))}
             >
-              + Assign to owner
+              {t(locale, "journey.hub.assign_owner")}
             </Link>
           </div>
           {/* Data tools: Export / Import / Templates */}
@@ -124,32 +158,88 @@ export default async function JourneyDashboardPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <CountCard
           icon={<Layers className="size-5" />}
-          label="Programs"
+          label={t(locale, "journey.hub.programs")}
           value={counts.programs.total}
-          hint={`${counts.programs.active} active`}
+          hint={`${counts.programs.active} ${t(locale, "journey.hub.active")}`}
           href="/dashboard/journey/programs"
         />
         <CountCard
           icon={<FolderTree className="size-5" />}
-          label="Categories"
+          label={t(locale, "journey.hub.categories")}
           value={counts.categories.total}
-          hint={`${counts.categories.active} active`}
+          hint={`${counts.categories.active} ${t(locale, "journey.hub.active")}`}
           href="/dashboard/journey/categories"
         />
         <CountCard
           icon={<FileText className="size-5" />}
-          label="Items"
+          label={t(locale, "journey.hub.items")}
           value={counts.items.total}
-          hint={`${counts.items.active} active`}
+          hint={`${counts.items.active} ${t(locale, "journey.hub.active")}`}
           href="/dashboard/journey/items"
         />
         <CountCard
           icon={<UsersIcon className="size-5" />}
-          label="Active owners"
+          label={t(locale, "journey.hub.active_owners")}
           value={counts.assignments.ownerCount}
-          hint={`${counts.assignments.active} active assignments`}
+          hint={`${counts.assignments.active} ${t(locale, "journey.hub.active")}`}
           href="/dashboard/journey/assignments"
         />
+      </div>
+
+      {/* Governance shortcuts — Layer-1 surfaces */}
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Link
+          href="/dashboard/journey/match-rules"
+          className="hover:bg-accent flex items-center gap-3 rounded-lg border p-4 transition"
+        >
+          <Filter className="text-muted-foreground size-5" />
+          <div className="min-w-0 flex-1">
+            <div className="font-semibold">{t(locale, "journey.hub.match_rules")}</div>
+            <div className="text-muted-foreground text-xs">
+              {t(locale, "journey.hub.match_rules_hint")}
+            </div>
+          </div>
+          <span className="text-muted-foreground text-sm">→</span>
+        </Link>
+        <Link
+          href="/dashboard/journey/feedback"
+          className="hover:bg-accent flex items-center gap-3 rounded-lg border p-4 transition"
+        >
+          <FileText className="text-muted-foreground size-5" />
+          <div className="min-w-0 flex-1">
+            <div className="font-semibold">{t(locale, "journey.hub.feedback")}</div>
+            <div className="text-muted-foreground text-xs">
+              {t(locale, "journey.hub.feedback_hint")}
+            </div>
+          </div>
+          <span className="text-muted-foreground text-sm">→</span>
+        </Link>
+        <Link
+          href="/dashboard/journey/expert-messages"
+          className="hover:bg-accent flex items-center gap-3 rounded-lg border p-4 transition"
+        >
+          <MessageSquare className="text-muted-foreground size-5" />
+          <div className="min-w-0 flex-1">
+            <div className="font-semibold">{t(locale, "journey.hub.expert_messages")}</div>
+            <div className="text-muted-foreground text-xs">
+              {t(locale, "journey.hub.expert_messages_hint")}
+            </div>
+          </div>
+          <span className="text-muted-foreground text-sm">→</span>
+        </Link>
+        <Link
+          href="/dashboard/journey/metrics"
+          className="hover:bg-accent flex items-center gap-3 rounded-lg border p-4 transition"
+        >
+          <Activity className="text-muted-foreground size-5" />
+          <div className="min-w-0 flex-1">
+            <div className="font-semibold">{t(locale, "journey.hub.metrics")}</div>
+            <div className="text-muted-foreground text-xs">
+              {t(locale, "journey.hub.metrics_hint")}
+            </div>
+          </div>
+          <span className="text-muted-foreground text-sm">→</span>
+        </Link>
       </div>
 
       {/* Programs + standalone categories quick peek */}
@@ -158,24 +248,24 @@ export default async function JourneyDashboardPage() {
           <header className="flex items-center justify-between border-b border-border p-4">
             <div className="flex items-center gap-2">
               <Route className="size-4" />
-              <h2 className="font-semibold">Programs</h2>
+              <h2 className="font-semibold">{t(locale, "journey.hub.programs")}</h2>
             </div>
             <Link
               href="/dashboard/journey/programs"
               className="text-primary text-sm hover:underline"
             >
-              Manage →
+              {t(locale, "journey.hub.manage")}
             </Link>
           </header>
           <ul className="divide-border divide-y">
             {programs.length === 0 ? (
               <li className="text-muted-foreground p-4 text-sm">
-                No programs yet -{" "}
+                {t(locale, "journey.hub.no_programs")} —{" "}
                 <Link
                   href="/dashboard/journey/programs/new"
                   className="text-primary hover:underline"
                 >
-                  create one
+                  {t(locale, "journey.hub.create_one")}
                 </Link>
                 .
               </li>
@@ -206,20 +296,19 @@ export default async function JourneyDashboardPage() {
           <header className="flex items-center justify-between border-b border-border p-4">
             <div className="flex items-center gap-2">
               <FolderTree className="size-4" />
-              <h2 className="font-semibold">Standalone categories</h2>
+              <h2 className="font-semibold">{t(locale, "journey.hub.standalone_cats")}</h2>
             </div>
             <Link
               href="/dashboard/journey/categories"
               className="text-primary text-sm hover:underline"
             >
-              Manage →
+              {t(locale, "journey.hub.manage")}
             </Link>
           </header>
           <ul className="divide-border divide-y">
             {standaloneCats.length === 0 ? (
               <li className="text-muted-foreground p-4 text-sm">
-                No standalone categories. These are categories not tied to any
-                program - useful for one-off assigns.
+                {t(locale, "journey.hub.no_standalone")}
               </li>
             ) : (
               standaloneCats.slice(0, 8).map((c) => (

@@ -38,7 +38,7 @@ type Hero = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 1. MANIFESTO — what these games actually are. Editorial single-column block.
+// 1. MANIFESTO - what these games actually are. Editorial single-column block.
 // ─────────────-───────────────────────────────────────────────────────────────
 
 export function AdultsManifestoSection({ isHe }: { isHe: boolean }) {
@@ -48,7 +48,7 @@ export function AdultsManifestoSection({ isHe }: { isHe: boolean }) {
       className="relative overflow-hidden px-4 py-12 sm:py-[90px]"
     >
       <div className="relative mx-auto max-w-3xl">
-        {/* Eyebrow — bumped to 13px on mobile (was 11px, unreadable). */}
+        {/* Eyebrow - bumped to 13px on mobile (was 11px, unreadable). */}
         <div className="text-center">
           <span className="inline-flex items-center gap-2.5 text-[13px] font-semibold uppercase tracking-[0.22em] text-[#8B2638] sm:text-[11px] sm:tracking-[0.32em]">
             <span className="h-1.5 w-1.5 rounded-full bg-[#B83C4D] shadow-[0_0_8px_rgba(184,60,77,0.3)]" />
@@ -56,7 +56,7 @@ export function AdultsManifestoSection({ isHe }: { isHe: boolean }) {
           </span>
         </div>
 
-        {/* Headline — capped at 30px on mobile so the long Hebrew
+        {/* Headline - capped at 30px on mobile so the long Hebrew
             italic doesn't break each word onto its own line. */}
         <h2
           className="mt-4 text-balance text-center text-[30px] leading-[1.1] tracking-[-0.02em] text-[#170E14] sm:mt-7 sm:text-5xl sm:leading-[1.05] lg:text-[56px]"
@@ -66,7 +66,7 @@ export function AdultsManifestoSection({ isHe }: { isHe: boolean }) {
             <>
               לא עוד משחק.{" "}
               <span
-                className="text-[#B83C4D]"
+                className="text-[#F43F5E]"
                 style={{ fontStyle: "italic", fontWeight: 500 }}
               >
                 ערב שלא רוצים שייגמר.
@@ -76,7 +76,7 @@ export function AdultsManifestoSection({ isHe }: { isHe: boolean }) {
             <>
               Not another game.{" "}
               <span
-                className="text-[#B83C4D]"
+                className="text-[#F43F5E]"
                 style={{ fontStyle: "italic", fontWeight: 500 }}
               >
                 An evening you won&apos;t want to end.
@@ -85,7 +85,7 @@ export function AdultsManifestoSection({ isHe }: { isHe: boolean }) {
           )}
         </h2>
 
-        {/* Body — three editorial paragraphs with vertical accent rule.
+        {/* Body - three editorial paragraphs with vertical accent rule.
             Mobile: tighter top margin + tighter inter-paragraph margins
             so the manifesto reads as one block, not three loose ones. */}
         <div className="relative mt-6 ps-6 sm:mt-12 sm:ps-10">
@@ -94,25 +94,28 @@ export function AdultsManifestoSection({ isHe }: { isHe: boolean }) {
             className="absolute inset-y-2 start-0 w-px bg-gradient-to-b from-[#B83C4D]/0 via-[#B83C4D]/50 to-[#B83C4D]/0"
           />
 
-          <p className="text-[17px] leading-[1.6] text-[#170E14] sm:text-[20px] sm:leading-[1.7] md:text-[22px]">
+          <p className="text-[20px] leading-[1.55] text-[#170E14] sm:text-[20px] sm:leading-[1.7] md:text-[22px]">
             {isHe
-              ? "המומחים של מיאושי בנו עבורכם משחקי מיניות בשלבים — כל שלב הוא פעולה מינית מסוימת שאתם מבצעים יחד. חלק מהמשחקים משלבים צעצועי מין. חלק לא. ההחלטה איתכם."
-              : "Mioshy's experts have built you sexual games in stages — each stage is a specific sexual act you perform together. Some games incorporate sex toys. Some don't. The choice is yours."}
+              ? "המומחים של מיאושי בנו עבורכם משחקי מיניות בשלבים - כל שלב הוא פעולה מינית מסוימת שאתם מבצעים יחד. חלק מהמשחקים משלבים צעצועי מין. חלק לא. ההחלטה איתכם."
+              : "Mioshy's experts have built you sexual games in stages - each stage is a specific sexual act you perform together. Some games incorporate sex toys. Some don't. The choice is yours."}
           </p>
 
-          <p className="mt-4 text-[16px] leading-[1.65] text-[#4A3A45] sm:mt-7 sm:text-[18px] sm:leading-[1.75] md:text-[19px]">
+          {/* Per Itzik 2026-05-07: bumped from 18-19px to 20px for
+              parity with the lead paragraph above — the two should
+              read as one continuous voice, not a stepdown. */}
+          <p className="mt-4 text-[20px] leading-[1.6] text-[#4A3A45] sm:mt-7 sm:text-[20px] sm:leading-[1.7]">
             {isHe
-              ? "כולם מכוונים למטרה אחת — חוויה מינית בלתי-נשכחת. המשחקים מיניים. אירוטיים. מעוררים. ובנויים בכוונה כך, שלא תרצו להפסיק לשחק."
-              : "All of them point to one goal — an unforgettable sexual experience. The games are sexual. Erotic. Arousing. And built — on purpose — so you won't want to stop playing."}
+              ? "כולם מכוונים למטרה אחת - חוויה מינית בלתי-נשכחת. המשחקים מיניים. אירוטיים. מעוררים. ובנויים בכוונה כך, שלא תרצו להפסיק לשחק."
+              : "All of them point to one goal - an unforgettable sexual experience. The games are sexual. Erotic. Arousing. And built - on purpose - so you won't want to stop playing."}
           </p>
 
           <p
-            className="mt-4 text-[17px] leading-[1.6] text-[#8B2638] sm:mt-7 sm:text-[18px] sm:leading-[1.7]"
+            className="mt-4 text-[20px] leading-[1.55] text-[#8B2638] sm:mt-7 sm:text-[18px] sm:leading-[1.7]"
             style={{ fontFamily: "'Frank Ruhl Libre', serif", fontStyle: "italic" }}
           >
             {isHe
-              ? "— זה לא משחק שמשחקים פעם וזורקים. זה לילה שחוזרים עליו."
-              : "— this isn't a game you play once and discard. It's a night you come back to."}
+              ? "- זה לא משחק שמשחקים פעם וזורקים. זה לילה שחוזרים עליו."
+              : "- this isn't a game you play once and discard. It's a night you come back to."}
           </p>
         </div>
       </div>
@@ -121,7 +124,7 @@ export function AdultsManifestoSection({ isHe }: { isHe: boolean }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 2. PROOF — gigantic stats. Single most credibility-loaded section on page.
+// 2. PROOF - gigantic stats. Single most credibility-loaded section on page.
 // ─────────-───────────────────────────────────────────────────────────────────
 
 export function AdultsProofSection({ isHe }: { isHe: boolean }) {
@@ -137,7 +140,7 @@ export function AdultsProofSection({ isHe }: { isHe: boolean }) {
       />
 
       <div className="relative mx-auto max-w-5xl">
-        {/* Eyebrow — bumped to 13px on mobile. */}
+        {/* Eyebrow - bumped to 13px on mobile. */}
         <div className="text-center">
           <span className="inline-flex items-center gap-2.5 text-[13px] font-semibold uppercase tracking-[0.22em] text-[#8B2638] sm:text-[11px] sm:tracking-[0.32em]">
             <span className="h-1.5 w-1.5 rounded-full bg-[#B83C4D] shadow-[0_0_8px_rgba(184,60,77,0.3)]" />
@@ -149,7 +152,7 @@ export function AdultsProofSection({ isHe }: { isHe: boolean }) {
           className="mt-3 text-balance text-center text-[28px] leading-[1.15] tracking-[-0.02em] text-[#170E14] sm:mt-6 sm:text-[36px] sm:leading-[1.1] md:text-[44px]"
           style={{ fontFamily: "'Frank Ruhl Libre', serif", fontWeight: 600 }}
         >
-          {isHe ? "אחרי משחק אחד — " : "After the first game — "}
+          {isHe ? "אחרי משחק אחד - " : "After the first game - "}
           <span
             className="text-[#B83C4D]"
             style={{ fontStyle: "italic", fontWeight: 500 }}
@@ -158,10 +161,10 @@ export function AdultsProofSection({ isHe }: { isHe: boolean }) {
           </span>
         </h2>
 
-        {/* Two stat cards — tighter top margin on mobile so the
+        {/* Two stat cards - tighter top margin on mobile so the
             "headline → cards" stack feels like one breath. */}
         <div className="mt-6 grid gap-4 sm:mt-14 sm:gap-6 sm:grid-cols-2">
-          {/* Stat 1 — 80% */}
+          {/* Stat 1 - 80% */}
           <div className="rounded-3xl border border-[#EAE0E3] bg-[#FBF5F2] px-10 py-12 text-center shadow-sm">
             <span
               className="block text-[100px] leading-none tracking-[-0.03em] text-[#170E14]"
@@ -171,16 +174,16 @@ export function AdultsProofSection({ isHe }: { isHe: boolean }) {
             </span>
             <div className="mx-auto mt-4 h-px w-20 bg-[#B83C4D]/30" />
             <p
-              className="mx-auto mt-6 max-w-xs text-[17px] leading-[1.55] text-[#4A3A45]"
+              className="mx-auto mt-6 max-w-sm text-[20px] leading-[1.55] text-[#4A3A45] sm:text-[20px] sm:leading-[1.6]"
               style={{ fontFamily: "'Frank Ruhl Libre', serif", fontWeight: 500 }}
             >
               {isHe
-                ? "מהזוגות שרכשו משחק אחד, חזרו לרכוש משחק שני."
+                ? "מהזוגות שרכשו משחק אחד — חזרו לרכוש משחק שני."
                 : "of couples who bought one game came back for a second."}
             </p>
           </div>
 
-          {/* Stat 2 — 50% */}
+          {/* Stat 2 - 50% */}
           <div className="rounded-3xl border border-[#EAE0E3] bg-[#FBF5F2] px-10 py-12 text-center shadow-sm">
             <span
               className="block text-[100px] leading-none tracking-[-0.03em] text-[#170E14]"
@@ -189,38 +192,35 @@ export function AdultsProofSection({ isHe }: { isHe: boolean }) {
               50<span className="text-[0.5em] text-[#B83C4D]">%</span>
             </span>
             <div className="mx-auto mt-4 h-px w-20 bg-[#B83C4D]/30" />
+            {/* Per Itzik 2026-05-07: clearer phrasing — "rכשו את כל
+                המוצרים שלנו" instead of the ambiguous "rכשו את כל
+                הקטלוג". Bumped to 20px on both mobile and desktop. */}
             <p
-              className="mx-auto mt-6 max-w-xs text-[17px] leading-[1.55] text-[#4A3A45]"
+              className="mx-auto mt-6 max-w-sm text-[20px] leading-[1.55] text-[#4A3A45] sm:text-[20px] sm:leading-[1.6]"
               style={{ fontFamily: "'Frank Ruhl Libre', serif", fontWeight: 500 }}
             >
               {isHe
-                ? "מהלקוחות הקיימים רכשו את כל הקטלוג."
-                : "of returning customers ended up owning the whole catalogue."}
+                ? "מהלקוחות שלנו — רכשו את כל המוצרים שלנו."
+                : "of our customers ended up owning every single product."}
             </p>
           </div>
         </div>
 
-        {/* Closing note */}
-        <p
-          className="mx-auto mt-10 max-w-xl text-center text-[15px] text-[#8B2638]/70"
-          style={{ fontFamily: "'Frank Ruhl Libre', serif", fontStyle: "italic" }}
-        >
-          {isHe
-            ? "— הסטטיסטיקות הן מהזוגות שלנו. לא ממכירות, לא מתסקירים."
-            : "— numbers are from our couples. Not from sales decks, not from reviews."}
-        </p>
+        {/* "Numbers are from our couples..." disclaimer removed
+            per Itzik 2026-05-07 — was over-explaining and softening
+            the proof. The stats stand on their own. */}
       </div>
     </section>
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// (removed) "INSIDE EACH GAME — three intensity levels" — section pulled per
+// (removed) "INSIDE EACH GAME - three intensity levels" - section pulled per
 // product decision; no replacement.
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 4. PRICING — dark plan cards, in keeping with the after-dark mood.
+// 4. PRICING - dark plan cards, in keeping with the after-dark mood.
 // ───────────-─────────────────────────────────────────────────────────────────
 
 export function AdultsPricingSection({
@@ -235,17 +235,17 @@ export function AdultsPricingSection({
   const singlePerks = [
     isHe ? "גישה מלאה למשחק שבחרתם" : "Full access to the game you pick",
     isHe ? "שלוש רמות עוצמה בתוך אותו משחק" : "All three intensity levels included",
-    isHe ? "נשאר שלכם לצמיתות" : "Yours forever — no subscription",
+    isHe ? "נשאר שלכם לצמיתות" : "Yours forever - no subscription",
   ];
   const monthlyPerks = [
     isHe ? "שני בני הזוג תחת מינוי אחד" : "Both partners on one plan",
-    isHe ? "כל אחד פותח משחק בחודש — שניים ביחד" : "Each unlocks one game / month — two together",
+    isHe ? "כל אחד פותח משחק בחודש - שניים ביחד" : "Each unlocks one game / month - two together",
     isHe ? "השותף/ה מצטרף/ת אוטומטית במייל הזמנה" : "Partner joins automatically by email invite",
     isHe ? "גישה לכל הקטלוג" : "Full catalogue access",
     isHe ? "ביטול בכל עת" : "Cancel anytime",
   ];
   const annualPerks = [
-    isHe ? "כל מה שכלול במינוי הזוגי — כל השנה" : "Everything in the couple plan — all year",
+    isHe ? "כל מה שכלול במינוי הזוגי - כל השנה" : "Everything in the couple plan - all year",
     isHe ? "24 משחקים לשניכם בשנה" : "24 games together per year",
     isHe ? "בונוס: משחק מהקטלוג הראשי ל-30 יום" : "Bonus: one core-catalogue game for 30 days",
     isHe ? "גישה מוקדמת למשחקים חדשים" : "Early access to new releases",
@@ -311,8 +311,8 @@ export function AdultsPricingSection({
               periodLabel={pricing.monthly.periodLabel}
               subtitle={
                 isHe
-                  ? "כל אחד פותח משחק בחודש — שניים ביחד"
-                  : "Each unlocks one a month — two together"
+                  ? "כל אחד פותח משחק בחודש - שניים ביחד"
+                  : "Each unlocks one a month - two together"
               }
               perks={monthlyPerks}
               ctaHref="#catalogue"
@@ -465,36 +465,72 @@ function DarkPlanCard({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 5. FAQ — single-column dark accordion. Distinct from /games + /journey
+// 5. FAQ - single-column dark accordion. Distinct from /games + /journey
 //    (whi-h use the homepage two-column V2 FAQ). Keeps the page identity.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function AdultsFaqSection({ isHe }: { isHe: boolean }) {
-  // First and last items removed per design review.
+  // FAQ rewritten per Itzik 2026-05-07: 5 anchor questions every couple
+  // asks before/after buying — why it's worth it, when to play, what
+  // they actually get, refund policy, partner access. Two product
+  // questions (toys, "what if one isn't ready") kept as the trailing
+  // items because they come up after the value/access concerns.
   const items = [
+    {
+      qHe: "למה זה טוב? איך זה שונה מטיפים שאני יכול למצוא ברשת?",
+      qEn: "Why is this good? How is it different from tips I'd find online?",
+      aHe:
+        "המשחקים שלנו נכתבו ע״י מומחים בעולם הסקסולוגיה והטיפול הזוגי, ועוצבו כחוויה שלמה — לא רשימת טיפים. כל משחק הוא מסע של שלבים, עם מתח שמצטבר ושיא שאתם זוכרים. זה מה שלא תמצאו במאמר באינטרנט: לא רעיונות, אלא מסגרת שמובילה אתכם דרך הערב.",
+      aEn:
+        "Our games are written by leading sexologists and couples therapists, and designed as a complete experience — not a tip list. Each game is a staged journey with rising tension and a peak you'll remember. That's what an internet article can't give you: not ideas, but a framework that walks you through the evening.",
+    },
+    {
+      qHe: "מה אנחנו מקבלים בתום הרכישה?",
+      qEn: "What do we get when we finish purchasing?",
+      aHe:
+        "גישה מיידית למשחק שרכשתם, לכל החיים, לשני בני הזוג. נפתח אזור פרטי ב״מיאושי שלי״ עם כל המשחקים שלכם — אפשר לחזור אליהם כמה פעמים שתרצו, בלי הגבלה. אין הורדות, אין התקנות. פותחים מהדפדפן בכל מכשיר.",
+      aEn:
+        "Immediate access to the game you bought, for life, for both partners. A private space opens up in 'My Mioshy' with all your games — replay as many times as you want, no limits. No downloads, no installs. Open it on any device through your browser.",
+    },
+    {
+      qHe: "מתי מומלץ לשחק? צריך הכנה?",
+      qEn: "When is it recommended to play? Do we need to prepare?",
+      aHe:
+        "הזמן הכי טוב הוא כשאתם רגועים, פנויים, ובמצב רוח. ערב סוף שבוע, חופשה קצרה, כל זמן שאתם מקדישים לעצמכם בלי הסחות. אין הכנה — נכנסים למשחק והוא מוביל אתכם. כל משחק כולל ציון של מה שצריך (אם בכלל) לפני ההתחלה.",
+      aEn:
+        "The best time is when you're relaxed, free, and in the mood. A weekend evening, a short getaway, any time you set aside for yourselves with no distractions. No prep needed — open the game and it leads you. Each game lists what's needed (if anything) before you start.",
+    },
+    {
+      qHe: "האם בן/בת הזוג מקבלים גישה למה שרכשתי?",
+      qEn: "Does my partner get access to what I purchased?",
+      aHe:
+        "כן, אוטומטית. כשאתם רוכשים, נפתח לכם ״חלל זוגי״ — אזור משותף לשניכם. כל מה שאחד מכם רוכש פתוח לשני, מיד, באותו רגע. רכישה אחת = שניכם בפנים. אין צורך לקנות פעמיים.",
+      aEn:
+        "Yes, automatically. When you purchase, a 'couple space' opens for both of you — a shared area. Anything one of you buys is immediately accessible to the other. One purchase = both of you in. No need to buy twice.",
+    },
+    {
+      qHe: "האם אפשר לקבל כסף חזרה אם זה לא מתאים?",
+      qEn: "Can we get a refund if it's not a fit?",
+      aHe:
+        "כן. עד 14 יום מהרכישה, אם לא התחלתם לשחק, נחזיר את התשלום במלואו — כתבו אלינו ב-mioshyoffice@gmail.com ונסגור את זה. אחרי שהתחלתם — התוכן נחשף ולכן הרכישה לא ניתנת להחזרה.",
+      aEn:
+        "Yes. Up to 14 days from purchase, if you haven't started playing, we'll refund in full — email us at mioshyoffice@gmail.com and we'll handle it. Once you've started, the content has been revealed so the purchase becomes non-refundable.",
+    },
     {
       qHe: "צריך לקנות צעצועי מין?",
       qEn: "Do I need to buy sex toys?",
       aHe:
-        "תלוי במשחק. חלק מהמשחקים משלבים צעצועים — וזה מצוין למפורט בעמוד המשחק. חלק לא דורשים שום ציוד. אתם בוחרים.",
+        "תלוי במשחק. חלק מהמשחקים משלבים צעצועים — וזה מצוין בעמוד של כל משחק. חלק לא דורשים שום ציוד. אתם בוחרים מראש.",
       aEn:
-        "Depends on the game. Some games incorporate toys — clearly listed on each game's page. Others require no equipment at all. You choose.",
-    },
-    {
-      qHe: "איך השותף/ה שלי מצטרף/ת?",
-      qEn: "How does my partner join?",
-      aHe:
-        "במינוי זוגי אתם מזינים את כתובת המייל שלהם. הם מקבלים מייל הזמנה ומצטרפים בלחיצה. כל משחק שאחד מכם פותח נגיש לשניכם.",
-      aEn:
-        "On a couple plan, you enter their email. They get an invite and join with one click. Every game either of you unlocks is accessible to both of you.",
+        "Depends on the game. Some games incorporate toys — clearly listed on each game's page. Others require no equipment at all. You choose upfront.",
     },
     {
       qHe: "זה דיסקרטי?",
       qEn: "Is this discreet?",
       aHe:
-        "לחלוטין. החיוב מופיע תחת Mioshy בלבד — בלי מילים אחרות, בלי שמות משחקים. כל הנתונים מוצפנים, אנחנו לא מוכרים מידע, ואין פרסומות.",
+        "לחלוטין. החיוב מופיע תחת Mioshy בלבד — בלי שמות משחקים, בלי מילים אחרות. כל הנתונים מוצפנים, אנחנו לא מוכרים מידע, ואין פרסומות.",
       aEn:
-        "Completely. Billing shows only as Mioshy — no other words, no game titles. All data is encrypted, we don't sell information, and there are no ads.",
+        "Completely. Billing shows only as Mioshy — no game titles, no other words. All data is encrypted, we don't sell information, and there are no ads.",
     },
     {
       qHe: "מה אם אחד מאיתנו לא מוכן/ה?",
@@ -573,7 +609,7 @@ export function AdultsFaqSection({ isHe }: { isHe: boolean }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 6. CLOSING — single dramatic statement + CTA. The page's last word.
+// 6. CLOSING - single dramatic statement + CTA. The page's last word.
 // ───────────-─────────────────────────────────────────────────────────────────
 
 export function AdultsClosingCta({ isHe }: { isHe: boolean }) {
@@ -644,7 +680,7 @@ export function AdultsClosingCta({ isHe }: { isHe: boolean }) {
         </Link>
 
         <p
-          className="mt-6 text-[14px] text-white/45"
+          className="mt-6 text-[18px] text-white/70 sm:text-[14px] sm:text-white/45"
           style={{ fontFamily: "'Frank Ruhl Libre', serif", fontStyle: "italic" }}
         >
           {isHe
@@ -669,33 +705,32 @@ export function AdultsClosingCta({ isHe }: { isHe: boolean }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Catalogue intro — small editorial heading rendered just above the storefront.
+// Catalogue intro - small editorial heading rendered just above the storefront.
 // Kept as its own -xport so the page can still position the storefront where
 // it wants.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function AdultsCatalogueIntro({ isHe }: { isHe: boolean }) {
   return (
-    <div id="catalogue-intro" className="relative px-4 pb-2 pt-[80px]">
-      {/* Top hairline */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#B83C4D]/20 to-transparent"
-      />
+    /* Per Itzik 2026-05-07: this intro now sits ON the dark catalogue
+       surface (text-white) so it reads as the heading OF the products
+       grid below, not as a stranded section on a separate cream
+       background. Eyebrow accent stays wine; body text is white. */
+    <div id="catalogue-intro" className="relative px-4 pb-6 pt-[40px] sm:pt-[80px]">
       <div className="mx-auto max-w-3xl text-center">
-        <span className="inline-flex items-center gap-2.5 text-[11px] font-semibold uppercase tracking-[0.32em] text-[#8B2638]">
-          <span className="h-1.5 w-1.5 rounded-full bg-[#B83C4D] shadow-[0_0_8px_rgba(184,60,77,0.3)]" />
+        <span className="inline-flex items-center gap-2.5 text-[11px] font-semibold uppercase tracking-[0.32em] text-[#F8C8CE]">
+          <span className="h-1.5 w-1.5 rounded-full bg-[#F43F5E] shadow-[0_0_10px_rgba(244,63,94,0.5)]" />
           {isHe ? "הקטלוג" : "The catalogue"}
         </span>
         <h2
-          className="mt-7 text-[36px] leading-[1.05] tracking-[-0.02em] text-[#170E14] sm:text-[44px] lg:text-[52px]"
+          className="mt-7 text-[36px] leading-[1.05] tracking-[-0.02em] text-white sm:text-[44px] lg:text-[52px]"
           style={{ fontFamily: "'Frank Ruhl Libre', serif", fontWeight: 600 }}
         >
           {isHe ? (
             <>
               בחרו את המשחק{" "}
               <span
-                className="text-[#B83C4D]"
+                className="text-[#F43F5E]"
                 style={{ fontStyle: "italic", fontWeight: 500 }}
               >
                 שמתחיל את הערב.
@@ -705,7 +740,7 @@ export function AdultsCatalogueIntro({ isHe }: { isHe: boolean }) {
             <>
               Pick the game{" "}
               <span
-                className="text-[#B83C4D]"
+                className="text-[#F43F5E]"
                 style={{ fontStyle: "italic", fontWeight: 500 }}
               >
                 that opens the evening.
@@ -718,7 +753,7 @@ export function AdultsCatalogueIntro({ isHe }: { isHe: boolean }) {
   );
 }
 
-// Backward-compat — still exported, but nobody on the new page uses it.
+// Backward-compat - still exported, but nobody on the new page uses it.
 export function AdultsMarketingSections({
   isHe,
   hero,

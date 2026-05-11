@@ -12,9 +12,12 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = params;
   const base = siteUrl();
+  const isHe = locale === "he";
   return {
-    title: "Mioshy - משחק מקומי",
-    description: "משחק סולמות ונחשים לזוגות, על מכשיר אחד.",
+    title: isHe ? "Mioshy - משחק מקומי" : "Mioshy - Local Game",
+    description: isHe
+      ? "משחק סולמות ונחשים לזוגות, על מכשיר אחד."
+      : "Snakes & Ladders for couples, played on a single device.",
     alternates: {
       canonical: `${base}/${locale}/game/local`,
       languages: {

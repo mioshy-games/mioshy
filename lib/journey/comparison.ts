@@ -2,7 +2,7 @@
  * lib/journey/comparison.ts
  *
  * Synchronizes two partners' journey responses into a single
- * "question matrix" — one row per question, with each partner's
+ * "question matrix" - one row per question, with each partner's
  * answer side-by-side and a divergence indicator.
  *
  * Why this is a separate file from analysis.ts:
@@ -12,7 +12,7 @@
  *   a time.
  *
  *   This file produces a COMPARISON between two people. It cares
- *   about question-level divergence — the clinical "where do they
+ *   about question-level divergence - the clinical "where do they
  *   see things differently" view that powers the side-by-side
  *   couple workspace.
  *
@@ -32,7 +32,7 @@ export type DivergenceLevel =
   | "match" //  identical or near-identical answers
   | "minor" //  small gap, expected variation
   | "moderate" //   meaningful gap worth noting
-  | "major"; // significant gap — flag in clinical view
+  | "major"; // significant gap - flag in clinical view
 
 export interface ComparisonRow {
   /** Stable question id from QUESTIONS catalog. */
@@ -42,7 +42,7 @@ export interface ComparisonRow {
   question_en: string;
   /** Question shape (likert / single / multi / ranking / reflection). */
   type: Question["type"];
-  /** Display strings — formatted exactly as the admin should read them. */
+  /** Display strings - formatted exactly as the admin should read them. */
   answer_a_display: string | null;
   answer_b_display: string | null;
   /** Raw values, kept for advanced UI affordances (charts, badges). */
@@ -60,7 +60,7 @@ export interface ComparisonRow {
 
 /**
  * Collapses a divergence score (0..1) into the four-level bucket the
- * UI consumes. Thresholds picked by clinical heuristic — tuned so
+ * UI consumes. Thresholds picked by clinical heuristic - tuned so
  * "major" only fires for genuinely meaningful gaps, not for minor
  * Likert noise (a 1-point gap on a 5-point scale is 0.25, "minor").
  */
@@ -130,7 +130,7 @@ function computeDivergence(
     return singleDivergence(a, b);
   if (q.type === "multi_choice") return multiDivergence(a, b);
   if (q.type === "ranking") return rankingDivergence(a, b);
-  // Reflection (free text) — we don't auto-score; treat as "minor"
+  // Reflection (free text) - we don't auto-score; treat as "minor"
   // by default. Admin can override via journey_feedback annotations.
   return 0.2;
 }
@@ -192,7 +192,7 @@ function formatAnswer(
   }
 
   if (ans.kind === "text") {
-    // Free-text reflection — truncate aggressively for the matrix
+    // Free-text reflection - truncate aggressively for the matrix
     // cell. Admin opens the row to see full text.
     const t = ans.text.trim();
     return t.length > 90 ? `${t.slice(0, 90)}…` : t;
@@ -202,12 +202,12 @@ function formatAnswer(
 }
 
 /**
- * Bilingual prompt extractor — handles the schema asymmetry between
+ * Bilingual prompt extractor - handles the schema asymmetry between
  * Likert questions (which expose plain `he`/`en` fields) and every
  * other type (which uses `he_prompt`/`en_prompt`). The runtime check
  * is needed because TypeScript's discriminated union narrows on
  * `q.type`, but we don't want to enumerate every type just to read
- * the prompt — there are 6 of them.
+ * the prompt - there are 6 of them.
  */
 function readPrompt(q: Question): { he: string; en: string } {
   const anyQ = q as unknown as Record<string, unknown>;
@@ -226,13 +226,13 @@ function readPrompt(q: Question): { he: string; en: string } {
  * Builds the question matrix for two partners.
  *
  * `responsesA` / `responsesB` are the arrays as returned from the
- * journey_responses table for each partner. Order doesn't matter —
+ * journey_responses table for each partner. Order doesn't matter -
  * we index by question_id.
  *
  * Returns rows in the canonical question order (the order they were
  * authored in lib/journey/questions.ts), filtered to questions where
  * AT LEAST ONE partner answered. Questions both partners skipped
- * are dropped — they'd just be noise in the matrix.
+ * are dropped - they'd just be noise in the matrix.
  *
  * The output is sorted with highest-divergence rows first when
  * `sortBy = "divergence"`. Default is canonical question order so
@@ -274,7 +274,7 @@ export function buildComparisonMatrix(
       divergence = computeDivergence(q, aVal, bVal);
     } else {
       one_sided = true;
-      // Only one side answered — render with its own divergence band so
+      // Only one side answered - render with its own divergence band so
       // the row is visually distinct in the UI but doesn't dominate the
       // sort-by-divergence ordering.
       divergence = 0.5;
@@ -312,7 +312,7 @@ export function buildComparisonMatrix(
 }
 
 /**
- * Quick aggregate stats for the matrix — used in the header strip
+ * Quick aggregate stats for the matrix - used in the header strip
  * of the comparison view (e.g. "23 questions · 4 major · 9 match").
  */
 export function summarizeMatrix(rows: ComparisonRow[]) {

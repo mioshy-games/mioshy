@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Mail, MessageCircleHeart, Clock } from "lucide-react";
+import { Mail, MessageCircle, Clock } from "lucide-react";
 
 export async function generateMetadata({
   params,
@@ -10,77 +10,133 @@ export async function generateMetadata({
   return {
     title: isHe ? "יצירת קשר - מיאושי" : "Contact - Mioshy",
     description: isHe
-      ? "איך ליצור קשר עם הצוות של מיאושי"
-      : "How to reach the Mioshy team",
+      ? "איך ליצור קשר עם הצוות של מיאושי — אימייל וואטסאפ, מענה תוך 48 שעות"
+      : "How to reach the Mioshy team — email, WhatsApp, reply within 48 hours",
   };
 }
 
+/**
+ * /contact — refreshed per Itzik 2026-05-07.
+ *
+ *   • Background flipped from the dark site bg to the cream palette
+ *     (#FBF5F2) used on /journey, /mioshy-sex marketing wrappers — the
+ *     contact page is editorial, not utility-dark.
+ *   • Email is now `mioshyoffice@gmail.com` (was hello@mioshy.com).
+ *   • Removed the "Sun–Thu 9-18 Israel time" availability box — replaced
+ *     with a calmer "we reply within 48h" line.
+ *   • Added a WhatsApp option to +972 545215193 — opens wa.me with a
+ *     preset Hebrew message so the user doesn't have to type from
+ *     scratch.
+ */
 export default function ContactPage({
   params,
 }: {
   params: { locale: string };
 }) {
   const isHe = params.locale === "he";
+
+  // wa.me expects digits-only phone with country code, no plus sign.
+  const waPhone = "972545215193";
+  // Optional pre-filled message — encoded for the URL.
+  const waMessage = encodeURIComponent(
+    isHe
+      ? "שלום מיאושי, יש לי שאלה על השירות:"
+      : "Hi Mioshy, I have a question about the service:",
+  );
+  const waUrl = `https://wa.me/${waPhone}?text=${waMessage}`;
+
   return (
     <main
       dir={isHe ? "rtl" : "ltr"}
-      className="min-h-[70dvh] bg-[var(--mio-bg)] px-4 py-20 text-white"
+      className="min-h-[70dvh] bg-[#FBF5F2] px-4 py-20 text-[#170E14]"
     >
       <div className="mx-auto max-w-2xl">
-        <h1 className="font-heading text-4xl font-bold tracking-tight sm:text-5xl">
-          {isHe ? "יצירת קשר" : "Contact us"}
+        {/* Eyebrow + headline */}
+        <span className="inline-flex items-center gap-2.5 text-[12px] font-semibold uppercase tracking-[0.22em] text-[#8B2638]">
+          <span className="h-[7px] w-[7px] rounded-sm bg-[#B83C4D] shadow-[0_0_0_3px_rgba(184,60,77,0.18)]" />
+          {isHe ? "יצירת קשר" : "Contact"}
+        </span>
+        <h1
+          className="mt-5 text-[44px] leading-[1.05] tracking-[-0.02em] sm:text-[56px]"
+          style={{
+            fontFamily:
+              "var(--font-frank-ruhl), 'Frank Ruhl Libre', serif",
+            fontWeight: 600,
+          }}
+        >
+          {isHe ? "מדברים?" : "Let's talk."}
         </h1>
-        <p className="mt-4 text-lg leading-relaxed text-white/75">
+        <p className="mt-5 max-w-xl text-[19px] leading-[1.65] text-[#4A3A45]">
           {isHe
-            ? "אנחנו כאן כדי לעזור. תפנו אלינו בשאלות, הצעות או תמיכה - נחזור תוך יום עסקים."
-            : "We're here to help. Reach out with questions, suggestions, or support - we'll respond within one business day."}
+            ? "אנחנו כאן כדי לענות. שאלות, תמיכה, רעיונות — תכתבו לנו במייל או בוואטסאפ. מענה תוך 48 שעות, ולפעמים מהר יותר."
+            : "We're here to answer. Questions, support, ideas — email us or send a WhatsApp. We reply within 48 hours, often sooner."}
         </p>
 
         <div className="mt-10 space-y-4">
+          {/* Email */}
           <a
-            href="mailto:hello@mioshy.com"
-            className="flex items-start gap-4 rounded-2xl border border-purple-500/20 bg-[var(--mio-card)] p-6 backdrop-blur-md transition hover:border-purple-400/40"
+            href="mailto:mioshyoffice@gmail.com"
+            className="group flex items-start gap-4 rounded-2xl border border-[#EAE0E3] bg-white p-6 shadow-sm transition hover:border-[#B83C4D]/40 hover:shadow-lg"
           >
-            <Mail className="mt-1 h-6 w-6 text-[var(--mio-purple)]" />
-            <div>
-              <p className="text-lg font-bold">
+            <span className="mt-1 grid size-11 shrink-0 place-items-center rounded-full bg-[#FBE9EC] text-[#B83C4D] transition group-hover:bg-[#B83C4D] group-hover:text-white">
+              <Mail className="size-5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[17px] font-bold text-[#170E14]">
                 {isHe ? "מייל" : "Email"}
               </p>
-              <p className="mt-1 text-sm text-white/70">
+              <p className="mt-1 text-[15px] leading-[1.55] text-[#7A6A75]">
                 {isHe
-                  ? "לכל דבר - תמיכה, שאלות, הצעות"
-                  : "For anything - support, questions, suggestions"}
+                  ? "לכל דבר — תמיכה, שאלות, הצעות, החזר כספי."
+                  : "For anything — support, questions, suggestions, refunds."}
               </p>
-              <p className="mt-2 font-semibold text-fuchsia-300">
-                hello@mioshy.com
+              <p className="mt-3 text-[18px] font-semibold text-[#B83C4D] underline-offset-4 group-hover:underline">
+                mioshyoffice@gmail.com
               </p>
             </div>
           </a>
 
-          <div className="flex items-start gap-4 rounded-2xl border border-purple-500/20 bg-[var(--mio-card)] p-6 backdrop-blur-md">
-            <MessageCircleHeart className="mt-1 h-6 w-6 text-[var(--mio-rose)]" />
-            <div>
-              <p className="text-lg font-bold">
-                {isHe ? "שאלות על המסע האישי" : "Questions about the journey"}
+          {/* WhatsApp */}
+          <a
+            href={waUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group flex items-start gap-4 rounded-2xl border border-[#EAE0E3] bg-white p-6 shadow-sm transition hover:border-emerald-500/40 hover:shadow-lg"
+          >
+            <span className="mt-1 grid size-11 shrink-0 place-items-center rounded-full bg-emerald-100 text-emerald-700 transition group-hover:bg-emerald-500 group-hover:text-white">
+              <MessageCircle className="size-5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[17px] font-bold text-[#170E14]">
+                {isHe ? "וואטסאפ" : "WhatsApp"}
               </p>
-              <p className="mt-1 text-sm text-white/70">
+              <p className="mt-1 text-[15px] leading-[1.55] text-[#7A6A75]">
                 {isHe
-                  ? "אם יש לכם שאלות על השאלון, הניתוח, או התוכנית השבועית - נשמח לענות לפני שתתחייבו."
-                  : "If you have questions about the questionnaire, analysis, or weekly plan - we're happy to answer before you commit."}
+                  ? "מהיר וכיף. שלחו הודעה ונחזור אליכם."
+                  : "Fast and friendly. Send a message and we'll come back to you."}
+              </p>
+              <p className="mt-3 text-[18px] font-semibold text-emerald-700 underline-offset-4 group-hover:underline">
+                {/* The +972 with a leading + reads correctly in HE
+                    when the surrounding direction is RTL because the
+                    + is a neutral. */}
+                +972 54-521-5193
               </p>
             </div>
-          </div>
+          </a>
 
-          <div className="flex items-start gap-4 rounded-2xl border border-purple-500/20 bg-[var(--mio-card)] p-6 backdrop-blur-md">
-            <Clock className="mt-1 h-6 w-6 text-[var(--mio-purple)]" />
-            <div>
-              <p className="text-lg font-bold">
-                {isHe ? "זמני מענה" : "Response times"}
+          {/* Response-time card — calm, no clock face */}
+          <div className="flex items-start gap-4 rounded-2xl border border-[#EAE0E3] bg-[#FBE9EC]/40 p-6">
+            <span className="mt-1 grid size-11 shrink-0 place-items-center rounded-full bg-white text-[#8B2638]">
+              <Clock className="size-5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[17px] font-bold text-[#170E14]">
+                {isHe ? "זמן מענה" : "Response time"}
               </p>
-              <p className="mt-1 text-sm text-white/70">
+              <p className="mt-1 text-[15px] leading-[1.55] text-[#4A3A45]">
                 {isHe
-                  ? "ימים א׳–ה׳, 09:00–18:00 (שעון ישראל). נחזור תוך יום עסקים אחד."
-                  : "Sun–Thu, 9am–6pm (Israel time). We respond within one business day."}
+                  ? "מענה תוך 48 שעות — בכל יום, גם בסופי שבוע. אם זה דחוף, וואטסאפ הוא הדרך המהירה."
+                  : "We reply within 48 hours — every day, including weekends. If it's urgent, WhatsApp is the fastest way."}
               </p>
             </div>
           </div>

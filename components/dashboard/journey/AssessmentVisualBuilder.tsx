@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * AssessmentVisualBuilder — drag-free WYSIWYG editor for the
+ * AssessmentVisualBuilder - drag-free WYSIWYG editor for the
  * questions inside an assessment_payload. Phase 3 step 5.
  *
  * Why drag-free: drag-and-drop on the web has cross-browser quirks
@@ -14,11 +14,12 @@
  *     The parent (AssessmentEditor) decides when to save.
  *
  * Keeps the existing JSON editor as a power-user fallback in
- * AssessmentEditor — this component is the friendly default.
+ * AssessmentEditor - this component is the friendly default.
  */
 
 import { useId } from "react";
 import {
+  AlertCircle,
   ChevronDown,
   ChevronUp,
   Plus,
@@ -28,7 +29,76 @@ import type {
   JourneyAssessmentPayload,
   JourneyAssessmentQuestion,
   JourneyAssessmentQuestionKind,
+  JourneyAudience,
 } from "@/lib/journey-content/types";
+
+// ─────────────────────────────────────────────────────────────────────
+// Validation
+// ─────────────────────────────────────────────────────────────────────
+
+export interface AssessmentValidationIssue {
+  questionIdx: number | null;  // null = payload-level
+  message: string;
+}
+
+/**
+ * Validate the assessment payload. Returns list of issues (empty when
+ * valid). Caller (AssessmentEditor) renders a summary + blocks save
+ * when issues.length > 0.
+ */
+export function validateAssessmentPayload(
+  p: JourneyAssessmentPayload | null,
+): AssessmentValidationIssue[] {
+  if (!p) return [{ questionIdx: null, message: "Payload is empty" }];
+  const issues: AssessmentValidationIssue[] = [];
+  const questions = p.questions ?? [];
+  if (questions.length === 0) {
+    issues.push({ questionIdx: null, message: "No questions defined" });
+  }
+  // Duplicate ids
+  const seenIds = new Map<string, number>();
+  for (let i = 0; i < questions.length; i++) {
+    const q = questions[i];
+    if (!q.id || !q.id.trim()) {
+      issues.push({ questionIdx: i, message: `Question ${i + 1}: missing id` });
+    } else if (seenIds.has(q.id)) {
+      issues.push({
+        questionIdx: i,
+        message: `Question ${i + 1}: duplicate id "${q.id}" (also #${seenIds.get(q.id)! + 1})`,
+      });
+    } else {
+      seenIds.set(q.id, i);
+    }
+    if (!q.prompt_he || !q.prompt_he.trim()) {
+      issues.push({
+        questionIdx: i,
+        message: `Question ${i + 1}: prompt_he is empty`,
+      });
+    }
+    if (
+      (q.kind === "single_choice" ||
+        q.kind === "multiple_choice" ||
+        q.kind === "ranking") &&
+      (!q.options || q.options.length < 2)
+    ) {
+      issues.push({
+        questionIdx: i,
+        message: `Question ${i + 1}: ${q.kind} needs at least 2 options`,
+      });
+    }
+    if (q.kind === "scale") {
+      const min = q.scale_min ?? 1;
+      const max = q.scale_max ?? 7;
+      if (min >= max) {
+        issues.push({
+          questionIdx: i,
+          message: `Question ${i + 1}: scale min (${min}) must be less than max (${max})`,
+        });
+      }
+    }
+  }
+  return issues;
+}
 
 const QUESTION_KINDS: Array<{
   value: JourneyAssessmentQuestionKind;
@@ -99,31 +169,61 @@ export function AssessmentVisualBuilder({
 
   return (
     <div className="space-y-4">
-      {/* Intro / outro meta */}
+      {/* Intro / outro meta — bilingual */}
       <div className="space-y-3 rounded-md border border-border bg-card/30 p-3">
-        <div>
-          <label className="text-xs font-semibold text-muted-foreground">
-            Intro (Hebrew)
-          </label>
-          <textarea
-            value={current.intro_he ?? ""}
-            onChange={(e) => updateMeta({ intro_he: e.target.value || null })}
-            rows={2}
-            className="mt-1 w-full rounded-md border border-border bg-background p-2 text-sm"
-            placeholder="טקסט פתיחה — אופציונלי"
-          />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground">
+              Intro (Hebrew)
+            </label>
+            <textarea
+              value={current.intro_he ?? ""}
+              onChange={(e) => updateMeta({ intro_he: e.target.value || null })}
+              rows={2}
+              dir="rtl"
+              className="mt-1 w-full rounded-md border border-border bg-background p-2 text-sm"
+              placeholder="טקסט פתיחה - אופציונלי"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground">
+              Intro (English)
+            </label>
+            <textarea
+              value={current.intro_en ?? ""}
+              onChange={(e) => updateMeta({ intro_en: e.target.value || null })}
+              rows={2}
+              className="mt-1 w-full rounded-md border border-border bg-background p-2 text-sm"
+              placeholder="Optional intro"
+            />
+          </div>
         </div>
-        <div>
-          <label className="text-xs font-semibold text-muted-foreground">
-            Outro (Hebrew)
-          </label>
-          <textarea
-            value={current.outro_he ?? ""}
-            onChange={(e) => updateMeta({ outro_he: e.target.value || null })}
-            rows={2}
-            className="mt-1 w-full rounded-md border border-border bg-background p-2 text-sm"
-            placeholder="טקסט סיום — אופציונלי"
-          />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground">
+              Outro (Hebrew)
+            </label>
+            <textarea
+              value={current.outro_he ?? ""}
+              onChange={(e) => updateMeta({ outro_he: e.target.value || null })}
+              rows={2}
+              dir="rtl"
+              className="mt-1 w-full rounded-md border border-border bg-background p-2 text-sm"
+              placeholder="טקסט סיום - אופציונלי"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground">
+              Outro (English)
+            </label>
+            <textarea
+              value={current.outro_en ?? ""}
+              onChange={(e) => updateMeta({ outro_en: e.target.value || null })}
+              rows={2}
+              className="mt-1 w-full rounded-md border border-border bg-background p-2 text-sm"
+              placeholder="Optional outro"
+            />
+          </div>
         </div>
       </div>
 
@@ -283,23 +383,39 @@ function QuestionCard({
         </div>
       </div>
 
-      {/* Prompt */}
-      <div className="mt-3">
-        <label className="text-[11px] font-semibold text-muted-foreground" htmlFor={`${idIn}-prompt`}>
-          Prompt (Hebrew, required)
-        </label>
-        <textarea
-          id={`${idIn}-prompt`}
-          value={q.prompt_he}
-          onChange={(e) => setField("prompt_he", e.target.value)}
-          rows={2}
-          className="mt-1 w-full rounded-md border border-border bg-background p-2 text-sm"
-          placeholder="...באיזו תדירות"
-        />
+      {/* Prompts — HE + EN side-by-side */}
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <div>
+          <label className="text-[11px] font-semibold text-muted-foreground" htmlFor={`${idIn}-prompt-he`}>
+            Prompt (Hebrew, required)
+          </label>
+          <textarea
+            id={`${idIn}-prompt-he`}
+            value={q.prompt_he}
+            onChange={(e) => setField("prompt_he", e.target.value)}
+            rows={2}
+            dir="rtl"
+            className="mt-1 w-full rounded-md border border-border bg-background p-2 text-sm"
+            placeholder="...באיזו תדירות"
+          />
+        </div>
+        <div>
+          <label className="text-[11px] font-semibold text-muted-foreground" htmlFor={`${idIn}-prompt-en`}>
+            Prompt (English, optional)
+          </label>
+          <textarea
+            id={`${idIn}-prompt-en`}
+            value={q.prompt_en ?? ""}
+            onChange={(e) => setField("prompt_en", e.target.value || null)}
+            rows={2}
+            className="mt-1 w-full rounded-md border border-border bg-background p-2 text-sm"
+            placeholder="How often do you..."
+          />
+        </div>
       </div>
 
-      {/* Required toggle */}
-      <div className="mt-2">
+      {/* Required + Audience row */}
+      <div className="mt-2 flex flex-wrap items-center gap-4">
         <label className="inline-flex items-center gap-2 text-[12px] text-muted-foreground">
           <input
             type="checkbox"
@@ -308,6 +424,26 @@ function QuestionCard({
           />
           Required
         </label>
+        <div className="inline-flex items-center gap-1.5">
+          <label
+            className="text-[11px] font-semibold text-muted-foreground"
+            htmlFor={`${idIn}-audience`}
+          >
+            Audience
+          </label>
+          <select
+            id={`${idIn}-audience`}
+            value={q.audience ?? "both"}
+            onChange={(e) =>
+              setField("audience", e.target.value as JourneyAudience)
+            }
+            className="rounded-md border border-border bg-background px-2 py-0.5 text-[11px]"
+          >
+            <option value="both">Both partners</option>
+            <option value="owner">Owner only</option>
+            <option value="partner">Partner only</option>
+          </select>
+        </div>
       </div>
 
       {/* Kind-specific fields */}
@@ -371,13 +507,21 @@ function OptionsEditor({
               value={opt.key}
               onChange={(e) => updateAt(idx, { key: e.target.value.trim() })}
               placeholder="key"
-              className="w-24 rounded-md border border-border bg-background px-2 py-1 font-mono text-[11px]"
+              className="w-20 rounded-md border border-border bg-background px-2 py-1 font-mono text-[11px]"
             />
             <input
               type="text"
               value={opt.label_he}
               onChange={(e) => updateAt(idx, { label_he: e.target.value })}
-              placeholder="תווית"
+              placeholder="תווית בעברית"
+              dir="rtl"
+              className="flex-1 rounded-md border border-border bg-background px-2 py-1 text-sm"
+            />
+            <input
+              type="text"
+              value={opt.label_en ?? ""}
+              onChange={(e) => updateAt(idx, { label_en: e.target.value || null })}
+              placeholder="English label"
               className="flex-1 rounded-md border border-border bg-background px-2 py-1 text-sm"
             />
             <button
@@ -447,6 +591,7 @@ function ScaleEditor({
             onChange({ scale_min_label_he: e.target.value || null })
           }
           placeholder="כלל לא"
+          dir="rtl"
           className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1 text-sm"
         />
       </div>
@@ -461,9 +606,72 @@ function ScaleEditor({
             onChange({ scale_max_label_he: e.target.value || null })
           }
           placeholder="מאוד"
+          dir="rtl"
           className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1 text-sm"
         />
       </div>
+      <div>
+        <label className="text-[11px] font-semibold text-muted-foreground">
+          Min label (English)
+        </label>
+        <input
+          type="text"
+          value={q.scale_min_label_en ?? ""}
+          onChange={(e) =>
+            onChange({ scale_min_label_en: e.target.value || null })
+          }
+          placeholder="Not at all"
+          className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1 text-sm"
+        />
+      </div>
+      <div>
+        <label className="text-[11px] font-semibold text-muted-foreground">
+          Max label (English)
+        </label>
+        <input
+          type="text"
+          value={q.scale_max_label_en ?? ""}
+          onChange={(e) =>
+            onChange({ scale_max_label_en: e.target.value || null })
+          }
+          placeholder="Very much"
+          className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1 text-sm"
+        />
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Validation summary — exported for AssessmentEditor to render
+// ─────────────────────────────────────────────────────────────────────
+
+export function ValidationSummary({
+  issues,
+}: {
+  issues: AssessmentValidationIssue[];
+}) {
+  if (issues.length === 0) {
+    return (
+      <div className="rounded-md border border-emerald-300/30 bg-emerald-500/[0.06] p-3 text-xs text-emerald-700 dark:text-emerald-200">
+        ✓ Assessment is valid — ready to save.
+      </div>
+    );
+  }
+  return (
+    <div className="rounded-md border border-amber-300/40 bg-amber-500/[0.06] p-3">
+      <div className="flex items-center gap-1.5 text-xs font-bold text-amber-800 dark:text-amber-100">
+        <AlertCircle className="h-3.5 w-3.5" />
+        {issues.length} issue{issues.length === 1 ? "" : "s"} — fix before save
+      </div>
+      <ul className="mt-2 space-y-1 text-[11px] text-amber-800 dark:text-amber-100/90">
+        {issues.map((iss, i) => (
+          <li key={i} className="flex items-start gap-1.5">
+            <span aria-hidden>•</span>
+            <span>{iss.message}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

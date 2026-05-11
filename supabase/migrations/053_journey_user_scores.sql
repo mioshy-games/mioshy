@@ -1,12 +1,12 @@
 -- ============================================================
--- 053 — journey_user_scores
+-- 053 - journey_user_scores
 -- ============================================================
--- Phase 5 — adaptive foundation. Per-user computed scores plus
+-- Phase 5 - adaptive foundation. Per-user computed scores plus
 -- edge-case flags, refreshed by lib/dashboard/user-scoring.ts.
 --
 -- Design intent (read this before changing the schema):
 --   1. The scores are DERIVED data. Truncating the table at any
---      time is safe — running the recompute job rebuilds it from
+--      time is safe - running the recompute job rebuilds it from
 --      journey_item_responses + journey_scheduled_items + completions.
 --   2. Numbers are 0..1 normalised so the recommendations layer
 --      doesn't hard-code thresholds against absolute counts that
@@ -24,7 +24,7 @@
 -- Privacy:
 --   The scores themselves are derived stats. They never include raw
 --   response text. We do NOT compute or store anything that would
---   constitute a clinical assessment — the scores are operational
+--   constitute a clinical assessment - the scores are operational
 --   signals (responsiveness, completion rate) used by the clinician
 --   triage UI. The clinician makes the clinical judgements.
 -- ============================================================
@@ -43,7 +43,7 @@ create table if not exists public.journey_user_scores (
   conflict_signal    numeric(4,3) check (conflict_signal    between 0 and 1),
   consistency        numeric(4,3) check (consistency        between 0 and 1),
 
-  -- Raw aggregates kept for explainability — the recs layer cites
+  -- Raw aggregates kept for explainability - the recs layer cites
   -- these in human-readable rationales.
   total_items                integer not null default 0,
   total_completed_items      integer not null default 0,

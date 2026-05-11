@@ -4,8 +4,8 @@
  * Feedback list / timeline + the "new feedback" entry button.
  *
  * Two render modes:
- *   • list      — flat newest-first cards, each expandable
- *   • timeline  — same data grouped by day, with a vertical rail and
+ *   • list      - flat newest-first cards, each expandable
+ *   • timeline  - same data grouped by day, with a vertical rail and
  *                 a date header. Used for couple-detail timeline view.
  *
  * The component is intentionally pure-presentational: it receives
@@ -16,7 +16,7 @@
 
 import { useMemo, useState } from "react";
 import { ChevronDown, Pencil, Plus, Trash2 } from "lucide-react";
-// Client-safe imports only — see comment in FeedbackFilterBar.tsx.
+// Client-safe imports only - see comment in FeedbackFilterBar.tsx.
 import {
   SEVERITY_LABEL_HE,
   SEVERITY_TONE,
@@ -75,7 +75,7 @@ export function FeedbackList({
 
   // Group rows by day for timeline view. We treat "day" as YYYY-MM-DD
   // in the server's local TZ; the timeline doesn't need TZ precision
-  // — it's a clinical scan, not an audit log.
+  // - it's a clinical scan, not an audit log.
   const grouped = useMemo(() => {
     if (view !== "timeline") return null;
     const map = new Map<string, JourneyFeedbackHydrated[]>();
@@ -178,7 +178,7 @@ function FeedbackRow({
   const subjectLabel =
     row.subject_user_display ??
     row.subject_user_email ??
-    (row.couple_id ? `Couple ${row.couple_id.slice(0, 8)}` : "—");
+    (row.couple_id ? `Couple ${row.couple_id.slice(0, 8)}` : "-");
 
   return (
     <article className="bg-card rounded-lg border p-4 shadow-sm">
@@ -255,13 +255,13 @@ function FeedbackRow({
   );
 }
 
-// ─── New-button — separate named export ──────────────────────────────────────
+// ─── New-button - separate named export ──────────────────────────────────────
 //
 // Earlier this was attached as a static on FeedbackList (FeedbackList.NewButton
 // = NewButton). That pattern blew up at runtime with
 //   "Cannot read properties of null (reading 'useState')"
 // because Next.js' RSC client-boundary serialiser only treats top-level
-// named exports as proper client components — a property assigned at module
+// named exports as proper client components - a property assigned at module
 // load time isn't exposed as one, so when the server-rendered page tried to
 // hydrate the button React got a dehydrated Suspense node it couldn't
 // connect a hook context to.

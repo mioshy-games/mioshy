@@ -1,5 +1,5 @@
 // ============================================================
-// cron-log.ts — write a journey_cron_runs row at the end of every
+// cron-log.ts - write a journey_cron_runs row at the end of every
 // cron run, no matter how it terminated. Slice 9 observability.
 //
 // Usage from a cron route handler:
@@ -9,7 +9,7 @@
 //     return { rowsProcessed: 17, payload: { delivered: 17, skipped: 4 } };
 //   });
 //
-// Always logs — successes (ok=true), thrown errors (ok=false +
+// Always logs - successes (ok=true), thrown errors (ok=false +
 // error_text), and partial-success cases where the wrapped function
 // returned `ok: false` explicitly. Never throws back to the caller
 // from the log step itself; if the insert fails the cron's outcome
@@ -90,7 +90,7 @@ async function writeRow(
   const admin = createServiceRoleClient();
   if (!admin) {
     console.warn(
-      "[cron-log] no admin client — skipping log row",
+      "[cron-log] no admin client - skipping log row",
       jobName,
     );
     return;
@@ -110,7 +110,7 @@ async function writeRow(
     console.error("[cron-log] insert failed", { jobName, error });
   }
 
-  // Slice 10 — surface failures to the admin pool. Throttled to one
+  // Slice 10 - surface failures to the admin pool. Throttled to one
   // email per job per 6h (per Itzik's brief), but the in-app log row
   // is always written so the health page banner shows every failure.
   if (!ok) {
@@ -133,7 +133,7 @@ async function writeRow(
       });
     } catch (notifyErr) {
       console.error(
-        "[cron-log] notifyAdminPool failed — non-fatal",
+        "[cron-log] notifyAdminPool failed - non-fatal",
         notifyErr,
       );
     }

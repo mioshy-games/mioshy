@@ -10,7 +10,7 @@ import {
 } from "@/lib/journey/priorities";
 
 /**
- * Per-partner pack returned by getPartnerDetailsForCouple — used by the
+ * Per-partner pack returned by getPartnerDetailsForCouple - used by the
  * expert couple-detail page to render two side-by-side columns. Everything
  * surfaced here is derived from a single user_id; couple-level data lives
  * on the parent ExpertClientDetail.
@@ -50,7 +50,7 @@ export type PartnerDetail = {
   recentActivity: ActivityEntry[];
   /** Ordered priority list (highest at index 0); null if not yet ranked. */
   priorityRanking: PriorityKey[] | null;
-  /** ISO timestamp of the latest q_priorities write — drives "ranked X ago"
+  /** ISO timestamp of the latest q_priorities write - drives "ranked X ago"
    *  in the expert UI. Maintained by the trigger added in migration 045;
    *  null when the partner hasn't ranked yet. */
   priorityRankingUpdatedAt: string | null;
@@ -195,7 +195,7 @@ export async function getPartnerDetailsForCouple(
     }
   }
 
-  // ── Demographics + priority ranking — both fetched from journey_responses
+  // ── Demographics + priority ranking - both fetched from journey_responses
   //    in a single query, partitioned by question_id at parse time. ───────
   const demographicsByUser = new Map<
     string,
@@ -242,7 +242,7 @@ export async function getPartnerDetailsForCouple(
       const uid = journeyToUser.get(r.journey_id);
       if (!uid) continue;
 
-      // Priority ranking is single-row per user — partition first.
+      // Priority ranking is single-row per user - partition first.
       if (r.question_id === "q_priorities") {
         if (r.answer?.kind === "ranking" && isValidOrder(r.answer.order)) {
           // updated_at exists post-migration 045; fall back to created_at

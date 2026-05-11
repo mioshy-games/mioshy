@@ -1,14 +1,14 @@
 /**
- * JourneyGraceBanner — surfaces the v3 grace / blocked state across
+ * JourneyGraceBanner - surfaces the v3 grace / blocked state across
  * every journey-adjacent surface (/my, /my/journey, /journey/timeline).
  *
  * Two variants driven by entitlements.journeyState:
  *
- *   "grace"   — 14-day window after natural expiry. Cadence is paused
+ *   "grace"   - 14-day window after natural expiry. Cadence is paused
  *               but past content stays accessible. Amber tone. Optional
  *               "X days remaining" countdown when journeyGraceUntil is
  *               in the future.
- *   "blocked" — grace expired without renewal. Rose tone. The locked
+ *   "blocked" - grace expired without renewal. Rose tone. The locked
  *               screen takes over /journey, /my/journey, /journey/timeline
  *               on its own; this banner remains for /my (the hub) and
  *               anywhere else that doesn't redirect to the locked screen.
@@ -40,8 +40,8 @@ export function JourneyGraceBanner({
   if (state === "grace") {
     const daysLeft = computeDaysLeft(graceUntil);
     const headline = isHe
-      ? "המנוי פג. יש לכם 14 יום לחזור לתוכן שכבר קיבלתם — חידוש פותח את הכל מחדש."
-      : "Your plan ended. You have 14 days to revisit content you've already received — renew to unlock everything.";
+      ? "המנוי פג. יש לכם 14 יום לחזור לתוכן שכבר קיבלתם - חידוש פותח את הכל מחדש."
+      : "Your plan ended. You have 14 days to revisit content you've already received - renew to unlock everything.";
     return (
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-400/30 bg-amber-500/[0.08] p-4 backdrop-blur-md">
         <div className="flex min-w-0 items-start gap-3">

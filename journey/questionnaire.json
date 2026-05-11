@@ -1,10 +1,10 @@
 {
   "version": 4,
   "gating": {
-    "auth_after_index": 33,
+    "auth_after_index": 30,
     "paywall_after_index": 99
   },
-  "total_questions": 35,
+  "total_questions": 29,
   "locales": [
     "he",
     "en"
@@ -29,6 +29,7 @@
     {
       "id": "q01_knowledge_world",
       "category": "free",
+      "domain": "emotional_connection",
       "type": "likert5",
       "axes": [
         {
@@ -44,6 +45,7 @@
     {
       "id": "q02_admiration_see_good",
       "category": "free",
+      "domain": "emotional_connection",
       "type": "likert5",
       "axes": [
         {
@@ -59,9 +61,10 @@
     {
       "id": "q_gender",
       "category": "free",
+      "domain": null,
       "type": "forced_choice",
       "axes": [],
-      "purpose": "Captures the respondent's gender label for audience-targeted coaching content (migration 044). Doesn't drive the diagnostic — option ids map directly to profiles.gender ('male' | 'female' | 'other').",
+      "purpose": "Captures the respondent's gender label for audience-targeted coaching content (migration 044). Doesn't drive the diagnostic - option ids map directly to profiles.gender ('male' | 'female' | 'other').",
       "insight": "Persisted onto profiles.gender immediately if authed, or backfilled the moment the anon journey is claimed by a user. The audience filter on couple timelines is structural (couple_members.role), so this is purely the display label the expert sees.",
       "he_prompt": "כדי שנוכל להתאים את התכנים האישיים שלך - מה המגדר שלך?",
       "en_prompt": "So we can tailor content to you - what's your gender?",
@@ -89,111 +92,130 @@
     {
       "id": "q_relationship_status",
       "category": "free",
+      "domain": null,
       "type": "forced_choice",
       "axes": [],
-      "purpose": "Relationship type — used by the expert to pick appropriate framing (married couples vs. dating differ in conflict patterns).",
+      "purpose": "Relationship type - used by the expert to pick appropriate framing (married couples vs. dating differ in conflict patterns).",
       "insight": "Doesn't affect axis scores; surfaced on the expert couple-detail page.",
       "he_prompt": "מה הסטטוס שלכם כזוג?",
       "en_prompt": "What's your relationship status?",
       "options": [
-        { "id": "married", "he": "נשואים", "en": "Married", "scores": [] },
-        { "id": "partnership", "he": "ידועים בציבור / חיים יחד", "en": "Partnership / living together", "scores": [] },
-        { "id": "dating", "he": "בזוגיות, לא גרים יחד", "en": "Dating, not living together", "scores": [] },
-        { "id": "engaged", "he": "מאורסים", "en": "Engaged", "scores": [] }
+        {
+          "id": "married",
+          "he": "נשואים",
+          "en": "Married",
+          "scores": []
+        },
+        {
+          "id": "partnership",
+          "he": "ידועים בציבור / חיים יחד",
+          "en": "Partnership / living together",
+          "scores": []
+        },
+        {
+          "id": "dating",
+          "he": "בזוגיות, לא גרים יחד",
+          "en": "Dating, not living together",
+          "scores": []
+        },
+        {
+          "id": "engaged",
+          "he": "מאורסים",
+          "en": "Engaged",
+          "scores": []
+        }
       ]
     },
     {
       "id": "q_relationship_years",
       "category": "free",
+      "domain": null,
       "type": "forced_choice",
       "axes": [],
-      "purpose": "How long the couple has been together — pacing of long-married vs. early-relationship couples differs.",
+      "purpose": "How long the couple has been together - pacing of long-married vs. early-relationship couples differs.",
       "insight": "Surfaced on expert dashboard.",
       "he_prompt": "כמה שנים אתם יחד?",
       "en_prompt": "How long have you been together?",
       "options": [
-        { "id": "lt1", "he": "פחות משנה", "en": "Less than 1 year", "scores": [] },
-        { "id": "1to3", "he": "1-3 שנים", "en": "1-3 years", "scores": [] },
-        { "id": "4to7", "he": "4-7 שנים", "en": "4-7 years", "scores": [] },
-        { "id": "8to15", "he": "8-15 שנים", "en": "8-15 years", "scores": [] },
-        { "id": "gt15", "he": "יותר מ-15 שנים", "en": "More than 15 years", "scores": [] }
+        {
+          "id": "lt1",
+          "he": "פחות משנה",
+          "en": "Less than 1 year",
+          "scores": []
+        },
+        {
+          "id": "1to3",
+          "he": "1-3 שנים",
+          "en": "1-3 years",
+          "scores": []
+        },
+        {
+          "id": "4to7",
+          "he": "4-7 שנים",
+          "en": "4-7 years",
+          "scores": []
+        },
+        {
+          "id": "8to15",
+          "he": "8-15 שנים",
+          "en": "8-15 years",
+          "scores": []
+        },
+        {
+          "id": "gt15",
+          "he": "יותר מ-15 שנים",
+          "en": "More than 15 years",
+          "scores": []
+        }
       ]
     },
     {
       "id": "q_kids_count",
       "category": "free",
+      "domain": "family",
       "type": "forced_choice",
       "axes": [],
-      "purpose": "Family size — informs scheduling-realistic prescriptions.",
+      "purpose": "Family size - informs scheduling-realistic prescriptions.",
       "insight": "Surfaced on expert dashboard.",
       "he_prompt": "כמה ילדים יש לכם?",
       "en_prompt": "How many kids do you have?",
       "options": [
-        { "id": "0", "he": "אין", "en": "None", "scores": [] },
-        { "id": "1", "he": "ילד אחד", "en": "1", "scores": [] },
-        { "id": "2", "he": "שני ילדים", "en": "2", "scores": [] },
-        { "id": "3", "he": "שלושה ילדים", "en": "3", "scores": [] },
-        { "id": "4plus", "he": "4 ומעלה", "en": "4 or more", "scores": [] }
-      ]
-    },
-    {
-      "id": "q_kids_age",
-      "category": "free",
-      "type": "forced_choice",
-      "axes": [],
-      "purpose": "Age band of the youngest child — exhausted-with-baby couples need different prescriptions than empty-nest.",
-      "insight": "Surfaced on expert dashboard.",
-      "he_prompt": "מה גיל הילד הצעיר ביותר?",
-      "en_prompt": "How old is your youngest?",
-      "options": [
-        { "id": "no_kids", "he": "אין ילדים", "en": "No kids", "scores": [] },
-        { "id": "0to2", "he": "0-2 (תינוקות)", "en": "0-2 (infants)", "scores": [] },
-        { "id": "3to5", "he": "3-5 (גן)", "en": "3-5 (preschool)", "scores": [] },
-        { "id": "6to12", "he": "6-12 (יסודי)", "en": "6-12 (elementary)", "scores": [] },
-        { "id": "13to17", "he": "13-17 (נוער)", "en": "13-17 (teens)", "scores": [] },
-        { "id": "18plus", "he": "18 ומעלה", "en": "18+ (adults)", "scores": [] }
-      ]
-    },
-    {
-      "id": "q_household_employment",
-      "category": "free",
-      "type": "forced_choice",
-      "axes": [],
-      "purpose": "Whether both partners work — defines available bandwidth for shared rituals.",
-      "insight": "Surfaced on expert dashboard.",
-      "he_prompt": "מי מכם עובד/ת?",
-      "en_prompt": "Who is currently working?",
-      "options": [
-        { "id": "both_full", "he": "שנינו במשרה מלאה", "en": "Both of us full-time", "scores": [] },
-        { "id": "one_full_one_part", "he": "אחד מאיתנו מלאה, השני חלקית", "en": "One full-time, one part-time", "scores": [] },
-        { "id": "one_works", "he": "רק אחד עובד", "en": "Only one of us works", "scores": [] },
-        { "id": "both_flex", "he": "שנינו פרילנס / גמיש", "en": "Both freelance / flexible", "scores": [] },
-        { "id": "both_home", "he": "שנינו בבית כרגע", "en": "Both at home right now", "scores": [] }
-      ]
-    },
-    {
-      "id": "q_work_field",
-      "category": "free",
-      "type": "forced_choice",
-      "axes": [],
-      "purpose": "Industry of the primary earner — flavours how the expert frames examples.",
-      "insight": "Surfaced on expert dashboard.",
-      "he_prompt": "באיזה תחום אתם עובדים? (העיקרי במשפחה)",
-      "en_prompt": "What field do you work in? (the primary earner)",
-      "options": [
-        { "id": "tech", "he": "הייטק / טכנולוגיה", "en": "Tech", "scores": [] },
-        { "id": "health", "he": "בריאות / רפואה", "en": "Health / medicine", "scores": [] },
-        { "id": "education", "he": "חינוך / אקדמיה", "en": "Education / academia", "scores": [] },
-        { "id": "business", "he": "עסקים / פיננסים", "en": "Business / finance", "scores": [] },
-        { "id": "arts", "he": "אומנות / מדיה", "en": "Arts / media", "scores": [] },
-        { "id": "trades", "he": "מקצועות עצמאיים", "en": "Trades / hands-on", "scores": [] },
-        { "id": "public", "he": "שירות ציבורי / צבא", "en": "Public sector / military", "scores": [] },
-        { "id": "other", "he": "אחר", "en": "Other", "scores": [] }
+        {
+          "id": "0",
+          "he": "אין",
+          "en": "None",
+          "scores": []
+        },
+        {
+          "id": "1",
+          "he": "ילד אחד",
+          "en": "1",
+          "scores": []
+        },
+        {
+          "id": "2",
+          "he": "שני ילדים",
+          "en": "2",
+          "scores": []
+        },
+        {
+          "id": "3",
+          "he": "שלושה ילדים",
+          "en": "3",
+          "scores": []
+        },
+        {
+          "id": "4plus",
+          "he": "4 ומעלה",
+          "en": "4 or more",
+          "scores": []
+        }
       ]
     },
     {
       "id": "q03_bids_turn_toward",
       "category": "free",
+      "domain": "friendship",
       "type": "likert5",
       "axes": [
         {
@@ -207,108 +229,9 @@
       "en": "When my partner reaches out with something small - a comment, a laugh, a touch - how often do I actually give attention instead of putting it off to 'later'?"
     },
     {
-      "id": "q04_love_language_pair_a",
-      "category": "registered",
-      "type": "forced_choice",
-      "axes": [],
-      "purpose": "Love language forced-choice pair 1 of 5 (Words vs Time).",
-      "insight": "Forced-choice avoids the 'all of the above' bias of Likert love-language quizzes.",
-      "he_prompt": "מה ייתן לי יותר תחושה שאוהבים אותי השבוע?",
-      "en_prompt": "Which would make me feel more loved this week?",
-      "options": [
-        {
-          "id": "a",
-          "he": "שבן/בת הזוג יגיד/תגיד לי משהו אישי ומחמם על מי שאני",
-          "en": "My partner saying something personal and warm about who I am",
-          "scores": [
-            {
-              "axis": "love_language_words",
-              "weight": 1
-            }
-          ]
-        },
-        {
-          "id": "b",
-          "he": "שנקבע ביחד ערב בלי טלפונים, רק אנחנו",
-          "en": "Setting aside an evening together with no phones - just us",
-          "scores": [
-            {
-              "axis": "love_language_time",
-              "weight": 1
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "q05_love_language_pair_b",
-      "category": "registered",
-      "type": "forced_choice",
-      "axes": [],
-      "purpose": "Love language forced-choice pair 2 of 5 (Service vs Touch).",
-      "he_prompt": "מה ייתן לי יותר תחושה שאכפת לבן/בת הזוג השבוע?",
-      "en_prompt": "Which would make me feel more cared for this week?",
-      "options": [
-        {
-          "id": "a",
-          "he": "שבן/בת הזוג ייקח/תיקח על עצמו/ה משהו ברשימה שלי בלי שאבקש",
-          "en": "Them taking something off my to-do list without being asked",
-          "scores": [
-            {
-              "axis": "love_language_service",
-              "weight": 1
-            }
-          ]
-        },
-        {
-          "id": "b",
-          "he": "יותר חיבוקים, נגיעות, קרבה פיזית לא-מינית במהלך היום",
-          "en": "More hugs, casual touch, non-sexual physical closeness during the day",
-          "scores": [
-            {
-              "axis": "love_language_touch",
-              "weight": 1
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "q06_love_language_pair_c",
-      "category": "registered",
-      "type": "forced_choice",
-      "axes": [],
-      "purpose": "Love language forced-choice pair 3 of 5 (Gifts vs Words).",
-      "he_prompt": "מה יגע בי יותר השבוע?",
-      "en_prompt": "Which would move me more this week?",
-      "options": [
-        {
-          "id": "a",
-          "he": "שבן/בת הזוג יביא/תביא לי משהו קטן שמראה שחשבו עליי",
-          "en": "Them bringing me a small thing that shows they were thinking of me",
-          "scores": [
-            {
-              "axis": "love_language_gifts",
-              "weight": 1
-            }
-          ]
-        },
-        {
-          "id": "b",
-          "he": "שיגידו לי באמצע היום: 'אני גאה בך'",
-          "en": "Them saying, mid-day: 'I'm proud of you'",
-          "scores": [
-            {
-              "axis": "love_language_words",
-              "weight": 1
-            }
-          ]
-        }
-      ]
-    },
-    {
       "id": "q07_pso_benefit_of_doubt",
       "category": "paid",
+      "domain": "communication",
       "type": "likert5",
       "axes": [
         {
@@ -324,6 +247,7 @@
     {
       "id": "q08_influence_decisions",
       "category": "paid",
+      "domain": "communication",
       "type": "likert5",
       "axes": [
         {
@@ -338,6 +262,7 @@
     {
       "id": "q09_repair_recovery",
       "category": "paid",
+      "domain": "communication",
       "type": "likert5",
       "axes": [
         {
@@ -352,6 +277,7 @@
     {
       "id": "q10_criticism_vs_complaint",
       "category": "paid",
+      "domain": "communication",
       "type": "likert5",
       "axes": [
         {
@@ -367,6 +293,7 @@
     {
       "id": "q11_contempt",
       "category": "paid",
+      "domain": "communication",
       "type": "likert5",
       "axes": [
         {
@@ -381,6 +308,7 @@
     {
       "id": "q12_defensive",
       "category": "paid",
+      "domain": "communication",
       "type": "likert5",
       "axes": [
         {
@@ -395,6 +323,7 @@
     {
       "id": "q13_stonewall",
       "category": "paid",
+      "domain": "communication",
       "type": "likert5",
       "axes": [
         {
@@ -409,6 +338,7 @@
     {
       "id": "q14_autonomy_separateness",
       "category": "paid",
+      "domain": "intimacy",
       "type": "likert5",
       "axes": [
         {
@@ -423,6 +353,7 @@
     {
       "id": "q15_anticipation",
       "category": "paid",
+      "domain": "intimacy",
       "type": "likert5",
       "axes": [
         {
@@ -437,6 +368,7 @@
     {
       "id": "q16_play",
       "category": "paid",
+      "domain": "friendship",
       "type": "likert5",
       "axes": [
         {
@@ -451,6 +383,7 @@
     {
       "id": "q17_context_logistics",
       "category": "paid",
+      "domain": "family",
       "type": "likert5",
       "axes": [
         {
@@ -466,6 +399,7 @@
     {
       "id": "q18_shared_meaning_goals",
       "category": "paid",
+      "domain": "family",
       "type": "likert5",
       "axes": [
         {
@@ -480,6 +414,7 @@
     {
       "id": "q19_rituals",
       "category": "paid",
+      "domain": "friendship",
       "type": "likert5",
       "axes": [
         {
@@ -494,6 +429,7 @@
     {
       "id": "q20_biggest_gap",
       "category": "paid",
+      "domain": null,
       "type": "single_choice",
       "axes": [],
       "purpose": "User-perceived top gap - used to weight recommendations.",
@@ -571,6 +507,7 @@
     {
       "id": "q21_reflect_strength",
       "category": "paid",
+      "domain": null,
       "type": "reflection",
       "axes": [],
       "purpose": "Open reflection - surfaces the user's own framing (qualitative data for coach).",
@@ -581,6 +518,7 @@
     {
       "id": "q22_reflect_friction",
       "category": "paid",
+      "domain": "friendship",
       "type": "reflection",
       "axes": [],
       "purpose": "Open reflection - friction point (coach input).",
@@ -591,6 +529,7 @@
     {
       "id": "q23_time_together",
       "category": "paid",
+      "domain": "family",
       "type": "likert5",
       "axes": [
         {
@@ -609,6 +548,7 @@
     {
       "id": "q24_physical_closeness",
       "category": "paid",
+      "domain": "intimacy",
       "type": "likert5",
       "axes": [
         {
@@ -627,6 +567,7 @@
     {
       "id": "q25_gratitude_expressed",
       "category": "paid",
+      "domain": "emotional_connection",
       "type": "likert5",
       "axes": [
         {
@@ -645,6 +586,7 @@
     {
       "id": "q26_partner_texts_unprompted",
       "category": "paid",
+      "domain": "friendship",
       "type": "likert5",
       "axes": [
         {
@@ -663,6 +605,7 @@
     {
       "id": "q27_commitment_willingness",
       "category": "paid",
+      "domain": null,
       "type": "likert5",
       "axes": [
         {
@@ -681,6 +624,7 @@
     {
       "id": "q_priorities",
       "category": "registered",
+      "domain": null,
       "type": "ranking",
       "axes": [],
       "purpose": "Captures the user's perceived priority order across 5 relationship domains. Drives the expert's per-partner alignment view.",

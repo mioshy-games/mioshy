@@ -28,6 +28,8 @@ import { LazyLiveDemoHero } from "@/components/marketing/v2/LazyLiveDemoHero";
 import { MediaSlider } from "@/components/marketing/v2/MediaSlider";
 import { Counter } from "@/components/marketing/v2/Counter";
 import { RevealOnScroll } from "@/components/marketing/v2/RevealOnScroll";
+import { pickGameThumbnail } from "@/lib/games-thumbnail";
+import { GamesPageAtmosphere } from "@/components/games/GamesPageAtmosphere";
 
 /**
  * /games - the games category landing page.
@@ -65,9 +67,9 @@ export async function generateMetadata({
     keywords:
       locale === "he"
         ? [
-            "משחקי זוגיות",
+            "משחקי זוגות אונליין",
             "אמת או חובה",
-            "משחקים לזוגות",
+            "משחקי זוגות",
             "שאלות לזוגות",
             "סולמות ונחשים",
             "משחק זוגי בדפדפן",
@@ -98,6 +100,12 @@ export async function generateMetadata({
   };
 }
 
+// Build marker - bumped when we ship significant changes to /games so
+// we can correlate "I don't see the change" reports with the actual
+// build the visitor's browser fetched. Surfaces in both server logs
+// and the client console (see <script> at end of each return tree).
+const GAMES_PAGE_BUILD = "2026-05-06-dark-ambient-v1";
+
 export default async function GamesHubPage({
   params,
 }: {
@@ -110,7 +118,7 @@ export default async function GamesHubPage({
 
   const supabase = await createServerSupabaseClient();
 
-  // Auth gate — same pattern as /adults: members skip the marketing
+  // Auth gate - same pattern as /adults: members skip the marketing
   // wrap and see just the catalog. Anonymous visitors get the full
   // story below.
   const {
@@ -125,29 +133,49 @@ export default async function GamesHubPage({
     .order("created_at", { ascending: false });
   const games = (data ?? []) as GameRow[];
 
+  // Diagnostic log - Itzik 2026-05-06 reported "I don't see the change".
+  // Most common cause: signed-in users hit the AUTHED catalog (line 132)
+  // not the marketing return at the bottom. This print tells us which
+  // path executed and which build was deployed when the request landed.
+  // Visible in `vercel logs <deployment>` and in the local dev console.
+  console.log("[GamesHubPage]", JSON.stringify({
+    build: GAMES_PAGE_BUILD,
+    locale,
+    isAuthed,
+    userId: user?.id ?? null,
+    view: isAuthed ? "authed-catalog" : "marketing",
+    games: games.length,
+  }));
+
   // ─── Logged-in catalog-only view ──────────────────────────────────────
   // Per Itzik 2026-05-02: returning members shouldn't re-read the same
   // marketing page on every visit. They land on a clean, dense grid
   // of every active game with a section title.
   if (isAuthed) {
+    // No bg-color on the wrapper - GamesPageAtmosphere supplies the
+    // base gradient via a child layer. A solid bg here would create a
+    // stacking opaque surface that paints OVER negative-z children
+    // (the gradient at -z-30, the radial wash at -z-20, the floating
+    // blobs/orbits at -z-10) and the whole atmosphere would be
+    // invisible. Itzik 2026-05-06: this is exactly the bug that
+    // made "I don't see the change" reproducible.
     return (
       <div
         dir={isHe ? "rtl" : "ltr"}
-        className="relative min-h-[100dvh] bg-[#0E0810] text-white"
+        className="relative min-h-[100dvh] overflow-hidden text-white"
       >
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[60vh]"
-          style={{
-            background:
-              "radial-gradient(900px 500px at 20% 0%, rgba(196,68,86,0.18), transparent 65%), " +
-              "radial-gradient(800px 440px at 80% 10%, rgba(139,38,56,0.15), transparent 65%)",
+        {/* Build marker - visible in browser console so we can confirm
+            the new build landed for this visitor. Itzik 2026-05-06. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `console.log("[GamesHub/client]", { build: ${JSON.stringify(GAMES_PAGE_BUILD)}, view: "authed-catalog" });`,
           }}
         />
+        <GamesPageAtmosphere />
         <main className="relative mx-auto max-w-6xl px-4 pb-20 pt-12 sm:pt-16">
           <div className="inline-flex items-center gap-2 rounded-full border border-rose-300/30 bg-rose-500/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-rose-100">
             <span className="h-1.5 w-1.5 rounded-full bg-rose-300" />
-            {isHe ? "כל המשחקים" : "All Games"}
+            {isHe ? "הקטלוג" : "Catalogue"}
           </div>
           <h1 className="mt-3 font-heading text-3xl font-bold leading-tight tracking-tight sm:text-4xl">
             {t("catalogueTitle")}
@@ -163,10 +191,14 @@ export default async function GamesHubPage({
               {isHe ? "עדיין אין משחקים פעילים." : "No active games yet."}
             </p>
           ) : (
-            <ul className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            // Catalogue grid — 2 per row (was 3) per Itzik 2026-05-07.
+            // Bigger card footprint reads as fewer "products" and more
+            // "experiences".
+            <ul className="mt-10 grid gap-7 sm:grid-cols-2">
               {games.map((g) => {
                 const name = isHe ? g.name_he : g.name_en;
                 const desc = isHe ? g.description_he : g.description_en;
+                const thumb = pickGameThumbnail(g, locale);
                 return (
                   <li key={g.id}>
                     <Link
@@ -174,9 +206,9 @@ export default async function GamesHubPage({
                       className="group block overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/10 to-white/5 shadow-xl backdrop-blur transition hover:border-rose-300/40 hover:from-white/20"
                     >
                       <div className="relative aspect-[16/10] w-full overflow-hidden bg-gradient-to-br from-rose-500/30 to-fuchsia-500/20">
-                        {g.thumbnail_url ? (
+                        {thumb ? (
                           <Image
-                            src={g.thumbnail_url}
+                            src={thumb}
                             alt={name ?? ""}
                             width={640}
                             height={400}
@@ -191,13 +223,13 @@ export default async function GamesHubPage({
                           {name}
                         </h3>
                         {desc ? (
-                          <p className="mt-2 line-clamp-2 text-sm text-white/70">
+                          <p className="mt-2 line-clamp-2 text-sm text-white/70 transition-[max-height,color] duration-500 ease-in-out group-hover:line-clamp-none">
                             {desc}
                           </p>
                         ) : null}
                         <div className="mt-5 flex items-center justify-between">
                           <span className="text-sm text-rose-200 group-hover:text-white">
-                            {isHe ? "פתחו את המשחק" : "Open the game"} →
+                            {isHe ? "שחקו עכשיו ←" : "Play the game →"}
                           </span>
                         </div>
                       </div>
@@ -205,8 +237,54 @@ export default async function GamesHubPage({
                   </li>
                 );
               })}
+
+              {/* ── Virtual snakes & ladders card (authenticated view) ──
+                  Same hardcoded card the marketing page renders alongside
+                  DB-backed wheel games. The board game isn't a row in
+                  `games`, it's a standalone /game route - but logged-in
+                  members expect to see EVERY active product in their
+                  catalogue, not just the wheel-based ones. */}
+              <li>
+                <Link
+                  href="/game"
+                  className="group block overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/10 to-white/5 shadow-xl backdrop-blur transition hover:border-rose-300/40 hover:from-white/20"
+                >
+                  <div className="relative aspect-[16/10] w-full overflow-hidden bg-gradient-to-br from-rose-500/30 via-fuchsia-500/25 to-violet-500/20">
+                    {/* Thumbnail - drop the image at
+                        /public/images/snakes-couples.webp (16:10 ratio
+                        recommended, e.g. 1280×800). */}
+                    <Image
+                      src="/images/snakes-couples.webp"
+                      alt={isHe ? "נחשים וסולמות" : "Snakes & Ladders"}
+                      fill
+                      sizes="(max-width: 640px) 100vw, 50vw"
+                      className="object-cover transition duration-500 group-hover:scale-[1.02]"
+                    />
+                    <span className="absolute end-3 top-3 rounded-full bg-gradient-to-r from-rose-400 to-fuchsia-400 px-3 py-1 text-xs font-bold text-white shadow-lg">
+                      {isHe ? "חדש 🔥" : "New 🔥"}
+                    </span>
+                    <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/70 to-transparent" />
+                  </div>
+                  <div className="p-5">
+                    <h3 className="text-xl font-bold text-white group-hover:text-rose-100">
+                      {isHe ? "נחשים וסולמות" : "Snakes & Ladders"}
+                    </h3>
+                    <p className="mt-2 line-clamp-2 text-sm text-white/70 transition-[max-height,color] duration-500 ease-in-out group-hover:line-clamp-none">
+                      {isHe
+                        ? "לוח קלאסי עם שאלות ואתגרים זוגיים - שחקו על מכשיר אחד או על שני מכשירים שונים."
+                        : "Classic board with couples questions & challenges - play on one device or remotely."}
+                    </p>
+                    <div className="mt-5 flex items-center justify-between">
+                      <span className="text-sm text-rose-200 group-hover:text-white">
+                        {isHe ? "שחקו עכשיו ←" : "Play the game →"}
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              </li>
             </ul>
           )}
+
         </main>
       </div>
     );
@@ -397,7 +475,19 @@ export default async function GamesHubPage({
       className="relative min-h-[100dvh] overflow-hidden text-white"
       dir={isHe ? "rtl" : "ltr"}
     >
-      {/* ── Dark hero backdrop (covers only the first viewport) - V2 wine palette ── */}
+      {/* Build marker - visible in browser console so we can confirm
+          the new build landed. Itzik 2026-05-06. */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `console.log("[GamesHub/client]", { build: ${JSON.stringify(GAMES_PAGE_BUILD)}, view: "marketing" });`,
+        }}
+      />
+
+      {/* ── Dark hero backdrop (covers ONLY the first viewport - 110vh).
+          Per Itzik 2026-05-06: revert of the page-wide dark treatment.
+          The dark atmosphere belongs to the hero + the #catalogue section
+          only; the marketing copy in between (Why / Press / Personas /
+          Benefits) reads on the cream surface like the original design. */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 -z-20 h-[110vh] bg-[linear-gradient(180deg,#0E0810_0%,#1A0B14_55%,#1E0F1E_100%)]"
@@ -424,25 +514,33 @@ export default async function GamesHubPage({
             1. HERO - dark, animated
         ════════════════════════════════════════════════════════════ */}
         <section className="relative">
+          {/* Breadcrumb sits over the hero gradient — no separate band.
+              Padding tightened (pt-8 → pt-4) and opacity lowered so it
+              integrates into the atmosphere instead of reading as its own
+              row. Per Itzik 2026-05-07. */}
           <nav
             aria-label="breadcrumb"
-            className="relative z-20 mx-auto flex max-w-6xl items-center gap-2 px-4 pt-8 text-xs text-white/60"
+            className="relative z-20 mx-auto hidden max-w-6xl items-center gap-2 px-4 pt-4 text-[13px] text-white/45 sm:flex"
           >
-            <Link href="/" className="transition hover:text-white/90">
+            <Link href="/" className="transition hover:text-white/75">
               {t("breadcrumbHome")}
             </Link>
-            <span aria-hidden>/</span>
-            <span className="text-white/80">{t("breadcrumbGames")}</span>
+            <span aria-hidden className="text-white/30">/</span>
+            <span className="text-white/65">{t("breadcrumbGames")}</span>
           </nav>
 
+          {/* Per Itzik 2026-05-07: secondary CTA "למה מיאושי?" removed
+              from the hero — the section "Why Mioshy" lives just below
+              and is reached by scrolling. The hero now has one primary
+              CTA only ("All games") for less visual noise. */}
           <LazyLiveDemoHero
             isHe={isHe}
             title={t("h1")}
             lede={t("lede")}
             ctaPrimary={t("ctaPrimary")}
             ctaPrimaryHref="#catalogue"
-            ctaSecondary={isHe ? "למה מיאושי?" : "Why Mioshy?"}
-            ctaSecondaryHref="#why"
+            ctaSecondary={undefined}
+            ctaSecondaryHref={undefined}
             badge={isHe ? "טעימה חיה · Mioshy" : "Live taste · Mioshy"}
             trust={trust}
             gameHref={demoGame ? `/games/${demoGame.slug}` : "#catalogue"}
@@ -463,7 +561,11 @@ export default async function GamesHubPage({
         </section>
 
         {/* ════════════════════════════════════════════════════════════
-            LIGHT SECTIONS - #why + #press + #catalogue
+            LIGHT SECTIONS - #why + #press + #catalogue + #personas
+            Itzik 2026-05-06 revert: the marketing copy below the hero
+            reads on a cream surface (original design). Only the
+            #catalogue section inside this wrapper opts back into a dark
+            surface - see its own bg/style block.
         ════════════════════════════════════════════════════════════ */}
         <div className="bg-[#FAF6F7] pb-[60px] text-slate-900">
 
@@ -473,10 +575,14 @@ export default async function GamesHubPage({
           {/* ════════════════════════════════════════════════════════════
               2. WHY MIOSHY - light bg, big cards with stat chips
           ════════════════════════════════════════════════════════════ */}
-          <section id="why" className="relative bg-[#FAF6F7] px-4 pb-14 pt-10 sm:pb-20 sm:pt-16">
+          {/* #why bottom padding tightened (sm:pb-20 → sm:pb-[60px])
+              per Itzik 2026-05-07 — combined with press's pt-[60px]
+              below, the gap from "Why" content to "במילים שלהם" is
+              exactly 60+60=120px on desktop instead of 160px. */}
+          <section id="why" className="relative bg-[#FAF6F7] px-4 pb-12 pt-10 sm:pb-[60px] sm:pt-16">
             <div className="mx-auto max-w-6xl">
               <div className="mx-auto max-w-3xl text-center">
-                {/* Eyebrow — bumped to 14px on mobile (16px equivalent
+                {/* Eyebrow - bumped to 14px on mobile (16px equivalent
                     once you account for letter-spacing). */}
                 <span className="inline-flex items-center gap-2.5 text-[14px] font-semibold uppercase tracking-[0.18em] text-[#170E14] sm:text-[13px]">
                   <span className="h-[7px] w-[7px] rounded-sm bg-[#B83C4D] shadow-[0_0_0_3px_rgba(184,60,77,0.18)]" />
@@ -492,7 +598,7 @@ export default async function GamesHubPage({
                 </p>
               </div>
 
-              {/* Unified card design — mobile tightened: padding 20px,
+              {/* Unified card design - mobile tightened: padding 20px,
                   icon + stat chip on the same row (saves a wasted block
                   of vertical space), title 18px, body 16px to keep
                   every card scannable on a single phone scroll. */}
@@ -524,7 +630,7 @@ export default async function GamesHubPage({
                       <h3 className="mt-3 font-heading text-[18px] font-bold leading-snug text-[#170E14] sm:mt-4 sm:text-xl">
                         {it.h}
                       </h3>
-                      <p className="mt-1.5 flex-1 text-[16px] leading-[1.55] text-[#4A3A45] sm:mt-2 sm:text-[18px] sm:leading-[1.6]">
+                      <p className="mt-1.5 flex-1 text-[18px] leading-[1.55] text-[#4A3A45] sm:mt-2 sm:leading-[1.6]">
                         {it.p}
                       </p>
                     </div>
@@ -544,7 +650,7 @@ export default async function GamesHubPage({
 
                 {/* Main pull-quote - clean line breaks, no awkward wrapping. */}
                 <p
-                  className="mt-7 text-[26px] leading-[1.45] text-[#170E14] sm:text-[30px] lg:text-[34px]"
+                  className="mt-7 text-[30px] leading-[1.35] text-[#170E14] sm:text-[30px] lg:text-[34px]"
                   style={{
                     fontFamily: "'Frank Ruhl Libre', serif",
                     fontWeight: 500,
@@ -670,7 +776,7 @@ export default async function GamesHubPage({
           {isHe ? (
             <section
               id="press"
-              className="relative overflow-hidden bg-[#FAF6F7] px-4 py-8 sm:py-20"
+              className="relative overflow-hidden bg-[#FAF6F7] px-4 py-8 sm:py-[60px]"
             >
               {/* Drifting peach blob - heavy blur, enters from screen-left */}
               <div
@@ -680,6 +786,10 @@ export default async function GamesHubPage({
                 <div
                   className="absolute top-[18%] -left-[12%] h-[620px] w-[620px] rounded-full mio-press-blob"
                   style={{
+                    /* Peach glow restored - the press section is back on
+                       a cream surface so the original soft-peach drift
+                       fits the editorial mood again (Itzik 2026-05-06
+                       revert). */
                     background:
                       "radial-gradient(circle, rgba(232,193,177,0.6), rgba(232,193,177,0.3) 45%, transparent 75%)",
                     filter: "blur(90px)",
@@ -700,30 +810,63 @@ export default async function GamesHubPage({
           {/* ════════════════════════════════════════════════════════════
               4. CATALOGUE - all wheel games + snakes virtual card
           ════════════════════════════════════════════════════════════ */}
-          <section id="catalogue" className="relative bg-white px-4 pb-24 pt-14">
-            {/* Subtle V2-tinted gradient mesh */}
+          <section
+            id="catalogue"
+            className="relative overflow-hidden bg-[#0E0810] px-4 pb-24 pt-14 text-white"
+          >
+            {/* ── Animated atmosphere ──────────────────────────────────────
+                Dark wine gradient base + drifting blobs + floating glow +
+                12 small orbit dots. Mirrors the inner-page (journey)
+                animation language but in the catalogue's wine/burgundy
+                palette so the section feels stitched into the wider site.
+                Lifted from -z-10 to z-0; content above sets z-10. */}
             <div
               aria-hidden
-              className="pointer-events-none absolute inset-0 -z-10 opacity-40"
-              style={{
-                background:
-                  "radial-gradient(800px 600px at 15% 40%, rgba(184,60,77,0.06), transparent 60%), " +
-                  "radial-gradient(700px 500px at 85% 60%, rgba(139,38,56,0.05), transparent 60%)",
-              }}
-            />
+              className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
+            >
+              {/* Aurora wash */}
+              <div
+                className="absolute inset-0"
+                style={{
+                  background:
+                    "radial-gradient(900px 600px at 18% 25%, rgba(184,60,77,0.18), transparent 60%), " +
+                    "radial-gradient(800px 540px at 82% 75%, rgba(61,31,61,0.22), transparent 60%), " +
+                    "linear-gradient(160deg, #1A0A14 0%, #0E0810 60%, #1A0A14 100%)",
+                }}
+              />
+              {/* Converging blobs - wine red ↔ deep burgundy */}
+              <div className="catalogue-blob catalogue-blob-1" />
+              <div className="catalogue-blob catalogue-blob-2" />
+              {/* Soft floating circle */}
+              <div className="catalogue-floating-circle" />
+              {/* 12 drifting orbit dots */}
+              <span className="catalogue-orbit catalogue-orbit-1" />
+              <span className="catalogue-orbit catalogue-orbit-2" />
+              <span className="catalogue-orbit catalogue-orbit-3" />
+              <span className="catalogue-orbit catalogue-orbit-4" />
+              <span className="catalogue-orbit catalogue-orbit-5" />
+              <span className="catalogue-orbit catalogue-orbit-6" />
+              <span className="catalogue-orbit catalogue-orbit-7" />
+              <span className="catalogue-orbit catalogue-orbit-8" />
+              <span className="catalogue-orbit catalogue-orbit-9" />
+              <span className="catalogue-orbit catalogue-orbit-10" />
+              <span className="catalogue-orbit catalogue-orbit-11" />
+              <span className="catalogue-orbit catalogue-orbit-12" />
+            </div>
 
-            <div className="mx-auto max-w-6xl">
-              <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <span className="inline-flex items-center gap-2.5 text-[13px] font-semibold uppercase tracking-[0.2em] text-[#170E14]">
-                    <span className="h-[7px] w-[7px] rounded-sm bg-[#B83C4D] shadow-[0_0_0_3px_rgba(184,60,77,0.18)]" />
-                    {isHe ? "כל המשחקים" : "All Games"}
-                  </span>
-                  <h2 className="mt-4 font-heading text-3xl font-bold leading-[1.05] tracking-[-0.02em] text-[#170E14] sm:text-4xl lg:text-5xl">
-                    {t("catalogueTitle")}
-                  </h2>
-                </div>
-                <p className="max-w-sm text-[18px] leading-[1.6] text-[#4A3A45]">
+            <div className="relative z-10 mx-auto max-w-6xl">
+              {/* Stacked header - eyebrow + title + lead description.
+                  Per Itzik 2026-05-06: lead reads BELOW the title (not on
+                  the side) so the catalogue copy flows top-to-bottom. */}
+              <div className="flex flex-col items-start gap-4">
+                <span className="inline-flex items-center gap-2.5 text-[13px] font-semibold uppercase tracking-[0.2em] text-rose-200">
+                  <span className="h-[7px] w-[7px] rounded-sm bg-[#B83C4D] shadow-[0_0_0_3px_rgba(184,60,77,0.28)]" />
+                  {isHe ? "הקטלוג" : "Catalogue"}
+                </span>
+                <h2 className="font-heading text-3xl font-bold leading-[1.05] tracking-[-0.02em] text-white sm:text-4xl lg:text-5xl">
+                  {t("catalogueTitle")}
+                </h2>
+                <p className="max-w-2xl text-[18px] leading-[1.6] text-white/70">
                   {isHe
                     ? "בחרו משחק, פתחו על הטלפון, ומתחילים. בלי הורדות, בלי הכנות."
                     : "Pick one, open it on your phone, and start. No downloads, no prep."}
@@ -731,15 +874,19 @@ export default async function GamesHubPage({
               </div>
 
               {games.length === 0 && (
-                <p className="mt-10 text-[#7A6A75]">-</p>
+                <p className="mt-10 text-white/60">-</p>
               )}
 
-              <ul className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {/* Catalogue grid — 2 per row (was 3) per Itzik 2026-05-07.
+                Bigger card footprint reads as fewer "products" and more
+                "experiences". */}
+            <ul className="mt-10 grid gap-7 sm:grid-cols-2">
                 {/* ── Regular wheel games from DB ── */}
                 {games.map((g, idx) => {
                   const name = isHe ? g.name_he : g.name_en;
                   const desc = isHe ? g.description_he : g.description_en;
                   const accent = accents[idx % accents.length]!;
+                  const thumb = pickGameThumbnail(g, locale);
                   return (
                     <li key={g.id} className="group relative">
                       {/* Hover glow */}
@@ -749,14 +896,14 @@ export default async function GamesHubPage({
                       />
                       <Link
                         href={`/games/${g.slug}`}
-                        className="relative flex h-full flex-col overflow-hidden rounded-3xl border border-[#EAE0E3] bg-[#FBF5F2] shadow-md shadow-[#EAE0E3]/40 transition duration-300 hover:-translate-y-1 hover:border-[#E9C4CA] hover:shadow-[#FBE9EC]/60"
+                        className="relative flex h-full flex-col overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] shadow-xl shadow-black/30 backdrop-blur-sm transition duration-300 hover:-translate-y-1 hover:border-rose-300/40 hover:bg-white/[0.07]"
                       >
                         {/* Thumbnail */}
                         <div className="relative aspect-[16/10] w-full overflow-hidden">
-                          {g.thumbnail_url ? (
+                          {thumb ? (
                             <>
                               <Image
-                                src={g.thumbnail_url}
+                                src={thumb}
                                 alt={name}
                                 fill
                                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
@@ -764,7 +911,7 @@ export default async function GamesHubPage({
                               />
                               <div
                                 aria-hidden
-                                className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent"
+                                className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"
                               />
                             </>
                           ) : (
@@ -774,20 +921,34 @@ export default async function GamesHubPage({
                               <Gamepad2 className="h-12 w-12 text-white/70" />
                             </div>
                           )}
-                          {/* Admin image-swap overlay */}
-                          {isAdmin && <AdminThumbnailEdit gameId={g.id} />}
+                          {/* Admin image-swap overlay - pre-fills with the
+                              current per-locale URLs so the admin can edit
+                              either or both. */}
+                          {isAdmin && (
+                            <AdminThumbnailEdit
+                              gameId={g.id}
+                              initialHe={g.thumbnail_url_he}
+                              initialEn={g.thumbnail_url_en}
+                            />
+                          )}
                         </div>
 
                         <div className="flex flex-1 flex-col p-6">
-                          <h3 className="font-heading text-xl font-bold leading-tight text-[#170E14]">
+                          {/* Per Itzik 2026-05-07: game card titles in
+                              the catalogue serif (Frank Ruhl Libre) so
+                              they read as named things, not labels. */}
+                          <h3
+                            className="text-[26px] font-bold leading-[1.15] tracking-[-0.01em] text-white"
+                            style={{ fontFamily: "var(--font-frank-ruhl), 'Frank Ruhl Libre', serif" }}
+                          >
                             {name}
                           </h3>
                           {desc ? (
-                            <p className="mt-2 line-clamp-3 text-[18px] leading-[1.5] text-[#4A3A45]">
+                            <p className="mt-2 line-clamp-3 text-[20px] leading-[1.5] text-white/70 transition-[max-height,color] duration-500 ease-in-out group-hover:line-clamp-none sm:text-[18px]">
                               {desc}
                             </p>
                           ) : null}
-                          <span className="mt-auto inline-flex items-center gap-2 pt-5 text-[18px] font-semibold text-[#B83C4D] transition group-hover:text-[#8B2638]">
+                          <span className="mt-auto inline-flex items-center gap-2 pt-5 text-[18px] font-semibold text-rose-200 transition group-hover:text-white">
                             {t("ctaPrimary")}
                             <ArrowRight
                               className={`h-5 w-5 transition group-hover:translate-x-1 ${
@@ -801,47 +962,53 @@ export default async function GamesHubPage({
                   );
                 })}
 
-                {/* ── Virtual snakes & ladders card - V2 wine palette ── */}
+                {/* ── Virtual snakes & ladders card - dark wine palette ── */}
                 <li className="group relative">
                   <div
                     aria-hidden
-                    className="pointer-events-none absolute -inset-px -z-10 rounded-[28px] bg-gradient-to-br from-[#B83C4D]/30 via-[#8B2638]/20 to-[#3D1F3D]/20 opacity-0 blur-xl transition duration-500 group-hover:opacity-60"
+                    className="pointer-events-none absolute -inset-px -z-10 rounded-[28px] bg-gradient-to-br from-[#B83C4D]/40 via-[#8B2638]/30 to-[#3D1F3D]/30 opacity-0 blur-xl transition duration-500 group-hover:opacity-70"
                   />
                   <Link
                     href="/game"
-                    className="relative flex h-full flex-col overflow-hidden rounded-3xl border border-[#EAE0E3] bg-white shadow-md shadow-[#EAE0E3]/40 transition duration-300 hover:-translate-y-1 hover:border-[#E9C4CA] hover:shadow-[#FBE9EC]/60"
+                    className="relative flex h-full flex-col overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] shadow-xl shadow-black/30 backdrop-blur-sm transition duration-300 hover:-translate-y-1 hover:border-rose-300/40 hover:bg-white/[0.07]"
                   >
-                    {/* Thumbnail - V2 warm gradient */}
-                    <div className="relative aspect-[16/10] w-full overflow-hidden bg-gradient-to-br from-[#B83C4D]/20 via-[#8B2638]/15 to-[#3D1F3D]/20">
-                      <div className="absolute inset-0 flex items-center justify-center gap-3">
-                        <span className="text-5xl drop-shadow-md">🐍</span>
-                        <span className="text-4xl drop-shadow-md">🌈</span>
-                      </div>
+                    {/* Thumbnail - see /public/images/snakes-couples.webp */}
+                    <div className="relative aspect-[16/10] w-full overflow-hidden bg-gradient-to-br from-[#B83C4D]/30 via-[#8B2638]/25 to-[#3D1F3D]/30">
+                      <Image
+                        src="/images/snakes-couples.webp"
+                        alt={isHe ? "נחשים וסולמות" : "Snakes & Ladders"}
+                        fill
+                        sizes="(max-width: 640px) 100vw, 50vw"
+                        className="object-cover transition duration-500 group-hover:scale-[1.02]"
+                      />
                       {/* New badge */}
                       <span className="absolute end-3 top-3 rounded-full bg-gradient-to-r from-[#B83C4D] to-[#8B2638] px-3 py-1 text-xs font-bold text-white shadow-lg">
                         {isHe ? "חדש 🔥" : "New 🔥"}
                       </span>
                       <div
                         aria-hidden
-                        className="absolute inset-0 bg-gradient-to-t from-black/15 via-transparent to-transparent"
+                        className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent"
                       />
                     </div>
 
                     <div className="flex flex-1 flex-col p-6">
-                      {/* Multi-player badge - V2 accent-bg */}
-                      <span className="mb-3 inline-flex items-center gap-1.5 self-start rounded-full border border-[#E9C4CA] bg-[#FBE9EC] px-2.5 py-0.5 text-xs font-semibold text-[#8B2638]">
+                      {/* Multi-player badge - on-dark variant */}
+                      <span className="mb-3 inline-flex items-center gap-1.5 self-start rounded-full border border-rose-300/30 bg-rose-500/15 px-2.5 py-0.5 text-xs font-semibold text-rose-100">
                         <Users className="h-3 w-3" />
                         {isHe ? "עד 8 שחקנים" : "Up to 8 players"}
                       </span>
-                      <h3 className="font-heading text-xl font-bold leading-tight text-[#170E14]">
+                      <h3
+                        className="text-[26px] font-bold leading-[1.15] tracking-[-0.01em] text-white"
+                        style={{ fontFamily: "var(--font-frank-ruhl), 'Frank Ruhl Libre', serif" }}
+                      >
                         {isHe ? "נחשים וסולמות" : "Snakes & Ladders"}
                       </h3>
-                      <p className="mt-2 line-clamp-3 text-[18px] leading-[1.5] text-[#4A3A45]">
+                      <p className="mt-2 line-clamp-3 text-[20px] leading-[1.5] text-white/70 transition-[max-height,color] duration-500 ease-in-out group-hover:line-clamp-none sm:text-[18px]">
                         {isHe
                           ? "לוח קלאסי עם שאלות ואתגרים זוגיים - שחקו על מכשיר אחד או על שני מכשירים שונים"
                           : "Classic board game with couples questions & challenges - play on one device or remotely"}
                       </p>
-                      <span className="mt-auto inline-flex items-center gap-2 pt-5 text-[18px] font-semibold text-[#B83C4D] transition group-hover:text-[#8B2638]">
+                      <span className="mt-auto inline-flex items-center gap-2 pt-5 text-[18px] font-semibold text-rose-200 transition group-hover:text-white">
                         {isHe ? "שחקו עכשיו" : "Play now"}
                         <ArrowRight
                           className={`h-5 w-5 transition group-hover:translate-x-1 ${
@@ -853,7 +1020,106 @@ export default async function GamesHubPage({
                   </Link>
                 </li>
               </ul>
+
             </div>
+
+            {/* Inline keyframes/styles for the catalogue atmosphere - kept
+                local so the new pattern doesn't bleed into other dark
+                sections that might want their own palette. */}
+            <style
+              dangerouslySetInnerHTML={{
+                __html: `
+                  /* Large drifting blobs - soft, slow, atmospheric. */
+                  .catalogue-blob {
+                    position: absolute;
+                    border-radius: 50%;
+                    filter: blur(110px);
+                    opacity: 0.55;
+                    pointer-events: none;
+                    will-change: transform;
+                  }
+                  .catalogue-blob-1 {
+                    width: 620px; height: 620px;
+                    top: -160px;
+                    inset-inline-start: -120px;
+                    background: radial-gradient(circle, rgba(184,60,77,0.7) 0%, rgba(184,60,77,0) 70%);
+                    animation: catalogue-blob-1-converge 56s ease-in-out infinite;
+                  }
+                  .catalogue-blob-2 {
+                    width: 560px; height: 560px;
+                    bottom: -140px;
+                    inset-inline-end: -100px;
+                    background: radial-gradient(circle, rgba(139,38,56,0.6) 0%, rgba(139,38,56,0) 70%);
+                    animation: catalogue-blob-2-converge 56s ease-in-out infinite;
+                  }
+                  @keyframes catalogue-blob-1-converge {
+                    0%, 100% { transform: translate(0, 0) scale(1); }
+                    50%      { transform: translate(140px, 100px) scale(1.06); }
+                  }
+                  @keyframes catalogue-blob-2-converge {
+                    0%, 100% { transform: translate(0, 0) scale(1); }
+                    50%      { transform: translate(-140px, -100px) scale(1.06); }
+                  }
+
+                  /* Soft floating circle */
+                  .catalogue-floating-circle {
+                    position: absolute;
+                    width: 220px; height: 220px;
+                    top: 38%;
+                    left: 48%;
+                    border-radius: 50%;
+                    background: radial-gradient(circle, rgba(232,131,148,0.45) 0%, rgba(184,60,77,0) 70%);
+                    filter: blur(40px);
+                    opacity: 0.5;
+                    animation: catalogue-floating-circle-move 32s ease-in-out infinite;
+                    pointer-events: none;
+                  }
+                  @keyframes catalogue-floating-circle-move {
+                    0%, 100% { transform: translate(0, 0) scale(1); }
+                    25%      { transform: translate(-30px, 40px) scale(1.05); }
+                    50%      { transform: translate(40px, -20px) scale(1.1); }
+                    75%      { transform: translate(20px, 30px) scale(1); }
+                  }
+
+                  /* 12 small drifting orbit dots - wine palette, soft halos.
+                     Single smooth fade gradient so the dots feather into
+                     the background instead of looking outlined. */
+                  .catalogue-orbit {
+                    position: absolute;
+                    border-radius: 50%;
+                    pointer-events: none;
+                    will-change: transform, opacity;
+                  }
+                  .catalogue-orbit-1  { width: 8px;  height: 8px;  left: 12%; top: 22%; background: radial-gradient(circle, rgba(232,131,148,0.85) 0%, rgba(232,131,148,0) 70%); box-shadow: 0 0 10px rgba(232,131,148,0.25); animation: catalogue-orbit-a 26s ease-in-out infinite; }
+                  .catalogue-orbit-2  { width: 6px;  height: 6px;  left: 24%; top: 68%; background: radial-gradient(circle, rgba(184,60,77,0.85) 0%, rgba(184,60,77,0) 70%);   box-shadow: 0 0 8px  rgba(184,60,77,0.22);   animation: catalogue-orbit-b 32s ease-in-out infinite; animation-delay: 1s; }
+                  .catalogue-orbit-3  { width: 10px; height: 10px; left: 38%; top: 18%; background: radial-gradient(circle, rgba(251,200,210,0.8)  0%, rgba(251,200,210,0)  70%); box-shadow: 0 0 12px rgba(251,200,210,0.22); animation: catalogue-orbit-c 30s ease-in-out infinite; animation-delay: 2s; }
+                  .catalogue-orbit-4  { width: 5px;  height: 5px;  left: 48%; top: 74%; background: radial-gradient(circle, rgba(245,158,177,0.85) 0%, rgba(245,158,177,0) 70%); box-shadow: 0 0 8px  rgba(245,158,177,0.22); animation: catalogue-orbit-d 36s ease-in-out infinite; animation-delay: 3s; }
+                  .catalogue-orbit-5  { width: 7px;  height: 7px;  left: 62%; top: 30%; background: radial-gradient(circle, rgba(184,60,77,0.8)  0%, rgba(184,60,77,0)  70%);   box-shadow: 0 0 10px rgba(184,60,77,0.22);   animation: catalogue-orbit-e 28s ease-in-out infinite; animation-delay: .8s; }
+                  .catalogue-orbit-6  { width: 7px;  height: 7px;  left: 74%; top: 66%; background: radial-gradient(circle, rgba(139,38,56,0.85) 0%, rgba(139,38,56,0) 70%);   box-shadow: 0 0 10px rgba(139,38,56,0.22);   animation: catalogue-orbit-a 34s ease-in-out infinite; animation-delay: 3.6s; }
+                  .catalogue-orbit-7  { width: 9px;  height: 9px;  left: 86%; top: 24%; background: radial-gradient(circle, rgba(232,131,148,0.85) 0%, rgba(232,131,148,0) 70%); box-shadow: 0 0 12px rgba(232,131,148,0.22); animation: catalogue-orbit-b 30s ease-in-out infinite; animation-delay: 4.2s; }
+                  .catalogue-orbit-8  { width: 6px;  height: 6px;  left: 18%; top: 46%; background: radial-gradient(circle, rgba(245,158,177,0.85) 0%, rgba(245,158,177,0) 70%); box-shadow: 0 0 8px  rgba(245,158,177,0.22); animation: catalogue-orbit-c 38s ease-in-out infinite; animation-delay: 1.6s; }
+                  .catalogue-orbit-9  { width: 8px;  height: 8px;  left: 54%; top: 54%; background: radial-gradient(circle, rgba(184,60,77,0.8)  0%, rgba(184,60,77,0)  70%);   box-shadow: 0 0 10px rgba(184,60,77,0.22);   animation: catalogue-orbit-d 32s ease-in-out infinite; animation-delay: 5s; }
+                  .catalogue-orbit-10 { width: 7px;  height: 7px;  left: 80%; top: 48%; background: radial-gradient(circle, rgba(251,200,210,0.85) 0%, rgba(251,200,210,0) 70%); box-shadow: 0 0 10px rgba(251,200,210,0.22); animation: catalogue-orbit-e 34s ease-in-out infinite; animation-delay: 2.4s; }
+                  .catalogue-orbit-11 { width: 5px;  height: 5px;  left: 30%; top: 38%; background: radial-gradient(circle, rgba(245,158,177,0.8)  0%, rgba(245,158,177,0)  70%); box-shadow: 0 0 8px  rgba(245,158,177,0.2);  animation: catalogue-orbit-a 28s ease-in-out infinite; animation-delay: 4s; }
+                  .catalogue-orbit-12 { width: 8px;  height: 8px;  left: 68%; top: 8%;  background: radial-gradient(circle, rgba(232,131,148,0.8)  0%, rgba(232,131,148,0)  70%); box-shadow: 0 0 10px rgba(232,131,148,0.22); animation: catalogue-orbit-b 30s ease-in-out infinite; animation-delay: .5s; }
+
+                  /* Drift ranges - ambient, not propelled. */
+                  @keyframes catalogue-orbit-a { 0%,100% { transform: translate(0,0); opacity: .25; } 50% { transform: translate(30px,-40px);  opacity: .65; } }
+                  @keyframes catalogue-orbit-b { 0%,100% { transform: translate(0,0); opacity: .25; } 50% { transform: translate(-40px,30px); opacity: .65; } }
+                  @keyframes catalogue-orbit-c { 0%,100% { transform: translate(0,0); opacity: .2; }  33% { transform: translate(40px,18px);  opacity: .55; } 66% { transform: translate(-25px,-30px); opacity: .7; } }
+                  @keyframes catalogue-orbit-d { 0%,100% { transform: translate(0,0); opacity: .25; } 50% { transform: translate(-30px,-45px); opacity: .65; } }
+                  @keyframes catalogue-orbit-e { 0%,100% { transform: translate(0,0); opacity: .25; } 50% { transform: translate(45px,35px);   opacity: .65; } }
+
+                  @media (prefers-reduced-motion: reduce) {
+                    .catalogue-blob,
+                    .catalogue-floating-circle,
+                    .catalogue-orbit {
+                      animation: none !important;
+                    }
+                  }
+                `,
+              }}
+            />
           </section>
           {/* ════════════════════════════════════════════════════════════
               5. PERSONAS - "למי זה מתאים" (magazine chapters on cream)

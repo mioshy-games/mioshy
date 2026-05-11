@@ -19,7 +19,6 @@
 import { revalidatePath } from "next/cache";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
-import { requireCompleteProfile } from "@/lib/auth/profile-gate";
 import { getBetweenUsSettings } from "@/lib/between-us/queries";
 import type { AdultsPlanTier } from "@/lib/between-us/types";
 
@@ -42,9 +41,10 @@ export async function subscribeAdultsTier(
     return { ok: false, error: "invalid_tier" };
   }
 
-  const gate = await requireCompleteProfile();
-  if (!gate.ok) return { ok: false, error: gate.error };
-
+  // Per Itzik 2026-05-07: subscribing to Mioshy's Sex (the recurring
+  // tier) does NOT require a full profile — only auth. Pairing a
+  // partner is optional and is gated separately on the redeem-code
+  // path. Auth alone is enough to start the Cardcom flow.
   const supabase = await createServerSupabaseClient();
   const {
     data: { user },

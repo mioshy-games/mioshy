@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * JourneyDesk — the primary work surface of /my/journey.
+ * JourneyDesk - the primary work surface of /my/journey.
  *
  * Layout (desktop, lg+):
  *   ┌──────────────────────────────────────────────────────────┐
@@ -102,7 +102,7 @@ export function JourneyDesk({
     setSelectedItemId(first?.id ?? null);
   }, [selectedPill]);
 
-  // Always compute progress — must come before any early return so
+  // Always compute progress - must come before any early return so
   // hook order stays stable (rules-of-hooks).
   const progress = useMemo(() => aggregateProgress(entries), [entries]);
 
@@ -126,7 +126,7 @@ export function JourneyDesk({
 
   return (
     <div className="space-y-4">
-      {/* Progress strip — quick "how am I doing" header. Empty
+      {/* Progress strip - quick "how am I doing" header. Empty
           (no real items) → render nothing; the "preparing" content
           panel carries the message in that case. */}
       {progress.totalItems > 0 ? (
@@ -134,7 +134,7 @@ export function JourneyDesk({
       ) : null}
 
       <div className="grid gap-4 lg:grid-cols-12 lg:gap-6">
-        {/* Content panel — DOM order matters for mobile (rail first). */}
+        {/* Content panel - DOM order matters for mobile (rail first). */}
         <div className="order-2 lg:order-1 lg:col-span-8">
           <ContentPanel
             isHe={isHe}
@@ -144,7 +144,7 @@ export function JourneyDesk({
             Arrow={Arrow}
           />
         </div>
-        {/* Rail — order-1 on mobile (top), col 1-4 on lg (right side in RTL). */}
+        {/* Rail - order-1 on mobile (top), col 1-4 on lg (right side in RTL). */}
         <aside className="order-1 lg:order-2 lg:col-span-4">
           <RailColumn
             isHe={isHe}
@@ -159,7 +159,7 @@ export function JourneyDesk({
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// Progress strip — sits above the desk
+// Progress strip - sits above the desk
 // ─────────────────────────────────────────────────────────────────────
 
 function ProgressStrip({
@@ -189,7 +189,7 @@ function ProgressStrip({
             : `${progress.completedItems} of ${progress.totalItems} completed`}
         </span>
       </div>
-      {/* Progress bar — calm, low-contrast */}
+      {/* Progress bar - calm, low-contrast */}
       <div
         className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]"
         role="progressbar"
@@ -348,7 +348,7 @@ function RailButton({
         ? Sparkles
         : Lock;
 
-  // Aggregate badges from items inside this pill — show a single dot
+  // Aggregate badges from items inside this pill - show a single dot
   // when there's an unread reply or an item awaiting the user's
   // response. Surfaced in the corner so it doesn't fight the icon.
   const unreadCount =
@@ -376,7 +376,7 @@ function RailButton({
       onClick={onClick}
       disabled={isLocked}
       aria-current={isSelected ? "step" : undefined}
-      aria-label={`${index + 1} / ${total} — ${entry.label}`}
+      aria-label={`${index + 1} / ${total} - ${entry.label}`}
       className={[
         "group flex w-full min-w-[160px] items-start gap-2 rounded-xl border px-3 py-2.5 text-start transition lg:min-w-0",
         surface,
@@ -397,7 +397,7 @@ function RailButton({
       </span>
       {/* Notification stack: unread clinician reply (violet) + the
           number of items still waiting for the user's response
-          (amber). Subtle — small dots, not loud chips. */}
+          (amber). Subtle - small dots, not loud chips. */}
       <span className="ms-1 flex shrink-0 flex-col items-end gap-1">
         {unreadCount > 0 ? (
           <span
@@ -460,11 +460,11 @@ function ContentPanel({
 
   return (
     <section className="overflow-hidden rounded-2xl border border-white/[0.07] bg-slate-950/70 backdrop-blur-md">
-      {/* Hero — image, video, or a calm gradient placeholder */}
+      {/* Hero - image, video, or a calm gradient placeholder */}
       <ItemHero item={item} isHe={isHe} />
 
       <div className="px-5 py-5 sm:px-7 sm:py-6">
-        {/* Pill breadcrumb above the title — tells the user which
+        {/* Pill breadcrumb above the title - tells the user which
             step in the rail they're inside. */}
         <p className="text-[11px] uppercase tracking-wider text-white/45">
           {pill.label}
@@ -487,7 +487,7 @@ function ContentPanel({
           </p>
         )}
 
-        {/* Open full view CTA — drills into /journey/timeline/[id]
+        {/* Open full view CTA - drills into /journey/timeline/[id]
             (or /journey/assessment for the synthetic entry). */}
         {item.status !== "locked" ? (
           <div className="mt-5">
@@ -507,7 +507,7 @@ function ContentPanel({
           </div>
         ) : null}
 
-        {/* Sibling items in this pill — only when the pill has
+        {/* Sibling items in this pill - only when the pill has
             multiple items, otherwise the chip row is just noise. */}
         {pill.items.length > 1 ? (
           <SiblingItemsRow
@@ -518,7 +518,7 @@ function ContentPanel({
           />
         ) : null}
 
-        {/* Conversation thread — what the user wrote, what the
+        {/* Conversation thread - what the user wrote, what the
             clinician replied. The whole point of "real interaction":
             instead of a one-shot textarea, the user sees the dialogue
             inline. Only for real items, never the synthetic
@@ -535,15 +535,15 @@ function ContentPanel({
 // Conversation thread (Phase 5)
 //
 // The "real interaction" surface inside the desk panel. Three lanes:
-//   1. The user's existing response (if any) — shown in a pale
+//   1. The user's existing response (if any) - shown in a pale
 //      bubble. Acknowledges "we got your message".
-//   2. The clinician's reply (if any) — shown in a slightly more
+//   2. The clinician's reply (if any) - shown in a slightly more
 //      prominent bubble with the "המומחה" label.
-//   3. The ResponseBox — for available items, lets the user reply or
+//   3. The ResponseBox - for available items, lets the user reply or
 //      add a follow-up note. For completed items it's still there so
 //      they can keep adding notes after the fact.
 //
-// Locked items render no thread — there's nothing to converse about
+// Locked items render no thread - there's nothing to converse about
 // yet.
 // ─────────────────────────────────────────────────────────────────────
 
@@ -631,7 +631,7 @@ function ConversationThread({
         </div>
       ) : null}
 
-      {/* The reply form — available + completed items both keep it
+      {/* The reply form - available + completed items both keep it
           on. Locked items short-circuit at the top of this function. */}
       <div>
         <p className="mb-2 text-[12px] font-semibold uppercase tracking-wider text-white/55">
@@ -679,7 +679,7 @@ function ItemHero({
       </div>
     );
   }
-  // Placeholder — gradient with a corner icon. Calm, not loud.
+  // Placeholder - gradient with a corner icon. Calm, not loud.
   return (
     <div className="relative flex aspect-[16/7] w-full items-center justify-center overflow-hidden bg-gradient-to-br from-slate-900 via-slate-900/80 to-slate-800/60">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(255,255,255,0.08),_transparent_60%)]" />

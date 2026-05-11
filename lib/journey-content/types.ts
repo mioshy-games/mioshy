@@ -71,10 +71,10 @@ export interface JourneyCategory {
 
 /**
  * v3 slice 7 / migration 054: per-binding mode for group ↔ subtopic.
- *   replace    — auto-cadence skips items in this subtopic for group
+ *   replace    - auto-cadence skips items in this subtopic for group
  *                members; admin pushes are the only way items reach
  *                the user from this subtopic.
- *   interleave — auto-cadence picks normally from this subtopic;
+ *   interleave - auto-cadence picks normally from this subtopic;
  *                admin pushes ALSO surface (additive). Slice 7 wires
  *                the cadence-side filter; the additive admin-push
  *                lands in slice 8.
@@ -135,7 +135,7 @@ export interface JourneySubtopic {
 export type JourneyAudience = "both" | "owner" | "partner";
 
 /**
- * Migration 050 — discriminator for items that aren't plain content:
+ * Migration 050 - discriminator for items that aren't plain content:
  *   - 'content'    → the original kind (articles / exercises / video)
  *   - 'assessment' → a structured questionnaire the user fills in
  *   - 'reflection' → a single open-ended prompt
@@ -188,7 +188,7 @@ export interface JourneyAssessmentPayload {
 
 /**
  * v3 slice 2 / migration 054: presentational discriminator for items.
- * Orthogonal to `kind` (which is content/assessment/reflection — the
+ * Orthogonal to `kind` (which is content/assessment/reflection - the
  * shape of the response surface). content_type drives icons + filters
  * in admin only; the cadence engine doesn't read it.
  */
@@ -232,6 +232,39 @@ export interface JourneyItem {
   /** v3 slice 2 / migration 054. Items that must be delivered before
    *  this one (cadence engine respects). */
   prereq_item_ids?: string[];
+
+  // ── Lesson blocks (migration 077) ────────────────────────────
+  // Each item is a structured lesson, not a wall of text. The 9 fields
+  // below render as their own micro-sections in LessonView. NULL on
+  // legacy rows is fine — LessonView falls back to body_he/task_he/
+  // challenge_he when the lesson blocks aren't populated.
+  /** Curriculum stage 1-4 (יסודות / העמקה / אינטגרציה / הבשלה). */
+  stage?: number | null;
+  /** Researcher / book attribution shown at lesson foot. */
+  source_attribution_he?: string | null;
+  source_attribution_en?: string | null;
+  /** Opening insight, ~60-150 words. */
+  expert_insight_he?: string | null;
+  expert_insight_en?: string | null;
+  /** What most couples get wrong. */
+  common_mistakes_he?: string | null;
+  common_mistakes_en?: string | null;
+  /** Visual anchor metaphor. */
+  metaphor_he?: string | null;
+  metaphor_en?: string | null;
+  /** What to observe / measure during the week. */
+  measurement_he?: string | null;
+  measurement_en?: string | null;
+  /** Explicit "do this week". */
+  do_this_week_he?: string | null;
+  do_this_week_en?: string | null;
+  /** Explicit "don't this week". */
+  dont_this_week_he?: string | null;
+  dont_this_week_en?: string | null;
+  /** Single observable sign that progress is happening. */
+  progress_marker_he?: string | null;
+  progress_marker_en?: string | null;
+
   sort_order: number;
   default_offset_days: number;
   is_active: boolean;
@@ -276,19 +309,24 @@ export interface JourneyScheduledItem {
   /** Migration 044: copied from item at materialization. The expert may
    * override this row independently (e.g. via per-couple CSV upload). */
   audience: JourneyAudience;
-  /** v3 slice 1 / migration 055 — first time the user opened this item. */
+  /** v3 slice 1 / migration 055 - first time the user opened this item. */
   seen_at?: string | null;
-  /** v3 slice 1 / migration 055 — first user message in the per-item
+  /** v3 slice 1 / migration 055 - first user message in the per-item
    *  thread stamps this. The cadence engine's auto-skip rule keys on
    *  it: rows past auto_skip_after_days with responded_at NULL get
    *  marked skipped on the next materialization sweep. */
   responded_at?: string | null;
-  /** v3 slice 1 / migration 055 — set by the cadence engine's
+  /** v3 slice 1 / migration 055 - set by the cadence engine's
    *  skip-sweep when this row passed the auto-skip threshold without
    *  a response. */
   skipped_at?: string | null;
-  /** v3 slice 1 / migration 055 — origin of this scheduled row. */
+  /** v3 slice 1 / migration 055 - origin of this scheduled row. */
   source?: "cadence" | "expert_push" | "group" | "random" | "admin_manual" | "program" | "category" | "item";
+  /** Migration 066 - the match rule that produced this scheduled item.
+   *  Drives the user-facing "Why this item?" disclosure and admin traces.
+   *  NULL for rows created before migration 066 that the backfill couldn't
+   *  attribute. */
+  matched_by_rule_id?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -315,7 +353,7 @@ export interface JourneyItemResponse {
   clinician_id?: string | null;
   clinician_reply_text?: string | null;
   clinician_replied_at?: string | null;
-  /** Migration 050 — for assessment/reflection items, the user's
+  /** Migration 050 - for assessment/reflection items, the user's
    *  serialized structured answer keyed by question id. Null for
    *  content items (which keep using `response_text`). */
   structured_answer?: Record<string, unknown> | null;
@@ -352,6 +390,14 @@ export interface TimelineEntry {
   completion: JourneyItemCompletion | null;
   /** Responses visible to the current viewer (private filtering applied). */
   responses: JourneyItemResponse[];
+  /** Migration 066 — the bilingual rationale for "Why this item?".
+   *  Null when the row predates rule attribution (legacy backfill miss). */
+  matchRule: {
+    id: string;
+    slug: string;
+    rationale_he: string;
+    rationale_en: string;
+  } | null;
 }
 
 /**

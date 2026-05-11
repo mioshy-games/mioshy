@@ -3,7 +3,7 @@
  *
  * Pure functions that map (entitlements + journey status) to the
  * single state badge and CTA copy on each pillar card. No DB calls
- * here — that's the page's job. This file just turns inputs into the
+ * here - that's the page's job. This file just turns inputs into the
  * three things the UI needs:
  *
  *   - state:    "open" | "in_progress" | "not_purchased"  (§3)
@@ -15,7 +15,7 @@
  *
  * MVP rule (per docs/my-page-redesign-spec.md §0): we only handle
  * the three "open / in_progress / not_purchased" states. No
- * COMING_SOON, no UNAVAILABLE — those were over-engineering.
+ * COMING_SOON, no UNAVAILABLE - those were over-engineering.
  */
 
 import type { PillarStateKind } from "@/components/ui/StateBadge"
@@ -23,7 +23,7 @@ import type { PillarStateKind } from "@/components/ui/StateBadge"
 export type PillarKey = "games" | "journey" | "adults"
 
 /**
- * Assessment stage — only meaningful for the Journey pillar.
+ * Assessment stage - only meaningful for the Journey pillar.
  * Derived from the legacy `journeys` table, not from the new
  * journey_assignments. The "completed" stage means the user finished
  * the questionnaire; whether or not the clinician has attached
@@ -64,17 +64,19 @@ export function derivePillarState(input: PillarStateInputs): PillarStateOutput {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// Journey — the most nuanced one (per spec §5)
+// Journey - the most nuanced one (per spec §5)
 // ─────────────────────────────────────────────────────────────────────
 
 function deriveJourneyState(input: PillarStateInputs): PillarStateOutput {
   const { entitlement, hasActiveAssignments, assessmentStage, isHe } = input
 
-  // No subscription → marketing entry
+  // No subscription → marketing entry. Per Itzik 2026-05-06 the
+  // generic "Discover" was too vague — replaced with action-language
+  // that signals what happens next on click.
   if (!entitlement) {
     return {
       state: "not_purchased",
-      ctaLabel: isHe ? "לגלות" : "Discover",
+      ctaLabel: isHe ? "להתחיל את הליווי" : "Start coaching",
       ctaHref: "/journey",
     }
   }
@@ -115,7 +117,7 @@ function deriveJourneyState(input: PillarStateInputs): PillarStateOutput {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// Games — light, two-state
+// Games - light, two-state
 // ─────────────────────────────────────────────────────────────────────
 
 function deriveGamesState(input: PillarStateInputs): PillarStateOutput {
@@ -123,7 +125,7 @@ function deriveGamesState(input: PillarStateInputs): PillarStateOutput {
   if (!entitlement) {
     return {
       state: "not_purchased",
-      ctaLabel: isHe ? "לגלות" : "Discover",
+      ctaLabel: isHe ? "לפתוח את המשחקים" : "Open the games",
       ctaHref: "/games",
     }
   }
@@ -135,7 +137,7 @@ function deriveGamesState(input: PillarStateInputs): PillarStateOutput {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// Adults — light, two-state
+// Adults - light, two-state
 // ─────────────────────────────────────────────────────────────────────
 
 function deriveAdultsState(input: PillarStateInputs): PillarStateOutput {
@@ -143,8 +145,8 @@ function deriveAdultsState(input: PillarStateInputs): PillarStateOutput {
   if (!entitlement) {
     return {
       state: "not_purchased",
-      ctaLabel: isHe ? "לגלות" : "Discover",
-      ctaHref: "/adults",
+      ctaLabel: isHe ? "לבחור משחק" : "Pick a game",
+      ctaHref: "/mioshy-sex",
     }
   }
   return {

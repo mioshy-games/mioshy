@@ -155,7 +155,7 @@ export const ITEM_COLS = [
   "sort_order",
   "default_offset_days",
   "is_active",
-  // 'both' | 'owner' | 'partner' — added in migration 044. Old CSV files
+  // 'both' | 'owner' | 'partner' - added in migration 044. Old CSV files
   // without this column default to 'both' on import.
   "audience",
 ] as const;
@@ -221,7 +221,7 @@ export type ItemExportRow = {
   sort_order: number;
   default_offset_days: number;
   is_active: boolean;
-  /** 'both' | 'owner' | 'partner' — see migration 044. */
+  /** 'both' | 'owner' | 'partner' - see migration 044. */
   audience: "both" | "owner" | "partner";
 };
 

@@ -26,6 +26,7 @@ import type {
   JourneyItem,
 } from "./types";
 import { computeUnlockAt } from "./schedule";
+import { resolveRuleId } from "./match-rules";
 
 // ------------------------------------------------------------
 // Pure planner
@@ -44,6 +45,10 @@ export interface PlannedScheduledRow {
    * tweaks AFTER materialization don't silently re-route who sees what. The
    * expert can override this row by editing the per-couple CSV. */
   audience: "both" | "owner" | "partner";
+  /** Migration 066 — the match rule that produced this row. Drives the
+   * user-facing "Why this item?" disclosure. NULL is acceptable but
+   * impoverishes the UX — every call site should resolve a slug. */
+  matched_by_rule_id: string | null;
 }
 
 export interface PlanMaterializeInput {
@@ -54,6 +59,10 @@ export interface PlanMaterializeInput {
     JourneyItem,
     "id" | "default_offset_days" | "sort_order" | "audience"
   >[];
+  /** Resolved rule id to stamp on every planned row. Pass via the
+   *  applier's `defaultRuleSlug` and let it resolve to id once before
+   *  calling the planner. */
+  matchedByRuleId: string | null;
 }
 
 /**
@@ -72,6 +81,7 @@ export function planMaterializeAssignment(
     has_unlock_override: false as const,
     admin_notes: null,
     audience: item.audience ?? "both",
+    matched_by_rule_id: input.matchedByRuleId,
   }));
 }
 
@@ -153,10 +163,21 @@ export interface MaterializeResult {
  * Materialize one assignment - idempotent by composite PK
  * (assignment_id, item_id) which was declared in migration 035. If the
  * scheduled rows already exist, we skip them silently instead of erroring.
+ *
+ * `defaultRuleSlug` controls the user-facing "Why this item?" attribution
+ * for every newly-created row. Caller picks the slug based on origin:
+ *   - Cardcom auto-purchase → 'default_program_kickoff' (or priority slug)
+ *   - Admin manual          → 'manual_assignment'
+ *   - Expert push           → 'expert_recommendation'
+ *   - Cadence engine        → resolved per-item by the engine itself
+ *
+ * If unset, rows land with NULL attribution and the UI falls back to
+ * a generic "part of your program" line.
  */
 export async function materializeAssignment(args: {
   assignment: JourneyAssignment;
   supabase?: SupabaseClient;
+  defaultRuleSlug?: string;
 }): Promise<MaterializeResult> {
   const supabase = args.supabase ?? (await createAdminClient());
   const { assignment } = args;
@@ -171,6 +192,12 @@ export async function materializeAssignment(args: {
     return { inserted: 0, assignmentId: assignment.id, items: [] };
   }
 
+  // Resolve the rule slug to id once for the whole batch. resolveRuleId
+  // is in-process cached so this is effectively free after the first hit.
+  const matchedByRuleId = args.defaultRuleSlug
+    ? await resolveRuleId(args.defaultRuleSlug)
+    : null;
+
   const rows = planMaterializeAssignment({
     assignmentId: assignment.id,
     anchorDate: assignment.anchor_date,
@@ -180,6 +207,7 @@ export async function materializeAssignment(args: {
       sort_order: i.sort_order,
       audience: i.audience,
     })),
+    matchedByRuleId,
   });
 
   // Upsert on (assignment_id, item_id) - the table's PK. ignoreDuplicates

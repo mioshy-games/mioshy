@@ -4,29 +4,43 @@
  */
 
 export type Plan = "weekly" | "monthly" | "annual"
+export type SubscriptionProduct = "games" | "journey"
 
-/** Amount in ILS per plan (VAT inclusive) */
-export const PLAN_AMOUNTS_ILS: Record<Plan, number> = {
-  weekly:  9,
-  monthly: 37,
-  annual:  369,
+/**
+ * Per-product subscription prices (Itzik 2026-05-06).
+ *
+ * Pricing model on the homepage:
+ *   • Games   — 9 ₪/wk  ($3/wk)  — light entry tier
+ *   • Journey — 57 ₪/wk ($17/wk) — single all-included plan
+ *   • Adults  — one-time per game (uses experience_games.price_*)
+ *
+ * Previously this file had a single PLAN_AMOUNTS_* matrix without
+ * a product axis, which meant journey/weekly was charged at 9 ₪
+ * instead of 57. The matrix is now indexed by product first, then
+ * by plan, and getPlanPrice() requires the product as input.
+ */
+export const PLAN_AMOUNTS_ILS: Record<SubscriptionProduct, Record<Plan, number>> = {
+  games:   { weekly:  9, monthly:  37, annual: 369 },
+  journey: { weekly: 57, monthly: 219, annual: 2199 },
 }
 
-/** Amount in USD per plan */
-export const PLAN_AMOUNTS_USD: Record<Plan, number> = {
-  weekly:  3,
-  monthly: 9,
-  annual:  123,
+export const PLAN_AMOUNTS_USD: Record<SubscriptionProduct, Record<Plan, number>> = {
+  games:   { weekly:  3, monthly:   9, annual: 123 },
+  journey: { weekly: 17, monthly:  65, annual: 649 },
 }
 
 /**
- * Return plan price info based on the user's country.
+ * Return plan price info based on the product, plan, and country.
  * Israeli users pay ILS (CoinId=1), others pay USD (CoinId=2).
  *
  * If NEXT_PUBLIC_BILLING_TEST_PRICE is set (e.g. "1"), overrides all amounts to
  * that value - useful for testing real Cardcom charges without paying full price.
  */
-export function getPlanPrice(plan: Plan, isIsraeli: boolean) {
+export function getPlanPrice(
+  plan: Plan,
+  isIsraeli: boolean,
+  product: SubscriptionProduct = "journey",
+) {
   const testOverride = process.env.NEXT_PUBLIC_BILLING_TEST_PRICE
   if (testOverride) {
     const amt = Number(testOverride)
@@ -37,8 +51,8 @@ export function getPlanPrice(plan: Plan, isIsraeli: boolean) {
     }
   }
   return isIsraeli
-    ? { amount: PLAN_AMOUNTS_ILS[plan], currency: "ILS", coinId: 1 }
-    : { amount: PLAN_AMOUNTS_USD[plan], currency: "USD", coinId: 2 }
+    ? { amount: PLAN_AMOUNTS_ILS[product][plan], currency: "ILS", coinId: 1 }
+    : { amount: PLAN_AMOUNTS_USD[product][plan], currency: "USD", coinId: 2 }
 }
 
 /**

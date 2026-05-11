@@ -1,7 +1,7 @@
 "use client";
 
 // ============================================================
-// PushComposer — slice 8 admin page for pushing items to a
+// PushComposer - slice 8 admin page for pushing items to a
 // recipient (user / couple / group). Three steps stacked vertically:
 //
 //   1. Recipient picker (kind radio + typeahead/select)
@@ -176,7 +176,7 @@ export function PushComposer({
 
   return (
     <div className="space-y-6">
-      {/* Step 1 — recipient */}
+      {/* Step 1 - recipient */}
       <section className="bg-card rounded-lg border p-5">
         <header className="mb-4">
           <span className="inline-flex items-center gap-1.5">
@@ -185,7 +185,7 @@ export function PushComposer({
           </span>
           <p className="text-muted-foreground mt-0.5 inline-flex items-center gap-1.5 text-xs">
             <span>
-              Pushes ride the recipient&apos;s next delivery slot — they don&apos;t
+              Pushes ride the recipient&apos;s next delivery slot - they don&apos;t
               deliver instantly.
             </span>
             <HintIcon topic="push.delivery_slot_explanation" />
@@ -256,7 +256,7 @@ export function PushComposer({
         )}
       </section>
 
-      {/* Step 2 — items */}
+      {/* Step 2 - items */}
       <section className="bg-card rounded-lg border p-5">
         <header className="mb-4 flex items-center justify-between">
           <div>
@@ -375,7 +375,7 @@ export function PushComposer({
           )}
         </div>
 
-        {/* Selected items chip row — visible across filters so the
+        {/* Selected items chip row - visible across filters so the
             admin can see what they've staged even if a filter hides
             some of the selected items. */}
         {selectedItems.length > 0 ? (
@@ -401,12 +401,12 @@ export function PushComposer({
         ) : null}
       </section>
 
-      {/* Step 3 — reason + submit */}
+      {/* Step 3 - reason + submit */}
       <section className="bg-card rounded-lg border p-5">
         <header className="mb-4">
           <h2 className="text-lg font-semibold">3. Reason note (optional)</h2>
           <p className="text-muted-foreground mt-0.5 text-xs">
-            Surfaces only on the dashboard side — users don&apos;t see this.
+            Surfaces only on the dashboard side - users don&apos;t see this.
           </p>
         </header>
         <Label htmlFor="reason" className="sr-only">

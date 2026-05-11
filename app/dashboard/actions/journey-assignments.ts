@@ -128,6 +128,9 @@ export async function createJourneyAssignment(
   const { inserted } = await materializeAssignment({
     assignment,
     supabase,
+    // Admin manual creation → user sees "hand-picked by your coach"
+    // (see migration 066, slug 'manual_assignment').
+    defaultRuleSlug: "manual_assignment",
   });
 
   revalidateJourney(v.owner_key);
@@ -192,6 +195,13 @@ export async function rematerializeJourneyAssignment(assignmentId: string) {
   const { inserted } = await materializeAssignment({
     assignment: data as JourneyAssignment,
     supabase,
+    // Re-materialize re-attaches the same rule the original used. The
+    // existing rows aren't touched (UPSERT with ignoreDuplicates), so
+    // this only affects newly-added items in the source.
+    defaultRuleSlug:
+      (data as JourneyAssignment).origin === "purchase"
+        ? "default_program_kickoff"
+        : "manual_assignment",
   });
   revalidateJourney();
   return { ok: true as const, inserted };

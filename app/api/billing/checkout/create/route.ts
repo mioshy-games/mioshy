@@ -25,6 +25,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server"
 import { createAdminClient }   from "@/lib/supabase-admin"
 import { openLowProfile }      from "@/lib/cardcom"
 import { getPlanPrice }        from "@/lib/billing"
+import { geoFromRequest, localeFromGeo, currencyFromGeo } from "@/lib/geo-from-request"
 
 function baseUrl(req: Request) {
   const envUrl = process.env.PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL
@@ -67,6 +68,23 @@ export async function POST(req: Request) {
   // ── Auth ────────────────────────────────────────────────────────────────────
   const supabase     = await createServerSupabaseClient()
   const { data: auth } = await supabase.auth.getUser()
+
+  // Diagnostic: when this branch returns UNAUTHORIZED for a user who
+  // appears signed-in in the browser, we need to know whether the request
+  // even carried Supabase cookies. We log only cookie NAMES (not values),
+  // an 8-char user-id prefix, and presence flags.
+  const cookieHeader = req.headers.get("cookie") || ""
+  const sbCookieNames = cookieHeader
+    .split(";")
+    .map(c => c.trim().split("=")[0])
+    .filter(name => name.startsWith("sb-"))
+  console.log("[checkout:CREATE] auth_check", {
+    has_user: Boolean(auth?.user),
+    user_id8: auth?.user?.id?.slice(0, 8) ?? null,
+    cookie_count: cookieHeader ? cookieHeader.split(";").length : 0,
+    sb_cookie_names: sbCookieNames,
+  })
+
   if (!auth?.user) {
     return NextResponse.json(
       { success: false, code: "UNAUTHORIZED", message: "Please sign in before paying." },
@@ -76,6 +94,11 @@ export async function POST(req: Request) {
 
   // ── Parse body ──────────────────────────────────────────────────────────────
   const body = await req.json().catch(() => ({}))
+  // NOTE: `country_code`, `language`, `is_israeli`, and `vat_rate_percent`
+  // are still accepted in the request body but are advisory only - the
+  // server-trusted values come from `geoFromRequest(req)` below. The
+  // audit log reads them off `body?.*` directly, so we don't destructure
+  // them as locals.
   const {
     email          = auth.user.email ?? "",
     name           = null,
@@ -83,13 +106,48 @@ export async function POST(req: Request) {
     product        = "journey",           // which pillar this purchase unlocks
     purchase_type  = "subscription",       // 'subscription' | 'one_time'
     target_game_id = null,                 // required when purchase_type='one_time'
-    country_code   = "",
-    language       = "he",
-    is_israeli     = false,
-    vat_rate_percent = 0,
     lead_id        = null,
     return_path   = null,                  // optional post-payment landing path
   } = body
+
+  // ── Server-trusted locale/tax fields, derived from request IP ───────────────
+  // Tax compliance: we cannot let the client decide whether they're charged
+  // 17% Israeli VAT or 0%. Vercel's edge attaches an ISO-2 country code via
+  // `x-vercel-ip-country` (see lib/geo-from-request.ts). This becomes the
+  // single source of truth for downstream pricing, VAT, currency, and
+  // invoice language. The client-supplied fields above are kept only for
+  // logging so we can spot mismatches.
+  const geo = geoFromRequest(req)
+  console.log("[checkout:CREATE] geo", {
+    ip_country: geo.countryCode,
+    source: geo.source,
+    client_country_code: typeof body?.country_code === "string" ? body.country_code : null,
+    client_is_israeli: typeof body?.is_israeli === "boolean" ? body.is_israeli : null,
+    client_language: typeof body?.language === "string" ? body.language : null,
+    client_vat_rate_percent:
+      typeof body?.vat_rate_percent === "number" ? body.vat_rate_percent : null,
+  })
+
+  // In production, refuse the checkout when we genuinely don't know the
+  // user's country. Issuing a tax invoice without a defensible country
+  // value (defaulting to either IL or US) is a worse outcome than asking
+  // the user to retry/contact support.
+  if (geo.source === "unknown" && process.env.VERCEL_ENV === "production") {
+    return NextResponse.json(
+      {
+        success: false,
+        code: "GEO_UNKNOWN",
+        message: "Could not determine your country. Please contact support.",
+      },
+      { status: 400 },
+    )
+  }
+
+  const trustedCountryCode = geo.countryCode ?? "XX"
+  const trustedIsIsraeli   = geo.isIsraeli
+  const trustedLanguage    = localeFromGeo(geo)
+  const trustedVatPercent  = trustedIsIsraeli ? 17 : 0
+  const trustedCurrency    = currencyFromGeo(geo)
 
   // Subscription plans must be one of weekly/monthly/annual.
   // One-time purchases use plan='one_time' and an explicit target_game_id;
@@ -143,7 +201,21 @@ export async function POST(req: Request) {
   let currency: string
   let coinId: number | undefined
   if (purchase_type === "subscription") {
-    const planPrice = getPlanPrice(plan, is_israeli)
+    // Subscription pricing is product-aware (Itzik 2026-05-06):
+    //   games → 9/37/369 ILS
+    //   journey → 57/219/2199 ILS
+    //   adults pillar isn't a subscription (one-time only) — guard.
+    if (product === "adults") {
+      return NextResponse.json(
+        {
+          success: false,
+          code: "INVALID_PRODUCT",
+          message: "Mioshy's Sex (adults) is one-time only, not subscription",
+        },
+        { status: 400 },
+      )
+    }
+    const planPrice = getPlanPrice(plan, trustedIsIsraeli, product as "games" | "journey")
     amount = planPrice.amount
     currency = planPrice.currency
     coinId = planPrice.coinId
@@ -160,7 +232,7 @@ export async function POST(req: Request) {
         { status: 400 },
       )
     }
-    if (is_israeli) {
+    if (trustedIsIsraeli) {
       const ils = game.price_ils as number | null
       if (ils == null || ils <= 0) {
         return NextResponse.json(
@@ -187,7 +259,7 @@ export async function POST(req: Request) {
 
   // Determine locale for redirect URLs - avoids the middleware double-redirect bug
   // where /billing/success gets turned into /he/billing/success?session_id=he/billing/success?...
-  const urlLocale = (language === "he" || is_israeli) ? "he" : "en"
+  const urlLocale = trustedLanguage
 
   // ── Create checkout session in DB ───────────────────────────────────────────
   const serviceClient = await createAdminClient()
@@ -207,12 +279,14 @@ export async function POST(req: Request) {
       purchase_type,
       target_game_id:   purchase_type === "one_time" ? target_game_id : null,
       amount,
-      currency,
+      currency:         trustedCurrency,
       coin_id:          coinId,
-      country_code:     country_code || null,
-      language,
-      is_israeli,
-      vat_rate_percent,
+      // Server-trusted values (IP-derived). The client-supplied versions
+      // were destructured above for audit logging only - never persisted.
+      country_code:     trustedCountryCode,
+      language:         trustedLanguage,
+      is_israeli:       trustedIsIsraeli,
+      vat_rate_percent: trustedVatPercent,
       status:           "created",
     })
     .select("id")
@@ -240,7 +314,7 @@ export async function POST(req: Request) {
   })
 
   // ── Open Cardcom LowProfile ─────────────────────────────────────────────────
-  const cardcomLang = (language === "he" || is_israeli) ? "he" : "en"
+  const cardcomLang = trustedLanguage
 
   // For one-time Adults purchases the natural success destination is the
   // product page itself (the entitled state surfaces the pair code there).
@@ -315,7 +389,7 @@ export async function POST(req: Request) {
     })
     .eq("id", sessionId)
 
-  console.log("[checkout:CREATE] DONE — Cardcom redirect ready", {
+  console.log("[checkout:CREATE] DONE - Cardcom redirect ready", {
     session_id: sessionId,
     low_profile_code: cardcomResult.lowProfileCode,
     redirect_url: cardcomResult.redirectUrl,

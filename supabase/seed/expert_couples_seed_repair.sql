@@ -18,7 +18,7 @@
 
 BEGIN;
 
--- 1. auth.users — backfill the columns GoTrue queries on sign-in.
+-- 1. auth.users - backfill the columns GoTrue queries on sign-in.
 UPDATE auth.users
 SET
   confirmation_token         = COALESCE(confirmation_token, ''),
@@ -36,7 +36,7 @@ SET
 WHERE email LIKE '%@mioshy.test';
 
 
--- 2. auth.identities — fix provider_id (must be email for email provider)
+-- 2. auth.identities - fix provider_id (must be email for email provider)
 --    and add the verified flags GoTrue expects in identity_data.
 UPDATE auth.identities i
 SET
@@ -58,7 +58,7 @@ WHERE i.user_id = u.id
   AND u.email LIKE '%@mioshy.test';
 
 
--- 3. Sanity check — print one row so you can confirm in psql.
+-- 3. Sanity check - print one row so you can confirm in psql.
 DO $$
 DECLARE
   v_count int;

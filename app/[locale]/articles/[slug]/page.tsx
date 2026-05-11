@@ -19,15 +19,69 @@ function siteUrl() {
   );
 }
 
-function formatDate(iso: string | null) {
+function formatDate(iso: string | null, locale: string) {
   if (!iso) return "-";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "-";
-  return d.toLocaleDateString(undefined, {
+  // Hebrew uses "DD בMonth YYYY" pattern with bound preposition; English
+  // keeps the long-month form. Per Itzik 2026-05-07 — was rendering
+  // English month names even on the Hebrew article ("March 27, 2026").
+  if (locale === "he") {
+    return new Intl.DateTimeFormat("he-IL", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    }).format(d);
+  }
+  return d.toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
     day: "numeric",
   });
+}
+
+/**
+ * Localise the author display name. The DB stores 'Itzik Berlav' (Latin
+ * spelling) so it travels through OG/SEO/JSON-LD cleanly; on the
+ * Hebrew article surface we render the canonical Hebrew spelling per
+ * Itzik 2026-05-07 ("יצחק ברלב", not "איציק ברלב").
+ */
+function localiseAuthor(author: string | null, locale: string): string {
+  if (!author) return "Mioshy";
+  if (locale === "he" && /itzik\s+berlav/i.test(author)) {
+    return "יצחק ברלב";
+  }
+  return author;
+}
+
+/**
+ * Display tag in the user's locale. DB tags live in English-slug form
+ * ("couples-games", "intimacy", etc.) for stability. On the HE
+ * surface we translate via this map; English uses the slug as-is
+ * with hyphens replaced by spaces.
+ */
+const TAG_TRANSLATIONS_HE: Record<string, string> = {
+  "couples-games": "משחקי זוגות",
+  "love-games": "משחקי אהבה",
+  "virtual-date": "דייט וירטואלי",
+  intimacy: "אינטימיות",
+  "sex-tips": "טיפים לסקס",
+  desire: "חשק",
+  "her-pleasure": "הנאה שלה",
+  men: "גברים",
+  positions: "תנוחות",
+  "relationship-tips": "טיפים לזוגיות",
+  communication: "תקשורת",
+  conflict: "קונפליקטים",
+  parenting: "הורות",
+  family: "משפחה",
+};
+
+function localiseTag(tag: string, locale: string): string {
+  if (locale === "he") {
+    return TAG_TRANSLATIONS_HE[tag] ?? tag.replace(/-/g, " ");
+  }
+  return tag.replace(/-/g, " ");
 }
 
 export async function generateMetadata({
@@ -165,7 +219,8 @@ export default async function ArticleDetailPage({
   const titlePick = pickLocalized({ locale, he: a.title_he, en: a.title_en });
   const excerptPick = pickLocalized({ locale, he: a.excerpt_he, en: a.excerpt_en });
   const contentPick = pickLocalized({ locale, he: a.content_he, en: a.content_en });
-  const date = formatDate(a.published_at ?? a.created_at);
+  const date = formatDate(a.published_at ?? a.created_at, locale);
+  const authorDisplay = localiseAuthor(a.author, locale);
 
   const [from, to] = getGradient(a.emoji ?? a.slug ?? "article");
 
@@ -327,7 +382,7 @@ export default async function ArticleDetailPage({
           {/* Author · Date · Reading time · Tags */}
           <Reveal delay={0.07}>
             <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-gray-100 pb-6">
-              <span className="text-sm font-medium text-gray-700">{a.author}</span>
+              <span className="text-sm font-medium text-gray-700">{authorDisplay}</span>
               <span className="text-gray-300" aria-hidden>•</span>
               <span className="text-sm text-gray-500">{date}</span>
               {a.reading_time_minutes && (
@@ -345,7 +400,7 @@ export default async function ArticleDetailPage({
                       key={tag}
                       className="rounded-full bg-rose-50 px-3 py-0.5 text-xs font-medium text-rose-700"
                     >
-                      {tag}
+                      {localiseTag(tag, locale)}
                     </span>
                   ))}
                 </div>

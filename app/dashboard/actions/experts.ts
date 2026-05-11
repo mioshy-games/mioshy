@@ -3,11 +3,11 @@
 /**
  * Server actions for the "Mioshy Coaching" expert flow.
  *
- *   - linkExpertToCouple / unlinkExpertFromCouple — admin only. Creates a
+ *   - linkExpertToCouple / unlinkExpertFromCouple - admin only. Creates a
  *     row in expert_couples so the expert can see the couple in their
  *     "My Clients" dashboard.
  *
- *   - assignContentToCouple — used by experts (or admins) on the couple
+ *   - assignContentToCouple - used by experts (or admins) on the couple
  *     detail page to push a program/category/item onto the couple's
  *     timeline. Wraps the existing createJourneyAssignment so the
  *     materialization pipeline stays a single code path.
@@ -207,6 +207,9 @@ export async function assignContentToCouple(
   await materializeAssignment({
     assignment: data as JourneyAssignment,
     supabase,
+    // Coach-pushed content surfaces "your coach hand-picked this" in the
+    // user's "Why this item?" disclosure (see migration 066).
+    defaultRuleSlug: "expert_recommendation",
   });
 
   revalidatePath(`/dashboard/my-clients/${v.coupleId}`, "layout");

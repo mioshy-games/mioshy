@@ -15,6 +15,8 @@ import {
   freezeSubscription,
   resumeSubscription,
 } from "./actions";
+import { getCurrentUserPauseState } from "@/lib/billing/pause-state";
+import { PauseSubscription } from "@/components/account/PauseSubscription";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { RedeemCodeButton } from "@/components/between-us/RedeemCodeButton";
 import { InvitePartnerByEmail } from "@/components/between-us/InvitePartnerByEmail";
@@ -59,13 +61,16 @@ export default async function AccountPage({
 }) {
   const { locale } = await params;
   const sp = (await searchParams) ?? {};
-  // Two-tab layout (profile + billing) on a single URL — per spec a single
+  // Two-tab layout (profile + billing) on a single URL - per spec a single
   // "החשבון שלי" header item houses both. Default = profile.
   const activeTab: "profile" | "billing" =
     sp.tab === "billing" ? "billing" : "profile";
   const t = await getTranslations({ locale, namespace: "account" });
   const supabase = await createServerSupabaseClient();
   const isHe = locale === "he";
+
+  // Layer-3 pause state — read once, pass into the new pause component.
+  const pauseState = await getCurrentUserPauseState();
 
   const {
     data: { user },
@@ -183,7 +188,7 @@ export default async function AccountPage({
         </div>
       )}
 
-      {/* ── Tab nav — two URLs (?tab=profile|billing) under one menu item ── */}
+      {/* ── Tab nav - two URLs (?tab=profile|billing) under one menu item ── */}
       <nav
         role="tablist"
         className="mt-6 inline-flex rounded-full border border-white/15 bg-white/5 p-1 text-sm"
@@ -365,33 +370,61 @@ export default async function AccountPage({
       {/* ── Plan + controls ──────────────────────────────────────────────── */}
       <div className="mt-4 rounded-2xl border p-5">
         <div className="grid gap-4 sm:grid-cols-2">
+          {/* Per Itzik 2026-05-07: account labels were `text-sm
+              font-semibold` and values `text-sm text-muted-foreground`
+              — both faded into the dark gradient bg of the page. The
+              "סטטוס: פעיל" line was nearly invisible. Bumped labels to
+              13px uppercase tracking-wide white/55 (clear "field
+              label" feel), and values to 18px font-semibold white
+              (full opacity). The combination is the SaaS-readable
+              spec-row pattern. */}
           <div>
-            <div className="text-sm font-semibold">{t("plan")}</div>
-            <div className="mt-1 text-sm text-muted-foreground">
+            <div className="text-[12px] font-semibold uppercase tracking-[0.12em] text-white/60">
+              {t("plan")}
+            </div>
+            <div className="mt-1.5 text-[18px] font-semibold text-white">
               {plan ? t(`plans.${plan}` as never) : t("noPlan")}
             </div>
           </div>
           <div>
-            <div className="text-sm font-semibold">{t("status")}</div>
-            <div className="mt-1 text-sm text-muted-foreground">
+            <div className="text-[12px] font-semibold uppercase tracking-[0.12em] text-white/60">
+              {t("status")}
+            </div>
+            <div className="mt-1.5 text-[18px] font-semibold text-white">
               {statusLabel ?? "-"}
             </div>
           </div>
           <div>
-            <div className="text-sm font-semibold">{t("renewal")}</div>
-            <div className="mt-1 text-sm text-muted-foreground">
+            <div className="text-[12px] font-semibold uppercase tracking-[0.12em] text-white/60">
+              {t("renewal")}
+            </div>
+            <div className="mt-1.5 text-[18px] font-semibold text-white">
               {renewal ?? t("noRenewal")}
             </div>
           </div>
           <div>
-            <div className="text-sm font-semibold">{t("paymentMethod")}</div>
-            <div className="mt-1 text-sm text-muted-foreground">
+            <div className="text-[12px] font-semibold uppercase tracking-[0.12em] text-white/60">
+              {t("paymentMethod")}
+            </div>
+            <div className="mt-1.5 text-[18px] font-semibold text-white">
               {pm && pm.status === "active" && pm.last4
                 ? t("paymentMethodEndsWith", { last4: pm.last4 })
                 : t("paymentMethodNone")}
             </div>
           </div>
         </div>
+
+        {/* Layer-3 pause flow — surfaced ABOVE freeze/cancel so the
+            user sees "step away" before "shut down." */}
+        {sub?.status === "active" || pauseState.isActive ? (
+          <div className="mt-5">
+            <PauseSubscription
+              isHe={isHe}
+              hasActivePause={pauseState.isActive}
+              pausedUntil={pauseState.pausedUntil}
+            />
+          </div>
+        ) : null}
 
         <div className="mt-5 flex flex-wrap gap-2">
           {sub?.status === "active" && (

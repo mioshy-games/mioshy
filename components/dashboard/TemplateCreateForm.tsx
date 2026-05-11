@@ -119,12 +119,12 @@ export function TemplateCreateForm() {
           onValueChange={(v) => setForm({ ...form, trigger_axis: v ?? "" })}
         >
           <SelectTrigger>
-            <SelectValue placeholder="— none —" />
+            <SelectValue placeholder="- none -" />
           </SelectTrigger>
           <SelectContent>
             {AXES.map((a) => (
               <SelectItem key={a || "none"} value={a}>
-                {a || "— none —"}
+                {a || "- none -"}
               </SelectItem>
             ))}
           </SelectContent>

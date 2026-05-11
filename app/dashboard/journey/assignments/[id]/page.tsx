@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/auth/admin";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
 import { getTimelineForOwner, adminGetOwnerLabel } from "@/lib/journey-content/queries";
+import { listMatchRules } from "@/lib/journey-content/match-rules";
 import { AssignmentControls } from "@/components/dashboard/journey/AssignmentControls";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -81,15 +82,21 @@ export default async function AssignmentDetailPage({
   // is_private filter hides partners' private reflections consistently.
   const ADMIN_VIEWER = "00000000-0000-0000-0000-000000000000";
 
-  const timeline = await getTimelineForOwner({
-    owner: assignment.couple_id
-      ? { kind: "couple", coupleId: assignment.couple_id }
-      : { kind: "user", userId: assignment.user_id! },
-    viewerUserId: ADMIN_VIEWER,
-  }).catch(() => []);
+  const [timeline, allRules] = await Promise.all([
+    getTimelineForOwner({
+      owner: assignment.couple_id
+        ? { kind: "couple", coupleId: assignment.couple_id }
+        : { kind: "user", userId: assignment.user_id! },
+      viewerUserId: ADMIN_VIEWER,
+    }).catch(() => []),
+    listMatchRules(),
+  ]);
 
   // Filter the timeline down to only this assignment.
   const rows = timeline.filter((t) => t.scheduled.assignment_id === assignment.id);
+
+  // Build a quick map for "Why" column rendering.
+  const rulesById = new Map(allRules.map((r) => [r.id, r]));
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -145,6 +152,7 @@ export default async function AssignmentDetailPage({
             <TableRow>
               <TableHead>Item</TableHead>
               <TableHead>Category</TableHead>
+              <TableHead>Why (rule)</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Unlock</TableHead>
               <TableHead className="text-right">Override</TableHead>
@@ -154,7 +162,7 @@ export default async function AssignmentDetailPage({
             {rows.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={5}
+                  colSpan={6}
                   className="text-muted-foreground py-8 text-center text-sm"
                 >
                   No scheduled rows. Try re-materializing - the source may
@@ -162,34 +170,53 @@ export default async function AssignmentDetailPage({
                 </TableCell>
               </TableRow>
             ) : null}
-            {rows.map((t) => (
-              <TableRow key={t.scheduled.id}>
-                <TableCell>
-                  <Link
-                    href={`/dashboard/journey/items/${t.item.id}`}
-                    className="underline-offset-4 hover:underline"
-                  >
-                    {t.item.title_he}
-                  </Link>
-                </TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  {t.category.name_he}
-                </TableCell>
-                <TableCell>
-                  <StatusBadge status={t.status} />
-                </TableCell>
-                <TableCell className="text-sm">
-                  {fmtDate(t.scheduled.unlock_at)}
-                </TableCell>
-                <TableCell className="text-right">
-                  {t.scheduled.has_unlock_override ? (
-                    <Badge variant="outline">custom</Badge>
-                  ) : (
-                    <span className="text-muted-foreground text-xs">-</span>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
+            {rows.map((t) => {
+              const ruleId = t.scheduled.matched_by_rule_id ?? null;
+              const rule = ruleId ? rulesById.get(ruleId) : null;
+              return (
+                <TableRow key={t.scheduled.id}>
+                  <TableCell>
+                    <Link
+                      href={`/dashboard/journey/items/${t.item.id}`}
+                      className="underline-offset-4 hover:underline"
+                    >
+                      {t.item.title_he}
+                    </Link>
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {t.category.name_he}
+                  </TableCell>
+                  <TableCell>
+                    {rule ? (
+                      <Link
+                        href={`/dashboard/journey/match-rules/${rule.id}`}
+                        className="text-xs underline-offset-4 hover:underline"
+                        title={rule.rationale_he}
+                      >
+                        {rule.label_he}
+                      </Link>
+                    ) : (
+                      <span className="text-muted-foreground text-xs italic">
+                        unattributed
+                      </span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge status={t.status} />
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {fmtDate(t.scheduled.unlock_at)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {t.scheduled.has_unlock_override ? (
+                      <Badge variant="outline">custom</Badge>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">-</span>
+                    )}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>

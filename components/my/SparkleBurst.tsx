@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * SparkleBurst — a one-shot, gentle sparkle that plays the first time
+ * SparkleBurst - a one-shot, gentle sparkle that plays the first time
  * a user sees a rail entry transition into "current". Used to draw
  * attention without being noisy.
  *
@@ -9,12 +9,12 @@
  *   - Tracks "seen" entries in localStorage by key
  *   - Renders 5 small dots that fade outward over ~600ms
  *   - Respects prefers-reduced-motion: falls back to a static dot
- *   - Plays exactly once per (user, key) — even across tabs in the
+ *   - Plays exactly once per (user, key) - even across tabs in the
  *     same session, since localStorage persists.
  *
  * Why not server-tracked: the existing `journey_scheduled_items.notified_at`
  * column already exists for backend notification tracking. This is a
- * UI-only "celebrate the moment" effect — separate concern.
+ * UI-only "celebrate the moment" effect - separate concern.
  */
 
 import { useEffect, useRef, useState } from "react";
@@ -22,7 +22,7 @@ import { useEffect, useRef, useState } from "react";
 const LS_KEY = "mioshy:sparkled";
 
 export function SparkleBurst({
-  /** Stable identifier — typically the rail entry's key. */
+  /** Stable identifier - typically the rail entry's key. */
   sparkleKey,
   /** Whether this entry is currently in a "fresh" state. The
    *  component decides on its own whether to actually play
@@ -47,7 +47,7 @@ export function SparkleBurst({
     }
 
     if (seen.includes(sparkleKey)) {
-      // Already seen on a prior visit — don't replay.
+      // Already seen on a prior visit - don't replay.
       return;
     }
 
@@ -59,7 +59,7 @@ export function SparkleBurst({
       const updated = Array.from(new Set([...seen, sparkleKey])).slice(-200);
       localStorage.setItem(LS_KEY, JSON.stringify(updated));
     } catch {
-      // ignore — best-effort
+      // ignore - best-effort
     }
 
     // Auto-stop after the animation completes

@@ -44,9 +44,6 @@ export function CouplesGames() {
               <Link href="/games" className="btn btn-primary">
                 {t("ctaPrimary")} <span className="arrow">←</span>
               </Link>
-              <Link href="/how-it-works" className="btn btn-ghost">
-                {t("ctaSecondary")}
-              </Link>
             </div>
           </div>
 
