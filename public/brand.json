@@ -1,0 +1,42 @@
+{
+  "name": "Mioshy",
+  "alt_name": "מיאושי",
+  "tagline_he": "משחקים, ליווי, ומסע זוגי",
+  "tagline_en": "Couples games and a guided relationship journey",
+  "description_he": "פלטפורמת זוגיות דו-לשונית — משחקים אינטראקטיביים, ליווי מקצועי, ומסע 26-שבועי בנוי על-ידי מטפלים בזוגיות.",
+  "description_en": "Bilingual couples platform — interactive games, guided support, and a 26-week journey designed by couples therapists.",
+  "url": "https://mioshy.com",
+  "logo": "https://mioshy.com/mioshy-white.svg",
+  "favicon": "https://mioshy.com/favicon.ico",
+  "colors": {
+    "primary": "#B83C4D",
+    "primary_deep": "#8B2638",
+    "primary_soft": "#E9C4CA",
+    "ink": "#170E14",
+    "bg": "#FFFFFF",
+    "accent_purple": "#e879f9",
+    "accent_rose": "#fb7185",
+    "hero_bg": "#0E0810"
+  },
+  "fonts": {
+    "display": "Noto Serif Hebrew",
+    "heading": "Frank Ruhl Libre",
+    "body": "Heebo"
+  },
+  "languages": ["he", "en"],
+  "social": {
+    "email": "mioshyoffice@gmail.com"
+  },
+  "links": {
+    "home_he": "https://mioshy.com/he",
+    "home_en": "https://mioshy.com/en",
+    "games_he": "https://mioshy.com/he/games",
+    "games_en": "https://mioshy.com/en/games",
+    "journey_he": "https://mioshy.com/he/journey",
+    "journey_en": "https://mioshy.com/en/journey",
+    "adults_he": "https://mioshy.com/he/adults",
+    "adults_en": "https://mioshy.com/en/adults",
+    "articles_he": "https://mioshy.com/he/articles",
+    "articles_en": "https://mioshy.com/en/articles"
+  }
+}

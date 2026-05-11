@@ -1,0 +1,37 @@
+{
+  "name": "Mioshy",
+  "alt_name": "מיאושי",
+  "url": "https://mioshy.com",
+  "description": "Mioshy is a bilingual (Hebrew, English) couples-games and relationship-journey platform. Adult-only catalog is partner-only, intimacy-focused content for couples in committed relationships.",
+  "languages": ["he", "en"],
+  "audience": "adults_18_plus",
+  "topics": [
+    "couples games",
+    "intimacy games",
+    "date night",
+    "truth or dare",
+    "would you rather",
+    "relationship communication",
+    "couples journey",
+    "consent-first sex-positive content"
+  ],
+  "content_policy": {
+    "consent_required": true,
+    "adult_content_gated": true,
+    "minors_blocked": true,
+    "no_dating_or_hookup_features": true
+  },
+  "ai_usage_policy": {
+    "training": "allowed_with_attribution",
+    "summarization": "allowed",
+    "reproduction": "snippet_only",
+    "contact_for_full_access": "mioshyoffice@gmail.com"
+  },
+  "contact": {
+    "general": "mioshyoffice@gmail.com",
+    "support_path": "/he/contact",
+    "support_path_en": "/en/contact"
+  },
+  "sitemap": "https://mioshy.com/sitemap.xml",
+  "llms_txt": "https://mioshy.com/llms.txt"
+}
