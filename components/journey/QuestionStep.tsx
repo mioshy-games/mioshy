@@ -60,7 +60,7 @@ export function QuestionStep({ question, locale, onSubmit, initial, busy }: Ques
       className="flex w-full max-w-2xl flex-col gap-6"
       dir={isHe ? "rtl" : "ltr"}
     >
-      <h2 className="text-xl font-semibold leading-snug text-white md:text-2xl drop-shadow-sm">
+      <h2 className="text-start text-xl font-semibold leading-snug text-white md:text-2xl drop-shadow-sm">
         {promptFor(question, locale)}
       </h2>
 
@@ -157,7 +157,7 @@ function SingleChoiceControl({
           key={opt.id}
           onClick={() => !busy && onChange({ kind: "single", option: opt.id })}
           disabled={busy}
-          className={`rounded-2xl border px-4 py-3 text-left transition active:scale-[0.98] ${
+          className={`rounded-2xl border px-4 py-3 text-start transition active:scale-[0.98] ${
             current === opt.id
               ? "border-fuchsia-400/70 bg-fuchsia-500/20 text-white ring-2 ring-fuchsia-400/50"
               : "border-white/12 bg-slate-800/70 text-white/85 hover:bg-slate-700/70 hover:border-white/20"
@@ -193,7 +193,7 @@ function MultiChoiceControl({
           type="button"
           key={opt.id}
           onClick={() => toggle(opt.id)}
-          className={`rounded-2xl border px-4 py-3 text-left transition active:scale-[0.98] ${
+          className={`rounded-2xl border px-4 py-3 text-start transition active:scale-[0.98] ${
             current.includes(opt.id)
               ? "border-fuchsia-400/70 bg-fuchsia-500/20 text-white"
               : "border-white/12 bg-slate-800/70 text-white/85 hover:bg-slate-700/70 hover:border-white/20"
