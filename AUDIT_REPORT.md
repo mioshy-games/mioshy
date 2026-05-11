@@ -188,21 +188,86 @@ If Lighthouse / PSI flags these because their headless-Chrome run also samples m
 - **Verify Cardcom CSP frame in dev.** Run a real checkout against `secure.cardcom.solutions` once with browser devtools open and confirm the iframe loads. If a different subdomain shows up, add it to `frame-src` / `connect-src` / `form-action`.
 - **Re-run PSI** on `https://mioshy.com` (mobile + desktop) and re-run the **VOW Auditor** scan after deploy. Verify the rules in the Verification table flip to `pass`.
 - **Wipe Supabase test data** before launch.
-- **Tighten CSP**: separate commit to introduce request-scoped nonces, drop `'unsafe-inline'` from `script-src`, and revisit whether `'unsafe-eval'` can be dropped after the Framer Motion / md-editor audit.
+- **Tighten CSP — defer to a dedicated post-launch session.** Move from the current moderate CSP (`'unsafe-inline'` + `'unsafe-eval'` in `script-src`, `'unsafe-inline'` in `style-src`) to a request-scoped nonce setup. **Risk:** likely to break GTM (inline init script), Framer Motion (style attributes + spring solver eval), and `@uiw/react-md-editor` (Function constructor). **Plan:** do this **after** the launch has steady traffic and a known-good rollback target, with a session dedicated solely to the migration. Specifically: (1) plumb a per-request nonce through the root layout, (2) attach it to every inline `<script>` (`GoogleTagManager`, the JSON-LD scripts, any CSS keyframe `<style>` blocks), (3) drop `'unsafe-inline'` from `script-src` and `style-src`, (4) audit Framer Motion + md-editor for `Function()` use and replace where possible before dropping `'unsafe-eval'`. Each step its own commit, deployed behind a preview URL, tested with real Cardcom checkout + a few games + admin dashboard before merge. **Do not bundle with feature work.**
 
 ## Items NOT yet touched
 
 | # | Issue | Status |
 |---|---|---|
-| 5 | `/.well-known/ai.json` | Out of scope this turn |
-| 6 | `/brand.json` | Out of scope this turn |
-| 10 | LCP mobile — hero image | **First pass landed (`081973a`).** AVIF + responsive sizes wired. Real measurement needs `next build && next start` or a deploy preview — dev does not run the image optimizer. |
+| 5 | `/.well-known/ai.json` | **Closed (`471aa0a`).** Static metadata for AI crawlers. |
+| 6 | `/brand.json` | **Closed (`471aa0a`).** Static brand kit metadata. |
+| 10 | LCP mobile — hero image | **First pass landed (`081973a`).** AVIF + responsive sizes wired. Real measurement deferred to the Vercel preview deploy — local dev does not run the image optimizer and would underestimate LCP. |
 | 13 | Font cleanup | **Closed — no drop.** Bilingual analysis showed both Latin fonts are live on every `/en/*` non-V2 page. |
+| 16 | JSON-LD `</script>` escape hardening | **Closed (`cb42db5`, `197d6da`).** `safeJsonLd()` helper applied to HomepageV2 plus the seven other JSON-LD render sites identified in the initial security scan. Zero remaining `JSON.stringify(jsonLd)` calls in `app/` / `components/`. |
 | 17 | `color-contrast` | **Closed.** Four real violations addressed across four small commits (C1–C4). Re-run axe after the fixes returned **0 real violations** on `/he`, `/en`, and `/he/articles/truth-or-dare-questions-couples`. The Authority `RevealOnScroll` mid-fade noise (F1–F3) still appears in axe; settled-state contrast is ~19:1 on white so it's not a code-level issue unless PSI samples mid-animation in production. |
-| 18 | Cardcom indicator rate limit | Out of scope this turn |
+| 18 | Cardcom indicator rate limit | **Closed (`40d17ec`).** 10 req/min per IP via the existing `checkRateLimit()` helper. Endpoint still responds 200 on overflow with `Retry-After` to keep Cardcom's retry logic predictable. |
 | RLS deep audit | Recommended before launch; separate session |
 
 ## Notes / corrections to the original brief
 
 - The brief mentioned **Stripe** webhook signature validation. The site uses **Cardcom** (Israeli provider), not Stripe. Cardcom does not sign callbacks; the indicator route at `app/api/billing/cardcom/indicator/route.ts` instead **server-pulls** the authoritative payment status from Cardcom (`pullLowProfileIndicator`), so spoofed callbacks cannot grant entitlements. Considered safe.
 - Independent security scan returned clean on: hardcoded secrets (none), env files in git (none), service-role exposure (server-only, verified), admin route auth gates (every `app/api/admin/*` checked), `/dashboard/*` middleware gating (already server-side).
+
+## Final session summary
+
+**Total: 25+ commits on `claude/optimistic-rubin-687c12`, no push to remote until the user requests the Vercel-preview deploy.**
+
+### Findings addressed (closed in code)
+
+| Finding | Severity | Commit(s) |
+|---|---|---|
+| #1 Public seed-games endpoint | Critical (security) | `11c1d30` |
+| #2 `<html lang>` set only client-side | High (SEO/a11y) | `1b316c5` |
+| #3 No JSON-LD Organization+WebSite | High (SEO/AEO) | `cb42db5` |
+| #4 No `/llms.txt` | High (AEO) | `d6bde9e` |
+| #5 No `/.well-known/ai.json` | Medium (AEO) | `471aa0a` |
+| #6 No `/brand.json` | Medium (AEO) | `471aa0a` |
+| #7 Heading-order skip on AdultGames | Critical (a11y) | `db6689e` |
+| #8 No security headers (CSP/HSTS/XFO/etc.) | High (security) | `5f6df6f` |
+| #9 Redirect chain `www → apex → /he` | Critical (perf) | `1f86767` |
+| #10 LCP hero image (first pass) | Critical (perf) | `081973a` |
+| #11 Unused md-editor CSS on every page | Critical (perf) | `debd628` |
+| #12 `noStore()` forcing SSR per request | High (perf) | `52f68d8` |
+| #14 No preconnect to Google Fonts | Medium (perf) | `fdd534c` |
+| #15 No GA4 / GTM | Medium (tracking) | `97b3afc` |
+| #16 JSON-LD `</script>` escape hardening | Low (security) | `cb42db5` + `197d6da` |
+| #17 Color-contrast violations (C1–C4) | Critical (a11y) | `9632b98`, `d91bf13`, `68511bf`, `3f70b2f` |
+| #18 No rate-limit on Cardcom indicator | Low (security) | `40d17ec` |
+| RTL alignment on `/he/journey/assessment` (out-of-audit user request) | n/a | `d6095b8` |
+
+### Findings explicitly closed *without* code change
+
+| Finding | Reason |
+|---|---|
+| #13 Font cleanup (drop Inter + Playfair) | Bilingual analysis showed both are live on every `/en/*` non-V2 page (articles, footer, contact, terms, privacy, products, legacy home, 404). Dropping would visibly regress every English page outside HomepageV2. Real cleanup requires migrating the English non-V2 pages onto the Heebo + Frank Ruhl stack first. |
+| F1–F3 Authority `RevealOnScroll` axe noise | Settled-state contrast is ~19:1; axe captures the mid-fade frame. Verified `getComputedStyle(...)` returns `rgb(23, 14, 20)` (= `--ink`) once the section has been on screen for ~3 s. Not a code-level issue at production user reading speed. |
+
+### Independent security scan — clean items
+
+- Hardcoded secrets: none
+- `.env*` files tracked in git: none
+- Service-role Supabase key client exposure: none (server-only, verified per call site)
+- `app/api/admin/*` auth gates: every route gated by `getAdminSession()`
+- `/dashboard/*` access: middleware-level server gate
+- Cardcom callback auth: indicator route server-pulls the authoritative payment status, spoofed callbacks cannot grant entitlements
+- HTTPS enforced; robots.txt + sitemap present; OG/Twitter meta present; FAQ/Article schema already on articles
+
+### Deferred to post-launch
+
+- CSP nonce migration (see "Manual follow-ups post-launch" above — risk of breaking GTM / Framer Motion / md-editor, must be a dedicated session)
+- RLS deep audit on every Supabase table — recommended before launch, separate session
+- Move `www → apex` redirect to Vercel domains panel
+- Add a consent banner (Consent Mode v2 defaults are already wired)
+- Drop `--font-geist-sans` dead references in `dashboard/page.tsx:28` and `paywall/page.tsx:8`
+- Re-run PSI and VOW Auditor after deploy
+- Wipe Supabase test data before launch
+
+### Verification status by stage
+
+| Stage | Verification |
+|---|---|
+| `next build` | exited 0 on Batch A end (a81e4e5); re-running now after #16 + #18 (running in background) |
+| axe on `/he`, `/en`, `/he/articles/*` | 0 real violations after C1–C4 (Authority mid-fade false positives remain — not a code issue) |
+| Visual RTL on assessment page | `text-align: start` confirmed on h2 + SingleChoice buttons; header right-aligned in `dir="rtl"` |
+| LCP measurement | **Deferred to Vercel preview deploy** — local dev does not run the image optimizer |
+| Real PSI / VOW Auditor re-scan | Must run against the live production deploy after merge |
