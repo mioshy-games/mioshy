@@ -3,6 +3,7 @@ import { Link } from "@/navigation";
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
+import { unstable_noStore as noStore } from "next/cache";
 import type { GameRow, SiteSettingsRow } from "@/lib/types/database";
 import type { Metadata } from "next";
 import Image from "next/image";
