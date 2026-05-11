@@ -1,6 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { safeJsonLd } from "@/lib/seo/jsonLd";
 import type { GameRow, SiteSettingsRow } from "@/lib/types/database";
 import type { Metadata } from "next";
 import Image from "next/image";
@@ -289,7 +290,7 @@ export default async function HomePage({
       <main>
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
         />
 
         {/* ─────────────── HERO (dark - the only dark section) ─────────────── */}

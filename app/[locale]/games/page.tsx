@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { getTranslations } from "next-intl/server";
 import { unstable_noStore as noStore } from "next/cache";
+import { safeJsonLd } from "@/lib/seo/jsonLd";
 import { Link } from "@/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getAdminSession } from "@/lib/auth/admin";
@@ -414,7 +415,7 @@ export default async function GamesHubPage({
 
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
       />
 
       <main className="relative">

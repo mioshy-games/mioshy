@@ -1,6 +1,7 @@
 import { unstable_noStore as noStore } from "next/cache";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
+import { safeJsonLd } from "@/lib/seo/jsonLd";
 import type { Metadata } from "next";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { ArticleRow } from "@/lib/types/database";
@@ -261,7 +262,7 @@ export default async function ArticleDetailPage({
     >
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
       />
 
       {/* ── HERO (dark, branded) ──────────────────────────────────────────── */}

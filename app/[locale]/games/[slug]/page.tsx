@@ -1,6 +1,7 @@
 import { TruthOrDareClient } from "@/components/TruthOrDareClient";
 import { GamePageBackground } from "@/components/game/GamePageBackground";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { safeJsonLd } from "@/lib/seo/jsonLd";
 import type { GameRow, QuestionRow, WheelConfigRow } from "@/lib/types/database";
 import { unstable_noStore as noStore } from "next/cache";
 import type { Metadata } from "next";
@@ -185,7 +186,7 @@ export default async function GameBySlugPage({
       >
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
         />
         <TruthOrDareClient game={g} wheel={w} questions={qs} gameSettings={gameSettings} />
       </div>
@@ -196,7 +197,7 @@ export default async function GameBySlugPage({
     <GamePageBackground gameSlug={g.slug} primaryColor={bgValue} bgSettings={gameSettings?.background} particlesSettings={gameSettings?.particles}>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
       />
       <TruthOrDareClient game={g} wheel={w} questions={qs} transparent gameSettings={gameSettings} />
     </GamePageBackground>
