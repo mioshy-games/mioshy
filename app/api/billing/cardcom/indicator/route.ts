@@ -18,6 +18,7 @@ import { createBillingDocumentWithRetry } from "@/lib/uxellent-api"
 import { createAdminClient }         from "@/lib/supabase-admin"
 import { assignJourneyOnPurchase }   from "@/lib/journey-content/auto-assign"
 import type { JourneyProductSlug }   from "@/lib/journey-content/types"
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit"
 
 /** Narrow the free-form checkout_sessions.product to the pillar union. */
 function normalizeProduct(raw: unknown): JourneyProductSlug {
@@ -51,6 +52,21 @@ export async function GET(req: Request) {
   const url            = new URL(req.url)
   const lowProfileCode = getParamCI(url, "LowProfileCode", "lowprofilecode")
   const returnValue    = getParamCI(url, "ReturnValue",    "returnvalue")    // checkout session id
+
+  // ── Rate limit ─────────────────────────────────────────────────────────────
+  // 10 requests / minute per IP. The endpoint is a Cardcom server-to-server
+  // callback (their datacenter IPs are stable, ~1 callback per real payment),
+  // so legitimate traffic is well under this. The limit guards against an
+  // attacker spraying fake LowProfileCode values — without it, each fake call
+  // would still trigger a server-pull to Cardcom (pullLowProfileIndicator),
+  // burning Cardcom API quota and our function-invocation budget. Returning
+  // 200 keeps Cardcom's retry logic happy on the rare legitimate burst.
+  const ip = getClientIp(req)
+  const { ok: rlOk, retryAfterSec } = checkRateLimit(`cardcom-indicator:${ip}`, 10, 60)
+  if (!rlOk) {
+    console.warn("[indicator:RATE_LIMITED]", { ip, retry_after_sec: retryAfterSec })
+    return new Response("ok", { status: 200, headers: { "Retry-After": String(retryAfterSec) } })
+  }
 
   console.log("[indicator:START] callback received from Cardcom", {
     has_low_profile: !!lowProfileCode,
