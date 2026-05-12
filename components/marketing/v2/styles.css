@@ -1361,31 +1361,30 @@
     .quote-stage{grid-template-columns:1fr}
     .quote-image{min-height:400px}
     .quote-content{padding:80px 40px}
-    /* A5 (updated 2026-05-12) — Float badges OUTSIDE the image on
-       mobile. Previous values (top:10px / bottom:10px) anchored them
-       10px INTO the image and the badge body (~74px tall) sat on top
-       of the couple's faces. New values pull each badge mostly above
-       or below the image — only the inner edge of the badge clips the
-       image corner, the rest floats into the hero's dark background.
+    /* A5 (updated 2026-05-12 round 3) — Per Itzik direction: less
+       vertical extrusion (move 20px back toward image: -58 → -38px),
+       and push horizontally to the viewport edge ("200px outward" /
+       "to the edge of the screen, but don't clip"). On a 360-414px
+       phone the badge body is ~220px wide and container padding is
+       28px — so the maximum outward shift without going off-screen
+       is exactly the container padding. Anything beyond -28px would
+       clip the badge at the viewport edge.
 
-       Layout math:
-         badge height  ≈ 74px (16+42+16)
-         top:-58px     → 58px above image, 16px overlap at image top
-         inset-inline-end:-10px → 10px past horizontal edge
+       Layout math (mobile):
+         badge height  ≈ 74px → top:-38px = 36px on image top corner
+         badge width   ≈ 220px → outer edge at viewport edge
 
-       Logical properties so RTL renders badge-1 top-left + badge-2
-       bottom-right (Hebrew), LTR auto-mirrors. Vertical breathing
-       room is covered by .hero-grid's 60px gap above and the hero's
-       80px bottom padding. */
+       Logical properties: RTL renders badge-1 top-left + badge-2
+       bottom-right (Hebrew); LTR auto-mirrors. */
     .badge-1{
-      top:-58px;bottom:auto;
-      inset-inline-start:auto;inset-inline-end:-10px;
+      top:-38px;bottom:auto;
+      inset-inline-start:auto;inset-inline-end:-28px;
       /* Reset old physical props so we don't fight ourselves. */
       left:auto;right:auto;
     }
     .badge-2{
-      bottom:-58px;top:auto;
-      inset-inline-end:auto;inset-inline-start:-10px;
+      bottom:-38px;top:auto;
+      inset-inline-end:auto;inset-inline-start:-28px;
       left:auto;right:auto;
     }
     .reviews-grid{grid-template-columns:1fr}
