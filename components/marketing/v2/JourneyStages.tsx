@@ -655,7 +655,14 @@ const STYLES = `
   @media (max-width:899px){
     .mood-timeline{padding:72px 0 56px}
     .mood-timeline .js-head{margin-bottom:40px}
-    .mood-timeline .js-head p{font-size:16px}
+    /* I3 — Mioshy-Services eyebrow ≥16px mobile (was 13px). Brings
+       it uniform with the other section eyebrows on mobile which all
+       sit at 16+ after the typography pass. */
+    .mood-timeline .eyebrow{font-size:16px;letter-spacing:0.16em}
+    /* I4 — Section subtitle bumped 16→19px on mobile so the "three
+       ways to reconnect" subtitle reads at the body floor (other
+       v2 section subtitles on mobile sit at 18-20). */
+    .mood-timeline .js-head p{font-size:19px;line-height:1.55}
 
     .mood-timeline .js-stops-panel{
       padding:4px 22px;
