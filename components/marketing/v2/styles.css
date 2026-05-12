@@ -888,6 +888,15 @@
     margin:0 auto 28px;
     max-width:14ch;
   }
+  /* G2 — `.ag-stage h2 em` was inheriting the global v2 --accent
+     (#B83C4D, wine red). On the dark wine/purple section background
+     this measured ~3.27:1 contrast — technically passes WCAG AA for
+     large text, but visually "red on red" and flagged in the content
+     brief as unreadable. Overriding to the same cream as the rest of
+     the headline keeps the emphasis structural (italic + serif) but
+     restores readable contrast. Applied universally (not just mobile)
+     because the contrast issue exists on both viewports. */
+  .ag-stage h2 em{color:#FBF3F0}
   /* PERF/UX 2026-05-08 — was a 3-stop gradient on the em (transparent
      fill + background-clip:text). Per "emphasis is colour-only, one
      simple change" rule we now inherit the global wine accent like
@@ -1600,9 +1609,14 @@
     .ag-pillar-num::after{width:28px}
     /* H4 inherits --fs-h4 (28px) — uniform across the homepage. */
     .ag-pillar h4{margin-bottom:8px}
-    .ag-pillar p{font-size:17px;line-height:1.6}
+    /* G3 — Pillar body 17→18px, line-height 1.6→1.4. Same direction
+       as the rest of the Phase-3 mobile typography pass: tightened
+       leading reads denser on the narrow mobile column. */
+    .ag-pillar p{font-size:18px;line-height:1.4}
     .ag-signature{gap:12px;margin-bottom:24px;text-align:center}
-    .ag-signature em{font-size:17px;line-height:1.45}
+    /* G7 — Signature italic 17→18px on mobile to hit the body floor
+       of the rest of the section. */
+    .ag-signature em{font-size:18px;line-height:1.45}
     .ag-signature-line{max-width:40px}
     .ag-closer-statement{font-size:26px;line-height:1.2;margin-bottom:22px}
     .ag-closer-cta{padding:16px 30px;font-size:16px}
