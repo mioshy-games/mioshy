@@ -43,7 +43,14 @@ export function Journey() {
           <div className="eyebrow">{t("eyebrow")}</div>
           <h2>
             {t.rich("headline", {
-              em: (chunks) => <em>{chunks}</em>,
+              /* `display:inline` overrides the global
+                 `h1 em, h2 em { display: block }` rule in styles.css.
+                 Without this, "מתחזקת." would land on a 3rd line
+                 below "הזוגיות שלכם" — but the line break we WANT is
+                 already provided by the <br>, so the em should sit
+                 inline on the same line as "הזוגיות שלכם". Same
+                 pattern as Authority.tsx. */
+              em: (chunks) => <em style={{ display: "inline" }}>{chunks}</em>,
               br: () => <br />,
             })}
           </h2>
