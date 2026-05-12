@@ -1672,11 +1672,14 @@
     .final-trust{flex-wrap:wrap;gap:10px 14px;font-size:13px;white-space:nowrap;justify-content:center}
 
     /* FAQ mobile */
-    .faq-item summary{padding:18px 0}
+    /* J1 — Question summary: bumped 19→20px and explicit so the
+       question is comfortably scannable above its open answer. */
+    .faq-item summary{padding:18px 0;font-size:20px}
     .faq-answer{padding:0 0 20px}
-    /* F4 (#11) — answers bumped to 20px on mobile so the body reads
-       at the larger floor Itzik asked for. Desktop stays at 18. */
-    .faq-answer p{font-size:20px;line-height:1.65}
+    /* J2 — Answer body keeps 20px font, line-height 1.65→1.4 to
+       match the rest of the Phase-3 mobile typography pass (denser
+       leading on the narrow column). */
+    .faq-answer p{font-size:20px;line-height:1.4}
 
     /* Footer mobile - single column */
     .footer-grid{grid-template-columns:1fr;gap:36px}
