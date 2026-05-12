@@ -25,11 +25,19 @@ export function Authority() {
                   "אותה תוצאה." */}
               <span style={{ whiteSpace: "nowrap" }}>
                 {t("headlinePart2")}
+                {/* `display:"inline"` overrides the global
+                    `h1 em, h2 em { display: block }` rule in styles.css.
+                    Without this, the <em> forces "תוצאה" onto its own
+                    line and the trailing "." into a 3rd line — even with
+                    whiteSpace:nowrap on the wrapping span, because the
+                    block-level child breaks inline flow. We keep the
+                    nowrap as a safety belt for narrow viewports. */}
                 <em
                   style={{
                     color: "var(--accent)",
                     fontStyle: "italic",
                     fontFamily: "'Frank Ruhl Libre', serif",
+                    display: "inline",
                   }}
                 >
                   {t("headlineEm")}
