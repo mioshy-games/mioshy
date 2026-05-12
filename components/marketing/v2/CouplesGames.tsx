@@ -42,7 +42,7 @@ export function CouplesGames() {
 
             <div className="cg-actions">
               <Link href="/games" className="btn btn-primary">
-                {t("ctaPrimary")} <span className="arrow">←</span>
+                {t("ctaPrimary")}
               </Link>
             </div>
           </div>

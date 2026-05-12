@@ -76,7 +76,7 @@ export function Journey() {
         <div className="journey-cta">
           <div className="journey-cta-text">{t("ctaText")}</div>
           <Link href="/journey/assessment" className="btn btn-primary">
-            {t("cta")} <span className="arrow">←</span>
+            {t("cta")}
           </Link>
         </div>
       </div>

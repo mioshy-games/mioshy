@@ -94,7 +94,7 @@ export function ForWhom() {
             <span className="big">{t("ctaBig")}</span>
           </div>
           <TrackedLink href="/journey/assessment" className="btn btn-primary" ctaId="for_whom_assessment" section="for-whom">
-            {t("cta")} <span className="arrow">←</span>
+            {t("cta")}
           </TrackedLink>
         </div>
       </div>

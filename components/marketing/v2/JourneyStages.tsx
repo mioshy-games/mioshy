@@ -257,10 +257,7 @@ export function JourneyStages() {
                 )}
               </div>
               <Link href={STAGE_HREFS[id]} className="js-stop-cta">
-                {t(`stage${id}Cta`)}{" "}
-                <span aria-hidden className="js-stop-cta-arrow">
-                  ←
-                </span>
+                {t(`stage${id}Cta`)}
               </Link>
             </div>
           </div>
@@ -652,13 +649,6 @@ const STYLES = `
     transform:translateY(-1px);
     box-shadow:0 14px 28px -12px var(--tone-ink);
   }
-  .mood-timeline .js-stop-cta-arrow{
-    display:inline-block;
-    transition:transform .25s ease;
-  }
-  .mood-timeline .js-stop-cta:hover .js-stop-cta-arrow{transform:translateX(-3px)}
-  [dir="ltr"] .mood-timeline .js-stop-cta-arrow{transform:scaleX(-1)}
-  [dir="ltr"] .mood-timeline .js-stop-cta:hover .js-stop-cta-arrow{transform:scaleX(-1) translateX(-3px)}
 
 
   /* ─── Mobile (≤899px) ──────────────────────────────────────────────── */

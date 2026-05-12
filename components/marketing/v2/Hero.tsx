@@ -69,7 +69,7 @@ export function Hero() {
             <RevealOnScroll variant="fade-up" delay={0.25}>
               <div className="hero-actions">
                 <TrackedLink href="/journey" className="btn btn-primary" ctaId="hero_primary" section="hero">
-                  {t("ctaPrimary")} <span className="arrow">←</span>
+                  {t("ctaPrimary")}
                 </TrackedLink>
               </div>
             </RevealOnScroll>

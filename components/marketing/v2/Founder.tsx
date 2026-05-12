@@ -68,7 +68,7 @@ export function Founder() {
                 the masthead. */}
             <div className="founder-actions">
               <Link href="/about/founder" className="btn btn-primary">
-                {t("cta")} <span className="arrow">←</span>
+                {t("cta")}
               </Link>
             </div>
           </RevealOnScroll>

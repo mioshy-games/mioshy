@@ -45,7 +45,7 @@ export function FAQ() {
             </h2>
             <p>{t("description")}</p>
             <Link href="/contact" className="btn btn-ghost">
-              {t("contactCta")} <span className="arrow">←</span>
+              {t("contactCta")}
             </Link>
           </div>
 
