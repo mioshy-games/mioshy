@@ -1,10 +1,13 @@
+"use client";
+
 // Side-effect import: ensures the v2 scoped styles are loaded whenever
 // MediaSlider is rendered, even on pages that don't import HomepageV2.
 // Safe because CSS imports are de-duplicated by Next.js.
 import "./styles.css";
 
 import Image from "next/image";
-import { useTranslations } from "next-intl";
+import { useCmsText } from "@/hooks/useCmsText";
+import { CmsText } from "@/components/cms/CmsText";
 
 /**
  * MediaSlider - editorial press table.
@@ -14,31 +17,40 @@ import { useTranslations } from "next-intl";
  * dividers between rows, layered drifting white gradients underneath
  * the cream surface for breathable depth.
  *
- * Static (no rotation) - both publications are visible at once,
- * each in its own row. Click "קראו את הכתבה" to open the article in a
- * new tab.
+ * Static (no rotation) — both publications are visible at once,
+ * each in its own row.
  *
- * Server-rendered (no use-client) - there's no interactive state.
+ * CMS-migrated (Sprint 1). headline carries <em>.
  */
 export function MediaSlider() {
-  const t = useTranslations("homeV2.media");
+  const eyebrow = useCmsText("homeV2.media.eyebrow");
+  const readArticle = useCmsText("homeV2.media.readArticle");
+
+  const item1Name = useCmsText("homeV2.media.item1Name");
+  const item1Date = useCmsText("homeV2.media.item1Date");
+  const item1Quote = useCmsText("homeV2.media.item1Quote");
+  const item1LogoAlt = useCmsText("homeV2.media.item1LogoAlt");
+  const item2Name = useCmsText("homeV2.media.item2Name");
+  const item2Date = useCmsText("homeV2.media.item2Date");
+  const item2Quote = useCmsText("homeV2.media.item2Quote");
+  const item2LogoAlt = useCmsText("homeV2.media.item2LogoAlt");
 
   const ITEMS = [
     {
-      name: t("item1Name"),
-      date: t("item1Date"),
-      quote: t("item1Quote"),
+      name: item1Name,
+      date: item1Date,
+      quote: item1Quote,
       url: "https://www.israelhayom.co.il/mumlazim/article/13374120",
       logoSrc: "/images/israel.webp",
-      logoAlt: t("item1LogoAlt"),
+      logoAlt: item1LogoAlt.text,
     },
     {
-      name: t("item2Name"),
-      date: t("item2Date"),
-      quote: t("item2Quote"),
+      name: item2Name,
+      date: item2Date,
+      quote: item2Quote,
       url: "https://tld.walla.co.il/item/3528908",
       logoSrc: "/images/walla.webp",
-      logoAlt: t("item2LogoAlt"),
+      logoAlt: item2LogoAlt.text,
     },
   ];
 
@@ -47,18 +59,19 @@ export function MediaSlider() {
       <div className="media-press-wrap">
         {/* Editorial header - right-aligned (RTL natural axis). */}
         <header className="media-press-head">
-          <div className="media-press-eyebrow">
+          <div className="media-press-eyebrow" style={eyebrow.style}>
             <span className="media-press-dot" aria-hidden="true" />
-            <span>{t("eyebrow")}</span>
+            <span>{eyebrow.text}</span>
           </div>
-          <h2 className="media-press-title">
-            {t.rich("headline", { em: (chunks) => <em>{chunks}</em> })}
-          </h2>
+          {/* headline carries <em> */}
+          <CmsText
+            cmsKey="homeV2.media.headline"
+            as="h2"
+            className="media-press-title"
+          />
         </header>
 
-        {/* Editorial table rows - 2-column grid: [Logo | Content].
-            CTA lives INSIDE the content column, right-aligned (RTL start)
-            so it sits next to the right edge of the quote text. */}
+        {/* Editorial table rows */}
         <ul className="media-press-rows">
           {ITEMS.map((item, i) => (
             <li key={i} className="media-press-row">
@@ -73,30 +86,33 @@ export function MediaSlider() {
                 />
               </div>
 
-              {/* Content column - quote, meta, then CTA right-aligned */}
+              {/* Content column */}
               <div className="media-press-row-content">
-                <p className="media-press-quote">
+                <p className="media-press-quote" style={item.quote.style}>
                   <span aria-hidden="true">״</span>
-                  {item.quote}
+                  {item.quote.text}
                   <span aria-hidden="true">״</span>
                 </p>
 
                 <div className="media-press-row-meta">
-                  <span className="media-press-name">{item.name}</span>
+                  <span className="media-press-name" style={item.name.style}>
+                    {item.name.text}
+                  </span>
                   <span className="media-press-sep" aria-hidden="true">
                     ·
                   </span>
-                  <span className="media-press-date">{item.date}</span>
+                  <span className="media-press-date" style={item.date.style}>
+                    {item.date.text}
+                  </span>
                 </div>
 
-                {/* CTA - italic serif, no border, no bg. Pure editorial link. */}
                 <a
                   href={item.url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="media-press-row-cta"
                 >
-                  <span>{t("readArticle")}</span>
+                  <span>{readArticle.text}</span>
                   <span className="arrow" aria-hidden="true">
                     ←
                   </span>

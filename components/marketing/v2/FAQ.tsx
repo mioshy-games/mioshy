@@ -1,18 +1,24 @@
-import { useTranslations } from "next-intl";
+"use client";
+
 import { Link } from "@/navigation";
+import { useCmsText } from "@/hooks/useCmsText";
+import { CmsText } from "@/components/cms/CmsText";
 
 /**
  * FAQ - accordion section. Uses native <details> for open/close behavior
  * (no JS needed). First item is open by default.
+ *
+ * CMS-migrated (Sprint 1). Question text is plain (rendered via
+ * useCmsText().text); answer text carries <p>/<strong>/<em> markup
+ * and is rendered via <CmsText> (dangerouslySetInnerHTML).
  */
 export function FAQ() {
-  const t = useTranslations("homeV2.faq");
+  // Section-level keys
+  const eyebrow = useCmsText("homeV2.faq.eyebrow");
+  const description = useCmsText("homeV2.faq.description");
+  const contactCta = useCmsText("homeV2.faq.contactCta");
 
-  // 11 FAQ entries; only the first is open by default.
-  // `defaultOpen` is set on every row (false where not opened) so the
-  // `as const` tuple types stay homogeneous - otherwise the union
-  // narrows defaultOpen out of the non-first entries and tsc rejects
-  // the access in the JSX below.
+  // 11 FAQ entries — index 0 is open by default.
   const FAQS = [
     { qKey: "item1Q", aKey: "item1A", defaultOpen: true },
     { qKey: "item2Q", aKey: "item2A", defaultOpen: false },
@@ -27,42 +33,60 @@ export function FAQ() {
     { qKey: "item11Q", aKey: "item11A", defaultOpen: false },
   ] as const;
 
-  // Rich-text tag map shared across all FAQ answers.
-  const richTags = {
-    p: (chunks: React.ReactNode) => <p>{chunks}</p>,
-    strong: (chunks: React.ReactNode) => <strong>{chunks}</strong>,
-    em: (chunks: React.ReactNode) => <em>{chunks}</em>,
-  };
-
   return (
     <section className="faq" id="faq">
       <div className="container">
         <div className="faq-grid">
           <div className="faq-side">
-            <div className="eyebrow">{t("eyebrow")}</div>
-            <h2>
-              {t.rich("headline", { br: () => <br /> })}
-            </h2>
-            <p>{t("description")}</p>
+            <div className="eyebrow" style={eyebrow.style}>
+              {eyebrow.text}
+            </div>
+            {/* headline contains <br> */}
+            <CmsText cmsKey="homeV2.faq.headline" as="h2" />
+            <p style={description.style}>{description.text}</p>
             <Link href="/contact" className="btn btn-ghost">
-              {t("contactCta")} <span className="arrow">←</span>
+              {contactCta.text} <span className="arrow">←</span>
             </Link>
           </div>
 
           <div className="faq-list">
             {FAQS.map((item, i) => (
-              <details className="faq-item" key={i} open={item.defaultOpen}>
-                <summary>
-                  {t(item.qKey)} <span className="faq-icon">+</span>
-                </summary>
-                <div className="faq-answer">
-                  {t.rich(item.aKey, richTags)}
-                </div>
-              </details>
+              <FaqRow
+                key={i}
+                qKey={`homeV2.faq.${item.qKey}`}
+                aKey={`homeV2.faq.${item.aKey}`}
+                defaultOpen={item.defaultOpen}
+              />
             ))}
           </div>
         </div>
       </div>
     </section>
+  );
+}
+
+/**
+ * Per-item row. Lifted into its own component so each FAQ entry has a
+ * stable hook order — useCmsText fires unconditionally per render and
+ * the iteration count is fixed (11 rows). Question is plain text;
+ * answer carries <p>/<strong>/<em> markup so it renders via CmsText.
+ */
+function FaqRow({
+  qKey,
+  aKey,
+  defaultOpen,
+}: {
+  qKey: string;
+  aKey: string;
+  defaultOpen: boolean;
+}) {
+  const q = useCmsText(qKey);
+  return (
+    <details className="faq-item" open={defaultOpen}>
+      <summary style={q.style}>
+        {q.text} <span className="faq-icon">+</span>
+      </summary>
+      <CmsText cmsKey={aKey} as="div" className="faq-answer" />
+    </details>
   );
 }
