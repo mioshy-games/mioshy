@@ -557,7 +557,7 @@ const STYLES = `
     font-weight:600;
   }
   .mood-timeline .js-stop-block-includes-list li::before{
-    content:"\2713"; /* ✓ */
+    content:"\\2713"; /* ✓ */
     position:absolute;
     inset-inline-start:0;
     top:0;
@@ -584,7 +584,7 @@ const STYLES = `
     font-weight:500;
   }
   .mood-timeline .js-stop-block-when-list li::before{
-    content:"\2022"; /* • */
+    content:"\\2022"; /* • */
     position:absolute;
     inset-inline-start:0;
     top:0;
