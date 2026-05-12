@@ -1352,8 +1352,23 @@
     .quote-stage{grid-template-columns:1fr}
     .quote-image{min-height:400px}
     .quote-content{padding:80px 40px}
-    .badge-1{right:auto;left:-14px;top:36px}
-    .badge-2{left:auto;right:-14px;bottom:46px}
+    /* A5 — Spread badges to diagonal image-corners. Logical
+       properties so RTL renders badge-1 top-left + badge-2 bottom-
+       right (as in Hebrew), and LTR auto-mirrors to badge-1 top-right
+       + badge-2 bottom-left. Larger negative inset (-20px) and
+       smaller top/bottom (10px) push them further into the corners
+       than the previous in-image overlap. */
+    .badge-1{
+      top:10px;bottom:auto;
+      inset-inline-start:auto;inset-inline-end:-20px;
+      /* Reset old physical props so we don't fight ourselves. */
+      left:auto;right:auto;
+    }
+    .badge-2{
+      bottom:10px;top:auto;
+      inset-inline-end:auto;inset-inline-start:-20px;
+      left:auto;right:auto;
+    }
     .reviews-grid{grid-template-columns:1fr}
     .nav-links{display:none}
     section{padding:60px 0}
@@ -1557,7 +1572,9 @@
 
     /* Hero mobile tighter */
     .hero{padding:40px 0 50px}
-    .hero h1{margin-bottom:18px}
+    /* A2 — H1 mobile +13%. Floor 46→52, scale 6.6vw→7.4vw; upper
+       cap unchanged (96px). Noticeable but not screen-dominating. */
+    .hero h1{margin-bottom:18px;font-size:clamp(52px,7.4vw,96px)}
     .hero p.lead{margin-bottom:24px}
     /* Mobile DOM diet (Lighthouse 2026-05-06): the hero ships ~36
        decorative ambient elements (5 blobs, 1 floating circle, 18
