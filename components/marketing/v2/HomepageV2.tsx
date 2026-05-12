@@ -6,7 +6,10 @@ import {
   webSiteJsonLd,
 } from "@/lib/seo/jsonLd";
 import { Hero } from "./Hero";
-import { Problem } from "./Problem";
+// `Problem` (./Problem.tsx) was removed from the homepage on
+// 2026-05-11 (K1, content brief). The component file is intentionally
+// kept so it can be re-introduced without re-writing it — restoration
+// just needs an `import { Problem }` line + `<Problem />` in the JSX.
 import { Authority } from "./Authority";
 import { MediaSlider } from "./MediaSlider";
 import { Founder } from "./Founder";
@@ -20,7 +23,10 @@ import { ForWhom } from "./ForWhom";
 // the single pricing surface on the homepage. The file is no longer
 // imported anywhere and can be deleted.
 import { JourneyStages } from "./JourneyStages";
-import { FinalCTA } from "./FinalCTA";
+// `FinalCTA` (./FinalCTA.tsx) was removed from the homepage on
+// 2026-05-11 (I11, content brief). The "הצעד הראשון" eyebrow that
+// section opened with duplicated the funnel work that JourneyStages
+// + the per-section CTAs already do. Kept on disk for future use.
 import { FAQ } from "./FAQ";
 
 /**
@@ -69,13 +75,7 @@ export function HomepageV2() {
       <Education />
       <ForWhom />
       <JourneyStages />
-      <FinalCTA />
       <FAQ />
-      {/* <Problem /> moved from second-position (right under Hero) to
-          end of page per Itzik 2026-05-08. The section also got
-          re-toned from "you're not broken..." to a more optimistic
-          frame — see messages/he.json:homeV2.problem. */}
-      <Problem />
     </div>
   );
 }

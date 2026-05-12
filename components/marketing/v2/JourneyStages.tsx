@@ -294,8 +294,6 @@ export function JourneyStages() {
             {renderStop("3")}
           </div>
         </div>
-
-        <p className="js-quote">{t("valueQuote")}</p>
       </div>
 
       <style
@@ -662,15 +660,6 @@ const STYLES = `
   [dir="ltr"] .mood-timeline .js-stop-cta-arrow{transform:scaleX(-1)}
   [dir="ltr"] .mood-timeline .js-stop-cta:hover .js-stop-cta-arrow{transform:scaleX(-1) translateX(-3px)}
 
-  /* ─── Closing quote ─────────────────────────────────────────────────── */
-  .mood-timeline .js-quote{
-    text-align:center;
-    max-width:560px;
-    margin:64px auto 0;
-    font-family:'Frank Ruhl Libre',serif;
-    font-size:18px;font-style:italic;
-    color:#4A3A45;line-height:1.65;
-  }
 
   /* ─── Mobile (≤899px) ──────────────────────────────────────────────── */
   @media (max-width:899px){
@@ -707,10 +696,5 @@ const STYLES = `
     }
     .mood-timeline .js-stop-cta{align-self:flex-start}
     .mood-timeline .js-stop-price-amount{font-size:38px}
-
-    .mood-timeline .js-quote{
-      font-size:16px;
-      padding:0 24px;
-    }
   }
 `;
