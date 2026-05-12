@@ -186,7 +186,7 @@ If Lighthouse / PSI flags these because their headless-Chrome run also samples m
 - **Add a consent banner.** Once a UI design is ready, call `gtag('consent', 'update', { ad_storage: 'granted', analytics_storage: 'granted', ... })` from the new component. The GTM container does not need any change — the Consent Mode v2 defaults are already in place.
 - **Drop `--font-geist-sans` references** in `app/[locale]/dashboard/page.tsx:28` and `app/[locale]/paywall/page.tsx:8` (no font is loaded for that variable).
 - **Verify Cardcom CSP frame in dev.** Run a real checkout against `secure.cardcom.solutions` once with browser devtools open and confirm the iframe loads. If a different subdomain shows up, add it to `frame-src` / `connect-src` / `form-action`.
-- **Re-run PSI** on `https://mioshy.com` (mobile + desktop) and re-run the **VOW Auditor** scan after deploy. Verify the rules in the Verification table flip to `pass`.
+- **Re-run PSI** on `https://mioshy.com` (mobile + desktop) and re-run the **initial scan** after deploy. Verify the rules in the Verification table flip to `pass`.
 - **Wipe Supabase test data** before launch.
 - **Tighten CSP — defer to a dedicated post-launch session.** Move from the current moderate CSP (`'unsafe-inline'` + `'unsafe-eval'` in `script-src`, `'unsafe-inline'` in `style-src`) to a request-scoped nonce setup. **Risk:** likely to break GTM (inline init script), Framer Motion (style attributes + spring solver eval), and `@uiw/react-md-editor` (Function constructor). **Plan:** do this **after** the launch has steady traffic and a known-good rollback target, with a session dedicated solely to the migration. Specifically: (1) plumb a per-request nonce through the root layout, (2) attach it to every inline `<script>` (`GoogleTagManager`, the JSON-LD scripts, any CSS keyframe `<style>` blocks), (3) drop `'unsafe-inline'` from `script-src` and `style-src`, (4) audit Framer Motion + md-editor for `Function()` use and replace where possible before dropping `'unsafe-eval'`. Each step its own commit, deployed behind a preview URL, tested with real Cardcom checkout + a few games + admin dashboard before merge. **Do not bundle with feature work.**
 
@@ -259,7 +259,7 @@ If Lighthouse / PSI flags these because their headless-Chrome run also samples m
 - Move `www → apex` redirect to Vercel domains panel
 - Add a consent banner (Consent Mode v2 defaults are already wired)
 - Drop `--font-geist-sans` dead references in `dashboard/page.tsx:28` and `paywall/page.tsx:8`
-- Re-run PSI and VOW Auditor after deploy
+- Re-run PSI and initial scan after deploy
 - Wipe Supabase test data before launch
 
 ### Verification status by stage
@@ -270,4 +270,4 @@ If Lighthouse / PSI flags these because their headless-Chrome run also samples m
 | axe on `/he`, `/en`, `/he/articles/*` | 0 real violations after C1–C4 (Authority mid-fade false positives remain — not a code issue) |
 | Visual RTL on assessment page | `text-align: start` confirmed on h2 + SingleChoice buttons; header right-aligned in `dir="rtl"` |
 | LCP measurement | **Deferred to Vercel preview deploy** — local dev does not run the image optimizer |
-| Real PSI / VOW Auditor re-scan | Must run against the live production deploy after merge |
+| Real PSI / initial-scan re-run | Must run against the live production deploy after merge |

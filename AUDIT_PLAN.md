@@ -1,12 +1,12 @@
 # mioshy.com — SEO / Performance / Security Audit Plan
 
-_Generated 2026-05-10 from VOW Auditor scan + independent security review._
+_Generated 2026-05-10 from initial scan + independent security review._
 
 This is the agreed work plan. The implementation log lives in `AUDIT_REPORT.md`.
 
 ## Inputs
 
-- **VOW Auditor brief** — pasted in the original request. Crawled 10 pages, mobile/desktop PSI scores, schema/AI/tracking checks.
+- **Initial audit brief** — pasted in the original request. Crawled 10 pages, mobile/desktop PSI scores, schema/AI/tracking checks.
 - **Independent security scan** — codebase grep for secrets, env files, service-role exposure, admin auth gates, payment webhook validation, CSP/headers, RLS coverage.
 
 ## Site Profile
@@ -77,7 +77,7 @@ RLS deep audit — defer to a separate session before launch.
 - Add the GTM/GA env vars in Vercel (preview + production) — already provided in this session, will be wired as constants in code per user instruction.
 - In Vercel domains panel: confirm `www.mioshy.com → mioshy.com` is handled at the edge (so the `next.config.mjs` redirect can be removed, eliminating one hop in the chain).
 - Re-run PSI on https://mioshy.com after deploy.
-- Re-run VOW Auditor scan to verify SEO/AEO rule statuses flip to `pass`.
+- Re-run initial scan to verify SEO/AEO rule statuses flip to `pass`.
 - Wipe pre-launch test data in Supabase (separate task, before go-live).
 
 ## Decisions captured pre-execution
