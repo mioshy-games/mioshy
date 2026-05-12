@@ -2,6 +2,7 @@
 
 import type { JSX } from "react";
 import { useCmsText } from "@/hooks/useCmsText";
+import { normalizeRichText } from "@/lib/cms/render";
 
 /**
  * Convenience renderer for CMS-managed strings that may contain
@@ -30,6 +31,13 @@ export function CmsText({
   style?: React.CSSProperties;
 }) {
   const { text, style } = useCmsText(cmsKey);
+  // normalizeRichText rewrites the `<br></br>` ICU-style placeholders
+  // (legacy next-intl t.rich syntax that the HTML parser would otherwise
+  // double-render as <br><br>) into a clean `<br />`. Cheap on every
+  // render — single regex on a short string. Also runs server-side via
+  // loadCmsTextsForPage so CMS-backed text is already clean by the time
+  // it reaches here; this branch covers the messages/*.json fallback.
+  const html = normalizeRichText(text);
   const mergedStyle = style || extraStyle ? { ...style, ...extraStyle } : undefined;
 
   // Cast: `Tag` is a dynamic intrinsic element. JSX.IntrinsicElements
@@ -46,7 +54,7 @@ export function CmsText({
     <Element
       className={className}
       style={mergedStyle}
-      dangerouslySetInnerHTML={{ __html: text }}
+      dangerouslySetInnerHTML={{ __html: html }}
     />
   );
 }

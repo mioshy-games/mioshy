@@ -2,6 +2,7 @@ import "server-only";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { CmsTextRow, CmsPage } from "./types";
+import { normalizeRowsForRender } from "./render";
 
 /**
  * CMS — server-only loader.
@@ -59,7 +60,7 @@ export async function loadCmsTextsForPage(
       console.warn("[cms] loadCmsTextsForPage failed:", error.message);
       return [];
     }
-    return (data ?? []) as unknown as CmsTextRow[];
+    return normalizeRowsForRender((data ?? []) as unknown as CmsTextRow[]);
   } catch (err) {
     console.warn("[cms] loadCmsTextsForPage threw:", err);
     return [];
@@ -80,7 +81,7 @@ export async function loadAllCmsTexts(): Promise<CmsTextRow[]> {
       console.warn("[cms] loadAllCmsTexts failed:", error.message);
       return [];
     }
-    return (data ?? []) as CmsTextRow[];
+    return normalizeRowsForRender((data ?? []) as CmsTextRow[]);
   } catch (err) {
     console.warn("[cms] loadAllCmsTexts threw:", err);
     return [];
