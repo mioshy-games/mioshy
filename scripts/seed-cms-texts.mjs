@@ -302,14 +302,27 @@ async function main() {
     `Active next-intl namespaces: ${activeNs.namespaces.size}${activeNs.rootNamespaceUsed ? " (+ root)" : ""}`,
   );
 
-  // Build rows + orphan stats
+  // Build rows + orphan stats + placeholder list
   const rows = [];
   const orphans = [];
+  const placeholders = []; // keys ending in ._TODO or ._PLACEHOLDER
   const pageStats = {};
   const onlyHe = [];
   const onlyEn = [];
 
+  // Placeholder suffixes — keys with these get excluded from the seed
+  // entirely. They're committed to JSON as scaffolding/dev placeholders
+  // and shouldn't surface in the CMS. Logged separately so a future
+  // PR can clean them out of messages/*.json.
+  const PLACEHOLDER_SUFFIXES = ["._TODO", "._PLACEHOLDER"];
+
   for (const key of allKeys) {
+    const isPlaceholder = PLACEHOLDER_SUFFIXES.some((s) => key.endsWith(s));
+    if (isPlaceholder) {
+      placeholders.push(key);
+      continue;
+    }
+
     const used = isKeyUsed(key, activeNs, corpus);
     if (!used) {
       orphans.push(key);
@@ -330,10 +343,43 @@ async function main() {
     });
   }
 
+  // Cleanup report — locate each placeholder in source files so the
+  // user knows which file is referencing the scaffolding key. This is
+  // best-effort: we don't traverse files individually, we just grep
+  // for the suffix-bearing key as a literal substring of the corpus.
+  // If we can't find it in the source corpus, it's only in JSON.
+  async function locatePlaceholderInSource(key) {
+    const hits = [];
+    const targets = ["app", "components", "lib", "hooks"];
+    async function walk(dir) {
+      let entries;
+      try {
+        entries = await readdir(dir, { withFileTypes: true });
+      } catch {
+        return;
+      }
+      for (const entry of entries) {
+        if (entry.name.startsWith(".") || entry.name === "node_modules") continue;
+        const full = join(dir, entry.name);
+        if (entry.isDirectory()) {
+          await walk(full);
+        } else if (/\.(tsx?|mjs|js)$/.test(entry.name)) {
+          try {
+            const text = await readFile(full, "utf-8");
+            if (text.includes(key)) hits.push(full.replace(REPO_ROOT + "/", ""));
+          } catch {}
+        }
+      }
+    }
+    for (const t of targets) await walk(join(REPO_ROOT, t));
+    return hits;
+  }
+
   // Report — phase 1 of report (always shown)
   console.log("─".repeat(72));
   console.log(`Migration plan:`);
   console.log(`  Total keys candidate:   ${allKeys.size}`);
+  console.log(`  Placeholders (filtered):${placeholders.length}  ← see cleanup list below`);
   console.log(`  Orphan (skipped):       ${orphans.length}`);
   console.log(`  Will write:             ${rows.length}`);
   console.log(`  HE-only (no EN twin):   ${onlyHe.length}  ← needs review`);
@@ -342,6 +388,20 @@ async function main() {
   console.log(`Per-page breakdown of writes:`);
   for (const [p, n] of Object.entries(pageStats).sort()) {
     console.log(`  ${p.padEnd(12)}  ${n}`);
+  }
+
+  if (placeholders.length > 0) {
+    console.log(``);
+    console.log(`Placeholder keys (excluded from seed; suffixes _TODO / _PLACEHOLDER):`);
+    for (const k of placeholders) {
+      const hits = await locatePlaceholderInSource(k);
+      const where =
+        hits.length === 0
+          ? "    (only in messages/*.json — no source reference)"
+          : hits.map((h) => `    - ${h}`).join("\n");
+      console.log(`  ${k}`);
+      console.log(where);
+    }
   }
 
   if (orphans.length > 0) {
