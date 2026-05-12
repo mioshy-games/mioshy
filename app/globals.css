@@ -328,3 +328,77 @@ small, .text-small {
     @apply font-sans;
   }
 }
+
+/* ════════════════════════════════════════════════════════════
+   Mioshy canonical CTA — global "black button" token (2026-05-12)
+   ════════════════════════════════════════════════════════════
+   Source of truth: <a class="btn btn-primary" href="…">…</a>
+     — the Journey "התחילו את האבחון" / "Start the assessment"
+       CTA in HomepageV2.
+
+   These rules define the identical pill button GLOBALLY so any
+   page on the site (not just `.home-v2`-scoped surfaces) can
+   render the same canonical CTA by using:
+
+       <a class="btn btn-primary" href="…">…</a>
+
+   Inside `.home-v2` the nested rules in
+   components/marketing/v2/styles.css are MORE specific and win
+   (specificity 0,0,2,0 vs 0,0,1,0 here) — these globals are the
+   fallback for everywhere else on the site.
+
+   Values are hardcoded here (not `var(--ink)` / `var(--accent)`
+   / `var(--t)`) because those tokens are themselves scoped to
+   `.home-v2` in this file. Hardcoding keeps the global button
+   self-contained — no surprise when used outside the v2 marketing
+   tree.
+
+   If you change colour/size, update BOTH this block AND
+   components/marketing/v2/styles.css `.btn` / `.btn-primary`.
+   ════════════════════════════════════════════════════════════ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 14px 28px;
+  border-radius: 999px;
+  font-size: 18px;
+  font-weight: 600;
+  font-family: var(--font-heebo), 'Heebo', system-ui, sans-serif;
+  line-height: 1.2;
+  letter-spacing: 0.005em;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    transform .35s cubic-bezier(.22, .61, .36, 1),
+    box-shadow .35s cubic-bezier(.22, .61, .36, 1),
+    background-color .35s cubic-bezier(.22, .61, .36, 1),
+    color .35s cubic-bezier(.22, .61, .36, 1);
+}
+.btn-primary {
+  background: #170E14;  /* --ink */
+  color: #fff;
+}
+.btn-primary:hover {
+  background: #B83C4D;  /* --accent */
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 18px 36px rgba(184, 60, 77, 0.3);
+}
+.btn-primary:focus-visible {
+  outline: 2px solid #B83C4D;
+  outline-offset: 3px;
+}
+@media (max-width: 640px) {
+  .btn { min-height: 48px; padding: 13px 24px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn { transition: background-color .2s linear, color .2s linear; }
+  .btn-primary:hover { transform: none; }
+}
