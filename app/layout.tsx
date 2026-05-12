@@ -1,8 +1,13 @@
 import type { ReactNode } from "react";
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { Assistant, Frank_Ruhl_Libre } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
+import {
+  GoogleTagManager,
+  GoogleTagManagerNoscript,
+} from "@/components/analytics/GoogleTagManager";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Root metadata - inherited by every page, with per-page metadata overriding
@@ -99,8 +104,18 @@ const SUPABASE_ORIGIN = (() => {
 })();
 
 export default function RootLayout({ children }: { children: ReactNode }) {
+  // Locale is stamped on the request by `middleware.ts` (header
+  // `x-mioshy-locale`). Reading it here lets us render `<html lang dir>` on
+  // the server — without this, the initial HTML had no `lang` attribute and
+  // the locale was patched in client-side via a `useEffect`, which Lighthouse
+  // / Google flag as a SEO + a11y failure (`tech.html_lang_present`).
+  const locale = headers().get("x-mioshy-locale") === "en" ? "en" : "he";
+  const dir = locale === "he" ? "rtl" : "ltr";
+
   return (
     <html
+      lang={locale}
+      dir={dir}
       suppressHydrationWarning
       className={cn(
         "font-sans",
@@ -124,6 +139,16 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       }
     >
       <head>
+        {/* Preconnect to Google Fonts CDN. next/font self-hosts most font
+            files but the initial CSS request still hits Google, and PSI's
+            network-dependency-tree audit flags the chain when the
+            connection isn't warmed in advance. */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin=""
+        />
         {SUPABASE_ORIGIN ? (
           // dns-prefetch only - full preconnect held a connection slot
           // that the marketing homepage never used (Supabase is hit only
@@ -134,8 +159,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         ) : null}
         <meta name="theme-color" content="#1a0a2e" />
         <meta name="format-detection" content="telephone=no" />
+        <GoogleTagManager />
       </head>
-      <body className="min-h-[100dvh] antialiased">{children}</body>
+      <body className="min-h-[100dvh] antialiased">
+        <GoogleTagManagerNoscript />
+        {children}
+      </body>
     </html>
   );
 }

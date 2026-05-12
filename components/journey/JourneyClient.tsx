@@ -573,7 +573,7 @@ export function JourneyClient({
         dir={locale === "he" ? "rtl" : "ltr"}
         className="mx-auto flex min-h-[80vh] w-full max-w-3xl flex-col gap-8 px-4 py-10"
       >
-        <header className="flex flex-col gap-2">
+        <header className="flex flex-col gap-2 text-start">
           <h1 className="text-2xl font-bold text-white md:text-3xl">{headerText.title}</h1>
           <p className="text-sm text-white/70">{headerText.subtitle}</p>
         </header>

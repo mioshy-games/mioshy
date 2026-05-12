@@ -69,7 +69,7 @@ export function SiteFooter() {
 
             {/* Explore */}
             <div className="space-y-3">
-              <p className="text-[13px] font-semibold uppercase tracking-widest text-white/45 md:text-xs md:text-white/30">
+              <p className="text-[13px] font-semibold uppercase tracking-widest text-white/60 md:text-xs">
                 {t("exploreTitle")}
               </p>
               <ul className="space-y-3 text-[15px] md:space-y-2.5 md:text-[11px]">
@@ -82,7 +82,7 @@ export function SiteFooter() {
 
             {/* Services - the three pillars, mirrors the header nav. */}
             <div className="space-y-3">
-              <p className="text-[13px] font-semibold uppercase tracking-widest text-white/45 md:text-xs md:text-white/30">
+              <p className="text-[13px] font-semibold uppercase tracking-widest text-white/60 md:text-xs">
                 {t("servicesTitle")}
               </p>
               <ul className="space-y-3 text-[15px] md:space-y-2.5 md:text-[11px]">
@@ -94,7 +94,7 @@ export function SiteFooter() {
 
             {/* Legal / info */}
             <div className="space-y-3">
-              <p className="text-[13px] font-semibold uppercase tracking-widest text-white/45 md:text-xs md:text-white/30">
+              <p className="text-[13px] font-semibold uppercase tracking-widest text-white/60 md:text-xs">
                 {t("infoTitle")}
               </p>
               <ul className="space-y-3 text-[15px] md:space-y-2.5 md:text-[11px]">
@@ -156,7 +156,7 @@ export function SiteFooter() {
 
       {/* ── Bottom bar - language switch + brand line ───────────────────── */}
       <div className="border-t border-white/[0.04]">
-        <div className="mx-auto flex w-full max-w-7xl flex-col items-start justify-between gap-3 px-4 py-5 text-[13px] text-white/45 sm:flex-row sm:items-center md:text-xs md:text-white/30">
+        <div className="mx-auto flex w-full max-w-7xl flex-col items-start justify-between gap-3 px-4 py-5 text-[13px] text-white/60 sm:flex-row sm:items-center md:text-xs">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
             <p>{tMarketing("footer.copyright")}</p>
             <span aria-hidden className="text-white/15">·</span>
@@ -168,7 +168,7 @@ export function SiteFooter() {
                 className={`transition-colors hover:text-white/70 ${
                   locale === "he"
                     ? "text-white/80 underline underline-offset-4 decoration-white/40"
-                    : "text-white/40"
+                    : "text-white/60"
                 }`}
               >
                 {t("hebrew")}
@@ -180,7 +180,7 @@ export function SiteFooter() {
                 className={`transition-colors hover:text-white/70 ${
                   locale === "en"
                     ? "text-white/80 underline underline-offset-4 decoration-white/40"
-                    : "text-white/40"
+                    : "text-white/60"
                 }`}
               >
                 {t("english")}

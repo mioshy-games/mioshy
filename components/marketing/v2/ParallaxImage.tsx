@@ -11,6 +11,12 @@ type Props = {
   height: number;
   className?: string;
   priority?: boolean;
+  /**
+   * Responsive `sizes` attribute. Forwarded to `next/image`. Critical for the
+   * hero image — without it, Next.js picks the largest srcset entry on every
+   * viewport, which inflates LCP bytes on mobile by 2-3x.
+   */
+  sizes?: string;
   /** How many pixels of parallax movement total (split half up, half down). */
   range?: number;
 };
@@ -30,6 +36,7 @@ export function ParallaxImage({
   height,
   className,
   priority = false,
+  sizes,
   range = 16,
 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
@@ -53,6 +60,7 @@ export function ParallaxImage({
         height={height}
         className={className}
         priority={priority}
+        sizes={sizes}
       />
     );
   }
@@ -67,6 +75,7 @@ export function ParallaxImage({
           height={height}
           className={className}
           priority={priority}
+          sizes={sizes}
         />
       </motion.div>
     </div>

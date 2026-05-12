@@ -1,0 +1,62 @@
+# Mioshy — Couples Games & Relationship Journey
+
+> Mioshy (מיאושי) is a bilingual (Hebrew RTL / English LTR) platform
+> for couples that combines interactive games and a guided 26-week
+> journey designed by relationship therapists. Web-only, browser-based,
+> no apps to install. Israel-first product, with full English support.
+
+## Brand
+- Name: Mioshy / מיאושי
+- Site: https://mioshy.com
+- Languages: Hebrew (he), English (en)
+- Audience: couples (18+, with a separate adults-only catalog gated by sign-in)
+- Tone: warm, honest, no euphemisms, never clinical
+
+## Primary surfaces
+- [Hebrew home](https://mioshy.com/he): /he — דף הבית
+- [English home](https://mioshy.com/en): /en — homepage
+- [Games — he](https://mioshy.com/he/games): wheel-based couples games (Truth or Dare, Would You Rather, Date Night)
+- [Games — en](https://mioshy.com/en/games)
+- [Adults — he](https://mioshy.com/he/adults): adults-only experience games
+- [Adults — en](https://mioshy.com/en/adults)
+- [Journey — he](https://mioshy.com/he/journey): 26-week guided journey for couples
+- [Journey — en](https://mioshy.com/en/journey)
+- [How it works — he](https://mioshy.com/he/how-it-works)
+- [How it works — en](https://mioshy.com/en/how-it-works)
+- [Pricing — he](https://mioshy.com/he/pricing)
+- [Pricing — en](https://mioshy.com/en/pricing)
+
+## Articles (English)
+- [Date night games for couples](https://mioshy.com/en/articles/date-night-games-ideas)
+- [Intimacy games for couples](https://mioshy.com/en/articles/intimacy-games-for-couples)
+- [50 best truth or dare questions for couples](https://mioshy.com/en/articles/truth-or-dare-questions-couples)
+- [60 would you rather questions for couples](https://mioshy.com/en/articles/would-you-rather-questions-couples)
+
+## Articles (Hebrew)
+- [משחקי ערב זוגי ללא מסך](https://mioshy.com/he/articles/date-night-games-ideas)
+- [50 שאלות אמת או חובה לזוגות](https://mioshy.com/he/articles/truth-or-dare-questions-couples)
+- [60 שאלות "היית מעדיף" לזוגות](https://mioshy.com/he/articles/would-you-rather-questions-couples)
+
+## Topics covered
+- Couples games, intimacy games, date night ideas
+- Truth or dare, would you rather, conversation starters
+- Communication exercises for couples
+- Long-term relationship maintenance
+- Sex-positive, consent-first, science-informed
+- Israeli-Hebrew-language relationship content (rare on the web)
+
+## What we are not
+- Not a dating app
+- Not a therapist directory
+- Not a hookup platform
+- Not a porn site (adults-only catalog is intimacy-focused, partner-only)
+
+## Crawler guidance
+- Sitemap: https://mioshy.com/sitemap.xml
+- robots.txt: https://mioshy.com/robots.txt
+- /api, /dashboard, /account, /billing are gated and not for crawling.
+- Article and game pages are public and welcome indexing.
+
+## Contact
+- Site: https://mioshy.com
+- For takedown / press / partnership inquiries, see /he/contact.

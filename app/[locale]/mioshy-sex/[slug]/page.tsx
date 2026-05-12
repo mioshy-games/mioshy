@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Link } from "@/navigation";
+import { safeJsonLd } from "@/lib/seo/jsonLd";
 import {
   ArrowRight,
   CheckCircle2,
@@ -359,7 +360,7 @@ export default async function BetweenUsGameDetailPage({
       {/* Product structured data - Google rich-result eligibility. */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
       />
       {/* Outer rail width AND padding match the SiteHeader exactly
           (max-w-7xl, mx-auto, px-4) so the page, header and footer

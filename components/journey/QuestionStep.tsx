@@ -60,7 +60,7 @@ export function QuestionStep({ question, locale, onSubmit, initial, busy }: Ques
       className="flex w-full max-w-2xl flex-col gap-6"
       dir={isHe ? "rtl" : "ltr"}
     >
-      <h2 className="text-xl font-semibold leading-snug text-white md:text-2xl drop-shadow-sm">
+      <h2 className="text-start text-xl font-semibold leading-snug text-white md:text-2xl drop-shadow-sm">
         {promptFor(question, locale)}
       </h2>
 

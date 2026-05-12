@@ -941,9 +941,12 @@
     background:linear-gradient(90deg,#EC4899 0%,transparent 100%);
     margin-top:14px;
   }
-  /* H4 inherits font-family/size from globals (`--fs-h4: 28px`) — uniform
-     across the homepage per Itzik 2026-05-06. Only color stays here. */
-  .ag-pillar h4{
+  /* H3 inherits font-family/size from globals (`--fs-h3` clamp) — uniform
+     across the homepage per Itzik 2026-05-06. The selector was changed
+     from h4 to h3 in audit commit db6689e (heading-order semantic fix:
+     the section opens with <h2> so the pillar headings must be <h3>).
+     Only color/line-height/margin stay here. */
+  .ag-pillar h3{
     line-height:1.2;
     margin:0 0 14px;
     color:#FBF3F0;

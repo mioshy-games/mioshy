@@ -1,6 +1,7 @@
 import { unstable_noStore as noStore } from "next/cache";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
+import { safeJsonLd } from "@/lib/seo/jsonLd";
 import type { Metadata } from "next";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { ArticleRow } from "@/lib/types/database";
@@ -316,7 +317,7 @@ export default async function ArticleDetailPage({
     >
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
       />
 
       {/* ── HERO (dark, branded) ──────────────────────────────────────────── */}
@@ -355,7 +356,7 @@ export default async function ArticleDetailPage({
           <Reveal>
             <Link
               href="/articles"
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-rose-500 hover:text-rose-600 transition-colors"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-rose-600 hover:text-rose-700 transition-colors"
             >
               <span aria-hidden>{isRtl ? "→" : "←"}</span>
               {t("back")}
@@ -397,7 +398,7 @@ export default async function ArticleDetailPage({
                   {a.tags.slice(0, 3).map((tag: string) => (
                     <span
                       key={tag}
-                      className="rounded-full bg-rose-50 px-3 py-0.5 text-xs font-medium text-rose-600"
+                      className="rounded-full bg-rose-50 px-3 py-0.5 text-xs font-medium text-rose-700"
                     >
                       {localiseTag(tag, locale)}
                     </span>
