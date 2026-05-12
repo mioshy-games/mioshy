@@ -123,7 +123,29 @@ export function JourneyStages() {
 
   const renderStop = (id: StageId) => {
     const tone = STAGE_TONE[id];
-    const includes = id === "3" ? t("stage3GetIncludes") : null;
+    // Stage 3 lists what's bundled in ("Online couples games", "Mioshy's
+    // Sex") as a checklist under the GetTitle. Previously this was a
+    // single inline string with `·` separators; split into discrete
+    // items so the rendered <ul> can use a brand-coloured ✓ marker and
+    // future additions are a JSON-key change, not a component change.
+    const includesItems = id === "3"
+      ? [t("stage3GetIncludesItem1"), t("stage3GetIncludesItem2")]
+      : null;
+    // Stage 3 "when this is the right thing" — list of 6 personas a
+    // user can self-identify with. Previously a single short paragraph;
+    // converted to a list so the user can scan ("am I one of these?")
+    // and the page can run a different marker style (dot, not ✓) so
+    // the two Stage-3 lists aren't visually identical.
+    const whenItems = id === "3"
+      ? [
+          t("stage3WhenItem1"),
+          t("stage3WhenItem2"),
+          t("stage3WhenItem3"),
+          t("stage3WhenItem4"),
+          t("stage3WhenItem5"),
+          t("stage3WhenItem6"),
+        ]
+      : null;
     return (
       <article
         className={`js-stop js-stop--${id}`}
@@ -184,8 +206,12 @@ export function JourneyStages() {
                 {t(`stage${id}GetTitle`)}
               </div>
               <p className="js-stop-block-body">{t(`stage${id}Get`)}</p>
-              {includes ? (
-                <p className="js-stop-block-includes">{includes}</p>
+              {includesItems ? (
+                <ul className="js-stop-block-includes-list">
+                  {includesItems.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
               ) : null}
             </div>
 
@@ -193,7 +219,15 @@ export function JourneyStages() {
               <div className="js-stop-block-title">
                 {t(`stage${id}WhenTitle`)}
               </div>
-              <p className="js-stop-block-body">{t(`stage${id}When`)}</p>
+              {whenItems ? (
+                <ul className="js-stop-block-when-list">
+                  {whenItems.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="js-stop-block-body">{t(`stage${id}When`)}</p>
+              )}
             </div>
 
             <div className="js-stop-foot">
@@ -510,11 +544,59 @@ const STYLES = `
     font-size:19px;line-height:1.55;color:#3D2C36;
     margin:0;
   }
-  .mood-timeline .js-stop-block-includes{
-    font-size:17px;line-height:1.55;
+  /* Stage 3 "what's included" list — each <li> shows a brand-coloured
+     ✓ marker in the stop's tone-ink. The tone-ink is set per-stop via
+     a CSS variable on .js-stop, so the checkmark stays semantically
+     tied to Stage 3 (indigo) rather than using a generic green. */
+  .mood-timeline .js-stop-block-includes-list{
+    list-style:none;
     margin:8px 0 0;
+    padding:0;
+    display:flex;flex-direction:column;gap:4px;
+  }
+  .mood-timeline .js-stop-block-includes-list li{
+    position:relative;
+    padding-inline-start:24px;
+    font-size:17px;line-height:1.55;
     color:var(--tone-ink);
     font-weight:600;
+  }
+  .mood-timeline .js-stop-block-includes-list li::before{
+    content:"\2713"; /* ✓ */
+    position:absolute;
+    inset-inline-start:0;
+    top:0;
+    color:var(--tone-ink);
+    font-weight:700;
+  }
+  /* Stage 3 "who it's for" list — different semantic meaning than the
+     "what's included" checklist above, so a different marker (•) and
+     more airy spacing so the user has time to read each persona and
+     ask "is that me?". Same tone-ink colour for visual unity within
+     Stage 3, but the larger gap + softer marker tells the reader
+     these are identification prompts, not feature confirmations. */
+  .mood-timeline .js-stop-block-when-list{
+    list-style:none;
+    margin:8px 0 0;
+    padding:0;
+    display:flex;flex-direction:column;gap:10px;
+  }
+  .mood-timeline .js-stop-block-when-list li{
+    position:relative;
+    padding-inline-start:20px;
+    font-size:18px;line-height:1.5;
+    color:#3D2C36;
+    font-weight:500;
+  }
+  .mood-timeline .js-stop-block-when-list li::before{
+    content:"\2022"; /* • */
+    position:absolute;
+    inset-inline-start:0;
+    top:0;
+    color:var(--tone-ink);
+    font-weight:700;
+    font-size:20px;
+    line-height:1.35;
   }
   .mood-timeline .js-stop-foot{
     margin-top:22px;
@@ -614,7 +696,9 @@ const STYLES = `
        bumped to 20px on mobile so each stop reads at the body floor. */
     .mood-timeline .js-stop-desc{font-size:20px;line-height:1.55;margin:20px 0 24px}
     .mood-timeline .js-stop-block-body{font-size:20px;line-height:1.55}
-    .mood-timeline .js-stop-block-includes{font-size:17px}
+    .mood-timeline .js-stop-block-includes-list li{font-size:17px}
+    .mood-timeline .js-stop-block-when-list{gap:8px}
+    .mood-timeline .js-stop-block-when-list li{font-size:17px;padding-inline-start:18px}
     .mood-timeline .js-stop-block-title{font-size:13px;letter-spacing:0.16em}
 
     .mood-timeline .js-stop-foot{
