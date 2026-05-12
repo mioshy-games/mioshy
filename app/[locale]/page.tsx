@@ -24,6 +24,8 @@ import { HeroClassicDark } from "@/components/marketing/HeroClassicDark";
 import { HeroLightGradient } from "@/components/marketing/HeroLightGradient";
 import { HomepageV2 } from "@/components/marketing/v2/HomepageV2";
 import { pickGameThumbnail } from "@/lib/games-thumbnail";
+import { CmsTextProvider } from "@/components/cms/CmsTextProvider";
+import { loadCmsTextsForPage } from "@/lib/cms/server";
 
 function siteUrl() {
   return (process.env.NEXT_PUBLIC_SITE_URL || "https://mioshy.com").replace(
@@ -95,7 +97,19 @@ export default async function HomePage({
   //    (analytics + QA stable for ~2 weeks), the legacy code below can be
   //    deleted entirely.
   if (searchParams?.old !== "1") {
-    return <HomepageV2 />;
+    // CMS — load every editable string for the homepage in ONE query,
+    // cached for 60s (see lib/cms/server.ts). The provider hydrates the
+    // client tree below; useCmsText(key) inside any component reads
+    // from this Map without doing its own database round-trip.
+    // If the query fails or the table is empty, rows is [] and every
+    // useCmsText call falls back to messages/*.json via next-intl —
+    // i.e. the public site keeps rendering exactly like it does today.
+    const cmsRows = await loadCmsTextsForPage("homepage");
+    return (
+      <CmsTextProvider rows={cmsRows}>
+        <HomepageV2 />
+      </CmsTextProvider>
+    );
   }
 
   const locale = params.locale;
