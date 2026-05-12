@@ -1485,10 +1485,22 @@
        lines inside the column with breathing room. */
     .authority .section-head h2{font-size:30px;line-height:1.1}
     .auth-narrative{margin:0 auto 36px}
+    /* B2 — Authority narrative paragraph: 20px + 1.5em on mobile. */
+    .auth-narrative p{font-size:20px;line-height:1.5}
     .auth-banner{padding:28px 0;margin-bottom:36px}
 
-    /* Reviews: show 3, hide rest until expanded */
-    .reviews-grid:n-t(.expanded) .review-card:nth-child(n+4){display:none}
+    /* C2 — Review-text mobile typography. Overrides the !important
+       block at the top of this file (rule was set to 17px/1.65 for
+       overall consistency; mobile readability calls for one notch up
+       on size and slightly tighter line-height). */
+    .home-v2 p.review-text{font-size:18px !important;line-height:1.4 !important}
+
+    /* C3 — Reviews load-more on mobile. The previous CSS rule used
+       `:n-t(.expanded)` (typo: missing characters). The ReviewsGrid
+       component now uses a `data-mobile-show` attribute with per-
+       click reveal, so the mobile hide rule reads that attribute.
+       Default initial value is 3; STEP is 3; max is REVIEWS.length. */
+    .reviews-grid[data-mobile-show="3"] .review-card:nth-child(n+4){display:none}
     .reviews-load-more{display:flex;margin-top:20px}
 
     /* Media press - tighten mobile */
