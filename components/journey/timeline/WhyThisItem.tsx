@@ -12,27 +12,31 @@
  * the user can trust.
  */
 
+"use client";
+
 import { Sparkles } from "lucide-react";
+import { useCmsText } from "@/hooks/useCmsText";
+import { CmsText } from "@/components/cms/CmsText";
 
 interface Props {
-  isHe: boolean;
+  /** Retained for backwards-compat; CMS lookup is locale-aware via the
+   *  context, so this isn't read inside the component anymore. */
+  isHe?: boolean;
   rationale: string | null;
 }
 
-export function WhyThisItem({ isHe, rationale }: Props) {
+export function WhyThisItem({ rationale }: Props) {
+  const ariaLabel = useCmsText("journeyTimeline.whyThisItem.ariaLabel").text;
+  const fallback = useCmsText("journeyTimeline.whyThisItem.fallbackRationale").text;
   // No attribution → render a quiet generic line so the user still
   // sees a "why" entry. Better than blank space, better than fake
   // certainty about content we can't attribute.
-  const text =
-    rationale ??
-    (isHe
-      ? "חלק מהמסלול שנבנה לכם."
-      : "Part of the path built for you.");
+  const text = rationale ?? fallback;
 
   return (
     <aside
       className="mt-5 flex items-start gap-3 rounded-2xl border border-[#B83C4D]/25 bg-gradient-to-br from-[#B83C4D]/[0.10] via-[#B83C4D]/[0.04] to-transparent px-4 py-3"
-      aria-label={isHe ? "למה הפריט הזה אצלכם" : "Why this item is here"}
+      aria-label={ariaLabel}
     >
       <span
         aria-hidden
@@ -41,9 +45,11 @@ export function WhyThisItem({ isHe, rationale }: Props) {
         <Sparkles className="h-3 w-3" />
       </span>
       <div className="min-w-0">
-        <div className="text-[11px] font-bold uppercase tracking-wider text-[#FAF6F7]/75">
-          {isHe ? "למה זה אצלכם" : "Why this is here"}
-        </div>
+        <CmsText
+          cmsKey="journeyTimeline.whyThisItem.heading"
+          as="div"
+          className="text-[11px] font-bold uppercase tracking-wider text-[#FAF6F7]/75"
+        />
         <p className="mt-0.5 text-[14px] leading-[1.55] text-white/85">
           {text}
         </p>

@@ -1488,6 +1488,52 @@
       "progressLabel": "Sign it's working",
       "sourcePrefix": "Based on the work of ",
       "sourceSuffix": " — Mioshy interpretation"
+    },
+    "celebration": {
+      "kicker": "One more step · real change",
+      "title": "You just did something that matters.",
+      "body": "Small moments like this are what build a closeness that lasts. Your journey is moving forward - step by step, at your own pace.",
+      "impactLabel": "What you just built",
+      "impactLine": "You grew a new relationship muscle - listening, presence, honesty between the two of you. That doesn't happen by accident.",
+      "credibilityTitle": "Itzik Berlav",
+      "credibilitySub": "Coaching couples since 2001",
+      "credibilityProof": "A method tested with hundreds of couples · Over 25 years of practice",
+      "continue": "Continue your journey",
+      "stay": "Stay here"
+    },
+    "whyThisItem": {
+      "fallbackRationale": "Part of the path built for you.",
+      "ariaLabel": "Why this item is here",
+      "heading": "Why this is here"
+    },
+    "activity": {
+      "empty": "No activity yet - start with the next chapter above.",
+      "verbItemOpened": "opened",
+      "verbItemCompleted": "completed",
+      "verbItemUncompleted": "un-completed",
+      "verbResponsePosted": "replied to",
+      "verbResponseDeleted": "deleted reply to",
+      "timeJustNow": "just now",
+      "timeMinutesAgo": "{n}m ago",
+      "timeHoursAgo": "{n}h ago",
+      "timeDaysAgo": "{n}d ago"
+    },
+    "feedback": {
+      "saveFailed": "Save failed — try again",
+      "saveSuccess": "Saved. What comes next adjusts to what you said.",
+      "postSubmitNote": "You marked it \"{label}\". What's next takes that in.",
+      "change": "Change",
+      "ariaLabel": "Feedback on this item",
+      "heading": "How was that?",
+      "helperText": "Your feedback changes what comes next.",
+      "ratingHelpful": "Helped",
+      "ratingNeutral": "Okay",
+      "ratingNotForUs": "Not for us",
+      "ratingMadeWorse": "Made it worse",
+      "notePlaceholder": "Optional. What didn't work? Your coach will read it.",
+      "cancel": "Cancel",
+      "sending": "Sending…",
+      "send": "Send"
     }
   }
 }

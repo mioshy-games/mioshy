@@ -1486,6 +1486,52 @@
       "progressLabel": "סימן שזה עובד",
       "sourcePrefix": "מבוסס על המחקר של ",
       "sourceSuffix": " — ניתוח של מיאושי"
+    },
+    "celebration": {
+      "kicker": "עוד צעד קטן · שינוי אמיתי",
+      "title": "עשיתם משהו חשוב ביחד.",
+      "body": "רגעים קטנים כאלה הם מה שבונה קרבה שנשארת. המסע שלכם מתקדם - צעד אחר צעד, בקצב שלכם.",
+      "impactLabel": "מה השגתם כרגע",
+      "impactLine": "בניתם שריר חדש לזוגיות - הקשבה, נוכחות וכנות בין שניכם. זה לא נבנה מאליו.",
+      "credibilityTitle": "איציק ברלב",
+      "credibilitySub": "מלווה זוגות משנת 2001",
+      "credibilityProof": "שיטה שנבחנה עם מאות זוגות · למעלה מ-25 שנות ליווי",
+      "continue": "המשך למסע",
+      "stay": "השארו כאן"
+    },
+    "whyThisItem": {
+      "fallbackRationale": "חלק מהמסלול שנבנה לכם.",
+      "ariaLabel": "למה הפריט הזה אצלכם",
+      "heading": "למה זה אצלכם"
+    },
+    "activity": {
+      "empty": "עוד לא נרשמה פעילות. תתחילו עם המשימה הבאה למעלה.",
+      "verbItemOpened": "פתחתם",
+      "verbItemCompleted": "סימנתם כבוצע",
+      "verbItemUncompleted": "ביטלתם סימון",
+      "verbResponsePosted": "הוספתם תגובה ל",
+      "verbResponseDeleted": "מחקתם תגובה ל",
+      "timeJustNow": "ממש עכשיו",
+      "timeMinutesAgo": "לפני {n} דקות",
+      "timeHoursAgo": "לפני {n} שעות",
+      "timeDaysAgo": "לפני {n} ימים"
+    },
+    "feedback": {
+      "saveFailed": "השמירה נכשלה — נסו שוב",
+      "saveSuccess": "נשמר. ההמשך מתאים את עצמו למה שאמרתם.",
+      "postSubmitNote": "סימנתם \"{label}\". המסלול הבא מתחשב בזה.",
+      "change": "שינוי",
+      "ariaLabel": "משוב על הפריט",
+      "heading": "איך זה היה?",
+      "helperText": "המשוב משנה את מה שתקבלו אחר כך.",
+      "ratingHelpful": "עזר",
+      "ratingNeutral": "בסדר",
+      "ratingNotForUs": "לא לנו",
+      "ratingMadeWorse": "פגע",
+      "notePlaceholder": "אופציונלי. מה לא עבד? המומחה/ת יקרא/תקרא.",
+      "cancel": "ביטול",
+      "sending": "שולח…",
+      "send": "שליחה"
     }
   }
 }
