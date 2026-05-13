@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidateTag } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { z } from "zod";
 import { getAdminSession } from "@/lib/auth/admin";
 import { normalizeRichText } from "./render";
@@ -100,11 +100,27 @@ export async function saveCmsText(input: unknown): Promise<SaveResult> {
     return { ok: false, error: error.message };
   }
 
-  // Invalidate every page's cached CMS rows. The public site's
-  // `loadCmsTextsForPage` is wrapped in unstable_cache with the
-  // "cms-texts" tag — this call clears those entries so the next
-  // request fetches the new value.
+  // ── Cache invalidation — three layers, belt-and-suspenders ────────
+  //
+  // Itzik reported (2026-05-13) that after a successful Save, the DB
+  // was updated correctly but /he still rendered the OLD copy. So
+  // `revalidateTag` alone wasn't enough to clear what Next.js was
+  // serving on the public site.
+  //
+  // Adding a path-based revalidation alongside the tag-based one. The
+  // tag clears Vercel's Data Cache entry for the unstable_cache wrap
+  // around loadCmsTextsForPage; the path clears the route-level
+  // caches (Full Route Cache + Router Cache). Both call paths cover
+  // each other in case one of them silently misses.
   revalidateTag("cms-texts");
+  revalidatePath("/he", "layout");
+  revalidatePath("/en", "layout");
+
+  // eslint-disable-next-line no-console
+  console.log("[cms-save] revalidation fired:", {
+    tag: "cms-texts",
+    paths: ["/he (layout)", "/en (layout)"],
+  });
 
   return { ok: true };
 }

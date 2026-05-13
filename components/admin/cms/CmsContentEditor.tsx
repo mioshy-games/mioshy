@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -65,6 +67,17 @@ export function CmsContentEditor({ rows }: { rows: CmsTextRow[] }) {
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-8">
+      {/* Back link to admin dashboard. Uses next/link so client-side
+          nav (no full page reload) and the dashboard's locale/auth
+          state is preserved across the bounce. */}
+      <Link
+        href="/dashboard"
+        className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 transition hover:text-slate-900"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        חזרה ללוח אדמין
+      </Link>
+
       {/* Header */}
       <header className="mb-6">
         <h1 className="font-heading text-2xl font-bold">

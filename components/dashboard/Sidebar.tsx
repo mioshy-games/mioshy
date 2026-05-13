@@ -176,6 +176,11 @@ const NAV: NavItem[] = [
       { kind: "leaf", href: "/dashboard/homepage",  labelKey: "nav.homepage",  icon: Home },
       { kind: "leaf", href: "/dashboard/articles",  labelKey: "nav.articles",  icon: BookOpenText },
       { kind: "leaf", href: "/dashboard/templates", labelKey: "nav.templates", icon: Mail },
+      // /admin/content lives OUTSIDE the dashboard route tree
+      // (different layout, different auth gate — see app/admin/...).
+      // Linking from here is the natural entry point for admins who
+      // are already in the dashboard.
+      { kind: "leaf", href: "/admin/content",       labelKey: "nav.content_cms", icon: FileText, adminOnly: true },
     ],
   },
 
