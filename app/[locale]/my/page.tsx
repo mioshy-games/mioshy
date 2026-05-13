@@ -35,6 +35,8 @@ import {
   type PillarStateOutput,
 } from "@/lib/dashboard/pillar-state";
 import { StateBadge } from "@/components/ui/StateBadge";
+import { CmsText } from "@/components/cms/CmsText";
+import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
 
 export const dynamic = "force-dynamic";
 
@@ -61,6 +63,15 @@ export default async function MyHubPage({
 }) {
   const { locale } = params;
   const isHe = locale === "he";
+
+  // CMS-managed copy resolved server-side. Used inline for raw-string
+  // consumers like the entitlement push() arrays below — JSX consumers
+  // use <CmsText> directly.
+  const t = await getCmsTranslations({
+    locale: isHe ? "he" : "en",
+    namespace: "myHub",
+    page: "my",
+  });
 
   // Post-purchase shortcut - when the billing-success page sends users back
   // to /my?purchased=<game_id> after an Adults purchase, we drop them
@@ -220,12 +231,12 @@ export default async function MyHubPage({
             <div className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/5 px-3 py-1 text-xs backdrop-blur">
               <Sparkles className="h-3.5 w-3.5 text-fuchsia-200" />
               <span className="text-white/85">
-                {isHe ? "החשבון שלך" : "Your account"}
+                <CmsText cmsKey="myHub.accountLabel" />
               </span>
             </div>
             <h1 className="mt-3 flex items-center gap-3 text-4xl font-bold tracking-tight sm:text-5xl">
               <Library className="h-8 w-8 text-fuchsia-300 sm:h-10 sm:w-10" />
-              {isHe ? "מיאושי שלי" : "My Mioshy"}
+              <CmsText cmsKey="myHub.pageHeading" />
             </h1>
             {/* Welcome line — bumped from text-sm (default) to base 18px
                 per Itzik 2026-05-06. The free-tier user reads this as their
@@ -270,7 +281,7 @@ export default async function MyHubPage({
               <div>
                 <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-white/85">
                   <span className="h-1.5 w-1.5 rounded-full bg-white/70" />
-                  {isHe ? "סטטוס: חינם" : "Status: Free"}
+                  <CmsText cmsKey="myHub.statusFree" />
                 </div>
                 <p className="mt-2 text-[20px] font-semibold text-white sm:text-[19px]">
                   {isHe
@@ -290,7 +301,7 @@ export default async function MyHubPage({
                 href="/pricing"
                 className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-white px-6 text-[16px] font-semibold text-fuchsia-700 shadow-lg hover:bg-white/95 hover:shadow-xl transition"
               >
-                {isHe ? "לראות מחירים" : "See pricing"}
+                <CmsText cmsKey="myHub.seePricing" />
               </Link>
             </div>
           ) : entitlements.pillarCount === 3 ? (
@@ -298,7 +309,7 @@ export default async function MyHubPage({
               <div>
                 <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/40 bg-emerald-500/20 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-emerald-100">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
-                  {isHe ? "סטטוס: הכל פתוח" : "Status: Full access"}
+                  <CmsText cmsKey="myHub.statusAllAccess" />
                 </div>
                 <p className="mt-2 text-[18px] font-semibold text-white sm:text-[16px]">
                   {isHe
@@ -306,7 +317,7 @@ export default async function MyHubPage({
                     : "Your plan covers all of Mioshy - games, journey, and adults only."}
                 </p>
                 <p className="mt-1 text-[16px] text-emerald-100/85 sm:text-sm">
-                  {isHe ? "תהנו." : "Enjoy."}
+                  <CmsText cmsKey="myHub.statusAllAccessSub" />
                 </p>
               </div>
             </div>
@@ -315,7 +326,7 @@ export default async function MyHubPage({
               <div>
                 <div className="inline-flex items-center gap-2 rounded-full border border-fuchsia-300/40 bg-fuchsia-500/25 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-fuchsia-100">
                   <span className="h-1.5 w-1.5 rounded-full bg-fuchsia-300" />
-                  {isHe ? "סטטוס: מנוי פעיל" : "Status: Active member"}
+                  <CmsText cmsKey="myHub.statusActiveMember" />
                 </div>
                 <p className="mt-2 text-[18px] font-semibold text-white sm:text-[16px]">
                   {isHe
@@ -326,12 +337,12 @@ export default async function MyHubPage({
                   {(() => {
                     const owned: string[] = [];
                     const missing: string[] = [];
-                    if (entitlements.games) owned.push(isHe ? "משחקים" : "Games");
-                    else missing.push(isHe ? "משחקים" : "Games");
-                    if (entitlements.journey) owned.push(isHe ? "ליווי" : "Journey");
-                    else missing.push(isHe ? "ליווי" : "Journey");
-                    if (entitlements.adults) owned.push(isHe ? "למבוגרים בלבד" : "Adults only");
-                    else missing.push(isHe ? "למבוגרים בלבד" : "Adults only");
+                    if (entitlements.games) owned.push(t("entitlementGames"));
+                    else missing.push(t("entitlementGames"));
+                    if (entitlements.journey) owned.push(t("entitlementJourney"));
+                    else missing.push(t("entitlementJourney"));
+                    if (entitlements.adults) owned.push(t("entitlementAdults"));
+                    else missing.push(t("entitlementAdults"));
                     return isHe
                       ? `פעיל: ${owned.join(", ")}. אפשר להוסיף: ${missing.join(", ")}.`
                       : `Active: ${owned.join(", ")}. Add: ${missing.join(", ")}.`;
@@ -342,7 +353,7 @@ export default async function MyHubPage({
                 href="/pricing"
                 className="inline-flex min-h-[40px] items-center justify-center rounded-full border border-white/20 bg-white/10 px-5 text-sm font-semibold text-white backdrop-blur hover:bg-white/20"
               >
-                {isHe ? "לשדרג מסלול" : "Upgrade plan"}
+                <CmsText cmsKey="myHub.upgradePlan" />
               </Link>
             </div>
           )}
@@ -463,7 +474,7 @@ export default async function MyHubPage({
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="min-w-0 flex-1">
                 <h3 className="text-sm font-semibold text-white">
-                  {isHe ? "הזמינו את בן/בת הזוג" : "Invite your partner"}
+                  <CmsText cmsKey="myHub.invitePartner" />
                 </h3>
                 <p className="mt-1 text-xs text-white/60">
                   {isHe
@@ -519,7 +530,7 @@ export default async function MyHubPage({
               <div className="flex flex-col justify-between gap-3 rounded-2xl border border-amber-300/40 bg-amber-400/10 p-5">
                 <div>
                   <p className="text-[16px] font-semibold text-amber-100">
-                    {isHe ? "השלימו את הפרופיל" : "Complete your profile"}
+                    <CmsText cmsKey="myHub.completeProfile" />
                   </p>
                   <p className="mt-1.5 text-[14px] leading-[1.55] text-amber-100/85">
                     {isHe
@@ -531,7 +542,7 @@ export default async function MyHubPage({
                   href={`/account/profile?reason=profile_incomplete&next=${encodeURIComponent("/my")}`}
                   className="inline-flex min-h-[44px] items-center justify-center self-start rounded-full bg-white px-5 text-[15px] font-semibold text-amber-700 shadow hover:bg-amber-50 transition"
                 >
-                  {isHe ? "להשלמה" : "Complete now"}
+                  <CmsText cmsKey="myHub.completeNow" />
                 </Link>
               </div>
             ) : null}
@@ -539,7 +550,7 @@ export default async function MyHubPage({
               <div className="flex flex-col justify-between gap-3 rounded-2xl border border-white/15 bg-white/[0.05] p-5">
                 <div>
                   <p className="text-[16px] font-semibold text-white">
-                    {isHe ? "קיבלתם קוד מבן/בת הזוג?" : "Got a code from your partner?"}
+                    <CmsText cmsKey="myHub.gotCode" />
                   </p>
                   <p className="mt-1.5 text-[14px] leading-[1.55] text-white/75">
                     {isHe

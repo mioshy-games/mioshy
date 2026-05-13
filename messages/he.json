@@ -1592,5 +1592,24 @@
     "herRoleLabel": "תפקיד האישה",
     "questionsEyebrow": "השאלות של המשחק",
     "defaultQuestionsIntro": "ענו על השאלה הבאה - לפי הסדר או לבחירתכם."
+  },
+  "myHub": {
+    "metaTitle": "מיאושי שלי",
+    "accountLabel": "החשבון שלך",
+    "pageHeading": "מיאושי שלי",
+    "statusFree": "סטטוס: חינם",
+    "seePricing": "לראות מחירים",
+    "statusAllAccess": "סטטוס: הכל פתוח",
+    "statusAllAccessSub": "תהנו.",
+    "statusActiveMember": "סטטוס: מנוי פעיל",
+    "entitlementGames": "משחקים",
+    "entitlementJourney": "ליווי",
+    "entitlementAdults": "למבוגרים בלבד",
+    "upgradePlan": "לשדרג מסלול",
+    "invitePartner": "הזמינו את בן/בת הזוג",
+    "completeProfile": "השלימו את הפרופיל",
+    "completeNow": "להשלמה",
+    "gotCode": "קיבלתם קוד מבן/בת הזוג?",
+    "notificationCount": "{n} חדשים"
   }
 }

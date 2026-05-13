@@ -1594,5 +1594,24 @@
     "herRoleLabel": "Her role",
     "questionsEyebrow": "The game's questions",
     "defaultQuestionsIntro": "Answer the next question - in order or as you wish."
+  },
+  "myHub": {
+    "metaTitle": "My Mioshy",
+    "accountLabel": "Your account",
+    "pageHeading": "My Mioshy",
+    "statusFree": "Status: Free",
+    "seePricing": "See pricing",
+    "statusAllAccess": "Status: Full access",
+    "statusAllAccessSub": "Enjoy.",
+    "statusActiveMember": "Status: Active member",
+    "entitlementGames": "Games",
+    "entitlementJourney": "Journey",
+    "entitlementAdults": "Adults only",
+    "upgradePlan": "Upgrade plan",
+    "invitePartner": "Invite your partner",
+    "completeProfile": "Complete your profile",
+    "completeNow": "Complete now",
+    "gotCode": "Got a code from your partner?",
+    "notificationCount": "{n} new"
   }
 }
