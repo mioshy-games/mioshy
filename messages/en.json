@@ -1613,5 +1613,25 @@
     "completeNow": "Complete now",
     "gotCode": "Got a code from your partner?",
     "notificationCount": "{n} new"
+  },
+  "myGames": {
+    "backToMyMioshy": "Back to My Mioshy",
+    "heading": "Your games",
+    "subheading": "Online couples games",
+    "noGamesAvailable": "No games available.",
+    "playNow": "Play now",
+    "snakesAndLadders": "Snakes & Ladders",
+    "newBadge": "New 🔥",
+    "snakesDescription": "Classic board with couples questions & challenges - play on one device or remotely."
+  },
+  "myJourneyTogether": {
+    "heading": "Together",
+    "backToPage": "Back to your page",
+    "sharedSpace": "Your shared space",
+    "partnerLabel": "Your partner",
+    "statTogether": "Together",
+    "bothCompleted": "both completed",
+    "youLabel": "You",
+    "itemsHint": "items"
   }
 }

@@ -1611,5 +1611,25 @@
     "completeNow": "להשלמה",
     "gotCode": "קיבלתם קוד מבן/בת הזוג?",
     "notificationCount": "{n} חדשים"
+  },
+  "myGames": {
+    "backToMyMioshy": "חזרה למיאושי שלי",
+    "heading": "המשחקים שלכם",
+    "subheading": "משחקי זוגות אונליין",
+    "noGamesAvailable": "אין כרגע משחקים זמינים.",
+    "playNow": "שחקו עכשיו",
+    "snakesAndLadders": "נחשים וסולמות",
+    "newBadge": "חדש 🔥",
+    "snakesDescription": "לוח קלאסי עם שאלות ואתגרים זוגיים - שחקו על מכשיר אחד או על שני מכשירים שונים."
+  },
+  "myJourneyTogether": {
+    "heading": "ביחד",
+    "backToPage": "חזרה לעמוד שלכם",
+    "sharedSpace": "המקום המשותף שלכם",
+    "partnerLabel": "בן/בת הזוג",
+    "statTogether": "פריטים יחד",
+    "bothCompleted": "השלמתם שניכם",
+    "youLabel": "אתם",
+    "itemsHint": "פריטים"
   }
 }
