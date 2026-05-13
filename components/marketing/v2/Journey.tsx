@@ -1,35 +1,20 @@
 "use client";
 
 import { Link } from "@/navigation";
-import { useCmsText } from "@/hooks/useCmsText";
 import { CmsText } from "@/components/cms/CmsText";
 
 /**
- * Journey - editorial timeline of 4 stages. Connecting hairline line
- * through all 4 numbers, each stage with its own checklist of features.
- * Closing CTA banner at the bottom.
- *
- * CMS-migrated (Sprint 1). The 4 stages × 5 fields (title, description,
- * 3 bullets) are read via the JourneyStage sub-component below — keeps
- * the parent's hook order shallow and lets each stage have its own
- * stable hook sequence.
+ * Journey — 4-stage editorial timeline + closing CTA banner.
+ * Sprint 4 #1 closeout: every DOM text via <CmsText>.
  */
 export function Journey() {
-  const eyebrow = useCmsText("homeV2.journey.eyebrow");
-  const description = useCmsText("homeV2.journey.description");
-  const ctaText = useCmsText("homeV2.journey.ctaText");
-  const cta = useCmsText("homeV2.journey.cta");
-
   return (
     <section className="journey" id="journey">
       <div className="container">
         <div className="section-head journey-head">
-          <div className="eyebrow" style={eyebrow.style}>
-            {eyebrow.text}
-          </div>
-          {/* headline carries <em> + <br> */}
+          <CmsText cmsKey="homeV2.journey.eyebrow" as="div" className="eyebrow" />
           <CmsText cmsKey="homeV2.journey.headline" as="h2" />
-          <p style={description.style}>{description.text}</p>
+          <CmsText cmsKey="homeV2.journey.description" as="p" />
         </div>
 
         <div className="journey-timeline">
@@ -43,11 +28,13 @@ export function Journey() {
         </div>
 
         <div className="journey-cta">
-          <div className="journey-cta-text" style={ctaText.style}>
-            {ctaText.text}
-          </div>
+          <CmsText
+            cmsKey="homeV2.journey.ctaText"
+            as="div"
+            className="journey-cta-text"
+          />
           <Link href="/journey/assessment" className="btn btn-primary">
-            {cta.text} <span className="arrow">←</span>
+            <CmsText cmsKey="homeV2.journey.cta" /> <span className="arrow">←</span>
           </Link>
         </div>
       </div>
@@ -55,10 +42,6 @@ export function Journey() {
   );
 }
 
-/**
- * Per-stage row. Each stage reads 5 keys (title, description, 3 bullets);
- * extracting into a component gives each stage its own stable hook order.
- */
 function JourneyStage({
   num,
   stageKey,
@@ -66,12 +49,6 @@ function JourneyStage({
   num: string;
   stageKey: "stage1" | "stage2" | "stage3" | "stage4";
 }) {
-  const title = useCmsText(`homeV2.journey.${stageKey}Title`);
-  const description = useCmsText(`homeV2.journey.${stageKey}Description`);
-  const b1 = useCmsText(`homeV2.journey.${stageKey}Bullet1`);
-  const b2 = useCmsText(`homeV2.journey.${stageKey}Bullet2`);
-  const b3 = useCmsText(`homeV2.journey.${stageKey}Bullet3`);
-
   return (
     <div className="journey-stage">
       <div className="journey-num-wrap">
@@ -80,12 +57,18 @@ function JourneyStage({
           <span className="dot">.</span>
         </div>
       </div>
-      <h3 style={title.style}>{title.text}</h3>
-      <p style={description.style}>{description.text}</p>
+      <CmsText cmsKey={`homeV2.journey.${stageKey}Title`} as="h3" />
+      <CmsText cmsKey={`homeV2.journey.${stageKey}Description`} as="p" />
       <ul className="journey-list">
-        <li style={b1.style}>{b1.text}</li>
-        <li style={b2.style}>{b2.text}</li>
-        <li style={b3.style}>{b3.text}</li>
+        <li>
+          <CmsText cmsKey={`homeV2.journey.${stageKey}Bullet1`} />
+        </li>
+        <li>
+          <CmsText cmsKey={`homeV2.journey.${stageKey}Bullet2`} />
+        </li>
+        <li>
+          <CmsText cmsKey={`homeV2.journey.${stageKey}Bullet3`} />
+        </li>
       </ul>
     </div>
   );

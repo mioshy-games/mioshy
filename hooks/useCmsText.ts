@@ -56,8 +56,15 @@ export function useCmsText(key: string): CmsTextResult {
   if (fontWeight) style.fontWeight = fontWeight;
   if (lineHeight) style.lineHeight = lineHeight;
 
+  // JSON-fallback rows (no CMS row exists yet) default to plain.
+  // Once we eventually re-seed missing keys this default becomes
+  // moot — the migration set is_rich correctly on every existing
+  // row, and the toggle in CmsTextRow promotes plain → rich on save.
+  const isRich = row?.is_rich ?? false;
+
   return {
     text,
+    isRich,
     style: Object.keys(style).length > 0 ? style : undefined,
   };
 }

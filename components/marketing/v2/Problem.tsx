@@ -4,21 +4,12 @@ import { useCmsText } from "@/hooks/useCmsText";
 import { CmsText } from "@/components/cms/CmsText";
 
 /**
- * Problem - "the warning signs" section. Two-column layout (image +
- * text) with a 3-item numbered list. The headline carries an <em> for
- * the wine-colour emphasis; item1Body has a <br> mid-line.
- *
- * CMS-migrated (Sprint 1).
+ * Problem — "the warning signs" section. Sprint 4 #1 closeout: every
+ * DOM text via <CmsText>. `imageAlt` keeps useCmsText for the <img>
+ * alt attribute.
  */
 export function Problem() {
   const imageAlt = useCmsText("homeV2.problem.imageAlt");
-  const eyebrow = useCmsText("homeV2.problem.eyebrow");
-  const lead = useCmsText("homeV2.problem.lead");
-  const item1Title = useCmsText("homeV2.problem.item1Title");
-  const item2Title = useCmsText("homeV2.problem.item2Title");
-  const item2Body = useCmsText("homeV2.problem.item2Body");
-  const item3Title = useCmsText("homeV2.problem.item3Title");
-  const item3Body = useCmsText("homeV2.problem.item3Body");
 
   return (
     <section className="problem" id="problem">
@@ -40,36 +31,30 @@ export function Problem() {
           </div>
 
           <div className="problem-text">
-            <div className="eyebrow" style={eyebrow.style}>
-              {eyebrow.text}
-            </div>
-            {/* headline carries <em> markup */}
+            <CmsText cmsKey="homeV2.problem.eyebrow" as="div" className="eyebrow" />
             <CmsText cmsKey="homeV2.problem.headline" as="h2" />
-            <p className="lead" style={lead.style}>
-              {lead.text}
-            </p>
+            <CmsText cmsKey="homeV2.problem.lead" as="p" className="lead" />
 
             <div className="problem-list">
               <div className="problem-item">
                 <span className="problem-num">01</span>
                 <div>
-                  <h3 style={item1Title.style}>{item1Title.text}</h3>
-                  {/* item1Body has inline <br> */}
+                  <CmsText cmsKey="homeV2.problem.item1Title" as="h3" />
                   <CmsText cmsKey="homeV2.problem.item1Body" as="p" />
                 </div>
               </div>
               <div className="problem-item">
                 <span className="problem-num">02</span>
                 <div>
-                  <h3 style={item2Title.style}>{item2Title.text}</h3>
-                  <p style={item2Body.style}>{item2Body.text}</p>
+                  <CmsText cmsKey="homeV2.problem.item2Title" as="h3" />
+                  <CmsText cmsKey="homeV2.problem.item2Body" as="p" />
                 </div>
               </div>
               <div className="problem-item">
                 <span className="problem-num">03</span>
                 <div>
-                  <h3 style={item3Title.style}>{item3Title.text}</h3>
-                  <p style={item3Body.style}>{item3Body.text}</p>
+                  <CmsText cmsKey="homeV2.problem.item3Title" as="h3" />
+                  <CmsText cmsKey="homeV2.problem.item3Body" as="p" />
                 </div>
               </div>
             </div>

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { Link } from "@/navigation";
-import { useCmsText } from "@/hooks/useCmsText";
+import { CmsText } from "@/components/cms/CmsText";
 
 /**
  * JourneyStages — connected Q&A, scroll-revealed
@@ -71,14 +71,9 @@ const STAGE_TONE: Record<
 
 export function JourneyStages() {
   const sectionRef = useRef<HTMLElement>(null);
-  // CMS-migrated (Sprint 1). Section-level keys read here; each
-  // stage's keys live in its own <Stop /> sub-component below so the
-  // hook ordering stays stable per stage even if a stage is later
-  // conditionally rendered.
-  const eyebrow = useCmsText("homeV2.journeyStages.eyebrow");
-  const headline = useCmsText("homeV2.journeyStages.headline");
-  const description = useCmsText("homeV2.journeyStages.description");
-  const valueQuote = useCmsText("homeV2.journeyStages.valueQuote");
+  // Sprint 4 #1 closeout — every DOM text via <CmsText>. Each stage
+  // lives in its own <Stop /> sub-component (defined below) so its
+  // many useCmsText/CmsText calls have a stable, isolated hook order.
 
   // F6 (Itzik #10) — switched from bidirectional to one-way reveal.
   // The previous "open in band, close out of band" behaviour was
@@ -143,11 +138,9 @@ export function JourneyStages() {
 
       <div className="container js-container">
         <div className="js-head">
-          <div className="eyebrow" style={eyebrow.style}>
-            {eyebrow.text}
-          </div>
-          <h2 style={headline.style}>{headline.text}</h2>
-          <p style={description.style}>{description.text}</p>
+          <CmsText cmsKey="homeV2.journeyStages.eyebrow" as="div" className="eyebrow" />
+          <CmsText cmsKey="homeV2.journeyStages.headline" as="h2" />
+          <CmsText cmsKey="homeV2.journeyStages.description" as="p" />
         </div>
 
         {/* Single rounded panel wrapping all 3 stops — gives the
@@ -161,9 +154,11 @@ export function JourneyStages() {
           </div>
         </div>
 
-        <p className="js-quote" style={valueQuote.style}>
-          {valueQuote.text}
-        </p>
+        <CmsText
+          cmsKey="homeV2.journeyStages.valueQuote"
+          as="p"
+          className="js-quote"
+        />
       </div>
 
       <style
@@ -194,28 +189,7 @@ function Stop({
   onHeadClick: (e: React.MouseEvent<HTMLDivElement>) => void;
 }) {
   const tone = STAGE_TONE[id];
-
-  // Shared keys for every stage
-  const label = useCmsText(`homeV2.journeyStages.stage${id}Label`);
-  const hook = useCmsText(`homeV2.journeyStages.stage${id}Hook`);
-  const desc = useCmsText(`homeV2.journeyStages.stage${id}Desc`);
-  const getTitle = useCmsText(`homeV2.journeyStages.stage${id}GetTitle`);
-  const get = useCmsText(`homeV2.journeyStages.stage${id}Get`);
-  const whenTitle = useCmsText(`homeV2.journeyStages.stage${id}WhenTitle`);
-  const when = useCmsText(`homeV2.journeyStages.stage${id}When`);
-  const product = useCmsText(`homeV2.journeyStages.stage${id}Product`);
-  const cta = useCmsText(`homeV2.journeyStages.stage${id}Cta`);
-  const price = useCmsText(`homeV2.journeyStages.stage${id}Price`);
-  const period = useCmsText(`homeV2.journeyStages.stage${id}Period`);
-
-  // Stage-specific extras — these keys are looked up for every stage to
-  // keep hook order constant, but rendered conditionally based on `id`.
-  // Empty strings just fall through to JSON or render nothing.
-  const stage3GetIncludes = useCmsText("homeV2.journeyStages.stage3GetIncludes");
-  const stage1Trial = useCmsText("homeV2.journeyStages.stage1Trial");
-  const stage2OriginalPrice = useCmsText("homeV2.journeyStages.stage2OriginalPrice");
-
-  const includes = id === "3" ? stage3GetIncludes.text : null;
+  const isStage3 = id === "3";
 
   return (
     <article
@@ -247,12 +221,15 @@ function Stop({
           {tone.numeral}
         </span>
         <div className="js-stop-head-text">
-          <span className="js-stop-label" style={label.style}>
-            {label.text}
-          </span>
-          <h3 className="js-stop-hook" style={hook.style}>
-            {hook.text}
-          </h3>
+          <CmsText
+            cmsKey={`homeV2.journeyStages.stage${id}Label`}
+            className="js-stop-label"
+          />
+          <CmsText
+            cmsKey={`homeV2.journeyStages.stage${id}Hook`}
+            as="h3"
+            className="js-stop-hook"
+          />
         </div>
         <span className="js-stop-chevron" aria-hidden>
           <svg viewBox="0 0 16 16" width="14" height="14">
@@ -268,69 +245,83 @@ function Stop({
         </span>
       </div>
 
-      {/* The "answer" — collapsed by default, revealed via the
-          grid-template-rows trick when the stop enters viewport. */}
       <div className="js-stop-reveal">
         <div className="js-stop-reveal-inner">
-          <p className="js-stop-desc" style={desc.style}>
-            {desc.text}
-          </p>
+          <CmsText
+            cmsKey={`homeV2.journeyStages.stage${id}Desc`}
+            as="p"
+            className="js-stop-desc"
+          />
 
           <div className="js-stop-block">
-            <div className="js-stop-block-title" style={getTitle.style}>
-              {getTitle.text}
-            </div>
-            <p className="js-stop-block-body" style={get.style}>
-              {get.text}
-            </p>
-            {includes ? (
-              <p className="js-stop-block-includes" style={stage3GetIncludes.style}>
-                {includes}
-              </p>
+            <CmsText
+              cmsKey={`homeV2.journeyStages.stage${id}GetTitle`}
+              as="div"
+              className="js-stop-block-title"
+            />
+            <CmsText
+              cmsKey={`homeV2.journeyStages.stage${id}Get`}
+              as="p"
+              className="js-stop-block-body"
+            />
+            {isStage3 ? (
+              <CmsText
+                cmsKey="homeV2.journeyStages.stage3GetIncludes"
+                as="p"
+                className="js-stop-block-includes"
+              />
             ) : null}
           </div>
 
           <div className="js-stop-block">
-            <div className="js-stop-block-title" style={whenTitle.style}>
-              {whenTitle.text}
-            </div>
-            <p className="js-stop-block-body" style={when.style}>
-              {when.text}
-            </p>
+            <CmsText
+              cmsKey={`homeV2.journeyStages.stage${id}WhenTitle`}
+              as="div"
+              className="js-stop-block-title"
+            />
+            <CmsText
+              cmsKey={`homeV2.journeyStages.stage${id}When`}
+              as="p"
+              className="js-stop-block-body"
+            />
           </div>
 
           <div className="js-stop-foot">
             <div className="js-stop-foot-info">
-              <div className="js-stop-product" style={product.style}>
-                {product.text}
-              </div>
+              <CmsText
+                cmsKey={`homeV2.journeyStages.stage${id}Product`}
+                as="div"
+                className="js-stop-product"
+              />
               {id === "1" ? (
-                /* Stage 1 framing: don't lead with the price — let
-                   the user try the games for free first. */
-                <div className="js-stop-trial" style={stage1Trial.style}>
-                  {stage1Trial.text}
-                </div>
+                // Stage 1 framing: don't lead with the price — let
+                // the user try the games for free first.
+                <CmsText
+                  cmsKey="homeV2.journeyStages.stage1Trial"
+                  as="div"
+                  className="js-stop-trial"
+                />
               ) : (
                 <div className="js-stop-price">
                   {id === "2" ? (
-                    <span
+                    <CmsText
+                      cmsKey="homeV2.journeyStages.stage2OriginalPrice"
                       className="js-stop-price-original"
-                      style={stage2OriginalPrice.style}
-                    >
-                      {stage2OriginalPrice.text}
-                    </span>
+                    />
                   ) : null}
-                  <span className="js-stop-price-amount" style={price.style}>
-                    {price.text}
-                  </span>
-                  <span className="js-stop-price-period" style={period.style}>
-                    {period.text}
-                  </span>
+                  <CmsText
+                    cmsKey={`homeV2.journeyStages.stage${id}Price`}
+                    className="js-stop-price-amount"
+                  />
+                  <CmsText
+                    cmsKey={`homeV2.journeyStages.stage${id}Period`}
+                    className="js-stop-price-period"
+                  />
                 </div>
               )}
             </div>
             <Link href={STAGE_HREFS[id]} className="js-stop-cta">
-              {cta.text}{" "}
+              <CmsText cmsKey={`homeV2.journeyStages.stage${id}Cta`} />{" "}
               <span aria-hidden className="js-stop-cta-arrow">
                 ←
               </span>

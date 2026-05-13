@@ -5,19 +5,33 @@ import { useCmsText } from "@/hooks/useCmsText";
 import { normalizeRichText } from "@/lib/cms/render";
 
 /**
- * Convenience renderer for CMS-managed strings that may contain
- * inline HTML markup (`<em>`, `<strong>`, `<br>`). The text is
- * sanitized on the WRITE path (admin save action), so emitting it
- * via dangerouslySetInnerHTML is safe — only the allow-listed tags
- * ever land in the database.
+ * Universal renderer for CMS-managed strings.
  *
- * Usage:
- *   <CmsText cmsKey="homeV2.hero.headline" as="h1" className="…" />
+ * Picks its rendering strategy from `useCmsText(key).isRich`:
  *
- * For plain-text consumption (no markup), call `useCmsText(key).text`
- * directly and render with `{text}` — that path doesn't dangerously
- * set HTML, which is preferable for places where the copy is known
- * to be pure text (button labels, form placeholders, etc.).
+ *   isRich = false (plain)  → renders the value as a text node.
+ *                             React escapes any `<…>` so admins who
+ *                             type literal angle brackets get
+ *                             literal angle brackets on the public
+ *                             site — not silent HTML interpretation.
+ *
+ *   isRich = true  (rich)   → renders via dangerouslySetInnerHTML
+ *                             after `normalizeRichText` collapses
+ *                             the legacy `<br></br>` pattern. The
+ *                             sanitiser on save guarantees only the
+ *                             7-tag allow-list ever reaches the DB,
+ *                             so the HTML we emit here can't carry
+ *                             attributes or unknown tags.
+ *
+ * Usage replaces every `{useCmsText(key).text}` consumer in the
+ * marketing components. The wrapping element comes from the `as`
+ * prop (defaults to <span> for inline usage). Pass any wrapping
+ * className/style as usual — typography overrides from the CMS row
+ * are merged automatically.
+ *
+ * Use `useCmsText(key).text` DIRECTLY (without this component) only
+ * for non-DOM consumers — `alt` attributes, `aria-label`, Counter
+ * suffix props, etc. — where you need the raw string.
  */
 export function CmsText({
   cmsKey,
@@ -30,31 +44,41 @@ export function CmsText({
   className?: string;
   style?: React.CSSProperties;
 }) {
-  const { text, style } = useCmsText(cmsKey);
-  // normalizeRichText rewrites the `<br></br>` ICU-style placeholders
-  // (legacy next-intl t.rich syntax that the HTML parser would otherwise
-  // double-render as <br><br>) into a clean `<br />`. Cheap on every
-  // render — single regex on a short string. Also runs server-side via
-  // loadCmsTextsForPage so CMS-backed text is already clean by the time
-  // it reaches here; this branch covers the messages/*.json fallback.
-  const html = normalizeRichText(text);
-  const mergedStyle = style || extraStyle ? { ...style, ...extraStyle } : undefined;
+  const { text, isRich, style } = useCmsText(cmsKey);
+  const mergedStyle =
+    style || extraStyle ? { ...style, ...extraStyle } : undefined;
 
   // Cast: `Tag` is a dynamic intrinsic element. JSX.IntrinsicElements
   // entries accept className/style/dangerouslySetInnerHTML uniformly,
   // but the union of all possible attribute shapes is too wide for
   // structural inference here.
-  const Element = Tag as unknown as React.ComponentType<{
-    className?: string;
-    style?: React.CSSProperties;
-    dangerouslySetInnerHTML: { __html: string };
-  }>;
+  const Element = Tag as unknown as React.ComponentType<
+    | {
+        className?: string;
+        style?: React.CSSProperties;
+        children: React.ReactNode;
+      }
+    | {
+        className?: string;
+        style?: React.CSSProperties;
+        dangerouslySetInnerHTML: { __html: string };
+      }
+  >;
+
+  if (isRich) {
+    const html = normalizeRichText(text);
+    return (
+      <Element
+        className={className}
+        style={mergedStyle}
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
+    );
+  }
 
   return (
-    <Element
-      className={className}
-      style={mergedStyle}
-      dangerouslySetInnerHTML={{ __html: html }}
-    />
+    <Element className={className} style={mergedStyle}>
+      {text}
+    </Element>
   );
 }

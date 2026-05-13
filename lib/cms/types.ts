@@ -50,14 +50,21 @@ export function isCmsPage(value: string): value is CmsPage {
 }
 
 /**
- * The shape returned by `useCmsText(key)` — text plus an optional
- * inline-style override for the active locale's typography columns.
- * `style` is `undefined` when the row has no typography overrides
- * set, so consumers can spread it without producing an empty
- * `style={}` attribute on the DOM element.
+ * The shape returned by `useCmsText(key)`:
+ *
+ *   text    — resolved string (CMS row → JSON fallback)
+ *   isRich  — whether the row is_rich = true. JSON-fallback rows
+ *             (i.e. no CMS row exists yet) default to false (plain).
+ *             Consumers rendering to the DOM use this to decide
+ *             between text-node vs dangerouslySetInnerHTML.
+ *   style   — optional inline-style object built from the row's
+ *             per-language typography columns. undefined when no
+ *             overrides are set, so a `style={x}` prop doesn't emit
+ *             an empty style attribute.
  */
 export type CmsTextResult = {
   text: string;
+  isRich: boolean;
   style?: {
     fontSize?: string;
     fontWeight?: string;

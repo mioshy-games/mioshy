@@ -1,27 +1,15 @@
 "use client";
 
 import { TrackedLink } from "./TrackedLink";
-import { useCmsText } from "@/hooks/useCmsText";
+import { CmsText } from "@/components/cms/CmsText";
 
 /**
- * ForWhom - 6 personas grid. Each card is a clickable link to the
- * matching service section. CTA banner below points to the assessment
- * quiz.
- *
- * CMS-migrated (Sprint 1). Persona rows use a sub-component so each
- * has its own stable hook order (6 personas × 3 keys = 18 hook calls
- * confined to the leaf).
+ * ForWhom — 6 personas grid + CTA banner.
+ * Sprint 4 #1 closeout: every DOM text via <CmsText>. Headline keeps
+ * its inline-styled <em> wrapper for the `headlineEm` portion so
+ * the wine-red italic-serif treatment stays regardless of mode.
  */
 export function ForWhom() {
-  const eyebrow = useCmsText("homeV2.forWhom.eyebrow");
-  const headlinePart1 = useCmsText("homeV2.forWhom.headlinePart1");
-  const headlinePart2 = useCmsText("homeV2.forWhom.headlinePart2");
-  const headlineEm = useCmsText("homeV2.forWhom.headlineEm");
-  const description = useCmsText("homeV2.forWhom.description");
-  const ctaSmall = useCmsText("homeV2.forWhom.ctaSmall");
-  const ctaBig = useCmsText("homeV2.forWhom.ctaBig");
-  const cta = useCmsText("homeV2.forWhom.cta");
-
   const PERSONAS = [
     { icon: "✦", n: 1, href: "#journey" },
     { icon: "⌛", n: 2, href: "#journey" },
@@ -35,13 +23,11 @@ export function ForWhom() {
     <section className="for-whom" id="for-whom">
       <div className="container">
         <div className="section-head">
-          <div className="eyebrow" style={eyebrow.style}>
-            {eyebrow.text}
-          </div>
+          <CmsText cmsKey="homeV2.forWhom.eyebrow" as="div" className="eyebrow" />
           <h2>
-            {headlinePart1.text}
+            <CmsText cmsKey="homeV2.forWhom.headlinePart1" />
             <br />
-            {headlinePart2.text}
+            <CmsText cmsKey="homeV2.forWhom.headlinePart2" />
             <em
               style={{
                 fontFamily: "'Frank Ruhl Libre', serif",
@@ -49,10 +35,10 @@ export function ForWhom() {
                 fontStyle: "italic",
               }}
             >
-              {headlineEm.text}
+              <CmsText cmsKey="homeV2.forWhom.headlineEm" />
             </em>
           </h2>
-          <p style={description.style}>{description.text}</p>
+          <CmsText cmsKey="homeV2.forWhom.description" as="p" />
         </div>
 
         <div className="personas-grid">
@@ -63,12 +49,8 @@ export function ForWhom() {
 
         <div className="for-whom-cta">
           <div className="for-whom-cta-text">
-            <span className="small" style={ctaSmall.style}>
-              {ctaSmall.text}
-            </span>
-            <span className="big" style={ctaBig.style}>
-              {ctaBig.text}
-            </span>
+            <CmsText cmsKey="homeV2.forWhom.ctaSmall" className="small" />
+            <CmsText cmsKey="homeV2.forWhom.ctaBig" className="big" />
           </div>
           <TrackedLink
             href="/journey/assessment"
@@ -76,7 +58,7 @@ export function ForWhom() {
             ctaId="for_whom_assessment"
             section="for-whom"
           >
-            {cta.text} <span className="arrow">←</span>
+            <CmsText cmsKey="homeV2.forWhom.cta" /> <span className="arrow">←</span>
           </TrackedLink>
         </div>
       </div>
@@ -93,16 +75,13 @@ function Persona({
   icon: string;
   href: string;
 }) {
-  const title = useCmsText(`homeV2.forWhom.persona${n}Title`);
-  const desc = useCmsText(`homeV2.forWhom.persona${n}Desc`);
-  const link = useCmsText(`homeV2.forWhom.persona${n}Link`);
   return (
     <a href={href} className="persona">
       <div className="persona-icon">{icon}</div>
-      <h3 style={title.style}>{title.text}</h3>
-      <p style={desc.style}>{desc.text}</p>
-      <span className="persona-link" style={link.style}>
-        {link.text} <span>←</span>
+      <CmsText cmsKey={`homeV2.forWhom.persona${n}Title`} as="h3" />
+      <CmsText cmsKey={`homeV2.forWhom.persona${n}Desc`} as="p" />
+      <span className="persona-link">
+        <CmsText cmsKey={`homeV2.forWhom.persona${n}Link`} /> <span>←</span>
       </span>
     </a>
   );

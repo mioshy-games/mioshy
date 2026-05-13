@@ -9,44 +9,23 @@ import { CmsText } from "@/components/cms/CmsText";
 
 /**
  * Hero - first section of HomepageV2.
- * Dark animated background with 5 floating blobs, headline, lead paragraph,
- * primary + secondary CTAs, social-proof meta strip, and right-side image
- * with two floating badge cards.
  *
- * CMS migration (2026-05-12, feature/admin-cms Phase 2):
- *   Every editable string is now sourced via `useCmsText(key)` instead of
- *   `useTranslations()`. The hook returns `{ text, style? }` — text resolves
- *   to the CMS row if non-empty, otherwise falls back to messages/*.json.
- *   `<CmsText cmsKey="..." />` is used for keys that carry inline HTML
- *   markup (<em>, <strong>) since dangerouslySetInnerHTML matches the
- *   existing render shape without parsing.
+ * CMS migration (Sprint 4 #1 closeout, 2026-05-13):
+ *   Every DOM text now flows through <CmsText cmsKey="…" /> instead of
+ *   `{useCmsText(key).text}`. CmsText picks plain text-node rendering
+ *   vs dangerouslySetInnerHTML based on the row's is_rich flag — so
+ *   when an admin promotes a plain key like homeV2.hero.tag to rich
+ *   via the toolbar toggle, the next render switches to HTML mode
+ *   automatically. No per-component changes needed.
  *
- * Animations:
- *  • Headline: scale-up reveal (94% → 100%) on first paint
- *  • Lead, CTAs, meta: fade-up reveal staggered
- *  • Stat numbers: count-up from 0 when in view
- *  • Hero image: subtle parallax on scroll (16px range)
- *  • Background blobs: CSS-driven (in styles.css), pause on reduced-motion
+ *   useCmsText() is still used directly for VALUES THAT AREN'T DOM
+ *   children — alt attributes, aria-labels, Counter suffix props.
  */
 export function Hero() {
-  // ── Plain-text keys (no HTML markup) ──────────────────────────────
-  // Each call returns { text, style? }. `text` is the resolved string
-  // (CMS → JSON fallback). `style` is set only when the CMS row has
-  // per-language typography overrides; otherwise undefined — React
-  // skips empty style attributes so the DOM stays identical to the
-  // pre-migration version.
-  const tag = useCmsText("homeV2.hero.tag");
-  const lead = useCmsText("homeV2.hero.lead");
-  const ctaPrimary = useCmsText("homeV2.hero.ctaPrimary");
+  // Non-DOM consumers (attributes / prop values). These need raw
+  // strings, not JSX, so they keep the useCmsText hook.
   const priceFromLabel = useCmsText("homeV2.hero.priceFromLabel");
-  const statCouplesLabel = useCmsText("homeV2.hero.statCouplesLabel");
-  const statExpertsLabel = useCmsText("homeV2.hero.statExpertsLabel");
-  const statRatingLabel = useCmsText("homeV2.hero.statRatingLabel");
   const imageAlt = useCmsText("homeV2.hero.imageAlt");
-  const badge1Title = useCmsText("homeV2.hero.badge1Title");
-  const badge1Body = useCmsText("homeV2.hero.badge1Body");
-  const badge2Title = useCmsText("homeV2.hero.badge2Title");
-  const badge2Body = useCmsText("homeV2.hero.badge2Body");
 
   return (
     <section className="hero">
@@ -80,23 +59,18 @@ export function Hero() {
         <div className="hero-grid">
           <div className="hero-text">
             <RevealOnScroll variant="fade-up" delay={0}>
-              <div className="hero-tag" style={tag.style}>
-                <span className="dot"></span> {tag.text}
+              <div className="hero-tag">
+                <span className="dot"></span>{" "}
+                <CmsText cmsKey="homeV2.hero.tag" />
               </div>
             </RevealOnScroll>
 
             <RevealOnScroll variant="scale-up" delay={0.05}>
-              {/* Rich text — contains <em> markup. CmsText renders via
-                  dangerouslySetInnerHTML on the h1 itself so styles
-                  (per-language typography overrides) apply to the
-                  heading element directly. */}
               <CmsText cmsKey="homeV2.hero.headline" as="h1" />
             </RevealOnScroll>
 
             <RevealOnScroll variant="fade-up" delay={0.15}>
-              <p className="lead" style={lead.style}>
-                {lead.text}
-              </p>
+              <CmsText cmsKey="homeV2.hero.lead" as="p" className="lead" />
             </RevealOnScroll>
 
             <RevealOnScroll variant="fade-up" delay={0.25}>
@@ -107,22 +81,24 @@ export function Hero() {
                   ctaId="hero_primary"
                   section="hero"
                 >
-                  {ctaPrimary.text} <span className="arrow">←</span>
+                  <CmsText cmsKey="homeV2.hero.ctaPrimary" />{" "}
+                  <span className="arrow">←</span>
                 </TrackedLink>
               </div>
             </RevealOnScroll>
 
             <RevealOnScroll variant="fade-up" delay={0.30}>
-              {/* priceFromLabel contains <strong> markup. The aria-label
-                  needs the same string with the tag stripped — we read
-                  via useCmsText (raw, includes tags) and apply the same
-                  regex strip the old code used. */}
+              {/* priceFromLabel is used twice: once via CmsText for the
+                  visible text (rich, so <strong> renders correctly),
+                  and once via useCmsText().text for the aria-label
+                  where we strip <strong> via regex. Two distinct
+                  rendering paths, same key. */}
               <div
                 className="hero-price-from"
                 aria-label={priceFromLabel.text.replace(/<\/?strong>/g, "")}
               >
                 <span className="dot" aria-hidden></span>
-                <CmsText cmsKey="homeV2.hero.priceFromLabel" as="span" />
+                <CmsText cmsKey="homeV2.hero.priceFromLabel" />
               </div>
             </RevealOnScroll>
 
@@ -132,25 +108,28 @@ export function Hero() {
                   <span className="num">
                     <Counter to={500} prefix="+" />
                   </span>
-                  <span className="label" style={statCouplesLabel.style}>
-                    {statCouplesLabel.text}
-                  </span>
+                  <CmsText
+                    cmsKey="homeV2.hero.statCouplesLabel"
+                    className="label"
+                  />
                 </div>
                 <div className="hero-meta-item">
                   <span className="num">
                     <Counter to={10} prefix="+" />
                   </span>
-                  <span className="label" style={statExpertsLabel.style}>
-                    {statExpertsLabel.text}
-                  </span>
+                  <CmsText
+                    cmsKey="homeV2.hero.statExpertsLabel"
+                    className="label"
+                  />
                 </div>
                 <div className="hero-meta-item">
                   <span className="num">
                     <Counter to={4.8} decimals={1} suffix="★" thousands={false} />
                   </span>
-                  <span className="label" style={statRatingLabel.style}>
-                    {statRatingLabel.text}
-                  </span>
+                  <CmsText
+                    cmsKey="homeV2.hero.statRatingLabel"
+                    className="label"
+                  />
                 </div>
               </div>
             </RevealOnScroll>
@@ -178,23 +157,15 @@ export function Hero() {
             <div className="badge-floating badge-1">
               <div className="badge-icon">♡</div>
               <div className="badge-text">
-                <div className="t1" style={badge1Title.style}>
-                  {badge1Title.text}
-                </div>
-                <div className="t2" style={badge1Body.style}>
-                  {badge1Body.text}
-                </div>
+                <CmsText cmsKey="homeV2.hero.badge1Title" as="div" className="t1" />
+                <CmsText cmsKey="homeV2.hero.badge1Body" as="div" className="t2" />
               </div>
             </div>
             <div className="badge-floating badge-2">
               <div className="badge-icon">✦</div>
               <div className="badge-text">
-                <div className="t1" style={badge2Title.style}>
-                  {badge2Title.text}
-                </div>
-                <div className="t2" style={badge2Body.style}>
-                  {badge2Body.text}
-                </div>
+                <CmsText cmsKey="homeV2.hero.badge2Title" as="div" className="t1" />
+                <CmsText cmsKey="homeV2.hero.badge2Body" as="div" className="t2" />
               </div>
             </div>
           </div>
