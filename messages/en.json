@@ -1261,6 +1261,21 @@
       "cta": "Join the service",
       "cancel": "Not now",
       "loading": "Preparing checkout…"
+    },
+    "intro": {
+      "eyebrow": "Just before",
+      "title": "A small agreement between you",
+      "subtitle": "Your path is built from your answers. For that to work, you have to be in.",
+      "durationTitle": "10 minutes a week, four weeks",
+      "durationBody": "The assessment takes about 7 minutes. After that — one short step a week, at your pace.",
+      "privacyTitle": "Your answers — yours",
+      "privacyBody": "Each of you answers alone. Your partner doesn't see your personal answers — only the coach does.",
+      "pactHeader": "Four weeks, together",
+      "pactBody": "10 minutes a week. No pressure, no judgment. If you feel like quitting — remember you said you'd be here for these four.",
+      "cta": "We're in",
+      "ctaBusy": "Saving…",
+      "backLink": "Maybe later",
+      "saveError": "Save failed — please retry"
     }
   }
 }
