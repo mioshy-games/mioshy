@@ -1281,6 +1281,12 @@
       "tryAgain": "נסו שוב",
       "revealSuffix": "מהזוגות ענו כמוכם",
       "back": "← חזרה"
+    },
+    "question": {
+      "selectAnswer": "בחר/י תשובה כדי להמשיך",
+      "saving": "שומר/ת…",
+      "continue": "המשך",
+      "reflectionPlaceholder": "כתוב/י בחופשיות…"
     }
   }
 }

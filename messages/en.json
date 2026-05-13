@@ -1283,6 +1283,12 @@
       "tryAgain": "Try again",
       "revealSuffix": "of couples answered like you",
       "back": "Back ←"
+    },
+    "question": {
+      "selectAnswer": "Select an answer to continue",
+      "saving": "Saving…",
+      "continue": "Continue",
+      "reflectionPlaceholder": "Write freely…"
     }
   }
 }
