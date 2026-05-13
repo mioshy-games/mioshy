@@ -1386,5 +1386,20 @@
       "errGeneric": "Could not open checkout. Please try again.",
       "errNetwork": "Network error. Check your connection and try again."
     }
+  },
+  "journeyTimeline": {
+    "list": {
+      "doneCount": "{completed} / {total} done",
+      "shared": "Shared with your partner",
+      "open": "Open",
+      "locked": "Locked",
+      "pillDone": "Done together",
+      "pillOpen": "Open now",
+      "unlockInOneDay": "In 1 day",
+      "unlockInDays": "In {n} days",
+      "unlockInWeeks": "In {n} weeks",
+      "replyOne": "1 reply",
+      "repliesMany": "{n} replies"
+    }
   }
 }

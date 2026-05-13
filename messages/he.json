@@ -1384,5 +1384,20 @@
       "errGeneric": "התשלום לא נפתח. נסו שוב או פנו אלינו.",
       "errNetwork": "תקלת רשת. בדקו את החיבור ונסו שוב."
     }
+  },
+  "journeyTimeline": {
+    "list": {
+      "doneCount": "{completed} / {total} הושלמו",
+      "shared": "משותף עם בן/בת הזוג",
+      "open": "פתיחה",
+      "locked": "נעול",
+      "pillDone": "נעשה ביחד",
+      "pillOpen": "פתוח עכשיו",
+      "unlockInOneDay": "בעוד יום",
+      "unlockInDays": "בעוד {n} ימים",
+      "unlockInWeeks": "בעוד {n} שבועות",
+      "replyOne": "תגובה אחת",
+      "repliesMany": "{n} תגובות"
+    }
   }
 }
