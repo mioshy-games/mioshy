@@ -1535,5 +1535,20 @@
       "sending": "Sending…",
       "send": "Send"
     }
+  },
+  "gamesSlug": {
+    "gameNotFoundTitle": "Game not found",
+    "gameNotFoundBody": "This game is not available right now.",
+    "missingWheelTitle": "Game is missing a wheel",
+    "missingWheelBody": "Please try again later.",
+    "tutorial": {
+      "badge": "Welcome",
+      "title": "Here's how it works",
+      "step1": "Spin the wheel",
+      "step2": "Reveal a Truth or Dare",
+      "step3": "Answer or do it — then spin again",
+      "cta": "Got it, let's start",
+      "dismiss": "Close"
+    }
   }
 }

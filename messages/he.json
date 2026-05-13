@@ -1533,5 +1533,20 @@
       "sending": "שולח…",
       "send": "שליחה"
     }
+  },
+  "gamesSlug": {
+    "gameNotFoundTitle": "המשחק לא נמצא",
+    "gameNotFoundBody": "המשחק הזה לא זמין כרגע.",
+    "missingWheelTitle": "חסר גלגל למשחק",
+    "missingWheelBody": "נסו שוב מאוחר יותר.",
+    "tutorial": {
+      "badge": "ברוכים הבאים",
+      "title": "ככה זה עובד",
+      "step1": "סובבו את הגלגל",
+      "step2": "קבלו שאלה - אמת או חובה",
+      "step3": "ענו או בצעו, ועברו לסיבוב הבא",
+      "cta": "מעולה, יוצאים לדרך",
+      "dismiss": "סגירה"
+    }
   }
 }
