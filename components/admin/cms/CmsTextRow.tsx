@@ -251,6 +251,23 @@ function LanguageEditor({
   const hasMarkup = /<\/?(em|strong|br|p|ul|li|s)\b/i.test(value);
   const showPreview = isRich && hasMarkup;
 
+  // Track whether the textarea currently has a non-collapsed selection.
+  // The toolbar buttons disable when nothing is selected — this avoids
+  // two buggy patterns Itzik hit on 2026-05-13:
+  //   1. Clicking "Brand color" with an empty caret produced an empty
+  //      <em></em> at the cursor (and the public site rendered nothing,
+  //      while the DB carried the orphan tag).
+  //   2. Clicking the same button twice on still-selected just-wrapped
+  //      text produced <em><em>…</em></em> nested. With the selection
+  //      collapsed automatically after each wrap (see wrapSelection),
+  //      a second click is now a no-op until the admin re-selects.
+  const [hasSelection, setHasSelection] = useState(false);
+  function refreshSelection() {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    setHasSelection(ta.selectionStart !== ta.selectionEnd);
+  }
+
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between gap-2">
@@ -266,6 +283,7 @@ function LanguageEditor({
               label="Brand color"
               preview={<span className="italic text-rose-700">italic red</span>}
               title="Wrap selected text in <em> (brand red italic on the public site)"
+              disabled={!hasSelection}
             />
             <ToolbarButton
               onClick={() =>
@@ -274,6 +292,7 @@ function LanguageEditor({
               label="Bold"
               preview={<span className="font-bold">bold</span>}
               title="Wrap selected text in <strong>"
+              disabled={!hasSelection}
             />
           </div>
         ) : (
@@ -298,7 +317,16 @@ function LanguageEditor({
         dir={dir}
         lang={lang}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => {
+          onChange(e.target.value);
+          // Typing also collapses any previous selection — refresh so
+          // the toolbar disables immediately.
+          refreshSelection();
+        }}
+        onSelect={refreshSelection}
+        onMouseUp={refreshSelection}
+        onKeyUp={refreshSelection}
+        onBlur={refreshSelection}
         className="min-h-[80px] resize-y text-sm leading-relaxed"
         placeholder={placeholder}
       />
@@ -331,18 +359,25 @@ function ToolbarButton({
   label,
   preview,
   title,
+  disabled,
 }: {
   onClick: () => void;
   label: string;
   preview: React.ReactNode;
   title: string;
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      title={title}
-      className="inline-flex items-center gap-1.5 rounded border border-slate-300 bg-white px-2 py-1 text-[11px] font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
+      disabled={disabled}
+      title={
+        disabled
+          ? "Select text in the textarea first, then click to wrap."
+          : title
+      }
+      className="inline-flex items-center gap-1.5 rounded border border-slate-300 bg-white px-2 py-1 text-[11px] font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-slate-300 disabled:hover:bg-white"
     >
       <span className="text-slate-500">{label}</span>
       <span className="text-slate-400">·</span>
@@ -371,6 +406,12 @@ function wrapSelection(
   if (!ta) return;
   const start = ta.selectionStart;
   const end = ta.selectionEnd;
+
+  // Guard — no selection means no-op. The toolbar button is also
+  // disabled at this point (see hasSelection in LanguageEditor), but
+  // we keep the runtime check in case the caller routes around it.
+  if (start === end) return;
+
   const value = ta.value;
   const selected = value.slice(start, end);
   const before = value.slice(0, start);
@@ -380,21 +421,25 @@ function wrapSelection(
   const newValue = `${before}${opening}${selected}${closing}${after}`;
   setValue(newValue);
 
-  // Restore caret/selection on the wrapped span. requestAnimationFrame
-  // gives React time to flush the value re-render before we touch the
-  // DOM selection — without it the focus / setSelectionRange runs
-  // before the new value lands and the cursor jumps to position 0.
+  // Restore caret AFTER the wrapped content (not on it). Two reasons:
+  //   1. If we kept the wrapped span selected, a second click on the
+  //      same toolbar button would nest <em><em>…</em></em>. Itzik hit
+  //      this on 2026-05-13 — collapsing the caret prevents the
+  //      accidental double-wrap.
+  //   2. The "hasSelection" effective state for the next render is now
+  //      false, so the toolbar disables until the admin deliberately
+  //      re-selects something.
+  // requestAnimationFrame gives React time to flush the value
+  // re-render before we touch the DOM selection — otherwise focus /
+  // setSelectionRange runs before the new value lands and the cursor
+  // jumps to position 0.
   requestAnimationFrame(() => {
     ta.focus();
-    if (selected.length === 0) {
-      // Empty selection — place caret BETWEEN the opening + closing tags
-      const caret = start + opening.length;
-      ta.setSelectionRange(caret, caret);
-    } else {
-      // Highlight what we just wrapped so the admin can see what changed
-      const newStart = start + opening.length;
-      const newEnd = newStart + selected.length;
-      ta.setSelectionRange(newStart, newEnd);
-    }
+    const caretAfter = start + opening.length + selected.length + closing.length;
+    ta.setSelectionRange(caretAfter, caretAfter);
+    // The onSelect handler doesn't fire from a programmatic
+    // setSelectionRange. Dispatch a synthetic select event so the
+    // refreshSelection callback updates hasSelection → false.
+    ta.dispatchEvent(new Event("select", { bubbles: true }));
   });
 }

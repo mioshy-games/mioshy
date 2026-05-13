@@ -48,6 +48,19 @@ export function CmsText({
   const mergedStyle =
     style || extraStyle ? { ...style, ...extraStyle } : undefined;
 
+  // In rich mode, compose a `cms-rich` class onto whatever className
+  // the caller passed. That class drives the brand styling for inline
+  // <em>/<strong>/<s> via app/globals.css — see ".cms-rich em" etc.
+  // Without it, an <em> inside a non-headline container (e.g. <p
+  // class="ag-lead">) would render in browser-default italic with
+  // no colour because the legacy rule only matches h1–h4 / .lead /
+  // .display.
+  const finalClassName = isRich
+    ? className
+      ? `${className} cms-rich`
+      : "cms-rich"
+    : className;
+
   // Cast: `Tag` is a dynamic intrinsic element. JSX.IntrinsicElements
   // entries accept className/style/dangerouslySetInnerHTML uniformly,
   // but the union of all possible attribute shapes is too wide for
@@ -69,7 +82,7 @@ export function CmsText({
     const html = normalizeRichText(text);
     return (
       <Element
-        className={className}
+        className={finalClassName}
         style={mergedStyle}
         dangerouslySetInnerHTML={{ __html: html }}
       />
@@ -77,7 +90,7 @@ export function CmsText({
   }
 
   return (
-    <Element className={className} style={mergedStyle}>
+    <Element className={finalClassName} style={mergedStyle}>
       {text}
     </Element>
   );
