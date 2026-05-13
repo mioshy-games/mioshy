@@ -1295,6 +1295,26 @@
       "moveUp": "Move {label} up",
       "moveDown": "Move {label} down",
       "position": "Position {n}"
+    },
+    "inlineAuth": {
+      "heading": "You finished the questionnaire! 🎉",
+      "sub": "Your personal analysis is ready - create a free account to unlock it.",
+      "fullName": "Full name",
+      "email": "Email",
+      "phone": "Phone",
+      "password": "Password",
+      "passwordPlaceholder": "At least 8 characters",
+      "submitRegister": "Get my personal analysis →",
+      "submitLogin": "Log in & view analysis →",
+      "switchToLogin": "I already have an account",
+      "switchToRegister": "I'm new here",
+      "errDefault": "Something went wrong. Please try again.",
+      "errRateLimit": "Email rate limit reached - please try again in a few minutes.",
+      "errAlreadyRegistered": "This email is already registered. Switch to 'I already have an account' below ↓",
+      "loadingLabel": "Hold on…",
+      "badge1": "🔒 100% private",
+      "badge2": "Analysis in seconds",
+      "badge3": "Cancel anytime"
     }
   }
 }
