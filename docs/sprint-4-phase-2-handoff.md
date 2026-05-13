@@ -11,6 +11,240 @@ session work — too much for one conversation. The pattern, tooling,
 and namespace mapping are all in place; a fresh agent session can
 pick up at "next component" without re-deriving any of the setup.
 
+---
+
+## ⭐ Start here (read this first)
+
+### Who you're working for
+
+The user is **Itzik (`mioshyoffice@gmail.com`)** — admin of Mioshy.
+Authenticated as admin in `profiles.role = 'admin'`. Speaks Hebrew
+primarily; English communication is fine, Hebrew commit messages
+are not used. Direct, fast feedback loop. Trusts you to keep
+flow — confirms decisions via short messages.
+
+The CMS lives at `https://<vercel-preview>/admin/content`. Itzik
+verifies migrations by opening that route, editing a row, saving,
+and refreshing `/he?cb=…` to see the change live within seconds.
+
+### Working environment
+
+- Branch: `feature/admin-cms` — do NOT push to `game` directly.
+- Worktree: `/Users/uxellent/mioshy/.claude/worktrees/admin-cms`.
+- Package manager: **pnpm** (Vercel CI rejects npm-only lockfiles
+  with `ERR_PNPM_OUTDATED_LOCKFILE`).
+- DB: dev Supabase at `kphfmbqqafrvuzmiotsz.supabase.co`.
+  Credentials live in `/Users/uxellent/mioshy/.env.local` —
+  use `node --env-file=…` to load them; never paste keys into code
+  or commits.
+- Auth gate: `getAdminSession()` from `lib/auth/admin.ts`.
+- Vercel deploy: automatic on push to feature branch.
+- Logs: `vercel logs <url> -x` for runtime; `vercel inspect <url>
+  --logs` for build.
+
+### Your first action
+
+1. Read this entire document (the recipe, the inventory, the
+   tooling reference, the Phase 2E decision call).
+2. Pick the next component from `Phase 2A — Journey assessment
+   flow` table below. Recommended start: `JourneyAssessmentIntro.tsx`
+   (smallest, 1 ternary — confirms the recipe still works).
+3. Run the 6-step recipe (Step 1 → Step 6).
+4. Commit + push after each component, or in small batches.
+5. Move to the next component.
+
+### The recipe in one screenshot — `AuthGateModal` as a worked example
+
+This is exactly what changed in commit `3d90f97` for the first
+Phase 2A migration. Use it as a template for every remaining
+component.
+
+**Before** (`components/journey/AuthGateModal.tsx`, lines 38–64
+of the pre-migration version):
+
+```tsx
+const t = locale === "he"
+  ? {
+      title: "שמרו את ההתקדמות שלכם",
+      body: "כדי להמשיך - צריך חשבון קטן. שלוש שאלות נשמרו כבר, לא תאבדו כלום.",
+      fullName: "שם מלא",
+      email: "אימייל",
+      phone: "טלפון",
+      password: "סיסמה",
+      submitRegister: "הרשמה וההמשך",
+      submitLogin: "התחברות וההמשך",
+      switchToLogin: "כבר יש לי חשבון",
+      switchToRegister: "אני חדש/ה כאן",
+      err: "משהו השתבש. נסו שוב.",
+    }
+  : {
+      title: "Save your progress",
+      body: "To continue we need a quick account. Your first 3 answers are safe - you won't lose anything.",
+      fullName: "Full name",
+      email: "Email",
+      phone: "Phone",
+      password: "Password",
+      submitRegister: "Register & continue",
+      submitLogin: "Log in & continue",
+      switchToLogin: "I already have an account",
+      switchToRegister: "I'm new here",
+      err: "Something went wrong. Please try again.",
+    };
+
+// ... later in JSX:
+<DialogTitle>{t.title}</DialogTitle>
+<Label htmlFor="full_name">{t.fullName}</Label>
+// ... 9 more usages of t.XXX
+```
+
+**Step 1 — Identify the 11 unique strings.** Decide on key path:
+`journeyAssessment.authGate.<key>` (matches the namespace mapping
+in `scripts/seed-cms-texts.mjs`).
+
+**Step 2 — Bulk-add to messages/*.json**:
+
+```bash
+cd /Users/uxellent/mioshy/.claude/worktrees/admin-cms
+cat <<'JSON' | node scripts/cms-add-keys.mjs
+{
+  "journeyAssessment.authGate.title":           { "he": "שמרו את ההתקדמות שלכם",                                              "en": "Save your progress" },
+  "journeyAssessment.authGate.body":            { "he": "כדי להמשיך - צריך חשבון קטן. שלוש שאלות נשמרו כבר, לא תאבדו כלום.",  "en": "To continue we need a quick account. Your first 3 answers are safe - you won't lose anything." },
+  "journeyAssessment.authGate.fullName":        { "he": "שם מלא",                                                              "en": "Full name" },
+  "journeyAssessment.authGate.email":           { "he": "אימייל",                                                              "en": "Email" },
+  "journeyAssessment.authGate.phone":           { "he": "טלפון",                                                               "en": "Phone" },
+  "journeyAssessment.authGate.password":        { "he": "סיסמה",                                                               "en": "Password" },
+  "journeyAssessment.authGate.submitRegister":  { "he": "הרשמה וההמשך",                                                        "en": "Register & continue" },
+  "journeyAssessment.authGate.submitLogin":     { "he": "התחברות וההמשך",                                                      "en": "Log in & continue" },
+  "journeyAssessment.authGate.switchToLogin":   { "he": "כבר יש לי חשבון",                                                      "en": "I already have an account" },
+  "journeyAssessment.authGate.switchToRegister":{ "he": "אני חדש/ה כאן",                                                       "en": "I'm new here" },
+  "journeyAssessment.authGate.err":             { "he": "משהו השתבש. נסו שוב.",                                                "en": "Something went wrong. Please try again." }
+}
+JSON
+```
+
+Output: `+ journeyAssessment.authGate.title` (11 lines) +
+`Done. Added 11, skipped 0`. The keys are now in
+`messages/he.json` + `messages/en.json` at the corresponding
+nested path. Re-running with the same payload is a safe no-op
+(idempotent).
+
+**Step 3 — Rewrite the component**. Drop the `const t = locale ===
+"he" ? … : …` block entirely. Add imports + replace each `{t.X}`
+with `<CmsText cmsKey="…" />`:
+
+```tsx
+"use client";
+
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { createBrowserSupabaseClient } from "@/lib/supabase/client";
+import { useCmsText } from "@/hooks/useCmsText";       // ← NEW
+import { CmsText } from "@/components/cms/CmsText";    // ← NEW
+import type { Locale } from "@/lib/journey/types";
+
+export function AuthGateModal({ open, locale, deviceId, onAuthenticated, onClose }: AuthGateModalProps) {
+  // … state unchanged …
+
+  // The error string is used inside a catch block (NOT a DOM child),
+  // so it reads via useCmsText().text for a raw-string return.
+  const errFallback = useCmsText("journeyAssessment.authGate.err").text;
+
+  const submit = async (e: React.FormEvent) => {
+    // … unchanged except `t.err` → `errFallback` in the catch handler.
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose?.()}>
+      <DialogContent dir={locale === "he" ? "rtl" : "ltr"} className="max-w-md">
+        <DialogHeader>
+          <DialogTitle><CmsText cmsKey="journeyAssessment.authGate.title" /></DialogTitle>
+          <DialogDescription><CmsText cmsKey="journeyAssessment.authGate.body" /></DialogDescription>
+        </DialogHeader>
+        {/* … all the form fields, each with <CmsText cmsKey="journeyAssessment.authGate.<X>" /> … */}
+      </DialogContent>
+    </Dialog>
+  );
+}
+```
+
+The full migrated file is at HEAD on `feature/admin-cms` —
+`components/journey/AuthGateModal.tsx`. Diff: `git show 3d90f97 --
+components/journey/AuthGateModal.tsx`.
+
+**Step 4 — Verify**:
+
+```bash
+cd /Users/uxellent/mioshy/.claude/worktrees/admin-cms
+npm run build       # or `pnpm build` — both pass through Vercel CI.
+```
+
+Expected: `EXIT=0`, output ending in the prerender summary table.
+TypeScript errors are blockers — fix them before committing. The
+visual parity is automatic because `useCmsText` falls back to
+`messages/<locale>.json` for any key that isn't in `cms_texts` yet
+(it won't be until you re-seed at the end).
+
+**Step 5 — Commit**:
+
+```bash
+git add -A && git commit -m "feat(cms): Phase 2A — <ComponentName> migrated
+
+N keys under <namespace>.<componentName>.*:
+  list each key
+
+<any tricky bits — array-of-bullets, error string, etc.>
+"
+git push origin feature/admin-cms
+```
+
+**Step 6 — Move to next component.** Pick the next file from the
+inventory below.
+
+### Build + seed commands cheat-sheet
+
+```bash
+# From the worktree root: /Users/uxellent/mioshy/.claude/worktrees/admin-cms
+
+# Quick build check
+npm run build > /tmp/build.log 2>&1; echo "EXIT=$?"; tail -5 /tmp/build.log
+
+# Type-only check (faster than full build)
+npx tsc --noEmit
+
+# Seed (idempotent — ON CONFLICT DO NOTHING). Run at the end of
+# each phase leg, or whenever you want the new keys in cms_texts
+# so /admin/content shows them in the editor.
+node --env-file=/Users/uxellent/mioshy/.env.local scripts/seed-cms-texts.mjs
+
+# Single deploy status check (don't poll)
+vercel ls mioshy 2>&1 | grep -v "^$" | head -6 | tail -2
+```
+
+### Verifying a migrated component on the preview
+
+After push, Vercel auto-deploys. Wait ~2 min, then:
+1. Open `https://<latest-preview>/<route-that-uses-the-component>?cb=$RANDOM`.
+2. Visual parity check — content should look identical to baseline.
+3. Optionally edit a key in `/admin/content`, save, refresh `?cb=…`,
+   confirm the new value reaches the public site.
+
+### What NOT to do
+
+- ❌ Don't auto-poll on deploys (Itzik's explicit rule: single
+  `vercel ls` check, report status, stop).
+- ❌ Don't push to `game` directly. Always to `feature/admin-cms`.
+- ❌ Don't use `npm install` — use `pnpm install` so the lockfile
+  stays in sync with Vercel's expectations.
+- ❌ Don't add new external dependencies without flagging them first.
+- ❌ Don't extract inline ternaries from `journey/questionnaire.json`
+  in this sprint — that needs an architectural call from Itzik
+  (see "Phase 2E" section below).
+
+---
+
 ## What's done (committed on `feature/admin-cms`)
 
 | Commit | What |
