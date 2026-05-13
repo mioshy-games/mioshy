@@ -1,5 +1,6 @@
 import "server-only";
 
+import { unstable_cache } from "next/cache";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { CmsTextRow, CmsPage } from "./types";
 import { normalizeRowsForRender } from "./render";
@@ -8,27 +9,25 @@ import { normalizeRowsForRender } from "./render";
  * CMS — server-only loader.
  *
  * Returns every CMS row tagged with the given `page`, e.g.
- * `homepage` for the marketing index.
+ * `homepage` for the marketing index. Wrapped in `unstable_cache` so
+ * the database is hit at most once per `revalidate` window per page
+ * key — except the public site reads from the cache, and every save
+ * server action in lib/cms/actions.ts calls `revalidateTag('cms-texts')`
+ * to clear it explicitly.
  *
- * IMPLEMENTATION NOTE — Phase 2 (2026-05-12): we DELIBERATELY do not
- * wrap this loader in `unstable_cache(... , { revalidate: 60 })` even
- * though that was the original Phase-1 plan. In live testing the cache
- * served stale rows for 5+ minutes after a DB write — `revalidate: 60`
- * in Vercel's Data Cache appears to require an explicit
- * `revalidateTag(...)` call to actually clear, not just a TTL.
+ * History — Phase 2 we tried `unstable_cache` first and the cache
+ * served stale forever because we had no publish path to call
+ * `revalidateTag`. With Sprint 2 we DO have the action, so the
+ * revalidation contract works as documented. The 60s TTL is a
+ * background safety net; the primary refresh mechanism is the tag
+ * invalidation from saves.
  *
- * Phase 4 (admin UI) will introduce a publish server action that
- * writes new rows AND immediately calls `revalidateTag('cms-texts')`
- * inside the same action — at that point we can safely re-enable
- * unstable_cache here. Until then, every page render does one
- * Supabase query keyed on `page` (indexed via `cms_texts_page_idx`,
- * sub-100ms in practice) and the read path is always fresh.
- *
- * If Supabase fails (network blip, table missing, RLS denial), this
- * returns `[]` and the public site silently falls back to next-intl
- * via the JSON files — the site never breaks because of CMS issues.
+ * If Supabase fails (network blip, table missing, RLS denial) the
+ * inner fn returns `[]` — the cache stores the empty array, the
+ * public site silently falls back to next-intl via the JSON files
+ * and never breaks because of CMS issues.
  */
-export async function loadCmsTextsForPage(
+async function loadCmsTextsForPageUncached(
   page: CmsPage,
 ): Promise<CmsTextRow[]> {
   try {
@@ -67,11 +66,21 @@ export async function loadCmsTextsForPage(
   }
 }
 
+export const loadCmsTextsForPage = unstable_cache(
+  loadCmsTextsForPageUncached,
+  ["cms-texts-by-page"],
+  {
+    revalidate: 60,
+    tags: ["cms-texts"],
+  },
+);
+
 /**
  * Same loader but for the entire CMS at once. Used by the admin
- * dashboard which paints every page in a single screen.
- *
- * Same caching caveat as `loadCmsTextsForPage` above.
+ * dashboard which paints every page in a single screen. Bypasses the
+ * cache — admins want to see their just-saved edits immediately, and
+ * the cost of refetching ~800 rows once per admin pageview is
+ * negligible.
  */
 export async function loadAllCmsTexts(): Promise<CmsTextRow[]> {
   try {
