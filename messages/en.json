@@ -1647,5 +1647,20 @@
     "openGame": "Open game",
     "unlockBadge": "Unlock",
     "detailsAndUnlock": "Details & unlock"
+  },
+  "myJourney": {
+    "metaTitle": "Your tuned clinic",
+    "assessmentCompleted": "Assessment completed",
+    "activityCompleted": "Completed: {title}",
+    "activityJustOpened": "Just opened: {title}",
+    "priorityCommunication": "Communication",
+    "priorityIntimacy": "Intimacy",
+    "priorityLove": "Love & emotional connection",
+    "priorityFriendship": "Friendship & daily partnership",
+    "priorityFamily": "Family & internal stress",
+    "backToMyMioshy": "Back to My Mioshy",
+    "coachingEyebrow": "Coaching with Mioshy",
+    "pageHeading": "Your tuned clinic",
+    "sharedSpace": "Your shared space"
   }
 }

@@ -103,6 +103,8 @@ import {
 import type { JourneyOwner } from "@/lib/journey-content/types";
 import { isPriorityKey, type PriorityKey } from "@/lib/journey/priorities";
 import { getPriorityLabels } from "@/lib/journey-content/priority-categories";
+import { CmsText } from "@/components/cms/CmsText";
+import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
 
 export const dynamic = "force-dynamic";
 
@@ -184,6 +186,11 @@ export default async function PrivateJourneyPage({
 
   const isHe = locale === "he";
   const Arrow = isHe ? ArrowLeft : ArrowRight;
+  const t = await getCmsTranslations({
+    locale: isHe ? "he" : "en",
+    namespace: "myJourney",
+    page: "my",
+  });
 
   // ── Auth + entitlement gate ───────────────────────────────────────────────
   const supabase = await createServerSupabaseClient();
@@ -641,7 +648,7 @@ export default async function PrivateJourneyPage({
     activityEntries.push({
       id: "assessment_completed",
       kind: "assessment_completed",
-      title: isHe ? "השלמתם את האבחון האישי" : "Assessment completed",
+      title: t("assessmentCompleted"),
       detail:
         focusLabel && topPriority
           ? isHe
@@ -663,7 +670,7 @@ export default async function PrivateJourneyPage({
     activityEntries.push({
       id: `done-${entry.scheduled.id}`,
       kind: "item_completed",
-      title: isHe ? `סיימתם: ${title}` : `Completed: ${title}`,
+      title: t("activityCompleted").replace("{title}", title),
       detail: cat,
       whenIso:
         entry.completion?.completed_at ?? entry.scheduled.unlock_at,
@@ -678,7 +685,7 @@ export default async function PrivateJourneyPage({
     activityEntries.push({
       id: `unlock-${entry.scheduled.id}`,
       kind: "item_unlocked",
-      title: isHe ? `נפתח עבורכם: ${title}` : `Just opened: ${title}`,
+      title: t("activityJustOpened").replace("{title}", title),
       detail: null,
       whenIso: entry.scheduled.unlock_at,
     });
@@ -712,22 +719,22 @@ export default async function PrivateJourneyPage({
             id: `priority-${k}`,
             label:
               k === "communication"
-                ? isHe ? "תקשורת זוגית" : "Communication"
+                ? t("priorityCommunication")
                 : k === "intimacy"
-                  ? isHe ? "מיניות ואינטימיות" : "Intimacy"
+                  ? t("priorityIntimacy")
                   : k === "love"
-                    ? isHe ? "אהבה וחיבור רגשי" : "Love & emotional connection"
+                    ? t("priorityLove")
                     : k === "friendship"
-                      ? isHe ? "חברות ושותפות יומיומית" : "Friendship & daily partnership"
-                      : isHe ? "משפחה ולחצים פנימיים" : "Family & internal stress",
+                      ? t("priorityFriendship")
+                      : t("priorityFamily"),
           })),
       ]
     : [
-        { id: "p-comm", label: isHe ? "תקשורת זוגית" : "Communication" },
-        { id: "p-intim", label: isHe ? "מיניות ואינטימיות" : "Intimacy" },
-        { id: "p-love", label: isHe ? "אהבה וחיבור רגשי" : "Love & emotional connection" },
-        { id: "p-friend", label: isHe ? "חברות ושותפות יומיומית" : "Friendship & daily partnership" },
-        { id: "p-family", label: isHe ? "משפחה ולחצים פנימיים" : "Family & internal stress" },
+        { id: "p-comm", label: t("priorityCommunication") },
+        { id: "p-intim", label: t("priorityIntimacy") },
+        { id: "p-love", label: t("priorityLove") },
+        { id: "p-friend", label: t("priorityFriendship") },
+        { id: "p-family", label: t("priorityFamily") },
       ];
 
   // Decide whether to show the "experts are reviewing" banner - only
@@ -788,7 +795,7 @@ export default async function PrivateJourneyPage({
           className="inline-flex items-center gap-1 text-xs font-medium text-white/55 transition hover:text-white/90"
         >
           <Arrow className="h-3 w-3 rotate-180" />
-          {isHe ? "חזרה למיאושי שלי" : "Back to My Mioshy"}
+          <CmsText cmsKey="myJourney.backToMyMioshy" />
         </Link>
 
         {/* ─────── Header ───────
@@ -798,11 +805,11 @@ export default async function PrivateJourneyPage({
           <div className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-slate-950/40 px-3 py-1 text-xs backdrop-blur">
             <Sparkles className="h-3.5 w-3.5 text-white/70" />
             <span className="font-semibold text-white/85">
-              {isHe ? "ליווי עם מיאושי" : "Coaching with Mioshy"}
+              <CmsText cmsKey="myJourney.coachingEyebrow" />
             </span>
           </div>
           <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
-            {isHe ? "הקליניקה המכווננת שלכם" : "Your tuned clinic"}
+            <CmsText cmsKey="myJourney.pageHeading" />
           </h1>
           <p className="mt-2 max-w-xl text-white/65">
             {isHe
@@ -899,7 +906,7 @@ export default async function PrivateJourneyPage({
           >
             <div className="min-w-0">
               <div className="text-[12px] font-bold uppercase tracking-wider text-[#FAF6F7]/75">
-                {isHe ? "המקום המשותף שלכם" : "Your shared space"}
+                <CmsText cmsKey="myJourney.sharedSpace" />
               </div>
               <p className="mt-1 text-[14px] leading-snug text-white/75">
                 {isHe

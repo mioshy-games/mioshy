@@ -1645,5 +1645,20 @@
     "openGame": "פתיחת המשחק",
     "unlockBadge": "פתחו",
     "detailsAndUnlock": "פרטים ורכישה"
+  },
+  "myJourney": {
+    "metaTitle": "הקליניקה המכווננת שלכם",
+    "assessmentCompleted": "השלמתם את האבחון האישי",
+    "activityCompleted": "סיימתם: {title}",
+    "activityJustOpened": "נפתח עבורכם: {title}",
+    "priorityCommunication": "תקשורת זוגית",
+    "priorityIntimacy": "מיניות ואינטימיות",
+    "priorityLove": "אהבה וחיבור רגשי",
+    "priorityFriendship": "חברות ושותפות יומיומית",
+    "priorityFamily": "משפחה ולחצים פנימיים",
+    "backToMyMioshy": "חזרה למיאושי שלי",
+    "coachingEyebrow": "ליווי עם מיאושי",
+    "pageHeading": "הקליניקה המכווננת שלכם",
+    "sharedSpace": "המקום המשותף שלכם"
   }
 }
