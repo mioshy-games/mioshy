@@ -26,68 +26,24 @@
 import { motion } from "framer-motion";
 import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useCmsText } from "@/hooks/useCmsText";
+import { CmsText } from "@/components/cms/CmsText";
 
 const STORAGE_KEY = "mioshy:assessment-interstitial-seen";
 
 export interface InterstitialDef {
   /** Index after which this interstitial appears. */
   atIndex: number;
-  /** Section number shown on the card (1..4). */
+  /** Section number shown on the card (1..4). Drives the CMS key lookup
+   *  for title/body — journeyAssessment.interstitial.step{step}.{title,body}. */
   step: number;
-  /** Section header (warm framing of what just happened). */
-  he: { title: string; body: string };
-  en: { title: string; body: string };
 }
 
 export const INTERSTITIALS: InterstitialDef[] = [
-  {
-    atIndex: 5,
-    step: 1,
-    he: {
-      title: "סיימתם את הבלוק הראשון",
-      body: "עוד רגע ונשאל איך אתם מתמודדים ברגעים הקשים יותר יחד. תיקחו נשימה.",
-    },
-    en: {
-      title: "First block done",
-      body: "In a moment we'll ask about the harder moments. Take a breath.",
-    },
-  },
-  {
-    atIndex: 12,
-    step: 2,
-    he: {
-      title: "זה החלק האישי",
-      body: "אינטימיות וחיבור רגשי. בלי שיפוט, בלי תשובות נכונות. עוד שניים-שלושה בלוקים.",
-    },
-    en: {
-      title: "This is the personal part",
-      body: "Intimacy and emotional connection. No judgment, no right answers. Two or three blocks left.",
-    },
-  },
-  {
-    atIndex: 19,
-    step: 3,
-    he: {
-      title: "חברות זוגית — הבסיס של הכל",
-      body: "סיימתם. עכשיו ניגע בחיים היומיומיים שלכם — ואז בעדיפויות שלכם.",
-    },
-    en: {
-      title: "Friendship — the base of everything",
-      body: "Done with that. Next we touch the everyday, then your priorities.",
-    },
-  },
-  {
-    atIndex: 26,
-    step: 4,
-    he: {
-      title: "כמעט סיימתם",
-      body: "השלב האחרון: לדרג את העדיפויות שלכם. זה מה שמכוון את כל המסלול הלאה.",
-    },
-    en: {
-      title: "Almost there",
-      body: "Last step: ranking your priorities. This is what shapes the path going forward.",
-    },
-  },
+  { atIndex: 5, step: 1 },
+  { atIndex: 12, step: 2 },
+  { atIndex: 19, step: 3 },
+  { atIndex: 26, step: 4 },
 ];
 
 export const INTERSTITIAL_INDICES = INTERSTITIALS.map((i) => i.atIndex);
@@ -127,13 +83,18 @@ export function markInterstitialShown(atIndex: number): void {
 }
 
 interface Props {
-  isHe: boolean;
+  /** Retained on the props interface for backwards compatibility — the
+   *  isHe flag was used pre-CMS to pick the title/body language. CMS
+   *  lookup is locale-aware via useCmsText, so this is unused inside
+   *  the component now. Callers still pass it. */
+  isHe?: boolean;
   def: InterstitialDef;
   onContinue: () => void;
 }
 
-export function AssessmentInterstitial({ isHe, def, onContinue }: Props) {
-  const t = isHe ? def.he : def.en;
+export function AssessmentInterstitial({ def, onContinue }: Props) {
+  const stepCounterTpl = useCmsText("journeyAssessment.interstitial.stepCounter").text;
+  const stepCounter = stepCounterTpl.replace("{n}", String(def.step));
   return (
     <motion.section
       key={`interstitial-${def.atIndex}`}
@@ -167,19 +128,23 @@ export function AssessmentInterstitial({ isHe, def, onContinue }: Props) {
             <Sparkles className="h-3.5 w-3.5" />
           </span>
           <span className="text-[13px] font-bold uppercase tracking-wider text-[#FAF6F7]/75">
-            {isHe ? `שלב ${def.step} / 4` : `Step ${def.step} / 4`}
+            {stepCounter}
           </span>
         </div>
 
         {/* W2.5 (Itzik #9) — title + body bumped on mobile so the
             stage-completion modal feels like a moment, not a footnote.
             Title now starts at 28px (was 26), body at 19px (was 16). */}
-        <h2 className="mt-4 font-heading text-[28px] font-extrabold leading-tight text-white sm:text-[32px]">
-          {t.title}
-        </h2>
-        <p className="mt-3 max-w-prose text-[19px] leading-[1.55] text-white/85 sm:text-[20px]">
-          {t.body}
-        </p>
+        <CmsText
+          cmsKey={`journeyAssessment.interstitial.step${def.step}.title`}
+          as="h2"
+          className="mt-4 font-heading text-[28px] font-extrabold leading-tight text-white sm:text-[32px]"
+        />
+        <CmsText
+          cmsKey={`journeyAssessment.interstitial.step${def.step}.body`}
+          as="p"
+          className="mt-3 max-w-prose text-[19px] leading-[1.55] text-white/85 sm:text-[20px]"
+        />
 
         <div className="mt-6 flex items-center justify-end">
           <Button
@@ -190,7 +155,7 @@ export function AssessmentInterstitial({ isHe, def, onContinue }: Props) {
               background: "linear-gradient(135deg, #B83C4D 0%, #6C2E40 100%)",
             }}
           >
-            {isHe ? "ממשיכים" : "Continue"}
+            <CmsText cmsKey="journeyAssessment.interstitial.continue" />
           </Button>
         </div>
       </div>

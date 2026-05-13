@@ -1315,6 +1315,26 @@
       "badge1": "🔒 100% private",
       "badge2": "Analysis in seconds",
       "badge3": "Cancel anytime"
+    },
+    "interstitial": {
+      "step1": {
+        "title": "First block done",
+        "body": "In a moment we'll ask about the harder moments. Take a breath."
+      },
+      "step2": {
+        "title": "This is the personal part",
+        "body": "Intimacy and emotional connection. No judgment, no right answers. Two or three blocks left."
+      },
+      "step3": {
+        "title": "Friendship — the base of everything",
+        "body": "Done with that. Next we touch the everyday, then your priorities."
+      },
+      "step4": {
+        "title": "Almost there",
+        "body": "Last step: ranking your priorities. This is what shapes the path going forward."
+      },
+      "stepCounter": "Step {n} / 4",
+      "continue": "Continue"
     }
   }
 }
