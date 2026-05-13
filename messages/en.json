@@ -1249,6 +1249,18 @@
       "switchToLogin": "I already have an account",
       "switchToRegister": "I'm new here",
       "err": "Something went wrong. Please try again."
+    },
+    "paywallGate": {
+      "title": "A personalized plan - week after week",
+      "body": "Join the service and get an in-depth analysis, weekly personalized tasks, and expert consultations.",
+      "bullet1": "2–4 expert-picked weekly tasks - matched precisely to your needs",
+      "bullet2": "Additional questionnaires in early weeks to sharpen your profile",
+      "bullet3": "100% personalized - not a generic program",
+      "bullet4": "Expert consultations are included in the price - no add-ons",
+      "price": "$33 / ₪98 per month - cancel anytime",
+      "cta": "Join the service",
+      "cancel": "Not now",
+      "loading": "Preparing checkout…"
     }
   }
 }
