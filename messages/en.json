@@ -1276,6 +1276,13 @@
       "ctaBusy": "Saving…",
       "backLink": "Maybe later",
       "saveError": "Save failed — please retry"
+    },
+    "client": {
+      "title": "Your relationship journey",
+      "analysisError": "We couldn't load your analysis.",
+      "tryAgain": "Try again",
+      "revealSuffix": "of couples answered like you",
+      "back": "Back ←"
     }
   }
 }
