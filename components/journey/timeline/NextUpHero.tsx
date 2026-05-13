@@ -10,6 +10,8 @@
 //   1. first available entry (by unlock_at asc)  - "do this now"
 //   2. else the nearest locked entry             - "coming next"
 //   3. else null (all completed)                 - render a victory card
+//
+// Sprint 4 #3 Phase 2A migration — 20 keys under journeyTimeline.nextUp.*.
 // ============================================================
 
 import * as React from "react";
@@ -26,6 +28,8 @@ import {
   Sparkles,
 } from "lucide-react";
 import type { TimelineEntry } from "@/lib/journey-content/types";
+import { useCmsText } from "@/hooks/useCmsText";
+import { CmsText } from "@/components/cms/CmsText";
 
 interface Props {
   /** The entry to feature - or null when everything is completed. */
@@ -74,16 +78,29 @@ function ActiveNextUpHero({
   const isAvailable = entry.status === "available";
   const isLocked = entry.status === "locked";
 
+  // Resolve every potentially-rendered string up front — useCmsText is
+  // a hook, can't sit inside conditional branches further down.
+  const ariaActive = useCmsText("journeyTimeline.nextUp.ariaActive").text;
+  const availableBadge = useCmsText("journeyTimeline.nextUp.availableBadge").text;
+  const availableKicker = useCmsText("journeyTimeline.nextUp.availableKicker").text;
+  const availableCta = useCmsText("journeyTimeline.nextUp.availableCta").text;
+  const lockedBadge = useCmsText("journeyTimeline.nextUp.lockedBadge").text;
+  const lockedCta = useCmsText("journeyTimeline.nextUp.lockedCta").text;
+  const countdownNow = useCmsText("journeyTimeline.nextUp.countdownNow").text;
+  const countdownToday = useCmsText("journeyTimeline.nextUp.countdownToday").text;
+  const countdownTomorrow = useCmsText("journeyTimeline.nextUp.countdownTomorrow").text;
+  const countdownDaysTpl = useCmsText("journeyTimeline.nextUp.countdownDays").text;
+  const countdownWeeksTpl = useCmsText("journeyTimeline.nextUp.countdownWeeks").text;
+  const countdownDateTpl = useCmsText("journeyTimeline.nextUp.countdownDate").text;
+
   // Palette + copy swap between "act now" and "coming soon".
   const theme = isAvailable
     ? {
-        badge: isHe ? "הצעד הבא שלכם" : "Your next step",
+        badge: availableBadge,
         badgeIcon: <Sparkles className="h-3.5 w-3.5" />,
-        kicker: isHe ? "הגיע הזמן" : "Ready for you",
-        whyLine: isHe
-          ? "רגע קטן ביחד שבונה את הקרבה שמחזיקה את כל השאר."
-          : "A small moment together that builds the closeness everything else rests on.",
-        cta: isHe ? "בואו נתחיל" : "Let's begin",
+        kicker: availableKicker,
+        whyLineKey: "journeyTimeline.nextUp.availableWhyLine",
+        cta: availableCta,
         border: "border-amber-300/55",
         glowA: "from-amber-400/35",
         glowB: "to-rose-400/25",
@@ -96,13 +113,18 @@ function ActiveNextUpHero({
         dotPulse: true,
       }
     : {
-        badge: isHe ? "הפרק הבא" : "Coming up",
+        badge: lockedBadge,
         badgeIcon: <Clock className="h-3.5 w-3.5" />,
-        kicker: formatUnlockCountdown(entry.scheduled.unlock_at, isHe),
-        whyLine: isHe
-          ? "המסע נבנה בקצב הנכון - הפרק הזה מחכה בדיוק לרגע שבו תהיו מוכנים אליו."
-          : "Your journey builds at the right pace - this chapter is waiting for exactly the right moment.",
-        cta: isHe ? "הצצה מהפרק" : "Peek inside",
+        kicker: formatUnlockCountdown(entry.scheduled.unlock_at, isHe, {
+          countdownNow,
+          countdownToday,
+          countdownTomorrow,
+          countdownDaysTpl,
+          countdownWeeksTpl,
+          countdownDateTpl,
+        }),
+        whyLineKey: "journeyTimeline.nextUp.lockedWhyLine",
+        cta: lockedCta,
         border: "border-indigo-300/40",
         glowA: "from-indigo-400/25",
         glowB: "to-emerald-400/15",
@@ -116,7 +138,7 @@ function ActiveNextUpHero({
       };
 
   return (
-    <section aria-label={isHe ? "הפעולה הבאה" : "Next action"}>
+    <section aria-label={ariaActive}>
       <div
         className={`group relative overflow-hidden rounded-3xl border ${theme.border} bg-white/[0.04] backdrop-blur-md ${theme.ring}`}
       >
@@ -183,9 +205,11 @@ function ActiveNextUpHero({
               {title}
             </h2>
 
-            <p className="mt-3 text-sm italic leading-relaxed text-white/85 sm:text-base">
-              {theme.whyLine}
-            </p>
+            <CmsText
+              cmsKey={theme.whyLineKey}
+              as="p"
+              className="mt-3 text-sm italic leading-relaxed text-white/85 sm:text-base"
+            />
 
             {body ? (
               <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-white/65 sm:text-base">
@@ -198,9 +222,7 @@ function ActiveNextUpHero({
                 been used with real couples. One line, low visual weight. */}
             <p className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-white/55">
               <ShieldCheck className="h-3 w-3 text-emerald-300/80" />
-              {isHe
-                ? "חלק משיטה מוכחת שנבנתה עם זוגות אמיתיים"
-                : "Part of a proven process, built with real couples"}
+              <CmsText cmsKey="journeyTimeline.nextUp.credibility" />
             </p>
 
             <div className="mt-5 flex flex-wrap items-center gap-3">
@@ -216,9 +238,7 @@ function ActiveNextUpHero({
               {isLocked ? (
                 <span className="inline-flex items-center gap-1.5 text-xs text-white/60">
                   <Lock className="h-3.5 w-3.5" />
-                  {isHe
-                    ? "נפתח אוטומטית בזמן שנקבע"
-                    : "Unlocks automatically at the scheduled time"}
+                  <CmsText cmsKey="journeyTimeline.nextUp.lockedUnlockHint" />
                 </span>
               ) : null}
             </div>
@@ -233,9 +253,12 @@ function ActiveNextUpHero({
 // Victory state - everything is done
 // ------------------------------------------------------------
 
-function VictoryHero({ isHe, total }: { isHe: boolean; total: number }) {
+function VictoryHero({ isHe: _isHe, total }: { isHe: boolean; total: number }) {
+  const ariaVictory = useCmsText("journeyTimeline.nextUp.ariaVictory").text;
+  const bodyTpl = useCmsText("journeyTimeline.nextUp.victoryBody").text;
+  const body = bodyTpl.replace("{total}", String(total));
   return (
-    <section aria-label={isHe ? "המסע הושלם" : "Journey complete"}>
+    <section aria-label={ariaVictory}>
       <div className="relative overflow-hidden rounded-3xl border border-emerald-400/40 bg-gradient-to-br from-emerald-500/15 via-teal-500/10 to-indigo-500/15 p-6 shadow-[0_0_0_1px_rgba(52,211,153,0.3)] sm:p-8">
         <div
           aria-hidden
@@ -248,18 +271,14 @@ function VictoryHero({ isHe, total }: { isHe: boolean; total: number }) {
           <div>
             <p className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-emerald-200">
               <CheckCircle2 className="h-3.5 w-3.5" />
-              {isHe ? "הושלם" : "Complete"}
+              <CmsText cmsKey="journeyTimeline.nextUp.victoryLabel" />
             </p>
-            <h2 className="mt-1 text-2xl font-bold text-white sm:text-3xl">
-              {isHe
-                ? "סיימתם את כל הפרקים של המסלול הזה"
-                : "You've completed every chapter on this path"}
-            </h2>
-            <p className="mt-1 text-sm text-white/75 sm:text-base">
-              {isHe
-                ? `${total} פרקים הושלמו. זה ההזדמנות לדבר - מה חשוב לכם לשמר?`
-                : `${total} chapters done. A good moment to reflect - what do you want to keep?`}
-            </p>
+            <CmsText
+              cmsKey="journeyTimeline.nextUp.victoryTitle"
+              as="h2"
+              className="mt-1 text-2xl font-bold text-white sm:text-3xl"
+            />
+            <p className="mt-1 text-sm text-white/75 sm:text-base">{body}</p>
           </div>
         </div>
       </div>
@@ -271,24 +290,29 @@ function VictoryHero({ isHe, total }: { isHe: boolean; total: number }) {
 // Helpers
 // ------------------------------------------------------------
 
-function formatUnlockCountdown(unlockAt: string, isHe: boolean): string {
+function formatUnlockCountdown(
+  unlockAt: string,
+  isHe: boolean,
+  copy: {
+    countdownNow: string;
+    countdownToday: string;
+    countdownTomorrow: string;
+    countdownDaysTpl: string;
+    countdownWeeksTpl: string;
+    countdownDateTpl: string;
+  },
+): string {
   const ms = new Date(unlockAt).getTime() - Date.now();
-  if (!Number.isFinite(ms) || ms <= 0) {
-    return isHe ? "נפתח כעת" : "Unlocking now";
-  }
+  if (!Number.isFinite(ms) || ms <= 0) return copy.countdownNow;
   const days = Math.ceil(ms / 86_400_000);
-  if (days <= 0) return isHe ? "היום" : "Today";
-  if (days === 1) return isHe ? "נפתח מחר" : "Unlocks tomorrow";
-  if (days < 14) {
-    return isHe ? `נפתח בעוד ${days} ימים` : `Unlocks in ${days} days`;
-  }
+  if (days <= 0) return copy.countdownToday;
+  if (days === 1) return copy.countdownTomorrow;
+  if (days < 14) return copy.countdownDaysTpl.replace("{n}", String(days));
   const weeks = Math.ceil(days / 7);
-  if (weeks < 6) {
-    return isHe ? `נפתח בעוד ${weeks} שבועות` : `Unlocks in ${weeks} weeks`;
-  }
+  if (weeks < 6) return copy.countdownWeeksTpl.replace("{n}", String(weeks));
   const dt = new Date(unlockAt).toLocaleDateString(
     isHe ? "he-IL" : "en-US",
     { month: "short", day: "numeric" },
   );
-  return isHe ? `נפתח ב-${dt}` : `Unlocks ${dt}`;
+  return copy.countdownDateTpl.replace("{date}", dt);
 }
