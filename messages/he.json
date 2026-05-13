@@ -1377,6 +1377,12 @@
       "checkoutErrorGeneric": "התשלום לא נפתח. נסו שוב או פנו אלינו.",
       "checkoutErrorNetwork": "תקלת רשת. בדקו את החיבור ונסו שוב.",
       "stickyCta": "להצטרפות לליווי עם מיאושי"
+    },
+    "checkoutButton": {
+      "defaultLabel": "להצטרפות עכשיו",
+      "busyLabel": "מכין תשלום…",
+      "errGeneric": "התשלום לא נפתח. נסו שוב או פנו אלינו.",
+      "errNetwork": "תקלת רשת. בדקו את החיבור ונסו שוב."
     }
   }
 }

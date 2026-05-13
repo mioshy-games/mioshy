@@ -1379,6 +1379,12 @@
       "checkoutErrorGeneric": "Could not open checkout. Please try again.",
       "checkoutErrorNetwork": "Network error. Check your connection and try again.",
       "stickyCta": "Join Mioshy coaching"
+    },
+    "checkoutButton": {
+      "defaultLabel": "Join now",
+      "busyLabel": "Preparing checkout…",
+      "errGeneric": "Could not open checkout. Please try again.",
+      "errNetwork": "Network error. Check your connection and try again."
     }
   }
 }
