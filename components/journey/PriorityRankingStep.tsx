@@ -12,6 +12,8 @@ import type {
   QuestionRankingCategory,
 } from "@/lib/journey/types";
 import { Button } from "@/components/ui/button";
+import { useCmsText } from "@/hooks/useCmsText";
+import { CmsText } from "@/components/cms/CmsText";
 
 interface Props {
   question: QuestionRanking;
@@ -108,10 +110,11 @@ export function PriorityRankingStep({
 
   const headline = isHe ? question.he_prompt : question.en_prompt;
   const subline = isHe ? question.he_subline : question.en_subline;
-  const continueLabel = isHe ? "המשך" : "Continue";
-  const arrowsHint = isHe
-    ? "השתמשו בחצים לשינוי הסדר"
-    : "Use the arrows to reorder";
+
+  // Aria-label templates with {label}/{n} placeholders — interpolated per row.
+  const moveUpTpl = useCmsText("journeyAssessment.priorityRanking.moveUp").text;
+  const moveDownTpl = useCmsText("journeyAssessment.priorityRanking.moveDown").text;
+  const positionTpl = useCmsText("journeyAssessment.priorityRanking.position").text;
 
   const submit = async () => {
     if (!isValidOrder(order)) return;
@@ -145,12 +148,8 @@ export function PriorityRankingStep({
           const isLast = idx === order.length - 1;
           const upDisabled = isFirst || busy;
           const downDisabled = isLast || busy;
-          const upLabel = isHe
-            ? `העלה את ${labelFor(key)}`
-            : `Move ${labelFor(key)} up`;
-          const downLabel = isHe
-            ? `הורד את ${labelFor(key)}`
-            : `Move ${labelFor(key)} down`;
+          const upLabel = moveUpTpl.replace("{label}", labelFor(key));
+          const downLabel = moveDownTpl.replace("{label}", labelFor(key));
           return (
             <motion.li
               key={key}
@@ -175,9 +174,7 @@ export function PriorityRankingStep({
                       ? "size-9 bg-fuchsia-400 text-fuchsia-950 text-base"
                       : "size-8 bg-white/10 text-white text-sm",
                   ].join(" ")}
-                  aria-label={
-                    isHe ? `מקום ${idx + 1}` : `Position ${idx + 1}`
-                  }
+                  aria-label={positionTpl.replace("{n}", String(idx + 1))}
                 >
                   {idx + 1}
                 </div>
@@ -231,9 +228,11 @@ export function PriorityRankingStep({
           near-invisible (text-xs / white/55). Hint bumped to 15px /
           white/85 and Continue button gets a primary treatment so the
           user sees their next step clearly. */}
-      <p className="text-center text-[15px] font-medium text-white/85">
-        {arrowsHint}
-      </p>
+      <CmsText
+        cmsKey="journeyAssessment.priorityRanking.arrowsHint"
+        as="p"
+        className="text-center text-[15px] font-medium text-white/85"
+      />
 
       <div className="flex justify-center">
         <Button
@@ -242,7 +241,7 @@ export function PriorityRankingStep({
           disabled={busy}
           className="min-w-[220px] min-h-[56px] text-[18px] font-semibold shadow-xl shadow-fuchsia-500/30"
         >
-          {continueLabel}
+          <CmsText cmsKey="journeyAssessment.question.continue" />
         </Button>
       </div>
     </motion.section>

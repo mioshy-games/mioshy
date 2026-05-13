@@ -1287,6 +1287,12 @@
       "saving": "שומר/ת…",
       "continue": "המשך",
       "reflectionPlaceholder": "כתוב/י בחופשיות…"
+    },
+    "priorityRanking": {
+      "arrowsHint": "השתמשו בחצים לשינוי הסדר",
+      "moveUp": "העלה את {label}",
+      "moveDown": "הורד את {label}",
+      "position": "מקום {n}"
     }
   }
 }

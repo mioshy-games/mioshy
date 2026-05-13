@@ -1289,6 +1289,12 @@
       "saving": "Saving…",
       "continue": "Continue",
       "reflectionPlaceholder": "Write freely…"
+    },
+    "priorityRanking": {
+      "arrowsHint": "Use the arrows to reorder",
+      "moveUp": "Move {label} up",
+      "moveDown": "Move {label} down",
+      "position": "Position {n}"
     }
   }
 }
