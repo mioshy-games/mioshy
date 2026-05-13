@@ -26,6 +26,7 @@
 
 import { Sparkles, AlertTriangle, Quote, Activity, Check, X, BookOpen, Target } from "lucide-react";
 import type { JourneyItem } from "@/lib/journey-content/types";
+import { CmsText } from "@/components/cms/CmsText";
 
 interface LessonViewProps {
   item:  JourneyItem;
@@ -71,7 +72,7 @@ export function LessonView({ item, isHe }: LessonViewProps) {
         <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 sm:p-6">
           <div className="mb-3 flex items-center gap-2 text-[12px] font-bold uppercase tracking-wider text-white/55">
             <Sparkles className="size-3.5 text-amber-300/70" />
-            {isHe ? "התובנה" : "The insight"}
+            <CmsText cmsKey="journeyTimeline.lesson.insightLabel" />
           </div>
           <p className="whitespace-pre-line text-[16px] leading-[1.7] text-white/90">
             {insight}
@@ -84,7 +85,7 @@ export function LessonView({ item, isHe }: LessonViewProps) {
         <section className="rounded-2xl border border-amber-300/20 bg-amber-500/[0.06] p-5 sm:p-6">
           <div className="mb-3 flex items-center gap-2 text-[12px] font-bold uppercase tracking-wider text-amber-100/85">
             <AlertTriangle className="size-3.5" />
-            {isHe ? "טעות שכיחה" : "Common mistake"}
+            <CmsText cmsKey="journeyTimeline.lesson.mistakesLabel" />
           </div>
           <p className="whitespace-pre-line text-[15px] leading-[1.65] text-amber-50/95">
             {mistakes}
@@ -100,7 +101,7 @@ export function LessonView({ item, isHe }: LessonViewProps) {
         >
           <div className="mb-2 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-white/55 not-italic">
             <Quote className="size-3" />
-            {isHe ? "כמו..." : "Like..."}
+            <CmsText cmsKey="journeyTimeline.lesson.metaphorLabel" />
           </div>
           <p className="whitespace-pre-line text-[16px] leading-[1.65] text-white/85">
             {metaphor}
@@ -113,7 +114,7 @@ export function LessonView({ item, isHe }: LessonViewProps) {
         <section className="prose prose-invert max-w-none">
           <div className="mb-3 flex items-center gap-2 text-[12px] font-bold uppercase tracking-wider text-white/55">
             <BookOpen className="size-3.5" />
-            {isHe ? "המאמר המלא" : "The full article"}
+            <CmsText cmsKey="journeyTimeline.lesson.bodyLabel" />
           </div>
           <div className="whitespace-pre-line text-[16px] leading-[1.75] text-white/85">
             {body}
@@ -132,7 +133,7 @@ export function LessonView({ item, isHe }: LessonViewProps) {
         >
           <div className="mb-3 flex items-center gap-2 text-[12px] font-bold uppercase tracking-wider text-[#FAF6F7]">
             <Target className="size-3.5" />
-            {isHe ? "התרגיל השבוע" : "This week's exercise"}
+            <CmsText cmsKey="journeyTimeline.lesson.exerciseLabel" />
           </div>
           <p className="whitespace-pre-line text-[16px] leading-[1.7] font-medium text-white/95">
             {exercise}
@@ -145,7 +146,7 @@ export function LessonView({ item, isHe }: LessonViewProps) {
         <section className="rounded-2xl border border-white/10 bg-white/[0.025] p-5">
           <div className="mb-2 flex items-center gap-2 text-[12px] font-bold uppercase tracking-wider text-white/55">
             <Activity className="size-3.5 text-blue-200/70" />
-            {isHe ? "מה למדוד השבוע" : "What to measure this week"}
+            <CmsText cmsKey="journeyTimeline.lesson.measurementLabel" />
           </div>
           <p className="whitespace-pre-line text-[14px] leading-[1.6] text-white/80">
             {measurement}
@@ -160,7 +161,7 @@ export function LessonView({ item, isHe }: LessonViewProps) {
             <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.07] p-4">
               <div className="mb-2 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-emerald-100/85">
                 <Check className="size-3.5" />
-                {isHe ? "לעשות השבוע" : "Do this week"}
+                <CmsText cmsKey="journeyTimeline.lesson.doThisLabel" />
               </div>
               <p className="whitespace-pre-line text-[14px] leading-[1.55] text-emerald-50/95">
                 {doThis}
@@ -171,7 +172,7 @@ export function LessonView({ item, isHe }: LessonViewProps) {
             <div className="rounded-2xl border border-rose-400/20 bg-rose-500/[0.07] p-4">
               <div className="mb-2 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-rose-100/85">
                 <X className="size-3.5" />
-                {isHe ? "לא השבוע" : "Not this week"}
+                <CmsText cmsKey="journeyTimeline.lesson.dontThisLabel" />
               </div>
               <p className="whitespace-pre-line text-[14px] leading-[1.55] text-rose-50/95">
                 {dontThis}
@@ -192,7 +193,7 @@ export function LessonView({ item, isHe }: LessonViewProps) {
         >
           <div className="mb-2 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-amber-100/85">
             <Sparkles className="size-3.5" />
-            {isHe ? "סימן שזה עובד" : "Sign it's working"}
+            <CmsText cmsKey="journeyTimeline.lesson.progressLabel" />
           </div>
           <p className="whitespace-pre-line text-[14px] leading-[1.55] italic text-amber-50/90">
             {progress}
@@ -200,15 +201,16 @@ export function LessonView({ item, isHe }: LessonViewProps) {
         </section>
       ) : null}
 
-      {/* 9. Source attribution — credit footer */}
+      {/* 9. Source attribution — credit footer. Split into prefix +
+          source + suffix so the citation styling sits on the source
+          name alone. Both prefix/suffix include their surrounding
+          spaces so admins can edit them without losing whitespace. */}
       {source ? (
         <footer className="mt-2 border-t border-white/[0.06] pt-3">
           <p className="text-[11px] leading-relaxed text-white/45">
-            {isHe ? (
-              <>מבוסס על המחקר של <span className="text-white/65">{source}</span> — ניתוח של מיאושי</>
-            ) : (
-              <>Based on the work of <span className="text-white/65">{source}</span> — Mioshy interpretation</>
-            )}
+            <CmsText cmsKey="journeyTimeline.lesson.sourcePrefix" />
+            <span className="text-white/65">{source}</span>
+            <CmsText cmsKey="journeyTimeline.lesson.sourceSuffix" />
           </p>
         </footer>
       ) : null}
