@@ -47,3 +47,8 @@ export function normalizeRowsForRender<
     en_text: row.en_text == null ? row.en_text : normalizeRichText(row.en_text),
   }));
 }
+
+// Sanitization (DOMPurify-backed) lives in lib/cms/sanitize.ts. It's
+// server-only because isomorphic-dompurify pulls JSDOM into the build,
+// which the client bundle can't tolerate. Keep this file safe for
+// both client + server consumers.

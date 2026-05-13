@@ -4,6 +4,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { z } from "zod";
 import { getAdminSession } from "@/lib/auth/admin";
 import { normalizeRichText } from "./render";
+import { sanitizeRichText } from "./sanitize";
 
 /**
  * Server actions for the internal CMS.
@@ -64,12 +65,41 @@ export async function saveCmsText(input: unknown): Promise<SaveResult> {
   }
   const { supabase, user } = session;
 
-  // Normalize before write so the DB never re-introduces `<br></br>`.
-  // We DON'T trim — admins may intentionally include leading/trailing
+  // ── Sanitize ─────────────────────────────────────────────────────
+  // The CMS toolbar emits only <em> / <strong> wrappers, but the
+  // textarea is a free-text field — an admin (or a paste of HTML
+  // from outside) could carry tags we don't want in the DB. Reject
+  // the save BEFORE writing if anything outside <em>/<strong>/<br>
+  // shows up. DOMPurify is the second-pass scrubber even for the
+  // allowed tags (strips attributes like style/onclick).
+  const heChecked = sanitizeRichText(parsed.data.he);
+  const enChecked = sanitizeRichText(parsed.data.en);
+  if (!heChecked.ok || !enChecked.ok) {
+    const parts: string[] = [];
+    if (!heChecked.ok) {
+      parts.push(
+        `Hebrew contains disallowed tags: <${heChecked.disallowed.join(">, <")}>`,
+      );
+    }
+    if (!enChecked.ok) {
+      parts.push(
+        `English contains disallowed tags: <${enChecked.disallowed.join(">, <")}>`,
+      );
+    }
+    return {
+      ok: false,
+      error:
+        parts.join(". ") +
+        ". Only <em>, <strong>, and <br> are permitted in CMS text.",
+    };
+  }
+
+  // Then normalize so the DB never re-introduces `<br></br>`. We
+  // DON'T trim — admins may intentionally include leading/trailing
   // whitespace for layout reasons. Empty string is fine; the public-
   // site read path falls back to JSON when text is empty.
-  const heNormalized = normalizeRichText(parsed.data.he);
-  const enNormalized = normalizeRichText(parsed.data.en);
+  const heNormalized = normalizeRichText(heChecked.html);
+  const enNormalized = normalizeRichText(enChecked.html);
 
   // eslint-disable-next-line no-console
   console.log("[cms-save] writing", {
