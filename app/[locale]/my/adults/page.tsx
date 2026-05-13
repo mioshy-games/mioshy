@@ -26,7 +26,6 @@ import type { ExperienceGame } from "@/lib/between-us/types";
 // product pages, so the moment of "this is mine now" still feels cinematic.
 import { AdultsAmbience } from "@/components/adults/AdultsAmbience";
 import { CmsText } from "@/components/cms/CmsText";
-import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
 
 // Body-font stack used inside this page. Frank Ruhl Libre is reserved
 // for headlines; Assistant (loaded as --font-body-hebrew in layout.tsx)
@@ -57,11 +56,6 @@ export default async function MyAdultsGalleryPage({
 }) {
   const { locale } = params;
   const isHe = locale === "he";
-  const t = await getCmsTranslations({
-    locale: isHe ? "he" : "en",
-    namespace: "myAdults",
-    page: "my",
-  });
 
   const ctx = await getCurrentCoupleContext();
   if (!ctx) redirect(`/${locale}/auth`);
