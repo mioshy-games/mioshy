@@ -1235,5 +1235,20 @@
       "item6Name": "Tal & Omri",
       "item6Source": "Together 6 years"
     }
+  },
+  "journeyAssessment": {
+    "authGate": {
+      "title": "Save your progress",
+      "body": "To continue we need a quick account. Your first 3 answers are safe - you won't lose anything.",
+      "fullName": "Full name",
+      "email": "Email",
+      "phone": "Phone",
+      "password": "Password",
+      "submitRegister": "Register & continue",
+      "submitLogin": "Log in & continue",
+      "switchToLogin": "I already have an account",
+      "switchToRegister": "I'm new here",
+      "err": "Something went wrong. Please try again."
+    }
   }
 }

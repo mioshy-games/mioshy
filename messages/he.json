@@ -1233,5 +1233,20 @@
       "item6Name": "טל ועומרי",
       "item6Source": "בזוגיות 6 שנים"
     }
+  },
+  "journeyAssessment": {
+    "authGate": {
+      "title": "שמרו את ההתקדמות שלכם",
+      "body": "כדי להמשיך - צריך חשבון קטן. שלוש שאלות נשמרו כבר, לא תאבדו כלום.",
+      "fullName": "שם מלא",
+      "email": "אימייל",
+      "phone": "טלפון",
+      "password": "סיסמה",
+      "submitRegister": "הרשמה וההמשך",
+      "submitLogin": "התחברות וההמשך",
+      "switchToLogin": "כבר יש לי חשבון",
+      "switchToRegister": "אני חדש/ה כאן",
+      "err": "משהו השתבש. נסו שוב."
+    }
   }
 }

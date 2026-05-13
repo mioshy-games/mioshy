@@ -1,11 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
+import { useCmsText } from "@/hooks/useCmsText";
+import { CmsText } from "@/components/cms/CmsText";
 import type { Locale } from "@/lib/journey/types";
 
 interface AuthGateModalProps {
@@ -18,11 +26,19 @@ interface AuthGateModalProps {
 
 /**
  * Register/Login modal shown after Q3.
- * After success it calls POST /api/journey/resume with the device_id so
- * the anonymous journey row is linked to the new user, then invokes
- * onAuthenticated() which advances the parent flow.
+ *
+ * CMS migration (Sprint 4 #3 Phase 2A) — every formerly-inline
+ * bilingual string moved to journeyAssessment.authGate.* keys. The
+ * DOM consumers render via <CmsText>; the error fallback string
+ * (used in a catch block, not the DOM) reads from useCmsText().text.
  */
-export function AuthGateModal({ open, locale, deviceId, onAuthenticated, onClose }: AuthGateModalProps) {
+export function AuthGateModal({
+  open,
+  locale,
+  deviceId,
+  onAuthenticated,
+  onClose,
+}: AuthGateModalProps) {
   const [mode, setMode] = useState<"register" | "login">("register");
   const [form, setForm] = useState({
     full_name: "",
@@ -35,33 +51,8 @@ export function AuthGateModal({ open, locale, deviceId, onAuthenticated, onClose
 
   const supabase = createBrowserSupabaseClient();
 
-  const t = locale === "he"
-    ? {
-        title: "שמרו את ההתקדמות שלכם",
-        body: "כדי להמשיך - צריך חשבון קטן. שלוש שאלות נשמרו כבר, לא תאבדו כלום.",
-        fullName: "שם מלא",
-        email: "אימייל",
-        phone: "טלפון",
-        password: "סיסמה",
-        submitRegister: "הרשמה וההמשך",
-        submitLogin: "התחברות וההמשך",
-        switchToLogin: "כבר יש לי חשבון",
-        switchToRegister: "אני חדש/ה כאן",
-        err: "משהו השתבש. נסו שוב.",
-      }
-    : {
-        title: "Save your progress",
-        body: "To continue we need a quick account. Your first 3 answers are safe - you won't lose anything.",
-        fullName: "Full name",
-        email: "Email",
-        phone: "Phone",
-        password: "Password",
-        submitRegister: "Register & continue",
-        submitLogin: "Log in & continue",
-        switchToLogin: "I already have an account",
-        switchToRegister: "I'm new here",
-        err: "Something went wrong. Please try again.",
-      };
+  // Used as a string in the catch block fallback, not for DOM render.
+  const errFallback = useCmsText("journeyAssessment.authGate.err").text;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,7 +90,7 @@ export function AuthGateModal({ open, locale, deviceId, onAuthenticated, onClose
 
       onAuthenticated();
     } catch (err) {
-      const message = err instanceof Error ? err.message : t.err;
+      const message = err instanceof Error ? err.message : errFallback;
       setError(message);
     } finally {
       setBusy(false);
@@ -110,67 +101,107 @@ export function AuthGateModal({ open, locale, deviceId, onAuthenticated, onClose
     <Dialog open={open} onOpenChange={(v) => !v && onClose?.()}>
       <DialogContent dir={locale === "he" ? "rtl" : "ltr"} className="max-w-md">
         <DialogHeader>
-          <DialogTitle>{t.title}</DialogTitle>
-          <DialogDescription>{t.body}</DialogDescription>
+          <DialogTitle>
+            <CmsText cmsKey="journeyAssessment.authGate.title" />
+          </DialogTitle>
+          <DialogDescription>
+            <CmsText cmsKey="journeyAssessment.authGate.body" />
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={submit} className="flex flex-col gap-3">
           {mode === "register" ? (
             <>
               <div>
-                <Label htmlFor="full_name">{t.fullName}</Label>
+                <Label htmlFor="full_name">
+                  <CmsText cmsKey="journeyAssessment.authGate.fullName" />
+                </Label>
                 <Input
                   id="full_name"
                   value={form.full_name}
-                  onChange={(e) => setForm((f) => ({ ...f, full_name: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, full_name: e.target.value }))
+                  }
                   required
                 />
               </div>
               <div>
-                <Label htmlFor="phone">{t.phone}</Label>
+                <Label htmlFor="phone">
+                  <CmsText cmsKey="journeyAssessment.authGate.phone" />
+                </Label>
                 <Input
                   id="phone"
                   type="tel"
                   value={form.phone}
-                  onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, phone: e.target.value }))
+                  }
                   required
                 />
               </div>
             </>
           ) : null}
           <div>
-            <Label htmlFor="email">{t.email}</Label>
+            <Label htmlFor="email">
+              <CmsText cmsKey="journeyAssessment.authGate.email" />
+            </Label>
             <Input
               id="email"
               type="email"
               autoComplete="email"
               value={form.email}
-              onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, email: e.target.value }))
+              }
               required
             />
           </div>
           <div>
-            <Label htmlFor="password">{t.password}</Label>
+            <Label htmlFor="password">
+              <CmsText cmsKey="journeyAssessment.authGate.password" />
+            </Label>
             <Input
               id="password"
               type="password"
-              autoComplete={mode === "register" ? "new-password" : "current-password"}
+              autoComplete={
+                mode === "register" ? "new-password" : "current-password"
+              }
               value={form.password}
-              onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, password: e.target.value }))
+              }
               required
               minLength={8}
             />
           </div>
           {error ? <p className="text-sm text-rose-500">{error}</p> : null}
           <Button type="submit" disabled={busy} className="w-full">
-            {busy ? "…" : mode === "register" ? t.submitRegister : t.submitLogin}
+            {busy ? (
+              "…"
+            ) : (
+              <CmsText
+                cmsKey={
+                  mode === "register"
+                    ? "journeyAssessment.authGate.submitRegister"
+                    : "journeyAssessment.authGate.submitLogin"
+                }
+              />
+            )}
           </Button>
           <button
             type="button"
-            onClick={() => setMode((m) => (m === "register" ? "login" : "register"))}
+            onClick={() =>
+              setMode((m) => (m === "register" ? "login" : "register"))
+            }
             className="text-sm text-white/70 underline underline-offset-4"
           >
-            {mode === "register" ? t.switchToLogin : t.switchToRegister}
+            <CmsText
+              cmsKey={
+                mode === "register"
+                  ? "journeyAssessment.authGate.switchToLogin"
+                  : "journeyAssessment.authGate.switchToRegister"
+              }
+            />
           </button>
         </form>
       </DialogContent>

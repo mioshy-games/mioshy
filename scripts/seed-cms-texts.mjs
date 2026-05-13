@@ -57,8 +57,10 @@ const NAMESPACE_TO_PAGE = {
   home: "homepage",
   marketingHome: "homepage",
 
-  // Journey / assessment
+  // Journey landing + assessment + timeline (Sprint 4 #3 Phase 2)
   journeyHub: "journey",
+  journeyAssessment: "journey",
+  journeyTimeline: "journey",
 
   // Games surface
   gamesHub: "games",
@@ -66,16 +68,22 @@ const NAMESPACE_TO_PAGE = {
   gameRoom: "games",
   game: "games",
   snakesGame: "games",
+  gamesSlug: "games",
 
   // Mioshy Sex / product line
-  // NOTE: the JSON has a top-level `products` namespace which appears
-  // to be the Mioshy Sex catalogue. If your products namespace serves
-  // a different surface, edit this line and re-run.
   products: "mioshy-sex",
+  mioshySexPage: "mioshy-sex",
+  mioshySexSlug: "mioshy-sex",
+  mioshySexPlay: "mioshy-sex",
 
   // My / dashboard / account
   account: "my",
   dashboard: "my",
+  myHub: "my",
+  myAdults: "my",
+  myGames: "my",
+  myJourney: "my",
+  myJourneyTogether: "my",
 
   // Shared — appears across multiple pages
   nav: "shared",
