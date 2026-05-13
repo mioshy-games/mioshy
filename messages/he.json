@@ -1631,5 +1631,19 @@
     "bothCompleted": "השלמתם שניכם",
     "youLabel": "אתם",
     "itemsHint": "פריטים"
+  },
+  "myAdults": {
+    "backToMyMioshy": "חזרה למיאושי שלי",
+    "heading": "הגלריה שלכם",
+    "eyebrow": "למבוגרים בלבד",
+    "moreGames": "עוד משחקים",
+    "pickGame": "לבחירת משחק",
+    "yourGames": "המשחקים שלכם",
+    "noGamesYet": "עוד לא רכשתם משחקים",
+    "exploreContent": "גלו תכנים",
+    "ownedBadge": "שלכם",
+    "openGame": "פתיחת המשחק",
+    "unlockBadge": "פתחו",
+    "detailsAndUnlock": "פרטים ורכישה"
   }
 }

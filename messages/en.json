@@ -1633,5 +1633,19 @@
     "bothCompleted": "both completed",
     "youLabel": "You",
     "itemsHint": "items"
+  },
+  "myAdults": {
+    "backToMyMioshy": "Back to My Mioshy",
+    "heading": "Your gallery",
+    "eyebrow": "Adults Only",
+    "moreGames": "More games",
+    "pickGame": "Pick a game",
+    "yourGames": "Your games",
+    "noGamesYet": "No games yet",
+    "exploreContent": "Explore content",
+    "ownedBadge": "Owned",
+    "openGame": "Open game",
+    "unlockBadge": "Unlock",
+    "detailsAndUnlock": "Details & unlock"
   }
 }

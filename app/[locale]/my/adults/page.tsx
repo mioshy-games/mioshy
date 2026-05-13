@@ -25,6 +25,8 @@ import type { ExperienceGame } from "@/lib/between-us/types";
 // keeps the post-purchase gallery in the same after-dark world as the
 // product pages, so the moment of "this is mine now" still feels cinematic.
 import { AdultsAmbience } from "@/components/adults/AdultsAmbience";
+import { CmsText } from "@/components/cms/CmsText";
+import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
 
 // Body-font stack used inside this page. Frank Ruhl Libre is reserved
 // for headlines; Assistant (loaded as --font-body-hebrew in layout.tsx)
@@ -55,6 +57,11 @@ export default async function MyAdultsGalleryPage({
 }) {
   const { locale } = params;
   const isHe = locale === "he";
+  const t = await getCmsTranslations({
+    locale: isHe ? "he" : "en",
+    namespace: "myAdults",
+    page: "my",
+  });
 
   const ctx = await getCurrentCoupleContext();
   if (!ctx) redirect(`/${locale}/auth`);
@@ -119,7 +126,7 @@ export default async function MyAdultsGalleryPage({
           className="inline-flex items-center gap-1.5 text-xs font-medium text-white/60 transition hover:text-white/95"
         >
           <Arrow className="h-3 w-3 rotate-180" />
-          {isHe ? "חזרה למיאושי שלי" : "Back to My Mioshy"}
+          <CmsText cmsKey="myAdults.backToMyMioshy" />
         </Link>
 
         {/* Header - eyebrow + display-serif headline + lede + CTA back to
@@ -130,7 +137,7 @@ export default async function MyAdultsGalleryPage({
             <div className="inline-flex items-center gap-1.5 rounded-full border border-rose-300/40 bg-rose-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] backdrop-blur">
               <Heart className="h-3.5 w-3.5 text-rose-200" />
               <span className="text-rose-100">
-                {isHe ? "הגלריה שלכם" : "Your gallery"}
+                <CmsText cmsKey="myAdults.heading" />
               </span>
             </div>
             <h1
@@ -142,7 +149,7 @@ export default async function MyAdultsGalleryPage({
             >
               <Library className="h-8 w-8 text-rose-300 sm:h-10 sm:w-10" />
               <span className="bg-gradient-to-br from-white via-rose-100 to-amber-200 bg-clip-text text-transparent">
-                {isHe ? "למבוגרים בלבד" : "Adults Only"}
+                <CmsText cmsKey="myAdults.eyebrow" />
               </span>
             </h1>
             <p className="mt-4 text-[16px] leading-[1.7] text-white/80 sm:text-[17px]">
@@ -158,7 +165,7 @@ export default async function MyAdultsGalleryPage({
               className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/[0.06] px-4 py-2 text-sm font-semibold text-white/90 backdrop-blur transition hover:border-rose-300/40 hover:bg-white/10 hover:text-white"
             >
               <Sparkles className="h-4 w-4 text-rose-200" />
-              {isHe ? "עוד משחקים" : "More games"}
+              <CmsText cmsKey="myAdults.moreGames" />
               <Arrow className="h-3.5 w-3.5" />
             </a>
           ) : null}
@@ -192,7 +199,7 @@ export default async function MyAdultsGalleryPage({
                   href="/mioshy-sex"
                   className="inline-flex items-center gap-1.5 rounded-full bg-amber-400 px-4 py-2 text-sm font-semibold text-black transition hover:bg-amber-300"
                 >
-                  {isHe ? "לבחירת משחק" : "Pick a game"}
+                  <CmsText cmsKey="myAdults.pickGame" />
                   <Arrow className="h-3.5 w-3.5" />
                 </Link>
               </div>
@@ -232,7 +239,7 @@ export default async function MyAdultsGalleryPage({
           <section className="mt-12">
             <div className="flex items-baseline gap-3">
               <h2 className="text-[20px] font-semibold text-white sm:text-[22px]">
-                {isHe ? "המשחקים שלכם" : "Your games"}
+                <CmsText cmsKey="myAdults.yourGames" />
               </h2>
               <span className="rounded-full border border-white/12 bg-white/5 px-2.5 py-0.5 text-[12px] font-semibold text-white/85 backdrop-blur">
                 {owned.length}
@@ -257,7 +264,7 @@ export default async function MyAdultsGalleryPage({
           <section id="more-games" className="mt-16 scroll-mt-24">
             <div className="flex items-baseline gap-3">
               <h2 className="text-[20px] font-semibold text-white sm:text-[22px]">
-                {isHe ? "עוד משחקים" : "More games"}
+                <CmsText cmsKey="myAdults.moreGames" />
               </h2>
               <span className="rounded-full border border-white/12 bg-white/5 px-2.5 py-0.5 text-[12px] font-semibold text-white/85 backdrop-blur">
                 {moreGames.length}
@@ -301,7 +308,7 @@ function EmptyGallery({ isHe }: { isHe: boolean }) {
           className="relative mt-4 text-[26px] font-bold sm:text-[30px]"
           style={{ fontFamily: "'Frank Ruhl Libre', serif", fontWeight: 700 }}
         >
-          {isHe ? "עוד לא רכשתם משחקים" : "No games yet"}
+          <CmsText cmsKey="myAdults.noGamesYet" />
         </h2>
         <p
           className="relative mx-auto mt-3 max-w-xl text-[15px] leading-[1.7] text-white/85"
@@ -321,7 +328,7 @@ function EmptyGallery({ isHe }: { isHe: boolean }) {
           />
           <span className="relative z-10 inline-flex items-center gap-2">
             <Sparkles className="h-4 w-4" />
-            {isHe ? "גלו תכנים" : "Explore content"}
+            <CmsText cmsKey="myAdults.exploreContent" />
           </span>
         </Link>
 
@@ -397,7 +404,7 @@ function OwnedGameCard({ game, isHe }: { game: OwnedGame; isHe: boolean }) {
           className="absolute end-3 top-3 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-emerald-400 to-teal-400 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-950 shadow-lg shadow-emerald-500/30"
         >
           <Sparkles className="h-3 w-3" />
-          {isHe ? "שלכם" : "Owned"}
+          <CmsText cmsKey="myAdults.ownedBadge" />
         </span>
       </div>
 
@@ -438,7 +445,7 @@ function OwnedGameCard({ game, isHe }: { game: OwnedGame; isHe: boolean }) {
             style={{ fontFamily: BODY_FONT }}
           >
             <Play className="h-4 w-4" />
-            {isHe ? "פתיחת המשחק" : "Open game"}
+            <CmsText cmsKey="myAdults.openGame" />
           </span>
           <span
             aria-hidden
@@ -496,7 +503,7 @@ function AvailableGameCard({
             still gated. */}
         <span className="absolute end-3 top-3 inline-flex items-center gap-1 rounded-full border border-white/30 bg-black/40 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-[0.18em] text-white backdrop-blur">
           <Sparkles className="h-3 w-3" />
-          {isHe ? "פתחו" : "Unlock"}
+          <CmsText cmsKey="myAdults.unlockBadge" />
         </span>
       </div>
 
@@ -522,7 +529,7 @@ function AvailableGameCard({
             style={{ fontFamily: BODY_FONT }}
           >
             <Sparkles className="h-4 w-4" />
-            {isHe ? "פרטים ורכישה" : "Details & unlock"}
+            <CmsText cmsKey="myAdults.detailsAndUnlock" />
           </span>
           <span
             aria-hidden
