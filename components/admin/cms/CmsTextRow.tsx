@@ -42,6 +42,14 @@ export function CmsTextRow({ row }: { row: CmsTextRowType }) {
   const [baselineHe, setBaselineHe] = useState<string>(row.he_text ?? "");
   const [baselineEn, setBaselineEn] = useState<string>(row.en_text ?? "");
 
+  // is_rich mode — starts at the DB value. Clicking the "enable
+  // rich formatting" toggle in plain rows flips this to true and
+  // marks the row dirty so the next Save promotes the column. We
+  // never auto-demote (rich → plain) — admin would have to manually
+  // strip markup and toggle off (UI for that isn't surfaced yet).
+  const [isRich, setIsRich] = useState<boolean>(row.is_rich);
+  const [baselineIsRich, setBaselineIsRich] = useState<boolean>(row.is_rich);
+
   const [isSaving, setIsSaving] = useState(false);
 
   // Refs onto the underlying <textarea> elements. On Save we read
@@ -50,7 +58,8 @@ export function CmsTextRow({ row }: { row: CmsTextRowType }) {
   const heRef = useRef<HTMLTextAreaElement>(null);
   const enRef = useRef<HTMLTextAreaElement>(null);
 
-  const isDirty = he !== baselineHe || en !== baselineEn;
+  const isDirty =
+    he !== baselineHe || en !== baselineEn || isRich !== baselineIsRich;
 
   async function handleSave() {
     if (isSaving || !isDirty) return;
@@ -60,6 +69,7 @@ export function CmsTextRow({ row }: { row: CmsTextRowType }) {
     // happen in practice, but defends against an SSR/hydration edge).
     const heToSave = heRef.current?.value ?? he;
     const enToSave = enRef.current?.value ?? en;
+    const isRichToSave = isRich;
 
     // Diagnostic — visible in DevTools console + Vercel runtime logs
     // (the server action below also logs). Helps narrow down whether
@@ -69,6 +79,7 @@ export function CmsTextRow({ row }: { row: CmsTextRowType }) {
       key: row.key,
       he: heToSave,
       en: enToSave,
+      is_rich: isRichToSave,
     });
 
     setIsSaving(true);
@@ -77,14 +88,15 @@ export function CmsTextRow({ row }: { row: CmsTextRowType }) {
         key: row.key,
         he: heToSave,
         en: enToSave,
+        is_rich: isRichToSave,
       });
       if (result.ok) {
-        // Reconcile state + baseline to the just-saved values. Done in
-        // sequence so isDirty becomes false after the second setter.
+        // Reconcile state + baseline to the just-saved values.
         setHe(heToSave);
         setEn(enToSave);
         setBaselineHe(heToSave);
         setBaselineEn(enToSave);
+        setBaselineIsRich(isRichToSave);
         toast.success("Saved", {
           description: row.key,
           duration: 2000,
@@ -108,12 +120,8 @@ export function CmsTextRow({ row }: { row: CmsTextRowType }) {
   function handleRevert() {
     setHe(baselineHe);
     setEn(baselineEn);
+    setIsRich(baselineIsRich);
   }
-
-  // Heuristic for "this looks like rich text" — admin sees a tiny hint
-  // when the value carries HTML markup so they know to be careful with
-  // tags. Sprint 5 will add a real preview + a markup helper toolbar.
-  const hasMarkup = /<\/?(em|strong|br)/i.test(he + en);
 
   return (
     <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-4">
@@ -121,15 +129,21 @@ export function CmsTextRow({ row }: { row: CmsTextRowType }) {
       <div className="mb-3 flex items-center justify-between gap-3">
         <code className="text-xs font-medium text-slate-700">{row.key}</code>
         <div className="flex items-center gap-2">
-          {hasMarkup ? (
-            <Badge
-              variant="outline"
-              className="border-amber-300 bg-amber-50 text-[10px] text-amber-700"
-              title="This value contains <em> / <strong> / <br> markup. Preserve the tags when editing."
-            >
-              rich text
-            </Badge>
-          ) : null}
+          <Badge
+            variant="outline"
+            className={
+              isRich
+                ? "border-amber-300 bg-amber-50 text-[10px] text-amber-700"
+                : "border-slate-300 bg-slate-50 text-[10px] text-slate-600"
+            }
+            title={
+              isRich
+                ? "This row accepts the 7-tag allow-list: <em>, <strong>, <br>, <p>, <ul>, <li>, <s>. Attributes are stripped on save."
+                : "Plain text only. Saves with any HTML tag are rejected. Click 'enable rich formatting' below to promote this row."
+            }
+          >
+            {isRich ? "rich text" : "plain text"}
+          </Badge>
           {row.needs_review ? (
             <Badge
               variant="outline"
@@ -160,6 +174,8 @@ export function CmsTextRow({ row }: { row: CmsTextRowType }) {
           value={he}
           onChange={setHe}
           textareaRef={heRef}
+          isRich={isRich}
+          onEnableRich={() => setIsRich(true)}
           placeholder="(empty — public site will fall back to messages/he.json)"
         />
         <LanguageEditor
@@ -170,6 +186,8 @@ export function CmsTextRow({ row }: { row: CmsTextRowType }) {
           value={en}
           onChange={setEn}
           textareaRef={enRef}
+          isRich={isRich}
+          onEnableRich={() => setIsRich(true)}
           placeholder="(empty — public site will fall back to messages/en.json)"
         />
       </div>
@@ -212,6 +230,8 @@ function LanguageEditor({
   value,
   onChange,
   textareaRef,
+  isRich,
+  onEnableRich,
   placeholder,
 }: {
   id: string;
@@ -221,35 +241,55 @@ function LanguageEditor({
   value: string;
   onChange: (v: string) => void;
   textareaRef: RefObject<HTMLTextAreaElement>;
+  isRich: boolean;
+  onEnableRich: () => void;
   placeholder?: string;
 }) {
-  // Preview is shown only when the value actually contains markup —
-  // for plain strings the textarea is the preview. Keeps the UI quiet
-  // on the 90% of keys that are tag-free.
-  const hasMarkup = /<\/?(em|strong|br)\b/i.test(value);
+  // Preview only when the row is rich AND contains markup — for
+  // plain rows there's nothing to render that the textarea doesn't
+  // already show.
+  const hasMarkup = /<\/?(em|strong|br|p|ul|li|s)\b/i.test(value);
+  const showPreview = isRich && hasMarkup;
 
   return (
     <div className="space-y-1.5">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <Label htmlFor={id} className="text-xs font-semibold">
           {label}
         </Label>
-        <div className="flex items-center gap-1">
-          <ToolbarButton
-            onClick={() => wrapSelection(textareaRef.current, "em", onChange)}
-            label="Brand color"
-            preview={<span className="italic text-rose-700">italic red</span>}
-            title="Wrap selected text in <em> (brand red italic on the public site)"
-          />
-          <ToolbarButton
-            onClick={() =>
-              wrapSelection(textareaRef.current, "strong", onChange)
-            }
-            label="Bold"
-            preview={<span className="font-bold">bold</span>}
-            title="Wrap selected text in <strong>"
-          />
-        </div>
+        {isRich ? (
+          <div className="flex items-center gap-1">
+            <ToolbarButton
+              onClick={() =>
+                wrapSelection(textareaRef.current, "em", onChange)
+              }
+              label="Brand color"
+              preview={<span className="italic text-rose-700">italic red</span>}
+              title="Wrap selected text in <em> (brand red italic on the public site)"
+            />
+            <ToolbarButton
+              onClick={() =>
+                wrapSelection(textareaRef.current, "strong", onChange)
+              }
+              label="Bold"
+              preview={<span className="font-bold">bold</span>}
+              title="Wrap selected text in <strong>"
+            />
+          </div>
+        ) : (
+          // Plain mode — replace the toolbar with a single toggle that
+          // promotes this row to rich on Save. Phrased as a hint so
+          // an admin who just wants to type text isn't pushed into
+          // markup mode by accident.
+          <button
+            type="button"
+            onClick={onEnableRich}
+            className="rounded border border-slate-300 bg-white px-2 py-1 text-[11px] font-medium text-slate-600 transition hover:border-slate-400 hover:bg-slate-50 hover:text-slate-900"
+            title="Currently plain text — clicking this flips the row to rich text mode and reveals the <em>/<strong> toolbar. Takes effect on the next Save."
+          >
+            Plain text · enable rich formatting
+          </button>
+        )}
       </div>
 
       <Textarea
@@ -263,7 +303,7 @@ function LanguageEditor({
         placeholder={placeholder}
       />
 
-      {hasMarkup ? (
+      {showPreview ? (
         <div className="rounded-md border border-slate-200 bg-white px-3 py-2">
           <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
             Preview
@@ -271,7 +311,7 @@ function LanguageEditor({
           <div
             dir={dir}
             lang={lang}
-            className="text-sm leading-relaxed text-slate-800 [&_em]:font-serif [&_em]:not-italic [&_em]:text-rose-700 [&_strong]:font-bold"
+            className="text-sm leading-relaxed text-slate-800 [&_em]:font-serif [&_em]:not-italic [&_em]:text-rose-700 [&_strong]:font-bold [&_p]:my-1 [&_ul]:list-disc [&_ul]:ps-5 [&_s]:line-through [&_s]:text-slate-400"
             dangerouslySetInnerHTML={{ __html: normalizeRichText(value) }}
           />
         </div>

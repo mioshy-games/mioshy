@@ -1,56 +1,71 @@
 /**
  * CMS — server-side rich-text sanitisation.
  *
- * History — first implementation used isomorphic-dompurify (a
- * DOMPurify wrapper backed by JSDOM in Node). It worked in local
- * dev + `next build`, but on the Vercel serverless runtime the JSDOM
- * bootstrap silently failed at module load. Result: the action
- * module itself wouldn't import, Next.js wrapped that as a generic
- * "Server Components render" error, and even our outer try/catch in
- * saveCmsText never ran (it's INSIDE the failing module).
+ * Mode-aware allow-list (Sprint 4 #1, migration 083):
  *
- * Replacement (2026-05-13) — pure-regex allow-list. Our policy is
- * narrow enough that we don't need a full HTML parser:
+ *   "plain"  → ZERO tags allowed. Any `<…>` in the input is reported
+ *              as disallowed, the save is rejected, the admin sees a
+ *              clear toast.
+ *   "rich"   → 7-tag allow-list: <em>, <strong>, <br>, <p>, <ul>,
+ *              <li>, <s>. Attributes are still stripped from every
+ *              allowed tag (no <em style="…">, no <strong onclick="…">).
+ *              Any other tag is disallowed and rejects the save.
  *
- *   • Only <em>, <strong>, <br> are allowed (opening or closing).
- *   • NO attributes are allowed on any tag. <em style="…"> is
- *     rejected even though <em> itself is fine.
- *   • Everything else is rejected with a clear error listing the
- *     disallowed tag names.
+ * The mode flows from `cms_texts.is_rich`. Plain rows can never be
+ * "promoted" by accident — the admin has to flip the toggle in the
+ * editor first, which sends `is_rich=true` along with the save.
  *
- * No external dependencies. No JSDOM. No serverless surprises.
- *
- * Still tagged `import "server-only"` to keep the architectural
- * intent (only saveCmsText calls it, never client code) even though
- * there's nothing dangerous to leak any more.
+ * Implementation is pure regex (replaced the original
+ * isomorphic-dompurify dependency after it crashed at module load
+ * on Vercel's serverless runtime — see commit a88cd11). No JSDOM,
+ * no third-party deps, no serverless surprises.
  */
 
 import "server-only";
 
-const ALLOWED_TAGS = ["em", "strong", "br"] as const;
-const ALLOWED_TAG_SET = new Set<string>(ALLOWED_TAGS);
+// 7-tag allow-list for rich mode. All semantic, all safe, all
+// attribute-free after sanitisation.
+const RICH_ALLOWED_TAGS = [
+  "em",
+  "strong",
+  "br",
+  "p",
+  "ul",
+  "li",
+  "s",
+] as const;
+const RICH_ALLOWED_SET = new Set<string>(RICH_ALLOWED_TAGS);
 
 // Matches any tag-like token: `<`, optional `/`, tag name, anything
-// until the next `>`. Captures the tag name. Used by both screening
-// (findDisallowedTags) and rewriting (sanitizeRichText).
+// until the next `>`. Captures the leading-slash group and the tag
+// name. Used by both screening (findDisallowedTags) and rewriting
+// (sanitizeRichText).
 const TAG_RE = /<\s*(\/?)\s*([a-zA-Z][a-zA-Z0-9]*)\b[^>]*>/g;
 
+export type SanitizeMode = "plain" | "rich";
+
 /**
- * Returns a list of tag names found in `html` that are NOT in the
- * allow-list. Produces the error string surfaced to the admin
- * ("found <script>, <iframe>") so they know what to remove before
- * retrying.
+ * Returns a list of tag names in `html` that are NOT permitted under
+ * the given mode. Empty array means the input is acceptable.
+ *
+ *   - In "plain" mode every tag is disallowed.
+ *   - In "rich" mode only tags outside the 7-tag allow-list are.
  */
-export function findDisallowedTags(html: string): string[] {
+export function findDisallowedTags(
+  html: string,
+  mode: SanitizeMode,
+): string[] {
   if (!html) return [];
-  const found = new Set<string>();
-  // Reset regex state for global flag — RE objects with /g carry
-  // lastIndex between invocations; explicit reset is safer.
+  // Reset regex state — RE objects with /g carry lastIndex across
+  // invocations and we don't want a previous call to skip a leading
+  // match.
   TAG_RE.lastIndex = 0;
+  const allowed = mode === "rich" ? RICH_ALLOWED_SET : null;
+  const found = new Set<string>();
   let m: RegExpExecArray | null;
   while ((m = TAG_RE.exec(html)) !== null) {
     const tag = m[2]!.toLowerCase();
-    if (!ALLOWED_TAG_SET.has(tag)) {
+    if (allowed === null || !allowed.has(tag)) {
       found.add(tag);
     }
   }
@@ -65,49 +80,49 @@ export type SanitizeResult =
  * Validate + clean a CMS text value before persisting.
  *
  *   ok: true   → `result.html` is the cleaned input (attributes
- *               stripped, tags normalised to bare form)
- *   ok: false  → save is rejected; `result.disallowed` is the list
- *               of forbidden tag names to surface in the error toast
+ *               stripped on rich-mode tags; plain input pass-through)
+ *   ok: false  → save is rejected; `result.disallowed` lists the
+ *               tag names to surface in the error toast.
  *
  * Empty / null input returns ok:true with empty string — admins may
  * legitimately blank a value to fall back to messages/*.json.
  *
- * Sanitisation strategy:
- *   1. First pass — `findDisallowedTags` rejects on the first
- *      forbidden tag. We don't silently strip; better to surface
- *      the problem so the admin knows what was removed.
- *   2. Second pass — rewrite every allowed tag to its bare form
- *      (no attributes). `<em onclick="bad()">x</em>` becomes
- *      `<em>x</em>`. `<br />` and `<br>` both normalise to `<br />`.
- *      Closing tags become `</em>` / `</strong>` (no closing tag
- *      for `<br>` since it's void).
+ * Rewriting (rich mode only):
+ *   - `<em onclick="…">` → `<em>` (attributes stripped)
+ *   - `<br>` / `<br/>` / `<br />` → `<br />` (normalised)
+ *   - `</br>` (illegal in HTML) → dropped (matches HTML5 spec — a
+ *     closing tag on a void element would create a phantom second
+ *     <br> in the DOM)
  */
-export function sanitizeRichText(html: string): SanitizeResult {
+export function sanitizeRichText(
+  html: string,
+  mode: SanitizeMode,
+): SanitizeResult {
   if (!html) return { ok: true, html: "" };
 
-  const disallowed = findDisallowedTags(html);
+  const disallowed = findDisallowedTags(html, mode);
   if (disallowed.length > 0) {
     return { ok: false, disallowed };
   }
 
-  // Rewrite each matched tag to its bare form. This wipes any
-  // attribute payload like style, onclick, data-*, etc. Even though
-  // findDisallowedTags caught any malicious TAGS, attributes on the
-  // allowed tags could still smuggle behaviour.
+  // Plain mode passed the screen — meaning there are NO tags in the
+  // input — so the cleaned output is identical to the input.
+  if (mode === "plain") {
+    return { ok: true, html };
+  }
+
+  // Rich mode — rewrite each allowed tag to its bare form.
   TAG_RE.lastIndex = 0;
   const clean = html.replace(TAG_RE, (_match, slash: string, name: string) => {
     const tag = name.toLowerCase();
-    // Closing tag, e.g. </em>
     if (slash === "/") {
-      // <br> is void — a closing tag shouldn't really exist, but if
-      // someone wrote one, drop it (don't emit </br>, which the HTML
-      // parser would parse as a SECOND <br>).
+      // <br> is void — drop any phantom </br>.
       if (tag === "br") return "";
       return `</${tag}>`;
     }
-    // Opening tag. For <br>, emit the self-closing form so the
-    // resulting HTML is identical between server render and
-    // dangerouslySetInnerHTML re-parse.
+    // Opening / self-closing. <br> always becomes <br /> so the
+    // server-rendered HTML matches the dangerouslySetInnerHTML
+    // re-parse on the client.
     if (tag === "br") return "<br />";
     return `<${tag}>`;
   });

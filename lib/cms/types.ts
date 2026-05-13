@@ -17,6 +17,14 @@ export type CmsTextRow = {
   en_font_weight: string | null;
   en_line_height: string | null;
   needs_review: boolean;
+  /**
+   * Sprint 4 #1 — false means plain text only. Sanitiser rejects
+   * any HTML tag on save; renderer outputs as a text node. True
+   * enables the rich-text toolbar (em / strong / br / p / ul / li
+   * / s) in the CMS UI; sanitiser accepts that 7-tag allow-list;
+   * renderer outputs via dangerouslySetInnerHTML.
+   */
+  is_rich: boolean;
   updated_at: string;
   updated_by: string | null;
 };

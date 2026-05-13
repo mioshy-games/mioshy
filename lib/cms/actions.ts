@@ -37,6 +37,12 @@ const SaveInput = z.object({
   key: z.string().min(1).max(200),
   he: z.string(),
   en: z.string(),
+  // Sprint 4 #1 — every save carries the mode the editor was in.
+  // The toolbar can promote a row from plain → rich by setting this
+  // true on save. We never auto-demote (rich → plain) because that
+  // would silently strip markup; admins do that explicitly by
+  // editing the value, removing tags, and saving with toggle off.
+  is_rich: z.boolean(),
 });
 
 export type SaveResult =
@@ -74,27 +80,27 @@ export async function saveCmsText(input: unknown): Promise<SaveResult> {
     const { supabase, user } = session;
 
     // ── Sanitize (isolated try/catch) ──────────────────────────────
-    // The CMS toolbar emits only <em> / <strong> wrappers, but the
-    // textarea is a free-text field — an admin (or a paste of HTML
-    // from outside) could carry tags we don't want in the DB. Reject
-    // the save BEFORE writing if anything outside <em>/<strong>/<br>
-    // shows up. DOMPurify is the second-pass scrubber even for the
-    // allowed tags (strips attributes like style/onclick).
+    // Mode flows from the editor: row.is_rich = false → plain mode
+    // (rejects ANY tag), is_rich = true → rich mode (allows the
+    // 7-tag list: em / strong / br / p / ul / li / s, attributes
+    // stripped). Migration 083 set this column to true on the 31
+    // rows that already contained markup at seed time.
     //
-    // The inner try/catch is so a DOMPurify/JSDOM throw doesn't
-    // crash the whole action — admin sees a clean error toast saying
-    // "couldn't sanitise this value, please simplify the markup".
+    // Inner try/catch is defensive — the regex sanitiser is pure
+    // and shouldn't throw, but we keep the safety net so any future
+    // change to sanitize.ts can't leak a 500 to the client.
+    const mode = parsed.data.is_rich ? "rich" : "plain";
     let heChecked, enChecked;
     try {
-      heChecked = sanitizeRichText(parsed.data.he);
-      enChecked = sanitizeRichText(parsed.data.en);
+      heChecked = sanitizeRichText(parsed.data.he, mode);
+      enChecked = sanitizeRichText(parsed.data.en, mode);
     } catch (err) {
       // eslint-disable-next-line no-console
       console.warn("[cms-save] sanitize threw:", err);
       return {
         ok: false,
         error:
-          "Couldn't sanitise the text. Try simplifying the markup (use only <em>, <strong>, <br>) and save again. " +
+          "Couldn't sanitise the text. " +
           (err instanceof Error ? err.message : String(err)),
       };
     }
@@ -111,11 +117,14 @@ export async function saveCmsText(input: unknown): Promise<SaveResult> {
           `English contains disallowed tags: <${enChecked.disallowed.join(">, <")}>`,
         );
       }
+      const allowed =
+        mode === "rich"
+          ? "<em>, <strong>, <br>, <p>, <ul>, <li>, <s>"
+          : "no markup (this row is marked plain text — click the toggle above the textarea to enable rich formatting)";
       return {
         ok: false,
         error:
-          parts.join(". ") +
-          ". Only <em>, <strong>, and <br> are permitted in CMS text.",
+          parts.join(". ") + ". Allowed in this row: " + allowed + ".",
       };
     }
 
@@ -141,6 +150,7 @@ export async function saveCmsText(input: unknown): Promise<SaveResult> {
       .update({
         he_text: heNormalized,
         en_text: enNormalized,
+        is_rich: parsed.data.is_rich,
         updated_by: user.id,
         // Edit clears the cross-language drift flag — admin took
         // ownership of both languages with this save. Sprint 5 may
