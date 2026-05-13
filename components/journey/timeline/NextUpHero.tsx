@@ -45,7 +45,7 @@ export function NextUpHero({ entry, locale, total, completed }: Props) {
 
   if (!entry) {
     if (total > 0 && completed === total) {
-      return <VictoryHero isHe={isHe} total={total} />;
+      return <VictoryHero total={total} />;
     }
     return null;
   }
@@ -253,7 +253,7 @@ function ActiveNextUpHero({
 // Victory state - everything is done
 // ------------------------------------------------------------
 
-function VictoryHero({ isHe: _isHe, total }: { isHe: boolean; total: number }) {
+function VictoryHero({ total }: { total: number }) {
   const ariaVictory = useCmsText("journeyTimeline.nextUp.ariaVictory").text;
   const bodyTpl = useCmsText("journeyTimeline.nextUp.victoryBody").text;
   const body = bodyTpl.replace("{total}", String(total));
