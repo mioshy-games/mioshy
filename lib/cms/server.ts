@@ -1,6 +1,5 @@
 import "server-only";
 
-import { unstable_cache } from "next/cache";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { CmsTextRow, CmsPage } from "./types";
 import { normalizeRowsForRender } from "./render";
@@ -9,25 +8,32 @@ import { normalizeRowsForRender } from "./render";
  * CMS — server-only loader.
  *
  * Returns every CMS row tagged with the given `page`, e.g.
- * `homepage` for the marketing index. Wrapped in `unstable_cache` so
- * the database is hit at most once per `revalidate` window per page
- * key — except the public site reads from the cache, and every save
- * server action in lib/cms/actions.ts calls `revalidateTag('cms-texts')`
- * to clear it explicitly.
+ * `homepage` for the marketing index. NO caching layer — every page
+ * render does one Supabase query keyed on `page` (indexed via
+ * `cms_texts_page_idx`, sub-100ms in practice).
  *
- * History — Phase 2 we tried `unstable_cache` first and the cache
- * served stale forever because we had no publish path to call
- * `revalidateTag`. With Sprint 2 we DO have the action, so the
- * revalidation contract works as documented. The 60s TTL is a
- * background safety net; the primary refresh mechanism is the tag
- * invalidation from saves.
+ * History (this is the SECOND time we've dropped the cache):
+ *   Phase 2 — wrapped in unstable_cache(... revalidate: 60). Vercel's
+ *     Data Cache served stale for 5+ minutes even past the TTL.
+ *     Dropped to read-on-every-render and it worked.
+ *   Sprint 2 — added Save server action that calls
+ *     revalidateTag('cms-texts'), and re-introduced unstable_cache
+ *     with the matching tag. Per the Next.js contract, save +
+ *     revalidateTag should clear the cache. In practice Itzik
+ *     observed Save updating the DB but /he still serving the OLD
+ *     copy ~5+ minutes later. The tag invalidation isn't propagating
+ *     to Vercel's Data Cache reliably for unstable_cache fns.
  *
- * If Supabase fails (network blip, table missing, RLS denial) the
- * inner fn returns `[]` — the cache stores the empty array, the
- * public site silently falls back to next-intl via the JSON files
- * and never breaks because of CMS issues.
+ *   Verdict — `unstable_cache` + `revalidateTag` is unreliable for
+ *   our use case. Dropping it again. The DB query is fast enough; if
+ *   we ever need caching we'll use Supabase's PostgREST built-in
+ *   cache or a Redis layer with explicit invalidation we control.
+ *
+ * If Supabase fails (network blip, table missing, RLS denial) this
+ * returns `[]` — the public site silently falls back to next-intl
+ * via the JSON files and never breaks because of CMS issues.
  */
-async function loadCmsTextsForPageUncached(
+export async function loadCmsTextsForPage(
   page: CmsPage,
 ): Promise<CmsTextRow[]> {
   try {
@@ -56,24 +62,32 @@ async function loadCmsTextsForPageUncached(
       .eq("page", page);
 
     if (error) {
+      // eslint-disable-next-line no-console
       console.warn("[cms] loadCmsTextsForPage failed:", error.message);
       return [];
     }
-    return normalizeRowsForRender((data ?? []) as unknown as CmsTextRow[]);
+
+    const rows = normalizeRowsForRender((data ?? []) as unknown as CmsTextRow[]);
+
+    // Diagnostic — verify which value the loader actually got from
+    // the DB on each render. Picks the hero.tag key for a stable
+    // probe across HE/EN. Visible in Vercel runtime logs. Retire
+    // after the cache story stabilises.
+    const probe = rows.find((r) => r.key === "homeV2.hero.tag");
+    // eslint-disable-next-line no-console
+    console.log("[cms-load] page=" + page, {
+      rowCount: rows.length,
+      heroTagHe: probe?.he_text?.slice(0, 50),
+      heroTagUpdatedAt: probe?.updated_at,
+    });
+
+    return rows;
   } catch (err) {
+    // eslint-disable-next-line no-console
     console.warn("[cms] loadCmsTextsForPage threw:", err);
     return [];
   }
 }
-
-export const loadCmsTextsForPage = unstable_cache(
-  loadCmsTextsForPageUncached,
-  ["cms-texts-by-page"],
-  {
-    revalidate: 60,
-    tags: ["cms-texts"],
-  },
-);
 
 /**
  * Same loader but for the entire CMS at once. Used by the admin
