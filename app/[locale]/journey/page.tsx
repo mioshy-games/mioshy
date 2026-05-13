@@ -29,7 +29,8 @@
  */
 
 import type { Metadata } from "next";
-import { getTranslations, setRequestLocale } from "next-intl/server";
+import { setRequestLocale } from "next-intl/server";
+import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
 import { notFound } from "next/navigation";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
 import { unstable_noStore as noStore } from "next/cache";
@@ -68,7 +69,13 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = params;
   const base = siteUrl();
-  const t = await getTranslations({ locale, namespace: "journeyHub" });
+  // CMS-backed translator: cms_texts row wins; messages/<locale>.json
+  // is the fallback. Drop-in for `getTranslations({...})`.
+  const t = await getCmsTranslations({
+    locale: locale === "he" ? "he" : "en",
+    namespace: "journeyHub",
+    page: "journey",
+  });
   const title = t("metaTitle");
   const description = t("metaDescription");
   const canonical = `${base}/${locale}/journey`;
@@ -122,7 +129,12 @@ export default async function JourneyMarketingPage({
   }
   setRequestLocale(locale);
   const isHe = locale === "he";
-  const t = await getTranslations({ locale, namespace: "journeyHub" });
+  // CMS-backed translator (see lib/cms/getCmsTranslations.ts).
+  const t = await getCmsTranslations({
+    locale: isHe ? "he" : "en",
+    namespace: "journeyHub",
+    page: "journey",
+  });
 
   // ── State-aware CTA wiring ──────────────────────────────────────────────
   const supabase = await createServerSupabaseClient();

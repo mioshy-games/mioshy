@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import { getTranslations } from "next-intl/server";
+import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
 import { unstable_noStore as noStore } from "next/cache";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
 import { Link } from "@/navigation";
@@ -57,7 +57,11 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = params;
   const base = siteUrl();
-  const t = await getTranslations({ locale, namespace: "gamesHub" });
+  const t = await getCmsTranslations({
+    locale: locale === "he" ? "he" : "en",
+    namespace: "gamesHub",
+    page: "games",
+  });
   const title = `Mioshy - ${t("title")}`;
   const description = t("subtitle");
   const canonical = `${base}/${locale}/games`;
@@ -114,7 +118,11 @@ export default async function GamesHubPage({
   noStore();
   const locale = params.locale;
   const isHe = locale === "he";
-  const t = await getTranslations({ locale, namespace: "gamesHub" });
+  const t = await getCmsTranslations({
+    locale: isHe ? "he" : "en",
+    namespace: "gamesHub",
+    page: "games",
+  });
 
   const supabase = await createServerSupabaseClient();
 
