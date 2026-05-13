@@ -43,8 +43,18 @@ export type SaveResult =
   | { ok: false; error: string };
 
 export async function saveCmsText(input: unknown): Promise<SaveResult> {
+  // Diagnostic — verify what the server actually receives. Lets us
+  // tell apart client-side (state stale) vs server-side (normalization
+  // or supabase) issues when a save lands wrong. Visible in Vercel
+  // runtime logs. Safe to leave for now; will retire once we've
+  // verified the save flow is solid for a week or two.
+  // eslint-disable-next-line no-console
+  console.log("[cms-save] raw input:", JSON.stringify(input));
+
   const parsed = SaveInput.safeParse(input);
   if (!parsed.success) {
+    // eslint-disable-next-line no-console
+    console.warn("[cms-save] validation failed:", parsed.error.format());
     return { ok: false, error: "Invalid input shape." };
   }
 
@@ -61,6 +71,16 @@ export async function saveCmsText(input: unknown): Promise<SaveResult> {
   const heNormalized = normalizeRichText(parsed.data.he);
   const enNormalized = normalizeRichText(parsed.data.en);
 
+  // eslint-disable-next-line no-console
+  console.log("[cms-save] writing", {
+    key: parsed.data.key,
+    he_len: heNormalized.length,
+    en_len: enNormalized.length,
+    he_preview: heNormalized.slice(0, 60),
+    en_preview: enNormalized.slice(0, 60),
+    updated_by: user.id,
+  });
+
   const { error } = await supabase
     .from("cms_texts")
     .update({
@@ -75,6 +95,8 @@ export async function saveCmsText(input: unknown): Promise<SaveResult> {
     .eq("key", parsed.data.key);
 
   if (error) {
+    // eslint-disable-next-line no-console
+    console.warn("[cms-save] supabase update failed:", error.message);
     return { ok: false, error: error.message };
   }
 

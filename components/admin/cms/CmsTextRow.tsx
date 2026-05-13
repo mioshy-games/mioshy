@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,9 +19,20 @@ import type { CmsTextRow as CmsTextRowType } from "@/lib/cms/types";
  * only used as the initial value. After a successful save we update
  * the "baseline" to the new value so the dirty-check works for
  * subsequent edits without needing a server refetch.
+ *
+ * Fix (2026-05-13) — the first MVP version used
+ * `useTransition(async () => await saveCmsText({he, en}))`. React
+ * 18.3's startTransition treats the async closure specially: in
+ * practice we observed Save sending the closed-over he/en from
+ * BEFORE the user typed (DB timestamp moved, value didn't). Replaced
+ * with plain useState(isSaving) + an explicit snapshot of the
+ * textarea values read straight from the DOM via refs at the moment
+ * the user clicks Save — bypasses any closure-staleness ambiguity.
  */
 export function CmsTextRow({ row }: { row: CmsTextRowType }) {
-  // Editor state — what's currently typed.
+  // Editor state — what's currently typed. We keep these for the
+  // "dirty" check + the Revert button. The actual save reads from the
+  // textarea refs below (DOM is the source of truth at submit time).
   const [he, setHe] = useState<string>(row.he_text ?? "");
   const [en, setEn] = useState<string>(row.en_text ?? "");
 
@@ -30,16 +41,49 @@ export function CmsTextRow({ row }: { row: CmsTextRowType }) {
   const [baselineHe, setBaselineHe] = useState<string>(row.he_text ?? "");
   const [baselineEn, setBaselineEn] = useState<string>(row.en_text ?? "");
 
-  const [isPending, startTransition] = useTransition();
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Refs onto the underlying <textarea> elements. On Save we read
+  // textarea.value directly — this is the most current value the DOM
+  // holds, regardless of any React batching / closure timing.
+  const heRef = useRef<HTMLTextAreaElement>(null);
+  const enRef = useRef<HTMLTextAreaElement>(null);
 
   const isDirty = he !== baselineHe || en !== baselineEn;
 
-  function handleSave() {
-    startTransition(async () => {
-      const result = await saveCmsText({ key: row.key, he, en });
+  async function handleSave() {
+    if (isSaving || !isDirty) return;
+
+    // Source of truth at submit-time: the DOM value of each textarea.
+    // Fall back to React state if the ref isn't attached (shouldn't
+    // happen in practice, but defends against an SSR/hydration edge).
+    const heToSave = heRef.current?.value ?? he;
+    const enToSave = enRef.current?.value ?? en;
+
+    // Diagnostic — visible in DevTools console + Vercel runtime logs
+    // (the server action below also logs). Helps narrow down whether
+    // the client or the server is the source of any future drift.
+    // eslint-disable-next-line no-console
+    console.log("[cms-save] sending", {
+      key: row.key,
+      he: heToSave,
+      en: enToSave,
+    });
+
+    setIsSaving(true);
+    try {
+      const result = await saveCmsText({
+        key: row.key,
+        he: heToSave,
+        en: enToSave,
+      });
       if (result.ok) {
-        setBaselineHe(he);
-        setBaselineEn(en);
+        // Reconcile state + baseline to the just-saved values. Done in
+        // sequence so isDirty becomes false after the second setter.
+        setHe(heToSave);
+        setEn(enToSave);
+        setBaselineHe(heToSave);
+        setBaselineEn(enToSave);
         toast.success("Saved", {
           description: row.key,
           duration: 2000,
@@ -50,7 +94,14 @@ export function CmsTextRow({ row }: { row: CmsTextRowType }) {
           duration: 5000,
         });
       }
-    });
+    } catch (err) {
+      toast.error("Save failed", {
+        description: err instanceof Error ? err.message : String(err),
+        duration: 5000,
+      });
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   function handleRevert() {
@@ -106,6 +157,7 @@ export function CmsTextRow({ row }: { row: CmsTextRowType }) {
           </Label>
           <Textarea
             id={`he-${row.id}`}
+            ref={heRef}
             dir="rtl"
             lang="he"
             value={he}
@@ -120,6 +172,7 @@ export function CmsTextRow({ row }: { row: CmsTextRowType }) {
           </Label>
           <Textarea
             id={`en-${row.id}`}
+            ref={enRef}
             dir="ltr"
             lang="en"
             value={en}
@@ -136,16 +189,16 @@ export function CmsTextRow({ row }: { row: CmsTextRowType }) {
           variant="ghost"
           size="sm"
           onClick={handleRevert}
-          disabled={!isDirty || isPending}
+          disabled={!isDirty || isSaving}
         >
           Revert
         </Button>
         <Button
           size="sm"
           onClick={handleSave}
-          disabled={!isDirty || isPending}
+          disabled={!isDirty || isSaving}
         >
-          {isPending ? "Saving…" : "Save"}
+          {isSaving ? "Saving…" : "Save"}
         </Button>
       </div>
     </div>
