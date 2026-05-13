@@ -94,13 +94,25 @@ export async function loadCmsTextsForPage(
  * Same loader but for the entire CMS at once. Used by the admin
  * dashboard which paints every page in a single screen. Bypasses the
  * cache — admins want to see their just-saved edits immediately, and
- * the cost of refetching ~800 rows once per admin pageview is
+ * the cost of refetching all rows once per admin pageview is
  * negligible.
+ *
+ * BUG FIX 2026-05-13 — Supabase JS client defaults every PostgREST
+ * request to a max of 1000 rows. We crossed that threshold after
+ * Sprint 4 #3 Phase 2 (1184 rows as of writing), so the admin UI was
+ * silently dropping ~184 keys from the back of the alphabet — entire
+ * sections invisible, "0 keys" tabs that actually had dozens. Adding
+ * an explicit `.range(0, 9999)` raises the ceiling well past anything
+ * we'll hit before Sprint 6. If we ever exceed 10k rows the admin
+ * needs pagination anyway (the UI mounts one editor per row).
  */
 export async function loadAllCmsTexts(): Promise<CmsTextRow[]> {
   try {
     const sb = await createServerSupabaseClient();
-    const { data, error } = await sb.from("cms_texts").select("*");
+    const { data, error } = await sb
+      .from("cms_texts")
+      .select("*")
+      .range(0, 9999);
     if (error) {
       console.warn("[cms] loadAllCmsTexts failed:", error.message);
       return [];

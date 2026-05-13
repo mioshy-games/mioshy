@@ -18,10 +18,20 @@ const PAGE_LABELS: Record<CmsPage, string> = {
   shared: "Shared",
 };
 
-// Sprint-2 MVP — only the homepage tab is enabled. The rest light up
-// when their components are migrated to useCmsText (planned for
-// Sprints 4–5 after Itzik validates the MVP on Homepage).
-const ENABLED_PAGES = new Set<CmsPage>(["homepage"]);
+// Sprint 4 #3 Phase 2 (A–D) shipped — every public route is now
+// migrated to <CmsText>/useCmsText/getCmsTranslations, so every tab
+// has rows worth editing. The `shared` bucket houses cross-route
+// keys (nav, footer, legal, auth, paywall, pricing) and is also
+// active. If a new tab ever needs to be gated in the future, drop
+// it from this set.
+const ENABLED_PAGES = new Set<CmsPage>([
+  "homepage",
+  "journey",
+  "games",
+  "mioshy-sex",
+  "my",
+  "shared",
+]);
 
 /**
  * CmsContentEditor — top-level admin UI for editing CMS texts.
@@ -41,6 +51,19 @@ const ENABLED_PAGES = new Set<CmsPage>(["homepage"]);
  */
 export function CmsContentEditor({ rows }: { rows: CmsTextRow[] }) {
   const [page, setPage] = useState<CmsPage>("homepage");
+
+  // Per-tab key counts — shown inline on every tab pill so admins can
+  // see at a glance how much content lives under each bucket without
+  // having to click through. Memoised on `rows` alone (page change
+  // doesn't shift the totals). Falls back to 0 for pages with no
+  // rows yet (e.g. a freshly-added bucket pre-seed).
+  const keysByPage = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const row of rows) {
+      map.set(row.page, (map.get(row.page) ?? 0) + 1);
+    }
+    return map;
+  }, [rows]);
 
   // Per-page filtering + section grouping. Memoised on `rows` + `page`
   // so the only re-computation cost is when the admin switches tabs.
@@ -99,6 +122,7 @@ export function CmsContentEditor({ rows }: { rows: CmsTextRow[] }) {
         <TabsList className="grid w-full grid-cols-6">
           {CMS_PAGES.map((p) => {
             const enabled = ENABLED_PAGES.has(p);
+            const count = keysByPage.get(p) ?? 0;
             return (
               <TabsTrigger
                 key={p}
@@ -106,14 +130,18 @@ export function CmsContentEditor({ rows }: { rows: CmsTextRow[] }) {
                 disabled={!enabled}
                 title={
                   enabled
-                    ? undefined
+                    ? `${count} keys`
                     : "Coming soon — components for this page haven't been migrated to the CMS yet."
                 }
               >
                 {PAGE_LABELS[p]}
-                {!enabled ? (
+                {enabled ? (
+                  <span className="ms-1 font-mono text-[10px] opacity-60 tabular-nums">
+                    ({count})
+                  </span>
+                ) : (
                   <span className="ms-1 text-[10px] opacity-60">soon</span>
-                ) : null}
+                )}
               </TabsTrigger>
             );
           })}
