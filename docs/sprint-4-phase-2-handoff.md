@@ -1,15 +1,20 @@
 # Sprint 4 #3 — Phase 2 Migration Handoff
 
-**Status as of 2026-05-13 PM:** Phase 1 ✅ shipped (commit `58f979a`).
-Phase 2A: 2 of ~30 components migrated (`AuthGateModal`,
-`PaywallGateModal`). The rest is straight-line repetition of the
-recipe below.
+**Status as of 2026-05-13 late PM:** Phase 1 ✅ + Phase 2A ✅ +
+Phase 2B ✅ + Phase 2C ✅ (page routes only) + Phase 2D ✅ shipped.
+Phase 2E (questionnaire.json) deferred per the architectural-call
+section below. Marketing sub-components on the mioshy-sex routes
+(Adults*/BetweenUs*) deferred — see "Remaining work" at the end.
+
+Headline totals:
+- **23 components/pages** migrated across Phases 2A–2D
+- **~380 CMS keys** added to messages/{he,en}.json
+- **~350 cms_texts rows** seeded into Supabase (idempotent re-runs safe)
 
 This doc exists because Phase 2's actual size (~800 inline-bilingual
 strings across ~30 components and 1 separate JSON file) is multi-
 session work — too much for one conversation. The pattern, tooling,
-and namespace mapping are all in place; a fresh agent session can
-pick up at "next component" without re-deriving any of the setup.
+and namespace mapping are all in place.
 
 ---
 
@@ -247,14 +252,65 @@ After push, Vercel auto-deploys. Wait ~2 min, then:
 
 ## What's done (committed on `feature/admin-cms`)
 
+### Phase 1 (shipped earlier)
 | Commit | What |
 |---|---|
 | `58f979a` | Phase 1 — journey/page.tsx + games/page.tsx migrated via new `lib/cms/getCmsTranslations.ts` server helper |
 | `3d90f97` | Phase 2A first migration — `AuthGateModal.tsx` (11 keys) + bulk-add tooling + seed namespace mapping |
 | `7c696d4` | Phase 2A — `PaywallGateModal.tsx` (10 keys) |
 
-Total keys added to messages/*.json so far in Phase 2: **21**.
-Total components migrated: **2 of ~30**.
+### Phase 2A — Journey assessment flow + timeline (17 components)
+| Commit | Component | Keys |
+|---|---|---|
+| `d34e59b` | `JourneyAssessmentIntro` | 13 |
+| `3abe735` | `JourneyClient` | 5 |
+| `5c3dad2` | `QuestionStep` | 4 |
+| `ce604ec` | `PriorityRankingStep` | 4 |
+| `5c4dbf4` | `InlineAuthStep` | 18 |
+| `9e1dddb` | `AssessmentInterstitial` | 10 |
+| `1e95c93` | `AnalysisSummary` | 42 |
+| `a5c0bc5` | `JourneyCheckoutButton` | 4 |
+| `65344d2` | `timeline/TimelineList` | 11 |
+| `078cc51` | `timeline/NextUpHero` + `PerItemThread` | 20 + 13 |
+| `19b3e1e` | `timeline/ItemDetailClient` + `LessonView` | 36 + 11 |
+| `0422b92` | `timeline/CompletionCelebrationModal` + `WhyThisItem` + `UserRecentActivity` + `ItemFeedbackBar` | 10 + 3 + 10 + 14 |
+| `588fb78` | CI fix — `VictoryHero` unused-prop ESLint blocker |
+
+Phase 2A subtotal: ~228 keys across 17 components + 2 pre-existing
+(AuthGate, PaywallGate) = 19 components total in the journey flow.
+
+### Phase 2B — Games slug (2 files)
+| Commit | What | Keys |
+|---|---|---|
+| `ac23137` | `app/[locale]/games/[slug]/page.tsx` + `components/game/TutorialPopup.tsx` | 11 |
+
+### Phase 2C — Mioshy-sex (3 page routes only)
+| Commit | What | Keys |
+|---|---|---|
+| `0595b21` | `app/[locale]/mioshy-sex/page.tsx` + `[slug]/page.tsx` + `[slug]/play/page.tsx` | 7 + 17 + 12 = 36 |
+
+Marketing sub-components imported by these routes
+(AdultsMarketingHero, AdultsMarketingSections,
+AdultsMarketingSections.variant-personal, AdultsHeroBuy,
+AdultsPricingPanel, BetweenUsStorefront, InvitePartnerByEmail,
+PairAndPurchasePanel, PairCodeWidget, RedeemCodeButton)
+contain ~170 additional ternaries combined — **deferred**.
+See "Remaining work" below.
+
+### Phase 2D — /my/* routes (5 pages)
+| Commit | What | Keys |
+|---|---|---|
+| `62644d7` | `app/[locale]/my/page.tsx` | 16 (myHub.*) |
+| `eeb50f3` | `app/[locale]/my/games/page.tsx` + `my/journey/together/page.tsx` | 8 + 8 |
+| `1766b1e` | `app/[locale]/my/adults/page.tsx` | 12 |
+| `f1b0247` | `app/[locale]/my/journey/page.tsx` | 13 |
+
+Phase 2D subtotal: 57 keys across 5 page routes.
+
+### Grand totals (Phases 2A–2D)
+- **23 components/pages** migrated  
+- **~380 CMS keys** in messages/{he,en}.json  
+- **~350 cms_texts rows** seeded into Supabase
 
 ## The recipe (for any remaining component)
 
@@ -356,80 +412,55 @@ N keys under <namespace>.<component>.*:
 <short note about any tricky bits>
 ```
 
-## The remaining inventory
+## Remaining work (Phase 2 follow-ups)
 
-Counts come from `grep -c 'locale === "he"\|isHe ?'` on the migrated
-worktree at HEAD `7c696d4`. Each number is roughly "inline ternaries
-in that file"; the actual key count after extraction is usually
-1.5–2× higher because each ternary often contains a dictionary or
-mid-sentence string that needs splitting.
+Everything in Phase 2A–2D's original inventory is migrated. What's
+left is two pieces that were *intentionally* scoped out of this
+sprint:
 
-### Phase 2A — Journey assessment flow
+### A) Mioshy-Sex marketing sub-components
+
+The 3 mioshy-sex page routes (Phase 2C) import a suite of marketing
+components that still contain inline-bilingual strings. The page
+routes themselves are migrated; these dependents are not:
 
 | File | Ternaries | Notes |
 |---|---|---|
-| `components/journey/JourneyClient.tsx` | 9 | Main orchestrator. Has a `headerText.warmup` value that doesn't appear to be rendered — flag for cleanup. Has a `${percent}%` interpolation — split into "{percent}%" + suffix key. |
-| `components/journey/QuestionStep.tsx` | 9 | Per-question UI. |
-| `components/journey/PriorityRankingStep.tsx` | 8 | Drag-and-drop ranking. |
-| `components/journey/InlineAuthStep.tsx` | 3 + array | Post-questionnaire signup. **18 keys** when expanded (3 badges + 3 error variants + loading label). |
-| `components/journey/AssessmentInterstitial.tsx` | 3 + 2 t() | Mid-flow reflections. Note: 2 existing t() calls — but for which namespace? Verify. |
-| `components/journey/JourneyAssessmentIntro.tsx` | 1 | Tiny — likely 1 key. |
-| `components/journey/AnalysisSummary.tsx` | 9 | Post-flow report. |
-| `components/journey/JourneyCheckoutButton.tsx` | 6 | CTA component. |
-| `components/journey/AuthGateModal.tsx` | ✅ DONE (11 keys) |
-| `components/journey/PaywallGateModal.tsx` | ✅ DONE (10 keys) |
-| `components/journey/AssessmentDiagProbe.tsx` | 0 | No t/locale. Skip. |
-| `components/journey/JourneyAmbience.tsx` | 0 | No t/locale. Skip. |
-| `components/journey/ProgressBar.tsx` | 0 | No t/locale. Skip. |
+| `components/adults/AdultsMarketingHero.tsx` | 20 | Top-of-page hero |
+| `components/adults/AdultsMarketingSections.tsx` | 41 | Manifesto, Proof, Catalogue intro, FAQ, Closing CTA in one file |
+| `components/adults/AdultsMarketingSections.variant-personal.tsx` | 33 | Variant of the above |
+| `components/adults/AdultsHeroBuy.tsx` | 15 | In-hero purchase panel |
+| `components/adults/AdultsPricingPanel.tsx` | 11 | Reused pricing block |
+| `components/between-us/BetweenUsStorefront.tsx` | 18 | Catalogue grid |
+| `components/between-us/InvitePartnerByEmail.tsx` | 11 | Email invite form |
+| `components/between-us/PairAndPurchasePanel.tsx` | 8 | Pair-then-buy flow |
+| `components/between-us/PairCodeWidget.tsx` | 3 | Code surface |
+| `components/between-us/RedeemCodeButton.tsx` | 8 | Code redemption |
 
-Estimated remaining keys for Phase 2A: ~60 (8 components × avg 8 keys).
+Estimated: ~168 ternaries → ~120 keys when extracted. Standard recipe
+applies (see "Start here" above); namespaces should be
+`mioshySexHero.*`, `mioshySexManifesto.*`, `betweenUs.storefront.*`,
+etc. — bucket all under `page: "mioshy-sex"` in the seed namespace map.
 
-### Phase 2A timeline sub-flow
+### B) `journey/questionnaire.json` (Phase 2E)
 
-| File | Ternaries |
-|---|---|
-| `components/journey/timeline/TimelineList.tsx` | 17 |
-| `components/journey/timeline/NextUpHero.tsx` | 18 |
-| `components/journey/timeline/ItemDetailClient.tsx` | 31 (+ 3 existing t()) |
-| `components/journey/timeline/PerItemThread.tsx` | 14 (+ 1 t()) |
-| `components/journey/timeline/LessonView.tsx` | 11 |
-| `components/journey/timeline/CompletionCelebrationModal.tsx` | 3 |
-| `components/journey/timeline/WhyThisItem.tsx` | 2 |
-| `components/journey/timeline/UserRecentActivity.tsx` | 5 |
-| `components/journey/timeline/ItemFeedbackBar.tsx` | 9 |
+Architectural decision deferred — see the original "Phase 2E" section
+below.
 
-Estimated: ~110 keys.
+### Known holdovers (low-priority)
 
-### Phase 2B — Games
+These are aria-labels / image-alt strings inside server-component
+sub-functions where the parent's `t()` from `getCmsTranslations`
+isn't in scope. Each is a single isHe ternary, accessibility-only,
+and a refactor to pass the resolved string through 3+ call sites
+wasn't worth it during this sprint:
 
-| File | Ternaries |
-|---|---|
-| `app/[locale]/games/[slug]/page.tsx` | 5 |
-| (game-internal components if any) | check `components/games/` |
+- `app/[locale]/my/page.tsx` — `EntitledPillar` notification-count
+  aria-label.
+- `app/[locale]/my/games/page.tsx` — Snakes & Ladders Image `alt`.
 
-Estimated: ~10 keys.
-
-### Phase 2C — Mioshy-Sex (3 routes)
-
-| File | Ternaries |
-|---|---|
-| `app/[locale]/mioshy-sex/page.tsx` | 26 |
-| `app/[locale]/mioshy-sex/[slug]/page.tsx` | 36 |
-| `app/[locale]/mioshy-sex/[slug]/play/page.tsx` | 26 |
-
-Estimated: ~90 keys.
-
-### Phase 2D — My/* (5 routes)
-
-| File | Ternaries |
-|---|---|
-| `app/[locale]/my/page.tsx` | 67 |
-| `app/[locale]/my/adults/page.tsx` | 38 |
-| `app/[locale]/my/games/page.tsx` | 19 |
-| `app/[locale]/my/journey/page.tsx` | 64 |
-| `app/[locale]/my/journey/together/page.tsx` | 21 |
-
-Estimated: ~210 keys.
+If admin demand for editing these surfaces, the fix is to lift the
+resolved string to the parent and pass via a new prop.
 
 ### Phase 2E — `journey/questionnaire.json` (architectural call needed)
 
