@@ -18,6 +18,8 @@ import {
 } from "@/components/adults/AdultsMarketingSections";
 import { resolveAdultsPricing } from "@/lib/adults/pricing";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { CmsText } from "@/components/cms/CmsText";
+import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
 
 export const dynamic = "force-dynamic";
 
@@ -99,24 +101,38 @@ export default async function AdultsLandingPage({
     return (
       <div className="min-h-[100dvh] bg-gradient-to-b from-violet-950 via-fuchsia-950 to-rose-950 text-white">
         <main className="mx-auto max-w-3xl px-4 py-24 text-center">
-          <h1 className="text-3xl font-bold">
-            {isHe ? "בקרוב" : "Coming soon"}
-          </h1>
-          <p className="mt-4 text-white/75">
-            {isHe
-              ? "אנחנו מכינים משהו מיוחד עבור זוגות. חזרו בקרוב."
-              : "We're preparing something special for couples. Check back soon."}
-          </p>
+          <CmsText
+            cmsKey="mioshySexPage.comingSoonTitle"
+            as="h1"
+            className="text-3xl font-bold"
+          />
+          <CmsText
+            cmsKey="mioshySexPage.comingSoonBody"
+            as="p"
+            className="mt-4 text-white/75"
+          />
           <Link
             href="/"
             className="mt-8 inline-block rounded-full border border-white/20 bg-white/10 px-5 py-2 text-sm hover:bg-white/20"
           >
-            ← {isHe ? "חזרה לדף הבית" : "Back home"}
+            ← <CmsText cmsKey="mioshySexPage.backHome" />
           </Link>
         </main>
       </div>
     );
   }
+
+  // CMS-managed fallbacks for the section header / tagline. Read once
+  // here on the server so each branch below can plug them into the
+  // existing settings-or-default cascade.
+  const t = await getCmsTranslations({
+    locale: isHe ? "he" : "en",
+    namespace: "mioshySexPage",
+    page: "mioshy-sex",
+  });
+  const defaultSectionName = t("defaultSectionName");
+  const defaultAuthedTagline = t("defaultAuthedTagline");
+  const defaultHeroTagline = t("defaultHeroTagline");
 
   // Pricing data - still resolved because BetweenUsStorefront and the buy-x
   // bundle chips read from it. The standalone pricing SECTION has been
@@ -131,12 +147,10 @@ export default async function AdultsLandingPage({
   if (isAuthed) {
     const sectionName =
       (isHe ? settings.section_name_he : settings.section_name_en) ||
-      (isHe ? "למבוגרים בלבד" : "Adults Only");
+      defaultSectionName;
     const sectionTagline =
       (isHe ? settings.section_tagline_he : settings.section_tagline_en) ||
-      (isHe
-        ? "כל המשחקים האקסקלוסיביים שלנו, במקום אחד."
-        : "All our exclusive games, in one place.");
+      defaultAuthedTagline;
     const heroForGrid = {
       title: sectionName,
       tagline: sectionTagline,
@@ -162,7 +176,7 @@ export default async function AdultsLandingPage({
             <div className="mx-auto max-w-6xl">
               <div className="inline-flex items-center gap-2 rounded-full border border-fuchsia-300/30 bg-fuchsia-500/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-fuchsia-100">
                 <span className="h-1.5 w-1.5 rounded-full bg-fuchsia-300" />
-                {isHe ? "החדר הסגור" : "The private chamber"}
+                <CmsText cmsKey="mioshySexPage.privateChamber" />
               </div>
               <h1 className="mt-3 font-heading text-3xl font-bold leading-tight tracking-tight text-white sm:text-4xl">
                 {sectionName}
@@ -190,14 +204,12 @@ export default async function AdultsLandingPage({
       (isHe
         ? settings.section_name_he
         : settings.section_name_en || settings.section_name_he) ||
-      (isHe ? "למבוגרים בלבד" : "Adults Only"),
+      defaultSectionName,
     tagline:
       (isHe
         ? settings.section_tagline_he
         : settings.section_tagline_en || settings.section_tagline_he) ||
-      (isHe
-        ? "המוצר הדגל של מיאושי. לילה אחד של חדשנות, הפתעה, וחוויה אחרת לגמרי."
-        : "Mioshy's flagship. One night of novelty, surprise - and a wholly different experience."),
+      defaultHeroTagline,
     singlePrice: pricing.single.displayPrice,
     subPrice: `${pricing.monthly.displayPrice}${pricing.monthly.periodLabel}`,
     singleEnabled: pricing.single.enabled,

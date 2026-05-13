@@ -1550,5 +1550,49 @@
       "cta": "Got it, let's start",
       "dismiss": "Close"
     }
+  },
+  "mioshySexPage": {
+    "comingSoonTitle": "Coming soon",
+    "comingSoonBody": "We're preparing something special for couples. Check back soon.",
+    "backHome": "Back home",
+    "privateChamber": "The private chamber",
+    "defaultSectionName": "Adults Only",
+    "defaultAuthedTagline": "All our exclusive games, in one place.",
+    "defaultHeroTagline": "Mioshy's flagship. One night of novelty, surprise - and a wholly different experience."
+  },
+  "mioshySexSlug": {
+    "pricing": {
+      "oneTime": "One-time purchase",
+      "monthly": "Monthly couple plan",
+      "annual": "Annual couple plan"
+    },
+    "breadcrumbHome": "Home",
+    "breadcrumbAdults": "Adults Only",
+    "defaultGenre": "Adult couples games",
+    "youOwnThis": "You own this · Open game",
+    "tagNew": "New",
+    "tagPopular": "Popular",
+    "metricIntimacy": "Intimacy",
+    "metricCommunication": "Communication",
+    "metricHeat": "Heat",
+    "whatYoullGet": "What you'll get",
+    "gameIsForYouIf": "This game is for you if…",
+    "gallery": "Gallery",
+    "nextGame": "Next game",
+    "keepExploring": "Keep exploring"
+  },
+  "mioshySexPlay": {
+    "yourGallery": "Your gallery",
+    "yourGameUnlocked": "Your game · unlocked",
+    "metricIntimacy": "Intimacy",
+    "metricCommunication": "Communication",
+    "metricHeat": "Heat",
+    "yourStoryEyebrow": "Your story",
+    "yourStoryTitlePrefix": "From overture ",
+    "yourStoryTitleAccent": "to climax.",
+    "hisRoleLabel": "His role",
+    "herRoleLabel": "Her role",
+    "questionsEyebrow": "The game's questions",
+    "defaultQuestionsIntro": "Answer the next question - in order or as you wish."
   }
 }

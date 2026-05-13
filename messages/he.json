@@ -1548,5 +1548,49 @@
       "cta": "מעולה, יוצאים לדרך",
       "dismiss": "סגירה"
     }
+  },
+  "mioshySexPage": {
+    "comingSoonTitle": "בקרוב",
+    "comingSoonBody": "אנחנו מכינים משהו מיוחד עבור זוגות. חזרו בקרוב.",
+    "backHome": "חזרה לדף הבית",
+    "privateChamber": "החדר הסגור",
+    "defaultSectionName": "למבוגרים בלבד",
+    "defaultAuthedTagline": "כל המשחקים האקסקלוסיביים שלנו, במקום אחד.",
+    "defaultHeroTagline": "המוצר הדגל של מיאושי. לילה אחד של חדשנות, הפתעה, וחוויה אחרת לגמרי."
+  },
+  "mioshySexSlug": {
+    "pricing": {
+      "oneTime": "רכישה חד-פעמית",
+      "monthly": "מינוי חודשי זוגי",
+      "annual": "מינוי שנתי זוגי"
+    },
+    "breadcrumbHome": "בית",
+    "breadcrumbAdults": "למבוגרים בלבד",
+    "defaultGenre": "משחקי זוגיות למבוגרים",
+    "youOwnThis": "המשחק שלכם · פתחו אותו",
+    "tagNew": "חדש",
+    "tagPopular": "פופולרי",
+    "metricIntimacy": "אינטימיות",
+    "metricCommunication": "תקשורת",
+    "metricHeat": "חום",
+    "whatYoullGet": "מה תקבלו",
+    "gameIsForYouIf": "המשחק הזה הוא בשבילכם אם…",
+    "gallery": "גלריה",
+    "nextGame": "המשחק הבא",
+    "keepExploring": "המשך לגלות"
+  },
+  "mioshySexPlay": {
+    "yourGallery": "הגלריה שלכם",
+    "yourGameUnlocked": "המשחק שלכם · נפתח",
+    "metricIntimacy": "אינטימיות",
+    "metricCommunication": "תקשורת",
+    "metricHeat": "חום",
+    "yourStoryEyebrow": "הסיפור שלכם",
+    "yourStoryTitlePrefix": "מהפתיחה ",
+    "yourStoryTitleAccent": "ועד השיא.",
+    "hisRoleLabel": "תפקיד הגבר",
+    "herRoleLabel": "תפקיד האישה",
+    "questionsEyebrow": "השאלות של המשחק",
+    "defaultQuestionsIntro": "ענו על השאלה הבאה - לפי הסדר או לבחירתכם."
   }
 }

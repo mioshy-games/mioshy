@@ -34,6 +34,8 @@ import {
 import { getGameBySlug } from "@/lib/between-us/queries";
 import { getCurrentCoupleContext } from "@/lib/between-us/couples";
 import { PlayAmbience } from "@/components/adults/PlayAmbience";
+import { CmsText } from "@/components/cms/CmsText";
+import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
 
 export const dynamic = "force-dynamic";
 
@@ -164,6 +166,19 @@ export default async function PlayExperienceGamePage({
     (isHe ? game.play_questions_he : game.play_questions_en) ?? []
   ).filter((q): q is string => typeof q === "string" && q.trim().length > 0);
 
+  // CMS-managed copy resolved server-side. Used inline where strings
+  // are needed as raw values (LevelPill label prop, RolePanel
+  // labelHe/labelEn pass-through, default-questions-intro fallback)
+  // and via <CmsText> elsewhere.
+  const t = await getCmsTranslations({
+    locale: isHe ? "he" : "en",
+    namespace: "mioshySexPlay",
+    page: "mioshy-sex",
+  });
+  const defaultQuestionsIntro = t("defaultQuestionsIntro");
+  const hisRoleLabel = t("hisRoleLabel");
+  const herRoleLabel = t("herRoleLabel");
+
   return (
     <div
       dir={isHe ? "rtl" : "ltr"}
@@ -198,7 +213,7 @@ export default async function PlayExperienceGamePage({
           style={{ fontFamily: "var(--font-body-hebrew), 'Assistant', system-ui, sans-serif" }}
         >
           <ArrowLeft className={`h-3.5 w-3.5 ${isHe ? "rotate-180" : ""}`} />
-          {isHe ? "הגלריה שלכם" : "Your gallery"}
+          <CmsText cmsKey="mioshySexPlay.yourGallery" />
         </Link>
 
         {/* ───── HERO ─────
@@ -211,7 +226,7 @@ export default async function PlayExperienceGamePage({
             style={{ fontFamily: "var(--font-body-hebrew), 'Assistant', system-ui, sans-serif" }}
           >
             <Sparkles className="h-3 w-3" />
-            {isHe ? "המשחק שלכם · נפתח" : "Your game · unlocked"}
+            <CmsText cmsKey="mioshySexPlay.yourGameUnlocked" />
           </span>
 
           <div className="relative mt-6">
@@ -242,17 +257,17 @@ export default async function PlayExperienceGamePage({
           <div className="mt-6 flex flex-wrap gap-2.5">
             <LevelChip
               icon={<Heart className="h-3.5 w-3.5 text-rose-200" />}
-              label={isHe ? "אינטימיות" : "Intimacy"}
+              label={t("metricIntimacy")}
               level={game.intimacy_level}
             />
             <LevelChip
               icon={<MessageCircleHeart className="h-3.5 w-3.5 text-sky-200" />}
-              label={isHe ? "תקשורת" : "Communication"}
+              label={t("metricCommunication")}
               level={game.communication_level}
             />
             <LevelChip
               icon={<Flame className="h-3.5 w-3.5 text-orange-200" />}
-              label={isHe ? "חום" : "Heat"}
+              label={t("metricHeat")}
               level={game.heat_level}
             />
           </div>
@@ -293,33 +308,19 @@ export default async function PlayExperienceGamePage({
         {fullDescParas.length > 0 ? (
           <section className="relative mx-auto mt-20 max-w-[680px]">
             <SectionEyebrow>
-              {isHe ? "הסיפור שלכם" : "Your story"}
+              <CmsText cmsKey="mioshySexPlay.yourStoryEyebrow" />
             </SectionEyebrow>
             <h2
               className="mt-5 text-balance text-[28px] leading-[1.15] tracking-[-0.01em] text-white sm:text-[34px]"
               style={{ fontFamily: "'Frank Ruhl Libre', serif", fontWeight: 700 }}
             >
-              {isHe ? (
-                <>
-                  מהפתיחה{" "}
-                  <span
-                    className="bg-gradient-to-br from-rose-200 via-rose-400 to-amber-300 bg-clip-text text-transparent"
-                    style={{ fontStyle: "italic", fontWeight: 500 }}
-                  >
-                    ועד השיא.
-                  </span>
-                </>
-              ) : (
-                <>
-                  From overture{" "}
-                  <span
-                    className="bg-gradient-to-br from-rose-200 via-rose-400 to-amber-300 bg-clip-text text-transparent"
-                    style={{ fontStyle: "italic", fontWeight: 500 }}
-                  >
-                    to climax.
-                  </span>
-                </>
-              )}
+              <CmsText cmsKey="mioshySexPlay.yourStoryTitlePrefix" />
+              <span
+                className="bg-gradient-to-br from-rose-200 via-rose-400 to-amber-300 bg-clip-text text-transparent"
+                style={{ fontStyle: "italic", fontWeight: 500 }}
+              >
+                <CmsText cmsKey="mioshySexPlay.yourStoryTitleAccent" />
+              </span>
             </h2>
 
             <div className="mt-8 space-y-5">
@@ -330,8 +331,8 @@ export default async function PlayExperienceGamePage({
                     <RolePanel
                       key={i}
                       tone="his"
-                      labelHe="תפקיד הגבר"
-                      labelEn="His role"
+                      labelHe={hisRoleLabel}
+                      labelEn={hisRoleLabel}
                       isHe={isHe}
                       body={stripRoleHeader(p)}
                     />
@@ -342,8 +343,8 @@ export default async function PlayExperienceGamePage({
                     <RolePanel
                       key={i}
                       tone="hers"
-                      labelHe="תפקיד האישה"
-                      labelEn="Her role"
+                      labelHe={herRoleLabel}
+                      labelEn={herRoleLabel}
                       isHe={isHe}
                       body={stripRoleHeader(p)}
                     />
@@ -382,7 +383,7 @@ export default async function PlayExperienceGamePage({
         {playQuestions.length > 0 ? (
           <section className="relative mx-auto mt-24 max-w-[680px]">
             <SectionEyebrow>
-              {isHe ? "השאלות של המשחק" : "The game's questions"}
+              <CmsText cmsKey="mioshySexPlay.questionsEyebrow" />
             </SectionEyebrow>
 
             <h2
@@ -391,9 +392,7 @@ export default async function PlayExperienceGamePage({
             >
               {playQuestionsIntro && playQuestionsIntro.length > 0
                 ? playQuestionsIntro
-                : isHe
-                  ? "ענו על השאלה הבאה - לפי הסדר או לבחירתכם."
-                  : "Answer the next question - in order or as you wish."}
+                : defaultQuestionsIntro}
             </h2>
 
             <ol className="mt-8 space-y-3 list-none p-0">
