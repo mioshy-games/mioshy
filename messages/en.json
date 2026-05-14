@@ -1660,6 +1660,37 @@
       "cancel": "Cancel",
       "sending": "Sending…",
       "send": "Send"
+    },
+    "page": {
+      "meta": {
+        "title": "Journey · Your timeline",
+        "description": "Your personal path - chapters that open at your pace, exercises and insights."
+      },
+      "yourJourney": "Your journey",
+      "backToMy": "Back to My Mioshy",
+      "empty": {
+        "h1": "Your timeline is still empty",
+        "lede": "Once you join a program, personal chapters will open here at your own pace - exercises, conversations, and weekly rituals.",
+        "ctaExplore": "Explore the Journey",
+        "ctaAssessment": "Start with the 5-min assessment"
+      },
+      "timelineBadge": "Journey timeline",
+      "timelineLede": "Each chapter opens on its own time. When it's ready - step in, reflect, and practice together.",
+      "allChapters": "All chapters",
+      "recentActivity": "Recent activity",
+      "trust": {
+        "ariaLabel": "Trust anchor",
+        "guidance": "Trusted guidance since 2001",
+        "name": "Itzik Berlav",
+        "title": "Couples specialist · Over 25 years coaching relationships",
+        "body": "Every chapter is built on thousands of real couples' conversations - not generic content, but steps that actually work."
+      },
+      "progress": {
+        "done": "Done",
+        "open": "Open",
+        "locked": "Locked",
+        "srTemplate": "Progress: {completed} of {total}"
+      }
     }
   },
   "gamesSlug": {
