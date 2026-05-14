@@ -42,6 +42,40 @@ even though no live surface renders strikethrough today.
    can choose to remove it from the sanitiser allow-list (defensive)
    or leave it for future strikethrough needs.
 
+### Dead-code components surfaced during Sprint 4 #3 Phase 2 (2026-05-14)
+
+While migrating the `/mioshy-sex` marketing page the import graph
+made it clear that four `components/adults/*` files (and one
+sub-export within an otherwise-live file) have **zero importers**
+and never render. They still hold inline HE/EN strings, so a naïve
+file-level audit ("grep this component for HE chars") would flag
+them — that's why this section exists.
+
+We are intentionally **not deleting** these today. The user-facing
+goal of this session is "every public marketing string is editable
+in CMS"; pruning dead code is a separate concern and would
+otherwise bloat the migration diff. The list below is the punch
+list for a future cleanup PR.
+
+| Component | Note |
+|---|---|
+| `components/adults/AdultsHeroBuy.tsx` | Only imported by `app/[locale]/mioshy-sex/[slug]/page.tsx` — out of scope for Phase-2 marketing (which excludes `[slug]/*` product pages). NOT dead globally, but dead for the public marketing surface. |
+| `components/adults/AdultsPricingPanel.tsx` | Truly dead — `grep -rn "AdultsPricingPanel" --include="*.tsx"` returns only its own definition. The file's own header still claims "the commerce surface on the /[locale]/adults/[slug]" but no `[slug]` page imports it. |
+| `components/adults/AdultsMarketingSections.variant-personal.tsx` | Truly dead — alt-variant of the marketing sections file, no consumers. |
+| `components/adults/AdultsMarketingSections.tsx` → `AdultsPricingSection` | Live file, **dead export**. Used only by the wrapper `AdultsMarketingSections` (same file, also dead — see next row), never by a page. The 24 HE ternary picks that remain in this file after Phase-2 migration all live here (lines 215-355). |
+| `components/adults/AdultsMarketingSections.tsx` → `AdultsMarketingSections` (the default wrapper export at the bottom of the file) | `grep -rn "<AdultsMarketingSections\b"` returns 0 — `/mioshy-sex/page.tsx` imports the named exports individually, never the wrapper. |
+
+**Cleanup recipe (when we're ready):**
+
+1. `git rm components/adults/AdultsHeroBuy.tsx` — coordinate with whoever
+   owns the `[slug]` product surface; this is _their_ commerce primitive,
+   not ours.
+2. `git rm components/adults/AdultsPricingPanel.tsx components/adults/AdultsMarketingSections.variant-personal.tsx`
+3. Inside `AdultsMarketingSections.tsx`, delete `AdultsPricingSection`,
+   `DarkPlanCard`, and the trailing `AdultsMarketingSections` wrapper.
+   Drop the `AdultsPricing`/`annualSavings` imports left dangling.
+4. `pnpm typecheck && pnpm build` to confirm no surprise consumers.
+
 ### Other surfaces worth re-auditing later
 
 The seed marked every key under namespaces it recognised, including
