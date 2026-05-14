@@ -762,6 +762,26 @@
         "title": "Fun",
         "body": "Real enjoyment, no excuses. An evening that starts with a click and turns into a game you don't want to end."
       }
+    },
+    "personas": {
+      "0": {
+        "tag": "Curiosity",
+        "title": "The new couples",
+        "body": "You want to know everything - but \"what scared you most as a kid?\" doesn't fly on date two. We ask it for you - in a way that laughs at the seriousness of it.",
+        "quote": "“Knowing someone deeply doesn’t take years. Just the right question.”"
+      },
+      "1": {
+        "tag": "Reminder",
+        "title": "Couples in the middle",
+        "body": "You haven't lost the relationship. Only the time to remember it. Mioshy compresses into thirty minutes what a romantic dinner does in three hours.",
+        "quote": "“Thirty minutes in the right place - isn’t a little. It’s everything.”"
+      },
+      "2": {
+        "tag": "Surprise",
+        "title": "The veterans",
+        "body": "You finish each other's sentences. Now you just need new sentences to start. We won't tell you something you didn't know - we'll just ask the question you didn't think to ask.",
+        "quote": "“Anyone who thinks they know it all - is asking the wrong questions.”"
+      }
     }
   },
   "journeyHub": {

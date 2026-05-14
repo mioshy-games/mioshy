@@ -423,43 +423,10 @@ export default async function GamesHubPage({
   // drive title/body so admins can edit per item; numerals stay inline.
   const benefitNumerals = ["I", "II", "III"];
 
-  // Personas - magazine chapters on light. Three couple archetypes; tag = the
-  // *promise* this game-line gives that persona (curiosity / reminder / surprise).
-  const personas = [
-    {
-      num: "01",
-      title: isHe ? "הזוגות החדשים" : "The new couples",
-      tag: isHe ? "סקרנות" : "Curiosity",
-      body: isHe
-        ? "אתם רוצים לדעת הכל - אבל \"מה הכי הפחיד אותך כילד?\" לא נשאלת בקפה השני. אנחנו שואלים את זה בשבילכם, באופן שצוחק על הרצינות."
-        : "You want to know everything - but \"what scared you most as a kid?\" doesn't fly on date two. We ask it for you - in a way that laughs at the seriousness of it.",
-      quote: isHe
-        ? "להכיר מישהו לעומק לא דורש שנים. רק את השאלה הנכונה."
-        : "Knowing someone deeply doesn't take years. Just the right question.",
-    },
-    {
-      num: "02",
-      title: isHe ? "הזוגות באמצע" : "Couples in the middle",
-      tag: isHe ? "תזכורת" : "Reminder",
-      body: isHe
-        ? "אתם לא איבדתם את הזוגיות. רק את הזמן לזכור אותה. מיאושי דוחס בחצי שעה את מה שמסעדה רומנטית עושה בשלוש."
-        : "You haven't lost the relationship. Only the time to remember it. Mioshy compresses into thirty minutes what a romantic dinner does in three hours.",
-      quote: isHe
-        ? "חצי שעה במקום הנכון - זה לא מעט. זה הכל."
-        : "Thirty minutes in the right place - isn't a little. It's everything.",
-    },
-    {
-      num: "03",
-      title: isHe ? "הזוגות הוותיקים" : "The veterans",
-      tag: isHe ? "הפתעה" : "Surprise",
-      body: isHe
-        ? "אתם מסיימים אחד לשני את המשפטים. עכשיו רק צריך משפטים חדשים להתחיל. אנחנו לא נספר לכם משהו שלא ידעתם - רק נשאל את השאלה שלא חשבתם לשאול."
-        : "You finish each other's sentences. Now you just need new sentences to start. We won't tell you something you didn't know - we'll just ask the question you didn't think to ask.",
-      quote: isHe
-        ? "מי שחושב שהוא יודע הכל - שואל את השאלות הלא נכונות."
-        : "Anyone who thinks they know it all - is asking the wrong questions.",
-    },
-  ];
+  // Personas - magazine chapters on light. Three couple archetypes.
+  // Chapter numerals (01/02/03) stay inline (static); tag/title/body/quote
+  // are CMS-managed via gamesHub.personas.{i}.*.
+  const personaNumerals = ["01", "02", "03"];
 
   return (
     <CmsTextProvider rows={cmsRows}>
@@ -1188,7 +1155,7 @@ export default async function GamesHubPage({
 
               {/* 3 magazine chapters */}
               <div className="mt-[80px] grid gap-8 lg:grid-cols-3 lg:gap-7">
-                {personas.map((p, i) => (
+                {personaNumerals.map((num, i) => (
                   <RevealOnScroll
                     key={i}
                     variant="fade-up"
@@ -1210,54 +1177,54 @@ export default async function GamesHubPage({
                             fontWeight: 600,
                           }}
                         >
-                          {p.num}
+                          {num}
                         </span>
                         <span className="h-px flex-1 bg-[#EAE0E3] transition-colors duration-500 group-hover:bg-[#B83C4D]/40" />
                       </div>
 
                       {/* Italic tag (small, accent) */}
-                      <p
+                      <CmsText
+                        cmsKey={`gamesHub.personas.${i}.tag`}
+                        as="p"
                         className="relative mt-6 text-[14px] uppercase tracking-[0.22em] text-[#B83C4D]"
                         style={{
                           fontFamily: "'Frank Ruhl Libre', serif",
                           fontStyle: "italic",
                           fontWeight: 500,
                         }}
-                      >
-                        {p.tag}
-                      </p>
+                      />
 
                       {/* Persona title */}
-                      <h3
+                      <CmsText
+                        cmsKey={`gamesHub.personas.${i}.title`}
+                        as="h3"
                         className="relative mt-3 text-[30px] leading-[1.1] tracking-[-0.01em] text-[#170E14] sm:text-[34px]"
                         style={{
                           fontFamily: "'Frank Ruhl Libre', serif",
                           fontWeight: 600,
                         }}
-                      >
-                        {p.title}
-                      </h3>
+                      />
 
                       {/* Body */}
-                      <p className="relative mt-5 text-[18px] leading-[1.7] text-[#4A3A45]">
-                        {p.body}
-                      </p>
+                      <CmsText
+                        cmsKey={`gamesHub.personas.${i}.body`}
+                        as="p"
+                        className="relative mt-5 text-[18px] leading-[1.7] text-[#4A3A45]"
+                      />
 
                       {/* Italic quote - bottom */}
                       <div className="relative mt-auto pt-8">
                         <div className="mb-4 h-px w-12 bg-[#B83C4D]/30" />
-                        <p
+                        <CmsText
+                          cmsKey={`gamesHub.personas.${i}.quote`}
+                          as="p"
                           className="text-[18px] leading-[1.5] text-[#170E14]/80"
                           style={{
                             fontFamily: "'Frank Ruhl Libre', serif",
                             fontStyle: "italic",
                             fontWeight: 500,
                           }}
-                        >
-                          {isHe ? "״" : "“"}
-                          {p.quote}
-                          {isHe ? "״" : "”"}
-                        </p>
+                        />
                       </div>
                     </article>
                   </RevealOnScroll>
