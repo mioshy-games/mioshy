@@ -97,27 +97,80 @@ export async function loadCmsTextsForPage(
  * the cost of refetching all rows once per admin pageview is
  * negligible.
  *
- * BUG FIX 2026-05-13 — Supabase JS client defaults every PostgREST
- * request to a max of 1000 rows. We crossed that threshold after
- * Sprint 4 #3 Phase 2 (1184 rows as of writing), so the admin UI was
- * silently dropping ~184 keys from the back of the alphabet — entire
- * sections invisible, "0 keys" tabs that actually had dozens. Adding
- * an explicit `.range(0, 9999)` raises the ceiling well past anything
- * we'll hit before Sprint 6. If we ever exceed 10k rows the admin
- * needs pagination anyway (the UI mounts one editor per row).
+ * BUG TIMELINE
+ * ────────────
+ * 2026-05-13 (9bda9ba) — Supabase JS client defaults every PostgREST
+ *   request to a max of 1000 rows. We crossed that threshold after
+ *   Sprint 4 #3 Phase 2 (1184 rows then), so the admin UI was silently
+ *   dropping ~184 keys. Added `.range(0, 9999)` which fixed it at the
+ *   time because PostgREST `db-max-rows` was unset on the project.
+ *
+ * 2026-05-14 — Itzik reports the admin showing 1000/1424 rows: tabs
+ *   spectacularly under-count (Mioshy Sex 1/103, Games 20/141, My 36/156).
+ *   `.range(0, 9999)` is still in place but the request comes back capped
+ *   at exactly 1000. That's the telltale of a server-side
+ *   `db-max-rows = 1000` PostgREST setting binding our client-side range
+ *   — PostgREST silently truncates a Range request that exceeds the
+ *   server cap. We can't unset that from the app side.
+ *
+ *   Mitigation: paginate explicitly with multiple .range() calls of
+ *   PAGE_SIZE each, looping until a page comes back short. Each
+ *   individual request stays at or below the server cap, and we stitch
+ *   the pages back together client-side. We order by `id` so successive
+ *   windows don't overlap or skip rows (PostgREST default order is
+ *   unspecified — historically ctid / insertion order, but the API
+ *   doesn't guarantee that).
+ *
+ *   Safety: SAFETY_CAP = 50_000 stops a runaway misconfiguration. The
+ *   UI mounts one editor per row, so well before 50k we'd need real
+ *   UI-side pagination anyway.
  */
 export async function loadAllCmsTexts(): Promise<CmsTextRow[]> {
   try {
     const sb = await createServerSupabaseClient();
-    const { data, error } = await sb
-      .from("cms_texts")
-      .select("*")
-      .range(0, 9999);
-    if (error) {
-      console.warn("[cms] loadAllCmsTexts failed:", error.message);
-      return [];
+    const PAGE_SIZE = 1000;
+    const SAFETY_CAP = 50_000;
+    const all: CmsTextRow[] = [];
+    let offset = 0;
+
+    while (offset < SAFETY_CAP) {
+      const { data, error } = await sb
+        .from("cms_texts")
+        .select("*")
+        // Deterministic ordering by id so consecutive .range() windows
+        // don't overlap or skip rows. Without this, two pages could in
+        // principle return the same row twice or skip one across the
+        // window boundary.
+        .order("id", { ascending: true })
+        .range(offset, offset + PAGE_SIZE - 1);
+
+      if (error) {
+        console.warn(
+          "[cms] loadAllCmsTexts page failed:",
+          error.message,
+          "offset=" + offset,
+        );
+        // Return what we've gathered so far rather than zero — partial
+        // data beats a blank-screen for an admin trying to edit.
+        return normalizeRowsForRender(all);
+      }
+
+      const pageRows = (data ?? []) as CmsTextRow[];
+      all.push(...pageRows);
+
+      // Canonical "no more data" signal in offset-pagination — when a
+      // page comes back shorter than PAGE_SIZE the table is exhausted.
+      // We can't rely on `count` because the Supabase client doesn't
+      // compute it unless explicitly asked, and asking incurs a
+      // meaningful per-request cost on large tables.
+      if (pageRows.length < PAGE_SIZE) break;
+      offset += PAGE_SIZE;
     }
-    return normalizeRowsForRender((data ?? []) as CmsTextRow[]);
+
+    // eslint-disable-next-line no-console
+    console.log("[cms] loadAllCmsTexts loaded", all.length, "rows");
+
+    return normalizeRowsForRender(all);
   } catch (err) {
     console.warn("[cms] loadAllCmsTexts threw:", err);
     return [];
