@@ -71,24 +71,10 @@ export async function generateMetadata({
   return {
     title,
     description,
-    keywords:
-      locale === "he"
-        ? [
-            "משחקי זוגות אונליין",
-            "אמת או חובה",
-            "משחקי זוגות",
-            "שאלות לזוגות",
-            "סולמות ונחשים",
-            "משחק זוגי בדפדפן",
-          ]
-        : [
-            "couples games",
-            "truth or dare for couples",
-            "relationship games",
-            "date night games",
-            "couples questions",
-            "snakes and ladders couples",
-          ],
+    keywords: t("metaKeywords")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean),
     alternates: {
       canonical,
       languages: {
@@ -1210,7 +1196,7 @@ export default async function GamesHubPage({
                 <div className="text-start">
                   <span className="inline-flex items-center gap-2.5 text-[12px] font-semibold uppercase tracking-[0.32em] text-[#170E14]">
                     <span className="h-[7px] w-[7px] rounded-sm bg-[#B83C4D] shadow-[0_0_0_3px_rgba(184,60,77,0.18)]" />
-                    {isHe ? "למה זה עובד" : "Why it works"}
+                    <CmsText cmsKey="gamesHub.whyItWorks.eyebrow" />
                   </span>
                   <h2
                     className="mt-7 text-[40px] leading-[1.05] tracking-[-0.02em] text-[#170E14] sm:text-5xl lg:text-[60px]"
@@ -1219,33 +1205,19 @@ export default async function GamesHubPage({
                       fontWeight: 600,
                     }}
                   >
-                    {isHe ? (
-                      <>
-                        שאלה אחת.{" "}
-                        <span
-                          className="text-[#B83C4D]"
-                          style={{ fontStyle: "italic", fontWeight: 500 }}
-                        >
-                          ערב שלם אחר.
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        One question.{" "}
-                        <span
-                          className="text-[#B83C4D]"
-                          style={{ fontStyle: "italic", fontWeight: 500 }}
-                        >
-                          An entirely different evening.
-                        </span>
-                      </>
-                    )}
+                    <CmsText cmsKey="gamesHub.whyItWorks.titleLine1" />
+                    {" "}
+                    <CmsText
+                      cmsKey="gamesHub.whyItWorks.titleLine2"
+                      className="text-[#B83C4D]"
+                      style={{ fontStyle: "italic", fontWeight: 500 }}
+                    />
                   </h2>
-                  <p className="mt-6 max-w-2xl text-[19px] leading-[1.65] text-[#4A3A45]">
-                    {isHe
-                      ? "לא טיפול. לא קורס. לא 'כלים לזוגיות'. משחק. אבל אחד שעובד."
-                      : "Not therapy. Not a course. Not 'tools for relationships.' A game - but one that works."}
-                  </p>
+                  <CmsText
+                    cmsKey="gamesHub.whyItWorks.lede"
+                    as="p"
+                    className="mt-6 max-w-2xl text-[19px] leading-[1.65] text-[#4A3A45]"
+                  />
                 </div>
               </RevealOnScroll>
 
@@ -1300,17 +1272,15 @@ export default async function GamesHubPage({
 
               {/* Closing italic - kept right-aligned to match the new axis */}
               <RevealOnScroll variant="fade" delay={0.4}>
-                <p
+                <CmsText
+                  cmsKey="gamesHub.whyItWorks.closing"
+                  as="p"
                   className="mt-10 max-w-xl text-[18px] text-[#7A6A75] lg:mt-12"
                   style={{
                     fontFamily: "'Frank Ruhl Libre', serif",
                     fontStyle: "italic",
                   }}
-                >
-                  {isHe
-                    ? "- לפעמים שינוי לא דורש מהפכה. רק התחלה."
-                    : "- sometimes change doesn't need a revolution. Just a start."}
-                </p>
+                />
               </RevealOnScroll>
             </div>
           </section>
