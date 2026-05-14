@@ -647,18 +647,16 @@ export default async function GamesHubPage({
                     Honest, qualified "free" framing: explicit no-credit-card
                     promise so the 6-spin paywall later doesn't feel like a
                     trap. */}
-                <p
+                <CmsText
+                  cmsKey="gamesHub.byTheNumbers.trial"
+                  as="p"
                   className="mt-4 text-[22px] leading-[1.4] text-[#170E14] sm:text-[24px] lg:text-[28px]"
                   style={{
                     fontFamily: "'Frank Ruhl Libre', serif",
                     fontStyle: "italic",
                     fontWeight: 500,
                   }}
-                >
-                  {isHe
-                    ? "התחילו חינם - בלי כרטיס אשראי."
-                    : "Start free - no credit card required."}
-                </p>
+                />
 
                 {/* Italic kicker line, flanked by decorative hairlines */}
                 <div className="mt-10 flex items-center justify-center gap-4">
@@ -666,18 +664,16 @@ export default async function GamesHubPage({
                     aria-hidden
                     className="h-px w-16 bg-[#B83C4D]/40"
                   />
-                  <p
+                  <CmsText
+                    cmsKey="gamesHub.byTheNumbers.kicker"
+                    as="p"
                     className="text-[14px] uppercase tracking-[0.22em] text-[#8B2638]"
                     style={{
                       fontFamily: "'Frank Ruhl Libre', serif",
                       fontStyle: "italic",
                       fontWeight: 500,
                     }}
-                  >
-                    {isHe
-                      ? "בקליק אחד מתחילים"
-                      : "one click - and you're in"}
-                  </p>
+                  />
                   <span
                     aria-hidden
                     className="h-px w-16 bg-[#B83C4D]/40"
@@ -697,7 +693,7 @@ export default async function GamesHubPage({
                       className="absolute inset-0 bg-[linear-gradient(110deg,#B83C4D_0%,#8B2638_55%,#3D1F3D_100%)]"
                     />
                     <span className="relative z-10 inline-flex items-center">
-                      {isHe ? "התחילו לשחק עכשיו" : "Start playing now"}
+                      <CmsText cmsKey="gamesHub.byTheNumbers.ctaPlayNow" />
                       <ArrowRight
                         className={`ms-2 h-5 w-5 transition group-hover:translate-x-1 ${
                           isHe ? "rotate-180 group-hover:-translate-x-1" : ""
