@@ -680,7 +680,18 @@
     "action": "Action",
     "waiting": "Waiting for your turn…",
     "log": "Log",
-    "turnOf": "{name}'s turn"
+    "turnOf": "{name}'s turn",
+    "coinFlip": {
+      "heads": "Heads",
+      "tails": "Tails",
+      "flipLabel": "Flip the coin",
+      "headsRule": "Heads = +3 steps (default)",
+      "tailsRule": "Tails = +1 step (default)",
+      "turnHint": "Only the active player can flip"
+    },
+    "gameLog": {
+      "empty": "No log yet…"
+    }
   },
   "articlesPage": {
     "title": "Tips & Articles",

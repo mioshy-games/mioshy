@@ -680,7 +680,18 @@
     "action": "פעולה",
     "waiting": "מחכה לתור שלך…",
     "log": "לוג",
-    "turnOf": "תור של {name}"
+    "turnOf": "תור של {name}",
+    "coinFlip": {
+      "heads": "עץ",
+      "tails": "פלי",
+      "flipLabel": "הטלת מטבע",
+      "headsRule": "עץ = +3 צעדים (ברירת מחדל)",
+      "tailsRule": "פלי = +1 צעד (ברירת מחדל)",
+      "turnHint": "רק השחקן בתור יכול להטיל"
+    },
+    "gameLog": {
+      "empty": "אין לוג עדיין…"
+    }
   },
   "articlesPage": {
     "title": "טיפים וכתבות לזוגות",
