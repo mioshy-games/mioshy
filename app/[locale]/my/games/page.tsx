@@ -8,6 +8,7 @@ import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
 import type { GameRow } from "@/lib/types/database";
 import { pickGameThumbnail } from "@/lib/games-thumbnail";
 import { CmsText } from "@/components/cms/CmsText";
+import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
 
 export const dynamic = "force-dynamic";
 
@@ -16,12 +17,14 @@ export async function generateMetadata({
 }: {
   params: { locale: string };
 }): Promise<Metadata> {
-  const isHe = params.locale === "he";
+  const t = await getCmsTranslations({
+    locale: params.locale === "he" ? "he" : "en",
+    namespace: "myGames",
+    page: "my",
+  });
   return {
-    title: `Mioshy - ${isHe ? "משחקים · הגלריה" : "Games · Gallery"}`,
-    description: isHe
-      ? "גלגל האמת, נחשים ושלבים - כל המשחקים שלכם, מוכנים להפעלה."
-      : "Truth wheel, snakes & ladders - all your games, ready to play.",
+    title: `Mioshy - ${t("metaTitle")}`,
+    description: t("metaDescription"),
   };
 }
 
@@ -32,6 +35,11 @@ export default async function MyGamesGalleryPage({
 }) {
   const { locale } = params;
   const isHe = locale === "he";
+  const t = await getCmsTranslations({
+    locale: isHe ? "he" : "en",
+    namespace: "myGames",
+    page: "my",
+  });
 
   const entitlements = await getUserEntitlements();
   if (!entitlements) redirect(`/${locale}/auth`);
@@ -72,11 +80,11 @@ export default async function MyGamesGalleryPage({
           <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
             <CmsText cmsKey="myGames.subheading" />
           </h1>
-          <p className="mt-2 max-w-2xl text-white/70">
-            {isHe
-              ? "כנות ואתגר, גלגל הזוגיות, סולמות ונחשים - מוכנים להפעלה."
-              : "Truth or dare, the wheel, snakes & ladders - ready to play."}
-          </p>
+          <CmsText
+            cmsKey="myGames.lede"
+            as="p"
+            className="mt-2 max-w-2xl text-white/70"
+          />
         </section>
 
         {/* ─────── Games grid - 2 per row per spec §7.2 ───────
@@ -154,7 +162,7 @@ export default async function MyGamesGalleryPage({
                         missing. */}
                     <Image
                       src="/images/snakes-couples.webp"
-                      alt={isHe ? "נחשים וסולמות" : "Snakes & Ladders"}
+                      alt={t("snakesAndLadders")}
                       fill
                       sizes="(max-width: 640px) 100vw, 50vw"
                       className="object-cover transition duration-500 group-hover:scale-[1.04]"

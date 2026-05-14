@@ -1783,7 +1783,32 @@
     "completeProfile": "Complete your profile",
     "completeNow": "Complete now",
     "gotCode": "Got a code from your partner?",
-    "notificationCount": "{n} new"
+    "notificationCount": "{n} new",
+    "metaDescription": "The three worlds of Mioshy in one place - games, journey, adults only.",
+    "heroLede": "Three services, each standing on its own. Pick your vibe tonight — a funny evening with a game, expert-written intimacy, or weekly coaching that aligns your relationship.",
+    "statusFreeTitle": "Your account is active. No subscription yet.",
+    "statusFreeBody": "Start small with a weekly game, add expert-written intimacy, or go all-in on coaching.",
+    "statusAllAccessSubFull": "Your plan covers all of Mioshy - games, journey, and adults only.",
+    "activeMemberPillarsTemplate": "You have access to {count} of our 3 services.",
+    "activeMemberDetailsTemplate": "Active: {owned}. Add: {missing}.",
+    "cardGamesLede": "Truth or dare, wheel, snakes & ladders.",
+    "cardGamesBuyLede": "A full evening of connection — questions that lead to real talks, challenges that bring back desire, and the laughter you didn't realise your relationship was missing. Weekly subscription, refreshing every Sunday.",
+    "cardJourneyOwnerLede": "Your tuned clinic - content ordered by what matters to you, each partner with their own order.",
+    "cardJourneyBuyLede": "An expert from Mioshy who studies you deeply, builds a personal program, and is available in chat. Both partners wrap the relationship in real work — all included in one weekly subscription.",
+    "cardAdultsBuyLede": "Games written by the top experts in sexology and couples therapy. A complete experience for your bedroom — not tips, not lists. One purchase per game, open to you and your partner forever.",
+    "invitePartnerLede": "Send an email invitation. Once they join, this section will disappear from your dashboard.",
+    "gameSessionCodeLabel": "Game session code (second device)",
+    "pairProfilePrereq": "To pair a partner or redeem a code, you need a full name, mobile and password.",
+    "redeemHint": "Enter the code and your account links to theirs instantly.",
+    "footerAccountLink": "My account · invoices · subscription",
+    "pillarGamesTitle": "Online couples games",
+    "pillarJourneyTitle": "Journey with Mioshy",
+    "pillarJourneySubtitle": "Personal work program",
+    "pillarAdultsEntitledTitle": "Adults Only",
+    "pillarAdultsMarketingTitle": "Mioshy's Sex",
+    "adultsOwnedSingular": "game unlocked for the two of you.",
+    "adultsOwnedPlural": "games unlocked for the two of you.",
+    "notificationAria": "{n} new"
   },
   "myGames": {
     "backToMyMioshy": "Back to My Mioshy",
@@ -1793,7 +1818,10 @@
     "playNow": "Play now",
     "snakesAndLadders": "Snakes & Ladders",
     "newBadge": "New 🔥",
-    "snakesDescription": "Classic board with couples questions & challenges - play on one device or remotely."
+    "snakesDescription": "Classic board with couples questions & challenges - play on one device or remotely.",
+    "metaTitle": "Games · Gallery",
+    "metaDescription": "Truth wheel, snakes & ladders - all your games, ready to play.",
+    "lede": "Truth or dare, the wheel, snakes & ladders - ready to play."
   },
   "myJourneyTogether": {
     "heading": "Together",
@@ -1803,7 +1831,13 @@
     "statTogether": "Together",
     "bothCompleted": "both completed",
     "youLabel": "You",
-    "itemsHint": "items"
+    "itemsHint": "items",
+    "metaTitle": "Together",
+    "headerBlurb": "Everything here, you both see. This isn't private reflections — it's your conversation as a couple. Your personal reflections stay yours.",
+    "asymmetryYouLead": "{partnerLabel} hasn't caught up yet. If it feels right, a gentle nudge — no pressure.",
+    "asymmetryPartnerLead": "{partnerLabel} is a bit ahead of you. Not a race — just so you know.",
+    "coachHint": "{coachName} sees this thread and can reply.",
+    "footerNote": "This surface is shared. Your reflections on individual items stay private."
   },
   "myAdults": {
     "backToMyMioshy": "Back to My Mioshy",
@@ -1817,7 +1851,16 @@
     "ownedBadge": "Owned",
     "openGame": "Open game",
     "unlockBadge": "Unlock",
-    "detailsAndUnlock": "Details & unlock"
+    "detailsAndUnlock": "Details & unlock",
+    "metaTitle": "Adults Only · Gallery",
+    "metaDescription": "Every experience you've unlocked, in one place.",
+    "heroLede": "Every experience you've purchased, in one place. Tap any card to open the full content - for both of you.",
+    "monthlyAvailableTitle": "Your monthly game is available",
+    "monthlyAvailableBody": "Your subscription includes one Adults game per month. Pick which one to unlock from the catalogue below.",
+    "monthlyConsumedTemplate": "Your monthly game is used. The next one unlocks {date}.",
+    "monthlyNextSoon": "soon",
+    "moreGamesLede": "Cards to expand your gallery. Tap any to open its page and unlock.",
+    "emptyGalleryLede": "Pick your first experience and unlock a world built just for the two of you. Everything you own appears here - automatically for your partner too."
   },
   "myJourney": {
     "metaTitle": "Your tuned clinic",
@@ -1832,6 +1875,14 @@
     "backToMyMioshy": "Back to My Mioshy",
     "coachingEyebrow": "Coaching with Mioshy",
     "pageHeading": "Your tuned clinic",
-    "sharedSpace": "Your shared space"
+    "sharedSpace": "Your shared space",
+    "metaDescription": "Personal content tuned to your priorities and what matters most to you.",
+    "focusFallback": "Connection",
+    "activityAssessmentDetail": "Top focus: {focusLabel}",
+    "activityClinicianReplied": "Your clinician replied",
+    "headerLede": "Content ordered by what matters to you. Each partner sees their own ranking - your priorities lead.",
+    "sharedSpaceBody": "What you've done together, your shared thread, and messages addressed to both of you.",
+    "priorityHintTemplate": "Ordered by your ranking: top focus is {focusLabel}. Your partner sees their own order.",
+    "footerNote": "Private space. Everything here is yours alone."
   }
 }

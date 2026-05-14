@@ -42,9 +42,13 @@ export async function generateMetadata({
 }: {
   params: { locale: string };
 }): Promise<Metadata> {
-  const isHe = params.locale === "he";
+  const t = await getCmsTranslations({
+    locale: params.locale === "he" ? "he" : "en",
+    namespace: "myJourneyTogether",
+    page: "my",
+  });
   return {
-    title: `Mioshy - ${isHe ? "ביחד" : "Together"}`,
+    title: `Mioshy - ${t("metaTitle")}`,
     robots: { index: false, follow: false },
   };
 }
@@ -213,11 +217,11 @@ export default async function TogetherPage({
             <h1 className="mt-3 font-heading text-3xl font-bold tracking-tight sm:text-4xl">
               <CmsText cmsKey="myJourneyTogether.sharedSpace" />
             </h1>
-            <p className="mt-2 max-w-prose text-[15px] leading-relaxed text-white/65">
-              {isHe
-                ? "מה שאתם רואים כאן — שניכם רואים. זה לא הרהורים אישיים, זו השיחה שלכם כזוג. ההרהורים האישיים שלכם נשארים אצלכם בלבד."
-                : "Everything here, you both see. This isn't private reflections — it's your conversation as a couple. Your personal reflections stay yours."}
-            </p>
+            <CmsText
+              cmsKey="myJourneyTogether.headerBlurb"
+              as="p"
+              className="mt-2 max-w-prose text-[15px] leading-relaxed text-white/65"
+            />
           </header>
 
           {/* Joint progress strip — three small numbers, scannable */}
@@ -254,13 +258,10 @@ export default async function TogetherPage({
               aria-live="polite"
             >
               <p className="text-[14px] leading-snug text-amber-100/90">
-                {isHe
-                  ? asymmetry.leaderUserId === effectiveUserId
-                    ? `${partnerLabel} עוד לא הספיק/ה לסגור פערים. אם בא לכם — אפשר להזכיר עדינות, לא לחץ.`
-                    : `${partnerLabel} קצת קדימה אתכם. לא תחרות — רק כדאי לדעת.`
-                  : asymmetry.leaderUserId === effectiveUserId
-                    ? `${partnerLabel} hasn't caught up yet. If it feels right, a gentle nudge — no pressure.`
-                    : `${partnerLabel} is a bit ahead of you. Not a race — just so you know.`}
+                {(asymmetry.leaderUserId === effectiveUserId
+                  ? t("asymmetryYouLead")
+                  : t("asymmetryPartnerLead")
+                ).replace("{partnerLabel}", partnerLabel)}
               </p>
             </section>
           ) : null}
@@ -279,18 +280,16 @@ export default async function TogetherPage({
           {/* Coach hint */}
           {coachName ? (
             <p className="mt-4 text-center text-[12px] text-white/45">
-              {isHe
-                ? `${coachName} רואה את השיחה הזו ויכולה להגיב.`
-                : `${coachName} sees this thread and can reply.`}
+              {t("coachHint").replace("{coachName}", coachName)}
             </p>
           ) : null}
 
           <footer className="mt-12 border-t border-white/5 pt-6 text-center">
-            <p className="text-xs text-white/40">
-              {isHe
-                ? "המשטח הזה משותף. ההרהורים שלכם על פריטים בודדים נשארים פרטיים."
-                : "This surface is shared. Your reflections on individual items stay private."}
-            </p>
+            <CmsText
+              cmsKey="myJourneyTogether.footerNote"
+              as="p"
+              className="text-xs text-white/40"
+            />
           </footer>
         </main>
       </div>
