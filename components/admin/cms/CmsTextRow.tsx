@@ -1,14 +1,30 @@
 "use client";
 
-import { useRef, useState, type RefObject } from "react";
+import { useMemo, useRef, useState, type RefObject } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { saveCmsText } from "@/lib/cms/actions";
+import {
+  COLOR_PRESETS,
+  COLOR_PRESET_ORDER,
+  HEX_VALUE_RE,
+  resolveColorOverride,
+  type ColorPresetName,
+} from "@/lib/cms/colors";
 import { normalizeRichText } from "@/lib/cms/render";
 import type { CmsTextRow as CmsTextRowType } from "@/lib/cms/types";
+import { cn } from "@/lib/utils";
 
 /**
  * CmsTextRow — one editable key. Renders Hebrew + English textareas
@@ -30,6 +46,80 @@ import type { CmsTextRow as CmsTextRowType } from "@/lib/cms/types";
  * textarea values read straight from the DOM via refs at the moment
  * the user clicks Save — bypasses any closure-staleness ambiguity.
  */
+// ── Colour-section helpers ───────────────────────────────────────────
+//
+// The DB stores `color_override` as one of three shapes:
+//   null              → no override
+//   "preset:<name>"   → named preset
+//   "#XXXXXX"         → 6-digit HEX
+//
+// The editor UI splits that into three pieces of state — `colorMode`,
+// `colorPreset`, `colorHex` — so the dropdown and the HEX input can
+// each be controlled independently. These two helpers convert between
+// the wire shape and the UI shape.
+
+type ColorMode = "default" | "preset" | "custom";
+
+type ColorUiState = {
+  mode: ColorMode;
+  preset: ColorPresetName | "";
+  hex: string;
+};
+
+/**
+ * Storage value → UI state. Used to seed initial editor state from the
+ * row prop AND to compute the baseline when the dropdown is reverted
+ * or after a successful save.
+ *
+ * Unknown preset names (a renamed preset that left orphan rows) and
+ * non-HEX strings (junk that bypassed the DB CHECK somehow) both fall
+ * back to "default" — matches `resolveColorOverride`'s graceful path.
+ */
+function deriveColorUiState(value: string | null): ColorUiState {
+  if (value === null) return { mode: "default", preset: "", hex: "" };
+  if (value.startsWith("preset:")) {
+    const name = value.slice("preset:".length);
+    if (name in COLOR_PRESETS) {
+      return { mode: "preset", preset: name as ColorPresetName, hex: "" };
+    }
+    return { mode: "default", preset: "", hex: "" };
+  }
+  if (HEX_VALUE_RE.test(value)) {
+    return { mode: "custom", preset: "", hex: value };
+  }
+  return { mode: "default", preset: "", hex: "" };
+}
+
+/**
+ * UI state → storage value (or validation error). The save action
+ * runs the same Zod refine on its side; this client-side check lets
+ * us disable the Save button before the round-trip.
+ *
+ * In "custom" mode an empty HEX returns null (treated as Default until
+ * the admin types something). A non-empty but malformed HEX returns
+ * an error so the input gets the red border.
+ */
+function buildColorOverride(state: ColorUiState): {
+  value: string | null;
+  error: string | null;
+} {
+  if (state.mode === "default") return { value: null, error: null };
+  if (state.mode === "preset") {
+    if (!state.preset) return { value: null, error: null };
+    return { value: `preset:${state.preset}`, error: null };
+  }
+  // custom
+  const trimmed = state.hex.trim();
+  if (trimmed.length === 0) return { value: null, error: null };
+  if (!HEX_VALUE_RE.test(trimmed)) {
+    return {
+      value: null,
+      error: "HEX לא תקין. נדרש פורמט #XXXXXX (6 ספרות).",
+    };
+  }
+  return { value: trimmed, error: null };
+}
+
 export function CmsTextRow({ row }: { row: CmsTextRowType }) {
   // Editor state — what's currently typed. We keep these for the
   // "dirty" check + the Revert button. The actual save reads from the
@@ -50,6 +140,45 @@ export function CmsTextRow({ row }: { row: CmsTextRowType }) {
   const [isRich, setIsRich] = useState<boolean>(row.is_rich);
   const [baselineIsRich, setBaselineIsRich] = useState<boolean>(row.is_rich);
 
+  // Sprint 5 — colour-override editor state. Three pieces because the
+  // dropdown, the HEX input, and the "Default" sentinel each need to
+  // be controlled independently. The single canonical baseline is
+  // `baselineColorOverride` (the wire shape); the baseline UI state
+  // is derived from it on the fly.
+  const initialColorState = useMemo(
+    () => deriveColorUiState(row.color_override),
+    [row.color_override],
+  );
+  const [colorMode, setColorMode] = useState<ColorMode>(initialColorState.mode);
+  const [colorPreset, setColorPreset] = useState<ColorPresetName | "">(
+    initialColorState.preset,
+  );
+  const [colorHex, setColorHex] = useState<string>(initialColorState.hex);
+  const [baselineColorOverride, setBaselineColorOverride] = useState<
+    string | null
+  >(row.color_override);
+
+  const baselineColorState = useMemo(
+    () => deriveColorUiState(baselineColorOverride),
+    [baselineColorOverride],
+  );
+
+  const colorBuild = buildColorOverride({
+    mode: colorMode,
+    preset: colorPreset,
+    hex: colorHex,
+  });
+
+  // Dirty if the UI shape (mode/preset/hex) differs from the baseline.
+  // Comparing UI shape rather than the built value lets a malformed
+  // HEX still register as dirty so Revert restores correctly — the
+  // built value would be null in that case and might match baseline
+  // by coincidence.
+  const colorIsDirty =
+    colorMode !== baselineColorState.mode ||
+    colorPreset !== baselineColorState.preset ||
+    colorHex !== baselineColorState.hex;
+
   const [isSaving, setIsSaving] = useState(false);
 
   // Refs onto the underlying <textarea> elements. On Save we read
@@ -59,10 +188,18 @@ export function CmsTextRow({ row }: { row: CmsTextRowType }) {
   const enRef = useRef<HTMLTextAreaElement>(null);
 
   const isDirty =
-    he !== baselineHe || en !== baselineEn || isRich !== baselineIsRich;
+    he !== baselineHe ||
+    en !== baselineEn ||
+    isRich !== baselineIsRich ||
+    colorIsDirty;
+
+  // Save is gated on validity too — a malformed custom HEX must not
+  // round-trip to the server (which would return its own validation
+  // error, but we can save the round-trip).
+  const canSave = isDirty && !isSaving && colorBuild.error === null;
 
   async function handleSave() {
-    if (isSaving || !isDirty) return;
+    if (!canSave) return;
 
     // Source of truth at submit-time: the DOM value of each textarea.
     // Fall back to React state if the ref isn't attached (shouldn't
@@ -70,6 +207,10 @@ export function CmsTextRow({ row }: { row: CmsTextRowType }) {
     const heToSave = heRef.current?.value ?? he;
     const enToSave = enRef.current?.value ?? en;
     const isRichToSave = isRich;
+    // Sprint 5 — colorBuild.value already carries the wire shape
+    // (null / "preset:<name>" / "#XXXXXX"). canSave guarantees error
+    // is null, so it's safe to send.
+    const colorOverrideToSave = colorBuild.value;
 
     // Diagnostic — visible in DevTools console + Vercel runtime logs
     // (the server action below also logs). Helps narrow down whether
@@ -80,6 +221,7 @@ export function CmsTextRow({ row }: { row: CmsTextRowType }) {
       he: heToSave,
       en: enToSave,
       is_rich: isRichToSave,
+      color_override: colorOverrideToSave,
     });
 
     setIsSaving(true);
@@ -89,6 +231,7 @@ export function CmsTextRow({ row }: { row: CmsTextRowType }) {
         he: heToSave,
         en: enToSave,
         is_rich: isRichToSave,
+        color_override: colorOverrideToSave,
       });
       if (result.ok) {
         // Reconcile state + baseline to the just-saved values.
@@ -97,6 +240,7 @@ export function CmsTextRow({ row }: { row: CmsTextRowType }) {
         setBaselineHe(heToSave);
         setBaselineEn(enToSave);
         setBaselineIsRich(isRichToSave);
+        setBaselineColorOverride(colorOverrideToSave);
         toast.success("Saved", {
           description: row.key,
           duration: 2000,
@@ -121,7 +265,70 @@ export function CmsTextRow({ row }: { row: CmsTextRowType }) {
     setHe(baselineHe);
     setEn(baselineEn);
     setIsRich(baselineIsRich);
+    // Colour revert — UI back to whatever the baseline storage value
+    // would derive to. Reads `baselineColorState` (memoised above).
+    setColorMode(baselineColorState.mode);
+    setColorPreset(baselineColorState.preset);
+    setColorHex(baselineColorState.hex);
   }
+
+  // Dropdown handler — single source of truth for "what does the user
+  // mean when they pick option X". The dropdown carries one of:
+  //   "default" | "custom" | "preset:<name>"
+  // We map that back into the three-piece UI state. When switching
+  // INTO custom mode we pre-populate the HEX input from the currently
+  // resolved colour (if it has a HEX form) so the admin starts from a
+  // known-good value rather than an empty box.
+  function handleColorDropdownChange(next: string) {
+    if (next === "default") {
+      setColorMode("default");
+      return;
+    }
+    if (next === "custom") {
+      // Seed from the currently shown preset's HEX if it has one.
+      // Falls through to whatever colorHex already is (last-typed
+      // value) for repeated default↔custom toggles. The `muted`
+      // preset is rgba and has no HEX form, so we leave the input
+      // empty in that case rather than seed something invalid.
+      if (colorMode === "preset" && colorPreset) {
+        const resolved = COLOR_PRESETS[colorPreset];
+        if (resolved.startsWith("#")) {
+          setColorHex(resolved);
+        }
+      }
+      setColorMode("custom");
+      return;
+    }
+    if (next.startsWith("preset:")) {
+      const name = next.slice("preset:".length);
+      if (name in COLOR_PRESETS) {
+        setColorMode("preset");
+        setColorPreset(name as ColorPresetName);
+      }
+    }
+  }
+
+  function handleColorReset() {
+    setColorMode("default");
+    setColorPreset("");
+    setColorHex("");
+  }
+
+  // Dropdown's controlled value — derives directly from UI state so
+  // there's only one source of truth.
+  const dropdownValue: string =
+    colorMode === "default"
+      ? "default"
+      : colorMode === "custom"
+        ? "custom"
+        : colorPreset
+          ? `preset:${colorPreset}`
+          : "default";
+
+  // Resolved CSS colour for the swatch preview. Uses the same
+  // resolver the public site uses, so what the admin sees in the
+  // swatch is exactly what visitors will get.
+  const swatchColor = resolveColorOverride(colorBuild.value);
 
   return (
     <div
@@ -201,6 +408,113 @@ export function CmsTextRow({ row }: { row: CmsTextRowType }) {
         />
       </div>
 
+      {/* Sprint 5 — Colour override section. Sits between the textareas
+          and the action row so the bottom of the card stays consistent
+          (Revert / Save always at the very bottom). */}
+      <div className="mt-3 rounded-md border border-slate-200 bg-white p-3">
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <Label className="text-xs font-semibold text-slate-700">Color</Label>
+          {colorMode !== "default" ? (
+            <button
+              type="button"
+              onClick={handleColorReset}
+              className="rounded border border-slate-300 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-600 transition hover:border-slate-400 hover:bg-slate-50 hover:text-slate-900"
+              title="Clear the override — the row will use the component's default colour"
+            >
+              Reset to default
+            </button>
+          ) : null}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Live swatch — solid for an active colour, diagonal-stripe
+              for "no override" so the admin can tell at a glance. */}
+          <div
+            className={cn(
+              "h-8 w-8 shrink-0 rounded border",
+              swatchColor
+                ? "border-slate-300"
+                : "border-dashed border-slate-300 bg-slate-50",
+            )}
+            style={swatchColor ? { backgroundColor: swatchColor } : undefined}
+            title={
+              swatchColor
+                ? `Resolved colour: ${swatchColor}`
+                : "No override — component default"
+            }
+            aria-label="Colour preview"
+          />
+
+          {/* Mode selector. Single source of truth for default vs
+              preset vs custom; the "Custom HEX…" option reveals the
+              text input below. */}
+          <Select
+            value={dropdownValue}
+            onValueChange={handleColorDropdownChange}
+          >
+            <SelectTrigger className="h-8 w-44 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="default">Default (no override)</SelectItem>
+              {COLOR_PRESET_ORDER.map((name) => (
+                <SelectItem key={name} value={`preset:${name}`}>
+                  {name}
+                </SelectItem>
+              ))}
+              <SelectItem value="custom">Custom HEX…</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* HEX input — only in custom mode. Fixed-width monospace so
+              "#" plus 6 hex chars fit cleanly. The red border + ring
+              fire whenever the build returns an error (any non-empty
+              malformed value). */}
+          {colorMode === "custom" ? (
+            <Input
+              value={colorHex}
+              onChange={(e) => setColorHex(e.target.value)}
+              placeholder="#RRGGBB"
+              spellCheck={false}
+              autoComplete="off"
+              maxLength={7}
+              aria-invalid={colorBuild.error !== null}
+              className={cn(
+                "h-8 w-32 font-mono text-xs",
+                colorBuild.error !== null &&
+                  "border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500/40",
+              )}
+            />
+          ) : null}
+        </div>
+
+        {/* Validation error — only relevant in custom mode. The dir+lang
+            + leading icon make the Hebrew copy below readable in either
+            UI direction; the error text itself stays short. */}
+        {colorMode === "custom" && colorBuild.error !== null ? (
+          <p
+            dir="rtl"
+            lang="he"
+            className="mt-2 text-[11px] font-medium text-red-600"
+          >
+            {colorBuild.error}
+          </p>
+        ) : null}
+
+        {/* Custom-mode warning. Always shown when in custom mode, not
+            just on error — picking custom at all is the moment to
+            warn, not after the admin already typed a HEX. */}
+        {colorMode === "custom" ? (
+          <p
+            dir="rtl"
+            lang="he"
+            className="mt-2 text-[11px] text-amber-700"
+          >
+            ⚠️ ערכים מותאמים יכולים לשבור את ה-design system. השתמש בזהירות.
+          </p>
+        ) : null}
+      </div>
+
       {/* Actions */}
       <div className="mt-3 flex items-center justify-end gap-2">
         <Button
@@ -214,7 +528,12 @@ export function CmsTextRow({ row }: { row: CmsTextRowType }) {
         <Button
           size="sm"
           onClick={handleSave}
-          disabled={!isDirty || isSaving}
+          disabled={!canSave}
+          title={
+            colorBuild.error !== null
+              ? "Fix the colour error before saving."
+              : undefined
+          }
         >
           {isSaving ? "Saving…" : "Save"}
         </Button>
