@@ -1,10 +1,18 @@
 # Sprint 4 #3 — Phase 2 Migration Handoff
 
-**Status as of 2026-05-13 late PM:** Phase 1 ✅ + Phase 2A ✅ +
-Phase 2B ✅ + Phase 2C ✅ (page routes only) + Phase 2D ✅ shipped.
-Phase 2E (questionnaire.json) deferred per the architectural-call
-section below. Marketing sub-components on the mioshy-sex routes
-(Adults*/BetweenUs*) deferred — see "Remaining work" at the end.
+**Status as of 2026-05-14:** Phase 1 ✅ + Phase 2A ✅ + Phase 2B ✅ +
+Phase 2C ✅ (page routes only) + Phase 2D ✅ shipped, but an audit
+revealed substantial leftover hardcoded bilingual content across
+the same pages. **Itzik chose Option A — full migration**: every
+user-visible text must be CMS-editable. Now executing that sweep,
+file by file, across multiple sessions.
+
+> **Stop signal**: if you're picking this up mid-flight and the
+> previous session asked for a "סבב חדש", continue from
+> **"Active migration — full-coverage sweep"** below. The earlier
+> sections (Phase 2A-D recipe, mioshy-sex marketing sub-components,
+> Phase 2E call) remain accurate context but are no longer the
+> active workstream.
 
 Headline totals:
 - **23 components/pages** migrated across Phases 2A–2D
@@ -592,3 +600,148 @@ grep -nE '>\s*\{t\(["`]' app/\[locale\]/<route>/page.tsx
 ```
 
 A clean migrated page has zero hits.
+
+---
+
+## Active migration — full-coverage sweep (started 2026-05-14)
+
+### Why this exists
+
+The "Phase 2 complete" claim from 2026-05-13 turned out to be
+**partial**. An audit (71 files scanned across the Phase 2 scope
+dirs) found **57 inline-bilingual ternaries with HE content on
+`app/[locale]/games/page.tsx` alone**, plus 36 hardcoded HE
+strings in JSX. Other pages had similar leftovers. The drop-in
+`getCmsTranslations` swap only migrated strings that were already
+keyed in next-intl JSON — anything written as inline
+`{isHe ? "…" : "…"}` was untouched.
+
+**Decision (2026-05-14):** Option A — every user-visible string
+must be CMS-editable. Multi-session sweep, page by page.
+
+### Audit baseline
+
+Per-file ternary + HE-in-JSX counts at session start. Re-run the
+audit script before declaring this workstream complete.
+
+```bash
+python3 -c '
+import os, re, glob
+SCOPE = [
+  "app/[[]locale[]]/games", "app/[[]locale[]]/journey",
+  "app/[[]locale[]]/mioshy-sex", "app/[[]locale[]]/my",
+  "components/journey", "components/games", "components/game",
+  "components/adults", "components/between-us",
+]
+TERN_HE  = re.compile(r"(?:locale\s*===\s*[\"\x27]he[\"\x27]|isHe)\s*\?\s*[\"\x27`].*[א-ת]")
+TERN_ANY = re.compile(r"(?:locale\s*===\s*[\"\x27]he[\"\x27]|isHe)\s*\?")
+JSX_HE   = re.compile(r">[^<>]*?[א-ת][^<>]*?<")
+def strip(s):
+  s = re.sub(r"/\*[\s\S]*?\*/", "", s)
+  return re.sub(r"//[^\n]*", "", s)
+for sd in SCOPE:
+  for p in sorted(glob.glob(sd+"/**/*.tsx", recursive=True)):
+    with open(p) as f: src = strip(f.read())
+    ta=len(TERN_ANY.findall(src)); th=len(TERN_HE.findall(src)); j=len(JSX_HE.findall(src))
+    if ta or j: print(f"{p}: {ta}/{th}/{j}")
+'
+```
+
+### Skip rules (per Itzik 2026-05-14, Option A)
+
+- `dir={isHe ? "rtl" : "ltr"}` — direction, not content
+- Icon swaps (`Arrow = isHe ? ArrowLeft : ArrowRight`)
+- Data-field access (`isHe ? row.he : row.en` / `game.title_he`)
+- Everything else **must** be in CMS
+
+### Method per file
+
+1. Confirm `<CmsTextProvider rows={cmsRows}>` is mounted (server
+   component loads `loadCmsTextsForPage(page)` first).
+2. Read the file in chunks; identify every translatable string.
+3. Bulk-add keys via `scripts/cms-add-keys.mjs` (one batch per file
+   or per logical section).
+4. Replace JSX children with `<CmsText cmsKey="…" as="…" />`.
+   For string-prop slots (alt, `LazyLiveDemoHero title={…}`), use
+   `t("…")` from `getCmsTranslations`. Refactoring sub-components
+   to accept cmsKey props is out of scope unless explicitly
+   requested.
+5. `pnpm build` after each file.
+6. Commit + push **per file** (or small 2-3 file batch if they're
+   tightly related).
+7. If the context window is getting tight: STOP cleanly. Update
+   this doc with what landed + what remains. Ask Itzik for a
+   fresh session. **Do not push partial work mid-file.**
+
+### Status — file by file
+
+#### `app/[locale]/games/page.tsx` (worst file, 77/57/36 at start)
+
+| Batch | Keys | Sections | Commit | Status |
+|---|---|---|---|---|
+| 1 | 21 | authed catalog view (192-313) · whyMeta stats · trust labels · LazyLiveDemoHero non-CMS props · Why-section eyebrow/hook | `b5f6604` | ✅ |
+| 2 | ~6 | `benefits[]` array (lines 429-451): 3 items × {title, body} | TODO | pending |
+| 3 | ~12 | `personas[]` array (lines 455-489): 3 items × {title, tag, body, quote} | TODO | pending |
+| 4 | ~6 | "By the numbers" pull-quote (lines 688-727) — **needs structural split** because `<Counter>` interleaves with italic `<em>` spans. Strategy: keys for prefix (`כבר ` / `Already `), middle (` זוגות מרחבי העולם` / ` couples worldwide`), connector (`שיחקו ב` / `have played `), suffix (`משחקים המקוריים של מיאושי` / `Mioshy's original games`). Keep `<Counter>` and `<em>` styling as inline JSX, only the text comes from CMS. | TODO | pending |
+| 5 | ~4 | "התחילו חינם" + kicker + "התחילו לשחק עכשיו" CTAs (lines 741-783) | TODO | pending |
+| 6 | 0 (reuse) | Marketing-side cataloguePill + catalogueHint (lines 893, 902) — reuse Batch 1 keys | TODO | pending |
+| 7 | 0 (reuse) | Marketing snakes card (lines 1010-1043) — reuse Batch 1 keys | TODO | pending |
+| 8 | ~6 | Personas eyebrow + h2 split italic (lines 1179, 1188-onwards: `"אין זוגיות משעממת"` line 1, italic accent line 2 + the EN counterparts) | TODO | pending |
+| 9 | TBD | "למה זה עובד" section (line 1314+, not yet read) | TODO | pending |
+
+**Expected total for games/page.tsx after all batches: ~60 keys.**
+
+#### Other files in scope (untouched in this active sweep)
+
+| File | tern-w/-HE | HE-in-JSX | Notes |
+|---|---:|---:|---|
+| `app/[locale]/journey/page.tsx` | 19 | 24 | The locked view (`if (user && !hasJourneyEntitlement)`) has hardcoded HE/EN for h1 split, lede, "back" link. Plus `whyMeta.stat` (lines ~322-332). |
+| `app/[locale]/journey/timeline/page.tsx` | 23 | 17 | Never in any Phase 2 scope. Audit-discovered. |
+| `app/[locale]/journey/timeline/[scheduledId]/page.tsx` | 6 | 5 | Never in any Phase 2 scope. Audit-discovered. |
+| `app/[locale]/mioshy-sex/page.tsx` | 2 | 0 | Phase 2C touched but missed strings. |
+| `app/[locale]/mioshy-sex/[slug]/page.tsx` | 0 | 0 | 18 any-tern but all data access — likely NOOP after audit. Re-check. |
+| `app/[locale]/mioshy-sex/[slug]/play/page.tsx` | 2 | 1 | Phase 2C touched but missed strings. |
+| `app/[locale]/my/page.tsx` | 19 | 11 | Many noise (`dir`/icon) but real ones: notification aria, metaTitle, sub-component fallbacks. |
+| `app/[locale]/my/adults/page.tsx` | 8 | 6 | Phase 2D touched but missed strings. |
+| `app/[locale]/my/games/page.tsx` | 4 | 2 | Phase 2D touched but missed strings. |
+| `app/[locale]/my/journey/page.tsx` | 9 | 6 | Phase 2D touched but missed strings. |
+| `app/[locale]/my/journey/together/page.tsx` | 4 | 5 | Phase 2D touched but missed strings. |
+| `components/games/GamesMarketingHero.tsx` | 1 | 1 | Small component. |
+| `components/game/GameTypeSelector.tsx` | 2 | 0 | Small. |
+| `components/adults/AdultsHeroBuy.tsx` | 17 | 14 | Issue 2 deferred — now in scope. |
+| `components/adults/AdultsMarketingHero.tsx` | 18 | 10 | Issue 2. |
+| `components/adults/AdultsMarketingSections.tsx` | 44 | 28 | Issue 2 — biggest single sub-component. |
+| `components/adults/AdultsMarketingSections.variant-personal.tsx` | 38 | 17 | Issue 2 variant. |
+| `components/adults/AdultsPricingPanel.tsx` | 21 | 13 | Issue 2. |
+| `components/between-us/BetweenUsStorefront.tsx` | 15 | 8 | Issue 2. |
+| `components/between-us/InvitePartnerByEmail.tsx` | 12 | 9 | Issue 2. |
+| `components/between-us/PairAndPurchasePanel.tsx` | 13 | 12 | Issue 2. |
+| `components/between-us/PairCodeWidget.tsx` | 3 | 1 | Issue 2 — small. |
+| `components/between-us/RedeemCodeButton.tsx` | 9 | 5 | Issue 2. |
+| `components/game/snakes/GameLobby.tsx` | 13 | 22 | Snakes — worst snakes file. |
+| `components/game/snakes/PlayerSetup.tsx` | 5 | 4 | Snakes. |
+| `components/game/snakes/QuestionModal.tsx` | 3 | 2 | Snakes. |
+| `components/game/snakes/SnakesGameBoard.tsx` | 11 | 5 | Snakes. |
+| `components/game/snakes/CoinFlip.tsx` | 0 | 2 | Snakes — hardcoded HE only. |
+| `components/game/snakes/GameLog.tsx` | 0 | 1 | Snakes — hardcoded HE only. |
+
+**Sweep total at session start: ~32 files, ~310 inline HE ternaries, ~190 hardcoded HE in JSX. After Batch 1 of games/page.tsx: ~289 ternaries + ~190 JSX hardcoded remaining.**
+
+### Next session — start here
+
+1. Read this section.
+2. `cd /Users/uxellent/mioshy/.claude/worktrees/admin-cms` and `git pull` to get latest.
+3. Pick up **games/page.tsx Batch 2** (`benefits[]` array, lines 429-451).
+   - Recommended approach: convert the array generation to keep
+     the data shape but switch from inline ternaries to `t()`
+     calls. Then in the JSX render that maps over `benefits`,
+     either render via `<CmsText cmsKey={\`gamesHub.benefits.${i}.title\`} as="h3" />` directly (preferred — adds rich support), or keep the array shape and accept that this content is plain.
+   - Find existing JSX render with `grep -n "benefits.map" app/\[locale\]/games/page.tsx`.
+4. Build + commit + push per the per-file rule.
+5. Continue through Batches 3-9 of games/page.tsx, then move on to journey/page.tsx, etc., per the file list above.
+6. When complete: run the audit script again, confirm zero ternaries + zero HE-in-JSX across all files in scope, run `node --env-file=.env.local scripts/seed-cms-texts.mjs`, push, deliver final URL.
+7. **Don't forget**: at some point after the sweep, also patch `scripts/seed-cms-texts.mjs` to fix the section-fragmentation rule (Itzik approved this separately — see commit `07e2414`'s `scripts/migration-resection.sql`; the seed script itself still has the old rule). This is a follow-up commit, not part of the migration sweep.
+
+### Latest preview URL (before sweep started)
+
+`https://mioshy-jepk0920o-itzikbab-gmailcoms-projects.vercel.app` — Phase 1 rich-text fix landed there.
