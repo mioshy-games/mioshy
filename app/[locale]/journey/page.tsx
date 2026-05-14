@@ -31,6 +31,9 @@
 import type { Metadata } from "next";
 import { setRequestLocale } from "next-intl/server";
 import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
+import { loadCmsTextsForPage } from "@/lib/cms/server";
+import { CmsTextProvider } from "@/components/cms/CmsTextProvider";
+import { CmsText } from "@/components/cms/CmsText";
 import { notFound } from "next/navigation";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
 import { unstable_noStore as noStore } from "next/cache";
@@ -130,11 +133,20 @@ export default async function JourneyMarketingPage({
   setRequestLocale(locale);
   const isHe = locale === "he";
   // CMS-backed translator (see lib/cms/getCmsTranslations.ts).
+  // Retained for raw-string slots — metadata, JSON-LD breadcrumbs, alt
+  // attributes — where HTML can't render anyway. JSX-child consumers
+  // below render via <CmsText> instead so they pick up the is_rich
+  // flag from each CMS row and render <em>/<strong> styled per the
+  // .cms-rich class in globals.css.
   const t = await getCmsTranslations({
     locale: isHe ? "he" : "en",
     namespace: "journeyHub",
     page: "journey",
   });
+  // CMS rows for this page → handed to <CmsTextProvider> so every
+  // nested <CmsText> can look up its row by key and apply the
+  // is_rich/typography overrides set in the admin editor.
+  const cmsRows = await loadCmsTextsForPage("journey");
 
   // ── State-aware CTA wiring ──────────────────────────────────────────────
   const supabase = await createServerSupabaseClient();
@@ -165,8 +177,8 @@ export default async function JourneyMarketingPage({
   // seeing the full marketing page below - they're not yet members and
   // need the broader pitch.
   if (user && !hasJourneyEntitlement) {
-    const lockedTrust = [0, 1, 2, 3].map((i) => t(`trust.${i}`));
     return (
+      <CmsTextProvider rows={cmsRows}>
       <div
         dir={isHe ? "rtl" : "ltr"}
         className="relative isolate min-h-[100dvh] overflow-hidden text-white"
@@ -241,18 +253,19 @@ export default async function JourneyMarketingPage({
           </div>
 
           <ul className="mt-12 grid gap-3 text-left sm:grid-cols-2">
-            {lockedTrust.map((item, idx) => (
+            {[0, 1, 2, 3].map((i) => (
               <li
-                key={idx}
+                key={i}
                 className="flex items-start gap-2 rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-white/80 backdrop-blur"
               >
                 <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" />
-                <span>{item}</span>
+                <CmsText cmsKey={`journeyHub.trust.${i}`} as="span" />
               </li>
             ))}
           </ul>
         </main>
       </div>
+      </CmsTextProvider>
     );
   }
 
@@ -300,10 +313,6 @@ export default async function JourneyMarketingPage({
   };
 
   // ── Section data ────────────────────────────────────────────────────────
-  const whyItems = [0, 1, 2, 3].map((i) => ({
-    h: t(`why.items.${i}.h`),
-    p: t(`why.items.${i}.p`),
-  }));
   // V2 wine-palette unified card design - same icon-tile chrome across all 4,
   // only icon and stat differ. No more rainbow.
   const whyMeta = [
@@ -329,26 +338,12 @@ export default async function JourneyMarketingPage({
     },
   ];
 
-  const steps = [0, 1, 2].map((i) => ({
-    title: t(`how.steps.${i}.title`),
-    body: t(`how.steps.${i}.body`),
-    tag: isHe
-      ? ["האבחון", "הניתוח", "המסלול"][i]
-      : ["The diagnostic", "The analysis", "The path"][i],
-  }));
-
-  const insideCards = [0, 1, 2, 3].map((i) => ({
-    h: t(`inside.cards.${i}.h`),
-    p: t(`inside.cards.${i}.p`),
-  }));
   const insideMeta = [
     { Icon: Target, numeral: "I" },
     { Icon: MessageCircle, numeral: "II" },
     { Icon: Sparkles, numeral: "III" },
     { Icon: Video, numeral: "IV" },
   ];
-
-  const trust = [0, 1, 2, 3].map((i) => t(`trust.${i}`));
 
   // When the viewer already has an active journey, the assessment funnel
   // is a detour - send them straight to the timeline from every CTA.
@@ -365,6 +360,7 @@ export default async function JourneyMarketingPage({
       : t("ctaPrimary");
 
   return (
+    <CmsTextProvider rows={cmsRows}>
     <div
       className="relative min-h-[100dvh] overflow-hidden text-white"
       dir={isHe ? "rtl" : "ltr"}
@@ -402,10 +398,14 @@ export default async function JourneyMarketingPage({
             className="relative z-20 mx-auto hidden max-w-6xl items-center gap-2 px-4 pt-4 text-[13px] text-white/45 sm:flex"
           >
             <Link href="/" className="transition hover:text-white/75">
-              {t("breadcrumbHome")}
+              <CmsText cmsKey="journeyHub.breadcrumbHome" />
             </Link>
             <span aria-hidden className="text-white/30">/</span>
-            <span className="text-white/65">{t("breadcrumbJourney")}</span>
+            <CmsText
+              cmsKey="journeyHub.breadcrumbJourney"
+              as="span"
+              className="text-white/65"
+            />
           </nav>
 
           {/* Animated background - converging emerald ↔ amber blobs, floating
@@ -439,14 +439,16 @@ export default async function JourneyMarketingPage({
           <div className="relative z-10 mx-auto max-w-5xl px-4 pb-12 pt-10 text-center sm:pb-32 sm:pt-16">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/25 bg-emerald-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-emerald-100">
               <Sparkles className="h-3 w-3" />
-              {t("badge")}
+              <CmsText cmsKey="journeyHub.badge" />
             </span>
 
             {/* Preheader — calls out the personal-coaching value
                 proposition above the headline. Per Itzik 2026-05-07. */}
-            <p className="mt-5 text-[15px] font-medium uppercase tracking-[0.18em] text-amber-200/80">
-              {t("preheader")}
-            </p>
+            <CmsText
+              cmsKey="journeyHub.preheader"
+              as="p"
+              className="mt-5 text-[15px] font-medium uppercase tracking-[0.18em] text-amber-200/80"
+            />
 
             {/* Headline — H1 + italic light-weight subtitle so the
                 two-word lockup ("ליווי עם מיאושי" + "מותאם אישית")
@@ -458,15 +460,17 @@ export default async function JourneyMarketingPage({
                 fontWeight: 600,
               }}
             >
-              <span className="bg-gradient-to-br from-white via-emerald-100 to-amber-200 bg-clip-text text-transparent">
-                {t("h1")}
-              </span>
-              <span
+              <CmsText
+                cmsKey="journeyHub.h1"
+                as="span"
+                className="bg-gradient-to-br from-white via-emerald-100 to-amber-200 bg-clip-text text-transparent"
+              />
+              <CmsText
+                cmsKey="journeyHub.h1Sub"
+                as="span"
                 className="mt-2 block text-[0.7em] font-light text-emerald-100/75"
                 style={{ fontStyle: "italic" }}
-              >
-                {t("h1Sub")}
-              </span>
+              />
             </h1>
 
             {/* Visual placeholder — per Itzik 2026-05-07 the journey
@@ -494,9 +498,11 @@ export default async function JourneyMarketingPage({
               </div>
             </div>
 
-            <p className="mx-auto mt-8 max-w-2xl text-pretty text-[19px] leading-[1.65] text-white/80 sm:text-[20px]">
-              {t("lede")}
-            </p>
+            <CmsText
+              cmsKey="journeyHub.lede"
+              as="p"
+              className="mx-auto mt-8 max-w-2xl text-pretty text-[19px] leading-[1.65] text-white/80 sm:text-[20px]"
+            />
 
             {hasActiveAssignments ? (
               <div className="mx-auto mt-6 inline-flex items-center gap-2 rounded-full border border-emerald-300/40 bg-emerald-400/10 px-4 py-1.5 text-xs font-medium text-emerald-100 backdrop-blur-md">
@@ -508,7 +514,7 @@ export default async function JourneyMarketingPage({
             ) : hasInProgressAssessment ? (
               <div className="mx-auto mt-6 inline-flex items-center gap-2 rounded-full border border-amber-300/30 bg-amber-400/10 px-4 py-1.5 text-xs font-medium text-amber-100 backdrop-blur-md">
                 <Clock className="h-3.5 w-3.5" />
-                {t("resumeHint")}
+                <CmsText cmsKey="journeyHub.resumeHint" />
               </div>
             ) : null}
 
@@ -534,12 +540,12 @@ export default async function JourneyMarketingPage({
                 href={secondaryHref}
                 className="inline-flex min-h-[56px] items-center justify-center rounded-full border border-white/20 bg-white/5 px-7 text-base font-semibold text-white/85 backdrop-blur-md transition hover:border-white/40 hover:bg-white/10 hover:text-white"
               >
-                {t("ctaSecondary")}
+                <CmsText cmsKey="journeyHub.ctaSecondary" />
               </a>
             </div>
 
             <ul className="mt-10 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-white/70">
-              {trust.map((label, i) => (
+              {[0, 1, 2, 3].map((i) => (
                 <li key={i} className="inline-flex items-center gap-1.5">
                   <span
                     aria-hidden
@@ -547,7 +553,7 @@ export default async function JourneyMarketingPage({
                       ["bg-emerald-300", "bg-teal-300", "bg-amber-300", "bg-indigo-300"][i]
                     }`}
                   />
-                  {label}
+                  <CmsText cmsKey={`journeyHub.trust.${i}`} />
                 </li>
               ))}
             </ul>
@@ -570,21 +576,21 @@ export default async function JourneyMarketingPage({
               <div className="mx-auto max-w-3xl text-center">
                 <span className="inline-flex items-center gap-2.5 text-[13px] font-semibold uppercase tracking-[0.2em] text-[#170E14]">
                   <span className="h-[7px] w-[7px] rounded-sm bg-[#B83C4D] shadow-[0_0_0_3px_rgba(184,60,77,0.18)]" />
-                  {t("why.badge")}
+                  <CmsText cmsKey="journeyHub.why.badge" />
                 </span>
-                <h2
+                <CmsText
+                  cmsKey="journeyHub.why.title"
+                  as="h2"
                   className="mt-5 text-3xl font-bold leading-[1.05] tracking-[-0.02em] text-[#170E14] sm:text-4xl lg:text-5xl"
                   style={{
                     fontFamily: "'Frank Ruhl Libre', serif",
                     fontWeight: 600,
                   }}
-                >
-                  {t("why.title")}
-                </h2>
+                />
               </div>
 
               <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                {whyItems.map((it, i) => {
+                {[0, 1, 2, 3].map((i) => {
                   const { Icon, iconBg, stat } = whyMeta[i]!;
                   return (
                     <div
@@ -603,12 +609,16 @@ export default async function JourneyMarketingPage({
                       <span className="inline-block self-start justify-self-start rounded-full border border-[#EAE0E3] bg-[#FBE9EC] px-3 py-1 text-[12px] font-semibold uppercase tracking-[0.05em] text-[#8B2638] sm:mt-4 sm:justify-self-auto">
                         {stat}
                       </span>
-                      <h3 className="font-heading text-2xl font-bold leading-snug text-[#170E14] sm:mt-4 sm:text-xl">
-                        {it.h}
-                      </h3>
-                      <p className="text-[18px] leading-[1.6] text-[#4A3A45] sm:mt-2 sm:flex-1">
-                        {it.p}
-                      </p>
+                      <CmsText
+                        cmsKey={`journeyHub.why.items.${i}.h`}
+                        as="h3"
+                        className="font-heading text-2xl font-bold leading-snug text-[#170E14] sm:mt-4 sm:text-xl"
+                      />
+                      <CmsText
+                        cmsKey={`journeyHub.why.items.${i}.p`}
+                        as="p"
+                        className="text-[18px] leading-[1.6] text-[#4A3A45] sm:mt-2 sm:flex-1"
+                      />
                     </div>
                   );
                 })}
@@ -749,21 +759,25 @@ export default async function JourneyMarketingPage({
               <div className="mx-auto max-w-2xl text-center">
                 <span className="inline-flex items-center gap-2.5 text-[12px] font-semibold uppercase tracking-[0.32em] text-[#170E14]">
                   <span className="h-[7px] w-[7px] rounded-sm bg-[#B83C4D] shadow-[0_0_0_3px_rgba(184,60,77,0.18)]" />
-                  {t("how.badge")}
+                  <CmsText cmsKey="journeyHub.how.badge" />
                 </span>
-                <h2
+                <CmsText
+                  cmsKey="journeyHub.how.title"
+                  as="h2"
                   className="mt-7 text-[40px] leading-[1.05] tracking-[-0.02em] text-[#170E14] sm:text-5xl lg:text-[56px]"
                   style={{
                     fontFamily: "'Frank Ruhl Libre', serif",
                     fontWeight: 600,
                   }}
-                >
-                  {t("how.title")}
-                </h2>
+                />
               </div>
 
               <div className="mt-16 grid gap-8 lg:grid-cols-3 lg:gap-7">
-                {steps.map((s, i) => (
+                {[0, 1, 2].map((i) => {
+                  const tag = isHe
+                    ? ["האבחון", "הניתוח", "המסלול"][i]
+                    : ["The diagnostic", "The analysis", "The path"][i];
+                  return (
                   <article
                     key={i}
                     className="group relative flex h-full flex-col overflow-hidden rounded-[28px] border border-[#EAE0E3] bg-[#FBF5F2] p-9 shadow-sm transition duration-500 hover:-translate-y-2 hover:border-transparent hover:shadow-[0_28px_56px_-20px_rgba(74,23,33,0.22)] sm:p-10"
@@ -797,26 +811,29 @@ export default async function JourneyMarketingPage({
                         fontWeight: 500,
                       }}
                     >
-                      {s.tag}
+                      {tag}
                     </p>
 
                     {/* Title */}
-                    <h3
+                    <CmsText
+                      cmsKey={`journeyHub.how.steps.${i}.title`}
+                      as="h3"
                       className="relative mt-3 text-[28px] leading-[1.1] tracking-[-0.01em] text-[#170E14] sm:text-[32px]"
                       style={{
                         fontFamily: "'Frank Ruhl Libre', serif",
                         fontWeight: 600,
                       }}
-                    >
-                      {s.title}
-                    </h3>
+                    />
 
                     {/* Body */}
-                    <p className="relative mt-5 text-[18px] leading-[1.7] text-[#4A3A45]">
-                      {s.body}
-                    </p>
+                    <CmsText
+                      cmsKey={`journeyHub.how.steps.${i}.body`}
+                      as="p"
+                      className="relative mt-5 text-[18px] leading-[1.7] text-[#4A3A45]"
+                    />
                   </article>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </section>
@@ -852,22 +869,22 @@ export default async function JourneyMarketingPage({
               <div className="mx-auto max-w-2xl text-center">
                 <span className="inline-flex items-center gap-2.5 text-[12px] font-semibold uppercase tracking-[0.32em] text-[#E9C4CA]">
                   <span className="h-[7px] w-[7px] rounded-sm bg-[#B83C4D] shadow-[0_0_0_3px_rgba(184,60,77,0.25)]" />
-                  {t("inside.badge")}
+                  <CmsText cmsKey="journeyHub.inside.badge" />
                 </span>
-                <h2
+                <CmsText
+                  cmsKey="journeyHub.inside.title"
+                  as="h2"
                   className="mt-7 text-[40px] leading-[1.05] tracking-[-0.02em] text-white sm:text-5xl lg:text-[58px]"
                   style={{
                     fontFamily: "'Frank Ruhl Libre', serif",
                     fontWeight: 600,
                   }}
-                >
-                  {t("inside.title")}
-                </h2>
+                />
               </div>
 
               {/* 4-card editorial grid with hairline dividers + per-card icon */}
               <div className="mt-10 grid gap-y-6 md:grid-cols-2 md:gap-x-10 md:gap-y-14 md:mt-14 lg:grid-cols-4 lg:gap-x-8 lg:mt-16">
-                {insideCards.map((c, i) => {
+                {[0, 1, 2, 3].map((i) => {
                   const { numeral } = insideMeta[i]!;
                   return (
                     <div
@@ -892,15 +909,19 @@ export default async function JourneyMarketingPage({
                         {numeral}
                       </span>
 
-                      <h3 className="text-[24px] font-bold leading-tight text-white md:mt-5">
-                        {c.h}
-                      </h3>
+                      <CmsText
+                        cmsKey={`journeyHub.inside.cards.${i}.h`}
+                        as="h3"
+                        className="text-[24px] font-bold leading-tight text-white md:mt-5"
+                      />
 
                       <div className="mt-3 h-[2px] w-12 bg-[#B83C4D] transition-all duration-500 ease-out group-hover:w-24 md:mt-4" />
 
-                      <p className="mt-3 text-[18px] leading-[1.65] text-white/70 md:mt-5">
-                        {c.p}
-                      </p>
+                      <CmsText
+                        cmsKey={`journeyHub.inside.cards.${i}.p`}
+                        as="p"
+                        className="mt-3 text-[18px] leading-[1.65] text-white/70 md:mt-5"
+                      />
                     </div>
                   );
                 })}
@@ -915,20 +936,22 @@ export default async function JourneyMarketingPage({
             <div className="relative mx-auto max-w-3xl text-center">
               <span className="inline-flex items-center gap-2.5 text-[12px] font-semibold uppercase tracking-[0.32em] text-[#170E14]">
                 <span className="h-[7px] w-[7px] rounded-sm bg-[#B83C4D] shadow-[0_0_0_3px_rgba(184,60,77,0.18)]" />
-                {t("ctaBlock.badge")}
+                <CmsText cmsKey="journeyHub.ctaBlock.badge" />
               </span>
-              <h2
+              <CmsText
+                cmsKey="journeyHub.ctaBlock.title"
+                as="h2"
                 className="mt-6 text-[40px] leading-[1.05] tracking-[-0.02em] text-[#170E14] sm:text-5xl lg:text-[56px]"
                 style={{
                   fontFamily: "'Frank Ruhl Libre', serif",
                   fontWeight: 600,
                 }}
-              >
-                {t("ctaBlock.title")}
-              </h2>
-              <p className="mx-auto mt-5 max-w-xl text-[19px] leading-[1.65] text-[#4A3A45]">
-                {t("ctaBlock.sub")}
-              </p>
+              />
+              <CmsText
+                cmsKey="journeyHub.ctaBlock.sub"
+                as="p"
+                className="mx-auto mt-5 max-w-xl text-[19px] leading-[1.65] text-[#4A3A45]"
+              />
 
               <Link
                 href={primaryHref}
@@ -997,17 +1020,21 @@ export default async function JourneyMarketingPage({
                   </div>
 
                   <div className="faq-list">
-                    {faqItems.map((it, i) => (
+                    {[0, 1, 2, 3, 4].map((i) => (
                       <details
                         className="faq-item"
                         key={i}
                         open={i === 0}
                       >
                         <summary>
-                          {it.q} <span className="faq-icon">+</span>
+                          <CmsText cmsKey={`journeyHub.faq.items.${i}.q`} />{" "}
+                          <span className="faq-icon">+</span>
                         </summary>
                         <div className="faq-answer">
-                          <p>{it.a}</p>
+                          <CmsText
+                            cmsKey={`journeyHub.faq.items.${i}.a`}
+                            as="p"
+                          />
                         </div>
                       </details>
                     ))}
@@ -1132,5 +1159,6 @@ export default async function JourneyMarketingPage({
         }}
       />
     </div>
+    </CmsTextProvider>
   );
 }

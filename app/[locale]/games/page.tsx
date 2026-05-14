@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
+import { loadCmsTextsForPage } from "@/lib/cms/server";
+import { CmsTextProvider } from "@/components/cms/CmsTextProvider";
+import { CmsText } from "@/components/cms/CmsText";
 import { unstable_noStore as noStore } from "next/cache";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
 import { Link } from "@/navigation";
@@ -118,11 +121,18 @@ export default async function GamesHubPage({
   noStore();
   const locale = params.locale;
   const isHe = locale === "he";
+  // CMS-backed translator — retained for raw-string slots (metadata,
+  // JSON-LD, alt props, sub-component string props). JSX-child
+  // consumers below render via <CmsText> so they pick up is_rich
+  // from each row and render <em>/<strong> via the .cms-rich CSS rule.
+  // Bug fix 2026-05-13: pre-CmsTextProvider rendering ignored is_rich
+  // and printed admin-entered <em> tags as literal text in the DOM.
   const t = await getCmsTranslations({
     locale: isHe ? "he" : "en",
     namespace: "gamesHub",
     page: "games",
   });
+  const cmsRows = await loadCmsTextsForPage("games");
 
   const supabase = await createServerSupabaseClient();
 
@@ -168,6 +178,7 @@ export default async function GamesHubPage({
     // invisible. Itzik 2026-05-06: this is exactly the bug that
     // made "I don't see the change" reproducible.
     return (
+      <CmsTextProvider rows={cmsRows}>
       <div
         dir={isHe ? "rtl" : "ltr"}
         className="relative min-h-[100dvh] overflow-hidden text-white"
@@ -185,9 +196,11 @@ export default async function GamesHubPage({
             <span className="h-1.5 w-1.5 rounded-full bg-rose-300" />
             {isHe ? "הקטלוג" : "Catalogue"}
           </div>
-          <h1 className="mt-3 font-heading text-3xl font-bold leading-tight tracking-tight sm:text-4xl">
-            {t("catalogueTitle")}
-          </h1>
+          <CmsText
+            cmsKey="gamesHub.catalogueTitle"
+            as="h1"
+            className="mt-3 font-heading text-3xl font-bold leading-tight tracking-tight sm:text-4xl"
+          />
           <p className="mt-2 max-w-2xl text-sm text-white/70">
             {isHe
               ? "בחרו משחק, פתחו על הטלפון, ומתחילים. בלי הורדות, בלי הכנות."
@@ -295,6 +308,7 @@ export default async function GamesHubPage({
 
         </main>
       </div>
+      </CmsTextProvider>
     );
   }
 
@@ -370,10 +384,6 @@ export default async function GamesHubPage({
     ],
   };
 
-  const whyItems = [0, 1, 2, 3].map((i) => ({
-    h: t(`whyItems.${i}.h`),
-    p: t(`whyItems.${i}.p`),
-  }));
 
   // V2 unified palette - same card treatment for all 4, only icons differentiated.
   // No more rainbow. Warm cream bg + accent top-bar + warm-toned icon backgrounds.
@@ -479,6 +489,7 @@ export default async function GamesHubPage({
   ];
 
   return (
+    <CmsTextProvider rows={cmsRows}>
     <div
       className="relative min-h-[100dvh] overflow-hidden text-white"
       dir={isHe ? "rtl" : "ltr"}
@@ -531,10 +542,14 @@ export default async function GamesHubPage({
             className="relative z-20 mx-auto hidden max-w-6xl items-center gap-2 px-4 pt-4 text-[13px] text-white/45 sm:flex"
           >
             <Link href="/" className="transition hover:text-white/75">
-              {t("breadcrumbHome")}
+              <CmsText cmsKey="gamesHub.breadcrumbHome" />
             </Link>
             <span aria-hidden className="text-white/30">/</span>
-            <span className="text-white/65">{t("breadcrumbGames")}</span>
+            <CmsText
+              cmsKey="gamesHub.breadcrumbGames"
+              as="span"
+              className="text-white/65"
+            />
           </nav>
 
           {/* Per Itzik 2026-05-07: secondary CTA "למה מיאושי?" removed
@@ -596,9 +611,11 @@ export default async function GamesHubPage({
                   <span className="h-[7px] w-[7px] rounded-sm bg-[#B83C4D] shadow-[0_0_0_3px_rgba(184,60,77,0.18)]" />
                   {isHe ? "למה מיאושי" : "Why Mioshy"}
                 </span>
-                <h2 className="mt-4 font-heading text-3xl font-bold leading-[1.05] tracking-[-0.02em] text-[#170E14] sm:text-4xl lg:text-5xl">
-                  {t("whyTitle")}
-                </h2>
+                <CmsText
+                  cmsKey="gamesHub.whyTitle"
+                  as="h2"
+                  className="mt-4 font-heading text-3xl font-bold leading-[1.05] tracking-[-0.02em] text-[#170E14] sm:text-4xl lg:text-5xl"
+                />
                 <p className="mx-auto mt-4 max-w-xl text-[17px] leading-[1.55] text-[#2A1B25] sm:mt-5 sm:text-[19px] sm:leading-[1.6]">
                   {isHe
                     ? "עזרנו למאות זוגות לשפר את הקשר שלהם - בדרך הכי כיפית שיש"
@@ -611,7 +628,7 @@ export default async function GamesHubPage({
                   of vertical space), title 18px, body 16px to keep
                   every card scannable on a single phone scroll. */}
               <div className="mt-8 grid gap-4 sm:mt-14 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4">
-                {whyItems.map((it, i) => {
+                {[0, 1, 2, 3].map((i) => {
                   const { Icon, iconBg, stat } = whyMeta[i]!;
                   return (
                     <div
@@ -635,12 +652,16 @@ export default async function GamesHubPage({
                           {stat}
                         </span>
                       </div>
-                      <h3 className="mt-3 font-heading text-[18px] font-bold leading-snug text-[#170E14] sm:mt-4 sm:text-xl">
-                        {it.h}
-                      </h3>
-                      <p className="mt-1.5 flex-1 text-[18px] leading-[1.55] text-[#4A3A45] sm:mt-2 sm:leading-[1.6]">
-                        {it.p}
-                      </p>
+                      <CmsText
+                        cmsKey={`gamesHub.whyItems.${i}.h`}
+                        as="h3"
+                        className="mt-3 font-heading text-[18px] font-bold leading-snug text-[#170E14] sm:mt-4 sm:text-xl"
+                      />
+                      <CmsText
+                        cmsKey={`gamesHub.whyItems.${i}.p`}
+                        as="p"
+                        className="mt-1.5 flex-1 text-[18px] leading-[1.55] text-[#4A3A45] sm:mt-2 sm:leading-[1.6]"
+                      />
                     </div>
                   );
                 })}
@@ -871,9 +892,11 @@ export default async function GamesHubPage({
                   <span className="h-[7px] w-[7px] rounded-sm bg-[#B83C4D] shadow-[0_0_0_3px_rgba(184,60,77,0.28)]" />
                   {isHe ? "הקטלוג" : "Catalogue"}
                 </span>
-                <h2 className="font-heading text-3xl font-bold leading-[1.05] tracking-[-0.02em] text-white sm:text-4xl lg:text-5xl">
-                  {t("catalogueTitle")}
-                </h2>
+                <CmsText
+                  cmsKey="gamesHub.catalogueTitle"
+                  as="h2"
+                  className="font-heading text-3xl font-bold leading-[1.05] tracking-[-0.02em] text-white sm:text-4xl lg:text-5xl"
+                />
                 <p className="max-w-2xl text-[18px] leading-[1.6] text-white/70">
                   {isHe
                     ? "בחרו משחק, פתחו על הטלפון, ומתחילים. בלי הורדות, בלי הכנות."
@@ -1395,5 +1418,6 @@ export default async function GamesHubPage({
 
       </main>
     </div>
+    </CmsTextProvider>
   );
 }

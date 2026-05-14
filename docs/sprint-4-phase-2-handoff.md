@@ -521,3 +521,74 @@ node --env-file=.env.local scripts/seed-cms-texts.mjs
 ```
 
 Re-runs are safe — UPSERT with `ON CONFLICT (key) DO NOTHING`.
+
+---
+
+## Rich-text behaviour on Phase 2 migrations
+
+**Rule:** if a CMS-managed string ever ends up rendered as a JSX
+child (`<h1>{value}</h1>`, `<p>{value}</p>`, etc.), it MUST go
+through `<CmsText cmsKey="…">`. Plain `{t("…")}` from
+`getCmsTranslations` ignores the `is_rich` flag and will print
+admin-entered `<em>` / `<strong>` tags as **literal text** in the
+DOM — exactly the bug we shipped on `/journey` and `/games` in
+Phase 1 before the 2026-05-13 fix (commit on `feature/admin-cms`).
+
+### When to use which API
+
+| Slot | Use | Why |
+|---|---|---|
+| JSX text child — `<h1>…</h1>`, `<p>…</p>`, `<span>…</span>` | `<CmsText cmsKey="…" as="h1" className="…">` | Resolves is_rich, renders via dangerouslySetInnerHTML w/ `cms-rich` class for `<em>`/`<strong>` styling |
+| Sub-component string prop — `<MyHero title={…}>` | `t("…")` from getCmsTranslations | Sub-component needs the raw string. If sub-component renders to DOM, it has the same bug; rewrite *that* component to take `cmsKey` + use `<CmsText>` internally if rich is needed there. |
+| Metadata — `generateMetadata` title/description | `t("…")` | Returns to Next.js as plain string; no HTML rendered. |
+| JSON-LD `@graph` names, descriptions, breadcrumb labels | `t("…")` | Search engines render attribute values; HTML in them is meaningless. |
+| `alt`, `aria-label`, `title` attributes | `t("…")` | Same — string-typed by the HTML spec, no rich. |
+| State value (`setError(…)`, default fallback) | `t("…")` | Rendered later as text; if you want rich, render via `<CmsText>` at the consumer site instead. |
+
+### Page-shell pattern (Phase 1 + Phase 2 pages with rich-aware JSX)
+
+```tsx
+// server component
+const t = await getCmsTranslations({ locale, namespace, page });
+const cmsRows = await loadCmsTextsForPage(page);   // ← ALL rows for this page bucket
+return (
+  <CmsTextProvider rows={cmsRows}>
+    <main>
+      <CmsText cmsKey="namespace.h1" as="h1" className="…" />
+      <CmsText cmsKey="namespace.lede" as="p" className="…" />
+      {[0,1,2].map(i => (
+        <CmsText key={i} cmsKey={`namespace.items.${i}.h`} as="h3" />
+      ))}
+    </main>
+  </CmsTextProvider>
+);
+```
+
+`<CmsText>` (client island) looks up the CMS row by key through
+the Provider's context, checks `is_rich`, and renders either a
+plain text node or `dangerouslySetInnerHTML` + `cms-rich` class.
+
+### Known holdovers (deliberately left as `t()` for now)
+
+These render text as DOM children but stayed as `t()` because the
+JSX consumer is INSIDE a sub-component we don't want to refactor
+in this sprint. Admin toggling these to rich would re-introduce
+the literal-tag bug.
+
+| Page | Slot | Sub-component |
+|---|---|---|
+| `/games` hero | `gamesHub.h1`, `gamesHub.lede`, `gamesHub.ctaPrimary` | `<LazyLiveDemoHero title={…} lede={…} ctaPrimary={…}>` — refactor LiveDemoHero to take `cmsKey` props if rich is wanted |
+| `/games` final CTA | `gamesHub.ctaPrimary` (line ~981) | Same key reused — fixing the hero refactor fixes both |
+| Phase 2 server-side `t()` consumers (`mioshy-sex/*`, `my/*`, `UserRecentActivity`) | Various string-typed slots (props, JSON-LD, error state, aria) | Same advice — if a slot's destination renders to a DOM child, lift the consumer to `<CmsText>`; otherwise these are slots where rich can't render anyway |
+
+### How to detect this regression in code review
+
+Grep for `{t(["` and `{t(\`` inside JSX. Anything wrapped in a
+DOM element opening/closing tag pair is a candidate for the bug.
+Convert to `<CmsText cmsKey="…" as="…" className="…" />`.
+
+```bash
+grep -nE '>\s*\{t\(["`]' app/\[locale\]/<route>/page.tsx
+```
+
+A clean migrated page has zero hits.
