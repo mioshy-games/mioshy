@@ -2,6 +2,7 @@
 
 import { useLocale, useTranslations } from "next-intl";
 import { useCmsTextContext } from "@/components/cms/CmsTextProvider";
+import { resolveColorOverride } from "@/lib/cms/colors";
 import type { CmsTextResult } from "@/lib/cms/types";
 
 /**
@@ -51,10 +52,17 @@ export function useCmsText(key: string): CmsTextResult {
   const lineHeight =
     locale === "he" ? row?.he_line_height : row?.en_line_height;
 
+  // Sprint 5 — colour override is locale-independent (one column, not
+  // a he_/en_ pair) by design: a brand colour means the same thing in
+  // both languages. Resolve preset name → HEX/rgba here so the
+  // returned style object is consumer-ready.
+  const resolvedColor = resolveColorOverride(row?.color_override ?? null);
+
   const style: CmsTextResult["style"] = {};
   if (fontSize) style.fontSize = fontSize;
   if (fontWeight) style.fontWeight = fontWeight;
   if (lineHeight) style.lineHeight = lineHeight;
+  if (resolvedColor) style.color = resolvedColor;
 
   // JSON-fallback rows (no CMS row exists yet) default to plain.
   // Once we eventually re-seed missing keys this default becomes

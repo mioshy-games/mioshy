@@ -3,6 +3,7 @@
 import { revalidatePath, revalidateTag } from "next/cache";
 import { z } from "zod";
 import { getAdminSession } from "@/lib/auth/admin";
+import { isValidColorOverride } from "./colors";
 import { normalizeRichText } from "./render";
 import { sanitizeRichText } from "./sanitize";
 
@@ -43,6 +44,27 @@ const SaveInput = z.object({
   // would silently strip markup; admins do that explicitly by
   // editing the value, removing tags, and saving with toggle off.
   is_rich: z.boolean(),
+  // Sprint 5 — per-row colour override. Optional in the input so the
+  // existing CmsTextRow caller (which doesn't pass this field yet)
+  // continues to save text-only changes between the Phase 2 deploy
+  // and the Phase 4 UI deploy. Phase 4 will always send the field.
+  //
+  //   undefined → key omitted from the UPDATE; the row keeps its
+  //               current color_override (no clobber on text-only saves)
+  //   null      → explicitly clear the override (admin picked "Default")
+  //   "preset:<name>" | "#XXXXXX" → set to the given value
+  //
+  // Same three non-undefined shapes the DB CHECK constraint enforces
+  // in migration 084 — we validate here too so the client gets a
+  // friendly error instead of a 23514 from PostgreSQL.
+  color_override: z
+    .string()
+    .nullable()
+    .optional()
+    .refine((v) => v === undefined || isValidColorOverride(v), {
+      message:
+        'color_override must be null, a "preset:<name>" string, or a 6-digit HEX like "#B83C4D".',
+    }),
 });
 
 export type SaveResult =
@@ -145,18 +167,27 @@ export async function saveCmsText(input: unknown): Promise<SaveResult> {
       updated_by: user.id,
     });
 
+    // Build the UPDATE patch. color_override is included ONLY when the
+    // caller passed it explicitly — undefined preserves the existing
+    // DB value, so a text-only save from a pre-Phase-4 CmsTextRow
+    // doesn't clobber a colour that's already set.
+    const updates: Record<string, unknown> = {
+      he_text: heNormalized,
+      en_text: enNormalized,
+      is_rich: parsed.data.is_rich,
+      updated_by: user.id,
+      // Edit clears the cross-language drift flag — admin took
+      // ownership of both languages with this save. Sprint 5 may
+      // expose this flag as a UI toggle.
+      needs_review: false,
+    };
+    if (parsed.data.color_override !== undefined) {
+      updates.color_override = parsed.data.color_override;
+    }
+
     const { error } = await supabase
       .from("cms_texts")
-      .update({
-        he_text: heNormalized,
-        en_text: enNormalized,
-        is_rich: parsed.data.is_rich,
-        updated_by: user.id,
-        // Edit clears the cross-language drift flag — admin took
-        // ownership of both languages with this save. Sprint 5 may
-        // expose this flag as a UI toggle.
-        needs_review: false,
-      })
+      .update(updates)
       .eq("key", parsed.data.key);
 
     if (error) {
