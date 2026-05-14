@@ -26,8 +26,17 @@ import { normalizeRichText } from "@/lib/cms/render";
  * Usage replaces every `{useCmsText(key).text}` consumer in the
  * marketing components. The wrapping element comes from the `as`
  * prop (defaults to <span> for inline usage). Pass any wrapping
- * className/style as usual — typography overrides from the CMS row
- * are merged automatically.
+ * className/style as usual — typography AND colour overrides from
+ * the CMS row are merged automatically into the rendered element's
+ * inline `style`.
+ *
+ * Sprint 5 — `useCmsText` now folds `cms_texts.color_override` into
+ * the returned `style.color`. The merge order below is `{...cmsStyle,
+ * ...callerExtraStyle}`, so a caller that explicitly passes
+ * `style={{ color: '#xxx' }}` still wins over the CMS — by design,
+ * for the rare callsite that must hardcode a colour. The CMS
+ * override beats whatever the className would have set, because
+ * inline style takes precedence over CSS in the cascade.
  *
  * Use `useCmsText(key).text` DIRECTLY (without this component) only
  * for non-DOM consumers — `alt` attributes, `aria-label`, Counter
