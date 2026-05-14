@@ -1691,6 +1691,14 @@
         "locked": "Locked",
         "srTemplate": "Progress: {completed} of {total}"
       }
+    },
+    "itemPage": {
+      "metaTitle": "Journey chapter",
+      "backToTimeline": "Back to the timeline",
+      "chapterFallback": "Chapter",
+      "expertPushBadge": "From your coach",
+      "threadHeading": "Your conversation on this item",
+      "threadPromptLabel": "Write a response - our experts read and reply."
     }
   },
   "gamesSlug": {

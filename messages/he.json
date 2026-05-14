@@ -1689,6 +1689,14 @@
         "locked": "נעולים",
         "srTemplate": "התקדמות: {completed} מתוך {total}"
       }
+    },
+    "itemPage": {
+      "metaTitle": "פרק במסע",
+      "backToTimeline": "חזרה לציר המסע",
+      "chapterFallback": "פרק",
+      "expertPushBadge": "מהמומחה שלכם",
+      "threadHeading": "השיחה שלכם על הפריט",
+      "threadPromptLabel": "כתבו תגובה - המומחים שלנו רואים ומגיבים."
     }
   },
   "gamesSlug": {
