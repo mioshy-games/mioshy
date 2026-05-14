@@ -54,8 +54,35 @@ export function CmsText({
   style?: React.CSSProperties;
 }) {
   const { text, isRich, style } = useCmsText(cmsKey);
+
+  // Sprint 5 — when the row carries a colour override, forward the
+  // resolved value to descendant <mark> elements via a CSS custom
+  // property. globals.css has `.cms-rich mark { color:
+  // var(--cms-mark-color, #B83C4D) }`, so a row WITHOUT an override
+  // gets the default brand-rose, and a row WITH one gets the same
+  // colour the surrounding text gets. This is how a single override
+  // unifies the outer text colour AND the highlighter colour.
+  //
+  // We don't bake this into useCmsText's style return because CSS
+  // custom properties are a rendering concern — the hook is supposed
+  // to stay locale/value-shaped and not know about cascade tricks.
+  //
+  // Cast: React.CSSProperties doesn't know about custom properties
+  // (`--foo`). The standard escape hatch is `as React.CSSProperties`
+  // after building the object with the extra key.
+  const cmsStyleWithMarkVar: React.CSSProperties | undefined = (() => {
+    if (!style) return undefined;
+    if (!style.color) return style;
+    return {
+      ...style,
+      ["--cms-mark-color"]: style.color,
+    } as React.CSSProperties;
+  })();
+
   const mergedStyle =
-    style || extraStyle ? { ...style, ...extraStyle } : undefined;
+    cmsStyleWithMarkVar || extraStyle
+      ? { ...cmsStyleWithMarkVar, ...extraStyle }
+      : undefined;
 
   // In rich mode, compose a `cms-rich` class onto whatever className
   // the caller passed. That class drives the brand styling for inline

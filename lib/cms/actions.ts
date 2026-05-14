@@ -104,9 +104,10 @@ export async function saveCmsText(input: unknown): Promise<SaveResult> {
     // ── Sanitize (isolated try/catch) ──────────────────────────────
     // Mode flows from the editor: row.is_rich = false → plain mode
     // (rejects ANY tag), is_rich = true → rich mode (allows the
-    // 7-tag list: em / strong / br / p / ul / li / s, attributes
-    // stripped). Migration 083 set this column to true on the 31
-    // rows that already contained markup at seed time.
+    // 8-tag list: em / strong / mark / br / p / ul / li / s,
+    // attributes stripped). Migration 083 set this column to true
+    // on the 31 rows that already contained markup at seed time;
+    // Sprint 5 added <mark> for highlighter-style colour spans.
     //
     // Inner try/catch is defensive — the regex sanitiser is pure
     // and shouldn't throw, but we keep the safety net so any future
@@ -141,7 +142,7 @@ export async function saveCmsText(input: unknown): Promise<SaveResult> {
       }
       const allowed =
         mode === "rich"
-          ? "<em>, <strong>, <br>, <p>, <ul>, <li>, <s>"
+          ? "<em>, <strong>, <mark>, <br>, <p>, <ul>, <li>, <s>"
           : "no markup (this row is marked plain text — click the toggle above the textarea to enable rich formatting)";
       return {
         ok: false,

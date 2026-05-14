@@ -1,15 +1,21 @@
 /**
  * CMS — server-side rich-text sanitisation.
  *
- * Mode-aware allow-list (Sprint 4 #1, migration 083):
+ * Mode-aware allow-list (Sprint 4 #1, migration 083; Sprint 5 added <mark>):
  *
  *   "plain"  → ZERO tags allowed. Any `<…>` in the input is reported
  *              as disallowed, the save is rejected, the admin sees a
  *              clear toast.
- *   "rich"   → 7-tag allow-list: <em>, <strong>, <br>, <p>, <ul>,
- *              <li>, <s>. Attributes are still stripped from every
- *              allowed tag (no <em style="…">, no <strong onclick="…">).
- *              Any other tag is disallowed and rejects the save.
+ *   "rich"   → 8-tag allow-list: <em>, <strong>, <mark>, <br>, <p>,
+ *              <ul>, <li>, <s>. Attributes are still stripped from
+ *              every allowed tag (no <em style="…">, no
+ *              <strong onclick="…">). Any other tag is disallowed and
+ *              rejects the save.
+ *
+ *              <mark> renders as inline highlighting — colour only,
+ *              no font change. Default colour is brand-rose (#B83C4D);
+ *              when a row has color_override the same resolved colour
+ *              is forwarded via --cms-mark-color so <mark> picks it up.
  *
  * The mode flows from `cms_texts.is_rich`. Plain rows can never be
  * "promoted" by accident — the admin has to flip the toggle in the
@@ -23,11 +29,12 @@
 
 import "server-only";
 
-// 7-tag allow-list for rich mode. All semantic, all safe, all
-// attribute-free after sanitisation.
+// 8-tag allow-list for rich mode. All semantic, all safe, all
+// attribute-free after sanitisation. Sprint 5 added <mark>.
 const RICH_ALLOWED_TAGS = [
   "em",
   "strong",
+  "mark",
   "br",
   "p",
   "ul",

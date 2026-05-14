@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState, type RefObject } from "react";
+import { Highlighter } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -354,7 +355,7 @@ export function CmsTextRow({ row }: { row: CmsTextRowType }) {
             }
             title={
               isRich
-                ? "This row accepts the 7-tag allow-list: <em>, <strong>, <br>, <p>, <ul>, <li>, <s>. Attributes are stripped on save."
+                ? "This row accepts the 8-tag allow-list: <em>, <strong>, <mark>, <br>, <p>, <ul>, <li>, <s>. Attributes are stripped on save."
                 : "Plain text only. Saves with any HTML tag are rejected. Click 'enable rich formatting' below to promote this row."
             }
           >
@@ -576,7 +577,7 @@ function LanguageEditor({
   // Preview only when the row is rich AND contains markup — for
   // plain rows there's nothing to render that the textarea doesn't
   // already show.
-  const hasMarkup = /<\/?(em|strong|br|p|ul|li|s)\b/i.test(value);
+  const hasMarkup = /<\/?(em|strong|mark|br|p|ul|li|s)\b/i.test(value);
   const showPreview = isRich && hasMarkup;
 
   // Track whether the textarea currently has a non-collapsed selection.
@@ -620,6 +621,24 @@ function LanguageEditor({
               label="Bold"
               preview={<span className="font-bold">bold</span>}
               title="Wrap selected text in <strong>"
+              disabled={!hasSelection}
+            />
+            {/* Sprint 5 — <mark> is colour-only highlighting. Defaults
+                to brand-rose; if the row has a colour override, the
+                mark inherits the same colour via --cms-mark-color
+                (set by <CmsText>). No font / weight change. */}
+            <ToolbarButton
+              onClick={() =>
+                wrapSelection(textareaRef.current, "mark", onChange)
+              }
+              label="Color"
+              preview={
+                <span className="inline-flex items-center gap-1 text-rose-700">
+                  <Highlighter className="h-3 w-3" />
+                  color
+                </span>
+              }
+              title="Wrap selected text in <mark> (colour-only highlight — brand-rose by default, or the row's colour override)"
               disabled={!hasSelection}
             />
           </div>
@@ -667,7 +686,7 @@ function LanguageEditor({
           <div
             dir={dir}
             lang={lang}
-            className="text-sm leading-relaxed text-slate-800 [&_em]:font-serif [&_em]:not-italic [&_em]:text-rose-700 [&_strong]:font-bold [&_p]:my-1 [&_ul]:list-disc [&_ul]:ps-5 [&_s]:line-through [&_s]:text-slate-400"
+            className="text-sm leading-relaxed text-slate-800 [&_em]:font-serif [&_em]:not-italic [&_em]:text-rose-700 [&_strong]:font-bold [&_mark]:bg-transparent [&_mark]:text-rose-700 [&_p]:my-1 [&_ul]:list-disc [&_ul]:ps-5 [&_s]:line-through [&_s]:text-slate-400"
             dangerouslySetInnerHTML={{ __html: normalizeRichText(value) }}
           />
         </div>
@@ -728,7 +747,7 @@ function ToolbarButton({
 
 function wrapSelection(
   ta: HTMLTextAreaElement | null,
-  tag: "em" | "strong",
+  tag: "em" | "strong" | "mark",
   setValue: (v: string) => void,
 ): void {
   if (!ta) return;

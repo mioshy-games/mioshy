@@ -767,3 +767,118 @@ for sd in SCOPE:
 ### Latest preview URL (this session)
 
 `https://mioshy-git-feature-admin-cms-itzikbab-gmailcoms-projects.vercel.app` — auto-tracks `feature/admin-cms` HEAD. Append `?cb=$RANDOM` to bust the route cache.
+
+---
+
+## Sprint 5 — Color Override (+ `<mark>` extension) — 2026-05-14
+
+Branch: `feature/cms-color-override` (off `game`).
+Worktree: `/Users/uxellent/mioshy/.claude/worktrees/cms-color`.
+Scope decided after Phase 4: **only `<mark>`** added to the
+rich-text allow-list this sprint. A "Save All" button was on the
+table but **deferred to Sprint 6**.
+
+### What changed
+
+1. **`color_override` column** on `cms_texts` (and history table).
+   Migration `084_cms_texts_color_override.sql`. Stores one of:
+   - `NULL` — no override (existing behaviour)
+   - `'preset:<name>'` — one of 8 named presets (registry in
+     `lib/cms/colors.ts`)
+   - `'#XXXXXX'` — 6-digit HEX, used verbatim
+   DB-level CHECK constraint (`cms_texts_color_override_format`)
+   enforces those three shapes.
+
+2. **`lib/cms/colors.ts`** — single source of truth for the preset
+   palette. 8 entries: `brand-rose`, `brand-rose-dark`,
+   `brand-purple`, `brand-cream`, `text-primary`, `text-secondary`,
+   `muted` (rgba — only non-HEX preset, 0.7 opacity), `white`.
+   Exports `COLOR_PRESETS`, `COLOR_PRESET_ORDER` (display order),
+   `PRESET_VALUE_RE` + `HEX_VALUE_RE` (shared with the Zod refine
+   in actions.ts AND the live admin-UI validation), and
+   `resolveColorOverride()` — the resolver used by `useCmsText`.
+
+3. **`useCmsText`** folds the resolved colour into its returned
+   `style.color`. **`<CmsText>`** spreads that into the rendered
+   element AND, when present, also forwards the same colour as a
+   CSS custom property `--cms-mark-color` so descendant `<mark>`
+   tags inherit it.
+
+4. **`<mark>` rich-text tag** added to the sanitiser allow-list
+   (`lib/cms/sanitize.ts` — now 8 tags). Renders via globals.css:
+   ```css
+   .cms-rich mark {
+     background: transparent;
+     color: var(--cms-mark-color, #B83C4D);
+   }
+   ```
+   Default colour = brand-rose. With a row-level colour override,
+   `--cms-mark-color` carries the override → `<mark>` matches the
+   surrounding text colour. **Colour-only — no font-style /
+   font-family / font-weight changes**, by design (em is the
+   italic-serif option, strong is the bold option, mark is the
+   "just colour" option).
+
+5. **Admin UI in `CmsTextRow.tsx`**:
+   - **Color section** between textareas and Save: dropdown
+     (Default + 8 presets + Custom HEX…), live swatch, HEX input
+     with red-border validation, Hebrew warning under custom mode,
+     Reset-to-default chip.
+   - **Mark toolbar button** alongside `Brand color` (em) and
+     `Bold` (strong). Icon: `Highlighter` from lucide-react.
+   - is_rich badge tooltip + actions.ts error message both updated
+     to list 8 tags instead of 7.
+   - Preview block in LanguageEditor styles `<mark>` so admins see
+     the highlight before save.
+
+### Files touched
+
+| File | Sprint-5 role |
+|---|---|
+| `supabase/migrations/084_cms_texts_color_override.sql` | New column + CHECK + audit-trigger refresh |
+| `lib/cms/colors.ts` | New — preset registry, regexes, resolver |
+| `lib/cms/types.ts` | `CmsTextRow.color_override` + `CmsTextResult.style.color` |
+| `lib/cms/server.ts` | Page-level loader selects the new column |
+| `lib/cms/actions.ts` | Save accepts optional `color_override`; error message updated to 8 tags |
+| `lib/cms/sanitize.ts` | `<mark>` added to RICH_ALLOWED_TAGS |
+| `hooks/useCmsText.ts` | Resolves preset → CSS-ready colour, folds into style |
+| `components/cms/CmsText.tsx` | Forwards colour to `--cms-mark-color`; doc updated |
+| `components/admin/cms/CmsTextRow.tsx` | Color section + Mark toolbar + preview CSS + badge text |
+| `app/globals.css` | `.cms-rich mark { background: transparent; color: var(--cms-mark-color, #B83C4D) }` |
+
+### Known intentional behaviour (don't "fix" without asking)
+
+- **`<em>` keeps its hardcoded brand-rose** even when the row has a
+  colour override. Inline `style.color` on the parent doesn't
+  override the explicit `.cms-rich em { color: #B83C4D }` rule
+  (CSS specificity, not inheritance). If a future request asks for
+  "make em respect the override too", the change is `.cms-rich em {
+  color: inherit }` — but this loses the auto-brand-red habit, so
+  treat as a deliberate design decision, not a bug fix.
+- **`<mark>` DOES respect the override**, by design — it reads
+  `--cms-mark-color` which is set from the resolved colour.
+- **Save button blocked on malformed HEX** (red border + Hebrew
+  error). The Zod refine on the server would catch it too; client
+  block just saves the round-trip.
+
+### What's deferred
+
+- **Save All button** (bulk save across dirty rows) — Sprint 6.
+- **Restore-from-history for colour** — the audit trigger writes
+  `color_override` snapshots, but the existing history UI (if any)
+  doesn't surface a restore button for it. Wait for explicit ask.
+- **Make `<em>` follow the override** — see above; design decision
+  to defer until someone asks.
+
+### Test cleanup recipe (after manual QA)
+
+```sql
+-- See every key with an active override:
+SELECT key, color_override
+FROM cms_texts
+WHERE color_override IS NOT NULL;
+
+-- Reset specific test keys:
+UPDATE cms_texts SET color_override = NULL
+WHERE key IN ('gamesHub.catalogueTitle', 'homeV2.hero.headline');
+```
