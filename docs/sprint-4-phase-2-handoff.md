@@ -675,73 +675,95 @@ for sd in SCOPE:
 
 ### Status — file by file
 
-#### `app/[locale]/games/page.tsx` (worst file, 77/57/36 at start)
+#### `app/[locale]/games/page.tsx` (worst file, 77/57/36 at start) — ✅ **DONE**
 
 | Batch | Keys | Sections | Commit | Status |
 |---|---|---|---|---|
 | 1 | 21 | authed catalog view (192-313) · whyMeta stats · trust labels · LazyLiveDemoHero non-CMS props · Why-section eyebrow/hook | `b5f6604` | ✅ |
-| 2 | ~6 | `benefits[]` array (lines 429-451): 3 items × {title, body} | TODO | pending |
-| 3 | ~12 | `personas[]` array (lines 455-489): 3 items × {title, tag, body, quote} | TODO | pending |
-| 4 | ~6 | "By the numbers" pull-quote (lines 688-727) — **needs structural split** because `<Counter>` interleaves with italic `<em>` spans. Strategy: keys for prefix (`כבר ` / `Already `), middle (` זוגות מרחבי העולם` / ` couples worldwide`), connector (`שיחקו ב` / `have played `), suffix (`משחקים המקוריים של מיאושי` / `Mioshy's original games`). Keep `<Counter>` and `<em>` styling as inline JSX, only the text comes from CMS. | TODO | pending |
-| 5 | ~4 | "התחילו חינם" + kicker + "התחילו לשחק עכשיו" CTAs (lines 741-783) | TODO | pending |
-| 6 | 0 (reuse) | Marketing-side cataloguePill + catalogueHint (lines 893, 902) — reuse Batch 1 keys | TODO | pending |
-| 7 | 0 (reuse) | Marketing snakes card (lines 1010-1043) — reuse Batch 1 keys | TODO | pending |
-| 8 | ~6 | Personas eyebrow + h2 split italic (lines 1179, 1188-onwards: `"אין זוגיות משעממת"` line 1, italic accent line 2 + the EN counterparts) | TODO | pending |
-| 9 | TBD | "למה זה עובד" section (line 1314+, not yet read) | TODO | pending |
+| 2 | 6 | `benefits[]` array: 3 items × {title, body} | `50b3303` | ✅ |
+| 3 | 12 | `personas[]` array: 3 items × {tag, title, body, quote} (quote marks bundled into the quote value) | `e7835e3` | ✅ |
+| 4 | 5 | "By the numbers" pull-quote — structural split with `<Counter suffix="+">` + `<em>` inline, CMS for prefix/middle/connector/suffix + eyebrow | `336d53b` | ✅ |
+| 5 | 3 | trial line + kicker + "Start playing" CTA | `daba449` | ✅ |
+| 6+7 | 0 (reused) | Marketing catalogue header + snakes marketing card | `05348c9` | ✅ |
+| 8 | 4 | Personas section header (eyebrow + 2-line h2 + lede) | `6a7b190` | ✅ |
+| 9 + final cleanup | 6 | "Why it works" eyebrow + 2-line h2 + lede + closing italic + SEO `metaKeywords` (CSV-style, runtime split) | `7d5bc1e` | ✅ |
 
-**Expected total for games/page.tsx after all batches: ~60 keys.**
+**games/page.tsx final: ~57 keys, tern-w-HE = 0, HE-in-JSX = 0.**
 
-#### Other files in scope (untouched in this active sweep)
+#### Other files — sweep status
 
-| File | tern-w/-HE | HE-in-JSX | Notes |
-|---|---:|---:|---|
-| `app/[locale]/journey/page.tsx` | 19 | 24 | The locked view (`if (user && !hasJourneyEntitlement)`) has hardcoded HE/EN for h1 split, lede, "back" link. Plus `whyMeta.stat` (lines ~322-332). |
-| `app/[locale]/journey/timeline/page.tsx` | 23 | 17 | Never in any Phase 2 scope. Audit-discovered. |
-| `app/[locale]/journey/timeline/[scheduledId]/page.tsx` | 6 | 5 | Never in any Phase 2 scope. Audit-discovered. |
-| `app/[locale]/mioshy-sex/page.tsx` | 2 | 0 | Phase 2C touched but missed strings. |
-| `app/[locale]/mioshy-sex/[slug]/page.tsx` | 0 | 0 | 18 any-tern but all data access — likely NOOP after audit. Re-check. |
-| `app/[locale]/mioshy-sex/[slug]/play/page.tsx` | 2 | 1 | Phase 2C touched but missed strings. |
-| `app/[locale]/my/page.tsx` | 19 | 11 | Many noise (`dir`/icon) but real ones: notification aria, metaTitle, sub-component fallbacks. |
-| `app/[locale]/my/adults/page.tsx` | 8 | 6 | Phase 2D touched but missed strings. |
-| `app/[locale]/my/games/page.tsx` | 4 | 2 | Phase 2D touched but missed strings. |
-| `app/[locale]/my/journey/page.tsx` | 9 | 6 | Phase 2D touched but missed strings. |
-| `app/[locale]/my/journey/together/page.tsx` | 4 | 5 | Phase 2D touched but missed strings. |
-| `components/games/GamesMarketingHero.tsx` | 1 | 1 | Small component. |
-| `components/game/GameTypeSelector.tsx` | 2 | 0 | Small. |
-| `components/adults/AdultsHeroBuy.tsx` | 17 | 14 | Issue 2 deferred — now in scope. |
-| `components/adults/AdultsMarketingHero.tsx` | 18 | 10 | Issue 2. |
-| `components/adults/AdultsMarketingSections.tsx` | 44 | 28 | Issue 2 — biggest single sub-component. |
-| `components/adults/AdultsMarketingSections.variant-personal.tsx` | 38 | 17 | Issue 2 variant. |
-| `components/adults/AdultsPricingPanel.tsx` | 21 | 13 | Issue 2. |
-| `components/between-us/BetweenUsStorefront.tsx` | 15 | 8 | Issue 2. |
-| `components/between-us/InvitePartnerByEmail.tsx` | 12 | 9 | Issue 2. |
-| `components/between-us/PairAndPurchasePanel.tsx` | 13 | 12 | Issue 2. |
-| `components/between-us/PairCodeWidget.tsx` | 3 | 1 | Issue 2 — small. |
-| `components/between-us/RedeemCodeButton.tsx` | 9 | 5 | Issue 2. |
-| `components/game/snakes/GameLobby.tsx` | 13 | 22 | Snakes — worst snakes file. |
-| `components/game/snakes/PlayerSetup.tsx` | 5 | 4 | Snakes. |
-| `components/game/snakes/QuestionModal.tsx` | 3 | 2 | Snakes. |
-| `components/game/snakes/SnakesGameBoard.tsx` | 11 | 5 | Snakes. |
-| `components/game/snakes/CoinFlip.tsx` | 0 | 2 | Snakes — hardcoded HE only. |
-| `components/game/snakes/GameLog.tsx` | 0 | 1 | Snakes — hardcoded HE only. |
+| File | Initial cnt | Status | Commit | Keys |
+|---|---:|---|---|---:|
+| `app/[locale]/journey/page.tsx` | 19/24 | ✅ | `3b9aa0d` | 31 |
+| `app/[locale]/journey/timeline/page.tsx` | 23/17 | ✅ retrofit CMS infra + migrate | `387a362` | 21 |
+| `app/[locale]/journey/timeline/[scheduledId]/page.tsx` | 6/5 | ✅ retrofit CMS infra + migrate | `6250ad9` | 6 |
+| `app/[locale]/mioshy-sex/page.tsx` | 2/0 | ✅ metadata fallbacks via existing keys | `756e421` | 0 (reused) |
+| `app/[locale]/mioshy-sex/[slug]/page.tsx` | 0/0 | ✅ universalBenefit/Target arrays | `756e421` | 4 |
+| `app/[locale]/mioshy-sex/[slug]/play/page.tsx` | 2/1 | ✅ + RolePanel cleanup | `756e421` | 2 |
+| `app/[locale]/my/page.tsx` | 19/11 | ✅ + EntitledPillar/PillarMarketing prop refactor | `f1ff106` | 25 |
+| `app/[locale]/my/adults/page.tsx` | 8/6 | ✅ | `f1ff106` | 9 |
+| `app/[locale]/my/games/page.tsx` | 4/2 | ✅ | `f1ff106` | 3 |
+| `app/[locale]/my/journey/page.tsx` | 9/6 | ✅ | `f1ff106` | 8 |
+| `app/[locale]/my/journey/together/page.tsx` | 4/5 | ✅ | `f1ff106` | 6 |
+| `components/games/GamesMarketingHero.tsx` | 1/1 | ✅ (dead code, but audit-clean) | `1f70cc4` | 1 |
+| `components/game/GameTypeSelector.tsx` | 2/0 | ✅ Card sub-component refactored to use CMS keys | `1f70cc4` | 6 |
+| `components/game/snakes/CoinFlip.tsx` | 0/2 | ✅ (HE-only → CMS, EN provided in seed) | `f6551e5` | 6 |
+| `components/game/snakes/GameLog.tsx` | 0/1 | ✅ | `f6551e5` | 1 |
+| `components/game/snakes/QuestionModal.tsx` | 3/2 | TODO | — | — |
+| `components/game/snakes/PlayerSetup.tsx` | 5/4 | TODO | — | — |
+| `components/game/snakes/SnakesGameBoard.tsx` | 11/5 | TODO — includes pass-the-phone toast template w/ `${user_name}` interpolation, win-overlay copy | — | — |
+| `components/game/snakes/GameLobby.tsx` | 13/22 | TODO — largest snakes file, includes color names (סגול/כחול/...), host/me badges, room-code share copy, character/avatar picker labels | — | — |
+| `components/adults/AdultsHeroBuy.tsx` | 17/14 | TODO (Issue 2) | — | — |
+| `components/adults/AdultsMarketingHero.tsx` | 18/10 | TODO (Issue 2) | — | — |
+| `components/adults/AdultsMarketingSections.tsx` | 44/28 | TODO (Issue 2 — biggest single component) | — | — |
+| `components/adults/AdultsMarketingSections.variant-personal.tsx` | 38/17 | TODO (Issue 2 variant) | — | — |
+| `components/adults/AdultsPricingPanel.tsx` | 21/13 | TODO (Issue 2) | — | — |
+| `components/between-us/BetweenUsStorefront.tsx` | 15/8 | TODO (Issue 2) | — | — |
+| `components/between-us/InvitePartnerByEmail.tsx` | 12/9 | TODO (Issue 2) | — | — |
+| `components/between-us/PairAndPurchasePanel.tsx` | 13/12 | TODO (Issue 2) | — | — |
+| `components/between-us/PairCodeWidget.tsx` | 3/1 | TODO (Issue 2 — smallest) | — | — |
+| `components/between-us/RedeemCodeButton.tsx` | 9/5 | TODO (Issue 2) | — | — |
 
-**Sweep total at session start: ~32 files, ~310 inline HE ternaries, ~190 hardcoded HE in JSX. After Batch 1 of games/page.tsx: ~289 ternaries + ~190 JSX hardcoded remaining.**
+**Sweep progress as of 2026-05-14 session 2:**
+- 15 files ✅ done (193 keys committed across 12 commits)
+- 14 files remaining: 4 snakes + 10 Issue 2 components.
+- Estimated ~280–330 additional keys for the remaining 14 files.
+
+### Patterns learned this sweep (apply to next session)
+
+1. **Page that already imports `getCmsTranslations` but is missing `loadCmsTextsForPage` + `<CmsTextProvider>`** → wrap both render branches in `<CmsTextProvider rows={cmsRows}>`. The journey/timeline pages needed this full retrofit because they predated the Phase 1 CMS infra.
+2. **Sub-components that take `isHe` + `xxxHe` + `xxxEn` prop pairs** → refactor to a single resolved `xxx: string` prop, resolve via `t()` in the parent. Applied to: `RolePanel`, `EntitledPillar`, `PillarMarketing`, `ProgressSummary`, `GameTypeSelector.Card`, `TrustAnchor`. Drops the inline `isHe ? labelHe : labelEn` selection inside.
+3. **String templates with placeholders** → CMS value carries `{name}` / `{count}` / `{date}` literal, runtime calls `.replace("{name}", v)`. Used for: notification aria, asymmetry message, monthly-consumed banner, priority hint, activity assessment detail, sr-only progress.
+4. **SEO `keywords` array** → collapse to a single CSV CMS value, split + trim at runtime in `generateMetadata`. Pattern in `gamesHub.metaKeywords`, `journeyHub.metaKeywords`.
+5. **Locale-specific punctuation (quote marks ״ / curly quotes)** → bundle into the CMS value itself rather than leaving an `isHe` ternary for the glyph. The `<Counter suffix="+">` case is similar — normalise both locales to one inline JSX shape, push the localised text into CMS.
+6. **HE-only components** (CoinFlip, GameLog) → provide reasonable EN translations when adding the key. Better than leaving them HE-only in the database; admin can always retune.
+7. **Per-file commit + push** rule held throughout. `pnpm build` after every file. `npm` lockfile is poison.
 
 ### Next session — start here
 
 1. Read this section.
-2. `cd /Users/uxellent/mioshy/.claude/worktrees/admin-cms` and `git pull` to get latest.
-3. Pick up **games/page.tsx Batch 2** (`benefits[]` array, lines 429-451).
-   - Recommended approach: convert the array generation to keep
-     the data shape but switch from inline ternaries to `t()`
-     calls. Then in the JSX render that maps over `benefits`,
-     either render via `<CmsText cmsKey={\`gamesHub.benefits.${i}.title\`} as="h3" />` directly (preferred — adds rich support), or keep the array shape and accept that this content is plain.
-   - Find existing JSX render with `grep -n "benefits.map" app/\[locale\]/games/page.tsx`.
-4. Build + commit + push per the per-file rule.
-5. Continue through Batches 3-9 of games/page.tsx, then move on to journey/page.tsx, etc., per the file list above.
-6. When complete: run the audit script again, confirm zero ternaries + zero HE-in-JSX across all files in scope, run `node --env-file=.env.local scripts/seed-cms-texts.mjs`, push, deliver final URL.
-7. **Don't forget**: at some point after the sweep, also patch `scripts/seed-cms-texts.mjs` to fix the section-fragmentation rule (Itzik approved this separately — see commit `07e2414`'s `scripts/migration-resection.sql`; the seed script itself still has the old rule). This is a follow-up commit, not part of the migration sweep.
+2. `cd /Users/uxellent/mioshy/.claude/worktrees/admin-cms && git pull`.
+3. Continue with **snakes components** in this order (smallest → largest):
+   - `QuestionModal.tsx` (3/2)
+   - `PlayerSetup.tsx` (5/4)
+   - `SnakesGameBoard.tsx` (11/5) — handle pass-the-phone & win-overlay templates
+   - `GameLobby.tsx` (13/22) — biggest snakes file, color names + character picker
+4. Then **between-us components** (smallest → largest):
+   - `PairCodeWidget.tsx` (3/1)
+   - `RedeemCodeButton.tsx` (9/5)
+   - `InvitePartnerByEmail.tsx` (12/9)
+   - `PairAndPurchasePanel.tsx` (13/12)
+   - `BetweenUsStorefront.tsx` (15/8)
+5. Then **adults components** (smallest → largest):
+   - `AdultsHeroBuy.tsx` (17/14)
+   - `AdultsMarketingHero.tsx` (18/10)
+   - `AdultsPricingPanel.tsx` (21/13)
+   - `AdultsMarketingSections.variant-personal.tsx` (38/17)
+   - `AdultsMarketingSections.tsx` (44/28) — biggest single sub-component
+6. After every file: `pnpm build` (must pass), then commit + push per the per-file rule.
+7. When complete: re-run the audit script across the full scope, confirm `tern-w-HE = 0 AND HE-in-JSX = 0` everywhere, run `node --env-file=.env.local scripts/seed-cms-texts.mjs`, push, deliver final preview URL.
+8. **Don't forget**: patch `scripts/seed-cms-texts.mjs` section-fragmentation rule (see `07e2414`'s SQL). Follow-up commit, not part of the migration sweep.
 
-### Latest preview URL (before sweep started)
+### Latest preview URL (this session)
 
-`https://mioshy-jepk0920o-itzikbab-gmailcoms-projects.vercel.app` — Phase 1 rich-text fix landed there.
+`https://mioshy-git-feature-admin-cms-itzikbab-gmailcoms-projects.vercel.app` — auto-tracks `feature/admin-cms` HEAD. Append `?cb=$RANDOM` to bust the route cache.
