@@ -782,6 +782,13 @@
         "body": "You finish each other's sentences. Now you just need new sentences to start. We won't tell you something you didn't know - we'll just ask the question you didn't think to ask.",
         "quote": "“Anyone who thinks they know it all - is asking the wrong questions.”"
       }
+    },
+    "byTheNumbers": {
+      "eyebrow": "By the numbers",
+      "prefix": "Already ",
+      "middle": " couples worldwide",
+      "connector": "have played ",
+      "suffix": "Mioshy's original games"
     }
   },
   "journeyHub": {

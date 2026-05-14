@@ -610,10 +610,13 @@ export default async function GamesHubPage({
               <div className="mx-auto mt-16 max-w-3xl text-center">
                 <span className="inline-flex items-center gap-2.5 text-[12px] font-semibold uppercase tracking-[0.32em] text-[#170E14]">
                   <span className="h-[7px] w-[7px] rounded-sm bg-[#B83C4D] shadow-[0_0_0_3px_rgba(184,60,77,0.18)]" />
-                  {isHe ? "המספרים" : "By the numbers"}
+                  <CmsText cmsKey="gamesHub.byTheNumbers.eyebrow" />
                 </span>
 
-                {/* Main pull-quote - clean line breaks, no awkward wrapping. */}
+                {/* Main pull-quote — text comes from CMS, the live <Counter>
+                    and <em> styling stay as inline JSX. Counter rendered with
+                    suffix="+" in both locales so the digit+plus glyph is the
+                    same in HE and EN. */}
                 <p
                   className="mt-7 text-[30px] leading-[1.35] text-[#170E14] sm:text-[30px] lg:text-[34px]"
                   style={{
@@ -621,45 +624,23 @@ export default async function GamesHubPage({
                     fontWeight: 500,
                   }}
                 >
-                  {isHe ? (
-                    <>
-                      כבר{" "}
-                      <em
-                        className="text-[#B83C4D]"
-                        style={{ fontStyle: "italic", fontWeight: 700 }}
-                      >
-                        +<Counter to={500} /> זוגות מרחבי העולם
-                      </em>
-                      <br />
-                      שיחקו ב
-                      <em
-                        className="text-[#B83C4D]"
-                        style={{ fontStyle: "italic", fontWeight: 700 }}
-                      >
-                        משחקים המקוריים של מיאושי
-                      </em>
-                      .
-                    </>
-                  ) : (
-                    <>
-                      Already{" "}
-                      <em
-                        className="text-[#B83C4D]"
-                        style={{ fontStyle: "italic", fontWeight: 700 }}
-                      >
-                        <Counter to={500} suffix="+" /> couples worldwide
-                      </em>
-                      <br />
-                      have played{" "}
-                      <em
-                        className="text-[#B83C4D]"
-                        style={{ fontStyle: "italic", fontWeight: 700 }}
-                      >
-                        Mioshy&apos;s original games
-                      </em>
-                      .
-                    </>
-                  )}
+                  <CmsText cmsKey="gamesHub.byTheNumbers.prefix" />
+                  <em
+                    className="text-[#B83C4D]"
+                    style={{ fontStyle: "italic", fontWeight: 700 }}
+                  >
+                    <Counter to={500} suffix="+" />
+                    <CmsText cmsKey="gamesHub.byTheNumbers.middle" />
+                  </em>
+                  <br />
+                  <CmsText cmsKey="gamesHub.byTheNumbers.connector" />
+                  <em
+                    className="text-[#B83C4D]"
+                    style={{ fontStyle: "italic", fontWeight: 700 }}
+                  >
+                    <CmsText cmsKey="gamesHub.byTheNumbers.suffix" />
+                  </em>
+                  .
                 </p>
 
                 {/* Trial line - its own line, black italic, smaller weight.
