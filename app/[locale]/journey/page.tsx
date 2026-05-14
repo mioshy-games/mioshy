@@ -85,23 +85,10 @@ export async function generateMetadata({
   return {
     title,
     description,
-    keywords:
-      locale === "he"
-        ? [
-            "מסע זוגי",
-            "אבחון זוגי",
-            "ייעוץ זוגי",
-            "תרגולים לזוגות",
-            "מסלול זוגי אישי",
-          ]
-        : [
-            "couples journey",
-            "couples assessment",
-            "relationship diagnostic",
-            "couples program",
-            "relationship exercises",
-            "personalized couples roadmap",
-          ],
+    keywords: t("metaKeywords")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean),
     alternates: {
       canonical,
       languages: {
@@ -200,35 +187,37 @@ export default async function JourneyMarketingPage({
         <main className="relative mx-auto max-w-3xl px-4 pb-24 pt-16 sm:pt-24 text-center">
           <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/30 bg-emerald-400/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-100">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
-            {isHe ? "ליווי עם מיאושי" : "Journey with Mioshy"}
+            <CmsText cmsKey="journeyHub.locked.badge" />
           </div>
           {/* Locked-state H1 — applies the Mioshy design language: bold
-              anchor + wine-color em + light tail. Per Itzik 2026-05-06. */}
+              anchor + wine-color em + light tail. Per Itzik 2026-05-06.
+              3 CMS slices so admin can edit each phrase independently. */}
           <h1 className="mt-5 font-heading text-4xl font-bold leading-tight tracking-tight sm:text-5xl">
-            {isHe ? (
-              <>
-                המסע <em className="not-italic font-semibold text-emerald-300">נעול</em>{" "}
-                <span className="font-light text-white/80">— בינתיים.</span>
-              </>
-            ) : (
-              <>
-                The journey is <em className="not-italic font-semibold text-emerald-300">locked</em>{" "}
-                <span className="font-light text-white/80">— for now.</span>
-              </>
-            )}
+            <CmsText cmsKey="journeyHub.locked.h1Lead" />
+            {" "}
+            <CmsText
+              cmsKey="journeyHub.locked.h1Highlight"
+              as="em"
+              className="not-italic font-semibold text-emerald-300"
+            />
+            {" "}
+            <CmsText
+              cmsKey="journeyHub.locked.h1Tail"
+              className="font-light text-white/80"
+            />
           </h1>
           {/* Lede — bumped to text-[20px] (was text-lg ≈ 18px) so the
               promise reads first, prompts second. */}
-          <p className="mt-6 text-[20px] leading-[1.55] text-white/85">
-            {isHe
-              ? "מגיע לכם ליווי שנבנה במיוחד עבורכם — תרגולים, אבחון, שיחות, ומשימות חודשיות מהמומחים שלנו. הכל כלול במנוי שבועי אחד."
-              : "You deserve coaching built around you — practices, assessment, conversations, and monthly tasks from our experts. All included in one weekly subscription."}
-          </p>
-          <p className="mt-3 text-[18px] leading-[1.55] text-white/70">
-            {isHe
-              ? "אנחנו לא רוצים שתפספסו את זה."
-              : "We don't want you to miss this."}
-          </p>
+          <CmsText
+            cmsKey="journeyHub.locked.lede"
+            as="p"
+            className="mt-6 text-[20px] leading-[1.55] text-white/85"
+          />
+          <CmsText
+            cmsKey="journeyHub.locked.subLede"
+            as="p"
+            className="mt-3 text-[18px] leading-[1.55] text-white/70"
+          />
 
           {/* Primary CTA bumped to h-14/text-base + bigger shadow per
               Itzik 2026-05-06 — this is the only meaningful action on a
@@ -239,7 +228,7 @@ export default async function JourneyMarketingPage({
                 clear path to payment; users hit a dead end. */}
             <JourneyCheckoutButton
               isHe={isHe}
-              label={isHe ? "להצטרפות עכשיו" : "Join now"}
+              label={t("locked.ctaJoin")}
               variant="white"
               source="journey_landing_locked"
               returnPath={`/${isHe ? "he" : "en"}/my/journey`}
@@ -248,7 +237,7 @@ export default async function JourneyMarketingPage({
               href="/my"
               className="inline-flex min-h-[56px] items-center justify-center rounded-full border border-white/20 bg-white/10 px-7 text-[16px] font-medium text-white backdrop-blur hover:bg-white/20 transition"
             >
-              {isHe ? "חזרה למיאושי שלי" : "Back to My Mioshy"}
+              <CmsText cmsKey="journeyHub.locked.backLink" />
             </Link>
           </div>
 
@@ -315,27 +304,14 @@ export default async function JourneyMarketingPage({
   // ── Section data ────────────────────────────────────────────────────────
   // V2 wine-palette unified card design - same icon-tile chrome across all 4,
   // only icon and stat differ. No more rainbow.
+  // whyMeta — icon + colour are presentation, the stat label comes from
+  // CMS via journeyHub.why.stats.<i>.label (rendered through <CmsText>
+  // at the consumer site so admins can edit per item).
   const whyMeta = [
-    {
-      Icon: Compass,
-      iconBg: "bg-[#B83C4D]",
-      stat: isHe ? "אישי לכם" : "Personal",
-    },
-    {
-      Icon: Clock,
-      iconBg: "bg-[#8B2638]",
-      stat: isHe ? "5 דקות" : "5 minutes",
-    },
-    {
-      Icon: BookOpen,
-      iconBg: "bg-[#4A1721]",
-      stat: isHe ? "מבוסס מחקר" : "Research-based",
-    },
-    {
-      Icon: HeartHandshake,
-      iconBg: "bg-[#3D1F3D]",
-      stat: isHe ? "לזוג" : "For couples",
-    },
+    { Icon: Compass,        iconBg: "bg-[#B83C4D]" },
+    { Icon: Clock,          iconBg: "bg-[#8B2638]" },
+    { Icon: BookOpen,       iconBg: "bg-[#4A1721]" },
+    { Icon: HeartHandshake, iconBg: "bg-[#3D1F3D]" },
   ];
 
   const insideMeta = [
@@ -352,9 +328,7 @@ export default async function JourneyMarketingPage({
     : "/journey/assessment";
   const secondaryHref = "#how";
   const primaryLabel = hasActiveAssignments
-    ? isHe
-      ? "פתיחת המסלול שלכם"
-      : "Open your journey"
+    ? t("openJourney")
     : hasInProgressAssessment
       ? t("ctaResume")
       : t("ctaPrimary");
@@ -490,9 +464,11 @@ export default async function JourneyMarketingPage({
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="flex flex-col items-center gap-2 text-emerald-100/40">
                     <Sparkles className="h-7 w-7" />
-                    <span className="text-[12px] uppercase tracking-[0.3em]">
-                      {isHe ? "תמונה תתווסף בקרוב" : "Image coming soon"}
-                    </span>
+                    <CmsText
+                      cmsKey="journeyHub.heroImagePlaceholder"
+                      as="span"
+                      className="text-[12px] uppercase tracking-[0.3em]"
+                    />
                   </div>
                 </div>
               </div>
@@ -507,9 +483,7 @@ export default async function JourneyMarketingPage({
             {hasActiveAssignments ? (
               <div className="mx-auto mt-6 inline-flex items-center gap-2 rounded-full border border-emerald-300/40 bg-emerald-400/10 px-4 py-1.5 text-xs font-medium text-emerald-100 backdrop-blur-md">
                 <Sparkles className="h-3.5 w-3.5" />
-                {isHe
-                  ? "המסלול שלכם פעיל - המשיכו מאיפה שעצרתם"
-                  : "Your journey is active - pick up where you left off"}
+                <CmsText cmsKey="journeyHub.activeAssignmentsBanner" />
               </div>
             ) : hasInProgressAssessment ? (
               <div className="mx-auto mt-6 inline-flex items-center gap-2 rounded-full border border-amber-300/30 bg-amber-400/10 px-4 py-1.5 text-xs font-medium text-amber-100 backdrop-blur-md">
@@ -591,7 +565,7 @@ export default async function JourneyMarketingPage({
 
               <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
                 {[0, 1, 2, 3].map((i) => {
-                  const { Icon, iconBg, stat } = whyMeta[i]!;
+                  const { Icon, iconBg } = whyMeta[i]!;
                   return (
                     <div
                       key={i}
@@ -606,9 +580,10 @@ export default async function JourneyMarketingPage({
                       >
                         <Icon className="h-7 w-7" />
                       </div>
-                      <span className="inline-block self-start justify-self-start rounded-full border border-[#EAE0E3] bg-[#FBE9EC] px-3 py-1 text-[12px] font-semibold uppercase tracking-[0.05em] text-[#8B2638] sm:mt-4 sm:justify-self-auto">
-                        {stat}
-                      </span>
+                      <CmsText
+                        cmsKey={`journeyHub.why.stats.${i}.label`}
+                        className="inline-block self-start justify-self-start rounded-full border border-[#EAE0E3] bg-[#FBE9EC] px-3 py-1 text-[12px] font-semibold uppercase tracking-[0.05em] text-[#8B2638] sm:mt-4 sm:justify-self-auto"
+                      />
                       <CmsText
                         cmsKey={`journeyHub.why.items.${i}.h`}
                         as="h3"
@@ -631,7 +606,7 @@ export default async function JourneyMarketingPage({
               <div className="mx-auto mt-16 max-w-3xl text-center">
                 <span className="inline-flex items-center gap-2.5 text-[12px] font-semibold uppercase tracking-[0.32em] text-[#170E14]">
                   <span className="h-[7px] w-[7px] rounded-sm bg-[#B83C4D] shadow-[0_0_0_3px_rgba(184,60,77,0.18)]" />
-                  {isHe ? "המסלול שלכם" : "Your path"}
+                  <CmsText cmsKey="journeyHub.pullQuote.eyebrow" />
                 </span>
 
                 <p
@@ -641,76 +616,49 @@ export default async function JourneyMarketingPage({
                     fontWeight: 500,
                   }}
                 >
-                  {isHe ? (
-                    <>
-                      <em
-                        className="text-[#B83C4D]"
-                        style={{ fontStyle: "italic", fontWeight: 700 }}
-                      >
-                        5 דקות
-                      </em>{" "}
-                      מפרידות אתכם
-                      <br />
-                      ממסלול אישי{" "}
-                      <em
-                        className="text-[#B83C4D]"
-                        style={{ fontStyle: "italic", fontWeight: 700 }}
-                      >
-                        שנכתב בדיוק לכם
-                      </em>
-                      .
-                    </>
-                  ) : (
-                    <>
-                      <em
-                        className="text-[#B83C4D]"
-                        style={{ fontStyle: "italic", fontWeight: 700 }}
-                      >
-                        Five minutes
-                      </em>{" "}
-                      stand between you
-                      <br />
-                      and a path written{" "}
-                      <em
-                        className="text-[#B83C4D]"
-                        style={{ fontStyle: "italic", fontWeight: 700 }}
-                      >
-                        just for you
-                      </em>
-                      .
-                    </>
-                  )}
+                  <CmsText
+                    cmsKey="journeyHub.pullQuote.line1Emphasis"
+                    as="em"
+                    className="text-[#B83C4D]"
+                    style={{ fontStyle: "italic", fontWeight: 700 }}
+                  />
+                  <CmsText cmsKey="journeyHub.pullQuote.line1After" />
+                  <br />
+                  <CmsText cmsKey="journeyHub.pullQuote.line2Before" />
+                  <CmsText
+                    cmsKey="journeyHub.pullQuote.line2Emphasis"
+                    as="em"
+                    className="text-[#B83C4D]"
+                    style={{ fontStyle: "italic", fontWeight: 700 }}
+                  />
+                  .
                 </p>
 
                 {/* Trial qualifier - black italic, smaller weight */}
-                <p
+                <CmsText
+                  cmsKey="journeyHub.pullQuote.trial"
+                  as="p"
                   className="mt-4 text-[22px] leading-[1.4] text-[#170E14] sm:text-[24px] lg:text-[28px]"
                   style={{
                     fontFamily: "'Frank Ruhl Libre', serif",
                     fontStyle: "italic",
                     fontWeight: 500,
                   }}
-                >
-                  {isHe
-                    ? "התחילו חינם - בלי כרטיס אשראי."
-                    : "Start free - no credit card required."}
-                </p>
+                />
 
                 {/* Italic kicker, flanked by hairlines */}
                 <div className="mt-10 flex items-center justify-center gap-4">
                   <span aria-hidden className="h-px w-16 bg-[#B83C4D]/40" />
-                  <p
+                  <CmsText
+                    cmsKey="journeyHub.pullQuote.kicker"
+                    as="p"
                     className="text-[14px] uppercase tracking-[0.22em] text-[#8B2638]"
                     style={{
                       fontFamily: "'Frank Ruhl Libre', serif",
                       fontStyle: "italic",
                       fontWeight: 500,
                     }}
-                  >
-                    {isHe
-                      ? "האבחון פתוח לכולם"
-                      : "the assessment is open"}
-                  </p>
+                  />
                   <span aria-hidden className="h-px w-16 bg-[#B83C4D]/40" />
                 </div>
 
@@ -773,11 +721,7 @@ export default async function JourneyMarketingPage({
               </div>
 
               <div className="mt-16 grid gap-8 lg:grid-cols-3 lg:gap-7">
-                {[0, 1, 2].map((i) => {
-                  const tag = isHe
-                    ? ["האבחון", "הניתוח", "המסלול"][i]
-                    : ["The diagnostic", "The analysis", "The path"][i];
-                  return (
+                {[0, 1, 2].map((i) => (
                   <article
                     key={i}
                     className="group relative flex h-full flex-col overflow-hidden rounded-[28px] border border-[#EAE0E3] bg-[#FBF5F2] p-9 shadow-sm transition duration-500 hover:-translate-y-2 hover:border-transparent hover:shadow-[0_28px_56px_-20px_rgba(74,23,33,0.22)] sm:p-10"
@@ -803,16 +747,16 @@ export default async function JourneyMarketingPage({
                     </div>
 
                     {/* Italic tag */}
-                    <p
+                    <CmsText
+                      cmsKey={`journeyHub.how.steps.${i}.tag`}
+                      as="p"
                       className="relative mt-6 text-[14px] uppercase tracking-[0.22em] text-[#B83C4D]"
                       style={{
                         fontFamily: "'Frank Ruhl Libre', serif",
                         fontStyle: "italic",
                         fontWeight: 500,
                       }}
-                    >
-                      {tag}
-                    </p>
+                    />
 
                     {/* Title */}
                     <CmsText
@@ -832,8 +776,7 @@ export default async function JourneyMarketingPage({
                       className="relative mt-5 text-[18px] leading-[1.7] text-[#4A3A45]"
                     />
                   </article>
-                  );
-                })}
+                ))}
               </div>
             </div>
           </section>
@@ -963,9 +906,7 @@ export default async function JourneyMarketingPage({
                 />
                 <span className="relative z-10 inline-flex items-center">
                   {hasActiveAssignments
-                    ? isHe
-                      ? "פתיחת המסלול שלכם"
-                      : "Open your journey"
+                    ? t("openJourney")
                     : hasInProgressAssessment
                       ? t("ctaResume")
                       : t("ctaBlock.primary")}
@@ -990,31 +931,20 @@ export default async function JourneyMarketingPage({
               <div className="container">
                 <div className="faq-grid">
                   <div className="faq-side">
-                    <div className="eyebrow">
-                      {isHe ? "שאלות שזוגות שואלים" : "Questions couples ask"}
-                    </div>
+                    <CmsText
+                      cmsKey="journeyHub.faqSide.eyebrow"
+                      as="div"
+                      className="eyebrow"
+                    />
                     <h2>
-                      {isHe ? (
-                        <>
-                          יש לכם שאלות על המסע?
-                          <br />
-                          יש לנו תשובות.
-                        </>
-                      ) : (
-                        <>
-                          Have questions about the journey?
-                          <br />
-                          We have answers.
-                        </>
-                      )}
+                      <CmsText cmsKey="journeyHub.faqSide.titleLine1" />
+                      <br />
+                      <CmsText cmsKey="journeyHub.faqSide.titleLine2" />
                     </h2>
-                    <p>
-                      {isHe
-                        ? "אספנו את השאלות שזוגות שואלים אותנו על האבחון, על המסלול ועל מה קורה אחרי. עדיין לא מצאתם תשובה?"
-                        : "We've gathered the most common questions about the assessment, the path, and what happens after. Didn't find your answer?"}
-                    </p>
+                    <CmsText cmsKey="journeyHub.faqSide.blurb" as="p" />
                     <Link href="/contact" className="btn btn-ghost">
-                      {isHe ? "דברו איתנו" : "Talk to us"}{" "}
+                      <CmsText cmsKey="journeyHub.faqSide.contactCta" />
+                      {" "}
                       <span className="arrow">{isHe ? "←" : "→"}</span>
                     </Link>
                   </div>

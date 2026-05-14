@@ -846,6 +846,20 @@
           "h": "Together, for real",
           "p": "Both partners see the same journey. Mark conversations, write reflections, and watch how you grow - together, for real."
         }
+      },
+      "stats": {
+        "0": {
+          "label": "Personal"
+        },
+        "1": {
+          "label": "5 minutes"
+        },
+        "2": {
+          "label": "Research-based"
+        },
+        "3": {
+          "label": "For couples"
+        }
       }
     },
     "how": {
@@ -854,15 +868,18 @@
       "steps": {
         "0": {
           "title": "Map your relationship in 5 minutes",
-          "body": "A short assessment of communication, intimacy, emotional connection, friendship, and family. By the end you'll see exactly where you stand - no jargon, no filler."
+          "body": "A short assessment of communication, intimacy, emotional connection, friendship, and family. By the end you'll see exactly where you stand - no jargon, no filler.",
+          "tag": "The diagnostic"
         },
         "1": {
           "title": "Get your personal diagnostic",
-          "body": "Instant results: your 3 strongest areas, your 2 biggest friction points, and the one thing most worth working on first."
+          "body": "Instant results: your 3 strongest areas, your 2 biggest friction points, and the one thing most worth working on first.",
+          "tag": "The analysis"
         },
         "2": {
           "title": "An expert + weekly practice",
-          "body": "Your Mioshy expert learns your relationship, builds a custom plan, and follows you in private chat. Short practices that add up to about an hour a week — at your pace."
+          "body": "Your Mioshy expert learns your relationship, builds a custom plan, and follows you in private chat. Short practices that add up to about an hour a week — at your pace.",
+          "tag": "The path"
         }
       }
     },
@@ -961,7 +978,37 @@
       }
     },
     "breadcrumbHome": "Home",
-    "breadcrumbJourney": "Journey with Mioshy"
+    "breadcrumbJourney": "Journey with Mioshy",
+    "metaKeywords": "couples journey, couples assessment, relationship diagnostic, couples program, relationship exercises, personalized couples roadmap",
+    "locked": {
+      "badge": "Journey with Mioshy",
+      "h1Lead": "The journey is",
+      "h1Highlight": "locked",
+      "h1Tail": "— for now.",
+      "lede": "You deserve coaching built around you — practices, assessment, conversations, and monthly tasks from our experts. All included in one weekly subscription.",
+      "subLede": "We don't want you to miss this.",
+      "ctaJoin": "Join now",
+      "backLink": "Back to My Mioshy"
+    },
+    "openJourney": "Open your journey",
+    "heroImagePlaceholder": "Image coming soon",
+    "activeAssignmentsBanner": "Your journey is active - pick up where you left off",
+    "pullQuote": {
+      "eyebrow": "Your path",
+      "line1Emphasis": "Five minutes",
+      "line1After": " stand between you",
+      "line2Before": "and a path written ",
+      "line2Emphasis": "just for you",
+      "trial": "Start free - no credit card required.",
+      "kicker": "the assessment is open"
+    },
+    "faqSide": {
+      "eyebrow": "Questions couples ask",
+      "titleLine1": "Have questions about the journey?",
+      "titleLine2": "We have answers.",
+      "blurb": "We've gathered the most common questions about the assessment, the path, and what happens after. Didn't find your answer?",
+      "contactCta": "Talk to us"
+    }
   },
   "homeV2": {
     "hero": {
