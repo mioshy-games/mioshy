@@ -1733,7 +1733,24 @@
     "privateChamber": "החדר הסגור",
     "defaultSectionName": "למבוגרים בלבד",
     "defaultAuthedTagline": "כל המשחקים האקסקלוסיביים שלנו, במקום אחד.",
-    "defaultHeroTagline": "המוצר הדגל של מיאושי. לילה אחד של חדשנות, הפתעה, וחוויה אחרת לגמרי."
+    "defaultHeroTagline": "המוצר הדגל של מיאושי. לילה אחד של חדשנות, הפתעה, וחוויה אחרת לגמרי.",
+    "heroBreadcrumbHome": "בית",
+    "heroBreadcrumbSection": "הסקס של מיאושי",
+    "heroFlagshipLabel": "המוצר הדגל",
+    "heroAgeGate": "למבוגרים בלבד · 18+",
+    "heroHeadline1": "ערב אחד.",
+    "heroHeadline2": "חוויה מינית חדשה.",
+    "heroLedePrefix": "משחקים שכתבו מומחים בעולם.",
+    "heroLedeEmphasis": "לזוגות שמוכנים לזה.",
+    "heroCtaPrimary": "אל הקטלוג",
+    "heroReassurance": "לזוגות סקרנים · ללא חוזה · ביטול בכל עת",
+    "heroPosterPlaceholder": "תמונת המשחק",
+    "heroPosterTouchingLevel": "מרגש",
+    "heroPosterTouchingHint": "שאלות שמפיגות מרחק",
+    "heroPosterTouchingAlt": "מרגש - תמונת המשחק",
+    "heroPosterStirringLevel": "מעורר",
+    "heroPosterStirringHint": "הזמנות לחוויה משותפת",
+    "heroPosterStirringAlt": "מעורר - תמונת המשחק"
   },
   "mioshySexSlug": {
     "pricing": {

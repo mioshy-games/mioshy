@@ -1735,7 +1735,24 @@
     "privateChamber": "The private chamber",
     "defaultSectionName": "Adults Only",
     "defaultAuthedTagline": "All our exclusive games, in one place.",
-    "defaultHeroTagline": "Mioshy's flagship. One night of novelty, surprise - and a wholly different experience."
+    "defaultHeroTagline": "Mioshy's flagship. One night of novelty, surprise - and a wholly different experience.",
+    "heroBreadcrumbHome": "Home",
+    "heroBreadcrumbSection": "Mioshy's Sex",
+    "heroFlagshipLabel": "The flagship",
+    "heroAgeGate": "Adults only · 18+",
+    "heroHeadline1": "One evening.",
+    "heroHeadline2": "A new sexual experience.",
+    "heroLedePrefix": "Games written by world-class experts.",
+    "heroLedeEmphasis": "For couples ready for it.",
+    "heroCtaPrimary": "Enter the catalogue",
+    "heroReassurance": "For curious couples · no contract · cancel anytime",
+    "heroPosterPlaceholder": "Game artwork",
+    "heroPosterTouchingLevel": "Touching",
+    "heroPosterTouchingHint": "Prompts that close distance",
+    "heroPosterTouchingAlt": "Touching - game artwork",
+    "heroPosterStirringLevel": "Stirring",
+    "heroPosterStirringHint": "Invitations into play",
+    "heroPosterStirringAlt": "Stirring - game artwork"
   },
   "mioshySexSlug": {
     "pricing": {
