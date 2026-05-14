@@ -124,7 +124,16 @@ export function CmsTextRow({ row }: { row: CmsTextRowType }) {
   }
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-4">
+    <div
+      // `data-cms-key` is the anchor the global search bar uses to
+      // scroll directly to this row when the admin clicks a result.
+      // Querying the DOM by `[data-cms-key="<key>"]` is more robust
+      // than relying on React refs threaded through Tabs → details
+      // → row, and survives the tab switch + section auto-open that
+      // happens before the scroll fires.
+      data-cms-key={row.key}
+      className="rounded-lg border border-slate-200 bg-slate-50/50 p-4 transition-shadow"
+    >
       {/* Key + meta */}
       <div className="mb-3 flex items-center justify-between gap-3">
         <code className="text-xs font-medium text-slate-700">{row.key}</code>
