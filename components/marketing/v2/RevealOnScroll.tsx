@@ -71,7 +71,35 @@ export function RevealOnScroll({
     <motion.div
       className={className}
       variants={variants}
-      initial="hidden"
+      // CMS migration follow-up (Sprint 1, 2026-05-13 / revised
+      // 2026-05-13 PM after Itzik reported a regression):
+      //
+      // ONE change keeps the homepage visible during slow hydration:
+      //
+      //   `initial={false}` — Tells framer-motion to skip the
+      //   "hidden" state on first render and start at "visible".
+      //   Previously every section's <motion.div> rendered at
+      //   opacity:0 (scale-up headlines) on SSR. With 11 newly
+      //   "use client" sections in Sprint 1, hydration could take
+      //   long enough on mid-range mobile that the
+      //   IntersectionObserver registration ran AFTER a fast
+      //   scroller had already passed sections, leaving them
+      //   opacity:0 forever. With `initial={false}` the element is
+      //   already visible on first paint — slow hydration no longer
+      //   leaves sections blank.
+      //
+      // NOTE — the first revision of this fix ALSO flipped
+      // `viewport.once: true → false`, on the theory it would let
+      // the observer "catch up" via re-firing. That introduced a
+      // different bug: every time a section left and re-entered the
+      // viewport during ordinary up/down scrolling, framer-motion
+      // animated it through hidden→visible AGAIN, producing a
+      // ~400ms flicker the user saw as "content disappears for a
+      // second". `initial={false}` alone is enough — content is
+      // visible from SSR, the observer only needs to fire ONCE, and
+      // there's nothing to replay on scroll-back. Reverted `once` to
+      // `true`.
+      initial={false}
       whileInView="visible"
       viewport={{ once: true, amount: 0.2, margin: "0px 0px -80px 0px" }}
       transition={{ duration, delay, ease: [0.22, 0.61, 0.36, 1] }}

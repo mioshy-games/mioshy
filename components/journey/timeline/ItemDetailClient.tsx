@@ -10,6 +10,10 @@
 // (complete/uncomplete) and conservative where it might lose
 // partner-visible data (response post - wait for server confirmation
 // before clearing the textarea).
+//
+// Sprint 4 #3 Phase 2A migration — 36 keys under
+// journeyTimeline.itemDetail.*. Includes per-error-code copy for the
+// errorCopy() switch (login_required/forbidden/locked/...).
 // ============================================================
 
 import * as React from "react";
@@ -45,6 +49,8 @@ import {
   deleteScheduledItemResponse,
 } from "@/app/actions/journey-content-user";
 import { CompletionCelebrationModal } from "@/components/journey/timeline/CompletionCelebrationModal";
+import { useCmsText } from "@/hooks/useCmsText";
+import { CmsText } from "@/components/cms/CmsText";
 
 interface Props {
   item: JourneyItem;
@@ -59,6 +65,31 @@ interface Props {
    *  them upstream. The complete-toggle, response thread, and
    *  celebration modal still render. */
   hideContent?: boolean;
+}
+
+/** Resolve every errorCopy() string in one hook call. Returned object
+ *  is keyed by error code; switch consumers look up by code with a
+ *  default-fallback string. Hooks can't sit inside a switch, so we
+ *  centralise the bundle here. */
+function useErrorCopyBundle() {
+  return {
+    login_required: useCmsText("journeyTimeline.itemDetail.errLoginRequired").text,
+    profile_incomplete: useCmsText("journeyTimeline.itemDetail.errProfileIncomplete").text,
+    forbidden: useCmsText("journeyTimeline.itemDetail.errForbidden").text,
+    locked: useCmsText("journeyTimeline.itemDetail.errLocked").text,
+    assignment_inactive: useCmsText("journeyTimeline.itemDetail.errAssignmentInactive").text,
+    empty_text: useCmsText("journeyTimeline.itemDetail.errEmptyText").text,
+    text_too_long: useCmsText("journeyTimeline.itemDetail.errTextTooLong").text,
+    not_found: useCmsText("journeyTimeline.itemDetail.errNotFound").text,
+    default: useCmsText("journeyTimeline.itemDetail.errDefault").text,
+  };
+}
+
+function errorCopy(
+  code: string,
+  bundle: ReturnType<typeof useErrorCopyBundle>,
+): string {
+  return (bundle as Record<string, string>)[code] ?? bundle.default;
 }
 
 export function ItemDetailClient({
@@ -86,6 +117,14 @@ export function ItemDetailClient({
   const [busyToggle, setBusyToggle] = React.useState(false);
   const [celebrationOpen, setCelebrationOpen] = React.useState(false);
 
+  // CMS strings — toasts + completed-on prefix. Other rendered strings
+  // (headings, body copy) use <CmsText as="..."> inline below.
+  const errBundle = useErrorCopyBundle();
+  const markedNotDoneMsg = useCmsText("journeyTimeline.itemDetail.markedNotDone").text;
+  const responseSavedMsg = useCmsText("journeyTimeline.itemDetail.responseSaved").text;
+  const responseDeletedMsg = useCmsText("journeyTimeline.itemDetail.responseDeleted").text;
+  const completedOnPrefix = useCmsText("journeyTimeline.itemDetail.completedOnPrefix").text;
+
   const title = isHe ? item.title_he : item.title_en ?? item.title_he;
   const body = isHe ? item.body_he : item.body_en ?? item.body_he;
   const task = isHe ? item.task_he : item.task_en ?? item.task_he;
@@ -106,14 +145,14 @@ export function ItemDetailClient({
         const res = await unmarkScheduledItemComplete(scheduled.id);
         if (!res.ok) {
           setCompletion(snapshot);
-          toast.error(errorCopy(res.error, isHe));
+          toast.error(errorCopy(res.error, errBundle));
           return;
         }
-        toast.success(isHe ? "סומן כלא הושלם" : "Marked as not done");
+        toast.success(markedNotDoneMsg);
       } else {
         const res = await markScheduledItemComplete(scheduled.id);
         if (!res.ok) {
-          toast.error(errorCopy(res.error, isHe));
+          toast.error(errorCopy(res.error, errBundle));
           return;
         }
         setCompletion({
@@ -139,11 +178,11 @@ export function ItemDetailClient({
       isPrivate,
     });
     if (!res.ok) {
-      toast.error(errorCopy(res.error, isHe));
+      toast.error(errorCopy(res.error, errBundle));
       return false;
     }
     setResponses((prev) => [...prev, res.response]);
-    toast.success(isHe ? "התגובה נשמרה" : "Response saved");
+    toast.success(responseSavedMsg);
     router.refresh();
     return true;
   }
@@ -155,10 +194,10 @@ export function ItemDetailClient({
     const res = await deleteScheduledItemResponse(responseId);
     if (!res.ok) {
       setResponses(snapshot);
-      toast.error(errorCopy(res.error, isHe));
+      toast.error(errorCopy(res.error, errBundle));
       return;
     }
-    toast.success(isHe ? "התגובה נמחקה" : "Response deleted");
+    toast.success(responseDeletedMsg);
     router.refresh();
   }
 
@@ -170,10 +209,10 @@ export function ItemDetailClient({
           {title}
         </h1>
         <div className="flex flex-wrap items-center gap-3 text-sm text-white/65">
-          <StatusBadge status={status} isHe={isHe} />
+          <StatusBadge status={status} />
           {completion ? (
             <span className="text-xs text-white/55">
-              {isHe ? "הושלם ב-" : "Completed on "}
+              {completedOnPrefix}
               {new Date(completion.completed_at).toLocaleDateString(
                 isHe ? "he-IL" : "en-US",
                 { year: "numeric", month: "short", day: "numeric" },
@@ -201,7 +240,7 @@ export function ItemDetailClient({
       ) : null}
 
       {/* Video (inline simple embed fallback for youtube / mp4) */}
-      {item.video_url ? <VideoBlock url={item.video_url} isHe={isHe} /> : null}
+      {item.video_url ? <VideoBlock url={item.video_url} /> : null}
 
       {/* Body / Task / Challenge — suppressed when LessonView is
           mounted upstream (Phase 1 — every block rendered there
@@ -220,7 +259,7 @@ export function ItemDetailClient({
           {task ? (
             <Callout
               icon={<Target className="h-4 w-4" />}
-              title={isHe ? "המשימה שלכם" : "Your task"}
+              titleKey="journeyTimeline.itemDetail.taskTitle"
               tone="emerald"
             >
               {task}
@@ -231,7 +270,7 @@ export function ItemDetailClient({
           {challenge ? (
             <Callout
               icon={<Play className="h-4 w-4" />}
-              title={isHe ? "אתגר נוסף" : "Bonus challenge"}
+              titleKey="journeyTimeline.itemDetail.challengeTitle"
               tone="amber"
             >
               {challenge}
@@ -245,23 +284,23 @@ export function ItemDetailClient({
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <div className="text-sm font-semibold">
-              {completion
-                ? isHe
-                  ? "הפרק הזה הושלם"
-                  : "This chapter is complete"
-                : isHe
-                  ? "סיימתם את הפרק?"
-                  : "Finished this chapter?"}
+              <CmsText
+                cmsKey={
+                  completion
+                    ? "journeyTimeline.itemDetail.chapterCompleteHeading"
+                    : "journeyTimeline.itemDetail.chapterFinishedQ"
+                }
+              />
             </div>
-            <p className="mt-1 max-w-md text-xs text-white/60">
-              {completion
-                ? isHe
-                  ? "אפשר תמיד לפתוח שוב ולענות, גם אחרי שסומן."
-                  : "You can reopen and add reflections anytime, even after marking it done."
-                : isHe
-                  ? "סמנו כשהתרגול נעשה - זה לא חייב להיות מיד. הפרק יישאר פתוח."
-                  : "Mark it once the practice is done - no rush. The chapter stays open."}
-            </p>
+            <CmsText
+              cmsKey={
+                completion
+                  ? "journeyTimeline.itemDetail.completeHintAfter"
+                  : "journeyTimeline.itemDetail.completeHintBefore"
+              }
+              as="p"
+              className="mt-1 max-w-md text-xs text-white/60"
+            />
           </div>
           <Button
             type="button"
@@ -283,13 +322,13 @@ export function ItemDetailClient({
             ) : (
               <CheckCircle2 className="me-2 h-4 w-4" />
             )}
-            {completion
-              ? isHe
-                ? "בטל סימון הושלם"
-                : "Unmark done"
-              : isHe
-                ? "סמן כהושלם"
-                : "Mark as done"}
+            <CmsText
+              cmsKey={
+                completion
+                  ? "journeyTimeline.itemDetail.unmarkDone"
+                  : "journeyTimeline.itemDetail.markAsDone"
+              }
+            />
           </Button>
         </div>
       </div>
@@ -299,9 +338,11 @@ export function ItemDetailClient({
         <header className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <MessageCircle className="h-4 w-4 text-indigo-300" />
-            <h2 className="text-lg font-semibold">
-              {isHe ? "תגובות ותובנות" : "Reflections"}
-            </h2>
+            <CmsText
+              cmsKey="journeyTimeline.itemDetail.reflectionsHeading"
+              as="h2"
+              className="text-lg font-semibold"
+            />
             <span className="text-xs text-white/50">
               {responses.length > 0 ? `(${responses.length})` : null}
             </span>
@@ -315,7 +356,7 @@ export function ItemDetailClient({
           isHe={isHe}
         />
 
-        <ResponseForm onSubmit={handleAddResponse} isHe={isHe} />
+        <ResponseForm onSubmit={handleAddResponse} />
       </section>
 
       <CompletionCelebrationModal
@@ -332,32 +373,26 @@ export function ItemDetailClient({
 // StatusBadge
 // ------------------------------------------------------------
 
-function StatusBadge({
-  status,
-  isHe,
-}: {
-  status: ScheduledItemStatus;
-  isHe: boolean;
-}) {
+function StatusBadge({ status }: { status: ScheduledItemStatus }) {
   if (status === "completed") {
     return (
       <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/40 bg-emerald-500/15 px-2.5 py-1 text-xs font-semibold text-emerald-100">
         <CheckCircle2 className="h-3.5 w-3.5" />
-        {isHe ? "הושלם" : "Completed"}
+        <CmsText cmsKey="journeyTimeline.itemDetail.statusCompleted" />
       </span>
     );
   }
   if (status === "available") {
     return (
       <span className="inline-flex items-center gap-1 rounded-full border border-amber-300/50 bg-amber-400/15 px-2.5 py-1 text-xs font-semibold text-amber-100">
-        {isHe ? "פתוח עכשיו" : "Open now"}
+        <CmsText cmsKey="journeyTimeline.itemDetail.statusOpenNow" />
       </span>
     );
   }
   return (
     <span className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-xs font-semibold text-white/60">
       <Lock className="h-3.5 w-3.5" />
-      {isHe ? "נעול" : "Locked"}
+      <CmsText cmsKey="journeyTimeline.itemDetail.statusLocked" />
     </span>
   );
 }
@@ -368,12 +403,12 @@ function StatusBadge({
 
 function Callout({
   icon,
-  title,
+  titleKey,
   tone,
   children,
 }: {
   icon: React.ReactNode;
-  title: string;
+  titleKey: string;
   tone: "emerald" | "amber" | "indigo";
   children: React.ReactNode;
 }) {
@@ -392,7 +427,7 @@ function Callout({
     >
       <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide opacity-90">
         {icon}
-        <span>{title}</span>
+        <CmsText cmsKey={titleKey} as="span" />
       </div>
       <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-white/90">
         {children}
@@ -405,14 +440,15 @@ function Callout({
 // VideoBlock - minimal YouTube/MP4 embed
 // ------------------------------------------------------------
 
-function VideoBlock({ url, isHe }: { url: string; isHe: boolean }) {
+function VideoBlock({ url }: { url: string }) {
   const yt = extractYouTubeId(url);
+  const videoTitle = useCmsText("journeyTimeline.itemDetail.videoTitle").text;
   if (yt) {
     return (
       <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-white/10 bg-black">
         <iframe
           src={`https://www.youtube.com/embed/${yt}`}
-          title={isHe ? "סרטון" : "Video"}
+          title={videoTitle}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen
           className="absolute inset-0 h-full w-full"
@@ -461,12 +497,12 @@ function ResponseList({
   onDelete: (id: string) => void;
   isHe: boolean;
 }) {
+  const deleteResponseLabel = useCmsText("journeyTimeline.itemDetail.deleteResponse").text;
+
   if (responses.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-white/15 bg-white/2 px-4 py-6 text-center text-sm text-white/50">
-        {isHe
-          ? "עדיין אין תגובות. תוסיפו ראשונים 👇"
-          : "No responses yet. Be the first 👇"}
+        <CmsText cmsKey="journeyTimeline.itemDetail.noResponsesYet" />
       </div>
     );
   }
@@ -486,19 +522,19 @@ function ResponseList({
           >
             <div className="flex items-center justify-between gap-3 text-xs">
               <span className="font-semibold text-white/80">
-                {mine
-                  ? isHe
-                    ? "אני"
-                    : "Me"
-                  : isHe
-                    ? "בן/בת הזוג"
-                    : "Partner"}
+                <CmsText
+                  cmsKey={
+                    mine
+                      ? "journeyTimeline.itemDetail.responseAuthorMe"
+                      : "journeyTimeline.itemDetail.responseAuthorPartner"
+                  }
+                />
               </span>
               <div className="flex items-center gap-2 text-white/40">
                 {r.is_private ? (
                   <span className="inline-flex items-center gap-1 rounded-full border border-white/15 px-2 py-0.5 text-xs uppercase tracking-wide">
                     <Lock className="h-3 w-3" />
-                    {isHe ? "פרטי" : "Private"}
+                    <CmsText cmsKey="journeyTimeline.itemDetail.responsePrivate" />
                   </span>
                 ) : null}
                 <time dateTime={r.created_at}>
@@ -517,8 +553,8 @@ function ResponseList({
                     type="button"
                     onClick={() => onDelete(r.id)}
                     className="text-white/45 transition hover:text-red-300"
-                    aria-label={isHe ? "מחק תגובה" : "Delete response"}
-                    title={isHe ? "מחק תגובה" : "Delete response"}
+                    aria-label={deleteResponseLabel}
+                    title={deleteResponseLabel}
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
@@ -528,10 +564,6 @@ function ResponseList({
             <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-white/90">
               {r.response_text}
             </p>
-            {/* Phase 2E - clinician's reply, when present.
-                Calm slate panel inset under the user's message,
-                clearly attributed and timestamped. Never auto-marks
-                as read; the toast on /my/journey handles "new". */}
             {r.clinician_reply_text ? (
               <ClinicianReplyPanel
                 replyText={r.clinician_reply_text}
@@ -562,9 +594,11 @@ function ClinicianReplyPanel({
   return (
     <div className="mt-3 rounded-xl border border-emerald-400/20 bg-emerald-500/[0.05] p-3">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-emerald-200/85">
-          {isHe ? "מענה מהמומחה" : "From your clinician"}
-        </span>
+        <CmsText
+          cmsKey="journeyTimeline.itemDetail.clinicianReplyLabel"
+          as="span"
+          className="text-[11px] font-semibold uppercase tracking-wider text-emerald-200/85"
+        />
         {repliedAt ? (
           <time
             className="text-[11px] text-emerald-200/55"
@@ -593,14 +627,15 @@ const RESPONSE_MAX_LEN = 4000;
 
 function ResponseForm({
   onSubmit,
-  isHe,
 }: {
   onSubmit: (text: string, isPrivate: boolean) => Promise<boolean>;
-  isHe: boolean;
 }) {
   const [text, setText] = React.useState("");
   const [isPrivate, setIsPrivate] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
+
+  const placeholder = useCmsText("journeyTimeline.itemDetail.responsePlaceholder").text;
+  const charactersLeftTpl = useCmsText("journeyTimeline.itemDetail.charactersLeft").text;
 
   const disabled = busy || text.trim().length === 0;
   const remaining = RESPONSE_MAX_LEN - text.length;
@@ -622,11 +657,7 @@ function ResponseForm({
       <Textarea
         value={text}
         onChange={(e) => setText(e.target.value.slice(0, RESPONSE_MAX_LEN))}
-        placeholder={
-          isHe
-            ? "שתפו מחשבה, תובנה או שאלה. התגובות משותפות עם בן/בת הזוג - אלא אם תסמנו פרטי."
-            : "Share a thought, insight or question. Responses are shared with your partner unless you mark them private."
-        }
+        placeholder={placeholder}
         rows={3}
         className="bg-white/5 text-white placeholder:text-white/40 border-white/15"
       />
@@ -639,13 +670,11 @@ function ResponseForm({
               onCheckedChange={setIsPrivate}
             />
             <Label htmlFor="response-private" className="text-sm text-white/70">
-              {isHe ? "פרטי (רק אני רואה)" : "Private (only me)"}
+              <CmsText cmsKey="journeyTimeline.itemDetail.privateOnlyMe" />
             </Label>
           </div>
           <span className="text-sm text-white/40">
-            {isHe
-              ? `${remaining} תווים נותרו`
-              : `${remaining} characters left`}
+            {charactersLeftTpl.replace("{n}", String(remaining))}
           </span>
         </div>
         <Button
@@ -655,44 +684,9 @@ function ResponseForm({
           className="min-h-[44px] bg-gradient-to-r from-indigo-500 via-emerald-500 to-teal-500 px-6 text-white hover:brightness-110"
         >
           {busy ? <Loader2 className="me-2 h-4 w-4 animate-spin" /> : null}
-          {isHe ? "שליחה" : "Send"}
+          <CmsText cmsKey="journeyTimeline.itemDetail.sendResponse" />
         </Button>
       </div>
     </form>
   );
-}
-
-// ------------------------------------------------------------
-// Error copy
-// ------------------------------------------------------------
-
-function errorCopy(code: string, isHe: boolean): string {
-  switch (code) {
-    case "login_required":
-      return isHe ? "צריך להתחבר קודם." : "Please sign in first.";
-    case "profile_incomplete":
-      return isHe
-        ? "השלימו את הפרופיל כדי להשתתף."
-        : "Complete your profile to participate.";
-    case "forbidden":
-      return isHe
-        ? "אין לכם גישה לפריט הזה."
-        : "You don't have access to this item.";
-    case "locked":
-      return isHe
-        ? "הפריט עדיין נעול - חזרו כשייפתח."
-        : "This item is still locked.";
-    case "assignment_inactive":
-      return isHe
-        ? "הקצאת המסע הזה בוטלה."
-        : "This journey assignment was cancelled.";
-    case "empty_text":
-      return isHe ? "כתבו משהו לפני השליחה." : "Write something before sending.";
-    case "text_too_long":
-      return isHe ? "הטקסט ארוך מדי." : "Text is too long.";
-    case "not_found":
-      return isHe ? "הפריט לא נמצא." : "Item not found.";
-    default:
-      return isHe ? "משהו השתבש. נסו שוב." : "Something went wrong. Try again.";
-  }
 }

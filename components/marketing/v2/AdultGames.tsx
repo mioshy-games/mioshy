@@ -1,22 +1,19 @@
+"use client";
+
 // Side-effect import: ensures the v2 scoped styles are loaded whenever
 // AdultGames is rendered, even on pages that don't import HomepageV2.
 // Safe because CSS imports are de-duplicated by Next.js.
 import "./styles.css";
-import { useTranslations } from "next-intl";
 import { Link } from "@/navigation";
+import { CmsText } from "@/components/cms/CmsText";
 
 /**
- * AdultGames — "Mioshy's Sex Rules" (renamed from "The private chamber"
- * per Itzik 2026-05-06). Premium manifesto section with midnight wine +
- * bronze palette, 3 manifesto pillars (I/II/III), signature whisper,
- * and dramatic closer CTA → /mioshy-sex.
- *
- * The English/Hebrew product brand was also renamed:
- *   "Adults Only" / "למבוגרים בלבד" → "Mioshy's Sex" / "הסקס של מיאושי"
- * URL: /adults → /mioshy-sex
+ * AdultGames — "Mioshy's Sex Rules" manifesto section.
+ * Sprint 4 #1 closeout: every DOM text via <CmsText>. headline +
+ * closer + lead are pre-marked is_rich, so dangerouslySetInnerHTML
+ * kicks in automatically; the pillars and trust strip stay plain.
  */
 export function AdultGames() {
-  const t = useTranslations("homeV2.adultGames");
   return (
     <section className="adult-games" id="adult-games">
       <span className="ag-aura ag-aura-1" aria-hidden="true"></span>
@@ -25,64 +22,53 @@ export function AdultGames() {
       <div className="ag-frame">
         <div className="ag-stage">
           <div className="ag-pills">
-            <span className="ag-pill">{t("pill1")}</span>
-            <span className="ag-pill">{t("pill2")}</span>
-            <span className="ag-pill">{t("pill3")}</span>
+            <CmsText cmsKey="homeV2.adultGames.pill1" className="ag-pill" />
+            <CmsText cmsKey="homeV2.adultGames.pill2" className="ag-pill" />
+            <CmsText cmsKey="homeV2.adultGames.pill3" className="ag-pill" />
           </div>
 
-          <span className="ag-eyebrow">{t("eyebrow")}</span>
+          <CmsText cmsKey="homeV2.adultGames.eyebrow" className="ag-eyebrow" />
 
-          <h2>
-            {t.rich("headline", {
-              em: (chunks) => <em>{chunks}</em>,
-              br: () => <br />,
-            })}
-          </h2>
-
-          <p className="ag-lead">
-            {t.rich("lead", {
-              strong: (chunks) => <strong>{chunks}</strong>,
-            })}
-          </p>
+          <CmsText cmsKey="homeV2.adultGames.headline" as="h2" />
+          <CmsText cmsKey="homeV2.adultGames.lead" as="p" className="ag-lead" />
 
           <div className="ag-pillars">
             <article className="ag-pillar">
               <span className="ag-pillar-num">I</span>
-              <h3>{t("pillar1Title")}</h3>
-              <p>{t("pillar1Body")}</p>
+              <CmsText cmsKey="homeV2.adultGames.pillar1Title" as="h3" />
+              <CmsText cmsKey="homeV2.adultGames.pillar1Body" as="p" />
             </article>
             <article className="ag-pillar">
               <span className="ag-pillar-num">II</span>
-              <h3>{t("pillar2Title")}</h3>
-              <p>{t("pillar2Body")}</p>
+              <CmsText cmsKey="homeV2.adultGames.pillar2Title" as="h3" />
+              <CmsText cmsKey="homeV2.adultGames.pillar2Body" as="p" />
             </article>
             <article className="ag-pillar">
               <span className="ag-pillar-num">III</span>
-              <h3>{t("pillar3Title")}</h3>
-              <p>{t("pillar3Body")}</p>
+              <CmsText cmsKey="homeV2.adultGames.pillar3Title" as="h3" />
+              <CmsText cmsKey="homeV2.adultGames.pillar3Body" as="p" />
             </article>
           </div>
 
           <div className="ag-signature">
             <span className="ag-signature-line" aria-hidden="true"></span>
-            <em>{t("signature")}</em>
+            <CmsText cmsKey="homeV2.adultGames.signature" as="em" />
             <span className="ag-signature-line" aria-hidden="true"></span>
           </div>
 
           <div className="ag-closer">
-            <h3 className="ag-closer-statement">
-              {t.rich("closer", {
-                em: (chunks) => <em>{chunks}</em>,
-                br: () => <br />,
-              })}
-            </h3>
+            <CmsText
+              cmsKey="homeV2.adultGames.closer"
+              as="h3"
+              className="ag-closer-statement"
+            />
             <Link href="/mioshy-sex" className="ag-closer-cta">
-              {t("cta")}
+              <CmsText cmsKey="homeV2.adultGames.cta" />
             </Link>
             <div className="ag-closer-trust">
-              <span>{t("trust1")}</span>
-              <span>{t("trust2")}</span>
-              <span>{t("trust3")}</span>
+              <CmsText cmsKey="homeV2.adultGames.trust1" />
+              <CmsText cmsKey="homeV2.adultGames.trust2" />
+              <CmsText cmsKey="homeV2.adultGames.trust3" />
             </div>
           </div>
         </div>

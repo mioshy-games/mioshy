@@ -103,6 +103,8 @@ import {
 import type { JourneyOwner } from "@/lib/journey-content/types";
 import { isPriorityKey, type PriorityKey } from "@/lib/journey/priorities";
 import { getPriorityLabels } from "@/lib/journey-content/priority-categories";
+import { CmsText } from "@/components/cms/CmsText";
+import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
 
 export const dynamic = "force-dynamic";
 
@@ -111,12 +113,14 @@ export async function generateMetadata({
 }: {
   params: { locale: string };
 }): Promise<Metadata> {
-  const isHe = params.locale === "he";
+  const t = await getCmsTranslations({
+    locale: params.locale === "he" ? "he" : "en",
+    namespace: "myJourney",
+    page: "my",
+  });
   return {
-    title: `Mioshy - ${isHe ? "הקליניקה המכווננת שלכם" : "Your tuned clinic"}`,
-    description: isHe
-      ? "תוכן אישי שמותאם להעדפות שלכם, מסונן ומדורג לפי מה שחשוב לכם."
-      : "Personal content tuned to your priorities and what matters most to you.",
+    title: `Mioshy - ${t("metaTitle")}`,
+    description: t("metaDescription"),
     robots: { index: false, follow: false },
   };
 }
@@ -184,6 +188,11 @@ export default async function PrivateJourneyPage({
 
   const isHe = locale === "he";
   const Arrow = isHe ? ArrowLeft : ArrowRight;
+  const t = await getCmsTranslations({
+    locale: isHe ? "he" : "en",
+    namespace: "myJourney",
+    page: "my",
+  });
 
   // ── Auth + entitlement gate ───────────────────────────────────────────────
   const supabase = await createServerSupabaseClient();
@@ -422,9 +431,7 @@ export default async function PrivateJourneyPage({
     ? isHe
       ? priorityLabels.labelsHe[topPriority]
       : priorityLabels.labelsEn[topPriority]
-    : isHe
-      ? "חיבור כללי"
-      : "Connection";
+    : t("focusFallback");
   const focusDesc = topPriority
     ? isHe
       ? priorityLabels.descsHe[topPriority]
@@ -641,12 +648,10 @@ export default async function PrivateJourneyPage({
     activityEntries.push({
       id: "assessment_completed",
       kind: "assessment_completed",
-      title: isHe ? "השלמתם את האבחון האישי" : "Assessment completed",
+      title: t("assessmentCompleted"),
       detail:
         focusLabel && topPriority
-          ? isHe
-            ? `המוקד הראשון: ${focusLabel}`
-            : `Top focus: ${focusLabel}`
+          ? t("activityAssessmentDetail").replace("{focusLabel}", focusLabel)
           : null,
       whenIso: new Date().toISOString(),
     });
@@ -663,7 +668,7 @@ export default async function PrivateJourneyPage({
     activityEntries.push({
       id: `done-${entry.scheduled.id}`,
       kind: "item_completed",
-      title: isHe ? `סיימתם: ${title}` : `Completed: ${title}`,
+      title: t("activityCompleted").replace("{title}", title),
       detail: cat,
       whenIso:
         entry.completion?.completed_at ?? entry.scheduled.unlock_at,
@@ -678,7 +683,7 @@ export default async function PrivateJourneyPage({
     activityEntries.push({
       id: `unlock-${entry.scheduled.id}`,
       kind: "item_unlocked",
-      title: isHe ? `נפתח עבורכם: ${title}` : `Just opened: ${title}`,
+      title: t("activityJustOpened").replace("{title}", title),
       detail: null,
       whenIso: entry.scheduled.unlock_at,
     });
@@ -687,9 +692,7 @@ export default async function PrivateJourneyPage({
     activityEntries.push({
       id: `reply-${freshReplies.latestReplyAt}`,
       kind: "clinician_replied",
-      title: isHe
-        ? "המומחה שלכם השיב על תגובה"
-        : "Your clinician replied",
+      title: t("activityClinicianReplied"),
       detail: null,
       whenIso: freshReplies.latestReplyAt,
     });
@@ -712,22 +715,22 @@ export default async function PrivateJourneyPage({
             id: `priority-${k}`,
             label:
               k === "communication"
-                ? isHe ? "תקשורת זוגית" : "Communication"
+                ? t("priorityCommunication")
                 : k === "intimacy"
-                  ? isHe ? "מיניות ואינטימיות" : "Intimacy"
+                  ? t("priorityIntimacy")
                   : k === "love"
-                    ? isHe ? "אהבה וחיבור רגשי" : "Love & emotional connection"
+                    ? t("priorityLove")
                     : k === "friendship"
-                      ? isHe ? "חברות ושותפות יומיומית" : "Friendship & daily partnership"
-                      : isHe ? "משפחה ולחצים פנימיים" : "Family & internal stress",
+                      ? t("priorityFriendship")
+                      : t("priorityFamily"),
           })),
       ]
     : [
-        { id: "p-comm", label: isHe ? "תקשורת זוגית" : "Communication" },
-        { id: "p-intim", label: isHe ? "מיניות ואינטימיות" : "Intimacy" },
-        { id: "p-love", label: isHe ? "אהבה וחיבור רגשי" : "Love & emotional connection" },
-        { id: "p-friend", label: isHe ? "חברות ושותפות יומיומית" : "Friendship & daily partnership" },
-        { id: "p-family", label: isHe ? "משפחה ולחצים פנימיים" : "Family & internal stress" },
+        { id: "p-comm", label: t("priorityCommunication") },
+        { id: "p-intim", label: t("priorityIntimacy") },
+        { id: "p-love", label: t("priorityLove") },
+        { id: "p-friend", label: t("priorityFriendship") },
+        { id: "p-family", label: t("priorityFamily") },
       ];
 
   // Decide whether to show the "experts are reviewing" banner - only
@@ -788,7 +791,7 @@ export default async function PrivateJourneyPage({
           className="inline-flex items-center gap-1 text-xs font-medium text-white/55 transition hover:text-white/90"
         >
           <Arrow className="h-3 w-3 rotate-180" />
-          {isHe ? "חזרה למיאושי שלי" : "Back to My Mioshy"}
+          <CmsText cmsKey="myJourney.backToMyMioshy" />
         </Link>
 
         {/* ─────── Header ───────
@@ -798,17 +801,17 @@ export default async function PrivateJourneyPage({
           <div className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-slate-950/40 px-3 py-1 text-xs backdrop-blur">
             <Sparkles className="h-3.5 w-3.5 text-white/70" />
             <span className="font-semibold text-white/85">
-              {isHe ? "ליווי עם מיאושי" : "Coaching with Mioshy"}
+              <CmsText cmsKey="myJourney.coachingEyebrow" />
             </span>
           </div>
           <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
-            {isHe ? "הקליניקה המכווננת שלכם" : "Your tuned clinic"}
+            <CmsText cmsKey="myJourney.pageHeading" />
           </h1>
-          <p className="mt-2 max-w-xl text-white/65">
-            {isHe
-              ? "תוכן שמסודר לפי מה שחשוב לכם. כל אחד רואה את השלבים בסדר שמתאים למה שביקש באבחון."
-              : "Content ordered by what matters to you. Each partner sees their own ranking - your priorities lead."}
-          </p>
+          <CmsText
+            cmsKey="myJourney.headerLede"
+            as="p"
+            className="mt-2 max-w-xl text-white/65"
+          />
         </header>
 
         {/* ─────── v3 slice 5 - grace / blocked banner ───────
@@ -899,13 +902,13 @@ export default async function PrivateJourneyPage({
           >
             <div className="min-w-0">
               <div className="text-[12px] font-bold uppercase tracking-wider text-[#FAF6F7]/75">
-                {isHe ? "המקום המשותף שלכם" : "Your shared space"}
+                <CmsText cmsKey="myJourney.sharedSpace" />
               </div>
-              <p className="mt-1 text-[14px] leading-snug text-white/75">
-                {isHe
-                  ? "מה שעשיתם ביחד, השיחה ביניכם, וההודעות מהמומחה לשניכם."
-                  : "What you've done together, your shared thread, and messages addressed to both of you."}
-              </p>
+              <CmsText
+                cmsKey="myJourney.sharedSpaceBody"
+                as="p"
+                className="mt-1 text-[14px] leading-snug text-white/75"
+              />
             </div>
             <Arrow className="h-4 w-4 shrink-0 text-white/55" />
           </Link>
@@ -939,9 +942,7 @@ export default async function PrivateJourneyPage({
         {viewerPriorities && viewerPriorities.length > 0 && topPriority ? (
           <section className="mt-6">
             <p className="rounded-xl border border-emerald-400/20 bg-emerald-500/[0.06] px-4 py-2.5 text-[13px] text-emerald-100">
-              {isHe
-                ? `מסודר לפי הדירוג שלך: המוקד הראשון הוא ${focusLabel}. בן/בת הזוג רואה את הסדר שלהם בנפרד.`
-                : `Ordered by your ranking: top focus is ${focusLabel}. Your partner sees their own order.`}
+              {t("priorityHintTemplate").replace("{focusLabel}", focusLabel)}
             </p>
           </section>
         ) : null}
@@ -1020,11 +1021,11 @@ export default async function PrivateJourneyPage({
 
         {/* ─────── Footer note ─────── */}
         <footer className="mt-12 border-t border-white/5 pt-6 text-center">
-          <p className="text-xs text-white/40">
-            {isHe
-              ? "אזור פרטי. הכל פה אישי לכם בלבד."
-              : "Private space. Everything here is yours alone."}
-          </p>
+          <CmsText
+            cmsKey="myJourney.footerNote"
+            as="p"
+            className="text-xs text-white/40"
+          />
         </footer>
       </main>
         </div>

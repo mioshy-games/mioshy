@@ -32,6 +32,8 @@ import { CoupleChannelThread } from "@/components/my/CoupleChannelThread";
 import { getCurrentUserPauseState } from "@/lib/billing/pause-state";
 import { getActiveViewAs } from "@/lib/journey/view-as";
 import { ViewAsBanner } from "@/components/my/ViewAsBanner";
+import { CmsText } from "@/components/cms/CmsText";
+import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
 
 export const dynamic = "force-dynamic";
 
@@ -40,9 +42,13 @@ export async function generateMetadata({
 }: {
   params: { locale: string };
 }): Promise<Metadata> {
-  const isHe = params.locale === "he";
+  const t = await getCmsTranslations({
+    locale: params.locale === "he" ? "he" : "en",
+    namespace: "myJourneyTogether",
+    page: "my",
+  });
   return {
-    title: `Mioshy - ${isHe ? "ביחד" : "Together"}`,
+    title: `Mioshy - ${t("metaTitle")}`,
     robots: { index: false, follow: false },
   };
 }
@@ -59,6 +65,11 @@ export default async function TogetherPage({
   setRequestLocale(locale);
   const isHe = locale === "he";
   const Arrow = isHe ? ArrowLeft : ArrowRight;
+  const t = await getCmsTranslations({
+    locale: isHe ? "he" : "en",
+    namespace: "myJourneyTogether",
+    page: "my",
+  });
 
   // Auth + entitlement.
   const supabase = await createServerSupabaseClient();
@@ -122,7 +133,7 @@ export default async function TogetherPage({
     .map((m) => m.user_id)
     .find((id) => id !== effectiveUserId);
 
-  let partnerLabel = isHe ? "בן/בת הזוג" : "Your partner";
+  let partnerLabel = t("partnerLabel");
   if (otherUserId) {
     const { data: otherProfile } = await admin
       .from("profiles")
@@ -195,38 +206,38 @@ export default async function TogetherPage({
             className="inline-flex items-center gap-1 text-xs font-medium text-white/55 transition hover:text-white/90"
           >
             <Arrow className="h-3 w-3 rotate-180" />
-            {isHe ? "חזרה לעמוד שלכם" : "Back to your page"}
+            <CmsText cmsKey="myJourneyTogether.backToPage" />
           </Link>
 
           <header className="mt-6">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-[#B83C4D]/40 bg-[#B83C4D]/15 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[#FAF6F7]">
               <HeartHandshake className="h-3 w-3" />
-              {isHe ? "ביחד" : "Together"}
+              <CmsText cmsKey="myJourneyTogether.heading" />
             </span>
             <h1 className="mt-3 font-heading text-3xl font-bold tracking-tight sm:text-4xl">
-              {isHe ? "המקום המשותף שלכם" : "Your shared space"}
+              <CmsText cmsKey="myJourneyTogether.sharedSpace" />
             </h1>
-            <p className="mt-2 max-w-prose text-[15px] leading-relaxed text-white/65">
-              {isHe
-                ? "מה שאתם רואים כאן — שניכם רואים. זה לא הרהורים אישיים, זו השיחה שלכם כזוג. ההרהורים האישיים שלכם נשארים אצלכם בלבד."
-                : "Everything here, you both see. This isn't private reflections — it's your conversation as a couple. Your personal reflections stay yours."}
-            </p>
+            <CmsText
+              cmsKey="myJourneyTogether.headerBlurb"
+              as="p"
+              className="mt-2 max-w-prose text-[15px] leading-relaxed text-white/65"
+            />
           </header>
 
           {/* Joint progress strip — three small numbers, scannable */}
           <section className="mt-6 grid grid-cols-3 gap-3">
             <Stat
-              label={isHe ? "פריטים יחד" : "Together"}
+              label={t("statTogether")}
               value={jointCompletedCount.toString()}
-              hint={isHe ? "השלמתם שניכם" : "both completed"}
+              hint={t("bothCompleted")}
             />
             <Stat
-              label={isHe ? "אתם" : "You"}
+              label={t("youLabel")}
               value={
                 (asymmetry?.partners.find((p) => p.userId === effectiveUserId)
                   ?.completions ?? 0).toString()
               }
-              hint={isHe ? "פריטים" : "items"}
+              hint={t("itemsHint")}
             />
             <Stat
               label={partnerLabel}
@@ -234,7 +245,7 @@ export default async function TogetherPage({
                 (asymmetry?.partners.find((p) => p.userId !== effectiveUserId)
                   ?.completions ?? 0).toString()
               }
-              hint={isHe ? "פריטים" : "items"}
+              hint={t("itemsHint")}
             />
           </section>
 
@@ -247,13 +258,10 @@ export default async function TogetherPage({
               aria-live="polite"
             >
               <p className="text-[14px] leading-snug text-amber-100/90">
-                {isHe
-                  ? asymmetry.leaderUserId === effectiveUserId
-                    ? `${partnerLabel} עוד לא הספיק/ה לסגור פערים. אם בא לכם — אפשר להזכיר עדינות, לא לחץ.`
-                    : `${partnerLabel} קצת קדימה אתכם. לא תחרות — רק כדאי לדעת.`
-                  : asymmetry.leaderUserId === effectiveUserId
-                    ? `${partnerLabel} hasn't caught up yet. If it feels right, a gentle nudge — no pressure.`
-                    : `${partnerLabel} is a bit ahead of you. Not a race — just so you know.`}
+                {(asymmetry.leaderUserId === effectiveUserId
+                  ? t("asymmetryYouLead")
+                  : t("asymmetryPartnerLead")
+                ).replace("{partnerLabel}", partnerLabel)}
               </p>
             </section>
           ) : null}
@@ -272,18 +280,16 @@ export default async function TogetherPage({
           {/* Coach hint */}
           {coachName ? (
             <p className="mt-4 text-center text-[12px] text-white/45">
-              {isHe
-                ? `${coachName} רואה את השיחה הזו ויכולה להגיב.`
-                : `${coachName} sees this thread and can reply.`}
+              {t("coachHint").replace("{coachName}", coachName)}
             </p>
           ) : null}
 
           <footer className="mt-12 border-t border-white/5 pt-6 text-center">
-            <p className="text-xs text-white/40">
-              {isHe
-                ? "המשטח הזה משותף. ההרהורים שלכם על פריטים בודדים נשארים פרטיים."
-                : "This surface is shared. Your reflections on individual items stay private."}
-            </p>
+            <CmsText
+              cmsKey="myJourneyTogether.footerNote"
+              as="p"
+              className="text-xs text-white/40"
+            />
           </footer>
         </main>
       </div>

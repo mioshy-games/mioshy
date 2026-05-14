@@ -31,6 +31,8 @@ import { AdultsAmbience } from "@/components/adults/AdultsAmbience";
 // DevTools and grep for [AmbienceDebugProbe:adults-detail] to verify.
 import { AmbienceDebugProbe } from "@/components/adults/AmbienceDebugProbe";
 import { resolveAdultsPricing } from "@/lib/adults/pricing";
+import { CmsText } from "@/components/cms/CmsText";
+import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
 
 export const dynamic = "force-dynamic";
 
@@ -90,6 +92,15 @@ export default async function BetweenUsGameDetailPage({
   const game = await getGameBySlug(slug);
   if (!game) notFound();
 
+  // CMS-managed copy for this route — used for JSON-LD offer/breadcrumb
+  // names (sent to search engines, must be raw strings) and as fallback
+  // template values for the genre category line below.
+  const t = await getCmsTranslations({
+    locale: isHe ? "he" : "en",
+    namespace: "mioshySexSlug",
+    page: "mioshy-sex",
+  });
+
   const [settings, ctx, catIds, tagIds, allCats, allTags, allGameCards] =
     await Promise.all([
       getBetweenUsSettings().catch(() => null),
@@ -130,27 +141,16 @@ export default async function BetweenUsGameDetailPage({
 
   // Universal value-prop bullets appended to every Adults game's
   // "What you'll get" / "This game is for you if…" lists. These are
-  // brand-level promises (not game-specific copy) so they live next to
-  // whatever the admin filled in for the individual game. If/when these
-  // become per-game admin-editable, drop them and rely on the DB columns.
-  const universalBenefits = isHe
-    ? [
-        "לילה בלתי נשכח",
-        "זכרון מיני חדש שישבור את השגרה",
-      ]
-    : [
-        "An unforgettable night",
-        "A new sexual memory that breaks the routine",
-      ];
-  const universalTargets = isHe
-    ? [
-        "לזוגות שמחפשים לשבור את הרוטינה של חדר השינה",
-        "לתת למומחים שלנו להוביל אתכם בחדר המיטות",
-      ]
-    : [
-        "For couples looking to break the bedroom routine",
-        "To let our experts guide you in the bedroom",
-      ];
+  // brand-level promises (not game-specific copy), so they read from
+  // CMS via universalBenefit[12] / universalTarget[12] keys.
+  const universalBenefits = [
+    t("universalBenefit1"),
+    t("universalBenefit2"),
+  ];
+  const universalTargets = [
+    t("universalTarget1"),
+    t("universalTarget2"),
+  ];
 
   const allBenefits = [...(benefits ?? []), ...universalBenefits];
   const allTargets = [...(targets ?? []), ...universalTargets];
@@ -223,7 +223,7 @@ export default async function BetweenUsGameDetailPage({
   if (pricing?.single?.enabled) {
     offers.push({
       "@type": "Offer",
-      name: isHe ? "רכישה חד-פעמית" : "One-time purchase",
+      name: t("pricing.oneTime"),
       price: tierAmount(pricing.single).toFixed(2),
       priceCurrency: productCurrency,
       availability: "https://schema.org/InStock",
@@ -233,7 +233,7 @@ export default async function BetweenUsGameDetailPage({
   if (pricing?.monthly?.enabled) {
     offers.push({
       "@type": "Offer",
-      name: isHe ? "מינוי חודשי זוגי" : "Monthly couple plan",
+      name: t("pricing.monthly"),
       price: tierAmount(pricing.monthly).toFixed(2),
       priceCurrency: productCurrency,
       availability: "https://schema.org/InStock",
@@ -243,7 +243,7 @@ export default async function BetweenUsGameDetailPage({
   if (pricing?.annual?.enabled) {
     offers.push({
       "@type": "Offer",
-      name: isHe ? "מינוי שנתי זוגי" : "Annual couple plan",
+      name: t("pricing.annual"),
       price: tierAmount(pricing.annual).toFixed(2),
       priceCurrency: productCurrency,
       availability: "https://schema.org/InStock",
@@ -259,13 +259,13 @@ export default async function BetweenUsGameDetailPage({
           {
             "@type": "ListItem",
             position: 1,
-            name: isHe ? "בית" : "Home",
+            name: t("breadcrumbHome"),
             item: `${base}/${locale}`,
           },
           {
             "@type": "ListItem",
             position: 2,
-            name: isHe ? "למבוגרים בלבד" : "Adults Only",
+            name: t("breadcrumbAdults"),
             item: `${base}/${locale}/mioshy-sex`,
           },
           {
@@ -286,7 +286,7 @@ export default async function BetweenUsGameDetailPage({
         category: gameCats
           .map((c) => (isHe ? c.name_he : c.name_en || c.name_he))
           .filter(Boolean)
-          .join(", ") || (isHe ? "משחקי זוגיות למבוגרים" : "Adult couples games"),
+          .join(", ") || t("defaultGenre"),
         inLanguage: isHe ? "he" : "en",
         ...(offers.length > 0
           ? offers.length === 1
@@ -384,7 +384,7 @@ export default async function BetweenUsGameDetailPage({
             className="mt-4 inline-flex items-center gap-2 rounded-full border border-emerald-300/40 bg-emerald-400/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-100 backdrop-blur transition hover:bg-emerald-400/15"
           >
             <Sparkles className="h-3.5 w-3.5" />
-            {isHe ? "המשחק שלכם · פתחו אותו" : "You own this · Open game"}
+            <CmsText cmsKey="mioshySexSlug.youOwnThis" />
           </Link>
         ) : null}
 
@@ -410,12 +410,12 @@ export default async function BetweenUsGameDetailPage({
                   primary CTA + headline gradient family. */}
               {game.is_new ? (
                 <span className="rounded-full bg-gradient-to-r from-rose-500 to-amber-400 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider text-white shadow">
-                  {isHe ? "חדש" : "New"}
+                  <CmsText cmsKey="mioshySexSlug.tagNew" />
                 </span>
               ) : null}
               {game.is_popular ? (
                 <span className="rounded-full bg-gradient-to-r from-fuchsia-500 to-rose-500 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider text-white shadow">
-                  {isHe ? "פופולרי" : "Popular"}
+                  <CmsText cmsKey="mioshySexSlug.tagPopular" />
                 </span>
               ) : null}
               {gameCats.map((c) => (
@@ -522,17 +522,17 @@ export default async function BetweenUsGameDetailPage({
             <div className="mt-10 flex flex-wrap gap-3">
               <LevelPill
                 icon={<Heart className="h-4 w-4 text-rose-200" />}
-                label={isHe ? "אינטימיות" : "Intimacy"}
+                label={t("metricIntimacy")}
                 level={game.intimacy_level}
               />
               <LevelPill
                 icon={<MessageCircleHeart className="h-4 w-4 text-sky-200" />}
-                label={isHe ? "תקשורת" : "Communication"}
+                label={t("metricCommunication")}
                 level={game.communication_level}
               />
               <LevelPill
                 icon={<Flame className="h-4 w-4 text-orange-200" />}
-                label={isHe ? "חום" : "Heat"}
+                label={t("metricHeat")}
                 level={game.heat_level}
               />
             </div>
@@ -589,9 +589,11 @@ export default async function BetweenUsGameDetailPage({
                     bullets bumped to 18px on every size - these are
                     high-importance value bullets and the user explicitly
                     flagged the previous 16px as too small. */}
-                <h2 className="text-2xl font-semibold text-white/95">
-                  {isHe ? "מה תקבלו" : "What you'll get"}
-                </h2>
+                <CmsText
+                  cmsKey="mioshySexSlug.whatYoullGet"
+                  as="h2"
+                  className="text-2xl font-semibold text-white/95"
+                />
                 <ul className="mt-4 space-y-3">
                   {allBenefits.map((b, i) => (
                     <li
@@ -608,9 +610,11 @@ export default async function BetweenUsGameDetailPage({
 
             {allTargets.length > 0 ? (
               <div>
-                <h2 className="text-2xl font-semibold text-white/95">
-                  {isHe ? "המשחק הזה הוא בשבילכם אם…" : "This game is for you if…"}
-                </h2>
+                <CmsText
+                  cmsKey="mioshySexSlug.gameIsForYouIf"
+                  as="h2"
+                  className="text-2xl font-semibold text-white/95"
+                />
                 <ul className="mt-4 space-y-3">
                   {allTargets.map((t, i) => (
                     <li
@@ -630,9 +634,11 @@ export default async function BetweenUsGameDetailPage({
         {/* Gallery */}
         {game.gallery && game.gallery.length > 0 ? (
           <section className="mt-14">
-            <h2 className="text-xl font-semibold text-white/95">
-              {isHe ? "גלריה" : "Gallery"}
-            </h2>
+            <CmsText
+              cmsKey="mioshySexSlug.gallery"
+              as="h2"
+              className="text-xl font-semibold text-white/95"
+            />
             <div className="mt-4 grid gap-3 sm:grid-cols-2 md:grid-cols-3">
               {game.gallery.map((src, i) => (
                 <div
@@ -675,9 +681,11 @@ export default async function BetweenUsGameDetailPage({
           <section className="mt-16 border-t border-white/10 pt-10">
             <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
               <div>
-                <p className="text-[12px] font-semibold uppercase tracking-[0.22em] text-rose-200/75">
-                  {isHe ? "המשחק הבא" : "Next game"}
-                </p>
+                <CmsText
+                  cmsKey="mioshySexSlug.nextGame"
+                  as="p"
+                  className="text-[12px] font-semibold uppercase tracking-[0.22em] text-rose-200/75"
+                />
                 <h3
                   className="mt-2 text-[26px] leading-[1.15] tracking-tight text-white sm:text-[30px]"
                   style={{
@@ -696,7 +704,7 @@ export default async function BetweenUsGameDetailPage({
                 href={`/mioshy-sex/${nextGame.slug}`}
                 className="group inline-flex items-center justify-center gap-2 self-start rounded-full border border-white/30 bg-transparent px-7 py-3 text-[16px] font-semibold text-white/85 transition hover:border-white/60 hover:bg-white/[0.04] hover:text-white sm:self-auto"
               >
-                <span>{isHe ? "המשך לגלות" : "Keep exploring"}</span>
+                <span><CmsText cmsKey="mioshySexSlug.keepExploring" /></span>
                 <ArrowRight
                   className={`h-5 w-5 transition group-hover:translate-x-1 ${
                     isHe ? "rotate-180 group-hover:-translate-x-1" : ""

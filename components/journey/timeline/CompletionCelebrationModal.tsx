@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight, Heart, Sparkles } from "lucide-react";
+import { CmsText } from "@/components/cms/CmsText";
 
 interface Props {
   open: boolean;
@@ -38,35 +39,6 @@ export function CompletionCelebrationModal({
 }: Props) {
   const isHe = locale === "he";
   const router = useRouter();
-
-  const t = isHe
-    ? {
-        kicker: "עוד צעד קטן · שינוי אמיתי",
-        title: "עשיתם משהו חשוב ביחד.",
-        body: "רגעים קטנים כאלה הם מה שבונה קרבה שנשארת. המסע שלכם מתקדם - צעד אחר צעד, בקצב שלכם.",
-        impactLabel: "מה השגתם כרגע",
-        impactLine:
-          "בניתם שריר חדש לזוגיות - הקשבה, נוכחות וכנות בין שניכם. זה לא נבנה מאליו.",
-        credibilityTitle: "איציק ברלב",
-        credibilitySub: "מלווה זוגות משנת 2001",
-        credibilityProof: "שיטה שנבחנה עם מאות זוגות · למעלה מ-25 שנות ליווי",
-        continue: "המשך למסע",
-        stay: "השארו כאן",
-      }
-    : {
-        kicker: "One more step · real change",
-        title: "You just did something that matters.",
-        body: "Small moments like this are what build a closeness that lasts. Your journey is moving forward - step by step, at your own pace.",
-        impactLabel: "What you just built",
-        impactLine:
-          "You grew a new relationship muscle - listening, presence, honesty between the two of you. That doesn't happen by accident.",
-        credibilityTitle: "Itzik Berlav",
-        credibilitySub: "Coaching couples since 2001",
-        credibilityProof:
-          "A method tested with hundreds of couples · Over 25 years of practice",
-        continue: "Continue your journey",
-        stay: "Stay here",
-      };
 
   const Arrow = isHe ? ArrowLeft : ArrowRight;
 
@@ -94,26 +66,34 @@ export function CompletionCelebrationModal({
         </div>
 
         <div className="relative px-7 pb-7 text-center sm:px-10">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-200/90">
-            {t.kicker}
-          </p>
+          <CmsText
+            cmsKey="journeyTimeline.celebration.kicker"
+            as="p"
+            className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-200/90"
+          />
           <DialogTitle className="mt-3 text-2xl font-bold leading-tight text-white sm:text-3xl">
-            {t.title}
+            <CmsText cmsKey="journeyTimeline.celebration.title" />
           </DialogTitle>
 
-          <p className="mx-auto mt-4 max-w-sm text-sm leading-relaxed text-white/80">
-            {t.body}
-          </p>
+          <CmsText
+            cmsKey="journeyTimeline.celebration.body"
+            as="p"
+            className="mx-auto mt-4 max-w-sm text-sm leading-relaxed text-white/80"
+          />
 
           {/* Impact pill - names the relationship-level change, so the
               completion feels meaningful, not transactional. */}
           <div className="mx-auto mt-5 max-w-sm rounded-2xl border border-emerald-300/25 bg-emerald-400/8 px-4 py-3 text-start backdrop-blur">
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-200/90">
-              {t.impactLabel}
-            </p>
-            <p className="mt-1.5 text-sm leading-relaxed text-white/85">
-              {t.impactLine}
-            </p>
+            <CmsText
+              cmsKey="journeyTimeline.celebration.impactLabel"
+              as="p"
+              className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-200/90"
+            />
+            <CmsText
+              cmsKey="journeyTimeline.celebration.impactLine"
+              as="p"
+              className="mt-1.5 text-sm leading-relaxed text-white/85"
+            />
           </div>
 
           {/* Credibility anchor - Itzik's 25-year credential gives the
@@ -123,15 +103,21 @@ export function CompletionCelebrationModal({
               <Heart className="h-4 w-4" />
             </div>
             <div className="flex flex-col leading-tight">
-              <span className="text-sm font-semibold text-white">
-                {t.credibilityTitle}
-              </span>
-              <span className="text-xs text-white/65">
-                {t.credibilitySub}
-              </span>
-              <span className="mt-1 text-xs text-white/50">
-                {t.credibilityProof}
-              </span>
+              <CmsText
+                cmsKey="journeyTimeline.celebration.credibilityTitle"
+                as="span"
+                className="text-sm font-semibold text-white"
+              />
+              <CmsText
+                cmsKey="journeyTimeline.celebration.credibilitySub"
+                as="span"
+                className="text-xs text-white/65"
+              />
+              <CmsText
+                cmsKey="journeyTimeline.celebration.credibilityProof"
+                as="span"
+                className="mt-1 text-xs text-white/50"
+              />
             </div>
           </div>
 
@@ -147,7 +133,7 @@ export function CompletionCelebrationModal({
               }}
               className="min-h-[48px] w-full bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-500 text-white shadow-lg shadow-emerald-500/30 hover:brightness-110 sm:w-auto sm:px-7"
             >
-              {t.continue}
+              <CmsText cmsKey="journeyTimeline.celebration.continue" />
               <Arrow className="ms-2 h-4 w-4 rotate-180" />
             </Button>
             <Button
@@ -157,7 +143,7 @@ export function CompletionCelebrationModal({
               onClick={() => onOpenChange(false)}
               className="min-h-[48px] w-full border-white/25 bg-white/5 text-white hover:bg-white/10 sm:w-auto sm:px-7"
             >
-              {t.stay}
+              <CmsText cmsKey="journeyTimeline.celebration.stay" />
             </Button>
           </div>
         </div>

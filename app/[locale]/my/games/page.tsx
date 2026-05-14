@@ -7,6 +7,8 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
 import type { GameRow } from "@/lib/types/database";
 import { pickGameThumbnail } from "@/lib/games-thumbnail";
+import { CmsText } from "@/components/cms/CmsText";
+import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
 
 export const dynamic = "force-dynamic";
 
@@ -15,12 +17,14 @@ export async function generateMetadata({
 }: {
   params: { locale: string };
 }): Promise<Metadata> {
-  const isHe = params.locale === "he";
+  const t = await getCmsTranslations({
+    locale: params.locale === "he" ? "he" : "en",
+    namespace: "myGames",
+    page: "my",
+  });
   return {
-    title: `Mioshy - ${isHe ? "משחקים · הגלריה" : "Games · Gallery"}`,
-    description: isHe
-      ? "גלגל האמת, נחשים ושלבים - כל המשחקים שלכם, מוכנים להפעלה."
-      : "Truth wheel, snakes & ladders - all your games, ready to play.",
+    title: `Mioshy - ${t("metaTitle")}`,
+    description: t("metaDescription"),
   };
 }
 
@@ -31,6 +35,11 @@ export default async function MyGamesGalleryPage({
 }) {
   const { locale } = params;
   const isHe = locale === "he";
+  const t = await getCmsTranslations({
+    locale: isHe ? "he" : "en",
+    namespace: "myGames",
+    page: "my",
+  });
 
   const entitlements = await getUserEntitlements();
   if (!entitlements) redirect(`/${locale}/auth`);
@@ -57,7 +66,7 @@ export default async function MyGamesGalleryPage({
           className="inline-flex items-center gap-1 text-xs font-medium text-white/55 transition hover:text-white/90"
         >
           <Arrow className="h-3 w-3 rotate-180" />
-          {isHe ? "חזרה למיאושי שלי" : "Back to My Mioshy"}
+          <CmsText cmsKey="myGames.backToMyMioshy" />
         </Link>
 
         {/* Header */}
@@ -65,17 +74,17 @@ export default async function MyGamesGalleryPage({
           <div className="inline-flex items-center gap-1.5 rounded-full border border-fuchsia-300/40 bg-fuchsia-500/10 px-3 py-1 text-xs backdrop-blur">
             <Gamepad2 className="h-3.5 w-3.5 text-fuchsia-200" />
             <span className="font-semibold text-fuchsia-100">
-              {isHe ? "המשחקים שלכם" : "Your games"}
+              <CmsText cmsKey="myGames.heading" />
             </span>
           </div>
           <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
-            {isHe ? "משחקי זוגות אונליין" : "Online couples games"}
+            <CmsText cmsKey="myGames.subheading" />
           </h1>
-          <p className="mt-2 max-w-2xl text-white/70">
-            {isHe
-              ? "כנות ואתגר, גלגל הזוגיות, סולמות ונחשים - מוכנים להפעלה."
-              : "Truth or dare, the wheel, snakes & ladders - ready to play."}
-          </p>
+          <CmsText
+            cmsKey="myGames.lede"
+            as="p"
+            className="mt-2 max-w-2xl text-white/70"
+          />
         </section>
 
         {/* ─────── Games grid - 2 per row per spec §7.2 ───────
@@ -86,7 +95,7 @@ export default async function MyGamesGalleryPage({
         <section className="mt-10">
           {games.length === 0 ? (
             <p className="mt-6 text-white/60">
-              {isHe ? "אין כרגע משחקים זמינים." : "No games available."}
+              <CmsText cmsKey="myGames.noGamesAvailable" />
             </p>
           ) : (
             <ul className="mt-6 grid gap-5 sm:grid-cols-2">
@@ -128,7 +137,7 @@ export default async function MyGamesGalleryPage({
                         ) : null}
                         <span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-fuchsia-300 transition group-hover:text-white">
                           <Play className="h-4 w-4" />
-                          {isHe ? "שחקו עכשיו" : "Play now"}
+                          <CmsText cmsKey="myGames.playNow" />
                         </span>
                       </div>
                     </Link>
@@ -153,28 +162,30 @@ export default async function MyGamesGalleryPage({
                         missing. */}
                     <Image
                       src="/images/snakes-couples.webp"
-                      alt={isHe ? "נחשים וסולמות" : "Snakes & Ladders"}
+                      alt={t("snakesAndLadders")}
                       fill
                       sizes="(max-width: 640px) 100vw, 50vw"
                       className="object-cover transition duration-500 group-hover:scale-[1.04]"
                     />
                     <span className="absolute end-3 top-3 rounded-full bg-gradient-to-r from-rose-400 to-fuchsia-400 px-3 py-1 text-xs font-bold text-white shadow-lg">
-                      {isHe ? "חדש 🔥" : "New 🔥"}
+                      <CmsText cmsKey="myGames.newBadge" />
                     </span>
                     <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/70 to-transparent" />
                   </div>
                   <div className="flex flex-1 flex-col p-5">
-                    <h3 className="font-heading text-xl font-bold">
-                      {isHe ? "נחשים וסולמות" : "Snakes & Ladders"}
-                    </h3>
-                    <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-white/75">
-                      {isHe
-                        ? "לוח קלאסי עם שאלות ואתגרים זוגיים - שחקו על מכשיר אחד או על שני מכשירים שונים."
-                        : "Classic board with couples questions & challenges - play on one device or remotely."}
-                    </p>
+                    <CmsText
+                      cmsKey="myGames.snakesAndLadders"
+                      as="h3"
+                      className="font-heading text-xl font-bold"
+                    />
+                    <CmsText
+                      cmsKey="myGames.snakesDescription"
+                      as="p"
+                      className="mt-2 line-clamp-3 text-sm leading-relaxed text-white/75"
+                    />
                     <span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-rose-300 transition group-hover:text-white">
                       <Play className="h-4 w-4" />
-                      {isHe ? "שחקו עכשיו" : "Play now"}
+                      <CmsText cmsKey="myGames.playNow" />
                     </span>
                   </div>
                 </Link>

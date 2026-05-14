@@ -16,10 +16,12 @@
 
 import { useEffect, useState } from "react";
 import { Sparkles, MousePointerClick, Eye, Heart, X } from "lucide-react";
+import { useCmsText } from "@/hooks/useCmsText";
+import { CmsText } from "@/components/cms/CmsText";
 
 const STORAGE_KEY = "mioshy:tod-tutorial-seen";
 
-export function TutorialPopup({ isHe }: { isHe: boolean }) {
+export function TutorialPopup() {
   // Default to NOT showing — flip to true only after we've verified the
   // user hasn't seen it yet. Doing it the other way around would flash
   // the modal for users who've already dismissed it on every page load.
@@ -48,33 +50,18 @@ export function TutorialPopup({ isHe }: { isHe: boolean }) {
     setOpen(false);
   };
 
-  if (!open) return null;
+  // Resolve labels used as string props (aria-label, dismiss aria-label)
+  // up front; hooks can't sit below the open-guard return.
+  const dialogTitle = useCmsText("gamesSlug.tutorial.title").text;
+  const dismissLabel = useCmsText("gamesSlug.tutorial.dismiss").text;
 
-  const t = isHe
-    ? {
-        badge: "ברוכים הבאים",
-        title: "ככה זה עובד",
-        step1: "סובבו את הגלגל",
-        step2: "קבלו שאלה - אמת או חובה",
-        step3: "ענו או בצעו, ועברו לסיבוב הבא",
-        cta: "מעולה, יוצאים לדרך",
-        dismiss: "סגירה",
-      }
-    : {
-        badge: "Welcome",
-        title: "Here's how it works",
-        step1: "Spin the wheel",
-        step2: "Reveal a Truth or Dare",
-        step3: "Answer or do it — then spin again",
-        cta: "Got it, let's start",
-        dismiss: "Close",
-      };
+  if (!open) return null;
 
   return (
     <div
       role="dialog"
       aria-modal="true"
-      aria-label={t.title}
+      aria-label={dialogTitle}
       className="fixed inset-0 z-[60] flex items-center justify-center px-5"
       onClick={dismiss}
     >
@@ -106,7 +93,7 @@ export function TutorialPopup({ isHe }: { isHe: boolean }) {
         <button
           type="button"
           onClick={dismiss}
-          aria-label={t.dismiss}
+          aria-label={dismissLabel}
           className="absolute end-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white/75 transition hover:bg-white/20 hover:text-white"
         >
           <X className="h-4 w-4" />
@@ -118,21 +105,31 @@ export function TutorialPopup({ isHe }: { isHe: boolean }) {
             style={{ background: "rgba(184,60,77,0.25)" }}
           >
             <Sparkles className="h-3 w-3" />
-            {t.badge}
+            <CmsText cmsKey="gamesSlug.tutorial.badge" />
           </span>
 
-          <h2 className="mt-3 font-heading text-[26px] font-extrabold leading-tight text-white sm:text-[28px]">
-            {t.title}
-          </h2>
+          <CmsText
+            cmsKey="gamesSlug.tutorial.title"
+            as="h2"
+            className="mt-3 font-heading text-[26px] font-extrabold leading-tight text-white sm:text-[28px]"
+          />
 
           <ol className="mt-5 flex flex-col gap-3.5">
             <Step
               n={1}
               icon={<MousePointerClick className="h-4 w-4" />}
-              text={t.step1}
+              cmsKey="gamesSlug.tutorial.step1"
             />
-            <Step n={2} icon={<Eye className="h-4 w-4" />} text={t.step2} />
-            <Step n={3} icon={<Heart className="h-4 w-4" />} text={t.step3} />
+            <Step
+              n={2}
+              icon={<Eye className="h-4 w-4" />}
+              cmsKey="gamesSlug.tutorial.step2"
+            />
+            <Step
+              n={3}
+              icon={<Heart className="h-4 w-4" />}
+              cmsKey="gamesSlug.tutorial.step3"
+            />
           </ol>
 
           <button
@@ -145,7 +142,7 @@ export function TutorialPopup({ isHe }: { isHe: boolean }) {
               boxShadow: "0 16px 36px -12px rgba(184,60,77,0.55)",
             }}
           >
-            {t.cta}
+            <CmsText cmsKey="gamesSlug.tutorial.cta" />
           </button>
         </div>
       </div>
@@ -156,11 +153,11 @@ export function TutorialPopup({ isHe }: { isHe: boolean }) {
 function Step({
   n,
   icon,
-  text,
+  cmsKey,
 }: {
   n: number;
   icon: React.ReactNode;
-  text: string;
+  cmsKey: string;
 }) {
   return (
     <li className="flex items-center gap-3">
@@ -181,7 +178,7 @@ function Step({
         >
           {String(n).padStart(2, "0")}
         </span>
-        {text}
+        <CmsText cmsKey={cmsKey} />
       </span>
     </li>
   );

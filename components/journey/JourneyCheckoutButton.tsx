@@ -18,6 +18,7 @@
 import { useState } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useCmsText } from "@/hooks/useCmsText";
 
 interface Props {
   isHe:      boolean;
@@ -45,8 +46,14 @@ export function JourneyCheckoutButton({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const visibleLabel =
-    label ?? (isHe ? "להצטרפות עכשיו" : "Join now");
+  // String-prop consumers — label/busy/error live in button children or
+  // state, so they resolve through useCmsText().text.
+  const defaultLabel = useCmsText("journeyAssessment.checkoutButton.defaultLabel").text;
+  const busyLabel = useCmsText("journeyAssessment.checkoutButton.busyLabel").text;
+  const errGeneric = useCmsText("journeyAssessment.checkoutButton.errGeneric").text;
+  const errNetwork = useCmsText("journeyAssessment.checkoutButton.errNetwork").text;
+
+  const visibleLabel = label ?? defaultLabel;
   const Arrow = isHe ? ArrowLeft : ArrowRight;
 
   const onClick = async () => {
@@ -94,17 +101,10 @@ export function JourneyCheckoutButton({
       }
 
       // Surface anything else so the user knows something is off.
-      const friendly =
-        data?.message ||
-        (isHe ? "התשלום לא נפתח. נסו שוב או פנו אלינו." : "Could not open checkout. Please try again.");
-      setError(friendly);
+      setError(data?.message || errGeneric);
       setBusy(false);
     } catch {
-      setError(
-        isHe
-          ? "תקלת רשת. בדקו את החיבור ונסו שוב."
-          : "Network error. Check your connection and try again.",
-      );
+      setError(errNetwork);
       setBusy(false);
     }
   };
@@ -138,11 +138,7 @@ export function JourneyCheckoutButton({
         ].join(" ")}
         style={wineStyle}
       >
-        {busy
-          ? isHe
-            ? "מכין תשלום…"
-            : "Preparing checkout…"
-          : visibleLabel}
+        {busy ? busyLabel : visibleLabel}
         {!busy ? <Arrow className="h-4 w-4" /> : null}
       </button>
       {error ? (

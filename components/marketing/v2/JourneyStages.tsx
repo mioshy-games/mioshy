@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useTranslations } from "next-intl";
 import { Link } from "@/navigation";
+import { CmsText } from "@/components/cms/CmsText";
 
 /**
  * JourneyStages — connected Q&A, scroll-revealed
@@ -70,8 +70,10 @@ const STAGE_TONE: Record<
 };
 
 export function JourneyStages() {
-  const t = useTranslations("homeV2.journeyStages");
   const sectionRef = useRef<HTMLElement>(null);
+  // Sprint 4 #1 closeout — every DOM text via <CmsText>. Each stage
+  // lives in its own <Stop /> sub-component (defined below) so its
+  // many useCmsText/CmsText calls have a stable, isolated hook order.
 
   // F6 (Itzik #10) — switched from bidirectional to one-way reveal.
   // The previous "open in band, close out of band" behaviour was
@@ -121,119 +123,10 @@ export function JourneyStages() {
     }
   };
 
-  const renderStop = (id: StageId) => {
-    const tone = STAGE_TONE[id];
-    const includes = id === "3" ? t("stage3GetIncludes") : null;
-    return (
-      <article
-        className={`js-stop js-stop--${id}`}
-        data-stop={id}
-        style={
-          {
-            "--tone-dot": tone.dot,
-            "--tone-ink": tone.ink,
-            "--tone-soft": tone.soft,
-          } as React.CSSProperties
-        }
-      >
-        <div className="js-stop-spine" aria-hidden />
-        <div
-          className="js-stop-head"
-          role="button"
-          tabIndex={0}
-          aria-expanded="false"
-          onClick={onHeadClick}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              onHeadClick(
-                e as unknown as React.MouseEvent<HTMLDivElement>,
-              );
-            }
-          }}
-        >
-          <span className="js-stop-numeral" aria-hidden>
-            {tone.numeral}
-          </span>
-          <div className="js-stop-head-text">
-            <span className="js-stop-label">{t(`stage${id}Label`)}</span>
-            <h3 className="js-stop-hook">{t(`stage${id}Hook`)}</h3>
-          </div>
-          <span className="js-stop-chevron" aria-hidden>
-            <svg viewBox="0 0 16 16" width="14" height="14">
-              <path
-                d="M3 5.5L8 10.5L13 5.5"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                fill="none"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </span>
-        </div>
-
-        {/* The "answer" — collapsed by default, revealed via the
-            grid-template-rows trick when the stop enters viewport. */}
-        <div className="js-stop-reveal">
-          <div className="js-stop-reveal-inner">
-            <p className="js-stop-desc">{t(`stage${id}Desc`)}</p>
-
-            <div className="js-stop-block">
-              <div className="js-stop-block-title">
-                {t(`stage${id}GetTitle`)}
-              </div>
-              <p className="js-stop-block-body">{t(`stage${id}Get`)}</p>
-              {includes ? (
-                <p className="js-stop-block-includes">{includes}</p>
-              ) : null}
-            </div>
-
-            <div className="js-stop-block">
-              <div className="js-stop-block-title">
-                {t(`stage${id}WhenTitle`)}
-              </div>
-              <p className="js-stop-block-body">{t(`stage${id}When`)}</p>
-            </div>
-
-            <div className="js-stop-foot">
-              <div className="js-stop-foot-info">
-                <div className="js-stop-product">
-                  {t(`stage${id}Product`)}
-                </div>
-                {id === "1" ? (
-                  /* Stage 1 framing: don't lead with the price — let
-                     the user try the games for free first. The actual
-                     price reveals on the games page itself, by design. */
-                  <div className="js-stop-trial">{t("stage1Trial")}</div>
-                ) : (
-                  <div className="js-stop-price">
-                    {id === "2" ? (
-                      <span className="js-stop-price-original">
-                        {t("stage2OriginalPrice")}
-                      </span>
-                    ) : null}
-                    <span className="js-stop-price-amount">
-                      {t(`stage${id}Price`)}
-                    </span>
-                    <span className="js-stop-price-period">
-                      {t(`stage${id}Period`)}
-                    </span>
-                  </div>
-                )}
-              </div>
-              <Link href={STAGE_HREFS[id]} className="js-stop-cta">
-                {t(`stage${id}Cta`)}{" "}
-                <span aria-hidden className="js-stop-cta-arrow">
-                  ←
-                </span>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </article>
-    );
-  };
+  // `renderStop` is now a render of <Stop id="…" onHeadClick={…} /> —
+  // see the sub-component below. Each stop has 11+ useCmsText calls;
+  // confining them to a per-stop component keeps the hook order stable
+  // and consistent across re-renders.
 
   return (
     <section
@@ -245,9 +138,9 @@ export function JourneyStages() {
 
       <div className="container js-container">
         <div className="js-head">
-          <div className="eyebrow">{t("eyebrow")}</div>
-          <h2>{t("headline")}</h2>
-          <p>{t("description")}</p>
+          <CmsText cmsKey="homeV2.journeyStages.eyebrow" as="div" className="eyebrow" />
+          <CmsText cmsKey="homeV2.journeyStages.headline" as="h2" />
+          <CmsText cmsKey="homeV2.journeyStages.description" as="p" />
         </div>
 
         {/* Single rounded panel wrapping all 3 stops — gives the
@@ -255,13 +148,17 @@ export function JourneyStages() {
             floating sections. */}
         <div className="js-stops-panel">
           <div className="js-stops">
-            {renderStop("1")}
-            {renderStop("2")}
-            {renderStop("3")}
+            <Stop id="1" onHeadClick={onHeadClick} />
+            <Stop id="2" onHeadClick={onHeadClick} />
+            <Stop id="3" onHeadClick={onHeadClick} />
           </div>
         </div>
 
-        <p className="js-quote">{t("valueQuote")}</p>
+        <CmsText
+          cmsKey="homeV2.journeyStages.valueQuote"
+          as="p"
+          className="js-quote"
+        />
       </div>
 
       <style
@@ -270,6 +167,169 @@ export function JourneyStages() {
         }}
       />
     </section>
+  );
+}
+
+/**
+ * Per-stop rendering. Pulled out of JourneyStages so each instance has
+ * its own stable hook order — 11 useCmsText calls per stop (12 for
+ * Stage 3 which has the `GetIncludes` extra). Without this split, the
+ * parent would call useCmsText × 33+ in the closure, and any future
+ * conditional render would shift hook order.
+ *
+ * Stage 1 has a free trial (no price block); stages 2 & 3 have price
+ * blocks. Stage 2 carries an `originalPrice` strikethrough for the
+ * "intro discount" framing.
+ */
+function Stop({
+  id,
+  onHeadClick,
+}: {
+  id: StageId;
+  onHeadClick: (e: React.MouseEvent<HTMLDivElement>) => void;
+}) {
+  const tone = STAGE_TONE[id];
+  const isStage3 = id === "3";
+
+  return (
+    <article
+      className={`js-stop js-stop--${id}`}
+      data-stop={id}
+      style={
+        {
+          "--tone-dot": tone.dot,
+          "--tone-ink": tone.ink,
+          "--tone-soft": tone.soft,
+        } as React.CSSProperties
+      }
+    >
+      <div className="js-stop-spine" aria-hidden />
+      <div
+        className="js-stop-head"
+        role="button"
+        tabIndex={0}
+        aria-expanded="false"
+        onClick={onHeadClick}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onHeadClick(e as unknown as React.MouseEvent<HTMLDivElement>);
+          }
+        }}
+      >
+        <span className="js-stop-numeral" aria-hidden>
+          {tone.numeral}
+        </span>
+        <div className="js-stop-head-text">
+          <CmsText
+            cmsKey={`homeV2.journeyStages.stage${id}Label`}
+            className="js-stop-label"
+          />
+          <CmsText
+            cmsKey={`homeV2.journeyStages.stage${id}Hook`}
+            as="h3"
+            className="js-stop-hook"
+          />
+        </div>
+        <span className="js-stop-chevron" aria-hidden>
+          <svg viewBox="0 0 16 16" width="14" height="14">
+            <path
+              d="M3 5.5L8 10.5L13 5.5"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </span>
+      </div>
+
+      <div className="js-stop-reveal">
+        <div className="js-stop-reveal-inner">
+          <CmsText
+            cmsKey={`homeV2.journeyStages.stage${id}Desc`}
+            as="p"
+            className="js-stop-desc"
+          />
+
+          <div className="js-stop-block">
+            <CmsText
+              cmsKey={`homeV2.journeyStages.stage${id}GetTitle`}
+              as="div"
+              className="js-stop-block-title"
+            />
+            <CmsText
+              cmsKey={`homeV2.journeyStages.stage${id}Get`}
+              as="p"
+              className="js-stop-block-body"
+            />
+            {isStage3 ? (
+              <CmsText
+                cmsKey="homeV2.journeyStages.stage3GetIncludes"
+                as="p"
+                className="js-stop-block-includes"
+              />
+            ) : null}
+          </div>
+
+          <div className="js-stop-block">
+            <CmsText
+              cmsKey={`homeV2.journeyStages.stage${id}WhenTitle`}
+              as="div"
+              className="js-stop-block-title"
+            />
+            <CmsText
+              cmsKey={`homeV2.journeyStages.stage${id}When`}
+              as="p"
+              className="js-stop-block-body"
+            />
+          </div>
+
+          <div className="js-stop-foot">
+            <div className="js-stop-foot-info">
+              <CmsText
+                cmsKey={`homeV2.journeyStages.stage${id}Product`}
+                as="div"
+                className="js-stop-product"
+              />
+              {id === "1" ? (
+                // Stage 1 framing: don't lead with the price — let
+                // the user try the games for free first.
+                <CmsText
+                  cmsKey="homeV2.journeyStages.stage1Trial"
+                  as="div"
+                  className="js-stop-trial"
+                />
+              ) : (
+                <div className="js-stop-price">
+                  {id === "2" ? (
+                    <CmsText
+                      cmsKey="homeV2.journeyStages.stage2OriginalPrice"
+                      className="js-stop-price-original"
+                    />
+                  ) : null}
+                  <CmsText
+                    cmsKey={`homeV2.journeyStages.stage${id}Price`}
+                    className="js-stop-price-amount"
+                  />
+                  <CmsText
+                    cmsKey={`homeV2.journeyStages.stage${id}Period`}
+                    className="js-stop-price-period"
+                  />
+                </div>
+              )}
+            </div>
+            <Link href={STAGE_HREFS[id]} className="js-stop-cta">
+              <CmsText cmsKey={`homeV2.journeyStages.stage${id}Cta`} />{" "}
+              <span aria-hidden className="js-stop-cta-arrow">
+                ←
+              </span>
+            </Link>
+          </div>
+        </div>
+      </div>
+    </article>
   );
 }
 

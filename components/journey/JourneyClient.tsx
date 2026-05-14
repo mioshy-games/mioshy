@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getOrCreateDeviceId } from "@/lib/device-id";
 import { QUESTIONS, QUESTIONNAIRE, totalQuestions } from "@/lib/journey/questions";
@@ -18,6 +18,7 @@ import {
   markInterstitialShown,
 } from "./AssessmentInterstitial";
 import { track } from "@/lib/analytics";
+import { CmsText } from "@/components/cms/CmsText";
 
 interface JourneyClientProps {
   locale: Locale;
@@ -349,25 +350,6 @@ export function JourneyClient({
 
   const question = QUESTIONS[Math.min(index, total - 1)];
 
-  const headerText = useMemo(
-    () =>
-      // F2 (#12) — duplicate "~7 minutes / autosaves" line removed.
-      // The intro page (/journey/assessment/intro) already says this.
-      // Subtitle now empty so the header pulls focus to the question.
-      locale === "he"
-        ? {
-            title: "מסע הזוגיות שלכם",
-            subtitle: "",
-            warmup: "נתחיל בחמש שאלות קצרות - ואז נעצור ונכין עבורכם ניתוח אישי.",
-          }
-        : {
-            title: "Your relationship journey",
-            subtitle: "",
-            warmup: "We'll start with five quick questions - then we'll prepare your personal analysis.",
-          },
-    [locale],
-  );
-
   // Submit handler: advances UI immediately for auto-advance types,
   // then saves to the server in the background.
   const submitAnswer = async (answer: AnswerValue) => {
@@ -574,8 +556,11 @@ export function JourneyClient({
         className="mx-auto flex min-h-[80vh] w-full max-w-3xl flex-col gap-8 px-4 py-10"
       >
         <header className="flex flex-col gap-2 text-start">
-          <h1 className="text-2xl font-bold text-white md:text-3xl">{headerText.title}</h1>
-          <p className="text-sm text-white/70">{headerText.subtitle}</p>
+          <CmsText
+            cmsKey="journeyAssessment.client.title"
+            as="h1"
+            className="text-2xl font-bold text-white md:text-3xl"
+          />
         </header>
 
         {/* Show 100% progress - no lock, all questions are done */}
@@ -611,11 +596,11 @@ export function JourneyClient({
           dir={locale === "he" ? "rtl" : "ltr"}
           className="mx-auto max-w-2xl space-y-4 p-10 text-center"
         >
-          <p className="text-white/80">
-            {locale === "he"
-              ? "לא הצלחנו לטעון את הניתוח שלכם."
-              : "We couldn't load your analysis."}
-          </p>
+          <CmsText
+            cmsKey="journeyAssessment.client.analysisError"
+            as="p"
+            className="text-white/80"
+          />
           <p className="text-xs text-white/40">{analysisError}</p>
           <button
             type="button"
@@ -628,7 +613,7 @@ export function JourneyClient({
             }}
             className="rounded-full bg-white/10 px-5 py-2 text-sm text-white hover:bg-white/20"
           >
-            {locale === "he" ? "נסו שוב" : "Try again"}
+            <CmsText cmsKey="journeyAssessment.client.tryAgain" />
           </button>
         </div>
       );
@@ -660,10 +645,11 @@ export function JourneyClient({
       </div>
 
       <header className="flex flex-col gap-2 text-start">
-        <h1 className="text-2xl font-bold text-white md:text-3xl">{headerText.title}</h1>
-        {headerText.subtitle ? (
-          <p className="text-sm text-white/70 sm:text-base">{headerText.subtitle}</p>
-        ) : null}
+        <CmsText
+          cmsKey="journeyAssessment.client.title"
+          as="h1"
+          className="text-2xl font-bold text-white md:text-3xl"
+        />
       </header>
 
       <AnimatePresence mode="wait">
@@ -726,9 +712,8 @@ export function JourneyClient({
             className="rounded-2xl border border-emerald-300/40 bg-emerald-400/15 p-4 text-center backdrop-blur-md"
           >
             <p className="text-[20px] font-semibold leading-snug text-white">
-              {locale === "he"
-                ? `${reveal.percent}% מהזוגות ענו כמוכם`
-                : `${reveal.percent}% of couples answered like you`}
+              {reveal.percent}%{" "}
+              <CmsText cmsKey="journeyAssessment.client.revealSuffix" />
             </p>
           </motion.div>
         ) : null}
@@ -751,7 +736,7 @@ export function JourneyClient({
             onClick={() => setIndex(Math.max(0, index - 1))}
             className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-sm text-white/75 transition hover:border-white/30 hover:bg-white/10 hover:text-white"
           >
-            {locale === "he" ? "← חזרה" : "Back ←"}
+            <CmsText cmsKey="journeyAssessment.client.back" />
           </button>
         </div>
       ) : null}

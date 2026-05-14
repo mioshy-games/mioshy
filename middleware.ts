@@ -60,6 +60,17 @@ export async function middleware(request: NextRequest) {
   const { supabase, response: supabaseResponse, user } =
     await updateSession(request);
 
+  // ── /admin/*: bypass i18n routing entirely ──────────────────────────────
+  // The internal CMS lives at /admin/content (not /[locale]/admin/...).
+  // Without this early return, intlMiddleware below adds a locale prefix
+  // and redirects /admin/content → /he/admin/content, which doesn't exist
+  // as a route and 404s. Auth gating happens at the page level via
+  // getAdminSession() (returns 404 on miss, not redirect — keeps the
+  // route invisible to non-admins).
+  if (request.nextUrl.pathname.startsWith("/admin")) {
+    return supabaseResponse;
+  }
+
   // ── Dashboard: admin-only ────────────────────────────────────────────────
   if (request.nextUrl.pathname.startsWith("/dashboard")) {
     if (!user) {

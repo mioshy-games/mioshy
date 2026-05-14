@@ -1,67 +1,33 @@
-import { useTranslations } from "next-intl";
+"use client";
+
 import { TrackedLink } from "./TrackedLink";
+import { CmsText } from "@/components/cms/CmsText";
 
 /**
- * ForWhom - 6 personas grid. Each card is a clickable link to the matching
- * service section. CTA banner below points to the assessment quiz.
+ * ForWhom — 6 personas grid + CTA banner.
+ * Sprint 4 #1 closeout: every DOM text via <CmsText>. Headline keeps
+ * its inline-styled <em> wrapper for the `headlineEm` portion so
+ * the wine-red italic-serif treatment stays regardless of mode.
  */
 export function ForWhom() {
-  const t = useTranslations("homeV2.forWhom");
-
   const PERSONAS = [
-    {
-      icon: "✦",
-      title: t("persona1Title"),
-      desc: t("persona1Desc"),
-      linkLabel: t("persona1Link"),
-      href: "#journey",
-    },
-    {
-      icon: "⌛",
-      title: t("persona2Title"),
-      desc: t("persona2Desc"),
-      linkLabel: t("persona2Link"),
-      href: "#journey",
-    },
-    {
-      icon: "◆",
-      title: t("persona3Title"),
-      desc: t("persona3Desc"),
-      linkLabel: t("persona3Link"),
-      href: "#journey",
-    },
-    {
-      icon: "↻",
-      title: t("persona4Title"),
-      desc: t("persona4Desc"),
-      linkLabel: t("persona4Link"),
-      href: "#couples-games",
-    },
-    {
-      icon: "★",
-      title: t("persona5Title"),
-      desc: t("persona5Desc"),
-      linkLabel: t("persona5Link"),
-      href: "#couples-games",
-    },
-    {
-      icon: "♨",
-      title: t("persona6Title"),
-      desc: t("persona6Desc"),
-      linkLabel: t("persona6Link"),
-      href: "#adult-games",
-    },
-  ];
+    { icon: "✦", n: 1, href: "#journey" },
+    { icon: "⌛", n: 2, href: "#journey" },
+    { icon: "◆", n: 3, href: "#journey" },
+    { icon: "↻", n: 4, href: "#couples-games" },
+    { icon: "★", n: 5, href: "#couples-games" },
+    { icon: "♨", n: 6, href: "#adult-games" },
+  ] as const;
 
   return (
     <section className="for-whom" id="for-whom">
       <div className="container">
         <div className="section-head">
-          <div className="eyebrow">{t("eyebrow")}</div>
+          <CmsText cmsKey="homeV2.forWhom.eyebrow" as="div" className="eyebrow" />
           <h2>
-            {t("headlinePart1")}
+            <CmsText cmsKey="homeV2.forWhom.headlinePart1" />
             <br />
-            {t("headlinePart2")}
+            <CmsText cmsKey="homeV2.forWhom.headlinePart2" />
             <em
               style={{
                 fontFamily: "'Frank Ruhl Libre', serif",
@@ -69,35 +35,54 @@ export function ForWhom() {
                 fontStyle: "italic",
               }}
             >
-              {t("headlineEm")}
+              <CmsText cmsKey="homeV2.forWhom.headlineEm" />
             </em>
           </h2>
-          <p>{t("description")}</p>
+          <CmsText cmsKey="homeV2.forWhom.description" as="p" />
         </div>
 
         <div className="personas-grid">
           {PERSONAS.map((p) => (
-            <a key={p.title} href={p.href} className="persona">
-              <div className="persona-icon">{p.icon}</div>
-              <h3>{p.title}</h3>
-              <p>{p.desc}</p>
-              <span className="persona-link">
-                {p.linkLabel} <span>←</span>
-              </span>
-            </a>
+            <Persona key={p.n} n={p.n} icon={p.icon} href={p.href} />
           ))}
         </div>
 
         <div className="for-whom-cta">
           <div className="for-whom-cta-text">
-            <span className="small">{t("ctaSmall")}</span>
-            <span className="big">{t("ctaBig")}</span>
+            <CmsText cmsKey="homeV2.forWhom.ctaSmall" className="small" />
+            <CmsText cmsKey="homeV2.forWhom.ctaBig" className="big" />
           </div>
-          <TrackedLink href="/journey/assessment" className="btn btn-primary" ctaId="for_whom_assessment" section="for-whom">
-            {t("cta")} <span className="arrow">←</span>
+          <TrackedLink
+            href="/journey/assessment"
+            className="btn btn-primary"
+            ctaId="for_whom_assessment"
+            section="for-whom"
+          >
+            <CmsText cmsKey="homeV2.forWhom.cta" /> <span className="arrow">←</span>
           </TrackedLink>
         </div>
       </div>
     </section>
+  );
+}
+
+function Persona({
+  n,
+  icon,
+  href,
+}: {
+  n: 1 | 2 | 3 | 4 | 5 | 6;
+  icon: string;
+  href: string;
+}) {
+  return (
+    <a href={href} className="persona">
+      <div className="persona-icon">{icon}</div>
+      <CmsText cmsKey={`homeV2.forWhom.persona${n}Title`} as="h3" />
+      <CmsText cmsKey={`homeV2.forWhom.persona${n}Desc`} as="p" />
+      <span className="persona-link">
+        <CmsText cmsKey={`homeV2.forWhom.persona${n}Link`} /> <span>←</span>
+      </span>
+    </a>
   );
 }

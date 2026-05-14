@@ -17,6 +17,9 @@
  *     that names the user's choice.
  *   • If the user has already submitted, we hydrate from initial
  *     props and show the post-submit state directly.
+ *
+ * Sprint 4 #3 Phase 2A migration — 14 keys under
+ * journeyTimeline.feedback.*.
  */
 
 import { useState } from "react";
@@ -25,6 +28,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { submitItemFeedback } from "@/app/actions/journey-item-feedback";
+import { useCmsText } from "@/hooks/useCmsText";
+import { CmsText } from "@/components/cms/CmsText";
 
 type Rating = "helpful" | "neutral" | "not_for_us" | "made_things_worse";
 
@@ -35,14 +40,22 @@ interface Props {
   initialRating: Rating | null;
 }
 
-const RATING_META: Record<
-  Rating,
-  { he: string; en: string; tone: "good" | "neutral" | "warn" | "bad" }
-> = {
-  helpful:           { he: "עזר",      en: "Helped",            tone: "good"    },
-  neutral:           { he: "בסדר",     en: "Okay",              tone: "neutral" },
-  not_for_us:        { he: "לא לנו",   en: "Not for us",        tone: "warn"    },
-  made_things_worse: { he: "פגע",      en: "Made it worse",     tone: "bad"    },
+/** Maps the rating code to the CMS key suffix under
+ *  journeyTimeline.feedback.rating* — used for the button label and
+ *  the post-submit confirmation. Tone keeps its visual mapping
+ *  separately below. */
+const RATING_KEY: Record<Rating, string> = {
+  helpful: "ratingHelpful",
+  neutral: "ratingNeutral",
+  not_for_us: "ratingNotForUs",
+  made_things_worse: "ratingMadeWorse",
+};
+
+const RATING_TONE: Record<Rating, "good" | "neutral" | "warn" | "bad"> = {
+  helpful: "good",
+  neutral: "neutral",
+  not_for_us: "warn",
+  made_things_worse: "bad",
 };
 
 const TONE_RING: Record<"good" | "neutral" | "warn" | "bad", string> = {
@@ -66,6 +79,28 @@ export function ItemFeedbackBar({ isHe, scheduledItemId, initialRating }: Props)
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(initialRating !== null);
 
+  // String-prop consumers — toasts, aria-label, textarea placeholder,
+  // and the rating-label resolutions used by the post-submit template.
+  const saveFailedMsg = useCmsText("journeyTimeline.feedback.saveFailed").text;
+  const saveSuccessMsg = useCmsText("journeyTimeline.feedback.saveSuccess").text;
+  const postSubmitTpl = useCmsText("journeyTimeline.feedback.postSubmitNote").text;
+  const ariaLabel = useCmsText("journeyTimeline.feedback.ariaLabel").text;
+  const notePlaceholder = useCmsText("journeyTimeline.feedback.notePlaceholder").text;
+
+  // All four rating labels — needed as raw strings for the post-submit
+  // template substitution. Listing them inline keeps the hook order
+  // stable across renders.
+  const labelHelpful = useCmsText("journeyTimeline.feedback.ratingHelpful").text;
+  const labelNeutral = useCmsText("journeyTimeline.feedback.ratingNeutral").text;
+  const labelNotForUs = useCmsText("journeyTimeline.feedback.ratingNotForUs").text;
+  const labelMadeWorse = useCmsText("journeyTimeline.feedback.ratingMadeWorse").text;
+  const ratingLabelByCode: Record<Rating, string> = {
+    helpful: labelHelpful,
+    neutral: labelNeutral,
+    not_for_us: labelNotForUs,
+    made_things_worse: labelMadeWorse,
+  };
+
   const submit = async (chosen: Rating) => {
     setSubmitting(true);
     const res = await submitItemFeedback({
@@ -75,19 +110,13 @@ export function ItemFeedbackBar({ isHe, scheduledItemId, initialRating }: Props)
     });
     setSubmitting(false);
     if (!res.ok) {
-      toast.error(
-        isHe ? "השמירה נכשלה — נסו שוב" : "Save failed — try again",
-      );
+      toast.error(saveFailedMsg);
       return;
     }
     setRating(chosen);
     setSubmitted(true);
     setShowNote(false);
-    toast.success(
-      isHe
-        ? "נשמר. ההמשך מתאים את עצמו למה שאמרתם."
-        : "Saved. What comes next adjusts to what you said.",
-    );
+    toast.success(saveSuccessMsg);
   };
 
   const handleClick = (chosen: Rating) => {
@@ -103,17 +132,13 @@ export function ItemFeedbackBar({ isHe, scheduledItemId, initialRating }: Props)
 
   // ── Post-submit state ───────────────────────────────────────────
   if (submitted && rating) {
-    const meta = RATING_META[rating];
+    const postSubmitLine = postSubmitTpl.replace("{label}", ratingLabelByCode[rating]);
     return (
       <section
         className="mt-6 rounded-2xl border border-white/10 bg-white/[0.025] px-5 py-4"
         aria-live="polite"
       >
-        <p className="text-[14px] leading-snug text-white/80">
-          {isHe
-            ? `סימנתם "${meta.he}". המסלול הבא מתחשב בזה.`
-            : `You marked it "${meta.en}". What's next takes that in.`}
-        </p>
+        <p className="text-[14px] leading-snug text-white/80">{postSubmitLine}</p>
         <button
           type="button"
           onClick={() => {
@@ -123,7 +148,7 @@ export function ItemFeedbackBar({ isHe, scheduledItemId, initialRating }: Props)
           }}
           className="mt-1 text-[12px] text-white/45 underline-offset-4 hover:text-white/75 hover:underline"
         >
-          {isHe ? "שינוי" : "Change"}
+          <CmsText cmsKey="journeyTimeline.feedback.change" />
         </button>
       </section>
     );
@@ -133,20 +158,21 @@ export function ItemFeedbackBar({ isHe, scheduledItemId, initialRating }: Props)
   return (
     <section
       className="mt-6 rounded-2xl border border-white/10 bg-white/[0.025] px-5 py-4"
-      aria-label={isHe ? "משוב על הפריט" : "Feedback on this item"}
+      aria-label={ariaLabel}
     >
-      <h3 className="text-[13px] font-bold uppercase tracking-wider text-white/65">
-        {isHe ? "איך זה היה?" : "How was that?"}
-      </h3>
-      <p className="mt-1 text-[12px] text-white/45">
-        {isHe
-          ? "המשוב משנה את מה שתקבלו אחר כך."
-          : "Your feedback changes what comes next."}
-      </p>
+      <CmsText
+        cmsKey="journeyTimeline.feedback.heading"
+        as="h3"
+        className="text-[13px] font-bold uppercase tracking-wider text-white/65"
+      />
+      <CmsText
+        cmsKey="journeyTimeline.feedback.helperText"
+        as="p"
+        className="mt-1 text-[12px] text-white/45"
+      />
 
       <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {(Object.keys(RATING_META) as Rating[]).map((r) => {
-          const meta = RATING_META[r];
+        {(Object.keys(RATING_KEY) as Rating[]).map((r) => {
           const Icon = ICONS[r];
           const isPicked = rating === r;
           return (
@@ -156,12 +182,12 @@ export function ItemFeedbackBar({ isHe, scheduledItemId, initialRating }: Props)
               onClick={() => handleClick(r)}
               disabled={submitting}
               className={`group inline-flex min-h-[48px] items-center justify-center gap-2 rounded-full border px-3 text-[14px] font-semibold transition disabled:opacity-50 ${
-                isPicked ? TONE_RING[meta.tone] : "border-white/10 bg-white/[0.02] text-white/75 hover:border-white/20 hover:bg-white/[0.06]"
+                isPicked ? TONE_RING[RATING_TONE[r]] : "border-white/10 bg-white/[0.02] text-white/75 hover:border-white/20 hover:bg-white/[0.06]"
               }`}
               aria-pressed={isPicked}
             >
               <Icon className="h-4 w-4" />
-              {isHe ? meta.he : meta.en}
+              <CmsText cmsKey={`journeyTimeline.feedback.${RATING_KEY[r]}`} />
             </button>
           );
         })}
@@ -176,11 +202,7 @@ export function ItemFeedbackBar({ isHe, scheduledItemId, initialRating }: Props)
             dir={isHe ? "rtl" : "ltr"}
             rows={3}
             maxLength={2000}
-            placeholder={
-              isHe
-                ? "אופציונלי. מה לא עבד? המומחה/ת יקרא/תקרא."
-                : "Optional. What didn't work? Your coach will read it."
-            }
+            placeholder={notePlaceholder}
             className="bg-white/[0.04] border-white/15 text-white placeholder:text-white/35"
             disabled={submitting}
           />
@@ -196,7 +218,7 @@ export function ItemFeedbackBar({ isHe, scheduledItemId, initialRating }: Props)
               }}
               disabled={submitting}
             >
-              {isHe ? "ביטול" : "Cancel"}
+              <CmsText cmsKey="journeyTimeline.feedback.cancel" />
             </Button>
             <Button
               type="button"
@@ -207,12 +229,10 @@ export function ItemFeedbackBar({ isHe, scheduledItemId, initialRating }: Props)
               {submitting ? (
                 <>
                   <Loader2 className="me-2 size-4 animate-spin" />
-                  {isHe ? "שולח…" : "Sending…"}
+                  <CmsText cmsKey="journeyTimeline.feedback.sending" />
                 </>
-              ) : isHe ? (
-                "שליחה"
               ) : (
-                "Send"
+                <CmsText cmsKey="journeyTimeline.feedback.send" />
               )}
             </Button>
           </div>

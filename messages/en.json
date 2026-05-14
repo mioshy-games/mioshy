@@ -680,7 +680,18 @@
     "action": "Action",
     "waiting": "Waiting for your turn…",
     "log": "Log",
-    "turnOf": "{name}'s turn"
+    "turnOf": "{name}'s turn",
+    "coinFlip": {
+      "heads": "Heads",
+      "tails": "Tails",
+      "flipLabel": "Flip the coin",
+      "headsRule": "Heads = +3 steps (default)",
+      "tailsRule": "Tails = +1 step (default)",
+      "turnHint": "Only the active player can flip"
+    },
+    "gameLog": {
+      "empty": "No log yet…"
+    }
   },
   "articlesPage": {
     "title": "Tips & Articles",
@@ -727,7 +738,87 @@
     "ctaSub": "Pick a game and dive in. Free to try.",
     "ctaPrimary": "Pick a game",
     "breadcrumbHome": "Home",
-    "breadcrumbGames": "Games"
+    "breadcrumbGames": "Games",
+    "cataloguePill": "Catalogue",
+    "catalogueHint": "Pick one, open it on your phone, and start. No downloads, no prep.",
+    "noActiveGames": "No active games yet.",
+    "playArrow": "Play the game →",
+    "playNow": "Play now",
+    "newBadge": "New 🔥",
+    "snakesName": "Snakes & Ladders",
+    "snakesDesc": "Classic board with couples questions & challenges - play on one device or remotely.",
+    "snakesPlayers": "Up to 8 players",
+    "statGames": "10+ games",
+    "statCouples": "Hundreds of couples",
+    "statNoInstall": "No install",
+    "statPrivate": "Private & secure",
+    "trustTry": "Try it",
+    "trustForCouples": "Built for couples",
+    "trustWorldwide": "Couples worldwide",
+    "heroBadge": "Live taste · Mioshy",
+    "sampleQuestionType": "Truth",
+    "sampleQuestion": "What moment with me can't you stop replaying - and why that one?",
+    "whyBadge": "Why Mioshy",
+    "whyHook": "We've helped hundreds of couples improve their connection - in the most fun way possible",
+    "benefits": {
+      "0": {
+        "title": "Passion",
+        "body": "The right questions bring back that early thrill. Without talking about it. Without 'exercises.'"
+      },
+      "1": {
+        "title": "Friendship",
+        "body": "Discover things about your partner - and your friends - you'd never have thought to ask."
+      },
+      "2": {
+        "title": "Fun",
+        "body": "Real enjoyment, no excuses. An evening that starts with a click and turns into a game you don't want to end."
+      }
+    },
+    "personas": {
+      "0": {
+        "tag": "Curiosity",
+        "title": "The new couples",
+        "body": "You want to know everything - but \"what scared you most as a kid?\" doesn't fly on date two. We ask it for you - in a way that laughs at the seriousness of it.",
+        "quote": "“Knowing someone deeply doesn’t take years. Just the right question.”"
+      },
+      "1": {
+        "tag": "Reminder",
+        "title": "Couples in the middle",
+        "body": "You haven't lost the relationship. Only the time to remember it. Mioshy compresses into thirty minutes what a romantic dinner does in three hours.",
+        "quote": "“Thirty minutes in the right place - isn’t a little. It’s everything.”"
+      },
+      "2": {
+        "tag": "Surprise",
+        "title": "The veterans",
+        "body": "You finish each other's sentences. Now you just need new sentences to start. We won't tell you something you didn't know - we'll just ask the question you didn't think to ask.",
+        "quote": "“Anyone who thinks they know it all - is asking the wrong questions.”"
+      }
+    },
+    "byTheNumbers": {
+      "eyebrow": "By the numbers",
+      "prefix": "Already ",
+      "middle": " couples worldwide",
+      "connector": "have played ",
+      "suffix": "Mioshy's original games",
+      "trial": "Start free - no credit card required.",
+      "kicker": "one click - and you're in",
+      "ctaPlayNow": "Start playing now"
+    },
+    "personasHeader": {
+      "eyebrow": "For whom",
+      "titleLine1": "There are no boring couples.",
+      "titleLine2": "Only questions never asked.",
+      "lede": "Every stage of a relationship has its waiting questions. We just know when to ask them."
+    },
+    "whyItWorks": {
+      "eyebrow": "Why it works",
+      "titleLine1": "One question.",
+      "titleLine2": "An entirely different evening.",
+      "lede": "Not therapy. Not a course. Not 'tools for relationships.' A game - but one that works.",
+      "closing": "- sometimes change doesn't need a revolution. Just a start."
+    },
+    "metaKeywords": "couples games, truth or dare for couples, relationship games, date night games, couples questions, snakes and ladders couples",
+    "heroSparkleChip": "2-player · free"
   },
   "journeyHub": {
     "metaTitle": "Journey with Mioshy - Personal Coaching from the Experts",
@@ -767,6 +858,20 @@
           "h": "Together, for real",
           "p": "Both partners see the same journey. Mark conversations, write reflections, and watch how you grow - together, for real."
         }
+      },
+      "stats": {
+        "0": {
+          "label": "Personal"
+        },
+        "1": {
+          "label": "5 minutes"
+        },
+        "2": {
+          "label": "Research-based"
+        },
+        "3": {
+          "label": "For couples"
+        }
       }
     },
     "how": {
@@ -775,15 +880,18 @@
       "steps": {
         "0": {
           "title": "Map your relationship in 5 minutes",
-          "body": "A short assessment of communication, intimacy, emotional connection, friendship, and family. By the end you'll see exactly where you stand - no jargon, no filler."
+          "body": "A short assessment of communication, intimacy, emotional connection, friendship, and family. By the end you'll see exactly where you stand - no jargon, no filler.",
+          "tag": "The diagnostic"
         },
         "1": {
           "title": "Get your personal diagnostic",
-          "body": "Instant results: your 3 strongest areas, your 2 biggest friction points, and the one thing most worth working on first."
+          "body": "Instant results: your 3 strongest areas, your 2 biggest friction points, and the one thing most worth working on first.",
+          "tag": "The analysis"
         },
         "2": {
           "title": "An expert + weekly practice",
-          "body": "Your Mioshy expert learns your relationship, builds a custom plan, and follows you in private chat. Short practices that add up to about an hour a week — at your pace."
+          "body": "Your Mioshy expert learns your relationship, builds a custom plan, and follows you in private chat. Short practices that add up to about an hour a week — at your pace.",
+          "tag": "The path"
         }
       }
     },
@@ -882,7 +990,37 @@
       }
     },
     "breadcrumbHome": "Home",
-    "breadcrumbJourney": "Journey with Mioshy"
+    "breadcrumbJourney": "Journey with Mioshy",
+    "metaKeywords": "couples journey, couples assessment, relationship diagnostic, couples program, relationship exercises, personalized couples roadmap",
+    "locked": {
+      "badge": "Journey with Mioshy",
+      "h1Lead": "The journey is",
+      "h1Highlight": "locked",
+      "h1Tail": "— for now.",
+      "lede": "You deserve coaching built around you — practices, assessment, conversations, and monthly tasks from our experts. All included in one weekly subscription.",
+      "subLede": "We don't want you to miss this.",
+      "ctaJoin": "Join now",
+      "backLink": "Back to My Mioshy"
+    },
+    "openJourney": "Open your journey",
+    "heroImagePlaceholder": "Image coming soon",
+    "activeAssignmentsBanner": "Your journey is active - pick up where you left off",
+    "pullQuote": {
+      "eyebrow": "Your path",
+      "line1Emphasis": "Five minutes",
+      "line1After": " stand between you",
+      "line2Before": "and a path written ",
+      "line2Emphasis": "just for you",
+      "trial": "Start free - no credit card required.",
+      "kicker": "the assessment is open"
+    },
+    "faqSide": {
+      "eyebrow": "Questions couples ask",
+      "titleLine1": "Have questions about the journey?",
+      "titleLine2": "We have answers.",
+      "blurb": "We've gathered the most common questions about the assessment, the path, and what happens after. Didn't find your answer?",
+      "contactCta": "Talk to us"
+    }
   },
   "homeV2": {
     "hero": {
@@ -1235,5 +1373,590 @@
       "item6Name": "Tal & Omri",
       "item6Source": "Together 6 years"
     }
+  },
+  "journeyAssessment": {
+    "authGate": {
+      "title": "Save your progress",
+      "body": "To continue we need a quick account. Your first 3 answers are safe - you won't lose anything.",
+      "fullName": "Full name",
+      "email": "Email",
+      "phone": "Phone",
+      "password": "Password",
+      "submitRegister": "Register & continue",
+      "submitLogin": "Log in & continue",
+      "switchToLogin": "I already have an account",
+      "switchToRegister": "I'm new here",
+      "err": "Something went wrong. Please try again."
+    },
+    "paywallGate": {
+      "title": "A personalized plan - week after week",
+      "body": "Join the service and get an in-depth analysis, weekly personalized tasks, and expert consultations.",
+      "bullet1": "2–4 expert-picked weekly tasks - matched precisely to your needs",
+      "bullet2": "Additional questionnaires in early weeks to sharpen your profile",
+      "bullet3": "100% personalized - not a generic program",
+      "bullet4": "Expert consultations are included in the price - no add-ons",
+      "price": "$33 / ₪98 per month - cancel anytime",
+      "cta": "Join the service",
+      "cancel": "Not now",
+      "loading": "Preparing checkout…"
+    },
+    "intro": {
+      "eyebrow": "Just before",
+      "title": "A small agreement between you",
+      "subtitle": "Your path is built from your answers. For that to work, you have to be in.",
+      "durationTitle": "10 minutes a week, four weeks",
+      "durationBody": "The assessment takes about 7 minutes. After that — one short step a week, at your pace.",
+      "privacyTitle": "Your answers — yours",
+      "privacyBody": "Each of you answers alone. Your partner doesn't see your personal answers — only the coach does.",
+      "pactHeader": "Four weeks, together",
+      "pactBody": "10 minutes a week. No pressure, no judgment. If you feel like quitting — remember you said you'd be here for these four.",
+      "cta": "We're in",
+      "ctaBusy": "Saving…",
+      "backLink": "Maybe later",
+      "saveError": "Save failed — please retry"
+    },
+    "client": {
+      "title": "Your relationship journey",
+      "analysisError": "We couldn't load your analysis.",
+      "tryAgain": "Try again",
+      "revealSuffix": "of couples answered like you",
+      "back": "Back ←"
+    },
+    "question": {
+      "selectAnswer": "Select an answer to continue",
+      "saving": "Saving…",
+      "continue": "Continue",
+      "reflectionPlaceholder": "Write freely…"
+    },
+    "priorityRanking": {
+      "arrowsHint": "Use the arrows to reorder",
+      "moveUp": "Move {label} up",
+      "moveDown": "Move {label} down",
+      "position": "Position {n}"
+    },
+    "inlineAuth": {
+      "heading": "You finished the questionnaire! 🎉",
+      "sub": "Your personal analysis is ready - create a free account to unlock it.",
+      "fullName": "Full name",
+      "email": "Email",
+      "phone": "Phone",
+      "password": "Password",
+      "passwordPlaceholder": "At least 8 characters",
+      "submitRegister": "Get my personal analysis →",
+      "submitLogin": "Log in & view analysis →",
+      "switchToLogin": "I already have an account",
+      "switchToRegister": "I'm new here",
+      "errDefault": "Something went wrong. Please try again.",
+      "errRateLimit": "Email rate limit reached - please try again in a few minutes.",
+      "errAlreadyRegistered": "This email is already registered. Switch to 'I already have an account' below ↓",
+      "loadingLabel": "Hold on…",
+      "badge1": "🔒 100% private",
+      "badge2": "Analysis in seconds",
+      "badge3": "Cancel anytime"
+    },
+    "interstitial": {
+      "step1": {
+        "title": "First block done",
+        "body": "In a moment we'll ask about the harder moments. Take a breath."
+      },
+      "step2": {
+        "title": "This is the personal part",
+        "body": "Intimacy and emotional connection. No judgment, no right answers. Two or three blocks left."
+      },
+      "step3": {
+        "title": "Friendship — the base of everything",
+        "body": "Done with that. Next we touch the everyday, then your priorities."
+      },
+      "step4": {
+        "title": "Almost there",
+        "body": "Last step: ranking your priorities. This is what shapes the path going forward."
+      },
+      "stepCounter": "Step {n} / 4",
+      "continue": "Continue"
+    },
+    "analysis": {
+      "sectionLabel": "Your results",
+      "title": "Your personal analysis",
+      "subtitle": "What we found, and where we go from here",
+      "friendship": "Friendship",
+      "conflict": "Handling friction",
+      "passion": "Passion at risk",
+      "narrativeLabel": "Summary",
+      "topGap": "Focus for the first month",
+      "recs": "Your personalized program",
+      "offerLabel": "What's next",
+      "offerHero": "Dedicated guidance from a relationship expert, inside a private room — just the two of you and them.",
+      "offerSub": "In 30 days you'll feel a real change.",
+      "feat1Title": "A private, closed room with your expert",
+      "feat1Body": "Send questions whenever you need to, get a real reply - no bot, no queue.",
+      "feat2Title": "Weekly content tailored to your story",
+      "feat2Body": "Not an off-the-shelf course. Each week's content is built around what you filled in and your conversations with the expert.",
+      "feat3Title": "A dialogue that grows with you",
+      "feat3Body": "You respond to every piece of content, your expert replies, and the process keeps building - week after week.",
+      "price": "$19 / week",
+      "priceNote": "Cancel anytime",
+      "cta": "Join now",
+      "ctaLoading": "Preparing checkout…",
+      "activeTitle": "You're already on the journey",
+      "activeSub": "Your personal plan is active. Weekly tasks will be delivered to you soon.",
+      "goAccount": "Open My Mioshy",
+      "whoForLabel": "Who is this for?",
+      "whoForTitle": "Couples ready to work on their relationship",
+      "whoFor1": "Couples who feel the closeness has faded and want it back",
+      "whoFor2": "Couples who struggle to communicate and want to understand each other better",
+      "whoFor3": "Couples facing challenges who want real tools to work on them",
+      "whoFor4": "Couples who want a safe place to ask questions and consult with experts",
+      "gainsLabel": "What you'll gain on the journey",
+      "gainsTitle": "Change you'll feel within the first month",
+      "gain1": "Improving intimate closeness — more sex, more variety",
+      "gain2": "Bringing the desire back to your relationship",
+      "gain3": "Professional tools for improving the relationship and handling hard moments",
+      "gain4": "A place to ask and consult with relationship experts",
+      "gain5": "Improving communication and intimacy in your relationship",
+      "preparingAnalysis": "Preparing your analysis…",
+      "checkoutErrorGeneric": "Could not open checkout. Please try again.",
+      "checkoutErrorNetwork": "Network error. Check your connection and try again.",
+      "stickyCta": "Join Mioshy coaching"
+    },
+    "checkoutButton": {
+      "defaultLabel": "Join now",
+      "busyLabel": "Preparing checkout…",
+      "errGeneric": "Could not open checkout. Please try again.",
+      "errNetwork": "Network error. Check your connection and try again."
+    }
+  },
+  "journeyTimeline": {
+    "list": {
+      "doneCount": "{completed} / {total} done",
+      "shared": "Shared with your partner",
+      "open": "Open",
+      "locked": "Locked",
+      "pillDone": "Done together",
+      "pillOpen": "Open now",
+      "unlockInOneDay": "In 1 day",
+      "unlockInDays": "In {n} days",
+      "unlockInWeeks": "In {n} weeks",
+      "replyOne": "1 reply",
+      "repliesMany": "{n} replies"
+    },
+    "nextUp": {
+      "ariaActive": "Next action",
+      "ariaVictory": "Journey complete",
+      "credibility": "Part of a proven process, built with real couples",
+      "availableBadge": "Your next step",
+      "availableKicker": "Ready for you",
+      "availableWhyLine": "A small moment together that builds the closeness everything else rests on.",
+      "availableCta": "Let's begin",
+      "lockedBadge": "Coming up",
+      "lockedWhyLine": "Your journey builds at the right pace - this chapter is waiting for exactly the right moment.",
+      "lockedCta": "Peek inside",
+      "lockedUnlockHint": "Unlocks automatically at the scheduled time",
+      "countdownNow": "Unlocking now",
+      "countdownToday": "Today",
+      "countdownTomorrow": "Unlocks tomorrow",
+      "countdownDays": "Unlocks in {n} days",
+      "countdownWeeks": "Unlocks in {n} weeks",
+      "countdownDate": "Unlocks {date}",
+      "victoryLabel": "Complete",
+      "victoryTitle": "You've completed every chapter on this path",
+      "victoryBody": "{total} chapters done. A good moment to reflect - what do you want to keep?"
+    },
+    "thread": {
+      "saveFailed": "Save failed: {error}",
+      "reactionFailed": "Reaction failed: {error}",
+      "posted": "Response posted",
+      "composerPlaceholder": "What surfaces for you here? Send a note to our experts…",
+      "privateLabel": "Private - only you + experts",
+      "send": "Send",
+      "historyAria": "Thread history",
+      "empty": "No messages in this thread yet. Your response opens it.",
+      "senderMioshy": "Mioshy",
+      "senderYou": "You",
+      "senderPartner": "Your partner",
+      "privateBadge": "Private",
+      "addReaction": "Add reaction"
+    },
+    "itemDetail": {
+      "markedNotDone": "Marked as not done",
+      "responseSaved": "Response saved",
+      "responseDeleted": "Response deleted",
+      "errLoginRequired": "Please sign in first.",
+      "errProfileIncomplete": "Complete your profile to participate.",
+      "errForbidden": "You don't have access to this item.",
+      "errLocked": "This item is still locked.",
+      "errAssignmentInactive": "This journey assignment was cancelled.",
+      "errEmptyText": "Write something before sending.",
+      "errTextTooLong": "Text is too long.",
+      "errNotFound": "Item not found.",
+      "errDefault": "Something went wrong. Try again.",
+      "completedOnPrefix": "Completed on ",
+      "taskTitle": "Your task",
+      "challengeTitle": "Bonus challenge",
+      "chapterCompleteHeading": "This chapter is complete",
+      "chapterFinishedQ": "Finished this chapter?",
+      "completeHintAfter": "You can reopen and add reflections anytime, even after marking it done.",
+      "completeHintBefore": "Mark it once the practice is done - no rush. The chapter stays open.",
+      "unmarkDone": "Unmark done",
+      "markAsDone": "Mark as done",
+      "reflectionsHeading": "Reflections",
+      "statusCompleted": "Completed",
+      "statusOpenNow": "Open now",
+      "statusLocked": "Locked",
+      "videoTitle": "Video",
+      "noResponsesYet": "No responses yet. Be the first 👇",
+      "responseAuthorMe": "Me",
+      "responseAuthorPartner": "Partner",
+      "responsePrivate": "Private",
+      "deleteResponse": "Delete response",
+      "clinicianReplyLabel": "From your clinician",
+      "responsePlaceholder": "Share a thought, insight or question. Responses are shared with your partner unless you mark them private.",
+      "privateOnlyMe": "Private (only me)",
+      "charactersLeft": "{n} characters left",
+      "sendResponse": "Send"
+    },
+    "lesson": {
+      "insightLabel": "The insight",
+      "mistakesLabel": "Common mistake",
+      "metaphorLabel": "Like...",
+      "bodyLabel": "The full article",
+      "exerciseLabel": "This week's exercise",
+      "measurementLabel": "What to measure this week",
+      "doThisLabel": "Do this week",
+      "dontThisLabel": "Not this week",
+      "progressLabel": "Sign it's working",
+      "sourcePrefix": "Based on the work of ",
+      "sourceSuffix": " — Mioshy interpretation"
+    },
+    "celebration": {
+      "kicker": "One more step · real change",
+      "title": "You just did something that matters.",
+      "body": "Small moments like this are what build a closeness that lasts. Your journey is moving forward - step by step, at your own pace.",
+      "impactLabel": "What you just built",
+      "impactLine": "You grew a new relationship muscle - listening, presence, honesty between the two of you. That doesn't happen by accident.",
+      "credibilityTitle": "Itzik Berlav",
+      "credibilitySub": "Coaching couples since 2001",
+      "credibilityProof": "A method tested with hundreds of couples · Over 25 years of practice",
+      "continue": "Continue your journey",
+      "stay": "Stay here"
+    },
+    "whyThisItem": {
+      "fallbackRationale": "Part of the path built for you.",
+      "ariaLabel": "Why this item is here",
+      "heading": "Why this is here"
+    },
+    "activity": {
+      "empty": "No activity yet - start with the next chapter above.",
+      "verbItemOpened": "opened",
+      "verbItemCompleted": "completed",
+      "verbItemUncompleted": "un-completed",
+      "verbResponsePosted": "replied to",
+      "verbResponseDeleted": "deleted reply to",
+      "timeJustNow": "just now",
+      "timeMinutesAgo": "{n}m ago",
+      "timeHoursAgo": "{n}h ago",
+      "timeDaysAgo": "{n}d ago"
+    },
+    "feedback": {
+      "saveFailed": "Save failed — try again",
+      "saveSuccess": "Saved. What comes next adjusts to what you said.",
+      "postSubmitNote": "You marked it \"{label}\". What's next takes that in.",
+      "change": "Change",
+      "ariaLabel": "Feedback on this item",
+      "heading": "How was that?",
+      "helperText": "Your feedback changes what comes next.",
+      "ratingHelpful": "Helped",
+      "ratingNeutral": "Okay",
+      "ratingNotForUs": "Not for us",
+      "ratingMadeWorse": "Made it worse",
+      "notePlaceholder": "Optional. What didn't work? Your coach will read it.",
+      "cancel": "Cancel",
+      "sending": "Sending…",
+      "send": "Send"
+    },
+    "page": {
+      "meta": {
+        "title": "Journey · Your timeline",
+        "description": "Your personal path - chapters that open at your pace, exercises and insights."
+      },
+      "yourJourney": "Your journey",
+      "backToMy": "Back to My Mioshy",
+      "empty": {
+        "h1": "Your timeline is still empty",
+        "lede": "Once you join a program, personal chapters will open here at your own pace - exercises, conversations, and weekly rituals.",
+        "ctaExplore": "Explore the Journey",
+        "ctaAssessment": "Start with the 5-min assessment"
+      },
+      "timelineBadge": "Journey timeline",
+      "timelineLede": "Each chapter opens on its own time. When it's ready - step in, reflect, and practice together.",
+      "allChapters": "All chapters",
+      "recentActivity": "Recent activity",
+      "trust": {
+        "ariaLabel": "Trust anchor",
+        "guidance": "Trusted guidance since 2001",
+        "name": "Itzik Berlav",
+        "title": "Couples specialist · Over 25 years coaching relationships",
+        "body": "Every chapter is built on thousands of real couples' conversations - not generic content, but steps that actually work."
+      },
+      "progress": {
+        "done": "Done",
+        "open": "Open",
+        "locked": "Locked",
+        "srTemplate": "Progress: {completed} of {total}"
+      }
+    },
+    "itemPage": {
+      "metaTitle": "Journey chapter",
+      "backToTimeline": "Back to the timeline",
+      "chapterFallback": "Chapter",
+      "expertPushBadge": "From your coach",
+      "threadHeading": "Your conversation on this item",
+      "threadPromptLabel": "Write a response - our experts read and reply."
+    }
+  },
+  "gamesSlug": {
+    "gameNotFoundTitle": "Game not found",
+    "gameNotFoundBody": "This game is not available right now.",
+    "missingWheelTitle": "Game is missing a wheel",
+    "missingWheelBody": "Please try again later.",
+    "tutorial": {
+      "badge": "Welcome",
+      "title": "Here's how it works",
+      "step1": "Spin the wheel",
+      "step2": "Reveal a Truth or Dare",
+      "step3": "Answer or do it — then spin again",
+      "cta": "Got it, let's start",
+      "dismiss": "Close"
+    }
+  },
+  "mioshySexPage": {
+    "comingSoonTitle": "Coming soon",
+    "comingSoonBody": "We're preparing something special for couples. Check back soon.",
+    "backHome": "Back home",
+    "privateChamber": "The private chamber",
+    "defaultSectionName": "Adults Only",
+    "defaultAuthedTagline": "All our exclusive games, in one place.",
+    "defaultHeroTagline": "Mioshy's flagship. One night of novelty, surprise - and a wholly different experience.",
+    "heroBreadcrumbHome": "Home",
+    "heroBreadcrumbSection": "Mioshy's Sex",
+    "heroFlagshipLabel": "The flagship",
+    "heroAgeGate": "Adults only · 18+",
+    "heroHeadline1": "One evening.",
+    "heroHeadline2": "A new sexual experience.",
+    "heroLedePrefix": "Games written by world-class experts.",
+    "heroLedeEmphasis": "For couples ready for it.",
+    "heroCtaPrimary": "Enter the catalogue",
+    "heroReassurance": "For curious couples · no contract · cancel anytime",
+    "heroPosterPlaceholder": "Game artwork",
+    "heroPosterTouchingLevel": "Touching",
+    "heroPosterTouchingHint": "Prompts that close distance",
+    "heroPosterTouchingAlt": "Touching - game artwork",
+    "heroPosterStirringLevel": "Stirring",
+    "heroPosterStirringHint": "Invitations into play",
+    "heroPosterStirringAlt": "Stirring - game artwork",
+    "manifestoKicker": "What this really is",
+    "manifestoHeadlinePrefix": "Not another game.",
+    "manifestoHeadlineEmphasis": "An evening you won't want to end.",
+    "manifestoBody1": "Mioshy's experts have built you sexual games in stages - each stage is a specific sexual act you perform together. Some games incorporate sex toys. Some don't. The choice is yours.",
+    "manifestoBody2": "All of them point to one goal - an unforgettable sexual experience. The games are sexual. Erotic. Arousing. And built - on purpose - so you won't want to stop playing.",
+    "manifestoBody3": "- this isn't a game you play once and discard. It's a night you come back to.",
+    "proofKicker": "The numbers speak",
+    "proofHeadlinePrefix": "After the first game - ",
+    "proofHeadlineEmphasis": "they want more.",
+    "proofStat1Caption": "of couples who bought one game came back for a second.",
+    "proofStat2Caption": "of our customers ended up owning every single product.",
+    "faqKicker": "FAQ",
+    "faqHeadlinePrefix": "Questions couples ask",
+    "faqHeadlineEmphasis": "before they buy.",
+    "faqQ1": "Why is this good? How is it different from tips I'd find online?",
+    "faqA1": "Our games are written by leading sexologists and couples therapists, and designed as a complete experience — not a tip list. Each game is a staged journey with rising tension and a peak you'll remember. That's what an internet article can't give you: not ideas, but a framework that walks you through the evening.",
+    "faqQ2": "What do we get when we finish purchasing?",
+    "faqA2": "Immediate access to the game you bought, for life, for both partners. A private space opens up in 'My Mioshy' with all your games — replay as many times as you want, no limits. No downloads, no installs. Open it on any device through your browser.",
+    "faqQ3": "When is it recommended to play? Do we need to prepare?",
+    "faqA3": "The best time is when you're relaxed, free, and in the mood. A weekend evening, a short getaway, any time you set aside for yourselves with no distractions. No prep needed — open the game and it leads you. Each game lists what's needed (if anything) before you start.",
+    "faqQ4": "Does my partner get access to what I purchased?",
+    "faqA4": "Yes, automatically. When you purchase, a 'couple space' opens for both of you — a shared area. Anything one of you buys is immediately accessible to the other. One purchase = both of you in. No need to buy twice.",
+    "faqQ5": "Can we get a refund if it's not a fit?",
+    "faqA5": "Yes. Up to 14 days from purchase, if you haven't started playing, we'll refund in full — email us at mioshyoffice@gmail.com and we'll handle it. Once you've started, the content has been revealed so the purchase becomes non-refundable.",
+    "faqQ6": "Do I need to buy sex toys?",
+    "faqA6": "Depends on the game. Some games incorporate toys — clearly listed on each game's page. Others require no equipment at all. You choose upfront.",
+    "faqQ7": "Is this discreet?",
+    "faqA7": "Completely. Billing shows only as Mioshy — no game titles, no other words. All data is encrypted, we don't sell information, and there are no ads.",
+    "faqQ8": "What if one of us isn't ready?",
+    "faqA8": "Then start at level one — talk and questions, no pressure. Most couples who start there find the other opens up naturally.",
+    "closingKicker": "Ready?",
+    "closingHeadlinePrefix": "One night.",
+    "closingHeadlineEmphasis": "That's all it takes to know.",
+    "closingReassurance": "No contract · cancel anytime · billed only as Mioshy",
+    "catalogueKicker": "The catalogue",
+    "catalogueHeadlinePrefix": "Pick the game",
+    "catalogueHeadlineEmphasis": "that opens the evening."
+  },
+  "mioshySexSlug": {
+    "pricing": {
+      "oneTime": "One-time purchase",
+      "monthly": "Monthly couple plan",
+      "annual": "Annual couple plan"
+    },
+    "breadcrumbHome": "Home",
+    "breadcrumbAdults": "Adults Only",
+    "defaultGenre": "Adult couples games",
+    "youOwnThis": "You own this · Open game",
+    "tagNew": "New",
+    "tagPopular": "Popular",
+    "metricIntimacy": "Intimacy",
+    "metricCommunication": "Communication",
+    "metricHeat": "Heat",
+    "whatYoullGet": "What you'll get",
+    "gameIsForYouIf": "This game is for you if…",
+    "gallery": "Gallery",
+    "nextGame": "Next game",
+    "keepExploring": "Keep exploring",
+    "universalBenefit1": "An unforgettable night",
+    "universalBenefit2": "A new sexual memory that breaks the routine",
+    "universalTarget1": "For couples looking to break the bedroom routine",
+    "universalTarget2": "To let our experts guide you in the bedroom"
+  },
+  "mioshySexPlay": {
+    "yourGallery": "Your gallery",
+    "yourGameUnlocked": "Your game · unlocked",
+    "metricIntimacy": "Intimacy",
+    "metricCommunication": "Communication",
+    "metricHeat": "Heat",
+    "yourStoryEyebrow": "Your story",
+    "yourStoryTitlePrefix": "From overture ",
+    "yourStoryTitleAccent": "to climax.",
+    "hisRoleLabel": "His role",
+    "herRoleLabel": "Her role",
+    "questionsEyebrow": "The game's questions",
+    "defaultQuestionsIntro": "Answer the next question - in order or as you wish.",
+    "metaTitleFallback": "Your game",
+    "closingNote": "There's no right order. No right pace. Whatever fits the two of you - that's right."
+  },
+  "myHub": {
+    "metaTitle": "My Mioshy",
+    "accountLabel": "Your account",
+    "pageHeading": "My Mioshy",
+    "statusFree": "Status: Free",
+    "seePricing": "See pricing",
+    "statusAllAccess": "Status: Full access",
+    "statusAllAccessSub": "Enjoy.",
+    "statusActiveMember": "Status: Active member",
+    "entitlementGames": "Games",
+    "entitlementJourney": "Journey",
+    "entitlementAdults": "Adults only",
+    "upgradePlan": "Upgrade plan",
+    "invitePartner": "Invite your partner",
+    "completeProfile": "Complete your profile",
+    "completeNow": "Complete now",
+    "gotCode": "Got a code from your partner?",
+    "notificationCount": "{n} new",
+    "metaDescription": "The three worlds of Mioshy in one place - games, journey, adults only.",
+    "heroLede": "Three services, each standing on its own. Pick your vibe tonight — a funny evening with a game, expert-written intimacy, or weekly coaching that aligns your relationship.",
+    "statusFreeTitle": "Your account is active. No subscription yet.",
+    "statusFreeBody": "Start small with a weekly game, add expert-written intimacy, or go all-in on coaching.",
+    "statusAllAccessSubFull": "Your plan covers all of Mioshy - games, journey, and adults only.",
+    "activeMemberPillarsTemplate": "You have access to {count} of our 3 services.",
+    "activeMemberDetailsTemplate": "Active: {owned}. Add: {missing}.",
+    "cardGamesLede": "Truth or dare, wheel, snakes & ladders.",
+    "cardGamesBuyLede": "A full evening of connection — questions that lead to real talks, challenges that bring back desire, and the laughter you didn't realise your relationship was missing. Weekly subscription, refreshing every Sunday.",
+    "cardJourneyOwnerLede": "Your tuned clinic - content ordered by what matters to you, each partner with their own order.",
+    "cardJourneyBuyLede": "An expert from Mioshy who studies you deeply, builds a personal program, and is available in chat. Both partners wrap the relationship in real work — all included in one weekly subscription.",
+    "cardAdultsBuyLede": "Games written by the top experts in sexology and couples therapy. A complete experience for your bedroom — not tips, not lists. One purchase per game, open to you and your partner forever.",
+    "invitePartnerLede": "Send an email invitation. Once they join, this section will disappear from your dashboard.",
+    "gameSessionCodeLabel": "Game session code (second device)",
+    "pairProfilePrereq": "To pair a partner or redeem a code, you need a full name, mobile and password.",
+    "redeemHint": "Enter the code and your account links to theirs instantly.",
+    "footerAccountLink": "My account · invoices · subscription",
+    "pillarGamesTitle": "Online couples games",
+    "pillarJourneyTitle": "Journey with Mioshy",
+    "pillarJourneySubtitle": "Personal work program",
+    "pillarAdultsEntitledTitle": "Adults Only",
+    "pillarAdultsMarketingTitle": "Mioshy's Sex",
+    "adultsOwnedSingular": "game unlocked for the two of you.",
+    "adultsOwnedPlural": "games unlocked for the two of you.",
+    "notificationAria": "{n} new"
+  },
+  "myGames": {
+    "backToMyMioshy": "Back to My Mioshy",
+    "heading": "Your games",
+    "subheading": "Online couples games",
+    "noGamesAvailable": "No games available.",
+    "playNow": "Play now",
+    "snakesAndLadders": "Snakes & Ladders",
+    "newBadge": "New 🔥",
+    "snakesDescription": "Classic board with couples questions & challenges - play on one device or remotely.",
+    "metaTitle": "Games · Gallery",
+    "metaDescription": "Truth wheel, snakes & ladders - all your games, ready to play.",
+    "lede": "Truth or dare, the wheel, snakes & ladders - ready to play."
+  },
+  "myJourneyTogether": {
+    "heading": "Together",
+    "backToPage": "Back to your page",
+    "sharedSpace": "Your shared space",
+    "partnerLabel": "Your partner",
+    "statTogether": "Together",
+    "bothCompleted": "both completed",
+    "youLabel": "You",
+    "itemsHint": "items",
+    "metaTitle": "Together",
+    "headerBlurb": "Everything here, you both see. This isn't private reflections — it's your conversation as a couple. Your personal reflections stay yours.",
+    "asymmetryYouLead": "{partnerLabel} hasn't caught up yet. If it feels right, a gentle nudge — no pressure.",
+    "asymmetryPartnerLead": "{partnerLabel} is a bit ahead of you. Not a race — just so you know.",
+    "coachHint": "{coachName} sees this thread and can reply.",
+    "footerNote": "This surface is shared. Your reflections on individual items stay private."
+  },
+  "myAdults": {
+    "backToMyMioshy": "Back to My Mioshy",
+    "heading": "Your gallery",
+    "eyebrow": "Adults Only",
+    "moreGames": "More games",
+    "pickGame": "Pick a game",
+    "yourGames": "Your games",
+    "noGamesYet": "No games yet",
+    "exploreContent": "Explore content",
+    "ownedBadge": "Owned",
+    "openGame": "Open game",
+    "unlockBadge": "Unlock",
+    "detailsAndUnlock": "Details & unlock",
+    "metaTitle": "Adults Only · Gallery",
+    "metaDescription": "Every experience you've unlocked, in one place.",
+    "heroLede": "Every experience you've purchased, in one place. Tap any card to open the full content - for both of you.",
+    "monthlyAvailableTitle": "Your monthly game is available",
+    "monthlyAvailableBody": "Your subscription includes one Adults game per month. Pick which one to unlock from the catalogue below.",
+    "monthlyConsumedTemplate": "Your monthly game is used. The next one unlocks {date}.",
+    "monthlyNextSoon": "soon",
+    "moreGamesLede": "Cards to expand your gallery. Tap any to open its page and unlock.",
+    "emptyGalleryLede": "Pick your first experience and unlock a world built just for the two of you. Everything you own appears here - automatically for your partner too."
+  },
+  "myJourney": {
+    "metaTitle": "Your tuned clinic",
+    "assessmentCompleted": "Assessment completed",
+    "activityCompleted": "Completed: {title}",
+    "activityJustOpened": "Just opened: {title}",
+    "priorityCommunication": "Communication",
+    "priorityIntimacy": "Intimacy",
+    "priorityLove": "Love & emotional connection",
+    "priorityFriendship": "Friendship & daily partnership",
+    "priorityFamily": "Family & internal stress",
+    "backToMyMioshy": "Back to My Mioshy",
+    "coachingEyebrow": "Coaching with Mioshy",
+    "pageHeading": "Your tuned clinic",
+    "sharedSpace": "Your shared space",
+    "metaDescription": "Personal content tuned to your priorities and what matters most to you.",
+    "focusFallback": "Connection",
+    "activityAssessmentDetail": "Top focus: {focusLabel}",
+    "activityClinicianReplied": "Your clinician replied",
+    "headerLede": "Content ordered by what matters to you. Each partner sees their own ranking - your priorities lead.",
+    "sharedSpaceBody": "What you've done together, your shared thread, and messages addressed to both of you.",
+    "priorityHintTemplate": "Ordered by your ranking: top focus is {focusLabel}. Your partner sees their own order.",
+    "footerNote": "Private space. Everything here is yours alone."
+  },
+  "gameTypeSelector": {
+    "wheelTitle": "Spin the Wheel",
+    "wheelDesc": "Spin and get questions & dares",
+    "wheelBadge": "Available",
+    "snakesTitle": "Snakes & Ladders",
+    "snakesDesc": "Up to 8 players with couple questions & challenges",
+    "snakesBadge": "New 🔥"
   }
 }

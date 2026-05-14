@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import { getTranslations } from "next-intl/server";
+import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
+import { loadCmsTextsForPage } from "@/lib/cms/server";
+import { CmsTextProvider } from "@/components/cms/CmsTextProvider";
+import { CmsText } from "@/components/cms/CmsText";
 import { unstable_noStore as noStore } from "next/cache";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
 import { Link } from "@/navigation";
@@ -57,31 +60,21 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = params;
   const base = siteUrl();
-  const t = await getTranslations({ locale, namespace: "gamesHub" });
+  const t = await getCmsTranslations({
+    locale: locale === "he" ? "he" : "en",
+    namespace: "gamesHub",
+    page: "games",
+  });
   const title = `Mioshy - ${t("title")}`;
   const description = t("subtitle");
   const canonical = `${base}/${locale}/games`;
   return {
     title,
     description,
-    keywords:
-      locale === "he"
-        ? [
-            "משחקי זוגות אונליין",
-            "אמת או חובה",
-            "משחקי זוגות",
-            "שאלות לזוגות",
-            "סולמות ונחשים",
-            "משחק זוגי בדפדפן",
-          ]
-        : [
-            "couples games",
-            "truth or dare for couples",
-            "relationship games",
-            "date night games",
-            "couples questions",
-            "snakes and ladders couples",
-          ],
+    keywords: t("metaKeywords")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean),
     alternates: {
       canonical,
       languages: {
@@ -114,7 +107,18 @@ export default async function GamesHubPage({
   noStore();
   const locale = params.locale;
   const isHe = locale === "he";
-  const t = await getTranslations({ locale, namespace: "gamesHub" });
+  // CMS-backed translator — retained for raw-string slots (metadata,
+  // JSON-LD, alt props, sub-component string props). JSX-child
+  // consumers below render via <CmsText> so they pick up is_rich
+  // from each row and render <em>/<strong> via the .cms-rich CSS rule.
+  // Bug fix 2026-05-13: pre-CmsTextProvider rendering ignored is_rich
+  // and printed admin-entered <em> tags as literal text in the DOM.
+  const t = await getCmsTranslations({
+    locale: isHe ? "he" : "en",
+    namespace: "gamesHub",
+    page: "games",
+  });
+  const cmsRows = await loadCmsTextsForPage("games");
 
   const supabase = await createServerSupabaseClient();
 
@@ -160,6 +164,7 @@ export default async function GamesHubPage({
     // invisible. Itzik 2026-05-06: this is exactly the bug that
     // made "I don't see the change" reproducible.
     return (
+      <CmsTextProvider rows={cmsRows}>
       <div
         dir={isHe ? "rtl" : "ltr"}
         className="relative min-h-[100dvh] overflow-hidden text-white"
@@ -175,21 +180,25 @@ export default async function GamesHubPage({
         <main className="relative mx-auto max-w-6xl px-4 pb-20 pt-12 sm:pt-16">
           <div className="inline-flex items-center gap-2 rounded-full border border-rose-300/30 bg-rose-500/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-rose-100">
             <span className="h-1.5 w-1.5 rounded-full bg-rose-300" />
-            {isHe ? "הקטלוג" : "Catalogue"}
+            <CmsText cmsKey="gamesHub.cataloguePill" />
           </div>
-          <h1 className="mt-3 font-heading text-3xl font-bold leading-tight tracking-tight sm:text-4xl">
-            {t("catalogueTitle")}
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm text-white/70">
-            {isHe
-              ? "בחרו משחק, פתחו על הטלפון, ומתחילים. בלי הורדות, בלי הכנות."
-              : "Pick one, open it on your phone, and start. No downloads, no prep."}
-          </p>
+          <CmsText
+            cmsKey="gamesHub.catalogueTitle"
+            as="h1"
+            className="mt-3 font-heading text-3xl font-bold leading-tight tracking-tight sm:text-4xl"
+          />
+          <CmsText
+            cmsKey="gamesHub.catalogueHint"
+            as="p"
+            className="mt-2 max-w-2xl text-sm text-white/70"
+          />
 
           {games.length === 0 ? (
-            <p className="mt-12 text-white/60">
-              {isHe ? "עדיין אין משחקים פעילים." : "No active games yet."}
-            </p>
+            <CmsText
+              cmsKey="gamesHub.noActiveGames"
+              as="p"
+              className="mt-12 text-white/60"
+            />
           ) : (
             // Catalogue grid — 2 per row (was 3) per Itzik 2026-05-07.
             // Bigger card footprint reads as fewer "products" and more
@@ -228,9 +237,11 @@ export default async function GamesHubPage({
                           </p>
                         ) : null}
                         <div className="mt-5 flex items-center justify-between">
-                          <span className="text-sm text-rose-200 group-hover:text-white">
-                            {isHe ? "שחקו עכשיו ←" : "Play the game →"}
-                          </span>
+                          <CmsText
+                            cmsKey="gamesHub.playArrow"
+                            as="span"
+                            className="text-sm text-rose-200 group-hover:text-white"
+                          />
                         </div>
                       </div>
                     </Link>
@@ -255,29 +266,35 @@ export default async function GamesHubPage({
                         recommended, e.g. 1280×800). */}
                     <Image
                       src="/images/snakes-couples.webp"
-                      alt={isHe ? "נחשים וסולמות" : "Snakes & Ladders"}
+                      alt={t("snakesName")}
                       fill
                       sizes="(max-width: 640px) 100vw, 50vw"
                       className="object-cover transition duration-500 group-hover:scale-[1.02]"
                     />
-                    <span className="absolute end-3 top-3 rounded-full bg-gradient-to-r from-rose-400 to-fuchsia-400 px-3 py-1 text-xs font-bold text-white shadow-lg">
-                      {isHe ? "חדש 🔥" : "New 🔥"}
-                    </span>
+                    <CmsText
+                      cmsKey="gamesHub.newBadge"
+                      as="span"
+                      className="absolute end-3 top-3 rounded-full bg-gradient-to-r from-rose-400 to-fuchsia-400 px-3 py-1 text-xs font-bold text-white shadow-lg"
+                    />
                     <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/70 to-transparent" />
                   </div>
                   <div className="p-5">
-                    <h3 className="text-xl font-bold text-white group-hover:text-rose-100">
-                      {isHe ? "נחשים וסולמות" : "Snakes & Ladders"}
-                    </h3>
-                    <p className="mt-2 line-clamp-2 text-sm text-white/70 transition-[max-height,color] duration-500 ease-in-out group-hover:line-clamp-none">
-                      {isHe
-                        ? "לוח קלאסי עם שאלות ואתגרים זוגיים - שחקו על מכשיר אחד או על שני מכשירים שונים."
-                        : "Classic board with couples questions & challenges - play on one device or remotely."}
-                    </p>
+                    <CmsText
+                      cmsKey="gamesHub.snakesName"
+                      as="h3"
+                      className="text-xl font-bold text-white group-hover:text-rose-100"
+                    />
+                    <CmsText
+                      cmsKey="gamesHub.snakesDesc"
+                      as="p"
+                      className="mt-2 line-clamp-2 text-sm text-white/70 transition-[max-height,color] duration-500 ease-in-out group-hover:line-clamp-none"
+                    />
                     <div className="mt-5 flex items-center justify-between">
-                      <span className="text-sm text-rose-200 group-hover:text-white">
-                        {isHe ? "שחקו עכשיו ←" : "Play the game →"}
-                      </span>
+                      <CmsText
+                        cmsKey="gamesHub.playArrow"
+                        as="span"
+                        className="text-sm text-rose-200 group-hover:text-white"
+                      />
                     </div>
                   </div>
                 </Link>
@@ -287,6 +304,7 @@ export default async function GamesHubPage({
 
         </main>
       </div>
+      </CmsTextProvider>
     );
   }
 
@@ -362,41 +380,21 @@ export default async function GamesHubPage({
     ],
   };
 
-  const whyItems = [0, 1, 2, 3].map((i) => ({
-    h: t(`whyItems.${i}.h`),
-    p: t(`whyItems.${i}.p`),
-  }));
 
   // V2 unified palette - same card treatment for all 4, only icons differentiated.
   // No more rainbow. Warm cream bg + accent top-bar + warm-toned icon backgrounds.
   const whyMeta = [
-    {
-      Icon: Gamepad2,
-      iconBg: "bg-[#B83C4D]",     // accent
-      stat: isHe ? "10+ משחקים" : "10+ games",
-    },
-    {
-      Icon: HeartHandshake,
-      iconBg: "bg-[#8B2638]",     // accent-deep
-      stat: isHe ? "מאות זוגות" : "Hundreds of couples",
-    },
-    {
-      Icon: Sparkles,
-      iconBg: "bg-[#4A1721]",     // wine
-      stat: isHe ? "ללא התקנה" : "No install",
-    },
-    {
-      Icon: Shield,
-      iconBg: "bg-[#3D1F3D]",     // purple
-      stat: isHe ? "פרטי ומאובטח" : "Private & secure",
-    },
+    { Icon: Gamepad2,      iconBg: "bg-[#B83C4D]", stat: t("statGames") },
+    { Icon: HeartHandshake, iconBg: "bg-[#8B2638]", stat: t("statCouples") },
+    { Icon: Sparkles,       iconBg: "bg-[#4A1721]", stat: t("statNoInstall") },
+    { Icon: Shield,         iconBg: "bg-[#3D1F3D]", stat: t("statPrivate") },
   ];
 
   const trust: { icon: "sparkles" | "heart" | "zap" | "infinity"; label: string }[] = [
-    { icon: "sparkles", label: isHe ? "התנסות"          : "Try it"          },
-    { icon: "heart",    label: isHe ? "לשני בני הזוג"   : "Built for couples" },
-    { icon: "zap",      label: isHe ? "ללא התקנה"       : "No install"        },
-    { icon: "infinity", label: isHe ? "זוגות מכל העולם" : "Couples worldwide" },
+    { icon: "sparkles", label: t("trustTry") },
+    { icon: "heart",    label: t("trustForCouples") },
+    { icon: "zap",      label: t("statNoInstall") },
+    { icon: "infinity", label: t("trustWorldwide") },
   ];
 
   // V2 wine palette - three subtle warm gradients for tile hover glows
@@ -407,70 +405,17 @@ export default async function GamesHubPage({
   ];
 
   // Editorial benefits - light cream spread, 3 focused emotion words.
-  // Roman numerals + serif italic. Was 5; trimmed to תשוקה / חברות / כיף.
-  const benefits = [
-    {
-      numeral: "I",
-      title: isHe ? "תשוקה" : "Passion",
-      body: isHe
-        ? "השאלות הנכונות מחזירות את ההתרגשות הראשונית. בלי לדבר על זה. בלי תרגילים."
-        : "The right questions bring back that early thrill. Without talking about it. Without 'exercises.'",
-    },
-    {
-      numeral: "II",
-      title: isHe ? "חברות" : "Friendship",
-      body: isHe
-        ? "תגלו על בני הזוג שלכם דברים שלא ידעתם - ועל החברים, דברים שלא חשבתם לשאול."
-        : "Discover things about your partner - and your friends - you'd never have thought to ask.",
-    },
-    {
-      numeral: "III",
-      title: isHe ? "כיף" : "Fun",
-      body: isHe
-        ? "הנאה אמיתית, בלי תירוצים. ערב שמתחיל בקליק והופך למשחק שלא רוצים לסיים."
-        : "Real enjoyment, no excuses. An evening that starts with a click and turns into a game you don't want to end.",
-    },
-  ];
+  // Roman numerals (static, non-translatable) + serif italic. CMS keys
+  // drive title/body so admins can edit per item; numerals stay inline.
+  const benefitNumerals = ["I", "II", "III"];
 
-  // Personas - magazine chapters on light. Three couple archetypes; tag = the
-  // *promise* this game-line gives that persona (curiosity / reminder / surprise).
-  const personas = [
-    {
-      num: "01",
-      title: isHe ? "הזוגות החדשים" : "The new couples",
-      tag: isHe ? "סקרנות" : "Curiosity",
-      body: isHe
-        ? "אתם רוצים לדעת הכל - אבל \"מה הכי הפחיד אותך כילד?\" לא נשאלת בקפה השני. אנחנו שואלים את זה בשבילכם, באופן שצוחק על הרצינות."
-        : "You want to know everything - but \"what scared you most as a kid?\" doesn't fly on date two. We ask it for you - in a way that laughs at the seriousness of it.",
-      quote: isHe
-        ? "להכיר מישהו לעומק לא דורש שנים. רק את השאלה הנכונה."
-        : "Knowing someone deeply doesn't take years. Just the right question.",
-    },
-    {
-      num: "02",
-      title: isHe ? "הזוגות באמצע" : "Couples in the middle",
-      tag: isHe ? "תזכורת" : "Reminder",
-      body: isHe
-        ? "אתם לא איבדתם את הזוגיות. רק את הזמן לזכור אותה. מיאושי דוחס בחצי שעה את מה שמסעדה רומנטית עושה בשלוש."
-        : "You haven't lost the relationship. Only the time to remember it. Mioshy compresses into thirty minutes what a romantic dinner does in three hours.",
-      quote: isHe
-        ? "חצי שעה במקום הנכון - זה לא מעט. זה הכל."
-        : "Thirty minutes in the right place - isn't a little. It's everything.",
-    },
-    {
-      num: "03",
-      title: isHe ? "הזוגות הוותיקים" : "The veterans",
-      tag: isHe ? "הפתעה" : "Surprise",
-      body: isHe
-        ? "אתם מסיימים אחד לשני את המשפטים. עכשיו רק צריך משפטים חדשים להתחיל. אנחנו לא נספר לכם משהו שלא ידעתם - רק נשאל את השאלה שלא חשבתם לשאול."
-        : "You finish each other's sentences. Now you just need new sentences to start. We won't tell you something you didn't know - we'll just ask the question you didn't think to ask.",
-      quote: isHe
-        ? "מי שחושב שהוא יודע הכל - שואל את השאלות הלא נכונות."
-        : "Anyone who thinks they know it all - is asking the wrong questions.",
-    },
-  ];
+  // Personas - magazine chapters on light. Three couple archetypes.
+  // Chapter numerals (01/02/03) stay inline (static); tag/title/body/quote
+  // are CMS-managed via gamesHub.personas.{i}.*.
+  const personaNumerals = ["01", "02", "03"];
 
   return (
+    <CmsTextProvider rows={cmsRows}>
     <div
       className="relative min-h-[100dvh] overflow-hidden text-white"
       dir={isHe ? "rtl" : "ltr"}
@@ -523,10 +468,14 @@ export default async function GamesHubPage({
             className="relative z-20 mx-auto hidden max-w-6xl items-center gap-2 px-4 pt-4 text-[13px] text-white/45 sm:flex"
           >
             <Link href="/" className="transition hover:text-white/75">
-              {t("breadcrumbHome")}
+              <CmsText cmsKey="gamesHub.breadcrumbHome" />
             </Link>
             <span aria-hidden className="text-white/30">/</span>
-            <span className="text-white/65">{t("breadcrumbGames")}</span>
+            <CmsText
+              cmsKey="gamesHub.breadcrumbGames"
+              as="span"
+              className="text-white/65"
+            />
           </nav>
 
           {/* Per Itzik 2026-05-07: secondary CTA "למה מיאושי?" removed
@@ -541,15 +490,11 @@ export default async function GamesHubPage({
             ctaPrimaryHref="#catalogue"
             ctaSecondary={undefined}
             ctaSecondaryHref={undefined}
-            badge={isHe ? "טעימה חיה · Mioshy" : "Live taste · Mioshy"}
+            badge={t("heroBadge")}
             trust={trust}
             gameHref={demoGame ? `/games/${demoGame.slug}` : "#catalogue"}
-            sampleQuestionType={isHe ? "אמת" : "Truth"}
-            sampleQuestion={
-              isHe
-                ? "מה הרגע איתי שלא יוצא לך מהראש - ולמה דווקא הוא?"
-                : "What moment with me can't you stop replaying - and why that one?"
-            }
+            sampleQuestionType={t("sampleQuestionType")}
+            sampleQuestion={t("sampleQuestion")}
             slices={demoSlices}
             wheelConfig={demoWheel}
             gameSettings={demoSettings}
@@ -586,16 +531,18 @@ export default async function GamesHubPage({
                     once you account for letter-spacing). */}
                 <span className="inline-flex items-center gap-2.5 text-[14px] font-semibold uppercase tracking-[0.18em] text-[#170E14] sm:text-[13px]">
                   <span className="h-[7px] w-[7px] rounded-sm bg-[#B83C4D] shadow-[0_0_0_3px_rgba(184,60,77,0.18)]" />
-                  {isHe ? "למה מיאושי" : "Why Mioshy"}
+                  <CmsText cmsKey="gamesHub.whyBadge" />
                 </span>
-                <h2 className="mt-4 font-heading text-3xl font-bold leading-[1.05] tracking-[-0.02em] text-[#170E14] sm:text-4xl lg:text-5xl">
-                  {t("whyTitle")}
-                </h2>
-                <p className="mx-auto mt-4 max-w-xl text-[17px] leading-[1.55] text-[#2A1B25] sm:mt-5 sm:text-[19px] sm:leading-[1.6]">
-                  {isHe
-                    ? "עזרנו למאות זוגות לשפר את הקשר שלהם - בדרך הכי כיפית שיש"
-                    : "We've helped hundreds of couples improve their connection - in the most fun way possible"}
-                </p>
+                <CmsText
+                  cmsKey="gamesHub.whyTitle"
+                  as="h2"
+                  className="mt-4 font-heading text-3xl font-bold leading-[1.05] tracking-[-0.02em] text-[#170E14] sm:text-4xl lg:text-5xl"
+                />
+                <CmsText
+                  cmsKey="gamesHub.whyHook"
+                  as="p"
+                  className="mx-auto mt-4 max-w-xl text-[17px] leading-[1.55] text-[#2A1B25] sm:mt-5 sm:text-[19px] sm:leading-[1.6]"
+                />
               </div>
 
               {/* Unified card design - mobile tightened: padding 20px,
@@ -603,7 +550,7 @@ export default async function GamesHubPage({
                   of vertical space), title 18px, body 16px to keep
                   every card scannable on a single phone scroll. */}
               <div className="mt-8 grid gap-4 sm:mt-14 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4">
-                {whyItems.map((it, i) => {
+                {[0, 1, 2, 3].map((i) => {
                   const { Icon, iconBg, stat } = whyMeta[i]!;
                   return (
                     <div
@@ -627,12 +574,16 @@ export default async function GamesHubPage({
                           {stat}
                         </span>
                       </div>
-                      <h3 className="mt-3 font-heading text-[18px] font-bold leading-snug text-[#170E14] sm:mt-4 sm:text-xl">
-                        {it.h}
-                      </h3>
-                      <p className="mt-1.5 flex-1 text-[18px] leading-[1.55] text-[#4A3A45] sm:mt-2 sm:leading-[1.6]">
-                        {it.p}
-                      </p>
+                      <CmsText
+                        cmsKey={`gamesHub.whyItems.${i}.h`}
+                        as="h3"
+                        className="mt-3 font-heading text-[18px] font-bold leading-snug text-[#170E14] sm:mt-4 sm:text-xl"
+                      />
+                      <CmsText
+                        cmsKey={`gamesHub.whyItems.${i}.p`}
+                        as="p"
+                        className="mt-1.5 flex-1 text-[18px] leading-[1.55] text-[#4A3A45] sm:mt-2 sm:leading-[1.6]"
+                      />
                     </div>
                   );
                 })}
@@ -645,10 +596,13 @@ export default async function GamesHubPage({
               <div className="mx-auto mt-16 max-w-3xl text-center">
                 <span className="inline-flex items-center gap-2.5 text-[12px] font-semibold uppercase tracking-[0.32em] text-[#170E14]">
                   <span className="h-[7px] w-[7px] rounded-sm bg-[#B83C4D] shadow-[0_0_0_3px_rgba(184,60,77,0.18)]" />
-                  {isHe ? "המספרים" : "By the numbers"}
+                  <CmsText cmsKey="gamesHub.byTheNumbers.eyebrow" />
                 </span>
 
-                {/* Main pull-quote - clean line breaks, no awkward wrapping. */}
+                {/* Main pull-quote — text comes from CMS, the live <Counter>
+                    and <em> styling stay as inline JSX. Counter rendered with
+                    suffix="+" in both locales so the digit+plus glyph is the
+                    same in HE and EN. */}
                 <p
                   className="mt-7 text-[30px] leading-[1.35] text-[#170E14] sm:text-[30px] lg:text-[34px]"
                   style={{
@@ -656,63 +610,39 @@ export default async function GamesHubPage({
                     fontWeight: 500,
                   }}
                 >
-                  {isHe ? (
-                    <>
-                      כבר{" "}
-                      <em
-                        className="text-[#B83C4D]"
-                        style={{ fontStyle: "italic", fontWeight: 700 }}
-                      >
-                        +<Counter to={500} /> זוגות מרחבי העולם
-                      </em>
-                      <br />
-                      שיחקו ב
-                      <em
-                        className="text-[#B83C4D]"
-                        style={{ fontStyle: "italic", fontWeight: 700 }}
-                      >
-                        משחקים המקוריים של מיאושי
-                      </em>
-                      .
-                    </>
-                  ) : (
-                    <>
-                      Already{" "}
-                      <em
-                        className="text-[#B83C4D]"
-                        style={{ fontStyle: "italic", fontWeight: 700 }}
-                      >
-                        <Counter to={500} suffix="+" /> couples worldwide
-                      </em>
-                      <br />
-                      have played{" "}
-                      <em
-                        className="text-[#B83C4D]"
-                        style={{ fontStyle: "italic", fontWeight: 700 }}
-                      >
-                        Mioshy&apos;s original games
-                      </em>
-                      .
-                    </>
-                  )}
+                  <CmsText cmsKey="gamesHub.byTheNumbers.prefix" />
+                  <em
+                    className="text-[#B83C4D]"
+                    style={{ fontStyle: "italic", fontWeight: 700 }}
+                  >
+                    <Counter to={500} suffix="+" />
+                    <CmsText cmsKey="gamesHub.byTheNumbers.middle" />
+                  </em>
+                  <br />
+                  <CmsText cmsKey="gamesHub.byTheNumbers.connector" />
+                  <em
+                    className="text-[#B83C4D]"
+                    style={{ fontStyle: "italic", fontWeight: 700 }}
+                  >
+                    <CmsText cmsKey="gamesHub.byTheNumbers.suffix" />
+                  </em>
+                  .
                 </p>
 
                 {/* Trial line - its own line, black italic, smaller weight.
                     Honest, qualified "free" framing: explicit no-credit-card
                     promise so the 6-spin paywall later doesn't feel like a
                     trap. */}
-                <p
+                <CmsText
+                  cmsKey="gamesHub.byTheNumbers.trial"
+                  as="p"
                   className="mt-4 text-[22px] leading-[1.4] text-[#170E14] sm:text-[24px] lg:text-[28px]"
                   style={{
                     fontFamily: "'Frank Ruhl Libre', serif",
                     fontStyle: "italic",
                     fontWeight: 500,
                   }}
-                >
-                  {isHe
-                    ? "התחילו חינם - בלי כרטיס אשראי."
-                    : "Start free - no credit card required."}
-                </p>
+                />
 
                 {/* Italic kicker line, flanked by decorative hairlines */}
                 <div className="mt-10 flex items-center justify-center gap-4">
@@ -720,18 +650,16 @@ export default async function GamesHubPage({
                     aria-hidden
                     className="h-px w-16 bg-[#B83C4D]/40"
                   />
-                  <p
+                  <CmsText
+                    cmsKey="gamesHub.byTheNumbers.kicker"
+                    as="p"
                     className="text-[14px] uppercase tracking-[0.22em] text-[#8B2638]"
                     style={{
                       fontFamily: "'Frank Ruhl Libre', serif",
                       fontStyle: "italic",
                       fontWeight: 500,
                     }}
-                  >
-                    {isHe
-                      ? "בקליק אחד מתחילים"
-                      : "one click - and you're in"}
-                  </p>
+                  />
                   <span
                     aria-hidden
                     className="h-px w-16 bg-[#B83C4D]/40"
@@ -751,7 +679,7 @@ export default async function GamesHubPage({
                       className="absolute inset-0 bg-[linear-gradient(110deg,#B83C4D_0%,#8B2638_55%,#3D1F3D_100%)]"
                     />
                     <span className="relative z-10 inline-flex items-center">
-                      {isHe ? "התחילו לשחק עכשיו" : "Start playing now"}
+                      <CmsText cmsKey="gamesHub.byTheNumbers.ctaPlayNow" />
                       <ArrowRight
                         className={`ms-2 h-5 w-5 transition group-hover:translate-x-1 ${
                           isHe ? "rotate-180 group-hover:-translate-x-1" : ""
@@ -861,16 +789,18 @@ export default async function GamesHubPage({
               <div className="flex flex-col items-start gap-4">
                 <span className="inline-flex items-center gap-2.5 text-[13px] font-semibold uppercase tracking-[0.2em] text-rose-200">
                   <span className="h-[7px] w-[7px] rounded-sm bg-[#B83C4D] shadow-[0_0_0_3px_rgba(184,60,77,0.28)]" />
-                  {isHe ? "הקטלוג" : "Catalogue"}
+                  <CmsText cmsKey="gamesHub.cataloguePill" />
                 </span>
-                <h2 className="font-heading text-3xl font-bold leading-[1.05] tracking-[-0.02em] text-white sm:text-4xl lg:text-5xl">
-                  {t("catalogueTitle")}
-                </h2>
-                <p className="max-w-2xl text-[18px] leading-[1.6] text-white/70">
-                  {isHe
-                    ? "בחרו משחק, פתחו על הטלפון, ומתחילים. בלי הורדות, בלי הכנות."
-                    : "Pick one, open it on your phone, and start. No downloads, no prep."}
-                </p>
+                <CmsText
+                  cmsKey="gamesHub.catalogueTitle"
+                  as="h2"
+                  className="font-heading text-3xl font-bold leading-[1.05] tracking-[-0.02em] text-white sm:text-4xl lg:text-5xl"
+                />
+                <CmsText
+                  cmsKey="gamesHub.catalogueHint"
+                  as="p"
+                  className="max-w-2xl text-[18px] leading-[1.6] text-white/70"
+                />
               </div>
 
               {games.length === 0 && (
@@ -976,15 +906,17 @@ export default async function GamesHubPage({
                     <div className="relative aspect-[16/10] w-full overflow-hidden bg-gradient-to-br from-[#B83C4D]/30 via-[#8B2638]/25 to-[#3D1F3D]/30">
                       <Image
                         src="/images/snakes-couples.webp"
-                        alt={isHe ? "נחשים וסולמות" : "Snakes & Ladders"}
+                        alt={t("snakesName")}
                         fill
                         sizes="(max-width: 640px) 100vw, 50vw"
                         className="object-cover transition duration-500 group-hover:scale-[1.02]"
                       />
                       {/* New badge */}
-                      <span className="absolute end-3 top-3 rounded-full bg-gradient-to-r from-[#B83C4D] to-[#8B2638] px-3 py-1 text-xs font-bold text-white shadow-lg">
-                        {isHe ? "חדש 🔥" : "New 🔥"}
-                      </span>
+                      <CmsText
+                        cmsKey="gamesHub.newBadge"
+                        as="span"
+                        className="absolute end-3 top-3 rounded-full bg-gradient-to-r from-[#B83C4D] to-[#8B2638] px-3 py-1 text-xs font-bold text-white shadow-lg"
+                      />
                       <div
                         aria-hidden
                         className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent"
@@ -995,21 +927,21 @@ export default async function GamesHubPage({
                       {/* Multi-player badge - on-dark variant */}
                       <span className="mb-3 inline-flex items-center gap-1.5 self-start rounded-full border border-rose-300/30 bg-rose-500/15 px-2.5 py-0.5 text-xs font-semibold text-rose-100">
                         <Users className="h-3 w-3" />
-                        {isHe ? "עד 8 שחקנים" : "Up to 8 players"}
+                        <CmsText cmsKey="gamesHub.snakesPlayers" />
                       </span>
-                      <h3
+                      <CmsText
+                        cmsKey="gamesHub.snakesName"
+                        as="h3"
                         className="text-[26px] font-bold leading-[1.15] tracking-[-0.01em] text-white"
                         style={{ fontFamily: "var(--font-frank-ruhl), 'Frank Ruhl Libre', serif" }}
-                      >
-                        {isHe ? "נחשים וסולמות" : "Snakes & Ladders"}
-                      </h3>
-                      <p className="mt-2 line-clamp-3 text-[20px] leading-[1.5] text-white/70 transition-[max-height,color] duration-500 ease-in-out group-hover:line-clamp-none sm:text-[18px]">
-                        {isHe
-                          ? "לוח קלאסי עם שאלות ואתגרים זוגיים - שחקו על מכשיר אחד או על שני מכשירים שונים"
-                          : "Classic board game with couples questions & challenges - play on one device or remotely"}
-                      </p>
+                      />
+                      <CmsText
+                        cmsKey="gamesHub.snakesDesc"
+                        as="p"
+                        className="mt-2 line-clamp-3 text-[20px] leading-[1.5] text-white/70 transition-[max-height,color] duration-500 ease-in-out group-hover:line-clamp-none sm:text-[18px]"
+                      />
                       <span className="mt-auto inline-flex items-center gap-2 pt-5 text-[18px] font-semibold text-rose-200 transition group-hover:text-white">
-                        {isHe ? "שחקו עכשיו" : "Play now"}
+                        <CmsText cmsKey="gamesHub.playNow" />
                         <ArrowRight
                           className={`h-5 w-5 transition group-hover:translate-x-1 ${
                             isHe ? "rotate-180 group-hover:-translate-x-1" : ""
@@ -1145,7 +1077,7 @@ export default async function GamesHubPage({
                 <div className="mx-auto max-w-2xl text-center">
                   <span className="inline-flex items-center gap-2.5 text-[12px] font-semibold uppercase tracking-[0.32em] text-[#170E14]">
                     <span className="h-[7px] w-[7px] rounded-sm bg-[#B83C4D] shadow-[0_0_0_3px_rgba(184,60,77,0.18)]" />
-                    {isHe ? "למי" : "For whom"}
+                    <CmsText cmsKey="gamesHub.personasHeader.eyebrow" />
                   </span>
                   <h2
                     className="mt-7 text-[40px] leading-[1.05] tracking-[-0.02em] text-[#170E14] sm:text-5xl lg:text-[58px]"
@@ -1154,41 +1086,25 @@ export default async function GamesHubPage({
                       fontWeight: 600,
                     }}
                   >
-                    {isHe ? (
-                      <>
-                        אין זוגיות משעממת.
-                        <br className="hidden sm:block" />
-                        <span
-                          className="text-[#B83C4D]"
-                          style={{ fontStyle: "italic", fontWeight: 500 }}
-                        >
-                          רק שאלות שלא נשאלו.
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        There are no boring couples.
-                        <br className="hidden sm:block" />
-                        <span
-                          className="text-[#B83C4D]"
-                          style={{ fontStyle: "italic", fontWeight: 500 }}
-                        >
-                          Only questions never asked.
-                        </span>
-                      </>
-                    )}
+                    <CmsText cmsKey="gamesHub.personasHeader.titleLine1" />
+                    <br className="hidden sm:block" />
+                    <CmsText
+                      cmsKey="gamesHub.personasHeader.titleLine2"
+                      className="text-[#B83C4D]"
+                      style={{ fontStyle: "italic", fontWeight: 500 }}
+                    />
                   </h2>
-                  <p className="mx-auto mt-6 max-w-xl text-[19px] leading-[1.65] text-[#4A3A45]">
-                    {isHe
-                      ? "בכל שלב בזוגיות מחכות שאלות. אנחנו רק יודעים מתי לשאול אותן."
-                      : "Every stage of a relationship has its waiting questions. We just know when to ask them."}
-                  </p>
+                  <CmsText
+                    cmsKey="gamesHub.personasHeader.lede"
+                    as="p"
+                    className="mx-auto mt-6 max-w-xl text-[19px] leading-[1.65] text-[#4A3A45]"
+                  />
                 </div>
               </RevealOnScroll>
 
               {/* 3 magazine chapters */}
               <div className="mt-[80px] grid gap-8 lg:grid-cols-3 lg:gap-7">
-                {personas.map((p, i) => (
+                {personaNumerals.map((num, i) => (
                   <RevealOnScroll
                     key={i}
                     variant="fade-up"
@@ -1210,54 +1126,54 @@ export default async function GamesHubPage({
                             fontWeight: 600,
                           }}
                         >
-                          {p.num}
+                          {num}
                         </span>
                         <span className="h-px flex-1 bg-[#EAE0E3] transition-colors duration-500 group-hover:bg-[#B83C4D]/40" />
                       </div>
 
                       {/* Italic tag (small, accent) */}
-                      <p
+                      <CmsText
+                        cmsKey={`gamesHub.personas.${i}.tag`}
+                        as="p"
                         className="relative mt-6 text-[14px] uppercase tracking-[0.22em] text-[#B83C4D]"
                         style={{
                           fontFamily: "'Frank Ruhl Libre', serif",
                           fontStyle: "italic",
                           fontWeight: 500,
                         }}
-                      >
-                        {p.tag}
-                      </p>
+                      />
 
                       {/* Persona title */}
-                      <h3
+                      <CmsText
+                        cmsKey={`gamesHub.personas.${i}.title`}
+                        as="h3"
                         className="relative mt-3 text-[30px] leading-[1.1] tracking-[-0.01em] text-[#170E14] sm:text-[34px]"
                         style={{
                           fontFamily: "'Frank Ruhl Libre', serif",
                           fontWeight: 600,
                         }}
-                      >
-                        {p.title}
-                      </h3>
+                      />
 
                       {/* Body */}
-                      <p className="relative mt-5 text-[18px] leading-[1.7] text-[#4A3A45]">
-                        {p.body}
-                      </p>
+                      <CmsText
+                        cmsKey={`gamesHub.personas.${i}.body`}
+                        as="p"
+                        className="relative mt-5 text-[18px] leading-[1.7] text-[#4A3A45]"
+                      />
 
                       {/* Italic quote - bottom */}
                       <div className="relative mt-auto pt-8">
                         <div className="mb-4 h-px w-12 bg-[#B83C4D]/30" />
-                        <p
+                        <CmsText
+                          cmsKey={`gamesHub.personas.${i}.quote`}
+                          as="p"
                           className="text-[18px] leading-[1.5] text-[#170E14]/80"
                           style={{
                             fontFamily: "'Frank Ruhl Libre', serif",
                             fontStyle: "italic",
                             fontWeight: 500,
                           }}
-                        >
-                          {isHe ? "״" : "“"}
-                          {p.quote}
-                          {isHe ? "״" : "”"}
-                        </p>
+                        />
                       </div>
                     </article>
                   </RevealOnScroll>
@@ -1280,7 +1196,7 @@ export default async function GamesHubPage({
                 <div className="text-start">
                   <span className="inline-flex items-center gap-2.5 text-[12px] font-semibold uppercase tracking-[0.32em] text-[#170E14]">
                     <span className="h-[7px] w-[7px] rounded-sm bg-[#B83C4D] shadow-[0_0_0_3px_rgba(184,60,77,0.18)]" />
-                    {isHe ? "למה זה עובד" : "Why it works"}
+                    <CmsText cmsKey="gamesHub.whyItWorks.eyebrow" />
                   </span>
                   <h2
                     className="mt-7 text-[40px] leading-[1.05] tracking-[-0.02em] text-[#170E14] sm:text-5xl lg:text-[60px]"
@@ -1289,39 +1205,25 @@ export default async function GamesHubPage({
                       fontWeight: 600,
                     }}
                   >
-                    {isHe ? (
-                      <>
-                        שאלה אחת.{" "}
-                        <span
-                          className="text-[#B83C4D]"
-                          style={{ fontStyle: "italic", fontWeight: 500 }}
-                        >
-                          ערב שלם אחר.
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        One question.{" "}
-                        <span
-                          className="text-[#B83C4D]"
-                          style={{ fontStyle: "italic", fontWeight: 500 }}
-                        >
-                          An entirely different evening.
-                        </span>
-                      </>
-                    )}
+                    <CmsText cmsKey="gamesHub.whyItWorks.titleLine1" />
+                    {" "}
+                    <CmsText
+                      cmsKey="gamesHub.whyItWorks.titleLine2"
+                      className="text-[#B83C4D]"
+                      style={{ fontStyle: "italic", fontWeight: 500 }}
+                    />
                   </h2>
-                  <p className="mt-6 max-w-2xl text-[19px] leading-[1.65] text-[#4A3A45]">
-                    {isHe
-                      ? "לא טיפול. לא קורס. לא 'כלים לזוגיות'. משחק. אבל אחד שעובד."
-                      : "Not therapy. Not a course. Not 'tools for relationships.' A game - but one that works."}
-                  </p>
+                  <CmsText
+                    cmsKey="gamesHub.whyItWorks.lede"
+                    as="p"
+                    className="mt-6 max-w-2xl text-[19px] leading-[1.65] text-[#4A3A45]"
+                  />
                 </div>
               </RevealOnScroll>
 
               {/* Editorial benefit rows - 2-column structure */}
               <ul className="mt-[60px] space-y-2">
-                {benefits.map((b, i) => (
+                {benefitNumerals.map((numeral, i) => (
                   <RevealOnScroll
                     key={i}
                     variant="fade-up"
@@ -1338,24 +1240,26 @@ export default async function GamesHubPage({
                             fontWeight: 500,
                           }}
                         >
-                          {b.numeral}
+                          {numeral}
                         </span>
-                        <h3
+                        <CmsText
+                          cmsKey={`gamesHub.benefits.${i}.title`}
+                          as="h3"
                           className="text-[36px] leading-[1] tracking-[-0.02em] text-[#170E14] sm:text-[40px]"
                           style={{
                             fontFamily: "'Frank Ruhl Libre', serif",
                             fontStyle: "italic",
                             fontWeight: 500,
                           }}
-                        >
-                          {b.title}
-                        </h3>
+                        />
                       </div>
 
                       {/* Body */}
-                      <p className="text-[18px] leading-[1.65] text-[#4A3A45] lg:-mt-[5px]">
-                        {b.body}
-                      </p>
+                      <CmsText
+                        cmsKey={`gamesHub.benefits.${i}.body`}
+                        as="p"
+                        className="text-[18px] leading-[1.65] text-[#4A3A45] lg:-mt-[5px]"
+                      />
                     </li>
                   </RevealOnScroll>
                 ))}
@@ -1368,17 +1272,15 @@ export default async function GamesHubPage({
 
               {/* Closing italic - kept right-aligned to match the new axis */}
               <RevealOnScroll variant="fade" delay={0.4}>
-                <p
+                <CmsText
+                  cmsKey="gamesHub.whyItWorks.closing"
+                  as="p"
                   className="mt-10 max-w-xl text-[18px] text-[#7A6A75] lg:mt-12"
                   style={{
                     fontFamily: "'Frank Ruhl Libre', serif",
                     fontStyle: "italic",
                   }}
-                >
-                  {isHe
-                    ? "- לפעמים שינוי לא דורש מהפכה. רק התחלה."
-                    : "- sometimes change doesn't need a revolution. Just a start."}
-                </p>
+                />
               </RevealOnScroll>
             </div>
           </section>
@@ -1387,5 +1289,6 @@ export default async function GamesHubPage({
 
       </main>
     </div>
+    </CmsTextProvider>
   );
 }

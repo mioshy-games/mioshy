@@ -35,6 +35,8 @@ import {
   type PillarStateOutput,
 } from "@/lib/dashboard/pillar-state";
 import { StateBadge } from "@/components/ui/StateBadge";
+import { CmsText } from "@/components/cms/CmsText";
+import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
 
 export const dynamic = "force-dynamic";
 
@@ -43,12 +45,14 @@ export async function generateMetadata({
 }: {
   params: { locale: string };
 }): Promise<Metadata> {
-  const isHe = params.locale === "he";
+  const t = await getCmsTranslations({
+    locale: params.locale === "he" ? "he" : "en",
+    namespace: "myHub",
+    page: "my",
+  });
   return {
-    title: `Mioshy - ${isHe ? "מיאושי שלי" : "My Mioshy"}`,
-    description: isHe
-      ? "שלושת עולמות מיאושי במקום אחד - משחקים, ליווי ולמבוגרים בלבד."
-      : "The three worlds of Mioshy in one place - games, journey, adults only.",
+    title: `Mioshy - ${t("metaTitle")}`,
+    description: t("metaDescription"),
   };
 }
 
@@ -61,6 +65,15 @@ export default async function MyHubPage({
 }) {
   const { locale } = params;
   const isHe = locale === "he";
+
+  // CMS-managed copy resolved server-side. Used inline for raw-string
+  // consumers like the entitlement push() arrays below — JSX consumers
+  // use <CmsText> directly.
+  const t = await getCmsTranslations({
+    locale: isHe ? "he" : "en",
+    namespace: "myHub",
+    page: "my",
+  });
 
   // Post-purchase shortcut - when the billing-success page sends users back
   // to /my?purchased=<game_id> after an Adults purchase, we drop them
@@ -220,22 +233,22 @@ export default async function MyHubPage({
             <div className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/5 px-3 py-1 text-xs backdrop-blur">
               <Sparkles className="h-3.5 w-3.5 text-fuchsia-200" />
               <span className="text-white/85">
-                {isHe ? "החשבון שלך" : "Your account"}
+                <CmsText cmsKey="myHub.accountLabel" />
               </span>
             </div>
             <h1 className="mt-3 flex items-center gap-3 text-4xl font-bold tracking-tight sm:text-5xl">
               <Library className="h-8 w-8 text-fuchsia-300 sm:h-10 sm:w-10" />
-              {isHe ? "מיאושי שלי" : "My Mioshy"}
+              <CmsText cmsKey="myHub.pageHeading" />
             </h1>
             {/* Welcome line — bumped from text-sm (default) to base 18px
                 per Itzik 2026-05-06. The free-tier user reads this as their
                 first sentence after signup, so it has to feel like a
                 proper welcome, not a status caption. */}
-            <p className="mt-3 max-w-xl text-[18px] leading-[1.55] text-white/80">
-              {isHe
-                ? "שלושה שירותים, כל אחד עומד בפני עצמו. בחרו את הוויב שלכם הערב — ערב מצחיק עם משחק, סקס שכתבו מומחים, או ליווי שבועי שמכוון את הזוגיות שלכם."
-                : "Three services, each one standalone. Pick tonight's vibe — a fun couples-game evening, sex written by experts, or weekly coaching that tunes your relationship."}
-            </p>
+            <CmsText
+              cmsKey="myHub.heroLede"
+              as="p"
+              className="mt-3 max-w-xl text-[18px] leading-[1.55] text-white/80"
+            />
           </div>
 
           {/* Account + invoices intentionally moved to a quiet quick-links
@@ -270,18 +283,18 @@ export default async function MyHubPage({
               <div>
                 <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-white/85">
                   <span className="h-1.5 w-1.5 rounded-full bg-white/70" />
-                  {isHe ? "סטטוס: חינם" : "Status: Free"}
+                  <CmsText cmsKey="myHub.statusFree" />
                 </div>
-                <p className="mt-2 text-[20px] font-semibold text-white sm:text-[19px]">
-                  {isHe
-                    ? "החשבון פעיל. עדיין בלי מנוי."
-                    : "Your account is active. No subscription yet."}
-                </p>
-                <p className="mt-1 text-[18px] leading-[1.55] text-white/75 sm:text-[16px]">
-                  {isHe
-                    ? "אפשר להתחיל בקטן עם משחק שבועי, להוסיף סקס שכתבו מומחים, או ללכת על ליווי-הכל-כלול."
-                    : "Start small with a weekly game, add expert-written sex, or go all-in with the coaching plan."}
-                </p>
+                <CmsText
+                  cmsKey="myHub.statusFreeTitle"
+                  as="p"
+                  className="mt-2 text-[20px] font-semibold text-white sm:text-[19px]"
+                />
+                <CmsText
+                  cmsKey="myHub.statusFreeBody"
+                  as="p"
+                  className="mt-1 text-[18px] leading-[1.55] text-white/75 sm:text-[16px]"
+                />
               </div>
               {/* CTA bumped from h-10/text-sm to h-12/text-base + bolder
                   shadow per Itzik 2026-05-06 — the free-tier user needs
@@ -290,7 +303,7 @@ export default async function MyHubPage({
                 href="/pricing"
                 className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-white px-6 text-[16px] font-semibold text-fuchsia-700 shadow-lg hover:bg-white/95 hover:shadow-xl transition"
               >
-                {isHe ? "לראות מחירים" : "See pricing"}
+                <CmsText cmsKey="myHub.seePricing" />
               </Link>
             </div>
           ) : entitlements.pillarCount === 3 ? (
@@ -298,15 +311,15 @@ export default async function MyHubPage({
               <div>
                 <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/40 bg-emerald-500/20 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-emerald-100">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
-                  {isHe ? "סטטוס: הכל פתוח" : "Status: Full access"}
+                  <CmsText cmsKey="myHub.statusAllAccess" />
                 </div>
-                <p className="mt-2 text-[18px] font-semibold text-white sm:text-[16px]">
-                  {isHe
-                    ? "המנוי שלך מקיף את כל מיאושי - משחקים, ליווי, ולמבוגרים בלבד."
-                    : "Your plan covers all of Mioshy - games, journey, and adults only."}
-                </p>
+                <CmsText
+                  cmsKey="myHub.statusAllAccessSubFull"
+                  as="p"
+                  className="mt-2 text-[18px] font-semibold text-white sm:text-[16px]"
+                />
                 <p className="mt-1 text-[16px] text-emerald-100/85 sm:text-sm">
-                  {isHe ? "תהנו." : "Enjoy."}
+                  <CmsText cmsKey="myHub.statusAllAccessSub" />
                 </p>
               </div>
             </div>
@@ -315,26 +328,27 @@ export default async function MyHubPage({
               <div>
                 <div className="inline-flex items-center gap-2 rounded-full border border-fuchsia-300/40 bg-fuchsia-500/25 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-fuchsia-100">
                   <span className="h-1.5 w-1.5 rounded-full bg-fuchsia-300" />
-                  {isHe ? "סטטוס: מנוי פעיל" : "Status: Active member"}
+                  <CmsText cmsKey="myHub.statusActiveMember" />
                 </div>
                 <p className="mt-2 text-[18px] font-semibold text-white sm:text-[16px]">
-                  {isHe
-                    ? `יש לכם גישה ל-${entitlements.pillarCount} מתוך 3 השירותים שלנו.`
-                    : `You have access to ${entitlements.pillarCount} of our 3 services.`}
+                  {t("activeMemberPillarsTemplate").replace(
+                    "{count}",
+                    String(entitlements.pillarCount),
+                  )}
                 </p>
                 <p className="mt-1 text-[16px] text-fuchsia-100/80 sm:text-sm">
                   {(() => {
                     const owned: string[] = [];
                     const missing: string[] = [];
-                    if (entitlements.games) owned.push(isHe ? "משחקים" : "Games");
-                    else missing.push(isHe ? "משחקים" : "Games");
-                    if (entitlements.journey) owned.push(isHe ? "ליווי" : "Journey");
-                    else missing.push(isHe ? "ליווי" : "Journey");
-                    if (entitlements.adults) owned.push(isHe ? "למבוגרים בלבד" : "Adults only");
-                    else missing.push(isHe ? "למבוגרים בלבד" : "Adults only");
-                    return isHe
-                      ? `פעיל: ${owned.join(", ")}. אפשר להוסיף: ${missing.join(", ")}.`
-                      : `Active: ${owned.join(", ")}. Add: ${missing.join(", ")}.`;
+                    if (entitlements.games) owned.push(t("entitlementGames"));
+                    else missing.push(t("entitlementGames"));
+                    if (entitlements.journey) owned.push(t("entitlementJourney"));
+                    else missing.push(t("entitlementJourney"));
+                    if (entitlements.adults) owned.push(t("entitlementAdults"));
+                    else missing.push(t("entitlementAdults"));
+                    return t("activeMemberDetailsTemplate")
+                      .replace("{owned}", owned.join(", "))
+                      .replace("{missing}", missing.join(", "));
                   })()}
                 </p>
               </div>
@@ -342,7 +356,7 @@ export default async function MyHubPage({
                 href="/pricing"
                 className="inline-flex min-h-[40px] items-center justify-center rounded-full border border-white/20 bg-white/10 px-5 text-sm font-semibold text-white backdrop-blur hover:bg-white/20"
               >
-                {isHe ? "לשדרג מסלול" : "Upgrade plan"}
+                <CmsText cmsKey="myHub.upgradePlan" />
               </Link>
             </div>
           )}
@@ -364,26 +378,17 @@ export default async function MyHubPage({
               isHe={isHe}
               pillar="games"
               pillarState={gamesPillar}
-              titleHe="משחקי זוגות אונליין"
-              titleEn="Online couples games"
-              description={
-                isHe
-                  ? "כנות ואתגר, גלגל הזוגיות, סולמות ונחשים."
-                  : "Truth or dare, wheel, snakes & ladders."
-              }
+              title={t("pillarGamesTitle")}
+              description={t("cardGamesLede")}
+              notificationAriaTemplate={t("notificationAria")}
             />
           ) : (
             <PillarMarketing
               isHe={isHe}
               pillar="games"
               pillarState={gamesPillar}
-              titleHe="משחקי זוגות אונליין"
-              titleEn="Online couples games"
-              tagline={
-                isHe
-                  ? "ערב שלם של חיבור — שאלות שמובילות לשיחות אמיתיות, אתגרים שמחזירים תשוקה, וצחוק שאתם לא יודעים שהזוגיות שלכם זקוקה לו. מנוי שבועי אחד פותח את כל המשחקים."
-                  : "A whole evening of connection — questions that spark real conversation, challenges that bring desire back, and laughter your relationship didn't know it needed. One weekly subscription opens every game."
-              }
+              title={t("pillarGamesTitle")}
+              tagline={t("cardGamesBuyLede")}
             />
           )}
 
@@ -393,31 +398,20 @@ export default async function MyHubPage({
               isHe={isHe}
               pillar="journey"
               pillarState={journeyPillar}
-              titleHe="ליווי עם מיאושי"
-              titleEn="Journey with Mioshy"
-              subtitleHe="תוכנית עבודה אישית"
-              subtitleEn="Personal work program"
-              description={
-                isHe
-                  ? "הקליניקה המכווננת שלכם - תוכן שמסודר לפי מה שחשוב לכם, כל אחד עם הסדר שלו."
-                  : "Your tuned clinic - content ordered by what matters to you, each partner sees their own ranking."
-              }
+              title={t("pillarJourneyTitle")}
+              subtitle={t("pillarJourneySubtitle")}
+              description={t("cardJourneyOwnerLede")}
               notificationCount={journeyNotificationCount}
+              notificationAriaTemplate={t("notificationAria")}
             />
           ) : (
             <PillarMarketing
               isHe={isHe}
               pillar="journey"
               pillarState={journeyPillar}
-              titleHe="ליווי עם מיאושי"
-              titleEn="Journey with Mioshy"
-              subtitleHe="תוכנית עבודה אישית"
-              subtitleEn="Personal work program"
-              tagline={
-                isHe
-                  ? "מומחה ממיאושי שלומד אתכם בעומק, בונה לכם תוכנית אישית, וזמין לכם בצ'אט. שני בני הזוג עוטפים את הקשר בעבודה אמיתית — הכל כלול במנוי השבועי."
-                  : "A Mioshy expert who learns you in depth, builds you a personal plan, and is there in chat. Both of you wrap your relationship in real work — everything included in the weekly subscription."
-              }
+              title={t("pillarJourneyTitle")}
+              subtitle={t("pillarJourneySubtitle")}
+              tagline={t("cardJourneyBuyLede")}
             />
           )}
 
@@ -427,28 +421,21 @@ export default async function MyHubPage({
               isHe={isHe}
               pillar="adults"
               pillarState={adultsPillar}
-              titleHe="למבוגרים בלבד"
-              titleEn="Adults Only"
-              description={
-                isHe
-                  ? `${ownedCount} ${
-                      ownedCount === 1 ? "משחק" : "משחקים"
-                    } פתוחים לשניכם.`
-                  : `${ownedCount} game${ownedCount === 1 ? "" : "s"} unlocked for the two of you.`
-              }
+              title={t("pillarAdultsEntitledTitle")}
+              description={`${ownedCount} ${
+                ownedCount === 1
+                  ? t("adultsOwnedSingular")
+                  : t("adultsOwnedPlural")
+              }`}
+              notificationAriaTemplate={t("notificationAria")}
             />
           ) : (
             <PillarMarketing
               isHe={isHe}
               pillar="adults"
               pillarState={adultsPillar}
-              titleHe="הסקס של מיאושי"
-              titleEn="Mioshy's Sex"
-              tagline={
-                isHe
-                  ? "משחקים שכתבו הבכירים בעולם בסקסולוגיה ובטיפול זוגי. חוויה שלמה לחדר המיטות שלכם — לא טיפים, לא רשימות. רכישה אחת פר משחק, פתוח לשניכם לתמיד."
-                  : "Games written by the world's leading sexologists and couples therapists. A whole experience for your bedroom — not tips, not lists. One purchase per game, open to both of you forever."
-              }
+              title={t("pillarAdultsMarketingTitle")}
+              tagline={t("cardAdultsBuyLede")}
             />
           )}
         </section>
@@ -463,13 +450,13 @@ export default async function MyHubPage({
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="min-w-0 flex-1">
                 <h3 className="text-sm font-semibold text-white">
-                  {isHe ? "הזמינו את בן/בת הזוג" : "Invite your partner"}
+                  <CmsText cmsKey="myHub.invitePartner" />
                 </h3>
-                <p className="mt-1 text-xs text-white/60">
-                  {isHe
-                    ? "שלחו הזמנה במייל. ברגע שיצטרפו, הזמן הזה ייעלם מהדשבורד."
-                    : "Send an email invitation. Once they join, this section disappears."}
-                </p>
+                <CmsText
+                  cmsKey="myHub.invitePartnerLede"
+                  as="p"
+                  className="mt-1 text-xs text-white/60"
+                />
               </div>
               <div className="w-full sm:w-auto">
                 <InvitePartnerByEmail
@@ -486,11 +473,11 @@ export default async function MyHubPage({
                 lives in one place. */}
             {ctx.pair_code ? (
               <div className="mt-4 border-t border-white/5 pt-4">
-                <p className="text-[11px] uppercase tracking-wider text-white/45">
-                  {isHe
-                    ? "קוד משחק (למכשיר שני)"
-                    : "Game session code (second device)"}
-                </p>
+                <CmsText
+                  cmsKey="myHub.gameSessionCodeLabel"
+                  as="p"
+                  className="text-[11px] uppercase tracking-wider text-white/45"
+                />
                 <div className="mt-2">
                   <PairCodeWidget
                     pairCode={ctx.pair_code}
@@ -519,19 +506,19 @@ export default async function MyHubPage({
               <div className="flex flex-col justify-between gap-3 rounded-2xl border border-amber-300/40 bg-amber-400/10 p-5">
                 <div>
                   <p className="text-[16px] font-semibold text-amber-100">
-                    {isHe ? "השלימו את הפרופיל" : "Complete your profile"}
+                    <CmsText cmsKey="myHub.completeProfile" />
                   </p>
-                  <p className="mt-1.5 text-[14px] leading-[1.55] text-amber-100/85">
-                    {isHe
-                      ? "כדי לצמד פרטנר/ית או להזין קוד — צריך שם מלא, נייד וסיסמה."
-                      : "To pair a partner or redeem a code, add your full name, mobile, and password."}
-                  </p>
+                  <CmsText
+                    cmsKey="myHub.pairProfilePrereq"
+                    as="p"
+                    className="mt-1.5 text-[14px] leading-[1.55] text-amber-100/85"
+                  />
                 </div>
                 <Link
                   href={`/account/profile?reason=profile_incomplete&next=${encodeURIComponent("/my")}`}
                   className="inline-flex min-h-[44px] items-center justify-center self-start rounded-full bg-white px-5 text-[15px] font-semibold text-amber-700 shadow hover:bg-amber-50 transition"
                 >
-                  {isHe ? "להשלמה" : "Complete now"}
+                  <CmsText cmsKey="myHub.completeNow" />
                 </Link>
               </div>
             ) : null}
@@ -539,13 +526,13 @@ export default async function MyHubPage({
               <div className="flex flex-col justify-between gap-3 rounded-2xl border border-white/15 bg-white/[0.05] p-5">
                 <div>
                   <p className="text-[16px] font-semibold text-white">
-                    {isHe ? "קיבלתם קוד מבן/בת הזוג?" : "Got a code from your partner?"}
+                    <CmsText cmsKey="myHub.gotCode" />
                   </p>
-                  <p className="mt-1.5 text-[14px] leading-[1.55] text-white/75">
-                    {isHe
-                      ? "הזינו את הקוד והחשבון יתחבר אליהם מיד."
-                      : "Enter the code and your account links to theirs instantly."}
-                  </p>
+                  <CmsText
+                    cmsKey="myHub.redeemHint"
+                    as="p"
+                    className="mt-1.5 text-[14px] leading-[1.55] text-white/75"
+                  />
                 </div>
                 <RedeemCodeButton
                   isHe={isHe}
@@ -568,9 +555,7 @@ export default async function MyHubPage({
             className="inline-flex items-center gap-1.5 text-white/55 transition hover:text-white"
           >
             <Users className="h-3.5 w-3.5" />
-            {isHe
-              ? "החשבון שלי · חשבוניות · ניהול מנוי"
-              : "My account · invoices · subscription"}
+            <CmsText cmsKey="myHub.footerAccountLink" />
           </Link>
         </footer>
       </main>
@@ -682,26 +667,24 @@ function EntitledPillar({
   isHe,
   pillar,
   pillarState,
-  titleHe,
-  titleEn,
-  subtitleHe,
-  subtitleEn,
+  title,
+  subtitle,
   description,
   notificationCount,
+  notificationAriaTemplate,
 }: {
   isHe: boolean;
   pillar: PillarKey;
   pillarState: PillarStateOutput;
-  titleHe: string;
-  titleEn: string;
-  subtitleHe?: string;
-  subtitleEn?: string;
+  title: string;
+  subtitle?: string;
   description: string;
   notificationCount?: number;
+  // Template with {n} placeholder — provided by the parent so the
+  // aria-label can be CMS-edited per locale.
+  notificationAriaTemplate?: string;
 }) {
   const Arrow = isHe ? ArrowLeft : ArrowRight;
-  const title = isHe ? titleHe : titleEn;
-  const subtitle = subtitleHe || subtitleEn ? (isHe ? subtitleHe : subtitleEn) : null;
   const hasNotif = typeof notificationCount === "number" && notificationCount > 0;
   const theme = PILLAR_THEMES[pillar];
   const Icon = theme.Icon;
@@ -725,7 +708,12 @@ function EntitledPillar({
       {hasNotif ? (
         <span
           aria-label={
-            isHe ? `${notificationCount} חדשים` : `${notificationCount} new`
+            notificationAriaTemplate
+              ? notificationAriaTemplate.replace(
+                  "{n}",
+                  String(notificationCount),
+                )
+              : String(notificationCount)
           }
           className="absolute end-4 top-4 z-10 inline-flex min-w-[24px] items-center justify-center rounded-full bg-rose-500 px-1.5 py-0.5 text-[11px] font-bold text-white shadow-[0_6px_18px_-4px_rgba(244,63,94,0.7)]"
         >
@@ -776,24 +764,18 @@ function PillarMarketing({
   isHe,
   pillar,
   pillarState,
-  titleHe,
-  titleEn,
-  subtitleHe,
-  subtitleEn,
+  title,
+  subtitle,
   tagline,
 }: {
   isHe: boolean;
   pillar: PillarKey;
   pillarState: PillarStateOutput;
-  titleHe: string;
-  titleEn: string;
-  subtitleHe?: string;
-  subtitleEn?: string;
+  title: string;
+  subtitle?: string;
   tagline: string;
 }) {
   const Arrow = isHe ? ArrowLeft : ArrowRight;
-  const title = isHe ? titleHe : titleEn;
-  const subtitle = subtitleHe || subtitleEn ? (isHe ? subtitleHe : subtitleEn) : null;
   const theme = PILLAR_THEMES[pillar];
   const Icon = theme.Icon;
 

@@ -6,6 +6,7 @@ import type { GameRow, QuestionRow, WheelConfigRow } from "@/lib/types/database"
 import { unstable_noStore as noStore } from "next/cache";
 import type { Metadata } from "next";
 import { fetchGameSettings } from "@/lib/settings-queries";
+import { CmsText } from "@/components/cms/CmsText";
 
 // Disable any form of static caching for this route.
 //   - `noStore()` (called below) disables Next's per-request fetch cache.
@@ -115,10 +116,16 @@ export default async function GameBySlugPage({
   if (!game) {
     return (
       <div className="mx-auto flex min-h-[70dvh] max-w-xl flex-col items-center justify-center px-6 text-center">
-        <h1 className="text-2xl font-bold">Game not found</h1>
-        <p className="text-muted-foreground mt-2 text-sm">
-          This game is not available right now.
-        </p>
+        <CmsText
+          cmsKey="gamesSlug.gameNotFoundTitle"
+          as="h1"
+          className="text-2xl font-bold"
+        />
+        <CmsText
+          cmsKey="gamesSlug.gameNotFoundBody"
+          as="p"
+          className="text-muted-foreground mt-2 text-sm"
+        />
       </div>
     );
   }
@@ -159,10 +166,16 @@ export default async function GameBySlugPage({
   if (!wheel) {
     return (
       <div className="mx-auto flex min-h-[70dvh] max-w-xl flex-col items-center justify-center px-6 text-center">
-        <h1 className="text-2xl font-bold">Game is missing a wheel</h1>
-        <p className="text-muted-foreground mt-2 text-sm">
-          Please try again later.
-        </p>
+        <CmsText
+          cmsKey="gamesSlug.missingWheelTitle"
+          as="h1"
+          className="text-2xl font-bold"
+        />
+        <CmsText
+          cmsKey="gamesSlug.missingWheelBody"
+          as="p"
+          className="text-muted-foreground mt-2 text-sm"
+        />
       </div>
     );
   }
