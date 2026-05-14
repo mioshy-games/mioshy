@@ -803,18 +803,18 @@ export default async function GamesHubPage({
               <div className="flex flex-col items-start gap-4">
                 <span className="inline-flex items-center gap-2.5 text-[13px] font-semibold uppercase tracking-[0.2em] text-rose-200">
                   <span className="h-[7px] w-[7px] rounded-sm bg-[#B83C4D] shadow-[0_0_0_3px_rgba(184,60,77,0.28)]" />
-                  {isHe ? "הקטלוג" : "Catalogue"}
+                  <CmsText cmsKey="gamesHub.cataloguePill" />
                 </span>
                 <CmsText
                   cmsKey="gamesHub.catalogueTitle"
                   as="h2"
                   className="font-heading text-3xl font-bold leading-[1.05] tracking-[-0.02em] text-white sm:text-4xl lg:text-5xl"
                 />
-                <p className="max-w-2xl text-[18px] leading-[1.6] text-white/70">
-                  {isHe
-                    ? "בחרו משחק, פתחו על הטלפון, ומתחילים. בלי הורדות, בלי הכנות."
-                    : "Pick one, open it on your phone, and start. No downloads, no prep."}
-                </p>
+                <CmsText
+                  cmsKey="gamesHub.catalogueHint"
+                  as="p"
+                  className="max-w-2xl text-[18px] leading-[1.6] text-white/70"
+                />
               </div>
 
               {games.length === 0 && (
@@ -920,15 +920,17 @@ export default async function GamesHubPage({
                     <div className="relative aspect-[16/10] w-full overflow-hidden bg-gradient-to-br from-[#B83C4D]/30 via-[#8B2638]/25 to-[#3D1F3D]/30">
                       <Image
                         src="/images/snakes-couples.webp"
-                        alt={isHe ? "נחשים וסולמות" : "Snakes & Ladders"}
+                        alt={t("snakesName")}
                         fill
                         sizes="(max-width: 640px) 100vw, 50vw"
                         className="object-cover transition duration-500 group-hover:scale-[1.02]"
                       />
                       {/* New badge */}
-                      <span className="absolute end-3 top-3 rounded-full bg-gradient-to-r from-[#B83C4D] to-[#8B2638] px-3 py-1 text-xs font-bold text-white shadow-lg">
-                        {isHe ? "חדש 🔥" : "New 🔥"}
-                      </span>
+                      <CmsText
+                        cmsKey="gamesHub.newBadge"
+                        as="span"
+                        className="absolute end-3 top-3 rounded-full bg-gradient-to-r from-[#B83C4D] to-[#8B2638] px-3 py-1 text-xs font-bold text-white shadow-lg"
+                      />
                       <div
                         aria-hidden
                         className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent"
@@ -939,21 +941,21 @@ export default async function GamesHubPage({
                       {/* Multi-player badge - on-dark variant */}
                       <span className="mb-3 inline-flex items-center gap-1.5 self-start rounded-full border border-rose-300/30 bg-rose-500/15 px-2.5 py-0.5 text-xs font-semibold text-rose-100">
                         <Users className="h-3 w-3" />
-                        {isHe ? "עד 8 שחקנים" : "Up to 8 players"}
+                        <CmsText cmsKey="gamesHub.snakesPlayers" />
                       </span>
-                      <h3
+                      <CmsText
+                        cmsKey="gamesHub.snakesName"
+                        as="h3"
                         className="text-[26px] font-bold leading-[1.15] tracking-[-0.01em] text-white"
                         style={{ fontFamily: "var(--font-frank-ruhl), 'Frank Ruhl Libre', serif" }}
-                      >
-                        {isHe ? "נחשים וסולמות" : "Snakes & Ladders"}
-                      </h3>
-                      <p className="mt-2 line-clamp-3 text-[20px] leading-[1.5] text-white/70 transition-[max-height,color] duration-500 ease-in-out group-hover:line-clamp-none sm:text-[18px]">
-                        {isHe
-                          ? "לוח קלאסי עם שאלות ואתגרים זוגיים - שחקו על מכשיר אחד או על שני מכשירים שונים"
-                          : "Classic board game with couples questions & challenges - play on one device or remotely"}
-                      </p>
+                      />
+                      <CmsText
+                        cmsKey="gamesHub.snakesDesc"
+                        as="p"
+                        className="mt-2 line-clamp-3 text-[20px] leading-[1.5] text-white/70 transition-[max-height,color] duration-500 ease-in-out group-hover:line-clamp-none sm:text-[18px]"
+                      />
                       <span className="mt-auto inline-flex items-center gap-2 pt-5 text-[18px] font-semibold text-rose-200 transition group-hover:text-white">
-                        {isHe ? "שחקו עכשיו" : "Play now"}
+                        <CmsText cmsKey="gamesHub.playNow" />
                         <ArrowRight
                           className={`h-5 w-5 transition group-hover:translate-x-1 ${
                             isHe ? "rotate-180 group-hover:-translate-x-1" : ""
