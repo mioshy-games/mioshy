@@ -1742,7 +1742,11 @@
     "gameIsForYouIf": "המשחק הזה הוא בשבילכם אם…",
     "gallery": "גלריה",
     "nextGame": "המשחק הבא",
-    "keepExploring": "המשך לגלות"
+    "keepExploring": "המשך לגלות",
+    "universalBenefit1": "לילה בלתי נשכח",
+    "universalBenefit2": "זכרון מיני חדש שישבור את השגרה",
+    "universalTarget1": "לזוגות שמחפשים לשבור את הרוטינה של חדר השינה",
+    "universalTarget2": "לתת למומחים שלנו להוביל אתכם בחדר המיטות"
   },
   "mioshySexPlay": {
     "yourGallery": "הגלריה שלכם",
@@ -1756,7 +1760,9 @@
     "hisRoleLabel": "תפקיד הגבר",
     "herRoleLabel": "תפקיד האישה",
     "questionsEyebrow": "השאלות של המשחק",
-    "defaultQuestionsIntro": "ענו על השאלה הבאה - לפי הסדר או לבחירתכם."
+    "defaultQuestionsIntro": "ענו על השאלה הבאה - לפי הסדר או לבחירתכם.",
+    "metaTitleFallback": "המשחק שלכם",
+    "closingNote": "אין סדר נכון. אין מהירות נכונה. כל מה שמתאים לכם - זה הנכון."
   },
   "myHub": {
     "metaTitle": "מיאושי שלי",

@@ -38,18 +38,19 @@ export async function generateMetadata({
   const { locale } = params;
   const settings = await getBetweenUsSettings().catch(() => null);
   const isHe = locale === "he";
+  const t = await getCmsTranslations({
+    locale: isHe ? "he" : "en",
+    namespace: "mioshySexPage",
+    page: "mioshy-sex",
+  });
   const sectionName = isHe
     ? settings?.section_name_he
     : settings?.section_name_en;
   const tagline = isHe
     ? settings?.section_tagline_he
     : settings?.section_tagline_en;
-  const title = `Mioshy - ${sectionName ?? (isHe ? "למבוגרים בלבד" : "Adults Only")}`;
-  const description =
-    tagline ??
-    (isHe
-      ? "המוצר הדגל של מיאושי. לילה אחד של חדשנות, הפתעה, וחוויה אחרת לגמרי."
-      : "Mioshy's flagship. One night of novelty, surprise - and a wholly different experience.");
+  const title = `Mioshy - ${sectionName ?? t("defaultSectionName")}`;
+  const description = tagline ?? t("defaultHeroTagline");
   const base = siteUrl();
   return {
     title,

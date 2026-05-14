@@ -1744,7 +1744,11 @@
     "gameIsForYouIf": "This game is for you if…",
     "gallery": "Gallery",
     "nextGame": "Next game",
-    "keepExploring": "Keep exploring"
+    "keepExploring": "Keep exploring",
+    "universalBenefit1": "An unforgettable night",
+    "universalBenefit2": "A new sexual memory that breaks the routine",
+    "universalTarget1": "For couples looking to break the bedroom routine",
+    "universalTarget2": "To let our experts guide you in the bedroom"
   },
   "mioshySexPlay": {
     "yourGallery": "Your gallery",
@@ -1758,7 +1762,9 @@
     "hisRoleLabel": "His role",
     "herRoleLabel": "Her role",
     "questionsEyebrow": "The game's questions",
-    "defaultQuestionsIntro": "Answer the next question - in order or as you wish."
+    "defaultQuestionsIntro": "Answer the next question - in order or as you wish.",
+    "metaTitleFallback": "Your game",
+    "closingNote": "There's no right order. No right pace. Whatever fits the two of you - that's right."
   },
   "myHub": {
     "metaTitle": "My Mioshy",

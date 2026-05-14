@@ -46,14 +46,17 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale, slug } = params;
   const isHe = locale === "he";
+  const t = await getCmsTranslations({
+    locale: isHe ? "he" : "en",
+    namespace: "mioshySexPlay",
+    page: "mioshy-sex",
+  });
   const game = await getGameBySlug(slug).catch(() => null);
   const title = game
     ? isHe
       ? game.title_he
       : game.title_en || game.title_he
-    : isHe
-      ? "המשחק שלכם"
-      : "Your game";
+    : t("metaTitleFallback");
   return {
     // Owners-only - keep out of the index.
     robots: { index: false, follow: false },
@@ -331,9 +334,7 @@ export default async function PlayExperienceGamePage({
                     <RolePanel
                       key={i}
                       tone="his"
-                      labelHe={hisRoleLabel}
-                      labelEn={hisRoleLabel}
-                      isHe={isHe}
+                      label={hisRoleLabel}
                       body={stripRoleHeader(p)}
                     />
                   );
@@ -343,9 +344,7 @@ export default async function PlayExperienceGamePage({
                     <RolePanel
                       key={i}
                       tone="hers"
-                      labelHe={herRoleLabel}
-                      labelEn={herRoleLabel}
-                      isHe={isHe}
+                      label={herRoleLabel}
                       body={stripRoleHeader(p)}
                     />
                   );
@@ -430,17 +429,15 @@ export default async function PlayExperienceGamePage({
         {/* ───── CLOSING ───── */}
         <section className="mx-auto mt-24 max-w-[680px] rounded-[28px] border border-rose-300/25 bg-gradient-to-br from-rose-500/12 via-violet-600/10 to-blue-600/10 p-8 text-center backdrop-blur sm:p-10">
           <Star className="mx-auto h-5 w-5 text-rose-200" />
-          <p
+          <CmsText
+            cmsKey="mioshySexPlay.closingNote"
+            as="p"
             className="mx-auto mt-4 max-w-md text-[17px] leading-[1.65] text-white/90"
             style={{
               fontFamily:
                 "var(--font-body-hebrew), 'Assistant', system-ui, sans-serif",
             }}
-          >
-            {isHe
-              ? "אין סדר נכון. אין מהירות נכונה. כל מה שמתאים לכם - זה הנכון."
-              : "There's no right order. No right pace. Whatever fits the two of you - that's right."}
-          </p>
+          />
         </section>
       </main>
 
@@ -545,15 +542,11 @@ function LevelChip({
 // can compare them side-by-side as the couple reads through.
 function RolePanel({
   tone,
-  labelHe,
-  labelEn,
-  isHe,
+  label,
   body,
 }: {
   tone: "his" | "hers";
-  labelHe: string;
-  labelEn: string;
-  isHe: boolean;
+  label: string;
   body: string;
 }) {
   const accent =
@@ -593,7 +586,7 @@ function RolePanel({
           <span aria-hidden className="text-base leading-none">
             {accent.glyph}
           </span>
-          {isHe ? labelHe : labelEn}
+          {label}
         </span>
       </div>
       <p

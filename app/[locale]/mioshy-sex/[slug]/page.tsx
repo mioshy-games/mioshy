@@ -141,27 +141,16 @@ export default async function BetweenUsGameDetailPage({
 
   // Universal value-prop bullets appended to every Adults game's
   // "What you'll get" / "This game is for you if…" lists. These are
-  // brand-level promises (not game-specific copy) so they live next to
-  // whatever the admin filled in for the individual game. If/when these
-  // become per-game admin-editable, drop them and rely on the DB columns.
-  const universalBenefits = isHe
-    ? [
-        "לילה בלתי נשכח",
-        "זכרון מיני חדש שישבור את השגרה",
-      ]
-    : [
-        "An unforgettable night",
-        "A new sexual memory that breaks the routine",
-      ];
-  const universalTargets = isHe
-    ? [
-        "לזוגות שמחפשים לשבור את הרוטינה של חדר השינה",
-        "לתת למומחים שלנו להוביל אתכם בחדר המיטות",
-      ]
-    : [
-        "For couples looking to break the bedroom routine",
-        "To let our experts guide you in the bedroom",
-      ];
+  // brand-level promises (not game-specific copy), so they read from
+  // CMS via universalBenefit[12] / universalTarget[12] keys.
+  const universalBenefits = [
+    t("universalBenefit1"),
+    t("universalBenefit2"),
+  ];
+  const universalTargets = [
+    t("universalTarget1"),
+    t("universalTarget2"),
+  ];
 
   const allBenefits = [...(benefits ?? []), ...universalBenefits];
   const allTargets = [...(targets ?? []), ...universalTargets];
