@@ -806,7 +806,8 @@
       "lede": "Not therapy. Not a course. Not 'tools for relationships.' A game - but one that works.",
       "closing": "- sometimes change doesn't need a revolution. Just a start."
     },
-    "metaKeywords": "couples games, truth or dare for couples, relationship games, date night games, couples questions, snakes and ladders couples"
+    "metaKeywords": "couples games, truth or dare for couples, relationship games, date night games, couples questions, snakes and ladders couples",
+    "heroSparkleChip": "2-player · free"
   },
   "journeyHub": {
     "metaTitle": "Journey with Mioshy - Personal Coaching from the Experts",
@@ -1884,5 +1885,13 @@
     "sharedSpaceBody": "What you've done together, your shared thread, and messages addressed to both of you.",
     "priorityHintTemplate": "Ordered by your ranking: top focus is {focusLabel}. Your partner sees their own order.",
     "footerNote": "Private space. Everything here is yours alone."
+  },
+  "gameTypeSelector": {
+    "wheelTitle": "Spin the Wheel",
+    "wheelDesc": "Spin and get questions & dares",
+    "wheelBadge": "Available",
+    "snakesTitle": "Snakes & Ladders",
+    "snakesDesc": "Up to 8 players with couple questions & challenges",
+    "snakesBadge": "New 🔥"
   }
 }

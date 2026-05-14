@@ -23,6 +23,7 @@ import {
   Zap,
 } from "lucide-react";
 import { Link } from "@/navigation";
+import { CmsText } from "@/components/cms/CmsText";
 
 type HeroProps = {
   isHe: boolean;
@@ -227,7 +228,7 @@ function AuroraOrb({
 // Visual column - a spinning wheel behind, dice floating top-right,
 // and a playing card tilted at bottom. Three elements, three motion patterns.
 
-function FloatingGamingStack({ isHe }: { isHe: boolean }) {
+function FloatingGamingStack({ isHe: _isHe }: { isHe: boolean }) {
   return (
     <div className="relative mx-auto h-[360px] w-full max-w-md sm:h-[440px] lg:h-[500px]">
       {/* Outer glow */}
@@ -313,7 +314,7 @@ function FloatingGamingStack({ isHe }: { isHe: boolean }) {
         aria-hidden
       >
         <Sparkles className="h-3 w-3" />
-        <span>{isHe ? "זוגי · בחינם" : "2-player · free"}</span>
+        <CmsText cmsKey="gamesHub.heroSparkleChip" />
       </motion.div>
     </div>
   );
