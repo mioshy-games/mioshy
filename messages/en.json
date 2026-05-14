@@ -792,6 +792,12 @@
       "trial": "Start free - no credit card required.",
       "kicker": "one click - and you're in",
       "ctaPlayNow": "Start playing now"
+    },
+    "personasHeader": {
+      "eyebrow": "For whom",
+      "titleLine1": "There are no boring couples.",
+      "titleLine2": "Only questions never asked.",
+      "lede": "Every stage of a relationship has its waiting questions. We just know when to ask them."
     }
   },
   "journeyHub": {

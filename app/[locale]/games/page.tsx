@@ -1091,7 +1091,7 @@ export default async function GamesHubPage({
                 <div className="mx-auto max-w-2xl text-center">
                   <span className="inline-flex items-center gap-2.5 text-[12px] font-semibold uppercase tracking-[0.32em] text-[#170E14]">
                     <span className="h-[7px] w-[7px] rounded-sm bg-[#B83C4D] shadow-[0_0_0_3px_rgba(184,60,77,0.18)]" />
-                    {isHe ? "למי" : "For whom"}
+                    <CmsText cmsKey="gamesHub.personasHeader.eyebrow" />
                   </span>
                   <h2
                     className="mt-7 text-[40px] leading-[1.05] tracking-[-0.02em] text-[#170E14] sm:text-5xl lg:text-[58px]"
@@ -1100,35 +1100,19 @@ export default async function GamesHubPage({
                       fontWeight: 600,
                     }}
                   >
-                    {isHe ? (
-                      <>
-                        אין זוגיות משעממת.
-                        <br className="hidden sm:block" />
-                        <span
-                          className="text-[#B83C4D]"
-                          style={{ fontStyle: "italic", fontWeight: 500 }}
-                        >
-                          רק שאלות שלא נשאלו.
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        There are no boring couples.
-                        <br className="hidden sm:block" />
-                        <span
-                          className="text-[#B83C4D]"
-                          style={{ fontStyle: "italic", fontWeight: 500 }}
-                        >
-                          Only questions never asked.
-                        </span>
-                      </>
-                    )}
+                    <CmsText cmsKey="gamesHub.personasHeader.titleLine1" />
+                    <br className="hidden sm:block" />
+                    <CmsText
+                      cmsKey="gamesHub.personasHeader.titleLine2"
+                      className="text-[#B83C4D]"
+                      style={{ fontStyle: "italic", fontWeight: 500 }}
+                    />
                   </h2>
-                  <p className="mx-auto mt-6 max-w-xl text-[19px] leading-[1.65] text-[#4A3A45]">
-                    {isHe
-                      ? "בכל שלב בזוגיות מחכות שאלות. אנחנו רק יודעים מתי לשאול אותן."
-                      : "Every stage of a relationship has its waiting questions. We just know when to ask them."}
-                  </p>
+                  <CmsText
+                    cmsKey="gamesHub.personasHeader.lede"
+                    as="p"
+                    className="mx-auto mt-6 max-w-xl text-[19px] leading-[1.65] text-[#4A3A45]"
+                  />
                 </div>
               </RevealOnScroll>
 
