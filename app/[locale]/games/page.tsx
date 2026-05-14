@@ -419,30 +419,9 @@ export default async function GamesHubPage({
   ];
 
   // Editorial benefits - light cream spread, 3 focused emotion words.
-  // Roman numerals + serif italic. Was 5; trimmed to תשוקה / חברות / כיף.
-  const benefits = [
-    {
-      numeral: "I",
-      title: isHe ? "תשוקה" : "Passion",
-      body: isHe
-        ? "השאלות הנכונות מחזירות את ההתרגשות הראשונית. בלי לדבר על זה. בלי תרגילים."
-        : "The right questions bring back that early thrill. Without talking about it. Without 'exercises.'",
-    },
-    {
-      numeral: "II",
-      title: isHe ? "חברות" : "Friendship",
-      body: isHe
-        ? "תגלו על בני הזוג שלכם דברים שלא ידעתם - ועל החברים, דברים שלא חשבתם לשאול."
-        : "Discover things about your partner - and your friends - you'd never have thought to ask.",
-    },
-    {
-      numeral: "III",
-      title: isHe ? "כיף" : "Fun",
-      body: isHe
-        ? "הנאה אמיתית, בלי תירוצים. ערב שמתחיל בקליק והופך למשחק שלא רוצים לסיים."
-        : "Real enjoyment, no excuses. An evening that starts with a click and turns into a game you don't want to end.",
-    },
-  ];
+  // Roman numerals (static, non-translatable) + serif italic. CMS keys
+  // drive title/body so admins can edit per item; numerals stay inline.
+  const benefitNumerals = ["I", "II", "III"];
 
   // Personas - magazine chapters on light. Three couple archetypes; tag = the
   // *promise* this game-line gives that persona (curiosity / reminder / surprise).
@@ -1342,7 +1321,7 @@ export default async function GamesHubPage({
 
               {/* Editorial benefit rows - 2-column structure */}
               <ul className="mt-[60px] space-y-2">
-                {benefits.map((b, i) => (
+                {benefitNumerals.map((numeral, i) => (
                   <RevealOnScroll
                     key={i}
                     variant="fade-up"
@@ -1359,24 +1338,26 @@ export default async function GamesHubPage({
                             fontWeight: 500,
                           }}
                         >
-                          {b.numeral}
+                          {numeral}
                         </span>
-                        <h3
+                        <CmsText
+                          cmsKey={`gamesHub.benefits.${i}.title`}
+                          as="h3"
                           className="text-[36px] leading-[1] tracking-[-0.02em] text-[#170E14] sm:text-[40px]"
                           style={{
                             fontFamily: "'Frank Ruhl Libre', serif",
                             fontStyle: "italic",
                             fontWeight: 500,
                           }}
-                        >
-                          {b.title}
-                        </h3>
+                        />
                       </div>
 
                       {/* Body */}
-                      <p className="text-[18px] leading-[1.65] text-[#4A3A45] lg:-mt-[5px]">
-                        {b.body}
-                      </p>
+                      <CmsText
+                        cmsKey={`gamesHub.benefits.${i}.body`}
+                        as="p"
+                        className="text-[18px] leading-[1.65] text-[#4A3A45] lg:-mt-[5px]"
+                      />
                     </li>
                   </RevealOnScroll>
                 ))}

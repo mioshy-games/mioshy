@@ -748,7 +748,21 @@
     "sampleQuestionType": "Truth",
     "sampleQuestion": "What moment with me can't you stop replaying - and why that one?",
     "whyBadge": "Why Mioshy",
-    "whyHook": "We've helped hundreds of couples improve their connection - in the most fun way possible"
+    "whyHook": "We've helped hundreds of couples improve their connection - in the most fun way possible",
+    "benefits": {
+      "0": {
+        "title": "Passion",
+        "body": "The right questions bring back that early thrill. Without talking about it. Without 'exercises.'"
+      },
+      "1": {
+        "title": "Friendship",
+        "body": "Discover things about your partner - and your friends - you'd never have thought to ask."
+      },
+      "2": {
+        "title": "Fun",
+        "body": "Real enjoyment, no excuses. An evening that starts with a click and turns into a game you don't want to end."
+      }
+    }
   },
   "journeyHub": {
     "metaTitle": "Journey with Mioshy - Personal Coaching from the Experts",
