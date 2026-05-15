@@ -364,6 +364,17 @@ small, .text-small {
 .cms-rich strong {
   font-weight: 700;
 }
+/* When a cms-rich element actually contains a <strong>, the admin's
+   intent is "make this word stand out". On headings whose base weight
+   is already heavy (`.media-press-title` is 600; Tailwind `font-bold`
+   on `gamesHub.catalogueTitle` is 700) the wrapped 700 reads as
+   "everything is bold" — the contrast vanishes. Drop the base weight
+   to 400 ONLY when a `<strong>` is present, so the bolded word pops
+   the same way it does in `.hero p.lead` (which is already 400).
+   Plain rich-text rows without `<strong>` keep their designed weight. */
+.cms-rich:has(strong) {
+  font-weight: 400;
+}
 .cms-rich s {
   color: #94a3b8;                  /* slate-400 — "no longer relevant" */
   text-decoration: line-through;

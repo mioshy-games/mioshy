@@ -26,17 +26,19 @@ import { normalizeRichText } from "@/lib/cms/render";
  * Usage replaces every `{useCmsText(key).text}` consumer in the
  * marketing components. The wrapping element comes from the `as`
  * prop (defaults to <span> for inline usage). Pass any wrapping
- * className/style as usual — typography AND colour overrides from
- * the CMS row are merged automatically into the rendered element's
- * inline `style`.
+ * className/style as usual — typography overrides from the CMS row
+ * are merged automatically into the rendered element's inline
+ * `style`, and the colour override is exposed via the
+ * `--cms-mark-color` custom property so `<mark>` children pick it
+ * up without affecting the outer element.
  *
- * Sprint 5 — `useCmsText` now folds `cms_texts.color_override` into
- * the returned `style.color`. The merge order below is `{...cmsStyle,
- * ...callerExtraStyle}`, so a caller that explicitly passes
- * `style={{ color: '#xxx' }}` still wins over the CMS — by design,
- * for the rare callsite that must hardcode a colour. The CMS
- * override beats whatever the className would have set, because
- * inline style takes precedence over CSS in the cascade.
+ * Sprint 5 — `useCmsText` folds `cms_texts.color_override` into the
+ * returned `style.color`. As of the mark-scoping fix, CmsText keeps
+ * that value OUT of the rendered `style.color` and instead writes it
+ * to `--cms-mark-color` so only descendant `<mark>` elements adopt
+ * it. A caller passing `style={{ color: '#xxx' }}` still wins for
+ * the outer element. Typography keys (fontSize/fontWeight/
+ * lineHeight) continue to merge straight into inline `style`.
  *
  * Use `useCmsText(key).text` DIRECTLY (without this component) only
  * for non-DOM consumers — `alt` attributes, `aria-label`, Counter
@@ -56,16 +58,22 @@ export function CmsText({
   const { text, isRich, style } = useCmsText(cmsKey);
 
   // Sprint 5 — when the row carries a colour override, forward the
-  // resolved value to descendant <mark> elements via a CSS custom
-  // property. globals.css has `.cms-rich mark { color:
-  // var(--cms-mark-color, #B83C4D) }`, so a row WITHOUT an override
-  // gets the default brand-rose, and a row WITH one gets the same
-  // colour the surrounding text gets. This is how a single override
-  // unifies the outer text colour AND the highlighter colour.
+  // resolved value to descendant <mark> elements ONLY, via the
+  // `--cms-mark-color` custom property. The outer element keeps the
+  // colour its CSS would otherwise set — so an h2.media-press-title
+  // stays var(--ink) and only `<mark>...</mark>` portions take on the
+  // admin's chosen colour. Same for an h1 with Tailwind text colour:
+  // the heading stays its design colour and the mark is highlighted.
   //
-  // We don't bake this into useCmsText's style return because CSS
-  // custom properties are a rendering concern — the hook is supposed
-  // to stay locale/value-shaped and not know about cascade tricks.
+  // Earlier behaviour (2026-05) applied `style.color` to the outer
+  // element AND set `--cms-mark-color`, which meant picking a colour
+  // recoloured the WHOLE heading — confusing in cases where the admin
+  // wrapped a single word in <mark> expecting just that word to take
+  // the colour (e.g. `gamesHub.catalogueTitle: מה <mark>משחקים</mark>
+  // הלילה?` with custom #0000ff). The new shape: colour override is
+  // mark-only; if an admin wants the entire row recoloured they wrap
+  // the whole text in <mark>. Typography overrides (font-size /
+  // font-weight / line-height) still apply to the outer element.
   //
   // Cast: React.CSSProperties doesn't know about custom properties
   // (`--foo`). The standard escape hatch is `as React.CSSProperties`
@@ -73,9 +81,10 @@ export function CmsText({
   const cmsStyleWithMarkVar: React.CSSProperties | undefined = (() => {
     if (!style) return undefined;
     if (!style.color) return style;
+    const { color: markColor, ...typographyOnly } = style;
     return {
-      ...style,
-      ["--cms-mark-color"]: style.color,
+      ...typographyOnly,
+      ["--cms-mark-color"]: markColor,
     } as React.CSSProperties;
   })();
 
