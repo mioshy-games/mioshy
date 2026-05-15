@@ -50,6 +50,7 @@ export const CMS_PAGES = [
   "games",
   "mioshy-sex",
   "my",
+  "about",
   "shared",
 ] as const;
 

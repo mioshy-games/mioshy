@@ -15,6 +15,7 @@ const PAGE_LABELS: Record<CmsPage, string> = {
   games: "Games",
   "mioshy-sex": "Mioshy Sex",
   my: "My / Account",
+  about: "About",
   shared: "Shared",
 };
 
@@ -22,14 +23,15 @@ const PAGE_LABELS: Record<CmsPage, string> = {
 // migrated to <CmsText>/useCmsText/getCmsTranslations, so every tab
 // has rows worth editing. The `shared` bucket houses cross-route
 // keys (nav, footer, legal, auth, paywall, pricing) and is also
-// active. If a new tab ever needs to be gated in the future, drop
-// it from this set.
+// active. `about` (Sprint 6) wraps the founder story. If a new tab
+// ever needs to be gated in the future, drop it from this set.
 const ENABLED_PAGES = new Set<CmsPage>([
   "homepage",
   "journey",
   "games",
   "mioshy-sex",
   "my",
+  "about",
   "shared",
 ]);
 
