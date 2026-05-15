@@ -25,6 +25,16 @@ export type CmsTextRow = {
    * renderer outputs via dangerouslySetInnerHTML.
    */
   is_rich: boolean;
+  /**
+   * Sprint 5 — per-row text colour override. NULL = no override,
+   * the component's existing CSS class wins. Two non-null shapes
+   * (enforced by the DB CHECK constraint in migration 084):
+   *   "preset:<name>" → resolved via lib/cms/colors.ts COLOR_PRESETS
+   *   "#XXXXXX"       → 6-digit HEX, used verbatim
+   * Use `resolveColorOverride()` from lib/cms/colors.ts to turn this
+   * into a CSS-ready colour string.
+   */
+  color_override: string | null;
   updated_at: string;
   updated_by: string | null;
 };
@@ -69,5 +79,11 @@ export type CmsTextResult = {
     fontSize?: string;
     fontWeight?: string;
     lineHeight?: string;
+    /**
+     * Sprint 5 — resolved colour from `cms_texts.color_override`.
+     * Already mapped from preset name to HEX/rgba by the hook, so
+     * consumers can apply this directly without re-resolving.
+     */
+    color?: string;
   };
 };

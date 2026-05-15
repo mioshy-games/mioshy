@@ -368,3 +368,16 @@ small, .text-small {
   color: #94a3b8;                  /* slate-400 — "no longer relevant" */
   text-decoration: line-through;
 }
+/* Sprint 5 — <mark> as an inline highlighter span. UA default is a
+   yellow background; we override to a transparent background +
+   coloured text so the effect is "tinted word", not "highlighted
+   word". Colour comes from --cms-mark-color when <CmsText> is
+   rendering a row with color_override; falls back to brand-rose
+   otherwise. NO font-family / font-style / font-weight rules — by
+   design, <mark> is colour-only and sits next to <em> (italic
+   serif) and <strong> (bold) as the "just colour, no other
+   styling" option. */
+.cms-rich mark {
+  background: transparent;
+  color: var(--cms-mark-color, #B83C4D);
+}

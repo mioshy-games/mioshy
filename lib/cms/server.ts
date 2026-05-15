@@ -56,6 +56,7 @@ export async function loadCmsTextsForPage(
           "en_line_height",
           "needs_review",
           "is_rich",
+          "color_override",
           "updated_at",
           "updated_by",
         ].join(","),
