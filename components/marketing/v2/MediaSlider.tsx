@@ -52,7 +52,11 @@ export function MediaSlider() {
             <span>{t("eyebrow")}</span>
           </div>
           <h2 className="media-press-title">
-            {t.rich("headline", { em: (chunks) => <em>{chunks}</em> })}
+            {t.rich("headline", {
+              em: (chunks) => <em>{chunks}</em>,
+              strong: (chunks) => <strong>{chunks}</strong>,
+              br: () => <br />,
+            })}
           </h2>
         </header>
 

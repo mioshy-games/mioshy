@@ -588,7 +588,7 @@
     },
     "media": {
       "eyebrow": "In their words",
-      "headline": "They wrote about us once. <em>Then again.</em>",
+      "headline": "They <strong>wrote</strong> about us once. <em>Then again.</em>",
       "readArticle": "Read the article",
       "item1Name": "Israel Hayom",
       "item1Date": "Editor's picks",

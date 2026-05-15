@@ -435,7 +435,8 @@
   .media-press-head{margin-bottom:40px;text-align:center}
   .media-press-eyebrow{display:inline-flex;align-items:center;gap:10px;font-size:var(--fs-label,13px);letter-spacing:0.22em;text-transform:uppercase;color:var(--ink);font-weight:600;margin-bottom:20px}
   .media-press-dot{width:7px;height:7px;background:var(--accent);border-radius:1px;box-shadow:0 0 0 3px rgba(184,60,77,0.18)}
-  .media-press-title{font-family:'Frank Ruhl Libre',serif;font-size:clamp(40px,5vw,60px);line-height:1.05;letter-spacing:-0.02em;color:var(--ink);font-weight:600;margin:0}
+  .media-press-title{font-family:'Frank Ruhl Libre',serif;font-size:clamp(40px,5vw,60px);line-height:1.05;letter-spacing:-0.02em;color:var(--ink);font-weight:400;margin:0}
+  .media-press-title strong{font-weight:700}
   .media-press-title em{color:var(--accent);font-style:italic;font-weight:500}
 
   /* Editorial table — 2-column rows divided by hairlines */
