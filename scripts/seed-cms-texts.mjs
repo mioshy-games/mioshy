@@ -85,6 +85,9 @@ const NAMESPACE_TO_PAGE = {
   myJourney: "my",
   myJourneyTogether: "my",
 
+  // About — long-form editorial pages (founder story, etc.)
+  about: "about",
+
   // Shared — appears across multiple pages
   nav: "shared",
   footer: "shared",
