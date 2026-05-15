@@ -6,6 +6,16 @@ import { resolveColorOverride } from "@/lib/cms/colors";
 import type { CmsTextResult } from "@/lib/cms/types";
 
 /**
+ * Matches any opening or closing tag from the 8-tag rich-text
+ * allow-list (em / strong / mark / br / p / ul / li / s).
+ *
+ * Used as a defensive safety net in `useCmsText` — see the
+ * `effectiveIsRich` derivation below for the full reasoning. Kept
+ * in sync with `RICH_ALLOWED_TAGS` in `lib/cms/sanitize.ts`.
+ */
+const RICH_MARKUP_RE = /<\/?(?:em|strong|mark|br|p|ul|li|s)\b/i;
+
+/**
  * useCmsText — single point of truth for reading editable copy.
  *
  * Resolution order, in order of precedence:
@@ -64,11 +74,60 @@ export function useCmsText(key: string): CmsTextResult {
   if (lineHeight) style.lineHeight = lineHeight;
   if (resolvedColor) style.color = resolvedColor;
 
-  // JSON-fallback rows (no CMS row exists yet) default to plain.
-  // Once we eventually re-seed missing keys this default becomes
-  // moot — the migration set is_rich correctly on every existing
-  // row, and the toggle in CmsTextRow promotes plain → rich on save.
-  const isRich = row?.is_rich ?? false;
+  // ── isRich resolution (with safety-net) ─────────────────────────
+  //
+  // declaredIsRich is the authoritative answer from cms_texts.is_rich
+  // (or false if the row isn't in the provider — e.g. a JSON-only key
+  // that hasn't been seeded yet, or a page that hasn't been wrapped
+  // in <CmsTextProvider>).
+  //
+  // Sprint 5+ defensive `markupDetected` — production regression
+  // 2026-05-15 on `homeV2.media.headline`: the row was loaded into
+  // the SSR provider correctly (cms-rich class made it into the
+  // server-rendered HTML), AND the row was present in the RSC
+  // payload sent to the client (verified by inspecting __next_f
+  // chunks), AND the row carries is_rich=true in the DB — yet on
+  // the client the headline rendered as a text node, exposing the
+  // admin's `<em>` tags as literal characters. Hero/Problem with
+  // the same shape rendered fine. We never fully root-caused why
+  // the client computed isRich=false for that one row, but the
+  // symptom was that the public site showed "<em>ואז שוב.</em>" as
+  // text instead of italic span.
+  //
+  // The defensive layer below: if the resolved `text` contains any
+  // tag from the rich-text allow-list, render as rich regardless of
+  // what `declaredIsRich` says. Justified because:
+  //
+  //   (a) every key in messages/*.json that contains markup is
+  //       intentionally rich — there is no key in the codebase that
+  //       ships markup-shaped strings as plain text on purpose
+  //       (audited 2026-05-15: 30 such keys, all listed in
+  //       migration 083 as is_rich=true).
+  //
+  //   (b) showing literal `<em>` characters to a visitor is always
+  //       a bug. Even if a future "tutorial about HTML" key wanted
+  //       to display tags as text, it would use entity escapes
+  //       (&lt;em&gt;) which won't trigger this regex.
+  //
+  //   (c) the SSR computes the same value (this hook runs on the
+  //       server too via React's RSC + client-component path), so
+  //       no hydration mismatch is introduced by the safety net.
+  //
+  // The diagnostic `console.warn` fires only when the safety net
+  // CHANGES the answer (declared=false but markup detected). That
+  // gives us a per-key telemetry signal in Vercel runtime logs (and
+  // the browser console for client renders) so we can chase the
+  // root cause without leaving the bug user-visible.
+  const declaredIsRich = row?.is_rich ?? false;
+  const markupDetected = RICH_MARKUP_RE.test(text);
+  const isRich = declaredIsRich || markupDetected;
+
+  if (markupDetected && !declaredIsRich) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[cms] safety-net rich detected for key "${key}" — row.is_rich=${row ? "false" : "missing"}, but rendered text contains markup. Rendering as rich. Investigate cms_texts and CmsTextProvider rows.`,
+    );
+  }
 
   return {
     text,
