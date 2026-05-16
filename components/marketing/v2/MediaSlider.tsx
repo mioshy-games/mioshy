@@ -23,6 +23,13 @@ import { useTranslations } from "next-intl";
 export function MediaSlider() {
   const t = useTranslations("homeV2.media");
 
+  // [DEBUG headline] Logs the raw translation source so we can see exactly
+  // what is in messages/*.json at render time (and confirm whether the
+  // CMS over-wrapped the line with <em>). Server log — appears in Vercel
+  // function output, NOT the browser console. Safe to remove once verified.
+  const rawHeadline = t.raw("headline");
+  console.log("[DEBUG media.headline] raw =", JSON.stringify(rawHeadline));
+
   const ITEMS = [
     {
       name: t("item1Name"),
