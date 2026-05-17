@@ -201,23 +201,49 @@ export default async function JourneyAssessmentPage({
         }
       }
     } else if (deviceIdForLog) {
-      // No user-owned journey - possibly the resume call didn't link the
-      // anon row. Probe for an orphan anon journey under the same device
-      // and surface it on the page log so we can see what should have
-      // been linked.
+      // No user-owned journey under RLS — probe for an orphan anon row
+      // under the same device. Two legitimate race cases recover here:
+      // (a) the link RPC hasn't propagated yet (user_id still NULL on
+      // the row) — claim it. (b) the row IS linked to this user but the
+      // JWT hasn't reached PostgREST yet — RLS denies, service-role
+      // sees it. In both cases we restore progress instead of dumping
+      // the user back to Q1.
       const admin = createServiceRoleClient();
       if (admin) {
         const { data: orphan } = await admin
           .from("journeys")
-          .select("id, current_step, status, user_id, last_activity_at")
+          .select("id, current_step, status, language, user_id, last_activity_at")
           .eq("device_id", deviceIdForLog)
           .order("last_activity_at", { ascending: false })
           .limit(1)
           .maybeSingle();
-        console.warn(
-          "[/journey/assessment] NO journey for this user - possible unlinked anon row:",
-          orphan,
-        );
+
+        if (orphan && (orphan.user_id === null || orphan.user_id === user.id)) {
+          console.log(
+            "[/journey/assessment] post-signup race recovery: restoring progress via service-role",
+            { journey_id: orphan.id, current_step: orphan.current_step, user_id: orphan.user_id },
+          );
+          initialProgress = {
+            current_step: orphan.current_step as number,
+            status: orphan.status as string,
+            language: ((orphan.language as string) ?? locale) as Locale,
+          };
+          // Hydrate prior answers via the same service-role client
+          const { data: rows } = await admin
+            .from("journey_responses")
+            .select("question_id, answer")
+            .eq("journey_id", orphan.id);
+          if (rows) {
+            for (const row of rows) {
+              initialAnswers[row.question_id as string] = row.answer;
+            }
+          }
+        } else {
+          console.warn(
+            "[/journey/assessment] NO journey for this user - possible unlinked anon row:",
+            orphan,
+          );
+        }
       }
     }
 
