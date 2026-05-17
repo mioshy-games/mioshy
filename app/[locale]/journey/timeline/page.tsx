@@ -65,6 +65,7 @@ export async function generateMetadata({
   return {
     title: `Mioshy - ${t("meta.title")}`,
     description: t("meta.description"),
+    robots: { index: false, follow: false },
   };
 }
 
