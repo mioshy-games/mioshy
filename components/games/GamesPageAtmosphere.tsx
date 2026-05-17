@@ -62,11 +62,19 @@ export function GamesPageAtmosphere() {
       <style
         dangerouslySetInnerHTML={{
           __html: `
-            .games-blob{position:absolute;border-radius:50%;filter:blur(140px);opacity:0.5;pointer-events:none;will-change:transform}
-            .games-blob-1{width:680px;height:680px;top:-200px;inset-inline-start:-160px;background:radial-gradient(circle,rgba(184,60,77,0.65) 0%,rgba(184,60,77,0) 70%);animation:games-blob-a 64s ease-in-out infinite}
-            .games-blob-2{width:580px;height:580px;top:35%;inset-inline-end:-140px;background:radial-gradient(circle,rgba(139,38,56,0.55) 0%,rgba(139,38,56,0) 70%);animation:games-blob-b 72s ease-in-out infinite}
-            .games-blob-3{width:620px;height:620px;bottom:18%;inset-inline-start:-180px;background:radial-gradient(circle,rgba(61,31,61,0.6) 0%,rgba(61,31,61,0) 70%);animation:games-blob-a 60s ease-in-out infinite reverse}
-            .games-blob-4{width:540px;height:540px;bottom:-160px;inset-inline-end:-100px;background:radial-gradient(circle,rgba(184,60,77,0.5) 0%,rgba(184,60,77,0) 70%);animation:games-blob-b 68s ease-in-out infinite reverse}
+            /* Perf 2026-05-17 — blur 140px→55px and blob dimensions
+               trimmed ~30%. blur(140px) on 680² elements was the top
+               GPU consumer on this page in Chrome (74% GPU, cursor
+               freezes for tens of seconds). Compositor cost scales
+               roughly with radius² × area; cutting both gives ~6×
+               cheaper paint per frame. The radial-gradient on each
+               blob already feathers softly so visually the change is
+               near-imperceptible. */
+            .games-blob{position:absolute;border-radius:50%;filter:blur(55px);opacity:0.5;pointer-events:none;will-change:transform}
+            .games-blob-1{width:480px;height:480px;top:-140px;inset-inline-start:-110px;background:radial-gradient(circle,rgba(184,60,77,0.65) 0%,rgba(184,60,77,0) 70%);animation:games-blob-a 64s ease-in-out infinite}
+            .games-blob-2{width:420px;height:420px;top:35%;inset-inline-end:-100px;background:radial-gradient(circle,rgba(139,38,56,0.55) 0%,rgba(139,38,56,0) 70%);animation:games-blob-b 72s ease-in-out infinite}
+            .games-blob-3{width:440px;height:440px;bottom:18%;inset-inline-start:-120px;background:radial-gradient(circle,rgba(61,31,61,0.6) 0%,rgba(61,31,61,0) 70%);animation:games-blob-a 60s ease-in-out infinite reverse}
+            .games-blob-4{width:400px;height:400px;bottom:-110px;inset-inline-end:-70px;background:radial-gradient(circle,rgba(184,60,77,0.5) 0%,rgba(184,60,77,0) 70%);animation:games-blob-b 68s ease-in-out infinite reverse}
             @keyframes games-blob-a{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(160px,120px) scale(1.08)}}
             @keyframes games-blob-b{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-140px,-100px) scale(1.06)}}
 

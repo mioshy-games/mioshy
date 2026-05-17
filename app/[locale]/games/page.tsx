@@ -712,7 +712,7 @@ export default async function GamesHubPage({
                 className="pointer-events-none absolute inset-0 -z-0 overflow-hidden"
               >
                 <div
-                  className="absolute top-[18%] -left-[12%] h-[620px] w-[620px] rounded-full mio-press-blob"
+                  className="absolute top-[18%] -left-[12%] h-[440px] w-[440px] rounded-full mio-press-blob"
                   style={{
                     /* Peach glow restored - the press section is back on
                        a cream surface so the original soft-peach drift
@@ -720,7 +720,11 @@ export default async function GamesHubPage({
                        revert). */
                     background:
                       "radial-gradient(circle, rgba(232,193,177,0.6), rgba(232,193,177,0.3) 45%, transparent 75%)",
-                    filter: "blur(90px)",
+                    /* Perf 2026-05-17 — blur 90→45 + size 620→440 to
+                       cut GPU compositor cost ~4× without changing the
+                       perceived softness (the gradient already feathers
+                       the edge). */
+                    filter: "blur(45px)",
                     willChange: "transform",
                   }}
                 />
@@ -767,19 +771,19 @@ export default async function GamesHubPage({
               <div className="catalogue-blob catalogue-blob-2" />
               {/* Soft floating circle */}
               <div className="catalogue-floating-circle" />
-              {/* 12 drifting orbit dots */}
+              {/* Drifting orbit dots — reduced from 12 to 6 (2026-05-17
+                  perf). Every orbit has a continuously-animated
+                  box-shadow halo, which paints + composites every
+                  frame. Halving the count cuts the per-frame
+                  compositor work proportionally; the remaining six
+                  are spread across the section so the field still
+                  reads as "alive" without the GPU storm. */}
               <span className="catalogue-orbit catalogue-orbit-1" />
-              <span className="catalogue-orbit catalogue-orbit-2" />
               <span className="catalogue-orbit catalogue-orbit-3" />
-              <span className="catalogue-orbit catalogue-orbit-4" />
               <span className="catalogue-orbit catalogue-orbit-5" />
-              <span className="catalogue-orbit catalogue-orbit-6" />
               <span className="catalogue-orbit catalogue-orbit-7" />
-              <span className="catalogue-orbit catalogue-orbit-8" />
               <span className="catalogue-orbit catalogue-orbit-9" />
-              <span className="catalogue-orbit catalogue-orbit-10" />
               <span className="catalogue-orbit catalogue-orbit-11" />
-              <span className="catalogue-orbit catalogue-orbit-12" />
             </div>
 
             <div className="relative z-10 mx-auto max-w-6xl">
@@ -961,26 +965,33 @@ export default async function GamesHubPage({
             <style
               dangerouslySetInnerHTML={{
                 __html: `
-                  /* Large drifting blobs - soft, slow, atmospheric. */
+                  /* Large drifting blobs - soft, slow, atmospheric.
+                     Perf 2026-05-17 — radius 110px→50px and dimensions
+                     620→460 / 560→420. blur(110px) on a 620² element
+                     was costing >70% GPU in Chrome on macOS and
+                     freezing the cursor for tens of seconds. Smaller
+                     radius + smaller element area is ~4× cheaper to
+                     composite per frame; visually identical because
+                     the radial-gradient already feathers the edge. */
                   .catalogue-blob {
                     position: absolute;
                     border-radius: 50%;
-                    filter: blur(110px);
+                    filter: blur(50px);
                     opacity: 0.55;
                     pointer-events: none;
                     will-change: transform;
                   }
                   .catalogue-blob-1 {
-                    width: 620px; height: 620px;
-                    top: -160px;
-                    inset-inline-start: -120px;
+                    width: 460px; height: 460px;
+                    top: -120px;
+                    inset-inline-start: -90px;
                     background: radial-gradient(circle, rgba(184,60,77,0.7) 0%, rgba(184,60,77,0) 70%);
                     animation: catalogue-blob-1-converge 56s ease-in-out infinite;
                   }
                   .catalogue-blob-2 {
-                    width: 560px; height: 560px;
-                    bottom: -140px;
-                    inset-inline-end: -100px;
+                    width: 420px; height: 420px;
+                    bottom: -100px;
+                    inset-inline-end: -80px;
                     background: radial-gradient(circle, rgba(139,38,56,0.6) 0%, rgba(139,38,56,0) 70%);
                     animation: catalogue-blob-2-converge 56s ease-in-out infinite;
                   }
