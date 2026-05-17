@@ -154,7 +154,16 @@ export async function middleware(request: NextRequest) {
     const locale = detectLocale(request);
     const url = request.nextUrl.clone();
     url.pathname = `/${locale}`;
-    const rewritten = NextResponse.rewrite(url);
+    // Pass `request.headers` explicitly so the `x-mioshy-locale` header
+    // stamped at line 58 propagates to the rewritten destination's
+    // `headers()` call in app/layout.tsx, which is what renders
+    // `<html lang dir>` server-side. Without this, NextResponse.rewrite
+    // forwards only the original (unmodified) request headers, and the
+    // root path ("/") always renders `<html lang="he">` regardless of
+    // which locale detectLocale chose.
+    const rewritten = NextResponse.rewrite(url, {
+      request: { headers: request.headers },
+    });
     copyAuthCookiesToResponse(supabaseResponse, rewritten);
 
     const currentCookie = request.cookies.get("NEXT_LOCALE")?.value;
