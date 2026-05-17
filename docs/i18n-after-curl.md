@@ -1,10 +1,10 @@
 # i18n After Cleanup — preview deployment curl validation
 
-**Captured:** 2026-05-17, 14:22–14:27 UTC
-**Branch:** `feature/i18n-cookie-and-alternates` @ `aebd7a0` (deploy `dpl_2KsVdAvbyUgWgrqtEoCmLh4NNUBT`)
-**Target:** `https://mioshy-git-feature-i18n-cook-3ca4b7-itzikbab-gmailcoms-projects.vercel.app` (Vercel preview, PR #5)
+**Captured:** 2026-05-17, 14:22–14:37 UTC (re-run after `cf3e447` fix)
+**Branches:** `feature/i18n-cookie-and-alternates` — initial run @ `aebd7a0` (deploy `dpl_2KsVdAvbyUgWgrqtEoCmLh4NNUBT`); re-run @ `cf3e447` (deploy `dpl_9JSeiQnFL3eGajVPAauDRQcdAUA7`)
+**Target:** `https://mioshy-git-feature-i18n-cook-3ca4b7-itzikbab-gmailcoms-projects.vercel.app` (Vercel preview, PR #5; stable alias across redeploys)
 
-> Result summary: **all four user-supplied scenarios pass.** Cookie precedence, crawler override, Accept-Language detection, Geo-IP fallback, cookie write attributes, cookie deduplication, canonical / hreflang / og:locale emission — all behave as designed. One pre-existing quirk surfaced during testing (`<html lang>` on root-rewrites always renders "he" because middleware's `request.headers.set("x-mioshy-locale", …)` doesn't propagate through `NextResponse.rewrite` by default). Not a regression — present on `origin/game` before this PR — flagged at the bottom as a follow-up.
+> Result summary: **all four user-supplied scenarios pass.** Cookie precedence, crawler override, Accept-Language detection, Geo-IP fallback, cookie write attributes, cookie deduplication, canonical / hreflang / og:locale emission — all behave as designed. Initial run surfaced a pre-existing quirk (`<html lang>` on root-rewrites always rendered "he" because middleware's `request.headers.set("x-mioshy-locale", …)` was not propagating through `NextResponse.rewrite`). **Fixed in commit `cf3e447` ("fix(i18n): propagate locale header to rewrite destination") and re-verified below.** Final state: both canonical AND `<html lang>` agree with the chosen locale on every scenario.
 
 ---
 
@@ -12,13 +12,13 @@
 
 For URL-prefixed paths (`/he/…` or `/en/…`), middleware's `resolveLocale` returns the URL prefix directly and the layout reads `x-mioshy-locale` correctly. `<html lang>` reflects the locale.
 
-For the **root rewrite** (`/` → `/he` or `/en`), middleware decides the locale via `detectLocale`, but the rewrite target receives the original request headers — so the layout's `headers().get("x-mioshy-locale")` returns `null` and falls back to the literal default in `app/layout.tsx:112`:
-```ts
-const locale = headers().get("x-mioshy-locale") === "en" ? "en" : "he";
-```
-That's why `<html lang>` on a root-rewrite always reads `"he"`. **It is misleading as a locale signal for the rewrite path.**
+For the **root rewrite** (`/` → `/he` or `/en`), middleware decides the locale via `detectLocale` and stamps `x-mioshy-locale` on the request. After `cf3e447`, the rewrite call explicitly forwards the modified request headers (`{ request: { headers: request.headers } }`), so the layout's `headers().get("x-mioshy-locale")` correctly receives the chosen locale and `<html lang dir>` renders accordingly.
 
-The reliable signal for "which locale page rendered" is the **`<link rel="canonical">` URL in the body**, because that comes from the page's own `generateMetadata` (after the rewrite resolved to `app/[locale]/page.tsx` with the chosen `params.locale`). All validations below use canonical as the truth source for root-rewrites, supplemented by `Set-Cookie` for the cookie-write behavior.
+Two independent signals are now verified for every scenario:
+- **`<link rel="canonical">` in the body** — comes from `app/[locale]/page.tsx`'s `generateMetadata` via `params.locale`. Confirms the rewrite landed on the right page.
+- **`<html lang>` + `dir`** — comes from `app/layout.tsx:112-118` via `headers().get("x-mioshy-locale")`. Confirms the request-header propagation works through the rewrite.
+
+Both signals agree on every test below.
 
 ---
 
@@ -33,6 +33,7 @@ curl -s -H "Cookie: NEXT_LOCALE=he" -H "Accept-Language: en-US,en;q=0.9" "$PREVI
 | HTTP status | `200` | `200` | ✅ |
 | `x-matched-path` | `/[locale]` | rewrite occurred | ✅ |
 | `<link rel="canonical">` | `https://mioshy.com/he` | `/he` (cookie wins) | ✅ |
+| `<html lang>` + `dir` | `lang="he" dir="rtl"` | Hebrew | ✅ |
 | `Set-Cookie: NEXT_LOCALE` | (none) | none (current matches chosen) | ✅ |
 
 ## S2 — Cookie wins over default geo for English speakers
@@ -46,8 +47,8 @@ curl -s -H "Cookie: NEXT_LOCALE=en" -A "Mozilla/5.0" "$PREVIEW/"
 | HTTP status | `200` | `200` | ✅ |
 | `x-matched-path` | `/[locale]` | rewrite occurred | ✅ |
 | `<link rel="canonical">` | `https://mioshy.com/en` | `/en` (cookie wins despite IL geo) | ✅ |
+| `<html lang>` + `dir` | `lang="en" dir="ltr"` | English | ✅ (fixed in `cf3e447`) |
 | `Set-Cookie: NEXT_LOCALE` | (none) | none (current matches chosen) | ✅ |
-| `<html lang>` | `he` | `he` (pre-existing layout quirk, see top) | — |
 
 ## S3 — Crawler always gets x-default (English), cookie ignored
 
@@ -60,9 +61,10 @@ curl -s -A "Googlebot/2.1 (+http://www.google.com/bot.html)" -H "Cookie: NEXT_LO
 | HTTP status | `200` | `200` | ✅ |
 | `x-matched-path` | `/[locale]` | rewrite occurred | ✅ |
 | `<link rel="canonical">` | `https://mioshy.com/en` | `/en` (crawler ignores `NEXT_LOCALE=he`) | ✅ |
+| `<html lang>` + `dir` | `lang="en" dir="ltr"` | English | ✅ (fixed in `cf3e447`) |
 | `Set-Cookie: NEXT_LOCALE` | (none) | none (no Set-Cookie for bots, even with cookie mismatch) | ✅ |
 
-The crawler check at line 39 of `middleware.ts:detectLocale` correctly short-circuits before the cookie read, AND the bot-skip clause at lines 161-164 of `middleware.ts` correctly suppresses Set-Cookie.
+The crawler check at line 39 of `middleware.ts:detectLocale` correctly short-circuits before the cookie read, AND the bot-skip clause at lines 167-170 of `middleware.ts` correctly suppresses Set-Cookie.
 
 ## S4 — canonical / hreflang / og:locale on /he/about/founder
 
@@ -176,30 +178,31 @@ Plus the bonus checks the original Phase 1 spec required:
 
 ---
 
-## Pre-existing quirk surfaced (NOT a regression)
+## Pre-existing quirk surfaced — and fixed in this PR
 
-**`<html lang="he">` is rendered on root-rewrites regardless of the chosen locale.**
+The initial run (commit `aebd7a0`) showed `<html lang="he">` on every root-rewrite regardless of the chosen locale. Investigation revealed a pre-existing issue in the middleware ↔ rewrite handoff: `middleware.ts:58` does `request.headers.set("x-mioshy-locale", resolveLocale(request))`, intending the layout to read it via `headers()` and render `<html lang dir>` server-side. For URL-prefixed paths this worked. But for the root `/` → `/he` / `/en` rewrite, `NextResponse.rewrite(url)` does **not** propagate `request.headers.set(...)` mutations to the rewritten destination unless explicitly passed via `request: { headers }`.
 
-`middleware.ts:58` does `request.headers.set("x-mioshy-locale", resolveLocale(request))`, intending the layout to read it via `headers()` and render `<html lang dir>` server-side. For URL-prefixed paths this works. But for the root `/` → `/he` / `/en` rewrite, `NextResponse.rewrite(url)` does **not** propagate `request.headers.set(...)` mutations to the rewritten destination unless explicitly passed via `request: { headers }`:
+Symptom was purely the `<html lang>` value — the rest of the page (text content, canonical, hreflang, og:locale) was always correct because those come from `params.locale` inside `app/[locale]/page.tsx`. But `<html lang>` is visible to screen readers and `<html lang>`-sensitive tools, so shipping with it incorrect would be misleading.
+
+**Fixed in commit `cf3e447` ("fix(i18n): propagate locale header to rewrite destination")** — one-line change inside the same `if (pathname === "/")` block:
 
 ```ts
 const rewritten = NextResponse.rewrite(url, {
-  request: { headers: request.headers },  // ← needed for header propagation
+  request: { headers: request.headers },  // ← propagates x-mioshy-locale
 });
 ```
 
-Symptom is purely the `<html lang>` value in the rendered HTML — the rest of the page (text content, canonical, hreflang, og:locale) reflects the chosen locale correctly because they come from `params.locale` inside `app/[locale]/page.tsx`. Search engines reading canonical/hreflang will index pages correctly. Screen readers and `<html lang>`-sensitive tools may report Hebrew on the root path even when English content is served.
-
-**This was true before this PR** — the pattern dates from upstream commit `1b316c5` ("seo: render `<html lang dir>` server-side"). Not caused by anything in `feature/i18n-cookie-and-alternates`. Fix is one-line, but out of scope for this PR (the cookie/alternates work doesn't need it). Tracked as a future follow-up.
+The behavior dated from upstream commit `1b316c5` ("seo: render `<html lang dir>` server-side"), so this fix retroactively repairs that work too. Re-validation against the new preview deploy (post-fix) confirms `<html lang>` and canonical agree on every scenario above.
 
 ---
 
 ## Summary
 
-✅ All four scenarios pass.
+✅ All four user-supplied scenarios pass.
 ✅ All cookie attributes match spec.
 ✅ Cookie write deduplication works.
 ✅ Crawler skip works (both detection and Set-Cookie suppression).
 ✅ canonical, hreflang (he/en/x-default), og:locale + alternate all emitted correctly.
+✅ `<html lang>` + `dir` match the chosen locale on every path (URL-prefixed and root-rewrite).
 
-Ready to mark PR #5 ready for review.
+PR #5 ready for merge.
