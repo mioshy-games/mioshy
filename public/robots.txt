@@ -9,6 +9,8 @@ Disallow: /api/
 Disallow: /auth/
 Disallow: /paywall/
 Disallow: /account/
+Disallow: /he/account/
+Disallow: /en/account/
 Disallow: /billing/
 Disallow: /game/local
 Disallow: /game/*/snakes
