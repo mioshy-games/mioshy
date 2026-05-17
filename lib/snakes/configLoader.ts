@@ -1,71 +1,78 @@
+"use server";
+
 /**
  * Server-side loader for the Snakes & Ladders game config.
  *
- * Used by `/game/local` (and any other server entrypoint that needs the
- * current admin-managed config) to fetch the live config out of the
- * `snakes_ladders_config` Supabase table.
+ * Architecture (2026-05-17, per Itzik):
+ *   The board itself — boardSize, snakes, ladders, coin steps,
+ *   penalties — is a frozen, hardcoded game design. It lives in
+ *   `lib/snakes/defaultConfig.ts` (`DEFAULT_SNAKES_CONFIG`) and is
+ *   never sourced from the DB. Admins do not tune mechanics.
+ *
+ *   The DB row in `snakes_ladders_config` only contributes the *content*
+ *   that admins actually edit:
+ *     • `name`       — display name for the variant
+ *     • `questions`  — the question/challenge deck
+ *
+ *   Every other field on the returned `GameConfig` comes from
+ *   `DEFAULT_SNAKES_CONFIG`, regardless of what's stored in the row.
+ *   This is the explicit "hardcoded wins" rule: the admin tabs for
+ *   snakes/ladders/coin/penalties are hidden from the UI, but even if
+ *   stale values are sitting in those columns from past edits, the
+ *   loader ignores them.
  *
  * Resolution chain (in order):
- *   1. The row with `is_active = true` — what admins toggle in
- *      `/dashboard/snakes` to publish.
- *   2. The row with `is_default = true` — the seeded fallback so the game
- *      still works if an admin temporarily un-activates everything.
- *   3. `DEFAULT_SNAKES_CONFIG` — the hardcoded emergency config in
- *      `lib/snakes/defaultConfig.ts`. Only reached if the DB is
- *      unreachable, the table is empty, or every fetch above errored.
+ *   1. The row with `is_active = true` — what admins toggle to publish.
+ *   2. The row with `is_default = true` — seeded fallback if no active.
+ *   3. `DEFAULT_SNAKES_CONFIG` verbatim — emergency fallback if the DB
+ *      is unreachable or both queries error out.
  *
- * Each layer of the chain is logged at console.warn level on miss so a
- * production "why is local showing the wrong content?" question has a
- * trail. The function never throws — callers always get a valid
- * `GameConfig`.
+ * Each miss is logged at console.warn level on the server side (Vercel
+ * runtime logs) so a "wrong content live" report has a trail. The
+ * function never throws — callers always get a valid `GameConfig`.
  *
- * Important: this is a Server Component / route helper only. Keep it out
- * of any "use client" file so the secret-free SSR client stays
- * server-bound and doesn't bloat the bundle.
+ * `"use server"` is set at the top so this can be invoked from both
+ * server components (the local-game page) and client components (the
+ * room-lobby start button) without duplicating the merge logic.
  */
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { DEFAULT_SNAKES_CONFIG } from "./defaultConfig";
-import type { GameConfig, Question, SnakeOrLadder } from "./types";
+import type { GameConfig, Question } from "./types";
 
-/** Raw shape of a `snakes_ladders_config` row coming back from Supabase. */
+/** Subset of `snakes_ladders_config` we actually consume now. */
 interface SnakesConfigRow {
   name: string | null;
-  board_size: number | null;
-  coin_heads_steps: number | null;
-  coin_tails_steps: number | null;
-  penalty_type: string | null;
-  penalty_steps: number | null;
-  snakes: unknown;
-  ladders: unknown;
   questions: unknown;
 }
 
 /**
- * Map a DB row (snake_case) into the in-app `GameConfig` shape
- * (camelCase). Identical to the inline mapping used by the room flow at
- * `app/[locale]/game/[roomCode]/ui.tsx` — extracted here so both
- * entrypoints stay in sync as the schema evolves.
+ * Merge a DB row over `DEFAULT_SNAKES_CONFIG`. Only `name` and
+ * `questions` cross from the row; everything mechanical stays
+ * hardcoded. Pass `null` to get the pure hardcoded config.
  */
-function rowToGameConfig(row: SnakesConfigRow): GameConfig {
+function mergeRowWithDefaults(row: SnakesConfigRow | null): GameConfig {
+  if (!row) return DEFAULT_SNAKES_CONFIG;
+
+  const dbQuestions = Array.isArray(row.questions)
+    ? (row.questions as Question[])
+    : null;
+
   return {
-    name: row.name ?? "Default",
-    boardSize: row.board_size ?? 100,
-    coinHeadsSteps: row.coin_heads_steps ?? 3,
-    coinTailsSteps: row.coin_tails_steps ?? 1,
-    penaltyType: (row.penalty_type ?? "back5") as "back5" | "start",
-    penaltySteps: row.penalty_steps ?? 5,
-    snakes: (Array.isArray(row.snakes) ? row.snakes : []) as SnakeOrLadder[],
-    ladders: (Array.isArray(row.ladders) ? row.ladders : []) as SnakeOrLadder[],
-    questions: (Array.isArray(row.questions) ? row.questions : []) as Question[],
+    ...DEFAULT_SNAKES_CONFIG,
+    name: row.name ?? DEFAULT_SNAKES_CONFIG.name,
+    // If the admin saved an empty array, respect that — they get an
+    // empty deck (a bug they can fix). Only swap in the hardcoded deck
+    // when the column is null/non-array (i.e. truly absent).
+    questions: dbQuestions ?? DEFAULT_SNAKES_CONFIG.questions,
   };
 }
 
 /**
- * Fetch the live Snakes config the same way the admin dashboard ships
- * it. Always resolves to a usable `GameConfig`; the result includes a
- * `source` tag so the caller can show "(fallback)" telemetry or just
- * inspect it during debugging.
+ * Fetch the live Snakes config the same way both the local game and
+ * the room lobby ship it. Always resolves to a usable `GameConfig`;
+ * the `source` tag lets callers surface telemetry or "(fallback)"
+ * markers in the console.
  */
 export async function loadActiveSnakesConfig(): Promise<{
   config: GameConfig;
@@ -74,17 +81,18 @@ export async function loadActiveSnakesConfig(): Promise<{
   try {
     const supabase = await createServerSupabaseClient();
 
-    // 1. is_active=true (the admin's "currently published" config)
+    // 1. is_active=true (the admin's currently published variant)
     const activeRes = await supabase
       .from("snakes_ladders_config")
-      .select(
-        "name, board_size, coin_heads_steps, coin_tails_steps, penalty_type, penalty_steps, snakes, ladders, questions",
-      )
+      .select("name, questions")
       .eq("is_active", true)
       .maybeSingle();
 
     if (activeRes.data) {
-      return { config: rowToGameConfig(activeRes.data as SnakesConfigRow), source: "active" };
+      return {
+        config: mergeRowWithDefaults(activeRes.data as SnakesConfigRow),
+        source: "active",
+      };
     }
     if (activeRes.error) {
       console.warn("[snakes/configLoader] active fetch error", activeRes.error.message);
@@ -93,14 +101,15 @@ export async function loadActiveSnakesConfig(): Promise<{
     // 2. is_default=true (the seeded "Default Couples" fallback)
     const defaultRes = await supabase
       .from("snakes_ladders_config")
-      .select(
-        "name, board_size, coin_heads_steps, coin_tails_steps, penalty_type, penalty_steps, snakes, ladders, questions",
-      )
+      .select("name, questions")
       .eq("is_default", true)
       .maybeSingle();
 
     if (defaultRes.data) {
-      return { config: rowToGameConfig(defaultRes.data as SnakesConfigRow), source: "default" };
+      return {
+        config: mergeRowWithDefaults(defaultRes.data as SnakesConfigRow),
+        source: "default",
+      };
     }
     if (defaultRes.error) {
       console.warn("[snakes/configLoader] default fetch error", defaultRes.error.message);
@@ -109,6 +118,6 @@ export async function loadActiveSnakesConfig(): Promise<{
     console.warn("[snakes/configLoader] unexpected error, falling back to hardcoded", e);
   }
 
-  // 3. Hardcoded emergency fallback
+  // 3. Hardcoded emergency fallback — pure DEFAULT_SNAKES_CONFIG.
   return { config: DEFAULT_SNAKES_CONFIG, source: "hardcoded" };
 }

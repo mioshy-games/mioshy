@@ -207,14 +207,19 @@ function SettingsPanel({ cfg }: { cfg: SnakesConfig }) {
 
 // ─── Tab config ────────────────────────────────────────────────────────────────
 
+// Tabs visible to admins.
+//
+// Snakes / Ladders / Coin / Penalties were hidden 2026-05-17: the board
+// mechanics are now hardcoded in `lib/snakes/defaultConfig.ts` and the
+// loader ignores any DB value for those columns. Leaving the tabs in
+// would imply they affect gameplay (they don't) and would mislead the
+// admin. The underlying editor components + server-action fields are
+// intentionally kept in place so we can re-enable any tab in one line
+// if we ever want admins to tune mechanics again.
 const TAB_CONFIG = [
   { value: "settings",  emoji: "⚙️",  label: "הגדרות"    },
   { value: "preview",   emoji: "👁",   label: "Preview"   },
-  { value: "snakes",    emoji: "🐍",   label: "Snakes"    },
-  { value: "ladders",   emoji: "🪜",   label: "Ladders"   },
   { value: "questions", emoji: "❓",   label: "Questions" },
-  { value: "coin",      emoji: "🪙",   label: "Coin"      },
-  { value: "penalty",   emoji: "⚠️",  label: "Penalties" },
 ] as const;
 
 const VALID_TABS = new Set(TAB_CONFIG.map((t) => t.value));
