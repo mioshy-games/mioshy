@@ -6,6 +6,7 @@ import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
 import { loadCmsTextsForPage } from "@/lib/cms/server";
 import { CmsTextProvider } from "@/components/cms/CmsTextProvider";
 import { CmsText } from "@/components/cms/CmsText";
+import { buildAlternates, buildOgLocale } from "@/lib/seo/alternates";
 
 /**
  * /[locale]/about/founder
@@ -59,15 +60,18 @@ export async function generateMetadata({
 }: {
   params: { locale: string };
 }): Promise<Metadata> {
+  const locale = params.locale === "he" ? "he" : "en";
   const t = await getCmsTranslations({
-    locale: params.locale === "he" ? "he" : "en",
+    locale,
     namespace: "about.founder",
     page: "about",
   });
   return {
     title: t("meta.title"),
     description: t("meta.description"),
+    alternates: buildAlternates(locale, "/about/founder"),
     openGraph: {
+      ...buildOgLocale(locale),
       type: "article",
       authors: ["Itzik Berlev"],
       images: ["/images/yitzhak.webp"],
