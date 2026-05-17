@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useLocalSnakesStore } from "@/lib/store/useLocalSnakesStore";
 import { useLocalGameRoom } from "@/hooks/useLocalGameRoom";
 import { SnakesGameBoard } from "@/components/game/snakes/SnakesGameBoard";
-import { DEFAULT_SNAKES_CONFIG } from "@/lib/snakes/defaultConfig";
+import type { GameConfig } from "@/lib/snakes/types";
 import { unlockAudio } from "@/lib/sounds";
 import { cn } from "@/lib/utils";
 import { track } from "@/lib/analytics";
@@ -51,8 +51,21 @@ function buildDefaults(index: number): DraftPlayer {
  *
  * The local store only lives in memory, so a refresh drops the session -
  * that's acceptable for ephemeral play and avoids privacy concerns.
+ *
+ * `initialConfig` is the live admin-managed Snakes config, loaded
+ * server-side by `page.tsx` (see `lib/snakes/configLoader.ts` for the
+ * is_active → is_default → hardcoded fallback chain). Local mode used
+ * to import `DEFAULT_SNAKES_CONFIG` directly, which froze the questions
+ * at build time and made admin edits invisible here — that's the bug
+ * this prop fixes.
  */
-export function LocalGameClient() {
+export function LocalGameClient({
+  initialConfig,
+  configSource,
+}: {
+  initialConfig: GameConfig;
+  configSource?: "active" | "default" | "hardcoded";
+}) {
   const router = useRouter();
   const locale = useLocale();
   const adapter = useLocalGameRoom();
@@ -103,11 +116,24 @@ export function LocalGameClient() {
   const [err, setErr] = useState<string | null>(null);
 
   // Build a fresh lobby room when the page loads, so state is clean every visit.
+  // `initialConfig` was hydrated on the server from the live admin config,
+  // so any change made in `/dashboard/snakes` is reflected on the next
+  // visit without a redeploy (the page is `dynamic = 'force-dynamic'`).
   useEffect(() => {
     if (!storeRoom) {
-      storeCreateRoom(DEFAULT_SNAKES_CONFIG);
+      storeCreateRoom(initialConfig);
     }
-  }, [storeCreateRoom, storeRoom]);
+  }, [storeCreateRoom, storeRoom, initialConfig]);
+
+  // Lightweight breadcrumb — surfaces in the browser console when the
+  // emergency hardcoded fallback fires, so a "wrong content live" report
+  // can be diagnosed without DB access.
+  useEffect(() => {
+    if (configSource && configSource !== "active") {
+      // eslint-disable-next-line no-console
+      console.warn(`[snakes/local] using config source = ${configSource}`);
+    }
+  }, [configSource]);
 
   // Auto-redirect to the unified /game setup whenever the user lands
   // here WITHOUT a fresh auto-start payload AND there's no active game
