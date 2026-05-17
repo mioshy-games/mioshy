@@ -40,7 +40,7 @@ This is the agreed work plan. The implementation log lives in `AUDIT_REPORT.md`.
 
 | # | Issue | File(s) | Category | Severity | Risk | Effort | Proposed fix |
 |---|---|---|---|---|---|---|---|
-| 1 | Public unauthenticated `GET /api/seed-games` uses service role to delete + reseed wheels | `app/api/seed-games/route.ts` | Security | 🔴 Critical | None — file marked "DELETE after use", was already removed once (commit `d7c0728`) and resurfaced. No script/doc references it. | 5m | Delete the file. Use `seed_runner.mjs` for ad-hoc seeding (already uses service role). |
+| 1 | Public unauthenticated `GET /api/seed-games` uses service role to delete + reseed wheels | `app/api/seed-games/route.ts` | Security | 🔴 Critical | None — file marked "DELETE after use", was already removed once (commit `d7c0728`) and resurfaced. No script/doc references it. | 5m | Delete the file. (Note 2026-05-17: the alternative `seed_runner.mjs` mentioned in earlier audits has also been removed — it re-created 7 ghost games in prod. Use the admin "New Game" form for one-off creation.) |
 | 2 | `<html lang>` set only client-side via `useEffect` — initial server HTML has no `lang` | `components/LocaleAttributes.tsx`, `app/layout.tsx`, `middleware.ts` | SEO/A11y | 🟠 High | Low | 15m | Middleware sets `x-mioshy-locale` request header; root layout reads it via `next/headers` and applies `lang`/`dir` server-side. Delete `LocaleAttributes`. |
 | 3 | No `Organization` / `WebSite` JSON-LD on the active homepage (HomepageV2) | `components/marketing/v2/HomepageV2.tsx`, `lib/seo/jsonLd.ts` (new) | SEO/AEO | 🟠 High | None | 20m | Add JSON-LD inside HomepageV2 using a `safeJsonLd()` helper that escapes `</` to `<\/` (also covers finding #16 hardening). |
 | 4 | No `/llms.txt` | `public/llms.txt` (new) | SEO/AEO | 🟠 High | None | 10m | Bilingual llms.txt listing brand description + key pages. |
@@ -88,4 +88,4 @@ RLS deep audit — defer to a separate session before launch.
 - **#15 tracking:** real IDs ship in code (GTM-5WQQB3R, G-E7LRXB8XN0, AW-457802965 inside GTM); user will register them as a manual checklist item rather than env vars.
 - **#8 CSP:** moderate first (`'unsafe-inline'` allowed), nonce migration in a separate commit.
 - **#17 contrast:** keep `--mio-purple` / `--mio-rose` brand tokens unchanged; if a CTA fails, add stroke/shadow/overlay rather than swap colors.
-- **#1 seed-games:** delete the route. Codebase has zero references; `seed_runner.mjs` covers ad-hoc seeding.
+- **#1 seed-games:** delete the route. Codebase has zero references. (2026-05-17 update: `seed_runner.mjs` has also been removed for the same reason — both scripts had recreated ghost games in prod when re-run. Use the admin "New Game" form.)
