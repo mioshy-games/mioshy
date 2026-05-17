@@ -281,6 +281,28 @@ export function CmsTextRow({ row }: { row: CmsTextRowType }) {
   // resolved colour (if it has a HEX form) so the admin starts from a
   // known-good value rather than an empty box.
   function handleColorDropdownChange(next: string) {
+    // ── DEBUG (row-level colour vs toolbar wrap diagnostics) ───────
+    // Itzik 2026-05-16 reported: "I selected a word to colour and
+    // the whole line came out coloured". Two surfaces can produce
+    // that symptom and we need to tell them apart from telemetry:
+    //   1. The toolbar Color chip → wraps selected text in <mark>
+    //      (logged in wrapSelection above).
+    //   2. THIS dropdown → sets cms_texts.color_override for the
+    //      ENTIRE row (whole text, both languages). Picking a
+    //      preset / custom HEX here is BY DESIGN row-scoped — there
+    //      is no per-selection state for it.
+    // Surface this log so when we look at the trail we know which
+    // control fired. Includes row key + chosen value.
+    // eslint-disable-next-line no-console
+    console.log("[cms-toolbar] row-color dropdown changed", {
+      key: row.key,
+      next,
+      wholeRowAffected: true,
+      note:
+        "This dropdown recolours the entire row by design. " +
+        "If only a selected word should be coloured, use the <mark> " +
+        "toolbar chip above the textarea instead.",
+    });
     if (next === "default") {
       setColorMode("default");
       return;
@@ -753,6 +775,30 @@ function wrapSelection(
   if (!ta) return;
   const start = ta.selectionStart;
   const end = ta.selectionEnd;
+
+  // ── DEBUG (toolbar wrap diagnostics) ─────────────────────────────
+  // Itzik reported on 2026-05-16: "selecting a word and clicking the
+  // toolbar wraps the WHOLE line, not just the selection". The code
+  // below slices by selectionStart/End so it shouldn't be possible
+  // for the wrap to span more than the selection — yet the bug is
+  // user-visible. The log fires once per click and prints every
+  // value that goes into the wrap decision so we can see whether
+  // the textarea is reporting start=0/end=length, whether the
+  // selection collapsed on button mousedown, or whether something
+  // else (RTL composition, dictation, etc.) is at play. Remove
+  // once we've captured a reproduction in the wild.
+  // eslint-disable-next-line no-console
+  console.log("[cms-toolbar] wrapSelection click", {
+    tag,
+    selectionStart: start,
+    selectionEnd: end,
+    selectedLength: end - start,
+    valueLength: ta.value.length,
+    selectedText: ta.value.slice(start, end),
+    fullValue: ta.value,
+    wrappingWholeLine: start === 0 && end === ta.value.length,
+    isFocused: document.activeElement === ta,
+  });
 
   // Guard — no selection means no-op. The toolbar button is also
   // disabled at this point (see hasSelection in LanguageEditor), but

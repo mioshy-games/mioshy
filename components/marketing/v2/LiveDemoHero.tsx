@@ -16,6 +16,28 @@ import { Wheel, type WheelApi, type WheelSegment } from "@/components/Wheel";
 import { GamePageBackground } from "@/components/game/GamePageBackground";
 import type { WheelConfigRow } from "@/lib/types/database";
 import type { GameSettings } from "@/lib/types/settings";
+import { normalizeRichText } from "@/lib/cms/render";
+
+/**
+ * Mirrors `RICH_MARKUP_RE` from hooks/useCmsText.ts and the
+ * `RICH_ALLOWED_TAGS` allow-list in lib/cms/sanitize.ts.
+ *
+ * Bug 2026-05-15 — when /games admins drop `<mark>...</mark>` into
+ * the CMS row for `gamesHub.h1`, the value reaches LiveDemoHero as a
+ * raw string prop (this component receives `title: string`, not a
+ * `<CmsText>` node). React escaped the tags and showed them as
+ * literal `<mark>...</mark>` characters on the public page.
+ *
+ * Strategy: if the prop string contains any allow-listed tag, emit
+ * via `dangerouslySetInnerHTML` (+ `cms-rich` class so the same
+ * brand styling that `<CmsText>` produces is applied here too).
+ * Plain strings keep the text-node path so we don't expand the
+ * dangerouslySetInnerHTML surface unnecessarily. Server-side
+ * sanitisation in lib/cms/sanitize.ts is still the authoritative
+ * gate — by the time a string reaches this prop it carries only
+ * the 8-tag allow-list.
+ */
+const RICH_MARKUP_RE = /<\/?(?:em|strong|mark|br|p|ul|li|s)\b/i;
 
 /**
  * LiveDemoHero - premium "Try-before-signup" hero for /games.
@@ -344,24 +366,45 @@ export function LiveDemoHero({
             </motion.div>
           ) : null}
 
-          <motion.h1
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut", delay: 0.05 }}
-            className="mt-6 text-balance text-5xl leading-[1.05] tracking-[-0.02em] text-white sm:text-6xl lg:text-7xl"
-            style={{ fontFamily: "'Frank Ruhl Libre', serif", fontWeight: 600 }}
-          >
-            {title}
-          </motion.h1>
+          {RICH_MARKUP_RE.test(title) ? (
+            <motion.h1
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease: "easeOut", delay: 0.05 }}
+              className="cms-rich mt-6 text-balance text-5xl leading-[1.05] tracking-[-0.02em] text-white sm:text-6xl lg:text-7xl"
+              style={{ fontFamily: "'Frank Ruhl Libre', serif", fontWeight: 600 }}
+              dangerouslySetInnerHTML={{ __html: normalizeRichText(title) }}
+            />
+          ) : (
+            <motion.h1
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease: "easeOut", delay: 0.05 }}
+              className="mt-6 text-balance text-5xl leading-[1.05] tracking-[-0.02em] text-white sm:text-6xl lg:text-7xl"
+              style={{ fontFamily: "'Frank Ruhl Libre', serif", fontWeight: 600 }}
+            >
+              {title}
+            </motion.h1>
+          )}
 
-          <motion.p
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut", delay: 0.15 }}
-            className="mx-auto mt-6 max-w-xl text-pretty text-[19px] leading-[1.65] text-white/80 lg:mx-0"
-          >
-            {lede}
-          </motion.p>
+          {RICH_MARKUP_RE.test(lede) ? (
+            <motion.p
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease: "easeOut", delay: 0.15 }}
+              className="cms-rich mx-auto mt-6 max-w-xl text-pretty text-[19px] leading-[1.65] text-white/80 lg:mx-0"
+              dangerouslySetInnerHTML={{ __html: normalizeRichText(lede) }}
+            />
+          ) : (
+            <motion.p
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease: "easeOut", delay: 0.15 }}
+              className="mx-auto mt-6 max-w-xl text-pretty text-[19px] leading-[1.65] text-white/80 lg:mx-0"
+            >
+              {lede}
+            </motion.p>
+          )}
 
           {/* CTAs - primary mutates after settle */}
           <motion.div

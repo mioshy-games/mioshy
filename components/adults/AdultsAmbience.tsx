@@ -75,9 +75,14 @@ function makeParticles(): ParticleSpec[] {
   // Density is intentionally high so EVERY section visibly has particles
   // drifting through it as the user scrolls.
   const out: ParticleSpec[] = [];
-  // 11 vertical bands × 5 particles each = 55 particles spread page-wide.
-  // On mobile we render only ~1/3 (every 3rd) - see `mobileVisible` below.
-  const tops = [4, 12, 20, 28, 36, 44, 52, 60, 68, 78, 90] as const;
+  // Perf 2026-05-17 — reduced from 11 bands × 5 cols = 55 dots to
+  // 6 bands × 5 cols = 30 dots. Each dot carries an inline box-shadow
+  // halo + continuously-animated transform/opacity, so paint+composite
+  // cost scales linearly with count. Halving the count was the second-
+  // biggest lever (after blur radius) for the cursor-freeze on /mioshy-sex
+  // in Chrome (macOS). Bands are spread roughly evenly so each scroll
+  // viewport still has motion. On mobile we render only ~1/3.
+  const tops = [8, 24, 40, 56, 72, 88] as const;
   for (const top of tops) {
     // Five horizontal positions, jittered per row so columns never align.
     const cols = [8, 28, 48, 68, 88] as const;
@@ -201,7 +206,7 @@ export function AdultsAmbience() {
           Inline rgba values (instead of Tailwind utility classes) make
           this immune to JIT-cache hiccups during dev Fast Refresh. */}
       <div
-        className="mio-fog mio-fog-1 absolute -start-[10%] top-[5%] h-[640px] w-[640px] rounded-full blur-[100px]"
+        className="mio-fog mio-fog-1 absolute -start-[10%] top-[5%] h-[640px] w-[640px] rounded-full blur-[45px]"
         style={{ background: "rgba(244, 63, 94, 0.55)" }}
       />
       {/* mio-fog-2 - pushed significantly up (top:-15% instead of 18%) so
@@ -210,7 +215,7 @@ export function AdultsAmbience() {
           the blob now sits above the visible viewport, clipped by the
           page wrapper's overflow-hidden. */}
       <div
-        className="mio-fog mio-fog-2 absolute -end-[10%] top-[-15%] h-[600px] w-[600px] rounded-full blur-[100px]"
+        className="mio-fog mio-fog-2 absolute -end-[10%] top-[-15%] h-[600px] w-[600px] rounded-full blur-[45px]"
         style={{ background: "rgba(217, 70, 239, 0.55)" }}
       />
       {/* mio-fog-3 was originally at start-[40%] top-[50%] - dead-centre of
@@ -219,19 +224,19 @@ export function AdultsAmbience() {
           mid-zone, shrunk slightly, and dropped opacity 0.55 → 0.32 so it
           reads as ambient atmosphere rather than a discrete object. */}
       <div
-        className="mio-fog mio-fog-3 absolute -start-[15%] top-[42%] h-[460px] w-[460px] rounded-full blur-[120px]"
+        className="mio-fog mio-fog-3 absolute -start-[15%] top-[42%] h-[460px] w-[460px] rounded-full blur-[50px]"
         style={{ background: "rgba(168, 85, 247, 0.32)" }}
       />
       <div
-        className="mio-fog mio-fog-4 absolute -start-[8%] top-[72%] h-[600px] w-[600px] rounded-full blur-[100px]"
+        className="mio-fog mio-fog-4 absolute -start-[8%] top-[72%] h-[600px] w-[600px] rounded-full blur-[45px]"
         style={{ background: "rgba(236, 72, 153, 0.55)" }}
       />
       <div
-        className="mio-fog mio-fog-5 absolute -end-[8%] top-[88%] h-[560px] w-[560px] rounded-full blur-[110px]"
+        className="mio-fog mio-fog-5 absolute -end-[8%] top-[88%] h-[560px] w-[560px] rounded-full blur-[45px]"
         style={{ background: "rgba(192, 38, 211, 0.55)" }}
       />
       <div
-        className="mio-fog mio-fog-6 absolute start-[20%] top-[105%] h-[480px] w-[480px] rounded-full blur-[110px]"
+        className="mio-fog mio-fog-6 absolute start-[20%] top-[105%] h-[480px] w-[480px] rounded-full blur-[45px]"
         style={{ background: "rgba(251, 191, 36, 0.40)" }}
       />
 
