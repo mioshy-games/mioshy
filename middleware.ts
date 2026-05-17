@@ -7,28 +7,51 @@ import { SESSION_COOKIE, validateSession } from "@/lib/auth/session-enforcement"
 const intlMiddleware = createIntlMiddleware(routing);
 
 /**
+ * Search bots and SEO crawlers that should always be served the
+ * x-default locale (English) without consulting cookie or geo signals.
+ * Narrow list kept as one case-insensitive regex so the middleware
+ * hot path stays cheap.
+ */
+const CRAWLER_REGEX =
+  /googlebot|bingbot|duckduckbot|yandexbot|baiduspider|slurp|applebot|twitterbot|facebookexternalhit|ahrefsbot|semrushbot/i;
+
+function isCrawler(userAgent: string | null): boolean {
+  if (!userAgent) return false;
+  return CRAWLER_REGEX.test(userAgent);
+}
+
+/**
  * Detect the preferred locale for an incoming request.
  *
  * Priority:
- *  1. Vercel geolocation header (x-vercel-ip-country) - set automatically
- *     on Vercel deployments; Israeli IP → Hebrew.
- *  2. Browser Accept-Language header - if Hebrew is listed, use Hebrew;
- *     if English is listed (and Hebrew isn't), use English.
- *  3. Default: Hebrew (Israel-first product).
+ *  1. Crawler UA → always "en" (= x-default). No cookie / geo read,
+ *     so the bot sees deterministic content that matches what its
+ *     hreflang x-default link advertises.
+ *  2. NEXT_LOCALE cookie ("he" or "en") — the user's explicit choice
+ *     wins over geo/lang for every subsequent root visit.
+ *  3. Accept-Language — primary tag only; "he" or "he-*" → Hebrew.
+ *     "en,he;q=0.5" stays English; "he-IL,en" goes Hebrew.
+ *  4. Vercel geolocation header (x-vercel-ip-country) — IL → Hebrew.
+ *  5. Default: "en" (matches the x-default canonical we advertise).
  */
 function detectLocale(request: NextRequest): "he" | "en" {
-  // ── 1. IP geolocation ────────────────────────────────────────────────────
-  const country = request.headers.get("x-vercel-ip-country");
-  if (country === "IL") return "he";
-  // Non-IL country but still check language preference before deciding
+  // ── 1. Crawlers ──────────────────────────────────────────────────────────
+  if (isCrawler(request.headers.get("user-agent"))) return "en";
 
-  // ── 2. Browser language ──────────────────────────────────────────────────
+  // ── 2. Cookie (explicit user choice) ─────────────────────────────────────
+  const cookieLocale = request.cookies.get("NEXT_LOCALE")?.value;
+  if (cookieLocale === "he" || cookieLocale === "en") return cookieLocale;
+
+  // ── 3. Browser language (primary tag only) ───────────────────────────────
   const acceptLang = request.headers.get("accept-language") ?? "";
-  if (/\bhe\b/i.test(acceptLang)) return "he";
-  if (country && /\ben\b/i.test(acceptLang)) return "en";
+  const primary = acceptLang.split(",")[0] ?? "";
+  if (/^he\b/i.test(primary)) return "he";
 
-  // ── 3. Default ───────────────────────────────────────────────────────────
-  return "he";
+  // ── 4. IP geolocation ────────────────────────────────────────────────────
+  if (request.headers.get("x-vercel-ip-country") === "IL") return "he";
+
+  // ── 5. Default ───────────────────────────────────────────────────────────
+  return "en";
 }
 
 /**
@@ -122,12 +145,30 @@ export async function middleware(request: NextRequest) {
   // localized page directly under "/" — same SEO surface (the per-page
   // metadata canonicals already point at /he or /en explicitly), zero
   // extra round-trip.
+  //
+  // On the rewrite we also pin the chosen locale to NEXT_LOCALE so the
+  // next visit to "/" returns to the same language without re-running
+  // geo/lang detection. Skipped for crawlers (their Set-Cookie would be
+  // wasted) and when the cookie already matches the chosen locale.
   if (request.nextUrl.pathname === "/") {
     const locale = detectLocale(request);
     const url = request.nextUrl.clone();
     url.pathname = `/${locale}`;
     const rewritten = NextResponse.rewrite(url);
     copyAuthCookiesToResponse(supabaseResponse, rewritten);
+
+    const currentCookie = request.cookies.get("NEXT_LOCALE")?.value;
+    if (
+      !isCrawler(request.headers.get("user-agent")) &&
+      currentCookie !== locale
+    ) {
+      rewritten.cookies.set("NEXT_LOCALE", locale, {
+        path: "/",
+        maxAge: 60 * 60 * 24 * 365,
+        sameSite: "lax",
+        secure: true,
+      });
+    }
     return rewritten;
   }
 
