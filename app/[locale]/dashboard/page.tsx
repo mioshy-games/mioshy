@@ -1,6 +1,31 @@
+// ── SUNSET 2026-08-17 ────────────────────────────────────────────────────
+// This route appears orphaned: nothing in app/, components/, lib/, or
+// middleware.ts links to `/[locale]/dashboard` via Link, router.push,
+// or pathname checks (the live `/dashboard/*` admin gate lives at
+// `app/dashboard/` instead). It was kept here behind `robots: noindex`
+// during the Phase 6 i18n cleanup as a defensive move in case some
+// external link, bookmark, or internal tool still hits it.
+//
+// Action by 2026-08-17:
+//   1. Check Vercel Analytics for pageviews on /he/dashboard and
+//      /en/dashboard over the prior 90 days.
+//   2. If pageviews ≈ 0 → delete this file AND components/DashboardClient.tsx
+//      (the latter has no other importers).
+//   3. If pageviews > 0 → either wire it into live navigation, or set
+//      up a 301 redirect to wherever the traffic should actually land.
+// ─────────────────────────────────────────────────────────────────────────
+
+import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { DashboardClient } from "@/components/DashboardClient";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+
+// Noindex: defensive while the route's reachability is being audited
+// (see sunset note above). The middleware does not gate access here,
+// so we at least keep search engines from indexing it.
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 export default async function DashboardPage() {
   const t = await getTranslations("dashboard");

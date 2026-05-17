@@ -4,6 +4,20 @@ import { useTranslations, useLocale } from "next-intl";
 import { Link, usePathname } from "@/navigation";
 import { Sparkles, Mail, Globe } from "lucide-react";
 
+/**
+ * Persist the user's explicit language choice as `NEXT_LOCALE` so the
+ * next visit to "/" honours it. Middleware's `detectLocale` reads this
+ * cookie before Geo-IP / Accept-Language. Mirrors the server-side write
+ * in middleware.ts on the root rewrite. The `Secure` attribute is only
+ * appended on HTTPS so the switcher still works under `pnpm dev`
+ * (HTTP localhost would silently drop a Secure cookie).
+ */
+function setLocaleCookie(locale: "he" | "en") {
+  const secure =
+    window.location.protocol === "https:" ? "; Secure" : "";
+  document.cookie = `NEXT_LOCALE=${locale}; Path=/; Max-Age=31536000; SameSite=Lax${secure}`;
+}
+
 export function SiteFooter() {
   const tMarketing = useTranslations("marketingHome");
   const t = useTranslations("footer");
@@ -165,6 +179,7 @@ export function SiteFooter() {
               <Link
                 href={pathname}
                 locale="he"
+                onClick={() => setLocaleCookie("he")}
                 className={`transition-colors hover:text-white/70 ${
                   locale === "he"
                     ? "text-white/80 underline underline-offset-4 decoration-white/40"
@@ -177,6 +192,7 @@ export function SiteFooter() {
               <Link
                 href={pathname}
                 locale="en"
+                onClick={() => setLocaleCookie("en")}
                 className={`transition-colors hover:text-white/70 ${
                   locale === "en"
                     ? "text-white/80 underline underline-offset-4 decoration-white/40"

@@ -1,17 +1,29 @@
 import type { Metadata } from "next";
 import { Mail, MessageCircle, Clock } from "lucide-react";
+import { buildAlternates, buildOgLocale } from "@/lib/seo/alternates";
 
 export async function generateMetadata({
   params,
 }: {
   params: { locale: string };
 }): Promise<Metadata> {
-  const isHe = params.locale === "he";
+  const locale = params.locale === "he" ? "he" : "en";
+  const isHe = locale === "he";
+  const title = isHe ? "יצירת קשר - מיאושי" : "Contact - Mioshy";
+  const description = isHe
+    ? "איך ליצור קשר עם הצוות של מיאושי — אימייל וואטסאפ, מענה תוך 48 שעות"
+    : "How to reach the Mioshy team — email, WhatsApp, reply within 48 hours";
   return {
-    title: isHe ? "יצירת קשר - מיאושי" : "Contact - Mioshy",
-    description: isHe
-      ? "איך ליצור קשר עם הצוות של מיאושי — אימייל וואטסאפ, מענה תוך 48 שעות"
-      : "How to reach the Mioshy team — email, WhatsApp, reply within 48 hours",
+    title,
+    description,
+    alternates: buildAlternates(locale, "/contact"),
+    openGraph: {
+      ...buildOgLocale(locale),
+      type: "website",
+      title,
+      description,
+      siteName: "Mioshy",
+    },
   };
 }
 
