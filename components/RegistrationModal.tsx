@@ -2,15 +2,20 @@
 
 import { useState, useEffect } from "react";
 import { useLocale } from "next-intl";
-import { createBrowserSupabaseClient } from "@/lib/supabase/client";
+import { signupAction } from "@/app/actions/auth-actions";
 import { track } from "@/lib/analytics";
 import { AuthField, AuthSubmitButton } from "@/components/ui/auth-field";
+import { ConsentCheckbox } from "@/components/auth/ConsentCheckbox";
 import {
   Dialog,
   DialogContent,
 } from "@/components/ui/dialog";
 
 // ── Bilingual strings ────────────────────────────────────────────────────────
+// Inline rather than next-intl because this modal renders mid-game and the
+// rest of the modal's strings have lived here historically. Consent copy
+// matches the wording in messages/{he,en}.json so users get the same
+// language as the standalone /auth/signup page.
 const T = {
   he: {
     headline:       "רגע לפני שמתחילים 🎲",
@@ -23,6 +28,9 @@ const T = {
     register:       "בואו נשחק ←",
     confirmEmail:   "בדקו את האימייל לאישור החשבון, ולאחר מכן התחברו.",
     registerFailed: "ההרשמה נכשלה",
+    consentLabel:   "אני מסכים/ה לקבל עדכונים, טיפים ותכנים חדשים במייל",
+    consentHint:    "ניתן לבטל בכל עת",
+    rateLimit:      "הגבלת שליחת מיילים - נסו שוב בעוד מספר דקות.",
   },
   en: {
     headline:       "One sec before we play 🎲",
@@ -35,6 +43,9 @@ const T = {
     register:       "Let's play →",
     confirmEmail:   "Check your email to confirm your account, then sign in.",
     registerFailed: "Registration failed",
+    consentLabel:   "I agree to receive updates, tips and new content by email",
+    consentHint:    "You can unsubscribe at any time",
+    rateLimit:      "Email rate limit reached - please try again in a few minutes.",
   },
 } as const;
 
@@ -56,6 +67,7 @@ export function RegistrationModal({
   const [mobile,   setMobile]   = useState("");
   const [email,    setEmail]    = useState("");
   const [password, setPassword] = useState("");
+  const [marketingConsent, setMarketingConsent] = useState(false);
   const [busy,     setBusy]     = useState(false);
   const [error,    setError]    = useState<string | null>(null);
 
@@ -67,30 +79,35 @@ export function RegistrationModal({
     setError(null);
     setBusy(true);
     try {
-      const supabase = createBrowserSupabaseClient();
-      const { data, error: e } = await supabase.auth.signUp({ email, password });
-      if (e) throw e;
-      const user = data.user;
-      if (!user) { setError(t.confirmEmail); return; }
-      if (data.session) {
-        await supabase
-          .from("profiles")
-          .update({ full_name: fullName.trim(), mobile: mobile.trim() })
-          .eq("id", user.id);
+      // Previously called supabase.auth.signUp() directly. Step C1
+      // consolidates onto the single canonical signupAction so consent
+      // capture, Brevo sync, and session-cookie handling all go through
+      // one code path. The modal's "mobile" UI field maps to FormData
+      // `phone` (same `profiles.phone` column either way).
+      const fd = new FormData();
+      fd.set("fullName", fullName.trim());
+      fd.set("email",    email.trim());
+      fd.set("phone",    mobile.trim());
+      fd.set("password", password);
+      fd.set("marketing_consent", marketingConsent ? "true" : "false");
+      fd.set("preferred_language", locale === "en" ? "en" : "he");
+      fd.set("source", "registration_modal");
+
+      const result = await signupAction(fd);
+
+      if (!result.success) {
+        const msg = result.error ?? t.registerFailed;
+        const isRateLimit = /rate.?limit|too many/i.test(msg);
+        setError(isRateLimit ? t.rateLimit : msg);
+        return;
       }
+
       track("registration_completed", { source: "game_lobby" });
       onSuccess();
       onOpenChange(false);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "";
-      const isRateLimit = /rate.?limit|too many/i.test(msg);
-      setError(
-        isRateLimit
-          ? isHe
-            ? "הגבלת שליחת מיילים - נסו שוב בעוד מספר דקות."
-            : "Email rate limit reached - please try again in a few minutes."
-          : msg || t.registerFailed
-      );
+      setError(msg || t.registerFailed);
     } finally {
       setBusy(false);
     }
@@ -121,6 +138,15 @@ export function RegistrationModal({
               <AuthField id="reg_email"    label={t.email}    type="email" value={email} onChange={setEmail} autoComplete="email" required />
               <AuthField id="reg_password" label={t.password} type="password" value={password} onChange={setPassword} autoComplete="new-password" required minLength={8} />
             </div>
+
+            <ConsentCheckbox
+              id="reg_marketing_consent"
+              checked={marketingConsent}
+              onChange={setMarketingConsent}
+              label={t.consentLabel}
+              hint={t.consentHint}
+              dir={isHe ? "rtl" : "ltr"}
+            />
 
             {error && (
               <p className="rounded-xl bg-rose-500/15 px-4 py-2.5 text-sm text-rose-300">{error}</p>

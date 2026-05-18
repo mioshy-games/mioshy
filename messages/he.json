@@ -275,7 +275,9 @@
     "terms": "תנאי השימוש",
     "termsSep": " ול-",
     "privacy": "מדיניות הפרטיות",
-    "termsSuffix": " שלנו."
+    "termsSuffix": " שלנו.",
+    "consentLabel": "אני מסכים/ה לקבל עדכונים, טיפים ותכנים חדשים במייל",
+    "consentHint": "ניתן לבטל בכל עת"
   },
   "footer": {
     "exploreTitle": "גלו",

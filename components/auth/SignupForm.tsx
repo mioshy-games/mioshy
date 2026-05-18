@@ -2,10 +2,11 @@
 
 import { motion } from "framer-motion";
 import { useState, useTransition } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Link, useRouter } from "@/navigation";
 import { signupAction } from "@/app/actions/auth-actions";
 import { AuthField, AuthSubmitButton, AuthCard } from "@/components/ui/auth-field";
+import { ConsentCheckbox } from "@/components/auth/ConsentCheckbox";
 import { safeNext } from "@/lib/auth/safe-next";
 
 type Props = {
@@ -17,6 +18,7 @@ type Props = {
 export function SignupForm({ next }: Props) {
   const router = useRouter();
   const t = useTranslations("auth");
+  const locale = useLocale() as "he" | "en";
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -24,6 +26,7 @@ export function SignupForm({ next }: Props) {
   const [email,    setEmail]    = useState("");
   const [phone,    setPhone]    = useState("");
   const [password, setPassword] = useState("");
+  const [marketingConsent, setMarketingConsent] = useState(false);
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -33,6 +36,11 @@ export function SignupForm({ next }: Props) {
     fd.set("email",    email);
     fd.set("phone",    phone);
     fd.set("password", password);
+    // New in Step C1: marketing consent + locale + source. Locale is
+    // derived from the URL via useLocale() rather than asking the user.
+    fd.set("marketing_consent", marketingConsent ? "true" : "false");
+    fd.set("preferred_language", locale === "en" ? "en" : "he");
+    fd.set("source", "signup");
 
     startTransition(async () => {
       const result = await signupAction(fd);
@@ -78,6 +86,14 @@ export function SignupForm({ next }: Props) {
           <AuthField id="signup_email"    label={t("emailLabel")}    type="email" value={email} onChange={setEmail} autoComplete="email"  required placeholder={t("emailPlaceholder")} />
           <AuthField id="signup_phone"    label={t("phoneLabel")}    type="tel"   value={phone} onChange={setPhone} autoComplete="tel"    optional  placeholder={t("phonePlaceholder")} />
           <AuthField id="signup_password" label={t("passwordLabel")} type="password" value={password} onChange={setPassword} autoComplete="new-password" required minLength={6} placeholder={t("passwordPlaceholder")} />
+
+          <ConsentCheckbox
+            id="signup_marketing_consent"
+            checked={marketingConsent}
+            onChange={setMarketingConsent}
+            label={t("consentLabel")}
+            hint={t("consentHint")}
+          />
 
           {error && (
             <motion.p

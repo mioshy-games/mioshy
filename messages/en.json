@@ -275,7 +275,9 @@
     "terms": "Terms",
     "termsSep": " and ",
     "privacy": "Privacy Policy",
-    "termsSuffix": "."
+    "termsSuffix": ".",
+    "consentLabel": "I agree to receive updates, tips and new content by email",
+    "consentHint": "You can unsubscribe at any time"
   },
   "footer": {
     "exploreTitle": "Explore",

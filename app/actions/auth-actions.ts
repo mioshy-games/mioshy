@@ -9,6 +9,7 @@ import {
   createSession,
   invalidateAllSessions,
 } from "@/lib/auth/session-enforcement";
+import { tagAsRegistered } from "@/lib/email/brevo-segments-sync";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -46,11 +47,35 @@ export type SignupResult =
   | { success: true }
   | { success: false; error: string };
 
+// Known sources for marketing_consent_source. Free-form text in the DB
+// for forward compatibility (see migration 082); these are the values
+// signupAction will ever write.
+type SignupSource = "signup" | "registration_modal";
+
+function parseSignupSource(raw: string | null | undefined): SignupSource {
+  return raw === "registration_modal" ? "registration_modal" : "signup";
+}
+
+function parseLanguage(raw: string | null | undefined): "he" | "en" {
+  return raw === "en" ? "en" : "he";
+}
+
 export async function signupAction(formData: FormData): Promise<SignupResult> {
   const fullName = (formData.get("fullName") as string | null)?.trim() ?? "";
   const email    = (formData.get("email")    as string | null)?.trim() ?? "";
   const phone    = (formData.get("phone")    as string | null)?.trim() ?? "";
   const password = (formData.get("password") as string | null) ?? "";
+
+  // New in Step C1 — marketing consent + locale + source. Optional so older
+  // callers (forms that haven't been updated yet) keep working: missing
+  // consent defaults to false, missing language to 'he', missing source
+  // to 'signup'.
+  const marketingConsent =
+    (formData.get("marketing_consent") as string | null) === "true";
+  const preferredLanguage = parseLanguage(
+    formData.get("preferred_language") as string | null,
+  );
+  const source = parseSignupSource(formData.get("source") as string | null);
 
   if (!fullName || !email || !password) {
     return { success: false, error: "Please fill in all required fields." };
@@ -80,11 +105,46 @@ export async function signupAction(formData: FormData): Promise<SignupResult> {
 
     const userId = userData.user.id;
 
-    // Upsert profile row with name + phone
+    // Upsert profile row with name + phone + consent state + language.
+    // The trigger from migration 002 has already inserted a row with
+    // role='user', so this upsert just fills in the fields we collect at
+    // signup. marketing_consent_at is stamped only when consent=true so
+    // future code can distinguish "never opted in" (NULL) from "opted in
+    // on a specific date" — important for any GDPR audit trail.
     await admin.from("profiles").upsert(
-      { id: userId, full_name: fullName, phone: phone || null },
+      {
+        id: userId,
+        full_name: fullName,
+        phone: phone || null,
+        marketing_consent: marketingConsent,
+        marketing_consent_at: marketingConsent ? new Date().toISOString() : null,
+        marketing_consent_source: marketingConsent ? source : null,
+        preferred_language: preferredLanguage,
+      },
       { onConflict: "id" },
     );
+
+    // Fire-and-forget Brevo sync. Israeli Communications Act §30A:
+    // marketing emails require prior explicit consent, so we only call
+    // Brevo when the user ticked the box. Auth + profile creation are
+    // the source of truth — Brevo failure must NEVER fail the signup.
+    if (marketingConsent) {
+      try {
+        const syncResult = await tagAsRegistered(
+          email,
+          userId,
+          preferredLanguage,
+        );
+        if (!syncResult.success) {
+          console.warn(
+            "[signup] tagAsRegistered returned non-success:",
+            syncResult.error,
+          );
+        }
+      } catch (brevoErr) {
+        console.error("[signup] Brevo sync failed", brevoErr);
+      }
+    }
 
     // Auto sign-in via regular client (now that email is confirmed)
     const supabase = await createServerSupabaseClient();

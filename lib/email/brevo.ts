@@ -9,6 +9,8 @@
 // ============================================================
 import "server-only";
 
+import { getBrevoApiKeyOrNull } from "./brevo-client";
+
 const BREVO_API = "https://api.brevo.com/v3/smtp/email";
 
 export interface BrevoRecipient {
@@ -46,7 +48,11 @@ function envOrNull(key: string): string | null {
 export async function sendBrevoEmail(
   payload: BrevoPayload,
 ): Promise<BrevoSendResult> {
-  const apiKey = envOrNull("BREVO_API_KEY");
+  // The API key is resolved through getBrevoApiKeyOrNull(), which decodes
+  // the base64-wrapped JSON shape stored in .env.local
+  // ({"api_key":"xkeysib-..."}) and falls back to the raw value when
+  // BREVO_API_KEY is already in xkeysib- form (e.g., on Vercel).
+  const apiKey = getBrevoApiKeyOrNull();
   const senderEmail = envOrNull("BREVO_SENDER_EMAIL");
   const senderName = envOrNull("BREVO_SENDER_NAME") ?? "Mioshy";
 
