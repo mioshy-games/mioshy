@@ -6,6 +6,8 @@ import type { Question, QuestionChoice, QuestionReflection, AnswerValue, Locale 
 import { likertLabel, promptFor } from "@/lib/journey/questions";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { useCmsText } from "@/hooks/useCmsText";
+import { CmsText } from "@/components/cms/CmsText";
 
 interface QuestionStepProps {
   question: Question;
@@ -29,6 +31,10 @@ export function QuestionStep({ question, locale, onSubmit, initial, busy }: Ques
 
   const isHe = locale === "he";
 
+  // CMS strings that need a raw string (validation message, busy label).
+  const selectAnswerMsg = useCmsText("journeyAssessment.question.selectAnswer").text;
+  const savingLabel = useCmsText("journeyAssessment.question.saving").text;
+
   // Auto-submitting question types
   const isAutoAdvance =
     question.type === "likert5" ||
@@ -43,7 +49,7 @@ export function QuestionStep({ question, locale, onSubmit, initial, busy }: Ques
 
   const submit = async () => {
     if (!answer) {
-      setError(isHe ? "בחר/י תשובה כדי להמשיך" : "Select an answer to continue");
+      setError(selectAnswerMsg);
       return;
     }
     setError(null);
@@ -77,7 +83,7 @@ export function QuestionStep({ question, locale, onSubmit, initial, busy }: Ques
       ) : question.type === "multi_choice" ? (
         <MultiChoiceControl question={question as QuestionChoice} locale={locale} value={answer} onChange={setAnswer} />
       ) : (
-        <ReflectionControl question={question as QuestionReflection} locale={locale} value={answer} onChange={setAnswer} />
+        <ReflectionControl question={question as QuestionReflection} value={answer} onChange={setAnswer} />
       )}
 
       {error ? <p className="text-sm text-rose-300">{error}</p> : null}
@@ -95,14 +101,16 @@ export function QuestionStep({ question, locale, onSubmit, initial, busy }: Ques
           size="lg"
           className="min-h-[50px] w-full text-[18px] font-semibold"
         >
-          {busy
-            ? isHe ? "שומר/ת…" : "Saving…"
-            : isHe ? "המשך" : "Continue"}
+          {busy ? (
+            savingLabel
+          ) : (
+            <CmsText cmsKey="journeyAssessment.question.continue" />
+          )}
         </Button>
       ) : busy ? (
         <div className="flex items-center gap-2 text-sm text-white/60">
           <div className="h-4 w-4 animate-spin rounded-full border-2 border-fuchsia-400 border-t-transparent" />
-          {isHe ? "שומר/ת…" : "Saving…"}
+          {savingLabel}
         </div>
       ) : null}
     </motion.div>
@@ -247,23 +255,22 @@ function MultiChoiceControl({
 
 function ReflectionControl({
   question,
-  locale,
   value,
   onChange,
 }: {
   question: QuestionReflection;
-  locale: Locale;
   value: AnswerValue | null;
   onChange: (v: AnswerValue) => void;
 }) {
   const text = value?.kind === "text" ? value.text : "";
+  const placeholder = useCmsText("journeyAssessment.question.reflectionPlaceholder").text;
   return (
     <Textarea
       value={text}
       onChange={(e) => onChange({ kind: "text", text: e.target.value })}
       maxLength={question.max_length ?? 600}
       rows={5}
-      placeholder={locale === "he" ? "כתוב/י בחופשיות…" : "Write freely…"}
+      placeholder={placeholder}
       className="bg-slate-800/70 border-white/12 text-white placeholder:text-white/40 focus-visible:border-fuchsia-400/60 focus-visible:ring-fuchsia-400/20"
     />
   );

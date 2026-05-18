@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { useLocale } from "next-intl";
 import { cn } from "@/lib/utils";
+import { CmsText } from "@/components/cms/CmsText";
 
 export type GameType = "wheel" | "snakes";
 
@@ -13,25 +14,23 @@ export function GameTypeSelector({
   value: GameType | null;
   onChange: (v: GameType) => void;
 }) {
-  const locale = useLocale();
-  const isHe = locale === "he";
+  // useLocale() kept available for future locale-conditional UX (e.g.,
+  // sort order, direction) — strings themselves come from CMS via
+  // gameTypeSelector.* keys.
+  void useLocale();
 
   const Card = ({
     type,
-    titleHe,
-    titleEn,
-    descHe,
-    descEn,
-    badge,
+    titleKey,
+    descKey,
+    badgeKey,
     accent,
     icon,
   }: {
     type: GameType;
-    titleHe: string;
-    titleEn: string;
-    descHe: string;
-    descEn: string;
-    badge: string;
+    titleKey: string;
+    descKey: string;
+    badgeKey: string;
     accent: "purple" | "cyan";
     icon: string;
   }) => {
@@ -62,17 +61,22 @@ export function GameTypeSelector({
           <div className="flex items-center gap-3">
             <span className="text-3xl">{icon}</span>
             <div>
-              <div className="text-lg font-bold text-slate-100">
-                {isHe ? titleHe : titleEn}
-              </div>
-              <div className="mt-1 text-sm text-slate-300">
-                {isHe ? descHe : descEn}
-              </div>
+              <CmsText
+                cmsKey={titleKey}
+                as="div"
+                className="text-lg font-bold text-slate-100"
+              />
+              <CmsText
+                cmsKey={descKey}
+                as="div"
+                className="mt-1 text-sm text-slate-300"
+              />
             </div>
           </div>
-          <span className="shrink-0 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-slate-200">
-            {badge}
-          </span>
+          <CmsText
+            cmsKey={badgeKey}
+            className="shrink-0 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-slate-200"
+          />
         </div>
       </motion.button>
     );
@@ -83,24 +87,19 @@ export function GameTypeSelector({
       <Card
         type="wheel"
         icon="🎡"
-        titleHe="גלגל המזל"
-        titleEn="Spin the Wheel"
-        descHe="סובבו את הגלגל וקבלו שאלות ואתגרים"
-        descEn="Spin and get questions & dares"
-        badge={isHe ? "קיים" : "Available"}
+        titleKey="gameTypeSelector.wheelTitle"
+        descKey="gameTypeSelector.wheelDesc"
+        badgeKey="gameTypeSelector.wheelBadge"
         accent="purple"
       />
       <Card
         type="snakes"
         icon="🐍🌈"
-        titleHe="נחשים וסולמות"
-        titleEn="Snakes & Ladders"
-        descHe="עד 8 שחקנים על לוח עם שאלות ואתגרים זוגיים"
-        descEn="Up to 8 players with couple questions & challenges"
-        badge={isHe ? "חדש 🔥" : "New 🔥"}
+        titleKey="gameTypeSelector.snakesTitle"
+        descKey="gameTypeSelector.snakesDesc"
+        badgeKey="gameTypeSelector.snakesBadge"
         accent="cyan"
       />
     </div>
   );
 }
-

@@ -21,6 +21,10 @@ import { redirect } from "next/navigation";
 import { setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { Link } from "@/navigation";
+import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
+import { loadCmsTextsForPage } from "@/lib/cms/server";
+import { CmsTextProvider } from "@/components/cms/CmsTextProvider";
+import { CmsText } from "@/components/cms/CmsText";
 import {
   ArrowLeft,
   ArrowRight,
@@ -53,12 +57,15 @@ export async function generateMetadata({
 }: {
   params: { locale: string };
 }): Promise<Metadata> {
-  const isHe = params.locale === "he";
+  const t = await getCmsTranslations({
+    locale: params.locale === "he" ? "he" : "en",
+    namespace: "journeyTimeline.page",
+    page: "journey",
+  });
   return {
-    title: `Mioshy - ${isHe ? "מסע זוגי · הציר שלכם" : "Journey · Your timeline"}`,
-    description: isHe
-      ? "המסלול האישי שלכם - פרקים שנפתחים בקצב שלכם, תרגולים ותובנות."
-      : "Your personal path - chapters that open at your pace, exercises and insights.",
+    title: `Mioshy - ${t("meta.title")}`,
+    description: t("meta.description"),
+    robots: { index: false, follow: false },
   };
 }
 
@@ -74,6 +81,12 @@ export default async function JourneyTimelinePage({
   setRequestLocale(locale);
 
   const isHe = locale === "he";
+  const t = await getCmsTranslations({
+    locale: isHe ? "he" : "en",
+    namespace: "journeyTimeline.page",
+    page: "journey",
+  });
+  const cmsRows = await loadCmsTextsForPage("journey");
 
   // ── Auth gate ──────────────────────────────────────────────────────────
   const supabase = await createServerSupabaseClient();
@@ -126,6 +139,7 @@ export default async function JourneyTimelinePage({
   // ── Empty state ───────────────────────────────────────────────────────
   if (entries.length === 0) {
     return (
+      <CmsTextProvider rows={cmsRows}>
       <div
         dir={isHe ? "rtl" : "ltr"}
         className="relative min-h-[100dvh] overflow-hidden text-white"
@@ -143,35 +157,36 @@ export default async function JourneyTimelinePage({
         <main className="relative mx-auto flex min-h-[100dvh] max-w-3xl flex-col items-center justify-center px-4 py-16 text-center">
           <div className="inline-flex items-center gap-1.5 rounded-full border border-indigo-300/40 bg-indigo-500/10 px-3 py-1 text-xs backdrop-blur">
             <Sparkles className="h-3.5 w-3.5 text-indigo-200" />
-            <span className="font-semibold text-indigo-100">
-              {isHe ? "המסע שלכם" : "Your journey"}
-            </span>
+            <CmsText
+              cmsKey="journeyTimeline.page.yourJourney"
+              className="font-semibold text-indigo-100"
+            />
           </div>
 
           <h1 className="mt-5 flex items-center justify-center gap-3 text-4xl font-bold tracking-tight sm:text-5xl">
             <Compass className="h-9 w-9 text-indigo-300 sm:h-11 sm:w-11" />
-            {isHe ? "הציר שלכם עדיין ריק" : "Your timeline is still empty"}
+            <CmsText cmsKey="journeyTimeline.page.empty.h1" />
           </h1>
 
-          <p className="mt-5 max-w-xl text-base text-white/75 sm:text-lg">
-            {isHe
-              ? "לאחר שתצטרפו למסלול, פרקים אישיים ייפתחו כאן בקצב שלכם - תרגולים, שיחות וטקסי שבוע."
-              : "Once you join a program, personal chapters will open here at your own pace - exercises, conversations, and weekly rituals."}
-          </p>
+          <CmsText
+            cmsKey="journeyTimeline.page.empty.lede"
+            as="p"
+            className="mt-5 max-w-xl text-base text-white/75 sm:text-lg"
+          />
 
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link
               href="/journey"
               className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-500 via-emerald-500 to-teal-500 px-6 py-3 text-sm font-semibold shadow-lg shadow-indigo-900/30 transition hover:brightness-110"
             >
-              {isHe ? "גלו את המסע" : "Explore the Journey"}
+              <CmsText cmsKey="journeyTimeline.page.empty.ctaExplore" />
               <Arrow className="h-4 w-4 rotate-180" />
             </Link>
             <Link
               href="/journey/assessment"
               className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-6 py-3 text-sm font-medium text-white/85 transition hover:bg-white/10"
             >
-              {isHe ? "התחילו באבחון של 5 דק׳" : "Start with the 5-min assessment"}
+              <CmsText cmsKey="journeyTimeline.page.empty.ctaAssessment" />
             </Link>
           </div>
 
@@ -180,15 +195,17 @@ export default async function JourneyTimelinePage({
             className="mt-10 inline-flex items-center gap-1 text-xs font-medium text-white/50 transition hover:text-white/80"
           >
             <Arrow className="h-3 w-3 rotate-180" />
-            {isHe ? "חזרה למיאושי שלי" : "Back to My Mioshy"}
+            <CmsText cmsKey="journeyTimeline.page.backToMy" />
           </Link>
         </main>
       </div>
+      </CmsTextProvider>
     );
   }
 
   // ── Populated timeline ────────────────────────────────────────────────
   return (
+    <CmsTextProvider rows={cmsRows}>
     <div
       dir={isHe ? "rtl" : "ltr"}
       className="relative min-h-[100dvh] overflow-hidden text-white"
@@ -238,7 +255,7 @@ export default async function JourneyTimelinePage({
           className="inline-flex items-center gap-1 text-xs font-medium text-white/55 transition hover:text-white/90"
         >
           <Arrow className="h-3 w-3 rotate-180" />
-          {isHe ? "חזרה למיאושי שלי" : "Back to My Mioshy"}
+          <CmsText cmsKey="journeyTimeline.page.backToMy" />
         </Link>
 
         {/* v3 slice 5 - grace banner. Renders nothing when journeyState
@@ -256,30 +273,36 @@ export default async function JourneyTimelinePage({
           <div>
             <div className="inline-flex items-center gap-1.5 rounded-full border border-indigo-300/40 bg-indigo-500/10 px-3 py-1 text-xs backdrop-blur">
               <MapIcon className="h-3.5 w-3.5 text-indigo-200" />
-              <span className="font-semibold text-indigo-100">
-                {isHe ? "ציר המסע" : "Journey timeline"}
-              </span>
+              <CmsText
+                cmsKey="journeyTimeline.page.timelineBadge"
+                className="font-semibold text-indigo-100"
+              />
             </div>
             <h1 className="mt-3 flex items-center gap-3 text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
               <Compass className="h-7 w-7 text-indigo-300 sm:h-9 sm:w-9 lg:h-10 lg:w-10" />
-              {isHe ? "המסע שלכם" : "Your journey"}
+              <CmsText cmsKey="journeyTimeline.page.yourJourney" />
             </h1>
-            <p className="mt-2 max-w-2xl text-sm text-white/70 sm:mt-3 sm:text-base">
-              {isHe
-                ? "כל פרק נפתח בזמן שלו. כשהגיע התור - היכנסו, תרגלו וענו יחד."
-                : "Each chapter opens on its own time. When it's ready - step in, reflect, and practice together."}
-            </p>
+            <CmsText
+              cmsKey="journeyTimeline.page.timelineLede"
+              as="p"
+              className="mt-2 max-w-2xl text-sm text-white/70 sm:mt-3 sm:text-base"
+            />
           </div>
 
-          {/* Progress summary - full width on mobile, right-aligned on desktop */}
+          {/* Progress summary - full width on mobile, right-aligned on desktop.
+              Stat labels resolved here via t() so the inner Stat sub-component
+              stays a plain string-prop consumer. */}
           <div className="self-start sm:self-end">
             <ProgressSummary
-              isHe={isHe}
               total={counts.total}
               completed={counts.completed}
               available={counts.available}
               locked={counts.locked}
               progressPct={progress}
+              labelDone={t("progress.done")}
+              labelOpen={t("progress.open")}
+              labelLocked={t("progress.locked")}
+              srTemplate={t("progress.srTemplate")}
             />
           </div>
         </section>
@@ -298,7 +321,7 @@ export default async function JourneyTimelinePage({
         <section className="mt-10 sm:mt-12">
           <div className="mb-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-white/55">
             <span className="h-px flex-1 bg-gradient-to-r from-transparent via-white/15 to-transparent" />
-            <span>{isHe ? "כל הפרקים" : "All chapters"}</span>
+            <CmsText cmsKey="journeyTimeline.page.allChapters" />
             <span className="h-px flex-1 bg-gradient-to-r from-transparent via-white/15 to-transparent" />
           </div>
           <TimelineList
@@ -313,17 +336,19 @@ export default async function JourneyTimelinePage({
         <section className="mt-10 sm:mt-12">
           <div className="mb-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-white/55">
             <span className="h-px flex-1 bg-gradient-to-r from-transparent via-white/15 to-transparent" />
-            <span>{isHe ? "ההיסטוריה שלכם" : "Recent activity"}</span>
+            <CmsText cmsKey="journeyTimeline.page.recentActivity" />
             <span className="h-px flex-1 bg-gradient-to-r from-transparent via-white/15 to-transparent" />
           </div>
           <UserRecentActivity userId={user.id} isHe={isHe} />
         </section>
 
         {/* Trust anchor - quiet but present, reinforcing this is a
-            guided, proven service rather than auto-generated content. */}
-        <TrustAnchor isHe={isHe} />
+            guided, proven service rather than auto-generated content.
+            aria-label resolved via t() since the slot is an HTML attribute. */}
+        <TrustAnchor ariaLabel={t("trust.ariaLabel")} />
       </main>
     </div>
+    </CmsTextProvider>
   );
 }
 
@@ -333,36 +358,36 @@ export default async function JourneyTimelinePage({
 // reads as background authority rather than marketing.
 // ------------------------------------------------------------
 
-function TrustAnchor({ isHe }: { isHe: boolean }) {
+function TrustAnchor({ ariaLabel }: { ariaLabel: string }) {
   return (
     <aside
-      aria-label={isHe ? "עוגן אמון" : "Trust anchor"}
+      aria-label={ariaLabel}
       className="mt-16 flex flex-col items-center gap-3 border-t border-white/5 pt-10 text-center"
     >
       <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-200/80">
         <ShieldCheck className="h-3.5 w-3.5" />
-        {isHe ? "ליווי מקצועי מאז 2001" : "Trusted guidance since 2001"}
+        <CmsText cmsKey="journeyTimeline.page.trust.guidance" />
       </div>
       <div className="inline-flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-start backdrop-blur">
         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-rose-400/85 to-fuchsia-500/85 text-white shadow-inner">
           <Heart className="h-4 w-4" />
         </div>
         <div className="flex flex-col leading-tight">
-          <span className="text-sm font-semibold text-white">
-            {isHe ? "איציק ברלב" : "Itzik Berlav"}
-          </span>
-          <span className="text-xs text-white/60">
-            {isHe
-              ? "מומחה ליחסים זוגיים · ליווי זוגות למעלה מ-25 שנה"
-              : "Couples specialist · Over 25 years coaching relationships"}
-          </span>
+          <CmsText
+            cmsKey="journeyTimeline.page.trust.name"
+            className="text-sm font-semibold text-white"
+          />
+          <CmsText
+            cmsKey="journeyTimeline.page.trust.title"
+            className="text-xs text-white/60"
+          />
         </div>
       </div>
-      <p className="mt-1 max-w-md text-xs leading-relaxed text-white/55">
-        {isHe
-          ? "כל פרק במסע נבנה על בסיס אלפי שיחות עם זוגות אמיתיים - לא תוכן גנרי, אלא צעדים שעובדים."
-          : "Every chapter is built on thousands of real couples' conversations - not generic content, but steps that actually work."}
-      </p>
+      <CmsText
+        cmsKey="journeyTimeline.page.trust.body"
+        as="p"
+        className="mt-1 max-w-md text-xs leading-relaxed text-white/55"
+      />
     </aside>
   );
 }
@@ -372,23 +397,33 @@ function TrustAnchor({ isHe }: { isHe: boolean }) {
 // ------------------------------------------------------------
 
 function ProgressSummary({
-  isHe,
   total,
   completed,
   available,
   locked,
   progressPct,
+  labelDone,
+  labelOpen,
+  labelLocked,
+  srTemplate,
 }: {
-  isHe: boolean;
   total: number;
   completed: number;
   available: number;
   locked: number;
   progressPct: number;
+  labelDone: string;
+  labelOpen: string;
+  labelLocked: string;
+  // Template with {completed}/{total} placeholders, filled at render.
+  srTemplate: string;
 }) {
   const radius = 28;
   const circ = 2 * Math.PI * radius;
   const dash = (progressPct / 100) * circ;
+  const srText = srTemplate
+    .replace("{completed}", String(completed))
+    .replace("{total}", String(total));
 
   return (
     <div className="inline-flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur">
@@ -429,24 +464,20 @@ function ProgressSummary({
         <Stat
           icon={<CheckCircle2 className="h-3.5 w-3.5 text-emerald-300" />}
           value={completed}
-          label={isHe ? "הושלמו" : "Done"}
+          label={labelDone}
         />
         <Stat
           icon={<Clock className="h-3.5 w-3.5 text-amber-200" />}
           value={available}
-          label={isHe ? "פתוחים" : "Open"}
+          label={labelOpen}
         />
         <Stat
           icon={<Lock className="h-3.5 w-3.5 text-white/60" />}
           value={locked}
-          label={isHe ? "נעולים" : "Locked"}
+          label={labelLocked}
         />
       </div>
-      <div className="sr-only">
-        {isHe
-          ? `התקדמות: ${completed} מתוך ${total}`
-          : `Progress: ${completed} of ${total}`}
-      </div>
+      <div className="sr-only">{srText}</div>
     </div>
   );
 }

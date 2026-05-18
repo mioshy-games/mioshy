@@ -31,6 +31,8 @@ import {
   toggleReaction,
 } from "@/app/actions/journey-messages";
 import type { JourneyMessage } from "@/lib/journey-content/messages";
+import { useCmsText } from "@/hooks/useCmsText";
+import { CmsText } from "@/components/cms/CmsText";
 
 const REACTION_PALETTE: Array<{ emoji: string; glyph: string; label: string }> = [
   { emoji: ":heart:", glyph: "❤️", label: "Heart" },
@@ -67,6 +69,14 @@ export function PerItemThread({
   const [posting, setPosting] = React.useState(false);
   const composerRef = React.useRef<HTMLTextAreaElement | null>(null);
 
+  // Raw-string consumers — toast messages, textarea placeholder, aria
+  // labels, sender labels (used inside MessageRow logic below).
+  const saveFailedTpl = useCmsText("journeyTimeline.thread.saveFailed").text;
+  const reactionFailedTpl = useCmsText("journeyTimeline.thread.reactionFailed").text;
+  const postedMsg = useCmsText("journeyTimeline.thread.posted").text;
+  const composerPlaceholder = useCmsText("journeyTimeline.thread.composerPlaceholder").text;
+  const historyAria = useCmsText("journeyTimeline.thread.historyAria").text;
+
   // Sync local state when the parent revalidates with fresh server data.
   const lastMsgIdsRef = React.useRef<string>(messages.map((m) => m.id).join("|"));
   React.useEffect(() => {
@@ -95,13 +105,11 @@ export function PerItemThread({
     });
     setPosting(false);
     if (!res.ok) {
-      toast.error(
-        isHe ? `שמירה נכשלה: ${res.error}` : `Save failed: ${res.error}`,
-      );
+      toast.error(saveFailedTpl.replace("{error}", res.error));
       return;
     }
     setDraft("");
-    toast.success(isHe ? "התגובה נשמרה" : "Response posted");
+    toast.success(postedMsg);
     router.refresh();
   }
 
@@ -122,9 +130,7 @@ export function PerItemThread({
     );
     const res = await toggleReaction({ messageId, emoji });
     if (!res.ok) {
-      toast.error(
-        isHe ? `שמירה נכשלה: ${res.error}` : `Reaction failed: ${res.error}`,
-      );
+      toast.error(reactionFailedTpl.replace("{error}", res.error));
       router.refresh(); // pull authoritative state
       return;
     }
@@ -146,11 +152,7 @@ export function PerItemThread({
           onChange={(e) => setDraft(e.target.value)}
           rows={4}
           dir={isHe ? "rtl" : "ltr"}
-          placeholder={
-            isHe
-              ? "מה עולה לכם מהפריט הזה? תגובה למומחים שלנו…"
-              : "What surfaces for you here? Send a note to our experts…"
-          }
+          placeholder={composerPlaceholder}
           className="min-h-[110px] resize-y bg-white/[0.04] border-white/15 text-white placeholder:text-white/35"
           disabled={posting}
         />
@@ -169,12 +171,12 @@ export function PerItemThread({
               {isPrivate ? (
                 <span className="inline-flex items-center gap-1.5">
                   <ShieldCheck className="size-3.5" aria-hidden />
-                  {isHe ? "פרטי - רק אתם והמומחים" : "Private - only you + experts"}
+                  <CmsText cmsKey="journeyTimeline.thread.privateLabel" />
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1.5">
                   <Users className="size-3.5" aria-hidden />
-                  {isHe ? "משותף עם בן/בת הזוג" : "Shared with your partner"}
+                  <CmsText cmsKey="journeyTimeline.list.shared" />
                 </span>
               )}
             </Label>
@@ -189,18 +191,16 @@ export function PerItemThread({
             ) : (
               <Send className="me-2 size-4" aria-hidden />
             )}
-            {isHe ? "שלחו" : "Send"}
+            <CmsText cmsKey="journeyTimeline.thread.send" />
           </Button>
         </div>
       </form>
 
       {/* Thread history */}
-      <ol className="space-y-3" aria-label={isHe ? "היסטוריית שיחה" : "Thread history"}>
+      <ol className="space-y-3" aria-label={historyAria}>
         {messages.length === 0 ? (
           <li className="rounded-xl border border-white/10 bg-white/[0.03] p-4 text-center text-sm text-white/55">
-            {isHe
-              ? "עדיין אין הודעות בשיחה הזו. התגובה שלכם תפתח אותה."
-              : "No messages in this thread yet. Your response opens it."}
+            <CmsText cmsKey="journeyTimeline.thread.empty" />
           </li>
         ) : (
           messages.map((m) => (
@@ -232,9 +232,15 @@ function MessageRow({
   const isExpert = message.author_kind === "expert";
   const isMine = message.author_user_id === viewerUserId;
 
+  // Sender-label strings via CMS. Resolved here so the avatar-initial
+  // fallback below can read the same value.
+  const senderMioshy = useCmsText("journeyTimeline.thread.senderMioshy").text;
+  const senderYou = useCmsText("journeyTimeline.thread.senderYou").text;
+  const senderPartner = useCmsText("journeyTimeline.thread.senderPartner").text;
+
   // Chat-bubble layout (Itzik #68 2026-05-07):
   //   • Expert messages anchor to the inline-start (RTL: right, LTR: left)
-  //     with a "מיאושי" badge so the source is unmistakable.
+  //     with the expert/Mioshy badge so the source is unmistakable.
   //   • User messages anchor to the inline-end and are visually softer.
   // The layout is RTL-aware via flexbox justify-* (which respects `dir`).
   const align = isExpert ? "justify-start" : "justify-end";
@@ -246,8 +252,8 @@ function MessageRow({
 
   // Sender label & avatar — Layer 2 surfaces the specific coach's
   // persona (display name + avatar) when expert_persona is present.
-  // Falls back to a generic "מיאושי" only for legacy unattributed
-  // expert messages.
+  // Falls back to the CMS-managed generic 'Mioshy' label for legacy
+  // unattributed expert messages.
   const expertPersona = message.expert_persona ?? null;
   const expertDisplayName = expertPersona
     ? (isHe
@@ -256,19 +262,15 @@ function MessageRow({
       expertPersona.display_name_he
     : null;
   const senderLabel = isExpert
-    ? expertDisplayName ?? (isHe ? "מיאושי" : "Mioshy")
+    ? expertDisplayName ?? senderMioshy
     : isMine
-      ? isHe
-        ? "אתם"
-        : "You"
-      : isHe
-        ? "בן/בת הזוג"
-        : "Your partner";
+      ? senderYou
+      : senderPartner;
   const avatarInitial = isExpert
-    ? (expertDisplayName ?? (isHe ? "מ" : "M")).slice(0, 1)
+    ? (expertDisplayName ?? senderMioshy).slice(0, 1)
     : isMine
       ? "·"
-      : "ז";
+      : senderPartner.slice(0, 1);
   const expertAvatarUrl = expertPersona?.avatar_url ?? null;
 
   const reactions = message.reactions ?? {};
@@ -320,7 +322,7 @@ function MessageRow({
           {message.is_private ? (
             <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-white/65">
               <ShieldCheck className="size-3" aria-hidden />
-              {isHe ? "פרטי" : "Private"}
+              <CmsText cmsKey="journeyTimeline.thread.privateBadge" />
             </span>
           ) : null}
         </div>
@@ -394,7 +396,6 @@ function ReactionPicker({
   existing,
   viewerUserId,
   onPick,
-  isHe,
 }: {
   messageId: string;
   existing: Record<string, string[]>;
@@ -403,13 +404,14 @@ function ReactionPicker({
   isHe: boolean;
 }) {
   const [open, setOpen] = React.useState(false);
+  const addReactionLabel = useCmsText("journeyTimeline.thread.addReaction").text;
   return (
     <div className="relative inline-block">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-white/55 hover:bg-white/10"
-        aria-label={isHe ? "הוסיפו תגובה רגשית" : "Add reaction"}
+        aria-label={addReactionLabel}
         aria-expanded={open}
         aria-controls={`reactions-${messageId}`}
       >

@@ -1,37 +1,33 @@
-import { useTranslations } from "next-intl";
+"use client";
+
 import { ReviewsGrid } from "./ReviewsGrid";
 import { Counter } from "./Counter";
 import { RevealOnScroll } from "./RevealOnScroll";
+import { CmsText } from "@/components/cms/CmsText";
 
 /**
- * Authority - third section. "5 years. Thousands of couples." narrative + stat banner +
- * 6-card reviews grid (with mobile load-more behavior in ReviewsGrid).
+ * Authority — "5 years. 500+ couples." narrative + stat banner + 6-card
+ * reviews grid. Sprint 4 #1 closeout: every DOM text flows through
+ * <CmsText> so promoting a row plain→rich in the editor takes effect on
+ * /he without per-component changes. The headline stays a 4-part split
+ * because Itzik wants the italic-serif <em> on `headlineEm` to be
+ * styled inline (wine-red Frank Ruhl Libre) regardless of CMS mode.
  */
 export function Authority() {
-  const t = useTranslations("homeV2.authority");
   return (
     <section className="authority" id="reviews">
       <div className="container">
         <RevealOnScroll variant="scale-up">
           <div className="section-head">
-            <div className="eyebrow">{t("eyebrow")}</div>
+            <CmsText cmsKey="homeV2.authority.eyebrow" as="div" className="eyebrow" />
             <h2>
-              {t("headlinePart1")}
+              <CmsText cmsKey="homeV2.authority.headlinePart1" />
               <br />
               {/* Wrap line 2 ("אותה תוצאה.") in a non-breaking span so
-                  the italic-serif <em> doesn't push "תוצאה" onto its
-                  own line on mobile. With this, the heading reliably
-                  reads as two lines: "5 שנים. 500+ זוגות." then
-                  "אותה תוצאה." */}
+                  the italic-serif <em> doesn't push the emphasis word
+                  onto its own line on mobile. */}
               <span style={{ whiteSpace: "nowrap" }}>
-                {t("headlinePart2")}
-                {/* `display:"inline"` overrides the global
-                    `h1 em, h2 em { display: block }` rule in styles.css.
-                    Without this, the <em> forces "תוצאה" onto its own
-                    line and the trailing "." into a 3rd line — even with
-                    whiteSpace:nowrap on the wrapping span, because the
-                    block-level child breaks inline flow. We keep the
-                    nowrap as a safety belt for narrow viewports. */}
+                <CmsText cmsKey="homeV2.authority.headlinePart2" />
                 <em
                   style={{
                     color: "var(--accent)",
@@ -40,9 +36,9 @@ export function Authority() {
                     display: "inline",
                   }}
                 >
-                  {t("headlineEm")}
+                  <CmsText cmsKey="homeV2.authority.headlineEm" />
                 </em>
-                {t("headlinePart3")}
+                <CmsText cmsKey="homeV2.authority.headlinePart3" />
               </span>
             </h2>
           </div>
@@ -50,11 +46,7 @@ export function Authority() {
 
         <RevealOnScroll variant="fade-up" delay={0.1}>
           <div className="auth-narrative">
-            <p>
-              {t.rich("narrative", {
-                strong: (chunks) => <strong>{chunks}</strong>,
-              })}
-            </p>
+            <CmsText cmsKey="homeV2.authority.narrative" as="p" />
           </div>
         </RevealOnScroll>
 
@@ -66,19 +58,19 @@ export function Authority() {
                   <Counter to={500} prefix="+" />
                 </em>
               </div>
-              <div className="label">{t("statCouplesLabel")}</div>
+              <CmsText cmsKey="homeV2.authority.statCouplesLabel" as="div" className="label" />
             </div>
             <div className="auth-divider"></div>
             <div className="auth-stat">
-              <div className="num">{t("since")}</div>
-              <div className="label">{t("sinceLabel")}</div>
+              <CmsText cmsKey="homeV2.authority.since" as="div" className="num" />
+              <CmsText cmsKey="homeV2.authority.sinceLabel" as="div" className="label" />
             </div>
             <div className="auth-divider"></div>
             <div className="auth-stat">
               <div className="num">
                 <Counter to={4.8} decimals={1} thousands={false} /> / 5
               </div>
-              <div className="label">{t("ratingLabel")}</div>
+              <CmsText cmsKey="homeV2.authority.ratingLabel" as="div" className="label" />
             </div>
             <div className="auth-divider"></div>
             <div className="auth-stat">
@@ -87,7 +79,7 @@ export function Authority() {
                   <Counter to={94} suffix="%" />
                 </em>
               </div>
-              <div className="label">{t("improvementLabel")}</div>
+              <CmsText cmsKey="homeV2.authority.improvementLabel" as="div" className="label" />
             </div>
           </div>
         </RevealOnScroll>

@@ -215,11 +215,11 @@ Spec gap: in-app notifications + reminder rules + admin failure alerts are all m
 | File | Type | What | Used by code? |
 |---|---|---|---|
 | `שאלות-ואתגרים-זוגיים-חלק-{1..5}.md` | Hebrew markdown | ~900 lines combined; couples questions/challenges by intensity tier | No |
-| `משחקי-זוגיות-10-קטגוריות.md` | Hebrew markdown | 1,345 lines; game design framework with 10 categories | No (referenced from `seed_wheel_games.sql`) |
+| `משחקי-זוגיות-10-קטגוריות.md` | Hebrew markdown | 1,345 lines; game design framework with 10 categories | No (was referenced from `seed_wheel_games.sql` — that script has been removed, see below) |
 | `love-games-messages-{he,en}.json` | JSON | Marketing copy fixture | Yes (in frontend marketing components) |
 | `seed_articles.sql` | SQL | 6 bilingual articles | Manual seeding only |
-| `seed_wheel_games.sql` | SQL | 7 wheel games with full configs | Manual seeding only |
-| `seed_runner.mjs` | Node script | Idempotent seed runner | Manual run only |
+| ~~`seed_wheel_games.sql`~~ | ~~SQL~~ | ~~7 wheel games with full configs~~ | **REMOVED 2026-05-17** — re-running it had silently restored 7 ghost games in prod that Itzik had manually deleted. Use the admin "New Game" form instead. |
+| ~~`seed_runner.mjs`~~ | ~~Node script~~ | ~~Idempotent seed runner~~ | **REMOVED 2026-05-17** — same reason as above (it executed the same INSERTs as `seed_wheel_games.sql`). |
 | `מסע-זוגיות-מערכת-תוכן.xlsx` | Excel (189 KB) | **Likely the journey content master** | No |
 | `מסע-זוגיות-מערכת-תוכן-אצווה-1.xlsx` | Excel (117 KB) | Batch 1 of journey content | No |
 | `משימות-זוגיות-אצווה-1.xlsx` | Excel (9.8 KB) | Tasks batch 1 | No |

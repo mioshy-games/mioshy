@@ -16,6 +16,10 @@ import { notFound, redirect } from "next/navigation";
 import { setRequestLocale } from "next-intl/server";
 import { Link } from "@/navigation";
 import { ArrowLeft, ArrowRight, Compass } from "lucide-react";
+import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
+import { loadCmsTextsForPage } from "@/lib/cms/server";
+import { CmsTextProvider } from "@/components/cms/CmsTextProvider";
+import { CmsText } from "@/components/cms/CmsText";
 import { routing } from "@/i18n/routing";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
@@ -48,9 +52,13 @@ export async function generateMetadata({
 }: {
   params: { locale: string; scheduledId: string };
 }): Promise<Metadata> {
-  const isHe = params.locale === "he";
+  const t = await getCmsTranslations({
+    locale: params.locale === "he" ? "he" : "en",
+    namespace: "journeyTimeline.itemPage",
+    page: "journey",
+  });
   return {
-    title: `Mioshy - ${isHe ? "פרק במסע" : "Journey chapter"}`,
+    title: `Mioshy - ${t("metaTitle")}`,
     robots: { index: false, follow: false },
   };
 }
@@ -67,6 +75,15 @@ export default async function JourneyTimelineItemPage({
   setRequestLocale(locale);
 
   const isHe = locale === "he";
+  const cmsRows = await loadCmsTextsForPage("journey");
+  // Server-side translator for raw-string slots — PerItemThread takes
+  // promptLabel as a plain string, not a React node.
+  const t = await getCmsTranslations({
+    locale: isHe ? "he" : "en",
+    namespace: "journeyTimeline.itemPage",
+    page: "journey",
+  });
+  const threadPromptLabel = t("threadPromptLabel");
 
   // ── Auth ─────────────────────────────────────────────────────────────
   const supabase = await createServerSupabaseClient();
@@ -283,6 +300,7 @@ export default async function JourneyTimelineItemPage({
   const Arrow = isHe ? ArrowLeft : ArrowRight;
 
   return (
+    <CmsTextProvider rows={cmsRows}>
     <div
       dir={isHe ? "rtl" : "ltr"}
       className="relative min-h-[100dvh] overflow-hidden text-white"
@@ -313,24 +331,25 @@ export default async function JourneyTimelineItemPage({
           className="inline-flex items-center gap-1 text-xs font-medium text-white/55 transition hover:text-white/90"
         >
           <Arrow className="h-3 w-3 rotate-180" />
-          {isHe ? "חזרה לציר המסע" : "Back to the timeline"}
+          <CmsText cmsKey="journeyTimeline.itemPage.backToTimeline" />
         </Link>
 
         <div className="mt-5 flex flex-wrap items-center gap-2 text-xs text-white/60">
           <Compass className="h-3.5 w-3.5 text-indigo-300" />
-          <span>
-            {category
-              ? (isHe ? category.name_he : category.name_en ?? category.name_he)
-              : isHe
-                ? "פרק"
-                : "Chapter"}
-          </span>
+          {category ? (
+            <span>
+              {isHe ? category.name_he : category.name_en ?? category.name_he}
+            </span>
+          ) : (
+            <CmsText cmsKey="journeyTimeline.itemPage.chapterFallback" />
+          )}
           {/* v3 slice 8 - source badge for expert pushes. Subtle chip
               so the user knows this isn't a regular cadence pick. */}
           {scheduled.source === "expert_push" ? (
-            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-300/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-100">
-              {isHe ? "מהמומחה שלכם" : "From your coach"}
-            </span>
+            <CmsText
+              cmsKey="journeyTimeline.itemPage.expertPushBadge"
+              className="inline-flex items-center gap-1 rounded-full border border-emerald-300/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-100"
+            />
           ) : null}
         </div>
 
@@ -431,23 +450,22 @@ export default async function JourneyTimelineItemPage({
             thread for content/reflection kinds. */}
         {item.kind !== "assessment" ? (
           <section className="mt-10 rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur sm:p-6">
-            <h2 className="mb-4 text-base font-semibold text-white/85">
-              {isHe ? "השיחה שלכם על הפריט" : "Your conversation on this item"}
-            </h2>
+            <CmsText
+              cmsKey="journeyTimeline.itemPage.threadHeading"
+              as="h2"
+              className="mb-4 text-base font-semibold text-white/85"
+            />
             <PerItemThread
               scheduledItemId={scheduled.id}
               initialMessages={threadMessages}
               viewerUserId={effectiveUserId}
               isHe={isHe}
-              promptLabel={
-                isHe
-                  ? "כתבו תגובה - המומחים שלנו רואים ומגיבים."
-                  : "Write a response - our experts read and reply."
-              }
+              promptLabel={threadPromptLabel}
             />
           </section>
         ) : null}
       </main>
     </div>
+    </CmsTextProvider>
   );
 }

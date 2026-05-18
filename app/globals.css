@@ -401,4 +401,54 @@ small, .text-small {
 @media (prefers-reduced-motion: reduce) {
   .btn { transition: background-color .2s linear, color .2s linear; }
   .btn-primary:hover { transform: none; }
+   CMS rich-text styling — applied wherever <CmsText> renders a
+   row whose is_rich = true (Sprint 4 #1, 2026-05-13).
+   ════════════════════════════════════════════════════════════
+
+   The <CmsText> component composes `cms-rich` onto the rendered
+   element when isRich is true. These rules then style any
+   <em>/<strong>/<s> that the rich-text toolbar produces,
+   regardless of which marketing section the value lives in.
+
+   Why this is necessary — the legacy v2/styles.css rule
+       h1 em, h2 em, h3 em, h4 em, .lead em, .display em
+         { color: var(--accent); … }
+   works for HEADLINES (h1–h4 / .lead / .display only). A row like
+   homeV2.adultGames.lead renders into <p class="ag-lead">, which
+   matches none of those selectors — so promoting it plain → rich
+   via the toolbar would show <em>זוגיות</em> in the browser
+   default italic but with no brand colour. `.cms-rich em` fixes
+   that without needing a per-section rule for every container.
+
+   Values are hardcoded (not var(--accent)) because --accent is
+   scoped to .home-v2 in this file — same caveat as the .btn-primary
+   token above. Keep this in sync with --accent if it ever changes.
+
+   <p>/<ul>/<li> intentionally keep browser defaults so section CSS
+   can override per-section spacing where needed.
+*/
+.cms-rich em {
+  color: #B83C4D;                  /* --accent */
+  font-style: italic;
+  font-family: 'Frank Ruhl Libre', 'Noto Serif Hebrew', serif;
+}
+.cms-rich strong {
+  font-weight: 700;
+}
+.cms-rich s {
+  color: #94a3b8;                  /* slate-400 — "no longer relevant" */
+  text-decoration: line-through;
+}
+/* Sprint 5 — <mark> as an inline highlighter span. UA default is a
+   yellow background; we override to a transparent background +
+   coloured text so the effect is "tinted word", not "highlighted
+   word". Colour comes from --cms-mark-color when <CmsText> is
+   rendering a row with color_override; falls back to brand-rose
+   otherwise. NO font-family / font-style / font-weight rules — by
+   design, <mark> is colour-only and sits next to <em> (italic
+   serif) and <strong> (bold) as the "just colour, no other
+   styling" option. */
+.cms-rich mark {
+  background: transparent;
+  color: var(--cms-mark-color, #B83C4D);
 }

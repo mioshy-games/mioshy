@@ -1,13 +1,22 @@
-import { useTranslations } from "next-intl";
+"use client";
+
 import { Counter } from "./Counter";
 import { RevealOnScroll } from "./RevealOnScroll";
+import { useCmsText } from "@/hooks/useCmsText";
+import { CmsText } from "@/components/cms/CmsText";
 
 /**
- * Education - "Why this happens". Light cream section with two-column flow:
- * narrative on the right, 4 dramatic stats on the left.
+ * Education — narrative + 4 dramatic stats.
+ * Sprint 4 #1 closeout: DOM text via <CmsText>; suffix / prefix
+ * keys for Counter stay on useCmsText since they're prop values.
  */
 export function Education() {
-  const t = useTranslations("homeV2.education");
+  // Counter suffix / prefix are prop strings, not DOM children.
+  const stat1Suffix = useCmsText("homeV2.education.stat1Suffix");
+  const stat2Suffix = useCmsText("homeV2.education.stat2Suffix");
+  const stat3Prefix = useCmsText("homeV2.education.stat3Prefix");
+  const stat4Suffix = useCmsText("homeV2.education.stat4Suffix");
+
   return (
     <section className="education">
       <div className="edu-orb"></div>
@@ -22,15 +31,9 @@ export function Education() {
         <div className="edu-grid">
           <RevealOnScroll variant="fade-up">
             <div>
-              <div className="eyebrow">{t("eyebrow")}</div>
-              <h2>
-                {t.rich("headline", { br: () => <br /> })}
-              </h2>
-              <p>
-                {t.rich("body", {
-                  strong: (chunks) => <strong>{chunks}</strong>,
-                })}
-              </p>
+              <CmsText cmsKey="homeV2.education.eyebrow" as="div" className="eyebrow" />
+              <CmsText cmsKey="homeV2.education.headline" as="h2" />
+              <CmsText cmsKey="homeV2.education.body" as="p" />
             </div>
           </RevealOnScroll>
           <RevealOnScroll variant="fade-up" delay={0.15}>
@@ -39,34 +42,35 @@ export function Education() {
                 <div className="edu-stat">
                   <div className="num">
                     <em>
-                      <Counter to={67} suffix={t("stat1Suffix")} />
+                      <Counter to={67} suffix={stat1Suffix.text} />
                     </em>
                   </div>
-                  <div className="label">{t("stat1Label")}</div>
+                  <CmsText cmsKey="homeV2.education.stat1Label" as="div" className="label" />
                 </div>
                 <div className="edu-stat">
                   <div className="num">
                     <em>
-                      <Counter to={3} suffix={t("stat2Suffix")} />
+                      <Counter to={3} suffix={stat2Suffix.text} />
                     </em>
                   </div>
-                  <div className="label">{t("stat2Label")}</div>
+                  <CmsText cmsKey="homeV2.education.stat2Label" as="div" className="label" />
                 </div>
                 <div className="edu-stat">
                   <div className="num">
                     <em>
-                      {t("stat3Prefix")}<Counter to={4} />
+                      {stat3Prefix.text}
+                      <Counter to={4} />
                     </em>
                   </div>
-                  <div className="label">{t("stat3Label")}</div>
+                  <CmsText cmsKey="homeV2.education.stat3Label" as="div" className="label" />
                 </div>
                 <div className="edu-stat">
                   <div className="num">
                     <em>
-                      <Counter to={30} suffix={t("stat4Suffix")} />
+                      <Counter to={30} suffix={stat4Suffix.text} />
                     </em>
                   </div>
-                  <div className="label">{t("stat4Label")}</div>
+                  <CmsText cmsKey="homeV2.education.stat4Label" as="div" className="label" />
                 </div>
               </div>
             </div>

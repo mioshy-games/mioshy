@@ -1,24 +1,32 @@
-import { useTranslations } from "next-intl";
+"use client";
+
 import { TrackedLink } from "./TrackedLink";
 import { RevealOnScroll } from "./RevealOnScroll";
 import { Counter } from "./Counter";
 import { ParallaxImage } from "./ParallaxImage";
+import { useCmsText } from "@/hooks/useCmsText";
+import { CmsText } from "@/components/cms/CmsText";
 
 /**
  * Hero - first section of HomepageV2.
- * Dark animated background with 5 floating blobs, headline, lead paragraph,
- * primary + secondary CTAs, social-proof meta strip, and right-side image
- * with two floating badge cards.
  *
- * Animations:
- *  • Headline: scale-up reveal (94% → 100%) on first paint
- *  • Lead, CTAs, meta: fade-up reveal staggered
- *  • Stat numbers: count-up from 0 when in view
- *  • Hero image: subtle parallax on scroll (16px range)
- *  • Background blobs: CSS-driven (in styles.css), pause on reduced-motion
+ * CMS migration (Sprint 4 #1 closeout, 2026-05-13):
+ *   Every DOM text now flows through <CmsText cmsKey="…" /> instead of
+ *   `{useCmsText(key).text}`. CmsText picks plain text-node rendering
+ *   vs dangerouslySetInnerHTML based on the row's is_rich flag — so
+ *   when an admin promotes a plain key like homeV2.hero.tag to rich
+ *   via the toolbar toggle, the next render switches to HTML mode
+ *   automatically. No per-component changes needed.
+ *
+ *   useCmsText() is still used directly for VALUES THAT AREN'T DOM
+ *   children — alt attributes, aria-labels, Counter suffix props.
  */
 export function Hero() {
-  const t = useTranslations("homeV2.hero");
+  // Non-DOM consumers (attributes / prop values). These need raw
+  // strings, not JSX, so they keep the useCmsText hook.
+  const priceFromLabel = useCmsText("homeV2.hero.priceFromLabel");
+  const imageAlt = useCmsText("homeV2.hero.imageAlt");
+
   return (
     <section className="hero">
       {/* Performance: hero animation count cut nearly in half per Itzik
@@ -52,36 +60,44 @@ export function Hero() {
           <div className="hero-text">
             <RevealOnScroll variant="fade-up" delay={0}>
               <div className="hero-tag">
-                <span className="dot"></span> {t("tag")}
+                <span className="dot"></span>{" "}
+                <CmsText cmsKey="homeV2.hero.tag" />
               </div>
             </RevealOnScroll>
 
             <RevealOnScroll variant="scale-up" delay={0.05}>
-              <h1>
-                {t.rich("headline", { em: (chunks) => <em>{chunks}</em> })}
-              </h1>
+              <CmsText cmsKey="homeV2.hero.headline" as="h1" />
             </RevealOnScroll>
 
             <RevealOnScroll variant="fade-up" delay={0.15}>
-              <p className="lead">{t("lead")}</p>
+              <CmsText cmsKey="homeV2.hero.lead" as="p" className="lead" />
             </RevealOnScroll>
 
             <RevealOnScroll variant="fade-up" delay={0.25}>
               <div className="hero-actions">
-                <TrackedLink href="/journey" className="btn btn-primary" ctaId="hero_primary" section="hero">
-                  {t("ctaPrimary")}
+                <TrackedLink
+                  href="/journey"
+                  className="btn btn-primary"
+                  ctaId="hero_primary"
+                  section="hero"
+                >
+                  <CmsText cmsKey="homeV2.hero.ctaPrimary" />
                 </TrackedLink>
               </div>
             </RevealOnScroll>
 
             <RevealOnScroll variant="fade-up" delay={0.30}>
-              <div className="hero-price-from" aria-label={t("priceFromLabel").replace(/<\/?strong>/g, "")}>
+              {/* priceFromLabel is used twice: once via CmsText for the
+                  visible text (rich, so <strong> renders correctly),
+                  and once via useCmsText().text for the aria-label
+                  where we strip <strong> via regex. Two distinct
+                  rendering paths, same key. */}
+              <div
+                className="hero-price-from"
+                aria-label={priceFromLabel.text.replace(/<\/?strong>/g, "")}
+              >
                 <span className="dot" aria-hidden></span>
-                <span>
-                  {t.rich("priceFromLabel", {
-                    strong: (chunks) => <strong>{chunks}</strong>,
-                  })}
-                </span>
+                <CmsText cmsKey="homeV2.hero.priceFromLabel" />
               </div>
             </RevealOnScroll>
 
@@ -91,19 +107,28 @@ export function Hero() {
                   <span className="num">
                     <Counter to={500} prefix="+" />
                   </span>
-                  <span className="label">{t("statCouplesLabel")}</span>
+                  <CmsText
+                    cmsKey="homeV2.hero.statCouplesLabel"
+                    className="label"
+                  />
                 </div>
                 <div className="hero-meta-item">
                   <span className="num">
                     <Counter to={10} prefix="+" />
                   </span>
-                  <span className="label">{t("statExpertsLabel")}</span>
+                  <CmsText
+                    cmsKey="homeV2.hero.statExpertsLabel"
+                    className="label"
+                  />
                 </div>
                 <div className="hero-meta-item">
                   <span className="num">
                     <Counter to={4.8} decimals={1} suffix="★" thousands={false} />
                   </span>
-                  <span className="label">{t("statRatingLabel")}</span>
+                  <CmsText
+                    cmsKey="homeV2.hero.statRatingLabel"
+                    className="label"
+                  />
                 </div>
               </div>
             </RevealOnScroll>
@@ -112,7 +137,7 @@ export function Hero() {
           <div className="hero-visual">
             <ParallaxImage
               src="/images/hero.webp"
-              alt={t("imageAlt")}
+              alt={imageAlt.text}
               width={720}
               height={900}
               className="hero-img"
@@ -131,15 +156,15 @@ export function Hero() {
             <div className="badge-floating badge-1">
               <div className="badge-icon">♡</div>
               <div className="badge-text">
-                <div className="t1">{t("badge1Title")}</div>
-                <div className="t2">{t("badge1Body")}</div>
+                <CmsText cmsKey="homeV2.hero.badge1Title" as="div" className="t1" />
+                <CmsText cmsKey="homeV2.hero.badge1Body" as="div" className="t2" />
               </div>
             </div>
             <div className="badge-floating badge-2">
               <div className="badge-icon">✦</div>
               <div className="badge-text">
-                <div className="t1">{t("badge2Title")}</div>
-                <div className="t2">{t("badge2Body")}</div>
+                <CmsText cmsKey="homeV2.hero.badge2Title" as="div" className="t1" />
+                <CmsText cmsKey="homeV2.hero.badge2Body" as="div" className="t2" />
               </div>
             </div>
           </div>

@@ -32,6 +32,8 @@ import {
 import { useEffect, useRef } from "react";
 import Image from "next/image";
 import { Link } from "@/navigation";
+import { CmsText } from "@/components/cms/CmsText";
+import { useCmsText } from "@/hooks/useCmsText";
 
 type Hero = {
   title: string;
@@ -55,8 +57,29 @@ export function AdultsMarketingHero({
   /** Kept for backward compat; unused in this minimal hero. */
   secondaryHref?: string;
 }) {
+  // Raw-string slots — PosterCard receives plain string props (level/hint/
+  // placeholder/alt), so JSX <CmsText> can't be used there. Read via the
+  // hook and pass `.text` through.
+  const posterPlaceholder = useCmsText(
+    "mioshySexPage.heroPosterPlaceholder",
+  ).text;
+  const touchingLevel = useCmsText(
+    "mioshySexPage.heroPosterTouchingLevel",
+  ).text;
+  const touchingHint = useCmsText(
+    "mioshySexPage.heroPosterTouchingHint",
+  ).text;
+  const touchingAlt = useCmsText("mioshySexPage.heroPosterTouchingAlt").text;
+  const stirringLevel = useCmsText(
+    "mioshySexPage.heroPosterStirringLevel",
+  ).text;
+  const stirringHint = useCmsText(
+    "mioshySexPage.heroPosterStirringHint",
+  ).text;
+  const stirringAlt = useCmsText("mioshySexPage.heroPosterStirringAlt").text;
+
   return (
-    <section className="relative" dir={isHe ? "rt-" : "ltr"}>
+    <section className="relative" dir={isHe ? "rtl" : "ltr"}>
       {/* Hairline gradient rail at the very top - section rhythm. */}
       <div
         aria-hidden
@@ -86,12 +109,13 @@ export function AdultsMarketingHero({
         className="relative z-20 mx-auto hidden max-w-6xl items-center gap-2 px-4 pt-4 text-[13px] text-white/45 sm:flex"
       >
         <Link href="/" className="transition hover:text-white/75">
-          {isHe ? "בית" : "Home"}
+          <CmsText cmsKey="mioshySexPage.heroBreadcrumbHome" />
         </Link>
         <span aria-hidden className="text-white/30">/</span>
-        <span className="text-white/65">
-          {isHe ? "הסקס של מיאושי" : "Mioshy's Sex"}
-        </span>
+        <CmsText
+          cmsKey="mioshySexPage.heroBreadcrumbSection"
+          className="text-white/65"
+        />
       </nav>
 -
 
@@ -117,11 +141,11 @@ export function AdultsMarketingHero({
           <PosterCard
             tone="violet"
             Icon={Heart}
-            level={isHe ? "מרגש" : "Touching"}
-            hint={isHe ? "שאלות שמפיגות מרחק" : "Prompts that close distance"}
-            placeholderLabel={isHe ? "תמונת המשחק" : "Game artwork"}
+            level={touchingLevel}
+            hint={touchingHint}
+            placeholderLabel={posterPlaceholder}
             imageSrc="/images/woman-mioshy.webp"
-            imageAlt={isHe ? "מרגש - תמונת המשחק" : "Touching - game artwork"}
+            imageAlt={touchingAlt}
           />
         </motion.div>
 
@@ -140,11 +164,11 @@ export function AdultsMarketingHero({
           <PosterCard
             tone="rose"
             Icon={Flame}
-            level={isHe ? "מעורר" : "Stirring"}
-            hint={isHe ? "הזמנות לחוויה משותפת" : "Invitations into play"}
-            placeholderLabel={isHe ? "תמונת המשחק" : "Game artwork"}
+            level={stirringLevel}
+            hint={stirringHint}
+            placeholderLabel={posterPlaceholder}
             imageSrc="/images/woman-sexy.webp"
-            imageAlt={isHe ? "מעורר - תמונת המשחק" : "Stirring - game artwork"}
+            imageAlt={stirringAlt}
           />
         </motion.div>
       </div>
@@ -166,12 +190,13 @@ export function AdultsMarketingHero({
         <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[13px] font-semibold uppercase tracking-[0.22em] sm:text-[11px] sm:tracking-[0.28em]">
           <span className="inline-flex items-center gap-1.5 text-rose-200/90">
             <span className="h-1.5 w-1.5 rounded-full bg-rose-400 shadow-[0_0_12px_rgba(244,63,94,0.7)]" />
-            {isHe ? "המוצר הדגל" : "The flagship"}
+            <CmsText cmsKey="mioshySexPage.heroFlagshipLabel" />
           </span>
           <span aria-hidden className="hidden h-3 w-px bg-white/15 sm:inline" />
-          <span className="text-white/65 sm:text-white/55">
-            {isHe ? "למבוגרים בלבד · 18+" : "Adults only · 18+"}
-          </span>
+          <CmsText
+            cmsKey="mioshySexPage.heroAgeGate"
+            className="text-white/65 sm:text-white/55"
+          />
         </div>
 
         {/* The statement. Two lines, second in italic SOLID rose-300.
@@ -185,44 +210,36 @@ export function AdultsMarketingHero({
             className="mx-auto max-w-[360px] text-balance text-[58px] leading-[1.02] tracking-[-0.025em] sm:max-w-none sm:text-[66px] sm:leading-[1.02] md:text-[86px] lg:text-[99px]"
             style={{ fontFamily: "'Frank Ruhl Libre', serif", fontWeight: 600 }}
           >
-            <span className="block text-white">
-              {isHe ? "ערב אחד." : "One evening."}
-            </span>
-            <span
+            <CmsText
+              cmsKey="mioshySexPage.heroHeadline1"
+              as="span"
+              className="block text-white"
+            />
+            <CmsText
+              cmsKey="mioshySexPage.heroHeadline2"
+              as="span"
               className="mt-1 block text-rose-300 sm:mt-2"
               style={{ fontStyle: "italic", fontWeight: 500 }}
-            >
-              {isHe ? "חוויה מינית חדשה." : "A new sexual experience."}
-            </span>
+            />
           </h1>
         </div>
 
-        {/* Lede - names the product type + the emotional payoff. */}
+        {/* Lede - names the product type + the emotional payoff. Split into
+            two keys so the italic <em> stays as a real DOM element (instead
+            of round-tripping through is_rich, which would also work but
+            depends on a CmsTextProvider being mounted upstream — this page
+            is intentionally provider-less). */}
         <p
           className="mx-auto mt-4 max-w-[300px] text-pretty text-[20px] leading-[1.5] text-white/85 sm:mt-7 sm:max-w-xl sm:text-[20px] sm:leading-[1.6] md:text-[22px]"
           style={{ fontFamily: "'Frank Ruhl Libre', serif", fontWeight: 500 }}
         >
-          {isHe ? (
-            <>
-              משחקים שכתבו מומחים בעולם.{" "}
-              <em
-                className="text-rose-200"
-                style={{ fontStyle: "italic", fontWeight: 500 }}
-              >
-                לזוגות שמוכנים לזה.
-              </em>
-            </>
-          ) : (
-            <>
-              Games written by world-class experts.{" "}
-              <em
-                className="text-rose-200"
-                style={{ fontStyle: "italic", fontWeight: 500 }}
-              >
-                For couples ready for it.
-              </em>
-            </>
-          )}
+          <CmsText cmsKey="mioshySexPage.heroLedePrefix" />{" "}
+          <em
+            className="text-rose-200"
+            style={{ fontStyle: "italic", fontWeight: 500 }}
+          >
+            <CmsText cmsKey="mioshySexPage.heroLedeEmphasis" />
+          </em>
         </p>
 
         {/* Mobile-only inline poster pair - sits between the lede and CTA,
@@ -240,7 +257,7 @@ export function AdultsMarketingHero({
               tone="violet"
               Icon={Heart}
               imageSrc="/images/woman-mioshy.webp"
-              imageAlt={isHe ? "מרגש - תמונת המשחק" : "Touching - game artwork"}
+              imageAlt={touchingAlt}
             />
           </div>
           <div className="h-[180px] w-[120px] rotate-[6deg]">
@@ -248,7 +265,7 @@ export function AdultsMarketingHero({
               tone="rose"
               Icon={Flame}
               imageSrc="/images/woman-sexy.webp"
-              imageAlt={isHe ? "מעורר - תמונת המשחק" : "Stirring - game artwork"}
+              imageAlt={stirringAlt}
             />
           </div>
         </div>
@@ -266,7 +283,7 @@ export function AdultsMarketingHero({
             />
             <span className="relative z-10 inline-flex items-center gap-2">
               <Sparkles className="h-4 w-4" />
-              {isHe ? "אל הקטלוג" : "Enter the catalogue"}
+              <CmsText cmsKey="mioshySexPage.heroCtaPrimary" />
               <ArrowRight
                 className={`h-5 w-5 transition group-hover:translate-x-1 ${
                   isHe ? "rotate-180 group-hover:-translate-x-1" : ""
@@ -277,17 +294,15 @@ export function AdultsMarketingHero({
         </div>
 
         {/* Reassurance line. */}
-        <p
+        <CmsText
+          cmsKey="mioshySexPage.heroReassurance"
+          as="p"
           className="mt-4 text-[18px] text-white/75 sm:mt-7 sm:text-[15px] sm:text-white/55"
           style={{
             fontFamily: "'Frank Ruhl Libre', serif",
             fontStyle: "italic",
           }}
-        >
-          {isHe
-            ? "לזוגות סקרנים · ללא חוזה · ביטול בכל עת"
-            : "For curious couples · no contract · cancel anytime"}
-        </p>
+        />
 
         {/* The tiny mobile edge cards now flank the headline at the
             top of the hero (see "MOBILE edge cards" block above), so

@@ -1,22 +1,29 @@
-import { useTranslations } from "next-intl";
+"use client";
+
+import { useCmsText } from "@/hooks/useCmsText";
+import { CmsText } from "@/components/cms/CmsText";
 
 /**
- * Problem - second section. Two-column layout (image + text). Sets up the
- * emotional pain ("you forgot how to be a couple") with a 3-item checklist
- * of warning signs.
+ * Problem — "the warning signs" section. Sprint 4 #1 closeout: every
+ * DOM text via <CmsText>. `imageAlt` keeps useCmsText for the <img>
+ * alt attribute.
  */
 export function Problem() {
-  const t = useTranslations("homeV2.problem");
+  const imageAlt = useCmsText("homeV2.problem.imageAlt");
+
   return (
     <section className="problem" id="problem">
       <div className="container">
         <div className="problem-grid">
           <div className="problem-image">
             <picture>
-              <source media="(max-width: 640px)" srcSet="/images/woman-w.webp" />
+              <source
+                media="(max-width: 640px)"
+                srcSet="/images/woman-w.webp"
+              />
               <img
                 src="/images/woman%20mioshy.webp"
-                alt={t("imageAlt")}
+                alt={imageAlt.text}
                 className="problem-img"
                 loading="lazy"
               />
@@ -24,34 +31,30 @@ export function Problem() {
           </div>
 
           <div className="problem-text">
-            <div className="eyebrow">{t("eyebrow")}</div>
-            <h2>
-              {t.rich("headline", { em: (chunks) => <em>{chunks}</em> })}
-            </h2>
-            <p className="lead">{t("lead")}</p>
+            <CmsText cmsKey="homeV2.problem.eyebrow" as="div" className="eyebrow" />
+            <CmsText cmsKey="homeV2.problem.headline" as="h2" />
+            <CmsText cmsKey="homeV2.problem.lead" as="p" className="lead" />
 
             <div className="problem-list">
               <div className="problem-item">
                 <span className="problem-num">01</span>
                 <div>
-                  <h3>{t("item1Title")}</h3>
-                  <p>
-                    {t.rich("item1Body", { br: () => <br /> })}
-                  </p>
+                  <CmsText cmsKey="homeV2.problem.item1Title" as="h3" />
+                  <CmsText cmsKey="homeV2.problem.item1Body" as="p" />
                 </div>
               </div>
               <div className="problem-item">
                 <span className="problem-num">02</span>
                 <div>
-                  <h3>{t("item2Title")}</h3>
-                  <p>{t("item2Body")}</p>
+                  <CmsText cmsKey="homeV2.problem.item2Title" as="h3" />
+                  <CmsText cmsKey="homeV2.problem.item2Body" as="p" />
                 </div>
               </div>
               <div className="problem-item">
                 <span className="problem-num">03</span>
                 <div>
-                  <h3>{t("item3Title")}</h3>
-                  <p>{t("item3Body")}</p>
+                  <CmsText cmsKey="homeV2.problem.item3Title" as="h3" />
+                  <CmsText cmsKey="homeV2.problem.item3Body" as="p" />
                 </div>
               </div>
             </div>

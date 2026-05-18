@@ -3,10 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { useGameRoom } from "@/hooks/useGameRoom";
 import { cn } from "@/lib/utils";
-import type { GameConfig, GameState } from "@/lib/snakes/types";
+import type { GameState } from "@/lib/snakes/types";
+import { loadActiveSnakesConfig } from "@/lib/snakes/configLoader";
 
 function normalize(code: string) {
   return code.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -16,7 +16,6 @@ export function RoomClient({ locale, roomCode }: { locale: string; roomCode: str
   const router = useRouter();
   const t = useTranslations("gameRoom");
   const code = useMemo(() => normalize(roomCode), [roomCode]);
-  const supabase = useMemo(() => createBrowserSupabaseClient(), []);
   const { room, players, isHost, myPlayerId, error, startGame, transferHostIfNeeded } =
     useGameRoom(code);
 
@@ -87,23 +86,12 @@ export function RoomClient({ locale, roomCode }: { locale: string; roomCode: str
             onClick={async () => {
               try {
                 setStartErr(null);
-                const { data: cfg } = await supabase
-                  .from("snakes_ladders_config")
-                  .select("*")
-                  .eq("is_active", true)
-                  .maybeSingle();
-
-                const config: GameConfig = {
-                  boardSize: (cfg?.board_size ?? 100) as number,
-                  coinHeadsSteps: (cfg?.coin_heads_steps ?? 3) as number,
-                  coinTailsSteps: (cfg?.coin_tails_steps ?? 1) as number,
-                  penaltyType: (cfg?.penalty_type ?? "back5") as "back5" | "start",
-                  penaltySteps: (cfg?.penalty_steps ?? 5) as number,
-                  snakes: (cfg?.snakes ?? []) as unknown as GameConfig["snakes"],
-                  ladders: (cfg?.ladders ?? []) as unknown as GameConfig["ladders"],
-                  questions: (cfg?.questions ?? []) as unknown as GameConfig["questions"],
-                  name: cfg?.name ?? "Default",
-                };
+                // Pull the live config through the shared loader so the
+                // room and the local game render the same board. The
+                // loader merges DB content (name + questions) over the
+                // hardcoded board mechanics in DEFAULT_SNAKES_CONFIG —
+                // mechanics are never sourced from the row.
+                const { config } = await loadActiveSnakesConfig();
 
                 const positions: Record<string, number> = {};
                 for (const p of players) positions[p.id] = 1;

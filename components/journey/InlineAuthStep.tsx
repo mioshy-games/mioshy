@@ -6,6 +6,8 @@ import { AuthField, AuthSubmitButton, AuthCard } from "@/components/ui/auth-fiel
 import type { Locale } from "@/lib/journey/types";
 import { track } from "@/lib/analytics";
 import { journeyInlineSignup } from "@/app/actions/journey-inline-signup";
+import { useCmsText } from "@/hooks/useCmsText";
+import { CmsText } from "@/components/cms/CmsText";
 
 interface InlineAuthStepProps {
   locale: Locale;
@@ -16,6 +18,12 @@ interface InlineAuthStepProps {
 /**
  * Inline registration / login - shown after 100% questionnaire completion.
  * Uses the same AuthField / AuthSubmitButton / AuthCard tokens as /auth pages.
+ *
+ * Sprint 4 #3 Phase 2A migration — 18 keys under journeyAssessment.inlineAuth.*.
+ * AuthField/AuthSubmitButton take label/placeholder/loadingLabel as string
+ * props, so those consumers go through useCmsText().text. Heading, sub,
+ * switch link, badges, and error message render as DOM children — those
+ * use <CmsText> (or set state to a resolved string).
  */
 export function InlineAuthStep({ locale, deviceId, onAuthenticated }: InlineAuthStepProps) {
   const [mode, setMode] = useState<"register" | "login">("register");
@@ -28,37 +36,20 @@ export function InlineAuthStep({ locale, deviceId, onAuthenticated }: InlineAuth
 
   const isHe = locale === "he";
 
-  const t = isHe
-    ? {
-        heading: "סיימתם את האבחון! 🎉",
-        sub: "הניתוח האישי שלכם מוכן - צרו חשבון חינמי כדי לקבל אותו.",
-        fullName: "שם מלא",
-        email: "אימייל",
-        phone: "טלפון",
-        password: "סיסמה",
-        passwordPlaceholder: "לפחות 8 תווים",
-        submitRegister: "קבלו את הניתוח האישי שלכם ←",
-        submitLogin: "התחברות וצפייה בניתוח ←",
-        switchToLogin: "כבר יש לי חשבון - כניסה",
-        switchToRegister: "אני חדש/ה כאן - הרשמה",
-        errDefault: "משהו השתבש. נסו שוב.",
-        badges: ["🔒 מוגן לחלוטין", "ניתוח אישי תוך שניות", "ניתן לביטול בכל עת"],
-      }
-    : {
-        heading: "You finished the questionnaire! 🎉",
-        sub: "Your personal analysis is ready - create a free account to unlock it.",
-        fullName: "Full name",
-        email: "Email",
-        phone: "Phone",
-        password: "Password",
-        passwordPlaceholder: "At least 8 characters",
-        submitRegister: "Get my personal analysis →",
-        submitLogin: "Log in & view analysis →",
-        switchToLogin: "I already have an account",
-        switchToRegister: "I'm new here",
-        errDefault: "Something went wrong. Please try again.",
-        badges: ["🔒 100% private", "Analysis in seconds", "Cancel anytime"],
-      };
+  // String-prop consumers — AuthField labels/placeholders, AuthSubmitButton
+  // labels, and the error-state strings set imperatively in the submit
+  // handler.
+  const fullNameLabel = useCmsText("journeyAssessment.inlineAuth.fullName").text;
+  const emailLabel = useCmsText("journeyAssessment.inlineAuth.email").text;
+  const phoneLabel = useCmsText("journeyAssessment.inlineAuth.phone").text;
+  const passwordLabel = useCmsText("journeyAssessment.inlineAuth.password").text;
+  const passwordPlaceholder = useCmsText("journeyAssessment.inlineAuth.passwordPlaceholder").text;
+  const submitRegisterLabel = useCmsText("journeyAssessment.inlineAuth.submitRegister").text;
+  const submitLoginLabel = useCmsText("journeyAssessment.inlineAuth.submitLogin").text;
+  const loadingLabel = useCmsText("journeyAssessment.inlineAuth.loadingLabel").text;
+  const errDefault = useCmsText("journeyAssessment.inlineAuth.errDefault").text;
+  const errRateLimit = useCmsText("journeyAssessment.inlineAuth.errRateLimit").text;
+  const errAlreadyRegistered = useCmsText("journeyAssessment.inlineAuth.errAlreadyRegistered").text;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,12 +59,6 @@ export function InlineAuthStep({ locale, deviceId, onAuthenticated }: InlineAuth
     try {
       console.log("[InlineAuthStep] submit", { mode, deviceId });
 
-      // One server-side call does it all atomically:
-      //   • admin.createUser({email_confirm:true})  - no email, no rate limit
-      //   • signInWithPassword                      - sets the auth cookie
-      //   • createSession + writeSessionCookie      - single-session record
-      //   • link_journey_to_user RPC                - links anon → user
-      //   • returns the linked journey row          - client jumps straight in
       const result = await journeyInlineSignup({
         email,
         password,
@@ -84,10 +69,6 @@ export function InlineAuthStep({ locale, deviceId, onAuthenticated }: InlineAuth
         mode,
       });
 
-      // Log the FULL server-side debug envelope to the browser console so
-      // we never have to switch terminals. Includes the pre-RPC anon
-      // journey state, the RPC result + any error, the fallback's
-      // result, and the post-link journey row resolved for this user.
       console.log("[InlineAuthStep] journeyInlineSignup returned", {
         success: result.success,
         ...(result.success
@@ -99,8 +80,6 @@ export function InlineAuthStep({ locale, deviceId, onAuthenticated }: InlineAuth
           : { error: result.error, debug: result.debug }),
       });
       if (!result.success) {
-        // Throwing pushes us into the existing catch block which already
-        // surfaces the message into the rose error UI.
         throw new Error(result.error);
       }
 
@@ -108,16 +87,11 @@ export function InlineAuthStep({ locale, deviceId, onAuthenticated }: InlineAuth
       console.log("[InlineAuthStep] calling onAuthenticated() → page reload");
       onAuthenticated();
     } catch (err) {
-      // Log the FULL error envelope so we can see what Supabase is
-      // actually returning (status, code, message, name, plus the full
-      // object if it's a SupabaseAuthError). This is what was missing -
-      // the previous code only surfaced the .message string.
       console.error("[InlineAuthStep] submit failed", {
         mode,
         email,
         errorName: err instanceof Error ? err.name : typeof err,
         errorMessage: err instanceof Error ? err.message : String(err),
-        // SupabaseAuthError carries .status and .code - log them explicitly.
         errorStatus: (err as { status?: number })?.status,
         errorCode: (err as { code?: string })?.code,
         rawError: err,
@@ -128,14 +102,10 @@ export function InlineAuthStep({ locale, deviceId, onAuthenticated }: InlineAuth
         /already.?registered|already.?exists|user.?already/i.test(msg);
       setError(
         isRateLimit
-          ? isHe
-            ? "הגבלת שליחת מיילים - נסו שוב בעוד מספר דקות."
-            : "Email rate limit reached - please try again in a few minutes."
+          ? errRateLimit
           : isAlreadyRegistered
-            ? isHe
-              ? "המייל הזה כבר רשום במערכת. עברו ל'יש לי כבר חשבון' למטה ↓"
-              : "This email is already registered. Switch to 'I already have an account' below ↓"
-            : msg || t.errDefault
+            ? errAlreadyRegistered
+            : msg || errDefault
       );
     } finally {
       setBusy(false);
@@ -153,19 +123,27 @@ export function InlineAuthStep({ locale, deviceId, onAuthenticated }: InlineAuth
     >
       {/* Heading */}
       <div className="flex flex-col gap-1">
-        <h2 className="text-2xl font-bold text-white">{t.heading}</h2>
-        <p className="text-sm text-white/60">{t.sub}</p>
+        <CmsText
+          cmsKey="journeyAssessment.inlineAuth.heading"
+          as="h2"
+          className="text-2xl font-bold text-white"
+        />
+        <CmsText
+          cmsKey="journeyAssessment.inlineAuth.sub"
+          as="p"
+          className="text-sm text-white/60"
+        />
       </div>
 
       {/* Trust badges */}
       <div className="flex flex-wrap gap-2">
-        {t.badges.map((b) => (
-          <span
-            key={b}
+        {[1, 2, 3].map((n) => (
+          <CmsText
+            key={n}
+            cmsKey={`journeyAssessment.inlineAuth.badge${n}`}
+            as="span"
             className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs text-white/60"
-          >
-            {b}
-          </span>
+          />
         ))}
       </div>
 
@@ -176,7 +154,7 @@ export function InlineAuthStep({ locale, deviceId, onAuthenticated }: InlineAuth
             <>
               <AuthField
                 id="inline_full_name"
-                label={t.fullName}
+                label={fullNameLabel}
                 type="text"
                 value={fullName}
                 onChange={setFullName}
@@ -185,7 +163,7 @@ export function InlineAuthStep({ locale, deviceId, onAuthenticated }: InlineAuth
               />
               <AuthField
                 id="inline_phone"
-                label={t.phone}
+                label={phoneLabel}
                 type="tel"
                 value={phone}
                 onChange={setPhone}
@@ -197,7 +175,7 @@ export function InlineAuthStep({ locale, deviceId, onAuthenticated }: InlineAuth
 
           <AuthField
             id="inline_email"
-            label={t.email}
+            label={emailLabel}
             type="email"
             value={email}
             onChange={setEmail}
@@ -207,11 +185,11 @@ export function InlineAuthStep({ locale, deviceId, onAuthenticated }: InlineAuth
 
           <AuthField
             id="inline_password"
-            label={t.password}
+            label={passwordLabel}
             type="password"
             value={password}
             onChange={setPassword}
-            placeholder={t.passwordPlaceholder}
+            placeholder={passwordPlaceholder}
             autoComplete={mode === "register" ? "new-password" : "current-password"}
             required
             minLength={8}
@@ -229,8 +207,8 @@ export function InlineAuthStep({ locale, deviceId, onAuthenticated }: InlineAuth
 
           <AuthSubmitButton
             loading={busy}
-            label={mode === "register" ? t.submitRegister : t.submitLogin}
-            loadingLabel={isHe ? "שניה…" : "Hold on…"}
+            label={mode === "register" ? submitRegisterLabel : submitLoginLabel}
+            loadingLabel={loadingLabel}
           />
         </form>
 
@@ -239,7 +217,13 @@ export function InlineAuthStep({ locale, deviceId, onAuthenticated }: InlineAuth
           onClick={() => setMode((m) => (m === "register" ? "login" : "register"))}
           className="mt-4 w-full text-center text-sm text-white/40 underline underline-offset-4 transition hover:text-white/70"
         >
-          {mode === "register" ? t.switchToLogin : t.switchToRegister}
+          <CmsText
+            cmsKey={
+              mode === "register"
+                ? "journeyAssessment.inlineAuth.switchToLogin"
+                : "journeyAssessment.inlineAuth.switchToRegister"
+            }
+          />
         </button>
       </AuthCard>
     </motion.div>

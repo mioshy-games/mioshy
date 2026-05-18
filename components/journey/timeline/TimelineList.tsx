@@ -25,6 +25,8 @@ import {
 } from "lucide-react";
 import type { TimelineEntry } from "@/lib/journey-content/types";
 import { cn } from "@/lib/utils";
+import { useCmsText } from "@/hooks/useCmsText";
+import { CmsText } from "@/components/cms/CmsText";
 
 interface Props {
   entries: TimelineEntry[];
@@ -95,6 +97,10 @@ function CategoryGroup({
   partnered: boolean;
 }) {
   const completed = items.filter((i) => i.status === "completed").length;
+  const doneCountTpl = useCmsText("journeyTimeline.list.doneCount").text;
+  const doneCount = doneCountTpl
+    .replace("{completed}", String(completed))
+    .replace("{total}", String(items.length));
   return (
     <section>
       <header className="mb-5 flex items-baseline justify-between gap-3">
@@ -104,11 +110,7 @@ function CategoryGroup({
             {title}
           </h2>
         </div>
-        <div className="text-xs text-white/55">
-          {isHe
-            ? `${completed} / ${items.length} הושלמו`
-            : `${completed} / ${items.length} done`}
-        </div>
+        <div className="text-xs text-white/55">{doneCount}</div>
       </header>
 
       <ol className="relative space-y-3">
@@ -152,6 +154,15 @@ function TimelineCard({
   const body = isHe ? entry.item.body_he : entry.item.body_en ?? entry.item.body_he;
   const hasImage = !!entry.item.image_url;
   const responsesCount = entry.responses.length;
+
+  // Reply count templates — Hebrew is always plural form, English has
+  // singular "1 reply" / plural "N replies".
+  const replyOne = useCmsText("journeyTimeline.list.replyOne").text;
+  const repliesManyTpl = useCmsText("journeyTimeline.list.repliesMany").text;
+  const repliesLabel =
+    responsesCount === 1
+      ? replyOne
+      : repliesManyTpl.replace("{n}", String(responsesCount));
 
   // Shared outer: wraps entire card so the whole region is the tap target
   // when openable; falls back to a <div> when locked so the cursor shows
@@ -301,15 +312,15 @@ function TimelineCard({
                   {responsesCount > 0 ? (
                     <span className="inline-flex items-center gap-1">
                       <MessageCircle className="h-3.5 w-3.5" />
-                      {isHe
-                        ? `${responsesCount} תגובות`
-                        : `${responsesCount} ${responsesCount === 1 ? "reply" : "replies"}`}
+                      {repliesLabel}
                     </span>
                   ) : null}
                   {partnered && status !== "locked" ? (
-                    <span className="opacity-70">
-                      {isHe ? "משותף עם בן/בת הזוג" : "Shared with your partner"}
-                    </span>
+                    <CmsText
+                      cmsKey="journeyTimeline.list.shared"
+                      as="span"
+                      className="opacity-70"
+                    />
                   ) : null}
                 </div>
                 {status !== "locked" ? (
@@ -317,13 +328,13 @@ function TimelineCard({
                   // the tap target matches the card's clickable area and
                   // users never miss the edge.
                   <span className="inline-flex min-h-[44px] items-center gap-1 rounded-full bg-white/5 px-3 py-1 text-sm font-semibold text-white/90 sm:min-h-0 sm:bg-transparent sm:px-0 sm:py-0 sm:text-xs sm:font-medium sm:text-white/80">
-                    {isHe ? "פתיחה" : "Open"}
+                    <CmsText cmsKey="journeyTimeline.list.open" />
                     <Arrow className="h-3.5 w-3.5 rotate-180 sm:h-3 sm:w-3" />
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1 text-xs text-white/40">
                     <Lock className="h-3.5 w-3.5" />
-                    {isHe ? "נעול" : "Locked"}
+                    <CmsText cmsKey="journeyTimeline.list.locked" />
                   </span>
                 )}
               </div>
@@ -374,11 +385,18 @@ function StatusPill({
   unlockAt: string;
   isHe: boolean;
 }) {
+  // Pull every template/label this pill might render up-front — hooks
+  // can't sit inside the if/return branches.
+  const locked = useCmsText("journeyTimeline.list.locked").text;
+  const unlockInOneDay = useCmsText("journeyTimeline.list.unlockInOneDay").text;
+  const unlockInDaysTpl = useCmsText("journeyTimeline.list.unlockInDays").text;
+  const unlockInWeeksTpl = useCmsText("journeyTimeline.list.unlockInWeeks").text;
+
   if (status === "completed") {
     return (
       <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-emerald-400/50 bg-emerald-500/20 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-50">
         <CheckCircle2 className="h-3.5 w-3.5" />
-        {isHe ? "נעשה ביחד" : "Done together"}
+        <CmsText cmsKey="journeyTimeline.list.pillDone" />
       </span>
     );
   }
@@ -386,26 +404,40 @@ function StatusPill({
     return (
       <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-amber-200/70 bg-amber-400/25 px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-amber-50 shadow-[0_0_10px_rgba(251,191,36,0.5)]">
         <Sparkles className="h-3.5 w-3.5" />
-        {isHe ? "פתוח עכשיו" : "Open now"}
+        <CmsText cmsKey="journeyTimeline.list.pillOpen" />
       </span>
     );
   }
   return (
     <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-white/55">
       <Lock className="h-3 w-3" />
-      {formatLockedPill(unlockAt, isHe)}
+      {formatLockedPill(unlockAt, isHe, {
+        locked,
+        unlockInOneDay,
+        unlockInDaysTpl,
+        unlockInWeeksTpl,
+      })}
     </span>
   );
 }
 
-function formatLockedPill(unlockAt: string, isHe: boolean): string {
+function formatLockedPill(
+  unlockAt: string,
+  isHe: boolean,
+  copy: {
+    locked: string;
+    unlockInOneDay: string;
+    unlockInDaysTpl: string;
+    unlockInWeeksTpl: string;
+  },
+): string {
   const ms = new Date(unlockAt).getTime() - Date.now();
-  if (!Number.isFinite(ms) || ms <= 0) return isHe ? "נעול" : "Locked";
+  if (!Number.isFinite(ms) || ms <= 0) return copy.locked;
   const days = Math.ceil(ms / 86_400_000);
-  if (days === 1) return isHe ? "בעוד יום" : "In 1 day";
-  if (days < 14) return isHe ? `בעוד ${days} ימים` : `In ${days} days`;
+  if (days === 1) return copy.unlockInOneDay;
+  if (days < 14) return copy.unlockInDaysTpl.replace("{n}", String(days));
   const weeks = Math.ceil(days / 7);
-  if (weeks < 6) return isHe ? `בעוד ${weeks} שבועות` : `In ${weeks} weeks`;
+  if (weeks < 6) return copy.unlockInWeeksTpl.replace("{n}", String(weeks));
   // Fallback - show a date once the gap is long enough that weeks feel silly.
   return new Date(unlockAt).toLocaleDateString(isHe ? "he-IL" : "en-US", {
     month: "short",

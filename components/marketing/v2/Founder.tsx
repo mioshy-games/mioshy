@@ -1,14 +1,18 @@
-import { useTranslations } from "next-intl";
+"use client";
+
 import { Link } from "@/navigation";
 import { ParallaxImage } from "./ParallaxImage";
 import { RevealOnScroll } from "./RevealOnScroll";
+import { useCmsText } from "@/hooks/useCmsText";
+import { CmsText } from "@/components/cms/CmsText";
 
 /**
- * Founder - Itzik Berlev section. Two-column layout with photo + floating
- * badge on the left, full bio + CTAs on the right.
+ * Founder — Itzik Berlev section. Sprint 4 #1 closeout: all DOM text
+ * via <CmsText>; only `imageAlt` keeps useCmsText for the <img> alt.
  */
 export function Founder() {
-  const t = useTranslations("homeV2.founder");
+  const imageAlt = useCmsText("homeV2.founder.imageAlt");
+
   return (
     <section className="founder" id="about">
       <div className="container">
@@ -16,59 +20,76 @@ export function Founder() {
           <div className="founder-image">
             <ParallaxImage
               src="/images/itzik-barlev.webp"
-              alt={t("imageAlt")}
+              alt={imageAlt.text}
               width={600}
               height={750}
               className="founder-img"
               range={14}
             />
             <div className="founder-badge">
-              <div className="founder-badge-icon">{t("badgeIcon")}</div>
+              <CmsText
+                cmsKey="homeV2.founder.badgeIcon"
+                as="div"
+                className="founder-badge-icon"
+              />
               <div className="founder-badge-text">
-                <div className="t1">{t("badgeTitle")}</div>
-                <div className="t2">{t("badgeName")}</div>
+                <CmsText cmsKey="homeV2.founder.badgeTitle" as="div" className="t1" />
+                <CmsText cmsKey="homeV2.founder.badgeName" as="div" className="t2" />
               </div>
             </div>
           </div>
 
-          <RevealOnScroll variant="fade-up" delay={0.1} className="founder-content">
-            <div className="eyebrow">{t("eyebrow")}</div>
-            <h2>
-              {t.rich("headline", {
-                em: (chunks) => <em>{chunks}</em>,
-                br: () => <br />,
-              })}
-            </h2>
-            <p className="lead">
-              {t.rich("lead", {
-                strong: (chunks) => <strong>{chunks}</strong>,
-              })}
-            </p>
+          <RevealOnScroll
+            variant="fade-up"
+            delay={0.1}
+            className="founder-content"
+          >
+            <CmsText cmsKey="homeV2.founder.eyebrow" as="div" className="eyebrow" />
+            <CmsText cmsKey="homeV2.founder.headline" as="h2" />
+            <CmsText cmsKey="homeV2.founder.lead" as="p" className="lead" />
 
             <div className="founder-bio">
               <div className="bio-item">
-                <div className="bio-item-label">{t("bioRoleLabel")}</div>
-                <div className="bio-item-value">{t("bioRoleValue")}</div>
+                <CmsText
+                  cmsKey="homeV2.founder.bioRoleLabel"
+                  as="div"
+                  className="bio-item-label"
+                />
+                <CmsText
+                  cmsKey="homeV2.founder.bioRoleValue"
+                  as="div"
+                  className="bio-item-value"
+                />
               </div>
               <div className="bio-item">
-                <div className="bio-item-label">{t("bioExpertiseLabel")}</div>
-                <div className="bio-item-value">{t("bioExpertiseValue")}</div>
+                <CmsText
+                  cmsKey="homeV2.founder.bioExpertiseLabel"
+                  as="div"
+                  className="bio-item-label"
+                />
+                <CmsText
+                  cmsKey="homeV2.founder.bioExpertiseValue"
+                  as="div"
+                  className="bio-item-value"
+                />
               </div>
               <div className="bio-item">
-                <div className="bio-item-label">{t("bioLifeLabel")}</div>
-                <div className="bio-item-value">{t("bioLifeValue")}</div>
+                <CmsText
+                  cmsKey="homeV2.founder.bioLifeLabel"
+                  as="div"
+                  className="bio-item-label"
+                />
+                <CmsText
+                  cmsKey="homeV2.founder.bioLifeValue"
+                  as="div"
+                  className="bio-item-value"
+                />
               </div>
             </div>
 
-            {/* Single CTA - was a primary + ghost pair, but the ghost was
-                "המומחים שלנו" which over-promised: today the entire
-                methodology is Itzik's. Adding a fake-team affordance would
-                erode trust the moment a visitor clicked through. We can
-                bring it back when there are actual additional experts on
-                the masthead. */}
             <div className="founder-actions">
               <Link href="/about/founder" className="btn btn-primary">
-                {t("cta")}
+                <CmsText cmsKey="homeV2.founder.cta" />
               </Link>
             </div>
           </RevealOnScroll>

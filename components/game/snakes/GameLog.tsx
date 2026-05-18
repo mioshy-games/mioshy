@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import type { GameLogEntry } from "@/lib/snakes/types";
 import { cn } from "@/lib/utils";
+import { CmsText } from "@/components/cms/CmsText";
 
 function typeColor(type: GameLogEntry["type"]) {
   switch (type) {
@@ -54,7 +55,11 @@ export function GameLog({ entries }: { entries: GameLogEntry[] }) {
           ))}
         </div>
       ) : (
-        <div className="text-slate-300/70">אין לוג עדיין…</div>
+        <CmsText
+          cmsKey="snakesGame.gameLog.empty"
+          as="div"
+          className="text-slate-300/70"
+        />
       )}
     </div>
   );

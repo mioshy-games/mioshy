@@ -28,6 +28,7 @@ import {
 import { Link } from "@/navigation";
 import type { AdultsPricing } from "@/lib/adults/pricing";
 import { annualSavings } from "@/lib/adults/pricing";
+import { CmsText } from "@/components/cms/CmsText";
 
 type Hero = {
   singlePrice: string;
@@ -41,7 +42,12 @@ type Hero = {
 // 1. MANIFESTO - what these games actually are. Editorial single-column block.
 // ─────────────-───────────────────────────────────────────────────────────────
 
-export function AdultsManifestoSection({ isHe }: { isHe: boolean }) {
+// `isHe` is destructured but no longer referenced in the body — every
+// HE/EN string now goes through <CmsText>. We rename to `_isHe` so the
+// destructure stays compatible with the caller's `<AdultsManifestoSection
+// isHe={isHe} />` signature while ESLint's no-unused-vars treats the
+// underscore-prefixed binding as intentional.
+export function AdultsManifestoSection({ isHe: _isHe }: { isHe: boolean }) {
   return (
     <section
       id="manifesto"
@@ -52,37 +58,25 @@ export function AdultsManifestoSection({ isHe }: { isHe: boolean }) {
         <div className="text-center">
           <span className="inline-flex items-center gap-2.5 text-[13px] font-semibold uppercase tracking-[0.22em] text-[#8B2638] sm:text-[11px] sm:tracking-[0.32em]">
             <span className="h-1.5 w-1.5 rounded-full bg-[#B83C4D] shadow-[0_0_8px_rgba(184,60,77,0.3)]" />
-            {isHe ? "מה זה באמת" : "What this really is"}
+            <CmsText cmsKey="mioshySexPage.manifestoKicker" />
           </span>
         </div>
 
         {/* Headline - capped at 30px on mobile so the long Hebrew
-            italic doesn't break each word onto its own line. */}
+            italic doesn't break each word onto its own line. Two CMS
+            keys (prefix + italic emphasis) so admins can re-balance
+            each half independently. */}
         <h2
           className="mt-4 text-balance text-center text-[30px] leading-[1.1] tracking-[-0.02em] text-[#170E14] sm:mt-7 sm:text-5xl sm:leading-[1.05] lg:text-[56px]"
           style={{ fontFamily: "'Frank Ruhl Libre', serif", fontWeight: 600 }}
         >
-          {isHe ? (
-            <>
-              לא עוד משחק.{" "}
-              <span
-                className="text-[#F43F5E]"
-                style={{ fontStyle: "italic", fontWeight: 500 }}
-              >
-                ערב שלא רוצים שייגמר.
-              </span>
-            </>
-          ) : (
-            <>
-              Not another game.{" "}
-              <span
-                className="text-[#F43F5E]"
-                style={{ fontStyle: "italic", fontWeight: 500 }}
-              >
-                An evening you won&apos;t want to end.
-              </span>
-            </>
-          )}
+          <CmsText cmsKey="mioshySexPage.manifestoHeadlinePrefix" />{" "}
+          <span
+            className="text-[#F43F5E]"
+            style={{ fontStyle: "italic", fontWeight: 500 }}
+          >
+            <CmsText cmsKey="mioshySexPage.manifestoHeadlineEmphasis" />
+          </span>
         </h2>
 
         {/* Body - three editorial paragraphs with vertical accent rule.
@@ -94,29 +88,27 @@ export function AdultsManifestoSection({ isHe }: { isHe: boolean }) {
             className="absolute inset-y-2 start-0 w-px bg-gradient-to-b from-[#B83C4D]/0 via-[#B83C4D]/50 to-[#B83C4D]/0"
           />
 
-          <p className="text-[20px] leading-[1.55] text-[#170E14] sm:text-[20px] sm:leading-[1.7] md:text-[22px]">
-            {isHe
-              ? "המומחים של מיאושי בנו עבורכם משחקי מיניות בשלבים - כל שלב הוא פעולה מינית מסוימת שאתם מבצעים יחד. חלק מהמשחקים משלבים צעצועי מין. חלק לא. ההחלטה איתכם."
-              : "Mioshy's experts have built you sexual games in stages - each stage is a specific sexual act you perform together. Some games incorporate sex toys. Some don't. The choice is yours."}
-          </p>
+          <CmsText
+            cmsKey="mioshySexPage.manifestoBody1"
+            as="p"
+            className="text-[20px] leading-[1.55] text-[#170E14] sm:text-[20px] sm:leading-[1.7] md:text-[22px]"
+          />
 
           {/* Per Itzik 2026-05-07: bumped from 18-19px to 20px for
               parity with the lead paragraph above — the two should
               read as one continuous voice, not a stepdown. */}
-          <p className="mt-4 text-[20px] leading-[1.6] text-[#4A3A45] sm:mt-7 sm:text-[20px] sm:leading-[1.7]">
-            {isHe
-              ? "כולם מכוונים למטרה אחת - חוויה מינית בלתי-נשכחת. המשחקים מיניים. אירוטיים. מעוררים. ובנויים בכוונה כך, שלא תרצו להפסיק לשחק."
-              : "All of them point to one goal - an unforgettable sexual experience. The games are sexual. Erotic. Arousing. And built - on purpose - so you won't want to stop playing."}
-          </p>
+          <CmsText
+            cmsKey="mioshySexPage.manifestoBody2"
+            as="p"
+            className="mt-4 text-[20px] leading-[1.6] text-[#4A3A45] sm:mt-7 sm:text-[20px] sm:leading-[1.7]"
+          />
 
-          <p
+          <CmsText
+            cmsKey="mioshySexPage.manifestoBody3"
+            as="p"
             className="mt-4 text-[20px] leading-[1.55] text-[#8B2638] sm:mt-7 sm:text-[18px] sm:leading-[1.7]"
             style={{ fontFamily: "'Frank Ruhl Libre', serif", fontStyle: "italic" }}
-          >
-            {isHe
-              ? "- זה לא משחק שמשחקים פעם וזורקים. זה לילה שחוזרים עליו."
-              : "- this isn't a game you play once and discard. It's a night you come back to."}
-          </p>
+          />
         </div>
       </div>
     </section>
@@ -127,7 +119,7 @@ export function AdultsManifestoSection({ isHe }: { isHe: boolean }) {
 // 2. PROOF - gigantic stats. Single most credibility-loaded section on page.
 // ─────────-───────────────────────────────────────────────────────────────────
 
-export function AdultsProofSection({ isHe }: { isHe: boolean }) {
+export function AdultsProofSection({ isHe: _isHe }: { isHe: boolean }) {
   return (
     <section
       id="proof"
@@ -144,7 +136,7 @@ export function AdultsProofSection({ isHe }: { isHe: boolean }) {
         <div className="text-center">
           <span className="inline-flex items-center gap-2.5 text-[13px] font-semibold uppercase tracking-[0.22em] text-[#8B2638] sm:text-[11px] sm:tracking-[0.32em]">
             <span className="h-1.5 w-1.5 rounded-full bg-[#B83C4D] shadow-[0_0_8px_rgba(184,60,77,0.3)]" />
-            {isHe ? "המספרים מדברים" : "The numbers speak"}
+            <CmsText cmsKey="mioshySexPage.proofKicker" />
           </span>
         </div>
 
@@ -152,12 +144,12 @@ export function AdultsProofSection({ isHe }: { isHe: boolean }) {
           className="mt-3 text-balance text-center text-[28px] leading-[1.15] tracking-[-0.02em] text-[#170E14] sm:mt-6 sm:text-[36px] sm:leading-[1.1] md:text-[44px]"
           style={{ fontFamily: "'Frank Ruhl Libre', serif", fontWeight: 600 }}
         >
-          {isHe ? "אחרי משחק אחד - " : "After the first game - "}
+          <CmsText cmsKey="mioshySexPage.proofHeadlinePrefix" />
           <span
             className="text-[#B83C4D]"
             style={{ fontStyle: "italic", fontWeight: 500 }}
           >
-            {isHe ? "רוצים עוד." : "they want more."}
+            <CmsText cmsKey="mioshySexPage.proofHeadlineEmphasis" />
           </span>
         </h2>
 
@@ -173,14 +165,12 @@ export function AdultsProofSection({ isHe }: { isHe: boolean }) {
               80<span className="text-[0.5em] text-[#B83C4D]">%</span>
             </span>
             <div className="mx-auto mt-4 h-px w-20 bg-[#B83C4D]/30" />
-            <p
+            <CmsText
+              cmsKey="mioshySexPage.proofStat1Caption"
+              as="p"
               className="mx-auto mt-6 max-w-sm text-[20px] leading-[1.55] text-[#4A3A45] sm:text-[20px] sm:leading-[1.6]"
               style={{ fontFamily: "'Frank Ruhl Libre', serif", fontWeight: 500 }}
-            >
-              {isHe
-                ? "מהזוגות שרכשו משחק אחד — חזרו לרכוש משחק שני."
-                : "of couples who bought one game came back for a second."}
-            </p>
+            />
           </div>
 
           {/* Stat 2 - 50% */}
@@ -192,17 +182,16 @@ export function AdultsProofSection({ isHe }: { isHe: boolean }) {
               50<span className="text-[0.5em] text-[#B83C4D]">%</span>
             </span>
             <div className="mx-auto mt-4 h-px w-20 bg-[#B83C4D]/30" />
-            {/* Per Itzik 2026-05-07: clearer phrasing — "rכשו את כל
-                המוצרים שלנו" instead of the ambiguous "rכשו את כל
-                הקטלוג". Bumped to 20px on both mobile and desktop. */}
-            <p
+            {/* Per Itzik 2026-05-07: clearer phrasing in HE — admins
+                edit copy in CMS now; the previous draft had "רכשו את
+                כל הקטלוג" before being tightened to "המוצרים שלנו".
+                Bumped to 20px on both mobile and desktop. */}
+            <CmsText
+              cmsKey="mioshySexPage.proofStat2Caption"
+              as="p"
               className="mx-auto mt-6 max-w-sm text-[20px] leading-[1.55] text-[#4A3A45] sm:text-[20px] sm:leading-[1.6]"
               style={{ fontFamily: "'Frank Ruhl Libre', serif", fontWeight: 500 }}
-            >
-              {isHe
-                ? "מהלקוחות שלנו — רכשו את כל המוצרים שלנו."
-                : "of our customers ended up owning every single product."}
-            </p>
+            />
           </div>
         </div>
 
@@ -469,77 +458,26 @@ function DarkPlanCard({
 //    (whi-h use the homepage two-column V2 FAQ). Keeps the page identity.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function AdultsFaqSection({ isHe }: { isHe: boolean }) {
+export function AdultsFaqSection({ isHe: _isHe }: { isHe: boolean }) {
   // FAQ rewritten per Itzik 2026-05-07: 5 anchor questions every couple
   // asks before/after buying — why it's worth it, when to play, what
   // they actually get, refund policy, partner access. Two product
   // questions (toys, "what if one isn't ready") kept as the trailing
   // items because they come up after the value/access concerns.
+  //
+  // Each entry holds the CMS keys for the question + answer. The actual
+  // copy lives in mioshySexPage.faqQ{1-8} / faqA{1-8} in messages/he.json
+  // and en.json, and (eventually) in cms_texts rows so admins can edit
+  // without a deploy.
   const items = [
-    {
-      qHe: "למה זה טוב? איך זה שונה מטיפים שאני יכול למצוא ברשת?",
-      qEn: "Why is this good? How is it different from tips I'd find online?",
-      aHe:
-        "המשחקים שלנו נכתבו ע״י מומחים בעולם הסקסולוגיה והטיפול הזוגי, ועוצבו כחוויה שלמה — לא רשימת טיפים. כל משחק הוא מסע של שלבים, עם מתח שמצטבר ושיא שאתם זוכרים. זה מה שלא תמצאו במאמר באינטרנט: לא רעיונות, אלא מסגרת שמובילה אתכם דרך הערב.",
-      aEn:
-        "Our games are written by leading sexologists and couples therapists, and designed as a complete experience — not a tip list. Each game is a staged journey with rising tension and a peak you'll remember. That's what an internet article can't give you: not ideas, but a framework that walks you through the evening.",
-    },
-    {
-      qHe: "מה אנחנו מקבלים בתום הרכישה?",
-      qEn: "What do we get when we finish purchasing?",
-      aHe:
-        "גישה מיידית למשחק שרכשתם, לכל החיים, לשני בני הזוג. נפתח אזור פרטי ב״מיאושי שלי״ עם כל המשחקים שלכם — אפשר לחזור אליהם כמה פעמים שתרצו, בלי הגבלה. אין הורדות, אין התקנות. פותחים מהדפדפן בכל מכשיר.",
-      aEn:
-        "Immediate access to the game you bought, for life, for both partners. A private space opens up in 'My Mioshy' with all your games — replay as many times as you want, no limits. No downloads, no installs. Open it on any device through your browser.",
-    },
-    {
-      qHe: "מתי מומלץ לשחק? צריך הכנה?",
-      qEn: "When is it recommended to play? Do we need to prepare?",
-      aHe:
-        "הזמן הכי טוב הוא כשאתם רגועים, פנויים, ובמצב רוח. ערב סוף שבוע, חופשה קצרה, כל זמן שאתם מקדישים לעצמכם בלי הסחות. אין הכנה — נכנסים למשחק והוא מוביל אתכם. כל משחק כולל ציון של מה שצריך (אם בכלל) לפני ההתחלה.",
-      aEn:
-        "The best time is when you're relaxed, free, and in the mood. A weekend evening, a short getaway, any time you set aside for yourselves with no distractions. No prep needed — open the game and it leads you. Each game lists what's needed (if anything) before you start.",
-    },
-    {
-      qHe: "האם בן/בת הזוג מקבלים גישה למה שרכשתי?",
-      qEn: "Does my partner get access to what I purchased?",
-      aHe:
-        "כן, אוטומטית. כשאתם רוכשים, נפתח לכם ״חלל זוגי״ — אזור משותף לשניכם. כל מה שאחד מכם רוכש פתוח לשני, מיד, באותו רגע. רכישה אחת = שניכם בפנים. אין צורך לקנות פעמיים.",
-      aEn:
-        "Yes, automatically. When you purchase, a 'couple space' opens for both of you — a shared area. Anything one of you buys is immediately accessible to the other. One purchase = both of you in. No need to buy twice.",
-    },
-    {
-      qHe: "האם אפשר לקבל כסף חזרה אם זה לא מתאים?",
-      qEn: "Can we get a refund if it's not a fit?",
-      aHe:
-        "כן. עד 14 יום מהרכישה, אם לא התחלתם לשחק, נחזיר את התשלום במלואו — כתבו אלינו ב-mioshyoffice@gmail.com ונסגור את זה. אחרי שהתחלתם — התוכן נחשף ולכן הרכישה לא ניתנת להחזרה.",
-      aEn:
-        "Yes. Up to 14 days from purchase, if you haven't started playing, we'll refund in full — email us at mioshyoffice@gmail.com and we'll handle it. Once you've started, the content has been revealed so the purchase becomes non-refundable.",
-    },
-    {
-      qHe: "צריך לקנות צעצועי מין?",
-      qEn: "Do I need to buy sex toys?",
-      aHe:
-        "תלוי במשחק. חלק מהמשחקים משלבים צעצועים — וזה מצוין בעמוד של כל משחק. חלק לא דורשים שום ציוד. אתם בוחרים מראש.",
-      aEn:
-        "Depends on the game. Some games incorporate toys — clearly listed on each game's page. Others require no equipment at all. You choose upfront.",
-    },
-    {
-      qHe: "זה דיסקרטי?",
-      qEn: "Is this discreet?",
-      aHe:
-        "לחלוטין. החיוב מופיע תחת Mioshy בלבד — בלי שמות משחקים, בלי מילים אחרות. כל הנתונים מוצפנים, אנחנו לא מוכרים מידע, ואין פרסומות.",
-      aEn:
-        "Completely. Billing shows only as Mioshy — no game titles, no other words. All data is encrypted, we don't sell information, and there are no ads.",
-    },
-    {
-      qHe: "מה אם אחד מאיתנו לא מוכן/ה?",
-      qEn: "What if one of us isn't ready?",
-      aHe:
-        "אז מתחילים ברמה הראשונה — שיחה ושאלות, בלי שום לחץ. רוב הזוגות שמתחילים שם מגלים שהשני נפתח באופן טבעי.",
-      aEn:
-        "Then start at level one — talk and questions, no pressure. Most couples who start there find the other opens up naturally.",
-    },
+    { qKey: "mioshySexPage.faqQ1", aKey: "mioshySexPage.faqA1" },
+    { qKey: "mioshySexPage.faqQ2", aKey: "mioshySexPage.faqA2" },
+    { qKey: "mioshySexPage.faqQ3", aKey: "mioshySexPage.faqA3" },
+    { qKey: "mioshySexPage.faqQ4", aKey: "mioshySexPage.faqA4" },
+    { qKey: "mioshySexPage.faqQ5", aKey: "mioshySexPage.faqA5" },
+    { qKey: "mioshySexPage.faqQ6", aKey: "mioshySexPage.faqA6" },
+    { qKey: "mioshySexPage.faqQ7", aKey: "mioshySexPage.faqA7" },
+    { qKey: "mioshySexPage.faqQ8", aKey: "mioshySexPage.faqA8" },
   ];
 
   return (
@@ -553,42 +491,28 @@ export function AdultsFaqSection({ isHe }: { isHe: boolean }) {
         <div className="text-center">
           <span className="inline-flex items-center gap-2.5 text-[11px] font-semibold uppercase tracking-[0.32em] text-[#8B2638]">
             <span className="h-1.5 w-1.5 rounded-full bg-[#B83C4D] shadow-[0_0_8px_rgba(184,60,77,0.3)]" />
-            {isHe ? "שאלות נפוצות" : "FAQ"}
+            <CmsText cmsKey="mioshySexPage.faqKicker" />
           </span>
           <h2
             className="mt-7 text-[36px] leading-[1.05] tracking-[-0.02em] text-[#170E14] sm:text-[44px]"
             style={{ fontFamily: "'Frank Ruhl Libre', serif", fontWeight: 600 }}
           >
-            {isHe ? (
-              <>
-                שאלות שזוגות שואלים{" "}
-                <span
-                  className="text-[#B83C4D]"
-                  style={{ fontStyle: "italic", fontWeight: 500 }}
-                >
-                  לפני הרכישה.
-                </span>
-              </>
-            ) : (
-              <>
-                Questions couples ask{" "}
-                <span
-                  className="text-[#B83C4D]"
-                  style={{ fontStyle: "italic", fontWeight: 500 }}
-                >
-                  before they buy.
-                </span>
-              </>
-            )}
+            <CmsText cmsKey="mioshySexPage.faqHeadlinePrefix" />{" "}
+            <span
+              className="text-[#B83C4D]"
+              style={{ fontStyle: "italic", fontWeight: 500 }}
+            >
+              <CmsText cmsKey="mioshySexPage.faqHeadlineEmphasis" />
+            </span>
           </h2>
         </div>
 
         <ul className="mt-12 space-y-2">
-          {items.map((it, i) => (
-            <li key={i}>
+          {items.map((it) => (
+            <li key={it.qKey}>
               <details className="group border-b border-[#EAE0E3] transition hover:border-[#B83C4D]/30">
                 <summary className="flex cursor-pointer list-none items-start justify-between gap-4 py-6 text-[18px] font-semibold text-[#170E14] transition group-open:text-[#B83C4D] [&::-webkit-details-marker]:hidden">
-                  <span className="text-start">{isHe ? it.qHe : it.qEn}</span>
+                  <CmsText cmsKey={it.qKey} className="text-start" />
                   <span
                     aria-hidden
                     className="mt-0.5 inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full border border-[#EAE0E3] bg-white text-[#8B2638]/60 transition group-open:rotate-45 group-open:border-[#B83C4D]/30 group-open:bg-[#FBE9EC] group-open:text-[#B83C4D]"
@@ -596,9 +520,11 @@ export function AdultsFaqSection({ isHe }: { isHe: boolean }) {
                     +
                   </span>
                 </summary>
-                <p className="pb-6 text-[16px] leading-[1.7] text-[#4A3A45]">
-                  {isHe ? it.aHe : it.aEn}
-                </p>
+                <CmsText
+                  cmsKey={it.aKey}
+                  as="p"
+                  className="pb-6 text-[16px] leading-[1.7] text-[#4A3A45]"
+                />
               </details>
             </li>
           ))}
@@ -613,6 +539,8 @@ export function AdultsFaqSection({ isHe }: { isHe: boolean }) {
 // ───────────-─────────────────────────────────────────────────────────────────
 
 export function AdultsClosingCta({ isHe }: { isHe: boolean }) {
+  // isHe stays referenced here — used below to flip the ArrowRight icon
+  // 180° in RTL so it visually points "forward" toward the catalogue.
   return (
     <section className="relative overflow-hidden px-4 py-[120px]">
       <div
@@ -631,33 +559,19 @@ export function AdultsClosingCta({ isHe }: { isHe: boolean }) {
       <div className="relative mx-auto max-w-3xl text-center">
         <span className="inline-flex items-center gap-2.5 text-[11px] font-semibold uppercase tracking-[0.32em] text-rose-200/80">
           <span className="h-1.5 w-1.5 rounded-full bg-rose-400 shadow-[0_0_12px_rgba(244,63,94,0.7)]" />
-          {isHe ? "מוכנים?" : "Ready?"}
+          <CmsText cmsKey="mioshySexPage.closingKicker" />
         </span>
         <h2
           className="mt-7 text-balance text-[44px] leading-[1.02] tracking-[-0.02em] text-white sm:text-[56px] lg:text-[72px]"
           style={{ fontFamily: "'Frank Ruhl Libre', serif", fontWeight: 600 }}
         >
-          {isHe ? (
-            <>
-              לילה אחד.{" "}
-              <span
-                className="block bg-gradient-to-br from-rose-200 via-rose-400 to-amber-300 bg-clip-text text-transparent"
-                style={{ fontStyle: "italic", fontWeight: 500 }}
-              >
-                כל מה שצריך כדי לדעת.
-              </span>
-            </>
-          ) : (
-            <>
-              One night.{" "}
-              <span
-                className="block bg-gradient-to-br from-rose-200 via-rose-400 to-amber-300 bg-clip-text text-transparent"
-                style={{ fontStyle: "italic", fontWeight: 500 }}
-              >
-                That&apos;s all it takes to know.
-              </span>
-            </>
-          )}
+          <CmsText cmsKey="mioshySexPage.closingHeadlinePrefix" />{" "}
+          <span
+            className="block bg-gradient-to-br from-rose-200 via-rose-400 to-amber-300 bg-clip-text text-transparent"
+            style={{ fontStyle: "italic", fontWeight: 500 }}
+          >
+            <CmsText cmsKey="mioshySexPage.closingHeadlineEmphasis" />
+          </span>
         </h2>
 
         <Link
@@ -670,7 +584,10 @@ export function AdultsClosingCta({ isHe }: { isHe: boolean }) {
           />
           <span className="relative z-10 inline-flex items-center gap-2">
             <Star className="h-4 w-4" />
-            {isHe ? "אל הקטלוג" : "Enter the catalogue"}
+            {/* CTA label reuses heroCtaPrimary — same string ("Enter the
+                catalogue" / "אל הקטלוג") used at the top of /mioshy-sex,
+                so admins edit it once and both surfaces update. */}
+            <CmsText cmsKey="mioshySexPage.heroCtaPrimary" />
             <ArrowRight
               className={`h-5 w-5 transition group-hover:translate-x-1 ${
                 isHe ? "rotate-180 group-hover:-translate-x-1" : ""
@@ -679,14 +596,12 @@ export function AdultsClosingCta({ isHe }: { isHe: boolean }) {
           </span>
         </Link>
 
-        <p
+        <CmsText
+          cmsKey="mioshySexPage.closingReassurance"
+          as="p"
           className="mt-6 text-[18px] text-white/70 sm:text-[14px] sm:text-white/45"
           style={{ fontFamily: "'Frank Ruhl Libre', serif", fontStyle: "italic" }}
-        >
-          {isHe
-            ? "ללא חוזה · ביטול בכל עת · החיוב מופיע כ-Mioshy בלבד"
-            : "No contract · cancel anytime · billed only as Mioshy"}
-        </p>
+        />
       </div>
 
       <style
@@ -710,7 +625,7 @@ export function AdultsClosingCta({ isHe }: { isHe: boolean }) {
 // it wants.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function AdultsCatalogueIntro({ isHe }: { isHe: boolean }) {
+export function AdultsCatalogueIntro({ isHe: _isHe }: { isHe: boolean }) {
   return (
     /* Per Itzik 2026-05-07: this intro now sits ON the dark catalogue
        surface (text-white) so it reads as the heading OF the products
@@ -720,33 +635,19 @@ export function AdultsCatalogueIntro({ isHe }: { isHe: boolean }) {
       <div className="mx-auto max-w-3xl text-center">
         <span className="inline-flex items-center gap-2.5 text-[11px] font-semibold uppercase tracking-[0.32em] text-[#F8C8CE]">
           <span className="h-1.5 w-1.5 rounded-full bg-[#F43F5E] shadow-[0_0_10px_rgba(244,63,94,0.5)]" />
-          {isHe ? "הקטלוג" : "The catalogue"}
+          <CmsText cmsKey="mioshySexPage.catalogueKicker" />
         </span>
         <h2
           className="mt-7 text-[36px] leading-[1.05] tracking-[-0.02em] text-white sm:text-[44px] lg:text-[52px]"
           style={{ fontFamily: "'Frank Ruhl Libre', serif", fontWeight: 600 }}
         >
-          {isHe ? (
-            <>
-              בחרו את המשחק{" "}
-              <span
-                className="text-[#F43F5E]"
-                style={{ fontStyle: "italic", fontWeight: 500 }}
-              >
-                שמתחיל את הערב.
-              </span>
-            </>
-          ) : (
-            <>
-              Pick the game{" "}
-              <span
-                className="text-[#F43F5E]"
-                style={{ fontStyle: "italic", fontWeight: 500 }}
-              >
-                that opens the evening.
-              </span>
-            </>
-          )}
+          <CmsText cmsKey="mioshySexPage.catalogueHeadlinePrefix" />{" "}
+          <span
+            className="text-[#F43F5E]"
+            style={{ fontStyle: "italic", fontWeight: 500 }}
+          >
+            <CmsText cmsKey="mioshySexPage.catalogueHeadlineEmphasis" />
+          </span>
         </h2>
       </div>
     </div>

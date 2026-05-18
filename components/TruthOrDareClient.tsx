@@ -635,7 +635,7 @@ export function TruthOrDareClient({
     >
       {/* First-visit tutorial — shows once per device, then never again.
           Self-gates on localStorage so safe to mount unconditionally. */}
-      <TutorialPopup isHe={locale === "he"} />
+      <TutorialPopup />
       {pageLayout === "side-by-side" ? (
         /* ── SIDE-BY-SIDE LAYOUT ─────────────────────────────────────────────
            Desktop (≥ md): wheel on the left, controls on the right.

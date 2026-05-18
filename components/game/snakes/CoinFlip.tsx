@@ -3,6 +3,8 @@
 import { motion } from "framer-motion";
 import type { CoinResult } from "@/lib/snakes/types";
 import { cn } from "@/lib/utils";
+import { useCmsText } from "@/hooks/useCmsText";
+import { CmsText } from "@/components/cms/CmsText";
 
 export function CoinFlip({
   onFlip,
@@ -15,12 +17,13 @@ export function CoinFlip({
   result: CoinResult | null;
   playerColor: string;
 }) {
-  const label =
-    result === "heads"
-      ? "עץ"
-      : result === "tails"
-        ? "פלי"
-        : "הטלת מטבע";
+  // Raw-string slot for aria-label (HTML attribute), so we use useCmsText
+  // directly for the result/idle label; JSX children below render via <CmsText>.
+  const heads = useCmsText("snakesGame.coinFlip.heads").text;
+  const tails = useCmsText("snakesGame.coinFlip.tails").text;
+  const flipLabel = useCmsText("snakesGame.coinFlip.flipLabel").text;
+  const ariaLabel =
+    result === "heads" ? heads : result === "tails" ? tails : flipLabel;
 
   return (
     <div className="flex flex-col items-center gap-3">
@@ -36,7 +39,7 @@ export function CoinFlip({
           "disabled:opacity-50 disabled:cursor-not-allowed",
         )}
         style={{ borderColor: `${playerColor}88` }}
-        aria-label={label}
+        aria-label={ariaLabel}
       >
         <motion.div
           key={result ?? "idle"}
@@ -48,15 +51,18 @@ export function CoinFlip({
           🪙
         </motion.div>
       </motion.button>
-      <div className="text-sm font-semibold text-slate-200">{label}</div>
-      <div className="text-xs text-slate-300/80">
-        {result === "heads"
-          ? "עץ = +3 צעדים (ברירת מחדל)"
-          : result === "tails"
-            ? "פלי = +1 צעד (ברירת מחדל)"
-            : "רק השחקן בתור יכול להטיל"}
-      </div>
+      <div className="text-sm font-semibold text-slate-200">{ariaLabel}</div>
+      <CmsText
+        cmsKey={
+          result === "heads"
+            ? "snakesGame.coinFlip.headsRule"
+            : result === "tails"
+              ? "snakesGame.coinFlip.tailsRule"
+              : "snakesGame.coinFlip.turnHint"
+        }
+        as="div"
+        className="text-xs text-slate-300/80"
+      />
     </div>
   );
 }
-
