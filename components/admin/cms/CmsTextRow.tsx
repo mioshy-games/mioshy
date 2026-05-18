@@ -8,13 +8,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { saveCmsText } from "@/lib/cms/actions";
 import {
   COLOR_PRESETS,
@@ -470,24 +463,31 @@ export function CmsTextRow({ row }: { row: CmsTextRowType }) {
 
           {/* Mode selector. Single source of truth for default vs
               preset vs custom; the "Custom HEX…" option reveals the
-              text input below. */}
-          <Select
+              text input below.
+
+              Native <select> instead of the Base UI primitive: the
+              Base UI Select.Item click handler was silently dropping
+              non-current selections in this row context (dropdown
+              opened, options visible, click did nothing, no
+              onValueChange fired). Native <select> is keyboard-/
+              screen-reader-accessible, RTL-safe, and visually close
+              enough at the small size used here. */}
+          <select
             value={dropdownValue}
-            onValueChange={handleColorDropdownChange}
+            onChange={(e) => handleColorDropdownChange(e.target.value)}
+            className={cn(
+              "h-8 w-44 rounded-lg border border-input bg-transparent px-2.5 text-xs",
+              "focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+            )}
           >
-            <SelectTrigger className="h-8 w-44 text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="default">Default (no override)</SelectItem>
-              {COLOR_PRESET_ORDER.map((name) => (
-                <SelectItem key={name} value={`preset:${name}`}>
-                  {name}
-                </SelectItem>
-              ))}
-              <SelectItem value="custom">Custom HEX…</SelectItem>
-            </SelectContent>
-          </Select>
+            <option value="default">Default (no override)</option>
+            {COLOR_PRESET_ORDER.map((name) => (
+              <option key={name} value={`preset:${name}`}>
+                {name}
+              </option>
+            ))}
+            <option value="custom">Custom HEX…</option>
+          </select>
 
           {/* HEX input — only in custom mode. Fixed-width monospace so
               "#" plus 6 hex chars fit cleanly. The red border + ring

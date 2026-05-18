@@ -57,11 +57,22 @@ export function CmsText({
 
   // Sprint 5 — when the row carries a colour override, forward the
   // resolved value to descendant <mark> elements via a CSS custom
-  // property. globals.css has `.cms-rich mark { color:
-  // var(--cms-mark-color, #B83C4D) }`, so a row WITHOUT an override
-  // gets the default brand-rose, and a row WITH one gets the same
-  // colour the surrounding text gets. This is how a single override
-  // unifies the outer text colour AND the highlighter colour.
+  // property ONLY. globals.css has `.cms-rich mark { color:
+  // var(--cms-mark-color, #B83C4D) }`, so the override paints just
+  // the highlighter, not the surrounding text.
+  //
+  // Earlier revision spread `style.color` onto the wrapper element
+  // as well (intent: "unify outer text + highlighter colour"). In
+  // practice that turned the whole headline the override colour
+  // even when the admin had wrapped a single word in <mark> to mean
+  // "only this word should change colour" — surprising and not what
+  // admins reach the picker for. We strip `color` from the wrapper
+  // style here so the dropdown's only behavioural effect is
+  // recolouring <mark>s inside the row. The surrounding text keeps
+  // whatever colour its section CSS gave it.
+  //
+  // Callers can still pass `style={{ color: '#xxx' }}` via
+  // `extraStyle` if they need an explicit override on the wrapper.
   //
   // We don't bake this into useCmsText's style return because CSS
   // custom properties are a rendering concern — the hook is supposed
@@ -72,10 +83,12 @@ export function CmsText({
   // after building the object with the extra key.
   const cmsStyleWithMarkVar: React.CSSProperties | undefined = (() => {
     if (!style) return undefined;
-    if (!style.color) return style;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { color, ...rest } = style;
+    if (!color) return Object.keys(rest).length ? rest : undefined;
     return {
-      ...style,
-      ["--cms-mark-color"]: style.color,
+      ...rest,
+      ["--cms-mark-color"]: color,
     } as React.CSSProperties;
   })();
 
