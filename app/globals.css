@@ -401,6 +401,9 @@ small, .text-small {
 @media (prefers-reduced-motion: reduce) {
   .btn { transition: background-color .2s linear, color .2s linear; }
   .btn-primary:hover { transform: none; }
+}
+
+/* ════════════════════════════════════════════════════════════
    CMS rich-text styling — applied wherever <CmsText> renders a
    row whose is_rich = true (Sprint 4 #1, 2026-05-13).
    ════════════════════════════════════════════════════════════
