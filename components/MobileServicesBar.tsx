@@ -106,6 +106,18 @@ export function MobileServicesBar() {
         // iOS safe-area: extends background under the home-indicator
         // strip but keeps the icons inside the safe zone.
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
+        // Chrome mobile fixed-bottom lag fix (2026-05-18):
+        // During the URL-bar collapse/expand animation, fixed-bottom
+        // elements visibly detach from the screen edge for a frame or
+        // two, making the bar look "floating". `will-change: transform`
+        // keeps the nav on its own compositor layer (which the existing
+        // Tailwind translate-y classes already touch on hide/show), so
+        // Chrome can reposition it in lockstep with the URL-bar
+        // animation instead of waiting on the layout viewport to
+        // re-resolve. We don't set `transform` here ourselves — that
+        // would clobber the translate-y-full / translate-y-0 hide
+        // animation tied to `footerVisible`.
+        willChange: "transform",
       }}
     >
       {/* F9 — bar background uses the same fuchsia → purple → pink

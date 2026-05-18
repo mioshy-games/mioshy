@@ -1635,8 +1635,10 @@
     /* Hero mobile tighter */
     .hero{padding:40px 0 50px}
     /* A2 — H1 mobile +13%. Floor 46→52, scale 6.6vw→7.4vw; upper
-       cap unchanged (96px). Noticeable but not screen-dominating. */
-    .hero h1{margin-bottom:18px;font-size:clamp(52px,7.4vw,96px)}
+       cap unchanged (96px). Noticeable but not screen-dominating.
+       Line-height +10% over the base 0.98 (→1.08) for breathing room
+       on mobile where the Hebrew serif headlines run multi-line. */
+    .hero h1{margin-bottom:18px;font-size:clamp(52px,7.4vw,96px);line-height:1.08}
     .hero p.lead{margin-bottom:24px}
     /* Mobile DOM diet (Lighthouse 2026-05-06): the hero ships ~36
        decorative ambient elements (5 blobs, 1 floating circle, 18
