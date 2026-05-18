@@ -70,7 +70,14 @@ const nextConfig = {
     // and `*.cardcom.co.il` are included for resilience to Cardcom's
     // multi-domain setup. Verify in dev with the real checkout flow before
     // production deploy — if a different subdomain shows up, add it here.
-    const csp = [
+    // `upgrade-insecure-requests` and HSTS are production-only.
+    // In `next dev` (HTTP on localhost) those two directives make Safari
+    // (which is stricter than Chrome about loopback) try to fetch every
+    // _next/static chunk over HTTPS, fail the TLS handshake, and render
+    // the page completely unstyled. Gate them on Vercel production.
+    const isProd = process.env.VERCEL_ENV === "production";
+
+    const cspDirectives = [
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://*.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
@@ -82,17 +89,25 @@ const nextConfig = {
       "form-action 'self' https://*.cardcom.solutions https://*.cardcom.co.il",
       "base-uri 'self'",
       "object-src 'none'",
-      "upgrade-insecure-requests",
-    ].join("; ");
+    ];
+    if (isProd) cspDirectives.push("upgrade-insecure-requests");
+    const csp = cspDirectives.join("; ");
 
     const securityHeaders = [
       { key: "Content-Security-Policy", value: csp },
       // Two years, full subdomain coverage, preload-list eligible. mioshy.com
-      // is HTTPS-only so this is safe to flip on immediately.
-      {
-        key: "Strict-Transport-Security",
-        value: "max-age=63072000; includeSubDomains; preload",
-      },
+      // is HTTPS-only so this is safe to flip on immediately — but ONLY in
+      // production. Sending HSTS from `next dev` pins the browser to HTTPS
+      // for two years on localhost, after which `http://localhost:3000`
+      // refuses to load.
+      ...(isProd
+        ? [
+            {
+              key: "Strict-Transport-Security",
+              value: "max-age=63072000; includeSubDomains; preload",
+            },
+          ]
+        : []),
       { key: "X-Content-Type-Options", value: "nosniff" },
       // Defense-in-depth alongside frame-ancestors 'none' above.
       { key: "X-Frame-Options", value: "DENY" },
