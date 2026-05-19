@@ -262,27 +262,86 @@ export async function journeyInlineSignup(args: {
         "[journeyInlineSignup] RPC didn't link, falling back to service-role UPDATE",
         { rpcError: linkErr?.message, linkedId },
       );
-      // Service-role direct UPDATE - bypasses the auth.uid() check by
-      // explicitly setting user_id from the just-signed-in session.
-      const { data: fallback, error: fallbackErr } = await admin
+      // 2026-05-19 — previously used `.maybeSingle()` here, which
+      // throws when MULTIPLE anon journeys exist under the same
+      // device_id. Common in dev (hot reload re-mounting JourneyClient)
+      // and possible in prod (user started+abandoned a few times).
+      // Confirmed 2026-05-19 incident: probe showed 3 anon journeys for
+      // the same device_id → fallback failed → user got 404 forever.
+      //
+      // New shape:
+      //   1. List all matching anon journeys.
+      //   2. Pick the "primary" — prefer status='complete', else most
+      //      recent — to set as linkedJourneyId for downstream UI.
+      //   3. UPDATE ALL of them to set user_id (so the user owns the
+      //      whole set and stragglers don't keep cluttering the
+      //      anon pool / get re-claimed by some other future signup).
+      const { data: candidates, error: listErr } = await admin
         .from("journeys")
-        .update({ user_id: userId, last_activity_at: new Date().toISOString() })
+        .select("id, status, last_activity_at, current_step")
         .eq("device_id", args.deviceId)
         .is("user_id", null)
-        .select("id")
-        .maybeSingle();
-      if (fallbackErr) {
+        .order("last_activity_at", { ascending: false });
+
+      if (listErr) {
         console.error(
-          "[journeyInlineSignup] fallback UPDATE failed",
-          fallbackErr,
+          "[journeyInlineSignup] fallback list failed",
+          listErr,
         );
         debug.rpc.error =
-          (debug.rpc.error ?? "") + " | fallback: " + fallbackErr.message;
-      } else if (fallback?.id) {
-        console.log("[journeyInlineSignup] fallback UPDATE linked journey", {
-          journeyId: fallback.id,
+          (debug.rpc.error ?? "") + " | fallback list: " + listErr.message;
+      } else {
+        const list = (candidates ?? []) as Array<{
+          id: string;
+          status: string;
+          last_activity_at: string | null;
+          current_step: number;
+        }>;
+        console.log("[journeyInlineSignup] fallback candidates", {
+          count: list.length,
+          ids: list.map((r) => r.id),
+          statuses: list.map((r) => r.status),
+          steps: list.map((r) => r.current_step),
         });
-        debug.rpc.linkedJourneyId = fallback.id;
+
+        if (list.length > 0) {
+          const primary =
+            list.find((r) => r.status === "complete") ?? list[0];
+
+          const { error: updErr } = await admin
+            .from("journeys")
+            .update({
+              user_id: userId,
+              last_activity_at: new Date().toISOString(),
+            })
+            .eq("device_id", args.deviceId)
+            .is("user_id", null);
+
+          if (updErr) {
+            console.error(
+              "[journeyInlineSignup] fallback UPDATE failed",
+              updErr,
+            );
+            debug.rpc.error =
+              (debug.rpc.error ?? "") + " | fallback update: " + updErr.message;
+          } else {
+            console.log(
+              "[journeyInlineSignup] fallback UPDATE linked journeys",
+              {
+                primaryJourneyId: primary.id,
+                primaryStatus: primary.status,
+                primarySteps: primary.current_step,
+                totalLinked: list.length,
+              },
+            );
+            debug.rpc.linkedJourneyId = primary.id;
+          }
+        } else {
+          console.warn(
+            "[journeyInlineSignup] fallback found ZERO anon journeys to link",
+            { deviceId: args.deviceId },
+          );
+        }
       }
     } else {
       console.log("[journeyInlineSignup] linked anon journey via RPC", {
@@ -295,13 +354,49 @@ export async function journeyInlineSignup(args: {
     // ── Resolve final journey state for the client ───────────────────────
     // Use the admin client so we don't depend on RLS visibility for the
     // freshly-linked row in this request.
-    const { data: journey } = await admin
+    //
+    // 2026-05-19 fix — previously ordered ONLY by `last_activity_at DESC`,
+    // which is wrong when MULTIPLE journeys were just linked: my
+    // fallback UPDATE sets `last_activity_at = NOW()` on all matching
+    // rows in one statement, so they all share the same timestamp and
+    // Postgres picks one arbitrarily (often the in_progress, step=1
+    // one instead of the complete, step=29 one). Result: client gets
+    // "you're at step 1, keep answering" and loops the user back into
+    // the assessment.
+    //
+    // Fix — sort COMPLETE journeys first, then by step (most progress),
+    // then by recency. That guarantees we surface the assessment the
+    // user just finished, not a stray in_progress row created by
+    // hot reload or a race condition in /api/journey/answer.
+    const { data: candidateJourneys } = await admin
       .from("journeys")
-      .select("id, current_step, status")
-      .eq("user_id", userId)
-      .order("last_activity_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .select("id, current_step, status, last_activity_at")
+      .eq("user_id", userId);
+
+    const journey = (candidateJourneys ?? [])
+      .slice()
+      .sort((a, b) => {
+        // Prefer status='complete' over everything else.
+        const aComplete = a.status === "complete" ? 1 : 0;
+        const bComplete = b.status === "complete" ? 1 : 0;
+        if (aComplete !== bComplete) return bComplete - aComplete;
+        // Then prefer the one with the most progress.
+        const stepDiff = (b.current_step ?? 0) - (a.current_step ?? 0);
+        if (stepDiff !== 0) return stepDiff;
+        // Finally fall back to recency.
+        const aTs = a.last_activity_at ? new Date(a.last_activity_at).getTime() : 0;
+        const bTs = b.last_activity_at ? new Date(b.last_activity_at).getTime() : 0;
+        return bTs - aTs;
+      })[0] ?? null;
+
+    if (journey) {
+      console.log("[journeyInlineSignup] resolved final journey (sorted)", {
+        chosenId: journey.id,
+        chosenStatus: journey.status,
+        chosenStep: journey.current_step,
+        totalCandidatesForUser: candidateJourneys?.length ?? 0,
+      });
+    }
 
     // Diagnostic: also count journey_responses for the resolved journey,
     // because that's what /my/journey gates on. If the journey is linked

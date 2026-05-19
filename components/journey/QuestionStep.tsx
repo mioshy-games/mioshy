@@ -147,8 +147,8 @@ function LikertControl({
           disabled={busy}
           className={`flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 transition active:scale-[0.98] sm:flex-col sm:items-center sm:justify-center sm:px-2 ${
             current === n
-              ? "border-fuchsia-400/70 bg-fuchsia-500/25 text-white ring-2 ring-fuchsia-400/50"
-              : "border-white/12 bg-slate-800/70 text-white/80 hover:bg-slate-700/70 hover:border-white/20"
+              ? "border-rose-400/70 bg-gradient-to-br from-rose-500/40 via-fuchsia-500/35 to-violet-500/35 text-white ring-2 ring-rose-400/50 shadow-lg shadow-rose-500/20"
+              : "border-rose-300/20 bg-gradient-to-br from-rose-950/40 via-slate-900/85 to-violet-950/40 text-white/85 hover:border-rose-300/45 hover:from-rose-900/45 hover:via-slate-800/85 hover:to-violet-900/45"
           } disabled:cursor-not-allowed disabled:opacity-50`}
         >
           {/* Per Itzik 2026-05-07: response text was too small (numbers
@@ -192,8 +192,8 @@ function SingleChoiceControl({
         const label = locale === "he" ? opt.he : opt.en;
         const classes = `rounded-2xl border px-4 py-5 text-start text-[22px] font-medium leading-snug transition active:scale-[0.98] sm:py-4 sm:text-[20px] ${
           current === opt.id
-            ? "border-fuchsia-400/70 bg-fuchsia-500/20 text-white ring-2 ring-fuchsia-400/50"
-            : "border-white/12 bg-slate-800/70 text-white/85 hover:bg-slate-700/70 hover:border-white/20"
+            ? "border-rose-400/70 bg-gradient-to-br from-rose-500/40 via-fuchsia-500/30 to-violet-500/30 text-white ring-2 ring-rose-400/50 shadow-lg shadow-rose-500/20"
+            : "border-rose-300/20 bg-gradient-to-br from-rose-950/40 via-slate-900/85 to-violet-950/40 text-white/90 hover:border-rose-300/45 hover:from-rose-900/45 hover:via-slate-800/85 hover:to-violet-900/45"
         } disabled:cursor-not-allowed disabled:opacity-50`;
         return (
           <button
@@ -234,8 +234,8 @@ function MultiChoiceControl({
         const label = locale === "he" ? opt.he : opt.en;
         const classes = `rounded-2xl border px-4 py-5 text-start text-[22px] font-medium leading-snug transition active:scale-[0.98] sm:py-4 sm:text-[20px] ${
           current.includes(opt.id)
-            ? "border-fuchsia-400/70 bg-fuchsia-500/20 text-white"
-            : "border-white/12 bg-slate-800/70 text-white/85 hover:bg-slate-700/70 hover:border-white/20"
+            ? "border-rose-400/70 bg-gradient-to-br from-rose-500/40 via-fuchsia-500/30 to-violet-500/30 text-white ring-2 ring-rose-400/40 shadow-lg shadow-rose-500/20"
+            : "border-rose-300/20 bg-gradient-to-br from-rose-950/40 via-slate-900/85 to-violet-950/40 text-white/90 hover:border-rose-300/45 hover:from-rose-900/45 hover:via-slate-800/85 hover:to-violet-900/45"
         }`;
         return (
           <button
@@ -244,7 +244,7 @@ function MultiChoiceControl({
             onClick={() => toggle(opt.id)}
             className={classes}
           >
-            <span className={`me-2 inline-block h-4 w-4 rounded border align-middle ${current.includes(opt.id) ? "border-fuchsia-400 bg-fuchsia-500" : "border-white/30"}`} />
+            <span className={`me-2 inline-block h-4 w-4 rounded border align-middle ${current.includes(opt.id) ? "border-rose-400 bg-gradient-to-br from-rose-500 to-fuchsia-500" : "border-white/35"}`} />
             {label}
           </button>
         );

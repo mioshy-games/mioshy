@@ -105,6 +105,12 @@ export function JourneyClient({
   );
   const confettiFiredRef = useRef(false);
   const analysisFetchAttemptedRef = useRef(false);
+  // Diagnostic: count how many times the isDone branch re-renders. If
+  // this climbs into the dozens within a few seconds we have a render
+  // storm (likely the cause of the "Chrome → whole machine slows"
+  // symptom Itzik reported 2026-05-18). Logged inline so it's visible
+  // in DevTools without expanding an Object.
+  const isDoneRenderCountRef = useRef(0);
   // Layer-1 mid-flow interstitial. When set to a non-null index, the
   // questionnaire is paused and the matching reflection card renders
   // in place of the question. Continuing dismisses it (and stamps the
@@ -305,26 +311,47 @@ export function JourneyClient({
           method: "POST",
           credentials: "include",
         });
-        console.log("[JourneyClient] POST response", {
-          status: postRes.status,
-          ok: postRes.ok,
-        });
+        // Inline-string log so the values are visible in DevTools without
+        // expanding `Object`. Same for the failure branch below.
+        console.log(
+          "[JourneyClient] POST response",
+          `status=${postRes.status}`,
+          `ok=${postRes.ok}`,
+        );
 
         if (!postRes.ok) {
-          const txt = await postRes.text().catch(() => "");
-          console.error("[JourneyClient] POST failed", {
-            status: postRes.status,
-            body: txt,
-          });
-          setAnalysisError(txt || `POST failed: ${postRes.status}`);
+          // Try to parse as JSON first so we can surface the structured
+          // diagnostic the server now returns (probe object with
+          // userKeyedViaAdmin count + recentAnonJourneys list). Fall back
+          // to text if it isn't JSON.
+          const cloned = postRes.clone();
+          let body: unknown = null;
+          try {
+            body = await postRes.json();
+          } catch {
+            body = await cloned.text().catch(() => "");
+          }
+          console.error(
+            "[JourneyClient] POST failed",
+            `status=${postRes.status}`,
+            `body=${typeof body === "string" ? body : JSON.stringify(body)}`,
+          );
+          const msg =
+            typeof body === "object" && body && "error" in body
+              ? String((body as { error: unknown }).error)
+              : typeof body === "string" && body
+                ? body
+                : `POST failed: ${postRes.status}`;
+          setAnalysisError(msg);
           return;
         }
 
         const postData = await postRes.json();
-        console.log("[JourneyClient] POST payload", {
-          hasAnalysis: !!postData?.analysis,
-          keys: postData?.analysis ? Object.keys(postData.analysis) : [],
-        });
+        console.log(
+          "[JourneyClient] POST payload",
+          `hasAnalysis=${!!postData?.analysis}`,
+          `keys=${postData?.analysis ? Object.keys(postData.analysis).join(",") : "(none)"}`,
+        );
 
         if (postData?.analysis) {
           setAnalysis(postData.analysis as Analysis);
@@ -482,6 +509,23 @@ export function JourneyClient({
       if (data.analysis) setAnalysis(data.analysis);
 
       const serverNext = data.next_index ?? optimisticNext;
+      // Inline log so we can see at a glance whether the server is
+      // advancing the user (serverNext === capturedIndex + 1) or
+      // keeping them on the same question (serverNext === capturedIndex).
+      // Diagnostic for the "stuck on q13" report 2026-05-18.
+      // eslint-disable-next-line no-console
+      console.log(
+        "[answer] server response",
+        `qid=${question.id}`,
+        `captured=${capturedIndex}`,
+        `optimistic=${optimisticNext}`,
+        `serverNext=${serverNext}`,
+        `serverNextRaw=${data.next_index}`,
+        `willRevert=${serverNext === capturedIndex}`,
+        `willAdvance=${serverNext === optimisticNext}`,
+        `willCorrect=${serverNext !== optimisticNext && serverNext !== capturedIndex}`,
+        `dataKeys=${Object.keys(data).join(",")}`,
+      );
       track("journey_question_answered", {
         step: capturedIndex,
         question_id: question.id,
@@ -553,8 +597,9 @@ export function JourneyClient({
     return (
       <div
         dir={locale === "he" ? "rtl" : "ltr"}
-        className="mx-auto flex min-h-[80vh] w-full max-w-3xl flex-col gap-8 px-4 py-10"
+        className="relative mx-auto flex min-h-[80vh] w-full max-w-3xl flex-col gap-8 px-4 py-10"
       >
+        <JourneyOutroBackdrop />
         <header className="flex flex-col gap-2 text-start">
           <CmsText
             cmsKey="journeyAssessment.client.title"
@@ -580,13 +625,16 @@ export function JourneyClient({
 
   // ── Render: Analysis summary (authenticated + done) ──────────────────────
   if (isDone) {
-    console.log("[JourneyClient] render isDone branch", {
-      hasAnalysis: !!analysis,
-      analysisLoading,
-      analysisError,
-      authenticated,
-      subscriptionActive,
-    });
+    isDoneRenderCountRef.current += 1;
+    console.log(
+      "[JourneyClient] render isDone branch",
+      `#${isDoneRenderCountRef.current}`,
+      `hasAnalysis=${!!analysis}`,
+      `analysisLoading=${analysisLoading}`,
+      `analysisError=${analysisError ?? "(none)"}`,
+      `authenticated=${authenticated}`,
+      `subscriptionActive=${subscriptionActive}`,
+    );
 
     // Surface error so the user isn't stuck on a generic loading message
     // when the fetch actually failed - they'll know to retry/contact us.
@@ -594,8 +642,9 @@ export function JourneyClient({
       return (
         <div
           dir={locale === "he" ? "rtl" : "ltr"}
-          className="mx-auto max-w-2xl space-y-4 p-10 text-center"
+          className="relative mx-auto max-w-2xl space-y-4 p-10 text-center"
         >
+          <JourneyOutroBackdrop />
           <CmsText
             cmsKey="journeyAssessment.client.analysisError"
             as="p"
@@ -619,12 +668,18 @@ export function JourneyClient({
       );
     }
 
+    // Wrap AnalysisSummary so the backdrop sits behind it without
+    // changing the summary's own layout. `relative` on the wrapper
+    // gives the backdrop's `inset-0` a containing block.
     return (
-      <AnalysisSummary
-        analysis={analysis}
-        locale={locale}
-        subscriptionActive={subscriptionActive}
-      />
+      <div className="relative">
+        <JourneyOutroBackdrop />
+        <AnalysisSummary
+          analysis={analysis}
+          locale={locale}
+          subscriptionActive={subscriptionActive}
+        />
+      </div>
     );
   }
 
@@ -747,5 +802,45 @@ export function JourneyClient({
         onClose={() => setPaywallOpen(false)}
       />
     </div>
+  );
+}
+
+/**
+ * JourneyOutroBackdrop — static, CSS-only gradient wash for the
+ * post-questions stages (signup gate + analysis summary).
+ *
+ * 2026-05-19 — replaces the heavy `JourneyAmbience` (21 particles
+ * × per-frame animation) that previously covered all of /assessment.
+ * That component was the prime suspect for the Chrome-eats-the-machine
+ * pattern Itzik reported. This backdrop renders the same warmth-cue
+ * the user expected after finishing the assessment, but at literally
+ * zero runtime cost: a stack of three radial gradients painted once,
+ * pointer-events-none, z-0 behind the content. No JS, no framer-motion,
+ * no animation loop.
+ *
+ * Palette deliberately mirrors `/journey` marketing hero (emerald +
+ * amber + sky) so finishing the assessment lands the user back inside
+ * the same "voyage" identity, not into the wine palette of `/games`.
+ *
+ * Sits absolute / inset-0 inside its parent. Parent should be
+ * `relative` (the JSX trees that include this backdrop are wrapped
+ * in containers; we add `relative` if not already present).
+ */
+function JourneyOutroBackdrop() {
+  return (
+    <div
+      aria-hidden
+      className="pointer-events-none absolute inset-0 -z-10"
+      style={{
+        // Wine/burgundy palette matching the Mioshy brand
+        // (--accent #B83C4D + magenta + violet). Replaces the earlier
+        // voyage palette (emerald/amber/sky) per Itzik 2026-05-19 —
+        // the green didn't fit the brand identity.
+        background:
+          "radial-gradient(1100px 640px at 14% 0%, rgba(184,60,77,0.32), transparent 62%), " +
+          "radial-gradient(900px 520px at 88% 12%, rgba(217,70,239,0.22), transparent 60%), " +
+          "radial-gradient(700px 460px at 50% 40%, rgba(139,38,56,0.20), transparent 65%)",
+      }}
+    />
   );
 }

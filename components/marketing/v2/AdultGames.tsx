@@ -21,11 +21,10 @@ export function AdultGames() {
 
       <div className="ag-frame">
         <div className="ag-stage">
-          <div className="ag-pills">
-            <CmsText cmsKey="homeV2.adultGames.pill1" className="ag-pill" />
-            <CmsText cmsKey="homeV2.adultGames.pill2" className="ag-pill" />
-            <CmsText cmsKey="homeV2.adultGames.pill3" className="ag-pill" />
-          </div>
+          {/* `.ag-pills` row (18+ · הסקס של מיאושי · פרטיות מוחלטת)
+              moved 2026-05-19 per Itzik — was at the top, now sits
+              just above the closing CTA so the trust signals frame
+              the conversion action instead of the headline. */}
 
           <CmsText cmsKey="homeV2.adultGames.eyebrow" className="ag-eyebrow" />
 
@@ -50,26 +49,32 @@ export function AdultGames() {
             </article>
           </div>
 
-          <div className="ag-signature">
-            <span className="ag-signature-line" aria-hidden="true"></span>
-            <CmsText cmsKey="homeV2.adultGames.signature" as="em" />
-            <span className="ag-signature-line" aria-hidden="true"></span>
-          </div>
+          {/* Signature row ("משחקי מין לאמיצים בלבד" with hairline
+              flourishes) + closer headline ("אולי הגיע הזמן לדבר
+              אחרת.") removed 2026-05-19 per Itzik. The CMS keys
+              (homeV2.adultGames.signature, homeV2.adultGames.closer)
+              and the `.ag-signature` / `.ag-closer-statement` CSS rules
+              stay on disk for possible later reuse. The CTA below was
+              kept as the section's terminal action. */}
 
           <div className="ag-closer">
-            <CmsText
-              cmsKey="homeV2.adultGames.closer"
-              as="h3"
-              className="ag-closer-statement"
-            />
+            {/* Order swapped 2026-05-19 (round 2) per Itzik — the CTA
+                now sits ABOVE the trust pill line so the eye lands on
+                the action first, and the supporting pills read as
+                reassurance below. */}
             <Link href="/mioshy-sex" className="ag-closer-cta">
               <CmsText cmsKey="homeV2.adultGames.cta" />
             </Link>
-            <div className="ag-closer-trust">
-              <CmsText cmsKey="homeV2.adultGames.trust1" />
-              <CmsText cmsKey="homeV2.adultGames.trust2" />
-              <CmsText cmsKey="homeV2.adultGames.trust3" />
+            <div className="ag-pills">
+              <CmsText cmsKey="homeV2.adultGames.pill1" className="ag-pill" />
+              <CmsText cmsKey="homeV2.adultGames.pill2" className="ag-pill" />
+              <CmsText cmsKey="homeV2.adultGames.pill3" className="ag-pill" />
             </div>
+            {/* Trust pill row ("כניסה לבני 18+ · מאומת על־ידי מומחים ·
+                פרטיות מוחלטת") removed 2026-05-19 per Itzik. The three
+                CMS keys (homeV2.adultGames.trust1/2/3) and the
+                `.ag-closer-trust` CSS rules are intentionally retained
+                on disk so the row can be reinstated cleanly. */}
           </div>
         </div>
       </div>

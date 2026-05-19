@@ -23,23 +23,12 @@ export function Authority() {
             <h2>
               <CmsText cmsKey="homeV2.authority.headlinePart1" />
               <br />
-              {/* Wrap line 2 ("אותה תוצאה.") in a non-breaking span so
-                  the italic-serif <em> doesn't push the emphasis word
-                  onto its own line on mobile. */}
-              <span style={{ whiteSpace: "nowrap" }}>
-                <CmsText cmsKey="homeV2.authority.headlinePart2" />
-                <em
-                  style={{
-                    color: "var(--accent)",
-                    fontStyle: "italic",
-                    fontFamily: "'Frank Ruhl Libre', serif",
-                    display: "inline",
-                  }}
-                >
-                  <CmsText cmsKey="homeV2.authority.headlineEm" />
-                </em>
-                <CmsText cmsKey="homeV2.authority.headlinePart3" />
-              </span>
+              {/* Italic <em> with "תוצאה" removed 2026-05-19 per Itzik.
+                  The non-breaking <span> that wrapped the second line
+                  (so "אותה תוצאה." stayed together on mobile) is also
+                  no longer needed without the em, so this whole block
+                  is removed from the render. Keys headlinePart2,
+                  headlineEm, headlinePart3 stay on disk for future use. */}
             </h2>
           </div>
         </RevealOnScroll>

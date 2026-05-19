@@ -29,46 +29,25 @@ export function CouplesGames() {
 
             <div className="cg-callout">
               <CmsText cmsKey="homeV2.couplesGames.callout" as="p" />
+              {/* Attribution name below the quote — added 2026-05-19
+                  per Itzik. Hebrew "ענת", English a non-Israeli name
+                  ("Sarah"). Styling lives in `.cg-callout-name` —
+                  bold, not italic, slightly muted color. */}
+              <CmsText
+                cmsKey="homeV2.couplesGames.calloutName"
+                as="p"
+                className="cg-callout-name"
+              />
             </div>
 
-            <div className="cg-stats">
-              <div className="cg-stat">
-                <CmsText
-                  cmsKey="homeV2.couplesGames.statTasks"
-                  as="div"
-                  className="num"
-                />
-                <CmsText
-                  cmsKey="homeV2.couplesGames.statTasksLabel"
-                  as="div"
-                  className="label"
-                />
-              </div>
-              <div className="cg-stat">
-                <CmsText
-                  cmsKey="homeV2.couplesGames.statRecs"
-                  as="div"
-                  className="num"
-                />
-                <CmsText
-                  cmsKey="homeV2.couplesGames.statRecsLabel"
-                  as="div"
-                  className="label"
-                />
-              </div>
-              <div className="cg-stat">
-                <CmsText
-                  cmsKey="homeV2.couplesGames.statLevels"
-                  as="div"
-                  className="num"
-                />
-                <CmsText
-                  cmsKey="homeV2.couplesGames.statLevelsLabel"
-                  as="div"
-                  className="label"
-                />
-              </div>
-            </div>
+            {/* Stats block (+500 משימות, +100 המלצות, 3 רמות) removed
+                2026-05-19 per Itzik — the numbers were marketing claims
+                without a verifiable source, same rule that took out the
+                Education section's 67%/4x/30 stats earlier in the day.
+                The 6 CMS keys (statTasks / statTasksLabel + statRecs /
+                statRecsLabel + statLevels / statLevelsLabel) and the
+                `.cg-stats` / `.cg-stat` CSS rules stay on disk for
+                possible re-use once a sourced replacement is authored. */}
 
             <div className="cg-actions">
               <Link href="/games" className="btn btn-primary">
@@ -98,11 +77,10 @@ function CgCard({ n }: { n: 1 | 2 | 3 }) {
           as="div"
           className="cg-card-tag"
         />
-        <div className="cg-card-title">
-          <CmsText cmsKey={`homeV2.couplesGames.card${n}TitleLine1`} />
-          <br />
-          <CmsText cmsKey={`homeV2.couplesGames.card${n}TitleLine2`} />
-        </div>
+        {/* Card title overlay ("אמת או / אמת" etc.) removed 2026-05-19
+            per Itzik — the user wanted clean game card images without
+            text on top. CMS keys card${n}TitleLine1 / card${n}TitleLine2
+            stay on disk in messages/*.json and cms_texts. */}
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/navigation";
 import { Gamepad2, Sparkles, Heart } from "lucide-react";
@@ -58,6 +58,7 @@ export function MobileServicesBar() {
   const t = useTranslations("nav");
   const pathname = usePathname();
   const [footerVisible, setFooterVisible] = useState(false);
+  const navRef = useRef<HTMLElement | null>(null);
 
   // W2.1 — hide on the assessment flow. The bottom bar sits on top of
   // the submit CTA + competing pillar links during a focused diagnostic
@@ -94,29 +95,123 @@ export function MobileServicesBar() {
     return () => observer.disconnect();
   }, [pathname]);
 
+  // ── Chrome mobile URL-bar tracker (2026-05-18, Itzik) ────────────────
+  //
+  // Symptom: on the hero the bar is flush with the screen bottom, but
+  // after scrolling further down a gap appears between the bar and the
+  // bottom edge of the viewport — the bar looks like it's floating in
+  // mid-air rather than pinned to the screen.
+  //
+  // Cause: Chrome mobile distinguishes the *layout viewport* (what
+  // `position: fixed; bottom: 0` anchors to) from the *visual viewport*
+  // (what the user actually sees, which shrinks/grows as the URL bar
+  // appears/collapses). Once the URL bar collapses during scroll, the
+  // visual viewport grows but `bottom: 0` still references the layout
+  // viewport's bottom — which is now ABOVE the visible screen bottom.
+  //
+  // Fix: read the live offset from `window.visualViewport` (Chrome 61+,
+  // Safari 13+) and apply it as a translateY on a wrapper. The wrapper
+  // gets repositioned every visualViewport `resize`/`scroll`, so the
+  // bar stays pinned to the actual visible bottom.
+  //
+  // We instrument the path with console logs gated on `NODE_ENV !==
+  // 'production'` so anyone reproducing the gap can read the exact
+  // numbers (window.innerHeight, vv.height, vv.offsetTop, computed
+  // offset, the bar's getBoundingClientRect). If the gap persists, the
+  // log makes it obvious whether the visualViewport API isn't reporting
+  // updates, or whether the translation is being clobbered by another
+  // CSS rule.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const vv = window.visualViewport;
+    const nav = navRef.current;
+    if (!vv || !nav) {
+      if (process.env.NODE_ENV !== "production") {
+        // eslint-disable-next-line no-console
+        console.log("[mobile-bar] visualViewport API unavailable — falling back to fixed positioning", {
+          hasVV: !!vv,
+          hasNav: !!nav,
+        });
+      }
+      return;
+    }
+
+    let lastLog = 0;
+    function update() {
+      if (!vv || !nav) return;
+      // Distance from the bottom of the layout viewport to the bottom
+      // of the visual viewport. Positive when the visual viewport sits
+      // higher on screen than the layout viewport's bottom edge — e.g.
+      // when the URL bar is shown and pushes the visual viewport up.
+      const bottomGap = window.innerHeight - (vv.height + vv.offsetTop);
+      // Negative translateY pulls the bar UP into the visual viewport.
+      // Clamp at 0 — we never want to push the bar DOWN past the
+      // layout viewport (would hide it under the URL bar).
+      const translate = -Math.max(0, bottomGap);
+      nav.style.setProperty("--mobile-bar-vv-offset", `${translate}px`);
+
+      // Throttled diagnostics — at most every 200ms so the console
+      // doesn't drown during a scroll. Logs every resize regardless.
+      if (process.env.NODE_ENV !== "production") {
+        const now = Date.now();
+        if (now - lastLog > 200) {
+          lastLog = now;
+          const rect = nav.getBoundingClientRect();
+          // eslint-disable-next-line no-console
+          console.log("[mobile-bar]", {
+            innerH: window.innerHeight,
+            vvH: vv.height,
+            vvTop: vv.offsetTop,
+            bottomGap,
+            applied: translate,
+            barTop: Math.round(rect.top),
+            barBottom: Math.round(rect.bottom),
+            visibleGapPx: Math.round(window.innerHeight - rect.bottom),
+            scrollY: Math.round(window.scrollY),
+          });
+        }
+      }
+    }
+
+    update();
+    vv.addEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("orientationchange", update);
+    return () => {
+      vv.removeEventListener("resize", update);
+      vv.removeEventListener("scroll", update);
+      window.removeEventListener("scroll", update);
+      window.removeEventListener("orientationchange", update);
+    };
+  }, []);
+
   if (isAssessment) return null;
 
   return (
     <nav
+      ref={navRef}
       aria-label={t("menu")}
-      className={`fixed inset-x-0 bottom-0 z-40 lg:hidden transition-transform duration-300 ease-out ${
-        footerVisible ? "translate-y-full" : "translate-y-0"
-      }`}
+      className="fixed inset-x-0 bottom-0 z-40 lg:hidden transition-transform duration-300 ease-out"
       style={{
         // iOS safe-area: extends background under the home-indicator
         // strip but keeps the icons inside the safe zone.
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
-        // Chrome mobile fixed-bottom lag fix (2026-05-18):
-        // During the URL-bar collapse/expand animation, fixed-bottom
-        // elements visibly detach from the screen edge for a frame or
-        // two, making the bar look "floating". `will-change: transform`
-        // keeps the nav on its own compositor layer (which the existing
-        // Tailwind translate-y classes already touch on hide/show), so
-        // Chrome can reposition it in lockstep with the URL-bar
-        // animation instead of waiting on the layout viewport to
-        // re-resolve. We don't set `transform` here ourselves — that
-        // would clobber the translate-y-full / translate-y-0 hide
-        // animation tied to `footerVisible`.
+        // Transform composes TWO pieces:
+        //   1. `--mobile-bar-vv-offset` — the visualViewport tracker
+        //      (set in the useEffect above) pulls the bar up by the
+        //      live gap between layout-viewport-bottom and visual-
+        //      viewport-bottom on Chrome mobile during URL-bar
+        //      collapse/expand. Defaults to 0px when the API is
+        //      unavailable or there's no gap.
+        //   2. `100%` when the footer is visible — slides the bar off
+        //      screen so the footer's bottom rows are readable.
+        // We compute the transform inline rather than using Tailwind's
+        // `translate-y-full` because Tailwind's class would clobber
+        // the visualViewport offset.
+        transform: footerVisible
+          ? "translateY(100%)"
+          : "translateY(var(--mobile-bar-vv-offset, 0px))",
         willChange: "transform",
       }}
     >

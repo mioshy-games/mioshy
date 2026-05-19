@@ -10,19 +10,38 @@ import { Hero } from "./Hero";
 // 2026-05-11 (K1, content brief). The component file is intentionally
 // kept so it can be re-introduced without re-writing it — restoration
 // just needs an `import { Problem }` line + `<Problem />` in the JSX.
-import { Authority } from "./Authority";
+//
+// `Intimacy` (./Intimacy.tsx) had two halves on 2026-05-18: a
+// loneliness framing on top + "how Mioshy solves it" on bottom.
+// Itzik kept only the bottom half (bridge + 3 pillars + CTA) — the
+// loneliness framing wasn't on-brand and the top half was occupying
+// expensive above-the-fold real estate. Top-half JSX is removed from
+// this file's render, but the JSON keys, CSS classes, and the
+// FeelsCard helper are intentionally retained on disk for re-use.
+//
+// `Education` (./Education.tsx) was removed on 2026-05-18 — Itzik
+// felt the content didn't fit Mioshy's voice and the unsourced
+// stats violated his rule against statistics without a source.
+// Component file kept on disk.
+import { Intimacy } from "./Intimacy";
+// `Authority` (./Authority.tsx) was removed from the homepage
+// 2026-05-19 per Itzik. Component file + CMS keys
+// (homeV2.authority.*) stay on disk for possible re-introduction.
 import { MediaSlider } from "./MediaSlider";
 import { Founder } from "./Founder";
-import { Journey } from "./Journey";
+// `Journey` (./Journey.tsx) was moved off the homepage 2026-05-19 per
+// Itzik — the inside-look promise now lives on /mioshy-sex. Component
+// file is still imported by /mioshy-sex so we don't delete it; we
+// simply no longer render it here.
 import { CouplesGames } from "./CouplesGames";
 import { AdultGames } from "./AdultGames";
-import { Education } from "./Education";
 import { ForWhom } from "./ForWhom";
 // `Pricing` (./Pricing.tsx) was removed from the homepage per Itzik
 // 2026-05-06. JourneyStages — rewritten as a "mood swiper" — is now
 // the single pricing surface on the homepage. The file is no longer
 // imported anywhere and can be deleted.
 import { JourneyStages } from "./JourneyStages";
+import { ReviewsGrid } from "./ReviewsGrid";
 // `FinalCTA` (./FinalCTA.tsx) was removed from the homepage on
 // 2026-05-11 (I11, content brief). The "הצעד הראשון" eyebrow that
 // section opened with duplicated the funnel work that JourneyStages
@@ -65,16 +84,27 @@ export function HomepageV2() {
           __html: safeJsonLd(webSiteJsonLd(localeKey)),
         }}
       />
+      {/* Section order set 2026-05-19 by Itzik. Authority also
+         removed this day. Current storyline:
+            1. Hero            — hook + price floor
+            2. Intimacy        — bridge + 3 pillars + CTA
+            3. ForWhom         — "is this for me" sorter
+            4. AdultGames      — bold offering
+            5. CouplesGames    — light offering
+            6. JourneyStages   — the three "moods" / pricing pivot
+            7. Founder         — human face behind it
+            8. MediaSlider     — press / social-proof images
+            9. ReviewsGrid     — couples talking
+           10. FAQ             — close objections                         */}
       <Hero />
-      <Authority />
-      <MediaSlider />
-      <Founder />
-      <Journey />
-      <CouplesGames />
-      <AdultGames />
-      <Education />
+      <Intimacy />
       <ForWhom />
+      <AdultGames />
+      <CouplesGames />
       <JourneyStages />
+      <Founder />
+      <MediaSlider />
+      <ReviewsGrid />
       <FAQ />
     </div>
   );

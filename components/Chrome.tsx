@@ -7,6 +7,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { MobileServicesBar } from "@/components/MobileServicesBar";
 import { HomeBackground } from "@/components/my/HomeBackground";
 import { PerfDebugHud } from "@/components/dev/PerfDebugHud";
+import { WhatsAppFloatingCta } from "@/components/marketing/WhatsAppFloatingCta";
 
 function shouldHideChrome(pathname: string) {
   // Hide chrome on gameplay pages (full-screen), including after login.
@@ -49,6 +50,7 @@ export function Chrome({
   isAuthed = false,
   entitlements = null,
   unreadNotifications = 0,
+  locale,
 }: {
   children: ReactNode;
   isAuthed?: boolean;
@@ -107,6 +109,11 @@ export function Chrome({
           gate as the footer: when the user is signed in, the dashboard
           chrome takes over and this surface gets out of the way. */}
       {!isAuthed && <MobileServicesBar />}
+      {/* Floating WhatsApp CTA — Hebrew-only, hides itself on
+          /journey/assessment + /my + /dashboard. Component decides
+          visibility internally; we always mount it on the chrome
+          surfaces. Added 2026-05-19 per Itzik. */}
+      <WhatsAppFloatingCta locale={locale ?? "he"} />
       <PerfDebugHud />
     </div>
   );

@@ -40,19 +40,9 @@ export function Hero() {
         <div className="hero-blob hero-blob-3"></div>
         {/* Floating soft-blurred circle. */}
         <div className="hero-floating-circle"></div>
-        {/* Drifting sparkles — 6 (was 18). Same look at half the cost. */}
-        <div className="hero-particles" aria-hidden>
-          {Array.from({ length: 6 }).map((_, i) => (
-            <span key={i} className={`hero-spark hero-spark-${(i % 6) + 1}`}></span>
-          ))}
-        </div>
-        {/* Wheels-game-style orbit dots — 6 (was 12). */}
-        <span className="hero-orbit hero-orbit-1" aria-hidden></span>
-        <span className="hero-orbit hero-orbit-2" aria-hidden></span>
-        <span className="hero-orbit hero-orbit-3" aria-hidden></span>
-        <span className="hero-orbit hero-orbit-4" aria-hidden></span>
-        <span className="hero-orbit hero-orbit-5" aria-hidden></span>
-        <span className="hero-orbit hero-orbit-6" aria-hidden></span>
+        {/* Floating orbs (single-layer .hero-orbs-field) removed
+            2026-05-19 per Itzik — sizing experiments didn't land.
+            CSS rule in styles.css kept inert for future reuse. */}
       </div>
       <div className="hero-grain"></div>
       <div className="container">

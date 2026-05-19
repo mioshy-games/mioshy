@@ -183,7 +183,18 @@ interface FloatingParticlesProps {
 }
 
 export function FloatingParticles({ settings, bgSettings }: FloatingParticlesProps) {
-  const cfg = { ...DEFAULT_PARTICLES, ...(settings ?? {}) };
+  // 2026-05-19 — global kill of floating particles per Itzik.
+  // We flipped DEFAULT_PARTICLES.enabled to false in
+  // lib/settings-defaults.ts earlier, but legacy `game_settings` rows
+  // in the DB still have `particles.enabled = true`, which overrode the
+  // default when merged. That's why dots kept appearing on
+  // /games/honesty-or-challenge, /games/never-have-i-ever, and others.
+  // Force-overriding enabled:false here is the single chokepoint —
+  // covers all 3 call sites (GamePageBackground, GentleAnimatedBg,
+  // HeroClassicDark) at once. To re-enable later: drop the
+  // `enabled: false` spread and per-game/per-component settings take
+  // over again.
+  const cfg = { ...DEFAULT_PARTICLES, ...(settings ?? {}), enabled: false };
 
   // Resolve base hex from background
   const baseHex = useMemo(() => {

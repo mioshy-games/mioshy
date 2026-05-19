@@ -3,8 +3,16 @@ import type { GameSettings, ParticlesSettings, SettingsPreset } from "@/lib/type
 // ─────────────────────────────────────────────────────────────────────────────
 // Default particle settings (shared by all defaults and presets)
 // ─────────────────────────────────────────────────────────────────────────────
+// 2026-05-19 — `enabled` flipped to `false` per Itzik. The floating
+// particles overlay (rendered by FloatingParticles via GamePageBackground)
+// was creating scattered "dots" across both the marketing hero on
+// /games AND every actual game page (e.g. /games/honesty-or-challenge).
+// We removed orbs from all marketing surfaces earlier the same day;
+// killing the default here completes that pass for game-play surfaces
+// without touching individual game configs. If a specific game wants
+// particles back, an admin can enable them per-game via game_settings.
 export const DEFAULT_PARTICLES: ParticlesSettings = {
-  enabled: true,
+  enabled: false,
   count: 18,
   shape: "circle",
   opacity: 0.55,

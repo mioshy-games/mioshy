@@ -34,6 +34,7 @@ import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
 import { loadCmsTextsForPage } from "@/lib/cms/server";
 import { CmsTextProvider } from "@/components/cms/CmsTextProvider";
 import { CmsText } from "@/components/cms/CmsText";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
 import { unstable_noStore as noStore } from "next/cache";
@@ -54,6 +55,8 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getOwnerJourneyStatus } from "@/lib/journey-content/owner-status";
 import { getCurrentCoupleContext } from "@/lib/between-us/couples";
 import { JourneyCheckoutButton } from "@/components/journey/JourneyCheckoutButton";
+// `JourneyHubDiagProbe` import removed 2026-05-19 along with the
+// orbs field. Probe file kept on disk for future debugging.
 import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
 // FAQ uses the same scoped CSS as the homepage v2 FAQ - wrapper class .home-v2
 import "@/components/marketing/v2/styles.css";
@@ -172,21 +175,21 @@ export default async function JourneyMarketingPage({
       >
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-x-0 top-0 -z-20 h-full bg-[linear-gradient(180deg,#070b18_0%,#0a1126_40%,#0c1530_100%)]"
+          className="pointer-events-none absolute inset-x-0 top-0 -z-20 h-full bg-[linear-gradient(180deg,#0E0810_0%,#1A0B14_55%,#1E0F1E_100%)]"
         />
         <div
           aria-hidden
           className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[85vh] animate-aurora-drift"
           style={{
             background:
-              "radial-gradient(1100px 640px at 14% 0%, rgba(16,185,129,0.22), transparent 62%), " +
-              "radial-gradient(900px 520px at 88% 12%, rgba(251,191,36,0.16), transparent 60%), " +
-              "radial-gradient(700px 460px at 50% 40%, rgba(56,189,248,0.10), transparent 65%)",
+              "radial-gradient(1100px 640px at 14% 0%, rgba(184,60,77,0.45), transparent 62%), " +
+              "radial-gradient(900px 520px at 88% 12%, rgba(217,70,239,0.32), transparent 48%), " +
+              "radial-gradient(700px 460px at 50% 40%, rgba(139,38,56,0.22), transparent 65%)",
           }}
         />
         <main className="relative mx-auto max-w-3xl px-4 pb-24 pt-16 sm:pt-24 text-center">
-          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/30 bg-emerald-400/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-100">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
+          <div className="inline-flex items-center gap-2 rounded-full border border-rose-300/30 bg-rose-400/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-rose-100">
+            <span className="h-1.5 w-1.5 rounded-full bg-rose-300" />
             <CmsText cmsKey="journeyHub.locked.badge" />
           </div>
           {/* Locked-state H1 — applies the Mioshy design language: bold
@@ -198,7 +201,7 @@ export default async function JourneyMarketingPage({
             <CmsText
               cmsKey="journeyHub.locked.h1Highlight"
               as="em"
-              className="not-italic font-semibold text-emerald-300"
+              className="not-italic font-semibold text-rose-300"
             />
             {" "}
             <CmsText
@@ -247,7 +250,7 @@ export default async function JourneyMarketingPage({
                 key={i}
                 className="flex items-start gap-2 rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-white/80 backdrop-blur"
               >
-                <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" />
+                <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
                 <CmsText cmsKey={`journeyHub.trust.${i}`} as="span" />
               </li>
             ))}
@@ -340,18 +343,34 @@ export default async function JourneyMarketingPage({
       dir={isHe ? "rtl" : "ltr"}
     >
       {/* Hero backdrop - kept dark voyage palette as the journey identity */}
+      {/* Base dark gradient — switched 2026-05-19 from indigo-voyage
+          to wine-charcoal so the page sits in the Mioshy brand family
+          (wine #B83C4D + magenta + violet), not in the cool emerald
+          voyage that didn't fit the brand identity. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 -z-20 h-[110vh] bg-[linear-gradient(180deg,#070b18_0%,#0a1126_40%,#0c1530_100%)]"
+        className="pointer-events-none absolute inset-x-0 top-0 -z-20 h-[110vh] bg-[linear-gradient(180deg,#0E0810_0%,#1A0B14_55%,#1E0F1E_100%)]"
       />
+      {/* Wine aurora wash. Opacities bumped from 0.22/0.16/0.10 → 0.45/0.32/0.22
+          per Itzik 2026-05-19 — the original gradient was too faint to read
+          as "atmospheric" against the dark base. */}
+      {/* Wine + magenta + violet aurora wash.
+          2026-05-19 round 6 — third tone added per Itzik. The first
+          two stops (wine + magenta) sit in the upper corners; the new
+          third stop is violet anchored in the lower-centre and
+          overlaps both upper stops in the mid-band — wine → magenta
+          → violet blend across the page instead of three separate
+          washes. Opacities bumped 0.45/0.32/0.22 → 0.55/0.45/0.40 so
+          the gradient reads as present and the overlap zone is rich. */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[85vh] animate-aurora-drift"
+        data-testid="journey-aurora"
         style={{
           background:
-            "radial-gradient(1100px 640px at 14% 0%, rgba(16,185,129,0.22), transparent 62%), " +
-            "radial-gradient(900px 520px at 88% 12%, rgba(251,191,36,0.16), transparent 60%), " +
-            "radial-gradient(700px 460px at 50% 40%, rgba(56,189,248,0.10), transparent 65%)",
+            "radial-gradient(1100px 640px at 14% 0%, rgba(184,60,77,0.55), transparent 62%), " +
+            "radial-gradient(900px 520px at 88% 12%, rgba(217,70,239,0.45), transparent 60%), " +
+            "radial-gradient(900px 560px at 50% 65%, rgba(168,85,247,0.40), transparent 60%)",
         }}
       />
 
@@ -399,19 +418,16 @@ export default async function JourneyMarketingPage({
             {/* Soft floating circle */}
             <div className="journey-floating-circle" />
 
-            {/* 6 drifting dots (was 12). Performance: orbit count halved
-                per Itzik 2026-05-06 — the journey hero was running 12
-                animated dots on top of 2 blobs + an aurora-drift layer. */}
-            <span className="journey-orbit journey-orbit-1" />
-            <span className="journey-orbit journey-orbit-2" />
-            <span className="journey-orbit journey-orbit-3" />
-            <span className="journey-orbit journey-orbit-4" />
-            <span className="journey-orbit journey-orbit-5" />
-            <span className="journey-orbit journey-orbit-6" />
+            {/* Floating orbs removed 2026-05-19 per Itzik — they
+                didn't fit the page after sizing experiments. CSS rule
+                `.journey-orbs-field` + keyframes left in disk (inert)
+                for possible later reuse. */}
           </div>
+          {/* `JourneyHubDiagProbe` removed 2026-05-19 — orbs are gone,
+              the probe is no longer useful. File kept on disk. */}
 
           <div className="relative z-10 mx-auto max-w-5xl px-4 pb-12 pt-10 text-center sm:pb-32 sm:pt-16">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/25 bg-emerald-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-emerald-100">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-rose-300/30 bg-rose-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-rose-100">
               <Sparkles className="h-3 w-3" />
               <CmsText cmsKey="journeyHub.badge" />
             </span>
@@ -421,7 +437,7 @@ export default async function JourneyMarketingPage({
             <CmsText
               cmsKey="journeyHub.preheader"
               as="p"
-              className="mt-5 text-[15px] font-medium uppercase tracking-[0.18em] text-amber-200/80"
+              className="mt-5 text-[15px] font-medium uppercase tracking-[0.18em] text-fuchsia-200/80"
             />
 
             {/* Headline — H1 + italic light-weight subtitle so the
@@ -437,40 +453,33 @@ export default async function JourneyMarketingPage({
               <CmsText
                 cmsKey="journeyHub.h1"
                 as="span"
-                className="bg-gradient-to-br from-white via-emerald-100 to-amber-200 bg-clip-text text-transparent"
+                className="bg-gradient-to-br from-white via-rose-100 to-fuchsia-200 bg-clip-text text-transparent"
               />
               <CmsText
                 cmsKey="journeyHub.h1Sub"
                 as="span"
-                className="mt-2 block text-[0.7em] font-light text-emerald-100/75"
+                className="mt-2 block text-[0.7em] font-light text-rose-100/75"
                 style={{ fontStyle: "italic" }}
               />
             </h1>
 
-            {/* Visual placeholder — per Itzik 2026-05-07 the journey
-                hero needed something to look at, not just text. This
-                is a calm gradient panel with a soft outline; a real
-                photograph or illustration can swap in later by
-                replacing the inner content. */}
+            {/* Hero photograph — replaced the gradient placeholder
+                2026-05-18 per Itzik. The container keeps the same
+                rounded-3xl frame; `object-cover` lets the image fill
+                the 180px strip without distortion across viewports. */}
             <div className="mx-auto mt-8 hidden max-w-3xl sm:block">
               <div
                 aria-hidden
-                className="relative h-[180px] overflow-hidden rounded-3xl border border-emerald-300/20"
-                style={{
-                  background:
-                    "linear-gradient(135deg, rgba(16,185,129,0.16) 0%, rgba(56,189,248,0.10) 50%, rgba(251,191,36,0.14) 100%)",
-                }}
+                className="relative h-[180px] overflow-hidden rounded-3xl border border-rose-300/25"
               >
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="flex flex-col items-center gap-2 text-emerald-100/40">
-                    <Sparkles className="h-7 w-7" />
-                    <CmsText
-                      cmsKey="journeyHub.heroImagePlaceholder"
-                      as="span"
-                      className="text-[12px] uppercase tracking-[0.3em]"
-                    />
-                  </div>
-                </div>
+                <Image
+                  src="/images/Journey-couple.webp"
+                  alt=""
+                  fill
+                  sizes="(max-width: 768px) 100vw, 768px"
+                  className="object-cover"
+                  priority={false}
+                />
               </div>
             </div>
 
@@ -481,12 +490,12 @@ export default async function JourneyMarketingPage({
             />
 
             {hasActiveAssignments ? (
-              <div className="mx-auto mt-6 inline-flex items-center gap-2 rounded-full border border-emerald-300/40 bg-emerald-400/10 px-4 py-1.5 text-xs font-medium text-emerald-100 backdrop-blur-md">
+              <div className="mx-auto mt-6 inline-flex items-center gap-2 rounded-full border border-rose-300/40 bg-rose-400/10 px-4 py-1.5 text-xs font-medium text-rose-100 backdrop-blur-md">
                 <Sparkles className="h-3.5 w-3.5" />
                 <CmsText cmsKey="journeyHub.activeAssignmentsBanner" />
               </div>
             ) : hasInProgressAssessment ? (
-              <div className="mx-auto mt-6 inline-flex items-center gap-2 rounded-full border border-amber-300/30 bg-amber-400/10 px-4 py-1.5 text-xs font-medium text-amber-100 backdrop-blur-md">
+              <div className="mx-auto mt-6 inline-flex items-center gap-2 rounded-full border border-fuchsia-300/35 bg-fuchsia-400/10 px-4 py-1.5 text-xs font-medium text-fuchsia-100 backdrop-blur-md">
                 <Clock className="h-3.5 w-3.5" />
                 <CmsText cmsKey="journeyHub.resumeHint" />
               </div>
@@ -524,7 +533,7 @@ export default async function JourneyMarketingPage({
                   <span
                     aria-hidden
                     className={`h-1.5 w-1.5 rounded-full ${
-                      ["bg-emerald-300", "bg-teal-300", "bg-amber-300", "bg-indigo-300"][i]
+                      ["bg-rose-300", "bg-fuchsia-300", "bg-violet-300", "bg-pink-300"][i]
                     }`}
                   />
                   <CmsText cmsKey={`journeyHub.trust.${i}`} />
@@ -699,7 +708,7 @@ export default async function JourneyMarketingPage({
               className="pointer-events-none absolute inset-0 -z-0"
               style={{
                 background:
-                  "radial-gradient(900px 500px at 50% -10%, rgba(184,60,77,0.07), transparent 60%)",
+                  "radial-gradient(900px 500px at 50% -10%, rgba(184,60,77,0.07), transparent 48%)",
               }}
             />
 
@@ -794,8 +803,8 @@ export default async function JourneyMarketingPage({
               className="pointer-events-none absolute inset-0 -z-0 opacity-70"
               style={{
                 background:
-                  "radial-gradient(900px 500px at 18% 20%, rgba(196,68,86,0.18), transparent 60%), " +
-                  "radial-gradient(800px 480px at 82% 80%, rgba(139,38,56,0.14), transparent 60%)",
+                  "radial-gradient(900px 500px at 18% 20%, rgba(196,68,86,0.18), transparent 48%), " +
+                  "radial-gradient(800px 480px at 82% 80%, rgba(139,38,56,0.14), transparent 48%)",
               }}
             />
             {/* Hairline frame */}
@@ -1002,26 +1011,38 @@ export default async function JourneyMarketingPage({
                Goal: feel atmospheric, not announced. Ambient drift, not
                a moving billboard. */
 
-            /* Large drifting blobs - soft, slow, atmospheric. */
+            /* Large drifting blobs - soft, slow, atmospheric.
+               Perf 2026-05-19 — filter: blur(110px) removed. The
+               radial-gradient stops below were softened (mid stop at
+               35%) so the visual edge stays as soft as before, but
+               the GPU no longer runs the blur shader every frame
+               while the blob translates. Same pattern just rolled out
+               on /games (Itzik confirmed it felt great there). */
             .journey-blob {
               position: absolute;
               border-radius: 50%;
-              filter: blur(110px);
               opacity: 0.42;
               will-change: transform;
             }
+            /* Wine palette repaint 2026-05-19 — was emerald (16,185,129)
+               and amber (251,191,36). Now rose (244,63,94) and magenta
+               (217,70,239) to match the Mioshy brand identity. Opacity
+               also bumped from 0.42 (parent rule) → 0.55 below to make
+               the wash actually read on a dark wine-charcoal base. */
             .journey-blob-1 {
               width: 620px; height: 620px;
               top: -160px;
               inset-inline-start: -120px;
-              background: radial-gradient(circle, rgba(16,185,129,0.7) 0%, rgba(16,185,129,0) 70%);
+              background: radial-gradient(circle, rgba(244,63,94,0.75) 0%, rgba(244,63,94,0.34) 35%, rgba(244,63,94,0) 75%);
+              opacity: 0.55;
               animation: journey-blob-1-converge 56s ease-in-out infinite;
             }
             .journey-blob-2 {
               width: 560px; height: 560px;
               bottom: -140px;
               inset-inline-end: -100px;
-              background: radial-gradient(circle, rgba(251,191,36,0.6) 0%, rgba(251,191,36,0) 70%);
+              background: radial-gradient(circle, rgba(217,70,239,0.65) 0%, rgba(217,70,239,0.3) 35%, rgba(217,70,239,0) 75%);
+              opacity: 0.55;
               animation: journey-blob-2-converge 56s ease-in-out infinite;
             }
 
@@ -1035,15 +1056,17 @@ export default async function JourneyMarketingPage({
               50%      { transform: translate(-140px, -100px) scale(1.06); }
             }
 
-            /* Soft floating circle */
+            /* Soft floating circle — wine palette 2026-05-19, was sky
+               (56,189,248), now violet (168,85,247). Perf 2026-05-19 —
+               filter: blur(40px) removed; gradient softened with mid
+               stop at 40% to keep the same feathered look. */
             .journey-floating-circle {
               position: absolute;
               width: 200px; height: 200px;
               left: 58%; top: 32%;
               border-radius: 50%;
-              background: radial-gradient(circle, rgba(56,189,248,0.35) 0%, rgba(56,189,248,0) 65%);
-              filter: blur(40px);
-              opacity: 0.45;
+              background: radial-gradient(circle, rgba(168,85,247,0.4) 0%, rgba(168,85,247,0.2) 40%, rgba(168,85,247,0) 75%);
+              opacity: 0.55;
               animation: journey-floating-circle-move 32s ease-in-out infinite;
               pointer-events: none;
             }
@@ -1054,37 +1077,73 @@ export default async function JourneyMarketingPage({
               75%      { transform: translate(60px, -30px) scale(1.07); }
             }
 
-            /* 12 small drifting orbit dots - journey palette.
-               Single smooth fade gradient (no mid-stop ring) so they feather
-               into the bg instead of looking outlined. Glow halo softened
-               so the dots blend rather than announce themselves. */
-            .journey-orbit {
-              position: absolute;
-              border-radius: 50%;
-              pointer-events: none;
-              opacity: 0.45;
-              will-change: transform, opacity;
-            }
-            .journey-orbit-1  { width: 8px;  height: 8px;  left: 12%; top: 22%; background: radial-gradient(circle, rgba(16,185,129,0.85) 0%, rgba(16,185,129,0) 70%);  box-shadow: 0 0 10px rgba(16,185,129,0.25);  animation: journey-orbit-a 26s ease-in-out infinite; }
-            .journey-orbit-2  { width: 6px;  height: 6px;  left: 24%; top: 68%; background: radial-gradient(circle, rgba(20,184,166,0.85) 0%, rgba(20,184,166,0) 70%);  box-shadow: 0 0 8px  rgba(20,184,166,0.22);  animation: journey-orbit-b 32s ease-in-out infinite; animation-delay: 1s; }
-            .journey-orbit-3  { width: 10px; height: 10px; left: 38%; top: 18%; background: radial-gradient(circle, rgba(251,191,36,0.8)  0%, rgba(251,191,36,0)  70%);  box-shadow: 0 0 12px rgba(251,191,36,0.22);  animation: journey-orbit-c 30s ease-in-out infinite; animation-delay: 2s; }
-            .journey-orbit-4  { width: 5px;  height: 5px;  left: 48%; top: 74%; background: radial-gradient(circle, rgba(56,189,248,0.85) 0%, rgba(56,189,248,0) 70%);  box-shadow: 0 0 8px  rgba(56,189,248,0.22);  animation: journey-orbit-d 36s ease-in-out infinite; animation-delay: 3s; }
-            .journey-orbit-5  { width: 7px;  height: 7px;  left: 62%; top: 30%; background: radial-gradient(circle, rgba(16,185,129,0.8)  0%, rgba(16,185,129,0)  70%);  box-shadow: 0 0 10px rgba(16,185,129,0.22);  animation: journey-orbit-e 28s ease-in-out infinite; animation-delay: .8s; }
-            .journey-orbit-6  { width: 7px;  height: 7px;  left: 74%; top: 66%; background: radial-gradient(circle, rgba(129,140,248,0.85) 0%, rgba(129,140,248,0) 70%);  box-shadow: 0 0 10px rgba(129,140,248,0.22);  animation: journey-orbit-a 34s ease-in-out infinite; animation-delay: 3.6s; }
-            .journey-orbit-7  { width: 9px;  height: 9px;  left: 86%; top: 24%; background: radial-gradient(circle, rgba(251,191,36,0.85) 0%, rgba(251,191,36,0) 70%);  box-shadow: 0 0 12px rgba(251,191,36,0.22);  animation: journey-orbit-b 30s ease-in-out infinite; animation-delay: 4.2s; }
-            .journey-orbit-8  { width: 6px;  height: 6px;  left: 18%; top: 46%; background: radial-gradient(circle, rgba(45,212,191,0.85) 0%, rgba(45,212,191,0) 70%);  box-shadow: 0 0 8px  rgba(45,212,191,0.22);  animation: journey-orbit-c 38s ease-in-out infinite; animation-delay: 1.6s; }
-            .journey-orbit-9  { width: 8px;  height: 8px;  left: 54%; top: 54%; background: radial-gradient(circle, rgba(56,189,248,0.8)  0%, rgba(56,189,248,0)  70%);  box-shadow: 0 0 10px rgba(56,189,248,0.22);  animation: journey-orbit-d 32s ease-in-out infinite; animation-delay: 5s; }
-            .journey-orbit-10 { width: 7px;  height: 7px;  left: 80%; top: 48%; background: radial-gradient(circle, rgba(34,211,238,0.85) 0%, rgba(34,211,238,0) 70%);  box-shadow: 0 0 10px rgba(34,211,238,0.22);  animation: journey-orbit-e 34s ease-in-out infinite; animation-delay: 2.4s; }
-            .journey-orbit-11 { width: 5px;  height: 5px;  left: 30%; top: 38%; background: radial-gradient(circle, rgba(167,243,208,0.8)  0%, rgba(167,243,208,0)  70%);  box-shadow: 0 0 8px  rgba(167,243,208,0.2);   animation: journey-orbit-a 28s ease-in-out infinite; animation-delay: 4s; }
-            .journey-orbit-12 { width: 8px;  height: 8px;  left: 68%; top: 8%;  background: radial-gradient(circle, rgba(253,224,71,0.8)   0%, rgba(253,224,71,0)   70%);  box-shadow: 0 0 10px rgba(253,224,71,0.22);   animation: journey-orbit-b 30s ease-in-out infinite; animation-delay: .5s; }
+            /* PERFORMANCE REBUILD 2026-05-19 — single-layer orbs field.
+               Was 12 individual .journey-orbit-N spans, each with its
+               own CSS animation translating + fading independently.
+               Net cost on a 60Hz monitor: ~720 style recalc operations
+               per second. Profiling showed this section dominated the
+               hero frame budget.
 
-            /* Drift ranges halved from previous version - feels ambient,
-               not propelled. Opacity softer so dots breathe in/out. */
-            @keyframes journey-orbit-a { 0%,100% { transform: translate(0,0); opacity: .25; } 50% { transform: translate(30px,-40px);  opacity: .65; } }
-            @keyframes journey-orbit-b { 0%,100% { transform: translate(0,0); opacity: .25; } 50% { transform: translate(-40px,30px); opacity: .65; } }
-            @keyframes journey-orbit-c { 0%,100% { transform: translate(0,0); opacity: .2; }  33% { transform: translate(40px,18px);  opacity: .55; } 66% { transform: translate(-25px,-30px); opacity: .7; } }
-            @keyframes journey-orbit-d { 0%,100% { transform: translate(0,0); opacity: .25; } 50% { transform: translate(-30px,-45px); opacity: .65; } }
-            @keyframes journey-orbit-e { 0%,100% { transform: translate(0,0); opacity: .25; } 50% { transform: translate(45px,35px);  opacity: .65; } }
+               New shape: ONE element. Background-image is a stack of
+               12 radial-gradient dots — same wine/rose/fuchsia/violet
+               palette, same opacities, similar sizes/positions
+               (recomputed as percentages so they sit where the
+               original spans did). Single transform animation drifts
+               the whole composition slowly — runs on the compositor
+               thread, zero repaint. Brightness preserved.
+
+               Trade-off: dots now move together as a constellation
+               instead of independently. Reads more elegant in
+               practice and is roughly 12x cheaper.
+
+               IMPORTANT: this CSS lives inside a JS template literal
+               (the <style dangerouslySetInnerHTML __html: backtick
+               block). Do NOT use backticks inside comments here —
+               they terminate the outer JS template and break the
+               build (learned 2026-05-19). */
+            .journey-orbs-field {
+              position: absolute;
+              inset: 0;
+              pointer-events: none;
+              /* 2026-05-19 round 2 — sizes doubled per Itzik, opacity
+                 dropped to 0.65 for subtle transparency (was 0.9). */
+              /* 2026-05-19 round 5 — opacity 0.35 → 0.3 (more
+                 transparency). Gradient changed from 2-stop "color →
+                 transparent at 35%" (blurry) to 3-stop "solid core to
+                 40% → transparent at 80%" (defined dot, almost no
+                 perceptible blur). The first stop ends at 40% of the
+                 radius so the dot reads as a clean disk; the 80%
+                 transparent stop gives the dot a tiny soft halo that
+                 just blends it into the page instead of cutting hard. */
+              opacity: 0.3;
+              background-image:
+                radial-gradient(circle 18px at 12% 22%, rgba(244, 63, 94, 0.95) 0%, rgba(244, 63, 94, 0.95) 40%, transparent 80%),
+                radial-gradient(circle 14px at 24% 68%, rgba(217, 70, 239, 0.95) 0%, rgba(217, 70, 239, 0.95) 40%, transparent 80%),
+                radial-gradient(circle 22px at 38% 18%, rgba(184, 60, 77, 0.9)  0%, rgba(184, 60, 77, 0.9)  40%, transparent 80%),
+                radial-gradient(circle 13px at 48% 74%, rgba(168, 85, 247, 0.95) 0%, rgba(168, 85, 247, 0.95) 40%, transparent 80%),
+                radial-gradient(circle 17px at 62% 30%, rgba(236, 72, 153, 0.95) 0%, rgba(236, 72, 153, 0.95) 40%, transparent 80%),
+                radial-gradient(circle 17px at 74% 66%, rgba(139, 92, 246, 0.95) 0%, rgba(139, 92, 246, 0.95) 40%, transparent 80%),
+                radial-gradient(circle 21px at 86% 24%, rgba(244, 63, 94, 0.9)  0%, rgba(244, 63, 94, 0.9)  40%, transparent 80%),
+                radial-gradient(circle 14px at 18% 46%, rgba(217, 70, 239, 0.9)  0%, rgba(217, 70, 239, 0.9)  40%, transparent 80%),
+                radial-gradient(circle 18px at 54% 54%, rgba(168, 85, 247, 0.95) 0%, rgba(168, 85, 247, 0.95) 40%, transparent 80%),
+                radial-gradient(circle 17px at 80% 48%, rgba(236, 72, 153, 0.95) 0%, rgba(236, 72, 153, 0.95) 40%, transparent 80%),
+                radial-gradient(circle 13px at 30% 38%, rgba(184, 60, 77, 0.9)  0%, rgba(184, 60, 77, 0.9)  40%, transparent 80%),
+                radial-gradient(circle 18px at 68% 8%,  rgba(139, 92, 246, 0.95) 0%, rgba(139, 92, 246, 0.95) 40%, transparent 80%);
+              background-size: 100% 100%;
+              background-repeat: no-repeat;
+              animation: journey-orbs-drift 22s ease-in-out infinite;
+              will-change: transform;
+            }
+            /* Group drift (~3-3.5% of viewport each axis). All 12 dots
+               move in unison — registers as a single floating layer. */
+            @keyframes journey-orbs-drift {
+              0%, 100% { transform: translate3d(0, 0, 0); }
+              33%      { transform: translate3d(3%, -2.5%, 0); }
+              66%      { transform: translate3d(-2.5%, 3%, 0); }
+            }
+            @media (prefers-reduced-motion: reduce) {
+              .journey-orbs-field { animation: none; }
+            }
           `,
         }}
       />

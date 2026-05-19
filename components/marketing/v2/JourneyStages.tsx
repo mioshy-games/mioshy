@@ -62,9 +62,14 @@ const STAGE_TONE: Record<
     numeral: "02",
   },
   "3": {
-    dot: "#4338CA",
-    ink: "#3730A3",
-    soft: "rgba(67,56,202,0.08)",
+    // 2026-05-19 — was indigo navy (#4338CA / #3730A3). Itzik flagged
+    // the blue as off-brand. Switched to a fuchsia-magenta family
+    // (purple-leaning-red) that sits inside the same wine/rose family
+    // as the rest of /journey: distinct from Stage 2 (wine #B83C4D)
+    // but still part of the same identity, not a cold blue accent.
+    dot: "#A21CAF",
+    ink: "#86198F",
+    soft: "rgba(162,28,175,0.08)",
     numeral: "03",
   },
 };
@@ -74,6 +79,51 @@ export function JourneyStages() {
   // Sprint 4 #1 closeout — every DOM text via <CmsText>. Each stage
   // lives in its own <Stop /> sub-component (defined below) so its
   // many useCmsText/CmsText calls have a stable, isolated hook order.
+
+  // TEMPORARY DEBUG (2026-05-19) — Itzik reports the bottom of the
+  // section still looks dark after we softened the gradient + halved
+  // the corner radials. Likely a hot-reload-cached CSS-in-JS payload,
+  // but let's confirm by logging what the BROWSER actually applied.
+  useEffect(() => {
+    const log = () => {
+      const section = document.querySelector<HTMLElement>(".mood-timeline");
+      const bg = document.querySelector<HTMLElement>(".mood-timeline .js-bg");
+      if (!section) {
+        console.log("[mood-timeline] section NOT in DOM");
+        return;
+      }
+      const secCS = getComputedStyle(section);
+      const bgCS = bg ? getComputedStyle(bg) : null;
+      const rect = section.getBoundingClientRect();
+      console.log(
+        "[mood-timeline]",
+        `sectionBg=${secCS.backgroundImage?.slice(0, 120)}...`,
+        `sectionBgColor=${secCS.backgroundColor}`,
+        `sectionH=${Math.round(rect.height)}`,
+      );
+      console.log(
+        "[mood-timeline js-bg]",
+        bg ? `present=true` : `present=false`,
+        bgCS ? `bgImage=${bgCS.backgroundImage?.slice(0, 200)}...` : "(n/a)",
+      );
+      // Probe a sample stop card to see what bg it inherits underneath.
+      const stop3 = document.querySelector<HTMLElement>('[data-stop="3"]');
+      if (stop3) {
+        const stopCS = getComputedStyle(stop3);
+        const stopRect = stop3.getBoundingClientRect();
+        console.log(
+          "[mood-timeline stop-3]",
+          `bgImage=${stopCS.backgroundImage?.slice(0, 60)}`,
+          `bgColor=${stopCS.backgroundColor}`,
+          `top=${Math.round(stopRect.top)}`,
+          `bottom=${Math.round(stopRect.bottom)}`,
+        );
+      }
+    };
+    log();
+    const t = setTimeout(log, 500);
+    return () => clearTimeout(t);
+  }, []);
 
   // F6 (Itzik #10) — switched from bidirectional to one-way reveal.
   // The previous "open in band, close out of band" behaviour was
@@ -154,11 +204,10 @@ export function JourneyStages() {
           </div>
         </div>
 
-        <CmsText
-          cmsKey="homeV2.journeyStages.valueQuote"
-          as="p"
-          className="js-quote"
-        />
+        {/* `.js-quote` ("שני 'ערבים' בחודש כבר עוברים את 57₪/שבוע.")
+            removed 2026-05-19 per Itzik. The CMS key
+            `homeV2.journeyStages.valueQuote` and the `.js-quote` CSS
+            rules stay on disk for possible re-use. */}
       </div>
 
       <style
@@ -334,18 +383,28 @@ function Stop({
 }
 
 const STYLES = `
+  /* 2026-05-19 (revision 3) — Itzik asked for a lighter, lavender-
+     leaning wash at ~10% intensity and transparency throughout.
+     Base linear-gradient uses rgba so the white page underneath
+     shows through; stops carry a very light violet tint that builds
+     gently toward the bottom. Corner radials repainted lavender
+     (violet-300/400) at 10% opacity each — replaces the amber+
+     fuchsia mix that read warmer than asked for. */
   .mood-timeline{
     position:relative;
     padding:96px 0 80px;
     overflow:hidden;
-    background:linear-gradient(180deg,#FFF9FB 0%,#F5E9EC 55%,#EFE7F1 100%);
+    background:linear-gradient(180deg,
+      rgba(255,255,255,0.6) 0%,
+      rgba(196,181,253,0.10) 55%,
+      rgba(167,139,250,0.12) 100%);
     isolation:isolate;
   }
   .mood-timeline .js-bg{
     position:absolute;inset:0;z-index:0;pointer-events:none;
     background:
-      radial-gradient(620px 420px at 88% 8%, rgba(251,191,36,0.16), transparent 65%),
-      radial-gradient(620px 420px at 12% 92%, rgba(67,56,202,0.14), transparent 65%);
+      radial-gradient(620px 420px at 88% 8%, rgba(196,181,253,0.10), transparent 65%),
+      radial-gradient(620px 420px at 12% 92%, rgba(167,139,250,0.10), transparent 65%);
   }
 
   .mood-timeline .js-container{position:relative;z-index:2}
@@ -378,17 +437,26 @@ const STYLES = `
      keep just enough of the wine hue at the bottom to anchor the
      panel to the brand palette, while the contrast against text
      stays high throughout. */
+  /* 2026-05-19 (revision 4) — Itzik flagged that the panel was in
+     wine/rose (rgba 244,114,128 at the bottom + wine shadow) while
+     the section background just shifted to lavender. Two palettes
+     fighting on the same surface. UX/UI fix: panel is now a neutral
+     ELEVATED CARD — white top, warm-neutral middle, soft lavender
+     bottom that pulls FROM the section background, not from a
+     separate accent. Shadow recoloured violet to match. This creates
+     one cohesive surface: outer lavender → panel that fades into
+     the same lavender at its edge → content reads on white. */
   .mood-timeline .js-stops-panel{
     max-width:640px;
     margin:0 auto;
     background:linear-gradient(180deg,
-      rgba(255,255,255,0.92) 0%,
-      rgba(253,243,245,0.78) 45%,
-      rgba(244,114,128,0.18) 100%);
-    border:1px solid rgba(255,255,255,0.7);
+      rgba(255,255,255,0.96) 0%,
+      rgba(252,250,253,0.92) 50%,
+      rgba(243,236,250,0.85) 100%);
+    border:1px solid rgba(255,255,255,0.75);
     border-radius:28px;
     box-shadow:
-      0 32px 64px -36px rgba(159,18,57,0.18),
+      0 32px 64px -36px rgba(124,58,237,0.20),
       inset 0 1px 0 rgba(255,255,255,0.7);
     padding:6px 36px;
     position:relative;
@@ -520,7 +588,7 @@ const STYLES = `
     grid-template-rows:1fr;
     opacity:1;
     transform:translateY(0);
-    margin-top:24px;
+    margin-top:-4px;
   }
   /* Reduced-motion: skip the slide-and-fade, just show content. */
   @media (prefers-reduced-motion:reduce){
@@ -558,16 +626,16 @@ const STYLES = `
   .mood-timeline .js-stop-desc{
     font-size:20px;line-height:1.6;color:#3D2C36;
     margin:18px 0 22px;
-    font-weight:400;
+    font-weight:600;
   }
   .mood-timeline .js-stop-block{margin-bottom:16px}
   .mood-timeline .js-stop-block-title{
-    font-size:11px;font-weight:600;letter-spacing:0.18em;
-    text-transform:uppercase;color:#7A6A75;
+    font-size:11px;font-weight:700;letter-spacing:0.18em;
+    text-transform:uppercase;color:#170E14;
     margin-bottom:5px;
   }
   .mood-timeline .js-stop-block-body{
-    font-size:19px;line-height:1.55;color:#3D2C36;
+    font-size:19px;line-height:1.55;color:#170E14;
     margin:0;
   }
   .mood-timeline .js-stop-block-includes{

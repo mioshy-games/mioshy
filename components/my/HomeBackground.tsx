@@ -67,17 +67,17 @@ const HOME_BG_CSS = `
      Durations chosen to feel "ambient" rather than "moving" - slow enough
      that the user reads the bg as atmosphere on focus-heavy pages
      (assessment, timeline) without it pulling attention. */
-  /* PERF 2026-05-08 — was: filter:blur(90px); mix-blend-mode:screen;
-     will-change:transform. mix-blend-mode forces a compositor readback
-     for every animated frame — and this backdrop is mounted on EVERY
-     authed page (dashboard, journey, my, …) so the cost paid on every
-     route. blur 90→70, mix-blend dropped, will-change dropped (transform
-     animations auto-promote). */
-  .home-bg-blob{position:absolute;border-radius:50%;filter:blur(70px);opacity:0.78}
-  .home-bg-blob-1{width:680px;height:680px;background:radial-gradient(circle,#F43F5E 0%,rgba(244,63,94,0) 70%);top:-180px;right:-120px;animation:home-bg-converge-1 64s ease-in-out infinite}
-  .home-bg-blob-2{width:560px;height:560px;background:radial-gradient(circle,#A855F7 0%,rgba(168,85,247,0) 70%);bottom:-120px;left:5%;animation:home-bg-converge-2 64s ease-in-out infinite}
-  .home-bg-blob-3{width:440px;height:440px;background:radial-gradient(circle,#EC4899 0%,rgba(236,72,153,0) 70%);top:25%;left:35%;animation:home-bg-drift-3 60s ease-in-out infinite}
-  .home-bg-blob-4{width:380px;height:380px;background:radial-gradient(circle,#7C3AED 0%,rgba(124,58,237,0) 70%);bottom:15%;right:25%;animation:home-bg-drift-4 72s ease-in-out infinite}
+  /* PERF 2026-05-19 — filter:blur(70px) removed entirely. Radial
+     gradient stops softened with a mid stop at 35% so the edge stays
+     feathered. This component is mounted on EVERY authed page
+     (dashboard, journey, my, …) — dropping the blur shader frees GPU
+     time across the whole authed app. Same pattern just rolled out
+     across /games, /journey and the marketing hero. */
+  .home-bg-blob{position:absolute;border-radius:50%;opacity:0.78}
+  .home-bg-blob-1{width:680px;height:680px;background:radial-gradient(circle,#F43F5E 0%,rgba(244,63,94,0.45) 35%,rgba(244,63,94,0) 75%);top:-180px;right:-120px;animation:home-bg-converge-1 64s ease-in-out infinite}
+  .home-bg-blob-2{width:560px;height:560px;background:radial-gradient(circle,#A855F7 0%,rgba(168,85,247,0.45) 35%,rgba(168,85,247,0) 75%);bottom:-120px;left:5%;animation:home-bg-converge-2 64s ease-in-out infinite}
+  .home-bg-blob-3{width:440px;height:440px;background:radial-gradient(circle,#EC4899 0%,rgba(236,72,153,0.45) 35%,rgba(236,72,153,0) 75%);top:25%;left:35%;animation:home-bg-drift-3 60s ease-in-out infinite}
+  .home-bg-blob-4{width:380px;height:380px;background:radial-gradient(circle,#7C3AED 0%,rgba(124,58,237,0.45) 35%,rgba(124,58,237,0) 75%);bottom:15%;right:25%;animation:home-bg-drift-4 72s ease-in-out infinite}
 
   @keyframes home-bg-converge-1 {
     0%,100% { transform: translate(0,0) scale(1); }
@@ -97,12 +97,15 @@ const HOME_BG_CSS = `
     50%      { transform: translate(-110px,50px) scale(1.2); }
   }
 
-  /* Floating circle - cyan-tinted, slow ambient drift */
+  /* Floating circle — PERF 2026-05-19 dropped filter:blur(24px).
+     Gradient inverted into a soft ring (transparent core → violet
+     edge → transparent outside) so the visual reads as a soft glow
+     without the blur shader. Same trick used on .hero-floating-circle. */
   .home-bg-floating-circle{
     position:absolute;width:160px;height:160px;left:60%;top:30%;
     border-radius:50%;
-    background:radial-gradient(circle,rgba(255,255,255,0) 50%,#A855F7 100%);
-    filter:blur(24px);opacity:0.65;
+    background:radial-gradient(circle,rgba(168,85,247,0) 30%,rgba(168,85,247,0.55) 70%,rgba(168,85,247,0) 100%);
+    opacity:0.65;
     animation:home-bg-floating 36s ease-in-out infinite;
   }
   @keyframes home-bg-floating {

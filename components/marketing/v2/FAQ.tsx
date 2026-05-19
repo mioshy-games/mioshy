@@ -9,9 +9,15 @@ import { CmsText } from "@/components/cms/CmsText";
  * <CmsText>; CmsText switches mode based on the row's is_rich.
  */
 export function FAQ() {
-  // 11 entries — first is open by default.
-  const FAQS = Array.from({ length: 11 }, (_, i) => ({
-    n: i + 1,
+  // Source has 11 questions in messages/*.json (item1..11). 2026-05-19
+  // Itzik dropped item8 ("ליווי צמוד עם המומחים - באמת הכל כלול?") and
+  // item11 ("למי בדיוק התוכן מתאים?") from the homepage FAQ. The CMS
+  // keys for those entries are intentionally retained on disk so the
+  // questions can be re-introduced cleanly. First visible entry stays
+  // open by default.
+  const VISIBLE_FAQ_NUMS = [1, 2, 3, 4, 5, 6, 7, 9, 10] as const;
+  const FAQS = VISIBLE_FAQ_NUMS.map((n, i) => ({
+    n,
     defaultOpen: i === 0,
   }));
 

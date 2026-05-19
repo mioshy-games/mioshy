@@ -33,6 +33,8 @@ import { Counter } from "@/components/marketing/v2/Counter";
 import { RevealOnScroll } from "@/components/marketing/v2/RevealOnScroll";
 import { pickGameThumbnail } from "@/lib/games-thumbnail";
 import { GamesPageAtmosphere } from "@/components/games/GamesPageAtmosphere";
+// `GamesOrbsDiagProbe` import removed 2026-05-19 along with the
+// orbs field. Probe file kept on disk for future debugging.
 
 /**
  * /games - the games category landing page.
@@ -177,6 +179,8 @@ export default async function GamesHubPage({
           }}
         />
         <GamesPageAtmosphere />
+        {/* `GamesOrbsDiagProbe` removed 2026-05-19 — orbs are gone,
+            the probe is no longer useful. File kept on disk. */}
         <main className="relative mx-auto max-w-6xl px-4 pb-20 pt-12 sm:pt-16">
           <div className="inline-flex items-center gap-2 rounded-full border border-rose-300/30 bg-rose-500/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-rose-100">
             <span className="h-1.5 w-1.5 rounded-full bg-rose-300" />
@@ -427,6 +431,8 @@ export default async function GamesHubPage({
           __html: `console.log("[GamesHub/client]", { build: ${JSON.stringify(GAMES_PAGE_BUILD)}, view: "marketing" });`,
         }}
       />
+      {/* `GamesOrbsDiagProbe` removed 2026-05-19 along with the
+          orbs. Probe file kept on disk for future debugging. */}
 
       {/* ── Dark hero backdrop (covers ONLY the first viewport - 110vh).
           Per Itzik 2026-05-06: revert of the page-wide dark treatment.
@@ -771,19 +777,10 @@ export default async function GamesHubPage({
               <div className="catalogue-blob catalogue-blob-2" />
               {/* Soft floating circle */}
               <div className="catalogue-floating-circle" />
-              {/* Drifting orbit dots — reduced from 12 to 6 (2026-05-17
-                  perf). Every orbit has a continuously-animated
-                  box-shadow halo, which paints + composites every
-                  frame. Halving the count cuts the per-frame
-                  compositor work proportionally; the remaining six
-                  are spread across the section so the field still
-                  reads as "alive" without the GPU storm. */}
-              <span className="catalogue-orbit catalogue-orbit-1" />
-              <span className="catalogue-orbit catalogue-orbit-3" />
-              <span className="catalogue-orbit catalogue-orbit-5" />
-              <span className="catalogue-orbit catalogue-orbit-7" />
-              <span className="catalogue-orbit catalogue-orbit-9" />
-              <span className="catalogue-orbit catalogue-orbit-11" />
+              {/* Floating orbs (.catalogue-orbs-field) removed
+                  2026-05-19 per Itzik — sizing experiments didn't
+                  land. CSS rule kept inert in the page <style>
+                  block for future reuse. */}
             </div>
 
             <div className="relative z-10 mx-auto max-w-6xl">
@@ -967,16 +964,17 @@ export default async function GamesHubPage({
                 __html: `
                   /* Large drifting blobs - soft, slow, atmospheric.
                      Perf 2026-05-17 — radius 110px→50px and dimensions
-                     620→460 / 560→420. blur(110px) on a 620² element
-                     was costing >70% GPU in Chrome on macOS and
-                     freezing the cursor for tens of seconds. Smaller
-                     radius + smaller element area is ~4× cheaper to
-                     composite per frame; visually identical because
-                     the radial-gradient already feathers the edge. */
+                     620→460 / 560→420. Perf 2026-05-19 — removed
+                     filter: blur() entirely; the radial-gradient stops
+                     already feather the edge, and dropping the blur
+                     shader recovers the GPU compositor cost that made
+                     /games feel sluggish vs other pages. To compensate
+                     for the slightly crisper inner core, the gradient
+                     stops below were softened (added a mid stop at
+                     35% so the falloff is gentler). */
                   .catalogue-blob {
                     position: absolute;
                     border-radius: 50%;
-                    filter: blur(50px);
                     opacity: 0.55;
                     pointer-events: none;
                     will-change: transform;
@@ -985,14 +983,14 @@ export default async function GamesHubPage({
                     width: 460px; height: 460px;
                     top: -120px;
                     inset-inline-start: -90px;
-                    background: radial-gradient(circle, rgba(184,60,77,0.7) 0%, rgba(184,60,77,0) 70%);
+                    background: radial-gradient(circle, rgba(184,60,77,0.7) 0%, rgba(184,60,77,0.32) 35%, rgba(184,60,77,0) 75%);
                     animation: catalogue-blob-1-converge 56s ease-in-out infinite;
                   }
                   .catalogue-blob-2 {
                     width: 420px; height: 420px;
                     bottom: -100px;
                     inset-inline-end: -80px;
-                    background: radial-gradient(circle, rgba(139,38,56,0.6) 0%, rgba(139,38,56,0) 70%);
+                    background: radial-gradient(circle, rgba(139,38,56,0.6) 0%, rgba(139,38,56,0.28) 35%, rgba(139,38,56,0) 75%);
                     animation: catalogue-blob-2-converge 56s ease-in-out infinite;
                   }
                   @keyframes catalogue-blob-1-converge {
@@ -1004,15 +1002,17 @@ export default async function GamesHubPage({
                     50%      { transform: translate(-140px, -100px) scale(1.06); }
                   }
 
-                  /* Soft floating circle */
+                  /* Soft floating circle — 2026-05-19 dropped filter:
+                     blur(40px); the radial-gradient now feathers with
+                     a mid stop so the visual is unchanged but the GPU
+                     no longer runs the blur shader every frame. */
                   .catalogue-floating-circle {
                     position: absolute;
                     width: 220px; height: 220px;
                     top: 38%;
                     left: 48%;
                     border-radius: 50%;
-                    background: radial-gradient(circle, rgba(232,131,148,0.45) 0%, rgba(184,60,77,0) 70%);
-                    filter: blur(40px);
+                    background: radial-gradient(circle, rgba(232,131,148,0.45) 0%, rgba(208,90,118,0.22) 40%, rgba(184,60,77,0) 75%);
                     opacity: 0.5;
                     animation: catalogue-floating-circle-move 32s ease-in-out infinite;
                     pointer-events: none;
@@ -1024,9 +1024,52 @@ export default async function GamesHubPage({
                     75%      { transform: translate(20px, 30px) scale(1); }
                   }
 
-                  /* 12 small drifting orbit dots - wine palette, soft halos.
-                     Single smooth fade gradient so the dots feather into
-                     the background instead of looking outlined. */
+                  /* 2026-05-19 single-layer orbs field replacing the
+                     legacy .catalogue-orbit-* spans below. Sharper edge
+                     (transparent 48%), more transparent (opacity 0.45)
+                     per Itzik global guideline "less blur + more
+                     transparency". */
+                  .catalogue-orbs-field {
+                    position: absolute;
+                    inset: 0;
+                    pointer-events: none;
+                    /* 2026-05-19 round 5 — matched to /journey final
+                       (3-stop solid core 0-40% → transparent 80%).
+                       Defines clear dots with subtle halo, opacity 0.3. */
+                    opacity: 0.3;
+                    background-image:
+                      radial-gradient(circle 18px at 12% 22%, rgba(244, 63, 94, 0.95) 0%, rgba(244, 63, 94, 0.95) 40%, transparent 80%),
+                      radial-gradient(circle 14px at 24% 68%, rgba(217, 70,239, 0.95) 0%, rgba(217, 70,239, 0.95) 40%, transparent 80%),
+                      radial-gradient(circle 22px at 38% 18%, rgba(236, 72,153, 0.9)  0%, rgba(236, 72,153, 0.9)  40%, transparent 80%),
+                      radial-gradient(circle 12px at 48% 74%, rgba(168, 85,247, 0.95) 0%, rgba(168, 85,247, 0.95) 40%, transparent 80%),
+                      radial-gradient(circle 17px at 62% 30%, rgba(244, 63, 94, 0.9)  0%, rgba(244, 63, 94, 0.9)  40%, transparent 80%),
+                      radial-gradient(circle 17px at 74% 66%, rgba(139, 92,246, 0.95) 0%, rgba(139, 92,246, 0.95) 40%, transparent 80%),
+                      radial-gradient(circle 21px at 86% 24%, rgba(217, 70,239, 0.9)  0%, rgba(217, 70,239, 0.9)  40%, transparent 80%),
+                      radial-gradient(circle 14px at 18% 46%, rgba(236, 72,153, 0.95) 0%, rgba(236, 72,153, 0.95) 40%, transparent 80%),
+                      radial-gradient(circle 18px at 54% 54%, rgba(168, 85,247, 0.9)  0%, rgba(168, 85,247, 0.9)  40%, transparent 80%),
+                      radial-gradient(circle 17px at 80% 48%, rgba(244, 63, 94, 0.9)  0%, rgba(244, 63, 94, 0.9)  40%, transparent 80%),
+                      radial-gradient(circle 13px at 30% 38%, rgba(217, 70,239, 0.95) 0%, rgba(217, 70,239, 0.95) 40%, transparent 80%),
+                      radial-gradient(circle 18px at 68% 8%,  rgba(236, 72,153, 0.9)  0%, rgba(236, 72,153, 0.9)  40%, transparent 80%),
+                      radial-gradient(circle 16px at 14% 86%, rgba(168, 85,247, 0.95) 0%, rgba(168, 85,247, 0.95) 40%, transparent 80%),
+                      radial-gradient(circle 14px at 42% 90%, rgba(139, 92,246, 0.9)  0%, rgba(139, 92,246, 0.9)  40%, transparent 80%),
+                      radial-gradient(circle 18px at 68% 94%, rgba(244, 63, 94, 0.9)  0%, rgba(244, 63, 94, 0.9)  40%, transparent 80%),
+                      radial-gradient(circle 17px at 90% 48%, rgba(236, 72,153, 0.95) 0%, rgba(236, 72,153, 0.95) 40%, transparent 80%);
+                    background-size: 100% 100%;
+                    background-repeat: no-repeat;
+                    animation: catalogue-orbs-drift 24s ease-in-out infinite;
+                    will-change: transform;
+                  }
+                  @keyframes catalogue-orbs-drift {
+                    0%, 100% { transform: translate3d(0, 0, 0); }
+                    33%      { transform: translate3d(3%, -2.5%, 0); }
+                    66%      { transform: translate3d(-2.5%, 3%, 0); }
+                  }
+                  @media (prefers-reduced-motion: reduce) {
+                    .catalogue-orbs-field { animation: none; }
+                  }
+
+                  /* Legacy .catalogue-orbit-* rules below — inert, kept
+                     on disk for possible rollback. */
                   .catalogue-orbit {
                     position: absolute;
                     border-radius: 50%;

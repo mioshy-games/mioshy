@@ -10,11 +10,21 @@ import { CmsText } from "@/components/cms/CmsText";
  * the wine-red italic-serif treatment stays regardless of mode.
  */
 export function ForWhom() {
+  // Display order set 2026-05-18 by Itzik. The `n` field still maps
+  // to its original CMS keys (`persona${n}Title|Desc|Link`).
+  //
+  // 2026-05-18 (later) — bottom row trimmed per Itzik. Personas 4
+  // ("רוצים להתחבר מחדש"), 2 ("רוצים זמן זוגי באמת"), and 3
+  // ("מחפשים מומחה שיעזור") were removed from the render. Their CMS
+  // keys (homeV2.forWhom.persona2/3/4 Title/Desc/Link) stay in
+  // messages/*.json + cms_texts so they can be reinstated cleanly.
+  //
+  // Visual order in the RTL grid — single row of 3:
+  //   1. persona1  — "רוצים להחזיר את הניצוץ"
+  //   2. persona5  — "מחפשים בילוי אינטימי מהנה"
+  //   3. persona6  — "רוצים לפלפל את חיי המין"
   const PERSONAS = [
     { icon: "✦", n: 1, href: "#journey" },
-    { icon: "⌛", n: 2, href: "#journey" },
-    { icon: "◆", n: 3, href: "#journey" },
-    { icon: "↻", n: 4, href: "#couples-games" },
     { icon: "★", n: 5, href: "#couples-games" },
     { icon: "♨", n: 6, href: "#adult-games" },
   ] as const;
@@ -24,19 +34,13 @@ export function ForWhom() {
       <div className="container">
         <div className="section-head">
           <CmsText cmsKey="homeV2.forWhom.eyebrow" as="div" className="eyebrow" />
+          {/* Wine-accent `<em>` ("בשבילכם.") removed 2026-05-18 per Itzik.
+              The `homeV2.forWhom.headlineEm` JSON key + cms_texts seed
+              stay on disk so the emphasis can be reinstated cleanly. */}
           <h2>
             <CmsText cmsKey="homeV2.forWhom.headlinePart1" />
             <br />
             <CmsText cmsKey="homeV2.forWhom.headlinePart2" />
-            <em
-              style={{
-                fontFamily: "'Frank Ruhl Libre', serif",
-                color: "var(--accent)",
-                fontStyle: "italic",
-              }}
-            >
-              <CmsText cmsKey="homeV2.forWhom.headlineEm" />
-            </em>
           </h2>
           <CmsText cmsKey="homeV2.forWhom.description" as="p" />
         </div>

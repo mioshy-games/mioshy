@@ -205,9 +205,17 @@ export function AdultsAmbience() {
           stack via alpha. We accept that for guaranteed visibility.
           Inline rgba values (instead of Tailwind utility classes) make
           this immune to JIT-cache hiccups during dev Fast Refresh. */}
+      {/* PERF 2026-05-19 — Tailwind `blur-[45px]` / `blur-[50px]`
+          utilities removed from all 6 fog blobs. Solid rgba
+          backgrounds replaced with radial-gradients that feather
+          via stops (mid stop at ~38%) instead of via a per-frame
+          GPU blur shader. Same wine palette, same positions, same
+          animation — just no `filter: blur()` cost on every scroll
+          or animation tick. Matches the /games and /journey
+          rollout from earlier today. */}
       <div
-        className="mio-fog mio-fog-1 absolute -start-[10%] top-[5%] h-[640px] w-[640px] rounded-full blur-[45px]"
-        style={{ background: "rgba(244, 63, 94, 0.55)" }}
+        className="mio-fog mio-fog-1 absolute -start-[10%] top-[5%] h-[640px] w-[640px] rounded-full"
+        style={{ background: "radial-gradient(circle, rgba(244,63,94,0.55) 0%, rgba(244,63,94,0.26) 38%, rgba(244,63,94,0) 75%)" }}
       />
       {/* mio-fog-2 - pushed significantly up (top:-15% instead of 18%) so
           only the bottom edge of the blob bleeds into the hero zone, and
@@ -215,8 +223,8 @@ export function AdultsAmbience() {
           the blob now sits above the visible viewport, clipped by the
           page wrapper's overflow-hidden. */}
       <div
-        className="mio-fog mio-fog-2 absolute -end-[10%] top-[-15%] h-[600px] w-[600px] rounded-full blur-[45px]"
-        style={{ background: "rgba(217, 70, 239, 0.55)" }}
+        className="mio-fog mio-fog-2 absolute -end-[10%] top-[-15%] h-[600px] w-[600px] rounded-full"
+        style={{ background: "radial-gradient(circle, rgba(217,70,239,0.55) 0%, rgba(217,70,239,0.26) 38%, rgba(217,70,239,0) 75%)" }}
       />
       {/* mio-fog-3 was originally at start-[40%] top-[50%] - dead-centre of
           the page, which read as a "strange purple disc" sitting on top of
@@ -224,55 +232,45 @@ export function AdultsAmbience() {
           mid-zone, shrunk slightly, and dropped opacity 0.55 → 0.32 so it
           reads as ambient atmosphere rather than a discrete object. */}
       <div
-        className="mio-fog mio-fog-3 absolute -start-[15%] top-[42%] h-[460px] w-[460px] rounded-full blur-[50px]"
-        style={{ background: "rgba(168, 85, 247, 0.32)" }}
+        className="mio-fog mio-fog-3 absolute -start-[15%] top-[42%] h-[460px] w-[460px] rounded-full"
+        style={{ background: "radial-gradient(circle, rgba(168,85,247,0.32) 0%, rgba(168,85,247,0.15) 38%, rgba(168,85,247,0) 75%)" }}
       />
       <div
-        className="mio-fog mio-fog-4 absolute -start-[8%] top-[72%] h-[600px] w-[600px] rounded-full blur-[45px]"
-        style={{ background: "rgba(236, 72, 153, 0.55)" }}
+        className="mio-fog mio-fog-4 absolute -start-[8%] top-[72%] h-[600px] w-[600px] rounded-full"
+        style={{ background: "radial-gradient(circle, rgba(236,72,153,0.55) 0%, rgba(236,72,153,0.26) 38%, rgba(236,72,153,0) 75%)" }}
       />
       <div
-        className="mio-fog mio-fog-5 absolute -end-[8%] top-[88%] h-[560px] w-[560px] rounded-full blur-[45px]"
-        style={{ background: "rgba(192, 38, 211, 0.55)" }}
+        className="mio-fog mio-fog-5 absolute -end-[8%] top-[88%] h-[560px] w-[560px] rounded-full"
+        style={{ background: "radial-gradient(circle, rgba(192,38,211,0.55) 0%, rgba(192,38,211,0.26) 38%, rgba(192,38,211,0) 75%)" }}
       />
       <div
-        className="mio-fog mio-fog-6 absolute start-[20%] top-[105%] h-[480px] w-[480px] rounded-full blur-[45px]"
-        style={{ background: "rgba(251, 191, 36, 0.40)" }}
+        className="mio-fog mio-fog-6 absolute start-[20%] top-[105%] h-[480px] w-[480px] rounded-full"
+        style={{ background: "radial-gradient(circle, rgba(251,191,36,0.40) 0%, rgba(251,191,36,0.19) 38%, rgba(251,191,36,0) 75%)" }}
       />
 
-      {/* ── 2. Floating particles - inline styled so the colored glow
-              halo isn't hijacked by the page's `text-white` currentColor. ── */}
-      <div className="absolute inset-0" data-testid="adults-particle-layer">
-        {particles.map((p, i) => {
-          const tint = PARTICLE_TINTS[p.tintIndex]!;
-          // Mobile keeps ~1/3 of particles; the rest hide via `hidden sm:block`.
-          const visibilityCls = p.mobileVisible ? "" : " hidden sm:block";
-          return (
-            <span
-              key={i}
-              className={`mio-particle absolute rounded-full${visibilityCls}`}
-              style={{
-                top: `${p.top}%`,
-                insetInlineStart: `${p.left}%`,
-                width: `${p.size}px`,
-                height: `${p.size}px`,
-                backgroundColor: tint.core,
-                // Layered glow: tight tinted halo + wider soft spread.
-                boxShadow: `0 0 ${p.size * 3}px ${tint.glow}, 0 0 ${
-                  p.size * 6
-                }px ${tint.glow}`,
-                animationDuration: `${p.duration}s`,
-                animationDelay: `${p.delay}s`,
-                // CSS custom props consumed by keyframes for 2D drift -
-                // each particle picks its own bearing (X + Y) so they don't
-                // all rise vertically.
-                ["--drift-x" as never]: `${p.driftX}px`,
-                ["--drift-y" as never]: `${p.driftY}px`,
-              }}
-            />
-          );
-        })}
-      </div>
+      {/* ── 2. Floating particles ──
+          2026-05-19 PERFORMANCE REBUILD — was 55 individual <span>
+          elements on desktop (18 on mobile), each with its own CSS
+          animation running translate + opacity. The cumulative cost
+          on a typical 60Hz session: hundreds of per-frame style
+          recalculations, the heaviest single source of jank reported
+          on /mioshy-sex.
+
+          New shape: ONE element rendering ~20 dots as a stack of
+          radial-gradient stops, with a single transform-only
+          animation drifting the whole composition. GPU-compositor
+          only, zero per-frame style work. Brightness/palette
+          preserved; particle DENSITY reduced from ~55 → ~20, which
+          on a near-black backdrop still reads as a generous starfield.
+
+          The `particles` array + makeParticles() + the diagnostic
+          useEffect that logs particle counts are intentionally left
+          in place for now — they no longer affect rendering but the
+          probe logs may still be useful for future investigations. */}
+      {/* `.mio-particle-field` removed 2026-05-19 per Itzik —
+          floating orbs across the site didn't land. CSS rule kept
+          inert in the inline style block for future reuse. The fog
+          blobs above stay (they're only 3 elements, very cheap). */}
 
       {/* ── 3. Grain overlay - keeps gradients from banding ── */}
       <div
@@ -335,8 +333,62 @@ export function AdultsAmbience() {
               will-change: transform, opacity;
             }
 
+            /* 2026-05-19 — single-layer particle field. Replaces the
+               55-on-desktop / 18-on-mobile <span>.mio-particle DOM tree
+               above. One element, 20 radial-gradient dots, ONE
+               transform-only animation. Compositor-cheap. */
+            /* 2026-05-19 round 2 — sizes 2x, opacity dropped to 0.55
+               for the subtle transparency Itzik asked for across all
+               orbs surfaces. */
+            /* 2026-05-19 round 4 — sizes increased ~3x (was 4-8px,
+               now 13-22px) to MATCH the other 4 orbs surfaces. Itzik
+               flagged that the orbs weren't visible on /mioshy-sex
+               at all. Opacity 0.38 → 0.35, edge sharpened 48% → 35%
+               (consistent with all other fields after Itzik's "less
+               blur + more transparency" pass). */
+            /* 2026-05-19 round 5 — matched to /journey final settings:
+               3-stop gradient (solid core 0-40%, transparent 80%) gives
+               sharp dots with subtle halo, opacity 0.3. Renders for
+               both authed and anonymous users (AdultsAmbience is a
+               pure layer with no auth gating, mounted in the page-
+               level wrapper). */
+            .mio-particle-field {
+              pointer-events: none;
+              opacity: 0.3;
+              background-image:
+                radial-gradient(circle 18px at 8%  12%, rgba(244, 63, 94, 0.85) 0%, rgba(244, 63, 94, 0.85) 40%, transparent 80%),
+                radial-gradient(circle 14px at 18% 28%, rgba(217, 70, 239, 0.85) 0%, rgba(217, 70, 239, 0.85) 40%, transparent 80%),
+                radial-gradient(circle 22px at 30% 8%,  rgba(255,255,255, 0.65) 0%, rgba(255,255,255, 0.65) 40%, transparent 80%),
+                radial-gradient(circle 13px at 42% 22%, rgba(251, 191, 36, 0.80) 0%, rgba(251, 191, 36, 0.80) 40%, transparent 80%),
+                radial-gradient(circle 17px at 55% 14%, rgba(168, 85, 247, 0.85) 0%, rgba(168, 85, 247, 0.85) 40%, transparent 80%),
+                radial-gradient(circle 14px at 70% 32%, rgba(236, 72, 153, 0.85) 0%, rgba(236, 72, 153, 0.85) 40%, transparent 80%),
+                radial-gradient(circle 18px at 82% 18%, rgba(192, 38, 211, 0.85) 0%, rgba(192, 38, 211, 0.85) 40%, transparent 80%),
+                radial-gradient(circle 21px at 92% 8%,  rgba(244, 63, 94, 0.80) 0%, rgba(244, 63, 94, 0.80) 40%, transparent 80%),
+                radial-gradient(circle 14px at 12% 48%, rgba(255,255,255, 0.6) 0%, rgba(255,255,255, 0.6) 40%, transparent 80%),
+                radial-gradient(circle 17px at 26% 62%, rgba(217, 70, 239, 0.85) 0%, rgba(217, 70, 239, 0.85) 40%, transparent 80%),
+                radial-gradient(circle 18px at 40% 54%, rgba(168, 85, 247, 0.85) 0%, rgba(168, 85, 247, 0.85) 40%, transparent 80%),
+                radial-gradient(circle 13px at 54% 72%, rgba(244, 63, 94, 0.80) 0%, rgba(244, 63, 94, 0.80) 40%, transparent 80%),
+                radial-gradient(circle 22px at 68% 60%, rgba(236, 72, 153, 0.85) 0%, rgba(236, 72, 153, 0.85) 40%, transparent 80%),
+                radial-gradient(circle 14px at 82% 76%, rgba(192, 38, 211, 0.80) 0%, rgba(192, 38, 211, 0.80) 40%, transparent 80%),
+                radial-gradient(circle 17px at 94% 56%, rgba(255,255,255, 0.55) 0%, rgba(255,255,255, 0.55) 40%, transparent 80%),
+                radial-gradient(circle 13px at 16% 86%, rgba(251, 191, 36, 0.75) 0%, rgba(251, 191, 36, 0.75) 40%, transparent 80%),
+                radial-gradient(circle 18px at 36% 92%, rgba(217, 70, 239, 0.80) 0%, rgba(217, 70, 239, 0.80) 40%, transparent 80%),
+                radial-gradient(circle 14px at 58% 88%, rgba(168, 85, 247, 0.80) 0%, rgba(168, 85, 247, 0.80) 40%, transparent 80%),
+                radial-gradient(circle 18px at 76% 94%, rgba(244, 63, 94, 0.80) 0%, rgba(244, 63, 94, 0.80) 40%, transparent 80%),
+                radial-gradient(circle 13px at 88% 86%, rgba(236, 72, 153, 0.75) 0%, rgba(236, 72, 153, 0.75) 40%, transparent 80%);
+              background-size: 100% 100%;
+              background-repeat: no-repeat;
+              animation: mio-particle-field-drift 28s ease-in-out infinite;
+              will-change: transform;
+            }
+            @keyframes mio-particle-field-drift {
+              0%, 100% { transform: translate3d(0, 0, 0); }
+              33%      { transform: translate3d(2%, -2%, 0); }
+              66%      { transform: translate3d(-2%, 2%, 0); }
+            }
+
             @media (prefers-reduced-motion: reduce) {
-              .mio-fog, .mio-particle { animation: none !important; }
+              .mio-fog, .mio-particle, .mio-particle-field { animation: none !important; }
             }
           `,
         }}

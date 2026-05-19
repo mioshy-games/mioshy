@@ -160,14 +160,17 @@ export default async function FounderStoryPage({
           </div>
 
           {/* Hero photo — editorial frame.
-              Aspect changed from 16:10 → 4:3 because the source photo
-              is a seated portrait with Itzik's head near the top of
-              the frame; a wide letterbox crop sliced his face. 4:3
-              keeps more vertical room AND object-position 'center
-              top' anchors the crop from the top so the head stays
-              visible at every viewport size. */}
-          <figure className="relative mt-10 overflow-hidden rounded-[28px] shadow-[0_30px_70px_-25px_rgba(120,53,15,0.4)] sm:mt-14">
-            <div className="aspect-[4/3] w-full bg-stone-200">
+              2026-05-19 — Itzik flagged that at the previous size
+              (920px wide × 4:3 aspect = 690px tall) the photo
+              dominated the page and still cropped the lower face
+              despite the top-anchored object-position. Two fixes:
+              (a) cap the photo at 460-540px wide so it reads as an
+              editorial portrait card, not a billboard; (b) switch
+              aspect from 4:3 (landscape) to 4:5 (portrait) so the
+              face fits naturally without aggressive cropping. The
+              wrapper is still centered inside the 920px header. */}
+          <figure className="relative mx-auto mt-10 w-full max-w-[460px] overflow-hidden rounded-[28px] shadow-[0_30px_70px_-25px_rgba(120,53,15,0.4)] sm:mt-14 sm:max-w-[540px]">
+            <div className="aspect-[4/5] w-full bg-stone-200">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/images/yitzhak.webp"

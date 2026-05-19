@@ -20,6 +20,12 @@ import { resolveAdultsPricing } from "@/lib/adults/pricing";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { CmsText } from "@/components/cms/CmsText";
 import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
+// Journey section (4-stage editorial timeline + CTA) moved off the
+// homepage and onto /mioshy-sex 2026-05-19 per Itzik. The styles are
+// scoped to .home-v2 — we wrap the section in that class below so the
+// existing CSS applies without polluting the rest of the page.
+import { Journey } from "@/components/marketing/v2/Journey";
+import "@/components/marketing/v2/styles.css";
 
 export const dynamic = "force-dynamic";
 
@@ -277,6 +283,18 @@ export default async function AdultsLandingPage({
             tags={tags}
             hideHero
           />
+        </div>
+
+        {/* ════════════════════════════════════════════════════════════
+            JOURNEY - 4-stage editorial timeline + CTA. Lives on a
+            cream surface so it reads as an editorial break between
+            the dark catalogue grid and the FAQ. The .home-v2 wrapper
+            scopes the styles in styles.css to this subtree only
+            (the rest of the dark adults page stays untouched).
+            Added 2026-05-19 per Itzik.
+        ════════════════════════════════════════════════════════════ */}
+        <div className="home-v2 relative bg-[#FAF6F7] text-slate-900">
+          <Journey />
         </div>
 
         {/* ════════════════════════════════════════════════════════════

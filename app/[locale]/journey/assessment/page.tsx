@@ -22,7 +22,13 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
 import { getCurrentUserPact } from "@/lib/journey/pacts";
 import { JourneyClient } from "@/components/journey/JourneyClient";
-import { JourneyAmbience } from "@/components/journey/JourneyAmbience";
+// `JourneyAmbience` (21 animated particles + fog blobs) removed
+// 2026-05-19 per Itzik — the per-frame animation cost on the question
+// stages was the main suspect for the "Chrome slows the whole machine"
+// pattern. Gradient/warmth is now applied ONLY on the signup gate +
+// analysis summary inside JourneyClient (`isDone === true`), so the
+// question pages stay visually quiet and the per-frame budget drops
+// to zero. Component kept on disk for possible later use.
 import { AssessmentDiagProbe } from "@/components/journey/AssessmentDiagProbe";
 import { totalQuestions } from "@/lib/journey/questions";
 import type { Locale } from "@/lib/journey/types";
@@ -173,13 +179,44 @@ export default async function JourneyAssessmentPage({
     }
 
     // ── Authenticated user: restore progress + check subscription ────────
-    const { data: journey } = await supabase
+    //
+    // 2026-05-19 fix — `.maybeSingle()` plus `ORDER BY last_activity_at DESC`
+    // alone misroutes the user when MULTIPLE journeys exist for the same
+    // user_id (which happens whenever `journey-inline-signup` claims an
+    // anon `complete` row AND a stray anon `in_progress` row in the same
+    // transaction — both get `last_activity_at = NOW()` and Postgres
+    // picks one arbitrarily).
+    //
+    // Picking the wrong row sends a finished user back to question 1.
+    // Fix: fetch all rows for the user, then sort: complete first,
+    // most-progress next, recency last. Mirrors the same sort in
+    // `journey-inline-signup`.
+    const { data: allJourneys } = await supabase
       .from("journeys")
       .select("id, current_step, status, language, last_activity_at, device_id")
-      .eq("user_id", user.id)
-      .order("last_activity_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .eq("user_id", user.id);
+
+    const journey = (allJourneys ?? [])
+      .slice()
+      .sort((a, b) => {
+        const aComplete = a.status === "complete" ? 1 : 0;
+        const bComplete = b.status === "complete" ? 1 : 0;
+        if (aComplete !== bComplete) return bComplete - aComplete;
+        const stepDiff = (b.current_step ?? 0) - (a.current_step ?? 0);
+        if (stepDiff !== 0) return stepDiff;
+        const aTs = a.last_activity_at ? new Date(a.last_activity_at).getTime() : 0;
+        const bTs = b.last_activity_at ? new Date(b.last_activity_at).getTime() : 0;
+        return bTs - aTs;
+      })[0] ?? null;
+
+    if (journey) {
+      console.log("[/journey/assessment] resolved user journey", {
+        chosenId: journey.id,
+        chosenStatus: journey.status,
+        chosenStep: journey.current_step,
+        totalCandidatesForUser: allJourneys?.length ?? 0,
+      });
+    }
 
     if (journey) {
       initialProgress = {
@@ -223,6 +260,71 @@ export default async function JourneyAssessmentPage({
             "[/journey/assessment] post-signup race recovery: restoring progress via service-role",
             { journey_id: orphan.id, current_step: orphan.current_step, user_id: orphan.user_id },
           );
+
+          // 2026-05-19 fix — previously this block only RESTORED the
+          // in-memory progress so the user wasn't dumped back to Q1.
+          // It did NOT actually link the orphan row to the user, so the
+          // /api/journey/analyze POST (which queries WHERE user_id = X)
+          // kept returning 404 forever. Now we claim the row right here:
+          // a one-shot service-role UPDATE that sets user_id on every
+          // anon row for this device. Uniqueness constraint
+          // `journeys_user_active_key` (UNIQUE(user_id) WHERE status IN
+          // ('in_progress','paywall')) means we can't link multiple
+          // in-progress rows — first claim the COMPLETE row(s) (no
+          // index conflict), then attempt the in-progress one. We do
+          // this as two separate UPDATEs so a conflict on the second
+          // doesn't roll back the first.
+          if (orphan.user_id === null) {
+            // Claim COMPLETE rows first — no unique-index conflict here.
+            const { error: claimCompleteErr } = await admin
+              .from("journeys")
+              .update({ user_id: user.id, last_activity_at: new Date().toISOString() })
+              .eq("device_id", deviceIdForLog)
+              .is("user_id", null)
+              .eq("status", "complete");
+            if (claimCompleteErr) {
+              console.warn(
+                "[/journey/assessment] race recovery: claim COMPLETE failed",
+                claimCompleteErr.message,
+              );
+            } else {
+              console.log(
+                "[/journey/assessment] race recovery: claimed all COMPLETE anon rows for device",
+                { device_id: deviceIdForLog, user_id: user.id },
+              );
+            }
+            // Now claim the most recent in_progress/paywall row (if any).
+            // We pick the latest by last_activity_at so the user lands
+            // on their newest state. Others stay anon (orphaned) — they
+            // can be cleaned up by a separate sweeper if needed.
+            const { data: latestInProgress } = await admin
+              .from("journeys")
+              .select("id")
+              .eq("device_id", deviceIdForLog)
+              .is("user_id", null)
+              .in("status", ["in_progress", "paywall"])
+              .order("last_activity_at", { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            if (latestInProgress?.id) {
+              const { error: claimIpErr } = await admin
+                .from("journeys")
+                .update({ user_id: user.id, last_activity_at: new Date().toISOString() })
+                .eq("id", latestInProgress.id);
+              if (claimIpErr) {
+                console.warn(
+                  "[/journey/assessment] race recovery: claim in_progress failed",
+                  { journey_id: latestInProgress.id, error: claimIpErr.message },
+                );
+              } else {
+                console.log(
+                  "[/journey/assessment] race recovery: claimed latest in_progress",
+                  { journey_id: latestInProgress.id, user_id: user.id },
+                );
+              }
+            }
+          }
+
           initialProgress = {
             current_step: orphan.current_step as number,
             status: orphan.status as string,
@@ -329,11 +431,23 @@ export default async function JourneyAssessmentPage({
 
   return (
     <div
-      className="relative isolate min-h-screen bg-[#070b18]"
+      className="relative isolate min-h-screen"
       data-testid="assessment-bg-base"
+      style={{
+        // Static wine-tinted dark backdrop. Replaces the flat #070b18
+        // black (2026-05-19 Itzik: too somber). Three radial washes in
+        // the brand palette (wine + magenta + violet) painted once,
+        // zero animation, zero JS. The base color stays dark so the
+        // questions remain the focus — the gradient just gives the
+        // page warmth so it doesn't feel like a void.
+        background:
+          "radial-gradient(1200px 720px at 18% -10%, rgba(184,60,77,0.16), transparent 65%), " +
+          "radial-gradient(1000px 600px at 86% 8%, rgba(139,38,56,0.13), transparent 62%), " +
+          "radial-gradient(900px 540px at 50% 110%, rgba(76,29,149,0.16), transparent 65%), " +
+          "linear-gradient(180deg, #0b0712 0%, #0e0913 50%, #100a17 100%)",
+      }}
     >
       <AssessmentDiagProbe />
-      <JourneyAmbience />
       <JourneyClient
         locale={locale as Locale}
         initialProgress={initialProgress}

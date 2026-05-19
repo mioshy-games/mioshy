@@ -138,6 +138,18 @@ export function PriorityRankingStep({
         ) : null}
       </header>
 
+      {/* Arrows hint — moved here ABOVE the list 2026-05-19 per Itzik.
+          The instruction "use the arrows to change order" wasn't being
+          read because it sat at the bottom of the list, AFTER the user
+          had already tried (and possibly failed) to figure out the
+          interaction. Reading it before the list lets the user
+          interpret the up/down chevrons correctly on first sight. */}
+      <CmsText
+        cmsKey="journeyAssessment.priorityRanking.arrowsHint"
+        as="p"
+        className="text-center text-[15px] font-medium text-white/85"
+      />
+
       <ul
         role="list"
         aria-roledescription="reorderable list"
@@ -224,16 +236,9 @@ export function PriorityRankingStep({
         })}
       </ul>
 
-      {/* Per Itzik 2026-05-07: the hint and Continue button were both
-          near-invisible (text-xs / white/55). Hint bumped to 15px /
-          white/85 and Continue button gets a primary treatment so the
-          user sees their next step clearly. */}
-      <CmsText
-        cmsKey="journeyAssessment.priorityRanking.arrowsHint"
-        as="p"
-        className="text-center text-[15px] font-medium text-white/85"
-      />
-
+      {/* Hint was here previously (2026-05-07 bump to 15px / white/85).
+          Moved above the list 2026-05-19 — see the comment up there.
+          Continue button stays here as the user's next step. */}
       <div className="flex justify-center">
         <Button
           type="button"

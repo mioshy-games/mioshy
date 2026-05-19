@@ -3,7 +3,7 @@
 import { useLocale, useTranslations } from "next-intl";
 import { Link, usePathname } from "@/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
-import { Gamepad2, Heart, Library, LogOut, Menu, Sparkles, X } from "lucide-react";
+import { Gamepad2, Heart, Home, Library, LogOut, Menu, Sparkles, X } from "lucide-react";
 import { JourneyNotificationsBell } from "@/components/notifications/JourneyNotificationsBell";
 import { logoutAction } from "@/app/actions/auth-actions";
 
@@ -342,6 +342,18 @@ export function SiteHeader({
         <div className="hidden items-center gap-2 md:flex">
           {isAuthed ? (
             <>
+              {/* Home link — desktop-only, mirror of the unauthed
+                  branch below. Same RTL ordering rationale: first in
+                  JSX = rightmost on screen in Hebrew. Icon removed
+                  2026-05-19 per Itzik — text-only matches the rest
+                  of the auth-area chrome (signOut, sign-in). */}
+              <Link
+                href="/"
+                className={`inline-flex min-h-[40px] items-center rounded-full px-3 py-2 text-base font-semibold transition ${linkBase}`}
+                aria-label={t("home")}
+              >
+                <span>{t("home")}</span>
+              </Link>
               {/* "מיאושי שלי" — primary CTA after login. Same gradient
                   treatment as the pre-login "Join now" button so the
                   user has one obvious next-action regardless of state.
@@ -375,6 +387,18 @@ export function SiteHeader({
             </>
           ) : (
             <>
+              {/* Home link — added 2026-05-19 per Itzik. Sits to the
+                  right of the sign-in button in RTL (FIRST in JSX
+                  order = rightmost when document is RTL). Desktop-
+                  only; on mobile this goes inside the drawer menu.
+                  Icon removed (text-only) per Itzik same-day. */}
+              <Link
+                href="/"
+                className={`inline-flex min-h-[40px] items-center rounded-full px-3 py-2 text-base font-semibold transition ${linkBase}`}
+                aria-label={t("home")}
+              >
+                <span>{t("home")}</span>
+              </Link>
               {/* Sign-in (secondary) button. Per Itzik 2026-05-07 — same
                   size + padding as the primary "Join now" CTA but with a
                   dark header-matching background, so the two buttons read
@@ -477,6 +501,30 @@ export function SiteHeader({
           dir={isHe ? "rtl" : "ltr"}
         >
           <div className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-3">
+            {/* Home link — mobile drawer entry point (the desktop
+                version sits inline next to the auth buttons; on mobile
+                the user opens the hamburger and finds Home at the top
+                of the drawer). Added 2026-05-19 per Itzik. */}
+            <Link
+              href="/"
+              onClick={() => setOpen(false)}
+              className={`group flex items-center gap-3 rounded-xl px-3 py-3 text-base font-medium transition ${
+                pathname === "/" || pathname === ""
+                  ? theme === "light"
+                    ? "bg-slate-100 font-semibold"
+                    : "bg-white/10 font-semibold"
+                  : theme === "light"
+                    ? "hover:bg-slate-100"
+                    : "hover:bg-white/5"
+              }`}
+            >
+              <span
+                className={`grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-rose-500 via-fuchsia-500 to-violet-500 shadow-lg shadow-black/40`}
+              >
+                <Home className="h-4 w-4 text-white" />
+              </span>
+              <span>{t("home")}</span>
+            </Link>
             {visiblePillars.map((p) => {
               const isActive = pathname.startsWith(p.href);
               return (

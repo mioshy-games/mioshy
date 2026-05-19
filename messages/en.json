@@ -1054,6 +1054,32 @@
       "item3Title": "Choose intentionally — don't just maintain",
       "item3Body": "Every time you stop and choose to be a couple, you strengthen the bond. We're here to make that as easy as possible."
     },
+    "intimacy": {
+      "eyebrow": "The quietest pain in a relationship",
+      "headlinePart1": "You can be together — ",
+      "headlineEm": "and still feel alone.",
+      "lead": "Sleep in the same bed. Share the same calendar. Order from the same place. And still search for each other. Loneliness inside a relationship isn't the absence of love — it's the absence of intimacy. And it doesn't happen when something breaks. It happens when we stop feeding it.",
+      "feels1Quote": "\"When did we last talk about something real?\"",
+      "feels1Body": "Conversations turned logistical. Who picks up the kids. What's needed from the store. Just that.",
+      "feels2Quote": "\"They're right next to me — and my head is in my phone.\"",
+      "feels2Body": "In the same room. In two different worlds. Hours go by without one of us looking up.",
+      "feels3Quote": "\"I'm not sure what they really think anymore.\"",
+      "feels3Body": "We used to know everything about each other. Now there are things we just don't ask. And don't always understand why.",
+      "feels4Quote": "\"I miss them — and they're right here.\"",
+      "feels4Body": "Physical closeness is here. Emotional closeness slipped away somewhere along the way. No clean moment to point to.",
+      "bridgeEyebrow": "And how Mioshy solves it",
+      "bridgeHeadlinePart1": "Not therapy. Tools that work ",
+      "bridgeHeadlineEm": "without putting life on hold.",
+      "bridgeBody": "We bring years of couples coaching together with games, challenges, questions you've never asked, and a personal expert who knows you deeply. Built for real couples with real lives — no 50-minute couch sessions required.",
+      "pillar1Title": "Personal to you",
+      "pillar1Body": "Every couple gets their own path. No two couples are the same — and one answer can't fit them all.",
+      "pillar2Title": "Fast and practical",
+      "pillar2Body": "10 minutes a day, not an hour a week. Fits into your life — it doesn't ask you to stop it.",
+      "pillar3Title": "Playful, not heavy",
+      "pillar3Body": "Games, questions, small moments that shift the tone. No couch, no notepad, no feeling examined.",
+      "ctaPrimary": "I want to stop feeling alone",
+      "ctaSecondary": "How Mioshy works"
+    },
     "authority": {
       "eyebrow": "The spark returns with a decision!",
       "headlinePart1": "5 years. 500+ couples.",
@@ -1130,6 +1156,7 @@
       "headlinePart2": ".",
       "lead": "Want to open up? Connect? Discover each other again? Thousands of couples in Israel are already recommending - from the couch, from the bed, even when one of you is overseas. You're up next.",
       "callout": "\"Bring in desire. Reconnect. Fall in love again and bring back the butterflies - especially if you're in a long relationship with kids and feel the burnout doing its thing.\"",
+      "calloutName": "Sarah",
       "statTasks": "+500",
       "statTasksLabel": "Tasks and challenges",
       "statRecs": "+100",
@@ -1325,6 +1352,9 @@
       "trust2": "Full privacy",
       "trust3": "100% pleasure"
     },
+    "liveDemo": {
+      "ctaSettledPlay": "Play Honesty / Challenge"
+    },
     "faq": {
       "eyebrow": "Questions couples ask",
       "headline": "Got questions?<br></br>We've got answers.",
@@ -1354,6 +1384,8 @@
       "item11A": "<p>For now, our content and tasks are tailored to heterosexual couples - a man and a woman. We're working on expanding the content to all kinds of relationships, and hope to share an update soon.</p>"
     },
     "reviews": {
+      "eyebrow": "Couples talking",
+      "title": "What our couples share",
       "loadMore": "Load more reviews",
       "item1Text": "\"I bought '52 Ways to Drive You Wild' as a birthday gift for my husband, just to mix things up and surprise him. No high expectations, a couple of drinks, and we had an amazing night. Great game — recommend.\"",
       "item1Initial": "S",

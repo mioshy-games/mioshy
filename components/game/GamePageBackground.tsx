@@ -96,6 +96,15 @@ type BlobConfig = {
 
 function Blob({ b, i }: { b: BlobConfig; i: number }) {
   const dir = i % 2 === 0 ? 1 : -1;
+  // 2026-05-19 — `filter: blur(...)` replaced with a soft radial-gradient.
+  // Reason: blur on a 90vw element forces the GPU's blur shader on EVERY
+  // animation frame while the motion.div translates — historically the
+  // single most expensive paint op on /games (and the wheel page in
+  // particular felt sluggish vs. other pages). A radial-gradient is
+  // rasterized once into the layer and composited near-free, giving the
+  // same soft-glow halo at a fraction of the GPU cost. `b.blur` is now
+  // unused but kept on BlobConfig so call sites don't need to change
+  // shape and we can A/B revert easily if visuals regress.
   return (
     <motion.div
       className="pointer-events-none absolute rounded-full"
@@ -106,8 +115,7 @@ function Blob({ b, i }: { b: BlobConfig; i: number }) {
         top: b.y,
         translateX: "-50%",
         translateY: "-50%",
-        background: b.color,
-        filter: `blur(${b.blur})`,
+        background: `radial-gradient(circle, ${b.color} 0%, transparent 70%)`,
         opacity: b.op,
         willChange: "transform",
       }}

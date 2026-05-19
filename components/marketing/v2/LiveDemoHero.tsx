@@ -17,6 +17,7 @@ import { GamePageBackground } from "@/components/game/GamePageBackground";
 import type { WheelConfigRow } from "@/lib/types/database";
 import type { GameSettings } from "@/lib/types/settings";
 import { normalizeRichText } from "@/lib/cms/render";
+import { useCmsText } from "@/hooks/useCmsText";
 
 /**
  * Mirrors `RICH_MARKUP_RE` from hooks/useCmsText.ts and the
@@ -322,13 +323,16 @@ export function LiveDemoHero({
   }, [effectiveSlices]);
 
   // Dynamic CTA - once the wheel has landed, the primary CTA invites the
-  // user to cont-nue with the very question they just got.
+  // user to continue with the very question they just got.
+  //
+  // 2026-05-19 — settled-state label was hardcoded inline. Itzik asked
+  // for both a copy change ("מעבר למשחק כנות / אתגר") and to make it
+  // editable via the CMS. Now wired through `useCmsText` so admins can
+  // tweak it in /admin/content without a deploy. Fallback chain:
+  // cms_texts (DB) → messages/he.json + en.json → key itself.
+  const settledCtaLabel = useCmsText("homeV2.liveDemo.ctaSettledPlay");
   const isSettled = phase === "settled";
-  const primaryLabel = isSettled
-    ? isHe
-      ? "המשיכו לשחק עם השאלה הזאת"
-      : "Continue playing with this question"
-    : ctaPrimary;
+  const primaryLabel = isSettled ? settledCtaLabel.text : ctaPrimary;
   const primaryHref = isSettled ? gameHref : ctaPrimaryHref;
 
   return (
@@ -344,7 +348,21 @@ export function LiveDemoHero({
         gameSlug={gameSlug}
         primaryColor={gameBgValue ?? undefined}
         bgSettings={gameSettings?.background}
-        particlesSettings={gameSettings?.particles}
+        // 2026-05-19 — particles disabled on the marketing hero per
+        // Itzik. NOTE: passing `null` is NOT enough — the component
+        // merges `DEFAULT_PARTICLES` (enabled: true, count: 18) over
+        // `null`, so particles still render. We must pass an explicit
+        // `{ enabled: false }` config to make `FloatingParticles`
+        // bail out (early return at line ~208 of FloatingParticles.tsx).
+        particlesSettings={{
+          enabled: false,
+          count: 0,
+          shape: "circle",
+          opacity: 0,
+          speed: 0,
+          sizeMin: 0,
+          sizeMax: 0,
+        }}
         containerClassName="relative w-full overflow-hidden"
       >
         {/* On mobile we open with the wheel - that's the product

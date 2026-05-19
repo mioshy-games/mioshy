@@ -80,18 +80,25 @@ const config: Config = {
         sm: "calc(var(--radius) - 4px)",
       },
       keyframes: {
+        // 2026-05-19 — drift made more noticeable. Translate range
+        // bumped 2/1.5 → 4/3, scale 1.04 → 1.06. Still transform-only
+        // so it stays compositor-cheap (zero repaint), just registers
+        // visually as actual motion instead of "barely-there". Same
+        // for `aurora-breathe`.
         "aurora-drift": {
           "0%, 100%": { transform: "translate3d(0,0,0) scale(1)" },
-          "50%": { transform: "translate3d(2%,-1.5%,0) scale(1.04)" },
+          "33%": { transform: "translate3d(4%,-3%,0) scale(1.04)" },
+          "66%": { transform: "translate3d(-3%,4%,0) scale(1.06)" },
         },
         "aurora-breathe": {
           "0%, 100%": { transform: "translate3d(0,0,0) scale(1)", opacity: "0.55" },
-          "50%": { transform: "translate3d(-1.5%,2%,0) scale(1.06)", opacity: "0.75" },
+          "33%": { transform: "translate3d(-3%,4%,0) scale(1.07)", opacity: "0.75" },
+          "66%": { transform: "translate3d(4%,-3%,0) scale(1.05)", opacity: "0.7" },
         },
       },
       animation: {
-        "aurora-drift": "aurora-drift 22s ease-in-out infinite",
-        "aurora-breathe": "aurora-breathe 28s ease-in-out infinite",
+        "aurora-drift": "aurora-drift 14s ease-in-out infinite",
+        "aurora-breathe": "aurora-breathe 18s ease-in-out infinite",
       },
     },
   },
