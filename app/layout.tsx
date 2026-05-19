@@ -75,18 +75,33 @@ export const metadata: Metadata = {
 // backwards-compat shim — when stylesheets are rewritten to reference the
 // canonical pair directly, we can delete the aliases.
 // ─────────────────────────────────────────────────────────────────────────────
+// 2026-05-19 — `display: "swap" → "optional"` for both fonts.
+// REASON: Lighthouse mobile run showed CLS 0.57 (threshold 0.1) with
+// the layout-shift culprit identified as section.hero > ::before —
+// classic FOUT signature: the Hero's clamp(52px,7.4vw,96px) headline
+// shipped in a fallback font first, then swapped to Frank Ruhl Libre
+// when the web font arrived, shifting every section below the hero.
+// `display: "optional"` gives the web font a 100ms window; if it
+// hasn't loaded, the page commits to the fallback for this session
+// and skips the swap entirely. On cached visits the font loads from
+// disk before paint so users still see the brand serif. Net: zero
+// font-swap CLS, brand stays intact for returning users (which is
+// the majority once we have any traffic).
+// Frank_Ruhl_Libre is by far the bigger CLS contributor (headlines
+// are huge); Assistant gets the same treatment so body text doesn't
+// reflow either.
 const assistant = Assistant({
   subsets: ["hebrew", "latin"],
   weight: ["400", "600", "700"],
   variable: "--font-assistant",
-  display: "swap",
+  display: "optional",
 });
 
 const frankRuhl = Frank_Ruhl_Libre({
   subsets: ["hebrew", "latin"],
   weight: ["400", "500", "700", "900"],
   variable: "--font-frank-ruhl",
-  display: "swap",
+  display: "optional",
 });
 
 // Preconnect to the Supabase domain used for images & realtime so the first

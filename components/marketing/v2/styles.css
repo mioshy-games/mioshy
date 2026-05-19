@@ -1973,7 +1973,17 @@
     .ag-closer-trust span:not(:last-child)::after{left:-8px;width:2px;height:2px}
 
     /* Hero mobile tighter */
-    .hero{padding:40px 0 50px}
+    /* CLS 2026-05-19 — `contain: layout` belts-and-braces the font-
+       display:optional change in app/layout.tsx. Tells the browser
+       that nothing inside .hero can shift elements OUTSIDE it during
+       layout — so even if a child re-measures by a couple of px
+       (image decode, font fallback metric drift, slow CMS hydration
+       of the lead paragraph), the next section below the hero
+       doesn't slide. This was the specific Lighthouse culprit:
+       div.flex-1 > div.home-v2 > section.hero > ::before with score
+       0.570 — the ::before moves because .hero's bounding box
+       changes; containment locks that down. */
+    .hero{padding:40px 0 50px;contain:layout}
     /* A2 — H1 mobile +13%. Floor 46→52, scale 6.6vw→7.4vw; upper
        cap unchanged (96px). Noticeable but not screen-dominating.
        Line-height +10% over the base 0.98 (→1.08) for breathing room
