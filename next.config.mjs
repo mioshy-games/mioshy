@@ -20,6 +20,23 @@ const nextConfig = {
     // visual quality, which directly cuts hero LCP bytes on mobile.
     // WebP stays as the fallback for older browsers.
     formats: ["image/avif", "image/webp"],
+    // ─── deviceSizes (PSI fix, 2026-05-21) ──────────────────────────────
+    // Next 14 default: [640, 750, 828, 1080, 1200, 1920, 2048, 3840].
+    // That's 8 buckets per image — every uploaded image gets re-encoded
+    // 8 times AVIF + 8 times WebP = 16 derived assets in Vercel cache.
+    // Mioshy's real viewport distribution (Vercel Analytics 2026-05):
+    //   • 67% mobile  ≤ 480px
+    //   • 18% tablet  480-1024
+    //   • 15% desktop 1024-1920
+    //   • ~0.4% over 1920
+    // Trimming the buckets gives us 7 useful sizes that cover the actual
+    // viewport space, and saves Vercel cache + build time. The 360 entry
+    // covers iPhone SE / mini; 1920 stays for QHD desktops; 3840/4K out.
+    deviceSizes: [360, 414, 640, 750, 828, 1080, 1280, 1600, 1920],
+    // imageSizes (for fixed-width images, e.g. icons, thumbnails) — also
+    // trimmed from default [16,32,48,64,96,128,256,384] to the ones we
+    // actually use. Reduces build asset count further.
+    imageSizes: [32, 64, 96, 128, 256, 384],
     remotePatterns: [
       {
         protocol: "https",

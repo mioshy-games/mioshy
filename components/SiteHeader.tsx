@@ -269,7 +269,14 @@ export function SiteHeader({
        header bgs in `barBg` now use opaque solids/strong-alpha
        gradients instead, which read identically without the blur. */
     <header
-      className={`sticky top-0 z-50 border-b transition-all duration-300 ${barBg} ${hideClass}`}
+      // CLS 2026-05-21 — explicit min-height locks the header height
+      // across all states (float ↔ scrolled ↔ themed). Without this,
+      // micro-differences in border/shadow rendering between the
+      // transparent and frosted variants could nudge `sticky` flow
+      // by 1-2px, which on a long page accumulates into measurable
+      // CLS. 64px mobile = py-3 (24) + max(h-10 logo, min-h-36 btn).
+      // 72px sm+ = py-3 (24) + h-12 logo.
+      className={`sticky top-0 z-50 min-h-[64px] sm:min-h-[72px] border-b transition-all duration-300 ${barBg} ${hideClass}`}
     >
       {/* Top-of-page gradient hair - only when transparent, to keep identity. */}
       {!scrolled ? (

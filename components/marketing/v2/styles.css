@@ -35,29 +35,38 @@
    drops the initial render workload on the homepage by ~40%.
 
    `contain-intrinsic-size` is a placeholder height so the
-   scrollbar doesn't jump when sections become visible. Numbers
-   are rough estimates of each section's natural height; they
-   don't have to be exact.
+   scrollbar doesn't jump when sections become visible.
 
    Hero is INTENTIONALLY excluded — it's the first thing the user
-   sees, so we want it laid out immediately. */
-.home-v2 .problem,
-.home-v2 .intimacy,
-.home-v2 .authority,
-.home-v2 .media,
-.home-v2 .media-press,
-.home-v2 .founder,
-.home-v2 .journey,
-.home-v2 .couples-games,
-.home-v2 .education,
-.home-v2 .for-whom,
-.home-v2 .adult-games,
-.home-v2 .journey-stages,
-.home-v2 .final,
-.home-v2 .faq{
-  content-visibility:auto;
-  contain-intrinsic-size:auto 800px;
-}
+   sees, so we want it laid out immediately.
+
+   ─── CLS 2026-05-21 ───────────────────────────────────────────
+   PSI flagged CLS=0.57 (target 0.10). The original blanket
+   `auto 800px` for all 14 sections was the main culprit: every
+   section reserved 800px, but real heights vary from ~600px (FAQ
+   collapsed) to ~1500px (Intimacy with 4 cards). When a section
+   scrolled in, it expanded from 800px to its real height — that
+   delta is layout shift, multiplied across all sections.
+
+   The fix: realistic per-section estimates, mobile-first. The
+   `auto` keyword means Chrome remembers the real height after
+   first measurement — so even imperfect estimates self-heal on
+   second visit. First visit is what we're tuning for.
+   ───────────────────────────────────────────────────────────── */
+.home-v2 .problem        { content-visibility:auto; contain-intrinsic-size:auto 900px; }
+.home-v2 .intimacy       { content-visibility:auto; contain-intrinsic-size:auto 1500px; }
+.home-v2 .authority      { content-visibility:auto; contain-intrinsic-size:auto 700px; }
+.home-v2 .media          { content-visibility:auto; contain-intrinsic-size:auto 650px; }
+.home-v2 .media-press    { content-visibility:auto; contain-intrinsic-size:auto 750px; }
+.home-v2 .founder        { content-visibility:auto; contain-intrinsic-size:auto 1100px; }
+.home-v2 .journey        { content-visibility:auto; contain-intrinsic-size:auto 950px; }
+.home-v2 .couples-games  { content-visibility:auto; contain-intrinsic-size:auto 1050px; }
+.home-v2 .education      { content-visibility:auto; contain-intrinsic-size:auto 800px; }
+.home-v2 .for-whom       { content-visibility:auto; contain-intrinsic-size:auto 1200px; }
+.home-v2 .adult-games    { content-visibility:auto; contain-intrinsic-size:auto 1100px; }
+.home-v2 .journey-stages { content-visibility:auto; contain-intrinsic-size:auto 1300px; }
+.home-v2 .final          { content-visibility:auto; contain-intrinsic-size:auto 600px; }
+.home-v2 .faq            { content-visibility:auto; contain-intrinsic-size:auto 1400px; }
 
 .home-v2 {
   /* Reset margins/padding for all v2 children */
@@ -490,7 +499,25 @@
   .hero .btn-ghost:hover{border-color:rgba(255,255,255,0.7);background:rgba(255,255,255,0.10)}
   .hero-meta{display:flex;align-items:center;gap:48px;padding-top:36px;border-top:1px solid rgba(255,255,255,0.15)}
   .hero-meta-item{display:flex;flex-direction:column;gap:6px}
-  .hero-meta-item .num{font-family:'Frank Ruhl Libre',serif;font-size:32px;font-weight:700;color:#fff;line-height:1}
+  /* CLS 2026-05-21 — Counter animates 0 → final value over 1.4s
+     and the digit-width varies per frame ("+1" → "+498" → "+500").
+     Without these, every animation frame reflows the .hero-meta row.
+     • font-variant-numeric: tabular-nums  →  fixed-width digits
+     • min-width: 3ch                      →  reserves space for final value
+     • display: inline-block + text-align  →  prevents the inner
+       motion.span (from framer-motion's useTransform) from shifting
+       the surrounding text. */
+  .hero-meta-item .num{
+    font-family:'Frank Ruhl Libre',serif;
+    font-size:32px;
+    font-weight:700;
+    color:#fff;
+    line-height:1;
+    font-variant-numeric:tabular-nums;
+    min-width:3ch;
+    display:inline-block;
+    text-align:start;
+  }
   /* Stat labels (זוגות פעילים / מומחים / דירוג) bumped 13→15px per
      Itzik 2026-05-07 — was uncomfortably small on both desktop and
      mobile. */

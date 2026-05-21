@@ -694,18 +694,14 @@ export function JourneyClient({
           F3 (#13) — dropped the opaque #070b18/85 backdrop because it
           painted a black strip over the page bg. The bar floats on
           the page bg now; backdrop-blur with no fill keeps it readable
-          against the questions sliding underneath. */}
-      <div className="sticky top-2 z-20 -mx-4 px-4 pb-1 sm:static sm:px-0">
+          against the questions sliding underneath.
+          2026-05-21 — page title "מסע הזוגיות שלכם" removed per Itzik.
+          Bumped pb-1 → pb-6 sm:pb-8 to restore breathing room between
+          the progress bar and the first question now that the header
+          slot is gone. */}
+      <div className="sticky top-2 z-20 -mx-4 px-4 pb-6 sm:static sm:px-0 sm:pb-8">
         <ProgressBar current={index} total={total} />
       </div>
-
-      <header className="flex flex-col gap-2 text-start">
-        <CmsText
-          cmsKey="journeyAssessment.client.title"
-          as="h1"
-          className="text-2xl font-bold text-white md:text-3xl"
-        />
-      </header>
 
       <AnimatePresence mode="wait">
         {interstitialIndex !== null ? (

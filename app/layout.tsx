@@ -90,11 +90,27 @@ export const metadata: Metadata = {
 // Frank_Ruhl_Libre is by far the bigger CLS contributor (headlines
 // are huge); Assistant gets the same treatment so body text doesn't
 // reflow either.
+// adjustFontFallback (2026-05-21) — when display:"optional" misses
+// the 100ms window, we commit to the system fallback. Without
+// matched metrics, fallback Arial/Times has slightly different
+// x-height + cap-height than Assistant / Frank Ruhl, which can
+// shift line heights by a few pixels across the page. next/font
+// auto-generates a @font-face fallback with size-adjust / ascent-
+// override / descent-override so the fallback occupies the same
+// vertical space as the web font. Net effect on CLS: small but
+// stacks with the other fixes shipped 2026-05-21.
+//
+// In Next 14.2 google-font API this is a boolean. Next picks the
+// correct fallback family per font category internally (Arial for
+// sans, Times New Roman for serif). adjustFontFallback defaults to
+// true in current Next versions but we set it EXPLICITLY so future
+// upgrades / refactors don't accidentally disable the metric match.
 const assistant = Assistant({
   subsets: ["hebrew", "latin"],
   weight: ["400", "600", "700"],
   variable: "--font-assistant",
   display: "optional",
+  adjustFontFallback: true,
 });
 
 const frankRuhl = Frank_Ruhl_Libre({
@@ -102,6 +118,7 @@ const frankRuhl = Frank_Ruhl_Libre({
   weight: ["400", "500", "700", "900"],
   variable: "--font-frank-ruhl",
   display: "optional",
+  adjustFontFallback: true,
 });
 
 // Preconnect to the Supabase domain used for images & realtime so the first

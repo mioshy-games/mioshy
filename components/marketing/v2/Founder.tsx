@@ -25,6 +25,14 @@ export function Founder() {
               height={750}
               className="founder-img"
               range={14}
+              // PERF 2026-05-21 — without `sizes`, next/image defaults to 100vw
+              // and the browser picks the largest srcset entry (w=1200). PSI
+              // 2026-05-21 flagged a 89KB waste — image displays at 372×464
+              // but served at 1154×1440. Breakpoints below match styles.css:
+              //   • mobile (≤640): .founder-image is full width minus 40px padding
+              //   • tablet (≤1100): max-width:480px capped + centered
+              //   • desktop: 480px (right column ~0.95fr of grid)
+              sizes="(max-width: 640px) calc(100vw - 40px), (max-width: 1100px) 480px, 480px"
             />
             <div className="founder-badge">
               <CmsText

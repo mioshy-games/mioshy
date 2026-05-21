@@ -93,13 +93,20 @@ export function QuestionStep({ question, locale, onSubmit, initial, busy }: Ques
           submit button below an open-text/multi-choice field is
           unmistakable on mobile (was getting lost). Full-width across
           all breakpoints because there's no good reason for it to be
-          half-empty on desktop either. */}
+          half-empty on desktop either.
+          2026-05-21 — bumped to the rose→plum gradient that the rest of
+          the assessment uses (interstitials, selected likert chips) so
+          the CTA reads as a primary action instead of disappearing into
+          the dark page bg. Explicit shadow + ring give it lift. */}
       {!isAutoAdvance ? (
         <Button
           onClick={submit}
           disabled={busy}
           size="lg"
-          className="min-h-[50px] w-full text-[18px] font-semibold"
+          className="min-h-[56px] w-full rounded-full text-[19px] font-bold text-white shadow-[0_18px_40px_-18px_rgba(184,60,77,0.85)] ring-1 ring-rose-300/30 hover:brightness-110 disabled:opacity-60"
+          style={{
+            background: "linear-gradient(135deg, #B83C4D 0%, #6C2E40 100%)",
+          }}
         >
           {busy ? (
             savingLabel

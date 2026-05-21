@@ -105,15 +105,21 @@ export function getDiagnosticDomainCount(): Record<Domain, number> {
 
 // --- Build-time assertion ---------------------------------------------------
 //
-// Locks in the current distribution. As of 2026-05-07 the flow is
-// 29 questions (down from 32 - q_kids_age, q_household_employment,
-// and q_work_field were removed from the family domain to reduce
-// questionnaire length; see B7.3 /journey/assessment overhaul).
+// Locks in the current distribution. As of 2026-05-21 the flow is
+// 26 questions. Recent trims (per Itzik 2026-05-21):
+//   - q18_shared_meaning_goals (family domain) removed
+//   - q23_time_together (family domain) removed — quality-time question
+//     was redundant with q17_passion_context / q19_rituals.
+//   - q27_commitment_willingness (null domain) removed — explicit
+//     "willing to invest 15-20 min/week?" question dropped to keep the
+//     end of the flow focused on the priority ranking.
+// Earlier trim (32→29 on 2026-05-07) removed q_kids_age,
+// q_household_employment, and q_work_field; see B7.3 /journey/assessment
+// overhaul.
 //
 // The breakdown remains uneven by design (Gottman's 4-Horsemen + repair
 // + influence + pso fill `communication` with 7 items). `family` now
-// has 4 items (kids count + 3 demographic items kept after the trim).
-// Other domains land at 3-5.
+// has 2 items (kids count + 1 demographic item). Other domains land at 3-5.
 //
 // If a future edit to questionnaire.json reshuffles the distribution,
 // this throws at module load so the mismatch surfaces in dev/build
@@ -123,9 +129,9 @@ const EXPECTED_DOMAIN_COUNTS: Record<Domain, number> = {
   intimacy: 3,
   emotional_connection: 3,
   friendship: 5,
-  family: 4,
+  family: 2,
 };
-const EXPECTED_NULL_COUNT = 7;
+const EXPECTED_NULL_COUNT = 6;
 
 (function assertDomainDistribution() {
   const actual = getDomainCount();

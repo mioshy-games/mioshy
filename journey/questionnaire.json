@@ -39,7 +39,7 @@
       ],
       "purpose": "Baseline Love Map - does the person actually know their partner's current inner life?",
       "insight": "If low: partner feels invisible. We open with Love Map week.",
-      "he": "בשבועיים האחרונים, עד כמה אני מרגיש/ה שאני באמת יודע/ת מה עובר על בן/בת הזוג שלי - המתחים, הקטנויות, מה מעסיק אותם באמת?",
+      "he": "בשבועיים האחרונים, עד כמה אני מודע/ת למה שעובר על בן/בת הזוג שלי - הן בדברים היומיומיים והן במה שמעסיק / מטריד אותם?",
       "en": "In the past two weeks, how much do I feel I truly know what my partner is going through - their stresses, small worries, what's really on their mind?"
     },
     {
@@ -55,7 +55,7 @@
       ],
       "purpose": "Fondness & Admiration snapshot - can the user still articulate what they love?",
       "insight": "If low + low Love Map: relationship is in early Negative Sentiment Override.",
-      "he": "כשאני חושב/ת על בן/בת הזוג שלי השבוע - עד כמה קל לי להיזכר בשלושה דברים שאני ממש מעריך/ה בהם?",
+      "he": "עד כמה קל לי להיזכר בשלושה דברים שאני מעריך/ה בבן/בת הזוג?",
       "en": "When I think of my partner this week - how easy is it for me to recall three things I genuinely admire about them?"
     },
     {
@@ -66,7 +66,7 @@
       "axes": [],
       "purpose": "Captures the respondent's gender label for audience-targeted coaching content (migration 044). Doesn't drive the diagnostic - option ids map directly to profiles.gender ('male' | 'female' | 'other').",
       "insight": "Persisted onto profiles.gender immediately if authed, or backfilled the moment the anon journey is claimed by a user. The audience filter on couple timelines is structural (couple_members.role), so this is purely the display label the expert sees.",
-      "he_prompt": "כדי שנוכל להתאים את התכנים האישיים שלך - מה המגדר שלך?",
+      "he_prompt": "כדי להתאים את התכנים האישיים עבורך - מה המגדר שלך?",
       "en_prompt": "So we can tailor content to you - what's your gender?",
       "options": [
         {
@@ -225,7 +225,7 @@
       ],
       "purpose": "Turn Toward: do small connection bids get responded to?",
       "insight": "The single strongest Gottman predictor of long-term stability.",
-      "he": "כשבן/בת הזוג שלי פונה אליי עם משהו קטן - משפט, צחוק, מחווה - באיזו תדירות אני באמת נותן/ת תשומת לב ולא דוחה את זה ל'אחר כך'?",
+      "he": "כשבן/בת הזוג שלי פונה אליי עם מחשבה, שיתוף של אירוע קטן או אחר - באיזו תדירות אני עוצר/ת את מה שאני עושה ומתמקד/ת בבן/בת הזוג שלי?",
       "en": "When my partner reaches out with something small - a comment, a laugh, a touch - how often do I actually give attention instead of putting it off to 'later'?"
     },
     {
@@ -271,7 +271,7 @@
         }
       ],
       "purpose": "Repair Attempts - can you de-escalate a tense moment?",
-      "he": "כשיש בינינו ריב או מתח - באיזו תדירות אחד מאיתנו מצליח להוריד את החום (בדיחה, הפסקה, התנצלות) ושזה באמת עובד?",
+      "he": "כשיש בינינו ריב או מתח - באיזו תדירות אני מצליח/ה להוריד את החום (בדיחה, הפסקה, התנצלות) ושזה באמת שובר את הלופ?",
       "en": "When there's an argument or tension - how often does one of us manage to take the heat down (joke, break, apology) and it actually works?"
     },
     {
@@ -287,7 +287,7 @@
       ],
       "purpose": "Four Horsemen - Criticism.",
       "insight": "A high score here flags the need for Week-5 conflict track.",
-      "he": "בוויכוחים שלנו, באיזו תדירות אני שומע/ת את עצמי או את בן/בת הזוג מתחילים משפטים ב'אתה תמיד...' או 'את אף פעם לא...'?",
+      "he": "בוויכוחים שלנו, באיזו תדירות עולים אצלנו משפטים כמו 'אתה תמיד...' או 'את אף פעם לא...'?",
       "en": "In our arguments, how often do I hear myself or my partner start sentences with 'you always…' or 'you never…'?"
     },
     {
@@ -317,7 +317,7 @@
         }
       ],
       "purpose": "Four Horsemen - Defensiveness.",
-      "he": "כשבן/בת הזוג מעלה משהו שהפריע להם - באיזו תדירות התגובה הראשונה שלי היא להסביר למה זה לא באשמתי, במקום לשמוע?",
+      "he": "כשבן/בת הזוג מעלה משהו שהפריע לו/ה - באיזו תדירות התגובה הראשונה שלי היא להסביר את עצמי, במקום להתעניין במה שהוא/היא חווה?",
       "en": "When my partner raises something that bothered them - how often is my first reaction to explain why it's not my fault, instead of listening?"
     },
     {
@@ -347,7 +347,7 @@
         }
       ],
       "purpose": "Passion - autonomy (Perel). Can you still see your partner as *other*?",
-      "he": "עד כמה בן/בת הזוג עדיין מפתיע/ה אותי - עדיין יש צד בהם שאני סקרן/ית לגביו ולא הכל צפוי?",
+      "he": "עד כמה אני עדיין סקרן/ית לגלות צדדים חדשים בבן/בת הזוג?",
       "en": "How much does my partner still surprise me - is there still a side of them I'm curious about, not fully predictable?"
     },
     {
@@ -362,7 +362,7 @@
         }
       ],
       "purpose": "Passion - anticipation. Is there something to look forward to with them?",
-      "he": "במהלך שבוע טיפוסי - עד כמה אני מוצא/ת את עצמי מחכה למשהו ספציפי שקורה בינינו?",
+      "he": "במהלך שבוע טיפוסי - עד כמה אני מוצא/ת את עצמי מחכה לרגע שאחזור לבן/בת הזוג?",
       "en": "In a typical week - how much do I find myself looking forward to something specific that happens between us?"
     },
     {
@@ -377,7 +377,7 @@
         }
       ],
       "purpose": "Passion - play. Do you still joke, tease, have non-goal-oriented fun?",
-      "he": "עד כמה יש בינינו הומור, התקנטויות קלות, וצחוקים משותפים בימים רגילים (לא רק באירועים מיוחדים)?",
+      "he": "בימים רגילים (לא רק באירועים מיוחדים) - עד כמה יש בינינו הומור משותף ובדיחות פנימיות?",
       "en": "How much humor, playful teasing, and shared laughter do we have on regular days (not just special occasions)?"
     },
     {
@@ -393,23 +393,8 @@
       ],
       "purpose": "Passion - context. Negative weight: high score = bad (logistics eats us).",
       "insight": "Inverted: 'almost always' = daily logistics dominate → low passion_context.",
-      "he": "כשאנחנו לבד בערב ללא ילדים/עבודה - באיזו תדירות השיחה עדיין מסתיימת בסופרמרקט, לו\"ז, או רשימות מטלות?",
+      "he": "כשיש לנו זמן רק לשנינו - באיזו תדירות השיחה עדיין מסתיימת בסופרמרקט, לו\"ז, או רשימות מטלות?",
       "en": "When we're alone in the evening with no kids/work - how often does the conversation still end up on groceries, schedules, or to-do lists?"
-    },
-    {
-      "id": "q18_shared_meaning_goals",
-      "category": "paid",
-      "domain": "family",
-      "type": "likert5",
-      "axes": [
-        {
-          "axis": "shared_meaning",
-          "weight": 1.0
-        }
-      ],
-      "purpose": "Shared Meaning - goals (Gottman Pillar 3).",
-      "he": "כשאני חושב/ת על החיים שאני רוצה בעוד 5 שנים - עד כמה הם תואמים למה שבן/בת הזוג רוצה?",
-      "en": "When I think about the life I want 5 years from now - how much does it line up with what my partner wants?"
     },
     {
       "id": "q19_rituals",
@@ -423,7 +408,7 @@
         }
       ],
       "purpose": "Shared Meaning - rituals of connection (Gottman Pillar 2).",
-      "he": "יש לנו רגע קבוע ביום או בשבוע שרק שייך לנו (קפה של בוקר, דייט קבוע, טקס ערב)?",
+      "he": "עד כמה יש לנו רגעים קבועים ביום או בשבוע שרק שייכים לנו (קפה של בוקר, דייט קבוע, טקס ערב)?",
       "en": "Do we have a regular moment in the day or week that belongs only to us (morning coffee, standing date, evening ritual)?"
     },
     {
@@ -438,7 +423,7 @@
       "options": [
         {
           "id": "knowing",
-          "he": "להרגיש שבאמת מכירים אחד את השני שוב",
+          "he": "להרגיש שמכירים אחד את השני באמת",
           "en": "Feeling we really know each other again",
           "scores": [
             {
@@ -471,7 +456,7 @@
         },
         {
           "id": "fights",
-          "he": "לריב פחות / להתאושש מהר יותר",
+          "he": "לריב פחות",
           "en": "Fighting less / recovering faster",
           "scores": [
             {
@@ -482,7 +467,7 @@
         },
         {
           "id": "passion",
-          "he": "לחזור להרגיש תשוקה ומשיכה",
+          "he": "להרגיש יותר תשוקה ומשיכה",
           "en": "Bringing back desire and attraction",
           "scores": [
             {
@@ -511,7 +496,7 @@
       "type": "reflection",
       "axes": [],
       "purpose": "Open reflection - surfaces the user's own framing (qualitative data for coach).",
-      "he_prompt": "באיזה רגע מהחודש האחרון הרגשת הכי קרוב/ה לבן/בת הזוג? תכתוב/י קצר, אפילו משפט אחד.",
+      "he_prompt": "באיזה רגע בחודש האחרון הרגשת הכי קרוב/ה לבן/בת הזוג? תכתוב/י קצר, אפילו משפט אחד.",
       "en_prompt": "In the past month, when did you feel closest to your partner? A short answer is enough - even one sentence.",
       "max_length": 600
     },
@@ -522,28 +507,9 @@
       "type": "reflection",
       "axes": [],
       "purpose": "Open reflection - friction point (coach input).",
-      "he_prompt": "ומה הרגע האחרון שבו הרגשת הכי רחוק/ה? (ללא האשמות, רק תיאור קצר)",
+      "he_prompt": "ומה הרגע בחודש האחרון שבו הרגשת הכי רחוק/ה? (ללא האשמות, רק תיאור קצר)",
       "en_prompt": "And when did you feel furthest away? (No blame - just a short description.)",
       "max_length": 600
-    },
-    {
-      "id": "q23_time_together",
-      "category": "paid",
-      "domain": "family",
-      "type": "likert5",
-      "axes": [
-        {
-          "axis": "shared_meaning",
-          "weight": 0.5
-        },
-        {
-          "axis": "passion_context",
-          "weight": 0.5
-        }
-      ],
-      "purpose": "Quality-time availability (context for recommendations).",
-      "he": "בשבוע טיפוסי, כמה זמן איכות באמת יש לנו לבד (בלי ילדים, בלי מסכים, בלי לו\"ז)?",
-      "en": "In a typical week, how much real quality time do we have alone (no kids, no screens, no schedule)?"
     },
     {
       "id": "q24_physical_closeness",
@@ -580,7 +546,7 @@
         }
       ],
       "purpose": "Expressed (not just felt) appreciation.",
-      "he": "באיזו תדירות אני אומר/ת לבן/בת הזוג משהו ספציפי שאני מעריך/ה (לא 'תודה' סתמי)?",
+      "he": "באיזו תדירות אני אומר/ת לבן/בת הזוג משהו ספציפי שאני מעריך/ה (למשל: 'אהבתי איך טיפלת בילד אתמול')?",
       "en": "How often do I tell my partner something specific I appreciate (not just a casual 'thanks')?"
     },
     {
@@ -599,27 +565,8 @@
         }
       ],
       "purpose": "Small-bid frequency from partner (mid-day reaching out).",
-      "he": "באיזו תדירות בן/בת הזוג פונה אליי באמצע היום בלי סיבה פרקטית - רק כדי להתחבר?",
+      "he": "באיזו תדירות אנחנו יוצרים קשר באמצע היום - רק כדי להתחבר?",
       "en": "How often does my partner reach out to me mid-day for no practical reason - just to connect?"
-    },
-    {
-      "id": "q27_commitment_willingness",
-      "category": "paid",
-      "domain": null,
-      "type": "likert5",
-      "axes": [
-        {
-          "axis": "shared_meaning",
-          "weight": 0.5
-        },
-        {
-          "axis": "influence",
-          "weight": 0.5
-        }
-      ],
-      "purpose": "Willingness to invest weekly time - predicts program engagement.",
-      "he": "עד כמה אני מוכן/ה להקדיש 15-20 דקות בשבוע לתרגיל זוגי קצר אם אדע שהוא מותאם אישית לנו?",
-      "en": "How willing am I to dedicate 15–20 minutes a week to a short relationship exercise if I know it's personalized for us?"
     },
     {
       "id": "q_priorities",

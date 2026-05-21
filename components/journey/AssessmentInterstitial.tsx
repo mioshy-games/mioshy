@@ -39,12 +39,10 @@ export interface InterstitialDef {
   step: number;
 }
 
-export const INTERSTITIALS: InterstitialDef[] = [
-  { atIndex: 5, step: 1 },
-  { atIndex: 12, step: 2 },
-  { atIndex: 19, step: 3 },
-  { atIndex: 26, step: 4 },
-];
+// Mid-flow reflection screens removed at Itzik's request (2026-05-21).
+// Keeping the component + helpers in place; emptying this array disables
+// every interstitial without touching the JourneyClient rendering logic.
+export const INTERSTITIALS: InterstitialDef[] = [];
 
 export const INTERSTITIAL_INDICES = INTERSTITIALS.map((i) => i.atIndex);
 
