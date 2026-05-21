@@ -2,6 +2,19 @@
 // Server-side Supabase query helpers for Between Us
 // Used by admin pages + public-facing pages
 // ============================================================
+//
+// 2026-05-20 — All public-page queries here are wrapped in
+// `React.cache()` so when multiple consumers within the same request
+// (e.g. /mioshy-sex's `generateMetadata` + its page component both
+// call `getBetweenUsSettings()`) we only round-trip to Supabase
+// ONCE per request, not N times. This shaved off ~3-4 redundant
+// Supabase RPCs per `/mioshy-sex` render — a meaningful contribution
+// to the 835ms server-response time Lighthouse measured.
+//
+// React.cache() de-duplicates by reference equality of the arguments.
+// Across requests it does nothing (each request gets its own cache).
+// So this is safe: the cache lifetime is one render, not cross-user.
+import { cache } from "react";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type {
   BetweenUsSettings,
@@ -15,20 +28,22 @@ import type {
 // ------------------------------------------------------------
 // Settings (single row)
 // ------------------------------------------------------------
-export async function getBetweenUsSettings(): Promise<BetweenUsSettings> {
-  const supabase = await createServerSupabaseClient();
-  const { data, error } = await supabase
-    .from("between_us_settings")
-    .select("*")
-    .eq("id", 1)
-    .maybeSingle();
+export const getBetweenUsSettings = cache(
+  async function getBetweenUsSettingsImpl(): Promise<BetweenUsSettings> {
+    const supabase = await createServerSupabaseClient();
+    const { data, error } = await supabase
+      .from("between_us_settings")
+      .select("*")
+      .eq("id", 1)
+      .maybeSingle();
 
-  if (error) throw new Error(error.message);
-  if (!data) {
-    throw new Error("between_us_settings singleton row missing - run migration 029");
-  }
-  return data as BetweenUsSettings;
-}
+    if (error) throw new Error(error.message);
+    if (!data) {
+      throw new Error("between_us_settings singleton row missing - run migration 029");
+    }
+    return data as BetweenUsSettings;
+  },
+);
 
 // ------------------------------------------------------------
 // Games
@@ -114,7 +129,8 @@ export interface GameCardData {
   tag_ids: string[];
 }
 
-export async function listActiveGameCards(): Promise<GameCardData[]> {
+export const listActiveGameCards = cache(
+  async function listActiveGameCardsImpl(): Promise<GameCardData[]> {
   const supabase = await createServerSupabaseClient();
   const { data: games, error: gamesErr } = await supabase
     .from("experience_games")
@@ -156,12 +172,14 @@ export async function listActiveGameCards(): Promise<GameCardData[]> {
     category_ids: byGameCat.get(game.id) ?? [],
     tag_ids: byGameTag.get(game.id) ?? [],
   }));
-}
+  },
+);
 
 // ------------------------------------------------------------
 // Categories
 // ------------------------------------------------------------
-export async function listCategories(
+export const listCategories = cache(
+  async function listCategoriesImpl(
   onlyActive = false,
 ): Promise<ExperienceGameCategory[]> {
   const supabase = await createServerSupabaseClient();
@@ -174,12 +192,14 @@ export async function listCategories(
   const { data, error } = await query;
   if (error) throw new Error(error.message);
   return (data ?? []) as ExperienceGameCategory[];
-}
+  },
+);
 
 // ------------------------------------------------------------
 // Tags
 // ------------------------------------------------------------
-export async function listTags(onlyActive = false): Promise<ExperienceGameTag[]> {
+export const listTags = cache(
+  async function listTagsImpl(onlyActive = false): Promise<ExperienceGameTag[]> {
   const supabase = await createServerSupabaseClient();
   let query = supabase
     .from("experience_game_tags")
@@ -189,7 +209,8 @@ export async function listTags(onlyActive = false): Promise<ExperienceGameTag[]>
   const { data, error } = await query;
   if (error) throw new Error(error.message);
   return (data ?? []) as ExperienceGameTag[];
-}
+  },
+);
 
 // ------------------------------------------------------------
 // Content (per-game)

@@ -1,5 +1,9 @@
 import { TruthOrDareClient } from "@/components/TruthOrDareClient";
-import { GamePageBackground } from "@/components/game/GamePageBackground";
+// 2026-05-20 — replaced GamePageBackground import with GameSurfaceShell,
+// which adds the WheelSpinContext on top so blob animations only run
+// while the wheel is actively spinning. See GameSurfaceShell.tsx and
+// WheelSpinContext.tsx for the rationale.
+import { GameSurfaceShell } from "@/components/game/GameSurfaceShell";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
 import type { GameRow, QuestionRow, WheelConfigRow } from "@/lib/types/database";
@@ -243,13 +247,13 @@ export default async function GameBySlugPage({
   }
 
   return (
-    <GamePageBackground gameSlug={g.slug} primaryColor={bgValue} bgSettings={gameSettings?.background} particlesSettings={gameSettings?.particles}>
+    <GameSurfaceShell gameSlug={g.slug} primaryColor={bgValue} bgSettings={gameSettings?.background} particlesSettings={gameSettings?.particles}>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
       />
       <TruthOrDareClient game={g} wheel={w} questions={qs} transparent gameSettings={gameSettings} />
-    </GamePageBackground>
+    </GameSurfaceShell>
   );
 }
 

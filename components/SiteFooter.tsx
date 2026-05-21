@@ -2,7 +2,7 @@
 
 import { useTranslations, useLocale } from "next-intl";
 import { Link, usePathname } from "@/navigation";
-import { Sparkles, Mail, Globe } from "lucide-react";
+import { Sparkles, Mail, Globe } from "@/components/icons/Icons";
 
 /**
  * Persist the user's explicit language choice as `NEXT_LOCALE` so the

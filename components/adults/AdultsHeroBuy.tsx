@@ -43,7 +43,7 @@ import {
   Lock,
   Play,
   Sparkles,
-} from "lucide-react";
+} from "@/components/icons/Icons";
 import { startAdultsSinglePurchase } from "@/app/actions/between-us-couple";
 import type { AdultsPricing } from "@/lib/adults/pricing";
 import { RedeemCodeButton } from "@/components/between-us/RedeemCodeButton";
@@ -309,18 +309,22 @@ export function AdultsHeroBuy({
 
   return (
     <div className="mt-8">
-      {/* Primary row: huge serif price + single buy CTA */}
-      <div className="flex flex-wrap items-end gap-x-6 gap-y-4">
+      {/* Primary stack — price on top, buy CTA below it, on every
+          breakpoint. 2026-05-20 per Itzik: the previous side-by-side
+          row felt cramped on desktop and broke awkwardly on mobile;
+          a clean vertical stack reads better at every size and gives
+          the CTA its own visual weight beneath the price reveal. */}
+      <div className="flex flex-col items-start gap-4">
         <div>
           <span
-            classN-me="block text-[12px] font-semibold uppercase tracking-[0.22em] text-rose-200/75"
+            className="block text-[15px] font-semibold uppercase tracking-[0.22em] text-rose-200/75"
           >
             {isHe
               ? "רכישה זוגית · לצמיתות · גישה לשני בני הזוג"
               : "Couple purchase · forever · access for both partners"}
           </span>
           <span
-            className="mt-1 block bg-gradient-to-br from-white via-rose-100 to-amber-200 bg-clip-text text-[56px] leading-none tracking-tight text-transparent sm:text-[64px]"
+            className="mt-[1.25rem] block bg-gradient-to-br from-white via-rose-100 to-amber-200 bg-clip-text text-[56px] leading-none tracking-tight text-transparent sm:text-[64px]"
             style={{
               fontFamily: "'Frank Ruhl Libre', serif",
               fontWeight: 700,
@@ -342,8 +346,8 @@ export function AdultsHeroBuy({
           />
           <span className="relative z-10 inline-flex items-center gap-2">
             {pending ? (
-              <>-
-                <Loader2 className="h-5 w-5 animate-spin" />-
+              <>
+                <Loader2 className="h-5 w-5 animate-spin" />
                 {isHe ? "מעבדים…" : "Processing…"}
               </>
             ) : (
@@ -372,7 +376,7 @@ export function AdultsHeroBuy({
           to the game") because it reinforces value and removes
           purchase anxiety right at the click. */}
       {loggedIn ? (
-        <p className="mt-4 text-[18px] leading-[1.5] text-white/70 sm:text-[13px] sm:leading-snug sm:text-white/55">
+        <p className="mt-4 text-[18px] leading-[1.5] text-white/70 sm:leading-snug sm:text-white/55">
           {isHe
             ? "תשלום חד-פעמי · נשאר שלכם לצמיתות · מועברים מיד אל המשחק."
             : "One-time payment · yours forever · taken straight to the game."}
@@ -393,8 +397,8 @@ export function AdultsHeroBuy({
           a true secondary action - rounded-full outline, no fill - and
           ~18px text so it pairs with the reassurance copy above. Desktop
           keeps the inline single-line treatment that was here before. */}
-      <div className="mt-5 flex flex-col items-start gap-2 sm:mt-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3 sm:gap-y-1">
-        <span className="text-[18px] text-white/70 sm:text-[13px] sm:text-white/55">
+      <div className="mt-5 flex flex-col items-start gap-2 sm:mt-[1.9rem] sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3 sm:gap-y-1">
+        <span className="text-[18px] text-white/70 sm:text-white/55">
           {isHe ? "קיבלת הזמנה למשחק?" : "Got an invite?"}
         </span>
         <RedeemCodeButton
@@ -403,7 +407,7 @@ export function AdultsHeroBuy({
           label={isHe ? "הזינו את הקוד" : "Enter your code"}
           redirectTo={playPath}
           authNext={gamePath}
-          className="rounded-full border border-rose-200/45 bg-transparent px-5 py-2 text-[18px] text-rose-200 transition hover:border-rose-200/85 hover:bg-rose-200/5 hover:text-white sm:px-4 sm:py-1.5 sm:text-[13px]"
+          className="rounded-full border border-rose-200/45 bg-transparent px-5 py-2 text-[18px] text-rose-200 transition hover:border-rose-200/85 hover:bg-rose-200/5 hover:text-white sm:px-4 sm:py-1.5"
         />
       </div>
 
@@ -435,14 +439,14 @@ export function AdultsHeroBuy({
         </p>
       ) : null}
 
+      {/* 2026-05-20 — mio-adults-buy-shift animation removed.
+          Same reasoning as the other two background-position
+          animations on /mioshy-sex: non-composited, forces paint
+          per frame. Static gradient now. */}
       <style
         dangerouslySetInnerHTML={{
           __html: `
-            @keyframes mio-adults-buy-shift {
-              0%, 100% { background-position: 0% 50%; }
-              50%      { background-position: 100% 50%; }
-            }
-            .mio-adults-buy-shift { animation: mio-adults-buy-shift 7s ease-in-out infinite; }
+            .mio-adults-buy-shift { /* static, animation removed */ }
           `,
         }}
       />

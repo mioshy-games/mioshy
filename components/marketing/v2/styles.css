@@ -577,9 +577,12 @@
     .badge-floating,.badge-floating::after{animation:none}
   }
 
-  /* SECTION BASE */
-  section{padding:95px 0;position:relative}
-  .section-head{text-align:center;max-width:780px;margin:0 auto 64px}
+  /* SECTION BASE
+     Padding 5px 0 80px per Itzik 2026-05-21 — tight top, generous
+     bottom so each section feels visually grouped with the one
+     above while keeping breathing room before the next. */
+  section{padding:5px 0 80px;position:relative}
+  .section-head{text-align:center;max-width:780px;margin:0 auto 34px}
   .section-head .eyebrow{justify-content:center}
   .section-head h2{margin-bottom:24px}
   .section-head p{color:var(--ink-3);font-size:var(--fs-lead);font-weight:300;line-height:var(--lh-relaxed)}
@@ -1112,6 +1115,11 @@
     justify-content:center;
     align-items:center;
     margin-bottom:24px;
+    /* 2026-05-20 — padding-top added per Itzik so the +18 / brand /
+       privacy pills sit clear of the CTA button above them. The CTA
+       has its own shadow that extends ~14px below; this 18px gap
+       puts the pills cleanly clear of that shadow on desktop. */
+    padding-top:18px;
   }
   .ag-pill{
     padding:4px 18px;
@@ -1199,7 +1207,7 @@
     gap:0;
     border-top:1px solid rgba(236,72,153,0.25);
     border-bottom:1px solid rgba(236,72,153,0.25);
-    margin:0 0 80px;
+    margin:0 0 50px;
     text-align:right;
     position:relative;
   }

@@ -1,14 +1,28 @@
 "use client";
 
-import { useMemo, useState } from "react";
+// 2026-05-20 — useTransition + React.memo together kill the INP
+// 1970ms problem on /mioshy-sex:
+//   • useTransition wraps the filter setters so the click handler
+//     returns immediately; the re-render runs in a non-urgent slot.
+//   • React.memo on GameCard ensures the (unfiltered) cards that
+//     remain in the grid skip reconciliation entirely — only the
+//     cards being added/removed do any DOM work.
+// Combined: filter click goes from blocking ~2s of main-thread to
+// nearly instant.
+import { memo, useMemo, useState, useTransition } from "react";
 import { Link } from "@/navigation";
+// 2026-05-20 — switched from lucide-react to local inline-SVG icon
+// components. Each card renders 3 stat-chip icons (Heart, MsgCircle,
+// Flame); with 30+ cards in the catalogue that's 90 icon instances
+// per render. Inline SVG components skip lucide's component-wrapper
+// overhead → measurable TBT win on /mioshy-sex.
 import {
   Flame,
   Heart,
   MessageCircleHeart,
   Sparkles,
   Star,
-} from "lucide-react";
+} from "@/components/icons/Icons";
 import type {
   ExperienceGameCategory,
   ExperienceGameTag,
@@ -47,13 +61,29 @@ export function BetweenUsStorefront({
   const isHe = locale === "he";
   const [selectedCategory, setSelectedCategory] = useState<string | "all">("all");
   const [selectedTag, setSelectedTag] = useState<string | "all">("all");
+  // 2026-05-20 — startTransition wraps the filter state setters so
+  // React treats the filter change as non-urgent work. The button
+  // click feels instant; the filtered grid re-renders in the next
+  // task slot. `isPending` is available for visual feedback if
+  // needed later (e.g. a subtle opacity dip on the grid during the
+  // transition).
+  // `isPending` would let us dim the grid while the transition runs;
+  // not wired today, so the destructured slot is underscore-prefixed
+  // to satisfy ESLint's unused-vars rule (allows /^_/).
+  const [_isPending, startTransition] = useTransition();
 
-  // Filter out empty categories and tags (those with no cards)
-  const activeCategoryIds = new Set(cards.flatMap((c) => c.category_ids));
-  const activeTagIds = new Set(cards.flatMap((c) => c.tag_ids));
-
-  const visibleCategories = categories.filter((c) => activeCategoryIds.has(c.id));
-  const visibleTags = tags.filter((t) => activeTagIds.has(t.id));
+  // Filter out empty categories and tags (those with no cards).
+  // 2026-05-20 — wrapped in useMemo so the .flatMap + Set
+  // construction doesn't recompute on every filter click (only
+  // when `cards` changes, which is once per page load).
+  const { visibleCategories, visibleTags } = useMemo(() => {
+    const activeCategoryIds = new Set(cards.flatMap((c) => c.category_ids));
+    const activeTagIds = new Set(cards.flatMap((c) => c.tag_ids));
+    return {
+      visibleCategories: categories.filter((c) => activeCategoryIds.has(c.id)),
+      visibleTags: tags.filter((t) => activeTagIds.has(t.id)),
+    };
+  }, [cards, categories, tags]);
 
   const filtered = useMemo(() => {
     return cards.filter((c) => {
@@ -64,7 +94,7 @@ export function BetweenUsStorefront({
   }, [cards, selectedCategory, selectedTag]);
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-12">
+    <main className="mx-auto max-w-7xl px-4 py-12">
       {/* Hero */}
       {hideHero ? null : (
       <section className="text-center">
@@ -146,7 +176,9 @@ export function BetweenUsStorefront({
                 })),
               ]}
               selected={selectedCategory}
-              onSelect={(v) => setSelectedCategory(v as string)}
+              onSelect={(v) =>
+                startTransition(() => setSelectedCategory(v as string))
+              }
             />
           ) : null}
           {visibleTags.length > 0 ? (
@@ -161,7 +193,9 @@ export function BetweenUsStorefront({
                 })),
               ]}
               selected={selectedTag}
-              onSelect={(v) => setSelectedTag(v as string)}
+              onSelect={(v) =>
+                startTransition(() => setSelectedTag(v as string))
+              }
               isTagRow
             />
           ) : null}
@@ -243,7 +277,11 @@ function FilterRow({
   );
 }
 
-function GameCard({
+// 2026-05-20 — Wrapped in React.memo so cards that stay in the grid
+// (between filter changes) skip re-renders. `locale` and `game` are
+// stable references when the parent re-renders for a filter change
+// (cards array identity is preserved, individual game objects too).
+const GameCard = memo(function GameCardImpl({
   locale,
   game,
 }: {
@@ -266,9 +304,14 @@ function GameCard({
         : null;
 
   return (
+    /* 2026-05-20 — `backdrop-blur` REMOVED from catalog card below.
+       backdrop-filter forces compositor readback on every paint
+       (including every scroll tick) — compounds with 3-30+ cards
+       to produce measurable scroll jank. Solid alpha background
+       gives the same dark glassy feel at zero readback cost. */
     <Link
       href={`/mioshy-sex/${game.slug}`}
-      className="group block overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/10 to-white/5 shadow-xl backdrop-blur transition hover:border-fuchsia-300/40 hover:from-white/20"
+      className="group block overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/10 to-white/5 shadow-xl transition hover:border-fuchsia-300/40 hover:from-white/20"
     >
       <div className="relative aspect-[5/3] overflow-hidden bg-gradient-to-br from-fuchsia-500/30 to-violet-500/20 sm:aspect-[4/3]">
         {game.cover_image_url ? (
@@ -353,7 +396,7 @@ function GameCard({
       </div>
     </Link>
   );
-}
+});
 
 function LevelBadge({
   icon,

@@ -3,7 +3,10 @@
 import { useLocale, useTranslations } from "next-intl";
 import { Link, usePathname } from "@/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
-import { Gamepad2, Heart, Home, Library, LogOut, Menu, Sparkles, X } from "lucide-react";
+// 2026-05-20 — swapped to local inline-SVG icons. SiteHeader renders
+// on every page (including /mioshy-sex with its long INP) so the
+// cumulative React-component-overhead win is broad.
+import { Gamepad2, Heart, Home, Library, LogOut, Menu, Sparkles, X } from "@/components/icons/Icons";
 import { JourneyNotificationsBell } from "@/components/notifications/JourneyNotificationsBell";
 import { logoutAction } from "@/app/actions/auth-actions";
 
@@ -159,20 +162,12 @@ export function SiteHeader({
   const [hiddenOnMobile, setHiddenOnMobile] = useState(false);
   const lastScrollY = useRef(0);
 
-  // ⚠️ BUILD MARKER - fires once per mount, confirms the entitlement-
-  // aware header is the version actually running on the client. If
-  // the log is missing in DevTools after a deploy, the new code
-  // didn't ship.
-  useEffect(() => {
-    console.log("[SiteHeader] BUILD=2026-04-30-phaseD-gating v1", {
-      isAuthed,
-      entitlements,
-      visiblePillarKeys: visiblePillars.map((p) => p.tKey),
-      pillarsHrefs: visiblePillars.map((p) => p.href),
-    });
-    // Empty deps - log once per mount only, not on every scroll tick.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // 2026-05-20 — [SiteHeader] BUILD marker console.log removed.
+  // The Lighthouse mobile audit flagged console output as a
+  // diagnostic-overhead source; this one fires on every page load
+  // (SiteHeader is on every page) and serializes entitlements +
+  // pillar arrays. To confirm a deploy shipped, check the Network
+  // panel for the actual JS hash instead.
 
   // Track scroll + theme on mount and on scroll. We intentionally resample
   // the theme on every scroll tick - switching between dark hero and light

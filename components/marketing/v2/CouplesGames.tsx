@@ -16,14 +16,16 @@ export function CouplesGames() {
         <div className="cg-grid">
           <div className="cg-text">
             <CmsText cmsKey="homeV2.couplesGames.eyebrow" as="div" className="eyebrow" />
+            {/* 2026-05-20 — `headlineMark` ("הטריפו") + `headlinePart2`
+                (" את המדינה.") removed from the headline per Itzik.
+                The CMS keys are NOT deleted from messages/*.json or
+                cms_texts, so admins can re-add them later by pasting
+                the original JSX back. Only `headlinePart1` renders
+                now — if the remaining text reads incomplete, update
+                `homeV2.couplesGames.headlinePart1` to a full
+                stand-alone sentence via the CMS admin. */}
             <h2>
               <CmsText cmsKey="homeV2.couplesGames.headlinePart1" />
-              <br />
-              <CmsText
-                cmsKey="homeV2.couplesGames.headlineMark"
-                className="text-mark"
-              />
-              <CmsText cmsKey="homeV2.couplesGames.headlinePart2" />
             </h2>
             <CmsText cmsKey="homeV2.couplesGames.lead" as="p" className="lead" />
 

@@ -261,43 +261,12 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
     return () => unsub();
   }, [rotation]);
 
-  // ── DIAG 2026-05-05 ─────────────────────────────────────────────────────
-  // Confirm what props arrived inside the production Wheel. If these
-  // values match what TruthOrDareClient/DIAG logged, the data pipeline is
-  // intact and any visual issue is purely in this component's math/CSS.
-  // Look for [Wheel/DIAG].
-  useEffect(() => {
-    console.log("[Wheel/DIAG] BUILD=2026-05-05-wheel-trace v1", {
-      received_labelRadiusFraction:    labelRadiusFraction,
-      received_labelOrientation:       labelOrientation,
-      received_labelFontSizePx:        labelFontSizePx,
-      received_innerCircle:            innerCircle,
-      received_innerCircleColor:       innerCircleColor,
-      received_pointerColor:           pointerColor,
-      received_pointerOffsetY:         pointerOffsetY,
-      received_pointerSvg_present:     !!pointerSvg,
-      received_pointerSvgWidth:        pointerSvgWidth,
-      received_pointerSvgHeight:       pointerSvgHeight,
-      received_wheelSizeRem:           wheelSizeRem,
-      received_wheelSizeRemMax:        wheelSizeRemMax,
-      received_viewportBudgetPx:       viewportBudgetPx,
-      received_markerConfig:           markerConfig,
-      received_optionsCount:           options.length,
-      // Computed values that determine visible label position:
-      computed_isRadial:               labelOrientation === "radial",
-      computed_labelRadius_radial:     140 * (1 - labelRadiusFraction),  // r=140 in radial mode
-      computed_labelRadius_tangential: 140 * labelRadiusFraction,        // r=140 in tangential mode
-      computed_innerCircleRadius:      40,
-      // If radial AND labelRadius_radial < innerCircleRadius (=40),
-      // labels render INSIDE the hub and look "squashed".
-      isLabelInsideHub: labelOrientation === "radial" && (140 * (1 - labelRadiusFraction)) < 40,
-    });
-  }, [
-    labelRadiusFraction, labelOrientation, labelFontSizePx,
-    innerCircle, innerCircleColor, pointerColor, pointerOffsetY,
-    pointerSvg, pointerSvgWidth, pointerSvgHeight,
-    wheelSizeRem, wheelSizeRemMax, viewportBudgetPx, markerConfig, options.length,
-  ]);
+  // 2026-05-20 — [Wheel/DIAG] diagnostic useEffect removed. Was
+  // firing on every prop change (and every Wheel re-render in
+  // /games where it mounts inside the LiveDemoHero), logging a
+  // large object and triggering main-thread work. Wheel pipeline
+  // is stable; if a future regression needs debug, wrap a
+  // re-added log in `if (process.env.NODE_ENV !== 'production')`.
 
   const segmentAngle = 360 / Math.max(options.length, 1);
 

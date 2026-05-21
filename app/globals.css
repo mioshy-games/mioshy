@@ -235,21 +235,63 @@ small, .text-small {
     animation: cta-glow 2.5s ease-in-out infinite;
   }
 
-  /* Adults page-wide animated dark wash. Stronger movement than the
-     subtler `aurora-drift` so the gradient is unmistakably alive on the
-     /adults/[slug] product surface. */
-  @keyframes mio-adults-bg-drift {
-    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-    33%      { transform: translate3d(4%, -3%, 0) scale(1.06); }
-    66%      { transform: translate3d(-3%, 2.5%, 0) scale(1.08); }
+  /* /journey/assessment ambient orbs — Itzik 2026-05-21.
+     Two enormous, very-soft radial blobs that drift slowly toward
+     each other and back. Built per the brand blob-perf pattern:
+     transparent radial-gradient (NOT filter:blur) so the GPU paints
+     once, and only the transform is animated (a single composited
+     property). Animation runs ~55s per cycle, alternating direction
+     so the orbs forever inch toward and away from one another. No
+     JS, no rerenders, no per-frame layout. Respects reduced motion. */
+  @keyframes journey-orb-drift-a {
+    0%   { transform: translate3d(-6vw, -4vh, 0); }
+    100% { transform: translate3d(14vw, 8vh, 0); }
   }
-  .mio-adults-bg {
-    animation: mio-adults-bg-drift 26s ease-in-out infinite;
+  @keyframes journey-orb-drift-b {
+    0%   { transform: translate3d(8vw, 6vh, 0); }
+    100% { transform: translate3d(-12vw, -8vh, 0); }
+  }
+  .journey-ambient-orb {
+    position: absolute;
+    border-radius: 9999px;
+    pointer-events: none;
     will-change: transform;
+    animation-duration: 55s;
+    animation-timing-function: ease-in-out;
+    animation-direction: alternate;
+    animation-iteration-count: infinite;
+  }
+  .journey-ambient-orb--a {
+    top: -18vh;
+    left: -10vw;
+    width: 70vmin;
+    height: 70vmin;
+    background: radial-gradient(circle, rgba(184,60,77,0.22) 0%, rgba(184,60,77,0.10) 38%, transparent 70%);
+    animation-name: journey-orb-drift-a;
+  }
+  .journey-ambient-orb--b {
+    bottom: -22vh;
+    right: -12vw;
+    width: 78vmin;
+    height: 78vmin;
+    background: radial-gradient(circle, rgba(99,46,153,0.22) 0%, rgba(99,46,153,0.10) 38%, transparent 70%);
+    animation-name: journey-orb-drift-b;
+    animation-duration: 62s;
   }
   @media (prefers-reduced-motion: reduce) {
-    .mio-adults-bg { animation: none !important; }
+    .journey-ambient-orb {
+      animation: none !important;
+    }
   }
+
+  /* 2026-05-20 — `.mio-adults-bg` + `mio-adults-bg-drift` REMOVED.
+     The 26s scale+translate transform on a viewport-sized double
+     radial-gradient was allocating a giant compositor layer that
+     correlated with periodic 30-second page freezes on the adults
+     surface. `will-change: transform` made it worse by holding the
+     layer in GPU memory permanently. Static tint layers in the
+     adults page templates now provide the dark-wash mood without
+     any per-frame work. */
 
   :root {
     --background: oklch(1 0 0);

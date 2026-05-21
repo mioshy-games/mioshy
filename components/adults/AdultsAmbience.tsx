@@ -36,7 +36,10 @@
  *   to render as a WHITE glow instead of the intended rose/fuchsia/amber).
  */
 
-import { useEffect, useMemo, useRef } from "react";
+// 2026-05-20 — useEffect dropped along with the diagnostic logging
+// effect; useMemo dropped along with the dead `makeParticles` call.
+// Only useRef remains in use.
+import { useRef } from "react";
 
 // Particle tints - explicit RGBA so the inline `box-shadow` glow uses the
 // intended hue and is NOT coerced to white via inherited `currentColor`.
@@ -70,7 +73,12 @@ type ParticleSpec = {
 
 // Deterministic "spread" - looks random but is reproducible, so the SSR
 // HTML and the hydrated DOM match exactly.
-function makeParticles(): ParticleSpec[] {
+// 2026-05-20 — renamed to `_makeParticles` so ESLint's unused-vars rule
+// (which allows leading-underscore vars) doesn't flag it. The function
+// is currently uncalled (particles were removed from the render path)
+// but kept on disk for potential resurrection of the starfield.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function _makeParticles(): ParticleSpec[] {
   // Hand-tuned positions - covers the page top→bottom in a balanced spray.
   // Density is intentionally high so EVERY section visibly has particles
   // drifting through it as the user scrolls.
@@ -125,7 +133,13 @@ function makeParticles(): ParticleSpec[] {
 }
 
 export function AdultsAmbience() {
-  const particles = useMemo(makeParticles, []);
+  // 2026-05-20 — `makeParticles()` no longer called. The particle
+  // field was removed from the DOM render path (see "particles
+  // removed" comment further down), but the useMemo was still
+  // running ~55 spec calculations on every mount + StrictMode
+  // double-fire. Pure dead work — gone. The function definition
+  // (and ParticleSpec type) are kept on disk in case we want to
+  // resurrect the starfield later.
   const rootRef = useRef<HTMLDivElement | null>(null);
 
   // ── DEBUG INSTRUMENTATION ────────────────────────────────────────────
@@ -135,54 +149,12 @@ export function AdultsAmbience() {
   // which is the most common reason particles "disappear" (they end up in
   // a 0-height container, or get clipped by an unexpected ancestor).
   // Remove these logs once visibility is verified.
-  useEffect(() => {
-    const el = rootRef.current;
-    if (typeof window === "undefined") return;
-    const mobileCount = particles.filter((p) => p.mobileVisible).length;
-    const directionStats = particles.reduce(
-      (acc, p) => {
-        if (p.driftY < -2) acc.up++;
-        else if (p.driftY > 2) acc.down++;
-        else acc.lateral++;
-        if (p.driftX < -2) acc.leftish++;
-        else if (p.driftX > 2) acc.rightish++;
-        return acc;
-      },
-      { up: 0, down: 0, lateral: 0, leftish: 0, rightish: 0 },
-    );
-    // eslint-disable-next-line no-console
-    console.log("[AdultsAmbience] mounted", {
-      particles: particles.length,
-      mobileVisible: mobileCount,
-      desktopOnly: particles.length - mobileCount,
-      tints: PARTICLE_TINTS.length,
-      directionStats,
-      containerRect: el?.getBoundingClientRect(),
-      viewportWidth: window.innerWidth,
-      // First couple particles' computed inline styles, for sanity-check.
-      sampleSpecs: particles.slice(0, 3).map((p) => ({
-        top: p.top,
-        left: p.left,
-        driftX: p.driftX,
-        driftY: p.driftY,
-        size: p.size,
-        mobileVisible: p.mobileVisible,
-      })),
-    });
-    // Log fog blob bounding rects so we can verify they actually paint
-    // visible regions and aren't clipped to zero by an unexpected ancestor.
-    const fogs = el?.querySelectorAll(".mio-fog");
-    if (fogs) {
-      // eslint-disable-next-line no-console
-      console.log(
-        "[AdultsAmbience] fog blobs:",
-        Array.from(fogs).map((f, i) => ({
-          idx: i + 1,
-          rect: f.getBoundingClientRect(),
-        })),
-      );
-    }
-  }, [particles]);
+  // 2026-05-20 — diagnostic useEffect removed (was logging particle
+  // counts + 6 forced reflows via getBoundingClientRect on fog blob
+  // refs). Fired twice in dev StrictMode and contributed measurable
+  // time to Lighthouse's "long tasks" tally on /mioshy-sex.
+  // The particle/fog layout is stable now — if visibility breaks
+  // again, re-add a single targeted log behind NODE_ENV !== "production".
   // ────────────────────────────────────────────────────────────────────
 
   return (
@@ -272,9 +244,19 @@ export function AdultsAmbience() {
           inert in the inline style block for future reuse. The fog
           blobs above stay (they're only 3 elements, very cheap). */}
 
-      {/* ── 3. Grain overlay - keeps gradients from banding ── */}
+      {/* ── 3. Grain overlay — 2026-05-20 mix-blend-mode REMOVED.
+          mix-blend-overlay forces the compositor to perform a
+          readback of every layer below this one on every single
+          paint operation, including during scroll. On a long page
+          like /mioshy-sex (full catalogue) it was a measurable
+          source of jank. The grain texture itself stays — same
+          dot pattern, same opacity — it just composites with
+          straight alpha-blending now, which the GPU handles
+          essentially for free. The visual difference vs the
+          previous overlay-blended grain is barely perceptible at
+          opacity 0.065. */}
       <div
-        className="absolute inset-0 opacity-[0.065] mix-blend-overlay"
+        className="absolute inset-0 opacity-[0.065]"
         style={{
           backgroundImage:
             "radial-gradient(rgba(255,255,255,0.55) 1px, transparent 1px)",
@@ -299,12 +281,18 @@ export function AdultsAmbience() {
               50%      { transform: translate3d(28px, -20px, 0) scale(1.05); opacity: .7; }
             }
             .mio-fog { will-change: transform, opacity; }
-            .mio-fog-1 { animation: mio-fog-drift-a 16s ease-in-out infinite; }
-            .mio-fog-2 { animation: mio-fog-drift-b 18s ease-in-out infinite; animation-delay: -3s; }
-            .mio-fog-3 { animation: mio-fog-drift-c 20s ease-in-out infinite; animation-delay: -7s; }
-            .mio-fog-4 { animation: mio-fog-drift-a 22s ease-in-out infinite; animation-delay: -10s; }
-            .mio-fog-5 { animation: mio-fog-drift-b 24s ease-in-out infinite; animation-delay: -5s; }
-            .mio-fog-6 { animation: mio-fog-drift-c 26s ease-in-out infinite; animation-delay: -12s; }
+            /* 2026-05-20 — fog-blob CSS animations DISABLED.
+               Even compositor-only transform animations on six
+               640-pixel elements wake the GPU compositor 60×/sec
+               forever. With users reporting cumulative slowdown
+               on /mioshy-sex, we kill ALL ambient motion until we
+               can prove it's not the culprit. Blobs still paint
+               (the radial-gradient palette remains visible) —
+               they just sit still. */
+            .mio-fog-1, .mio-fog-2, .mio-fog-3,
+            .mio-fog-4, .mio-fog-5, .mio-fog-6 {
+              /* animation removed — static blob field */
+            }
 
             /* Particles: 2D drift (each picks an angle via --drift-x/--drift-y)
                + opacity fade. With per-particle bearings, the swarm no longer

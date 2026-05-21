@@ -2,7 +2,7 @@
 
 import type { JSX } from "react";
 import { useCmsText } from "@/hooks/useCmsText";
-import { normalizeRichText } from "@/lib/cms/render";
+import { normalizeRichText, normalizePlainText } from "@/lib/cms/render";
 
 /**
  * Universal renderer for CMS-managed strings.
@@ -138,9 +138,24 @@ export function CmsText({
     );
   }
 
+  // 2026-05-20 — PLAIN-mode rendering now honours newlines from the
+  // CMS editor. Two changes vs the old plain branch:
+  //   1. The string is run through `normalizePlainText` to collapse
+  //      3+ consecutive newlines → 2, trim outer whitespace, etc.
+  //      Original is preserved in the DB; we clean only at render.
+  //   2. `whitespace-pre-line` Tailwind class is appended so the
+  //      browser treats `\n` as a visible line break (default
+  //      `white-space: normal` collapses them to single spaces).
+  //
+  // Net result: admin hits Enter in the plain-text editor → blank
+  // line appears in the UI. Without rich mode, without `<br>`.
+  const normalizedPlain = normalizePlainText(text);
+  const plainClassName = finalClassName
+    ? `${finalClassName} whitespace-pre-line`
+    : "whitespace-pre-line";
   return (
-    <Element className={finalClassName} style={mergedStyle}>
-      {text}
+    <Element className={plainClassName} style={mergedStyle}>
+      {normalizedPlain}
     </Element>
   );
 }

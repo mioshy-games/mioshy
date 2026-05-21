@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/navigation";
-import { Gamepad2, Sparkles, Heart } from "lucide-react";
+import { Gamepad2, Sparkles, Heart } from "@/components/icons/Icons";
 
 /**
  * MobileServicesBar
@@ -125,52 +125,18 @@ export function MobileServicesBar() {
     if (typeof window === "undefined") return;
     const vv = window.visualViewport;
     const nav = navRef.current;
-    if (!vv || !nav) {
-      if (process.env.NODE_ENV !== "production") {
-        // eslint-disable-next-line no-console
-        console.log("[mobile-bar] visualViewport API unavailable — falling back to fixed positioning", {
-          hasVV: !!vv,
-          hasNav: !!nav,
-        });
-      }
-      return;
-    }
+    if (!vv || !nav) return;
 
-    let lastLog = 0;
+    // 2026-05-20 — diagnostic console.log removed. Was throttled to
+    // 200ms but the visualViewport resize event still fires on
+    // every scroll tick on iOS Safari (URL-bar show/hide), so the
+    // log appeared 50+ times in a single page load and showed up
+    // as a measurable main-thread drag in Lighthouse runs.
     function update() {
       if (!vv || !nav) return;
-      // Distance from the bottom of the layout viewport to the bottom
-      // of the visual viewport. Positive when the visual viewport sits
-      // higher on screen than the layout viewport's bottom edge — e.g.
-      // when the URL bar is shown and pushes the visual viewport up.
       const bottomGap = window.innerHeight - (vv.height + vv.offsetTop);
-      // Negative translateY pulls the bar UP into the visual viewport.
-      // Clamp at 0 — we never want to push the bar DOWN past the
-      // layout viewport (would hide it under the URL bar).
       const translate = -Math.max(0, bottomGap);
       nav.style.setProperty("--mobile-bar-vv-offset", `${translate}px`);
-
-      // Throttled diagnostics — at most every 200ms so the console
-      // doesn't drown during a scroll. Logs every resize regardless.
-      if (process.env.NODE_ENV !== "production") {
-        const now = Date.now();
-        if (now - lastLog > 200) {
-          lastLog = now;
-          const rect = nav.getBoundingClientRect();
-          // eslint-disable-next-line no-console
-          console.log("[mobile-bar]", {
-            innerH: window.innerHeight,
-            vvH: vv.height,
-            vvTop: vv.offsetTop,
-            bottomGap,
-            applied: translate,
-            barTop: Math.round(rect.top),
-            barBottom: Math.round(rect.bottom),
-            visibleGapPx: Math.round(window.innerHeight - rect.bottom),
-            scrollY: Math.round(window.scrollY),
-          });
-        }
-      }
     }
 
     update();

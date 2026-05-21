@@ -23,6 +23,12 @@ import {
 import { RegistrationModal } from "@/components/RegistrationModal";
 import { SubscriptionModal } from "@/components/SubscriptionModal";
 import { stopSpinSound } from "@/lib/sounds";
+// 2026-05-20 — read the wheel-spin setter from the GameSurfaceShell
+// context provider so the ambient blob animations on GamePageBackground
+// only run while the wheel is actively spinning. Outside the shell
+// (e.g. snakes-only games), the hook returns a noop setter, so this
+// integration is safe to use regardless of wrapping.
+import { useWheelSpin } from "@/components/game/WheelSpinContext";
 import { QuestionPopup } from "@/components/game/QuestionPopup";
 import { TutorialPopup } from "@/components/game/TutorialPopup";
 
@@ -44,6 +50,12 @@ export function TruthOrDareClient({
   const t = useTranslations("game");
   const locale = useLocale();
   const wheelRef = useRef<WheelApi>(null);
+  // 2026-05-20 — setter for the GameSurfaceShell wheel-spin context.
+  // Toggled true on Wheel.onSpinStart, back to false on Wheel.onSettled.
+  // Inside the shell, this controls the `frozen` state of the ambient
+  // blobs in GamePageBackground. Outside the shell (e.g. snakes pages),
+  // the hook returns a noop setter — no observable effect.
+  const { setIsSpinning } = useWheelSpin();
   const gameTitle =
     locale === "he" ? (game.name_he ?? game.name_en ?? "") : (game.name_en ?? game.name_he ?? "");
 
@@ -399,6 +411,12 @@ export function TruthOrDareClient({
 
   const handleSettled = useCallback(
     ({ type }: { index: number; type: QuestionType }) => {
+      // 2026-05-20 — wheel landed → release the "spinning" flag so
+      // GamePageBackground freezes its blobs again until the next
+      // spin. Order matters: flip the flag BEFORE any state changes
+      // that might cause a re-render so the frozen blobs are the
+      // first thing the layout commits with the new question.
+      setIsSpinning(false);
       const actualType = String(type);
       lastTwoTypesRef.current = [...lastTwoTypesRef.current.slice(-1), actualType];
       if (
@@ -441,7 +459,7 @@ export function TruthOrDareClient({
         }
       }
     },
-    [completedSpins, game.player_mode, game.slug, pickNextQuestion, subscribed, userId, leadCaptured],
+    [completedSpins, game.player_mode, game.slug, pickNextQuestion, subscribed, userId, leadCaptured, setIsSpinning],
   );
 
   const handleNext = () => setCurrent(null);
@@ -578,6 +596,10 @@ export function TruthOrDareClient({
       ref={wheelRef}
       options={options}
       onSettled={handleSettled}
+      // 2026-05-20 — spin starts → unfreeze blobs on GamePageBackground.
+      // `handleSettled` re-freezes when the wheel lands. Outside a
+      // GameSurfaceShell the setter is a noop (default context value).
+      onSpinStart={() => setIsSpinning(true)}
       disabled={!authReady}
       isSpinSoundEnabled={spinSoundOn}
       pointerColor={resolvedPointerColor}

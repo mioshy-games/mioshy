@@ -21,14 +21,18 @@
  * centre clean and let the headline + CTA breathe.
  */
 
-import { motion } from "framer-motion";
+// 2026-05-20 — framer-motion import removed. The PosterCard floats
+// that previously used motion.div with repeat:Infinity are now pure
+// CSS keyframe animations (transform-only, compositor-only). No
+// other code in this file references framer-motion.
+// import { motion } from "framer-motion";
 import {
   ArrowRight,
   Sparkles,
   Heart,
   Flame,
   ImageIcon,
-} from "lucide-react";
+} from "@/components/icons/Icons";
 import { useEffect, useRef } from "react";
 import Image from "next/image";
 import { Link } from "@/navigation";
@@ -85,7 +89,7 @@ export function AdultsMarketingHero({
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-rose-400/40 to-transparent"
       />
--
+
       {/* Animated two-tone DARK gradient pool behind the headline.
           Two dark radials drift via `animate-aurora-drift` (defined in
           tailwind.config). Mirrors the journey-page hero treatment but
@@ -101,12 +105,12 @@ export function AdultsMarketingHero({
             "radial-gradient(820px 480px at 76% 60%, rgba(46,18,56,0.65), transparent 62%)",
         }}
       />
--
+
       {/* Breadcrumb integrated into the hero gradient — same treatment
           as /games and /journey. No separate dark band. */}
       <nav
         aria-label="breadcrumb"
-        className="relative z-20 mx-auto hidden max-w-6xl items-center gap-2 px-4 pt-4 text-[13px] text-white/45 sm:flex"
+        className="relative z-20 mx-auto hidden max-w-7xl items-center gap-2 px-4 pt-4 text-[13px] text-white/45 sm:flex"
       >
         <Link href="/" className="transition hover:text-white/75">
           <CmsText cmsKey="mioshySexPage.heroBreadcrumbHome" />
@@ -117,7 +121,6 @@ export function AdultsMarketingHero({
           className="text-white/65"
         />
       </nav>
--
 
       {/* ── DESKTOP edge cards - two only, brought closer to the headline.
             start/end values bumped from 2% → 8% so the cards read as part
@@ -127,17 +130,34 @@ export function AdultsMarketingHero({
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 hidden lg:block"
-      >-
-        {/* Card peek - start (right in RTL) edge.
-            Position iterations: 8% → 4% (out to edges) → 6.5% (gentle pull
-            back toward centre per user feedback). Aligned around the
-            headline's vertical centre at top:200px. */}
-        <motion.div
-          initial={{ y: 8, rotate: -8 }}
-          animate={{ y: [8, -8, 8], rotate: [-8, -6, -8] }}
-          transition={{ duration: 11, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-[200px] start-[6.5%] h-[360px] w-[240px]"
+      >
+        {/* 2026-05-20 round 3 per Itzik:
+            • PosterCards are now COMPLETELY STATIC — no animation.
+              Round 2 (framer-motion → CSS keyframes) cut JS rAF cost,
+              but the cards were still compositor-animated 24/7. Now
+              they just sit there: zero GPU work between page loads.
+              The base tilt is preserved via a static `transform` so
+              the cards still feel "casual" against the headline.
+            • Sizes bumped +20% (240px → 288px wide, 360px → 432px
+              tall) so the larger poster artwork carries the visual
+              motion the floats used to provide.
+            • Behind each card sits an `.mio-adults-poster-glow` aura:
+              wine + burgundy gradient blob with a slow blur drift.
+              GPU-only (filter:blur is one-shot rasterised + a
+              transform animation), and it's positioned absolutely so
+              it doesn't affect layout. The colorful "motion" Itzik
+              asked for now lives in the background, not on the
+              poster itself. */}
+        {/* Card peek - start (right in RTL) edge. */}
+        <div
+          className="absolute top-[180px] start-[5%] h-[432px] w-[288px]"
         >
+          {/* Aura behind the card — wine + burgundy gradient with
+              slow drift. Pure GPU. */}
+          <div
+            aria-hidden
+            className="mio-adults-poster-aura mio-adults-poster-aura-a pointer-events-none absolute -inset-12 -z-10 rounded-[40px] opacity-90"
+          />
           <PosterCard
             tone="violet"
             Icon={Heart}
@@ -147,20 +167,16 @@ export function AdultsMarketingHero({
             imageSrc="/images/woman-mioshy.webp"
             imageAlt={touchingAlt}
           />
-        </motion.div>
+        </div>
 
         {/* Card peek - end (left in RTL) edge, slightly lower & opposite tilt */}
-        <motion.div
-          initial={{ y: -10, rotate: 8 }}
-          animate={{ y: [-10, 10, -10], rotate: [8, 10, 8] }}
-          transition={{
-            duration: 13,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 0.7,
-          }}
-          className="absolute top-[260px] end-[6.5%] h-[360px] w-[240px]"
+        <div
+          className="absolute top-[240px] end-[5%] h-[432px] w-[288px]"
         >
+          <div
+            aria-hidden
+            className="mio-adults-poster-aura mio-adults-poster-aura-b pointer-events-none absolute -inset-12 -z-10 rounded-[40px] opacity-90"
+          />
           <PosterCard
             tone="rose"
             Icon={Flame}
@@ -170,9 +186,9 @@ export function AdultsMarketingHero({
             imageSrc="/images/woman-sexy.webp"
             imageAlt={stirringAlt}
           />
-        </motion.div>
+        </div>
       </div>
--
+
       {/* ── CENTRE STAGE - copy + CTA.
           Mobile redesign:
           - Top padding cut from pt-10 → pt-4 to remove dead air.
@@ -313,11 +329,52 @@ export function AdultsMarketingHero({
       <style
         dangerouslySetInnerHTML={{
           __html: `
-            @keyframes mio-adults-gradient-shift {
-              0%, 100% { background-position: 0% 50%; }
-              50%      { background-position: 100% 50%; }
+            /* 2026-05-20 — mio-adults-gradient-shift animation removed.
+               It animated background-position which forces a full
+               paint on every frame (Lighthouse "Avoid non-composited
+               animations"). The static gradient looks the same to
+               the eye but costs zero per-frame work. */
+            .mio-adults-gradient-shift { /* static, no animation */ }
+
+            /* 2026-05-20 round 3 — PosterCard floats REMOVED per Itzik.
+               The two cards are now completely static (zero GPU work).
+               The visual interest is provided by an animated wine/burgundy
+               aura that sits BEHIND each card. Keeping the same class
+               names .mio-adults-poster-a / .mio-adults-poster-b for the
+               cards in case future JS references them, but they no
+               longer carry any animation. */
+            .mio-adults-poster-a,
+            .mio-adults-poster-b {
+              /* explicitly no animation — static cards */
             }
-            .mio-adults-gradient-shift { animation: mio-adults-gradient-shift 7s ease-in-out infinite; }
+
+            /* ── POSTER AURA — 2026-05-20 round 4 ──────────────────────
+               CRITICAL FIX. The previous version of this aura used
+               'filter: blur(36px)' PLUS a transform animation —
+               without 'will-change: transform' the browser had to
+               re-rasterize the blurred surface every frame of the
+               14-17s drift cycle. Over time GPU memory pressure
+               built up and the page degraded progressively. That
+               was the source of Itzik's "page gets slower as it
+               stays open" report.
+
+               Fix: drop filter:blur entirely (replaced by softer
+               radial-gradient stops that already feather), AND drop
+               the transform animation (auras are now static). Cards
+               were already static; auras now are too. Page is
+               TRULY idle once first paint settles. Zero ongoing
+               GPU/CPU work behind these elements. */
+            .mio-adults-poster-aura {
+              background:
+                radial-gradient(circle at 30% 30%, rgba(162, 27, 64, 0.55) 0%, rgba(162, 27, 64, 0.25) 35%, transparent 70%),
+                radial-gradient(circle at 70% 70%, rgba(107, 15, 43, 0.6) 0%, rgba(107, 15, 43, 0.28) 40%, transparent 75%),
+                radial-gradient(circle at 50% 50%, rgba(61, 31, 61, 0.45) 0%, rgba(61, 31, 61, 0.2) 45%, transparent 80%),
+                linear-gradient(135deg, #2a0612 0%, #4A0E1F 50%, #3D1F3D 100%);
+            }
+            /* Animation classes kept as empty selectors so any future
+               JS doesn't break, but they no longer do anything. */
+            .mio-adults-poster-aura-a,
+            .mio-adults-poster-aura-b { /* static — no animation */ }
 
             /* On-load firework burst around the headline.
                Each spark gets its own --dx/--dy via inline style; this single
@@ -348,7 +405,7 @@ export function AdultsMarketingHero({
             .mio-hero-spark {
               animation: mio-hero-spark 4s cubic-bezier(0.18, 0.7, 0.25, 1) 1 forwards;
             }
--
+
             /* Central pulse flash - the bright halo at the burst origin.
                Pops fast (peak at 6%) then expands + fades over the rest of
                the 4s. Plays once. */
@@ -365,7 +422,7 @@ export function AdultsMarketingHero({
               will-change: transform, opacity;
               filter: blur(2px);
             }
--
+
             /* Reduced-motion fallback - instead of hiding the burst entirely
                (was opacity: 0 !important), give a brief static fade-in/out
                so the user still gets the visual cue without movement. */
@@ -481,7 +538,7 @@ function HeroFireworks() {
       // sparks were z-0 and the white-text headline drew on top of them,
       // making the burst near-invisible against its own light.
       className="pointer-events-none absolute left-1/2 top-1/2 z-[2] -translate-x-1/2 -translate-y-1/2"
-    >-
+    >
       {/* Central pulse flash - a large soft radial halo that pops bright at
           burst origin then expands and fades. This makes the firework
           impossible to miss even before individual sparks are noticed. */}
@@ -499,7 +556,7 @@ function HeroFireworks() {
             "radial-gradient(circle, rgba(255,221,228,0.85) 0%, rgba(244,63,94,0.55) 30%, rgba(168,85,247,0.30) 55%, transparent 75%)",
         }}
       />
--
+
       {/* Individual sparks - fly outward from the same origin. */}
       {sparks.map((s, i) => (
         <span

@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import type { ReactNode } from "react";
 import type { BackgroundSettings, ParticlesSettings } from "@/lib/types/settings";
 import { FloatingParticles } from "./FloatingParticles";
+import { useWheelSpin } from "./WheelSpinContext";
 
 // ─── Color utilities ──────────────────────────────────────────────────────────
 // Pure functions - no deps - derive a palette from a single hex input
@@ -94,17 +95,33 @@ type BlobConfig = {
   op: number;
 };
 
-function Blob({ b, i }: { b: BlobConfig; i: number }) {
+function Blob({ b, i, frozen }: { b: BlobConfig; i: number; frozen?: boolean }) {
   const dir = i % 2 === 0 ? 1 : -1;
   // 2026-05-19 — `filter: blur(...)` replaced with a soft radial-gradient.
-  // Reason: blur on a 90vw element forces the GPU's blur shader on EVERY
-  // animation frame while the motion.div translates — historically the
-  // single most expensive paint op on /games (and the wheel page in
-  // particular felt sluggish vs. other pages). A radial-gradient is
-  // rasterized once into the layer and composited near-free, giving the
-  // same soft-glow halo at a fraction of the GPU cost. `b.blur` is now
-  // unused but kept on BlobConfig so call sites don't need to change
-  // shape and we can A/B revert easily if visuals regress.
+  // 2026-05-20 — added `frozen` prop. When true, the blob renders
+  // STATIC (no `animate` prop, no infinite transition). Used by the
+  // /games LiveDemoHero: after the wheel settles, Itzik wants the
+  // entire hero to go quiet — no rAF/compositor work continuing in
+  // the background. Continuous translation of three 90vw elements
+  // even via the GPU compositor still wakes the main thread for
+  // animation frame scheduling, and on slow mobile the cost is
+  // visible. `frozen=true` halts that.
+  if (frozen) {
+    return (
+      <div
+        className="pointer-events-none absolute rounded-full"
+        style={{
+          width: b.size,
+          height: b.size,
+          left: b.x,
+          top: b.y,
+          transform: "translate(-50%,-50%)",
+          background: `radial-gradient(circle, ${b.color} 0%, transparent 70%)`,
+          opacity: b.op,
+        }}
+      />
+    );
+  }
   return (
     <motion.div
       className="pointer-events-none absolute rounded-full"
@@ -153,6 +170,21 @@ export function GamePageBackground({
    * The inner content wrapper height also adapts when this is provided.
    */
   containerClassName,
+  /**
+   * 2026-05-20 — when true, the drifting blob animations stop and the
+   * blobs render as static positioned divs. Used by /games's
+   * LiveDemoHero post-wheel-settle to release the compositor/main
+   * thread so the page reads as calm once the demo's done.
+   *
+   * If `frozen` is left undefined, the component falls back to
+   * `!isSpinning` from `WheelSpinContext` — that's the path used by
+   * the actual game pages (/games/<slug>), where the GameSurfaceShell
+   * wrapper owns the context provider and the Wheel callbacks flip
+   * the state. Outside a provider the context returns `false`, so
+   * `frozen` resolves to `true` (frozen by default) which is the
+   * desired "do nothing until the user interacts" behaviour.
+   */
+  frozen,
 }: {
   gameSlug: string;
   primaryColor?: string;
@@ -162,7 +194,17 @@ export function GamePageBackground({
   particlesSettings?: ParticlesSettings | null;
   children: ReactNode;
   containerClassName?: string;
+  frozen?: boolean;
 }) {
+  // 2026-05-20 — resolve `frozen` from prop OR context fallback.
+  // Explicit prop wins (used by LiveDemoHero which controls its own
+  // phase state). When prop is undefined we ask the WheelSpinContext
+  // — present only on /games/<slug> game surfaces where the
+  // GameSurfaceShell wrapper provides it. Outside any provider the
+  // hook returns isSpinning=false, so blobs freeze by default.
+  const { isSpinning } = useWheelSpin();
+  const resolvedFrozen = frozen ?? !isSpinning;
+
   // ── If bgSettings has an image, render it directly and skip blobs ─────────
   if (bgSettings?.type === "image" && bgSettings.imageUrl) {
     return (
@@ -231,8 +273,8 @@ export function GamePageBackground({
       {/* Solid base */}
       <div className="pointer-events-none absolute inset-0" style={{ background: base }} />
 
-      {/* Animated blobs */}
-      {blobs.map((b, i) => <Blob key={i} b={b} i={i} />)}
+      {/* Animated blobs — frozen prop halts drift after settle. */}
+      {blobs.map((b, i) => <Blob key={i} b={b} i={i} frozen={resolvedFrozen} />)}
 
       {/* Scanlines - light gaming texture */}
       <div

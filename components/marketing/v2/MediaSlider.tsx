@@ -29,11 +29,20 @@ export function MediaSlider() {
             <span className="media-press-dot" aria-hidden="true" />
             <CmsText cmsKey="homeV2.media.eyebrow" />
           </div>
-          <CmsText
-            cmsKey="homeV2.media.headline"
-            as="h2"
-            className="media-press-title"
-          />
+          {/* 2026-05-20 — next-intl JSON-with-<em> pitfall. The
+              original `headline` JSON value had inline <em>…</em>,
+              which causes next-intl's t() to throw
+              FORMATTING_ERROR when no matching cms_texts row exists
+              (because <em> is parsed as a context variable). Now we
+              keep `headline` as a plain fallback and render Part1 +
+              <em>Em</em> as separate JSX children. Same pattern as
+              ForWhom + Intimacy. See memory: project_nextintl_em_pitfall. */}
+          <h2 className="media-press-title">
+            <CmsText cmsKey="homeV2.media.headlinePart1" />{" "}
+            <em>
+              <CmsText cmsKey="homeV2.media.headlineEm" />
+            </em>
+          </h2>
         </header>
 
         <ul className="media-press-rows">

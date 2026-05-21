@@ -122,17 +122,22 @@ export default function ContactPage({
               <p className="text-[17px] font-bold text-[#170E14]">
                 {isHe ? "וואטסאפ" : "WhatsApp"}
               </p>
-              <p className="mt-1 text-[15px] leading-[1.55] text-[#7A6A75]">
+              <p className="mt-1 text-[18px] leading-[1.55] text-[#7A6A75]">
                 {isHe
                   ? "מהיר וכיף. שלחו הודעה ונחזור אליכם."
                   : "Fast and friendly. Send a message and we'll come back to you."}
               </p>
-              <p className="mt-3 text-[18px] font-semibold text-emerald-700 underline-offset-4 group-hover:underline">
-                {/* The +972 with a leading + reads correctly in HE
-                    when the surrounding direction is RTL because the
-                    + is a neutral. */}
-                +972 54-521-5193
-              </p>
+              {/* CTA pill replaces the raw phone number. Itzik
+                  2026-05-21: don't expose +972 54-521-5193 inline —
+                  visitors should land directly in WhatsApp's send-
+                  message flow instead of dialling. The outer <a>
+                  already points at wa.me with a pre-filled message,
+                  so this span is purely visual; click-through is
+                  whole-card. */}
+              <span className="mt-3 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-5 py-2.5 text-[18px] font-semibold text-white shadow-sm transition group-hover:bg-emerald-700">
+                <MessageCircle className="size-4" />
+                {isHe ? "שליחת הודעה" : "Send a message"}
+              </span>
             </div>
           </a>
 

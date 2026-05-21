@@ -10,7 +10,7 @@ import {
   MessageCircleHeart,
   Sparkles,
   Target,
-} from "lucide-react";
+} from "@/components/icons/Icons";
 import {
   getGameBySlug,
   getGameCategoryIds,
@@ -22,17 +22,18 @@ import {
 } from "@/lib/between-us/queries";
 import { getCurrentCoupleContext } from "@/lib/between-us/couples";
 import { AdultsHeroBuy } from "@/components/adults/AdultsHeroBuy";
-// Page-wide animated mood lighting (drifting fog blobs + floating particles)
-// - keeps the detail page from looking like a flat dark plate. Reuses the
-// /adults marketing-surface ambience component.
-import { AdultsAmbience } from "@/components/adults/AdultsAmbience";
-// Diagnostic probe: logs from the page level whether the ambience layer
-// actually rendered into the DOM, with bounding-box + child counts. Open
-// DevTools and grep for [AmbienceDebugProbe:adults-detail] to verify.
-import { AmbienceDebugProbe } from "@/components/adults/AmbienceDebugProbe";
+// 2026-05-20 — AdultsAmbience + AmbienceDebugProbe imports removed
+// because of the periodic 30s freeze on this route. The new shared
+// SexHeroBlobs field carries the after-dark atmosphere — three
+// transform-only compositor layers — so the slug page now matches
+// /mioshy-sex visually without re-introducing the freeze risk.
+import { SexHeroBlobs } from "@/components/adults/SexHeroBlobs";
 import { resolveAdultsPricing } from "@/lib/adults/pricing";
 import { CmsText } from "@/components/cms/CmsText";
+import { CmsTextProvider } from "@/components/cms/CmsTextProvider";
+import { MaybeRichText } from "@/components/cms/MaybeRichText";
 import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
+import { loadCmsTextsForPage } from "@/lib/cms/server";
 
 export const dynamic = "force-dynamic";
 
@@ -100,6 +101,13 @@ export default async function BetweenUsGameDetailPage({
     namespace: "mioshySexSlug",
     page: "mioshy-sex",
   });
+
+  // Load cms_texts rows for the mioshy-sex page so every <CmsText>
+  // below picks up admin-edited values (is_rich, color_override,
+  // font sizing). Without the provider wrap further down, every
+  // CmsText falls through to next-intl JSON and admin edits in CRM
+  // never reach the public page.
+  const cmsRows = await loadCmsTextsForPage("mioshy-sex");
 
   const [settings, ctx, catIds, tagIds, allCats, allTags, allGameCards] =
     await Promise.all([
@@ -312,6 +320,7 @@ export default async function BetweenUsGameDetailPage({
   // ──────────────────────────────────────────────────────────────────────
 
   return (
+    <CmsTextProvider rows={cmsRows}>
     <div
       dir={isHe ? "rtl" : "ltr"}
       // `isolate` (CSS isolation: isolate) is CRITICAL here.
@@ -320,7 +329,7 @@ export default async function BetweenUsGameDetailPage({
       // element's `bg-[#0a0410]` solid background - i.e. invisible.
       // Adding `isolate` makes the wrapper its own stacking context, so
       // `-z-10` paints between the wrapper's bg and the in-flow content.
-      className="relative isolate min-h-[100dvh] overflow-hidden bg-[#0a0410] text-white"
+      className="relative isolate flex min-h-[100dvh] flex-col overflow-hidden bg-[#0a0410] text-white"
     >
       {/* Deep midnight base + ambient color washes - same vocabulary as the
           /adults marketing surface so the detail page feels like part of the
@@ -329,33 +338,23 @@ export default async function BetweenUsGameDetailPage({
           blobs synthesize new colours where they meet (rose + fuchsia →
           magenta etc). For that to paint correctly, we DON'T set
           `isolation: isolate` anywhere between the blobs and the base wash. */}
-      {/* Static dark base - fallback so the wrapper is never empty even
-          if the animated layer pauses (prefers-reduced-motion). Pulled to
-          deeper near-black tones per design feedback so the page reads
-          properly "after-dark" rather than dusty wine. */}
+      {/* Static dark base — fallback wash so the wrapper is never
+          empty even if the SexHeroBlobs animation pauses
+          (prefers-reduced-motion). */}
       <div
         aria-hidden
         data-testid="adults-bg-base"
-        className="pointer-events-none absolute inset-x-0 top-0 -z-20 h-full bg-[linear-gradient(180deg,#070210_0%,#0d041a_50%,#070210_100%)]"
+        className="pointer-events-none absolute inset-x-0 top-0 -z-30 h-full bg-[linear-gradient(180deg,#070111_0%,#0e0220_24%,#170428_48%,#0e0220_76%,#070111_100%)]"
       />
-      {/* Animated two-tone dark wash that drifts on top of the base.
-          Uses the dedicated `mio-adults-bg` keyframe (defined in
-          globals.css) - stronger translate + scale than the subtle
-          aurora-drift so the dark plate is visibly alive. Colour pair
-          DARKENED per round of design feedback: deep burgundy + deep
-          plum at higher alpha so the swirl reads on a near-black plate. */}
-      <div
-        aria-hidden
-        data-testid="adults-bg-animated"
-        className="pointer-events-none absolute inset-x-0 top-0 -z-[15] h-full mio-adults-bg"
-        style={{
-          background:
-            "radial-gradient(900px 520px at 28% 22%, rgba(48,18,32,0.85), transparent 60%), " +
-            "radial-gradient(820px 480px at 76% 70%, rgba(28,12,38,0.85), transparent 62%)",
-        }}
-      />
-      <AdultsAmbience />
-      <AmbienceDebugProbe label="adults-detail" />
+      {/* Shared hero blob field — the same three "dancing" gradient
+          circles that paint the /mioshy-sex catalogue hero. Adopted
+          here per Itzik 2026-05-20 so the catalogue → detail page
+          transition keeps the same after-dark atmosphere; the
+          previous static double-radial wash was a stopgap put in
+          while we hunted the 30s-freeze bug. Three transform-only
+          compositor layers — light enough to run safely on this
+          route again. */}
+      <SexHeroBlobs isHe={isHe} />
 
       {/* Product structured data - Google rich-result eligibility. */}
       <script
@@ -367,7 +366,12 @@ export default async function BetweenUsGameDetailPage({
           all sit on the same vertical grid lines - same right edge in
           RTL on every screen. Content blocks below still cap themselves
           (max-w-3xl on the benefits column, etc.) for reading comfort. */}
-      <main className="relative mx-auto max-w-7xl px-4 py-10">
+      {/* `flex-1` so `<main>` fills the wrapper's remaining flex
+          space. Combined with `flex min-h-[100dvh] flex-col` on the
+          wrapper above, this guarantees the dark `bg-[#0a0410]`
+          extends ALL THE WAY DOWN to where the SiteFooter starts —
+          verified zero-gap on 2026-05-20 (gapWrapperToFooter=0). */}
+      <main className="relative mx-auto w-full max-w-7xl flex-1 px-4 py-10">
         {/* Back link removed per UX redesign - moved to the BOTTOM of the
             page and reframed as a "Next game" carousel CTA so the visitor
             keeps discovering products instead of being asked to go back
@@ -394,25 +398,22 @@ export default async function BetweenUsGameDetailPage({
             two columns stack vertically; on md+ they sit side-by-side and
             justify-center keeps the pair anchored to the page's centre
             instead of stretching to the full max-w-7xl rail. */}
-        <section className="mt-6 flex flex-col items-stretch gap-8 md:flex-row md:items-start md:justify-center md:gap-10">
-          {/* Left column is `flex flex-col` so we can use `order-X` to reshuffle
-              children on mobile WITHOUT changing source order (and without
-              breaking the desktop two-column hero layout). Mobile reading
-              order: badges → h1 → cover → desc → levels → tags → price/CTA.
-              The image-after-h1 placement creates the title-visual coupling
-              that was missing; the price-after-meta moves the price
-              reveal AFTER value cues (levels + tags) have done their work. */}
-          <div className="flex w-full flex-col md:max-w-[550px] md:flex-1">
+        {/* Hero section — 2026-05-20: switched from
+            `justify-center` + per-column `max-w-[550px]` to a
+            spread layout that fills the page's max-w-7xl rail. The
+            two columns now sit at the far left + far right of the
+            container, matching the alignment of the sections below
+            ("מה תקבלו", gallery, etc.) which extend to the rail
+            edges. Each column flexes between a sensible min and the
+            full available half-width. */}
+        <section className="mt-6 flex flex-col items-stretch gap-8 md:flex-row md:items-start md:justify-between md:gap-10">
+          {/* Left column — `flex-1` so it takes its half of the row. */}
+          <div className="flex w-full flex-col md:flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              {/* "New" badge - was bg-emerald-500 (green), which clashed
-                  against the rose / fuchsia / violet ambience. Now uses
-                  the warm rose-amber gradient that matches the page's
-                  primary CTA + headline gradient family. */}
-              {game.is_new ? (
-                <span className="rounded-full bg-gradient-to-r from-rose-500 to-amber-400 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider text-white shadow">
-                  <CmsText cmsKey="mioshySexSlug.tagNew" />
-                </span>
-              ) : null}
+              {/* "New" badge removed 2026-05-20 per Itzik. The
+                  is_new flag on the game row remains in the DB but
+                  is no longer surfaced on the slug page. The
+                  `is_popular` badge below is still rendered. */}
               {game.is_popular ? (
                 <span className="rounded-full bg-gradient-to-r from-fuchsia-500 to-rose-500 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider text-white shadow">
                   <CmsText cmsKey="mioshySexSlug.tagPopular" />
@@ -440,17 +441,19 @@ export default async function BetweenUsGameDetailPage({
                 matches every other heading on the site (personas h3,
                 why h3, /adults flagship h1, etc.). Frank Ruhl Libre
                 supports Hebrew + Latin, so one declaration covers both. */}
-            <h1
+            <MaybeRichText
+              value={title}
+              as="h1"
               className="mt-4 text-[42px] leading-[1.08] tracking-tight sm:text-5xl sm:leading-tight"
               style={{ fontFamily: "'Frank Ruhl Libre', serif", fontWeight: 700 }}
-            >
-              {title}
-            </h1>
+            />
 
             {shortDesc ? (
-              <p className="mt-4 text-lg font-medium text-white/85 sm:text-white/80 sm:font-normal">
-                {shortDesc}
-              </p>
+              <MaybeRichText
+                value={shortDesc}
+                as="p"
+                className="mt-4 text-[1.5rem] font-medium leading-[1.45] text-white/85 sm:text-white/80 sm:font-normal"
+              />
             ) : null}
 
             {/* Mobile-only cover artwork - placed AFTER the short description
@@ -557,7 +560,7 @@ export default async function BetweenUsGameDetailPage({
               visual-reinforcement job before scroll. `hidden md:block`
               suppresses this duplicate on phones so we don't render the
               same cover twice. */}
-          <div className="relative hidden aspect-[4/3] w-full overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-fuchsia-500/30 to-violet-500/20 shadow-2xl md:block md:aspect-auto md:h-[420px] md:max-w-[550px] md:flex-1">
+          <div className="relative hidden aspect-[4/3] w-full overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-fuchsia-500/30 to-violet-500/20 shadow-2xl md:block md:aspect-auto md:h-[420px] md:flex-1">
             {game.cover_image_url ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -601,7 +604,8 @@ export default async function BetweenUsGameDetailPage({
                       className="flex items-start gap-2.5 text-[18px] leading-relaxed text-white/85"
                     >
                       <CheckCircle2 className="mt-1 h-4 w-4 flex-shrink-0 text-emerald-300" />
-                      <span>{b}</span>
+                      <MaybeRichText value={b} />
+
                     </li>
                   ))}
                 </ul>
@@ -622,7 +626,8 @@ export default async function BetweenUsGameDetailPage({
                       className="flex items-start gap-2.5 text-[18px] leading-relaxed text-white/85"
                     >
                       <Target className="mt-1 h-4 w-4 flex-shrink-0 text-fuchsia-200" />
-                      <span>{t}</span>
+                      <MaybeRichText value={t} />
+
                     </li>
                   ))}
                 </ul>
@@ -686,15 +691,15 @@ export default async function BetweenUsGameDetailPage({
                   as="p"
                   className="text-[12px] font-semibold uppercase tracking-[0.22em] text-rose-200/75"
                 />
-                <h3
+                <MaybeRichText
+                  value={nextGameTitle}
+                  as="h3"
                   className="mt-2 text-[26px] leading-[1.15] tracking-tight text-white sm:text-[30px]"
                   style={{
                     fontFamily: "'Frank Ruhl Libre', serif",
                     fontWeight: 700,
                   }}
-                >
-                  {nextGameTitle}
-                </h3>
+                />
               </div>
               {/* Per Itzik 2026-05-07: this is a SECONDARY CTA (the
                   primary purchase action lives in the hero). Outline-
@@ -716,6 +721,7 @@ export default async function BetweenUsGameDetailPage({
         ) : null}
       </main>
     </div>
+    </CmsTextProvider>
   );
 }
 

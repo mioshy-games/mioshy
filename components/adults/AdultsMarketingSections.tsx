@@ -24,7 +24,7 @@ import {
   Crown,
   Sparkles,
   Star,
-} from "lucide-react";
+} from "@/components/icons/Icons";
 import { Link } from "@/navigation";
 import type { AdultsPricing } from "@/lib/adults/pricing";
 import { annualSavings } from "@/lib/adults/pricing";
@@ -257,7 +257,7 @@ export function AdultsPricingSection({
 
   return (
     <section id="pricing" className="relative px-4 py-[110px] scroll-mt-24">
-      <div className="relative mx-auto max-w-6xl">
+      <div className="relative mx-auto max-w-7xl">
         <div className="mx-auto max-w-2xl text-center">
           <span className="inline-flex items-center gap-2.5 text-[11px] font-semibold uppercase tracking-[0.32em] text-rose-200/80">
             <span className="h-1.5 w-1.5 rounded-full bg-rose-400 shadow-[0_0_12px_rgba(244,63,94,0.7)]" />
@@ -469,8 +469,12 @@ export function AdultsFaqSection({ isHe: _isHe }: { isHe: boolean }) {
   // copy lives in mioshySexPage.faqQ{1-8} / faqA{1-8} in messages/he.json
   // and en.json, and (eventually) in cms_texts rows so admins can edit
   // without a deploy.
+  // faqQ1/faqA1 ("למה זה טוב? איך זה שונה מטיפים שאני יכול למצוא ברשת?")
+  // removed from the rendered list per Itzik 2026-05-21 — the value-vs-tips
+  // framing reads too defensive and the surrounding answers already cover
+  // what couples get. JSON keys are kept in messages/{he,en}.json so the
+  // question can be restored from the array without re-translating.
   const items = [
-    { qKey: "mioshySexPage.faqQ1", aKey: "mioshySexPage.faqA1" },
     { qKey: "mioshySexPage.faqQ2", aKey: "mioshySexPage.faqA2" },
     { qKey: "mioshySexPage.faqQ3", aKey: "mioshySexPage.faqA3" },
     { qKey: "mioshySexPage.faqQ4", aKey: "mioshySexPage.faqA4" },
@@ -604,14 +608,16 @@ export function AdultsClosingCta({ isHe }: { isHe: boolean }) {
         />
       </div>
 
+      {/* 2026-05-20 — mio-adults-cta-shift CSS animation removed.
+          It animated `background-position` which forces a full paint
+          on every frame and was flagged as non-composited in
+          Lighthouse. The CTA's gradient now sits static; the visual
+          loss is minimal (a subtle 7s left-right shimmer) but the
+          paint cost is eliminated entirely. */}
       <style
         dangerouslySetInnerHTML={{
           __html: `
-            @keyframes mio-adults-cta-shift {
-              0%, 100% { background-position: 0% 50%; }
-              50%      { background-position: 100% 50%; }
-            }
-            .mio-adults-cta-shift { animation: mio-adults-cta-shift 7s ease-in-out infinite; }
+            .mio-adults-cta-shift { /* static, animation removed */ }
           `,
         }}
       />

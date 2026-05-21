@@ -447,6 +447,20 @@ export default async function JourneyAssessmentPage({
           "linear-gradient(180deg, #0b0712 0%, #0e0913 50%, #100a17 100%)",
       }}
     >
+      {/* Ambient drifting orbs — 2026-05-21 per Itzik. Two huge,
+          translucent circles that slowly slide toward each other
+          and back over ~55–62s. CSS-only (no JS, no rerenders),
+          paint-once via radial-gradient, transform-only animation.
+          Sit between the static gradient backdrop above and the
+          questionnaire UI in JourneyClient (which renders its own
+          z-10 surface). Keyframes + tokens live in globals.css. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 -z-0 overflow-hidden"
+      >
+        <div className="journey-ambient-orb journey-ambient-orb--a" />
+        <div className="journey-ambient-orb journey-ambient-orb--b" />
+      </div>
       <AssessmentDiagProbe />
       <JourneyClient
         locale={locale as Locale}

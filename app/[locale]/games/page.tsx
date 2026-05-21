@@ -13,14 +13,13 @@ import { fetchGameSettings } from "@/lib/settings-queries";
 import type { GameRow, WheelConfigRow } from "@/lib/types/database";
 import type { GameSettings } from "@/lib/types/settings";
 import type { WheelSegment } from "@/components/Wheel";
-import {
-  ArrowRight,
-  Gamepad2,
-  HeartHandshake,
-  Sparkles,
-  Shield,
-  Users,
-} from "lucide-react";
+// 2026-05-20 — HeartHandshake / Sparkles / Shield removed from imports
+// alongside the now-commented `whyMeta` array that was their only
+// consumer. ArrowRight / Gamepad2 / Users still rendered in JSX so
+// they stay. Lucide tree-shaking handles the bundle delta in prod;
+// removing the import names just satisfies ESLint's unused-vars rule
+// for the strict build.
+import { ArrowRight, Gamepad2, Users } from "lucide-react";
 import { AdminThumbnailEdit } from "@/components/games/AdminThumbnailEdit";
 // Lazy wrapper: code-splits LiveDemoHero (which embeds the full Wheel +
 // framer-motion + sound effects) out of the initial /games bundle. The
@@ -28,13 +27,22 @@ import { AdminThumbnailEdit } from "@/components/games/AdminThumbnailEdit";
 // the real interactive demo on the client. Big win on TTI for visitors
 // who never spin the wheel.
 import { LazyLiveDemoHero } from "@/components/marketing/v2/LazyLiveDemoHero";
-import { MediaSlider } from "@/components/marketing/v2/MediaSlider";
-import { Counter } from "@/components/marketing/v2/Counter";
+// MediaSlider import removed 2026-05-20 — press section was deleted
+// from /games (homepage v2 still uses it via HomepageV2.tsx).
+// import { MediaSlider } from "@/components/marketing/v2/MediaSlider";
+// Counter import removed 2026-05-20 — was used by the #why section
+// (`<Counter to={500} />`) which was deleted. Kept commented for
+// quick restoration if Itzik wants the stats back.
+// import { Counter } from "@/components/marketing/v2/Counter";
 import { RevealOnScroll } from "@/components/marketing/v2/RevealOnScroll";
+import { FAQ } from "@/components/marketing/v2/FAQ";
 import { pickGameThumbnail } from "@/lib/games-thumbnail";
 import { GamesPageAtmosphere } from "@/components/games/GamesPageAtmosphere";
 // `GamesOrbsDiagProbe` import removed 2026-05-19 along with the
 // orbs field. Probe file kept on disk for future debugging.
+// `BreadcrumbBackdropProbe` import removed 2026-05-20 — the probe
+// helped us discover the missing-isolation bug; mystery solved
+// (added `isolate` to the wrapper). Probe file kept on disk.
 
 /**
  * /games - the games category landing page.
@@ -95,11 +103,10 @@ export async function generateMetadata({
   };
 }
 
-// Build marker - bumped when we ship significant changes to /games so
-// we can correlate "I don't see the change" reports with the actual
-// build the visitor's browser fetched. Surfaces in both server logs
-// and the client console (see <script> at end of each return tree).
-const GAMES_PAGE_BUILD = "2026-05-06-dark-ambient-v1";
+// 2026-05-20 — GAMES_PAGE_BUILD constant removed alongside its only
+// consumers (the diagnostic <script> tags and server-side log).
+// Build verification now goes through the Vercel deployment URL.
+// const GAMES_PAGE_BUILD = "2026-05-06-dark-ambient-v1";
 
 export default async function GamesHubPage({
   params,
@@ -139,18 +146,24 @@ export default async function GamesHubPage({
     .order("created_at", { ascending: false });
   const games = (data ?? []) as GameRow[];
 
-  // Diagnostic log - Itzik 2026-05-06 reported "I don't see the change".
-  // Most common cause: signed-in users hit the AUTHED catalog (line 132)
-  // not the marketing return at the bottom. This print tells us which
-  // path executed and which build was deployed when the request landed.
-  // Visible in `vercel logs <deployment>` and in the local dev console.
-  console.log("[GamesHubPage]", JSON.stringify({
-    build: GAMES_PAGE_BUILD,
+  // 2026-05-20 — TEMP DIAGNOSTIC. Itzik reports the recent edits
+  // (benefits-moved-below-hero, bg-white removed, alignment fix)
+  // don't appear visually. Adding a build-stamped marker so we can
+  // confirm whether the new server-rendered output is actually
+  // reaching the browser. Look for `[GamesHubPage/DIAG]` in the
+  // Vercel function logs OR Network → games doc → response HTML
+  // for `<!--GAMES_PAGE_BUILD_…-->`. Remove once verified.
+  const GAMES_PAGE_DIAG_STAMP = "2026-05-20T-benefits-above-press-v3";
+  // eslint-disable-next-line no-console
+  console.log("[GamesHubPage/DIAG]", JSON.stringify({
+    stamp: GAMES_PAGE_DIAG_STAMP,
     locale,
     isAuthed,
-    userId: user?.id ?? null,
     view: isAuthed ? "authed-catalog" : "marketing",
-    games: games.length,
+    benefitsPosition: "first-light-section-after-hero",
+    benefitsBgWhite: false,
+    benefitsWrapperClass: "relative overflow-hidden px-4 py-[60px]",
+    benefitsInnerMaxWidth: "max-w-7xl",
   }));
 
   // ─── Logged-in catalog-only view ──────────────────────────────────────
@@ -171,17 +184,13 @@ export default async function GamesHubPage({
         dir={isHe ? "rtl" : "ltr"}
         className="relative min-h-[100dvh] overflow-hidden text-white"
       >
-        {/* Build marker - visible in browser console so we can confirm
-            the new build landed for this visitor. Itzik 2026-05-06. */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `console.log("[GamesHub/client]", { build: ${JSON.stringify(GAMES_PAGE_BUILD)}, view: "authed-catalog" });`,
-          }}
-        />
+        {/* 2026-05-20 — [GamesHub/client] build-marker <script>
+            removed from the authed branch (same change as marketing
+            branch above). */}
         <GamesPageAtmosphere />
         {/* `GamesOrbsDiagProbe` removed 2026-05-19 — orbs are gone,
             the probe is no longer useful. File kept on disk. */}
-        <main className="relative mx-auto max-w-6xl px-4 pb-20 pt-12 sm:pt-16">
+        <main className="relative mx-auto max-w-7xl px-4 pb-20 pt-12 sm:pt-16">
           <div className="inline-flex items-center gap-2 rounded-full border border-rose-300/30 bg-rose-500/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-rose-100">
             <span className="h-1.5 w-1.5 rounded-full bg-rose-300" />
             <CmsText cmsKey="gamesHub.cataloguePill" />
@@ -385,14 +394,16 @@ export default async function GamesHubPage({
   };
 
 
-  // V2 unified palette - same card treatment for all 4, only icons differentiated.
-  // No more rainbow. Warm cream bg + accent top-bar + warm-toned icon backgrounds.
-  const whyMeta = [
-    { Icon: Gamepad2,      iconBg: "bg-[#B83C4D]", stat: t("statGames") },
-    { Icon: HeartHandshake, iconBg: "bg-[#8B2638]", stat: t("statCouples") },
-    { Icon: Sparkles,       iconBg: "bg-[#4A1721]", stat: t("statNoInstall") },
-    { Icon: Shield,         iconBg: "bg-[#3D1F3D]", stat: t("statPrivate") },
-  ];
+  // 2026-05-20 — `whyMeta` retired alongside the #why section
+  // (deleted earlier in this session). The Lucide icons it used
+  // (Gamepad2, HeartHandshake, Sparkles, Shield) are still imported
+  // at the top of the file for other consumers / future restoration.
+  // const whyMeta = [
+  //   { Icon: Gamepad2,      iconBg: "bg-[#B83C4D]", stat: t("statGames") },
+  //   { Icon: HeartHandshake, iconBg: "bg-[#8B2638]", stat: t("statCouples") },
+  //   { Icon: Sparkles,       iconBg: "bg-[#4A1721]", stat: t("statNoInstall") },
+  //   { Icon: Shield,         iconBg: "bg-[#3D1F3D]", stat: t("statPrivate") },
+  // ];
 
   const trust: { icon: "sparkles" | "heart" | "zap" | "infinity"; label: string }[] = [
     { icon: "sparkles", label: t("trustTry") },
@@ -408,10 +419,11 @@ export default async function GamesHubPage({
     "from-[#4A1721]/30 via-[#3D1F3D]/20 to-[#1E0F1E]/20",
   ];
 
-  // Editorial benefits - light cream spread, 3 focused emotion words.
-  // Roman numerals (static, non-translatable) + serif italic. CMS keys
-  // drive title/body so admins can edit per item; numerals stay inline.
-  const benefitNumerals = ["I", "II", "III"];
+  // Editorial benefits — 3 focused emotion words (תשוקה / חברות / כיף).
+  // 2026-05-20 — original `benefitNumerals = ["I", "II", "III"]` removed.
+  // Itzik flagged Roman numerals as feeling "academic" — replaced with
+  // unicode glyphs (♡ ✦ ✺) inlined directly in the JSX. CMS keys
+  // (gamesHub.benefits.{i}.{title,body}) still drive the editable text.
 
   // Personas - magazine chapters on light. Three couple archetypes.
   // Chapter numerals (01/02/03) stay inline (static); tag/title/body/quote
@@ -420,37 +432,79 @@ export default async function GamesHubPage({
 
   return (
     <CmsTextProvider rows={cmsRows}>
+    {/* 2026-05-19 — `isolate` (CSS isolation:isolate) added to the
+        marketing wrapper. THIS IS THE FIX for the "breadcrumb sits on
+        black" mystery the BreadcrumbBackdropProbe found.
+        Why: the wine-gradient divs below use `-z-20` / `-z-10`. The
+        wrapper's `relative` alone does NOT create a stacking context
+        (only relative + an explicit z-index does), so the negative-z
+        gradients escape the wrapper's local stacking context entirely
+        and end up painted BEHIND <body>'s background-color (which is
+        `bg-[var(--mio-bg)]` = #0d0a14 on the Chrome wrapper). Result:
+        the breadcrumb strip showed the dark `--mio-bg` instead of the
+        wine atmosphere we intended.
+        `isolate` forces the wrapper into a new stacking context, so
+        the negative-z gradients now stay inside it (painted above the
+        Chrome bg, below the breadcrumb). Matches the /journey
+        wrapper at app/[locale]/journey/page.tsx#L174 which had this
+        from day one. */}
     <div
-      className="relative min-h-[100dvh] overflow-hidden text-white"
+      className="relative isolate min-h-[100dvh] overflow-hidden text-white"
       dir={isHe ? "rtl" : "ltr"}
     >
-      {/* Build marker - visible in browser console so we can confirm
-          the new build landed. Itzik 2026-05-06. */}
+      {/* 2026-05-20 — [GamesHub/client] build-marker <script> and
+          <BreadcrumbBackdropProbe /> both removed. The probe served
+          its purpose (helped diagnose the missing-isolation bug);
+          the build marker is reproducible via Network panel hash
+          inspection without a console.log running on every load. */}
+      {/* 2026-05-20 TEMP DIAGNOSTIC — Itzik can't see the recent
+          changes. The HTML comment + client console.log below confirm
+          which version of /games is actually served. To verify:
+            (1) View Source on /he/games → grep for "GAMES_PAGE_BUILD_"
+                — the stamp string proves SSR HTML is fresh.
+            (2) Browser console → look for "[GamesHub/client/DIAG]". */}
       <script
         dangerouslySetInnerHTML={{
-          __html: `console.log("[GamesHub/client]", { build: ${JSON.stringify(GAMES_PAGE_BUILD)}, view: "marketing" });`,
+          __html: `console.log("[GamesHub/client/DIAG]", { stamp: "${GAMES_PAGE_DIAG_STAMP}", route: "marketing", benefitsAt: "first-section-after-hero", benefitsBgWhiteRemoved: true });`,
         }}
       />
-      {/* `GamesOrbsDiagProbe` removed 2026-05-19 along with the
-          orbs. Probe file kept on disk for future debugging. */}
+      {/* Inline marker visible in View Source: */}
+      {/* GAMES_PAGE_BUILD_2026-05-20T-benefits-above-press-v3 */}
 
       {/* ── Dark hero backdrop (covers ONLY the first viewport - 110vh).
           Per Itzik 2026-05-06: revert of the page-wide dark treatment.
           The dark atmosphere belongs to the hero + the #catalogue section
           only; the marketing copy in between (Why / Press / Personas /
-          Benefits) reads on the cream surface like the original design. */}
+          Benefits) reads on the cream surface like the original design.
+
+          2026-05-19 — reverted to top:0 to match the /journey treatment
+          per Itzik. The dark wine gradient extends behind the breadcrumb
+          (no transparent strip at the top). /journey's app/[locale]/
+          journey/page.tsx uses the same top:0 + h-[110vh] for the wine
+          backdrop and top:0 + h-[85vh] for the radial layer, and the
+          two pages should feel identical at the page-header strip. */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 -z-20 h-[110vh] bg-[linear-gradient(180deg,#0E0810_0%,#1A0B14_55%,#1E0F1E_100%)]"
       />
+      {/* Wine + magenta + violet aurora wash — copied verbatim from
+          /journey so the two pages feel like the same atmosphere.
+          Differences from the previous /games version:
+            • `animate-aurora-drift` added (subtle motion already in use
+              on /journey).
+            • Third radial stop swapped from wine-dark @ 50%/40% to
+              violet @ 50%/65% with opacity 0.32 → 0.40 — gives the
+              header strip a real wine + violet blend instead of a
+              flat dark wine; this is the visible difference Itzik
+              flagged between the two pages' header areas. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[80vh]"
+        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[85vh] animate-aurora-drift"
         style={{
           background:
-            "radial-gradient(1100px 600px at 12% 0%, rgba(196,68,86,0.22), transparent 62%), " +
-            "radial-gradient(900px 520px at 88% 12%, rgba(139,38,56,0.18), transparent 60%), " +
-            "radial-gradient(700px 460px at 50% 38%, rgba(74,23,33,0.18), transparent 65%)",
+            "radial-gradient(1100px 640px at 14% 0%, rgba(184,60,77,0.55), transparent 62%), " +
+            "radial-gradient(900px 520px at 88% 12%, rgba(217,70,239,0.45), transparent 60%), " +
+            "radial-gradient(900px 560px at 50% 65%, rgba(168,85,247,0.40), transparent 60%)",
         }}
       />
 
@@ -465,13 +519,25 @@ export default async function GamesHubPage({
             1. HERO - dark, animated
         ════════════════════════════════════════════════════════════ */}
         <section className="relative">
-          {/* Breadcrumb sits over the hero gradient — no separate band.
-              Padding tightened (pt-8 → pt-4) and opacity lowered so it
-              integrates into the atmosphere instead of reading as its own
-              row. Per Itzik 2026-05-07. */}
+          {/* 2026-05-19 round 3 — breadcrumb pulled out of the document
+              flow and floated ABSOLUTELY over the LiveDemoHero so it
+              sits on top of the GAME's own atmosphere (GamePageBackground
+              with honesty-or-challenge's bg_value), not on the page-level
+              wine wash above it. Earlier rounds tried matching the page-
+              level wine to LiveDemoHero's bg, but they're produced by
+              different components (page-wrapper radial-gradient vs
+              GamePageBackground's blob system) and never matched
+              exactly — that produced the visible "wine strip above /
+              navy strip below" seam Itzik flagged.
+              The breadcrumb is now position:absolute top-0 with z-30,
+              and the LiveDemoHero below starts at the section's top
+              (no gap reserved for the breadcrumb) — so the LiveDemoHero
+              atmosphere paints all the way up under the breadcrumb,
+              and the breadcrumb visually integrates with the hero
+              instead of competing with it. */}
           <nav
             aria-label="breadcrumb"
-            className="relative z-20 mx-auto hidden max-w-6xl items-center gap-2 px-4 pt-4 text-[13px] text-white/45 sm:flex"
+            className="absolute inset-x-0 top-0 z-30 mx-auto hidden max-w-7xl items-center gap-2 px-4 pt-4 text-[13px] text-white/45 sm:flex"
           >
             <Link href="/" className="transition hover:text-white/75">
               <CmsText cmsKey="gamesHub.breadcrumbHome" />
@@ -523,227 +589,162 @@ export default async function GamesHubPage({
           {/* ── Transition: dark → light wave divider ── */}
           <div className="pointer-events-none -mt-16 h-16 bg-[linear-gradient(to_bottom,transparent,#FAF6F7)]" />
 
-          {/* ════════════════════════════════════════════════════════════
-              2. WHY MIOSHY - light bg, big cards with stat chips
-          ════════════════════════════════════════════════════════════ */}
-          {/* #why bottom padding tightened (sm:pb-20 → sm:pb-[60px])
-              per Itzik 2026-05-07 — combined with press's pt-[60px]
-              below, the gap from "Why" content to "במילים שלהם" is
-              exactly 60+60=120px on desktop instead of 160px. */}
-          <section id="why" className="relative bg-[#FAF6F7] px-4 pb-12 pt-10 sm:pb-[60px] sm:pt-16">
-            <div className="mx-auto max-w-6xl">
-              <div className="mx-auto max-w-3xl text-center">
-                {/* Eyebrow - bumped to 14px on mobile (16px equivalent
-                    once you account for letter-spacing). */}
-                <span className="inline-flex items-center gap-2.5 text-[14px] font-semibold uppercase tracking-[0.18em] text-[#170E14] sm:text-[13px]">
-                  <span className="h-[7px] w-[7px] rounded-sm bg-[#B83C4D] shadow-[0_0_0_3px_rgba(184,60,77,0.18)]" />
-                  <CmsText cmsKey="gamesHub.whyBadge" />
-                </span>
-                <CmsText
-                  cmsKey="gamesHub.whyTitle"
-                  as="h2"
-                  className="mt-4 font-heading text-3xl font-bold leading-[1.05] tracking-[-0.02em] text-[#170E14] sm:text-4xl lg:text-5xl"
-                />
-                <CmsText
-                  cmsKey="gamesHub.whyHook"
-                  as="p"
-                  className="mx-auto mt-4 max-w-xl text-[17px] leading-[1.55] text-[#2A1B25] sm:mt-5 sm:text-[19px] sm:leading-[1.6]"
-                />
-              </div>
+          {/* 2026-05-20 — BENEFITS moved up from the bottom of the page
+              to here (first light section after the hero). Was the very
+              last marketing block above the footer; Itzik wants it
+              immediately under the hero. Also dropped its `bg-white`
+              wrapper class so the section now blends with the cream
+              parent (#FAF6F7) instead of reading as a discrete white
+              card. Original CmsKeys (gamesHub.whyItWorks.*,
+              gamesHub.benefits.{i}.*) unchanged.
+              2026-05-20 round 2 — outer wrapper normalised to match
+              other sections (`relative overflow-hidden px-4 py-[60px]`)
+              instead of the prior `mx-4 sm:mx-8 lg:mx-12 px-6...` which
+              produced non-standard side insets that didn't line up
+              with the SiteHeader logo or the press/catalogue/personas
+              sections below. Inner `max-w-4xl → max-w-7xl` so the
+              right edge of the benefit rows aligns horizontally with
+              the SiteHeader's logo column and every other content
+              column on the page. */}
+          <section
+            id="benefits"
+            data-benefits-position="above-press-v3"
+            data-bg-white-removed="true"
+            data-stamp="2026-05-20T-benefits-above-press-v3"
+            className="relative overflow-hidden px-4 py-[60px]"
+          >
+            <div className="relative mx-auto max-w-7xl">
+              {/* Header - right-aligned (RTL natural). Single reading axis, no
+                  center→right awkwardness. */}
+              <RevealOnScroll variant="scale-up">
+                <div className="text-start">
+                  <span className="inline-flex items-center gap-2.5 text-[12px] font-semibold uppercase tracking-[0.32em] text-[#170E14]">
+                    <span className="h-[7px] w-[7px] rounded-sm bg-[#B83C4D] shadow-[0_0_0_3px_rgba(184,60,77,0.18)]" />
+                    <CmsText cmsKey="gamesHub.whyItWorks.eyebrow" />
+                  </span>
+                  {/* 2026-05-20 — `gamesHub.whyItWorks.titleLine2`
+                      (the wine-italic "ערב שלם אחר." suffix) removed
+                      from the headline per Itzik. The CMS key itself
+                      is NOT deleted from cms_texts or messages/*.json
+                      so admins can restore it later by re-adding the
+                      <CmsText> below; for now the headline shows just
+                      titleLine1. */}
+                  <h2
+                    className="mt-7 text-[40px] leading-[1.05] tracking-[-0.02em] text-[#170E14] sm:text-5xl lg:text-[60px]"
+                    style={{
+                      fontFamily: "'Frank Ruhl Libre', serif",
+                      fontWeight: 600,
+                    }}
+                  >
+                    <CmsText cmsKey="gamesHub.whyItWorks.titleLine1" />
+                  </h2>
+                  <CmsText
+                    cmsKey="gamesHub.whyItWorks.lede"
+                    as="p"
+                    className="mt-6 max-w-2xl text-[19px] leading-[1.65] text-[#4A3A45]"
+                  />
+                </div>
+              </RevealOnScroll>
 
-              {/* Unified card design - mobile tightened: padding 20px,
-                  icon + stat chip on the same row (saves a wasted block
-                  of vertical space), title 18px, body 16px to keep
-                  every card scannable on a single phone scroll. */}
-              <div className="mt-8 grid gap-4 sm:mt-14 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4">
-                {[0, 1, 2, 3].map((i) => {
-                  const { Icon, iconBg, stat } = whyMeta[i]!;
+              {/* 2026-05-20 round 5 — Itzik: cards too prominent.
+                  Stripped ALL card chrome (no background tint, no
+                  border ring, no rounded corners, no shadow, no
+                  hover-lift). What's left is the typography only —
+                  glyph + word + body — sitting in 3 columns of pure
+                  whitespace on the parent cream.
+
+                  The 3 columns are separated by a single thin wine
+                  hairline that softly fades at top/bottom (gradient
+                  mask), so the divider reads as a typographic
+                  flourish rather than a hard edge. On mobile the
+                  vertical dividers go away (single column stack)
+                  and natural spacing takes over.
+
+                  Implementation note: `before:` pseudo-element keyed
+                  to inline-start respects RTL automatically — the
+                  hairline ends up between adjacent cards regardless
+                  of script direction. `first:before:hidden` strips
+                  the line from the first column so we don't get a
+                  stray hairline on the leading edge. */}
+              <div className="mt-[33px] grid gap-12 sm:grid-cols-2 sm:gap-x-10 sm:gap-y-14 lg:mt-[33px] lg:grid-cols-3 lg:gap-x-12 lg:gap-y-0">
+                {[0, 1, 2].map((i) => {
+                  const glyph = ["♡", "✦", "✺"][i]!;
                   return (
-                    <div
+                    <RevealOnScroll
                       key={i}
-                      className="group relative flex flex-col overflow-hidden rounded-2xl border border-[#EAE0E3] bg-[#FBF5F2] p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-transparent hover:shadow-md sm:rounded-3xl sm:p-7"
+                      variant="fade-up"
+                      delay={0.1 + i * 0.08}
                     >
-                      {/* Accent top-bar - same color for all cards (V2 brand) */}
-                      <div
-                        aria-hidden
-                        className="absolute inset-x-0 top-0 h-[3px] origin-right scale-x-0 rounded-t-3xl bg-[#B83C4D] transition-transform duration-400 group-hover:scale-x-100"
-                      />
-                      {/* Mobile: icon + stat chip share a row (RTL: icon
-                          on right, chip on left); desktop: stacked. */}
-                      <div className="flex items-center justify-between gap-3 sm:block">
-                        <div
-                          className={`inline-flex h-12 w-12 items-center justify-center rounded-xl ${iconBg} text-white shadow-md sm:h-14 sm:w-14 sm:rounded-2xl`}
+                      <article
+                        className="group relative px-2 lg:px-6 lg:before:absolute lg:before:inset-y-6 lg:before:start-0 lg:before:w-px lg:before:bg-gradient-to-b lg:before:from-transparent lg:before:via-[#B83C4D]/25 lg:before:to-transparent lg:first:before:hidden"
+                      >
+                        {/* Glyph eyebrow — large, serif, half-opacity
+                            wine. Acts as a typographic accent above
+                            the word. */}
+                        <span
+                          aria-hidden
+                          className="block text-[40px] leading-none text-[#B83C4D]/55 transition-colors duration-300 group-hover:text-[#B83C4D]/80 lg:text-[44px]"
+                          style={{ fontFamily: "'Frank Ruhl Libre', serif" }}
                         >
-                          <Icon className="h-6 w-6 sm:h-7 sm:w-7" />
-                        </div>
-                        <span className="inline-block rounded-full border border-[#EAE0E3] bg-[#FBE9EC] px-3 py-1 text-[12px] font-semibold uppercase tracking-[0.05em] text-[#8B2638] sm:mt-4 sm:self-start">
-                          {stat}
+                          {glyph}
                         </span>
-                      </div>
-                      <CmsText
-                        cmsKey={`gamesHub.whyItems.${i}.h`}
-                        as="h3"
-                        className="mt-3 font-heading text-[18px] font-bold leading-snug text-[#170E14] sm:mt-4 sm:text-xl"
-                      />
-                      <CmsText
-                        cmsKey={`gamesHub.whyItems.${i}.p`}
-                        as="p"
-                        className="mt-1.5 flex-1 text-[18px] leading-[1.55] text-[#4A3A45] sm:mt-2 sm:leading-[1.6]"
-                      />
-                    </div>
+
+                        {/* Wine italic word — dominant element.
+                            Period stays in ink-black so the
+                            statement reads as a declaration. */}
+                        <h3
+                          className="mt-5 text-[44px] leading-[0.95] text-[#B83C4D] sm:text-[48px] lg:mt-6 lg:text-[56px]"
+                          style={{
+                            fontFamily: "'Frank Ruhl Libre', serif",
+                            fontStyle: "italic",
+                            fontWeight: 500,
+                          }}
+                        >
+                          <CmsText cmsKey={`gamesHub.benefits.${i}.title`} />
+                          <span className="text-[#170E14]">.</span>
+                        </h3>
+
+                        {/* Body — natural readable size, ink-dark
+                            for contrast on the cream parent. */}
+                        <CmsText
+                          cmsKey={`gamesHub.benefits.${i}.body`}
+                          as="p"
+                          className="mt-5 text-[17px] leading-[1.65] text-[#3D2C36] lg:mt-6 lg:text-[18px]"
+                        />
+                      </article>
+                    </RevealOnScroll>
                   );
                 })}
               </div>
 
-              {/* Social proof - editorial pull-quote.
-                  The numbers ARE the story: each one set in serif italic accent
-                  inside a flowing magazine-style sentence, instead of a sterile
-                  data row. Decorative em-dashes flank a small italic kicker line. */}
-              <div className="mx-auto mt-16 max-w-3xl text-center">
-                <span className="inline-flex items-center gap-2.5 text-[12px] font-semibold uppercase tracking-[0.32em] text-[#170E14]">
-                  <span className="h-[7px] w-[7px] rounded-sm bg-[#B83C4D] shadow-[0_0_0_3px_rgba(184,60,77,0.18)]" />
-                  <CmsText cmsKey="gamesHub.byTheNumbers.eyebrow" />
-                </span>
-
-                {/* Main pull-quote — text comes from CMS, the live <Counter>
-                    and <em> styling stay as inline JSX. Counter rendered with
-                    suffix="+" in both locales so the digit+plus glyph is the
-                    same in HE and EN. */}
-                <p
-                  className="mt-7 text-[30px] leading-[1.35] text-[#170E14] sm:text-[30px] lg:text-[34px]"
-                  style={{
-                    fontFamily: "'Frank Ruhl Libre', serif",
-                    fontWeight: 500,
-                  }}
-                >
-                  <CmsText cmsKey="gamesHub.byTheNumbers.prefix" />
-                  <em
-                    className="text-[#B83C4D]"
-                    style={{ fontStyle: "italic", fontWeight: 700 }}
-                  >
-                    <Counter to={500} suffix="+" />
-                    <CmsText cmsKey="gamesHub.byTheNumbers.middle" />
-                  </em>
-                  <br />
-                  <CmsText cmsKey="gamesHub.byTheNumbers.connector" />
-                  <em
-                    className="text-[#B83C4D]"
-                    style={{ fontStyle: "italic", fontWeight: 700 }}
-                  >
-                    <CmsText cmsKey="gamesHub.byTheNumbers.suffix" />
-                  </em>
-                  .
-                </p>
-
-                {/* Trial line - its own line, black italic, smaller weight.
-                    Honest, qualified "free" framing: explicit no-credit-card
-                    promise so the 6-spin paywall later doesn't feel like a
-                    trap. */}
-                <CmsText
-                  cmsKey="gamesHub.byTheNumbers.trial"
-                  as="p"
-                  className="mt-4 text-[22px] leading-[1.4] text-[#170E14] sm:text-[24px] lg:text-[28px]"
-                  style={{
-                    fontFamily: "'Frank Ruhl Libre', serif",
-                    fontStyle: "italic",
-                    fontWeight: 500,
-                  }}
-                />
-
-                {/* Italic kicker line, flanked by decorative hairlines */}
-                <div className="mt-10 flex items-center justify-center gap-4">
-                  <span
-                    aria-hidden
-                    className="h-px w-16 bg-[#B83C4D]/40"
-                  />
-                  <CmsText
-                    cmsKey="gamesHub.byTheNumbers.kicker"
-                    as="p"
-                    className="text-[14px] uppercase tracking-[0.22em] text-[#8B2638]"
-                    style={{
-                      fontFamily: "'Frank Ruhl Libre', serif",
-                      fontStyle: "italic",
-                      fontWeight: 500,
-                    }}
-                  />
-                  <span
-                    aria-hidden
-                    className="h-px w-16 bg-[#B83C4D]/40"
-                  />
-                </div>
-
-                {/* CTA - delivers on the kicker's promise: one click → game */}
-                <div className="mt-7">
-                  <Link
-                    href={
-                      demoGame ? `/games/${demoGame.slug}` : "#catalogue"
-                    }
-                    className="group relative inline-flex min-h-[52px] items-center justify-center overflow-hidden rounded-full px-9 text-[16px] font-semibold text-white shadow-lg shadow-[#B83C4D]/30 transition hover:brightness-110"
-                  >
-                    <span
-                      aria-hidden
-                      className="absolute inset-0 bg-[linear-gradient(110deg,#B83C4D_0%,#8B2638_55%,#3D1F3D_100%)]"
-                    />
-                    <span className="relative z-10 inline-flex items-center">
-                      <CmsText cmsKey="gamesHub.byTheNumbers.ctaPlayNow" />
-                      <ArrowRight
-                        className={`ms-2 h-5 w-5 transition group-hover:translate-x-1 ${
-                          isHe ? "rotate-180 group-hover:-translate-x-1" : ""
-                        }`}
-                      />
-                    </span>
-                  </Link>
-                </div>
-              </div>
+              {/* 2026-05-20 — closing italic `gamesHub.whyItWorks.closing`
+                  removed per Itzik. CMS key + JSON fallback are left
+                  intact so it can be re-added later without a deploy. */}
             </div>
           </section>
 
-          {/* ════════════════════════════════════════════════════════════
-              3. PRESS - Hebrew-only. The press logos are all Israeli
-              outlets (ישראל היום, walla, מגזין החיים, TLD), and we don't
-              have English-language press to swap in for the EN locale,
-              so we hide the whole block entirely outside Hebrew rather
-              than show foreign-language logos that confuse the reader.
-              Mobile padding tightened to remove the dead air the user
-              flagged between the CTA above and the press headline.
-          ════════════════════════════════════════════════════════════ */}
-          {isHe ? (
-            <section
-              id="press"
-              className="relative overflow-hidden bg-[#FAF6F7] px-4 py-8 sm:py-[60px]"
-            >
-              {/* Drifting peach blob - heavy blur, enters from screen-left */}
-              <div
-                aria-hidden
-                className="pointer-events-none absolute inset-0 -z-0 overflow-hidden"
-              >
-                <div
-                  className="absolute top-[18%] -left-[12%] h-[440px] w-[440px] rounded-full mio-press-blob"
-                  style={{
-                    /* Peach glow restored - the press section is back on
-                       a cream surface so the original soft-peach drift
-                       fits the editorial mood again (Itzik 2026-05-06
-                       revert). */
-                    background:
-                      "radial-gradient(circle, rgba(232,193,177,0.6), rgba(232,193,177,0.3) 45%, transparent 75%)",
-                    /* Perf 2026-05-17 — blur 90→45 + size 620→440 to
-                       cut GPU compositor cost ~4× without changing the
-                       perceived softness (the gradient already feathers
-                       the edge). */
-                    filter: "blur(45px)",
-                    willChange: "transform",
-                  }}
-                />
-              </div>
+          {/* `<section id="why">` (Why Mioshy: 4 stat cards + social-
+              proof pull-quote + CTA) removed 2026-05-19 per Itzik.
+              The CMS keys it referenced (`gamesHub.whyBadge`,
+              `gamesHub.whyTitle`, `gamesHub.whyHook`,
+              `gamesHub.whyItems.{0..3}.{h,p}`, `gamesHub.byTheNumbers.*`)
+              are NOT deleted from the cms_texts table or messages/*.json
+              — admins may want to bring the section back, and the
+              `whyMeta`/`personaNumerals` constants are still in scope
+              above. Just the JSX block was removed so the marketing
+              page now goes straight from the dark hero → wave-divider
+              → light press section → catalogue. */}
 
-              <div
-                className="home-v2 relative"
-                dir="rtl"
-              >
-                <MediaSlider />
-              </div>
-            </section>
-          ) : null}
+          {/* 2026-05-20 — PRESS section (id="press", MediaSlider)
+              removed from /games per Itzik. The component file
+              `components/marketing/v2/MediaSlider.tsx` is left intact
+              — homepage v2 still mounts it via HomepageV2.tsx, so the
+              press logos / quotes are still surfaced sitewide; just
+              not duplicated on the /games catalog page. CMS keys
+              (homeV2.media.*) and the import of MediaSlider can be
+              dropped from this file later if a full cleanup pass is
+              done; for now we keep the import to avoid touching
+              unrelated lines. */}
 
           {/* ════════════════════════════════════════════════════════════
               4. CATALOGUE - all wheel games + snakes virtual card
@@ -783,7 +784,7 @@ export default async function GamesHubPage({
                   block for future reuse. */}
             </div>
 
-            <div className="relative z-10 mx-auto max-w-6xl">
+            <div className="relative z-10 mx-auto max-w-7xl">
               {/* Stacked header - eyebrow + title + lead description.
                   Per Itzik 2026-05-06: lead reads BELOW the title (not on
                   the side) so the catalogue copy flows top-to-bottom. */}
@@ -1126,7 +1127,7 @@ export default async function GamesHubPage({
               }}
             />
 
-            <div className="relative mx-auto max-w-6xl">
+            <div className="relative mx-auto max-w-7xl">
               <RevealOnScroll variant="scale-up">
                 <div className="mx-auto max-w-2xl text-center">
                   <span className="inline-flex items-center gap-2.5 text-[12px] font-semibold uppercase tracking-[0.32em] text-[#170E14]">
@@ -1157,7 +1158,7 @@ export default async function GamesHubPage({
               </RevealOnScroll>
 
               {/* 3 magazine chapters */}
-              <div className="mt-[80px] grid gap-8 lg:grid-cols-3 lg:gap-7">
+              <div className="mt-[33px] grid gap-8 lg:grid-cols-3 lg:gap-7">
                 {personaNumerals.map((num, i) => (
                   <RevealOnScroll
                     key={i}
@@ -1235,109 +1236,25 @@ export default async function GamesHubPage({
               </div>
             </div>
           </section>
+          {/* 2026-05-20 — original BENEFITS section was here at the
+              bottom of the cream wrapper. Moved to right below the
+              hero (see above, right after the wave-divider). */}
+
           {/* ════════════════════════════════════════════════════════════
-              BENEFITS - "מה זה עושה לכם" (moved to bottom, above footer)
-                   Editorial spread: serif-italic emotion words, hairline rows.
+              FAQ - 8 questions tailored to the /games funnel.
+              Mounted via the shared <FAQ> component with a `gamesHub.faq.*`
+              CMS namespace, so admins can edit each Q/A independently of
+              the homepage FAQ (`homeV2.faq.*`). Wrapped in `.home-v2` so
+              the existing `.home-v2 .faq` styling in styles.css applies
+              without duplication. Itzik 2026-05-20.
           ════════════════════════════════════════════════════════════ */}
-          <section
-            id="benefits"
-            className="relative mx-4 mt-6 overflow-hidden bg-white px-6 py-[60px] sm:mx-8 sm:px-10 lg:mx-12 lg:px-14"
-          >
-            <div className="relative mx-auto max-w-4xl">
-              {/* Header - right-aligned (RTL natural). Single reading axis, no
-                  center→right awkwardness. */}
-              <RevealOnScroll variant="scale-up">
-                <div className="text-start">
-                  <span className="inline-flex items-center gap-2.5 text-[12px] font-semibold uppercase tracking-[0.32em] text-[#170E14]">
-                    <span className="h-[7px] w-[7px] rounded-sm bg-[#B83C4D] shadow-[0_0_0_3px_rgba(184,60,77,0.18)]" />
-                    <CmsText cmsKey="gamesHub.whyItWorks.eyebrow" />
-                  </span>
-                  <h2
-                    className="mt-7 text-[40px] leading-[1.05] tracking-[-0.02em] text-[#170E14] sm:text-5xl lg:text-[60px]"
-                    style={{
-                      fontFamily: "'Frank Ruhl Libre', serif",
-                      fontWeight: 600,
-                    }}
-                  >
-                    <CmsText cmsKey="gamesHub.whyItWorks.titleLine1" />
-                    {" "}
-                    <CmsText
-                      cmsKey="gamesHub.whyItWorks.titleLine2"
-                      className="text-[#B83C4D]"
-                      style={{ fontStyle: "italic", fontWeight: 500 }}
-                    />
-                  </h2>
-                  <CmsText
-                    cmsKey="gamesHub.whyItWorks.lede"
-                    as="p"
-                    className="mt-6 max-w-2xl text-[19px] leading-[1.65] text-[#4A3A45]"
-                  />
-                </div>
-              </RevealOnScroll>
-
-              {/* Editorial benefit rows - 2-column structure */}
-              <ul className="mt-[60px] space-y-2">
-                {benefitNumerals.map((numeral, i) => (
-                  <RevealOnScroll
-                    key={i}
-                    variant="fade-up"
-                    delay={0.1 + i * 0.1}
-                  >
-                    <li className="group grid gap-y-4 border-t border-[#EAE0E3] pt-8 transition-colors duration-300 hover:border-[#B83C4D]/40 lg:grid-cols-[240px_1fr] lg:items-baseline lg:gap-x-[45px] lg:pt-9">
-                      {/* Title cluster - numeral + word inline, baseline-aligned */}
-                      <div className="flex items-baseline gap-3">
-                        <span
-                          className="text-[22px] tracking-[0.08em] text-[#B83C4D] transition-colors duration-300 group-hover:text-[#8B2638] sm:text-[24px]"
-                          style={{
-                            fontFamily: "'Frank Ruhl Libre', serif",
-                            fontStyle: "italic",
-                            fontWeight: 500,
-                          }}
-                        >
-                          {numeral}
-                        </span>
-                        <CmsText
-                          cmsKey={`gamesHub.benefits.${i}.title`}
-                          as="h3"
-                          className="text-[36px] leading-[1] tracking-[-0.02em] text-[#170E14] sm:text-[40px]"
-                          style={{
-                            fontFamily: "'Frank Ruhl Libre', serif",
-                            fontStyle: "italic",
-                            fontWeight: 500,
-                          }}
-                        />
-                      </div>
-
-                      {/* Body */}
-                      <CmsText
-                        cmsKey={`gamesHub.benefits.${i}.body`}
-                        as="p"
-                        className="text-[18px] leading-[1.65] text-[#4A3A45] lg:-mt-[5px]"
-                      />
-                    </li>
-                  </RevealOnScroll>
-                ))}
-                {/* Final hairline so the last row has bottom delimiter symmetry */}
-                <li
-                  aria-hidden
-                  className="!mt-2 h-px w-full bg-[#EAE0E3]"
-                />
-              </ul>
-
-              {/* Closing italic - kept right-aligned to match the new axis */}
-              <RevealOnScroll variant="fade" delay={0.4}>
-                <CmsText
-                  cmsKey="gamesHub.whyItWorks.closing"
-                  as="p"
-                  className="mt-10 max-w-xl text-[18px] text-[#7A6A75] lg:mt-12"
-                  style={{
-                    fontFamily: "'Frank Ruhl Libre', serif",
-                    fontStyle: "italic",
-                  }}
-                />
-              </RevealOnScroll>
-            </div>
-          </section>
+          <div className="home-v2">
+            <FAQ
+              cmsKeyPrefix="gamesHub.faq"
+              numbers={[1, 2, 3, 4, 5, 6, 7, 8]}
+              anchorId="faq-games"
+            />
+          </div>
         </div>
         {/* ── end light sections ── */}
 

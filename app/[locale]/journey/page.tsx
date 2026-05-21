@@ -40,14 +40,10 @@ import { safeJsonLd } from "@/lib/seo/jsonLd";
 import { unstable_noStore as noStore } from "next/cache";
 import {
   ArrowRight,
-  Compass,
   HeartHandshake,
   Sparkles,
   Clock,
   BookOpen,
-  MessageCircle,
-  Target,
-  Video,
 } from "lucide-react";
 import { Link } from "@/navigation";
 import { routing } from "@/i18n/routing";
@@ -310,19 +306,25 @@ export default async function JourneyMarketingPage({
   // whyMeta — icon + colour are presentation, the stat label comes from
   // CMS via journeyHub.why.stats.<i>.label (rendered through <CmsText>
   // at the consumer site so admins can edit per item).
+  // 2026-05-21 — the "מותאם לכם" (Compass / stats[0]) card was removed
+  // at Itzik's request; remaining 3 cards center on desktop and stretch
+  // slightly wider in their grid track. CMS rows for index 0 stay in
+  // cms_texts (journeyHub.why.{stats,items}.0.*) untouched so the card
+  // can be re-introduced by restoring this array entry and switching
+  // the loop back to [0,1,2,3]. The loop below intentionally iterates
+  // cms indices [1,2,3] while indexing `whyMeta` 0..2 — that keeps the
+  // admin's existing rows stable instead of renumbering them.
   const whyMeta = [
-    { Icon: Compass,        iconBg: "bg-[#B83C4D]" },
     { Icon: Clock,          iconBg: "bg-[#8B2638]" },
     { Icon: BookOpen,       iconBg: "bg-[#4A1721]" },
     { Icon: HeartHandshake, iconBg: "bg-[#3D1F3D]" },
   ];
 
-  const insideMeta = [
-    { Icon: Target, numeral: "I" },
-    { Icon: MessageCircle, numeral: "II" },
-    { Icon: Sparkles, numeral: "III" },
-    { Icon: Video, numeral: "IV" },
-  ];
+  // `insideMeta` removed 2026-05-21 alongside the INSIDE section
+  // (id="inside"). If the section is brought back, restore from
+  // git: `git show HEAD~1 -- app/[locale]/journey/page.tsx | grep
+  // -A 6 insideMeta`. The lucide imports (Target / MessageCircle /
+  // Video) may now be unused — Next/TS will warn.
 
   // When the viewer already has an active journey, the assessment funnel
   // is a detour - send them straight to the timeline from every CTA.
@@ -426,11 +428,16 @@ export default async function JourneyMarketingPage({
           {/* `JourneyHubDiagProbe` removed 2026-05-19 — orbs are gone,
               the probe is no longer useful. File kept on disk. */}
 
-          <div className="relative z-10 mx-auto max-w-5xl px-4 pb-12 pt-10 text-center sm:pb-32 sm:pt-16">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-rose-300/30 bg-rose-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-rose-100">
-              <Sparkles className="h-3 w-3" />
-              <CmsText cmsKey="journeyHub.badge" />
-            </span>
+          {/* 2026-05-21 — hero top/bottom padding tightened so the
+              block doesn't feel oversized. Mobile: pt-10→pt-6,
+              pb-12→pb-6. Desktop: sm:pt-12→sm:pt-8, sm:pb-32→sm:pb-16.
+              Inner spacing (mt-* on headline, lede, CTAs) untouched. */}
+          <div className="relative z-10 mx-auto max-w-5xl px-4 pb-6 pt-6 text-center sm:pb-16 sm:pt-8">
+            {/* `journeyHub.badge` pill removed 2026-05-20 per Itzik
+                ("ליווי עם מיאושי · Personalised coaching"). The CMS
+                row stays in cms_texts in case the badge is brought
+                back; only the JSX render is gone. The Sparkles icon
+                import may now be unused — Next/ts will warn if so. */}
 
             {/* Preheader — calls out the personal-coaching value
                 proposition above the headline. Per Itzik 2026-05-07. */}
@@ -486,7 +493,7 @@ export default async function JourneyMarketingPage({
             <CmsText
               cmsKey="journeyHub.lede"
               as="p"
-              className="mx-auto mt-8 max-w-2xl text-pretty text-[19px] leading-[1.65] text-white/80 sm:text-[20px]"
+              className="mx-auto mt-8 max-w-2xl text-pretty text-[20px] leading-[1.65] text-white/80 sm:text-[20px]"
             />
 
             {hasActiveAssignments ? (
@@ -572,126 +579,64 @@ export default async function JourneyMarketingPage({
                 />
               </div>
 
-              <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                {[0, 1, 2, 3].map((i) => {
-                  const { Icon, iconBg } = whyMeta[i]!;
+              {/* 3-up grid (was 4-up). Centered with mx-auto + max-w-5xl
+                  so the cards stretch slightly wider than they did at
+                  4-up but don't fill the whole 6xl section width — keeps
+                  visual balance with the section heading above. */}
+              <div className="mx-auto mt-14 grid max-w-5xl gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {[1, 2, 3].map((cmsIndex, arrayIndex) => {
+                  const { Icon, iconBg } = whyMeta[arrayIndex]!;
                   return (
                     <div
-                      key={i}
-                      className="group relative grid grid-cols-[56px_1fr] gap-x-4 gap-y-2 overflow-hidden rounded-3xl border border-[#EAE0E3] bg-[#FBF5F2] p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-transparent hover:shadow-md sm:flex sm:flex-col sm:gap-x-0 sm:gap-y-0 sm:p-7"
+                      key={cmsIndex}
+                      className="group relative flex flex-col gap-3 overflow-hidden rounded-3xl border border-[#EAE0E3] bg-[#FBF5F2] p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-transparent hover:shadow-md sm:p-7"
                     >
                       <div
                         aria-hidden
                         className="absolute inset-x-0 top-0 h-[3px] origin-right scale-x-0 rounded-t-3xl bg-[#B83C4D] transition-transform duration-400 group-hover:scale-x-100"
                       />
-                      <div
-                        className={`row-span-3 self-start inline-flex h-14 w-14 items-center justify-center rounded-2xl sm:row-auto ${iconBg} text-white shadow-md`}
-                      >
-                        <Icon className="h-7 w-7" />
+                      {/* Icon + badge unified into one row.
+                          2026-05-21 — Itzik asked for the icon-tile
+                          (was 56px) and the pill badge to read as a
+                          single chip-row, with the icon shrunk hard.
+                          New: 32px tile, 16px lucide glyph. */}
+                      <div className="flex items-center gap-2.5">
+                        <span
+                          aria-hidden
+                          className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${iconBg} text-white shadow-sm`}
+                        >
+                          <Icon className="h-4 w-4" />
+                        </span>
+                        <CmsText
+                          cmsKey={`journeyHub.why.stats.${cmsIndex}.label`}
+                          className="inline-block rounded-full border border-[#EAE0E3] bg-[#FBE9EC] px-3 py-1 text-[12px] font-semibold uppercase tracking-[0.05em] text-[#8B2638]"
+                        />
                       </div>
                       <CmsText
-                        cmsKey={`journeyHub.why.stats.${i}.label`}
-                        className="inline-block self-start justify-self-start rounded-full border border-[#EAE0E3] bg-[#FBE9EC] px-3 py-1 text-[12px] font-semibold uppercase tracking-[0.05em] text-[#8B2638] sm:mt-4 sm:justify-self-auto"
-                      />
-                      <CmsText
-                        cmsKey={`journeyHub.why.items.${i}.h`}
+                        cmsKey={`journeyHub.why.items.${cmsIndex}.h`}
                         as="h3"
-                        className="font-heading text-2xl font-bold leading-snug text-[#170E14] sm:mt-4 sm:text-xl"
+                        className="font-heading text-2xl font-bold leading-snug text-[#170E14] sm:text-xl"
                       />
                       <CmsText
-                        cmsKey={`journeyHub.why.items.${i}.p`}
+                        cmsKey={`journeyHub.why.items.${cmsIndex}.p`}
                         as="p"
-                        className="text-[18px] leading-[1.6] text-[#4A3A45] sm:mt-2 sm:flex-1"
+                        className="text-[18px] leading-[1.6] text-[#4A3A45] sm:flex-1"
                       />
                     </div>
                   );
                 })}
               </div>
 
-              {/* Social proof - editorial pull-quote, mirroring /games.
-                  Two italic-accent phrases inside a flowing serif sentence,
-                  black-italic trial qualifier, kicker line, and a CTA that
-                  delivers on the kicker's promise. */}
-              <div className="mx-auto mt-16 max-w-3xl text-center">
-                <span className="inline-flex items-center gap-2.5 text-[12px] font-semibold uppercase tracking-[0.32em] text-[#170E14]">
-                  <span className="h-[7px] w-[7px] rounded-sm bg-[#B83C4D] shadow-[0_0_0_3px_rgba(184,60,77,0.18)]" />
-                  <CmsText cmsKey="journeyHub.pullQuote.eyebrow" />
-                </span>
-
-                <p
-                  className="mt-7 text-[30px] leading-[1.35] text-[#170E14] sm:text-[30px] lg:text-[34px]"
-                  style={{
-                    fontFamily: "'Frank Ruhl Libre', serif",
-                    fontWeight: 500,
-                  }}
-                >
-                  <CmsText
-                    cmsKey="journeyHub.pullQuote.line1Emphasis"
-                    as="em"
-                    className="text-[#B83C4D]"
-                    style={{ fontStyle: "italic", fontWeight: 700 }}
-                  />
-                  <CmsText cmsKey="journeyHub.pullQuote.line1After" />
-                  <br />
-                  <CmsText cmsKey="journeyHub.pullQuote.line2Before" />
-                  <CmsText
-                    cmsKey="journeyHub.pullQuote.line2Emphasis"
-                    as="em"
-                    className="text-[#B83C4D]"
-                    style={{ fontStyle: "italic", fontWeight: 700 }}
-                  />
-                  .
-                </p>
-
-                {/* Trial qualifier - black italic, smaller weight */}
-                <CmsText
-                  cmsKey="journeyHub.pullQuote.trial"
-                  as="p"
-                  className="mt-4 text-[22px] leading-[1.4] text-[#170E14] sm:text-[24px] lg:text-[28px]"
-                  style={{
-                    fontFamily: "'Frank Ruhl Libre', serif",
-                    fontStyle: "italic",
-                    fontWeight: 500,
-                  }}
-                />
-
-                {/* Italic kicker, flanked by hairlines */}
-                <div className="mt-10 flex items-center justify-center gap-4">
-                  <span aria-hidden className="h-px w-16 bg-[#B83C4D]/40" />
-                  <CmsText
-                    cmsKey="journeyHub.pullQuote.kicker"
-                    as="p"
-                    className="text-[14px] uppercase tracking-[0.22em] text-[#8B2638]"
-                    style={{
-                      fontFamily: "'Frank Ruhl Libre', serif",
-                      fontStyle: "italic",
-                      fontWeight: 500,
-                    }}
-                  />
-                  <span aria-hidden className="h-px w-16 bg-[#B83C4D]/40" />
-                </div>
-
-                {/* CTA - delivers on the kicker's promise */}
-                <div className="mt-7">
-                  <Link
-                    href={primaryHref}
-                    className="group relative inline-flex min-h-[52px] items-center justify-center overflow-hidden rounded-full px-9 text-[16px] font-semibold text-white shadow-lg shadow-fuchsia-500/25 transition hover:brightness-110"
-                  >
-                    <span
-                      aria-hidden
-                      className="absolute inset-0 bg-[linear-gradient(110deg,#d946ef_0%,#a855f7_35%,#ec4899_70%,#f59e0b_100%)]"
-                    />
-                    <span className="relative z-10 inline-flex items-center">
-                      {primaryLabel}
-                      <ArrowRight
-                        className={`ms-2 h-5 w-5 transition group-hover:translate-x-1 ${
-                          isHe ? "rotate-180 group-hover:-translate-x-1" : ""
-                        }`}
-                      />
-                    </span>
-                  </Link>
-                </div>
-              </div>
+              {/* Social-proof pull-quote block (eyebrow "המסלול שלכם",
+                  the serif sentence, trial qualifier, kicker hairlines,
+                  and the gradient assessment CTA) removed 2026-05-21
+                  per Itzik — the section already has its own heading
+                  and "Why" cards, and the pull-quote ended up feeling
+                  like noise after the line1Emphasis / line2Before /
+                  line2Emphasis fragments were stripped one by one. The
+                  CMS rows journeyHub.pullQuote.{eyebrow,line1After,
+                  trial,kicker} stay in cms_texts so the whole block
+                  can be rebuilt by restoring this JSX from git. */}
             </div>
           </section>
 
@@ -791,95 +736,14 @@ export default async function JourneyMarketingPage({
           </section>
 
           {/* ════════════════════════════════════════════════════════════
-              4. INSIDE - dark wine editorial card (full break from cream)
+              4. INSIDE — REMOVED 2026-05-21 per Itzik.
+              The dark-wine editorial card with the 4 roman-numeral
+              cards ("What's inside the journey") was cut from the
+              live page. CMS rows (journeyHub.inside.badge / .title /
+              .cards.{0-3}.{h,p}) and the `insideMeta` array remain
+              on disk so the section can be re-instated by uncommenting
+              the JSX block in git history, no re-translation needed.
           ════════════════════════════════════════════════════════════ */}
-          <section
-            id="inside"
-            className="relative mx-4 my-6 overflow-hidden rounded-[36px] bg-[linear-gradient(180deg,#0E0810_0%,#1A0B14_55%,#1E0F1E_100%)] px-4 pt-14 pb-[60px] sm:mx-8 lg:mx-12 lg:pt-20"
-          >
-            {/* Aurora glows */}
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-0 -z-0 opacity-70"
-              style={{
-                background:
-                  "radial-gradient(900px 500px at 18% 20%, rgba(196,68,86,0.18), transparent 48%), " +
-                  "radial-gradient(800px 480px at 82% 80%, rgba(139,38,56,0.14), transparent 48%)",
-              }}
-            />
-            {/* Hairline frame */}
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-x-6 top-6 h-px bg-gradient-to-r from-transparent via-[#B83C4D]/30 to-transparent"
-            />
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-x-6 bottom-6 h-px bg-gradient-to-r from-transparent via-[#B83C4D]/30 to-transparent"
-            />
-
-            <div className="relative mx-auto max-w-6xl">
-              <div className="mx-auto max-w-2xl text-center">
-                <span className="inline-flex items-center gap-2.5 text-[12px] font-semibold uppercase tracking-[0.32em] text-[#E9C4CA]">
-                  <span className="h-[7px] w-[7px] rounded-sm bg-[#B83C4D] shadow-[0_0_0_3px_rgba(184,60,77,0.25)]" />
-                  <CmsText cmsKey="journeyHub.inside.badge" />
-                </span>
-                <CmsText
-                  cmsKey="journeyHub.inside.title"
-                  as="h2"
-                  className="mt-7 text-[40px] leading-[1.05] tracking-[-0.02em] text-white sm:text-5xl lg:text-[58px]"
-                  style={{
-                    fontFamily: "'Frank Ruhl Libre', serif",
-                    fontWeight: 600,
-                  }}
-                />
-              </div>
-
-              {/* 4-card editorial grid with hairline dividers + per-card icon */}
-              <div className="mt-10 grid gap-y-6 md:grid-cols-2 md:gap-x-10 md:gap-y-14 md:mt-14 lg:grid-cols-4 lg:gap-x-8 lg:mt-16">
-                {[0, 1, 2, 3].map((i) => {
-                  const { numeral } = insideMeta[i]!;
-                  return (
-                    <div
-                      key={i}
-                      className={`group relative h-full grid grid-cols-[3rem_1fr] items-start gap-x-4 md:block ${
-                        i > 0 ? "lg:border-s lg:ps-8" : ""
-                      }`}
-                      style={
-                        i > 0
-                          ? { borderColor: "rgba(255,255,255,0.08)" }
-                          : undefined
-                      }
-                    >
-                      <span
-                        className="row-span-3 md:row-auto text-center md:text-start text-[32px] leading-none tracking-[0.1em] text-[#B83C4D] transition-colors duration-300 group-hover:text-[#E9C4CA]"
-                        style={{
-                          fontFamily: "'Frank Ruhl Libre', serif",
-                          fontStyle: "italic",
-                          fontWeight: 500,
-                        }}
-                      >
-                        {numeral}
-                      </span>
-
-                      <CmsText
-                        cmsKey={`journeyHub.inside.cards.${i}.h`}
-                        as="h3"
-                        className="text-[24px] font-bold leading-tight text-white md:mt-5"
-                      />
-
-                      <div className="mt-3 h-[2px] w-12 bg-[#B83C4D] transition-all duration-500 ease-out group-hover:w-24 md:mt-4" />
-
-                      <CmsText
-                        cmsKey={`journeyHub.inside.cards.${i}.p`}
-                        as="p"
-                        className="mt-3 text-[18px] leading-[1.65] text-white/70 md:mt-5"
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </section>
 
           {/* ════════════════════════════════════════════════════════════
               5. CTA BLOCK - light cream manifesto closer

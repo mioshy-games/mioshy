@@ -26,7 +26,7 @@ import {
   Play,
   Sparkles,
   Star,
-} from "lucide-react";
+} from "@/components/icons/Icons";
 import { stubPurchaseGame } from "@/app/actions/between-us-couple";
 import { subscribeAdultsTier } from "@/app/actions/adults-subscribe";
 import type { AdultsPricing } from "@/lib/adults/pricing";

@@ -50,11 +50,12 @@ export function Intimacy() {
             as="div"
             className="eyebrow intimacy-bridge-eyebrow"
           />
+          {/* 2026-05-20 — `bridgeHeadlineEm` removed per Itzik. The
+              CMS key + JSON fallback are left intact so an admin can
+              paste the inner `<em><CmsText/></em>` back later without
+              a deploy. Only `bridgeHeadlinePart1` renders now. */}
           <h2 className="intimacy-bridge-head">
             <CmsText cmsKey="homeV2.intimacy.bridgeHeadlinePart1" />
-            <em>
-              <CmsText cmsKey="homeV2.intimacy.bridgeHeadlineEm" />
-            </em>
           </h2>
           <CmsText
             cmsKey="homeV2.intimacy.bridgeBody"

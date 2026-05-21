@@ -111,7 +111,11 @@ export function LiveDemoHero({
   isHe,
   title,
   lede,
-  badge,
+  // `badge` arg renamed to `_badge` so ESLint's unused-args rule
+  // (allows /^_/) accepts it. The pill that consumed `badge` was
+  // removed earlier; the prop is still part of the public API so
+  // callers don't need to change.
+  badge: _badge,
   ctaPrimary,
   ctaPrimaryHref = "#catalogue",
   ctaSecondary,
@@ -137,26 +141,13 @@ export function LiveDemoHero({
   // Helps confirm whether centering math actually places the card in view
   // or whether something (transform: none, overflow, etc.) is shifting it.
   useEffect(() => {
+    // 2026-05-20 — popup-rect diagnostic effect removed entirely.
+    // Was logging 5 separate console.log calls per settle, each
+    // capturing big object literals. Costed ~10-15ms of main-thread
+    // work per spin. The popup positioning is stable now; if we ever
+    // need to debug position again we can re-add via NODE_ENV gate.
     if (phase !== "settled" || !cardOpen) return;
-    const log = () => {
-      const el = popupRef.current;
-      if (!el) {
-        console.log("[LiveDemoHero/popup] popupRef.current is null - element not yet mounted.");
-        return;
-      }
-      const rect = el.getBoundingClientRect();
-      const parent = el.parentElement;
-      const parentRect = parent?.getBoundingClientRect();
-      const cs = window.getComputedStyle(el);
-      console.log("[LiveDemoHero/popup] viewport:", { w: window.innerWidth, h: window.innerHeight });
-      console.log("[LiveDemoHero/popup] popup rect:", { left: rect.left, right: rect.right, top: rect.top, width: rect.width });
-      console.log("[LiveDemoHero/popup] parent rect:", parentRect ? { left: parentRect.left, right: parentRect.right, width: parentRect.width } : "no parent");
-      console.log("[LiveDemoHero/popup] computed transform:", cs.transform, "left:", cs.left, "right:", cs.right, "marginLeft:", cs.marginLeft, "marginRight:", cs.marginRight);
-      console.log("[LiveDemoHero/popup] inline style.transform (Framer-applied):", el.style.transform || "(empty)");
-    };
-    // Wait one frame so Framer's animate has applied its inline transform.
-    const id = requestAnimationFrame(() => requestAnimationFrame(log));
-    return () => cancelAnimationFrame(id);
+    return undefined;
   }, [phase, cardOpen]);
 
   // Marketing demo wheel - intentionally simplified to TWO categories
@@ -203,10 +194,10 @@ export function LiveDemoHero({
       ? "מה היית מוחק/ת מהעבר שלנו אם יכולת?"
       : "What would you erase from our past, if you could?";
 
-  // First-render diagnostic - logs once when the data shape arrives.
-  if (typeof window !== "undefined" && !spinStartedRef.current) {
-    console.log("[LiveDemoHero] render - phase:", phase, "slices from props:", slices?.length ?? "null", "fallback active:", !slices || slices.length === 0, "effectiveSlices:", effectiveSlices);
-  }
+  // 2026-05-20 — first-render diagnostic console.log removed. Was
+  // running on every initial render of LiveDemoHero and serializing
+  // the entire effectiveSlices array. Cheap on its own but stacked
+  // with all the other logs it was visible in main-thread profiles.
 
   // ── Resolved Wheel props - mirrors TruthOrDareClient's mapping so the demo
   //    wheel matches the adm-n-configured production wheel pixel-for-pixel.
@@ -284,42 +275,32 @@ export function LiveDemoHero({
   const resolvedPointerSvgHeight = gameSettings?.wheel?.pointerSvgHeight;
 
   // Auto-spin immediately on mount - no entrance delay (per Itzik).
-  // Production Wheel handles all th- easing, duration and landing math -
-  // we just trigger and listen.-
-  //
-  // Diagnostic logging: trace the chain to surface why the spin might
-  // silently no-op (ref not yet assigned, options empty, double-mount
-  // cancellation in StrictMode, etc.). Harmless in prod and easy to
-  // strip once the hero is verified.
+  // Production Wheel handles all the easing, duration and landing math -
+  // we just trigger and listen.
+  // 2026-05-20 — Re StrictMode double-spin: kept the original
+  // "no-cleanup" pattern intentionally. Why we don't add cleanup:
+  //   1. StrictMode dev runs effect → cleanup → effect again,
+  //      synchronously.
+  //   2. If cleanup `clearTimeout`s, the timer never fires (it was
+  //      scheduled for the next macro-task) and the spin never
+  //      starts in dev.
+  //   3. The `spinStartedRef` guard on the second effect prevents
+  //      double-spin; refs persist across the StrictMode pseudo-
+  //      unmount, so the second mount correctly bails.
+  // Net: spin runs exactly once in both dev (StrictMode) and prod.
+  // The unmounted-component warning during real navigation is
+  // suppressed by the wheelRef null-check below.
   useEffect(() => {
-    console.log("[LiveDemoHero] mount effect - spinStarted:", spinStartedRef.current, "wheelRef.current:", wheelRef.current, "slices:", effectiveSlices.length);
-
-    if (spinStartedRef.current) {
-      console.log("[LiveDemoHero] already started → skipping (StrictMode's 2nd effect run)");
-      return;
-    }
+    if (spinStartedRef.current) return;
     spinStartedRef.current = true;
 
-    // Defer one tick so Wheel's useImperativeHandle has assigned the ref.
-    // Crucially: NO cleanup that cancels the timer - React 18 StrictMode
-    // tears down the first effect before the timer -ires, and we want
-    // the spin to happen exactly once. The Wheel's internal `spinning`
-    // guard prevents a double-trigger if anything fires twice.
     setTimeout(() => {
-      console.log("[LiveDemoHero] timer fired - wheelRef.current:", wheelRef.current, "options:", effectiveSlices.length);
-      if (!wheelRef.current) {
-        console.error("[LiveDemoHero] wheelRef.current is null - Wheel never registered its imperative handle.");
-        return;
-      }
-      if (effectiveSlices.length === 0) {
-        console.error("[LiveDemoHero] effectiveSlices is empty - spin() will no-op.");
-        return;
-      }
+      if (!wheelRef.current) return;
+      if (effectiveSlices.length === 0) return;
       setPhase("spinning");
       wheelRef.current.spin();
-      console.log("[LiveDemoHero] spin() called");
     }, 0);
-    // Intentionally no cleanup - see comment above.
+    // Intentionally no cleanup — see comment above.
   }, [effectiveSlices]);
 
   // Dynamic CTA - once the wheel has landed, the primary CTA invites the
@@ -348,6 +329,13 @@ export function LiveDemoHero({
         gameSlug={gameSlug}
         primaryColor={gameBgValue ?? undefined}
         bgSettings={gameSettings?.background}
+        // 2026-05-20 — once the demo wheel has settled, freeze the
+        // drifting blob animations so the marketing hero stops
+        // consuming compositor frames. Itzik: "after the wheel lands
+        // the page should go back to feeling fast." Hands the
+        // GPU/compositor budget back for scroll, hydration of
+        // sections below, and IntersectionObserver callbacks.
+        frozen={phase === "settled"}
         // 2026-05-19 — particles disabled on the marketing hero per
         // Itzik. NOTE: passing `null` is NOT enough — the component
         // merges `DEFAULT_PARTICLES` (enabled: true, count: 18) over
@@ -369,78 +357,77 @@ export function LiveDemoHero({
             taste-test. The copy follows below, centered. On desktop
             the copy reads first on the start side, wheel on the other.
             flex-col-reverse achieves the swap without duplicating DOM. */}
-        <div className="mx-auto flex min-h-[700px] max-w-6xl flex-col-reverse items-center gap-10 px-4 pb-16 pt-6 lg:flex-row lg:items-stretch lg:gap-12 lg:pb-20 lg:pt-16">
+        {/* 2026-05-20 — max-w-6xl → max-w-7xl. SiteHeader's top bar
+            uses max-w-7xl (see SiteHeader.tsx line 280). All marketing
+            sections were previously max-w-6xl, which left a ~64px gap
+            on each side between the hero and the header's logo column.
+            Itzik: the header is the reference width; everything else
+            should align. */}
+        <div className="mx-auto flex min-h-[700px] max-w-7xl flex-col-reverse items-center gap-10 px-4 pb-16 pt-6 lg:flex-row lg:items-stretch lg:gap-12 lg:pb-20 lg:pt-16">
         {/* ── COPY COLUMN ─────────────────────────────────────────── */}
         <div className="relative z-10 mx-auto max-w-2xl text-center lg:mx-0 lg:flex-1 lg:text-start">
-          {badge ? (
-            <motion.div
-              initial={{ opacity: 0, y: -6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
-              className="inline-flex items-center gap-1.5 rounded-full border border-[#E9C4CA]/30 bg-[#B83C4D]/15 px-3 py-1 text-[12px] font-semibold text-[#E9C4CA] backdrop-blur-md"
-            >
-              <Sparkles className="h-3.5 w-3.5" />
-              <span>{badge}</span>
-            </motion.div>
-          ) : null}
+          {/* 2026-05-19 — "טעימה חיה · Mioshy" sparkle pill removed per
+              Itzik. The h1 alone carries the heading weight; the pill
+              read as redundant chrome. `badge` prop kept on the
+              component signature so callers don't need to change. */}
 
+          {/* 2026-05-20 — All entrance motion.* `initial={{...}}`
+              changed to `initial={false}`. Reason: now that we SSR the
+              LiveDemoHero (Stage 1.1 of perf rollout), the SSR HTML
+              would have shipped with `style="opacity:0"` and the user
+              would see invisible content for ~0.8s on slow phones
+              while waiting for hydration + entrance animation. With
+              initial={false}, the element renders at its final state
+              from the very first paint — no FOUC, no entrance
+              animation. The fade-in was nice but optional; instant
+              text is the right call for SSR + above-the-fold content. */}
           {RICH_MARKUP_RE.test(title) ? (
-            <motion.h1
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, ease: "easeOut", delay: 0.05 }}
+            <h1
               className="cms-rich mt-6 text-balance text-5xl leading-[1.05] tracking-[-0.02em] text-white sm:text-6xl lg:text-7xl"
               style={{ fontFamily: "'Frank Ruhl Libre', serif", fontWeight: 600 }}
               dangerouslySetInnerHTML={{ __html: normalizeRichText(title) }}
             />
           ) : (
-            <motion.h1
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, ease: "easeOut", delay: 0.05 }}
+            <h1
               className="mt-6 text-balance text-5xl leading-[1.05] tracking-[-0.02em] text-white sm:text-6xl lg:text-7xl"
               style={{ fontFamily: "'Frank Ruhl Libre', serif", fontWeight: 600 }}
             >
               {title}
-            </motion.h1>
+            </h1>
           )}
 
           {RICH_MARKUP_RE.test(lede) ? (
-            <motion.p
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, ease: "easeOut", delay: 0.15 }}
-              className="cms-rich mx-auto mt-6 max-w-xl text-pretty text-[19px] leading-[1.65] text-white/80 lg:mx-0"
+            <p
+              className="cms-rich mx-auto mt-6 max-w-xl text-pretty text-[22px] leading-[1.55] text-white lg:mx-0"
               dangerouslySetInnerHTML={{ __html: normalizeRichText(lede) }}
             />
           ) : (
-            <motion.p
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, ease: "easeOut", delay: 0.15 }}
-              className="mx-auto mt-6 max-w-xl text-pretty text-[19px] leading-[1.65] text-white/80 lg:mx-0"
+            <p
+              className="mx-auto mt-6 max-w-xl text-pretty text-[22px] leading-[1.55] text-white lg:mx-0"
             >
               {lede}
-            </motion.p>
+            </p>
           )}
 
-          {/* CTAs - primary mutates after settle */}
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut", delay: 0.25 }}
+          {/* CTAs - primary mutates after settle (CTA copy/href flip
+              is state-driven; the wrapping <div> is plain now). */}
+          <div
             className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-center lg:justify-start"
           >
             <Link
               href={primaryHref}
               className="group relative inline-flex min-h-[56px] items-center justify-center overflow-hidden rounded-full px-8 text-[16px] font-semibold text-white shadow-xl shadow-[#B83C4D]/30 transition hover:brightness-110"
             >
+              {/* 2026-05-20 — `animation: mio-gradient-shift` removed.
+                  Was animating `background-position` to create a slow
+                  horizontal shimmer across the CTA gradient. Lighthouse
+                  flagged it as a non-composited animation (background-
+                  position triggers paint every frame, not just
+                  compositor work). Static gradient gives essentially
+                  the same visual at zero per-frame cost. */}
               <span
                 aria-hidden
-                className="absolute inset-0 bg-[linear-gradient(110deg,#B83C4D_0%,#8B2638_45%,#3D1F3D_100%)] bg-[length:220%_100%]"
-                style={{
-                  animation: "mio-gradient-shift 6s ease-in-out infinite",
-                }}
+                className="absolute inset-0 bg-[linear-gradient(110deg,#B83C4D_0%,#8B2638_45%,#3D1F3D_100%)]"
               />
               <span className="relative z-10 inline-flex items-center">
                 {primaryLabel}
@@ -460,14 +447,11 @@ export function LiveDemoHero({
                 {ctaSecondary}
               </Link>
             ) : null}
-          </motion.div>
+          </div>
 
           {trust && trust.length > 0 ? (
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, ease: "easeOut", delay: 0.35 }}
-              className="mt-8 flex flex-wrap justify-center gap-x-5 gap-y-2 text-[12px] text-white/65 lg:justify-start"
+            <div
+              className="mt-8 flex flex-wrap justify-center gap-x-5 gap-y-2 text-[14px] text-white/90 lg:justify-start"
             >
               {trust.map((t, i) => {
                 const Icon =
@@ -493,7 +477,7 @@ export function LiveDemoHero({
                   </span>
                 );
               })}
-            </motion.div>
+            </div>
           ) : null}
         </div>
 
@@ -563,11 +547,11 @@ export function LiveDemoHero({
                       }`}
                     />
                   </Link>
-                  <p className="mt-2 text-center text-[12px] text-[#7A6A75]">
+                  <p className="mt-2 text-center text-[14px] text-[#7A6A75]">
                     {isHe
                       ? "הסיבוב הבא ממשיך את הערב - בתוך המשחק עצמו."
                       : "The next spin continues y-ur evening - inside the game itself."}
-                  </p>-
+                  </p>
                 </motion.div>
               ) : null}
             </AnimatePresence>
@@ -578,11 +562,10 @@ export function LiveDemoHero({
             <Wheel
               ref={wheelRef}
               options={effectiveSlices}
-              onSpinStart={() => {
-                console.log("[Wheel] onSpinStart - actual spin animation kicked off");
-              }}
               onSettled={(result) => {
-                console.log("[Wheel] onSettled - landed on index:", result.index, "type:", result.type, "label:", effectiveSlices[result.index]?.label);
+                // 2026-05-20 — onSpinStart/onSettled console.log
+                // diagnostics removed; the state transition itself
+                // (setPhase("settled")) is the source of truth.
                 setLandedSlice(effectiveSlices[result.index] ?? null);
                 setPhase("settled");
                 setCardOpen(true);
@@ -612,18 +595,9 @@ export function LiveDemoHero({
         </div>
       </GamePageBackground>
 
-      {/* Local keyframes - kept inline so the component is drop-in. */}
-      <style jsx>{`-
-        @keyframes mio-gradient-shift {
-          0%,
-          100% {
-            background-position: 0% 50%;
-          }
-          50% {
-            background-position: 100% 50%;
-          }
-        }
-      `}</style>
+      {/* 2026-05-20 — `mio-gradient-shift` keyframes block removed
+          along with its only consumer (the CTA shimmer animation
+          above). Was an inline <style jsx> island; gone now. */}
     </section>
   );
 }
