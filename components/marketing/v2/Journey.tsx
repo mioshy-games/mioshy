@@ -1,5 +1,8 @@
-"use client";
-
+// PERF 2026-05-21 — 4-stage editorial timeline with static <article>
+// stages, no useState/useEffect. Removed "use client" → Server Component.
+// Note: this component currently renders on /mioshy-sex (per file
+// header in HomepageV2.tsx); it's no longer on the homepage. Either
+// way, removing client JS is a win on both pages.
 import { Link } from "@/navigation";
 import { CmsText } from "@/components/cms/CmsText";
 

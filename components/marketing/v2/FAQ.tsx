@@ -1,5 +1,8 @@
-"use client";
-
+// PERF 2026-05-21 — FAQ is a pure-structural component: it renders
+// native <details> for the accordion (zero JS needed for open/close)
+// and <CmsText> for every editable string. CmsText itself stays a
+// client island, but FAQ no longer needs its own client chunk + its
+// own hydration. Removed "use client" → FAQ is now a Server Component.
 import { Link } from "@/navigation";
 import { CmsText } from "@/components/cms/CmsText";
 

@@ -1,6 +1,17 @@
 import createNextIntlPlugin from "next-intl/plugin";
+import bundleAnalyzer from "@next/bundle-analyzer";
 
 const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
+
+// Bundle analyzer (opt-in, 2026-05-21). Only activates when ANALYZE=true is
+// in the environment — so a normal `pnpm build` / Vercel deploy is unaffected.
+// Run `pnpm analyze` (which sets ANALYZE=true) to open the visualizer in the
+// browser. Use it to find oversized chunks, framer-motion duplication across
+// routes, accidental client-bundle imports (e.g. @uiw/react-md-editor leaking
+// into a marketing page), etc.
+const withBundleAnalyzer = bundleAnalyzer({
+  enabled: process.env.ANALYZE === "true",
+});
 
 function supabaseHost() {
   try {
@@ -166,4 +177,4 @@ const nextConfig = {
   },
 };
 
-export default withNextIntl(nextConfig);
+export default withBundleAnalyzer(withNextIntl(nextConfig));

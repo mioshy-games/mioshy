@@ -1,5 +1,7 @@
-"use client";
-
+// PERF 2026-05-21 — manifesto-style section with no client features.
+// Three <article> pillars + CTA. Removed "use client" → Server
+// Component. The decorative <span className="ag-aura"> elements are
+// pure CSS animations.
 // Side-effect import: ensures the v2 scoped styles are loaded whenever
 // AdultGames is rendered, even on pages that don't import HomepageV2.
 // Safe because CSS imports are de-duplicated by Next.js.

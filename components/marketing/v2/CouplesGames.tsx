@@ -1,5 +1,7 @@
-"use client";
-
+// PERF 2026-05-21 — pure structural component: <CmsText> blocks +
+// 3 static decorative <CgCard> children. No useState, useEffect, or
+// event handlers. Removed "use client" → Server Component, zero
+// client JS chunk for this section.
 import { Link } from "@/navigation";
 import { CmsText } from "@/components/cms/CmsText";
 
