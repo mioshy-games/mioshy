@@ -141,6 +141,10 @@ export function Hero() {
               // viewport; on desktop it tops out near 720 px in the right
               // column).
               sizes="(max-width: 1024px) 100vw, 720px"
+              // fetchPriority="high" — pairs with `priority` and the
+              // ReactDOM.preload() in HomepageV2 so the browser network
+              // stack treats this resource as critical-path. PSI 2026-05-21.
+              fetchPriority="high"
               range={16}
             />
             <div className="badge-floating badge-1">

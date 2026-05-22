@@ -2052,6 +2052,41 @@
     .hero-price-from strong{font-size:15.5px;font-weight:600}
     .hero-meta{padding-top:24px;gap:18px}
 
+    /* Badge floating positions — re-anchor after the wider hero-visual
+       below. The 1100px rule sets the badges at inset-inline-{start,end}:-28px
+       — that landed them ~8px outside the viewport on a 414px phone
+       (container padding 20px, badge poking 28px further). With the
+       full-bleed image below, the same -28px would push them 28px past
+       the viewport edge → severe clipping. Pull them back inside.
+       8px keeps a tight, anchored look against the new image edge. */
+    .badge-1{ inset-inline-end:8px; left:auto; right:auto; }
+    .badge-2{ inset-inline-start:8px; left:auto; right:auto; }
+
+    /* Hero image mobile (2026-05-21, Itzik request) — wider+shorter.
+       Was inheriting from the 1100px rule: aspect-ratio:5/4, max-width:560px,
+       centered. On a 360-414px phone that limited the image to the same
+       width as the body text (container has 20px padding each side) and
+       a fairly tall 5/4 frame.
+       New on mobile only:
+         • Full-bleed horizontally — break out of the .container 20px
+           padding so the image kisses the viewport edges. That's the
+           max possible width gain on a phone (≈+11% on a 414px device).
+         • aspect-ratio 7/4 (≈1.75) instead of 5/4 (1.25) — the visible
+           frame becomes much more landscape so the image reads ~30%
+           shorter for the same width. The underlying image file
+           (720×900) is unchanged; object-fit:cover crops top/bottom
+           equally around object-position:center so the couple's
+           central composition stays in view.
+       Badges remain anchored to .hero-visual via inset-inline-{start,end}
+       so they shift outward with the image rather than relative to the
+       old narrower frame — that keeps the badge↔image visual rhythm. */
+    .hero-visual{
+      aspect-ratio:7/4;
+      max-width:none;
+      width:calc(100% + 40px);
+      margin-inline:-20px;
+    }
+
     /* Problem mobile */
     .problem-text h2{margin-bottom:10px}
     .problem-text .lead{margin-bottom:18px}

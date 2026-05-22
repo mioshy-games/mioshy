@@ -17,6 +17,13 @@ type Props = {
    * viewport, which inflates LCP bytes on mobile by 2-3x.
    */
   sizes?: string;
+  /**
+   * `fetchPriority` hint for the underlying <img>. "high" makes the browser
+   * upgrade this resource's network priority above other deferred resources
+   * (lazy images, async scripts) for LCP-critical paints. Pair with
+   * `priority` so next/image also opts out of lazy-loading. Per PSI 2026-05-21.
+   */
+  fetchPriority?: "high" | "low" | "auto";
   /** How many pixels of parallax movement total (split half up, half down). */
   range?: number;
 };
@@ -37,6 +44,7 @@ export function ParallaxImage({
   className,
   priority = false,
   sizes,
+  fetchPriority,
   range = 16,
 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
@@ -61,6 +69,7 @@ export function ParallaxImage({
         className={className}
         priority={priority}
         sizes={sizes}
+        fetchPriority={fetchPriority}
       />
     );
   }
