@@ -75,8 +75,14 @@ export async function generateMetadata({
     namespace: "gamesHub",
     page: "games",
   });
-  const title = `Mioshy - ${t("title")}`;
+  // 2026-05-22 — Itzik switched to social-share-first copy: the new
+  // gamesHub.title already contains "Mioshy · ..." so we no longer
+  // prefix it. og:image:alt is locale-aware via gamesHub.ogImageAlt,
+  // with a safe fallback to the title if the key is missing.
+  const title = t("title");
   const description = t("subtitle");
+  let ogImageAlt = title;
+  try { ogImageAlt = t("ogImageAlt"); } catch { /* fallback to title */ }
   const canonical = `${base}/${locale}/games`;
   return {
     title,
@@ -99,6 +105,19 @@ export async function generateMetadata({
       title,
       description,
       siteName: "Mioshy",
+      locale: locale === "he" ? "he_IL" : "en_US",
+      alternateLocale: locale === "he" ? ["en_US"] : ["he_IL"],
+      images: [
+        { url: "/opengraph-image.jpg", width: 1200, height: 630, alt: ogImageAlt },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [
+        { url: "/twitter-image.jpg", width: 1200, height: 630, alt: ogImageAlt },
+      ],
     },
   };
 }

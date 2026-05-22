@@ -114,15 +114,25 @@ export function CmsText({
   // entries accept className/style/dangerouslySetInnerHTML uniformly,
   // but the union of all possible attribute shapes is too wide for
   // structural inference here.
+  //
+  // 2026-05-21 — added `data-cms-key` to every rendered element so per-
+  // key style overrides can be authored as CSS attribute selectors:
+  //   [data-cms-key="homeV2.foo.bar"] { font-size: 40px; }
+  // Cost: ~30 bytes of HTML per CmsText call, ~2KB gzipped on a typical
+  // homepage. Win: precise per-key targeting from a single CSS sheet,
+  // no need to thread custom classNames through every callsite when an
+  // admin needs to bump a single string's size on mobile.
   const Element = Tag as unknown as React.ComponentType<
     | {
         className?: string;
         style?: React.CSSProperties;
+        "data-cms-key"?: string;
         children: React.ReactNode;
       }
     | {
         className?: string;
         style?: React.CSSProperties;
+        "data-cms-key"?: string;
         dangerouslySetInnerHTML: { __html: string };
       }
   >;
@@ -133,6 +143,7 @@ export function CmsText({
       <Element
         className={finalClassName}
         style={mergedStyle}
+        data-cms-key={cmsKey}
         dangerouslySetInnerHTML={{ __html: html }}
       />
     );
@@ -154,7 +165,7 @@ export function CmsText({
     ? `${finalClassName} whitespace-pre-line`
     : "whitespace-pre-line";
   return (
-    <Element className={plainClassName} style={mergedStyle}>
+    <Element className={plainClassName} style={mergedStyle} data-cms-key={cmsKey}>
       {normalizedPlain}
     </Element>
   );

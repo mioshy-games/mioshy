@@ -2123,6 +2123,84 @@
     .cg-card-1{right:10px;top:0;transform:rotate(-9deg)}
     .cg-card-2{right:75px;top:40px;transform:rotate(4deg)}
     .cg-card-3{right:140px;top:80px;transform:rotate(-5deg)}
+
+    /* ────────────────────────────────────────────────────────────
+       Mobile font-size overrides per cmsKey (2026-05-21 Itzik spec)
+       ────────────────────────────────────────────────────────────
+       Targets every CmsText element via the data-cms-key attribute
+       (added to CmsText.tsx on the same day). Mobile-only by virtue
+       of sitting inside the @media (max-width:640px) block above.
+
+       Why attribute selectors and not class selectors:
+         • Most of these strings render with no semantic class on the
+           element itself — they inherit sizing from the section's h2/h3/p
+           cascade or from Tailwind inline classes. Attribute selectors
+           sidestep the cascade variance and hit each key directly.
+         • The user spec is explicitly per-cmsKey. data-cms-key maps the
+           CSS rule 1:1 with the spec — no translation layer to drift.
+         • Future per-key tweaks become one-line CSS edits without
+           touching JSX.
+
+       Specificity note: [data-cms-key] is class-equivalent (specificity
+       0,1,0). Inline Tailwind utilities (text-[Npx]) compile to one
+       class each = 0,1,0 too. Mobile breakpoint variants compile to
+       the same specificity. We win cascade order by living deeper in
+       the cascade (this @media block is loaded after the v2 reset/
+       typography rules above). For the games + mioshy-sex inline
+       Tailwind overrides we use !important in globals.css — see there.
+
+       The grouping below mirrors the user's spec order so future edits
+       are obvious. */
+
+    /* 40px — section h2 headlines (8 keys) */
+    [data-cms-key="homeV2.intimacy.bridgeHeadlinePart1"],
+    [data-cms-key="homeV2.forWhom.headlinePart1"],
+    [data-cms-key="homeV2.forWhom.headlinePart2"],
+    [data-cms-key="homeV2.adultGames.headline"],
+    [data-cms-key="homeV2.couplesGames.headlinePart1"],
+    [data-cms-key="homeV2.journeyStages.headline"],
+    [data-cms-key="homeV2.founder.headline"],
+    /* media headline is split into Part1 + Em via JSX (next-intl pitfall
+       — see MediaSlider.tsx). Bumping .media-press-title catches the
+       composite h2 in one go so both halves resize together. */
+    .home-v2 .media-press-title{
+      font-size:40px !important;
+      line-height:1.15 !important;
+    }
+
+    /* 29px — pillar/persona section titles (9 keys) */
+    [data-cms-key="homeV2.intimacy.pillar1Title"],
+    [data-cms-key="homeV2.intimacy.pillar2Title"],
+    [data-cms-key="homeV2.intimacy.pillar3Title"],
+    [data-cms-key="homeV2.forWhom.persona1Title"],
+    [data-cms-key="homeV2.forWhom.persona2Title"],
+    [data-cms-key="homeV2.forWhom.persona3Title"],
+    [data-cms-key="homeV2.adultGames.pillar1Title"],
+    [data-cms-key="homeV2.adultGames.pillar2Title"],
+    [data-cms-key="homeV2.adultGames.pillar3Title"]{
+      font-size:29px !important;
+      line-height:1.2 !important;
+    }
+
+    /* 20px — pillar/persona body copy (9 keys) */
+    [data-cms-key="homeV2.intimacy.pillar1Body"],
+    [data-cms-key="homeV2.intimacy.pillar2Body"],
+    [data-cms-key="homeV2.intimacy.pillar3Body"],
+    [data-cms-key="homeV2.forWhom.persona1Desc"],
+    [data-cms-key="homeV2.forWhom.persona2Desc"],
+    [data-cms-key="homeV2.forWhom.persona3Desc"],
+    [data-cms-key="homeV2.adultGames.pillar1Body"],
+    [data-cms-key="homeV2.adultGames.pillar2Body"],
+    [data-cms-key="homeV2.adultGames.pillar3Body"]{
+      font-size:20px !important;
+      line-height:1.55 !important;
+    }
+
+    /* 25px — CouplesGames callout quote */
+    [data-cms-key="homeV2.couplesGames.callout"]{
+      font-size:25px !important;
+      line-height:1.4 !important;
+    }
   }
 }
 

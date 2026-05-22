@@ -80,6 +80,9 @@ export async function generateMetadata({
   });
   const title = t("metaTitle");
   const description = t("metaDescription");
+  // og:image:alt — localized; safe fallback to title if missing.
+  let ogImageAlt = title;
+  try { ogImageAlt = t("ogImageAlt"); } catch { /* fallback to title */ }
   const canonical = `${base}/${locale}/journey`;
   return {
     title,
@@ -102,6 +105,19 @@ export async function generateMetadata({
       title,
       description,
       siteName: "Mioshy",
+      locale: locale === "he" ? "he_IL" : "en_US",
+      alternateLocale: locale === "he" ? ["en_US"] : ["he_IL"],
+      images: [
+        { url: "/opengraph-image.jpg", width: 1200, height: 630, alt: ogImageAlt },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [
+        { url: "/twitter-image.jpg", width: 1200, height: 630, alt: ogImageAlt },
+      ],
     },
   };
 }

@@ -497,3 +497,73 @@ small, .text-small {
   background: transparent;
   color: var(--cms-mark-color, #B83C4D);
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   MOBILE FONT-SIZE OVERRIDES — non-homepage pages (2026-05-21 Itzik spec)
+   ════════════════════════════════════════════════════════════════════
+   Companion to the block inside components/marketing/v2/styles.css —
+   that block scopes to .home-v2, this one covers /games, /journey, and
+   /mioshy-sex. All target via [data-cms-key="…"] which CmsText emits
+   for every editable string (see CmsText.tsx).
+
+   `!important` is used here because those pages render CmsText with
+   inline Tailwind utilities (e.g. `text-[18px]`) directly on the
+   element. Inline Tailwind compiles to a class selector (specificity
+   0,1,0) — same as our attribute selector. Cascade order would normally
+   tie-break by source order, but since Tailwind utilities are emitted
+   inside per-route CSS and globals.css loads first, we need !important
+   to win. Inside @media (max-width: 640px) so only mobile is affected;
+   desktop keeps the Tailwind inline sizes exactly as they are. */
+@media (max-width: 640px) {
+  /* ── /games — body copy at 20px (10 keys + 1 personasHeader.lede) ── */
+  [data-cms-key="gamesHub.benefits.0.body"],
+  [data-cms-key="gamesHub.benefits.1.body"],
+  [data-cms-key="gamesHub.benefits.2.body"],
+  [data-cms-key="gamesHub.catalogueHint"],
+  [data-cms-key="gamesHub.personasHeader.lede"],
+  [data-cms-key="gamesHub.personas.0.body"],
+  [data-cms-key="gamesHub.personas.1.body"],
+  [data-cms-key="gamesHub.personas.2.body"],
+  [data-cms-key="gamesHub.personas.0.quote"],
+  [data-cms-key="gamesHub.personas.1.quote"],
+  [data-cms-key="gamesHub.personas.2.quote"] {
+    font-size: 20px !important;
+    line-height: 1.6 !important;
+  }
+
+  /* ── /journey — supporting paragraphs at 20px (7 keys) ────────────── */
+  [data-cms-key="journeyHub.why.items.1.p"],
+  [data-cms-key="journeyHub.why.items.2.p"],
+  [data-cms-key="journeyHub.why.items.3.p"],
+  [data-cms-key="journeyHub.how.steps.0.body"],
+  [data-cms-key="journeyHub.how.steps.1.body"],
+  [data-cms-key="journeyHub.how.steps.2.body"],
+  [data-cms-key="journeyHub.ctaBlock.sub"] {
+    font-size: 20px !important;
+    line-height: 1.6 !important;
+  }
+
+  /* ── /mioshy-sex — flagship hero + manifesto ─────────────────────── */
+  /* 52px — hero h1 */
+  [data-cms-key="mioshySexPage.heroHeadline1"] {
+    font-size: 52px !important;
+    line-height: 1.05 !important;
+  }
+  /* 20px — manifesto body (3 paragraphs) */
+  [data-cms-key="mioshySexPage.manifestoBody1"],
+  [data-cms-key="mioshySexPage.manifestoBody2"],
+  [data-cms-key="mioshySexPage.manifestoBody3"] {
+    font-size: 20px !important;
+    line-height: 1.6 !important;
+  }
+
+  /* /mioshy-sex category cards — short product description paragraph.
+     The element is plain JSX (not <CmsText>) in app/[locale]/mioshy-sex/
+     page.tsx around line 821:
+       <p className="line-clamp-3 text-[18px] leading-[1.6] text-white/80">
+     Adjusted via a class chain that's unique enough not to leak.
+     Bumping 18→20px on mobile to match the manifesto cadence per Itzik. */
+  p.line-clamp-3.text-\[18px\].text-white\/80 {
+    font-size: 20px !important;
+  }
+}

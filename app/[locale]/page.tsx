@@ -44,6 +44,14 @@ export async function generateMetadata({
   const t = await getTranslations({ locale, namespace: "metadata" });
   const title = t("title");
   const description = t("description");
+  // og:image:alt — localized (HE / EN). Falls back to title if the key
+  // is missing for any reason so we never emit an empty alt.
+  let ogImageAlt = title;
+  try {
+    ogImageAlt = t("ogImageAlt");
+  } catch {
+    /* key missing — keep title as fallback */
+  }
 
   return {
     title,
@@ -56,12 +64,38 @@ export async function generateMetadata({
         "x-default": `${base}/en`,
       },
     },
+    // Homepage overrides the root layout's openGraph entirely so we can
+    // attach a localized og:image:alt and emit og:locale / alternateLocale.
+    // The image itself (/opengraph-image.jpg, 1200×630) lives in /public.
     openGraph: {
       type: "website",
       url: `${base}/${locale}`,
       title,
       description,
       siteName: "Mioshy",
+      locale: locale === "he" ? "he_IL" : "en_US",
+      alternateLocale: locale === "he" ? ["en_US"] : ["he_IL"],
+      images: [
+        {
+          url: "/opengraph-image.jpg",
+          width: 1200,
+          height: 630,
+          alt: ogImageAlt,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [
+        {
+          url: "/twitter-image.jpg",
+          width: 1200,
+          height: 630,
+          alt: ogImageAlt,
+        },
+      ],
     },
   };
 }

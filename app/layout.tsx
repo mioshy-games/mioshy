@@ -32,28 +32,55 @@ export const metadata: Metadata = {
   authors: [{ name: "Mioshy" }],
   // Default OG card. Pages that override `openGraph` will replace this entirely
   // for that route; the metadataBase above still lets relative URLs resolve.
+  // Files live at /public/opengraph-image.jpg + /public/twitter-image.jpg
+  // (1200×630, verified 2026-05-22). When sharing on WhatsApp / Facebook /
+  // Twitter / Slack, the unfurler now sees a real image instead of the
+  // 404'd /images/og-default.png that the previous metadata pointed at.
   openGraph: {
     type: "website",
     siteName: "Mioshy",
     images: [
       {
-        url: "/images/og-default.png",
+        url: "/opengraph-image.jpg",
         width: 1200,
         height: 630,
-        alt: "Mioshy - Couples games",
+        alt: "Mioshy — משחקי זוגיות שמחממים את הקשר",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    images: ["/images/og-default.png"],
+    images: [
+      {
+        url: "/twitter-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Mioshy — משחקי זוגיות שמחממים את הקשר",
+      },
+    ],
   },
   // Tell crawlers we accept indexing by default; per-page rules in robots.txt
   // and per-route `robots` metadata can still tighten this for specific paths.
   robots: { index: true, follow: true },
+  // Full favicon set (added 2026-05-22). Browsers pick the best size per
+  // surface: tab favicons read 16/32, iOS home-screen reads apple-touch
+  // (180×180), Android home-screen / PWA reads the manifest's 192+512.
+  // .ico is kept as the universal fallback for legacy browsers and as
+  // /favicon.ico which crawlers fetch implicitly.
   icons: {
-    icon: "/favicon.ico",
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/android-chrome-192x192.png", sizes: "192x192", type: "image/png" },
+      { url: "/android-chrome-512x512.png", sizes: "512x512", type: "image/png" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
   },
+  manifest: "/site.webmanifest",
 };
 
 // ─────────────────────────────────────────────────────────────────────────────

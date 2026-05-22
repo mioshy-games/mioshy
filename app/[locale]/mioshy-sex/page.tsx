@@ -95,8 +95,18 @@ export async function generateMetadata({
   const tagline = isHe
     ? settings?.section_tagline_he
     : settings?.section_tagline_en;
-  const title = `Mioshy - ${sectionName ?? t("defaultSectionName")}`;
+  // 2026-05-22 — defaultSectionName now contains the full social-share
+  // headline (already includes "Mioshy"). When the admin sets a custom
+  // section_name via experience_settings we still prefix with "Mioshy - "
+  // to keep brand identity on overrides; when falling back to the i18n
+  // default we use it verbatim because it already says "Mioshy".
+  const title = sectionName
+    ? `Mioshy - ${sectionName}`
+    : t("defaultSectionName");
   const description = tagline ?? t("defaultHeroTagline");
+  // og:image:alt — localized; safe fallback to title if missing.
+  let ogImageAlt = title;
+  try { ogImageAlt = t("ogImageAlt"); } catch { /* fallback to title */ }
   const base = siteUrl();
   return {
     title,
@@ -115,6 +125,19 @@ export async function generateMetadata({
       title,
       description,
       siteName: "Mioshy",
+      locale: isHe ? "he_IL" : "en_US",
+      alternateLocale: isHe ? ["en_US"] : ["he_IL"],
+      images: [
+        { url: "/opengraph-image.jpg", width: 1200, height: 630, alt: ogImageAlt },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [
+        { url: "/twitter-image.jpg", width: 1200, height: 630, alt: ogImageAlt },
+      ],
     },
   };
 }
@@ -839,18 +862,32 @@ export default async function MioshySexLandingPage({
                           ) : null}
                           {/* Price + CTA row — labels hardcoded HE/EN
                               rather than added as new CMS rows; they're
-                              UI scaffolding, not editorial copy. */}
+                              UI scaffolding, not editorial copy.
+                              2026-05-21 Itzik — price NUMBER bumped 50%
+                              (18→27px) while keeping the currency sign
+                              at 18px so the symbol doesn't dominate
+                              the card. Split into two spans so each
+                              side can size independently. */}
                           <div className="mt-2 flex items-end justify-between gap-3 border-t border-white/10 pt-3">
                             <div>
                               <div className="text-[10.5px] font-medium uppercase tracking-wider text-white/45">
                                 {isHe ? "מחיר" : "Price"}
                               </div>
-                              <div className="mt-0.5 text-[18px] font-bold text-white">
-                                {game.price_ils
-                                  ? isHe
-                                    ? `₪${game.price_ils}`
-                                    : `$${game.price_usd ?? game.price_ils}`
-                                  : "—"}
+                              <div className="mt-0.5 font-bold text-white leading-none">
+                                {game.price_ils ? (
+                                  <>
+                                    <span className="text-[18px] align-baseline">
+                                      {isHe ? "₪" : "$"}
+                                    </span>
+                                    <span className="text-[27px] align-baseline">
+                                      {isHe
+                                        ? game.price_ils
+                                        : (game.price_usd ?? game.price_ils)}
+                                    </span>
+                                  </>
+                                ) : (
+                                  <span className="text-[18px]">—</span>
+                                )}
                               </div>
                             </div>
                             <div className="inline-flex items-center gap-1 text-[12px] font-semibold uppercase tracking-wider text-rose-200">

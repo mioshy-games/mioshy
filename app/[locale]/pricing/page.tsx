@@ -18,8 +18,13 @@ export async function generateMetadata({
   const { locale } = params;
   const base = siteUrl();
   const t = await getTranslations({ locale, namespace: "pricing" });
-  const title = `Mioshy — ${t("title")}`;
+  // 2026-05-22 — pricing.title now contains the full social-share-ready
+  // headline ("מחירים · גישה מלאה לכל מיאושי..."); no longer prefixed
+  // with "Mioshy — " in code.
+  const title = t("title");
   const description = t("subtitle");
+  let ogImageAlt = title;
+  try { ogImageAlt = t("ogImageAlt"); } catch { /* fallback to title */ }
 
   return {
     title,
@@ -38,6 +43,19 @@ export async function generateMetadata({
       title,
       description,
       siteName: "Mioshy",
+      locale: locale === "he" ? "he_IL" : "en_US",
+      alternateLocale: locale === "he" ? ["en_US"] : ["he_IL"],
+      images: [
+        { url: "/opengraph-image.jpg", width: 1200, height: 630, alt: ogImageAlt },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [
+        { url: "/twitter-image.jpg", width: 1200, height: 630, alt: ogImageAlt },
+      ],
     },
   };
 }

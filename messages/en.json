@@ -1,7 +1,8 @@
 {
   "metadata": {
-    "title": "Mioshy - Couples Games",
-    "description": "Couples games for grown-ups. Browser-based. No install."
+    "title": "Mioshy · Bring the Spark Back to Your Relationship",
+    "description": "Couples games, personal coaching, and adult games for partners. Built by relationship experts - to help you bring the spark back.",
+    "ogImageAlt": "Mioshy - Games and Coaching for Couples"
   },
   "nav": {
     "home": "Home",
@@ -597,15 +598,16 @@
     "note": "Data is kept in this browser session only (demo)."
   },
   "pricing": {
-    "title": "Pricing",
-    "subtitle": "Subscribe for unlimited spins and access to every game.",
+    "title": "Pricing · Full Access to Mioshy in One Plan",
+    "subtitle": "Monthly or yearly — all games, the coaching journey, and adults-only included. Unlimited spins, no ads, no surprise upgrades.",
     "recommended": "Recommended",
     "feature1": "Unlimited spins",
     "feature2": "New games added regularly",
     "feature3": "Cancel anytime",
     "cta": "Continue (Stripe coming soon)",
     "disclaimer": "Payments are not enabled yet - this is UI only.",
-    "account": "Account"
+    "account": "Account",
+    "ogImageAlt": "Mioshy subscription pricing"
   },
   "account": {
     "title": "Your account",
@@ -712,8 +714,8 @@
     "langEnglish": "English"
   },
   "gamesHub": {
-    "title": "Couples Games - All Games",
-    "subtitle": "Mioshy's interactive collection: truth-or-dare wheels, snakes & ladders with deep questions, challenges, and more - in your browser, on one device or two.",
+    "title": "Mioshy · Couples Games That Spark the Conversation",
+    "subtitle": "Truth-or-dare wheels, snakes & ladders with deep questions, challenges and more. One device or two — all in your browser, no downloads.",
     "h1": "Interactive couples games",
     "lede": "Pick a game, spin the wheel, or play snakes & ladders with personal questions. No installs, no code - just open and play.",
     "whyTitle": "Why Mioshy?",
@@ -842,11 +844,12 @@
       "item8A": "<p>Trial - free, no credit card. After that you can buy a weekly subscription with access to all the &quot;Couples Games Online&quot; titles. No commitment, no penalties - you can stop with one click.</p>"
     },
     "metaKeywords": "couples games, truth or dare for couples, relationship games, date night games, couples questions, snakes and ladders couples",
-    "heroSparkleChip": "2-player · free"
+    "heroSparkleChip": "2-player · free",
+    "ogImageAlt": "Interactive couples games in your browser"
   },
   "journeyHub": {
-    "metaTitle": "Journey with Mioshy - Personal Coaching from the Experts",
-    "metaDescription": "A relationship assessment, an expert who learns the two of you, and a personal plan that updates with you. Journey with Mioshy - both partners, every tool, all included.",
+    "metaTitle": "Journey with Mioshy · Your Personal Couples Coach",
+    "metaDescription": "A relationship assessment, an expert who learns the two of you, and a plan that grows with you. Both partners, every tool, all in-app.",
     "badge": "Journey with Mioshy · Personalised coaching",
     "h1": "Journey with Mioshy",
     "h1Sub": "personalised",
@@ -1044,7 +1047,8 @@
       "titleLine2": "We have answers.",
       "blurb": "We've gathered the most common questions about the assessment, the path, and what happens after. Didn't find your answer?",
       "contactCta": "Talk to us"
-    }
+    },
+    "ogImageAlt": "Personal couples coaching in the Mioshy app"
   },
   "homeV2": {
     "hero": {
@@ -1796,9 +1800,9 @@
     "comingSoonBody": "We're preparing something special for couples. Check back soon.",
     "backHome": "Back home",
     "privateChamber": "The private chamber",
-    "defaultSectionName": "Adults Only",
+    "defaultSectionName": "Mioshy for Adults · One Night Different — Remembered Long After",
     "defaultAuthedTagline": "All our exclusive games, in one place.",
-    "defaultHeroTagline": "Mioshy's flagship. One night of novelty, surprise - and a wholly different experience.",
+    "defaultHeroTagline": "Mioshy's flagship. Adult games for partners that build the mood, surprise, and reignite the spark. Discreet, tasteful, browser-based.",
     "heroBreadcrumbHome": "Home",
     "heroBreadcrumbSection": "Mioshy's Sex",
     "heroFlagshipLabel": "Best seller",
@@ -1860,7 +1864,8 @@
     "closingReassurance": "No contract · cancel anytime · billed only as Mioshy",
     "catalogueKicker": "The catalogue",
     "catalogueHeadlinePrefix": "Pick the game",
-    "catalogueHeadlineEmphasis": "that opens the evening."
+    "catalogueHeadlineEmphasis": "that opens the evening.",
+    "ogImageAlt": "Mioshy adult games for couples"
   },
   "mioshySexSlug": {
     "pricing": {
