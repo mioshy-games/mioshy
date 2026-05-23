@@ -1,17 +1,31 @@
 /**
- * ScoreEvolutionChart
+ * ScoreEvolutionChart (v2 — 2026-05-22)
  * ─────────────────────────────────────────────────────────
- * Layer-4 inline SVG line chart for score evolution. No chart
- * library — pure SVG so the whole module is ~5KB rendered and
- * has zero hydration overhead.
+ * Three score cards (חברות / התמודדות / תשוקה) instead of an SVG
+ * line chart. The line chart was unreadable when the data was flat
+ * or had only two points — almost always the case in the first
+ * months of a journey. The card-based design surfaces the actual
+ * numbers, the delta from the previous measurement, and a plain
+ * Hebrew label so the couple immediately understands *what
+ * changed* rather than having to read a graph.
  *
- * Three lines:
- *   - friendship    (higher = better)
- *   - conflictHealth (higher = better)
- *   - passionRisk   (rendered INVERTED so visual up always = good)
+ * Visual model:
+ *   - All three pillars are normalized to "higher = healthier" before
+ *     display. friendship & conflictHealth come that way naturally;
+ *     passionRisk is inverted (100 - raw) and labeled simply as
+ *     "תשוקה" so the user doesn't need to mentally invert anything.
+ *   - Arrow + color encode the *health direction*, not the raw delta
+ *     direction. Going from passion_risk 40 → 30 means the displayed
+ *     value goes from 60 → 70, shown as ↑ +10 (green) "התחזק".
  *
- * Renders nothing when fewer than 2 points are supplied (single
- * baseline isn't a story).
+ * Single-measurement state: shows current values with no arrow and a
+ * short caption ("ממתינים למדידה נוספת"). The old chart hid itself
+ * entirely with <2 points — the new cards still inform the user
+ * even on baseline.
+ *
+ * Component signature unchanged so the page-level import keeps
+ * working. Pages that previously gated on length>=2 may want to
+ * relax to length>=1 to take advantage of the baseline rendering.
  */
 
 import type { ScorePoint } from "@/lib/journey/score-history";
@@ -19,136 +33,169 @@ import type { ScorePoint } from "@/lib/journey/score-history";
 interface Props {
   isHe:   boolean;
   points: ScorePoint[];
-  /** Title shown above the chart. Optional — page can render its own. */
+  /** Optional title override. Falls back to a friendly default. */
   title?: string;
 }
 
-const W = 360;
-const H = 160;
-const PAD_X = 12;
-const PAD_Y = 12;
+interface Pillar {
+  key:    "friendship" | "conflictHealth" | "passionRisk";
+  he:     string;
+  en:     string;
+  invert: boolean; // when true, display 100 - raw so higher = healthier
+  hintHe: string;  // tiny clarifier under the pillar name
+  hintEn: string;
+}
 
-const SERIES = [
+const PILLARS: Pillar[] = [
   {
-    key:    "friendship" as const,
+    key:    "friendship",
     he:     "חברות",
     en:     "Friendship",
-    color:  "#34d399", // emerald
     invert: false,
+    hintHe: "כמה אתם חברים",
+    hintEn: "How close",
   },
   {
-    key:    "conflictHealth" as const,
+    key:    "conflictHealth",
     he:     "התמודדות",
-    en:     "Conflict",
-    color:  "#fbbf24", // amber
+    en:     "Coping",
     invert: false,
+    hintHe: "ניהול חיכוכים",
+    hintEn: "Handling conflict",
   },
   {
-    key:    "passionRisk" as const,
+    key:    "passionRisk",
     he:     "תשוקה",
     en:     "Passion",
-    color:  "#f43f5e", // rose
     invert: true,
+    hintHe: "חיוניות הזוגיות",
+    hintEn: "Spark vitality",
   },
 ];
 
-export function ScoreEvolutionChart({ isHe, points, title }: Props) {
-  if (points.length < 2) return null;
+/** Convert a raw score to its displayed value (handling inversion). */
+function displayed(raw: number | null, invert: boolean): number | null {
+  if (raw === null) return null;
+  return invert ? 100 - raw : raw;
+}
 
-  const innerW = W - PAD_X * 2;
-  const innerH = H - PAD_Y * 2;
-  const lastIdx = points.length - 1;
-  const xFor = (i: number) =>
-    PAD_X + (i / Math.max(1, lastIdx)) * innerW;
-  const yFor = (val: number) =>
-    PAD_Y + innerH - (val / 100) * innerH;
+function arrowSymbol(delta: number): string {
+  if (delta > 0) return "↑";
+  if (delta < 0) return "↓";
+  return "→";
+}
+
+/** Human-feel Hebrew/English label for a delta. Keep these short. */
+function humanLabel(delta: number, isHe: boolean): string {
+  if (delta >= 8)  return isHe ? "קפיצה ממש יפה" : "Strong gain";
+  if (delta >= 3)  return isHe ? "התחזקתם"        : "Improved";
+  if (delta >  0)  return isHe ? "עלייה קלה"      : "Up a bit";
+  if (delta === 0) return isHe ? "יציבות"         : "Steady";
+  if (delta > -3)  return isHe ? "ירידה קלה"      : "Down a bit";
+  if (delta > -8)  return isHe ? "כדאי לשים לב"   : "Worth noting";
+  return isHe ? "צריך תשומת לב"  : "Needs attention";
+}
+
+export function ScoreEvolutionChart({ isHe, points, title }: Props) {
+  if (points.length === 0) return null;
+
+  const latest   = points[points.length - 1];
+  const previous = points.length > 1 ? points[points.length - 2] : null;
+  const isFirst  = previous === null;
 
   return (
     <section
       className="mt-4 rounded-2xl border border-white/10 bg-white/[0.025] p-4 sm:p-5"
-      aria-label={title ?? (isHe ? "התקדמות הציונים" : "Score evolution")}
+      aria-label={title ?? (isHe ? "המדדים שלכם" : "Your scores")}
     >
-      <header className="mb-3 flex items-center justify-between">
-        <h3 className="text-[14px] font-bold tracking-wider text-white/85">
-          {title ?? (isHe ? "התקדמות הציונים" : "Score evolution")}
-        </h3>
-        <span className="text-[11px] text-white/50">
-          {isHe
-            ? `${points.length} נקודות מדידה`
-            : `${points.length} measurements`}
+      <header className="mb-3 flex items-end justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="text-[14px] font-bold tracking-wider text-white/85">
+            {title ?? (isHe ? "המדדים שלכם" : "Your scores")}
+          </h3>
+          <p className="mt-0.5 text-[11px] leading-relaxed text-white/45">
+            {isFirst
+              ? (isHe
+                  ? "המדידה הראשונה שלכם. המדידה הבאה תראה לאן הלכתם."
+                  : "Your baseline. The next check-in will show where you've moved.")
+              : (isHe
+                  ? "ההשוואה היא מול המדידה הקודמת שלכם."
+                  : "Compared to your previous measurement.")}
+          </p>
+        </div>
+        <span className="shrink-0 rounded-full bg-white/[0.04] px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-white/55">
+          {isHe ? `${points.length} ${points.length === 1 ? "מדידה" : "מדידות"}` : `${points.length} ${points.length === 1 ? "check" : "checks"}`}
         </span>
       </header>
 
-      <svg
-        viewBox={`0 0 ${W} ${H}`}
-        className="block h-auto w-full"
-        role="img"
-      >
-        {/* Soft horizontal guides at 25/50/75 */}
-        {[25, 50, 75].map((g) => (
-          <line
-            key={g}
-            x1={PAD_X}
-            x2={W - PAD_X}
-            y1={yFor(g)}
-            y2={yFor(g)}
-            stroke="rgba(255,255,255,0.06)"
-            strokeWidth={1}
-          />
-        ))}
+      <ul className="grid grid-cols-1 gap-2.5 sm:grid-cols-3 sm:gap-3">
+        {PILLARS.map((p) => {
+          const current = displayed(latest[p.key], p.invert);
+          const prev    = previous ? displayed(previous[p.key], p.invert) : null;
+          const delta   = current !== null && prev !== null ? current - prev : null;
 
-        {/* Series */}
-        {SERIES.map((s) => {
-          const dPts = points.map((p, i) => {
-            const raw = p[s.key] ?? null;
-            if (raw === null) return null;
-            const v = s.invert ? 100 - raw : raw;
-            return { x: xFor(i), y: yFor(v) };
-          });
-          // Skip series with fewer than 2 valid points.
-          const valid = dPts.filter((p): p is { x: number; y: number } => !!p);
-          if (valid.length < 2) return null;
-          const path = valid
-            .map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`)
-            .join(" ");
+          const positive = delta !== null && delta > 0;
+          const negative = delta !== null && delta < 0;
+
+          // Color scheme — health-oriented, not raw-direction-oriented.
+          const accentText =
+            positive ? "text-emerald-300" :
+            negative ? "text-rose-300"    :
+                       "text-white/55";
+
+          const cardGradient =
+            positive ? "from-emerald-500/[0.10] to-emerald-500/[0.01]" :
+            negative ? "from-rose-500/[0.10] to-rose-500/[0.01]"       :
+                       "from-white/[0.04] to-white/[0.01]";
+
+          const cardBorder =
+            positive ? "border-emerald-400/20" :
+            negative ? "border-rose-400/20"    :
+                       "border-white/[0.07]";
+
           return (
-            <g key={s.key}>
-              <path
-                d={path}
-                fill="none"
-                stroke={s.color}
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              {/* Endpoint dot */}
-              <circle
-                cx={valid[valid.length - 1].x}
-                cy={valid[valid.length - 1].y}
-                r={3}
-                fill={s.color}
-              />
-            </g>
+            <li
+              key={p.key}
+              className={`relative overflow-hidden rounded-xl border ${cardBorder} bg-gradient-to-br ${cardGradient} p-3 sm:p-4`}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="text-[12px] font-bold tracking-wide text-white/85">
+                    {isHe ? p.he : p.en}
+                  </div>
+                  <div className="mt-0.5 text-[10px] text-white/40">
+                    {isHe ? p.hintHe : p.hintEn}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-2.5 flex items-baseline gap-1">
+                <span className="tabular-nums text-[28px] font-bold leading-none text-white/95">
+                  {current !== null ? current : "—"}
+                </span>
+                <span className="text-[11px] text-white/40">/ 100</span>
+              </div>
+
+              {delta !== null ? (
+                <div className={`mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[12px] ${accentText}`}>
+                  <span aria-hidden className="text-[15px] font-bold leading-none">
+                    {arrowSymbol(delta)}
+                  </span>
+                  <span className="tabular-nums font-bold">
+                    {delta > 0 ? "+" : ""}{delta}
+                  </span>
+                  <span className="text-white/60">
+                    {humanLabel(delta, isHe)}
+                  </span>
+                </div>
+              ) : (
+                <div className="mt-2 text-[12px] text-white/40">
+                  {isHe ? "ממתינים למדידה נוספת" : "Awaiting next measurement"}
+                </div>
+              )}
+            </li>
           );
         })}
-      </svg>
-
-      <ul className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-white/65">
-        {SERIES.map((s) => (
-          <li key={s.key} className="inline-flex items-center gap-1">
-            <span
-              aria-hidden
-              className="inline-block h-2 w-2 rounded-full"
-              style={{ background: s.color }}
-            />
-            {isHe ? s.he : s.en}
-            {s.invert ? (
-              <span className="text-white/35">
-                {isHe ? " (הפוך)" : " (inverted)"}
-              </span>
-            ) : null}
-          </li>
-        ))}
       </ul>
     </section>
   );

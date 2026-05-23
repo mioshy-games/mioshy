@@ -17,7 +17,10 @@ import {
   type OwnedGame,
 } from "@/lib/between-us/couples";
 import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
-import { getAdultsMonthlyStatus } from "@/lib/entitlements/adults-monthly";
+// 2026-05-22 — the "one Adults game per month for Journey subscribers"
+// model was retired; Journey now grants unrestricted Adults access via
+// getUserEntitlements().adults. The legacy getAdultsMonthlyStatus import
+// was removed along with the banner that displayed slot availability.
 import { listActiveGameCards } from "@/lib/between-us/queries";
 import type { ExperienceGame } from "@/lib/between-us/types";
 // Same drifting fog + sparkle field used on the /adults marketing
@@ -60,11 +63,6 @@ export default async function MyAdultsGalleryPage({
 }) {
   const { locale } = params;
   const isHe = locale === "he";
-  const t = await getCmsTranslations({
-    locale: isHe ? "he" : "en",
-    namespace: "myAdults",
-    page: "my",
-  });
 
   const ctx = await getCurrentCoupleContext();
   if (!ctx) redirect(`/${locale}/auth`);
@@ -91,11 +89,10 @@ export default async function MyAdultsGalleryPage({
     .map((c) => c.game)
     .filter((g) => !ownedIds.has(g.id));
 
-  // Monthly Adults bundle (spec §8.4) - Journey subscribers get one
-  // free game per calendar month. We surface the slot's state at the
-  // top of the page so the user knows whether to "use it now" or
-  // wait until next month.
-  const monthlyStatus = await getAdultsMonthlyStatus(ctx.user_id);
+  // 2026-05-22 — Journey now bundles full Adults access (no monthly
+  // slot mechanic). The has-journey signal drives messaging changes
+  // further down the page, e.g. AvailableGameCard's CTA.
+  const journeyBundlesAdults = entitlements.journey;
 
   const Arrow = isHe ? ArrowLeft : ArrowRight;
 
@@ -174,56 +171,34 @@ export default async function MyAdultsGalleryPage({
           ) : null}
         </section>
 
-        {/* ─────── Monthly bundle banner (spec §8.4) ───────
-            Visible only when the user has a Journey subscription that
-            bundles a free Adults game per calendar month. Two states:
-              - available: invite to pick one
-              - consumed:  show when the next slot opens */}
-        {monthlyStatus.has_bundle_subscription ? (
+        {/* ─────── Journey bundles full Adults access (2026-05-22) ───────
+            Replaces the previous monthly-slot banner. When the visitor
+            holds an active Journey subscription, surface that every Adults
+            game is open — no per-month limit, no pick-and-stamp. The CMS
+            keys reuse the existing strings (`monthlyAvailable*` will be
+            re-copied via the messages migration); for now the banner
+            renders unconditionally to journey-subs. The two CTAs from
+            the old banner ("pickGame" / "moreGames") were redundant once
+            access is full, so the banner is purely informational. */}
+        {journeyBundlesAdults ? (
           <section className="mt-8">
-            {monthlyStatus.available ? (
-              <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-amber-300/40 bg-gradient-to-br from-amber-500/15 via-rose-500/8 to-transparent p-5 backdrop-blur">
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-full border border-amber-300/40 bg-amber-500/15">
-                  <Sparkles className="size-5 text-amber-200" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <CmsText
-                    cmsKey="myAdults.monthlyAvailableTitle"
-                    as="p"
-                    className="text-sm font-semibold text-white"
-                  />
-                  <CmsText
-                    cmsKey="myAdults.monthlyAvailableBody"
-                    as="p"
-                    className="mt-0.5 text-xs text-white/70"
-                  />
-                </div>
-                <Link
-                  href="/mioshy-sex"
-                  className="inline-flex items-center gap-1.5 rounded-full bg-amber-400 px-4 py-2 text-sm font-semibold text-black transition hover:bg-amber-300"
-                >
-                  <CmsText cmsKey="myAdults.pickGame" />
-                  <Arrow className="h-3.5 w-3.5" />
-                </Link>
+            <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-amber-300/40 bg-gradient-to-br from-amber-500/15 via-rose-500/8 to-transparent p-5 backdrop-blur">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-full border border-amber-300/40 bg-amber-500/15">
+                <Sparkles className="size-5 text-amber-200" />
               </div>
-            ) : (
-              <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4 backdrop-blur">
-                <Sparkles className="size-4 shrink-0 text-white/45" />
-                <p className="text-xs text-white/60">
-                  {t("monthlyConsumedTemplate").replace(
-                    "{date}",
-                    monthlyStatus.next_available_at
-                      ? new Date(
-                          monthlyStatus.next_available_at,
-                        ).toLocaleDateString(isHe ? "he-IL" : "en-US", {
-                          day: "numeric",
-                          month: "long",
-                        })
-                      : t("monthlyNextSoon"),
-                  )}
-                </p>
+              <div className="min-w-0 flex-1">
+                <CmsText
+                  cmsKey="myAdults.journeyBundleTitle"
+                  as="p"
+                  className="text-sm font-semibold text-white"
+                />
+                <CmsText
+                  cmsKey="myAdults.journeyBundleBody"
+                  as="p"
+                  className="mt-0.5 text-xs text-white/70"
+                />
               </div>
-            )}
+            </div>
           </section>
         ) : null}
 

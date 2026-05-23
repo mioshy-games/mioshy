@@ -887,12 +887,6 @@ export default async function PrivateJourneyPage({
           />
         ) : null}
 
-        {/* Layer-4 score evolution — only renders when ≥2 analysis
-            rows exist (i.e. after a retake at week 8+). */}
-        {scoreHistory.length >= 2 ? (
-          <ScoreEvolutionChart isHe={isHe} points={scoreHistory} />
-        ) : null}
-
         {/* Layer-5 — paired users get a soft link to the shared "we"
             surface. Solo users never see this. */}
         {isPaired ? (
@@ -1018,6 +1012,20 @@ export default async function PrivateJourneyPage({
             />
           </div>
         </section>
+
+        {/* ─────── Score cards (v2 2026-05-22) ───────
+            Moved here from above WeeklyRecap — at the bottom of the
+            dashboard the cards act as a summary glance rather than a
+            primary surface. Gate relaxed to length>=1 so the new
+            card design shows a baseline state on the first
+            measurement (the old SVG line chart needed >=2 to draw a
+            line; the cards just show "ממתינים למדידה נוספת" until a
+            second measurement lands). */}
+        {scoreHistory.length >= 1 ? (
+          <section className="mt-10">
+            <ScoreEvolutionChart isHe={isHe} points={scoreHistory} />
+          </section>
+        ) : null}
 
         {/* ─────── Footer note ─────── */}
         <footer className="mt-12 border-t border-white/5 pt-6 text-center">

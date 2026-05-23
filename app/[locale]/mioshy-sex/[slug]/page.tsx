@@ -109,10 +109,17 @@ export default async function BetweenUsGameDetailPage({
   // never reach the public page.
   const cmsRows = await loadCmsTextsForPage("mioshy-sex");
 
-  const [settings, ctx, catIds, tagIds, allCats, allTags, allGameCards] =
+  const [settings, ctx, journeyEntitlements, catIds, tagIds, allCats, allTags, allGameCards] =
     await Promise.all([
       getBetweenUsSettings().catch(() => null),
       getCurrentCoupleContext(),
+      // 2026-05-22 — Journey subscribers get free access to every Adults
+      // game (no per-game purchase). We pull the entitlement snapshot
+      // here so the hero CTA can short-circuit straight to "Open game"
+      // for them, even when this couple never bought THIS specific game.
+      import("@/lib/entitlements/getUserEntitlements").then((m) =>
+        m.getUserEntitlements().catch(() => null),
+      ),
       // Note: per-game content (`listGameContent(game.id)`) used to be
       // fetched here for the now-removed preview card section. Don't
       // re-add this fetch on the public page - that data belongs only on
@@ -127,7 +134,15 @@ export default async function BetweenUsGameDetailPage({
       listActiveGameCards().catch(() => []),
     ]);
 
-  const entitled = !!ctx && ctx.couple_id !== null && ctx.entitled_game_ids.has(game.id);
+  // Per-game purchase entitlement: the couple bought THIS specific game.
+  const ownedThisGame =
+    !!ctx && ctx.couple_id !== null && ctx.entitled_game_ids.has(game.id);
+  // 2026-05-22 — Journey subscribers get the same "open game" treatment
+  // even without a per-game purchase. The /play route still has its own
+  // entitlement gate which ALSO accepts journey, so the CTA here doesn't
+  // promise something the gated page would refuse.
+  const journeyGrantsAccess = journeyEntitlements?.journey === true;
+  const entitled = ownedThisGame || journeyGrantsAccess;
 
   // Couple-share is now a pure copy-and-paste flow built around the
   // visible pair_code. We deliberately removed the email-invite query

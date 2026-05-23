@@ -160,9 +160,17 @@ export async function POST(req: Request) {
     )
   }
   if (purchase_type === "subscription") {
-    if (!plan || !["weekly", "monthly", "annual"].includes(plan)) {
+    // 2026-05-22: subscriptions are weekly-only. Monthly + annual plans
+    // were retired (Itzik). The CHECK constraint in migration 092 also
+    // enforces this at the DB layer, but we reject early here to give
+    // the client a clean error code.
+    if (plan !== "weekly") {
       return NextResponse.json(
-        { success: false, code: "INVALID_PLAN", message: "Invalid plan" },
+        {
+          success: false,
+          code: "INVALID_PLAN",
+          message: "Only the weekly plan is available",
+        },
         { status: 400 },
       )
     }

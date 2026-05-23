@@ -411,8 +411,9 @@ export function AdultsHeroBuy({
         />
       </div>
 
-      {/* Cross-pillar tease - Journey gives full-site access (incl. all
-          Adults games) for a monthly fee. Soft, single line. Goes only
+      {/* Cross-pillar tease — Journey gives free access to every Adults
+          game and the full coaching layer for a weekly fee (no monthly /
+          annual tiers since 2026-05-22). Soft, single line. Shown only
           to authenticated buyers; logged-out users have enough to
           process already with the Buy + Got-an-invite affordances. */}
       {loggedIn ? (
@@ -423,8 +424,8 @@ export function AdultsHeroBuy({
           >
             <Sparkles className="h-3.5 w-3.5 text-amber-300" />
             {isHe
-              ? "רוצים גישה לכל המשחקים? נסו את ליווי מיאושי - מנוי חודשי, גישה לכל האתר."
-              : "Want access to everything? Try Mioshy Journey - monthly subscription, full site access."}
+              ? "רוצים גישה לכל המשחקים? נסו את ליווי מיאושי - 57 ₪/שבוע, גישה לכל האתר."
+              : "Want access to everything? Try Mioshy Journey — 57 ₪/week, full site access."}
           </Link>
         </div>
       ) : null}

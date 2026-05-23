@@ -342,32 +342,29 @@ function Stop({
                 as="div"
                 className="js-stop-product"
               />
-              {id === "1" ? (
-                // Stage 1 framing: don't lead with the price — let
-                // the user try the games for free first.
+              {/* 2026-05-22 — Itzik consolidated pricing display.
+                  Stage 1 previously showed a free-trial pill via
+                  `stage1Trial`; that path was removed and all three
+                  stages now show a price block. Stage 1 price is the
+                  games weekly (9 ₪/שבוע), stage 3 is the journey
+                  weekly (57 ₪/שבוע), stage 2 keeps its one-time
+                  per-game framing with the strikethrough original. */}
+              <div className="js-stop-price">
+                {id === "2" ? (
+                  <CmsText
+                    cmsKey="homeV2.journeyStages.stage2OriginalPrice"
+                    className="js-stop-price-original"
+                  />
+                ) : null}
                 <CmsText
-                  cmsKey="homeV2.journeyStages.stage1Trial"
-                  as="div"
-                  className="js-stop-trial"
+                  cmsKey={`homeV2.journeyStages.stage${id}Price`}
+                  className="js-stop-price-amount"
                 />
-              ) : (
-                <div className="js-stop-price">
-                  {id === "2" ? (
-                    <CmsText
-                      cmsKey="homeV2.journeyStages.stage2OriginalPrice"
-                      className="js-stop-price-original"
-                    />
-                  ) : null}
-                  <CmsText
-                    cmsKey={`homeV2.journeyStages.stage${id}Price`}
-                    className="js-stop-price-amount"
-                  />
-                  <CmsText
-                    cmsKey={`homeV2.journeyStages.stage${id}Period`}
-                    className="js-stop-price-period"
-                  />
-                </div>
-              )}
+                <CmsText
+                  cmsKey={`homeV2.journeyStages.stage${id}Period`}
+                  className="js-stop-price-period"
+                />
+              </div>
             </div>
             <Link href={STAGE_HREFS[id]} className="js-stop-cta">
               <CmsText cmsKey={`homeV2.journeyStages.stage${id}Cta`} />{" "}

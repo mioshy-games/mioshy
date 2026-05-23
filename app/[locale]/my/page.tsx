@@ -21,6 +21,7 @@ import {
 } from "@/lib/between-us/invitations";
 import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
 import { JourneyGraceBanner } from "@/components/my/JourneyGraceBanner";
+import { UpgradeToJourneyCard } from "@/components/my/UpgradeToJourneyCard";
 import { getOwnerJourneyStatus } from "@/lib/journey-content/owner-status";
 import { countUnreadJourneyItems } from "@/lib/journey-content/unread";
 import { getFreshClinicianReplies } from "@/lib/journey-content/fresh-replies";
@@ -362,6 +363,17 @@ export default async function MyHubPage({
             </div>
           )}
         </section>
+
+        {/* ─────── Cross-sell: games-only users get a Journey upgrade nudge ───────
+            2026-05-22: Itzik consolidated subscriptions to weekly-only and
+            made Journey grant unrestricted Adults access on top of every
+            games title. Surface a one-line nudge for users currently on
+            just the games plan so they know the upgrade path exists. The
+            indicator webhook handles the games-sub cancellation
+            automatically the moment the Journey checkout completes. */}
+        {entitlements.games && !entitlements.journey ? (
+          <UpgradeToJourneyCard isHe={isHe} />
+        ) : null}
 
         {/* Per spec §5.2 - the "Got a code from partner?" panel was moved
             BELOW the pillar cards. Cards come first (the products), partner

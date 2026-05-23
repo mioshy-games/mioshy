@@ -46,7 +46,10 @@ export function PricingCheckout({
 }: {
   isHe: boolean;
   product: "journey" | "games" | "adults";
-  plan: "weekly" | "monthly" | "annual";
+  // 2026-05-22 — subscriptions are weekly-only. The prop is kept so the
+  // surface that mounts this component still expresses intent, but the
+  // only legal value is "weekly". Server validates and rejects others.
+  plan: "weekly";
   ctaLabel: string;
   tax_note_he: string;
   tax_note_en: string;

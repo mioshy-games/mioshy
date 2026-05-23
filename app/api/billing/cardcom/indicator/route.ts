@@ -497,6 +497,62 @@ export async function GET(req: Request) {
         console.error("[indicator] auto-assign threw", err)
       }
     }
+
+    // ── Auto-cancel games subscription on journey upgrade ──────────────────
+    // Itzik 2026-05-22: when a user with an active "games" subscription buys
+    // "journey", we cancel the games sub immediately. Rationale:
+    //   • Journey already includes every game in the games pillar at the
+    //     entitlement layer (`getUserEntitlements`).
+    //   • Charging for both products in parallel would double-bill the user
+    //     for content they already get.
+    //   • Per the policy decision (אין החזרים): we do NOT refund the unused
+    //     portion of the current games billing period; we simply stop future
+    //     auto-renewal charges.
+    // We do NOT void the existing games invoice or the partial week paid —
+    // the user keeps games access through the database row, but the cron at
+    // /api/billing/renewals/run will skip a cancelled row because it only
+    // selects status IN ('active','past_due').
+    if (userId && product === "journey") {
+      const { data: gamesSub, error: gamesLookupErr } = await admin
+        .from("subscriptions")
+        .select("id, status, plan, current_period_end")
+        .eq("user_id", userId)
+        .eq("product", "games")
+        .eq("status", "active")
+        .maybeSingle()
+
+      if (gamesLookupErr) {
+        console.error("[indicator:JOURNEY_UPGRADE] games lookup failed", {
+          user_id: userId,
+          error: gamesLookupErr.message,
+        })
+      } else if (gamesSub?.id) {
+        const { error: cancelErr } = await admin
+          .from("subscriptions")
+          .update({
+            status: "cancelled",
+            next_billing_date: null,
+            cancelled_at: now.toISOString(),
+            cancellation_reason: "upgraded_to_journey",
+          })
+          .eq("id", gamesSub.id)
+
+        if (cancelErr) {
+          console.error("[indicator:JOURNEY_UPGRADE] games cancel failed", {
+            user_id: userId,
+            games_sub_id: gamesSub.id,
+            error: cancelErr.message,
+          })
+        } else {
+          console.log("[indicator:JOURNEY_UPGRADE] games sub cancelled", {
+            user_id: userId,
+            games_sub_id: gamesSub.id,
+            new_journey_sub_id: subscriptionId,
+            note: "journey includes games at the entitlement layer; cron will skip cancelled row",
+          })
+        }
+      }
+    }
   }
 
   // ── Create invoice via uxellent API ─────────────────────────────────────────

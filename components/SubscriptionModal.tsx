@@ -71,9 +71,11 @@ const T = {
       "ביטול בקליק אחד, בכל רגע",
     ],
     period: {
-      weekly:  { label: "שבועי", short: "לשבוע",  note: "/שבוע", blurb: "התנסות קצרה ללא התחייבות" },
-      monthly: { label: "חודשי", short: "לחודש", note: "/חודש", blurb: "הפופולרי ביותר - משחק חופשי בכל משחק" },
-      annual:  { label: "שנתי",  short: "לשנה",  note: "/שנה",  blurb: "החיסכון הכי גדול - ₪30 לחודש בלבד" },
+      // 2026-05-22 — Itzik consolidated to weekly-only pricing. The
+      // monthly/annual entries used to exist here; removed so no
+      // legacy copy resurfaces. Kept the `weekly` shape so existing
+      // call sites continue to compile.
+      weekly:  { label: "שבועי", short: "לשבוע",  note: "/שבוע", blurb: "ביטול בכל עת בלחיצה אחת" },
     },
   },
   en: {
@@ -127,9 +129,8 @@ const T = {
       "Cancel with one click, anytime",
     ],
     period: {
-      weekly:  { label: "Weekly",  short: "/week",  note: "/week",  blurb: "A short trial - no commitment" },
-      monthly: { label: "Monthly", short: "/month", note: "/month", blurb: "Most popular - unlimited play across every game" },
-      annual:  { label: "Annual",  short: "/year",  note: "/year",  blurb: "The biggest saving - just $7 per month" },
+      // 2026-05-22 — weekly-only pricing (see HE counterpart above).
+      weekly:  { label: "Weekly",  short: "/week",  note: "/week",  blurb: "Cancel anytime with one click" },
     },
   },
 } as const;
@@ -140,15 +141,16 @@ const TEST_PRICE = process.env.NEXT_PUBLIC_BILLING_TEST_PRICE
   ? String(process.env.NEXT_PUBLIC_BILLING_TEST_PRICE)
   : null;
 
+// 2026-05-22 — weekly-only pricing (monthly + annual removed).
 const PRICES_ILS = TEST_PRICE
-  ? { weekly: TEST_PRICE, monthly: TEST_PRICE, annual: TEST_PRICE }
-  : { weekly: "9", monthly: "37", annual: "369" };
+  ? { weekly: TEST_PRICE }
+  : { weekly: "9" };
 
 const PRICES_USD = TEST_PRICE
-  ? { weekly: TEST_PRICE, monthly: TEST_PRICE, annual: TEST_PRICE }
-  : { weekly: "3", monthly: "9", annual: "123" };
+  ? { weekly: TEST_PRICE }
+  : { weekly: "3" };
 
-type Plan = "weekly" | "monthly" | "annual";
+type Plan = "weekly";
 
 // ── Per-game palette lookup - matches GamePageBackground.SLUG_THEMES ──────────
 // Keep this list in sync. Admin overrides via bg_value will cascade naturally

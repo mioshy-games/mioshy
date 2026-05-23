@@ -7,32 +7,22 @@ import { Link } from "@/navigation";
 export function Paywall() {
   const t = useTranslations("paywall");
 
+  // 2026-05-22 — pricing simplified to weekly-only.
+  // The single/yearly tiers were removed alongside monthly; the page
+  // now surfaces just the active "weekly" tier (9 ₪/week games or
+  // 57 ₪/week journey depending on the surface that links here).
   const plans = [
     {
-      key: "single",
-      price: t("singlePrice"),
-      title: t("single"),
-      desc: t("singleDesc"),
-      highlight: false,
-    },
-    {
-      key: "monthly",
-      price: t("monthlyPrice"),
-      title: t("monthly"),
-      desc: t("monthlyDesc"),
+      key: "weekly",
+      price: t("weeklyPrice"),
+      title: t("weekly"),
+      desc: t("weeklyDesc"),
       highlight: true,
-    },
-    {
-      key: "yearly",
-      price: t("yearlyPrice"),
-      title: t("yearly"),
-      desc: t("yearlyDesc"),
-      highlight: false,
     },
   ];
 
   return (
-    <div className="mx-auto grid w-full max-w-5xl gap-4 px-4 py-8 sm:grid-cols-3">
+    <div className="mx-auto grid w-full max-w-md gap-4 px-4 py-8">
       {plans.map((p, i) => (
         <motion.div
           key={p.key}
@@ -59,10 +49,10 @@ export function Paywall() {
           </button>
         </motion.div>
       ))}
-      <p className="sm:col-span-3 text-center text-sm text-white/70">
+      <p className="text-center text-sm text-white/70">
         {t("placeholder")}
       </p>
-      <div className="sm:col-span-3 text-center">
+      <div className="text-center">
         <Link
           href="/games"
           className="text-sm font-medium text-white underline-offset-4 hover:underline"

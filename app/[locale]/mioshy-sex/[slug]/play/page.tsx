@@ -126,6 +126,10 @@ export default async function PlayExperienceGamePage({
   if (!game) notFound();
 
   // ── Access gate ─────────────────────────────────────────────────────────
+  // Itzik 2026-05-22: Journey subscribers get free access to every Adults
+  // game. We check the Journey entitlement BEFORE the per-game ownership
+  // check so a Journey subscriber can play any title without first
+  // grinding through a per-game couple_entitlements insert.
   const ctx = await getCurrentCoupleContext();
   if (!ctx) {
     redirect(
@@ -137,7 +141,13 @@ export default async function PlayExperienceGamePage({
   if (!ctx.couple_id) {
     redirect(`/${locale}/mioshy-sex/${slug}`);
   }
-  const entitled = ctx.entitled_game_ids.has(game.id);
+  const { getUserEntitlements } = await import(
+    "@/lib/entitlements/getUserEntitlements"
+  );
+  const journeyEnt = await getUserEntitlements().catch(() => null);
+  const journeyGrantsAccess = journeyEnt?.journey === true;
+  const ownedThisGame = ctx.entitled_game_ids.has(game.id);
+  const entitled = ownedThisGame || journeyGrantsAccess;
   if (!entitled) {
     redirect(`/${locale}/mioshy-sex/${slug}`);
   }

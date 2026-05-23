@@ -113,9 +113,33 @@ export async function getUserEntitlements(
       return new Date(s.current_period_end as string).getTime() > now;
     });
 
-  // ── Adults entitlement: EITHER an active "adults" sub OR at least one
-  //    per-game couple_entitlement. ──────────────────────────────────────
+  // ── Adults entitlement (Itzik 2026-05-22) ──────────────────────────────
+  //   Sources of access, OR'd together:
+  //     1. An active "adults" pillar subscription (vestigial — adults is
+  //        currently one-time only, but we keep the check for future).
+  //     2. An active Journey subscription — Journey bundles full access
+  //        to every adults game (no per-game purchase needed). This is
+  //        a hard rule from the 2026-05-22 pricing overhaul; previously
+  //        Journey gave only "one adults game per calendar month" via
+  //        adults_monthly_used_at, which is now deprecated.
+  //     3. At least one per-game couple_entitlement (one-time purchases
+  //        the couple made directly). These survive sub cancellations.
+  //
+  //   Games subscription deliberately does NOT grant adults — that pillar
+  //   is a separate purchase track.
   let adults = activeBy("adults");
+  // Journey subscribers get full adults access (replaces the monthly slot).
+  // We resolve journey *after* this block, so re-derive a quick boolean
+  // here from the same subs list to avoid order-of-eval dependencies.
+  const journeyActive = (subs ?? []).some((s) => {
+    if (s.product !== "journey") return false;
+    if (s.status !== "active") return false;
+    if (!s.current_period_end) return true;
+    return new Date(s.current_period_end as string).getTime() > now;
+  });
+  if (!adults && journeyActive) {
+    adults = true;
+  }
   if (!adults && coupleId) {
     const { data: ents } = await supabase
       .from("couple_entitlements")

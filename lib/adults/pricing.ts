@@ -104,9 +104,16 @@ export function resolveAdultsPricing(
       displayPrice: formatAmount(pick(singleIls, singleUsd), currency),
       periodLabel: "",
     },
+    // 2026-05-22 — the Adults pillar is one-time only. The admin
+    // toggles for monthly/annual on `between_us_settings` are kept on
+    // the row so we don't drop historical configuration, but the
+    // resolver hard-overrides `enabled = false` here so the marketing
+    // and detail surfaces stop offering tiers the checkout API will
+    // refuse. (See checkout/create: product='adults' + subscription
+    // returns INVALID_PRODUCT.)
     monthly: {
       tier: "monthly",
-      enabled: settings.monthly_enabled,
+      enabled: false,
       priceIls: monthlyIls,
       priceUsd: monthlyUsd,
       displayPrice: formatAmount(pick(monthlyIls, monthlyUsd), currency),
@@ -114,7 +121,7 @@ export function resolveAdultsPricing(
     },
     annual: {
       tier: "annual",
-      enabled: settings.annual_enabled,
+      enabled: false,
       priceIls: annualIls,
       priceUsd: annualUsd,
       displayPrice: formatAmount(pick(annualIls, annualUsd), currency),

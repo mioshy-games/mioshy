@@ -1,43 +1,49 @@
 /**
  * lib/billing.ts
  * Shared billing constants and helpers for mioshy subscriptions.
+ *
+ * Itzik 2026-05-22 — pricing simplification:
+ *   • Subscriptions are weekly only. Monthly + annual plans are removed.
+ *   • Games subscription: 9 ₪/week ($3/week).
+ *   • Journey subscription: 57 ₪/week ($17/week).
+ *   • Adults: one-time per game purchase (handled outside this file via
+ *     experience_games.price_ils/usd).
  */
 
-export type Plan = "weekly" | "monthly" | "annual"
+export type Plan = "weekly"
 export type SubscriptionProduct = "games" | "journey"
 
 /**
- * Per-product subscription prices (Itzik 2026-05-06).
+ * Per-product weekly subscription prices.
  *
- * Pricing model on the homepage:
- *   • Games   — 9 ₪/wk  ($3/wk)  — light entry tier
- *   • Journey — 57 ₪/wk ($17/wk) — single all-included plan
- *   • Adults  — one-time per game (uses experience_games.price_*)
- *
- * Previously this file had a single PLAN_AMOUNTS_* matrix without
- * a product axis, which meant journey/weekly was charged at 9 ₪
- * instead of 57. The matrix is now indexed by product first, then
- * by plan, and getPlanPrice() requires the product as input.
+ * Indexed by product so journey/games never charge the same amount.
+ * (Historical: prior to 2026-05-22 this matrix had a weekly/monthly/annual
+ * axis. Itzik consolidated to weekly-only — the monthly/annual entries
+ * were never used in production.)
  */
-export const PLAN_AMOUNTS_ILS: Record<SubscriptionProduct, Record<Plan, number>> = {
-  games:   { weekly:  9, monthly:  37, annual: 369 },
-  journey: { weekly: 57, monthly: 219, annual: 2199 },
+export const PLAN_AMOUNTS_ILS: Record<SubscriptionProduct, number> = {
+  games:    9,
+  journey: 57,
 }
 
-export const PLAN_AMOUNTS_USD: Record<SubscriptionProduct, Record<Plan, number>> = {
-  games:   { weekly:  3, monthly:   9, annual: 123 },
-  journey: { weekly: 17, monthly:  65, annual: 649 },
+export const PLAN_AMOUNTS_USD: Record<SubscriptionProduct, number> = {
+  games:    3,
+  journey: 17,
 }
 
 /**
- * Return plan price info based on the product, plan, and country.
+ * Return plan price info based on product and country.
  * Israeli users pay ILS (CoinId=1), others pay USD (CoinId=2).
  *
- * If NEXT_PUBLIC_BILLING_TEST_PRICE is set (e.g. "1"), overrides all amounts to
- * that value - useful for testing real Cardcom charges without paying full price.
+ * If NEXT_PUBLIC_BILLING_TEST_PRICE is set (e.g. "1"), overrides the amount
+ * to that value — useful for testing real Cardcom charges without paying
+ * full price.
+ *
+ * The `_plan` parameter is kept in the signature for backwards-compatible
+ * call sites but is ignored: there is now only one plan (weekly).
  */
 export function getPlanPrice(
-  plan: Plan,
+  _plan: Plan,
   isIsraeli: boolean,
   product: SubscriptionProduct = "journey",
 ) {
@@ -51,8 +57,8 @@ export function getPlanPrice(
     }
   }
   return isIsraeli
-    ? { amount: PLAN_AMOUNTS_ILS[product][plan], currency: "ILS", coinId: 1 }
-    : { amount: PLAN_AMOUNTS_USD[product][plan], currency: "USD", coinId: 2 }
+    ? { amount: PLAN_AMOUNTS_ILS[product], currency: "ILS", coinId: 1 }
+    : { amount: PLAN_AMOUNTS_USD[product], currency: "USD", coinId: 2 }
 }
 
 /**
@@ -66,20 +72,12 @@ export function getCardcomLanguage(locale: string, isIsraeli: boolean): string {
 
 /**
  * Calculate the next billing period end from a given start date.
+ * All subscriptions are weekly — always advance by 7 days.
  */
-export function addPlanPeriod(from: Date, plan: Plan): Date {
+export function addPlanPeriod(from: Date, _plan: Plan = "weekly"): Date {
   const d = new Date(from.getTime())
-  switch (plan) {
-    case "weekly":
-      d.setDate(d.getDate() + 7)
-      return d
-    case "monthly":
-      d.setMonth(d.getMonth() + 1)
-      return d
-    case "annual":
-      d.setFullYear(d.getFullYear() + 1)
-      return d
-  }
+  d.setDate(d.getDate() + 7)
+  return d
 }
 
 /**
