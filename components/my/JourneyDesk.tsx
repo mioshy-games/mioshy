@@ -133,9 +133,13 @@ export function JourneyDesk({
         <ProgressStrip isHe={isHe} progress={progress} />
       ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-12 lg:gap-6">
+      {/* 2026-05-23 — was `lg:grid-cols-12` only. Tablets (768–1023px)
+          stayed in single-column stack, which felt wasteful given the
+          space. Moved the split to md so iPad portrait + landscape get
+          the desktop side-by-side layout. Mobile (<md) still stacks. */}
+      <div className="grid gap-4 md:grid-cols-12 md:gap-6">
         {/* Content panel - DOM order matters for mobile (rail first). */}
-        <div className="order-2 lg:order-1 lg:col-span-8">
+        <div className="order-2 md:order-1 md:col-span-8">
           <ContentPanel
             isHe={isHe}
             pill={selectedPill}
@@ -144,8 +148,8 @@ export function JourneyDesk({
             Arrow={Arrow}
           />
         </div>
-        {/* Rail - order-1 on mobile (top), col 1-4 on lg (right side in RTL). */}
-        <aside className="order-1 lg:order-2 lg:col-span-4">
+        {/* Rail - order-1 on mobile (top), col 1-4 on md+ (right side in RTL). */}
+        <aside className="order-1 md:order-2 md:col-span-4">
           <RailColumn
             isHe={isHe}
             entries={entries}
@@ -301,18 +305,23 @@ function RailColumn({
         </p>
       </header>
 
+      {/* 2026-05-23 — Itzik flagged horizontal overflow on Safari iOS.
+          Was: `flex overflow-x-auto` with `min-w-[160px]` per button,
+          vertical-stack only at lg+ (1024px). 4 rail buttons × 160px =
+          640px in a ~343px viewport → guaranteed clipping in RTL.
+          Now: 2-col grid on mobile, 3-col on sm tablets, vertical
+          stack already at md (768px) so tablets behave like desktop.
+          The lg+ vertical-column layout is unchanged. */}
       <ol
         className={[
-          // Mobile: horizontal scroll. Desktop: vertical column.
-          "flex gap-2 overflow-x-auto pb-1",
-          "snap-x snap-mandatory",
-          "lg:flex-col lg:gap-1.5 lg:overflow-visible lg:snap-none lg:pb-0",
+          "grid grid-cols-2 gap-2 sm:grid-cols-3",
+          "md:flex md:flex-col md:gap-1.5 md:overflow-visible",
           "[scrollbar-width:none] [-ms-overflow-style:none]",
           "[&::-webkit-scrollbar]:hidden",
         ].join(" ")}
       >
         {entries.map((entry, idx) => (
-          <li key={entry.key} className="snap-start lg:snap-align-none">
+          <li key={entry.key}>
             <RailButton
               entry={entry}
               index={idx}
@@ -378,7 +387,12 @@ function RailButton({
       aria-current={isSelected ? "step" : undefined}
       aria-label={`${index + 1} / ${total} - ${entry.label}`}
       className={[
-        "group flex w-full min-w-[160px] items-start gap-2 rounded-xl border px-3 py-2.5 text-start transition lg:min-w-0",
+        // 2026-05-23 — `min-w-[160px]` removed (was forcing horizontal
+        // overflow at <lg). `w-full` makes the button fill whatever
+        // its grid/flex parent gives it; that's 50% of the column at
+        // base, 33% at sm, full column at md+ where the parent flips
+        // to flex-col.
+        "group flex w-full items-start gap-2 rounded-xl border px-3 py-2.5 text-start transition",
         surface,
         selectedRing,
         isLocked

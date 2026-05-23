@@ -756,7 +756,18 @@ export default async function PrivateJourneyPage({
   });
 
   return (
-    <div dir={isHe ? "rtl" : "ltr"} className="min-h-[100dvh] text-white">
+    <div
+      dir={isHe ? "rtl" : "ltr"}
+      // 2026-05-23 — overflow-x-hidden added. Without it, any child that
+      // accidentally exceeds the viewport width turns the WHOLE page
+      // into a horizontal scroll area — especially nasty under RTL on
+      // Safari iOS, where the scroll direction flips and Safari shows
+      // a sliver of the next-section background bleeding from the side.
+      // Belt-and-suspenders: even after fixing the JourneyDesk /
+      // JourneyProgressRail overflows in the same commit, this acts as
+      // a guard against future regressions.
+      className="min-h-[100dvh] overflow-x-hidden text-white"
+    >
       {viewAsContext && viewAsLabel ? (
         <ViewAsBanner viewedLabel={viewAsLabel} isHe={isHe} />
       ) : null}
@@ -784,7 +795,11 @@ export default async function PrivateJourneyPage({
           /my (max-w-6xl) so the user sees the same canvas across pages. */}
       <div className="mx-auto mt-6 max-w-6xl px-3 sm:px-4">
         <div className="rounded-3xl border border-white/[0.06] bg-slate-950/75 px-2 pb-8 pt-2 backdrop-blur-md sm:px-4 sm:pb-10 sm:pt-4">
-      <main className="mx-auto w-full px-4 pb-20 pt-10 sm:pt-14">
+      {/* 2026-05-23 — was `px-4` flat. iPhone SE (375px) had only
+          343px of useful width inside the page wrapper. Tightened to
+          px-3 on base for one extra column of breathing room, then
+          back up to px-4/px-6 on larger viewports. */}
+      <main className="mx-auto w-full px-3 pb-20 pt-10 sm:px-4 sm:pt-14 md:px-6">
         {/* Breadcrumb back to /my */}
         <Link
           href="/my"

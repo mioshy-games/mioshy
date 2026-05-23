@@ -66,10 +66,18 @@ export function JourneyProgressRail({
         </p>
       </div>
 
+      {/* 2026-05-23 — Itzik flagged horizontal overflow on Safari iOS
+          (375px viewport). Was: `flex gap-2 overflow-x-auto` with
+          `min-w-[150px]` per pill — 4 pills × 150px = 600px scrolling
+          horizontally inside a 343px content column, RTL-clipped on
+          both sides. Now: 2-col grid on mobile (no overflow possible),
+          3-col on tablet, original horizontal scroll restored only at
+          lg+ where the desktop design was already validated. */}
       <ol
         className={[
-          "mt-3 flex gap-2 overflow-x-auto pb-1",
-          "snap-x snap-mandatory",
+          "mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3",
+          "lg:flex lg:gap-2 lg:overflow-x-auto lg:pb-1",
+          "lg:snap-x lg:snap-mandatory",
           "[scrollbar-width:none] [-ms-overflow-style:none]",
           "[&::-webkit-scrollbar]:hidden",
         ].join(" ")}
@@ -77,7 +85,7 @@ export function JourneyProgressRail({
         {entries.map((entry) => (
           <li
             key={entry.key}
-            className="snap-start"
+            className="lg:snap-start"
             aria-current={entry.status === "current" ? "step" : undefined}
           >
             <RailPill entry={entry} />
@@ -123,7 +131,15 @@ function RailPill({ entry }: { entry: RailEntry }) {
   const inner = (
     <div
       className={[
-        "group relative flex min-w-[150px] flex-col items-start gap-1 rounded-xl border px-3.5 py-2.5",
+        // 2026-05-23 — was `min-w-[150px]` unconditionally; that locked
+        // the pill at 150px even when the grid cell at <lg was 343/2 =
+        // 171px on iPhone SE → fine, but on narrower devices (<320px)
+        // it caused horizontal scroll inside the cell. Switched to
+        // `w-full` so the pill fills whatever its grid/flex parent
+        // gives it; restored `lg:min-w-[150px] lg:w-auto` so the
+        // desktop horizontal-scroll rail behaves like before.
+        "group relative flex w-full flex-col items-start gap-1 rounded-xl border px-3.5 py-2.5",
+        "lg:min-w-[150px] lg:w-auto",
         "transition-colors duration-200",
         surfaceClass,
         interactiveClass,
