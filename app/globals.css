@@ -567,3 +567,18 @@ small, .text-small {
     font-size: 20px !important;
   }
 }
+
+/* ─── WhatsApp floating CTA — offset above the mobile services bar ───
+   Itzik 2026-05-23: the green WhatsApp circle was overlapping the
+   leftmost card in <MobileServicesBar> on mobile, hiding the
+   "הסקס של מיאושי" label. The bar only renders below the lg
+   breakpoint (1024px), so we lift the button on small screens only.
+   Variable consumed inline in components/marketing/WhatsAppFloatingCta.tsx
+   via `bottom: calc(env(safe-area-inset-bottom, 0px) + var(--whatsapp-bottom-offset, 20px))`.
+   Bar measures ~84px (40px icon + 18px label + 16px padding + 8px gap +
+   2px border + safety). 92px clears it with a small breathing gap. */
+@media (max-width: 1023px) {
+  :root {
+    --whatsapp-bottom-offset: 92px;
+  }
+}

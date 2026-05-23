@@ -65,8 +65,23 @@ export function WhatsAppFloatingCta({ locale }: { locale: string }) {
       // position stays on the literal left side under RTL Hebrew too.
       // safe-area-inset-bottom kept so the button doesn't disappear
       // under the iPhone home-indicator strip.
+      //
+      // 2026-05-23 — Itzik flagged that on mobile the button was
+      // sitting ON TOP of the leftmost card in <MobileServicesBar>
+      // ("הסקס של מיאושי"), making its label unreadable. The bar is
+      // <lg only and ~80px tall (40px icon plate + 18px label + 16px
+      // padding). On mobile we lift the button above the bar; on
+      // desktop the bar isn't rendered, so we stay at the original
+      // 20px offset. Tailwind doesn't expose a `bottom: calc(...)`
+      // utility with media-query branching that survives JIT, so we
+      // express the breakpoint with two inline tokens and pick via
+      // window match in a layout effect would be overkill — instead
+      // we rely on the fact that on viewports <1024px the bar is
+      // present, and use a CSS variable with @media to pick the
+      // larger offset there.
       style={{
-        bottom: "calc(env(safe-area-inset-bottom, 0px) + 20px)",
+        bottom:
+          "calc(env(safe-area-inset-bottom, 0px) + var(--whatsapp-bottom-offset, 20px))",
         left: "20px",
       }}
     >

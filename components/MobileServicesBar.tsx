@@ -95,32 +95,36 @@ export function MobileServicesBar() {
     return () => observer.disconnect();
   }, [pathname]);
 
-  // ── Chrome mobile URL-bar tracker (2026-05-18, Itzik) ────────────────
+  // ── Chrome mobile URL-bar tracker (2026-05-18 + 2026-05-23, Itzik) ───
   //
-  // Symptom: on the hero the bar is flush with the screen bottom, but
-  // after scrolling further down a gap appears between the bar and the
-  // bottom edge of the viewport — the bar looks like it's floating in
-  // mid-air rather than pinned to the screen.
+  // Symptom A (fixed 2026-05-18): on the hero the bar is flush with the
+  // screen bottom, but after scrolling UP (URL bar reappears) a gap
+  // appeared between the bar and the bottom edge of the viewport.
+  //
+  // Symptom B (this fix, 2026-05-23): the inverse — when scrolling DOWN
+  // in Chrome iOS the URL bar AND the bottom Chrome toolbar collapse
+  // together; the visual viewport GROWS downward beyond the layout
+  // viewport's bottom. The bar (anchored at `bottom: 0`, which references
+  // the layout viewport's bottom) stays put and ends up ABOVE the new
+  // visible bottom — creating a visible gap below the bar before the
+  // screen edge.
   //
   // Cause: Chrome mobile distinguishes the *layout viewport* (what
   // `position: fixed; bottom: 0` anchors to) from the *visual viewport*
   // (what the user actually sees, which shrinks/grows as the URL bar
-  // appears/collapses). Once the URL bar collapses during scroll, the
-  // visual viewport grows but `bottom: 0` still references the layout
-  // viewport's bottom — which is now ABOVE the visible screen bottom.
+  // appears/collapses).
   //
-  // Fix: read the live offset from `window.visualViewport` (Chrome 61+,
-  // Safari 13+) and apply it as a translateY on a wrapper. The wrapper
-  // gets repositioned every visualViewport `resize`/`scroll`, so the
-  // bar stays pinned to the actual visible bottom.
-  //
-  // We instrument the path with console logs gated on `NODE_ENV !==
-  // 'production'` so anyone reproducing the gap can read the exact
-  // numbers (window.innerHeight, vv.height, vv.offsetTop, computed
-  // offset, the bar's getBoundingClientRect). If the gap persists, the
-  // log makes it obvious whether the visualViewport API isn't reporting
-  // updates, or whether the translation is being clobbered by another
-  // CSS rule.
+  // Fix: read the live delta between layout-bottom and visual-bottom
+  // from `window.visualViewport` (Chrome 61+, Safari 13+) and translate
+  // the bar in EITHER direction. The previous version capped the offset
+  // at 0 via `Math.max(0, …)`, which fixed symptom A but left symptom B
+  // unhandled. Removing the cap means:
+  //   • bottomGap > 0  (visual-bottom is ABOVE layout-bottom — URL bar
+  //                     just appeared) → translate UP by bottomGap.
+  //   • bottomGap < 0  (visual-bottom is BELOW layout-bottom — chrome
+  //                     just collapsed)  → translate DOWN by |bottomGap|.
+  //   • bottomGap = 0  → no offset needed.
+  // In both cases `translate = -bottomGap` gives the right sign.
   useEffect(() => {
     if (typeof window === "undefined") return;
     const vv = window.visualViewport;
@@ -135,7 +139,11 @@ export function MobileServicesBar() {
     function update() {
       if (!vv || !nav) return;
       const bottomGap = window.innerHeight - (vv.height + vv.offsetTop);
-      const translate = -Math.max(0, bottomGap);
+      // Allow translation in BOTH directions (see comment above).
+      // Sub-pixel rounding: round to 0.5px to avoid jitter on iOS Safari
+      // where vv.height changes by fractional pixels during inertial
+      // scroll.
+      const translate = -Math.round(bottomGap * 2) / 2;
       nav.style.setProperty("--mobile-bar-vv-offset", `${translate}px`);
     }
 
