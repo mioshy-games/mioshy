@@ -365,16 +365,24 @@ export function MobileServicesBar() {
       aria-label={t("menu")}
       className="fixed inset-x-0 bottom-0 z-40 lg:hidden transition-transform duration-300 ease-out"
       style={{
-        // iOS safe-area: extends background under the home-indicator
-        // strip but keeps the icons inside the safe zone.
-        paddingBottom: "env(safe-area-inset-bottom, 0px)",
+        // 2026-05-23 — Itzik reproduced "gap under bar on scroll-down"
+        // bug. Diagnostic logs revealed: when iOS Chrome's bottom
+        // toolbar collapses, `safe-area-inset-bottom` jumps from 0 to
+        // 34px (home-indicator zone is exposed). Before, the
+        // `padding-bottom: env(safe-area-inset-bottom)` lived HERE
+        // on the outer nav, but the coloured gradient lived on the
+        // inner <div>, so the 34px padding zone was transparent and
+        // page content peeked through it → the perceived "gap".
+        // Moved padding into the inner gradient div so the colour
+        // extends THROUGH the home-indicator zone. The outer nav now
+        // only handles positioning + the transform animation.
         // Transform composes TWO pieces:
         //   1. `--mobile-bar-vv-offset` — the visualViewport tracker
-        //      (set in the useEffect above) pulls the bar up by the
-        //      live gap between layout-viewport-bottom and visual-
-        //      viewport-bottom on Chrome mobile during URL-bar
-        //      collapse/expand. Defaults to 0px when the API is
-        //      unavailable or there's no gap.
+        //      (set in the useEffect above) handles edge cases where
+        //      the visual and layout viewports drift apart during
+        //      URL-bar collapse on Chrome iOS. Defaults to 0px when
+        //      the two viewports match (the common case per the
+        //      Vercel diagnostic — both viewports moved together).
         //   2. `100%` when the footer is visible — slides the bar off
         //      screen so the footer's bottom rows are readable.
         // We compute the transform inline rather than using Tailwind's
@@ -390,7 +398,11 @@ export function MobileServicesBar() {
           gradient as the header CTA so the strip pulls the eye and
           immediately reads as "an action surface". Each pillar is
           wrapped in a translucent card with a coloured icon plate so
-          users can tell each item is independently clickable. */}
+          users can tell each item is independently clickable.
+          2026-05-23 — `padding-bottom: env(safe-area-inset-bottom)`
+          moved HERE from the outer <nav> so the gradient extends
+          through the iPhone home-indicator zone. See the long
+          comment on <nav> above. */}
       <div
         className="border-t border-white/20"
         style={{
@@ -398,6 +410,7 @@ export function MobileServicesBar() {
             "linear-gradient(110deg, #d946ef 0%, #a855f7 35%, #ec4899 70%, #f59e0b 100%)",
           boxShadow:
             "0 -14px 36px -10px rgba(217,70,239,0.45), inset 0 1px 0 rgba(255,255,255,0.18)",
+          paddingBottom: "env(safe-area-inset-bottom, 0px)",
         }}
       >
         <ul className="mx-auto flex max-w-md items-stretch gap-2 px-2 py-2">
