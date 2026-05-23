@@ -8,6 +8,20 @@ import { CmsTextProvider } from "@/components/cms/CmsTextProvider";
 import { CmsText } from "@/components/cms/CmsText";
 import { buildAlternates, buildOgLocale } from "@/lib/seo/alternates";
 
+// 2026-05-23 — Itzik flagged a build-time warning:
+//   "[cms] loadCmsTextsForPage threw: Dynamic server usage: Route
+//    /he/about/founder couldn't be rendered statically because it
+//    used `cookies`."
+// loadCmsTextsForPage() opens a Supabase server client that reads the
+// auth cookies, which Next.js refuses to do at build time on a static
+// route. The page is content-rich and reads from the live CMS on
+// every visit, so static rendering wasn't appropriate anyway — we
+// just have to tell Next.js it's dynamic. `noStore()` is already
+// called inside the page; adding `force-dynamic` here makes the
+// build-time renderer skip the page outright and stops the noisy
+// warning from masking real CMS errors in the log.
+export const dynamic = "force-dynamic";
+
 /**
  * /[locale]/about/founder
  *

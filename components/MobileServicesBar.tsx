@@ -187,11 +187,57 @@ export function MobileServicesBar() {
     vv.addEventListener("scroll", update);
     window.addEventListener("scroll", update, { passive: true });
     window.addEventListener("orientationchange", update);
+
+    // 2026-05-23 — Itzik flagged: bar leaves a gap below itself when
+    // scrolling DOWN actively on iOS Chrome. Confirmed cause: neither
+    // `visualViewport.scroll` nor `window.scroll` fire fast enough
+    // during the active scroll gesture when the bottom toolbar
+    // animates out. The bar lags behind the viewport bottom until
+    // the gesture ends.
+    //
+    // Workaround: while a finger is on the screen, drive `update`
+    // from a requestAnimationFrame loop so we recompute every frame
+    // (≈16ms). Loop is started on `touchstart` and torn down on
+    // `touchend` / `touchcancel`, so it costs nothing during static
+    // viewing. Touch events are mobile-only by definition; desktop
+    // mouse scrolling is unaffected.
+    let rafId = 0;
+    let touchActive = false;
+    function frame() {
+      if (!touchActive) return;
+      update();
+      rafId = requestAnimationFrame(frame);
+    }
+    function onTouchStart() {
+      touchActive = true;
+      if (!rafId) rafId = requestAnimationFrame(frame);
+    }
+    function onTouchEnd() {
+      touchActive = false;
+      // Two final updates after the gesture ends — one immediate,
+      // one delayed past the chrome animation (Chrome iOS takes
+      // ~250ms to finish the toolbar-collapse animation). Catches
+      // the steady-state position so we don't leave a stale offset.
+      update();
+      window.setTimeout(update, 300);
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = 0;
+      }
+    }
+    window.addEventListener("touchstart", onTouchStart, { passive: true });
+    window.addEventListener("touchend", onTouchEnd, { passive: true });
+    window.addEventListener("touchcancel", onTouchEnd, { passive: true });
+
     return () => {
       vv.removeEventListener("resize", update);
       vv.removeEventListener("scroll", update);
       window.removeEventListener("scroll", update);
       window.removeEventListener("orientationchange", update);
+      window.removeEventListener("touchstart", onTouchStart);
+      window.removeEventListener("touchend", onTouchEnd);
+      window.removeEventListener("touchcancel", onTouchEnd);
+      if (rafId) cancelAnimationFrame(rafId);
     };
   }, []);
 
