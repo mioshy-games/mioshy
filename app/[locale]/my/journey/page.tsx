@@ -97,6 +97,7 @@ import {
 import { JourneyDashboardViewTracker } from "@/components/my/JourneyDashboardViewTracker";
 import { getTimelineForOwner } from "@/lib/journey-content/queries";
 import { ensureCadenceAssignment } from "@/lib/journey-content/cadence-engine";
+import { resolvePrioritiesForUser } from "@/lib/journey-content/resolve-priorities";
 import {
   journeyOwnerForUser,
   preferCoupleOwner,
@@ -329,39 +330,32 @@ export default async function PrivateJourneyPage({
         }
       }
 
-      // (b) Priorities gate: cadence engine cannot deliver without a
-      // VALID journey_user_priorities row (isCadenceEligible →
-      // no_priorities). A partial row with empty/null ranking breaks
-      // the cadence picker the same way an absent row does, so we
-      // treat both cases as "needs assessment".
-      // Checked BEFORE firstSession so users with first_session set
-      // but missing priorities don't get an empty dashboard.
-      const { data: priorities } = await gateAdmin
-        .from("journey_user_priorities")
-        .select("user_id, ranking")
-        .eq("user_id", effectiveUserId)
-        .maybeSingle();
-
-      const hasValidRanking =
-        !!priorities?.ranking
-        && Array.isArray(priorities.ranking)
-        && priorities.ranking.length >= 1;
-
-      if (!hasValidRanking) {
-        const rankingLength =
-          priorities?.ranking && Array.isArray(priorities.ranking)
-            ? priorities.ranking.length
-            : 0;
-        console.log(
-          "[/my/journey:GATE] no valid ranking → /journey/assessment",
-          {
-            user_id: effectiveUserId,
-            has_row: !!priorities,
-            ranking_length: rankingLength,
-          },
-        );
-        redirect(`/${locale}/journey/assessment`);
+      // (b) Lazy-resolve priorities.
+      //
+      //     2-step cascade — see
+      //     lib/journey-content/resolve-priorities.ts:
+      //       A. Row already exists with valid ranking → 'ready'
+      //          (also materializes day-1 if no item exists yet —
+      //          hotfix for backfilled rows).
+      //       B. q_priorities response found → resolve slugs →
+      //          upsert (source='assessment') → materialize day-1 →
+      //          'ready'.
+      //       (Default-ranking fallback was removed 2026-05-24:
+      //        product rule says every user needs a real assessment.)
+      //
+      //     On 'needs_assessment' (no q_priorities at all) we send
+      //     the user to /journey/assessment/intro. The intro page
+      //     captures the pact, then proceeds to the questions.
+      //
+      //     Idempotent; silent (no logs/alerts per product decision).
+      const resolveResult = await resolvePrioritiesForUser(
+        gateAdmin,
+        effectiveUserId,
+      );
+      if (resolveResult.kind === "needs_assessment") {
+        redirect(`/${locale}/journey/assessment/intro`);
       }
+      // 'ready' or 'no_program' → fall through to firstSession check.
     }
   }
 

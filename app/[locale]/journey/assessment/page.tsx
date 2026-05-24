@@ -378,11 +378,31 @@ export default async function JourneyAssessmentPage({
       willRedirect: subscriptionActive && completed,
     });
     if (subscriptionActive && completed) {
-      console.log(
-        "[/journey/assessment] ✅ Phase A guard fired - redirecting to /my/journey",
-        { user_id: user.id },
-      );
-      redirect(`/${locale}/my/journey`);
+      // Defense-in-depth (2026-05-24): only redirect back to the
+      // dashboard if the user actually has a resolved priorities
+      // row. If completed=true but no priorities row, the user is
+      // in the "completed assessment but priorities missing" state
+      // (e.g. orphan anonymous flow). Without this check, the
+      // /my/journey gate's needs_assessment redirect would bounce
+      // them right back here → infinite loop. Falling through lets
+      // the user re-run the assessment naturally and persist their
+      // priorities via the normal /api/journey/answer trigger.
+      const { data: priorityCheck } = await supabase
+        .from("journey_user_priorities")
+        .select("user_id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (priorityCheck) {
+        console.log(
+          "[/journey/assessment] ✅ Phase A guard fired - redirecting to /my/journey",
+          { user_id: user.id },
+        );
+        redirect(`/${locale}/my/journey`);
+      }
+      // No priorities row → fall through. The questionnaire UI will
+      // pick up from where the user left off (their current_step is
+      // already at the end), they'll re-answer q_priorities, and
+      // /api/journey/answer's trigger will write the priorities row.
     }
   } else {
     // ── Anonymous user: restore progress from device_id cookie ───────────

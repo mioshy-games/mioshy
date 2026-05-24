@@ -131,11 +131,24 @@ export function SiteHeader({
         },
       ];
     }
-    // After login, the header surfaces only the two SUBSCRIPTION pillars
-    // (games + journey). Mioshy's Sex (adults) is one-time per game and
-    // doesn't belong in primary nav once the user is inside — it lives
-    // on /my and inside the journey track. Per Itzik 2026-05-07.
-    if (p.tKey === "adults") return [];
+    // Adults pillar: always visible after login, regardless of
+    // entitlements — links straight to /my/adults so a logged-in user
+    // always has a one-tap path into the adults gallery (where
+    // owned-game thumbnails sit, and unowned ones are merchandised).
+    // Per Itzik 2026-05-24 — reverses the 2026-05-07 hide-when-authed
+    // rule. Reason for the reversal: hiding the pillar entirely made
+    // existing customers feel the section had been removed, and broke
+    // re-entry into already-purchased adults titles from the top nav.
+    if (p.tKey === "adults") {
+      return [
+        {
+          href: p.authedHref,
+          tKey: p.tKey,
+          Icon: p.Icon,
+          accent: p.accent,
+        },
+      ];
+    }
     const owns = entitlements ? entitlements[p.tKey] : false;
     if (!owns) return [];
     return [
