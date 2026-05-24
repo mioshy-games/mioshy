@@ -488,10 +488,6 @@ export async function GET(req: Request) {
         })
         if (!result.ok) {
           console.error("[indicator] auto-assign failed", result.reason)
-        } else if (result.outcome === "no_program_configured") {
-          console.warn(
-            `[indicator] no journey program wired for product='${product}' - skipping auto-assign`,
-          )
         }
       } catch (err) {
         console.error("[indicator] auto-assign threw", err)

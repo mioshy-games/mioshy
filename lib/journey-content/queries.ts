@@ -356,6 +356,11 @@ export async function getTimelineForOwner(args: {
   now?: Date;
 }): Promise<TimelineEntry[]> {
   const { owner, viewerUserId, viewerCoupleRole, sourceKinds, now } = args;
+  // P1.3: hoisted from below so the .lte filter on scheduled_items uses
+  // the same clock value that deriveStatus uses for status derivation.
+  // Same clock → no race between the SQL filter and the JS computation.
+  const clock = now ?? new Date();
+  const clockIso = clock.toISOString();
   const supabase = await createServerSupabaseClient();
 
   // 1. Active assignments for this owner (optionally narrowed by source_kind).
@@ -366,11 +371,17 @@ export async function getTimelineForOwner(args: {
   if (assignments.length === 0) return [];
   const assignmentIds = assignments.map((a) => a.id);
 
-  // 2. Scheduled items
+  // 2. Scheduled items — only those already unlocked.
+  // P1.3 (2026-05-24): added .lte("unlock_at", clockIso) so locked/upcoming
+  // items don't render in JourneyDesk. The cadence engine drips one item
+  // per delivery slot, so future items don't normally exist — but
+  // pre-materialized rows from program assignments (or items with
+  // non-zero default_offset_days) would otherwise leak through.
   const { data: scheduledRows, error: sErr } = await supabase
     .from("journey_scheduled_items")
     .select("*")
     .in("assignment_id", assignmentIds)
+    .lte("unlock_at", clockIso)
     .order("unlock_at", { ascending: true });
   if (sErr) throw new Error(sErr.message);
   let scheduled = (scheduledRows ?? []) as JourneyScheduledItem[];
@@ -465,8 +476,6 @@ export async function getTimelineForOwner(args: {
     list.push(r);
     responsesByScheduled.set(r.scheduled_item_id, list);
   }
-
-  const clock = now ?? new Date();
 
   return scheduled
     .map<TimelineEntry | null>((s) => {

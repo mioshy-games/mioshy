@@ -5,37 +5,6 @@ import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/navigation";
 import { Gamepad2, Sparkles, Heart } from "@/components/icons/Icons";
 
-// ─── Debug instrumentation (Itzik 2026-05-23) ───────────────────────
-// When the page URL contains `?debug_bar=1`, the bar POSTs diagnostic
-// snapshots to /api/debug/mobile-bar so we can see (via Vercel logs)
-// what state the bar is in when it floats off the bottom edge on a
-// real iPhone — neither console.log nor Web Inspector are accessible
-// from the user's hand. Throttled to 1 send per 800ms and suppressed
-// entirely outside debug mode. Remove the helper + the route + the
-// usage below once the bug is closed.
-const DEBUG_QUERY_FLAG = "debug_bar";
-const DEBUG_THROTTLE_MS = 800;
-
-function isDebugEnabled(): boolean {
-  if (typeof window === "undefined") return false;
-  try {
-    return new URLSearchParams(window.location.search).get(DEBUG_QUERY_FLAG) === "1";
-  } catch {
-    return false;
-  }
-}
-
-function makeSessionId(): string {
-  // Short id is fine — we just want to correlate samples within one
-  // tab session. Crypto.randomUUID is widely supported in iOS 15.4+,
-  // fall back to Math.random for older devices.
-  try {
-    return (crypto as Crypto).randomUUID().slice(0, 8);
-  } catch {
-    return Math.random().toString(36).slice(2, 10);
-  }
-}
-
 /**
  * MobileServicesBar
  * ─────────────────
@@ -90,10 +59,6 @@ export function MobileServicesBar() {
   const pathname = usePathname();
   const [footerVisible, setFooterVisible] = useState(false);
   const navRef = useRef<HTMLElement | null>(null);
-
-  // Debug session state (only allocated when ?debug_bar=1 is present).
-  const debugSessionIdRef = useRef<string | null>(null);
-  const lastDebugSendRef = useRef<number>(0);
 
   // W2.1 — hide on the assessment flow. The bottom bar sits on top of
   // the submit CTA + competing pillar links during a focused diagnostic
@@ -240,122 +205,6 @@ export function MobileServicesBar() {
       if (rafId) cancelAnimationFrame(rafId);
     };
   }, []);
-
-  // ── Debug instrumentation effect ────────────────────────────────────
-  // Fires only when the URL contains ?debug_bar=1. Sends a snapshot
-  // of bar geometry + viewport state on mount, on visualViewport
-  // resize/scroll, on near-bottom page scroll, and when the footer
-  // intersects. All sends share an 800ms throttle so we don't flood
-  // Vercel logs during a single inertial scroll.
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (!isDebugEnabled()) return;
-    if (!debugSessionIdRef.current) {
-      debugSessionIdRef.current = makeSessionId();
-    }
-
-    function sendSnapshot(reason: string, force = false) {
-      const now = Date.now();
-      if (!force && now - lastDebugSendRef.current < DEBUG_THROTTLE_MS) return;
-      lastDebugSendRef.current = now;
-
-      const nav = navRef.current;
-      const vv = window.visualViewport;
-      const navRect = nav?.getBoundingClientRect();
-      const computed = nav ? getComputedStyle(nav) : null;
-      // Resolve the safe-area-inset-bottom by reading it off a probe div.
-      // env() values aren't directly observable on a regular element's
-      // computed style; we proxy through a CSS custom property.
-      let safeArea = "n/a";
-      try {
-        const probe = document.createElement("div");
-        probe.style.cssText =
-          "position:fixed;visibility:hidden;height:env(safe-area-inset-bottom, 0px);";
-        document.body.appendChild(probe);
-        safeArea = `${probe.getBoundingClientRect().height}px`;
-        document.body.removeChild(probe);
-      } catch {
-        /* probe failed — leave safeArea as 'n/a' */
-      }
-
-      const body = {
-        ts: now,
-        sessionId: debugSessionIdRef.current,
-        url: window.location.pathname + window.location.search,
-        ua: navigator.userAgent,
-        reason,
-        innerHeight: window.innerHeight,
-        scrollY: window.scrollY,
-        scrollHeight:
-          document.scrollingElement?.scrollHeight ??
-          document.documentElement.scrollHeight,
-        bottomDistance:
-          (document.scrollingElement?.scrollHeight ??
-            document.documentElement.scrollHeight) -
-          (window.scrollY + window.innerHeight),
-        vvHeight: vv?.height,
-        vvOffsetTop: vv?.offsetTop,
-        vvOffsetCssVar: nav
-          ? nav.style.getPropertyValue("--mobile-bar-vv-offset") || "0px"
-          : "n/a",
-        navRect: navRect
-          ? {
-              top: navRect.top,
-              bottom: navRect.bottom,
-              left: navRect.left,
-              right: navRect.right,
-              width: navRect.width,
-              height: navRect.height,
-            }
-          : undefined,
-        footerVisible,
-        navTransform: computed?.transform ?? "n/a",
-        safeAreaInsetBottom: safeArea,
-      };
-
-      // keepalive=true so the browser doesn't kill the request when the
-      // user navigates away mid-scroll. We deliberately don't await —
-      // the response is just "ok"; the value is in the server log.
-      fetch("/api/debug/mobile-bar", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(body),
-        keepalive: true,
-      }).catch(() => {
-        /* swallow — diagnostic only */
-      });
-    }
-
-    // One snapshot on mount so we know the starting state.
-    sendSnapshot("mount", true);
-
-    function onScroll() {
-      const scrollEl = document.scrollingElement ?? document.documentElement;
-      const bottomDistance =
-        scrollEl.scrollHeight - (window.scrollY + window.innerHeight);
-      // Only emit when the user is within 400px of the document's bottom
-      // (where the bug manifests). Outside that window the bar is fine,
-      // and sampling everywhere would just bury the interesting samples.
-      if (bottomDistance <= 400) {
-        sendSnapshot("scroll-near-bottom");
-      }
-    }
-
-    function onVvChange() {
-      sendSnapshot("vv-change");
-    }
-
-    window.addEventListener("scroll", onScroll, { passive: true });
-    const vv = window.visualViewport;
-    vv?.addEventListener("resize", onVvChange);
-    vv?.addEventListener("scroll", onVvChange);
-
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      vv?.removeEventListener("resize", onVvChange);
-      vv?.removeEventListener("scroll", onVvChange);
-    };
-  }, [footerVisible]);
 
   if (isAssessment) return null;
 

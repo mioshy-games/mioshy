@@ -1,37 +1,50 @@
 // ============================================================
-// Auto-assignment of Journey programs on purchase.
+// Auto-assignment of Journey on purchase.
 //
-// When the Cardcom indicator (webhook) confirms a paid subscription, we
-// want the user to land on /journey/timeline with content already queued
-// - no "go to dashboard and click Assign" middle-step.
+// Updated 2026-05-24 (P1.1): switched from program-kind assignments
+// with eager materialization to per-user cadence containers with
+// lazy item delivery. Items are no longer created at purchase time —
+// they're materialized by the cadence engine after the user completes
+// their priority-ranking assessment.
 //
-// This module resolves:
-//   1. Which program corresponds to the purchased product pillar
-//      (migration 036 added journey_programs.product_slug).
-//   2. Who the owner is - prefer the user's couple when paired, so both
-//      partners see the same timeline immediately.
-//   3. Whether an auto-assignment already exists (idempotent on the
-//      origin_ref so webhook replays don't duplicate rows).
-//   4. Whether the owner already has an active manual/auto assignment
-//      for the same source program - if so we leave it alone. This is
-//      the "no overwrites without intent" rule from the Phase 6 brief.
+// When the Cardcom indicator (webhook) confirms a paid subscription,
+// this module:
+//   1. Resolves the anchor date from the purchase timestamp
+//      (start-of-UTC-day per schedule.resolveAnchorDate).
+//   2. Resolves the user's couple membership — only for the
+//      couples.started_journey_at stamp (Layer-5 anniversary
+//      milestones). This stamp is best-effort: failure here is
+//      logged but does not fail the assignment. Cadence assignments
+//      themselves are PER-USER, not per-couple, since each partner
+//      has their own priority ranking and delivered-items history.
+//   3. Calls ensureCadenceAssignment (cadence-engine.ts) — idempotent
+//      get-or-create. Returns the SAME id for Cardcom webhook retries,
+//      post-cancel resubscribes, and concurrent calls (23505 race
+//      recovery handled inside).
 //
-// The Cardcom indicator is fire-and-forget from the user's perspective,
-// so this helper NEVER throws - failures are logged and returned as a
-// result object. A later admin retry can call createJourneyAssignment
-// directly without ceremony.
+// What does NOT happen here:
+//   - No scheduled_items are materialized. The first item arrives
+//     when the user submits priorities in /journey/assessment, via
+//     cadence-trigger.onPriorityRankingSubmitted → day-1 materialize.
+//   - No program lookup. The cadence engine works on priority
+//     categories from migration 055, not on per-product programs.
+//
+// Non-blocking from the user's UI flow — the user's redirect happens
+// regardless of auto-assign outcome. This helper therefore NEVER
+// throws; failures are logged and returned as a result object with
+// ok: false.
+//
+// Related modules:
+//   - cadence-engine.ts        — ensureCadenceAssignment + picker + cron
+//   - cadence-trigger.ts       — onPriorityRankingSubmitted (day-1 item)
+//   - app/[locale]/my/journey/page.tsx — self-heal gate for legacy users
 // ============================================================
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase-admin";
-import { materializeAssignment } from "./materialize";
-import { resolveRuleId } from "./match-rules";
+import { ensureCadenceAssignment } from "./cadence-engine";
 import { resolveAnchorDate } from "./schedule";
-import type {
-  JourneyAssignment,
-  JourneyProductSlug,
-  JourneyProgram,
-} from "./types";
+import type { JourneyProductSlug } from "./types";
 
 // ------------------------------------------------------------
 // Public API
@@ -60,187 +73,86 @@ export interface AssignJourneyOnPurchaseArgs {
 export type AssignJourneyOnPurchaseResult =
   | {
       ok: true;
-      outcome: "created";
+      outcome: "cadence_assignment_ready";
       assignmentId: string;
-      inserted: number;
-      programId: string;
-    }
-  | {
-      ok: true;
-      outcome: "already_assigned";
-      /** Row the webhook would have created had this been a first run. */
-      assignmentId: string;
-    }
-  | {
-      ok: true;
-      outcome: "existing_owner_assignment";
-      /** The pre-existing assignment we deferred to. */
-      assignmentId: string;
-      programId: string;
-    }
-  | {
-      ok: true;
-      outcome: "no_program_configured";
-      product: JourneyProductSlug;
+      userId: string;
     }
   | { ok: false; reason: string };
 
 /**
- * Main entry point - idempotent, non-throwing, safe to call from a webhook.
+ * Main entry point — idempotent, non-throwing, safe to call from a webhook.
  *
  * Contract:
  *   • Always resolves to an `ok: true` result when the business state is
- *     consistent (including "nothing to do" shapes).
+ *     consistent. The new cadence-based flow has no "nothing to do" cases —
+ *     every paying user gets a cadence assignment (creating one if absent).
  *   • Returns `ok: false` only for infra/DB errors worth alerting on.
+ *
+ * What changed in P1.1 (2026-05-24):
+ *   - REMOVED: program-kind assignment creation + materializeAssignment.
+ *     Previously created 275 scheduled_items at offset=0 → "everything
+ *     unlocked" bug.
+ *   - REMOVED: day-1 unlock_at override. The first item is now
+ *     materialized by cadence-trigger.onPriorityRankingSubmitted after
+ *     the user completes /journey/assessment.
+ *   - ADDED: ensureCadenceAssignment — idempotent get-or-create of the
+ *     per-user cadence container. Re-invocations return the SAME
+ *     assignment id (Cardcom retries, post-cancel resubscribes).
  */
 export async function assignJourneyOnPurchase(
   args: AssignJourneyOnPurchaseArgs,
 ): Promise<AssignJourneyOnPurchaseResult> {
   const supabase = args.supabase ?? (await createAdminClient());
-  const originRef = buildOriginRef(args.checkoutSessionId);
 
   try {
-    // 1. Idempotency - has this specific checkout already assigned?
-    const existingForCheckout = await findAssignmentByOriginRef(
-      supabase,
-      originRef,
-    );
-    if (existingForCheckout) {
-      return {
-        ok: true,
-        outcome: "already_assigned",
-        assignmentId: existingForCheckout.id,
-      };
-    }
-
-    // 2. Program lookup by product_slug (exactly one active row per slug).
-    const program = await findActiveProgramForProduct(supabase, args.product);
-    if (!program) {
-      // Not configured yet - webhook should not fail; admin can wire this
-      // up in the program editor when ready.
-      return {
-        ok: true,
-        outcome: "no_program_configured",
-        product: args.product,
-      };
-    }
-
-    // 3. Resolve the preferred owner - couple wins when the user has one.
-    const owner = await resolveOwnerForUser(supabase, args.userId);
-
-    // 4. Respect any pre-existing active assignment for this owner+program.
-    //    That prevents an admin's manual curation from being stomped by
-    //    the auto-assign hook, and also prevents a second subscription
-    //    purchase within the same period from duplicating scheduled rows.
-    const existingOwnerAssignment = await findActiveAssignmentForOwnerProgram(
-      supabase,
-      owner,
-      program.id,
-    );
-    if (existingOwnerAssignment) {
-      return {
-        ok: true,
-        outcome: "existing_owner_assignment",
-        assignmentId: existingOwnerAssignment.id,
-        programId: program.id,
-      };
-    }
-
-    // 5. Create the assignment with the purchase date as anchor, then
-    //    materialize its scheduled items. Anchor is normalized to
-    //    start-of-UTC-day by resolveAnchorDate so per-day offsets behave
-    //    predictably across DST.
+    // 1. Resolve anchor — start-of-UTC-day from the purchase timestamp.
+    //    Becomes the cadence assignment's anchor_date and the reference
+    //    point for "weeks since join" delivery slots.
     const anchorIso = resolveAnchorDate({
       anchorKind: "purchase",
       purchaseAt: args.purchasedAt,
     });
+    const anchorDate = new Date(anchorIso);
 
-    const insertRow = {
-      user_id: owner.kind === "user" ? owner.userId : null,
-      couple_id: owner.kind === "couple" ? owner.coupleId : null,
-      source_kind: "program" as const,
-      source_id: program.id,
-      anchor_kind: "purchase" as const,
-      anchor_date: anchorIso,
-      origin: "purchase" as const,
-      origin_ref: originRef,
-      notes: `Auto-assigned on purchase (${args.product}).`,
-      is_active: true,
-    };
+    // 2. Resolve owner — used only for the couples.started_journey_at
+    //    stamp. Cadence assignments themselves are PER-USER (migration
+    //    058's partial unique index keys on user_id only), so paired
+    //    users each get their own assignment.
+    const owner = await resolveOwnerForUser(supabase, args.userId);
 
-    const { data: assignment, error: insErr } = await supabase
-      .from("journey_assignments")
-      .insert(insertRow)
-      .select("*")
-      .single();
-
-    if (insErr || !assignment) {
+    // 3. Get-or-create the per-user cadence assignment.
+    //    ensureCadenceAssignment is idempotent via the partial unique
+    //    index on (user_id) WHERE source_kind='cadence' AND
+    //    is_active=true (migration 058). Returns the SAME id for:
+    //      - Cardcom webhook retries (same user, same payment)
+    //      - Post-cancel resubscribes (preserves anchor +
+    //        delivered_items + priority ranking history)
+    //      - Concurrent calls (handled via 23505 race recovery inside)
+    //
+    //    NOTE: We do NOT materialize scheduled_items here. Items are
+    //    created lazily by the cadence engine when:
+    //      (a) The user submits priority ranking →
+    //          onPriorityRankingSubmitted fires
+    //          materializeNextItemForUser for the day-1 item.
+    //      (b) The cadence cron tick fires on a delivery slot.
+    //    This prevents the "275 items unlocked at once" bug.
+    const assignmentId = await ensureCadenceAssignment(
+      args.userId,
+      anchorDate,
+    );
+    if (!assignmentId) {
       return {
         ok: false,
-        reason: insErr?.message ?? "failed to insert assignment",
+        reason: "ensureCadenceAssignment returned null (no admin client?)",
       };
     }
 
-    const { inserted } = await materializeAssignment({
-      assignment: assignment as JourneyAssignment,
-      supabase,
-      // Every row inherits the default-program rule until the day-1
-      // override below promotes the first row to 'day_one_kickoff'.
-      defaultRuleSlug: "default_program_kickoff",
-    });
-
-    // ──────────────────────────────────────────────────────────────────
-    // Day-1 override (Itzik 2026-05-07).
-    //
-    // Items in a program normally schedule via `default_offset_days`
-    // (the cadence engine drips one per Monday from the anchor date).
-    // For a freshly-purchased Journey, the user expects to see SOMETHING
-    // unlocked immediately — anything else feels broken even if it's
-    // technically "working as designed".
-    //
-    // We force the EARLIEST scheduled item (lowest sort_order) to
-    // unlock right now, and mark `has_unlock_override=true` so the
-    // expert dashboard can see it was a system-driven shift, not a
-    // mistake. Best-effort: failure here doesn't fail the assignment.
-    if (inserted > 0) {
-      try {
-        // `materializeAssignment` returns the count, not the rows, so we
-        // requery to find the first scheduled item by sort_order.
-        const { data: firstItem } = await supabase
-          .from("journey_scheduled_items")
-          .select("id, sort_order")
-          .eq("assignment_id", (assignment as JourneyAssignment).id)
-          .order("sort_order", { ascending: true })
-          .limit(1)
-          .maybeSingle();
-
-        if (firstItem?.id) {
-          const nowIso = new Date().toISOString();
-          // Promote the first item's rule attribution to day_one_kickoff
-          // so the user sees "First step of your journey" rather than
-          // the default "part of your starting program" line.
-          const dayOneRuleId = await resolveRuleId("day_one_kickoff");
-          await supabase
-            .from("journey_scheduled_items")
-            .update({
-              unlock_at: nowIso,
-              has_unlock_override: true,
-              ...(dayOneRuleId ? { matched_by_rule_id: dayOneRuleId } : {}),
-            })
-            .eq("id", firstItem.id as string);
-        }
-      } catch (overrideErr) {
-        console.warn(
-          "[assignJourneyOnPurchase] day-1 unlock override failed (non-fatal)",
-          overrideErr,
-        );
-      }
-    }
-
-    // Layer-5 — stamp couples.started_journey_at on first purchase
-    // so the anniversary milestones (30 / 90 / 365 days) anchor to
-    // the moment the couple actually started, not to couple creation.
-    // Best-effort: failure here doesn't fail the assignment.
+    // 4. Layer-5 — stamp the couple's started_journey_at on first
+    //    purchase so the anniversary milestones (30/90/365 days)
+    //    anchor to the moment the couple actually started, not to
+    //    couple creation. The `.is("started_journey_at", null)` guard
+    //    makes this a no-op on resubscribe.
+    //    Best-effort: failure here doesn't fail the assignment.
     if (owner.kind === "couple") {
       try {
         await supabase
@@ -258,10 +170,9 @@ export async function assignJourneyOnPurchase(
 
     return {
       ok: true,
-      outcome: "created",
-      assignmentId: (assignment as JourneyAssignment).id,
-      inserted,
-      programId: program.id,
+      outcome: "cadence_assignment_ready",
+      assignmentId,
+      userId: args.userId,
     };
   } catch (err) {
     return { ok: false, reason: (err as Error).message };
@@ -279,34 +190,6 @@ export async function assignJourneyOnPurchase(
  */
 export function buildOriginRef(checkoutSessionId: string): string {
   return `cardcom:${checkoutSessionId}`;
-}
-
-async function findAssignmentByOriginRef(
-  supabase: SupabaseClient,
-  originRef: string,
-): Promise<JourneyAssignment | null> {
-  const { data, error } = await supabase
-    .from("journey_assignments")
-    .select("*")
-    .eq("origin", "purchase")
-    .eq("origin_ref", originRef)
-    .maybeSingle();
-  if (error) throw new Error(error.message);
-  return (data as JourneyAssignment | null) ?? null;
-}
-
-async function findActiveProgramForProduct(
-  supabase: SupabaseClient,
-  product: JourneyProductSlug,
-): Promise<JourneyProgram | null> {
-  const { data, error } = await supabase
-    .from("journey_programs")
-    .select("*")
-    .eq("product_slug", product)
-    .eq("is_active", true)
-    .maybeSingle();
-  if (error) throw new Error(error.message);
-  return (data as JourneyProgram | null) ?? null;
 }
 
 type OwnerRef =
@@ -330,33 +213,4 @@ async function resolveOwnerForUser(
     return { kind: "couple", coupleId: data.couple_id as string };
   }
   return { kind: "user", userId };
-}
-
-async function findActiveAssignmentForOwnerProgram(
-  supabase: SupabaseClient,
-  owner: OwnerRef,
-  programId: string,
-): Promise<JourneyAssignment | null> {
-  let q = supabase
-    .from("journey_assignments")
-    .select("*")
-    .eq("is_active", true)
-    .eq("source_kind", "program")
-    .eq("source_id", programId);
-
-  if (owner.kind === "couple") q = q.eq("couple_id", owner.coupleId);
-  else q = q.eq("user_id", owner.userId);
-
-  const { data, error } = await q.maybeSingle();
-  if (error) {
-    // When more than one row matches maybeSingle() returns an error - we
-    // still want the first as the "existing" signal for the dedup check.
-    if (/multiple/i.test(error.message)) {
-      const { data: fallback } = await q.limit(1);
-      const first = (fallback ?? [])[0] as JourneyAssignment | undefined;
-      return first ?? null;
-    }
-    throw new Error(error.message);
-  }
-  return (data as JourneyAssignment | null) ?? null;
 }

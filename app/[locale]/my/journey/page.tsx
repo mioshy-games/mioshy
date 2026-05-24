@@ -96,6 +96,7 @@ import {
 } from "@/lib/journey-content/messages";
 import { JourneyDashboardViewTracker } from "@/components/my/JourneyDashboardViewTracker";
 import { getTimelineForOwner } from "@/lib/journey-content/queries";
+import { ensureCadenceAssignment } from "@/lib/journey-content/cadence-engine";
 import {
   journeyOwnerForUser,
   preferCoupleOwner,
@@ -265,6 +266,103 @@ export default async function PrivateJourneyPage({
     return (
       <PausedStateScreen isHe={isHe} pausedUntil={pauseState.pausedUntil} />
     );
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // P1.2 gate (added 2026-05-24): cadence assignment + priorities.
+  //
+  // Runs AFTER entitlements + pause, BEFORE the first-session branch.
+  // Order matters: a user with first_session set but no priorities
+  // would otherwise see an empty dashboard.
+  //
+  // Skipped when impersonating (viewAs) so a coach can debug a user's
+  // missing-priorities state without being redirected away.
+  // ════════════════════════════════════════════════════════════════
+  if (!viewAsContext) {
+    const gateAdmin = createServiceRoleClient();
+    if (gateAdmin) {
+      // (a) Self-heal: paying users created before P1.1 deployed (or
+      // whose Cardcom webhook race-conditioned) may not have a cadence
+      // assignment. ensureCadenceAssignment is idempotent — no-op if
+      // one exists.
+      const { data: existingCadence } = await gateAdmin
+        .from("journey_assignments")
+        .select("id")
+        .eq("user_id", effectiveUserId)
+        .eq("source_kind", "cadence")
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (!existingCadence) {
+        // Self-heal anchor is NOW — not subscription.created_at.
+        // Backfilled cadence assignments start dripping from "now",
+        // not from the original purchase date. Otherwise users who
+        // paid weeks ago would receive a burst of items they're
+        // supposed to have already seen.
+        // couples.started_journey_at remains untouched — anniversary
+        // milestones still anchor to the original journey start.
+        // New purchases via Cardcom still anchor to purchase_time
+        // (handled in assignJourneyOnPurchase, not here).
+        const anchor = new Date();
+        const createdId = await ensureCadenceAssignment(
+          effectiveUserId,
+          anchor,
+        );
+
+        if (!createdId) {
+          // Self-heal failed — log loudly and continue. The user will
+          // see an empty state but at least we know about it. Better
+          // than silent failure.
+          console.error(
+            "[/my/journey:GATE] self-heal FAILED — no assignment created",
+            {
+              user_id: effectiveUserId,
+              anchor: anchor.toISOString(),
+            },
+          );
+        } else {
+          console.log("[/my/journey:GATE] self-heal cadence assignment", {
+            user_id: effectiveUserId,
+            created_id: createdId,
+            anchor: anchor.toISOString(),
+          });
+        }
+      }
+
+      // (b) Priorities gate: cadence engine cannot deliver without a
+      // VALID journey_user_priorities row (isCadenceEligible →
+      // no_priorities). A partial row with empty/null ranking breaks
+      // the cadence picker the same way an absent row does, so we
+      // treat both cases as "needs assessment".
+      // Checked BEFORE firstSession so users with first_session set
+      // but missing priorities don't get an empty dashboard.
+      const { data: priorities } = await gateAdmin
+        .from("journey_user_priorities")
+        .select("user_id, ranking")
+        .eq("user_id", effectiveUserId)
+        .maybeSingle();
+
+      const hasValidRanking =
+        !!priorities?.ranking
+        && Array.isArray(priorities.ranking)
+        && priorities.ranking.length >= 1;
+
+      if (!hasValidRanking) {
+        const rankingLength =
+          priorities?.ranking && Array.isArray(priorities.ranking)
+            ? priorities.ranking.length
+            : 0;
+        console.log(
+          "[/my/journey:GATE] no valid ranking → /journey/assessment",
+          {
+            user_id: effectiveUserId,
+            has_row: !!priorities,
+            ranking_length: rankingLength,
+          },
+        );
+        redirect(`/${locale}/journey/assessment`);
+      }
+    }
   }
 
   // ── Layer-1 first-session branch ─────────────────────────────────────────
