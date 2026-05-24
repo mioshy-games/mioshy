@@ -663,12 +663,95 @@ export default async function PrivateJourneyPage({
   // Build the rail-key → category-slug lookup from the live timeline.
   // For dynamic categories the slug comes from journey_categories;
   // for the empty/static rails we pull slugs from the bucket data.
+  // (Declared early so the missing-categories pad block below can
+  // extend the Map for newly-added pending entries.)
   const categorySlugByKey = new Map<string, string | null>();
   for (const entry of timeline) {
     categorySlugByKey.set(`dyn:${entry.category.id}`, entry.category.slug ?? null);
   }
+
+  // ── Pad with pending categories (2026-05-24) ─────────────────────────
+  // Restore the original "show all steps, lock the future ones" UX.
+  // buildDynamicRail only emits entries for categories that have items
+  // in the timeline. We now ALSO pull the program's active categories
+  // and inject pending entries for any that are missing, so the rail
+  // always shows the full set with locks on what hasn't started yet.
+  //
+  // Only runs when timeline.length > 0 (the dynamic path). For an empty
+  // timeline, buildDbBackedEmptyRail above already includes every
+  // active category.
+  let railEntriesPadded: RailEntry[] = railEntriesRaw;
+  if (timeline.length > 0) {
+    const padAdmin = createServiceRoleClient();
+    if (padAdmin) {
+      try {
+        const { data: program } = await padAdmin
+          .from("journey_programs")
+          .select("id")
+          .eq("product_slug", "journey")
+          .eq("is_active", true)
+          .maybeSingle();
+        const programId = (program as { id: string } | null)?.id ?? null;
+        if (programId) {
+          const { data: allCats } = await padAdmin
+            .from("journey_categories")
+            .select("id, name_he, name_en, slug, sort_order")
+            .eq("program_id", programId)
+            .eq("is_active", true)
+            .order("sort_order", { ascending: true });
+          const cats =
+            (allCats as Array<{
+              id: string;
+              name_he: string;
+              name_en: string | null;
+              slug: string | null;
+              sort_order: number;
+            }> | null) ?? [];
+          if (cats.length > 0) {
+            // Identify which category UUIDs are already represented in
+            // railEntriesRaw via the "dyn:<uuid>" key shape (set by
+            // buildDynamicRail line 372).
+            const existingCategoryIds = new Set<string>();
+            for (const entry of railEntriesRaw) {
+              if (entry.key.startsWith("dyn:")) {
+                existingCategoryIds.add(entry.key.slice(4));
+              }
+            }
+            const missingEntries: RailEntry[] = [];
+            for (const cat of cats) {
+              if (existingCategoryIds.has(cat.id)) continue;
+              missingEntries.push({
+                key: `dyn:${cat.id}`,
+                label: isHe ? cat.name_he : (cat.name_en || cat.name_he),
+                status: "pending",
+                // Matches hintFor("pending", isHe, false) in
+                // journey-rail.ts:585-591 — that helper is private to
+                // its module, so we duplicate the exact string here.
+                hint: isHe ? "ייפתח בהמשך" : "Coming up",
+                href: null,
+                items: [],
+              });
+              // Extend the slug Map so sortRailByPriorities can route
+              // this pending entry by the user's ranking too (Option X).
+              categorySlugByKey.set(`dyn:${cat.id}`, cat.slug ?? null);
+            }
+            if (missingEntries.length > 0) {
+              railEntriesPadded = [...railEntriesRaw, ...missingEntries];
+            }
+          }
+        }
+      } catch (err) {
+        console.warn(
+          "[/my/journey] missing-categories pad failed (non-fatal)",
+          err,
+        );
+        // Fall through with railEntriesRaw unchanged.
+      }
+    }
+  }
+
   const railEntries: RailEntry[] = sortRailByPriorities(
-    railEntriesRaw,
+    railEntriesPadded,
     viewerPriorities,
     categorySlugByKey,
   );

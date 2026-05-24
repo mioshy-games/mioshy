@@ -429,12 +429,13 @@ export async function buildDbBackedEmptyRail(args: {
 
   try {
     // Find the canonical 'journey' program. We don't hardcode the
-    // program id - admins create programs by slug, and the journey
-    // program is conventionally slug='journey'.
+    // program id - admins create programs by product_slug, since the
+    // journey product line is identified by product_slug='journey'
+    // (the legacy 'slug' field per-program is a human-readable name).
     const { data: program } = await admin
       .from("journey_programs")
       .select("id")
-      .eq("slug", "journey")
+      .eq("product_slug", "journey")
       .eq("is_active", true)
       .maybeSingle();
 
