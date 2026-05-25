@@ -12,6 +12,7 @@
 // ============================================================
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 
 export type PillarKey = "games" | "journey" | "adults";
 
@@ -82,26 +83,75 @@ export async function getUserEntitlements(
     email = user?.email ?? null;
   }
 
-  // ── Couple membership - needed to look up `adults` entitlements ────────
+  // ── Couple membership - needed to look up `adults` entitlements AND
+  //    to defer subscription-reads to the couple's owner when the caller
+  //    is a partner (Itzik 2026-05-25, partner-sharing MVP).
   const { data: membership } = await supabase
     .from("couple_members")
-    .select("couple_id")
+    .select("couple_id, role")
     .eq("user_id", uid)
     .maybeSingle();
 
   const coupleId = (membership?.couple_id as string) ?? null;
+  const memberRole =
+    (membership?.role as "owner" | "partner" | null) ?? null;
+
+  // ── Partner-aware entitlement source ───────────────────────────────────
+  // Decision (Itzik 2026-05-25): pairing a partner via couple_invitations
+  // /pair_code grants them the owner's subscription benefits — Games,
+  // Journey, and Adults — for as long as that subscription is active.
+  // The Adults pillar already worked through couple_entitlements (RLS in
+  // migration 029:723-728 lets both couple members read), but Games and
+  // Journey were gated on `subscriptions.user_id = caller.uid` and the
+  // partner has no sub of their own.
+  //
+  // The fix: when the caller is a 'partner' in a couple, swap the
+  // subscription-query subject to the OWNER's user_id. Adults logic
+  // below is untouched (it reads couple_entitlements via coupleId, which
+  // is identical for both members — no double-grant risk).
+  //
+  // Fail-closed: if the owner lookup yields nothing (orphan couple after
+  // admin deletion), entitlementSourceUid stays at uid, the partner has
+  // no sub of their own, and all flags evaluate to false.
+  //
+  // No recursion risk: migration 029:63-65 UNIQUE INDEX on
+  // couple_members.user_id ensures every user is in at most one couple,
+  // so an owner cannot also be someone else's partner. One hop, done.
+  let entitlementSourceUid = uid;
+  if (memberRole === "partner" && coupleId) {
+    const { data: ownerMember } = await supabase
+      .from("couple_members")
+      .select("user_id")
+      .eq("couple_id", coupleId)
+      .eq("role", "owner")
+      .maybeSingle();
+    if (ownerMember?.user_id) {
+      entitlementSourceUid = ownerMember.user_id as string;
+    }
+  }
 
   // ── Subscriptions per pillar ───────────────────────────────────────────
   // We pull both 'active' and 'grace' rows: 'grace' is the v3 journey
   // soft-expiry window (status stays 'grace' even after journey_blocked_at
   // is stamped - the blocked-vs-grace distinction lives on the columns,
   // not on the status enum, per Itzik's slice 5 brief).
-  const { data: subs } = await supabase
+  //
+  // RLS note: migration 012:90-93's `subscriptions_select_own` policy
+  // restricts SELECT to `auth.uid() = user_id`. That means a partner
+  // session client cannot read the owner's row. When we defer to an
+  // owner (entitlementSourceUid !== uid), we MUST use the admin client
+  // to bypass RLS — the security check is already enforced upstream:
+  // we verified (a) the caller is a member of couple X with role
+  // 'partner', and (b) the owner we resolved is the role='owner' of
+  // the SAME couple X. No cross-couple leakage possible.
+  const subsClient =
+    entitlementSourceUid !== uid ? createAdminSupabaseClient() : supabase;
+  const { data: subs } = await subsClient
     .from("subscriptions")
     .select(
       "product, status, current_period_end, journey_grace_until, journey_blocked_at",
     )
-    .eq("user_id", uid)
+    .eq("user_id", entitlementSourceUid)
     .in("status", ["active", "grace"]);
 
   const now = Date.now();
