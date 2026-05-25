@@ -24,6 +24,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { SectionHelp } from "@/components/dashboard/SectionHelp";
 import { getAdminLocale } from "@/lib/admin/locale";
 import { t } from "@/lib/admin/i18n";
+import { JourneyDataTools } from "@/components/dashboard/journey/DataTools";
 
 export const dynamic = "force-dynamic";
 
@@ -128,12 +129,17 @@ export default async function ItemsListPage({
             {t(locale, "journey.items.subtitle")}
           </p>
         </div>
-        <Link
-          href="/dashboard/journey/items/new"
-          className={cn(buttonVariants({ variant: "default" }), "inline-flex gap-1.5")}
-        >
-          <Plus className="size-4" /> {t(locale, "journey.hub.new_item")}
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Phase 1: Export-only on the items page (Import lives on the
+              hub until Phase 2 modernizes the import flow). */}
+          <JourneyDataTools scope="items" />
+          <Link
+            href="/dashboard/journey/items/new"
+            className={cn(buttonVariants({ variant: "default" }), "inline-flex gap-1.5")}
+          >
+            <Plus className="size-4" /> {t(locale, "journey.hub.new_item")}
+          </Link>
+        </div>
       </div>
 
       {/* Category filter strip */}

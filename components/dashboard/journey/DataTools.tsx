@@ -114,7 +114,22 @@ function ResultModal({
 
 // ── Main DataTools component ──────────────────────────────────────────────────
 
-export function JourneyDataTools() {
+/**
+ * `scope` controls which buttons are visible.
+ *   - "hub"   (default): Templates, Import, Export — the existing
+ *     `/dashboard/journey` mount. Back-compat: omitting the prop renders
+ *     the full toolbar.
+ *   - "items": Export only. Used on `/dashboard/journey/items`. Import
+ *     and Templates are hidden in Phase 1 because the import route still
+ *     speaks the old UUID-keyed format; we don't want to expose a broken
+ *     round-trip on the items page until Phase 2 modernizes import.
+ */
+export interface JourneyDataToolsProps {
+  scope?: "hub" | "items";
+}
+
+export function JourneyDataTools({ scope = "hub" }: JourneyDataToolsProps = {}) {
+  const showImportAndTemplates = scope === "hub";
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<JourneyImportSummary | null>(null);
@@ -167,43 +182,49 @@ export function JourneyDataTools() {
 
   return (
     <>
-      {/* Hidden file input */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".csv,text/csv"
-        className="hidden"
-        onChange={handleFileChange}
-      />
+      {/* Hidden file input — only mounted when import is enabled */}
+      {showImportAndTemplates && (
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".csv,text/csv"
+          className="hidden"
+          onChange={handleFileChange}
+        />
+      )}
 
       {/* Button group */}
       <div className="flex flex-wrap items-center gap-2">
-        {/* Templates */}
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="gap-1.5 text-muted-foreground hover:text-foreground"
-          onClick={() => { window.location.href = "/dashboard/journey/template"; }}
-        >
-          <FileDown className="size-4" />
-          Templates
-        </Button>
+        {/* Templates — hub only */}
+        {showImportAndTemplates && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="gap-1.5 text-muted-foreground hover:text-foreground"
+            onClick={() => { window.location.href = "/dashboard/journey/template"; }}
+          >
+            <FileDown className="size-4" />
+            Templates
+          </Button>
+        )}
 
-        {/* Import */}
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="gap-1.5"
-          disabled={importing}
-          onClick={handleImportClick}
-        >
-          <Upload className="size-4" />
-          {importing ? "Importing…" : "Import CSV"}
-        </Button>
+        {/* Import — hub only (Phase 2 will modernize) */}
+        {showImportAndTemplates && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+            disabled={importing}
+            onClick={handleImportClick}
+          >
+            <Upload className="size-4" />
+            {importing ? "Importing…" : "Import CSV"}
+          </Button>
+        )}
 
-        {/* Export */}
+        {/* Export — always shown */}
         <Button
           type="button"
           variant="outline"
@@ -212,12 +233,12 @@ export function JourneyDataTools() {
           onClick={() => { window.location.href = "/dashboard/journey/export"; }}
         >
           <Download className="size-4" />
-          Export ZIP
+          {scope === "items" ? "Export to CSV" : "Export ZIP"}
         </Button>
       </div>
 
-      {/* Inline import error (structural/auth errors) */}
-      {importError && (
+      {/* Inline import error (structural/auth errors) — hub only */}
+      {showImportAndTemplates && importError && (
         <div className="mt-2 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-900 dark:border-red-800 dark:bg-red-950 dark:text-red-100">
           <XCircle className="mt-0.5 size-3.5 shrink-0" />
           <span className="flex-1">{importError}</span>
@@ -227,8 +248,8 @@ export function JourneyDataTools() {
         </div>
       )}
 
-      {/* Result modal */}
-      {importResult && (
+      {/* Result modal — only relevant on hub */}
+      {showImportAndTemplates && importResult && (
         <ResultModal summary={importResult} onClose={handleModalClose} />
       )}
     </>

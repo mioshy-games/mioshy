@@ -1,40 +1,70 @@
 /**
  * CSV utilities for the Journey content system.
  *
- * Export columns (matched to DB schema):
+ * ─────────────────────────────────────────────────────────────────────────────
+ * EXPORT side (Phase 1 — modernized, slug-keyed)
+ * ─────────────────────────────────────────────────────────────────────────────
+ * The export builders below emit CSVs keyed by SLUG, never UUID, so a dev
+ * export can be re-imported into prod without primary-key collisions. UUIDs
+ * never appear in the user-facing CSV. Slug uniqueness:
+ *   - programs.slug              — global (UNIQUE)
+ *   - categories.slug            — unique per program (or per standalone set)
+ *   - subtopics.slug             — unique per category
+ *   - items.slug                 — unique per category
  *
- *   programs.csv
- *     program_id, slug, name_he, name_en, description_he, description_en,
+ * Files emitted:
+ *
+ *   programs.csv     (slug-keyed, no id column)
+ *     slug, name_he, name_en, description_he, description_en,
  *     cover_image_url, default_anchor, product_slug, is_active, sort_weight
  *
- *   categories.csv
- *     category_id, program_id, slug, name_he, name_en, description_he,
- *     description_en, sort_order, is_active
+ *   categories.csv   (slug-keyed, no id/program_id columns)
+ *     program_slug, slug, name_he, name_en, description_he, description_en,
+ *     sort_order, is_active
  *
- *   items.csv
- *     item_id, category_id, slug, title_he, title_en, body_he, body_en,
- *     task_he, task_en, challenge_he, challenge_en, video_url, image_url,
- *     sort_order, default_offset_days, is_active
+ *   subtopics.csv    (new — added in Phase 1)
+ *     category_slug, program_slug, slug, name_he, name_en,
+ *     description_he, description_en, sort_order, is_active
  *
- *   assignments.csv  (export only - assignments are import via UI)
- *     assignment_id, owner_key, source_kind, source_id, anchor_kind,
- *     anchor_date, origin, origin_ref, notes, is_active, created_at
+ *   items.csv        (40 columns — covers schema through migration 080;
+ *                     is_one_off rows are filtered out at the query layer)
+ *     category_slug, program_slug, subtopic_slug, slug,
+ *     title_he, title_en,
+ *     stage, content_type, audience, kind, est_minutes,
+ *     tags, prereq_item_slugs,
+ *     body_he, body_en, task_he, task_en, challenge_he, challenge_en,
+ *     expert_insight_he, expert_insight_en,
+ *     common_mistakes_he, common_mistakes_en,
+ *     metaphor_he, metaphor_en,
+ *     measurement_he, measurement_en,
+ *     do_this_week_he, do_this_week_en,
+ *     dont_this_week_he, dont_this_week_en,
+ *     progress_marker_he, progress_marker_en,
+ *     source_attribution_he, source_attribution_en,
+ *     video_url, image_url,
+ *     sort_order, default_offset_days, is_active,
+ *     assessment_payload_json
  *
- * Import rules
- * ────────────
- * Type auto-detection: first column header determines the entity type.
+ * Cell encoding for compound fields:
+ *   • tags / prereq_item_slugs → pipe-joined ("focus|discovery")
+ *   • assessment_payload_json  → JSON.stringify(payload) or "" when null
+ *   • booleans                 → "true" / "false"
+ *   • nulls                    → ""  (empty string, unquoted)
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * IMPORT side (legacy — not yet migrated to slug-keyed format)
+ * ─────────────────────────────────────────────────────────────────────────────
+ * The parsers + import row types below still operate on the OLD UUID-keyed
+ * format. They are wired into /dashboard/journey/import/route.ts (untouched
+ * in Phase 1). Phase 2 will rewrite them to match the new export schema.
+ *
+ * Legacy auto-detection (still in effect for the old import flow):
  *   program_id   → programs import
  *   category_id  → categories import
  *   item_id      → items import
  *   assignment_id → rejected (assignments are insert-only via UI)
  *
- * Row-level:
- *   • first-col ID present → UPDATE existing record
- *   • first-col ID empty   → INSERT new record
- *   • Invalid rows are skipped and collected in the `skipped[]` array
- *
- * Encoding: UTF-8 with BOM (Excel-compatible)
- * Delimiter: comma, quoting: RFC 4180
+ * Encoding (both directions): UTF-8 with BOM, CRLF line endings, RFC 4180.
  */
 
 // ---------------------------------------------------------------------------
@@ -112,8 +142,12 @@ export type CsvParseResult<T> =
 // Column definitions
 // ---------------------------------------------------------------------------
 
+// ──────────────────────────────────────────────────────────────────────────
+// Export column lists — slug-keyed, no UUIDs in user-facing CSVs.
+// Order matters: builders below emit cells in this exact order.
+// ──────────────────────────────────────────────────────────────────────────
+
 export const PROGRAM_COLS = [
-  "program_id",
   "slug",
   "name_he",
   "name_en",
@@ -127,8 +161,7 @@ export const PROGRAM_COLS = [
 ] as const;
 
 export const CATEGORY_COLS = [
-  "category_id",
-  "program_id",
+  "program_slug",
   "slug",
   "name_he",
   "name_en",
@@ -138,26 +171,66 @@ export const CATEGORY_COLS = [
   "is_active",
 ] as const;
 
+// Subtopic schema added by migration 054. program_slug is echoed (resolved
+// via the subtopic's category → program chain) so the row is unambiguous
+// even when the same category_slug exists under multiple programs.
+export const SUBTOPIC_COLS = [
+  "category_slug",
+  "program_slug",
+  "slug",
+  "name_he",
+  "name_en",
+  "description_he",
+  "description_en",
+  "sort_order",
+  "is_active",
+] as const;
+
+// 40 columns — matches the Phase 1 spec exactly. Covers every user-editable
+// column on journey_items through migration 080. `is_one_off` rows are
+// filtered out at the query layer and intentionally omitted from this list.
 export const ITEM_COLS = [
-  "item_id",
-  "category_id",
+  "category_slug",
+  "program_slug",
+  "subtopic_slug",
   "slug",
   "title_he",
   "title_en",
+  "stage",
+  "content_type",
+  "audience",
+  "kind",
+  "est_minutes",
+  "tags",
+  "prereq_item_slugs",
   "body_he",
   "body_en",
   "task_he",
   "task_en",
   "challenge_he",
   "challenge_en",
+  "expert_insight_he",
+  "expert_insight_en",
+  "common_mistakes_he",
+  "common_mistakes_en",
+  "metaphor_he",
+  "metaphor_en",
+  "measurement_he",
+  "measurement_en",
+  "do_this_week_he",
+  "do_this_week_en",
+  "dont_this_week_he",
+  "dont_this_week_en",
+  "progress_marker_he",
+  "progress_marker_en",
+  "source_attribution_he",
+  "source_attribution_en",
   "video_url",
   "image_url",
   "sort_order",
   "default_offset_days",
   "is_active",
-  // 'both' | 'owner' | 'partner' - added in migration 044. Old CSV files
-  // without this column default to 'both' on import.
-  "audience",
+  "assessment_payload_json",
 ] as const;
 
 export const ASSIGNMENT_COLS = [
@@ -178,6 +251,12 @@ export const ASSIGNMENT_COLS = [
 // Export row types (shape coming from DB select)
 // ---------------------------------------------------------------------------
 
+/**
+ * Shape returned by the export route's SELECT on `journey_programs`.
+ * `id` is retained internally so the route can build a program-id→slug
+ * map for resolving FKs on the category/subtopic rows; it is NOT emitted
+ * to the CSV.
+ */
 export type ProgramExportRow = {
   id: string;
   slug: string;
@@ -192,6 +271,10 @@ export type ProgramExportRow = {
   sort_weight: number;
 };
 
+/**
+ * Shape from `journey_categories`. `id` + `program_id` are retained for
+ * map construction; only `program_slug` is emitted to the CSV.
+ */
 export type CategoryExportRow = {
   id: string;
   program_id: string | null;
@@ -204,26 +287,96 @@ export type CategoryExportRow = {
   is_active: boolean;
 };
 
-export type ItemExportRow = {
+/**
+ * Shape from `journey_subtopics` (migration 054). `id` + `category_id`
+ * are retained for map construction; the CSV emits `category_slug` and
+ * `program_slug` (resolved via the category's program).
+ */
+export type SubtopicExportRow = {
   id: string;
   category_id: string;
   slug: string;
+  name_he: string;
+  name_en: string | null;
+  description_he: string | null;
+  description_en: string | null;
+  sort_order: number;
+  is_active: boolean;
+};
+
+/**
+ * Shape from `journey_items`. Covers every user-editable column through
+ * migration 080. The UUID columns (`id`, `category_id`, `subtopic_id`,
+ * `prereq_item_ids`) are retained for slug resolution at build time and
+ * never emitted directly to the CSV.
+ */
+export type ItemExportRow = {
+  // Internal — never emitted
+  id: string;
+  category_id: string;
+  subtopic_id: string | null;
+  prereq_item_ids: string[] | null;
+  // Identification
+  slug: string;
+  // Title
   title_he: string;
   title_en: string | null;
+  // Classification (migrations 044, 050, 054, 077)
+  stage: number | null;
+  content_type: string;
+  audience: "both" | "owner" | "partner";
+  kind: "content" | "assessment" | "reflection";
+  est_minutes: number | null;
+  tags: string[] | null;
+  // Legacy body / task / challenge
   body_he: string;
   body_en: string | null;
   task_he: string | null;
   task_en: string | null;
   challenge_he: string | null;
   challenge_en: string | null;
+  // Lesson blocks (migration 077)
+  expert_insight_he: string | null;
+  expert_insight_en: string | null;
+  common_mistakes_he: string | null;
+  common_mistakes_en: string | null;
+  metaphor_he: string | null;
+  metaphor_en: string | null;
+  measurement_he: string | null;
+  measurement_en: string | null;
+  do_this_week_he: string | null;
+  do_this_week_en: string | null;
+  dont_this_week_he: string | null;
+  dont_this_week_en: string | null;
+  progress_marker_he: string | null;
+  progress_marker_en: string | null;
+  source_attribution_he: string | null;
+  source_attribution_en: string | null;
+  // Media
   video_url: string | null;
   image_url: string | null;
+  // Ordering / flags
   sort_order: number;
   default_offset_days: number;
   is_active: boolean;
-  /** 'both' | 'owner' | 'partner' - see migration 044. */
-  audience: "both" | "owner" | "partner";
+  // Structured payload for kind = 'assessment' | 'reflection' (migration 050)
+  assessment_payload: unknown | null;
 };
+
+// ────────────────────────────────────────────────────────────────────────
+// Lookup maps the builders accept for slug resolution. The export route
+// is responsible for materializing these from its SELECTs and passing
+// them in; this keeps the builders pure (testable).
+// ────────────────────────────────────────────────────────────────────────
+
+/** category id → { slug, program_slug ("" if standalone) } */
+export type CategoryLookup = Map<string, { slug: string; program_slug: string }>;
+
+/** subtopic id → { slug } */
+export type SubtopicLookup = Map<string, { slug: string }>;
+
+/** item id → slug (for prereq_item_ids resolution) */
+export type ItemSlugLookup = Map<string, string>;
 
 export type AssignmentExportRow = {
   id: string;
@@ -248,7 +401,6 @@ export function buildProgramsCsv(rows: ProgramExportRow[]): string {
   return buildCsv(
     PROGRAM_COLS,
     rows.map((r) => [
-      r.id,
       r.slug,
       r.name_he,
       r.name_en ?? "",
@@ -263,12 +415,19 @@ export function buildProgramsCsv(rows: ProgramExportRow[]): string {
   );
 }
 
-export function buildCategoriesCsv(rows: CategoryExportRow[]): string {
+/**
+ * Build categories.csv. `programSlugById` resolves the FK to the
+ * human-readable slug; standalone categories (program_id NULL) emit
+ * an empty `program_slug` cell.
+ */
+export function buildCategoriesCsv(
+  rows: CategoryExportRow[],
+  programSlugById: Map<string, string>,
+): string {
   return buildCsv(
     CATEGORY_COLS,
     rows.map((r) => [
-      r.id,
-      r.program_id ?? "",
+      r.program_id ? (programSlugById.get(r.program_id) ?? "") : "",
       r.slug,
       r.name_he,
       r.name_en ?? "",
@@ -280,28 +439,112 @@ export function buildCategoriesCsv(rows: CategoryExportRow[]): string {
   );
 }
 
-export function buildItemsCsv(rows: ItemExportRow[]): string {
+/**
+ * Build subtopics.csv. Resolves category_slug + program_slug via the
+ * `categoryById` lookup the export route builds from journey_categories.
+ * If the parent category can't be resolved (shouldn't happen — FK is
+ * NOT NULL with ON DELETE RESTRICT) the row emits empty slugs so the
+ * export doesn't crash; the row is still inspectable in the CSV.
+ */
+export function buildSubtopicsCsv(
+  rows: SubtopicExportRow[],
+  categoryById: CategoryLookup,
+): string {
+  return buildCsv(
+    SUBTOPIC_COLS,
+    rows.map((r) => {
+      const cat = categoryById.get(r.category_id);
+      return [
+        cat?.slug ?? "",
+        cat?.program_slug ?? "",
+        r.slug,
+        r.name_he,
+        r.name_en ?? "",
+        r.description_he ?? "",
+        r.description_en ?? "",
+        r.sort_order,
+        String(r.is_active),
+      ];
+    }),
+  );
+}
+
+/**
+ * Build items.csv with full slug resolution:
+ *   - category_id → category_slug + program_slug (via categoryById)
+ *   - subtopic_id → subtopic_slug             (via subtopicById)
+ *   - prereq_item_ids[] → prereq_item_slugs   (via itemSlugById, pipe-joined)
+ *
+ * Unresolvable prereq UUIDs are dropped silently per Phase 1 spec —
+ * we never fail the export for a stale prereq reference.
+ *
+ * `tags` is pipe-joined to survive Excel without parsing JSON.
+ * `assessment_payload_json` is JSON.stringify(payload) when present,
+ * empty string otherwise. NULL columns emit empty strings.
+ */
+export function buildItemsCsv(
+  rows: ItemExportRow[],
+  categoryById: CategoryLookup,
+  subtopicById: SubtopicLookup,
+  itemSlugById: ItemSlugLookup,
+): string {
   return buildCsv(
     ITEM_COLS,
-    rows.map((r) => [
-      r.id,
-      r.category_id,
-      r.slug,
-      r.title_he,
-      r.title_en ?? "",
-      r.body_he,
-      r.body_en ?? "",
-      r.task_he ?? "",
-      r.task_en ?? "",
-      r.challenge_he ?? "",
-      r.challenge_en ?? "",
-      r.video_url ?? "",
-      r.image_url ?? "",
-      r.sort_order,
-      r.default_offset_days,
-      String(r.is_active),
-      r.audience,
-    ]),
+    rows.map((r) => {
+      const cat = categoryById.get(r.category_id);
+      const sub = r.subtopic_id ? subtopicById.get(r.subtopic_id) : null;
+      const prereqSlugs = (r.prereq_item_ids ?? [])
+        .map((id) => itemSlugById.get(id))
+        .filter((s): s is string => typeof s === "string" && s.length > 0)
+        .join("|");
+      const tagsCell = (r.tags ?? []).join("|");
+      const payloadCell =
+        r.assessment_payload == null ? "" : JSON.stringify(r.assessment_payload);
+
+      return [
+        cat?.slug ?? "",
+        cat?.program_slug ?? "",
+        sub?.slug ?? "",
+        r.slug,
+        r.title_he,
+        r.title_en ?? "",
+        r.stage == null ? "" : r.stage,
+        r.content_type,
+        r.audience,
+        r.kind,
+        r.est_minutes == null ? "" : r.est_minutes,
+        tagsCell,
+        prereqSlugs,
+        r.body_he,
+        r.body_en ?? "",
+        r.task_he ?? "",
+        r.task_en ?? "",
+        r.challenge_he ?? "",
+        r.challenge_en ?? "",
+        r.expert_insight_he ?? "",
+        r.expert_insight_en ?? "",
+        r.common_mistakes_he ?? "",
+        r.common_mistakes_en ?? "",
+        r.metaphor_he ?? "",
+        r.metaphor_en ?? "",
+        r.measurement_he ?? "",
+        r.measurement_en ?? "",
+        r.do_this_week_he ?? "",
+        r.do_this_week_en ?? "",
+        r.dont_this_week_he ?? "",
+        r.dont_this_week_en ?? "",
+        r.progress_marker_he ?? "",
+        r.progress_marker_en ?? "",
+        r.source_attribution_he ?? "",
+        r.source_attribution_en ?? "",
+        r.video_url ?? "",
+        r.image_url ?? "",
+        r.sort_order,
+        r.default_offset_days,
+        String(r.is_active),
+        payloadCell,
+      ];
+    }),
   );
 }
 
@@ -329,103 +572,30 @@ export function buildAssignmentsCsv(rows: AssignmentExportRow[]): string {
 // Template builders
 // ---------------------------------------------------------------------------
 
+// ──────────────────────────────────────────────────────────────────────────
+// Templates — headers + one blank row per Phase 1 spec. Admins use these
+// to author new content offline. The blank placeholder row ensures Excel
+// renders the header row correctly and gives admins a row to type into.
+// ──────────────────────────────────────────────────────────────────────────
+
+function blankRow(cols: readonly string[]): string[] {
+  return cols.map(() => "");
+}
+
 export function buildProgramsTemplate(): string {
-  return buildCsv(PROGRAM_COLS, [
-    [
-      "",                        // program_id (empty = INSERT)
-      "intimacy-basics",         // slug
-      "יסודות האינטימיות",       // name_he
-      "Intimacy Basics",         // name_en
-      "תוכנית בסיסית לזוגות",    // description_he
-      "Intro program for couples", // description_en
-      "",                        // cover_image_url
-      "assignment",              // default_anchor
-      "",                        // product_slug (games | journey | adults | empty)
-      "true",                    // is_active
-      "0",                       // sort_weight
-    ],
-    [
-      "",
-      "deep-connection",
-      "חיבור עמוק",
-      "Deep Connection",
-      "תוכנית לחיבור רגשי עמוק",
-      "Emotional depth program",
-      "",
-      "assignment",
-      "journey",
-      "false",
-      "10",
-    ],
-  ]);
+  return buildCsv(PROGRAM_COLS, [blankRow(PROGRAM_COLS)]);
 }
 
 export function buildCategoriesTemplate(): string {
-  return buildCsv(CATEGORY_COLS, [
-    [
-      "",                              // category_id (empty = INSERT)
-      "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx", // program_id (UUID or empty for standalone)
-      "week-1-trust",                  // slug
-      "שבוע 1 - אמון",                 // name_he
-      "Week 1 - Trust",               // name_en
-      "בניית אמון בסיסי",              // description_he
-      "Building foundational trust",   // description_en
-      "0",                             // sort_order
-      "true",                          // is_active
-    ],
-    [
-      "",
-      "",                              // empty = standalone category (no program)
-      "communication-basics",
-      "תקשורת בסיסית",
-      "Communication Basics",
-      "",
-      "",
-      "1",
-      "true",
-    ],
-  ]);
+  return buildCsv(CATEGORY_COLS, [blankRow(CATEGORY_COLS)]);
+}
+
+export function buildSubtopicsTemplate(): string {
+  return buildCsv(SUBTOPIC_COLS, [blankRow(SUBTOPIC_COLS)]);
 }
 
 export function buildItemsTemplate(): string {
-  return buildCsv(ITEM_COLS, [
-    [
-      "",                                      // item_id (empty = INSERT)
-      "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",  // category_id (REQUIRED)
-      "feeling-check-in",                      // slug
-      "איך אתה מרגיש עכשיו?",                  // title_he
-      "How are you feeling right now?",        // title_en
-      "קח רגע לבדוק פנימה...",                 // body_he (markdown)
-      "Take a moment to check in...",          // body_en
-      "שתף את הפרטנר שלך",                    // task_he
-      "Share with your partner",              // task_en
-      "",                                      // challenge_he
-      "",                                      // challenge_en
-      "",                                      // video_url
-      "",                                      // image_url
-      "0",                                     // sort_order
-      "1",                                     // default_offset_days
-      "true",                                  // is_active
-    ],
-    [
-      "",
-      "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-      "gratitude-practice",
-      "תרגול הכרת תודה",
-      "Gratitude Practice",
-      "כתוב 3 דברים שאתה מעריך בפרטנר שלך...",
-      "Write 3 things you appreciate about your partner...",
-      "שתף בקול",
-      "Share out loud",
-      "שתפו יחד וגלו",
-      "Share together and discover",
-      "",
-      "",
-      "1",
-      "2",
-      "true",
-    ],
-  ]);
+  return buildCsv(ITEM_COLS, [blankRow(ITEM_COLS)]);
 }
 
 // ---------------------------------------------------------------------------

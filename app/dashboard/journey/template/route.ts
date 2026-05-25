@@ -1,10 +1,16 @@
 /**
  * GET /dashboard/journey/template
  *
- * Returns a ZIP file with three import-ready CSV templates:
- *   programs_template.csv, categories_template.csv, items_template.csv
+ * Returns a ZIP file with four import-ready CSV templates that match the
+ * Phase 1 slug-keyed export schema:
  *
- * Assignments are intentionally excluded - they should be created via the UI.
+ *   programs_template.csv, categories_template.csv,
+ *   subtopics_template.csv, items_template.csv
+ *
+ * Each template contains the header row + one blank row as a placeholder
+ * for admins to type into. Assignments are intentionally excluded —
+ * they should be created via the UI.
+ *
  * Requires admin auth.
  */
 import { requireAdmin } from "@/lib/auth/admin";
@@ -12,6 +18,7 @@ import { buildZip } from "@/lib/zip-builder";
 import {
   buildProgramsTemplate,
   buildCategoriesTemplate,
+  buildSubtopicsTemplate,
   buildItemsTemplate,
 } from "@/lib/csv-journey";
 
@@ -21,6 +28,7 @@ export async function GET() {
   const zip = buildZip([
     { name: "programs_template.csv",   content: buildProgramsTemplate() },
     { name: "categories_template.csv", content: buildCategoriesTemplate() },
+    { name: "subtopics_template.csv",  content: buildSubtopicsTemplate() },
     { name: "items_template.csv",      content: buildItemsTemplate() },
   ]);
 
