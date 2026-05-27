@@ -185,17 +185,29 @@ export async function chargeToken(args: {
     "TokenToCharge.UserPassword":    c.apiPassword,
   })
   if (args.tokenExDate) {
-    // Bug fix 2026-05-27: our DB stores expiry as MMYY (per normalizeExpiry
-    // above), but Cardcom's TokenToCharge.TokenExDate field expects YYMM.
-    // Sending MMYY caused Cardcom to reject every renewal with
+    // Bug fix 2026-05-27 (round 2): Cardcom's ChargeToken API expects
+    // expiry as TWO SEPARATE fields, not a single TokenExDate. Per the
+    // official Cardcom example URL on their domain:
+    //   TokenToCharge.CardValidityMonth=10
+    //   TokenToCharge.CardValidityYear=2024
+    // Sending TokenExDate (in any of MMYY/YYMM/YYYYMM formats) caused
     // ResponseCode=60000416 + Description="תאריך תוקף לא במבנה תקין".
-    // This was masked for months by the 405 bug — the renewal cron never
-    // actually ran until both fixes shipped on 2026-05-27.
+    // Our DB stores MMYY (per normalizeExpiry above), e.g. "1230" for
+    // December 2030. We split into month+full-year and send both.
     // See docs/weekly-billing-audit-2026-05-27.md.
     const mmyy = args.tokenExDate
-    const yymm = mmyy.length === 4 ? mmyy.slice(2, 4) + mmyy.slice(0, 2) : mmyy
-    form.set("TokenToCharge.TokenExDate", yymm)
+    if (mmyy.length === 4) {
+      const month = mmyy.slice(0, 2)        // "12"
+      const yy    = mmyy.slice(2, 4)         // "30"
+      form.set("TokenToCharge.CardValidityMonth", String(parseInt(month, 10))) // "12"
+      form.set("TokenToCharge.CardValidityYear",  `20${yy}`)                   // "2030"
+    }
   }
+  // JParameter=5 marks this as a recurring/standing-order charge. Cardcom
+  // requires this for ChargeToken renewals; without it, some terminals
+  // reject the call even with a valid token + expiry. Per the official
+  // example URL.
+  form.set("TokenToCharge.JParameter", "5")
 
   const res    = await fetch("https://secure.cardcom.solutions/interface/ChargeToken.aspx", {
     method:  "POST",
