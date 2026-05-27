@@ -92,7 +92,12 @@ export function AnalysisSummary({
           source: "analysis_summary",
           language: locale,
           is_israeli: locale === "he",
-          return_path: `/${locale}/my/journey`,
+          // Land on the hub (/my), not the journey workspace, so the
+          // newly-subscribed user sees the PartnerShareCard and can
+          // invite their partner before diving into the program. Per
+          // Itzik 2026-05-27: the hub is the "first-screen" — Journey
+          // gets opened on demand from there.
+          return_path: `/${locale}/my`,
         }),
       });
       const data = await res.json().catch(() => ({}));

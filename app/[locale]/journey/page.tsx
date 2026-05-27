@@ -246,7 +246,11 @@ export default async function JourneyMarketingPage({
               label={t("locked.ctaJoin")}
               variant="white"
               source="journey_landing_locked"
-              returnPath={`/${isHe ? "he" : "en"}/my/journey`}
+              // Per Itzik 2026-05-27 — post-purchase always lands on /my
+              // (the hub), not /my/journey, so the user sees the
+              // PartnerShareCard immediately and can invite their
+              // partner before opening the workspace.
+              returnPath={`/${isHe ? "he" : "en"}/my`}
             />
             <Link
               href="/my"

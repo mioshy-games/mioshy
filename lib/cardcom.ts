@@ -184,7 +184,18 @@ export async function chargeToken(args: {
     "TokenToCharge.UniqAsmachta":    args.uniqAsmachta,
     "TokenToCharge.UserPassword":    c.apiPassword,
   })
-  if (args.tokenExDate) form.set("TokenToCharge.TokenExDate", args.tokenExDate)
+  if (args.tokenExDate) {
+    // Bug fix 2026-05-27: our DB stores expiry as MMYY (per normalizeExpiry
+    // above), but Cardcom's TokenToCharge.TokenExDate field expects YYMM.
+    // Sending MMYY caused Cardcom to reject every renewal with
+    // ResponseCode=60000416 + Description="תאריך תוקף לא במבנה תקין".
+    // This was masked for months by the 405 bug — the renewal cron never
+    // actually ran until both fixes shipped on 2026-05-27.
+    // See docs/weekly-billing-audit-2026-05-27.md.
+    const mmyy = args.tokenExDate
+    const yymm = mmyy.length === 4 ? mmyy.slice(2, 4) + mmyy.slice(0, 2) : mmyy
+    form.set("TokenToCharge.TokenExDate", yymm)
+  }
 
   const res    = await fetch("https://secure.cardcom.solutions/interface/ChargeToken.aspx", {
     method:  "POST",

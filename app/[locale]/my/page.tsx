@@ -93,11 +93,41 @@ export default async function MyHubPage({
     redirect(`/${locale}/my/adults`);
   }
 
-  const ctx = await getCurrentCoupleContext();
+  let ctx = await getCurrentCoupleContext();
   if (!ctx) redirect(`/${locale}/auth`);
 
   const entitlements = await getUserEntitlements(ctx.user_id);
   if (!entitlements) redirect(`/${locale}/auth`);
+
+  // ─── Lazy couple creation (Itzik 2026-05-27) ─────────────────────
+  // Some subscription paths don't auto-create a couple row:
+  //   • Cardcom indicator webhook activates a sub without RPC'ing
+  //     create_couple_for_current_user.
+  //   • Admin-bypass users have entitlements but no real DB rows.
+  //   • Migrated / hand-granted subscriptions skipped the purchase flow.
+  // The PartnerShareCard NEEDS ctx.pair_code to render, and pair_code
+  // only exists once a couple row does. So if the user has any active
+  // subscription but no couple yet, lazily create the couple now so
+  // the share widget can render on first paint. The RPC is idempotent
+  // (returns the existing couple if the user is already a member),
+  // so this is safe to run on every /my hit.
+  if (entitlements.pillarCount > 0 && !ctx.couple_id) {
+    try {
+      const { createCoupleForSelf } = await import(
+        "@/app/actions/between-us-couple"
+      );
+      const created = await createCoupleForSelf();
+      if (created.ok) {
+        const refreshed = await getCurrentCoupleContext();
+        if (refreshed) ctx = refreshed;
+      }
+    } catch (err) {
+      console.warn(
+        "[/my] lazy couple creation failed — share widget will hide",
+        err,
+      );
+    }
+  }
 
   // (Removed temporary diagnostic logs from the billing-debug session.
   // The pillar logic is now derived from a pure helper -
