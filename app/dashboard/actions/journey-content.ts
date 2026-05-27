@@ -550,6 +550,31 @@ export async function deleteJourneyItem(itemId: string) {
   return { ok: true as const };
 }
 
+/**
+ * Toggle the is_active flag on a journey item without going through the
+ * full saveJourneyItem zod pipeline. Used by the quick-manage row on
+ * /dashboard/journey/items so admins can flip status without opening
+ * the editor. Revalidates the journey layout so the items list, hub,
+ * and any nested views all re-render.
+ */
+export async function setJourneyItemActive(
+  itemId: string,
+  isActive: boolean,
+): Promise<{ ok: true; isActive: boolean } | { ok: false; error: string }> {
+  if (!itemId) return { ok: false, error: "missing itemId" };
+  const supabase = await adminDb();
+  const { error } = await supabase
+    .from("journey_items")
+    .update({ is_active: isActive })
+    .eq("id", itemId);
+  if (error) {
+    console.error("[setJourneyItemActive] update failed", error);
+    return { ok: false, error: error.message };
+  }
+  revalidateJourney();
+  return { ok: true, isActive };
+}
+
 export async function createAndRedirectNewItem(
   categoryId: string,
   subtopicId?: string | null,

@@ -2,9 +2,11 @@
 
 import { motion } from "framer-motion";
 import { useState, useTransition } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { Heart } from "lucide-react";
 import { Link, useRouter } from "@/navigation";
 import { loginAction } from "@/app/actions/auth-actions";
+import { joinCoupleByPairCode } from "@/app/actions/between-us-couple";
 import { AuthField, AuthSubmitButton, AuthCard } from "@/components/ui/auth-field";
 import { safeNext } from "@/lib/auth/safe-next";
 
@@ -14,13 +16,27 @@ type Props = {
   /** Optional ?next=/path to return to after a successful login. Validated
    *  to be a same-origin path before use. Falls back to /my. */
   next?: string;
+  /** Optional partner pair-code arriving via ?code=ABC123. Mirrors the
+   *  SignupForm contract: on successful login we auto-redeem the code
+   *  so the user lands on /my already paired. See app/[locale]/auth/
+   *  page.tsx for the URL contract. */
+  pairCode?: string;
 };
 
-export function LoginForm({ kicked = false, next }: Props) {
+export function LoginForm({ kicked = false, next, pairCode }: Props) {
   const router = useRouter();
   const t = useTranslations("auth");
+  const locale = useLocale() as "he" | "en";
+  const isHe = locale === "he";
   const [isPending, startTransition] = useTransition();
   const [error,     setError]        = useState<string | null>(null);
+
+  // Same normalisation rule as SignupForm — invalid code → undefined.
+  const normalizedCode = (() => {
+    if (!pairCode) return undefined;
+    const trimmed = pairCode.trim().toUpperCase();
+    return /^[A-Z0-9]{6}$/.test(trimmed) ? trimmed : undefined;
+  })();
 
   // Controlled state (AuthField needs value+onChange)
   const [email,    setEmail]    = useState("");
@@ -41,17 +57,33 @@ export function LoginForm({ kicked = false, next }: Props) {
         window.location.assign("/dashboard");
         return;
       }
+
+      // Partner-share flow — if the user arrived via /auth?code=, try
+      // to auto-pair to the inviter's couple. We swallow errors here
+      // so a failed pair never blocks the login — most likely culprit
+      // is profile_incomplete, in which case the user can finish
+      // their profile from /my and redeem manually.
+      if (normalizedCode) {
+        try {
+          await joinCoupleByPairCode(normalizedCode);
+        } catch (err) {
+          console.warn("[login] auto-pair via ?code= failed", err);
+        }
+      }
+
       // Honour caller-supplied next if present and same-origin.
       const target = safeNext(next, "/my");
       router.push(target);
     });
   }
 
-  // Preserve the next param when the user clicks through to signup so the
-  // funnel doesn't lose track of where they were trying to go.
-  const signupHref = next
-    ? `/auth/signup?next=${encodeURIComponent(safeNext(next, "/my"))}`
-    : "/auth/signup";
+  // Preserve the next param + ?code= when the user clicks through to
+  // signup so neither piece of context is lost mid-funnel.
+  const signupParams = new URLSearchParams();
+  if (next) signupParams.set("next", safeNext(next, "/my"));
+  if (normalizedCode) signupParams.set("code", normalizedCode);
+  const signupQs = signupParams.toString();
+  const signupHref = signupQs ? `/auth/signup?${signupQs}` : "/auth/signup";
 
   return (
     <motion.div
@@ -88,6 +120,28 @@ export function LoginForm({ kicked = false, next }: Props) {
       <AuthCard>
         <h1 className="text-2xl font-bold text-white">{t("loginTitle")}</h1>
         <p className="mt-1 text-[15px] text-white/85">{t("loginSubtitle")}</p>
+
+        {normalizedCode ? (
+          <div className="mt-5 flex items-start gap-3 rounded-2xl border border-fuchsia-300/40 bg-fuchsia-500/15 px-4 py-3 text-[14px] leading-[1.55] text-fuchsia-50">
+            <Heart className="mt-0.5 h-5 w-5 shrink-0 text-fuchsia-200" />
+            <div className="min-w-0">
+              <p className="font-semibold text-white">
+                {isHe
+                  ? "מצטרפ/ת לבן/בת הזוג"
+                  : "Joining your partner"}
+              </p>
+              <p className="mt-0.5 text-fuchsia-100/85">
+                {isHe
+                  ? "אחרי הכניסה לחשבון נחבר אתכם אוטומטית למנוי המשותף."
+                  : "After login we'll connect you to the shared subscription automatically."}
+              </p>
+              <p className="mt-1 inline-flex items-center gap-1.5 font-mono text-[13px] tracking-[0.32em] text-white">
+                {isHe ? "קוד: " : "Code: "}
+                <span className="font-bold">{normalizedCode}</span>
+              </p>
+            </div>
+          </div>
+        ) : null}
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <AuthField id="login_email"    label={t("emailLabel")}    type="email"    value={email}    onChange={setEmail}    autoComplete="email"            required placeholder={t("emailPlaceholder")} />

@@ -32,6 +32,8 @@ export async function POST(req: Request) {
   const now      = new Date()
   const results: Array<{ sub_id: string; status: string; error?: string }> = []
 
+  console.log("[renewals:START]", { invokedAt: now.toISOString(), method: req.method })
+
   // ── Find due subscriptions (max 20 per run) ─────────────────────────────────
   const { data: dueSubs } = await admin
     .from("subscriptions")
@@ -41,13 +43,28 @@ export async function POST(req: Request) {
     .order("next_billing_date", { ascending: true })
     .limit(20)
 
+  console.log("[renewals:FOUND]", { due_count: dueSubs?.length ?? 0 })
+
   if (!dueSubs?.length) {
+    console.log("[renewals:END]", { processed: 0, reason: "no_due_subs" })
     return NextResponse.json({ processed: 0, results })
   }
 
   for (const sub of dueSubs) {
     const subId  = sub.id
     const userId = sub.user_id
+
+    console.log("[renewals:SUB_START]", {
+      sub_id: subId,
+      user_id: userId,
+      email: sub.email,
+      product: sub.product,
+      plan: sub.plan,
+      amount: sub.plan_amount,
+      currency: sub.currency,
+      next_billing_date: sub.next_billing_date,
+      failed_attempts: sub.failed_attempts,
+    })
 
     try {
       // ── Validate payment method ─────────────────────────────────────────────
@@ -101,6 +118,7 @@ export async function POST(req: Request) {
       const chargeId = charge?.id
 
       // ── Call Cardcom ChargeToken ────────────────────────────────────────────
+      console.log("[renewals:CARDCOM_CALL]", { sub_id: subId, asmachta, amount: sub.plan_amount, currency: sub.currency })
       const chargeResult = await chargeToken({
         token:        rawToken,
         tokenExDate:  pm.expiry_mmyy ?? undefined,
@@ -108,6 +126,7 @@ export async function POST(req: Request) {
         coinId:       sub.coin_id,
         uniqAsmachta: asmachta,
       })
+      console.log("[renewals:CARDCOM_RESPONSE]", { sub_id: subId, ok: chargeResult.ok, response_code: chargeResult.responseCode })
 
       if (!chargeResult.ok) {
         // Failed charge
@@ -207,9 +226,11 @@ export async function POST(req: Request) {
         await admin.from("subscriptions").update({ invoice_url: invoiceUrl }).eq("id", subId)
       }
 
+      console.log("[renewals:SUB_OK]", { sub_id: subId, asmachta, invoice_url: invoiceUrl })
       results.push({ sub_id: subId, status: "charged" })
 
     } catch (err) {
+      console.error("[renewals:SUB_ERROR]", { sub_id: subId, error: String(err) })
       // Mark subscription past_due on unexpected error
       await admin
         .from("subscriptions")
@@ -221,6 +242,14 @@ export async function POST(req: Request) {
     }
   }
 
+  console.log("[renewals:END]", {
+    processed: results.length,
+    summary: results.reduce<Record<string, number>>((acc, r) => {
+      acc[r.status] = (acc[r.status] ?? 0) + 1
+      return acc
+    }, {}),
+  })
+
   // ── Block subscriptions past grace period ───────────────────────────────────
   await admin
     .from("subscriptions")
@@ -231,3 +260,10 @@ export async function POST(req: Request) {
 
   return NextResponse.json({ processed: results.length, results })
 }
+
+// Vercel cron invokes endpoints via GET, not POST. Without this alias
+// every scheduled run returned 405 Method Not Allowed (audit 2026-05-27,
+// `docs/weekly-billing-audit-2026-05-27.md`). Same fix applied to
+// repair-missing-invoices. The journey crons already followed this
+// pattern (see grace-watcher/route.ts).
+export const GET = POST

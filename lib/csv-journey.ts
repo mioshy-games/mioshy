@@ -26,7 +26,7 @@
  *     category_slug, program_slug, slug, name_he, name_en,
  *     description_he, description_en, sort_order, is_active
  *
- *   items.csv        (40 columns — covers schema through migration 080;
+ *   items.csv        (41 columns — covers schema through migration 080;
  *                     is_one_off rows are filtered out at the query layer)
  *     category_slug, program_slug, subtopic_slug, slug,
  *     title_he, title_en,
@@ -52,17 +52,23 @@
  *   • nulls                    → ""  (empty string, unquoted)
  *
  * ─────────────────────────────────────────────────────────────────────────────
- * IMPORT side (legacy — not yet migrated to slug-keyed format)
+ * IMPORT side (Phase 2 — slug-keyed parsers, CSV-only)
  * ─────────────────────────────────────────────────────────────────────────────
- * The parsers + import row types below still operate on the OLD UUID-keyed
- * format. They are wired into /dashboard/journey/import/route.ts (untouched
- * in Phase 1). Phase 2 will rewrite them to match the new export schema.
+ * The parsers below consume exactly what the build* functions above emit.
+ * They return a tagged ParseResult with three buckets:
  *
- * Legacy auto-detection (still in effect for the old import flow):
- *   program_id   → programs import
- *   category_id  → categories import
- *   item_id      → items import
- *   assignment_id → rejected (assignments are insert-only via UI)
+ *   - rows[]            : successfully parsed + validated rows
+ *   - errors[]          : per-row validation failures (row excluded from rows[])
+ *   - unknownColumns[]  : header columns the parser didn't recognize. The
+ *                         caller surfaces these as ONE consolidated warning
+ *                         on the result modal, not per-row noise. This keeps
+ *                         the importer forward-compatible: a future schema
+ *                         column won't break existing CSV imports.
+ *
+ * All parsers are pure (no I/O, no throw). detectCsvKind matches on header
+ * signature: items.csv has `kind`+`audience`, subtopics.csv has
+ * `category_slug` but no `kind`, categories.csv has `program_slug` but no
+ * `category_slug`, programs.csv has `default_anchor`+`sort_weight`.
  *
  * Encoding (both directions): UTF-8 with BOM, CRLF line endings, RFC 4180.
  */
@@ -89,7 +95,7 @@ export function buildCsv(
     headers.map(csvEsc).join(","),
     ...rows.map((r) => r.map(csvEsc).join(",")),
   ];
-  return "\uFEFF" + lines.join("\r\n") + "\r\n";
+  return "﻿" + lines.join("\r\n") + "\r\n";
 }
 
 // ---------------------------------------------------------------------------
@@ -97,7 +103,7 @@ export function buildCsv(
 // ---------------------------------------------------------------------------
 
 function parseRawCsv(text: string): string[][] {
-  const clean = text.startsWith("\uFEFF") ? text.slice(1) : text;
+  const clean = text.startsWith("﻿") ? text.slice(1) : text;
   const rows: string[][] = [];
   let row: string[] = [];
   let cell = "";
@@ -127,16 +133,6 @@ function parseRawCsv(text: string): string[][] {
   while (rows.length > 0 && rows[rows.length - 1].every((c) => c.trim() === "")) rows.pop();
   return rows;
 }
-
-// ---------------------------------------------------------------------------
-// Shared types
-// ---------------------------------------------------------------------------
-
-export type CsvSkip = { row: number; field: string; message: string };
-
-export type CsvParseResult<T> =
-  | { ok: false; errors: CsvSkip[] }
-  | { ok: true; rows: T[]; skipped: CsvSkip[] };
 
 // ---------------------------------------------------------------------------
 // Column definitions
@@ -186,7 +182,7 @@ export const SUBTOPIC_COLS = [
   "is_active",
 ] as const;
 
-// 40 columns — matches the Phase 1 spec exactly. Covers every user-editable
+// 41 columns — matches the Phase 1 spec exactly. Covers every user-editable
 // column on journey_items through migration 080. `is_one_off` rows are
 // filtered out at the query layer and intentionally omitted from this list.
 export const ITEM_COLS = [
@@ -598,274 +594,824 @@ export function buildItemsTemplate(): string {
   return buildCsv(ITEM_COLS, [blankRow(ITEM_COLS)]);
 }
 
-// ---------------------------------------------------------------------------
-// Import row types (validated data ready for DB write)
-// ---------------------------------------------------------------------------
+// ============================================================================
+// ─────────────────────────────────────────────────────────────────────────────
+// IMPORT SIDE (Phase 2)
+// ─────────────────────────────────────────────────────────────────────────────
+// ============================================================================
+
+// ── Validation constants ────────────────────────────────────────────────────
+
+const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const INT_RE = /^-?\d+$/;
+const VALID_ANCHORS = new Set(["assignment", "purchase", "fixed"]);
+const VALID_PRODUCTS = new Set(["games", "journey", "adults"]);
+const VALID_AUDIENCES = new Set(["both", "owner", "partner"]);
+const VALID_KINDS = new Set(["content", "assessment", "reflection"]);
+const VALID_CONTENT_TYPES = new Set([
+  "article",
+  "exercise",
+  "video",
+  "prompt",
+  "challenge",
+]);
+
+// ── Parse result + error types ──────────────────────────────────────────────
+
+export type ParseErrorCode =
+  | "empty_file"
+  | "missing_header"
+  | "missing_field"
+  | "bad_slug"
+  | "bad_enum"
+  | "bad_int"
+  | "bad_json"
+  | "duplicate_slug"
+  // items only: kind=content but body_he + expert_insight_he + task_he all empty
+  | "body_required";
+
+export type ParseError = {
+  /** 1-indexed CSV row. Header is row 1; data starts at row 2. row=0 = file-level. */
+  row: number;
+  /** Header column name when error is field-specific. */
+  column?: string;
+  code: ParseErrorCode;
+  message: string;
+};
+
+/**
+ * Parser output. Successful rows go into `rows`; failed rows go into
+ * `errors` and do NOT appear in `rows`. `unknownColumns` lists header
+ * columns the parser didn't recognize — the caller surfaces these as
+ * ONE consolidated warning (not per-row) so a future schema column
+ * doesn't break existing imports.
+ */
+export type ParseResult<T> = {
+  rows: T[];
+  errors: ParseError[];
+  unknownColumns: string[];
+};
+
+// ── ImportRow types ─────────────────────────────────────────────────────────
 
 export type ProgramImportRow = {
-  program_id: string;  // empty = INSERT
   slug: string;
   name_he: string;
-  name_en: string;
-  description_he: string;
-  description_en: string;
-  cover_image_url: string;
-  default_anchor: string;
-  product_slug: string;
+  name_en: string | null;
+  description_he: string | null;
+  description_en: string | null;
+  cover_image_url: string | null;
+  default_anchor: "assignment" | "purchase" | "fixed";
+  product_slug: "games" | "journey" | "adults" | null;
   is_active: boolean;
   sort_weight: number;
 };
 
 export type CategoryImportRow = {
-  category_id: string; // empty = INSERT
-  program_id: string;  // empty = standalone
+  /** null when this is a standalone category (no parent program). */
+  program_slug: string | null;
   slug: string;
   name_he: string;
-  name_en: string;
-  description_he: string;
-  description_en: string;
+  name_en: string | null;
+  description_he: string | null;
+  description_en: string | null;
+  sort_order: number;
+  is_active: boolean;
+};
+
+export type SubtopicImportRow = {
+  category_slug: string;
+  /** Defensive echo; the apply layer verifies it matches the category's actual program. */
+  program_slug: string | null;
+  slug: string;
+  name_he: string;
+  name_en: string | null;
+  description_he: string | null;
+  description_en: string | null;
   sort_order: number;
   is_active: boolean;
 };
 
 export type ItemImportRow = {
-  item_id: string;     // empty = INSERT
-  category_id: string; // REQUIRED
+  category_slug: string;
+  /** Defensive echo; apply layer cross-checks. */
+  program_slug: string | null;
+  /** null = item hangs directly off the category (no subtopic). */
+  subtopic_slug: string | null;
   slug: string;
   title_he: string;
-  title_en: string;
-  body_he: string;
-  body_en: string;
-  task_he: string;
-  task_en: string;
-  challenge_he: string;
-  challenge_en: string;
-  video_url: string;
-  image_url: string;
+  title_en: string | null;
+  stage: number | null;
+  content_type: "article" | "exercise" | "video" | "prompt" | "challenge";
+  audience: "both" | "owner" | "partner";
+  kind: "content" | "assessment" | "reflection";
+  est_minutes: number | null;
+  /** Pipe-split from `tags` cell. Empty cell → []. */
+  tags: string[];
+  /**
+   * Pipe-split from `prereq_item_slugs` cell. Tokens may be bare
+   * `item-slug` (resolved within the same category) or
+   * `category-slug/item-slug` (cross-category). Resolution to UUIDs
+   * happens in the apply layer's pass-2 prereq resolver.
+   */
+  prereq_item_slugs: string[];
+  body_he: string | null;
+  body_en: string | null;
+  task_he: string | null;
+  task_en: string | null;
+  challenge_he: string | null;
+  challenge_en: string | null;
+  expert_insight_he: string | null;
+  expert_insight_en: string | null;
+  common_mistakes_he: string | null;
+  common_mistakes_en: string | null;
+  metaphor_he: string | null;
+  metaphor_en: string | null;
+  measurement_he: string | null;
+  measurement_en: string | null;
+  do_this_week_he: string | null;
+  do_this_week_en: string | null;
+  dont_this_week_he: string | null;
+  dont_this_week_en: string | null;
+  progress_marker_he: string | null;
+  progress_marker_en: string | null;
+  source_attribution_he: string | null;
+  source_attribution_en: string | null;
+  video_url: string | null;
+  image_url: string | null;
   sort_order: number;
   default_offset_days: number;
   is_active: boolean;
-  audience: "both" | "owner" | "partner"; // missing column → 'both'
+  /** Parsed from assessment_payload_json. null when cell is empty. */
+  assessment_payload: unknown | null;
 };
 
-// ---------------------------------------------------------------------------
-// Auto-detect entity type from first header column
-// ---------------------------------------------------------------------------
+// ── Header-signature CSV kind detection ─────────────────────────────────────
 
-export type JourneyCsvKind = "programs" | "categories" | "items";
+export type JourneyCsvKind = "programs" | "categories" | "subtopics" | "items";
 
+/**
+ * Detect entity type from header column set. Order matters: items first
+ * (most distinctive — has `kind`+`audience`), then subtopics (has
+ * `category_slug` but no `kind`), then categories (has `program_slug`
+ * but no `category_slug`), then programs.
+ *
+ * Returns null if no shape matches — caller responds with a clear
+ * "could not detect" error to the user.
+ */
 export function detectCsvKind(text: string): JourneyCsvKind | null {
   const raw = parseRawCsv(text);
   if (raw.length === 0) return null;
-  const first = raw[0][0]?.trim().toLowerCase();
-  if (first === "program_id") return "programs";
-  if (first === "category_id") return "categories";
-  if (first === "item_id") return "items";
+  const headers = new Set(
+    raw[0].map((h) => h.trim().toLowerCase()).filter((h) => h.length > 0),
+  );
+  const has = (k: string) => headers.has(k);
+
+  if (has("kind") && has("audience") && has("category_slug")) return "items";
+  if (has("category_slug") && has("name_he") && !has("kind")) return "subtopics";
+  if (
+    has("program_slug") &&
+    has("name_he") &&
+    has("sort_order") &&
+    !has("category_slug")
+  )
+    return "categories";
+  if (
+    has("default_anchor") &&
+    has("sort_weight") &&
+    !has("program_slug") &&
+    !has("category_slug")
+  )
+    return "programs";
   return null;
 }
 
-// ---------------------------------------------------------------------------
-// Parsers
-// ---------------------------------------------------------------------------
+// ── Parser helpers ──────────────────────────────────────────────────────────
 
-const VALID_ANCHORS = new Set(["assignment", "purchase", "fixed"]);
-const VALID_PRODUCTS = new Set(["games", "journey", "adults", ""]);
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-function parseBool(s: string, fallback = true): boolean {
-  if (s === "false" || s === "0") return false;
-  if (s === "true" || s === "1") return true;
-  return fallback;
+function trimOr(v: string | undefined): string {
+  return (v ?? "").trim();
 }
 
-function parseInt10(s: string, fallback = 0): number {
+function nullIfEmpty(v: string): string | null {
+  return v === "" ? null : v;
+}
+
+function parseBoolDefault(s: string, def: boolean): boolean {
+  const t = s.toLowerCase();
+  if (t === "") return def;
+  if (t === "false" || t === "0") return false;
+  if (t === "true" || t === "1") return true;
+  return def;
+}
+
+/** Returns `null` on empty cell, `"bad"` on parse failure, else the int. */
+function intOrNull(s: string): number | null | "bad" {
+  if (s === "") return null;
+  if (!INT_RE.test(s)) return "bad";
   const n = parseInt(s, 10);
-  return isNaN(n) ? fallback : n;
+  return Number.isFinite(n) ? n : "bad";
 }
 
-export function parseProgramsCsv(text: string): CsvParseResult<ProgramImportRow> {
+/** Returns `def` on empty cell, `"bad"` on parse failure, else the int. */
+function intDefault(s: string, def: number): number | "bad" {
+  if (s === "") return def;
+  if (!INT_RE.test(s)) return "bad";
+  const n = parseInt(s, 10);
+  return Number.isFinite(n) ? n : "bad";
+}
+
+/** Pipe-split. Empty cell → []. Trims tokens, drops empties. */
+function splitPipe(s: string): string[] {
+  if (s === "") return [];
+  return s
+    .split("|")
+    .map((x) => x.trim())
+    .filter((x) => x.length > 0);
+}
+
+function lowerHeaders(rawHeader: string[]): string[] {
+  return rawHeader.map((h) => h.trim().toLowerCase());
+}
+
+function checkRequiredHeaders(
+  headers: string[],
+  required: readonly string[],
+  errors: ParseError[],
+): boolean {
+  let ok = true;
+  for (const r of required) {
+    if (!headers.includes(r.toLowerCase())) {
+      errors.push({
+        row: 1,
+        column: r,
+        code: "missing_header",
+        message: `Required column "${r}" missing from header`,
+      });
+      ok = false;
+    }
+  }
+  return ok;
+}
+
+function diffUnknownColumns(
+  headers: string[],
+  known: readonly string[],
+): string[] {
+  const knownLower = new Set(known.map((c) => c.toLowerCase()));
+  return headers.filter((h) => h.length > 0 && !knownLower.has(h));
+}
+
+/**
+ * Reject rows whose natural key collides within the same file. All
+ * occurrences are reported (including the first) so the admin sees
+ * the conflict, and ALL conflicting rows are removed from the
+ * result — none of them is imported. Per Section 12 of the Phase 2A
+ * plan: silent "keep the last" would hide the admin's mistake.
+ */
+function detectDuplicates<T>(
+  provisional: Array<{ rowNum: number; key: string; row: T }>,
+  errors: ParseError[],
+): T[] {
+  const keyToRows = new Map<string, number[]>();
+  for (const p of provisional) {
+    const list = keyToRows.get(p.key) ?? [];
+    list.push(p.rowNum);
+    keyToRows.set(p.key, list);
+  }
+  const dupes = new Set<string>();
+  for (const [key, rowNums] of keyToRows) {
+    if (rowNums.length > 1) {
+      dupes.add(key);
+      for (const rn of rowNums) {
+        errors.push({
+          row: rn,
+          column: "slug",
+          code: "duplicate_slug",
+          message: `Duplicate key "${key}" appears on rows ${rowNums.join(", ")}`,
+        });
+      }
+    }
+  }
+  return provisional.filter((p) => !dupes.has(p.key)).map((p) => p.row);
+}
+
+// ── parseProgramsCsv ────────────────────────────────────────────────────────
+
+export function parseProgramsCsv(text: string): ParseResult<ProgramImportRow> {
   const raw = parseRawCsv(text);
-  if (raw.length === 0) return { ok: false, errors: [{ row: 0, field: "file", message: "Empty file" }] };
-
+  const errors: ParseError[] = [];
+  if (raw.length === 0) {
+    return {
+      rows: [],
+      errors: [{ row: 0, code: "empty_file", message: "Empty file" }],
+      unknownColumns: [],
+    };
+  }
   const [headerRow, ...dataRows] = raw;
-  const hdrs = headerRow.map((h) => h.trim().toLowerCase());
-  const required = ["program_id", "slug", "name_he"] as const;
-  const missing = required.filter((h) => !hdrs.includes(h));
-  if (missing.length > 0)
-    return { ok: false, errors: [{ row: 1, field: "header", message: `Missing columns: ${missing.join(", ")}` }] };
+  const headers = lowerHeaders(headerRow);
+  const indexOf = (col: string) => headers.indexOf(col);
+  const required = ["slug", "name_he"] as const;
+  const unknownColumns = diffUnknownColumns(headers, PROGRAM_COLS);
+  if (!checkRequiredHeaders(headers, required, errors)) {
+    return { rows: [], errors, unknownColumns };
+  }
+  const get = (row: string[], col: string) => trimOr(row[indexOf(col)]);
 
-  const idx = (col: string) => hdrs.indexOf(col);
-  const get = (row: string[], col: string) => (row[idx(col)] ?? "").trim();
-
-  const skipped: CsvSkip[] = [];
-  const rows: ProgramImportRow[] = [];
+  const provisional: Array<{ rowNum: number; key: string; row: ProgramImportRow }> = [];
 
   for (let r = 0; r < dataRows.length; r++) {
     const row = dataRows[r];
     const rn = r + 2;
-    if (row.every((c) => c.trim() === "")) continue;
+    if (row.every((c) => trimOr(c) === "")) continue;
 
-    const rawId = get(row, "program_id");
-    const rawSlug = get(row, "slug");
-    const rawNameHe = get(row, "name_he");
+    const slug = get(row, "slug");
+    const name_he = get(row, "name_he");
     const rawAnchor = get(row, "default_anchor") || "assignment";
     const rawProduct = get(row, "product_slug");
+    const rawWeight = get(row, "sort_weight");
 
-    let err = false;
-
-    if (!rawSlug) { skipped.push({ row: rn, field: "slug", message: "slug is required" }); err = true; }
-    if (!rawNameHe) { skipped.push({ row: rn, field: "name_he", message: "name_he is required" }); err = true; }
-    if (rawId && !UUID_RE.test(rawId)) { skipped.push({ row: rn, field: "program_id", message: `Invalid UUID: "${rawId}"` }); err = true; }
-    if (!VALID_ANCHORS.has(rawAnchor)) { skipped.push({ row: rn, field: "default_anchor", message: `Must be assignment|purchase|fixed (got "${rawAnchor}")` }); err = true; }
-    if (!VALID_PRODUCTS.has(rawProduct)) { skipped.push({ row: rn, field: "product_slug", message: `Must be games|journey|adults or empty (got "${rawProduct}")` }); err = true; }
-
-    if (err) continue;
-
-    rows.push({
-      program_id: rawId,
-      slug: rawSlug,
-      name_he: rawNameHe,
-      name_en: get(row, "name_en"),
-      description_he: get(row, "description_he"),
-      description_en: get(row, "description_en"),
-      cover_image_url: get(row, "cover_image_url"),
-      default_anchor: rawAnchor,
-      product_slug: rawProduct,
-      is_active: parseBool(get(row, "is_active")),
-      sort_weight: parseInt10(get(row, "sort_weight")),
-    });
-  }
-
-  return { ok: true, rows, skipped };
-}
-
-export function parseCategoriesCsv(text: string): CsvParseResult<CategoryImportRow> {
-  const raw = parseRawCsv(text);
-  if (raw.length === 0) return { ok: false, errors: [{ row: 0, field: "file", message: "Empty file" }] };
-
-  const [headerRow, ...dataRows] = raw;
-  const hdrs = headerRow.map((h) => h.trim().toLowerCase());
-  const required = ["category_id", "slug", "name_he"] as const;
-  const missing = required.filter((h) => !hdrs.includes(h));
-  if (missing.length > 0)
-    return { ok: false, errors: [{ row: 1, field: "header", message: `Missing columns: ${missing.join(", ")}` }] };
-
-  const idx = (col: string) => hdrs.indexOf(col);
-  const get = (row: string[], col: string) => (row[idx(col)] ?? "").trim();
-
-  const skipped: CsvSkip[] = [];
-  const rows: CategoryImportRow[] = [];
-
-  for (let r = 0; r < dataRows.length; r++) {
-    const row = dataRows[r];
-    const rn = r + 2;
-    if (row.every((c) => c.trim() === "")) continue;
-
-    const rawId = get(row, "category_id");
-    const rawProgId = get(row, "program_id");
-    const rawSlug = get(row, "slug");
-    const rawNameHe = get(row, "name_he");
-
-    let err = false;
-    if (!rawSlug) { skipped.push({ row: rn, field: "slug", message: "slug is required" }); err = true; }
-    if (!rawNameHe) { skipped.push({ row: rn, field: "name_he", message: "name_he is required" }); err = true; }
-    if (rawId && !UUID_RE.test(rawId)) { skipped.push({ row: rn, field: "category_id", message: `Invalid UUID: "${rawId}"` }); err = true; }
-    if (rawProgId && !UUID_RE.test(rawProgId)) { skipped.push({ row: rn, field: "program_id", message: `Invalid UUID: "${rawProgId}"` }); err = true; }
-
-    if (err) continue;
-
-    rows.push({
-      category_id: rawId,
-      program_id: rawProgId,
-      slug: rawSlug,
-      name_he: rawNameHe,
-      name_en: get(row, "name_en"),
-      description_he: get(row, "description_he"),
-      description_en: get(row, "description_en"),
-      sort_order: parseInt10(get(row, "sort_order")),
-      is_active: parseBool(get(row, "is_active")),
-    });
-  }
-
-  return { ok: true, rows, skipped };
-}
-
-export function parseItemsCsv(text: string): CsvParseResult<ItemImportRow> {
-  const raw = parseRawCsv(text);
-  if (raw.length === 0) return { ok: false, errors: [{ row: 0, field: "file", message: "Empty file" }] };
-
-  const [headerRow, ...dataRows] = raw;
-  const hdrs = headerRow.map((h) => h.trim().toLowerCase());
-  const required = ["item_id", "category_id", "slug", "title_he", "body_he"] as const;
-  const missing = required.filter((h) => !hdrs.includes(h));
-  if (missing.length > 0)
-    return { ok: false, errors: [{ row: 1, field: "header", message: `Missing columns: ${missing.join(", ")}` }] };
-
-  const idx = (col: string) => hdrs.indexOf(col);
-  const get = (row: string[], col: string) => (row[idx(col)] ?? "").trim();
-
-  const skipped: CsvSkip[] = [];
-  const rows: ItemImportRow[] = [];
-
-  for (let r = 0; r < dataRows.length; r++) {
-    const row = dataRows[r];
-    const rn = r + 2;
-    if (row.every((c) => c.trim() === "")) continue;
-
-    const rawId = get(row, "item_id");
-    const rawCatId = get(row, "category_id");
-    const rawSlug = get(row, "slug");
-    const rawTitleHe = get(row, "title_he");
-    const rawBodyHe = get(row, "body_he");
-
-    let err = false;
-    if (!rawCatId) { skipped.push({ row: rn, field: "category_id", message: "category_id is required" }); err = true; }
-    else if (!UUID_RE.test(rawCatId)) { skipped.push({ row: rn, field: "category_id", message: `Invalid UUID: "${rawCatId}"` }); err = true; }
-    if (!rawSlug) { skipped.push({ row: rn, field: "slug", message: "slug is required" }); err = true; }
-    if (!rawTitleHe) { skipped.push({ row: rn, field: "title_he", message: "title_he is required" }); err = true; }
-    if (!rawBodyHe) { skipped.push({ row: rn, field: "body_he", message: "body_he is required" }); err = true; }
-    if (rawId && !UUID_RE.test(rawId)) { skipped.push({ row: rn, field: "item_id", message: `Invalid UUID: "${rawId}"` }); err = true; }
-
-    if (err) continue;
-
-    // audience: optional column; missing/blank → 'both'. Any other value
-    // is rejected so a typo doesn't silently mark content as the wrong
-    // partner.
-    const rawAudience = get(row, "audience").toLowerCase();
-    let audience: "both" | "owner" | "partner";
-    if (rawAudience === "" || rawAudience === "both") {
-      audience = "both";
-    } else if (rawAudience === "owner" || rawAudience === "partner") {
-      audience = rawAudience;
-    } else {
-      skipped.push({
-        row: rn,
-        field: "audience",
-        message: `Must be both|owner|partner (got "${rawAudience}")`,
+    let bad = false;
+    if (slug === "") {
+      errors.push({ row: rn, column: "slug", code: "missing_field", message: "slug is required" });
+      bad = true;
+    } else if (!SLUG_RE.test(slug)) {
+      errors.push({
+        row: rn, column: "slug", code: "bad_slug",
+        message: `Slug "${slug}" must match /^[a-z0-9]+(-[a-z0-9]+)*$/`,
       });
-      continue;
+      bad = true;
+    }
+    if (name_he === "") {
+      errors.push({ row: rn, column: "name_he", code: "missing_field", message: "name_he is required" });
+      bad = true;
+    }
+    if (!VALID_ANCHORS.has(rawAnchor)) {
+      errors.push({
+        row: rn, column: "default_anchor", code: "bad_enum",
+        message: `default_anchor must be assignment|purchase|fixed (got "${rawAnchor}")`,
+      });
+      bad = true;
+    }
+    if (rawProduct !== "" && !VALID_PRODUCTS.has(rawProduct)) {
+      errors.push({
+        row: rn, column: "product_slug", code: "bad_enum",
+        message: `product_slug must be games|journey|adults or empty (got "${rawProduct}")`,
+      });
+      bad = true;
+    }
+    const sortWeight = intDefault(rawWeight, 0);
+    if (sortWeight === "bad") {
+      errors.push({
+        row: rn, column: "sort_weight", code: "bad_int",
+        message: `sort_weight must be an integer (got "${rawWeight}")`,
+      });
+      bad = true;
     }
 
-    rows.push({
-      item_id: rawId,
-      category_id: rawCatId,
-      slug: rawSlug,
-      title_he: rawTitleHe,
-      title_en: get(row, "title_en"),
-      body_he: rawBodyHe,
-      body_en: get(row, "body_en"),
-      task_he: get(row, "task_he"),
-      task_en: get(row, "task_en"),
-      challenge_he: get(row, "challenge_he"),
-      challenge_en: get(row, "challenge_en"),
-      video_url: get(row, "video_url"),
-      image_url: get(row, "image_url"),
-      sort_order: parseInt10(get(row, "sort_order")),
-      default_offset_days: parseInt10(get(row, "default_offset_days")),
-      is_active: parseBool(get(row, "is_active")),
-      audience,
-    });
+    if (bad) continue;
+
+    const parsed: ProgramImportRow = {
+      slug,
+      name_he,
+      name_en: nullIfEmpty(get(row, "name_en")),
+      description_he: nullIfEmpty(get(row, "description_he")),
+      description_en: nullIfEmpty(get(row, "description_en")),
+      cover_image_url: nullIfEmpty(get(row, "cover_image_url")),
+      default_anchor: rawAnchor as ProgramImportRow["default_anchor"],
+      product_slug:
+        rawProduct === ""
+          ? null
+          : (rawProduct as Exclude<ProgramImportRow["product_slug"], null>),
+      is_active: parseBoolDefault(get(row, "is_active"), true),
+      sort_weight: sortWeight as number,
+    };
+    provisional.push({ rowNum: rn, key: slug, row: parsed });
   }
 
-  return { ok: true, rows, skipped };
+  const rows = detectDuplicates(provisional, errors);
+  return { rows, errors, unknownColumns };
+}
+
+// ── parseCategoriesCsv ──────────────────────────────────────────────────────
+
+export function parseCategoriesCsv(text: string): ParseResult<CategoryImportRow> {
+  const raw = parseRawCsv(text);
+  const errors: ParseError[] = [];
+  if (raw.length === 0) {
+    return {
+      rows: [],
+      errors: [{ row: 0, code: "empty_file", message: "Empty file" }],
+      unknownColumns: [],
+    };
+  }
+  const [headerRow, ...dataRows] = raw;
+  const headers = lowerHeaders(headerRow);
+  const indexOf = (col: string) => headers.indexOf(col);
+  const required = ["slug", "name_he"] as const;
+  const unknownColumns = diffUnknownColumns(headers, CATEGORY_COLS);
+  if (!checkRequiredHeaders(headers, required, errors)) {
+    return { rows: [], errors, unknownColumns };
+  }
+  const get = (row: string[], col: string) => trimOr(row[indexOf(col)]);
+
+  const provisional: Array<{ rowNum: number; key: string; row: CategoryImportRow }> = [];
+
+  for (let r = 0; r < dataRows.length; r++) {
+    const row = dataRows[r];
+    const rn = r + 2;
+    if (row.every((c) => trimOr(c) === "")) continue;
+
+    const program_slug = get(row, "program_slug");
+    const slug = get(row, "slug");
+    const name_he = get(row, "name_he");
+    const rawSort = get(row, "sort_order");
+
+    let bad = false;
+    if (slug === "") {
+      errors.push({ row: rn, column: "slug", code: "missing_field", message: "slug is required" });
+      bad = true;
+    } else if (!SLUG_RE.test(slug)) {
+      errors.push({
+        row: rn, column: "slug", code: "bad_slug",
+        message: `Slug "${slug}" must match slug syntax`,
+      });
+      bad = true;
+    }
+    if (name_he === "") {
+      errors.push({ row: rn, column: "name_he", code: "missing_field", message: "name_he is required" });
+      bad = true;
+    }
+    if (program_slug !== "" && !SLUG_RE.test(program_slug)) {
+      errors.push({
+        row: rn, column: "program_slug", code: "bad_slug",
+        message: `program_slug "${program_slug}" must match slug syntax`,
+      });
+      bad = true;
+    }
+    const sortOrder = intDefault(rawSort, 0);
+    if (sortOrder === "bad") {
+      errors.push({
+        row: rn, column: "sort_order", code: "bad_int",
+        message: `sort_order must be an integer (got "${rawSort}")`,
+      });
+      bad = true;
+    }
+
+    if (bad) continue;
+
+    const parsed: CategoryImportRow = {
+      program_slug: program_slug === "" ? null : program_slug,
+      slug,
+      name_he,
+      name_en: nullIfEmpty(get(row, "name_en")),
+      description_he: nullIfEmpty(get(row, "description_he")),
+      description_en: nullIfEmpty(get(row, "description_en")),
+      sort_order: sortOrder as number,
+      is_active: parseBoolDefault(get(row, "is_active"), true),
+    };
+    // Natural key includes program_slug so the same category slug can exist
+    // under different programs without being flagged duplicate.
+    provisional.push({ rowNum: rn, key: `${program_slug}/${slug}`, row: parsed });
+  }
+
+  const rows = detectDuplicates(provisional, errors);
+  return { rows, errors, unknownColumns };
+}
+
+// ── parseSubtopicsCsv ───────────────────────────────────────────────────────
+
+export function parseSubtopicsCsv(text: string): ParseResult<SubtopicImportRow> {
+  const raw = parseRawCsv(text);
+  const errors: ParseError[] = [];
+  if (raw.length === 0) {
+    return {
+      rows: [],
+      errors: [{ row: 0, code: "empty_file", message: "Empty file" }],
+      unknownColumns: [],
+    };
+  }
+  const [headerRow, ...dataRows] = raw;
+  const headers = lowerHeaders(headerRow);
+  const indexOf = (col: string) => headers.indexOf(col);
+  const required = ["category_slug", "slug", "name_he"] as const;
+  const unknownColumns = diffUnknownColumns(headers, SUBTOPIC_COLS);
+  if (!checkRequiredHeaders(headers, required, errors)) {
+    return { rows: [], errors, unknownColumns };
+  }
+  const get = (row: string[], col: string) => trimOr(row[indexOf(col)]);
+
+  const provisional: Array<{ rowNum: number; key: string; row: SubtopicImportRow }> = [];
+
+  for (let r = 0; r < dataRows.length; r++) {
+    const row = dataRows[r];
+    const rn = r + 2;
+    if (row.every((c) => trimOr(c) === "")) continue;
+
+    const category_slug = get(row, "category_slug");
+    const program_slug = get(row, "program_slug");
+    const slug = get(row, "slug");
+    const name_he = get(row, "name_he");
+    const rawSort = get(row, "sort_order");
+
+    let bad = false;
+    if (category_slug === "") {
+      errors.push({
+        row: rn, column: "category_slug", code: "missing_field",
+        message: "category_slug is required",
+      });
+      bad = true;
+    } else if (!SLUG_RE.test(category_slug)) {
+      errors.push({
+        row: rn, column: "category_slug", code: "bad_slug",
+        message: `category_slug "${category_slug}" must match slug syntax`,
+      });
+      bad = true;
+    }
+    if (slug === "") {
+      errors.push({ row: rn, column: "slug", code: "missing_field", message: "slug is required" });
+      bad = true;
+    } else if (!SLUG_RE.test(slug)) {
+      errors.push({
+        row: rn, column: "slug", code: "bad_slug",
+        message: `Slug "${slug}" must match slug syntax`,
+      });
+      bad = true;
+    }
+    if (name_he === "") {
+      errors.push({ row: rn, column: "name_he", code: "missing_field", message: "name_he is required" });
+      bad = true;
+    }
+    if (program_slug !== "" && !SLUG_RE.test(program_slug)) {
+      errors.push({
+        row: rn, column: "program_slug", code: "bad_slug",
+        message: `program_slug "${program_slug}" must match slug syntax`,
+      });
+      bad = true;
+    }
+    const sortOrder = intDefault(rawSort, 0);
+    if (sortOrder === "bad") {
+      errors.push({
+        row: rn, column: "sort_order", code: "bad_int",
+        message: `sort_order must be an integer (got "${rawSort}")`,
+      });
+      bad = true;
+    }
+
+    if (bad) continue;
+
+    const parsed: SubtopicImportRow = {
+      category_slug,
+      program_slug: program_slug === "" ? null : program_slug,
+      slug,
+      name_he,
+      name_en: nullIfEmpty(get(row, "name_en")),
+      description_he: nullIfEmpty(get(row, "description_he")),
+      description_en: nullIfEmpty(get(row, "description_en")),
+      sort_order: sortOrder as number,
+      is_active: parseBoolDefault(get(row, "is_active"), true),
+    };
+    provisional.push({ rowNum: rn, key: `${category_slug}/${slug}`, row: parsed });
+  }
+
+  const rows = detectDuplicates(provisional, errors);
+  return { rows, errors, unknownColumns };
+}
+
+// ── parseItemsCsv ───────────────────────────────────────────────────────────
+
+export function parseItemsCsv(text: string): ParseResult<ItemImportRow> {
+  const raw = parseRawCsv(text);
+  const errors: ParseError[] = [];
+  if (raw.length === 0) {
+    return {
+      rows: [],
+      errors: [{ row: 0, code: "empty_file", message: "Empty file" }],
+      unknownColumns: [],
+    };
+  }
+  const [headerRow, ...dataRows] = raw;
+  const headers = lowerHeaders(headerRow);
+  const indexOf = (col: string) => headers.indexOf(col);
+  const required = [
+    "category_slug",
+    "slug",
+    "title_he",
+    "kind",
+    "audience",
+  ] as const;
+  const unknownColumns = diffUnknownColumns(headers, ITEM_COLS);
+  if (!checkRequiredHeaders(headers, required, errors)) {
+    return { rows: [], errors, unknownColumns };
+  }
+  const get = (row: string[], col: string) => trimOr(row[indexOf(col)]);
+
+  const provisional: Array<{ rowNum: number; key: string; row: ItemImportRow }> = [];
+
+  for (let r = 0; r < dataRows.length; r++) {
+    const row = dataRows[r];
+    const rn = r + 2;
+    if (row.every((c) => trimOr(c) === "")) continue;
+
+    const category_slug = get(row, "category_slug");
+    const slug = get(row, "slug");
+    const title_he = get(row, "title_he");
+    const program_slug = get(row, "program_slug");
+    const subtopic_slug = get(row, "subtopic_slug");
+
+    // Defaults — empty cell falls back to the most common value.
+    const kindRaw = (get(row, "kind") || "content").toLowerCase();
+    const audienceRaw = (get(row, "audience") || "both").toLowerCase();
+    const contentTypeRaw = (get(row, "content_type") || "article").toLowerCase();
+
+    const rawStage = get(row, "stage");
+    const rawEst = get(row, "est_minutes");
+    const rawSort = get(row, "sort_order");
+    const rawOffset = get(row, "default_offset_days");
+
+    let bad = false;
+
+    if (category_slug === "") {
+      errors.push({
+        row: rn, column: "category_slug", code: "missing_field",
+        message: "category_slug is required",
+      });
+      bad = true;
+    } else if (!SLUG_RE.test(category_slug)) {
+      errors.push({
+        row: rn, column: "category_slug", code: "bad_slug",
+        message: `category_slug "${category_slug}" must match slug syntax`,
+      });
+      bad = true;
+    }
+    if (slug === "") {
+      errors.push({ row: rn, column: "slug", code: "missing_field", message: "slug is required" });
+      bad = true;
+    } else if (!SLUG_RE.test(slug)) {
+      errors.push({
+        row: rn, column: "slug", code: "bad_slug",
+        message: `Slug "${slug}" must match slug syntax`,
+      });
+      bad = true;
+    }
+    if (title_he === "") {
+      errors.push({
+        row: rn, column: "title_he", code: "missing_field",
+        message: "title_he is required",
+      });
+      bad = true;
+    }
+    if (subtopic_slug !== "" && !SLUG_RE.test(subtopic_slug)) {
+      errors.push({
+        row: rn, column: "subtopic_slug", code: "bad_slug",
+        message: `subtopic_slug "${subtopic_slug}" must match slug syntax`,
+      });
+      bad = true;
+    }
+    if (program_slug !== "" && !SLUG_RE.test(program_slug)) {
+      errors.push({
+        row: rn, column: "program_slug", code: "bad_slug",
+        message: `program_slug "${program_slug}" must match slug syntax`,
+      });
+      bad = true;
+    }
+    if (!VALID_KINDS.has(kindRaw)) {
+      errors.push({
+        row: rn, column: "kind", code: "bad_enum",
+        message: `kind must be content|assessment|reflection (got "${kindRaw}")`,
+      });
+      bad = true;
+    }
+    if (!VALID_AUDIENCES.has(audienceRaw)) {
+      errors.push({
+        row: rn, column: "audience", code: "bad_enum",
+        message: `audience must be both|owner|partner (got "${audienceRaw}")`,
+      });
+      bad = true;
+    }
+    if (!VALID_CONTENT_TYPES.has(contentTypeRaw)) {
+      errors.push({
+        row: rn, column: "content_type", code: "bad_enum",
+        message: `content_type must be article|exercise|video|prompt|challenge (got "${contentTypeRaw}")`,
+      });
+      bad = true;
+    }
+    const stage = intOrNull(rawStage);
+    if (stage === "bad") {
+      errors.push({
+        row: rn, column: "stage", code: "bad_int",
+        message: `stage must be an integer or empty (got "${rawStage}")`,
+      });
+      bad = true;
+    }
+    const est = intOrNull(rawEst);
+    if (est === "bad") {
+      errors.push({
+        row: rn, column: "est_minutes", code: "bad_int",
+        message: `est_minutes must be an integer or empty (got "${rawEst}")`,
+      });
+      bad = true;
+    }
+    const sortOrder = intDefault(rawSort, 0);
+    if (sortOrder === "bad") {
+      errors.push({
+        row: rn, column: "sort_order", code: "bad_int",
+        message: `sort_order must be an integer (got "${rawSort}")`,
+      });
+      bad = true;
+    }
+    const offsetDays = intDefault(rawOffset, 0);
+    if (offsetDays === "bad") {
+      errors.push({
+        row: rn, column: "default_offset_days", code: "bad_int",
+        message: `default_offset_days must be an integer (got "${rawOffset}")`,
+      });
+      bad = true;
+    }
+
+    // assessment_payload_json — validate JSON only; structural validation
+    // (questions[] shape, scale_min/max consistency, etc.) happens in the
+    // per-item editor when the admin opens the row. Per Section 12 #5.
+    const rawPayload = get(row, "assessment_payload_json");
+    let payload: unknown | null = null;
+    if (rawPayload !== "") {
+      try {
+        payload = JSON.parse(rawPayload);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        errors.push({
+          row: rn, column: "assessment_payload_json", code: "bad_json",
+          message: `Invalid JSON: ${msg}`,
+        });
+        bad = true;
+      }
+    }
+
+    // body_he relaxation (Section 12 #1): for kind=content require at least
+    // ONE of body_he / expert_insight_he / task_he to be non-empty. For
+    // assessment / reflection the payload carries the content; body fields
+    // may all be empty.
+    if (!bad && kindRaw === "content") {
+      const body_he = get(row, "body_he");
+      const expert_insight_he = get(row, "expert_insight_he");
+      const task_he = get(row, "task_he");
+      if (body_he === "" && expert_insight_he === "" && task_he === "") {
+        errors.push({
+          row: rn, column: "body_he", code: "body_required",
+          message:
+            "For kind=content, at least one of body_he / expert_insight_he / task_he must be non-empty",
+        });
+        bad = true;
+      }
+    }
+
+    if (bad) continue;
+
+    const parsed: ItemImportRow = {
+      category_slug,
+      program_slug: program_slug === "" ? null : program_slug,
+      subtopic_slug: subtopic_slug === "" ? null : subtopic_slug,
+      slug,
+      title_he,
+      title_en: nullIfEmpty(get(row, "title_en")),
+      stage: stage as number | null,
+      content_type: contentTypeRaw as ItemImportRow["content_type"],
+      audience: audienceRaw as ItemImportRow["audience"],
+      kind: kindRaw as ItemImportRow["kind"],
+      est_minutes: est as number | null,
+      tags: splitPipe(get(row, "tags")),
+      prereq_item_slugs: splitPipe(get(row, "prereq_item_slugs")),
+      body_he: nullIfEmpty(get(row, "body_he")),
+      body_en: nullIfEmpty(get(row, "body_en")),
+      task_he: nullIfEmpty(get(row, "task_he")),
+      task_en: nullIfEmpty(get(row, "task_en")),
+      challenge_he: nullIfEmpty(get(row, "challenge_he")),
+      challenge_en: nullIfEmpty(get(row, "challenge_en")),
+      expert_insight_he: nullIfEmpty(get(row, "expert_insight_he")),
+      expert_insight_en: nullIfEmpty(get(row, "expert_insight_en")),
+      common_mistakes_he: nullIfEmpty(get(row, "common_mistakes_he")),
+      common_mistakes_en: nullIfEmpty(get(row, "common_mistakes_en")),
+      metaphor_he: nullIfEmpty(get(row, "metaphor_he")),
+      metaphor_en: nullIfEmpty(get(row, "metaphor_en")),
+      measurement_he: nullIfEmpty(get(row, "measurement_he")),
+      measurement_en: nullIfEmpty(get(row, "measurement_en")),
+      do_this_week_he: nullIfEmpty(get(row, "do_this_week_he")),
+      do_this_week_en: nullIfEmpty(get(row, "do_this_week_en")),
+      dont_this_week_he: nullIfEmpty(get(row, "dont_this_week_he")),
+      dont_this_week_en: nullIfEmpty(get(row, "dont_this_week_en")),
+      progress_marker_he: nullIfEmpty(get(row, "progress_marker_he")),
+      progress_marker_en: nullIfEmpty(get(row, "progress_marker_en")),
+      source_attribution_he: nullIfEmpty(get(row, "source_attribution_he")),
+      source_attribution_en: nullIfEmpty(get(row, "source_attribution_en")),
+      video_url: nullIfEmpty(get(row, "video_url")),
+      image_url: nullIfEmpty(get(row, "image_url")),
+      sort_order: sortOrder as number,
+      default_offset_days: offsetDays as number,
+      is_active: parseBoolDefault(get(row, "is_active"), true),
+      assessment_payload: payload,
+    };
+    provisional.push({ rowNum: rn, key: `${category_slug}/${slug}`, row: parsed });
+  }
+
+  const rows = detectDuplicates(provisional, errors);
+  return { rows, errors, unknownColumns };
 }

@@ -26,7 +26,7 @@ import { getOwnerJourneyStatus } from "@/lib/journey-content/owner-status";
 import { countUnreadJourneyItems } from "@/lib/journey-content/unread";
 import { getFreshClinicianReplies } from "@/lib/journey-content/fresh-replies";
 import { getProfileGate } from "@/lib/auth/profile-gate";
-import { PairCodeWidget } from "@/components/between-us/PairCodeWidget";
+import { PartnerShareCard } from "@/components/between-us/PartnerShareCard";
 import { RedeemCodeButton } from "@/components/between-us/RedeemCodeButton";
 import { InvitePartnerByEmail } from "@/components/between-us/InvitePartnerByEmail";
 import type { PillarKey } from "@/lib/entitlements/getUserEntitlements";
@@ -309,57 +309,77 @@ export default async function MyHubPage({
               </Link>
             </div>
           ) : entitlements.pillarCount === 3 ? (
-            <div className="flex flex-wrap items-start justify-between gap-4 rounded-2xl border border-emerald-300/40 bg-emerald-400/10 p-5 backdrop-blur">
-              <div>
-                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/40 bg-emerald-500/20 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-emerald-100">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
-                  <CmsText cmsKey="myHub.statusAllAccess" />
+            <div className="rounded-2xl border border-emerald-300/40 bg-emerald-400/10 p-5 backdrop-blur">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/40 bg-emerald-500/20 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-emerald-100">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
+                    <CmsText cmsKey="myHub.statusAllAccess" />
+                  </div>
+                  <CmsText
+                    cmsKey="myHub.statusAllAccessSubFull"
+                    as="p"
+                    className="mt-2 text-[18px] font-semibold text-white sm:text-[16px]"
+                  />
+                  <p className="mt-1 text-[16px] text-emerald-100/85 sm:text-sm">
+                    <CmsText cmsKey="myHub.statusAllAccessSub" />
+                  </p>
                 </div>
-                <CmsText
-                  cmsKey="myHub.statusAllAccessSubFull"
-                  as="p"
-                  className="mt-2 text-[18px] font-semibold text-white sm:text-[16px]"
-                />
-                <p className="mt-1 text-[16px] text-emerald-100/85 sm:text-sm">
-                  <CmsText cmsKey="myHub.statusAllAccessSub" />
-                </p>
               </div>
+
+              {/* Partner-share widget — rendered only when the user has
+                  an active subscription and still doesn't have a
+                  partner attached. Once the partner joins, needsPartner
+                  flips to false and the whole block disappears.
+                  See spec §3.1. */}
+              {needsPartner && ctx.pair_code ? (
+                <PartnerShareCard pairCode={ctx.pair_code} />
+              ) : null}
             </div>
           ) : (
-            <div className="flex flex-wrap items-start justify-between gap-4 rounded-2xl border border-fuchsia-300/30 bg-fuchsia-400/10 p-5 backdrop-blur">
-              <div>
-                <div className="inline-flex items-center gap-2 rounded-full border border-fuchsia-300/40 bg-fuchsia-500/25 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-fuchsia-100">
-                  <span className="h-1.5 w-1.5 rounded-full bg-fuchsia-300" />
-                  <CmsText cmsKey="myHub.statusActiveMember" />
+            <div className="rounded-2xl border border-fuchsia-300/30 bg-fuchsia-400/10 p-5 backdrop-blur">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <div className="inline-flex items-center gap-2 rounded-full border border-fuchsia-300/40 bg-fuchsia-500/25 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-fuchsia-100">
+                    <span className="h-1.5 w-1.5 rounded-full bg-fuchsia-300" />
+                    <CmsText cmsKey="myHub.statusActiveMember" />
+                  </div>
+                  <p className="mt-2 text-[18px] font-semibold text-white sm:text-[16px]">
+                    {t("activeMemberPillarsTemplate").replace(
+                      "{count}",
+                      String(entitlements.pillarCount),
+                    )}
+                  </p>
+                  <p className="mt-1 text-[16px] text-fuchsia-100/80 sm:text-sm">
+                    {(() => {
+                      const owned: string[] = [];
+                      const missing: string[] = [];
+                      if (entitlements.games) owned.push(t("entitlementGames"));
+                      else missing.push(t("entitlementGames"));
+                      if (entitlements.journey) owned.push(t("entitlementJourney"));
+                      else missing.push(t("entitlementJourney"));
+                      if (entitlements.adults) owned.push(t("entitlementAdults"));
+                      else missing.push(t("entitlementAdults"));
+                      return t("activeMemberDetailsTemplate")
+                        .replace("{owned}", owned.join(", "))
+                        .replace("{missing}", missing.join(", "));
+                    })()}
+                  </p>
                 </div>
-                <p className="mt-2 text-[18px] font-semibold text-white sm:text-[16px]">
-                  {t("activeMemberPillarsTemplate").replace(
-                    "{count}",
-                    String(entitlements.pillarCount),
-                  )}
-                </p>
-                <p className="mt-1 text-[16px] text-fuchsia-100/80 sm:text-sm">
-                  {(() => {
-                    const owned: string[] = [];
-                    const missing: string[] = [];
-                    if (entitlements.games) owned.push(t("entitlementGames"));
-                    else missing.push(t("entitlementGames"));
-                    if (entitlements.journey) owned.push(t("entitlementJourney"));
-                    else missing.push(t("entitlementJourney"));
-                    if (entitlements.adults) owned.push(t("entitlementAdults"));
-                    else missing.push(t("entitlementAdults"));
-                    return t("activeMemberDetailsTemplate")
-                      .replace("{owned}", owned.join(", "))
-                      .replace("{missing}", missing.join(", "));
-                  })()}
-                </p>
+                <Link
+                  href="/pricing"
+                  className="inline-flex min-h-[40px] items-center justify-center rounded-full border border-white/20 bg-white/10 px-5 text-sm font-semibold text-white backdrop-blur hover:bg-white/20"
+                >
+                  <CmsText cmsKey="myHub.upgradePlan" />
+                </Link>
               </div>
-              <Link
-                href="/pricing"
-                className="inline-flex min-h-[40px] items-center justify-center rounded-full border border-white/20 bg-white/10 px-5 text-sm font-semibold text-white backdrop-blur hover:bg-white/20"
-              >
-                <CmsText cmsKey="myHub.upgradePlan" />
-              </Link>
+
+              {/* Partner-share widget — see spec §3.1. Gated on
+                  needsPartner so it disappears the moment the partner
+                  redeems the code. */}
+              {needsPartner && ctx.pair_code ? (
+                <PartnerShareCard pairCode={ctx.pair_code} />
+              ) : null}
             </div>
           )}
         </section>
@@ -481,25 +501,15 @@ export default async function MyHubPage({
               </div>
             </div>
 
-            {/* Pair code - for cross-device play. Shown alongside the
-                invite (not as a separate section) so the "couple plumbing"
-                lives in one place. */}
-            {ctx.pair_code ? (
-              <div className="mt-4 border-t border-white/5 pt-4">
-                <CmsText
-                  cmsKey="myHub.gameSessionCodeLabel"
-                  as="p"
-                  className="text-[11px] uppercase tracking-wider text-white/45"
-                />
-                <div className="mt-2">
-                  <PairCodeWidget
-                    pairCode={ctx.pair_code}
-                    isHe={isHe}
-                    compact
-                  />
-                </div>
-              </div>
-            ) : null}
+            {/* Per Itzik 2026-05-27: the pair-code is now exposed
+                prominently inside the active-membership banner via
+                <PartnerShareCard> (with copy / WhatsApp / SMS / QR
+                actions). The compact PairCodeWidget that used to live
+                here was redundant — same code, two places — so we
+                removed it. If the user is on the *free* tier (no
+                pair_code yet) they don't see this section anyway
+                because hasCouple is false until they own at least one
+                purchase. */}
           </section>
         ) : null}
 

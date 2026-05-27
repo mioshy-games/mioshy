@@ -126,10 +126,16 @@ export async function GET() {
     return new Response(`Export failed: ${err?.message}`, { status: 500 });
   }
 
-  const programs = (progRes.data ?? []) as ProgramExportRow[];
-  const categories = (catRes.data ?? []) as CategoryExportRow[];
-  const subtopics = (subRes.data ?? []) as SubtopicExportRow[];
-  const items = (itemRes.data ?? []) as ItemExportRow[];
+  // Supabase v2 narrows the data type of a failed query result to
+  // `GenericStringError[]`, which doesn't overlap with our hand-rolled
+  // row types, so TypeScript refuses a direct `as`. The `as unknown`
+  // intermediary is the documented escape hatch — we've already
+  // returned a 500 above if any of these queries errored, so by this
+  // point the data is guaranteed to be the real row shape.
+  const programs = (progRes.data ?? []) as unknown as ProgramExportRow[];
+  const categories = (catRes.data ?? []) as unknown as CategoryExportRow[];
+  const subtopics = (subRes.data ?? []) as unknown as SubtopicExportRow[];
+  const items = (itemRes.data ?? []) as unknown as ItemExportRow[];
 
   // ── Build slug-resolution maps ────────────────────────────────────────────
   // programs: id → slug

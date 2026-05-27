@@ -481,6 +481,11 @@ export async function getTimelineForOwner(args: {
     .map<TimelineEntry | null>((s) => {
       const item = itemsById.get(s.item_id);
       if (!item) return null;
+      // Admin set is_active=false → hide from user timelines even if
+      // the scheduled_items row already exists. This is the soft-hide
+      // counterpart to the hard-delete cascade: content stays in the DB
+      // (responses/completions preserved) but stops being shown.
+      if (!item.is_active) return null;
       const category = categoriesById.get(item.category_id);
       if (!category) return null;
       const completion = completionsById.get(s.id) ?? null;

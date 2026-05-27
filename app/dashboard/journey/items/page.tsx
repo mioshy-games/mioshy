@@ -8,7 +8,6 @@ import {
   adminListPrograms,
 } from "@/lib/journey-content/queries";
 import { getItemLiveStatsBatch } from "@/lib/journey-content/observability";
-import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Plus, UsersRound } from "lucide-react";
 import {
   Table,
@@ -18,7 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { RowActions } from "@/components/dashboard/journey/RowActions";
+import { ItemQuickRow } from "@/components/dashboard/journey/ItemQuickRow";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 import { SectionHelp } from "@/components/dashboard/SectionHelp";
@@ -28,6 +27,11 @@ import { JourneyDataTools } from "@/components/dashboard/journey/DataTools";
 
 export const dynamic = "force-dynamic";
 
+// Bump when shipping a visible UI change to /dashboard/journey/items so
+// we can verify in the browser DOM (data-page-build attr) and server
+// logs whether the deploy actually picked up the new code.
+const PAGE_BUILD = "v4-2026-05-27-compact+rtl";
+
 export default async function ItemsListPage({
   searchParams,
 }: {
@@ -35,6 +39,7 @@ export default async function ItemsListPage({
 }) {
   await requireAdmin();
   const locale = getAdminLocale();
+  console.log(`[ItemsListPage ${PAGE_BUILD}] render`, { searchParams });
 
   // Subtopic filter sentinels:
   //   ?subtopic=<uuid>    → only items in that subtopic
@@ -76,7 +81,7 @@ export default async function ItemsListPage({
   const liveStatsByItem = await getItemLiveStatsBatch(items.map((i) => i.id));
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="mx-auto max-w-6xl space-y-6" data-page-build={PAGE_BUILD}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <Link
@@ -88,6 +93,12 @@ export default async function ItemsListPage({
           </Link>
           <span className="mt-2 inline-flex items-center gap-1.5">
             <h1 className="text-3xl font-bold tracking-tight">{t(locale, "journey.items.title")}</h1>
+            <span
+              className="rounded-md border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 font-mono text-[10px] text-amber-700 dark:text-amber-300"
+              title="Build marker — proves the new ItemQuickRow code is being served. Remove once verified."
+            >
+              {PAGE_BUILD}
+            </span>
             <SectionHelp
               title="פריטי המסע — הקטלוג"
               body={
@@ -238,27 +249,27 @@ export default async function ItemsListPage({
         </div>
       ) : null}
 
-      <div className="bg-card rounded-lg border">
+      <div className="bg-card overflow-x-auto rounded-lg border">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Title</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Slug</TableHead>
-              <TableHead>Offset</TableHead>
-              <TableHead>Sort</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="font-mono text-[10px] uppercase tracking-wide" title="Q queued · D delivered · C completed % · S skipped %">
+              <TableHead className="w-[44%]">פריט</TableHead>
+              <TableHead className="w-[22%]">קטגוריה</TableHead>
+              <TableHead className="w-[14%]">סטטוס</TableHead>
+              <TableHead
+                className="w-[10%] font-mono text-[10px] uppercase tracking-wide"
+                title="Q queued · D delivered · C completed % · S skipped %"
+              >
                 Q/D/C/S
               </TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="w-[10%] text-end">פעולות</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {items.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={8}
+                  colSpan={5}
                   className="text-muted-foreground h-24 text-center"
                 >
                   {subtopicFilterRaw === "__none__"
@@ -274,76 +285,23 @@ export default async function ItemsListPage({
               items.map((it) => {
                 const cat = categoryById.get(it.category_id);
                 const programLabel =
-                  cat?.program_id ? programNameById.get(cat.program_id) : null;
-                const stats = liveStatsByItem.get(it.id);
-                const completionRate =
-                  stats && stats.delivered > 0
-                    ? Math.round((stats.completed / stats.delivered) * 100)
-                    : null;
-                const skipRate =
-                  stats && stats.delivered > 0
-                    ? Math.round((stats.skipped / stats.delivered) * 100)
-                    : null;
+                  cat?.program_id ? programNameById.get(cat.program_id) ?? null : null;
                 return (
-                  <TableRow key={it.id}>
-                    <TableCell>
-                      <Link
-                        href={`/dashboard/journey/items/${it.id}`}
-                        className="font-medium hover:underline"
-                      >
-                        {it.title_he}
-                      </Link>
-                      {it.title_en ? (
-                        <div className="text-muted-foreground text-xs">
-                          {it.title_en}
-                        </div>
-                      ) : null}
-                    </TableCell>
-                    <TableCell className="text-xs">
-                      {cat ? (
-                        <Link
-                          href={`/dashboard/journey/categories/${cat.id}`}
-                          className="hover:underline"
-                        >
-                          {programLabel ? `${programLabel} · ` : ""}
-                          {cat.name_he}
-                        </Link>
-                      ) : (
-                        "-"
-                      )}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground font-mono text-xs">
-                      {it.slug}
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      +{it.default_offset_days}d
-                    </TableCell>
-                    <TableCell className="text-sm">{it.sort_order}</TableCell>
-                    <TableCell>
-                      <Badge variant={it.is_active ? "default" : "secondary"}>
-                        {it.is_active ? "Active" : "Draft"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground font-mono text-[11px] tabular-nums">
-                      {stats ? (
-                        <span title={`Queued ${stats.queued} · Delivered ${stats.delivered} · Completed ${stats.completed} (${completionRate ?? 0}%) · Skipped ${stats.skipped} (${skipRate ?? 0}%)`}>
-                          Q{stats.queued}/D{stats.delivered}/
-                          {completionRate !== null ? `${completionRate}%C` : "-C"}
-                          /
-                          {skipRate !== null ? `${skipRate}%S` : "-S"}
-                        </span>
-                      ) : (
-                        "-"
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <RowActions
-                        kind="item"
-                        id={it.id}
-                        editHref={`/dashboard/journey/items/${it.id}`}
-                      />
-                    </TableCell>
-                  </TableRow>
+                  <ItemQuickRow
+                    key={it.id}
+                    item={it}
+                    category={
+                      cat
+                        ? {
+                            id: cat.id,
+                            name_he: cat.name_he,
+                            program_id: cat.program_id ?? null,
+                          }
+                        : undefined
+                    }
+                    programLabel={programLabel}
+                    stats={liveStatsByItem.get(it.id)}
+                  />
                 );
               })
             )}

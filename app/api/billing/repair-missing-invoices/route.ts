@@ -48,6 +48,11 @@ type RepairRow = {
   error?:          string
 }
 
+// Vercel cron invokes endpoints via GET, not POST. Without the alias at
+// the bottom of this file, every scheduled run returned 405 Method Not
+// Allowed (audit 2026-05-27, `docs/weekly-billing-audit-2026-05-27.md`).
+// Same fix applied to renewals/run. The journey crons already followed
+// this pattern (see grace-watcher/route.ts).
 export async function POST(req: Request) {
   // ── Auth ────────────────────────────────────────────────────────────────
   const secret = process.env.CARDCOM_BILLING_CRON_SECRET
@@ -226,6 +231,9 @@ export async function POST(req: Request) {
     rows,
   })
 }
+
+// Vercel cron uses GET. See header comment.
+export const GET = POST
 
 // ─── helpers ────────────────────────────────────────────────────────────
 

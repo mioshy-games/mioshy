@@ -1948,7 +1948,60 @@
     "pillarAdultsMarketingTitle": "Mioshy's Sex",
     "adultsOwnedSingular": "game unlocked for the two of you.",
     "adultsOwnedPlural": "games unlocked for the two of you.",
-    "notificationAria": "{n} new"
+    "notificationAria": "{n} new",
+    "share": {
+      "title": "Share with your partner",
+      "lede": "This code lets your partner unlock everything you have — at no extra cost — as long as your subscription stays active.",
+      "copyBtn": "Copy",
+      "copied": "Copied",
+      "whatsappBtn": "WhatsApp",
+      "smsBtn": "SMS",
+      "qrBtn": "Show QR",
+      "howItWorks": "How does this work?",
+      "message": "Hey, join me on Mioshy — my whole subscription opens up for you too, at no extra cost. Our code is {code}. One-click signup: {url}",
+      "qrCaption": "Scan with the camera to jump straight to signup — the code fills itself in.",
+      "downloadQr": "Download QR as image",
+      "close": "Close"
+    }
+  },
+  "shareGuide": {
+    "metaTitle": "How to share your subscription with your partner · Mioshy",
+    "metaDescription": "Four simple steps to connect your partner to your subscription — no extra charge, no complicated forms.",
+    "backToHub": "Back to My Mioshy",
+    "eyebrow": "Quick guide",
+    "heading": "How to share with your partner",
+    "lede": "Your subscription is shared — both of you get access to the exact same content. In four steps we'll connect your accounts, both partners get everything you've purchased, with no double-billing.",
+    "steps": {
+      "getCode": {
+        "title": "1. Get your code",
+        "body": "As soon as you have an active subscription, a personal 6-character code appears in 'My Mioshy'. The code belongs only to your couple and can't be guessed."
+      },
+      "send": {
+        "title": "2. Send it to your partner",
+        "body": "Tap 'WhatsApp' or 'SMS' to open a ready-made message with the code and a direct signup link. You can also copy the code or have them scan a QR — whichever is easier."
+      },
+      "signup": {
+        "title": "3. Your partner signs up",
+        "body": "The link opens a signup page with the code already filled in. Name, email, mobile and password — and in less than a minute the accounts are linked."
+      },
+      "confirm": {
+        "title": "4. Everything unlocks for both of you",
+        "body": "The moment signup finishes, both partners see the exact same content. The code disappears from the screen automatically — nothing more to do."
+      }
+    },
+    "faq": {
+      "q1": "Does my partner pay separately?",
+      "a1": "No. Your subscription unlocks access for both partners — no double-billing, no joining fee, no extra charges of any kind.",
+      "q2": "What happens when my subscription ends?",
+      "a2": "Both of your access levels update together. As long as your subscription is active — you both get everything. If it ends — both of you lose access.",
+      "q3": "Can I connect more than one person?",
+      "a3": "The subscription supports one couple — two people. Once your partner joins, the code stops working for additional users.",
+      "q4": "What if my partner loses the code?",
+      "a4": "You can always head back to 'My Mioshy' and send the code again — via WhatsApp, SMS, or as a QR image."
+    },
+    "ctaTitle": "Ready to share?",
+    "ctaBody": "Head back to 'My Mioshy' — your code is waiting at the top of the page with all the share options.",
+    "ctaButton": "Back to My Mioshy"
   },
   "myGames": {
     "backToMyMioshy": "Back to My Mioshy",
