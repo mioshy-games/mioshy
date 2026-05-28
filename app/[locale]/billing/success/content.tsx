@@ -95,18 +95,21 @@ export function BillingSuccessContent() {
   }, [sessionId])
 
   // Auto-redirect once the session flips to paid.
+  // Itzik 2026-05-27: ALWAYS land on /my after payment regardless of
+  // return_path. Rationale: /my is the only surface that prominently
+  // shows the pair_code share widget at the top, which is the very
+  // next action a new subscriber needs to take. Sending them deep into
+  // a product page (which is what return_path used to do for Adults
+  // one-time purchases) hid that widget and lost partner-pair conversion.
+  // The safeReturnPath is intentionally unused below.
   useEffect(() => {
     if (phase !== "active") return
-    const target = safeReturnPath
-      ? safeReturnPath.startsWith(`/${locale}/`)
-        ? safeReturnPath
-        : `/${locale}${safeReturnPath}`
-      : `/${locale}/my`
+    const target = `/${locale}/my`
     const t = setTimeout(() => {
       window.location.assign(target)
     }, 1800)
     return () => clearTimeout(t)
-  }, [phase, safeReturnPath, locale, sessionId])
+  }, [phase, locale, sessionId])
 
   const t = isHe
     ? {

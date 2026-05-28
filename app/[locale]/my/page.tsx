@@ -183,6 +183,39 @@ export default async function MyHubPage({
   const needsPartner = hasCouple && (ctx.partner_count ?? 0) < 2;
   const isOwner = !hasCouple || ctx.role === "owner";
 
+  // ─── Partner profile lookup (Itzik 2026-05-27) ───────────────────
+  // When the couple is fully paired (needsPartner=false), the
+  // top-of-page status banner shows "משוייך ל [partner full name]"
+  // instead of the share-code widget. We need the OTHER member's
+  // profile.full_name. Uses admin client to bypass RLS that may
+  // restrict cross-user profile reads.
+  let partnerFullName: string | null = null;
+  if (hasCouple && !needsPartner && ctx.couple_id) {
+    try {
+      const { createAdminSupabaseClient } = await import(
+        "@/lib/supabase/admin"
+      );
+      const admin = createAdminSupabaseClient();
+      const { data: members } = await admin
+        .from("couple_members")
+        .select("user_id")
+        .eq("couple_id", ctx.couple_id);
+      const partnerUserId = (members ?? [])
+        .map((m) => m.user_id as string)
+        .find((id) => id !== ctx.user_id);
+      if (partnerUserId) {
+        const { data: profile } = await admin
+          .from("profiles")
+          .select("full_name")
+          .eq("id", partnerUserId)
+          .maybeSingle();
+        partnerFullName = (profile?.full_name as string | null) ?? null;
+      }
+    } catch (err) {
+      console.warn("[/my] partner profile lookup failed", err);
+    }
+  }
+
   // ─── Pillar state derivation ─────────────────────────────────────────
   // One pure helper computes badge + CTA per pillar. UI just renders.
   // See docs/my-page-redesign-spec.md §0 (MVP) and §3/§5.
@@ -288,6 +321,37 @@ export default async function MyHubPage({
               about products, not admin chrome. Admin lives in /my/account. */}
         </section>
 
+        {/* ─────── Top-of-page partner status (Itzik 2026-05-27) ───────
+            Two mutually-exclusive states, both surfaced *above the fold*:
+            (a) Has couple + still no partner → prominent PartnerShareCard
+                so the very first action a new subscriber sees is "send
+                the code to your partner".
+            (b) Couple is fully paired → small acknowledgement banner
+                "משוייך ל [partner full name]" so the buyer can see at
+                a glance that the link is live.
+            Free-tier users (no couple) see nothing — they have no code
+            yet and no partner to acknowledge. */}
+        {hasCouple && needsPartner && ctx.pair_code ? (
+          <section className="mt-6">
+            <PartnerShareCard pairCode={ctx.pair_code} />
+          </section>
+        ) : null}
+
+        {hasCouple && !needsPartner ? (
+          <section className="mt-6">
+            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/30 bg-emerald-400/10 px-4 py-2 text-sm text-emerald-50 backdrop-blur">
+              <Users className="h-4 w-4 text-emerald-300" />
+              <span>
+                {isHe ? "משוייך ל " : "Paired with "}
+                <span className="font-semibold">
+                  {partnerFullName ??
+                    (isHe ? "פרטנר" : "your partner")}
+                </span>
+              </span>
+            </div>
+          </section>
+        ) : null}
+
         {/* v3 slice 5 - grace / blocked banner. Renders nothing when
             journey is active or null. Sits above the membership banner
             so users in grace immediately see the "your plan ended"
@@ -357,14 +421,8 @@ export default async function MyHubPage({
                 </div>
               </div>
 
-              {/* Partner-share widget — rendered only when the user has
-                  an active subscription and still doesn't have a
-                  partner attached. Once the partner joins, needsPartner
-                  flips to false and the whole block disappears.
-                  See spec §3.1. */}
-              {needsPartner && ctx.pair_code ? (
-                <PartnerShareCard pairCode={ctx.pair_code} />
-              ) : null}
+              {/* PartnerShareCard moved to top-of-page partner status
+                  section above (Itzik 2026-05-27). */}
             </div>
           ) : (
             <div className="rounded-2xl border border-fuchsia-300/30 bg-fuchsia-400/10 p-5 backdrop-blur">
@@ -404,12 +462,8 @@ export default async function MyHubPage({
                 </Link>
               </div>
 
-              {/* Partner-share widget — see spec §3.1. Gated on
-                  needsPartner so it disappears the moment the partner
-                  redeems the code. */}
-              {needsPartner && ctx.pair_code ? (
-                <PartnerShareCard pairCode={ctx.pair_code} />
-              ) : null}
+              {/* PartnerShareCard moved to top-of-page partner status
+                  section above (Itzik 2026-05-27). */}
             </div>
           )}
         </section>

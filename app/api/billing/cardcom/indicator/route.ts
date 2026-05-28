@@ -474,6 +474,38 @@ export async function GET(req: Request) {
       }
     }
 
+    // Auto-create couple for subscription buyers (Itzik 2026-05-27).
+    // Mirrors the one-time branch above so that Games/Journey subscribers
+    // get a couple + pair_code the moment the webhook fires, not lazily
+    // on their first /my visit. The RPC is idempotent — returns the
+    // existing couple if the user is already a member, otherwise creates
+    // a new couple with the user as 'owner' and a fresh pair_code.
+    // The PartnerShareCard on /my needs ctx.pair_code to render the
+    // invite-partner widget; doing it here means the code is visible
+    // on first paint instead of on the second visit.
+    if (userId) {
+      try {
+        const { data: coupleIdResp, error: coupleErr } = await admin.rpc(
+          "ensure_couple_for_user",
+          { p_user_id: userId },
+        )
+        if (coupleErr || !coupleIdResp) {
+          console.error("[indicator:subscription] couple ensure failed", {
+            user_id: userId,
+            error: coupleErr?.message ?? "no couple_id",
+          })
+        } else {
+          coupleIdForLog = coupleIdResp as string
+          console.log("[indicator:subscription] couple ensured", {
+            user_id: userId,
+            couple_id: coupleIdForLog,
+          })
+        }
+      } catch (err) {
+        console.error("[indicator:subscription] couple ensure threw", err)
+      }
+    }
+
     // Auto-assign journey content (subscription-only - irrelevant for
     // one-time purchases). Fire-and-forget; the helper is idempotent and
     // never throws.
