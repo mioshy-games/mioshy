@@ -111,11 +111,24 @@ export async function signupAction(formData: FormData): Promise<SignupResult> {
     // signup. marketing_consent_at is stamped only when consent=true so
     // future code can distinguish "never opted in" (NULL) from "opted in
     // on a specific date" — important for any GDPR audit trail.
+    //
+    // CRITICAL BUG FIX (Itzik 2026-05-27): write the phone value to BOTH
+    // `phone` and `mobile` columns. The schema has two columns with the
+    // same data (migration 020 added `phone`, migrations 009+064 added
+    // `mobile`). signupAction historically wrote only `phone`, but the
+    // profile-completeness gate (lib/auth/profile-gate.ts) reads `mobile`.
+    // That mismatch caused every newly-signed-up user — including pair-code
+    // partners — to fail requireCompleteProfile() with 'profile_incomplete',
+    // which blocked silent auto-pair on signup and shoved partners into
+    // a redundant /account/profile completion screen asking for the same
+    // phone they just typed seconds earlier. Writing to both keeps every
+    // downstream reader happy regardless of which column they consult.
     await admin.from("profiles").upsert(
       {
         id: userId,
         full_name: fullName,
         phone: phone || null,
+        mobile: phone || null,
         marketing_consent: marketingConsent,
         marketing_consent_at: marketingConsent ? new Date().toISOString() : null,
         marketing_consent_source: marketingConsent ? source : null,

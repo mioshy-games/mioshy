@@ -32,10 +32,29 @@ export default async function ProfileDetailsPage({
 }) {
   const { locale } = params;
   const isHe = locale === "he";
-  const next =
-    typeof searchParams?.next === "string" && searchParams.next.startsWith("/")
-      ? searchParams.next
-      : `/${locale}/my`;
+
+  // The `next` value gets passed to ProfileDetailsForm / SetPasswordForm,
+  // which call router.push() using the next-intl router. That router
+  // AUTO-PREPENDS the current locale, so feeding it "/he/my" produces
+  // "/he/he/my" → 404. Strip the leading locale segment if present so
+  // the next-intl router can re-prepend it correctly.
+  //
+  // Bug repro before this fix (Itzik 2026-05-27):
+  //   • RedeemCodeButton fails with profile_incomplete
+  //   • Sends user to /he/account/profile?next=%2Fhe%2Fmy
+  //   • Profile page passes "/he/my" to <ProfileDetailsForm nextHref/>
+  //   • Form calls router.push("/he/my") → next-intl re-prefixes
+  //   • Browser lands on /he/he/my → 404
+  function stripLocalePrefix(path: string): string {
+    return path.replace(/^\/(?:he|en)(?=\/|$)/, "") || "/";
+  }
+  const next = (() => {
+    const raw = searchParams?.next;
+    if (typeof raw === "string" && raw.startsWith("/") && !raw.startsWith("//")) {
+      return stripLocalePrefix(raw);
+    }
+    return "/my";
+  })();
 
   const gate = await getProfileGate();
   if (!gate) {
