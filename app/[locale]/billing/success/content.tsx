@@ -35,18 +35,12 @@ export function BillingSuccessContent() {
   const rawSessionId = searchParams.get("session_id") ?? ""
   const sessionId    = rawSessionId.split(/[?/]/)[0] ?? ""
 
-  // Optional return_path - when /api/billing/checkout/create is called with
-  // return_path in the body (e.g. an Adults one-time purchase asking to
-  // land back on the product page), Cardcom is told to redirect here with
-  // ?return_path=… in the success URL. Once payment is confirmed we auto-
-  // navigate the user there instead of forcing the generic "go to library"
-  // flow. The path is validated to start with "/" so a malicious upstream
-  // can never redirect off-origin.
-  const rawReturnPath = searchParams.get("return_path") ?? ""
-  const safeReturnPath =
-    rawReturnPath.startsWith("/") && !rawReturnPath.startsWith("//")
-      ? rawReturnPath
-      : null
+  // Itzik 2026-05-27: return_path support intentionally removed.
+  // ALL post-payment landings go to /my so the buyer immediately sees the
+  // top-of-page PartnerShareCard. /api/billing/checkout/create still
+  // accepts return_path in the body for backwards-compat with existing
+  // callers (Adults purchase passes its slug), but billing/success
+  // ignores it on purpose.
 
   const [phase, setPhase]       = useState<Phase>("loading")
   const [attempts, setAttempts] = useState(0)
