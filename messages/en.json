@@ -2078,7 +2078,15 @@
     "headerLede": "Content ordered by what matters to you. Each partner sees their own ranking - your priorities lead.",
     "sharedSpaceBody": "What you've done together, your shared thread, and messages addressed to both of you.",
     "priorityHintTemplate": "Ordered by your ranking: top focus is {focusLabel}. Your partner sees their own order.",
-    "footerNote": "Private space. Everything here is yours alone."
+    "footerNote": "Private space. Everything here is yours alone.",
+    "analysisCard": {
+      "eyebrow": "Your assessment",
+      "title": "What we heard",
+      "focusPrefix": "Your top focus:",
+      "friendship": "Friendship",
+      "conflict": "Conflict health",
+      "passion": "Passion risk"
+    }
   },
   "gameTypeSelector": {
     "wheelTitle": "Spin the Wheel",

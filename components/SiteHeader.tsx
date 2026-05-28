@@ -164,6 +164,13 @@ export function SiteHeader({
   const pathname = usePathname();
   const isHe = locale === "he";
   const t = useTranslations("nav");
+  // 2026-05-28 — Itzik: during the assessment funnel the header should
+  // be reduced to a small Mioshy logo only (no pillar nav, no CTA, no
+  // hamburger). The logo stays in its current start-aligned position
+  // (right in RTL) per his "במיקום שלו כיום" note. usePathname() from
+  // @/navigation already strips the locale prefix, so a literal
+  // /journey/assessment match works for both he and en.
+  const isAssessment = pathname.startsWith("/journey/assessment");
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("dark");
@@ -313,7 +320,16 @@ export function SiteHeader({
           <img
             src="/mioshy-white.svg"
             alt="Mioshy"
-            className="h-10 w-auto sm:h-12"
+            // 2026-05-28 — smaller logo on assessment per Itzik
+            // ("להשאיר רק את הלוגו בקטן"). Mobile-only change per
+            // feedback_mioshy_mobile_only — desktop (sm:h-12) is
+            // unchanged. Non-assessment pages keep the original
+            // h-10/sm:h-12 sizing.
+            className={
+              isAssessment
+                ? "h-7 w-auto sm:h-12"
+                : "h-10 w-auto sm:h-12"
+            }
             width={171}
             height={81}
             style={{ filter: logoFilter, transition: "filter 220ms ease" }}
@@ -451,7 +467,7 @@ export function SiteHeader({
             can jump straight into /my, and unauthenticated users get
             a lightweight Sign-up CTA in the same slot. The full nav
             still lives inside the drawer. */}
-        <div className="flex items-center gap-2 lg:hidden">
+        {!isAssessment && <div className="flex items-center gap-2 lg:hidden">
           {isAuthed ? (
             // Mobile primary — matching the desktop My-Mioshy gradient
             // treatment. Compact size to fit beside the hamburger.
@@ -495,7 +511,7 @@ export function SiteHeader({
           >
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
-        </div>
+        </div>}
       </div>
 
       {/* ─────── Mobile drawer ─────── */}

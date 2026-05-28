@@ -493,11 +493,15 @@ export default async function JourneyMarketingPage({
             {/* Hero photograph — replaced the gradient placeholder
                 2026-05-18 per Itzik. The container keeps the same
                 rounded-3xl frame; `object-cover` lets the image fill
-                the 180px strip without distortion across viewports. */}
-            <div className="mx-auto mt-8 hidden max-w-3xl sm:block">
+                the strip without distortion across viewports.
+                2026-05-28 — exposed on mobile per Itzik (was
+                hidden sm:block). Mobile gets a shorter 140px strip
+                so the image doesn't dominate the hero on small
+                screens, desktop sm:h-[180px] is unchanged. */}
+            <div className="mx-auto mt-8 max-w-3xl">
               <div
                 aria-hidden
-                className="relative h-[180px] overflow-hidden rounded-3xl border border-rose-300/25"
+                className="relative h-[140px] overflow-hidden rounded-3xl border border-rose-300/25 sm:h-[180px]"
               >
                 <Image
                   src="/images/Journey-couple.webp"

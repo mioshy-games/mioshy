@@ -135,9 +135,13 @@ export function InlineAuthStep({ locale, deviceId, onAuthenticated }: InlineAuth
         />
       </div>
 
-      {/* Trust badges */}
+      {/* Trust badges.
+          2026-05-28 — badge3 ("ניתן לביטול בכל עת") removed from the
+          render per Itzik. The JSON key (and the cms_texts seed) stay
+          on disk so the badge can be brought back by switching the
+          loop back to [1, 2, 3]. */}
       <div className="flex flex-wrap gap-2">
-        {[1, 2, 3].map((n) => (
+        {[1, 2].map((n) => (
           <CmsText
             key={n}
             cmsKey={`journeyAssessment.inlineAuth.badge${n}`}

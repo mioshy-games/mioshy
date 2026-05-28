@@ -39,8 +39,9 @@ export function ForWhom() {
               stay on disk so the emphasis can be reinstated cleanly. */}
           <h2>
             <CmsText cmsKey="homeV2.forWhom.headlinePart1" />
-            <br />
-            <CmsText cmsKey="homeV2.forWhom.headlinePart2" />
+            {/* `homeV2.forWhom.headlinePart2` ("באחד מאלה - מיאושי ")
+                removed from the render 2026-05-28 per Itzik. The
+                JSON key + cms_texts seed stay on disk for future use. */}
           </h2>
           <CmsText cmsKey="homeV2.forWhom.description" as="p" />
         </div>

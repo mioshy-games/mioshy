@@ -51,7 +51,7 @@
 
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { materializeNextItemForUser } from "./cadence-engine";
+import { materializeNextItemForUser, type MaterializeResult } from "./cadence-engine";
 
 /**
  * Default category weights matching `journey_settings.default_priority_weights`
@@ -96,11 +96,17 @@ export async function resolvePrioritiesForUser(
       ?.ranking;
     if (Array.isArray(existingRanking) && existingRanking.length >= 1) {
       // Hotfix: priorities row exists but no scheduled item yet
-      // (e.g. backfilled rows from migration without natural materialize).
-      // Fire a single day-1 materialize so the dashboard isn't empty.
+      // (e.g. backfilled rows from migration without natural materialize,
+      // OR — the bug Itzik hit 2026-05-28 — the day-1 materialize fired
+      // during /api/journey/answer raced the Cardcom webhook and
+      // returned `no_journey_subscription`).
+      //
+      // We always RETRY here on page load. The cadence engine is
+      // idempotent (journey_user_delivered_items dedup) so a re-fire
+      // can only ever add a missing item, never duplicate one.
       const hasItem = await userHasUnlockedItem(admin, userId);
       if (!hasItem) {
-        await materializeDay1Item(userId);
+        await materializeDay1Item(userId, "stepA");
       }
       return { kind: "ready" };
     }
@@ -128,7 +134,7 @@ export async function resolvePrioritiesForUser(
           "assessment",
         );
         if (ok) {
-          await materializeDay1Item(userId);
+          await materializeDay1Item(userId, "stepB");
         }
         return { kind: "ready" };
       }
@@ -290,18 +296,51 @@ async function userHasUnlockedItem(
  * eligibility checks (subscription, grace), dedup, and the
  * `journey_user_delivered_items` lock.
  *
- * Wrapped so any error stays inside this function and doesn't
- * escape to the caller's try/catch.
+ * 2026-05-28 — was `Promise<void>` with a silent `catch {}`. That
+ * masked the exact failure mode Itzik hit (paid + assessment-
+ * complete user with zero scheduled_items, no signal in logs).
+ * Now returns the `MaterializeResult` so callers can act on
+ * `ok=false`, and logs both throws AND structured `reason`/`error`
+ * returns. The error is still NOT rethrown to the caller — better
+ * to render an empty dashboard than a 500 — but it's no longer
+ * invisible.
  */
-async function materializeDay1Item(userId: string): Promise<void> {
+async function materializeDay1Item(
+  userId: string,
+  context: "stepA" | "stepB",
+): Promise<MaterializeResult> {
   try {
-    await materializeNextItemForUser(userId, {
+    const result = await materializeNextItemForUser(userId, {
       unlockAt: new Date(),
       source: "cadence",
       skipSweep: true,
     });
-  } catch {
-    // Silent. The cadence cron will pick up the user on its
-    // next tick if this transient call failed.
+    if (!result.ok) {
+      console.warn(
+        "[resolve-priorities] day-1 materialize returned !ok",
+        `user_id=${userId}`,
+        `context=${context}`,
+        `reason=${result.reason ?? "(unspecified)"}`,
+        `error=${result.error ?? "(none)"}`,
+      );
+    } else {
+      console.log(
+        "[resolve-priorities] day-1 materialize OK",
+        `user_id=${userId}`,
+        `context=${context}`,
+        `scheduledItemId=${result.scheduledItemId ?? "(none)"}`,
+        `itemId=${result.itemId ?? "(none)"}`,
+      );
+    }
+    return result;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(
+      "[resolve-priorities] day-1 materialize THREW",
+      `user_id=${userId}`,
+      `context=${context}`,
+      `error=${msg}`,
+    );
+    return { ok: false, reason: "db_error", error: msg };
   }
 }

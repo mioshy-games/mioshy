@@ -98,6 +98,12 @@ import { JourneyDashboardViewTracker } from "@/components/my/JourneyDashboardVie
 import { getTimelineForOwner } from "@/lib/journey-content/queries";
 import { ensureCadenceAssignment } from "@/lib/journey-content/cadence-engine";
 import { resolvePrioritiesForUser } from "@/lib/journey-content/resolve-priorities";
+// 2026-05-28 — surface the assessment analysis (top scores +
+// narrative + recommendations) on the dashboard. Until now the
+// `journey_analysis` row was written but never displayed to the
+// paying user post-funnel.
+import { getLatestAnalysisForUser } from "@/lib/journey/analysis-read";
+import { JourneyAnalysisCard } from "@/components/my/JourneyAnalysisCard";
 import {
   journeyOwnerForUser,
   preferCoupleOwner,
@@ -802,6 +808,14 @@ export default async function PrivateJourneyPage({
   // for week-1 users.
   const scoreHistory = await getScoreHistoryForUser(effectiveUserId);
 
+  // 2026-05-28 — Latest computed assessment analysis. The row was
+  // already being written on assessment completion (api/journey/answer
+  // → journey_analysis INSERT) but no dashboard surface read it.
+  // Loaded once here and passed into JourneyAnalysisCard below;
+  // returns null for users who finished anonymously and never relinked
+  // their row, in which case the card hides itself.
+  const latestAnalysis = await getLatestAnalysisForUser(effectiveUserId);
+
   // Layer-5 — surface the "together" link only when the user is
   // actually paired. Solo users never see it.
   const isPaired = !!couple?.couple_id;
@@ -1169,6 +1183,18 @@ export default async function PrivateJourneyPage({
             />
           );
         })()}
+
+        {/* ─────── Assessment analysis card (2026-05-28) ───────
+            Compact post-purchase read of the user's journey_analysis
+            row. Self-hides when the analysis hasn't been computed
+            yet (anonymous-flow link races, etc.). Sits above the
+            desk so a returning paying user sees their actual
+            assessment output before the work plan. */}
+        <JourneyAnalysisCard
+          analysis={latestAnalysis}
+          isHe={isHe}
+          focusLabel={topPriority ? focusLabel : null}
+        />
 
         {/* ─────── The desk - vertical rail + content panel ───────
             The rail (right in RTL, top on mobile) acts as the menu;

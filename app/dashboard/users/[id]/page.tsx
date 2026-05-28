@@ -16,6 +16,10 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { UserDetailClient } from "@/components/dashboard/UserDetailClient";
+// 2026-05-28 — admin one-click "force day-1" for stuck paying users.
+// Sits next to the Analysis card so the operator has all the context
+// (scores, narrative) plus the recovery affordance in one place.
+import { ForceMaterializeDay1Button } from "@/components/dashboard/ForceMaterializeDay1Button";
 import { QUESTIONS } from "@/lib/journey/questions";
 import { axisLabel } from "@/lib/journey/analysis";
 import type { Axis } from "@/lib/journey/types";
@@ -149,6 +153,25 @@ export default async function UserDetailPage({ params }: { params: { id: string 
           </CardContent>
         </Card>
       ) : null}
+
+      {/* 2026-05-28 — Journey recovery row. Force-materializes a
+          fresh day-1 cadence item for this user. Use when a paying
+          user has priorities but their dashboard / timeline shows
+          empty. The action is idempotent (cadence engine dedup) and
+          surfaces the engine's exact failure reason inline. */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Journey recovery</CardTitle>
+          <CardDescription>
+            Force-fire a day-1 cadence materialize. Safe to click
+            repeatedly — the engine dedups against
+            journey_user_delivered_items.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ForceMaterializeDay1Button userId={userId} />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

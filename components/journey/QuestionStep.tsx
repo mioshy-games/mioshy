@@ -91,22 +91,21 @@ export function QuestionStep({ question, locale, onSubmit, initial, busy }: Ques
       {/* Show Continue button only for non-auto-advance types.
           W2.5 (Itzik #8) — explicit min-height 50px + 18px text so the
           submit button below an open-text/multi-choice field is
-          unmistakable on mobile (was getting lost). Full-width across
-          all breakpoints because there's no good reason for it to be
-          half-empty on desktop either.
-          2026-05-21 — bumped to the rose→plum gradient that the rest of
-          the assessment uses (interstitials, selected likert chips) so
-          the CTA reads as a primary action instead of disappearing into
-          the dark page bg. Explicit shadow + ring give it lift. */}
+          unmistakable on mobile (was getting lost).
+          2026-05-28 — restyled per Itzik to match the answer-choice
+          cards above (rounded-2xl, border, rose→fuchsia→violet dark
+          gradient + selected-state ring) so the assessment flow reads
+          as a single unified component instead of a CTA pill stuck
+          under a list of cards. Width stays full so it doesn't get
+          lost on mobile, and `font-semibold` gives it slightly more
+          weight than an unselected option without breaking the
+          visual family. */}
       {!isAutoAdvance ? (
         <Button
           onClick={submit}
           disabled={busy}
           size="lg"
-          className="min-h-[56px] w-full rounded-full text-[19px] font-bold text-white shadow-[0_18px_40px_-18px_rgba(184,60,77,0.85)] ring-1 ring-rose-300/30 hover:brightness-110 disabled:opacity-60"
-          style={{
-            background: "linear-gradient(135deg, #B83C4D 0%, #6C2E40 100%)",
-          }}
+          className="min-h-[56px] w-full rounded-2xl border border-rose-400/70 bg-gradient-to-br from-rose-500/40 via-fuchsia-500/30 to-violet-500/30 text-[19px] font-semibold text-white ring-2 ring-rose-400/50 shadow-lg shadow-rose-500/20 transition active:scale-[0.98] hover:from-rose-500/55 hover:via-fuchsia-500/45 hover:to-violet-500/45 hover:border-rose-400/80 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {busy ? (
             savingLabel
@@ -152,7 +151,7 @@ function LikertControl({
           key={n}
           onClick={() => !busy && onChange({ kind: "likert", value: n })}
           disabled={busy}
-          className={`flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 transition active:scale-[0.98] sm:flex-col sm:items-center sm:justify-center sm:px-2 ${
+          className={`flex items-center justify-start gap-3 rounded-2xl border px-4 py-3 transition active:scale-[0.98] sm:flex-col sm:items-center sm:justify-center sm:px-2 ${
             current === n
               ? "border-rose-400/70 bg-gradient-to-br from-rose-500/40 via-fuchsia-500/35 to-violet-500/35 text-white ring-2 ring-rose-400/50 shadow-lg shadow-rose-500/20"
               : "border-rose-300/20 bg-gradient-to-br from-rose-950/40 via-slate-900/85 to-violet-950/40 text-white/85 hover:border-rose-300/45 hover:from-rose-900/45 hover:via-slate-800/85 hover:to-violet-900/45"
@@ -162,9 +161,16 @@ function LikertControl({
               20-22px, labels 14-18px) — bumped numbers to 28px and the
               accompanying label to 17-18px so they read clearly on
               both phone and desktop. Removed the slight transparency
-              on the labels too. */}
-          <span className="text-[28px] font-semibold sm:text-[26px]">{n}</span>
-          <span className="text-[18px] font-medium leading-snug sm:mt-1.5 sm:text-[17px]">
+              on the labels too.
+              2026-05-28 — mobile RTL fix per Itzik: label is now flush
+              right (start in RTL) with the number sitting just to its
+              left, instead of label-left / number-right spread by
+              `justify-between`. `order-*` classes only apply at the
+              base breakpoint; `sm:order-none` restores DOM order
+              (number on top of label) for the desktop column layout
+              unchanged. */}
+          <span className="order-2 sm:order-none text-[28px] font-semibold sm:text-[26px]">{n}</span>
+          <span className="order-1 sm:order-none text-[18px] font-medium leading-snug sm:mt-1.5 sm:text-[17px]">
             {likertLabel(n, locale)}
           </span>
         </button>
