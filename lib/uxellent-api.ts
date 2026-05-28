@@ -21,13 +21,31 @@ export type CreateDocumentInput = {
   /** mioshy user id (Supabase auth.users.id) */
   user_id:          string
   email:            string
+  /** Customer display name. Shown on the invoice as "לכבוד <name>". */
   name?:            string | null
+  /** Customer phone (free-form, "054-1234567" or "+972-…"). Optional. */
+  phone?:           string | null
   country:          string       // ISO-2
   amount:           number
   currency:         string       // "ILS" | "USD"
   language:         "he" | "en"
   is_israeli:       boolean
   plan:             string       // "weekly" | "monthly" | "annual" | one-time slug
+  /**
+   * Human-readable product description (Hebrew or English) that appears
+   * on the invoice line, e.g. "הסקס של מיאושי" / "ליווי עם מיאושי" /
+   * "משחקי זוגות אונליין" / a specific game title. When omitted, the
+   * issuer falls back to a generic "מיאושי - עולם הזוגיות" line item,
+   * which is regulatory-correct but opaque to the customer.
+   */
+  product_name?:    string | null
+  /**
+   * Real payment method label, e.g. "כרטיס אשראי" / "Bit" / "Apple Pay".
+   * The issuer requires a concrete payment method on the receipt — never
+   * a SaaS/service description. Defaults to "כרטיס אשראי" on the issuer
+   * side when omitted (matches Cardcom's overwhelmingly-common card case).
+   */
+  payment_method?:  string | null
   /** Cardcom deal number for audit trail. ALSO drives the idempotency key. */
   deal_number?:     string | null
 }

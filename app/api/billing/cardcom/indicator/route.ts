@@ -15,6 +15,11 @@ import { pullLowProfileIndicator, extractToken, normalizeExpiry } from "@/lib/ca
 import { encryptToken, tokenHashSha256 }  from "@/lib/tokenCrypto"
 import { addPlanPeriod, type Plan } from "@/lib/billing"
 import { createBillingDocumentWithRetry } from "@/lib/uxellent-api"
+import {
+  productNameForSession,
+  brandToPaymentMethod,
+  extractCardcomCustomerInfo,
+} from "@/lib/uxellent-billing-helpers"
 import { createAdminClient }         from "@/lib/supabase-admin"
 import { assignJourneyOnPurchase }   from "@/lib/journey-content/auto-assign"
 import type { JourneyProductSlug }   from "@/lib/journey-content/types"
@@ -671,6 +676,36 @@ export async function GET(req: Request) {
   const billingDisabled =
     String(process.env.UXELLENT_BILLING_DISABLED || "").toLowerCase() === "true"
 
+  // ── Regulatory-required invoice fields (Itzik, 2026-05-28) ───────────
+  // The uxellent issuer accepts name/phone/product_name/payment_method
+  // as optional fields, but BKMV-compliant Israeli tax invoices require
+  // a real customer name, contact, specific product description and a
+  // concrete payment method. We try hard to populate all four.
+  //
+  //  · name           → prefer the checkout session (what the user typed
+  //                     into our form); fall back to the name Cardcom
+  //                     reads off the card.
+  //  · phone          → checkout_sessions has no phone column, so we
+  //                     take it from the Cardcom indicator only.
+  //                     (Profile-fallback is intentionally NOT used here;
+  //                     for renewals/repair we DO look at profiles.)
+  //  · product_name   → pillar mapping; for adults one-time purchases we
+  //                     look up the specific game title.
+  //  · payment_method → derived from the brand string Cardcom returns
+  //                     (Mutag/CardName); defaults to "כרטיס אשראי".
+  const cardcomCustomer = extractCardcomCustomerInfo(
+    indicator.parsed as Record<string, string>,
+  )
+  const customerName  = (session.name ?? "").trim() || cardcomCustomer.name || null
+  const customerPhone = cardcomCustomer.phone
+  const productName   = await productNameForSession({
+    admin,
+    product:        session.product,
+    purchase_type:  purchaseType,
+    target_game_id: session.target_game_id ?? null,
+  })
+  const paymentMethod = brandToPaymentMethod(cardcomCustomer.brand)
+
   const invoiceResult = billingDisabled
     ? (() => {
         console.warn("[indicator] UXELLENT_BILLING_DISABLED=true - skipping invoice creation", {
@@ -687,16 +722,19 @@ export async function GET(req: Request) {
       })()
     : await createBillingDocumentWithRetry(
         {
-          user_id:     userId ?? "",
-          email:       session.email,
-          name:        session.name ?? null,
-          country:     country2,
-          amount:      session.amount,
-          currency:    session.currency,
-          language:    (session.language === "he" ? "he" : "en") as "he" | "en",
-          is_israeli:  session.is_israeli,
-          plan:        session.plan,
-          deal_number: indicator.dealNumber ?? null,
+          user_id:        userId ?? "",
+          email:          session.email,
+          name:           customerName,
+          phone:          customerPhone,
+          country:        country2,
+          amount:         session.amount,
+          currency:       session.currency,
+          language:       (session.language === "he" ? "he" : "en") as "he" | "en",
+          is_israeli:     session.is_israeli,
+          plan:           session.plan,
+          product_name:   productName,
+          payment_method: paymentMethod,
+          deal_number:    indicator.dealNumber ?? null,
         },
         { chargeId, subscriptionId },
       )

@@ -37,6 +37,10 @@ export const maxDuration = 300
 import { NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase-admin"
 import { createBillingDocumentWithRetry } from "@/lib/uxellent-api"
+import {
+  productNameForSubscription,
+  brandToPaymentMethod,
+} from "@/lib/uxellent-billing-helpers"
 import { logMioshyBillingFailure } from "@/lib/billing-failures"
 
 type RepairRow = {
@@ -77,13 +81,14 @@ export async function POST(req: Request) {
       id,
       user_id,
       subscription_id,
+      payment_method_id,
       amount,
       currency,
       uniq_asmachta,
       raw_response,
       created_at,
       subscriptions:subscription_id (
-        id, email, plan, is_israeli, currency, status
+        id, email, plan, product, is_israeli, currency, status
       )
     `)
     .eq("status", "succeeded")
@@ -103,24 +108,26 @@ export async function POST(req: Request) {
     id: string
     email: string | null
     plan: string
+    product: string | null
     is_israeli: boolean
     currency: string
     status: string
   }
 
   type ChargeRow = {
-    id:               string
-    user_id:          string | null
-    subscription_id:  string | null
-    amount:           number
-    currency:         string
-    uniq_asmachta:    string | null
-    raw_response:     unknown
-    created_at:       string
+    id:                 string
+    user_id:            string | null
+    subscription_id:    string | null
+    payment_method_id:  string | null
+    amount:             number
+    currency:           string
+    uniq_asmachta:      string | null
+    raw_response:       unknown
+    created_at:         string
     // Supabase typings sometimes return a joined relation as either an
     // array or a single object depending on the query shape - we narrow
     // it ourselves below.
-    subscriptions:    SubscriptionJoin | SubscriptionJoin[] | null
+    subscriptions:      SubscriptionJoin | SubscriptionJoin[] | null
   }
 
   const rows: RepairRow[] = []
@@ -164,20 +171,64 @@ export async function POST(req: Request) {
       continue
     }
 
+    // ── BKMV-compliant invoice fields (Itzik, 2026-05-28) ────────────────
+    // The original first-purchase indicator had access to the Cardcom
+    // callback (name/phone/brand from the card form). At repair time
+    // that's gone — we reconstruct from the durable sources of truth:
+    //   · name/phone  → profiles.full_name / profiles.mobile
+    //   · brand       → customer_payment_methods.card_brand
+    //   · product     → subscriptions.product → pillar mapping
+    // All lookups are best-effort; nulls flow through to the issuer.
+    let profileName:  string | null = null
+    let profilePhone: string | null = null
+    try {
+      const { data: profile } = await admin
+        .from("profiles")
+        .select("full_name, mobile")
+        .eq("id", c.user_id)
+        .maybeSingle<{ full_name: string | null; mobile: string | null }>()
+      profileName  = profile?.full_name?.trim() || null
+      profilePhone = profile?.mobile?.trim()    || null
+    } catch (err) {
+      console.warn("[repair-cron] profile lookup failed - continuing with nulls", {
+        user_id: c.user_id, charge_id: c.id, error: String(err),
+      })
+    }
+
+    let cardBrand: string | null = null
+    if (c.payment_method_id) {
+      try {
+        const { data: pm } = await admin
+          .from("customer_payment_methods")
+          .select("card_brand")
+          .eq("id", c.payment_method_id)
+          .maybeSingle<{ card_brand: string | null }>()
+        cardBrand = pm?.card_brand ?? null
+      } catch (err) {
+        console.warn("[repair-cron] payment-method lookup failed - using default", {
+          charge_id: c.id, error: String(err),
+        })
+      }
+    }
+
     const res = await createBillingDocumentWithRetry(
       {
-        user_id:     String(c.user_id),
-        email:       sub.email ?? "",
+        user_id:        String(c.user_id),
+        email:          sub.email ?? "",
+        name:           profileName,
+        phone:          profilePhone,
         // ISO-2 default: issuer requires exactly 2 chars. We don't
         // carry country on charges/subscriptions, so derive from is_israeli.
         // is_israeli was IP-validated at /checkout/create - see lib/geo-from-request.ts
-        country:     sub.is_israeli ? "IL" : "US",
-        amount:      Number(c.amount),
-        currency:    String(c.currency || sub.currency || "ILS"),
-        language:    (sub.is_israeli ? "he" : "en") as "he" | "en",
-        is_israeli:  Boolean(sub.is_israeli),
-        plan:        String(sub.plan || ""),
-        deal_number: dealNumber,
+        country:        sub.is_israeli ? "IL" : "US",
+        amount:         Number(c.amount),
+        currency:       String(c.currency || sub.currency || "ILS"),
+        language:       (sub.is_israeli ? "he" : "en") as "he" | "en",
+        is_israeli:     Boolean(sub.is_israeli),
+        plan:           String(sub.plan || ""),
+        product_name:   productNameForSubscription(sub.product),
+        payment_method: brandToPaymentMethod(cardBrand),
+        deal_number:    dealNumber,
       },
       { chargeId: String(c.id), subscriptionId: String(sub.id) },
     )

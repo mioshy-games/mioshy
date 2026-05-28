@@ -18,6 +18,10 @@ import { chargeToken }             from "@/lib/cardcom"
 import { decryptToken }            from "@/lib/tokenCrypto"
 import { addPlanPeriod, makeAsmachta, GRACE_PERIOD_DAYS } from "@/lib/billing"
 import { createBillingDocumentWithRetry } from "@/lib/uxellent-api"
+import {
+  productNameForSubscription,
+  brandToPaymentMethod,
+} from "@/lib/uxellent-billing-helpers"
 import { createAdminClient }       from "@/lib/supabase-admin"
 
 export async function POST(req: Request) {
@@ -37,7 +41,7 @@ export async function POST(req: Request) {
   // ── Find due subscriptions (max 20 per run) ─────────────────────────────────
   const { data: dueSubs } = await admin
     .from("subscriptions")
-    .select("*, customer_payment_methods(id, token_enc, expiry_mmyy, status)")
+    .select("*, customer_payment_methods(id, token_enc, expiry_mmyy, status, card_brand)")
     .in("status", ["active", "past_due"])
     .lte("next_billing_date", now.toISOString())
     .order("next_billing_date", { ascending: true })
@@ -68,7 +72,7 @@ export async function POST(req: Request) {
 
     try {
       // ── Validate payment method ─────────────────────────────────────────────
-      const pm = (sub as unknown as { customer_payment_methods: { id: string; token_enc: string; expiry_mmyy: string | null; status: string } | null }).customer_payment_methods
+      const pm = (sub as unknown as { customer_payment_methods: { id: string; token_enc: string; expiry_mmyy: string | null; status: string; card_brand: string | null } | null }).customer_payment_methods
       if (!pm || pm.status !== "active") {
         throw new Error("No active payment method")
       }
@@ -182,6 +186,29 @@ export async function POST(req: Request) {
       const billingDisabled =
         String(process.env.UXELLENT_BILLING_DISABLED || "").toLowerCase() === "true"
 
+      // ── Pull profile for invoice fields (name + phone) ─────────────────────
+      // The subscriptions row carries email + is_israeli, but no display
+      // name or phone. We pull both from profiles for the BKMV-compliant
+      // invoice fields. Either may legitimately be NULL — we forward null
+      // and the issuer renders the receipt without that line. Profile
+      // lookup is best-effort: on error we proceed with nulls rather
+      // than block the renewal invoice.
+      let profileName:  string | null = null
+      let profilePhone: string | null = null
+      try {
+        const { data: profile } = await admin
+          .from("profiles")
+          .select("full_name, mobile")
+          .eq("id", userId)
+          .maybeSingle<{ full_name: string | null; mobile: string | null }>()
+        profileName  = profile?.full_name?.trim() || null
+        profilePhone = profile?.mobile?.trim()    || null
+      } catch (err) {
+        console.warn("[renewals] profile lookup failed - continuing with nulls", {
+          user_id: userId, sub_id: subId, error: String(err),
+        })
+      }
+
       const invoiceResult = billingDisabled
         ? (() => {
             console.warn("[renewals] UXELLENT_BILLING_DISABLED=true - skipping invoice creation", {
@@ -195,15 +222,22 @@ export async function POST(req: Request) {
           })()
         : await createBillingDocumentWithRetry(
             {
-              user_id:     userId,
-              email:       sub.email ?? "",
-              country:     sub.is_israeli ? "IL" : "US",
-              amount:      sub.plan_amount,
-              currency:    sub.currency,
-              language:    (sub.is_israeli ? "he" : "en") as "he" | "en",
-              is_israeli:  sub.is_israeli,
-              plan:        sub.plan,
-              deal_number: asmachta, // idempotency anchor for renewals
+              user_id:        userId,
+              email:          sub.email ?? "",
+              name:           profileName,
+              phone:          profilePhone,
+              country:        sub.is_israeli ? "IL" : "US",
+              amount:         sub.plan_amount,
+              currency:       sub.currency,
+              language:       (sub.is_israeli ? "he" : "en") as "he" | "en",
+              is_israeli:     sub.is_israeli,
+              plan:           sub.plan,
+              // Renewals are always recurring pillar subs — no target game.
+              product_name:   productNameForSubscription(sub.product),
+              // pm.card_brand was captured at the original first-purchase
+              // (see indicator route's customer_payment_methods upsert).
+              payment_method: brandToPaymentMethod(pm.card_brand),
+              deal_number:    asmachta, // idempotency anchor for renewals
             },
             { chargeId, subscriptionId: subId },
           )
