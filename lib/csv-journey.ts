@@ -602,7 +602,11 @@ export function buildItemsTemplate(): string {
 
 // ── Validation constants ────────────────────────────────────────────────────
 
-const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+// Slugs allow `-` AND `_` as separators. The DB has canonical slugs
+// authored with both (e.g. `emotional_connection` from migration 055,
+// `csv-s1-communication-001` from migration 078). Restricting to `-`
+// would reject ~67 valid rows on every round-trip with production data.
+const SLUG_RE = /^[a-z0-9]+(?:[-_][a-z0-9]+)*$/;
 const INT_RE = /^-?\d+$/;
 const VALID_ANCHORS = new Set(["assignment", "purchase", "fixed"]);
 const VALID_PRODUCTS = new Set(["games", "journey", "adults"]);
@@ -937,7 +941,7 @@ export function parseProgramsCsv(text: string): ParseResult<ProgramImportRow> {
     } else if (!SLUG_RE.test(slug)) {
       errors.push({
         row: rn, column: "slug", code: "bad_slug",
-        message: `Slug "${slug}" must match /^[a-z0-9]+(-[a-z0-9]+)*$/`,
+        message: `Slug "${slug}" must match /^[a-z0-9]+([-_][a-z0-9]+)*$/`,
       });
       bad = true;
     }
