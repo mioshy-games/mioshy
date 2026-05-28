@@ -41,7 +41,7 @@ import { routing } from "@/i18n/routing";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getCurrentCoupleContext } from "@/lib/between-us/couples";
 import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
-import { preferCoupleOwner } from "@/lib/journey-content/owner";
+import { preferCoupleOwner, journeyOwnerForUser } from "@/lib/journey-content/owner";
 import { getTimelineForOwner } from "@/lib/journey-content/queries";
 import { countStatuses } from "@/lib/journey-content/status";
 import type { TimelineEntry } from "@/lib/journey-content/types";
@@ -107,19 +107,51 @@ export default async function JourneyTimelinePage({
     redirect(`/${locale}/journey`);
   }
 
-  // ── Resolve owner (solo user OR their couple) ─────────────────────────
+  // ── Resolve owners — TWO axes (matches /my/journey pattern) ──────────
+  // Itzik 2026-05-28 — regression fix from the auto-create-couple change.
+  //
+  // Before: every subscriber had a couple → preferCoupleOwner returned
+  // couple-scoped owner → ownerFilter queried journey_assignments WHERE
+  // couple_id = X. But cadence assignments (the per-user content
+  // containers shipped 2026-05-24, see auto-assign.ts and the v3 NOTE
+  // on owner.ts:51-57) are ALWAYS user-scoped — couple_id is NULL on
+  // them by design. Result: a brand-new paying user who'd just done
+  // the assessment saw an empty timeline because the query was
+  // looking at the wrong column.
+  //
+  // Fix: mirror /my/journey:540-593 — fetch legacy (program/category/
+  // item) assignments against the couple-preferred owner AND cadence
+  // assignments against the strict per-user owner, then merge by
+  // unlock_at. Both lists feed the same downstream TimelineList.
   const couple = await getCurrentCoupleContext();
-  const owner = preferCoupleOwner(user.id, couple?.couple_id ?? null);
+  const legacyOwner = preferCoupleOwner(user.id, couple?.couple_id ?? null);
+  const cadenceOwner = journeyOwnerForUser(user.id);
 
   // ── Load timeline ─────────────────────────────────────────────────────
   // Pass the viewer's couple_member role so audience-targeted items
   // ('owner'|'partner') are filtered to the right person. Solo users
-  // see everything as 'both'.
-  const entries = await getTimelineForOwner({
-    owner,
-    viewerUserId: user.id,
-    viewerCoupleRole: couple?.role ?? null,
-  }).catch(() => []);
+  // see everything as 'both'. Cadence axis ignores viewerCoupleRole
+  // because cadence is per-user.
+  const [legacyEntries, cadenceEntries] = await Promise.all([
+    getTimelineForOwner({
+      owner: legacyOwner,
+      viewerUserId: user.id,
+      viewerCoupleRole: couple?.role ?? null,
+      sourceKinds: ["program", "category", "item"],
+    }).catch(() => []),
+    getTimelineForOwner({
+      owner: cadenceOwner,
+      viewerUserId: user.id,
+      viewerCoupleRole: null,
+      sourceKinds: ["cadence"],
+    }).catch(() => []),
+  ]);
+  // Merge by unlock_at ascending — same as /my/journey:589-593.
+  const entries = [...legacyEntries, ...cadenceEntries].sort((a, b) => {
+    const ua = new Date(a.scheduled.unlock_at).getTime();
+    const ub = new Date(b.scheduled.unlock_at).getTime();
+    return ua - ub;
+  });
 
   const counts = countStatuses(entries.map((e) => e.status));
   const progress =
@@ -175,8 +207,14 @@ export default async function JourneyTimelinePage({
           />
 
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            {/* Itzik 2026-05-28: the "גלו את המסע" primary button used to
+                point at /journey — the public marketing page — which made
+                no sense for a paying user who'd already landed on the
+                authed timeline. Now points at /my/journey, the private
+                dashboard where the coach card and first-session content
+                already render even before journey_assignments populate. */}
             <Link
-              href="/journey"
+              href="/my/journey"
               className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-500 via-emerald-500 to-teal-500 px-6 py-3 text-sm font-semibold shadow-lg shadow-indigo-900/30 transition hover:brightness-110"
             >
               <CmsText cmsKey="journeyTimeline.page.empty.ctaExplore" />
