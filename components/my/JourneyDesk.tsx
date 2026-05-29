@@ -45,7 +45,6 @@ import {
   Lock,
   Sparkles,
   ImageIcon,
-  PlayCircle,
   ArrowLeft,
   ArrowRight,
   Clock,

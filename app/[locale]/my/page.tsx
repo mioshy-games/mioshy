@@ -103,12 +103,15 @@ export default async function MyHubPage({
   // same `auth.getUser()` underneath. Both are wrapped in React.cache
   // (couples.ts + getUserEntitlements.ts) so duplicated work across
   // layout + this page collapses to one set of round-trips.
-  let [ctx, entitlements] = await Promise.all([
+  // NOTE: `ctx` is `let` because the lazy-couple-creation block below
+  // may reassign it after createCoupleForSelf; entitlements is const.
+  const [initialCtx, entitlements] = await Promise.all([
     getCurrentCoupleContext(),
     getUserEntitlements(),
   ]);
-  if (!ctx) redirect(`/${locale}/auth`);
+  if (!initialCtx) redirect(`/${locale}/auth`);
   if (!entitlements) redirect(`/${locale}/auth`);
+  let ctx = initialCtx;
 
   // ─── Lazy couple creation (Itzik 2026-05-27) ─────────────────────
   // Some subscription paths don't auto-create a couple row (Cardcom
