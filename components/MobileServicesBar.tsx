@@ -136,14 +136,34 @@ export function MobileServicesBar() {
     // every scroll tick on iOS Safari (URL-bar show/hide), so the
     // log appeared 50+ times in a single page load and showed up
     // as a measurable main-thread drag in Lighthouse runs.
+    //
+    // 2026-05-29 — CLAMP added after Itzik reported the bar floating
+    // ~600-800px above the screen bottom in iOS Chrome. Root cause is
+    // most likely an outlier visualViewport reading during pinch-zoom
+    // or a layout-engine transient where vv.height temporarily reports
+    // 0 / vv.offsetTop reports a large value, producing a huge
+    // bottomGap and a catastrophic upward translate. The legitimate
+    // drift between layout and visual viewports on mobile Chrome/Safari
+    // is bounded by the height of the address bar + the home-indicator
+    // zone — practically ≤ 120px. Anything larger is a glitch, so we
+    // clamp and let the next animation frame self-correct. If a real
+    // larger gap appears, raise MAX_VV_OFFSET; don't remove the clamp.
+    const MAX_VV_OFFSET = 120;
     function update() {
       if (!vv || !nav) return;
+      // Sanity guard: a vv.height under half of innerHeight almost
+      // always indicates a transient measurement (keyboard open,
+      // pinch-zoom in progress). Skip rather than apply nonsense.
+      if (vv.height > 0 && vv.height < window.innerHeight * 0.5) return;
       const bottomGap = window.innerHeight - (vv.height + vv.offsetTop);
       // Allow translation in BOTH directions (see comment above).
       // Sub-pixel rounding: round to 0.5px to avoid jitter on iOS Safari
       // where vv.height changes by fractional pixels during inertial
       // scroll.
-      const translate = -Math.round(bottomGap * 2) / 2;
+      let translate = -Math.round(bottomGap * 2) / 2;
+      // Hard clamp — see 2026-05-29 note above.
+      if (translate > MAX_VV_OFFSET) translate = MAX_VV_OFFSET;
+      if (translate < -MAX_VV_OFFSET) translate = -MAX_VV_OFFSET;
       nav.style.setProperty("--mobile-bar-vv-offset", `${translate}px`);
     }
 
