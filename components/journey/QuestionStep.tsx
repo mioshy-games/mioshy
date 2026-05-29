@@ -66,7 +66,7 @@ export function QuestionStep({ question, locale, onSubmit, initial, busy }: Ques
       className="flex w-full max-w-2xl flex-col gap-6"
       dir={isHe ? "rtl" : "ltr"}
     >
-      <h2 className="text-start text-xl font-semibold leading-snug text-white md:text-2xl drop-shadow-sm">
+      <h2 className="text-start text-[24px] font-semibold leading-snug text-white drop-shadow-sm">
         {promptFor(question, locale)}
       </h2>
 
@@ -168,9 +168,16 @@ function LikertControl({
               `justify-between`. `order-*` classes only apply at the
               base breakpoint; `sm:order-none` restores DOM order
               (number on top of label) for the desktop column layout
-              unchanged. */}
-          <span className="order-2 sm:order-none text-[28px] font-semibold sm:text-[26px]">{n}</span>
-          <span className="order-1 sm:order-none text-[18px] font-medium leading-snug sm:mt-1.5 sm:text-[17px]">
+              unchanged.
+              2026-05-29 — Itzik flipped the mobile order again: number
+              FIRST (rightmost in RTL), label after it. Number sits in
+              a fixed-width slot (w-7 + text-center) so every row's
+              label starts at the same x position — that's the
+              "straight line of text" the spec asks for. Label bumped
+              to 20px/font-semibold per spec; desktop sm:text-[17px]
+              unchanged because the desktop column layout is tighter. */}
+          <span className="order-1 sm:order-none w-7 text-center text-[28px] font-semibold sm:w-auto sm:text-[26px]">{n}</span>
+          <span className="order-2 sm:order-none text-[20px] font-semibold leading-snug sm:mt-1.5 sm:text-[17px] sm:font-medium">
             {likertLabel(n, locale)}
           </span>
         </button>
