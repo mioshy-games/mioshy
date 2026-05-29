@@ -191,17 +191,22 @@ export function PriorityRankingStep({
                   {idx + 1}
                 </div>
 
-                {/* Title + description */}
+                {/* Title + description
+                    2026-05-29 — Itzik mobile-only typography bump:
+                    title 24px, description 20px. Desktop unchanged
+                    (sm: keeps the original isFirst-bigger pattern and
+                    text-xs description) because the desktop card row
+                    is denser. */}
                 <div className="min-w-0 flex-1">
                   <div
                     className={[
-                      "font-semibold text-white",
-                      isFirst ? "text-lg" : "text-base",
+                      "font-semibold text-white text-[24px]",
+                      isFirst ? "sm:text-lg" : "sm:text-base",
                     ].join(" ")}
                   >
                     {labelFor(key)}
                   </div>
-                  <p className="mt-0.5 text-xs leading-snug text-white/65">
+                  <p className="mt-0.5 text-[20px] leading-snug text-white/65 sm:text-xs">
                     {descFor(key)}
                   </p>
                 </div>
@@ -238,13 +243,20 @@ export function PriorityRankingStep({
 
       {/* Hint was here previously (2026-05-07 bump to 15px / white/85).
           Moved above the list 2026-05-19 — see the comment up there.
-          Continue button stays here as the user's next step. */}
+          Continue button stays here as the user's next step.
+          2026-05-29 — restyled to match the rose/fuchsia/violet
+          gradient used on QuestionStep's Continue button. Itzik
+          flagged that the default shadcn button rendered as black/
+          dark and didn't read as a CTA against the wine backdrop.
+          Same style now reads consistently across the whole
+          assessment flow. Width stays bounded (min-w 220, max 360)
+          so it doesn't stretch full-width on tablets. */}
       <div className="flex justify-center">
         <Button
           type="button"
           onClick={submit}
           disabled={busy}
-          className="min-w-[220px] min-h-[56px] text-[18px] font-semibold shadow-xl shadow-fuchsia-500/30"
+          className="min-w-[220px] max-w-[360px] min-h-[56px] rounded-2xl border border-rose-400/70 bg-gradient-to-br from-rose-500/40 via-fuchsia-500/30 to-violet-500/30 text-[19px] font-semibold text-white ring-2 ring-rose-400/50 shadow-lg shadow-rose-500/20 transition active:scale-[0.98] hover:from-rose-500/55 hover:via-fuchsia-500/45 hover:to-violet-500/45 hover:border-rose-400/80 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <CmsText cmsKey="journeyAssessment.question.continue" />
         </Button>

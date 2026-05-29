@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { AuthField, AuthSubmitButton, AuthCard } from "@/components/ui/auth-field";
 import type { Locale } from "@/lib/journey/types";
@@ -8,6 +8,58 @@ import { track } from "@/lib/analytics";
 import { journeyInlineSignup } from "@/app/actions/journey-inline-signup";
 import { useCmsText } from "@/hooks/useCmsText";
 import { CmsText } from "@/components/cms/CmsText";
+
+// 2026-05-29 — Itzik bug report: user clicked browser-back from the
+// inline-auth gate, then forward again, and the form was empty. They
+// had to re-type fullName/email/phone. Persist non-secret fields in
+// localStorage for 7 days so back/forward (or even closing the tab
+// and coming back the next day) keeps the data filled. Password is
+// NEVER persisted; the user re-enters it on every visit. Cleared on
+// successful submit so the next visitor on a shared device doesn't
+// see someone else's details.
+const STORAGE_KEY = "mioshy.inlineAuth.draft.v1";
+const STORAGE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+interface DraftShape {
+  fullName: string;
+  email: string;
+  phone: string;
+  savedAt: number;
+}
+function loadDraft(): DraftShape | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as DraftShape;
+    if (!parsed || typeof parsed.savedAt !== "number") return null;
+    if (Date.now() - parsed.savedAt > STORAGE_TTL_MS) {
+      window.localStorage.removeItem(STORAGE_KEY);
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+function saveDraft(d: Omit<DraftShape, "savedAt">) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ ...d, savedAt: Date.now() }),
+    );
+  } catch {
+    // localStorage can throw in private mode or when full — best-effort.
+  }
+}
+function clearDraft() {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    /* noop */
+  }
+}
 
 interface InlineAuthStepProps {
   locale: Locale;
@@ -33,8 +85,35 @@ export function InlineAuthStep({ locale, deviceId, onAuthenticated }: InlineAuth
   const [password, setPassword] = useState("");
   const [busy,     setBusy]     = useState(false);
   const [error,    setError]    = useState<string | null>(null);
+  // Skip the auto-save effect on the very first render (right after
+  // hydration) so we don't immediately overwrite a draft with the
+  // empty initial state. After hydrate, this flag flips to true.
+  const hydratedRef = useRef(false);
 
   const isHe = locale === "he";
+
+  // ── Draft hydration (Itzik 2026-05-29) ──────────────────────────────
+  // Read once on mount. If a recent draft exists, fill the fields so the
+  // user doesn't have to retype after browser back/forward.
+  useEffect(() => {
+    const draft = loadDraft();
+    if (draft) {
+      if (draft.fullName) setFullName(draft.fullName);
+      if (draft.email) setEmail(draft.email);
+      if (draft.phone) setPhone(draft.phone);
+    }
+    hydratedRef.current = true;
+  }, []);
+
+  // ── Auto-save draft as the user types ───────────────────────────────
+  // Runs after every change to a persisted field. We don't debounce
+  // because localStorage writes are cheap (microseconds) and the user
+  // typing rate is low — no benefit. We DO skip the first render so
+  // we don't blank an existing draft with empty initial state.
+  useEffect(() => {
+    if (!hydratedRef.current) return;
+    saveDraft({ fullName, email, phone });
+  }, [fullName, email, phone]);
 
   // String-prop consumers — AuthField labels/placeholders, AuthSubmitButton
   // labels, and the error-state strings set imperatively in the submit
@@ -84,6 +163,9 @@ export function InlineAuthStep({ locale, deviceId, onAuthenticated }: InlineAuth
       }
 
       track("registration_completed", { source: "journey_inline", mode });
+      // Successful signup/login — clear the draft so a future user
+      // on the same device doesn't see these details prefilled.
+      clearDraft();
       console.log("[InlineAuthStep] calling onAuthenticated() → page reload");
       onAuthenticated();
     } catch (err) {
