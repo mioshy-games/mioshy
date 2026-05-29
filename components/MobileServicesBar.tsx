@@ -59,6 +59,12 @@ export function MobileServicesBar() {
   const pathname = usePathname();
   const [footerVisible, setFooterVisible] = useState(false);
   const navRef = useRef<HTMLElement | null>(null);
+  // 2026-05-29 — visible on-screen debug overlay. Enable with
+  // `?mbar=debug` in the URL on mobile (no DevTools / remote-inspect
+  // needed). Shows live visualViewport values + the computed translate
+  // so we can diagnose the floating-bar bug straight from the phone.
+  // Reads the URL once on mount, no re-renders.
+  const [debugInfo, setDebugInfo] = useState<string | null>(null);
 
   // W2.1 — hide on the assessment flow. The bottom bar sits on top of
   // the submit CTA + competing pillar links during a focused diagnostic
@@ -129,7 +135,14 @@ export function MobileServicesBar() {
     if (typeof window === "undefined") return;
     const vv = window.visualViewport;
     const nav = navRef.current;
-    if (!vv || !nav) return;
+    // Debug overlay gate — read once. URL param ?mbar=debug shows live
+    // values on screen for mobile diagnosis.
+    const debugOn =
+      new URLSearchParams(window.location.search).get("mbar") === "debug";
+    if (!vv || !nav) {
+      if (debugOn) setDebugInfo("vv=NULL or nav=NULL");
+      return;
+    }
 
     // 2026-05-20 — diagnostic console.log removed. Was throttled to
     // 200ms but the visualViewport resize event still fires on
@@ -151,20 +164,28 @@ export function MobileServicesBar() {
     const MAX_VV_OFFSET = 120;
     function update() {
       if (!vv || !nav) return;
+      const vvH = vv.height;
+      const vvT = vv.offsetTop;
+      const winH = window.innerHeight;
+      const docH = document.documentElement.clientHeight;
       // Sanity guard: a vv.height under half of innerHeight almost
       // always indicates a transient measurement (keyboard open,
       // pinch-zoom in progress). Skip rather than apply nonsense.
-      if (vv.height > 0 && vv.height < window.innerHeight * 0.5) return;
-      const bottomGap = window.innerHeight - (vv.height + vv.offsetTop);
-      // Allow translation in BOTH directions (see comment above).
-      // Sub-pixel rounding: round to 0.5px to avoid jitter on iOS Safari
-      // where vv.height changes by fractional pixels during inertial
-      // scroll.
+      const skip = vvH > 0 && vvH < winH * 0.5;
+      const bottomGap = winH - (vvH + vvT);
       let translate = -Math.round(bottomGap * 2) / 2;
+      const preClamp = translate;
       // Hard clamp — see 2026-05-29 note above.
       if (translate > MAX_VV_OFFSET) translate = MAX_VV_OFFSET;
       if (translate < -MAX_VV_OFFSET) translate = -MAX_VV_OFFSET;
-      nav.style.setProperty("--mobile-bar-vv-offset", `${translate}px`);
+      if (!skip) {
+        nav.style.setProperty("--mobile-bar-vv-offset", `${translate}px`);
+      }
+      if (debugOn) {
+        setDebugInfo(
+          `winH=${winH} docH=${docH} vvH=${Math.round(vvH)} vvT=${Math.round(vvT)} gap=${Math.round(bottomGap)} pre=${preClamp} → tr=${translate}${skip ? " SKIP" : ""}`,
+        );
+      }
     }
 
     update();
@@ -229,6 +250,37 @@ export function MobileServicesBar() {
   if (isAssessment) return null;
 
   return (
+    <>
+      {/* 2026-05-29 debug overlay — only renders when URL has
+          ?mbar=debug. Sits top-center, monospace, semi-transparent;
+          a tap dismisses it. Used to read live visualViewport values
+          on the phone without remote-inspect. */}
+      {debugInfo ? (
+        <div
+          onClick={() => setDebugInfo(null)}
+          style={{
+            position: "fixed",
+            top: 8,
+            left: 8,
+            right: 8,
+            zIndex: 99999,
+            background: "rgba(0,0,0,0.85)",
+            color: "#9eff9e",
+            fontFamily: "ui-monospace, Menlo, monospace",
+            fontSize: 11,
+            lineHeight: 1.35,
+            padding: "8px 10px",
+            borderRadius: 8,
+            pointerEvents: "auto",
+            whiteSpace: "pre-wrap",
+          }}
+        >
+          {debugInfo}
+          <div style={{ marginTop: 4, color: "#888" }}>
+            tap to dismiss · ?mbar=debug
+          </div>
+        </div>
+      ) : null}
     <nav
       ref={navRef}
       aria-label={t("menu")}
@@ -325,5 +377,6 @@ export function MobileServicesBar() {
         </ul>
       </div>
     </nav>
+    </>
   );
 }
