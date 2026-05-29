@@ -151,12 +151,12 @@ export function AnalysisSummary({
         <CmsText
           cmsKey="journeyAssessment.analysis.title"
           as="h1"
-          className="font-heading text-[34px] font-extrabold leading-tight text-white sm:text-[42px]"
+          className="text-balance text-start font-heading text-[34px] font-extrabold leading-tight text-white sm:text-[42px]"
         />
         <CmsText
           cmsKey="journeyAssessment.analysis.subtitle"
           as="p"
-          className="text-[22px] leading-[1.3] text-white/70 sm:text-[19px] sm:leading-[1.55]"
+          className="text-pretty text-start text-[22px] leading-[1.3] text-white/70 sm:text-[19px] sm:leading-[1.55]"
         />
       </header>
 
@@ -181,13 +181,13 @@ export function AnalysisSummary({
       </div>
 
       {/* ── Narrative ────────────────────────────────────────────────── */}
-      <section className="rounded-3xl border border-white/10 bg-white/[0.025] p-6">
+      <section className="rounded-3xl border border-white/10 bg-white/[0.025] p-5 sm:p-6">
         <CmsText
           cmsKey="journeyAssessment.analysis.narrativeLabel"
           as="div"
-          className="text-[20px] leading-[1.3] font-semibold uppercase tracking-wider text-[#B83C4D]/85 sm:text-[13px] sm:leading-normal"
+          className="text-start text-[20px] leading-[1.3] font-semibold uppercase tracking-wider text-[#B83C4D]/85 sm:text-[13px] sm:leading-normal"
         />
-        <p className="mt-2 text-[22px] leading-[1.3] text-white/90 sm:text-[19px] sm:leading-[1.7]">
+        <p className="mt-2 text-pretty text-start text-[22px] leading-[1.3] text-white/90 sm:text-[19px] sm:leading-[1.7]">
           {isHe ? analysis.summary.narrative_he : analysis.summary.narrative_en}
         </p>
       </section>
@@ -200,7 +200,7 @@ export function AnalysisSummary({
         const focus = getFocusMonthCopy(priority, locale);
         return (
           <section
-            className="relative overflow-hidden rounded-3xl border p-6 sm:p-7"
+            className="relative overflow-hidden rounded-3xl border p-5 sm:p-7"
             style={{
               borderColor: "rgba(184,60,77,0.35)",
               background:
@@ -216,9 +216,9 @@ export function AnalysisSummary({
               <CmsText
                 cmsKey="journeyAssessment.analysis.topGap"
                 as="div"
-                className="text-[20px] leading-[1.3] font-semibold uppercase tracking-wider text-[#FAF6F7]/75 sm:text-[13px] sm:leading-normal"
+                className="text-start text-[20px] leading-[1.3] font-semibold uppercase tracking-wider text-[#FAF6F7]/75 sm:text-[13px] sm:leading-normal"
               />
-              <div className="mt-1.5 font-heading text-[28px] font-extrabold leading-tight text-white sm:text-[32px]">
+              <div className="mt-1.5 text-balance text-start font-heading text-[28px] font-extrabold leading-tight text-white sm:text-[32px]">
                 {focusLabel}
               </div>
               {focus ? (
@@ -226,13 +226,13 @@ export function AnalysisSummary({
                   {[focus.reflection, focus.plan, focus.close].map((line, i) => (
                     <li
                       key={i}
-                      className="flex items-start gap-3 text-[22px] leading-[1.3] text-white/90 sm:text-[19px] sm:leading-[1.7]"
+                      className="flex items-start gap-3 text-pretty text-start text-[22px] leading-[1.3] text-white/90 sm:text-[19px] sm:leading-[1.7]"
                     >
                       <CheckCircle2
-                        className="mt-1 h-4 w-4 shrink-0 text-[#B83C4D]"
+                        className="mt-1.5 h-4 w-4 shrink-0 text-[#B83C4D]"
                         aria-hidden
                       />
-                      <span className={i === 2 ? "font-semibold text-[#FAF6F7]" : ""}>
+                      <span className={`flex-1 ${i === 2 ? "font-semibold text-[#FAF6F7]" : ""}`}>
                         {line}
                       </span>
                     </li>
@@ -249,20 +249,20 @@ export function AnalysisSummary({
         <CmsText
           cmsKey="journeyAssessment.analysis.recs"
           as="h2"
-          className="font-heading text-[24px] font-extrabold text-white sm:text-[28px]"
+          className="text-balance text-start font-heading text-[24px] font-extrabold text-white sm:text-[28px]"
         />
         <ul className="mt-4 flex flex-col gap-2.5">
           {analysis.summary.recommendations.map((rec) => (
             <li
               key={rec.id}
-              className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.025] px-5 py-4"
+              className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.025] px-4 py-3.5 sm:px-5 sm:py-4"
             >
               <span
-                className="mt-2 inline-block h-2 w-2 shrink-0 rounded-full"
+                className="mt-2.5 inline-block h-2 w-2 shrink-0 rounded-full"
                 style={{ background: "#B83C4D" }}
                 aria-hidden
               />
-              <span className="text-[22px] leading-[1.3] text-white/90 sm:text-[19px] sm:leading-[1.65]">
+              <span className="flex-1 text-pretty text-start text-[22px] leading-[1.3] text-white/90 sm:text-[19px] sm:leading-[1.65]">
                 {isHe ? rec.he : rec.en}
               </span>
             </li>
@@ -273,16 +273,16 @@ export function AnalysisSummary({
       {/* W3.2 (Itzik #14) — what you'll gain. Placed between the
           recommendations and the offer so the user reads concrete
           benefits before they see the price. */}
-      <section className="rounded-3xl border border-emerald-400/20 bg-emerald-500/[0.04] p-6 sm:p-7">
+      <section className="rounded-3xl border border-emerald-400/20 bg-emerald-500/[0.04] p-5 sm:p-7">
         <CmsText
           cmsKey="journeyAssessment.analysis.gainsLabel"
           as="div"
-          className="text-[20px] leading-[1.3] font-semibold uppercase tracking-wider text-emerald-300/80 sm:text-[13px] sm:leading-normal"
+          className="text-start text-[20px] leading-[1.3] font-semibold uppercase tracking-wider text-emerald-300/80 sm:text-[13px] sm:leading-normal"
         />
         <CmsText
           cmsKey="journeyAssessment.analysis.gainsTitle"
           as="h2"
-          className="mt-2 font-heading text-[24px] font-extrabold leading-tight text-white sm:text-[28px]"
+          className="mt-2 text-balance text-start font-heading text-[24px] font-extrabold leading-tight text-white sm:text-[28px]"
         />
         <ul className="mt-4 flex flex-col gap-2.5">
           {[1, 2, 3, 4, 5].map((n) => (
@@ -294,7 +294,10 @@ export function AnalysisSummary({
                 className="mt-1 h-5 w-5 shrink-0 text-emerald-300"
                 aria-hidden
               />
-              <CmsText cmsKey={`journeyAssessment.analysis.gain${n}`} />
+              <CmsText
+                cmsKey={`journeyAssessment.analysis.gain${n}`}
+                className="flex-1 text-pretty text-start"
+              />
             </li>
           ))}
         </ul>
@@ -302,16 +305,16 @@ export function AnalysisSummary({
 
       {/* W3.2 (Itzik #13) — who is this for. Below the gains so the
           user reads "what" before "who" — natural decision order. */}
-      <section className="rounded-3xl border border-white/10 bg-white/[0.025] p-6 sm:p-7">
+      <section className="rounded-3xl border border-white/10 bg-white/[0.025] p-5 sm:p-7">
         <CmsText
           cmsKey="journeyAssessment.analysis.whoForLabel"
           as="div"
-          className="text-[20px] leading-[1.3] font-semibold uppercase tracking-wider text-[#B83C4D]/85 sm:text-[13px] sm:leading-normal"
+          className="text-start text-[20px] leading-[1.3] font-semibold uppercase tracking-wider text-[#B83C4D]/85 sm:text-[13px] sm:leading-normal"
         />
         <CmsText
           cmsKey="journeyAssessment.analysis.whoForTitle"
           as="h2"
-          className="mt-2 font-heading text-[24px] font-extrabold leading-tight text-white sm:text-[28px]"
+          className="mt-2 text-balance text-start font-heading text-[24px] font-extrabold leading-tight text-white sm:text-[28px]"
         />
         <ul className="mt-4 flex flex-col gap-2.5">
           {[1, 2, 3, 4].map((n) => (
@@ -320,11 +323,14 @@ export function AnalysisSummary({
               className="flex items-start gap-3 text-[22px] leading-[1.3] text-white/90 sm:text-[19px] sm:leading-[1.65]"
             >
               <span
-                className="mt-2 inline-block h-2 w-2 shrink-0 rounded-full"
+                className="mt-2.5 inline-block h-2 w-2 shrink-0 rounded-full"
                 style={{ background: "#B83C4D" }}
                 aria-hidden
               />
-              <CmsText cmsKey={`journeyAssessment.analysis.whoFor${n}`} />
+              <CmsText
+                cmsKey={`journeyAssessment.analysis.whoFor${n}`}
+                className="flex-1 text-pretty text-start"
+              />
             </li>
           ))}
         </ul>
@@ -489,7 +495,7 @@ function OfferCard({
   const pricePeriod = periodParts.join(" / ");
   return (
     <section
-      className="relative overflow-hidden rounded-3xl border p-7 sm:p-8"
+      className="relative overflow-hidden rounded-3xl border p-5 sm:p-8"
       style={{
         borderColor: "rgba(184,60,77,0.45)",
         background:
@@ -512,12 +518,12 @@ function OfferCard({
         <CmsText
           cmsKey="journeyAssessment.analysis.offerHero"
           as="h2"
-          className="mt-3 font-heading text-[26px] font-extrabold leading-snug text-white sm:text-[30px]"
+          className="mt-3 text-balance text-start font-heading text-[26px] font-extrabold leading-snug text-white sm:text-[30px]"
         />
         <CmsText
           cmsKey="journeyAssessment.analysis.offerSub"
           as="p"
-          className="mt-2 text-[17px] font-semibold text-[#FAF6F7]/85"
+          className="mt-2 text-pretty text-start text-[17px] font-semibold text-[#FAF6F7]/85"
         />
 
         <div className="mt-6 flex flex-col gap-3 sm:grid sm:grid-cols-3">
@@ -602,10 +608,11 @@ function FeatureTile({
   titleKey: string;
   bodyKey: string;
 }) {
-  // Itzik 2026-05-29 (mobile): icon + title on the same row, title
-  // bumped 16→20px (bold preserved), body bumped 14→22px, both with
-  // leading 1.3. Desktop layout (icon-above-title-above-body, original
-  // sizes) preserved via sm: overrides.
+  // Itzik 2026-05-29 (mobile UX):
+  //   - icon + title on the same row (mobile), icon above on desktop
+  //   - title takes flex-1 with text-balance so it wraps to even lines
+  //   - body uses text-pretty to avoid orphan words on the last line
+  //   - All text explicitly text-start so RTL/LTR resolves correctly
   return (
     <div className="flex flex-col gap-2 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
       <div className="flex flex-row items-center gap-3 sm:flex-col sm:items-start sm:gap-2">
@@ -619,13 +626,13 @@ function FeatureTile({
         <CmsText
           cmsKey={titleKey}
           as="div"
-          className="text-[20px] leading-[1.3] font-bold text-white sm:text-[16px] sm:leading-snug"
+          className="flex-1 text-balance text-start text-[20px] leading-[1.3] font-bold text-white sm:flex-none sm:text-[16px] sm:leading-snug"
         />
       </div>
       <CmsText
         cmsKey={bodyKey}
         as="p"
-        className="text-[22px] leading-[1.3] text-white/70 sm:text-[14px] sm:leading-[1.55]"
+        className="text-pretty text-start text-[22px] leading-[1.3] text-white/70 sm:text-[14px] sm:leading-[1.55]"
       />
     </div>
   );
