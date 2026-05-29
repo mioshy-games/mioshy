@@ -28,11 +28,12 @@ WITH me AS (
   WHERE email = 'itzik@uxellent.com'
 )
 
--- 1) Subscription state
+-- 1) Subscription state. The `plan` column carries the product
+--    identifier ('weekly' for journey, 'monthly_adults', etc.) —
+--    there is no separate `product` column.
 SELECT
   'subscriptions' AS check,
   s.id,
-  s.product,
   s.plan,
   s.status,
   s.created_at,
@@ -93,7 +94,8 @@ JOIN me ON p.user_id = me.user_id;
 
 -- 5) Couple membership — every paying user gets one via
 --    ensure_couple_for_user on Cardcom webhook. Empty = the webhook
---    never fired.
+--    never fired. `members_count` is computed (no partner_count column
+--    on couples — fixed 2026-05-28).
 WITH me AS (
   SELECT id AS user_id FROM auth.users WHERE email = 'itzik@uxellent.com'
 )
@@ -103,7 +105,11 @@ SELECT
   cm.user_id,
   cm.role,
   c.started_journey_at,
-  c.partner_count
+  (
+    SELECT count(*)
+    FROM public.couple_members cm2
+    WHERE cm2.couple_id = cm.couple_id
+  ) AS members_count
 FROM public.couple_members cm
 JOIN public.couples c ON c.id = cm.couple_id
 JOIN me ON cm.user_id = me.user_id;
@@ -120,8 +126,7 @@ SELECT
   ja.couple_id,
   ja.source_kind,
   ja.is_active,
-  ja.created_at,
-  ja.last_delivered_at
+  ja.created_at
 FROM public.journey_assignments ja
 JOIN me ON ja.user_id = me.user_id
 WHERE ja.source_kind = 'cadence'
@@ -168,8 +173,10 @@ ORDER BY d.delivered_at DESC
 LIMIT 10;
 
 -- 9) Pause state — defensive guard inside the cadence engine. If a
---    paused row exists with paused_until in the future, NO new items
---    will ever materialize.
+--    paused row exists with paused_until in the future AND no
+--    resumed_at, NO new items will ever materialize. (Pauses don't
+--    have a `status` column — "active" is computed as resumed_at IS
+--    NULL AND paused_until > now.)
 WITH me AS (
   SELECT id AS user_id FROM auth.users WHERE email = 'itzik@uxellent.com'
 )
@@ -177,14 +184,16 @@ SELECT
   'subscription_pauses (active)' AS check,
   sp.id,
   sp.user_id,
-  sp.couple_id,
-  sp.paused_from,
+  sp.subscription_id,
+  sp.paused_at,
   sp.paused_until,
-  sp.status
+  sp.resumed_at,
+  sp.reason
 FROM public.subscription_pauses sp
 JOIN me ON sp.user_id = me.user_id
-WHERE sp.status = 'active'
-ORDER BY sp.paused_from DESC;
+WHERE sp.resumed_at IS NULL
+  AND sp.paused_until > now()
+ORDER BY sp.paused_at DESC;
 
 -- 10) Active journey program. If is_active=false for all rows, the
 --     resolver returns no_program and nothing ever materializes.

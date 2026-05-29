@@ -489,17 +489,19 @@ function ContentPanel({
 
         <ItemStatusLine item={item} isHe={isHe} />
 
-        {item.body ? (
-          <div className="mt-4 whitespace-pre-wrap text-[15px] leading-relaxed text-white/80">
-            {item.body}
-          </div>
-        ) : (
+        {/* Body section under the title removed 2026-05-28 per Itzik
+            ("רק בלחיצה על הכפתור להתחיל את הפריט ניתן להגיע לעוד
+            הפריט"). The short body excerpt now lives inside ItemHero
+            above; the full body lives behind the CTA that drills into
+            /journey/timeline/[id]. Items with no body at all show a
+            calm placeholder hero. */}
+        {!item.body ? (
           <p className="mt-4 text-sm italic text-white/45">
             {isHe
               ? "התוכן המלא ייפתח כאן ברגע שהשלב יהיה זמין."
               : "Full content will appear here once the step is available."}
           </p>
-        )}
+        ) : null}
 
         {/* Open full view CTA - drills into /journey/timeline/[id]
             (or /journey/assessment for the synthetic entry). */}
@@ -693,16 +695,36 @@ function ItemHero({
       </div>
     );
   }
-  // Placeholder - gradient with a corner icon. Calm, not loud.
+  // No media → render a calm summary panel in the hero slot. Per
+  // Itzik 2026-05-28: an empty "תצוגה מקדימה" placeholder felt
+  // broken when most items don't yet carry an image or video. We
+  // instead surface a short body excerpt here, so the hero slot
+  // always communicates *something* about the item. The full body
+  // lives inside the item detail page; the Desk panel no longer
+  // duplicates it below the title (see ContentPanel render — body
+  // section removed). If the item has no body at all, fall back
+  // to the original icon + label placeholder.
+  if (item.body) {
+    return (
+      <div className="relative w-full overflow-hidden bg-gradient-to-br from-slate-900 via-slate-900/80 to-slate-800/60">
+        <div
+          aria-hidden
+          className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(255,255,255,0.08),_transparent_60%)]"
+        />
+        <div className="relative px-6 py-6 sm:px-8 sm:py-8">
+          <p className="line-clamp-4 whitespace-pre-line text-[15px] leading-[1.65] text-white/85 sm:text-[16px]">
+            {item.body}
+          </p>
+        </div>
+      </div>
+    );
+  }
+  // Final fallback — no media AND no body. Calm icon + label.
   return (
     <div className="relative flex aspect-[16/7] w-full items-center justify-center overflow-hidden bg-gradient-to-br from-slate-900 via-slate-900/80 to-slate-800/60">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(255,255,255,0.08),_transparent_60%)]" />
       <div className="relative flex flex-col items-center gap-2 text-white/55">
-        {item.videoUrl === null && item.imageUrl === null ? (
-          <ImageIcon className="size-7" aria-hidden />
-        ) : (
-          <PlayCircle className="size-7" aria-hidden />
-        )}
+        <ImageIcon className="size-7" aria-hidden />
         <span className="text-[11px] uppercase tracking-wider">
           {isHe ? "תצוגה מקדימה" : "Preview"}
         </span>

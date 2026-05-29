@@ -59,10 +59,9 @@ import { getFreshClinicianReplies } from "@/lib/journey-content/fresh-replies";
 import { SubscriptionStatusBanner } from "@/components/my/SubscriptionStatusBanner";
 import { JourneyGraceBanner } from "@/components/my/JourneyGraceBanner";
 import { WelcomeProcessingBanner } from "@/components/my/WelcomeProcessingBanner";
-import {
-  JourneyKickoffCards,
-  type JourneyKickoffStartItem,
-} from "@/components/my/JourneyKickoffCards";
+// JourneyKickoffCards import removed 2026-05-28 — section was
+// removed from the render below per Itzik. Component file remains
+// on disk for possible later use.
 import { JourneyFirstSession } from "@/components/my/JourneyFirstSession";
 import { getCoachPersonaForUser } from "@/lib/journey/coach";
 import { getActiveViewAs } from "@/lib/journey/view-as";
@@ -1145,44 +1144,19 @@ export default async function PrivateJourneyPage({
           </section>
         ) : null}
 
-        {/* ─────── #66 Post-purchase kickoff cards ───────
-            Two recap cards near the top of the dashboard:
-            (a) assessment results — top focus + program size,
-            (b) start-here — first available item from the day-1 unlock.
-            Both render conditionally — the section disappears when
-            neither is meaningful. */}
-        {(() => {
-          const first = openItems[0] ?? null;
-          const startItem: JourneyKickoffStartItem | null = first
-            ? {
-                scheduledId: first.scheduled.id,
-                title:
-                  (isHe
-                    ? first.item.title_he
-                    : first.item.title_en || first.item.title_he) ?? "",
-                categoryName:
-                  (isHe
-                    ? first.category.name_he
-                    : first.category.name_en || first.category.name_he) ??
-                  null,
-                snippet:
-                  (isHe
-                    ? first.item.body_he
-                    : first.item.body_en || first.item.body_he) ?? null,
-              }
-            : null;
-          return (
-            <JourneyKickoffCards
-              isHe={isHe}
-              focusLabel={topPriority ? focusLabel : null}
-              focusDesc={topPriority ? focusDesc : null}
-              totalItems={timeline.length}
-              openItemCount={openItems.length}
-              completedItemCount={completedItems.length}
-              startItem={startItem}
-            />
-          );
-        })()}
+        {/* #66 Kickoff cards (AssessmentRecapCard + StartHereCard)
+            removed 2026-05-28 per Itzik — both cards duplicated content
+            already surfaced elsewhere on the dashboard:
+              • AssessmentRecapCard's "top focus + program size" → now
+                lives inside the new JourneyAnalysisCard below.
+              • StartHereCard's day-1 item title/body/CTA → renders
+                inside the JourneyDesk panel below, where the user has
+                full media + sibling items + conversation thread.
+            Showing the same item twice (in the kickoff card AND in
+            the Desk) felt confusing once the Desk became the primary
+            work surface. The component file + CMS keys remain on disk
+            so the kickoff section can be reinstated by uncommenting
+            the original IIFE in git history. */}
 
         {/* ─────── Assessment analysis card (2026-05-28) ───────
             Compact post-purchase read of the user's journey_analysis

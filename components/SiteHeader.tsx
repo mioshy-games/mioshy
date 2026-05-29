@@ -115,11 +115,18 @@ export function SiteHeader({
   // hid the product surface from existing customers who might want to
   // upgrade.
   // Resolve which pillar links the current visitor sees.
-  //   - Anonymous → all three marketing pillars
-  //   - Authenticated, OWNS pillar X → /my/X (private)
-  //   - Authenticated, does NOT own pillar X → pillar HIDDEN (not just
-  //     re-routed). Per spec §11 the header is never a marketing
-  //     surface once the user is signed in.
+  //   - Anonymous → all three marketing pillars (/games, /journey, /mioshy-sex).
+  //   - Authenticated → all three pillars ALWAYS visible (Itzik 2026-05-28).
+  //     • Owned pillar  → /my/X  (private workspace).
+  //     • Un-owned       → /X    (marketing page so the user can upgrade).
+  //
+  // This unifies the rule that originally only applied to Adults
+  // (added 2026-05-24): hiding pillars from non-entitled signed-in
+  // users felt inconsistent and hid the product surface from existing
+  // customers who might want to add another pillar. The rule now
+  // applies to all three pillars: post-login, header is a 3-pillar
+  // shelf where each tile leads either into the workspace (if owned)
+  // or into the upgrade path (if not).
   const visiblePillars = PILLARS.flatMap((p) => {
     if (!isAuthed) {
       return [
@@ -131,14 +138,9 @@ export function SiteHeader({
         },
       ];
     }
-    // Adults pillar: always visible after login, regardless of
-    // entitlements — links straight to /my/adults so a logged-in user
-    // always has a one-tap path into the adults gallery (where
-    // owned-game thumbnails sit, and unowned ones are merchandised).
-    // Per Itzik 2026-05-24 — reverses the 2026-05-07 hide-when-authed
-    // rule. Reason for the reversal: hiding the pillar entirely made
-    // existing customers feel the section had been removed, and broke
-    // re-entry into already-purchased adults titles from the top nav.
+    // Adults always lands on /my/adults so a logged-in user has
+    // one tap into the adults gallery — owned thumbnails sit there
+    // and unowned ones are merchandised inline.
     if (p.tKey === "adults") {
       return [
         {
@@ -149,11 +151,12 @@ export function SiteHeader({
         },
       ];
     }
+    // Games + Journey: pillar always rendered. Route depends on
+    // entitlement — owned → /my/X, otherwise → marketing /X.
     const owns = entitlements ? entitlements[p.tKey] : false;
-    if (!owns) return [];
     return [
       {
-        href: p.authedHref,
+        href: owns ? p.authedHref : p.marketingHref,
         tKey: p.tKey,
         Icon: p.Icon,
         accent: p.accent,

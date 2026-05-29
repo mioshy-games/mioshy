@@ -1,6 +1,7 @@
 // ============================================================
 // Server-side helpers for the current user's couple context
 // ============================================================
+import { cache } from "react";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export interface CoupleContext {
@@ -13,7 +14,26 @@ export interface CoupleContext {
   entitled_game_ids: Set<string>;
 }
 
-export async function getCurrentCoupleContext(): Promise<CoupleContext | null> {
+/**
+ * Per-request cached: see Itzik perf audit 2026-05-28. Called by
+ * layouts, /my, /my/journey, /account and assorted server actions —
+ * sharing the result within a single render saves 4+ Supabase
+ * round-trips on /my alone.
+ *
+ * NOTE about staleness: the lazy `createCoupleForSelf` flow in
+ * /my/page.tsx mutates the user's couple membership and expects to
+ * re-read it on the same request. After that mutation, callers must
+ * use `getCurrentCoupleContextFresh()` (uncached) to bypass the
+ * memoised value.
+ */
+export const getCurrentCoupleContext = cache(_getCurrentCoupleContext);
+
+/** Uncached variant — use after a write that changes couple membership. */
+export async function getCurrentCoupleContextFresh(): Promise<CoupleContext | null> {
+  return _getCurrentCoupleContext();
+}
+
+async function _getCurrentCoupleContext(): Promise<CoupleContext | null> {
   const supabase = await createServerSupabaseClient();
   const {
     data: { user },

@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import {
   getCurrentCoupleContext,
+  getCurrentCoupleContextFresh,
   listOwnedGamesForCouple,
 } from "@/lib/between-us/couples";
 import {
@@ -68,10 +69,18 @@ export default async function MyHubPage({
   const { locale } = params;
   const isHe = locale === "he";
 
-  // CMS-managed copy resolved server-side. Used inline for raw-string
-  // consumers like the entitlement push() arrays below — JSX consumers
-  // use <CmsText> directly.
-  const t = await getCmsTranslations({
+  // ─── Perf-debug logger (Itzik 2026-05-28 audit) ──────────────────
+  // The verbose [/my:RENDER] dump used to fire on every request and
+  // serialised the full entitlement + journey state to Vercel logs.
+  // Helpful when debugging billing tickets — wasteful for the 99% of
+  // hits with no issue. Set DEBUG_MY=1 (Vercel env or .env.local) to
+  // re-enable. Same gate is applied to the BUILD marker.
+  const debugMy = process.env.DEBUG_MY === "1";
+
+  // Kick the CMS translations request off in parallel with the auth
+  // round-trip. They have no dependency on each other so awaiting them
+  // sequentially burned an extra ~150-400ms per render.
+  const tPromise = getCmsTranslations({
     locale: isHe ? "he" : "en",
     namespace: "myHub",
     page: "my",
@@ -81,36 +90,34 @@ export default async function MyHubPage({
   // to /my?purchased=<game_id> after an Adults purchase, we drop them
   // straight into /my/adults instead of showing a celebration banner.
   // Per spec: "User wants to use, not celebrate."
-  // ⚠️ BUILD MARKER - bump this string whenever you deploy a meaningful
-  // /my redesign so logs make it obvious which version actually rendered.
-  // If you don't see this log in Vercel after a deploy, the new code
-  // didn't ship (build cache, branch mismatch, etc.).
-  console.log("[/my] BUILD=2026-04-30-redesign-phase-B v1");
+  if (debugMy) console.log("[/my] BUILD=2026-04-30-redesign-phase-B v1");
 
   const purchasedQuery = searchParams?.purchased ?? null;
   if (purchasedQuery) {
-    console.log("[/my] redirecting to /my/adults due to ?purchased=", purchasedQuery);
+    if (debugMy)
+      console.log("[/my] redirecting to /my/adults due to ?purchased=", purchasedQuery);
     redirect(`/${locale}/my/adults`);
   }
 
-  let ctx = await getCurrentCoupleContext();
+  // The two top-of-render reads (couple ctx + entitlements) share the
+  // same `auth.getUser()` underneath. Both are wrapped in React.cache
+  // (couples.ts + getUserEntitlements.ts) so duplicated work across
+  // layout + this page collapses to one set of round-trips.
+  let [ctx, entitlements] = await Promise.all([
+    getCurrentCoupleContext(),
+    getUserEntitlements(),
+  ]);
   if (!ctx) redirect(`/${locale}/auth`);
-
-  const entitlements = await getUserEntitlements(ctx.user_id);
   if (!entitlements) redirect(`/${locale}/auth`);
 
   // ─── Lazy couple creation (Itzik 2026-05-27) ─────────────────────
-  // Some subscription paths don't auto-create a couple row:
-  //   • Cardcom indicator webhook activates a sub without RPC'ing
-  //     create_couple_for_current_user.
-  //   • Admin-bypass users have entitlements but no real DB rows.
-  //   • Migrated / hand-granted subscriptions skipped the purchase flow.
-  // The PartnerShareCard NEEDS ctx.pair_code to render, and pair_code
-  // only exists once a couple row does. So if the user has any active
-  // subscription but no couple yet, lazily create the couple now so
-  // the share widget can render on first paint. The RPC is idempotent
-  // (returns the existing couple if the user is already a member),
-  // so this is safe to run on every /my hit.
+  // Some subscription paths don't auto-create a couple row (Cardcom
+  // indicator webhook, admin-bypass users, hand-granted subs). When
+  // that happens, the PartnerShareCard needs ctx.pair_code to render,
+  // and pair_code only exists once a couple row does. The RPC is
+  // idempotent so it's safe to run on every /my hit for affected users.
+  // We do this BEFORE the big parallel fan-out so all the downstream
+  // queries see the freshly-created couple_id.
   if (entitlements.pillarCount > 0 && !ctx.couple_id) {
     try {
       const { createCoupleForSelf } = await import(
@@ -118,7 +125,8 @@ export default async function MyHubPage({
       );
       const created = await createCoupleForSelf();
       if (created.ok) {
-        const refreshed = await getCurrentCoupleContext();
+        // Bypass the React.cache memo so we pick up the row we just made.
+        const refreshed = await getCurrentCoupleContextFresh();
         if (refreshed) ctx = refreshed;
       }
     } catch (err) {
@@ -129,19 +137,31 @@ export default async function MyHubPage({
     }
   }
 
-  // (Removed temporary diagnostic logs from the billing-debug session.
-  // The pillar logic is now derived from a pure helper -
-  // lib/dashboard/pillar-state.ts - so we don't need to dump raw
-  // subscription rows from this page anymore.)
+  const hasCouple = !!ctx.couple_id;
+  const coupleId = ctx.couple_id;
 
-  // Coaching pillar notification - TWO sources combined:
-  //   a. unread content items (countUnreadJourneyItems)
-  //   b. recent clinician replies (getFreshClinicianReplies, 30-day window)
-  //
-  // We sum both into a single dot on the pillar card. The user just
-  // wants to know "is there something new for me?" - not "of what kind?".
-  // The detail (item vs. reply) shows up inside /my/journey.
-  const [unreadJourneyCount, freshReplies] = await Promise.all([
+  // ─── BIG PARALLEL FAN-OUT (Itzik perf audit 2026-05-28) ──────────
+  // Everything below depends on `ctx` and `entitlements` (already
+  // resolved) but NOT on each other. The old code awaited them
+  // sequentially — 7 round-trips at ~150ms = 1+ second wasted. Now
+  // they all fly concurrently and the slowest one sets the floor.
+  const adminClientPromise = hasCouple
+    ? import("@/lib/supabase/admin").then((m) =>
+        m.createAdminSupabaseClient(),
+      )
+    : null;
+
+  const [
+    t,
+    unreadJourneyCount,
+    freshReplies,
+    journeyStatus,
+    owned,
+    profileGate,
+    pendingInvitationRow,
+    partnerFullName,
+  ] = await Promise.all([
+    tPromise,
     countUnreadJourneyItems({
       userId: ctx.user_id,
       coupleId: ctx.couple_id,
@@ -151,70 +171,57 @@ export default async function MyHubPage({
       recentReplyCount: 0,
       latestReplyHref: null,
     })),
-  ]);
-  const journeyNotificationCount =
-    unreadJourneyCount + freshReplies.recentReplyCount;
-
-  // Journey pillar - decide whether the "Open" CTA should go to the live
-  // timeline, to Resume Assessment, or to the marketing hub. This is the
-  // only state that isn't already encoded in entitlements.
-  const journeyStatus = await getOwnerJourneyStatus({
-    userId: ctx.user_id,
-    coupleId: ctx.couple_id,
-  });
-
-  // Pull couple + adults context (still relevant for the adults panel)
-  const hasCouple = !!ctx.couple_id;
-  const owned = hasCouple
-    ? await listOwnedGamesForCouple(ctx.couple_id as string)
-    : [];
-  const ownedCount = owned.length;
-
-  const profileGate = await getProfileGate();
-  const profileIncomplete = !!profileGate && !profileGate.complete;
-
-  const pendingInvitation = hasCouple
-    ? toInvitationUiSummary(
-        await getPendingInvitationForCouple(ctx.couple_id as string).catch(
-          () => null,
-        ),
-      )
-    : null;
-  const needsPartner = hasCouple && (ctx.partner_count ?? 0) < 2;
-  const isOwner = !hasCouple || ctx.role === "owner";
-
-  // ─── Partner profile lookup (Itzik 2026-05-27) ───────────────────
-  // When the couple is fully paired (needsPartner=false), the
-  // top-of-page status banner shows "משוייך ל [partner full name]"
-  // instead of the share-code widget. We need the OTHER member's
-  // profile.full_name. Uses admin client to bypass RLS that may
-  // restrict cross-user profile reads.
-  let partnerFullName: string | null = null;
-  if (hasCouple && !needsPartner && ctx.couple_id) {
-    try {
-      const { createAdminSupabaseClient } = await import(
-        "@/lib/supabase/admin"
-      );
-      const admin = createAdminSupabaseClient();
-      const { data: members } = await admin
-        .from("couple_members")
-        .select("user_id")
-        .eq("couple_id", ctx.couple_id);
-      const partnerUserId = (members ?? [])
-        .map((m) => m.user_id as string)
-        .find((id) => id !== ctx.user_id);
-      if (partnerUserId) {
+    getOwnerJourneyStatus({
+      userId: ctx.user_id,
+      coupleId: ctx.couple_id,
+    }),
+    hasCouple
+      ? listOwnedGamesForCouple(coupleId as string)
+      : Promise.resolve([] as Awaited<ReturnType<typeof listOwnedGamesForCouple>>),
+    getProfileGate(),
+    hasCouple
+      ? getPendingInvitationForCouple(coupleId as string).catch(() => null)
+      : Promise.resolve(null),
+    // ─── Partner profile lookup ─────────────────────────────────────
+    // Used by the "משוייך ל X" banner when the couple is fully
+    // paired. Two admin reads collapsed into one helper so it can
+    // ride alongside the rest of the fan-out instead of being a
+    // post-script. TODO (Itzik 2026-05-28): consider storing
+    // partner_full_name on couples to drop this lookup entirely.
+    (async () => {
+      if (!hasCouple || (ctx.partner_count ?? 0) < 2 || !coupleId)
+        return null;
+      try {
+        const admin = await adminClientPromise;
+        if (!admin) return null;
+        const { data: members } = await admin
+          .from("couple_members")
+          .select("user_id")
+          .eq("couple_id", coupleId);
+        const partnerUserId = (members ?? [])
+          .map((m) => m.user_id as string)
+          .find((id) => id !== ctx.user_id);
+        if (!partnerUserId) return null;
         const { data: profile } = await admin
           .from("profiles")
           .select("full_name")
           .eq("id", partnerUserId)
           .maybeSingle();
-        partnerFullName = (profile?.full_name as string | null) ?? null;
+        return (profile?.full_name as string | null) ?? null;
+      } catch (err) {
+        console.warn("[/my] partner profile lookup failed", err);
+        return null;
       }
-    } catch (err) {
-      console.warn("[/my] partner profile lookup failed", err);
-    }
-  }
+    })(),
+  ]);
+
+  const journeyNotificationCount =
+    unreadJourneyCount + freshReplies.recentReplyCount;
+  const ownedCount = owned.length;
+  const profileIncomplete = !!profileGate && !profileGate.complete;
+  const pendingInvitation = toInvitationUiSummary(pendingInvitationRow);
+  const needsPartner = hasCouple && (ctx.partner_count ?? 0) < 2;
+  const isOwner = !hasCouple || ctx.role === "owner";
 
   // ─── Pillar state derivation ─────────────────────────────────────────
   // One pure helper computes badge + CTA per pillar. UI just renders.
@@ -243,39 +250,41 @@ export default async function MyHubPage({
     isHe,
   });
 
-  // ─── Diagnostic log - prints once per render, server-side only ────
-  // Surfaces in Vercel logs the exact state we're showing the user.
-  // Helps reproduce reports like "I subscribed but the page treats
-  // me as a guest" - we can correlate user_id to the resolved state.
-  console.log("[/my:RENDER]", {
-    user_id: ctx.user_id,
-    email: entitlements.email,
-    couple_id: ctx.couple_id,
-    entitlements: {
-      games: entitlements.games,
-      journey: entitlements.journey,
-      adults: entitlements.adults,
-      pillarCount: entitlements.pillarCount,
-    },
-    assessmentStage,
-    journeyStatus: {
-      hasActiveAssignments: journeyStatus.hasActiveAssignments,
-      hasInProgressAssessment: journeyStatus.hasInProgressAssessment,
-      hasCompletedAssessment: journeyStatus.hasCompletedAssessment,
-    },
-    pillarStates: {
-      games: gamesPillar.state,
-      journey: journeyPillar.state,
-      adults: adultsPillar.state,
-    },
-    journey_cta: journeyPillar.ctaLabel,
-    journey_href: journeyPillar.ctaHref,
-    notifications: {
-      unreadItems: unreadJourneyCount,
-      freshReplies: freshReplies.recentReplyCount,
-      total: journeyNotificationCount,
-    },
-  });
+  // ─── Diagnostic log - gated behind DEBUG_MY=1 (Itzik perf audit 2026-05-28) ──
+  // Was unconditional and ran on every render. The serialisation alone
+  // (and the resulting log volume) was non-trivial; gate it so it only
+  // fires when explicitly enabled for debugging billing/auth tickets.
+  if (debugMy) {
+    console.log("[/my:RENDER]", {
+      user_id: ctx.user_id,
+      email: entitlements.email,
+      couple_id: ctx.couple_id,
+      entitlements: {
+        games: entitlements.games,
+        journey: entitlements.journey,
+        adults: entitlements.adults,
+        pillarCount: entitlements.pillarCount,
+      },
+      assessmentStage,
+      journeyStatus: {
+        hasActiveAssignments: journeyStatus.hasActiveAssignments,
+        hasInProgressAssessment: journeyStatus.hasInProgressAssessment,
+        hasCompletedAssessment: journeyStatus.hasCompletedAssessment,
+      },
+      pillarStates: {
+        games: gamesPillar.state,
+        journey: journeyPillar.state,
+        adults: adultsPillar.state,
+      },
+      journey_cta: journeyPillar.ctaLabel,
+      journey_href: journeyPillar.ctaHref,
+      notifications: {
+        unreadItems: unreadJourneyCount,
+        freshReplies: freshReplies.recentReplyCount,
+        total: journeyNotificationCount,
+      },
+    });
+  }
 
   // The Journey rail and the per-tab work-area used to live here. They
   // moved to /[locale]/my/journey, where all the past/present/future

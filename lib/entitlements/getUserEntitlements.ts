@@ -11,6 +11,7 @@
 // so older call sites that just need a yes/no continue to work.
 // ============================================================
 
+import { cache } from "react";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 
@@ -60,8 +61,16 @@ export interface UserEntitlements {
 /**
  * Build the full entitlement snapshot for the given user id.
  * `null` means "not signed in" - the caller decides what to do.
+ *
+ * Wrapped in React.cache so that calling it multiple times within a
+ * single request (e.g. once from layout.tsx for the header + once from
+ * /my page itself) only executes the DB queries once. Itzik perf
+ * audit 2026-05-28 — this alone saves ~500-1500ms on /my by removing
+ * 3-4 duplicate Supabase round-trips.
  */
-export async function getUserEntitlements(
+export const getUserEntitlements = cache(_getUserEntitlements);
+
+async function _getUserEntitlements(
   userId?: string,
 ): Promise<UserEntitlements | null> {
   const supabase = await createServerSupabaseClient();

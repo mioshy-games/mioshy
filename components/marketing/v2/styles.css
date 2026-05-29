@@ -524,6 +524,18 @@
   .hero-meta-item .label{font-size:15px;color:rgba(255,255,255,0.7);letter-spacing:0.02em;line-height:1.35}
 
   .hero-visual{position:relative;aspect-ratio:4/5}
+  /* 2026-05-28 — ParallaxImage wraps the <img> in two divs (overflow
+     wrapper + motion.div). Neither has an explicit height, which
+     means `height: 100%` on the inner .hero-img can't resolve and
+     the img falls back to its intrinsic 720×900 portrait — making
+     .hero-visual's aspect-ratio decorative-only. Forcing
+     `height: 100%` on the ParallaxImage chain (but NOT on the
+     absolutely-positioned .badge-floating siblings) closes the
+     chain so the aspect-ratio actually constrains rendered height
+     across all hero-visual aspect overrides (mobile 7/5, tablet
+     5/4, etc.). */
+  .hero-visual > div:not(.badge-floating),
+  .hero-visual > div:not(.badge-floating) > div{height:100%}
   .hero-visual .hero-img{
     width:100%;height:100%;
     object-fit:cover;object-position:center;
@@ -2062,30 +2074,55 @@
     .badge-1{ inset-inline-end:8px; left:auto; right:auto; }
     .badge-2{ inset-inline-start:8px; left:auto; right:auto; }
 
-    /* Hero image mobile (2026-05-21, Itzik request) — wider+shorter.
-       Was inheriting from the 1100px rule: aspect-ratio:5/4, max-width:560px,
-       centered. On a 360-414px phone that limited the image to the same
-       width as the body text (container has 20px padding each side) and
-       a fairly tall 5/4 frame.
+    /* Hero image mobile (2026-05-28 round 2, Itzik request).
+       Round 1 (2026-05-21) made the image full-bleed (touched viewport
+       edges) with aspect 7/4. Itzik flagged it now reads too tall and
+       too wide — wants the image inset from the viewport edges (~5%
+       gap each side) and at least 33% shorter, so the frame is a
+       compact landscape banner rather than a panoramic full-bleed.
        New on mobile only:
-         • Full-bleed horizontally — break out of the .container 20px
-           padding so the image kisses the viewport edges. That's the
-           max possible width gain on a phone (≈+11% on a 414px device).
-         • aspect-ratio 7/4 (≈1.75) instead of 5/4 (1.25) — the visible
-           frame becomes much more landscape so the image reads ~30%
-           shorter for the same width. The underlying image file
-           (720×900) is unchanged; object-fit:cover crops top/bottom
-           equally around object-position:center so the couple's
-           central composition stays in view.
-       Badges remain anchored to .hero-visual via inset-inline-{start,end}
-       so they shift outward with the image rather than relative to the
-       old narrower frame — that keeps the badge↔image visual rhythm. */
+         • width 90vw with margin-inline = calc(5vw - 20px). The
+           container has 20px horizontal padding; setting the image
+           to 90vw and offsetting by (5vw - 20px) places the image
+           edges at exactly 5vw from each viewport edge regardless
+           of viewport size (verified at 360 / 414 / 768).
+         • aspect-ratio 9/4 (=2.25) instead of 7/4 (=1.75). On a
+           360px viewport that shrinks the rendered height from
+           ~206px to ~144px — about 30% shorter than round 1 (which
+           was already 30% shorter than the pre-round-1 5/4). Net
+           effect vs. the original 5/4: ~50% shorter, much more
+           horizontal — a true landscape banner.
+       Badges keep their inset-inline-{start,end} anchoring to
+       .hero-visual, so they shift inward with the new narrower
+       frame and stay glued to the image edge — no further tweak
+       needed there. Desktop / tablet layout untouched (the rule at
+       max-width:1100px keeps 5/4 + 560px centered). */
     .hero-visual{
-      aspect-ratio:7/4;
+      /* 2026-05-28 round 4 per Itzik: target ~360w × 260h on a
+         phone-sized viewport. 360/260 ≈ 1.385 → aspect-ratio 7/5
+         (=1.4) is the closest clean fraction. Side gap stays at
+         5vw via the width 90vw + margin calc(5vw - 20px) pattern
+         introduced in round 2.
+         Computed sizes:
+           360px viewport → 324w × 231h
+           390px viewport → 351w × 251h
+           414px viewport → 373w × 266h
+           400px viewport → 360w × 257h ← Itzik's reference. */
+      aspect-ratio:7/5;
       max-width:none;
-      width:calc(100% + 40px);
-      margin-inline:-20px;
+      width:90vw;
+      margin-inline:calc(5vw - 20px);
     }
+    /* 2026-05-28 round 5 per Itzik — shift the crop up so we see
+       more face area and less torso. The 720×900 portrait original
+       has the faces in the upper half; default `center` (50%)
+       leaves a chunk of torso/hand visible at the bottom. 30%
+       moves the visible band up so the face-mid-line sits ~30%
+       from the top of the box, cropping more of the lower body
+       instead of more of the hair/headroom. Desktop unchanged
+       (the base rule at line 529 still uses `object-position:
+       center` outside this media query). */
+    .hero-visual .hero-img{object-position:center 30%}
 
     /* Problem mobile */
     .problem-text h2{margin-bottom:10px}

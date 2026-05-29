@@ -1,6 +1,21 @@
 /**
- * Animated dark backdrop for /my and every other authed page.
+ * Static dark backdrop for /my and every other authed page.
  *
+ * Itzik 2026-05-28 ANIMATION REMOVAL (perf audit):
+ *   The 3 blobs + floating circle used to drift on slow 60-64s loops.
+ *   Although transform-based and GPU-composited, the layers are large
+ *   (680/560/440/160px) and ran on EVERY authed page (dashboard,
+ *   journey, my, …), giving the GPU constant compositing work and
+ *   contributing to Style/Layout + Rendering main-thread time.
+ *   Itzik explicitly authorised removing moving background elements
+ *   as part of the perf push.
+ *
+ *   The visual layout is UNCHANGED — same 3 colored blobs + soft ring
+ *   in the same positions. Only the keyframe animations were stripped.
+ *   If you want motion back, restore the `animation:` declarations on
+ *   the four .home-bg-* rules below (the @keyframes are still defined).
+ *
+ * Prior history (kept for context):
  * Itzik 2026-05-27 PERFORMANCE REBUILD:
  *   Was 17 simultaneous animated layers (4 blobs + 1 floating circle +
  *   12 orbit dots) and the user reported the page felt heavy. Now
@@ -68,9 +83,12 @@ const HOME_BG_CSS = `
      (dashboard, journey, my, …) — dropping the blur shader frees GPU
      time across the whole authed app. Same pattern used on the homepage. */
   .home-bg-blob{position:absolute;border-radius:50%;opacity:0.78}
-  .home-bg-blob-1{width:680px;height:680px;background:radial-gradient(circle,#F43F5E 0%,rgba(244,63,94,0.45) 35%,rgba(244,63,94,0) 75%);top:-180px;right:-120px;animation:home-bg-converge-1 64s ease-in-out infinite}
-  .home-bg-blob-2{width:560px;height:560px;background:radial-gradient(circle,#A855F7 0%,rgba(168,85,247,0.45) 35%,rgba(168,85,247,0) 75%);bottom:-120px;left:5%;animation:home-bg-converge-2 64s ease-in-out infinite}
-  .home-bg-blob-3{width:440px;height:440px;background:radial-gradient(circle,#EC4899 0%,rgba(236,72,153,0.45) 35%,rgba(236,72,153,0) 75%);top:25%;left:35%;animation:home-bg-drift-3 60s ease-in-out infinite}
+  /* Animations removed 2026-05-28 — see component docstring. To restore
+     motion, re-add the animation: declarations referencing the keyframe
+     names defined below (home-bg-converge-1/2 and home-bg-drift-3). */
+  .home-bg-blob-1{width:680px;height:680px;background:radial-gradient(circle,#F43F5E 0%,rgba(244,63,94,0.45) 35%,rgba(244,63,94,0) 75%);top:-180px;right:-120px}
+  .home-bg-blob-2{width:560px;height:560px;background:radial-gradient(circle,#A855F7 0%,rgba(168,85,247,0.45) 35%,rgba(168,85,247,0) 75%);bottom:-120px;left:5%}
+  .home-bg-blob-3{width:440px;height:440px;background:radial-gradient(circle,#EC4899 0%,rgba(236,72,153,0.45) 35%,rgba(236,72,153,0) 75%);top:25%;left:35%}
 
   @keyframes home-bg-converge-1 {
     0%,100% { transform: translate(0,0) scale(1); }
@@ -90,12 +108,12 @@ const HOME_BG_CSS = `
      Gradient inverted into a soft ring (transparent core → violet
      edge → transparent outside) so the visual reads as a soft glow
      without the blur shader. Same trick used on .hero-floating-circle. */
+  /* Animation removed 2026-05-28 — see component docstring. */
   .home-bg-floating-circle{
     position:absolute;width:160px;height:160px;left:60%;top:30%;
     border-radius:50%;
     background:radial-gradient(circle,rgba(168,85,247,0) 30%,rgba(168,85,247,0.55) 70%,rgba(168,85,247,0) 100%);
     opacity:0.65;
-    animation:home-bg-floating 36s ease-in-out infinite;
   }
   @keyframes home-bg-floating {
     0%,100% { transform: translate(0,0) scale(1); }
