@@ -11,18 +11,14 @@
  * messages and passes them in via the `labels` map. This keeps the graph
  * locale-agnostic.
  *
+ * NOTE on icons: the lucide components are NOT bundled into NavItem —
+ * they'd be function references and crash the RSC payload boundary
+ * ("Functions cannot be passed directly to Client Components"). The
+ * client rails (SideNav / MobileTabs) own their NAV_ICONS map and
+ * resolve the icon at render time by NavKey.
+ *
  * Added 2026-05-29 (Step 1 of post-login redesign).
  */
-
-import {
-  Sun,
-  BookOpen,
-  MessageCircle,
-  LayoutGrid,
-  Heart,
-  Users,
-  Settings,
-} from "lucide-react";
 
 import type { NavItem, NavKey } from "./types";
 
@@ -55,73 +51,17 @@ export function buildNavItems(args: {
 
   return [
     // ── המסע שלי ────────────────────────────────
-    {
-      key:   "today",
-      group: "journey",
-      label: labels.today,
-      href:  NAV_HREF.today,
-      Icon:  Sun,
-      badge: badges.today ?? null,
-      dot:   dots.today ?? false,
-    },
-    {
-      key:   "lessons",
-      group: "journey",
-      label: labels.lessons,
-      href:  NAV_HREF.lessons,
-      Icon:  BookOpen,
-      badge: badges.lessons ?? null,
-      dot:   dots.lessons ?? false,
-    },
-    {
-      key:   "expert",
-      group: "journey",
-      label: labels.expert,
-      href:  NAV_HREF.expert,
-      Icon:  MessageCircle,
-      badge: badges.expert ?? null,
-      dot:   dots.expert ?? false,
-    },
+    { key: "today",    group: "journey", label: labels.today,    href: NAV_HREF.today,    badge: badges.today    ?? null, dot: dots.today    ?? false },
+    { key: "lessons",  group: "journey", label: labels.lessons,  href: NAV_HREF.lessons,  badge: badges.lessons  ?? null, dot: dots.lessons  ?? false },
+    { key: "expert",   group: "journey", label: labels.expert,   href: NAV_HREF.expert,   badge: badges.expert   ?? null, dot: dots.expert   ?? false },
 
     // ── משחקים ─────────────────────────────────
-    {
-      key:   "games",
-      group: "games",
-      label: labels.games,
-      href:  NAV_HREF.games,
-      Icon:  LayoutGrid,
-      badge: badges.games ?? null,
-      dot:   dots.games ?? false,
-    },
-    {
-      key:   "adults",
-      group: "games",
-      label: labels.adults,
-      href:  NAV_HREF.adults,
-      Icon:  Heart,
-      badge: badges.adults ?? null,
-      dot:   dots.adults ?? false,
-    },
+    { key: "games",    group: "games",   label: labels.games,    href: NAV_HREF.games,    badge: badges.games    ?? null, dot: dots.games    ?? false },
+    { key: "adults",   group: "games",   label: labels.adults,   href: NAV_HREF.adults,   badge: badges.adults   ?? null, dot: dots.adults   ?? false },
 
     // ── החשבון ─────────────────────────────────
-    {
-      key:   "share",
-      group: "account",
-      label: labels.share,
-      href:  NAV_HREF.share,
-      Icon:  Users,
-      badge: badges.share ?? null,
-      dot:   dots.share ?? false,
-    },
-    {
-      key:   "settings",
-      group: "account",
-      label: labels.settings,
-      href:  NAV_HREF.settings,
-      Icon:  Settings,
-      badge: badges.settings ?? null,
-      dot:   dots.settings ?? false,
-    },
+    { key: "share",    group: "account", label: labels.share,    href: NAV_HREF.share,    badge: badges.share    ?? null, dot: dots.share    ?? false },
+    { key: "settings", group: "account", label: labels.settings, href: NAV_HREF.settings, badge: badges.settings ?? null, dot: dots.settings ?? false },
   ];
 }
 

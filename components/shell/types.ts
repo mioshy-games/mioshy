@@ -10,8 +10,6 @@
  * Visual spec: post-login-mockup-v12.html.
  */
 
-import type { ComponentType, SVGProps } from "react";
-
 export type NavKey =
   | "today"
   | "lessons"
@@ -27,6 +25,13 @@ export type NavGroup = "journey" | "games" | "account";
  * One entry in the sidebar / mobile-tab nav. `href` is locale-less
  * (prepended by `@/navigation` Link automatically). Badges are pulled
  * from the parent layout — the shell never queries the DB itself.
+ *
+ * NOTE: NavItem is JSON-serialisable on purpose. The parent layout is
+ * a server component and the consumer rails (SideNav, MobileTabs) are
+ * client components — passing a function reference (like a React
+ * component) would crash with "Functions cannot be passed directly to
+ * Client Components". The actual lucide icon is resolved client-side
+ * via the NAV_ICONS map in SideNav / MobileTabs by NavKey.
  */
 export interface NavItem {
   key:    NavKey;
@@ -34,8 +39,6 @@ export interface NavItem {
   /** Visible label. Picked from messages.json by the layout, not here. */
   label:  string;
   href:   string;
-  /** lucide-react icon component (constructor) */
-  Icon:   ComponentType<SVGProps<SVGSVGElement>>;
   /** Numeric badge ("1", "2", …) — null hides it. */
   badge?: number | null;
   /** Soft dot indicator (e.g. unfinished partner-share). Stacks BELOW badge. */

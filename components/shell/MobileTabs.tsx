@@ -24,7 +24,17 @@
  */
 
 import { Link, usePathname } from "@/navigation";
-import { Menu } from "lucide-react";
+import type { ComponentType, SVGProps } from "react";
+import {
+  BookOpen,
+  Heart,
+  LayoutGrid,
+  Menu,
+  MessageCircle,
+  Settings,
+  Sun,
+  Users,
+} from "lucide-react";
 
 import {
   MOBILE_PRIMARY_KEYS,
@@ -33,6 +43,21 @@ import {
   NAV_HREF,
 } from "./NavConfig";
 import type { NavItem, NavKey } from "./types";
+
+/**
+ * NavKey → lucide icon. Mirrors the map in SideNav. Lives in this
+ * client file so the component refs stay inside the client bundle
+ * (server → client cannot carry function references).
+ */
+const NAV_ICONS: Record<NavKey, ComponentType<SVGProps<SVGSVGElement>>> = {
+  today:    Sun,
+  lessons:  BookOpen,
+  expert:   MessageCircle,
+  games:    LayoutGrid,
+  adults:   Heart,
+  share:    Users,
+  settings: Settings,
+};
 
 interface Props {
   items: NavItem[];
@@ -88,6 +113,7 @@ export function MobileTabs({ items, moreLabel, moreHref = "/my/more" }: Props) {
 
       {primaryItems.map((item) => {
         const active = isNavActive(item, pathname);
+        const Icon = NAV_ICONS[item.key];
         return (
           <Tab
             key={item.key}
@@ -97,7 +123,7 @@ export function MobileTabs({ items, moreLabel, moreHref = "/my/more" }: Props) {
             badge={item.badge}
             dot={item.dot}
           >
-            <item.Icon className="h-[17px] w-[17px]" />
+            <Icon className="h-[17px] w-[17px]" />
           </Tab>
         );
       })}

@@ -24,6 +24,16 @@
  */
 
 import { Link, usePathname } from "@/navigation";
+import type { ComponentType, SVGProps } from "react";
+import {
+  BookOpen,
+  Heart,
+  LayoutGrid,
+  MessageCircle,
+  Settings,
+  Sun,
+  Users,
+} from "lucide-react";
 
 import { CoupleCard } from "./CoupleCard";
 import { ExpertMini } from "./ExpertMini";
@@ -34,8 +44,24 @@ import type {
   ExpertMiniData,
   NavGroup,
   NavItem,
+  NavKey,
   ShellChrome,
 } from "./types";
+
+/**
+ * NavKey → lucide icon. Lives in this client file so the icon
+ * components stay inside the client bundle — server can't pass
+ * function references across the RSC boundary.
+ */
+const NAV_ICONS: Record<NavKey, ComponentType<SVGProps<SVGSVGElement>>> = {
+  today:    Sun,
+  lessons:  BookOpen,
+  expert:   MessageCircle,
+  games:    LayoutGrid,
+  adults:   Heart,
+  share:    Users,
+  settings: Settings,
+};
 
 interface Props {
   items:    NavItem[];
@@ -132,7 +158,7 @@ export function SideNav({ items, couple, expert, chrome }: Props) {
 // ─────────────────────────────────────────────────────────────────────
 
 function NavRow({ item, active }: { item: NavItem; active: boolean }) {
-  const Icon = item.Icon;
+  const Icon = NAV_ICONS[item.key];
   return (
     <Link
       href={item.href}
