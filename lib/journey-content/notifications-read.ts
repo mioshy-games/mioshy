@@ -12,6 +12,7 @@
 // ============================================================
 
 import "server-only";
+import { cache } from "react";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
 import type { NotificationKind } from "./notifications";
 
@@ -25,7 +26,14 @@ export interface NotificationRow {
 
 const DEFAULT_LIMIT = 20;
 
-export async function getUnreadCountForUser(userId: string): Promise<number> {
+// 2026-05-31 — wrapped in React.cache. The (shell) parent
+// `[locale]/layout.tsx` already calls this once per request to populate
+// the marketing bell badge, and then `getShellData()` calls it AGAIN to
+// populate the shell's PageHeader bell. Cache makes the second call free.
+// Scope is request-only; no cross-request staleness.
+export const getUnreadCountForUser = cache(_getUnreadCountForUser);
+
+async function _getUnreadCountForUser(userId: string): Promise<number> {
   const admin = createServiceRoleClient();
   if (!admin || !userId) return 0;
   const { count } = await admin

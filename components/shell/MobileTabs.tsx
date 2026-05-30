@@ -123,7 +123,7 @@ export function MobileTabs({ items, moreLabel, moreHref = "/my/more" }: Props) {
             badge={item.badge}
             dot={item.dot}
           >
-            <Icon className="h-[17px] w-[17px]" />
+            <Icon className="h-[19px] w-[19px]" />
           </Tab>
         );
       })}
@@ -133,7 +133,7 @@ export function MobileTabs({ items, moreLabel, moreHref = "/my/more" }: Props) {
         href={moreHref}
         active={moreActive}
       >
-        <Menu className="h-[17px] w-[17px]" />
+        <Menu className="h-[19px] w-[19px]" />
       </Tab>
     </nav>
   );
@@ -154,14 +154,21 @@ function Tab({ label, href, active, badge, dot, children }: TabProps) {
   return (
     <Link
       href={href}
-      className="flex flex-col items-center gap-[3px] rounded-[11px] px-1 py-1.5 text-[11px] font-bold"
+      // 2026-05-31 — label sizing pass after mobile screenshot review:
+      //   • text-[11px] → text-[12.5px] for legibility on small viewports
+      //   • gap raised so a 2-line label doesn't crowd the icon
+      //   • icon pill bumped 24→28px so the wordmark + glyph carry equal weight
+      //   • text-center on the label so wrapped lines align to the icon
+      //     centerline (without this, the second line was visually drifting
+      //     to the start side under RTL).
+      className="flex flex-col items-center gap-1 rounded-[11px] px-0.5 py-1.5 font-bold"
       style={{
         color: active ? "#FFFFFF" : "var(--shell-side-t2)",
       }}
       aria-current={active ? "page" : undefined}
     >
       <span
-        className="relative flex h-6 w-6 items-center justify-center rounded-lg"
+        className="relative flex h-7 w-7 items-center justify-center rounded-lg"
         style={{
           background: active ? "var(--shell-cta-grad)" : "transparent",
           color: active ? "#FFFFFF" : "var(--shell-side-t2)",
@@ -184,7 +191,11 @@ function Tab({ label, href, active, badge, dot, children }: TabProps) {
           />
         ) : null}
       </span>
-      <span className="leading-none">{label}</span>
+      <span
+        className="block w-full text-center text-[12.5px] leading-tight"
+      >
+        {label}
+      </span>
     </Link>
   );
 }

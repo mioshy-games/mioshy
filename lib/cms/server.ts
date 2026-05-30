@@ -1,5 +1,7 @@
 import "server-only";
 
+import { cache } from "react";
+
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { CmsTextRow, CmsPage } from "./types";
 import { normalizeRowsForRender } from "./render";
@@ -29,11 +31,23 @@ import { normalizeRowsForRender } from "./render";
  *   we ever need caching we'll use Supabase's PostgREST built-in
  *   cache or a Redis layer with explicit invalidation we control.
  *
+ * 2026-05-31 — REQUEST-SCOPED memoization added via React.cache. The
+ *   AppShell layout calls getCmsTranslations 3-4 times per request
+ *   (different namespaces, all reading the same `app-shell` page), and
+ *   each call previously fired its own Supabase query. cache() makes
+ *   repeated calls with the same `page` value share one round-trip,
+ *   without introducing the cross-request staleness that bit us with
+ *   unstable_cache. Verified: React.cache scope is the React tree of
+ *   ONE server render — there is no cross-request cache here, so admin
+ *   edits land on the next page render.
+ *
  * If Supabase fails (network blip, table missing, RLS denial) this
  * returns `[]` — the public site silently falls back to next-intl
  * via the JSON files and never breaks because of CMS issues.
  */
-export async function loadCmsTextsForPage(
+export const loadCmsTextsForPage = cache(_loadCmsTextsForPage);
+
+async function _loadCmsTextsForPage(
   page: CmsPage,
 ): Promise<CmsTextRow[]> {
   try {
@@ -71,17 +85,12 @@ export async function loadCmsTextsForPage(
 
     const rows = normalizeRowsForRender((data ?? []) as unknown as CmsTextRow[]);
 
-    // Diagnostic — verify which value the loader actually got from
-    // the DB on each render. Picks the hero.tag key for a stable
-    // probe across HE/EN. Visible in Vercel runtime logs. Retire
-    // after the cache story stabilises.
-    const probe = rows.find((r) => r.key === "homeV2.hero.tag");
-    // eslint-disable-next-line no-console
-    console.log("[cms-load] page=" + page, {
-      rowCount: rows.length,
-      heroTagHe: probe?.he_text?.slice(0, 50),
-      heroTagUpdatedAt: probe?.updated_at,
-    });
+    // Per-render diagnostic was retired 2026-05-31 along with the
+    // React.cache memoization. With cache(), the loader runs once per
+    // request per `page` value, so the noisy per-namespace log no longer
+    // reflects per-namespace activity anyway. If a cache-staleness bug
+    // ever resurfaces, re-add a log inside `_loadCmsTextsForPage` (not
+    // the cached export) so each underlying call is visible.
 
     return rows;
   } catch (err) {

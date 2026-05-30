@@ -27,9 +27,8 @@ import { createServiceRoleClient } from "@/lib/supabase-admin";
 import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
 import { getCurrentCoupleContext } from "@/lib/between-us/couples";
 import { getCoachPersonaForUser } from "@/lib/journey/coach";
-import { getGeneralChannelThread } from "@/lib/journey-content/messages";
 import { getUnreadCountForUser } from "@/lib/journey-content/notifications-read";
-import { getTimelineForOwner } from "@/lib/journey-content/queries";
+import { listAssignmentsForOwner } from "@/lib/journey-content/queries";
 import {
   journeyOwnerForUser,
   preferCoupleOwner,
@@ -127,40 +126,116 @@ async function countFreshUnlockedItems(args: {
   coupleId: string | null;
   lessonsSeenAt: string | null;
 }): Promise<number> {
+  // 2026-05-31 — rewritten as a count-style query. Old version called
+  // `getTimelineForOwner` twice, and each call internally fanned out to
+  // 7 DB reads (assignments, scheduled, items, completions, responses,
+  // categories, rules) — even though all the badge needs is a count of
+  // scheduled rows in a small time window.
+  //
+  // New plan, 3-4 queries total:
+  //   1. Assignment ids for legacy + cadence owners (in parallel).
+  //   2. Scheduled rows in (cutoff, now] for those assignments (id +
+  //      assignment_id + audience only — no joins).
+  //   3. Completions for those scheduled ids (id-only) so we can subtract.
+  //
+  // Audience filter: legacy assignments are typically couple-owned, and
+  // `viewerCoupleRole` is unknown at shell-render time → we preserve the
+  // existing rule "couple-owned + unknown role → only audience='both'".
+  // For user-owned assignments (cadence) the audience column doesn't
+  // apply, so every scheduled row passes.
   try {
-    const legacyOwner = preferCoupleOwner(args.userId, args.coupleId);
-    const cadenceOwner = journeyOwnerForUser(args.userId);
-    const [legacy, cadence] = await Promise.all([
-      getTimelineForOwner({
-        owner: legacyOwner,
-        viewerUserId: args.userId,
-        viewerCoupleRole: null,
-        sourceKinds: ["program", "category", "item"],
-      }),
-      getTimelineForOwner({
-        owner: cadenceOwner,
-        viewerUserId: args.userId,
-        viewerCoupleRole: null,
-        sourceKinds: ["cadence"],
-      }),
-    ]);
     const nowMs = Date.now();
     const recencyMs = nowMs - 24 * 60 * 60 * 1000;
-    // Cutoff = whichever is MORE RECENT, the user's last visit OR the
-    // 24h recency window. Treats NULL as "never seen" → fall back to
-    // the recency window so the badge still surfaces fresh items.
     const seenMs = args.lessonsSeenAt
       ? new Date(args.lessonsSeenAt).getTime()
       : 0;
     const cutoffMs = Math.max(recencyMs, seenMs);
-    const merged = [...legacy, ...cadence];
-    return merged.filter((e) => {
-      const unlockMs = new Date(e.scheduled.unlock_at).getTime();
-      if (unlockMs > nowMs) return false; // not unlocked
-      if (unlockMs <= cutoffMs) return false; // before cutoff
-      if (e.completion?.completed_at) return false; // already done
-      return true;
-    }).length;
+    const cutoffIso = new Date(cutoffMs).toISOString();
+    const nowIso = new Date(nowMs).toISOString();
+
+    const legacyOwner = preferCoupleOwner(args.userId, args.coupleId);
+    const cadenceOwner = journeyOwnerForUser(args.userId);
+
+    const [legacyAssignments, cadenceAssignments] = await Promise.all([
+      listAssignmentsForOwner(legacyOwner, {
+        onlyActive: true,
+        sourceKinds: ["program", "category", "item"],
+      }),
+      listAssignmentsForOwner(cadenceOwner, {
+        onlyActive: true,
+        sourceKinds: ["cadence"],
+      }),
+    ]);
+    if (
+      legacyAssignments.length === 0 &&
+      cadenceAssignments.length === 0
+    ) {
+      return 0;
+    }
+
+    // Tag each assignment id with its ownership kind so the audience
+    // filter below can apply the correct rule. We don't need to keep
+    // the full assignment row — only the kind, which is constant per
+    // owner kind.
+    const assignmentKindById = new Map<string, "couple" | "user">();
+    for (const a of legacyAssignments) {
+      assignmentKindById.set(
+        a.id,
+        legacyOwner.kind === "couple" ? "couple" : "user",
+      );
+    }
+    for (const a of cadenceAssignments) {
+      // cadenceOwner is always user-kind by construction.
+      assignmentKindById.set(a.id, "user");
+    }
+    const assignmentIds = Array.from(assignmentKindById.keys());
+
+    const supabase = await createServerSupabaseClient();
+    const { data: scheduledRows, error: sErr } = await supabase
+      .from("journey_scheduled_items")
+      .select("id, assignment_id, audience")
+      .in("assignment_id", assignmentIds)
+      .gt("unlock_at", cutoffIso)
+      .lte("unlock_at", nowIso);
+    if (sErr) {
+      console.warn(
+        "[getShellData.countFreshUnlockedItems] scheduled read failed",
+        sErr,
+      );
+      return 0;
+    }
+    if (!scheduledRows || scheduledRows.length === 0) return 0;
+
+    type SRow = { id: string; assignment_id: string; audience: string };
+    const audienceFiltered = (scheduledRows as SRow[]).filter((r) => {
+      const kind = assignmentKindById.get(r.assignment_id);
+      if (kind !== "couple") return true;
+      // Couple-owned + unknown viewer role → only 'both' surfaces, same
+      // as `getTimelineForOwner`'s defensive default.
+      return r.audience === "both";
+    });
+    if (audienceFiltered.length === 0) return 0;
+
+    // Subtract already-completed. If this read fails we return the
+    // pre-subtraction count — over-counting beats showing zero badge.
+    const scheduledIds = audienceFiltered.map((r) => r.id);
+    const { data: completionRows, error: cErr } = await supabase
+      .from("journey_item_completions")
+      .select("scheduled_item_id")
+      .in("scheduled_item_id", scheduledIds);
+    if (cErr) {
+      console.warn(
+        "[getShellData.countFreshUnlockedItems] completions read failed",
+        cErr,
+      );
+      return audienceFiltered.length;
+    }
+    const completedSet = new Set(
+      ((completionRows ?? []) as { scheduled_item_id: string }[]).map(
+        (c) => c.scheduled_item_id,
+      ),
+    );
+    return audienceFiltered.filter((r) => !completedSet.has(r.id)).length;
   } catch (err) {
     console.warn("[getShellData.countFreshUnlockedItems] failed", err);
     return 0;
@@ -203,6 +278,40 @@ async function countFreshClinicianReplies(args: {
 }
 
 /**
+ * Single-row body-only fetch of the latest message in the user's
+ * general channel — used to populate ExpertMini.lastMessage in the
+ * sidebar. The full thread is fetched lazily on /my/expert; here we
+ * only need a preview string.
+ *
+ * Why this lives in the shell file rather than next to
+ * getGeneralChannelThread: it's a shell-specific shape (1 row, body
+ * only, no personas) and pulling it in via the existing helper would
+ * either re-introduce the over-fetch or muddy that helper's contract.
+ */
+async function fetchLastMessagePreview(
+  channelUserId: string,
+): Promise<string | null> {
+  try {
+    const admin = createServiceRoleClient();
+    if (!admin) return null;
+    const { data, error } = await admin
+      .from("journey_messages")
+      .select("body, is_private")
+      .eq("channel_user_id", channelUserId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error || !data) return null;
+    // The channel owner sees everything in their channel, including
+    // private rows — same rule as getGeneralChannelThread.
+    return (data as { body: string | null }).body ?? null;
+  } catch (err) {
+    console.warn("[shell.fetchLastMessagePreview]", err);
+    return null;
+  }
+}
+
+/**
  * Main entry. Server-only. Returns null when not authenticated.
  *
  * Wrapped in React.cache so the layout AND every page that reads the
@@ -223,44 +332,59 @@ async function _getShellData(args: {
   if (!user) return null;
 
   const hebrew = args.locale === "he";
-
-  // Entitlements are React.cache-wrapped — calling this here is free
-  // because the (shell) layout's parent (locale layout) already paid
-  // the cost.
-  const entitlements = await getUserEntitlements();
-  const hasJourney = !!entitlements?.journey;
-
-  // Couple context — single owner/partner row + role.
-  const coupleCtx = await getCurrentCoupleContext();
-
-  // Pull the owner & partner names. Owner = profiles row for THIS user.
-  // Partner = the other couple_member's profile row (if any). Done in
-  // parallel to keep the shell render-cost flat.
-  //
-  // We could derive the partner id from `coupleCtx` if it exposed
-  // members, but it intentionally only returns the count — so we hit
-  // couple_members directly here. Admin client is fine: auth.uid is
-  // validated above and RLS doesn't apply when partner lookups need to
-  // cross couple_members rows that belong to the SAME couple as the
-  // caller (already verified via getCurrentCoupleContext).
   const admin = createServiceRoleClient();
-  let fullName: string | null = null;
-  let partnerName: string | null = null;
-  // B5 — surface "seen" markers. NULL when migration 099 hasn't run yet
-  // OR the user has never opened the surface. Both cases map to "no
-  // cut-off" — badge sees everything in the recency window.
-  let expertSeenAt: string | null = null;
-  let lessonsSeenAt: string | null = null;
 
-  if (admin) {
-    const ownerProfileP = admin
-      .from("profiles")
-      .select("full_name, expert_messages_seen_at, lessons_seen_at")
-      .eq("id", user.id)
-      .maybeSingle();
+  // 2026-05-31 — parallelism pass.
+  //
+  // Previously this function awaited each fetch in series — entitlements,
+  // then coupleCtx, then ownerProfile, then partner, then coach persona,
+  // then last message, then badges. Many of those don't depend on each
+  // other; the serial chain was ~5 sequential round-trips before the
+  // sidebar could render.
+  //
+  // New phasing:
+  //   Phase A (fire on auth):
+  //     • entitlements (React.cache hit from parent layout — free)
+  //     • coupleCtx
+  //     • ownerProfile
+  //   Phase B (after Phase A resolves):
+  //     • partner lookup (depends on coupleCtx)
+  //     • badges (depend on ownerProfile.lessons_seen_at + entitlements)
+  //     • coach persona + last message (only when hasJourney)
+  //
+  // Net: 5 sequential round-trips → 2 (worst case). Couples with no
+  // journey + no partner stay at ~1 round-trip beyond auth.
+  type OwnerRow = {
+    full_name: string | null;
+    expert_messages_seen_at: string | null;
+    lessons_seen_at: string | null;
+  };
 
-    // Partner lookup only runs when there IS a couple.
-    const partnerNameP = coupleCtx?.couple_id
+  const ownerProfileP: Promise<{ data: OwnerRow | null }> = admin
+    ? (admin
+        .from("profiles")
+        .select("full_name, expert_messages_seen_at, lessons_seen_at")
+        .eq("id", user.id)
+        .maybeSingle() as unknown as Promise<{ data: OwnerRow | null }>)
+    : Promise.resolve({ data: null });
+
+  const [entitlements, coupleCtx, { data: ownerRow }] = await Promise.all([
+    getUserEntitlements(),
+    getCurrentCoupleContext(),
+    ownerProfileP,
+  ]);
+
+  const hasJourney = !!entitlements?.journey;
+  const fullName = ownerRow?.full_name?.trim() || null;
+  const expertSeenAt = ownerRow?.expert_messages_seen_at ?? null;
+  const lessonsSeenAt = ownerRow?.lessons_seen_at ?? null;
+
+  // ── Phase B: fan everything else out in parallel ─────────────────────
+  // Partner name (depends on coupleCtx). Admin client is fine: auth.uid
+  // is validated above; cross-couple_members rows are within the same
+  // couple verified via coupleCtx.
+  const partnerP: Promise<string | null> =
+    admin && coupleCtx?.couple_id
       ? (async () => {
           const { data: otherMembers } = await admin
             .from("couple_members")
@@ -277,26 +401,56 @@ async function _getShellData(args: {
             .select("full_name")
             .eq("id", otherId)
             .maybeSingle();
-          return (row as { full_name: string | null } | null)?.full_name?.trim() ?? null;
+          return (
+            (row as { full_name: string | null } | null)?.full_name?.trim() ??
+            null
+          );
         })()
       : Promise.resolve(null);
 
-    const [{ data: ownerRow }, partnerVal] = await Promise.all([
-      ownerProfileP,
-      partnerNameP,
-    ]);
-    const orow = ownerRow as
-      | {
-          full_name: string | null;
-          expert_messages_seen_at: string | null;
-          lessons_seen_at: string | null;
-        }
-      | null;
-    fullName = orow?.full_name?.trim() || null;
-    expertSeenAt = orow?.expert_messages_seen_at ?? null;
-    lessonsSeenAt = orow?.lessons_seen_at ?? null;
-    partnerName = partnerVal;
-  }
+  // Journey-gated reads only fire when the user actually owns the pillar
+  // — non-journey users skip these entirely.
+  type CoachPersonaResult = Awaited<ReturnType<typeof getCoachPersonaForUser>>;
+  const coachPersonaP: Promise<CoachPersonaResult | null> = hasJourney
+    ? getCoachPersonaForUser(user.id)
+    : Promise.resolve(null);
+  const lastMessageP: Promise<string | null> = hasJourney
+    ? fetchLastMessagePreview(user.id)
+    : Promise.resolve(null);
+
+  // Badge reads — same gating as before.
+  const freshRepliesP: Promise<number> = hasJourney
+    ? countFreshClinicianReplies({
+        userId: user.id,
+        expertSeenAt,
+      })
+    : Promise.resolve(0);
+  const freshLessonsP: Promise<number> = hasJourney
+    ? countFreshUnlockedItems({
+        userId: user.id,
+        coupleId: coupleCtx?.couple_id ?? null,
+        lessonsSeenAt,
+      })
+    : Promise.resolve(0);
+  const unreadP: Promise<number> = hasJourney
+    ? getUnreadCountForUser(user.id).catch(() => 0)
+    : Promise.resolve(0);
+
+  const [
+    partnerName,
+    coachPersona,
+    lastMessage,
+    freshReplies,
+    freshLessons,
+    unread,
+  ] = await Promise.all([
+    partnerP,
+    coachPersonaP,
+    lastMessageP,
+    freshRepliesP,
+    freshLessonsP,
+    unreadP,
+  ]);
 
   const ownerName = resolveOwnerName({
     fullName,
@@ -313,31 +467,15 @@ async function _getShellData(args: {
   };
 
   // ── Expert mini ────────────────────────────────────────────────────
-  // Only populate when the user has a journey entitlement — without one
-  // the channel is locked anyway. We pull the coach persona AND the
-  // most recent message (in either direction) so the preview shows a
-  // real snippet, not a stub.
+  // Built from Phase B's coachPersona + lastMessage results — both
+  // resolved with everything else in the single Promise.all above.
   let expert: ExpertMiniData | null = null;
-  if (hasJourney) {
-    const persona = await getCoachPersonaForUser(user.id);
+  if (hasJourney && coachPersona) {
     const displayName = hebrew
-      ? persona.displayNameHe || persona.displayNameEn
-      : persona.displayNameEn || persona.displayNameHe;
+      ? coachPersona.displayNameHe || coachPersona.displayNameEn
+      : coachPersona.displayNameEn || coachPersona.displayNameHe;
 
     if (displayName) {
-      // Most recent message in the user's general channel. Limit 1 is
-      // implicit — getGeneralChannelThread returns the whole thread and
-      // we pluck the newest. The dashboard already pays this fetch, so
-      // we re-use it later via React.cache when wired.
-      let lastMessage: string | null = null;
-      try {
-        const thread = await getGeneralChannelThread(user.id, user.id);
-        const newest = thread[thread.length - 1] ?? null;
-        lastMessage = newest?.body ?? null;
-      } catch (err) {
-        console.warn("[shell.getShellData] expert thread read failed", err);
-      }
-
       expert = {
         expertName: displayName,
         expertInitial: initialOf(displayName),
@@ -350,18 +488,10 @@ async function _getShellData(args: {
     }
   }
 
-  // ── Badges (Step 6: real counts in parallel) ───────────────────────
-  // Each badge degrades to 0 on failure (the helper functions all
-  // swallow their own errors). The three reads run in parallel so the
-  // shell render-cost stays flat regardless of how many we add later.
-  //
-  //   • expert  — clinician replies in the last 30 days (read tracking
-  //               can come later; for now "recent" is the proxy).
-  //   • lessons — items unlocked in the last 24h not yet completed.
-  //   • bell    — the existing journey_notifications inbox count.
-  //
-  // Skips badge lookups entirely when the user isn't entitled to
-  // Journey — there's nothing to count.
+  // ── Badges ─────────────────────────────────────────────────────────
+  // Counts were resolved in Phase B (or set to 0 for non-journey users).
+  // Sparse map — only keys with > 0 appear, the consumer renders them
+  // as actual badges; everything else stays clean.
   const badges: Partial<Record<NavKey, number>> = {};
   const dots: Partial<Record<NavKey, boolean>> = {};
 
@@ -370,32 +500,9 @@ async function _getShellData(args: {
     dots.share = true;
   }
 
-  let notificationCount = 0;
-
-  if (hasJourney) {
-    // B5 — both badge queries now respect the surface "seen" marker.
-    // The `countFreshClinicianReplies` and `countFreshUnlockedItems`
-    // helpers above take MAX(seen_at, recency cut-off), so:
-    //   • Opening the page once → badge = 0 next render.
-    //   • A new reply / lesson arrives → badge re-appears.
-    // Bell badge uses the existing read_at column on journey_notifications.
-    const [freshReplies, freshLessons, unread] = await Promise.all([
-      countFreshClinicianReplies({
-        userId:        user.id,
-        expertSeenAt:  expertSeenAt,
-      }),
-      countFreshUnlockedItems({
-        userId:        user.id,
-        coupleId:      coupleCtx?.couple_id ?? null,
-        lessonsSeenAt: lessonsSeenAt,
-      }),
-      getUnreadCountForUser(user.id).catch(() => 0),
-    ]);
-
-    if (freshReplies > 0) badges.expert = freshReplies;
-    if (freshLessons > 0) badges.lessons = freshLessons;
-    notificationCount = unread;
-  }
+  if (freshReplies > 0) badges.expert = freshReplies;
+  if (freshLessons > 0) badges.lessons = freshLessons;
+  const notificationCount = unread;
 
   return {
     userId: user.id,
