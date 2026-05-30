@@ -56,7 +56,9 @@
       "completedTitle": "הושלמו",
       "totalLabel": "{count} סה״כ",
       "upcomingTitle": "בקרוב",
-      "waitingSuffix": "ממתינים"
+      "waitingSuffix": "ממתינים",
+      "upcomingEmptyTitle": "התעדכנתם בכל מה שיש כרגע",
+      "upcomingEmptyBody": "השיעור הבא ייפתח כשהמומחית תוסיף אותו ללוח שלכם. אין צורך להמתין על המסך — תקבלו התראה."
     },
     "expert": {
       "pageTitle": "צ׳אט עם מומחה",

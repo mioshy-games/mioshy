@@ -25,6 +25,13 @@ function shouldHideChrome(pathname: string) {
   // Shown (catalogue / marketing):
   // - /en/games                   (catalogue index - needs chrome)
   //
+  // Also hide on post-login AppShell routes (Studio v12, 2026-05-29) —
+  // /my/today, /my/lessons, /my/expert, /my/share, /my/settings,
+  // /my/notifications, /my/more. The shell ships its own PageHeader,
+  // so the marketing SiteHeader stacks awkwardly above it. Existing
+  // /my and /my/games and /my/adults and /my/journey are NOT in the
+  // shell yet → they still get the marketing chrome until migrated.
+  //
   // Support any locale prefix (/[locale]/...) and also non-localized routes.
   return (
     // /game/<roomCode> and deeper - always gameplay; but /game (lobby) keeps chrome
@@ -35,7 +42,9 @@ function shouldHideChrome(pathname: string) {
     /^\/games\/.+/.test(pathname) ||
     // Auth flows
     /^\/[^/]+\/auth(\/|$)/.test(pathname) ||
-    /^\/auth(\/|$)/.test(pathname)
+    /^\/auth(\/|$)/.test(pathname) ||
+    // AppShell routes — post-login surface ships its own header
+    /^\/(en|he)\/my\/(today|lessons|expert|share|settings|notifications|more)(\/|$)/.test(pathname)
   );
 }
 

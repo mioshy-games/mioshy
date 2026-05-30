@@ -31,8 +31,12 @@ export const NAV_HREF: Record<NavKey, string> = {
   today:    "/my/today",
   lessons:  "/my/lessons",
   expert:   "/my/expert",
-  games:    "/games",
-  adults:   "/mioshy-sex",
+  // 2026-05-30 — was pointing at the marketing catalogues (/games and
+  // /mioshy-sex). Logged-in users should land on their OWN catalogue
+  // (the entitled-only view at /my/games and /my/adults) — the
+  // existing legacy pages handle gating and journey-includes-all rules.
+  games:    "/my/games",
+  adults:   "/my/adults",
   share:    "/my/share",
   settings: "/my/settings",
 };

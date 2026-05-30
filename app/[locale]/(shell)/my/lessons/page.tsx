@@ -161,12 +161,16 @@ export default async function LessonsPage({
           />
         ) : null}
 
-        {/* Upcoming — same gating as Completed. */}
+        {/* Upcoming — same gating as Completed. Renders an "all caught
+            up" empty state when items is empty so the section never
+            silently disappears. */}
         {shell.hasJourney ? (
           <UpcomingList
             title={tL("upcomingTitle")}
             waitingSuffix={tL("waitingSuffix")}
             items={data.upcoming}
+            emptyTitle={tL("upcomingEmptyTitle")}
+            emptyBody={tL("upcomingEmptyBody")}
           />
         ) : null}
       </div>

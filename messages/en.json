@@ -56,7 +56,9 @@
       "completedTitle": "Completed",
       "totalLabel": "{count} total",
       "upcomingTitle": "Coming up",
-      "waitingSuffix": "waiting"
+      "waitingSuffix": "waiting",
+      "upcomingEmptyTitle": "You're caught up",
+      "upcomingEmptyBody": "The next lesson opens when your expert adds it. No need to wait on the screen — we'll notify you."
     },
     "expert": {
       "pageTitle": "Chat with expert",
