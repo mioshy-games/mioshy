@@ -303,6 +303,49 @@ export function AnalysisSummary({
         </ul>
       </section>
 
+      {/* Itzik 2026-05-29 — Topics covered. Concrete answer to "what
+          will we actually work on?" using the 5 journey priority
+          categories (communication / intimacy / emotional_connection /
+          friendship / family). Each row: name (bold) + short desc.
+          Placed after Gains ("what change") so users see "what areas"
+          next, before WhoFor / Expert / Offer. */}
+      <section className="rounded-3xl border border-white/10 bg-white/[0.025] p-5 sm:p-7">
+        <CmsText
+          cmsKey="journeyAssessment.analysis.topicsLabel"
+          as="div"
+          className="text-start text-[20px] leading-[1.3] font-semibold uppercase tracking-wider text-[#B83C4D]/85 sm:text-[13px] sm:leading-normal"
+        />
+        <CmsText
+          cmsKey="journeyAssessment.analysis.topicsTitle"
+          as="h2"
+          className="mt-2 text-balance text-start font-heading text-[24px] font-extrabold leading-tight text-white sm:text-[28px]"
+        />
+        <CmsText
+          cmsKey="journeyAssessment.analysis.topicsSub"
+          as="p"
+          className="mt-2 text-pretty text-start text-[18px] leading-[1.4] text-white/70 sm:text-[16px] sm:leading-[1.55]"
+        />
+        <ul className="mt-4 flex flex-col gap-2.5">
+          {[1, 2, 3, 4, 5].map((n) => (
+            <li
+              key={n}
+              className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3.5 sm:px-5 sm:py-4"
+            >
+              <CmsText
+                cmsKey={`journeyAssessment.analysis.topic${n}Name`}
+                as="div"
+                className="text-balance text-start text-[20px] leading-[1.3] font-bold text-white sm:text-[18px]"
+              />
+              <CmsText
+                cmsKey={`journeyAssessment.analysis.topic${n}Desc`}
+                as="p"
+                className="mt-1 text-pretty text-start text-[18px] leading-[1.4] text-white/70 sm:text-[15px] sm:leading-[1.55]"
+              />
+            </li>
+          ))}
+        </ul>
+      </section>
+
       {/* W3.2 (Itzik #13) — who is this for. Below the gains so the
           user reads "what" before "who" — natural decision order. */}
       <section className="rounded-3xl border border-white/10 bg-white/[0.025] p-5 sm:p-7">
@@ -334,6 +377,62 @@ export function AnalysisSummary({
             </li>
           ))}
         </ul>
+      </section>
+
+      {/* Itzik 2026-05-29 — Expert emphasis. The unique human element
+          before the price: real couples expert in a private 1:1 chat,
+          always available, learning the couple over time. Wine palette
+          mirrors the Focus and Offer cards so it reads as the same
+          "premium delivery" voice. Placed right before the offer so
+          the human face is the last thing the user sees before the
+          price. */}
+      <section
+        className="relative overflow-hidden rounded-3xl border p-5 sm:p-7"
+        style={{
+          borderColor: "rgba(184,60,77,0.45)",
+          background:
+            "linear-gradient(135deg, rgba(184,60,77,0.22) 0%, rgba(108,46,64,0.12) 60%, rgba(255,255,255,0.02) 100%)",
+        }}
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -end-20 -top-20 h-56 w-56 rounded-full opacity-30 blur-3xl"
+          style={{ background: "#B83C4D" }}
+        />
+        <div className="relative">
+          <CmsText
+            cmsKey="journeyAssessment.analysis.expertLabel"
+            as="div"
+            className="text-start text-[20px] leading-[1.3] font-semibold uppercase tracking-wider text-[#FAF6F7]/75 sm:text-[13px] sm:leading-normal"
+          />
+          <CmsText
+            cmsKey="journeyAssessment.analysis.expertTitle"
+            as="h2"
+            className="mt-1.5 text-balance text-start font-heading text-[26px] font-extrabold leading-tight text-white sm:text-[30px]"
+          />
+          <CmsText
+            cmsKey="journeyAssessment.analysis.expertBody"
+            as="p"
+            className="mt-3 text-pretty text-start text-[20px] leading-[1.4] text-white/90 sm:text-[18px] sm:leading-[1.7]"
+          />
+          <ul className="mt-4 flex flex-col gap-2.5">
+            {[1, 2, 3, 4].map((n) => (
+              <li
+                key={n}
+                className="flex items-start gap-3 text-[22px] leading-[1.3] text-white/95 sm:text-[19px] sm:leading-[1.65]"
+              >
+                <MessageCircle
+                  className="mt-1 h-5 w-5 shrink-0 text-[#B83C4D]"
+                  aria-hidden
+                />
+                <CmsText
+                  cmsKey={`journeyAssessment.analysis.expertBullet${n}`}
+                  className="flex-1 text-pretty text-start"
+                />
+              </li>
+            ))}
+          </ul>
+        </div>
       </section>
 
       {/* ── CTA / Active subscriber ──────────────────────────────────── */}

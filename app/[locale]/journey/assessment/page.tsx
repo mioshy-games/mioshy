@@ -421,7 +421,13 @@ export default async function JourneyAssessmentPage({
           .select("id, current_step, status, language")
           .eq("device_id", deviceId)
           .is("user_id", null)          // only anonymous rows
-          .in("status", ["in_progress", "paywall", "completed"])
+          // Itzik 2026-05-29 bugfix — api/journey/answer writes status
+          // 'complete' (singular). The legacy 'completed' filter here
+          // never matched a finished anon row, so an anon user who
+          // completed the questionnaire and then logged in would be
+          // bumped back to Q1 if the device-id branch was the only
+          // restore path. We accept both spellings defensively.
+          .in("status", ["in_progress", "paywall", "complete", "completed"])
           .order("last_activity_at", { ascending: false })
           .limit(1)
           .maybeSingle();

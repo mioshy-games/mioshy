@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mioshy — Post-Login Design Alternatives</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&family=Frank+Ruhl+Libre:wght@500;700;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: 'Heebo', system-ui, sans-serif;
+      background: #EFEAE3;
+      color: #1F1B19;
+      padding: 40px 16px 80px;
+      line-height: 1.5;
+    }
+    .page-head { max-width: 1280px; margin: 0 auto 40px; }
+    .page-head h1 { font-family: 'Frank Ruhl Libre', serif; font-size: 36px; margin: 0 0 6px; font-weight: 900; letter-spacing: -0.02em; }
+    .page-head p { font-size: 15px; color: #5C534D; margin: 0; max-width: 720px; }
+    .legend { display: flex; gap: 24px; margin-top: 20px; font-size: 13px; color: #5C534D; }
+    .legend span::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-inline-end: 8px; vertical-align: middle; }
+    .legend .a::before { background: #B85C44; }
+    .legend .b::before { background: #C9A86A; }
+
+    .option {
+      max-width: 1280px;
+      margin: 0 auto 48px;
+      padding: 28px 24px 32px;
+      border-radius: 24px;
+    }
+    .option.a { background: #FAF6F0; border: 1px solid #E5DDD2; }
+    .option.b { background: #14171A; color: #F2EDE5; border: 1px solid #2A2E33; }
+
+    .opt-head { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 24px; }
+    .opt-head h2 { font-family: 'Frank Ruhl Libre', serif; font-size: 26px; margin: 0; font-weight: 900; letter-spacing: -0.01em; }
+    .opt-head .tag { font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; padding: 5px 10px; border-radius: 999px; }
+    .option.a .tag { background: #B85C44; color: #FAF6F0; }
+    .option.b .tag { background: #C9A86A; color: #14171A; }
+    .opt-head .pitch { font-size: 14px; color: inherit; opacity: 0.7; max-width: 540px; line-height: 1.55; }
+    .option.a .opt-head .pitch { color: #5C534D; }
+
+    .screens { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    @media (max-width: 980px) { .screens { grid-template-columns: 1fr; max-width: 380px; margin: 0 auto; } }
+
+    .screen-wrap { display: flex; flex-direction: column; gap: 8px; }
+    .screen-label { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.6; text-align: start; }
+    .frame {
+      width: 100%;
+      max-width: 380px;
+      margin: 0 auto;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: 0 18px 40px -16px rgba(20, 23, 26, 0.25), 0 4px 10px -4px rgba(20, 23, 26, 0.15);
+      position: relative;
+    }
+    .option.a .frame { background: #FFFFFF; border: 1px solid #E5DDD2; }
+    .option.b .frame { background: #1B1E22; border: 1px solid #262A2F; }
+
+    .status-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 18px; font-size: 12px; font-weight: 600; }
+    .option.a .status-bar { color: #1F1B19; background: #FFFFFF; }
+    .option.b .status-bar { color: #F2EDE5; background: #1B1E22; }
+
+    .scr { padding: 8px 18px 24px; }
+
+    /* ─── Option A typography ─── */
+    .option.a .eyebrow { font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: #B85C44; font-weight: 600; }
+    .option.a h3 { font-family: 'Frank Ruhl Libre', serif; font-size: 24px; line-height: 1.15; margin: 6px 0 4px; font-weight: 700; color: #1F1B19; letter-spacing: -0.01em; }
+    .option.a .sub { font-size: 14px; color: #5C534D; margin: 0 0 18px; }
+    .option.a .card { background: #FAF6F0; border: 1px solid #E5DDD2; border-radius: 14px; padding: 14px 16px; }
+    .option.a .row-card { background: #FFFFFF; border: 1px solid #E5DDD2; border-radius: 14px; }
+    .option.a .pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+    .option.a .pill-on { background: #E9EFE5; color: #4F6244; }
+    .option.a .pill-off { background: #F2ECE2; color: #8A7F71; }
+    .option.a .pill-soft { background: #FCE9E0; color: #B85C44; }
+    .option.a .meta { font-size: 12px; color: #8A7F71; }
+    .option.a .divider { height: 1px; background: #ECE5D9; margin: 14px 0; border: 0; }
+    .option.a .btn { display: block; text-align: center; padding: 13px 16px; background: #1F1B19; color: #FAF6F0; border-radius: 12px; font-weight: 600; font-size: 14px; }
+    .option.a .btn-soft { background: #FFFFFF; color: #1F1B19; border: 1px solid #1F1B19; }
+    .option.a .progress { height: 6px; background: #ECE5D9; border-radius: 999px; overflow: hidden; }
+    .option.a .progress > span { display: block; height: 100%; background: #B85C44; border-radius: 999px; }
+
+    /* ─── Option B typography ─── */
+    .option.b .eyebrow { font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: #C9A86A; font-weight: 600; }
+    .option.b h3 { font-family: 'Heebo', sans-serif; font-size: 22px; line-height: 1.2; margin: 6px 0 4px; font-weight: 700; color: #F2EDE5; letter-spacing: -0.01em; }
+    .option.b .sub { font-size: 14px; color: #8E9296; margin: 0 0 18px; }
+    .option.b .card { background: #20242A; border: 1px solid #2A2E33; border-radius: 12px; padding: 14px 16px; }
+    .option.b .row-card { background: #20242A; border: 1px solid #2A2E33; border-radius: 12px; }
+    .option.b .pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+    .option.b .pill-on { background: rgba(141, 160, 154, 0.18); color: #A7BCB4; }
+    .option.b .pill-off { background: rgba(155, 142, 122, 0.18); color: #C2B79F; }
+    .option.b .pill-soft { background: rgba(201, 168, 106, 0.16); color: #DBC18A; }
+    .option.b .meta { font-size: 12px; color: #7C8186; }
+    .option.b .divider { height: 1px; background: #262A2F; margin: 14px 0; border: 0; }
+    .option.b .btn { display: block; text-align: center; padding: 13px 16px; background: #C9A86A; color: #14171A; border-radius: 10px; font-weight: 700; font-size: 14px; }
+    .option.b .btn-soft { background: transparent; color: #F2EDE5; border: 1px solid #3A4047; }
+    .option.b .progress { height: 6px; background: #262A2F; border-radius: 999px; overflow: hidden; }
+    .option.b .progress > span { display: block; height: 100%; background: #C9A86A; border-radius: 999px; }
+
+    /* shared layout helpers */
+    .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .stack { display: flex; flex-direction: column; gap: 10px; }
+    .stack-tight { display: flex; flex-direction: column; gap: 6px; }
+    .gap-sm { display: flex; gap: 8px; flex-wrap: wrap; }
+    .num { font-family: 'Frank Ruhl Libre', serif; font-size: 28px; font-weight: 800; }
+    .option.a .num { color: #1F1B19; }
+    .option.b .num { color: #F2EDE5; }
+    .seg { display: flex; gap: 4px; background: rgba(127, 127, 127, 0.08); padding: 4px; border-radius: 12px; font-size: 13px; }
+    .option.b .seg { background: #1B1E22; border: 1px solid #2A2E33; }
+    .seg > button { flex: 1; padding: 7px 10px; border: 0; background: transparent; font: inherit; cursor: default; font-weight: 600; color: inherit; opacity: 0.7; border-radius: 8px; }
+    .seg > button.active { opacity: 1; }
+    .option.a .seg > button.active { background: #FFFFFF; color: #1F1B19; box-shadow: 0 1px 2px rgba(31,27,25,0.06); }
+    .option.b .seg > button.active { background: #2A2E33; color: #F2EDE5; }
+
+    .lesson-card { padding: 14px 16px; }
+    .lesson-card .row { align-items: flex-start; }
+    .icon-square { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 17px; font-weight: 700; }
+    .option.a .icon-square.c1 { background: #FCE9E0; color: #B85C44; }
+    .option.a .icon-square.c2 { background: #E9EFE5; color: #4F6244; }
+    .option.a .icon-square.c3 { background: #F2ECE2; color: #8A6E4D; }
+    .option.a .icon-square.c4 { background: #EFE9F2; color: #6A5680; }
+    .option.b .icon-square.c1 { background: rgba(201,168,106,0.16); color: #DBC18A; }
+    .option.b .icon-square.c2 { background: rgba(141,160,154,0.18); color: #A7BCB4; }
+    .option.b .icon-square.c3 { background: rgba(194,154,128,0.16); color: #D7B59A; }
+    .option.b .icon-square.c4 { background: rgba(155,142,180,0.16); color: #BFB1D2; }
+
+    .tab-strip { display: flex; gap: 18px; border-bottom: 1px solid rgba(127,127,127,0.18); padding-bottom: 10px; margin: 6px 0 14px; font-size: 13px; font-weight: 600; }
+    .tab-strip > div { opacity: 0.55; padding-bottom: 6px; position: relative; }
+    .tab-strip > div.active { opacity: 1; }
+    .option.a .tab-strip > div.active::after { content:''; position: absolute; right: 0; left: 0; bottom: -11px; height: 2px; background: #B85C44; border-radius: 1px; }
+    .option.b .tab-strip > div.active::after { content:''; position: absolute; right: 0; left: 0; bottom: -11px; height: 2px; background: #C9A86A; border-radius: 1px; }
+
+    .micro { font-size: 12px; opacity: 0.7; }
+    .strong { font-weight: 700; }
+    .between { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .chip { font-size: 11px; padding: 3px 8px; border-radius: 999px; font-weight: 600; }
+    .option.a .chip { background: #ECE5D9; color: #5C534D; }
+    .option.b .chip { background: #262A2F; color: #B9BFC6; }
+
+    .nav-bar {
+      position: absolute; bottom: 0; right: 0; left: 0;
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      padding: 10px 8px 18px;
+      gap: 4px;
+    }
+    .option.a .nav-bar { background: rgba(255,255,255,0.96); border-top: 1px solid #E5DDD2; backdrop-filter: blur(8px); }
+    .option.b .nav-bar { background: rgba(20,23,26,0.92); border-top: 1px solid #262A2F; backdrop-filter: blur(8px); }
+    .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px; font-weight: 500; opacity: 0.55; }
+    .nav-item.active { opacity: 1; }
+    .nav-item .dot { width: 18px; height: 18px; border-radius: 5px; }
+    .option.a .nav-item .dot { background: #D7C9B6; }
+    .option.a .nav-item.active .dot { background: #B85C44; }
+    .option.b .nav-item .dot { background: #3A4047; }
+    .option.b .nav-item.active .dot { background: #C9A86A; }
+
+    .frame-padded { padding-bottom: 70px; }
+
+    .principles { font-size: 13px; color: inherit; opacity: 0.85; display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 22px; }
+    @media (max-width: 760px) { .principles { grid-template-columns: 1fr; } }
+    .principle { padding: 14px 16px; border-radius: 12px; }
+    .option.a .principle { background: #F4EFE5; border: 1px solid #E5DDD2; }
+    .option.b .principle { background: #1B1E22; border: 1px solid #262A2F; }
+    .principle .ptitle { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+
+<header class="page-head">
+  <h1>החוויה אחרי ההתחברות — שתי חלופות עיצוב</h1>
+  <p>אותו תוכן, אותה פונקציונליות. הבדל בפלטה, בטיפוגרפיה, ובכמות ה"קישוט" — שתי קריאות מהוקצעות שמתאימות יותר למוצר ליווי זוגי.</p>
+  <div class="legend">
+    <span class="a">חלופה א׳ — Quiet Daylight (בהיר, חמים, אדיטוריאלי)</span>
+    <span class="b">חלופה ב׳ — Quiet Night (כהה מאופק, פרימיום מקצועי)</span>
+  </div>
+</header>
+
+<!-- ─────────────────────────────────────────────────────────────── -->
+<!-- OPTION A — Quiet Daylight                                       -->
+<!-- ─────────────────────────────────────────────────────────────── -->
+<section class="option a">
+  <div class="opt-head">
+    <div>
+      <span class="tag">חלופה א׳</span>
+      <h2 style="margin-top:8px">Quiet Daylight</h2>
+    </div>
+    <p class="pitch">בז׳ חמים, סריף לכותרות, אקסנט יחיד של טרהקוטה. תחושה של פרקטיקה פרטית באזור מואר — אמין, רגוע, לא "אפליקציה".</p>
+  </div>
+
+  <div class="principles">
+    <div class="principle"><div class="ptitle">פלטה</div>קרם #FAF6F0 · פחם חם #1F1B19 · טרהקוטה #B85C44 · מרווה #7A8A6F (לסטטוס בלבד)</div>
+    <div class="principle"><div class="ptitle">טיפוגרפיה</div>Frank Ruhl Libre לכותרות (סריף עברי), Heebo לגוף. ניגוד גבוה, ללא uppercase דקורטיבי בתוכן.</div>
+    <div class="principle"><div class="ptitle">חומריות</div>כרטיסים שטוחים, גבול עדין, ללא glow/blur, ללא גרדיאנט פוקסיה. הצללות עדינות מאוד.</div>
+  </div>
+
+  <div class="screens" style="margin-top:28px">
+
+    <!-- A1: /my hub -->
+    <div class="screen-wrap">
+      <div class="screen-label">דף הבית — /my</div>
+      <div class="frame frame-padded">
+        <div class="status-bar"><span>9:42</span><span>mioshy.com</span></div>
+        <div class="scr">
+          <div class="eyebrow">שלום, נועה ויואב</div>
+          <h3>איפה אנחנו השבוע</h3>
+          <p class="sub">השבוע התשיעי שלכם במסע. נמשיך מאיפה שעצרנו.</p>
+
+          <div class="card" style="margin-bottom:12px">
+            <div class="between" style="margin-bottom:10px">
+              <span class="pill pill-on">פעיל</span>
+              <span class="meta">חודש שלישי · שבוע 9 מתוך 12</span>
+            </div>
+            <div class="strong" style="font-size:16px;margin-bottom:6px">המסע עם מיאושי</div>
+            <div class="progress"><span style="width:62%"></span></div>
+            <div class="between" style="margin-top:10px">
+              <span class="meta">7 שיעורים פתוחים</span>
+              <span class="meta">המומחה: ד״ר ענת ר.</span>
+            </div>
+          </div>
+
+          <div class="row-card" style="padding:12px 14px;margin-bottom:10px">
+            <div class="between">
+              <div>
+                <div class="strong" style="font-size:14px">השיעור של היום</div>
+                <div class="meta">תקשורת זוגית · 12 דקות לקריאה</div>
+              </div>
+              <span class="pill pill-soft">פתוח</span>
+            </div>
+          </div>
+
+          <div class="row-card" style="padding:12px 14px;margin-bottom:18px">
+            <div class="between">
+              <div>
+                <div class="strong" style="font-size:14px">צ׳אט עם ענת</div>
+                <div class="meta">"חשבתי עליכם השבוע — איך עבר השיעור?"</div>
+              </div>
+              <span class="pill pill-soft">2</span>
+            </div>
+          </div>
+
+          <a class="btn">פתחו את השיעור</a>
+        </div>
+        <nav class="nav-bar">
+          <div class="nav-item active"><span class="dot"></span><span>הבית</span></div>
+          <div class="nav-item"><span class="dot"></span><span>המסע</span></div>
+          <div class="nav-item"><span class="dot"></span><span>משחקים</span></div>
+          <div class="nav-item"><span class="dot"></span><span>חשבון</span></div>
+        </nav>
+      </div>
+    </div>
+
+    <!-- A2: Journey dashboard -->
+    <div class="screen-wrap">
+      <div class="screen-label">הליווי שלי — /my/journey</div>
+      <div class="frame frame-padded">
+        <div class="status-bar"><span>9:42</span><span>mioshy.com</span></div>
+        <div class="scr">
+          <div class="eyebrow">הליווי שלי</div>
+          <h3>המסע השלם</h3>
+          <p class="sub">חמישה תחומים · 250 שיעורים · ענת ר., מומחית.</p>
+
+          <div class="seg" style="margin-bottom:14px">
+            <button class="active">סקירה</button>
+            <button>השיעורים שלי</button>
+            <button>האבחון שלי</button>
+          </div>
+
+          <div class="card" style="margin-bottom:12px">
+            <div class="between" style="margin-bottom:6px">
+              <span class="eyebrow">המוקד הנוכחי</span>
+              <span class="chip">חודש 1</span>
+            </div>
+            <div class="strong" style="font-size:17px;margin-bottom:4px">מיניות ואינטימיות</div>
+            <div class="meta">העדיפות שבחרתם באבחון. נסיים סבב ראשון עוד 3 שבועות.</div>
+          </div>
+
+          <div class="stack">
+            <div class="lesson-card row-card">
+              <div class="row">
+                <div class="icon-square c1">א</div>
+                <div style="flex:1">
+                  <div class="strong" style="font-size:14px">שפת האהבה שלי — ושלך</div>
+                  <div class="meta">תקשורת · נפתח אתמול</div>
+                </div>
+                <span class="pill pill-soft">המשך</span>
+              </div>
+            </div>
+            <div class="lesson-card row-card">
+              <div class="row">
+                <div class="icon-square c2">ב</div>
+                <div style="flex:1">
+                  <div class="strong" style="font-size:14px">מתי כבר נגעתם זה בזה?</div>
+                  <div class="meta">אינטימיות · ייפתח מחר</div>
+                </div>
+                <span class="pill pill-off">בקרוב</span>
+              </div>
+            </div>
+            <div class="lesson-card row-card">
+              <div class="row">
+                <div class="icon-square c3">ג</div>
+                <div style="flex:1">
+                  <div class="strong" style="font-size:14px">השיחה שאף פעם לא היתה</div>
+                  <div class="meta">חיבור רגשי · יום ראשון</div>
+                </div>
+                <span class="pill pill-off">בקרוב</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <nav class="nav-bar">
+          <div class="nav-item"><span class="dot"></span><span>הבית</span></div>
+          <div class="nav-item active"><span class="dot"></span><span>המסע</span></div>
+          <div class="nav-item"><span class="dot"></span><span>משחקים</span></div>
+          <div class="nav-item"><span class="dot"></span><span>חשבון</span></div>
+        </nav>
+      </div>
+    </div>
+
+    <!-- A3: Assessment moved into dashboard -->
+    <div class="screen-wrap">
+      <div class="screen-label">האבחון שלי — בתוך הדשבורד</div>
+      <div class="frame frame-padded">
+        <div class="status-bar"><span>9:42</span><span>mioshy.com</span></div>
+        <div class="scr">
+          <div class="tab-strip">
+            <div>סקירה</div>
+            <div>השיעורים שלי</div>
+            <div class="active">האבחון שלי</div>
+          </div>
+
+          <div class="eyebrow">תוצאות האבחון</div>
+          <h3>התמונה שיצאה לכם</h3>
+          <p class="sub">12 בפברואר · נשמרו בארכיון. ניתן להריץ אבחון נוסף בעוד 60 ימים.</p>
+
+          <div class="gap-sm" style="margin-bottom:14px">
+            <div class="card" style="flex:1;text-align:center">
+              <div class="meta">חברות</div>
+              <div class="num" style="margin-top:4px;color:#7A8A6F">75</div>
+            </div>
+            <div class="card" style="flex:1;text-align:center">
+              <div class="meta">קונפליקטים</div>
+              <div class="num" style="margin-top:4px;color:#7A8A6F">68</div>
+            </div>
+            <div class="card" style="flex:1;text-align:center">
+              <div class="meta">תשוקה</div>
+              <div class="num" style="margin-top:4px;color:#B85C44">42</div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-bottom:12px">
+            <div class="eyebrow">המוקד שבחרתם</div>
+            <div class="strong" style="font-size:16px;margin:6px 0 4px">מיניות ואינטימיות</div>
+            <div class="meta">העדיפות הראשונה שלכם — זו הקטגוריה שמתחילה את המסע, ומתחדשת בכל חודש.</div>
+          </div>
+
+          <hr class="divider">
+          <div class="strong" style="font-size:14px;margin-bottom:8px">סיכום מילולי</div>
+          <p class="meta" style="line-height:1.65">אנחנו רואים בתשובות שלכם זוגיות אמיתית — עם היכרות, חום ורצון להתחבר עוד יותר. בסיס התקשורת ביניכם איתן, מה שמאפשר לצלול לעומק החיבור...</p>
+          <a class="btn-soft btn" style="margin-top:14px">קראו את הניתוח המלא</a>
+        </div>
+        <nav class="nav-bar">
+          <div class="nav-item"><span class="dot"></span><span>הבית</span></div>
+          <div class="nav-item active"><span class="dot"></span><span>המסע</span></div>
+          <div class="nav-item"><span class="dot"></span><span>משחקים</span></div>
+          <div class="nav-item"><span class="dot"></span><span>חשבון</span></div>
+        </nav>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────────────────────────── -->
+<!-- OPTION B — Quiet Night                                          -->
+<!-- ─────────────────────────────────────────────────────────────── -->
+<section class="option b">
+  <div class="opt-head">
+    <div>
+      <span class="tag">חלופה ב׳</span>
+      <h2 style="margin-top:8px">Quiet Night</h2>
+    </div>
+    <p class="pitch">דיו עמוק (לא יין), אקסנט יחיד של זהב חם, גרמטיקה ויזואלית של Linear/Vercel. לא "פלטפורמת רומנטיקה" — דשבורד מקצועי לעבודה אמיתית.</p>
+  </div>
+
+  <div class="principles">
+    <div class="principle"><div class="ptitle">פלטה</div>דיו #14171A · משטח #20242A · קרם #F2EDE5 · זהב חם #C9A86A (אקסנט יחיד)</div>
+    <div class="principle"><div class="ptitle">טיפוגרפיה</div>Heebo בלבד. ניגוד מבוסס משקל ולא צבע — ספרים גדולים, גוף נקי, ללא קישוטים.</div>
+    <div class="principle"><div class="ptitle">חומריות</div>גבולות 1px, רדיוסים שמרניים (10–12px), ללא glow, ללא blur בלובים, ללא צבע יין/אמרלד/פוקסיה.</div>
+  </div>
+
+  <div class="screens" style="margin-top:28px">
+
+    <!-- B1: /my hub -->
+    <div class="screen-wrap">
+      <div class="screen-label">דף הבית — /my</div>
+      <div class="frame frame-padded">
+        <div class="status-bar"><span>9:42</span><span>mioshy.com</span></div>
+        <div class="scr">
+          <div class="eyebrow">שלום, נועה ויואב</div>
+          <h3>איפה אנחנו השבוע</h3>
+          <p class="sub">שבוע 9 מתוך 12. נמשיך מאיפה שעצרנו.</p>
+
+          <div class="card" style="margin-bottom:12px">
+            <div class="between" style="margin-bottom:10px">
+              <span class="pill pill-on">פעיל</span>
+              <span class="meta">חודש שלישי · שבוע 9 / 12</span>
+            </div>
+            <div class="strong" style="font-size:16px;margin-bottom:6px">המסע עם מיאושי</div>
+            <div class="progress"><span style="width:62%"></span></div>
+            <div class="between" style="margin-top:10px">
+              <span class="meta">7 שיעורים פתוחים</span>
+              <span class="meta">ענת ר.</span>
+            </div>
+          </div>
+
+          <div class="row-card" style="padding:12px 14px;margin-bottom:10px">
+            <div class="between">
+              <div>
+                <div class="strong" style="font-size:14px">השיעור של היום</div>
+                <div class="meta">תקשורת זוגית · 12 דקות</div>
+              </div>
+              <span class="pill pill-soft">פתוח</span>
+            </div>
+          </div>
+
+          <div class="row-card" style="padding:12px 14px;margin-bottom:18px">
+            <div class="between">
+              <div>
+                <div class="strong" style="font-size:14px">צ׳אט עם ענת</div>
+                <div class="meta">"חשבתי עליכם השבוע — איך עבר השיעור?"</div>
+              </div>
+              <span class="pill pill-soft">2</span>
+            </div>
+          </div>
+
+          <a class="btn">פתחו את השיעור</a>
+        </div>
+        <nav class="nav-bar">
+          <div class="nav-item active"><span class="dot"></span><span>הבית</span></div>
+          <div class="nav-item"><span class="dot"></span><span>המסע</span></div>
+          <div class="nav-item"><span class="dot"></span><span>משחקים</span></div>
+          <div class="nav-item"><span class="dot"></span><span>חשבון</span></div>
+        </nav>
+      </div>
+    </div>
+
+    <!-- B2: Journey dashboard -->
+    <div class="screen-wrap">
+      <div class="screen-label">הליווי שלי — /my/journey</div>
+      <div class="frame frame-padded">
+        <div class="status-bar"><span>9:42</span><span>mioshy.com</span></div>
+        <div class="scr">
+          <div class="eyebrow">הליווי שלי</div>
+          <h3>המסע השלם</h3>
+          <p class="sub">חמישה תחומים · 250 שיעורים · ענת ר., מומחית.</p>
+
+          <div class="seg" style="margin-bottom:14px">
+            <button class="active">סקירה</button>
+            <button>השיעורים שלי</button>
+            <button>האבחון שלי</button>
+          </div>
+
+          <div class="card" style="margin-bottom:12px">
+            <div class="between" style="margin-bottom:6px">
+              <span class="eyebrow">המוקד הנוכחי</span>
+              <span class="chip">חודש 1</span>
+            </div>
+            <div class="strong" style="font-size:17px;margin-bottom:4px">מיניות ואינטימיות</div>
+            <div class="meta">העדיפות שבחרתם באבחון. סבב ראשון יסתיים עוד 3 שבועות.</div>
+          </div>
+
+          <div class="stack">
+            <div class="lesson-card row-card">
+              <div class="row">
+                <div class="icon-square c1">א</div>
+                <div style="flex:1">
+                  <div class="strong" style="font-size:14px">שפת האהבה שלי — ושלך</div>
+                  <div class="meta">תקשורת · נפתח אתמול</div>
+                </div>
+                <span class="pill pill-soft">המשך</span>
+              </div>
+            </div>
+            <div class="lesson-card row-card">
+              <div class="row">
+                <div class="icon-square c2">ב</div>
+                <div style="flex:1">
+                  <div class="strong" style="font-size:14px">מתי כבר נגעתם זה בזה?</div>
+                  <div class="meta">אינטימיות · ייפתח מחר</div>
+                </div>
+                <span class="pill pill-off">בקרוב</span>
+              </div>
+            </div>
+            <div class="lesson-card row-card">
+              <div class="row">
+                <div class="icon-square c3">ג</div>
+                <div style="flex:1">
+                  <div class="strong" style="font-size:14px">השיחה שאף פעם לא היתה</div>
+                  <div class="meta">חיבור רגשי · יום ראשון</div>
+                </div>
+                <span class="pill pill-off">בקרוב</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <nav class="nav-bar">
+          <div class="nav-item"><span class="dot"></span><span>הבית</span></div>
+          <div class="nav-item active"><span class="dot"></span><span>המסע</span></div>
+          <div class="nav-item"><span class="dot"></span><span>משחקים</span></div>
+          <div class="nav-item"><span class="dot"></span><span>חשבון</span></div>
+        </nav>
+      </div>
+    </div>
+
+    <!-- B3: Assessment as tab inside dashboard -->
+    <div class="screen-wrap">
+      <div class="screen-label">האבחון שלי — בתוך הדשבורד</div>
+      <div class="frame frame-padded">
+        <div class="status-bar"><span>9:42</span><span>mioshy.com</span></div>
+        <div class="scr">
+          <div class="tab-strip">
+            <div>סקירה</div>
+            <div>השיעורים שלי</div>
+            <div class="active">האבחון שלי</div>
+          </div>
+
+          <div class="eyebrow">תוצאות האבחון</div>
+          <h3>התמונה שיצאה לכם</h3>
+          <p class="sub">12 בפברואר · נשמרו בארכיון. ניתן להריץ אבחון נוסף בעוד 60 ימים.</p>
+
+          <div class="gap-sm" style="margin-bottom:14px">
+            <div class="card" style="flex:1;text-align:center">
+              <div class="meta">חברות</div>
+              <div class="num" style="margin-top:4px;color:#A7BCB4">75</div>
+            </div>
+            <div class="card" style="flex:1;text-align:center">
+              <div class="meta">קונפליקטים</div>
+              <div class="num" style="margin-top:4px;color:#A7BCB4">68</div>
+            </div>
+            <div class="card" style="flex:1;text-align:center">
+              <div class="meta">תשוקה</div>
+              <div class="num" style="margin-top:4px;color:#DBC18A">42</div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-bottom:12px">
+            <div class="eyebrow">המוקד שבחרתם</div>
+            <div class="strong" style="font-size:16px;margin:6px 0 4px">מיניות ואינטימיות</div>
+            <div class="meta">העדיפות הראשונה שלכם — זו הקטגוריה שמתחילה את המסע ומתחדשת בכל חודש.</div>
+          </div>
+
+          <hr class="divider">
+          <div class="strong" style="font-size:14px;margin-bottom:8px">סיכום מילולי</div>
+          <p class="meta" style="line-height:1.65">אנחנו רואים בתשובות שלכם זוגיות אמיתית — עם היכרות, חום ורצון להתחבר עוד יותר. בסיס התקשורת ביניכם איתן, מה שמאפשר לצלול לעומק החיבור...</p>
+          <a class="btn-soft btn" style="margin-top:14px">קראו את הניתוח המלא</a>
+        </div>
+        <nav class="nav-bar">
+          <div class="nav-item"><span class="dot"></span><span>הבית</span></div>
+          <div class="nav-item active"><span class="dot"></span><span>המסע</span></div>
+          <div class="nav-item"><span class="dot"></span><span>משחקים</span></div>
+          <div class="nav-item"><span class="dot"></span><span>חשבון</span></div>
+        </nav>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+</body>
+</html>

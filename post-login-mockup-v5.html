@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mioshy — Studio v5 · Brand Palette</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    /* ─── Tokens ─ Mioshy existing brand colors only ───
+       Dark canvas matches the live SiteHeader gradient
+         linear-gradient(135deg, #0F0828, #09051C, #0E0726)
+       Wine accent matches AnalysisSummary / OfferCard
+         #B83C4D + #6C2E40
+       Primary CTA gradient = exact header signup gradient
+         #d946ef → #a855f7 → #ec4899 → #f59e0b
+       Sage matches the existing "active subscription" pill in /my.
+       --------------------------------- */
+    :root {
+      --canvas-deep:   #07041A;
+      --canvas:        #0F0828;     /* page canvas = brand dark */
+      --content-panel: #18103A;     /* the "paper" surface */
+      --card:          #1F1648;
+      --card-elev:     #261B54;
+      --line-soft:     rgba(255,255,255,0.08);
+      --line-mid:      rgba(255,255,255,0.14);
+      --line-glow:     rgba(217,70,239,0.30);
+
+      --side-bg:       #FAF6F7;     /* INVERTED: light sidebar on dark content */
+      --side-text:     #1B0F2E;
+      --side-text-sub: #6B5E80;
+      --side-active-bg:#1B0F2E;
+      --side-active-fg:#FAF6F7;
+
+      --text-1:        #FAF6F7;
+      --text-2:        #C9C0DC;
+      --text-3:        #897FA6;
+
+      --wine:          #B83C4D;
+      --wine-deep:     #6C2E40;
+      --wine-soft:     rgba(184,60,77,0.16);
+      --wine-edge:     rgba(184,60,77,0.32);
+
+      --amber:         #F59E0B;
+      --amber-soft:    rgba(245,158,11,0.18);
+      --sage:          #87A878;
+      --sage-soft:     rgba(135,168,120,0.16);
+
+      --cta-grad:      linear-gradient(110deg, #D946EF 0%, #A855F7 35%, #EC4899 70%, #F59E0B 100%);
+      --header-grad:   linear-gradient(135deg, #0F0828 0%, #09051C 50%, #0E0726 100%);
+    }
+
+    *,*::before,*::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: 'Heebo', system-ui, sans-serif;
+      background: var(--canvas-deep);
+      color: var(--text-1);
+      padding: 36px 16px 80px;
+      line-height: 1.5;
+    }
+
+    .head { max-width: 1500px; margin: 0 auto 24px; }
+    .head h1 { font-size: 30px; margin: 0 0 8px; font-weight: 800; letter-spacing: -0.02em; }
+    .head p { font-size: 15px; color: var(--text-2); margin: 0 0 14px; max-width: 880px; line-height: 1.6; }
+
+    .spec { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 28px; max-width: 1500px; margin-inline: auto; }
+    @media (max-width: 980px) { .spec { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 540px) { .spec { grid-template-columns: 1fr; } }
+    .spec .item { background: var(--content-panel); border: 1px solid var(--line-soft); border-radius: 12px; padding: 12px 14px; }
+    .spec .lbl { font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: #E0B5F5; font-weight: 700; margin-bottom: 4px; }
+    .spec .val { font-size: 13px; color: var(--text-2); line-height: 1.55; }
+    .spec code { background: var(--canvas); padding: 1px 6px; border-radius: 4px; font-family: ui-monospace, monospace; font-size: 12px; color: var(--text-1); }
+
+    .sec-title { max-width: 1500px; margin: 36px auto 14px; display: flex; align-items: baseline; gap: 14px; }
+    .sec-title h2 { font-size: 20px; font-weight: 800; margin: 0; letter-spacing: -0.01em; }
+    .sec-title .kind { font-size: 13px; color: var(--text-3); }
+
+    .pair { max-width: 1500px; margin: 0 auto; display: grid; grid-template-columns: 380px 1fr; gap: 24px; align-items: start; }
+    @media (max-width: 1100px) { .pair { grid-template-columns: 1fr; } }
+    .col h3 { font-size: 13px; font-weight: 700; color: var(--text-3); margin: 0 0 10px; letter-spacing: 0.12em; text-transform: uppercase; }
+
+    /* ─── device chrome ─── */
+    .device { background: var(--canvas); color: var(--text-1); border-radius: 26px; overflow: hidden; position: relative;
+      box-shadow: 0 28px 60px -22px rgba(0,0,0,0.7), 0 4px 10px -4px rgba(0,0,0,0.4);
+    }
+    .device.mobile { width: 380px; min-height: 820px; margin: 0 auto; border-radius: 32px; }
+    .device.desktop { width: 100%; min-height: 720px; border-radius: 20px; border: 1px solid var(--line-soft); }
+
+    /* top bar — uses real Mioshy header gradient */
+    .topbar { background: var(--header-grad); border-bottom: 1px solid var(--line-soft); padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .topbar .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; }
+    .topbar .logo {
+      width: 32px; height: 32px; border-radius: 9px;
+      background: var(--cta-grad);
+      display: flex; align-items: center; justify-content: center;
+      color: #FFFFFF; font-weight: 900; font-size: 14px;
+      box-shadow: 0 4px 14px -4px rgba(217,70,239,0.45);
+    }
+    .topbar .right { display: flex; align-items: center; gap: 8px; }
+    .iconbtn { width: 38px; height: 38px; border-radius: 11px; background: rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: center; font-size: 16px; position: relative; color: var(--text-1); }
+    .iconbtn .badge {
+      position: absolute; top: -4px; left: -4px;
+      min-width: 18px; height: 18px; padding: 0 5px;
+      background: var(--amber); color: #1A1410;
+      font-size: 11px; font-weight: 800; border-radius: 999px;
+      display: flex; align-items: center; justify-content: center;
+      border: 2px solid var(--canvas);
+    }
+
+    /* mobile bottom nav — uses header gradient as well, instantly identifiable */
+    .mobtabs {
+      position: absolute; bottom: 0; right: 0; left: 0;
+      display: grid; grid-template-columns: repeat(4,1fr); gap: 4px;
+      padding: 8px 8px 22px;
+      background: var(--header-grad);
+      border-top: 1px solid var(--line-mid);
+    }
+    .mobtabs .t {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      font-size: 12px; font-weight: 600; color: var(--text-3); padding: 8px 4px; border-radius: 10px;
+    }
+    .mobtabs .t .g { width: 22px; height: 22px; border-radius: 7px; background: rgba(255,255,255,0.08); position: relative; }
+    .mobtabs .t.active { color: var(--text-1); }
+    .mobtabs .t.active .g { background: var(--cta-grad); }
+    .mobtabs .t .g[data-new]::after {
+      content: ''; position: absolute; top: -2px; left: -2px;
+      width: 8px; height: 8px; border-radius: 50%; background: var(--amber);
+      border: 2px solid var(--canvas);
+    }
+
+    /* mobile content scroll area */
+    .scroll { padding: 14px 18px 110px; display: flex; flex-direction: column; gap: 16px; }
+    .scroll.no-pad-bottom { padding-bottom: 30px; }
+    .crumb { padding: 12px 18px 0; font-size: 14px; color: var(--text-3); }
+
+    /* progress */
+    .prog { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 14px; color: var(--text-2); }
+    .prog .bar { flex: 1; height: 5px; background: rgba(255,255,255,0.10); border-radius: 999px; overflow: hidden; }
+    .prog .bar > span { display: block; height: 100%; background: var(--cta-grad); border-radius: 999px; }
+
+    .secHead { display: flex; align-items: baseline; justify-content: space-between; }
+    .secHead h3 { font-size: 18px; font-weight: 800; margin: 0; color: var(--text-1); letter-spacing: -0.01em; }
+    .secHead .a { font-size: 14px; color: #E0B5F5; font-weight: 600; }
+    .secHead .count { font-size: 14px; color: var(--text-3); }
+
+    /* hero (current item) */
+    .hero {
+      background: linear-gradient(160deg, rgba(217,70,239,0.10) 0%, var(--card) 40%, var(--content-panel) 100%);
+      border: 1px solid var(--line-glow);
+      border-radius: 20px;
+      padding: 22px;
+      position: relative;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.06),
+                  0 16px 36px -18px rgba(217,70,239,0.30);
+    }
+    .hero[data-new="true"]::after {
+      content: 'נפתח עכשיו';
+      position: absolute; top: 16px; right: 16px;
+      background: var(--amber); color: #1A0F00;
+      font-size: 13px; font-weight: 800; padding: 4px 10px; border-radius: 999px;
+    }
+    .hero[data-new="true"] .pre { padding-inline-start: 92px; }
+    .hero .pre { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
+    .hero .focus { font-size: 14px; color: var(--text-2); font-weight: 500; }
+    .hero .chip {
+      font-size: 14px; padding: 5px 12px; border-radius: 999px;
+      background: var(--wine-soft); color: #F2B5BD; font-weight: 700; border: 1px solid var(--wine-edge);
+    }
+    .hero h2 { font-size: 26px; font-weight: 900; margin: 6px 0 12px; letter-spacing: -0.015em; line-height: 1.18; color: var(--text-1); }
+    .hero .meta { display: flex; gap: 8px; font-size: 14px; color: var(--text-2); margin-bottom: 18px; flex-wrap: wrap; }
+    .hero .meta span { padding: 4px 11px; border-radius: 999px; background: rgba(255,255,255,0.05); font-weight: 600; }
+    .hero .cta {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      width: 100%; padding: 16px 14px; border-radius: 14px;
+      color: #FFFFFF; font-weight: 800; font-size: 18px; letter-spacing: -0.01em;
+      background: var(--cta-grad);
+      box-shadow: 0 10px 28px -10px rgba(217,70,239,0.55);
+      text-shadow: 0 1px 0 rgba(0,0,0,0.20);
+    }
+
+    /* chat preview */
+    .chat { background: var(--card); border: 1px solid var(--line-soft); border-radius: 16px; padding: 16px; display: flex; gap: 14px; align-items: center; position: relative; }
+    .chat .avatar {
+      width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0; position: relative;
+      background: linear-gradient(135deg, var(--wine) 0%, var(--wine-deep) 100%);
+      display: flex; align-items: center; justify-content: center; color: #FFFFFF; font-weight: 800; font-size: 16px;
+    }
+    .chat .avatar .presence { position: absolute; bottom: 0; right: 0; width: 12px; height: 12px; border-radius: 50%; background: var(--sage); border: 2px solid var(--card); }
+    .chat .body { flex: 1; min-width: 0; }
+    .chat .h { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+    .chat .name { font-weight: 700; font-size: 16px; color: var(--text-1); }
+    .chat .when { font-size: 14px; color: var(--text-3); }
+    .chat .msg { font-size: 16px; color: var(--text-2); line-height: 1.45; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+    .chat .unread {
+      align-self: center; flex-shrink: 0;
+      min-width: 28px; height: 28px; padding: 0 9px;
+      background: var(--cta-grad); color: #FFFFFF;
+      font-size: 14px; font-weight: 800; border-radius: 999px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 14px -4px rgba(217,70,239,0.55);
+    }
+
+    /* items list */
+    .list { display: flex; flex-direction: column; gap: 10px; }
+    .litem { display: flex; gap: 14px; align-items: center; background: var(--card); border: 1px solid var(--line-soft); padding: 14px; border-radius: 14px; position: relative; }
+    .litem .num { width: 36px; height: 36px; border-radius: 11px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 16px; }
+    .litem .text { flex: 1; min-width: 0; }
+    .litem .title { font-size: 18px; font-weight: 700; color: var(--text-1); line-height: 1.3; }
+    .litem .sub { font-size: 14px; color: var(--text-3); margin-top: 2px; }
+    .litem .when { font-size: 14px; color: var(--text-3); flex-shrink: 0; }
+    .litem.done { background: rgba(31,22,72,0.50); border-color: rgba(255,255,255,0.04); }
+    .litem.done .num { background: var(--sage-soft); color: var(--sage); }
+    .litem.done .title { color: var(--text-2); font-weight: 600; }
+    .litem.done .sub, .litem.done .when { color: var(--text-3); opacity: 0.85; }
+    .litem.locked { background: rgba(31,22,72,0.30); border-color: rgba(255,255,255,0.04); opacity: 0.72; }
+    .litem.locked .num { background: rgba(255,255,255,0.04); color: var(--text-3); }
+    .litem.locked .title { color: var(--text-2); font-weight: 500; }
+
+    /* ─── LESSON view ─── */
+    .lesson-eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 14px; font-weight: 700; color: #F2B5BD; letter-spacing: 0.10em; text-transform: uppercase;
+      background: var(--wine-soft); border: 1px solid var(--wine-edge);
+      padding: 5px 12px; border-radius: 999px;
+    }
+    .lesson-title { font-size: 30px; font-weight: 900; line-height: 1.15; margin: 14px 0 10px; letter-spacing: -0.02em; color: var(--text-1); }
+    .device.desktop .lesson-title { font-size: 38px; }
+    .lesson-time { font-size: 14px; color: var(--text-3); margin-bottom: 22px; }
+    .lesson-block { background: var(--card); border: 1px solid var(--line-soft); border-radius: 16px; padding: 20px; margin-bottom: 14px; }
+    .lesson-block .h { font-size: 14px; font-weight: 700; color: #E0B5F5; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 8px; }
+    .lesson-block .b { font-size: 20px; line-height: 1.55; color: var(--text-1); font-weight: 400; }
+    .lesson-block .b strong { color: #F2B5BD; font-weight: 700; }
+    .lesson-block.callout {
+      background: linear-gradient(135deg, rgba(184,60,77,0.18) 0%, var(--card) 100%);
+      border-color: var(--wine-edge);
+    }
+    .lesson-actions { display: flex; gap: 10px; margin-top: 22px; flex-wrap: wrap; }
+    .btn-primary {
+      flex: 1; min-width: 200px;
+      background: var(--cta-grad); color: #FFFFFF;
+      padding: 15px 18px; border-radius: 14px;
+      font-weight: 800; font-size: 17px; letter-spacing: -0.01em;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      box-shadow: 0 10px 28px -10px rgba(217,70,239,0.55);
+    }
+    .btn-ghost {
+      padding: 15px 18px; border-radius: 14px;
+      background: transparent; color: var(--text-1);
+      border: 1px solid var(--line-mid);
+      font-weight: 700; font-size: 15px;
+    }
+
+    /* ═══ DESKTOP SHELL ═══════════════════════════════════════
+       Visual logic: LIGHT sidebar (cream) — instantly identifiable
+       as the "menu". DARK content panel — the "page". Mirrors the
+       light-mode pattern of "dark menu + white page", flipped.
+       ═══════════════════════════════════════════════════════ */
+    .desk-shell {
+      display: grid;
+      grid-template-columns: 260px 1fr 320px;
+      gap: 24px;
+      padding: 24px;
+      background: var(--canvas-deep);
+    }
+    .desk-shell.no-right { grid-template-columns: 260px 1fr; }
+
+    /* LEFT SIDEBAR — light, the inverted menu */
+    .side-menu {
+      background: var(--side-bg);
+      color: var(--side-text);
+      border-radius: 18px;
+      padding: 16px;
+      height: fit-content;
+      box-shadow: 0 18px 40px -16px rgba(0,0,0,0.55);
+    }
+    .side-menu .who {
+      display: flex; align-items: center; gap: 12px; padding: 6px 8px 14px;
+      border-bottom: 1px solid rgba(27,15,46,0.10);
+      margin-bottom: 12px;
+    }
+    .side-menu .who .av {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: var(--cta-grad);
+      display: flex; align-items: center; justify-content: center;
+      color: #FFFFFF; font-weight: 800; font-size: 14px;
+    }
+    .side-menu .who .who-name { font-weight: 700; font-size: 14px; line-height: 1.2; }
+    .side-menu .who .who-sub { font-size: 12px; color: var(--side-text-sub); }
+    .side-menu .rail-h { font-size: 11px; font-weight: 700; color: var(--side-text-sub); letter-spacing: 0.16em; text-transform: uppercase; padding: 10px 12px 6px; }
+    .side-link {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 12px; border-radius: 10px; font-size: 15px; color: var(--side-text); font-weight: 600;
+    }
+    .side-link .ic { display: inline-flex; align-items: center; gap: 10px; }
+    .side-link .ic .sq { width: 22px; height: 22px; border-radius: 7px; background: rgba(27,15,46,0.08); }
+    .side-link.active { background: var(--side-active-bg); color: var(--side-active-fg); }
+    .side-link.active .sq { background: var(--cta-grad); }
+    .side-link .ind { width: 8px; height: 8px; border-radius: 50%; background: var(--amber); }
+    .side-menu hr { border: 0; height: 1px; background: rgba(27,15,46,0.10); margin: 6px 4px; }
+
+    /* CENTER — dark content panel ("the page") */
+    .content-panel {
+      background: var(--content-panel);
+      border: 1px solid var(--line-soft);
+      border-radius: 18px;
+      padding: 28px 28px 32px;
+      display: flex; flex-direction: column; gap: 16px;
+      min-width: 0;
+    }
+
+    /* RIGHT — expert side panel (dark like content) */
+    .side-expert {
+      background: var(--content-panel); border: 1px solid var(--line-soft);
+      border-radius: 18px; padding: 18px;
+      height: fit-content; position: sticky; top: 24px;
+      display: flex; flex-direction: column; gap: 14px;
+    }
+    .side-expert .h { display: flex; align-items: center; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--line-soft); }
+    .side-expert .h .av {
+      width: 42px; height: 42px; border-radius: 50%; position: relative;
+      background: linear-gradient(135deg, var(--wine) 0%, var(--wine-deep) 100%);
+      display: flex; align-items: center; justify-content: center; color: #FFFFFF; font-weight: 800; font-size: 15px;
+    }
+    .side-expert .h .av .presence { position: absolute; bottom: 0; right: 0; width: 11px; height: 11px; border-radius: 50%; background: var(--sage); border: 2px solid var(--content-panel); }
+    .side-expert .h .name { font-weight: 700; font-size: 16px; color: var(--text-1); }
+    .side-expert .h .role { font-size: 13px; color: var(--text-3); }
+    .conv-mini { display: flex; flex-direction: column; gap: 8px; }
+    .bubble { font-size: 15px; line-height: 1.45; padding: 10px 12px; border-radius: 14px; max-width: 100%; }
+    .bubble.them { background: var(--card); color: var(--text-1); border: 1px solid var(--line-soft); align-self: flex-start; border-bottom-right-radius: 4px; }
+    .bubble.me   { background: var(--cta-grad); color: #FFFFFF; align-self: flex-end; border-bottom-left-radius: 4px; font-weight: 500; }
+    .composer { display: flex; gap: 8px; align-items: center; background: var(--card); border: 1px solid var(--line-mid); border-radius: 999px; padding: 6px 6px 6px 14px; }
+    .composer .ipt { flex: 1; font-size: 14px; color: var(--text-3); }
+    .composer .sb { width: 32px; height: 32px; border-radius: 50%; background: var(--cta-grad); color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-weight: 800; }
+
+    .annot { font-size: 13px; color: var(--text-3); padding: 6px 4px; line-height: 1.55; }
+    .annot strong { color: var(--text-2); }
+  </style>
+</head>
+<body>
+
+  <header class="head">
+    <h1>Studio v5 — פלטת מיאושי הקיימת</h1>
+    <p>צבעים מהמותג: רקע סגול עמוק <code>#0F0828</code> כמו ב-SiteHeader, אקסנט יין <code>#B83C4D</code> כמו ב-AnalysisSummary, וגרדיאנט CTA <code>fuchsia→purple→pink→amber</code> בדיוק כמו כפתור "אני רוצה להצטרף" בהאדר. שום צבע חדש שהומצא לדשבורד.</p>
+    <p style="font-size:14px;color:var(--text-3)"><strong style="color:var(--text-2)">בדסקטופ:</strong> תפריט בצד שמאל בקרם <code>#FAF6F7</code> (מוכר, היפוך מהמצב הבהיר: "תפריט כהה + תוכן לבן" → "תפריט בהיר + תוכן כהה"). תוכן בפאנל סגול-כהה — בולט מיד איפה הניווט ואיפה הקריאה. <strong style="color:var(--text-2)">במובייל:</strong> Bottom-tab משתמש בגרדיאנט ההאדר עצמו — קל לזיהוי כניווט קבוע.</p>
+  </header>
+
+  <section class="spec">
+    <div class="item"><div class="lbl">פלטה — מיאושי בלבד</div><div class="val">קנבס <code>#0F0828</code> · יין <code>#B83C4D</code> · CTA grad <code>#D946EF→#F59E0B</code> · קרם תפריט <code>#FAF6F7</code>. שום צבע חדש.</div></div>
+    <div class="item"><div class="lbl">תפריט מול תוכן</div><div class="val">דסקטופ: sidebar קרם בהיר (היפוך מ"light mode menu"). תוכן בפאנל סגול-כהה עם פינות מעוגלות — קריאה כמו "דף על שולחן".</div></div>
+    <div class="item"><div class="lbl">CTA</div><div class="val">גרדיאנט ההאדר זוהר → גם בכפתור הירו וגם ב"סיימתי שיעור". שני כפתורים זהים = מסלול מובהק.</div></div>
+    <div class="item"><div class="lbl">קריאות</div><div class="val">גוף שיעור 20px / 1.55, כותרת 30–38px משקל 900, מטא 14px. ניגוד טקסט ראשי 17:1 ✓ AAA.</div></div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       1. /my/journey — "היום"
+       ═══════════════════════════════════════════════════════════════════ -->
+  <div class="sec-title">
+    <h2>/my/journey · ״היום״</h2>
+    <span class="kind">מסך הבית של הליווי</span>
+  </div>
+
+  <div class="pair">
+    <!-- MOBILE -->
+    <div class="col">
+      <h3>מובייל</h3>
+      <div class="device mobile">
+        <div class="topbar">
+          <div class="brand"><div class="logo">M</div><span>המסע שלי</span></div>
+          <div class="right">
+            <div class="iconbtn">✶</div>
+            <div class="iconbtn">✉<span class="badge">2</span></div>
+          </div>
+        </div>
+        <div class="crumb">דף הבית › המסע שלי</div>
+        <div class="scroll">
+          <div class="prog">
+            <span>חודש 1</span>
+            <div class="bar"><span style="width:18%"></span></div>
+            <span>שבוע 2 / 12</span>
+          </div>
+
+          <article class="hero" data-new="true">
+            <div class="pre">
+              <span class="focus">המוקד · מיניות ואינטימיות</span>
+              <span class="chip">השיעור הנוכחי</span>
+            </div>
+            <h2>שפת האהבה שלי — ושלך</h2>
+            <div class="meta">
+              <span>תקשורת</span><span>12 דקות</span><span>מתאים לערב</span>
+            </div>
+            <a class="cta">פתחו את השיעור ←</a>
+          </article>
+
+          <article class="chat">
+            <div class="avatar">ע<span class="presence"></span></div>
+            <div class="body">
+              <div class="h">
+                <span class="name">ענת ר.</span>
+                <span class="when">לפני 2ש</span>
+              </div>
+              <div class="msg">״חשבתי עליכם השבוע. איך עבר השיעור על שפת האהבה? שאלה אחת לפני שאני שולחת את הבא…״</div>
+            </div>
+            <span class="unread">2</span>
+          </article>
+
+          <div class="secHead"><h3>ההיסטוריה שלכם</h3><span class="a">הכל</span></div>
+          <div class="list">
+            <div class="litem done"><div class="num">✓</div><div class="text"><div class="title">להגיד תודה — בכוונה</div><div class="sub">חיבור רגשי · הושלם</div></div><div class="when">לפני 3ימ׳</div></div>
+            <div class="litem done"><div class="num">✓</div><div class="text"><div class="title">השיחה שאף פעם לא הייתה</div><div class="sub">תקשורת · הושלם</div></div><div class="when">לפני 6ימ׳</div></div>
+            <div class="litem done"><div class="num">✓</div><div class="text"><div class="title">חמש דקות שמשנות יום</div><div class="sub">חברות · הושלם</div></div><div class="when">שבוע שעבר</div></div>
+          </div>
+        </div>
+        <nav class="mobtabs">
+          <div class="t active"><span class="g"></span><span>היום</span></div>
+          <div class="t"><span class="g" data-new></span><span>השיעורים</span></div>
+          <div class="t"><span class="g" data-new></span><span>צ׳אט</span></div>
+          <div class="t"><span class="g"></span><span>חשבון</span></div>
+        </nav>
+      </div>
+      <p class="annot"><strong>Bottom-tab:</strong> אותו גרדיאנט של ההאדר העליון — מיד מובחן כניווט קבוע. נקודות אדומות → תוכן חדש.</p>
+    </div>
+
+    <!-- DESKTOP -->
+    <div class="col">
+      <h3>דסקטופ</h3>
+      <div class="device desktop">
+        <div class="topbar">
+          <div class="brand"><div class="logo">M</div><span>מיאושי שלי</span></div>
+          <div class="right">
+            <div class="iconbtn">✉<span class="badge">2</span></div>
+            <div class="iconbtn">⚙</div>
+            <div class="iconbtn">נ</div>
+          </div>
+        </div>
+
+        <div class="desk-shell">
+          <!-- LIGHT SIDEBAR -->
+          <aside class="side-menu">
+            <div class="who">
+              <div class="av">נ</div>
+              <div>
+                <div class="who-name">נועה ויואב</div>
+                <div class="who-sub">חודש 1 · שבוע 2/12</div>
+              </div>
+            </div>
+            <div class="rail-h">המסע</div>
+            <div class="side-link active"><span class="ic"><span class="sq"></span>היום</span></div>
+            <div class="side-link"><span class="ic"><span class="sq"></span>השיעורים</span><span class="ind"></span></div>
+            <div class="side-link"><span class="ic"><span class="sq"></span>צ׳אט עם ענת</span><span class="ind"></span></div>
+            <div class="side-link"><span class="ic"><span class="sq"></span>האבחון שלי</span></div>
+            <div class="side-link"><span class="ic"><span class="sq"></span>התקדמות</span></div>
+            <hr>
+            <div class="rail-h">החשבון</div>
+            <div class="side-link"><span class="ic"><span class="sq"></span>שיתוף עם בן/בת זוג</span></div>
+            <div class="side-link"><span class="ic"><span class="sq"></span>מנוי וחיוב</span></div>
+            <div class="side-link"><span class="ic"><span class="sq"></span>פרופיל</span></div>
+          </aside>
+
+          <!-- DARK CONTENT PANEL -->
+          <main class="content-panel">
+            <div class="prog">
+              <span>המוקד הנוכחי · מיניות ואינטימיות</span>
+              <div class="bar"><span style="width:18%"></span></div>
+              <span>שבוע 2 / 12</span>
+            </div>
+
+            <article class="hero" data-new="true">
+              <div class="pre">
+                <span class="focus">המוקד · מיניות ואינטימיות</span>
+                <span class="chip">השיעור הנוכחי</span>
+              </div>
+              <h2 style="font-size:30px">שפת האהבה שלי — ושלך</h2>
+              <div class="meta">
+                <span>תקשורת</span><span>12 דקות</span><span>מתאים לערב</span><span>אישי לכם</span>
+              </div>
+              <a class="cta" style="max-width:320px">פתחו את השיעור ←</a>
+            </article>
+
+            <div class="secHead"><h3>ההיסטוריה שלכם</h3><span class="a">הכל (9)</span></div>
+            <div class="list">
+              <div class="litem done"><div class="num">✓</div><div class="text"><div class="title">להגיד תודה — בכוונה</div><div class="sub">חיבור רגשי · הושלם</div></div><div class="when">לפני 3 ימים</div></div>
+              <div class="litem done"><div class="num">✓</div><div class="text"><div class="title">השיחה שאף פעם לא הייתה</div><div class="sub">תקשורת · הושלם</div></div><div class="when">לפני 6 ימים</div></div>
+              <div class="litem done"><div class="num">✓</div><div class="text"><div class="title">חמש דקות שמשנות יום</div><div class="sub">חברות · הושלם</div></div><div class="when">השבוע שעבר</div></div>
+            </div>
+
+            <div class="secHead" style="margin-top:6px"><h3>בקרוב</h3><span class="count">4 ממתינים</span></div>
+            <div class="list">
+              <div class="litem locked"><div class="num">⌛</div><div class="text"><div class="title">מתי כבר נגעתם זה בזה?</div><div class="sub">אינטימיות · ייפתח מחר</div></div></div>
+              <div class="litem locked"><div class="num">⌛</div><div class="text"><div class="title">להתנצל כמו מבוגרים</div><div class="sub">תקשורת · יום ראשון</div></div></div>
+            </div>
+          </main>
+
+          <!-- expert side panel -->
+          <aside class="side-expert">
+            <div class="h">
+              <div class="av">ע<span class="presence"></span></div>
+              <div>
+                <div class="name">ענת ר.</div>
+                <div class="role">המומחית שלכם · online</div>
+              </div>
+            </div>
+            <div class="conv-mini">
+              <div class="bubble them">חשבתי עליכם השבוע. איך עבר השיעור?</div>
+              <div class="bubble them">שאלה לפני הבא — מי הופתע יותר?</div>
+              <div class="bubble me">היה מאתגר, פתח שיחה ארוכה :)</div>
+            </div>
+            <div class="composer">
+              <span class="ipt">כתבו הודעה…</span>
+              <span class="sb">↑</span>
+            </div>
+          </aside>
+        </div>
+      </div>
+      <p class="annot"><strong>הסידור הדסקטופי:</strong> תפריט קרם בצד = "אני יודע איפה אני", פאנל סגול-כהה במרכז = "התוכן שלי", פאנל ימני קבוע = "המומחית בקצה אצבע". שלוש סקציות, שלוש פונקציות.</p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       2. Single lesson view
+       ═══════════════════════════════════════════════════════════════════ -->
+  <div class="sec-title">
+    <h2>שיעור בודד · ״שפת האהבה שלי — ושלך״</h2>
+    <span class="kind">מבנה תוכן — eyebrow קטגוריה + 4 בלוקים + פעולה. בלי ציטוטי מקור.</span>
+  </div>
+
+  <div class="pair">
+    <!-- MOBILE -->
+    <div class="col">
+      <h3>מובייל</h3>
+      <div class="device mobile">
+        <div class="topbar">
+          <div class="brand"><div class="logo">M</div><span>שיעור</span></div>
+          <div class="right">
+            <div class="iconbtn">⌕</div>
+            <div class="iconbtn">⋯</div>
+          </div>
+        </div>
+        <div class="crumb">המסע שלי › השיעורים › שפת האהבה</div>
+        <div class="scroll no-pad-bottom" style="padding-bottom:30px">
+          <span class="lesson-eyebrow">תקשורת</span>
+          <h1 class="lesson-title">שפת האהבה שלי — ושלך</h1>
+          <div class="lesson-time">12 דקות לקריאה · מתאים לערב</div>
+
+          <div class="lesson-block">
+            <div class="h">תובנה מרכזית</div>
+            <div class="b">כל אחד מאיתנו מבין אהבה דרך <strong>שפה מועדפת</strong>. כשאני מדבר/ת בשפה שלי — בעיקר אם היא שונה משל בן/בת הזוג — האהבה לא תמיד מתורגמת. החוכמה היא לזהות את השפה של השני, ולהתאמן בה גם כשהיא לא טבעית לי.</div>
+          </div>
+
+          <div class="lesson-block callout">
+            <div class="h">המבחן הקטן</div>
+            <div class="b">חישבו על מה הביקורת היומית שלכם. ״אנחנו לא מדברים״ → השפה שלכם זמן איכות. ״אתה לא עוזר לי״ → מעשי שירות. <strong>הביקורת היא חלון לצורך הלא ממומש.</strong></div>
+          </div>
+
+          <div class="lesson-block">
+            <div class="h">טעות נפוצה</div>
+            <div class="b">מתנות במקום נוכחות. מי ששפתו ״מעשי שירות״ יקנה לבן/בת זוג ש״זמן איכות״ — פרחים. הפרחים יפים — אבל לא נשמעים כ״אני אוהב/ת אותך״.</div>
+          </div>
+
+          <div class="lesson-block">
+            <div class="h">לעשות השבוע</div>
+            <div class="b">בחרו שפה אחת של בן/בת הזוג. תתרגלו אותה <strong>שלוש פעמים השבוע</strong>, באופן מודע — בלי להזכיר שאתם מתרגלים.</div>
+          </div>
+
+          <div class="lesson-actions">
+            <a class="btn-primary">סיימתי את השיעור ✓</a>
+            <a class="btn-ghost">לשמור</a>
+          </div>
+        </div>
+        <nav class="mobtabs">
+          <div class="t"><span class="g"></span><span>היום</span></div>
+          <div class="t active"><span class="g"></span><span>השיעורים</span></div>
+          <div class="t"><span class="g"></span><span>צ׳אט</span></div>
+          <div class="t"><span class="g"></span><span>חשבון</span></div>
+        </nav>
+      </div>
+      <p class="annot">eyebrow ״תקשורת״ (קטגוריה) נשאר. ציטוטי גוטמן/צ׳פמן הוסרו לטובת קריאה זורמת. בלוקים 20px עם משקל 400 — קריא בעיניים עייפות.</p>
+    </div>
+
+    <!-- DESKTOP -->
+    <div class="col">
+      <h3>דסקטופ</h3>
+      <div class="device desktop">
+        <div class="topbar">
+          <div class="brand"><div class="logo">M</div><span>מיאושי שלי</span></div>
+          <div class="right">
+            <div class="iconbtn">✉<span class="badge">2</span></div>
+            <div class="iconbtn">⚙</div>
+            <div class="iconbtn">נ</div>
+          </div>
+        </div>
+
+        <div class="desk-shell">
+          <!-- LIGHT SIDEBAR -->
+          <aside class="side-menu">
+            <div class="who">
+              <div class="av">נ</div>
+              <div>
+                <div class="who-name">נועה ויואב</div>
+                <div class="who-sub">חודש 1 · שבוע 2/12</div>
+              </div>
+            </div>
+            <div class="rail-h">המסע</div>
+            <div class="side-link"><span class="ic"><span class="sq"></span>היום</span></div>
+            <div class="side-link active"><span class="ic"><span class="sq"></span>השיעורים</span></div>
+            <div class="side-link"><span class="ic"><span class="sq"></span>צ׳אט עם ענת</span><span class="ind"></span></div>
+            <div class="side-link"><span class="ic"><span class="sq"></span>האבחון שלי</span></div>
+            <div class="side-link"><span class="ic"><span class="sq"></span>התקדמות</span></div>
+            <hr>
+            <div class="rail-h">שיעורי החודש</div>
+            <div class="side-link" style="background:rgba(217,70,239,0.10);color:#1B0F2E;font-weight:700">
+              <span class="ic"><span class="sq" style="background:var(--cta-grad)"></span>שפת האהבה</span>
+              <span style="font-size:11px;color:#A855F7">נוכחי</span>
+            </div>
+            <div class="side-link"><span class="ic"><span class="sq"></span>מתי כבר נגעתם</span><span class="ind"></span></div>
+            <div class="side-link"><span class="ic"><span class="sq"></span>להתנצל כמו מבוגרים</span></div>
+          </aside>
+
+          <!-- DARK CONTENT PANEL -->
+          <main class="content-panel">
+            <span class="lesson-eyebrow">תקשורת</span>
+            <h1 class="lesson-title">שפת האהבה שלי — ושלך</h1>
+            <div class="lesson-time">12 דקות לקריאה · מתאים לערב · אישי לכם</div>
+
+            <div class="lesson-block">
+              <div class="h">תובנה מרכזית</div>
+              <div class="b">כל אחד מאיתנו מבין אהבה דרך <strong>שפה מועדפת</strong>. כשאני מדבר/ת בשפה שלי — בעיקר אם היא שונה משל בן/בת הזוג — האהבה לא תמיד מתורגמת. החוכמה היא לזהות את השפה של השני, ולהתאמן בה גם כשהיא לא טבעית לי.</div>
+            </div>
+
+            <div class="lesson-block callout">
+              <div class="h">המבחן הקטן</div>
+              <div class="b">חישבו על מה הביקורת היומית שלכם. ״אנחנו לא מדברים״ → השפה שלכם זמן איכות. ״אתה לא עוזר לי״ → מעשי שירות. <strong>הביקורת היא חלון לצורך הלא ממומש.</strong></div>
+            </div>
+
+            <div class="lesson-block">
+              <div class="h">טעות נפוצה</div>
+              <div class="b">מתנות במקום נוכחות. מי ששפתו ״מעשי שירות״ יקנה לבן/בת זוג ש״זמן איכות״ — פרחים. הפרחים יפים — אבל לא נשמעים כ״אני אוהב/ת אותך״ באוזניים שלהם.</div>
+            </div>
+
+            <div class="lesson-block">
+              <div class="h">לעשות השבוע</div>
+              <div class="b">בחרו שפה אחת של בן/בת הזוג. תתרגלו אותה <strong>שלוש פעמים השבוע</strong>, באופן מודע — בלי להזכיר שאתם מתרגלים.</div>
+            </div>
+
+            <div class="lesson-actions">
+              <a class="btn-primary" style="max-width:280px">סיימתי את השיעור ✓</a>
+              <a class="btn-ghost">לשמור לאחר כך</a>
+              <a class="btn-ghost">לשלוח לבן/בת הזוג</a>
+            </div>
+          </main>
+
+          <!-- expert -->
+          <aside class="side-expert">
+            <div class="h">
+              <div class="av">ע<span class="presence"></span></div>
+              <div>
+                <div class="name">ענת ר.</div>
+                <div class="role">שאלות על השיעור?</div>
+              </div>
+            </div>
+            <div class="conv-mini">
+              <div class="bubble them">השיעור הזה לרוב מעלה את השאלה: ״ומה אם השפה שלנו זהה?״ — אם זה המקרה, ספרו לי.</div>
+            </div>
+            <div class="composer">
+              <span class="ipt">שאלה לענת…</span>
+              <span class="sb">↑</span>
+            </div>
+          </aside>
+        </div>
+      </div>
+      <p class="annot">בדסקטופ ה-sidebar גם מציג את שיעורי החודש (״נוכחי״ מודגש בגרדיאנט), כך שניווט בין שיעורים זמין תמיד בלי לעזוב את העמוד.</p>
+    </div>
+  </div>
+
+  <p style="max-width:1500px;margin:32px auto 0;font-size:14px;color:var(--text-3);line-height:1.6">
+    <strong style="color:var(--text-2)">/my (בית) — נשאר כפי שהוא בינתיים</strong> לפי בקשתך. אם נרצה לטעון אותו "מערכת" יותר אחר כך, נעשה איטרציה נפרדת על העמוד הקיים בלי להחליף מבנה.
+  </p>
+
+</body>
+</html>

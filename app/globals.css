@@ -83,6 +83,56 @@ small, .text-small {
     --mio-card-border: rgba(139, 92, 246, 0.20);
   }
 
+  /* ═══════════════════════════════════════════════════════════
+     APP SHELL TOKENS (post-login surface)
+     Scoped to `.app-shell` so they don't leak into marketing pages
+     or onto the homepage. Brand-aligned: wine + warm gradient.
+     See post-login-mockup-v12.html for the visual spec.
+     Added 2026-05-29 (Itzik Studio v12 sign-off).
+     ═══════════════════════════════════════════════════════════ */
+  .app-shell {
+    /* canvas (content area background) */
+    --shell-canvas-deep:  #060217;
+    --shell-canvas:       #0D0429;
+    --shell-canvas-grad:  linear-gradient(160deg, rgba(236,72,153,0.10) 0%, #320F37 23.53%, #0D0429 100%);
+    --shell-header-grad:  linear-gradient(135deg, #0F0828 0%, #09051C 50%, #0E0726 100%);
+
+    /* cards inside the content area */
+    --shell-card:         #1D0E36;
+    --shell-card-elev:    #28154A;
+    --shell-line-soft:    rgba(255,255,255,0.07);
+    --shell-line-mid:     rgba(255,255,255,0.13);
+
+    /* sidebar — same family, one notch lifted */
+    --shell-side-bg:      #150829;
+    --shell-side-bg-soft: #1B0E33;
+    --shell-side-line:    rgba(244,229,234,0.06);
+    --shell-side-line-mid:rgba(244,229,234,0.12);
+    --shell-side-t1:      #F4ECEE;
+    --shell-side-t2:      rgba(244,236,238,0.66);
+    --shell-side-t3:      rgba(244,236,238,0.42);
+    --shell-side-hover:   rgba(244,236,238,0.05);
+
+    /* text on content */
+    --shell-text-1:       #FAF6F7;
+    --shell-text-2:       #C9C0DC;
+    --shell-text-3:       #897FA6;
+
+    /* accent palette (matches AnalysisSummary + SiteHeader gradient) */
+    --shell-wine:         #B83C4D;
+    --shell-wine-deep:    #6C2E40;
+    --shell-wine-soft:    rgba(184,60,77,0.16);
+    --shell-wine-edge:    rgba(184,60,77,0.32);
+    --shell-pink-text:    #F2B5BD;
+    --shell-amber:        #F59E0B;
+    --shell-sage:         #87A878;
+    --shell-sage-soft:    rgba(135,168,120,0.20);
+
+    /* the loud gradient — used SPARINGLY (CTA only, and the small
+       active-route accent bar in SideNav) */
+    --shell-cta-grad:     linear-gradient(110deg, #B83C4D 0%, #EC4899 55%, #F59E0B 100%);
+  }
+
   [dir="rtl"] {
     --font-body: var(--font-body-hebrew);
     --font-heading: var(--font-heading-hebrew);

@@ -52,6 +52,11 @@ export const CMS_PAGES = [
   "my",
   "about",
   "shared",
+  // 2026-05-29 — post-login AppShell strings (Studio v12). 69 rows
+  // backfilled by migration 098_cms_texts_app_shell.sql. Components
+  // under components/shell/* and app/[locale]/(shell)/* read these
+  // via getCmsTranslations({ page: "app-shell" }).
+  "app-shell",
 ] as const;
 
 export type CmsPage = (typeof CMS_PAGES)[number];

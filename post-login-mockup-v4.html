@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mioshy — Studio v4 · Espresso + Cognac</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    /* ─── Design tokens (WCAG-checked) ───
+       Canvas espresso #1A1410 = luminance 0.007
+       text-1 #F4ECDE on canvas = 14.7:1 ✓ AAA
+       text-2 #B8AB99 on canvas =  7.6:1 ✓ AAA body / sub
+       text-3 #8E8275 on canvas =  4.7:1 ✓ AA  meta
+       accent #C7956A bg, text #1A1410 = 7.4:1 ✓ AAA  primary CTA
+       sage #87A878 bg, text #1A1410   = 5.9:1 ✓ AAA  "done"
+       --------------------------------- */
+    :root {
+      --bg:         #1A1410;
+      --bg-deep:    #120E0B;
+      --surface:    #251E18;
+      --surface-2:  #2E2620;
+      --line:       rgba(244,236,222,0.08);
+      --line-mid:   rgba(244,236,222,0.14);
+      --text-1:     #F4ECDE;
+      --text-2:     #B8AB99;
+      --text-3:     #8E8275;
+      --accent:     #C7956A;          /* warm cognac / tan */
+      --accent-2:   #E0B891;          /* lighter for text on dark */
+      --accent-glow:rgba(199,149,106,0.35);
+      --done:       #87A878;
+      --done-bg:    rgba(135,168,120,0.14);
+      --new:        #D4A574;
+      --new-bg:     rgba(212,165,116,0.18);
+    }
+
+    *,*::before,*::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: 'Heebo', system-ui, sans-serif;
+      background: var(--bg-deep); color: var(--text-1);
+      padding: 36px 16px 80px;
+      line-height: 1.5;
+    }
+
+    .head { max-width: 1480px; margin: 0 auto 24px; }
+    .head h1 { font-size: 30px; margin: 0 0 8px; font-weight: 800; letter-spacing: -0.02em; }
+    .head p { font-size: 15px; color: var(--text-2); margin: 0 0 14px; max-width: 820px; line-height: 1.6; }
+    .head .why { font-size: 14px; color: var(--text-3); }
+    .head .why strong { color: var(--text-2); font-weight: 600; }
+
+    /* spec strip */
+    .spec { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 28px; max-width: 1480px; margin-inline: auto; }
+    @media (max-width: 980px) { .spec { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 540px) { .spec { grid-template-columns: 1fr; } }
+    .spec .item { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+    .spec .lbl { font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent-2); font-weight: 700; margin-bottom: 4px; }
+    .spec .val { font-size: 13px; color: var(--text-2); line-height: 1.55; }
+    .spec code { background: var(--bg); padding: 1px 6px; border-radius: 4px; font-family: ui-monospace, monospace; font-size: 12px; color: var(--text-1); }
+
+    /* section heading on the page */
+    .sec-title {
+      max-width: 1480px; margin: 36px auto 14px;
+      display: flex; align-items: baseline; gap: 14px;
+    }
+    .sec-title h2 { font-size: 20px; font-weight: 800; margin: 0; letter-spacing: -0.01em; }
+    .sec-title .kind { font-size: 13px; color: var(--text-3); }
+
+    /* viewport row */
+    .pair { max-width: 1480px; margin: 0 auto; display: grid; grid-template-columns: 380px 1fr; gap: 24px; align-items: start; }
+    @media (max-width: 1100px) { .pair { grid-template-columns: 1fr; } }
+
+    .col h3 { font-size: 13px; font-weight: 700; color: var(--text-3); margin: 0 0 10px; letter-spacing: 0.12em; text-transform: uppercase; }
+
+    /* ─── shared device chrome ─── */
+    .device { background: var(--bg); color: var(--text-1); border-radius: 26px; overflow: hidden; box-shadow: 0 24px 60px -22px rgba(0,0,0,0.55), 0 4px 10px -4px rgba(0,0,0,0.35); position: relative; }
+    .device.mobile { width: 380px; min-height: 800px; margin: 0 auto; border-radius: 32px; }
+    .device.desktop { width: 100%; min-height: 720px; border-radius: 20px; border: 1px solid var(--line); }
+
+    /* top bar (shared) */
+    .topbar { background: var(--bg-deep); border-bottom: 1px solid var(--line); padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .topbar .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; }
+    .topbar .logo {
+      width: 30px; height: 30px; border-radius: 9px;
+      background: linear-gradient(135deg, #E0B891 0%, #C7956A 60%, #8C6440 100%);
+      display: flex; align-items: center; justify-content: center;
+      color: #1A1410; font-weight: 800; font-size: 14px;
+    }
+    .topbar .tabs { display: flex; gap: 4px; }
+    .topbar .tab {
+      padding: 7px 14px; border-radius: 8px; font-size: 14px; font-weight: 600; color: var(--text-3);
+      display: inline-flex; align-items: center; gap: 6px; position: relative;
+    }
+    .topbar .tab.active { background: rgba(244,236,222,0.06); color: var(--text-1); }
+    .topbar .tab .dot {
+      width: 7px; height: 7px; border-radius: 50%; background: var(--new);
+    }
+    .topbar .right { display: flex; align-items: center; gap: 8px; }
+    .iconbtn {
+      width: 38px; height: 38px; border-radius: 11px;
+      background: rgba(244,236,222,0.06);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; position: relative; color: var(--text-1);
+    }
+    .iconbtn .badge {
+      position: absolute; top: -4px; left: -4px;
+      min-width: 18px; height: 18px; padding: 0 5px;
+      background: var(--new); color: #1A1410;
+      font-size: 11px; font-weight: 800;
+      border-radius: 999px; display: flex; align-items: center; justify-content: center;
+      border: 2px solid var(--bg-deep);
+    }
+
+    /* mobile bottom tabs */
+    .mobtabs {
+      position: absolute; bottom: 0; right: 0; left: 0;
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      padding: 8px 8px 22px; background: var(--bg-deep);
+      border-top: 1px solid var(--line); gap: 4px;
+    }
+    .mobtabs .t {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      font-size: 12px; font-weight: 600; color: var(--text-3); padding: 8px 4px; border-radius: 10px;
+    }
+    .mobtabs .t .g { width: 22px; height: 22px; border-radius: 7px; background: rgba(244,236,222,0.1); position: relative; }
+    .mobtabs .t.active { color: var(--text-1); }
+    .mobtabs .t.active .g { background: var(--accent); }
+    .mobtabs .t .g[data-new]::after {
+      content: ''; position: absolute; top: -2px; left: -2px;
+      width: 8px; height: 8px; border-radius: 50%; background: var(--new);
+      border: 2px solid var(--bg-deep);
+    }
+
+    /* ─── content blocks ─── */
+    .crumb { padding: 12px 18px 0; font-size: 14px; color: var(--text-3); }
+    .scroll { padding: 14px 18px 110px; display: flex; flex-direction: column; gap: 16px; }
+    .scroll.no-pad-bottom { padding-bottom: 32px; }
+
+    .prog { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 14px; color: var(--text-2); }
+    .prog .bar { flex: 1; height: 5px; background: rgba(244,236,222,0.10); border-radius: 999px; overflow: hidden; }
+    .prog .bar > span { display: block; height: 100%; background: linear-gradient(90deg, #C7956A 0%, #E0B891 100%); border-radius: 999px; }
+
+    .secHead { display: flex; align-items: baseline; justify-content: space-between; }
+    .secHead h3 { font-size: 18px; font-weight: 800; margin: 0; color: var(--text-1); letter-spacing: -0.01em; }
+    .secHead .a, .secHead .count { font-size: 14px; color: var(--text-3); font-weight: 600; }
+    .secHead .a { color: var(--accent-2); }
+
+    /* hero (current item) — only this draws the eye */
+    .hero {
+      background: linear-gradient(160deg, #312820 0%, #281E18 60%, #221813 100%);
+      border: 1px solid rgba(199,149,106,0.30);
+      border-radius: 20px; padding: 22px;
+      position: relative;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 16px 36px -18px var(--accent-glow);
+    }
+    .hero[data-new="true"]::after {
+      content: 'נפתח עכשיו';
+      position: absolute; top: 16px; right: 16px;
+      background: var(--new); color: #1A1410;
+      font-size: 13px; font-weight: 800; padding: 4px 10px; border-radius: 999px;
+    }
+    .hero[data-new="true"] .pre { padding-inline-start: 92px; }
+    .hero .pre { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
+    .hero .focus { font-size: 14px; color: var(--text-2); font-weight: 500; }
+    .hero .chip {
+      font-size: 14px; padding: 5px 12px; border-radius: 999px;
+      background: rgba(199,149,106,0.18); color: var(--accent-2); font-weight: 700; border: 1px solid rgba(199,149,106,0.25);
+    }
+    .hero h2 { font-size: 26px; font-weight: 900; margin: 6px 0 12px; letter-spacing: -0.015em; line-height: 1.18; color: var(--text-1); }
+    .hero .meta { display: flex; gap: 8px; font-size: 14px; color: var(--text-2); margin-bottom: 18px; flex-wrap: wrap; }
+    .hero .meta span { padding: 4px 11px; border-radius: 999px; background: rgba(244,236,222,0.06); font-weight: 600; }
+    .hero .cta {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      width: 100%; background: var(--accent); color: #1A1410;
+      padding: 16px 14px; border-radius: 14px;
+      font-weight: 800; font-size: 18px; letter-spacing: -0.01em;
+      box-shadow: 0 8px 24px -10px var(--accent-glow);
+    }
+
+    /* expert chat preview */
+    .chat {
+      background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px;
+      display: flex; gap: 14px; align-items: center; position: relative;
+    }
+    .chat .avatar {
+      width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0; position: relative;
+      background: linear-gradient(135deg, #E0B891 0%, #8C6440 100%);
+      display: flex; align-items: center; justify-content: center; color: #1A1410; font-weight: 800; font-size: 16px;
+    }
+    .chat .avatar .presence {
+      position: absolute; bottom: 0; right: 0;
+      width: 12px; height: 12px; border-radius: 50%;
+      background: var(--done); border: 2px solid var(--surface);
+    }
+    .chat .body { flex: 1; min-width: 0; }
+    .chat .h { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+    .chat .name { font-weight: 700; font-size: 16px; color: var(--text-1); }
+    .chat .when { font-size: 14px; color: var(--text-3); }
+    .chat .msg {
+      font-size: 16px; color: var(--text-2); line-height: 1.45;
+      overflow: hidden; text-overflow: ellipsis;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    }
+    .chat .unread {
+      align-self: center; flex-shrink: 0;
+      min-width: 28px; height: 28px; padding: 0 9px;
+      background: var(--accent); color: #1A1410;
+      font-size: 14px; font-weight: 800;
+      border-radius: 999px;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* item rows (history / upcoming) */
+    .list { display: flex; flex-direction: column; gap: 10px; }
+    .litem {
+      display: flex; gap: 14px; align-items: center;
+      background: var(--surface); border: 1px solid var(--line);
+      padding: 14px; border-radius: 14px; position: relative;
+    }
+    .litem .num {
+      width: 36px; height: 36px; border-radius: 11px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 16px;
+    }
+    .litem .text { flex: 1; min-width: 0; }
+    .litem .title { font-size: 18px; font-weight: 700; color: var(--text-1); line-height: 1.3; }
+    .litem .sub { font-size: 14px; color: var(--text-3); margin-top: 2px; }
+    .litem .when { font-size: 14px; color: var(--text-3); flex-shrink: 0; }
+
+    /* done — visually de-emphasised */
+    .litem.done {
+      background: rgba(37,30,24,0.55);
+      border-color: rgba(244,236,222,0.05);
+    }
+    .litem.done .num { background: var(--done-bg); color: var(--done); }
+    .litem.done .title { color: var(--text-2); font-weight: 600; }
+    .litem.done .sub, .litem.done .when { color: var(--text-3); opacity: 0.85; }
+
+    /* locked — even more transparent, no border */
+    .litem.locked {
+      background: rgba(37,30,24,0.35);
+      border-color: rgba(244,236,222,0.04);
+      opacity: 0.75;
+    }
+    .litem.locked .num { background: rgba(244,236,222,0.04); color: var(--text-3); }
+    .litem.locked .title { color: var(--text-2); font-weight: 500; }
+    .litem.locked .sub { color: var(--text-3); }
+
+    /* ─── lesson body (single content view) ─── */
+    .lesson-eyebrow { font-size: 14px; font-weight: 700; color: var(--accent-2); letter-spacing: 0.14em; text-transform: uppercase; }
+    .lesson-title { font-size: 30px; font-weight: 900; line-height: 1.15; margin: 8px 0 14px; letter-spacing: -0.02em; }
+    .device.desktop .lesson-title { font-size: 38px; }
+    .lesson-meta { display: flex; gap: 8px; font-size: 14px; color: var(--text-2); flex-wrap: wrap; margin-bottom: 24px; }
+    .lesson-meta span { padding: 5px 12px; border-radius: 999px; background: rgba(244,236,222,0.06); font-weight: 600; }
+    .lesson-block { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin-bottom: 14px; }
+    .lesson-block .h { font-size: 14px; font-weight: 700; color: var(--accent-2); letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 8px; }
+    .lesson-block .b { font-size: 20px; line-height: 1.6; color: var(--text-1); }
+    .lesson-block .b strong { color: var(--accent-2); font-weight: 700; }
+    .lesson-block.callout {
+      background: linear-gradient(135deg, rgba(199,149,106,0.10) 0%, rgba(37,30,24,0.6) 100%);
+      border-color: rgba(199,149,106,0.30);
+    }
+    .lesson-actions {
+      display: flex; gap: 10px; margin-top: 22px;
+    }
+    .btn-primary {
+      flex: 1;
+      background: var(--accent); color: #1A1410;
+      padding: 15px 18px; border-radius: 14px;
+      font-weight: 800; font-size: 17px; letter-spacing: -0.01em;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      box-shadow: 0 8px 24px -10px var(--accent-glow);
+    }
+    .btn-ghost {
+      padding: 15px 18px; border-radius: 14px;
+      background: transparent; color: var(--text-1);
+      border: 1px solid var(--line-mid);
+      font-weight: 700; font-size: 15px;
+    }
+
+    /* desktop 2-col shells */
+    .desk-shell { display: grid; grid-template-columns: 240px 1fr 320px; gap: 24px; padding: 24px; }
+    .desk-shell.no-right { grid-template-columns: 240px 1fr; }
+    .desk-rail {
+      background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+      padding: 12px; display: flex; flex-direction: column; gap: 4px; height: fit-content;
+    }
+    .desk-rail .rail-h {
+      font-size: 12px; font-weight: 700; color: var(--text-3); letter-spacing: 0.14em; text-transform: uppercase;
+      padding: 10px 12px 6px;
+    }
+    .rail-link {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 12px; border-radius: 10px;
+      font-size: 15px; color: var(--text-2); font-weight: 600;
+    }
+    .rail-link .ic { display: inline-flex; align-items: center; gap: 10px; }
+    .rail-link .ic .sq { width: 22px; height: 22px; border-radius: 7px; background: rgba(244,236,222,0.06); }
+    .rail-link.active { background: rgba(199,149,106,0.10); color: var(--text-1); border: 1px solid rgba(199,149,106,0.20); }
+    .rail-link.active .sq { background: var(--accent); }
+    .rail-link .ind { width: 8px; height: 8px; border-radius: 50%; background: var(--new); }
+    .desk-rail hr { height: 1px; background: var(--line); border: 0; margin: 6px 4px; }
+
+    .desk-main { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+    .desk-side {
+      background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+      padding: 16px; height: fit-content; position: sticky; top: 24px;
+      display: flex; flex-direction: column; gap: 14px;
+    }
+    .desk-side .h { display: flex; align-items: center; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+    .desk-side .h .avatar {
+      width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, #E0B891 0%, #8C6440 100%);
+      display: flex; align-items: center; justify-content: center; color: #1A1410; font-weight: 800; font-size: 15px; position: relative;
+    }
+    .desk-side .h .avatar .presence { position: absolute; bottom: 0; right: 0; width: 11px; height: 11px; border-radius: 50%; background: var(--done); border: 2px solid var(--surface); }
+    .desk-side .h .name { font-weight: 700; font-size: 16px; }
+    .desk-side .h .role { font-size: 13px; color: var(--text-3); }
+    .conv-mini { display: flex; flex-direction: column; gap: 8px; }
+    .bubble { font-size: 15px; line-height: 1.45; padding: 10px 12px; border-radius: 14px; max-width: 100%; }
+    .bubble.them { background: var(--bg); color: var(--text-1); border: 1px solid var(--line); align-self: flex-start; border-bottom-right-radius: 4px; }
+    .bubble.me   { background: var(--accent); color: #1A1410; align-self: flex-end; border-bottom-left-radius: 4px; font-weight: 500; }
+    .composer { display: flex; gap: 8px; align-items: center; background: var(--bg); border: 1px solid var(--line-mid); border-radius: 999px; padding: 6px 6px 6px 14px; }
+    .composer .ipt { flex: 1; font-size: 14px; color: var(--text-3); }
+    .composer .sb { width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: #1A1410; display: flex; align-items: center; justify-content: center; font-weight: 800; }
+
+    /* /my pillar cards */
+    .pillars { display: grid; grid-template-columns: 1fr; gap: 12px; }
+    .device.desktop .pillars { grid-template-columns: 1fr 1fr 1fr; }
+    .pillar {
+      background: var(--surface); border: 1px solid var(--line); border-radius: 18px;
+      padding: 20px; display: flex; flex-direction: column; gap: 14px;
+    }
+    .pillar .head-line { display: flex; align-items: center; justify-content: space-between; }
+    .pillar .ic {
+      width: 44px; height: 44px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; font-weight: 800;
+    }
+    .pillar.journey .ic { background: rgba(199,149,106,0.18); color: var(--accent-2); }
+    .pillar.games .ic   { background: rgba(135,168,120,0.18); color: var(--done); }
+    .pillar.adults .ic  { background: rgba(212,165,116,0.18); color: var(--new); }
+    .pillar .status { font-size: 12px; padding: 4px 10px; border-radius: 999px; font-weight: 700; }
+    .pillar .status.on { background: var(--done-bg); color: var(--done); }
+    .pillar .status.off { background: rgba(244,236,222,0.06); color: var(--text-3); }
+    .pillar h3 { font-size: 22px; font-weight: 800; margin: 0; letter-spacing: -0.01em; }
+    .pillar p { margin: 0; font-size: 15px; color: var(--text-2); line-height: 1.5; }
+    .pillar.locked { opacity: 0.6; }
+    .pillar .pcta {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px; border-radius: 12px; font-weight: 700; font-size: 15px;
+      background: var(--accent); color: #1A1410;
+    }
+    .pillar.locked .pcta { background: transparent; color: var(--text-2); border: 1px solid var(--line-mid); }
+
+    /* partner share card */
+    .share-card {
+      background: linear-gradient(135deg, #2A1F18 0%, #221813 100%);
+      border: 1px solid rgba(199,149,106,0.25); border-radius: 18px;
+      padding: 20px;
+      display: flex; align-items: center; gap: 16px;
+    }
+    .share-card .icon {
+      width: 52px; height: 52px; border-radius: 14px;
+      background: rgba(199,149,106,0.18); color: var(--accent-2);
+      display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 800;
+    }
+    .share-card .b { flex: 1; }
+    .share-card .b h4 { font-size: 17px; margin: 0 0 4px; font-weight: 800; }
+    .share-card .b p { font-size: 14px; margin: 0; color: var(--text-2); line-height: 1.45; }
+    .share-card .copy {
+      background: rgba(244,236,222,0.04); border: 1px solid var(--line-mid);
+      padding: 8px 14px; border-radius: 10px; font-family: ui-monospace, monospace;
+      font-size: 13px; color: var(--text-1); flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <header class="head">
+    <h1>Studio v4 — Espresso · Cognac</h1>
+    <p>פלטה חמה ומוכרת — מבוססת אספרסו (רקע) וקוניאק/טאן (אקסנט). פוקוס יחיד לכל מסך, אייטמים סגורים בשקיפות, כפתורי CTA עם ניגוד גבוה לדף וגם לטקסט. WCAG AA על כל אלמנט. דוגמאות מובייל ודסקטופ לשלושה מסכים: <strong>/my/journey</strong> (היום) · <strong>שיעור בודד</strong> · <strong>/my</strong> (הבית).</p>
+    <p class="why"><strong>למה הפלטה הזו:</strong> חום עמוק (אספרסו) קורא כ"חדר עבודה פרטי" — מוכר מ-Notion/Linear/Stripe dashboards. הקוניאק `#C7956A` הוא טון רגוע (לא ורוד, לא כתום), אקסנט אחד, נשען על משקל פונט להיררכיה ולא על צבע. אייטמים שכבר נעשו יורדים לשקיפות 55%, מה שמייצר מיד הבחנה ויזואלית בין "מה לעשות" ל"מה כבר עשיתי".</p>
+  </header>
+
+  <section class="spec">
+    <div class="item">
+      <div class="lbl">פלטה</div>
+      <div class="val">קנבס <code>#1A1410</code> · משטח <code>#251E18</code> · אקסנט קוניאק <code>#C7956A</code> · מרווה לסטטוס <code>#87A878</code>. שום ורוד, שום כתום-ניאון.</div>
+    </div>
+    <div class="item">
+      <div class="lbl">ניגודיות AA</div>
+      <div class="val">טקסט ראשי <code>14.7:1</code>, משני <code>7.6:1</code>, מטא <code>4.7:1</code>. כפתור CTA <code>7.4:1</code>. כל הסטטוסים <code>≥5.9:1</code>.</div>
+    </div>
+    <div class="item">
+      <div class="lbl">אייטמים סגורים</div>
+      <div class="val">״הושלם״ באטימות 55% עם רקע חצי־שקוף · ״נעול״ באטימות 40%, ללא גבול בולט. הירו (״פעיל עכשיו״) — אטימות מלאה + זוהר קוניאק.</div>
+    </div>
+    <div class="item">
+      <div class="lbl">נוטיפיקציות</div>
+      <div class="val">תג ״נפתח עכשיו״ <code>#D4A574</code> · נקודות <code>data-new</code> ב-tab-bar · סופר הודעות. לחיצה — נעלם.</div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       1. /my/journey — "היום"  (mobile + desktop)
+       ═══════════════════════════════════════════════════════════════════ -->
+  <div class="sec-title">
+    <h2>/my/journey · ״היום״</h2>
+    <span class="kind">מסך הבית של הליווי — אייטם נוכחי, צ׳אט מומחה, היסטוריה</span>
+  </div>
+
+  <div class="pair">
+    <!-- MOBILE -->
+    <div class="col">
+      <h3>מובייל · 380×800</h3>
+      <div class="device mobile">
+        <div class="topbar">
+          <div class="brand"><div class="logo">M</div><span>המסע שלי</span></div>
+          <div class="right">
+            <div class="iconbtn">✶</div>
+            <div class="iconbtn">✉<span class="badge">2</span></div>
+          </div>
+        </div>
+        <div class="crumb">דף הבית › המסע שלי</div>
+        <div class="scroll">
+          <div class="prog">
+            <span>חודש 1</span>
+            <div class="bar"><span style="width:18%"></span></div>
+            <span>שבוע 2 / 12</span>
+          </div>
+
+          <article class="hero" data-new="true">
+            <div class="pre">
+              <span class="focus">המוקד · מיניות ואינטימיות</span>
+              <span class="chip">השיעור הנוכחי</span>
+            </div>
+            <h2>שפת האהבה שלי — ושלך</h2>
+            <div class="meta">
+              <span>12 דקות</span><span>תקשורת</span><span>מתאים לערב</span>
+            </div>
+            <a class="cta">פתחו את השיעור ←</a>
+          </article>
+
+          <article class="chat">
+            <div class="avatar">ע<span class="presence"></span></div>
+            <div class="body">
+              <div class="h">
+                <span class="name">ענת ר.</span>
+                <span class="when">לפני 2ש</span>
+              </div>
+              <div class="msg">״חשבתי עליכם השבוע. איך עבר השיעור על שפת האהבה? שאלה אחת לפני שאני שולחת את הבא…״</div>
+            </div>
+            <span class="unread">2</span>
+          </article>
+
+          <div class="secHead"><h3>ההיסטוריה שלכם</h3><span class="a">הכל</span></div>
+          <div class="list">
+            <div class="litem done"><div class="num">✓</div><div class="text"><div class="title">להגיד תודה — בכוונה</div><div class="sub">חיבור רגשי · הושלם</div></div><div class="when">לפני 3ימ׳</div></div>
+            <div class="litem done"><div class="num">✓</div><div class="text"><div class="title">השיחה שאף פעם לא הייתה</div><div class="sub">תקשורת · הושלם</div></div><div class="when">לפני 6ימ׳</div></div>
+            <div class="litem done"><div class="num">✓</div><div class="text"><div class="title">חמש דקות שמשנות יום</div><div class="sub">חברות · הושלם</div></div><div class="when">שבוע שעבר</div></div>
+          </div>
+        </div>
+        <nav class="mobtabs">
+          <div class="t active"><span class="g"></span><span>היום</span></div>
+          <div class="t"><span class="g" data-new></span><span>השיעורים</span></div>
+          <div class="t"><span class="g" data-new></span><span>צ׳אט</span></div>
+          <div class="t"><span class="g"></span><span>חשבון</span></div>
+        </nav>
+      </div>
+    </div>
+
+    <!-- DESKTOP -->
+    <div class="col">
+      <h3>דסקטופ · 1100+</h3>
+      <div class="device desktop">
+        <div class="topbar">
+          <div class="brand"><div class="logo">M</div><span>מיאושי שלי</span></div>
+          <div class="tabs">
+            <div class="tab active">היום</div>
+            <div class="tab">השיעורים <span class="dot"></span></div>
+            <div class="tab">צ׳אט <span class="dot"></span></div>
+            <div class="tab">האבחון שלי</div>
+            <div class="tab">חשבון</div>
+          </div>
+          <div class="right">
+            <div class="iconbtn">✶</div>
+            <div class="iconbtn">✉<span class="badge">2</span></div>
+            <div class="iconbtn">נ</div>
+          </div>
+        </div>
+
+        <div class="desk-shell">
+          <!-- left rail -->
+          <aside class="desk-rail">
+            <div class="rail-h">המסע</div>
+            <div class="rail-link active">
+              <span class="ic"><span class="sq"></span>היום</span>
+            </div>
+            <div class="rail-link">
+              <span class="ic"><span class="sq"></span>השיעורים</span>
+              <span class="ind"></span>
+            </div>
+            <div class="rail-link">
+              <span class="ic"><span class="sq"></span>צ׳אט עם ענת</span>
+              <span class="ind"></span>
+            </div>
+            <div class="rail-link"><span class="ic"><span class="sq"></span>האבחון שלי</span></div>
+            <div class="rail-link"><span class="ic"><span class="sq"></span>התקדמות</span></div>
+            <hr>
+            <div class="rail-h">חשבון</div>
+            <div class="rail-link"><span class="ic"><span class="sq"></span>שיתוף עם בן/בת זוג</span></div>
+            <div class="rail-link"><span class="ic"><span class="sq"></span>מנוי וחיוב</span></div>
+          </aside>
+
+          <!-- main -->
+          <main class="desk-main">
+            <div class="prog">
+              <span>חודש 1 · מיניות ואינטימיות</span>
+              <div class="bar"><span style="width:18%"></span></div>
+              <span>שבוע 2 / 12</span>
+            </div>
+
+            <article class="hero" data-new="true">
+              <div class="pre">
+                <span class="focus">המוקד · מיניות ואינטימיות</span>
+                <span class="chip">השיעור הנוכחי</span>
+              </div>
+              <h2 style="font-size:30px">שפת האהבה שלי — ושלך</h2>
+              <div class="meta">
+                <span>12 דקות</span><span>תקשורת</span><span>מתאים לערב</span><span>אישי לכם</span>
+              </div>
+              <a class="cta" style="max-width:300px">פתחו את השיעור ←</a>
+            </article>
+
+            <div class="secHead"><h3>ההיסטוריה שלכם</h3><span class="a">הכל (9)</span></div>
+            <div class="list">
+              <div class="litem done"><div class="num">✓</div><div class="text"><div class="title">להגיד תודה — בכוונה</div><div class="sub">חיבור רגשי · הושלם</div></div><div class="when">לפני 3 ימים</div></div>
+              <div class="litem done"><div class="num">✓</div><div class="text"><div class="title">השיחה שאף פעם לא הייתה</div><div class="sub">תקשורת · הושלם</div></div><div class="when">לפני 6 ימים</div></div>
+              <div class="litem done"><div class="num">✓</div><div class="text"><div class="title">חמש דקות שמשנות יום</div><div class="sub">חברות · הושלם</div></div><div class="when">השבוע שעבר</div></div>
+            </div>
+
+            <div class="secHead" style="margin-top:6px"><h3>בקרוב</h3><span class="count">4 ממתינים</span></div>
+            <div class="list">
+              <div class="litem locked"><div class="num">⌛</div><div class="text"><div class="title">מתי כבר נגעתם זה בזה?</div><div class="sub">אינטימיות · ייפתח מחר</div></div></div>
+              <div class="litem locked"><div class="num">⌛</div><div class="text"><div class="title">להתנצל כמו מבוגרים</div><div class="sub">תקשורת · יום ראשון</div></div></div>
+            </div>
+          </main>
+
+          <!-- right side -->
+          <aside class="desk-side">
+            <div class="h">
+              <div class="avatar">ע<span class="presence"></span></div>
+              <div>
+                <div class="name">ענת ר.</div>
+                <div class="role">המומחית שלכם · online</div>
+              </div>
+            </div>
+            <div class="conv-mini">
+              <div class="bubble them">חשבתי עליכם השבוע. איך עבר השיעור?</div>
+              <div class="bubble them">שאלה לפני הבא — מי הופתע יותר?</div>
+              <div class="bubble me">היה מאתגר, פתח שיחה ארוכה :)</div>
+            </div>
+            <div class="composer">
+              <span class="ipt">כתבו הודעה…</span>
+              <span class="sb">↑</span>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       2. Single lesson view
+       ═══════════════════════════════════════════════════════════════════ -->
+  <div class="sec-title">
+    <h2>שיעור בודד · ״שפת האהבה שלי — ושלך״</h2>
+    <span class="kind">מבנה תוכן — כל שיעור = 5–7 בלוקים קצרים + פעולה</span>
+  </div>
+
+  <div class="pair">
+    <!-- MOBILE -->
+    <div class="col">
+      <h3>מובייל</h3>
+      <div class="device mobile">
+        <div class="topbar">
+          <div class="brand"><div class="logo">M</div><span>שיעור</span></div>
+          <div class="right">
+            <div class="iconbtn">⌕</div>
+            <div class="iconbtn">⋯</div>
+          </div>
+        </div>
+        <div class="crumb">המסע שלי › השיעורים › שפת האהבה</div>
+        <div class="scroll no-pad-bottom" style="padding-bottom:30px">
+          <div class="lesson-eyebrow">תקשורת · 12 דקות</div>
+          <h1 class="lesson-title">שפת האהבה שלי — ושלך</h1>
+          <div class="lesson-meta">
+            <span>מבוסס גוטמן + צ׳פמן</span><span>מתאים לערב</span>
+          </div>
+
+          <div class="lesson-block">
+            <div class="h">תובנה מרכזית</div>
+            <div class="b">כל אחד מאיתנו מבין אהבה דרך <strong>שפה מועדפת</strong>. כשאני מדבר/ת בשפה שלי — בעיקר אם היא שונה משל בן/בת הזוג — האהבה לא תמיד מתורגמת. החוכמה היא לזהות את השפה של השני, ולהתאמן בה גם כשהיא לא טבעית לי.</div>
+          </div>
+
+          <div class="lesson-block callout">
+            <div class="h">המבחן הקטן</div>
+            <div class="b">חישבו על מה הביקורת היומית שלכם. ״אנחנו לא מדברים״ → השפה שלכם זמן איכות. ״אתה לא עוזר לי״ → מעשי שירות. הביקורת היא חלון לצורך הלא ממומש.</div>
+          </div>
+
+          <div class="lesson-block">
+            <div class="h">טעות נפוצה</div>
+            <div class="b">מתנות במקום נוכחות. גבר ששפתו ״מעשי שירות״ יקנה לאשתו ש״זמן איכות״ — פרחים. הפרחים יפים — אבל לא נשמעים כ״אני אוהב אותך״ באוזניה.</div>
+          </div>
+
+          <div class="lesson-block">
+            <div class="h">לעשות השבוע</div>
+            <div class="b">בחרו שפה אחת של בן/בת הזוג. תתרגלו אותה שלוש פעמים השבוע, באופן מודע — בלי להזכיר שאתם מתרגלים.</div>
+          </div>
+
+          <div class="lesson-actions">
+            <a class="btn-primary">סיימתי את השיעור ✓</a>
+            <a class="btn-ghost">לשמור</a>
+          </div>
+        </div>
+        <nav class="mobtabs">
+          <div class="t"><span class="g"></span><span>היום</span></div>
+          <div class="t active"><span class="g"></span><span>השיעורים</span></div>
+          <div class="t"><span class="g"></span><span>צ׳אט</span></div>
+          <div class="t"><span class="g"></span><span>חשבון</span></div>
+        </nav>
+      </div>
+    </div>
+
+    <!-- DESKTOP -->
+    <div class="col">
+      <h3>דסקטופ</h3>
+      <div class="device desktop">
+        <div class="topbar">
+          <div class="brand"><div class="logo">M</div><span>מיאושי שלי</span></div>
+          <div class="tabs">
+            <div class="tab">היום</div>
+            <div class="tab active">השיעורים</div>
+            <div class="tab">צ׳אט <span class="dot"></span></div>
+            <div class="tab">האבחון שלי</div>
+            <div class="tab">חשבון</div>
+          </div>
+          <div class="right">
+            <div class="iconbtn">✶</div>
+            <div class="iconbtn">✉<span class="badge">2</span></div>
+            <div class="iconbtn">נ</div>
+          </div>
+        </div>
+
+        <div class="desk-shell">
+          <aside class="desk-rail">
+            <div class="rail-h">שיעורי החודש</div>
+            <div class="rail-link active"><span class="ic"><span class="sq"></span>שפת האהבה שלי — ושלך</span></div>
+            <div class="rail-link"><span class="ic"><span class="sq"></span>מתי כבר נגעתם</span><span class="ind"></span></div>
+            <div class="rail-link"><span class="ic"><span class="sq"></span>להתנצל כמו מבוגרים</span></div>
+            <hr>
+            <div class="rail-h">הושלמו</div>
+            <div class="rail-link" style="opacity:0.6"><span class="ic"><span class="sq"></span>להגיד תודה</span></div>
+            <div class="rail-link" style="opacity:0.6"><span class="ic"><span class="sq"></span>השיחה שלא הייתה</span></div>
+          </aside>
+
+          <main class="desk-main">
+            <div class="lesson-eyebrow">תקשורת · 12 דקות · מבוסס גוטמן + צ׳פמן</div>
+            <h1 class="lesson-title">שפת האהבה שלי — ושלך</h1>
+
+            <div class="lesson-block">
+              <div class="h">תובנה מרכזית</div>
+              <div class="b">כל אחד מאיתנו מבין אהבה דרך <strong>שפה מועדפת</strong>. כשאני מדבר/ת בשפה שלי — בעיקר אם היא שונה משל בן/בת הזוג — האהבה לא תמיד מתורגמת. החוכמה היא לזהות את השפה של השני, ולהתאמן בה גם כשהיא לא טבעית לי.</div>
+            </div>
+
+            <div class="lesson-block callout">
+              <div class="h">המבחן הקטן</div>
+              <div class="b">חישבו על מה הביקורת היומית שלכם. ״אנחנו לא מדברים״ → השפה שלכם זמן איכות. ״אתה לא עוזר לי״ → מעשי שירות. הביקורת היא חלון לצורך הלא ממומש.</div>
+            </div>
+
+            <div class="lesson-block">
+              <div class="h">טעות נפוצה</div>
+              <div class="b">מתנות במקום נוכחות. גבר ששפתו ״מעשי שירות״ יקנה לאשתו ש״זמן איכות״ — פרחים. הפרחים יפים — אבל לא נשמעים כ״אני אוהב אותך״ באוזניה.</div>
+            </div>
+
+            <div class="lesson-block">
+              <div class="h">לעשות השבוע</div>
+              <div class="b">בחרו שפה אחת של בן/בת הזוג. תתרגלו אותה שלוש פעמים השבוע, באופן מודע — בלי להזכיר שאתם מתרגלים.</div>
+            </div>
+
+            <div class="lesson-actions">
+              <a class="btn-primary" style="max-width:260px">סיימתי את השיעור ✓</a>
+              <a class="btn-ghost">לשמור לאחר כך</a>
+              <a class="btn-ghost">לשלוח לבן/בת הזוג</a>
+            </div>
+          </main>
+
+          <aside class="desk-side">
+            <div class="h">
+              <div class="avatar">ע<span class="presence"></span></div>
+              <div>
+                <div class="name">ענת ר.</div>
+                <div class="role">שאלות על השיעור הזה?</div>
+              </div>
+            </div>
+            <div class="conv-mini">
+              <div class="bubble them">השיעור הזה לרוב מעלה שאלה: ״ומה אם השפה שלנו זהה?״ — אם זה המקרה, ספרו לי.</div>
+            </div>
+            <div class="composer">
+              <span class="ipt">שאלה לענת…</span>
+              <span class="sb">↑</span>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       3. /my hub
+       ═══════════════════════════════════════════════════════════════════ -->
+  <div class="sec-title">
+    <h2>/my · בית המיאושי שלי</h2>
+    <span class="kind">המסך הראשון אחרי התחברות — בחירת תחום + שיתוף עם בן/בת זוג</span>
+  </div>
+
+  <div class="pair">
+    <!-- MOBILE -->
+    <div class="col">
+      <h3>מובייל</h3>
+      <div class="device mobile">
+        <div class="topbar">
+          <div class="brand"><div class="logo">M</div><span>שלום, נועה</span></div>
+          <div class="right">
+            <div class="iconbtn">✉<span class="badge">2</span></div>
+            <div class="iconbtn">⚙</div>
+          </div>
+        </div>
+        <div class="scroll" style="padding-top:18px">
+          <div>
+            <div class="lesson-eyebrow" style="font-size:13px">המיאושי שלכם</div>
+            <h1 style="font-size:24px;font-weight:900;margin:6px 0 0;letter-spacing:-0.02em">איפה היינו השבוע?</h1>
+            <p style="font-size:15px;color:var(--text-2);margin:6px 0 0;line-height:1.55">בחרו את התחום שאתם רוצים להמשיך בו.</p>
+          </div>
+
+          <div class="pillars">
+            <article class="pillar journey">
+              <div class="head-line">
+                <div class="ic">ל</div>
+                <span class="status on">פעיל</span>
+              </div>
+              <div>
+                <h3>הליווי עם מיאושי</h3>
+                <p>חודש 1 · שבוע 2 מתוך 12. שיעור חדש מחכה לכם.</p>
+              </div>
+              <a class="pcta"><span>כניסה לליווי</span><span>←</span></a>
+            </article>
+
+            <article class="pillar games">
+              <div class="head-line">
+                <div class="ic">מ</div>
+                <span class="status on">כלול במנוי</span>
+              </div>
+              <div>
+                <h3>משחקי הזוגות</h3>
+                <p>גלגל המזל ועוד 42 משחקי שיחה. מתאים לכל ערב.</p>
+              </div>
+              <a class="pcta" style="background:transparent;color:var(--text-1);border:1px solid var(--line-mid)"><span>למשחקים שלי</span><span>←</span></a>
+            </article>
+
+            <article class="pillar adults locked">
+              <div class="head-line">
+                <div class="ic">∞</div>
+                <span class="status off">לא נרכש</span>
+              </div>
+              <div>
+                <h3>מיאושי למבוגרים</h3>
+                <p>משחקים אינטימיים בטעם טוב. ₪29 לרכישה חד-פעמית.</p>
+              </div>
+              <a class="pcta"><span>לבחור משחק</span><span>←</span></a>
+            </article>
+          </div>
+
+          <article class="share-card">
+            <div class="icon">+</div>
+            <div class="b">
+              <h4>שתפו את המסע עם בן/בת הזוג</h4>
+              <p>הם יקבלו גישה לכל המסע — בלי תוספת תשלום.</p>
+            </div>
+          </article>
+        </div>
+        <nav class="mobtabs">
+          <div class="t active"><span class="g"></span><span>הבית</span></div>
+          <div class="t"><span class="g" data-new></span><span>המסע</span></div>
+          <div class="t"><span class="g"></span><span>משחקים</span></div>
+          <div class="t"><span class="g"></span><span>חשבון</span></div>
+        </nav>
+      </div>
+    </div>
+
+    <!-- DESKTOP -->
+    <div class="col">
+      <h3>דסקטופ</h3>
+      <div class="device desktop">
+        <div class="topbar">
+          <div class="brand"><div class="logo">M</div><span>שלום, נועה</span></div>
+          <div class="tabs">
+            <div class="tab active">הבית</div>
+            <div class="tab">המסע <span class="dot"></span></div>
+            <div class="tab">משחקים</div>
+            <div class="tab">למבוגרים</div>
+            <div class="tab">חשבון</div>
+          </div>
+          <div class="right">
+            <div class="iconbtn">✉<span class="badge">2</span></div>
+            <div class="iconbtn">נ</div>
+          </div>
+        </div>
+
+        <div style="padding:30px 36px; display:flex; flex-direction:column; gap:22px">
+          <div>
+            <div class="lesson-eyebrow">המיאושי שלכם</div>
+            <h1 style="font-size:32px;font-weight:900;margin:8px 0 0;letter-spacing:-0.02em">איפה היינו השבוע?</h1>
+            <p style="font-size:16px;color:var(--text-2);margin:6px 0 0">בחרו את התחום שאתם רוצים להמשיך בו.</p>
+          </div>
+
+          <div class="pillars">
+            <article class="pillar journey">
+              <div class="head-line"><div class="ic">ל</div><span class="status on">פעיל</span></div>
+              <div>
+                <h3>הליווי עם מיאושי</h3>
+                <p>חודש 1 · שבוע 2 מתוך 12. שיעור חדש מחכה לכם.</p>
+              </div>
+              <a class="pcta"><span>כניסה לליווי</span><span>←</span></a>
+            </article>
+
+            <article class="pillar games">
+              <div class="head-line"><div class="ic">מ</div><span class="status on">כלול במנוי</span></div>
+              <div>
+                <h3>משחקי הזוגות</h3>
+                <p>גלגל המזל ועוד 42 משחקי שיחה. מתאים לכל ערב.</p>
+              </div>
+              <a class="pcta" style="background:transparent;color:var(--text-1);border:1px solid var(--line-mid)"><span>למשחקים שלי</span><span>←</span></a>
+            </article>
+
+            <article class="pillar adults locked">
+              <div class="head-line"><div class="ic">∞</div><span class="status off">לא נרכש</span></div>
+              <div>
+                <h3>מיאושי למבוגרים</h3>
+                <p>משחקים אינטימיים בטעם טוב. ₪29 לרכישה חד-פעמית.</p>
+              </div>
+              <a class="pcta"><span>לבחור משחק</span><span>←</span></a>
+            </article>
+          </div>
+
+          <article class="share-card">
+            <div class="icon">+</div>
+            <div class="b">
+              <h4>שתפו את המסע עם בן/בת הזוג</h4>
+              <p>קישור אישי — הם יקבלו גישה לכל המסע (ליווי + משחקים) בלי תוספת תשלום. רק בני זוג בלבד.</p>
+            </div>
+            <div class="copy">JOIN-MIO-7K4P</div>
+            <a class="btn-primary" style="flex:0 0 auto;padding:11px 18px;font-size:14px">העתקה</a>
+          </article>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

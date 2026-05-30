@@ -91,6 +91,14 @@ function deriveJourneyState(input: PillarStateInputs): PillarStateOutput {
   }
 
   // Stage-dependent labels per §5
+  //
+  // Itzik 2026-05-29: simplified to two-state — paid users ALWAYS see
+  // "פתוח", regardless of assessment progress. The earlier "in_progress"
+  // badge confused users into thinking their *subscription* was being
+  // processed, when in fact the subscription was already active and the
+  // only thing pending was the assessment itself. The CTA still routes
+  // them to the right place (resume assessment / enter coaching) so no
+  // funnel step is lost.
   switch (assessmentStage) {
     case "completed":
       // Welcome, never re-invite.
@@ -100,10 +108,10 @@ function deriveJourneyState(input: PillarStateInputs): PillarStateOutput {
         ctaHref: "/my/journey",
       }
     case "in_progress":
-      // Continue, never restart.
+      // Paid, mid-assessment — still "open"; CTA continues the assessment.
       return {
-        state: "in_progress",
-        ctaLabel: isHe ? "להמשיך" : "Continue",
+        state: "open",
+        ctaLabel: isHe ? "להמשיך אבחון" : "Continue assessment",
         ctaHref: "/journey/assessment",
       }
     case "not_started":

@@ -80,7 +80,9 @@ export function SignupForm({ next, pairCode }: Props) {
       }
 
       // Honour caller-supplied next if present and same-origin.
-      const target = safeNext(next, "/my");
+      // Fallback target updated 2026-05-29 from /my → /my/today (go-live
+      // of the AppShell). Middleware also catches stragglers hitting /my.
+      const target = safeNext(next, "/my/today");
       router.push(target);
     });
   }
@@ -90,7 +92,7 @@ export function SignupForm({ next, pairCode }: Props) {
   // in and still get auto-paired via the post-login redirect (handled
   // inside LoginForm's own code= prop, which mirrors this one).
   const loginHrefParams = new URLSearchParams();
-  if (next) loginHrefParams.set("next", safeNext(next, "/my"));
+  if (next) loginHrefParams.set("next", safeNext(next, "/my/today"));
   if (normalizedCode) loginHrefParams.set("code", normalizedCode);
   const loginQs = loginHrefParams.toString();
   const loginHref = loginQs ? `/auth?${loginQs}` : "/auth";

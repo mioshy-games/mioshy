@@ -389,7 +389,7 @@ export function SiteHeader({
                   user has one obvious next-action regardless of state.
                   Per Itzik 2026-05-07. */}
               <Link
-                href="/my"
+                href="/my/today"
                 className="group relative inline-flex min-h-[40px] items-center justify-center gap-1.5 overflow-hidden rounded-full px-5 text-base font-semibold text-white shadow-lg shadow-fuchsia-500/25 transition hover:brightness-110"
               >
                 <span
@@ -475,7 +475,7 @@ export function SiteHeader({
             // Mobile primary — matching the desktop My-Mioshy gradient
             // treatment. Compact size to fit beside the hamburger.
             <Link
-              href="/my"
+              href="/my/today"
               className="group relative inline-flex min-h-[36px] items-center justify-center gap-1.5 overflow-hidden rounded-full px-4 text-sm font-semibold text-white shadow-md shadow-fuchsia-500/25 transition hover:brightness-110 md:hidden"
               aria-label={t("library")}
             >
@@ -597,7 +597,7 @@ export function SiteHeader({
             {isAuthed ? (
               <>
                 <Link
-                  href="/my"
+                  href="/my/today"
                   onClick={() => setOpen(false)}
                   className={`inline-flex items-center gap-2 rounded-xl px-3 py-3 text-base font-semibold transition ${
                     theme === "light" ? "hover:bg-slate-100" : "hover:bg-white/5"

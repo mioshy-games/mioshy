@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mioshy — Studio v11 · Unified dark + mobile</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --canvas-grad: linear-gradient(160deg, rgba(236,72,153,0.10) 0%, #320F37 23.53%, #0D0429 100%);
+      --canvas-deep: #060217;
+      --canvas-solid:#0D0429;
+
+      /* sidebar: same family as content, lifted one notch */
+      --side-bg:     #150829;
+      --side-bg-soft:#1B0E33;
+      --side-line:   rgba(244,229,234,0.06);
+      --side-line-mid: rgba(244,229,234,0.12);
+      --side-t1:     #F4ECEE;
+      --side-t2:     rgba(244,236,238,0.66);
+      --side-t3:     rgba(244,236,238,0.42);
+      --side-hover:  rgba(244,236,238,0.05);
+
+      --card:        #1D0E36;
+      --card-elev:   #28154A;
+      --line-soft:   rgba(255,255,255,0.07);
+      --line-mid:    rgba(255,255,255,0.13);
+
+      --text-1:      #FAF6F7;
+      --text-2:      #C9C0DC;
+      --text-3:      #897FA6;
+      --wine:        #B83C4D;
+      --wine-deep:   #6C2E40;
+      --wine-soft:   rgba(184,60,77,0.16);
+      --wine-edge:   rgba(184,60,77,0.32);
+      --amber:       #F59E0B;
+      --sage:        #87A878;
+      --sage-soft:   rgba(135,168,120,0.20);
+
+      --cta-grad:    linear-gradient(110deg, #B83C4D 0%, #EC4899 55%, #F59E0B 100%);
+      --header-grad: linear-gradient(135deg, #0F0828 0%, #09051C 50%, #0E0726 100%);
+    }
+
+    *,*::before,*::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: 'Assistant', system-ui, sans-serif;
+      background: var(--canvas-deep);
+      color: var(--text-1);
+      padding: 36px 16px 80px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .head { max-width: 1500px; margin: 0 auto 22px; }
+    .head h1 { font-size: 28px; margin: 0 0 8px; font-weight: 800; letter-spacing: -0.02em; }
+    .head p { font-size: 15px; color: var(--text-2); margin: 0 0 10px; max-width: 880px; line-height: 1.6; }
+    .head .pill { display: inline-block; padding: 4px 12px; border-radius: 999px; background: var(--wine-soft); border: 1px solid var(--wine-edge); color: #F2B5BD; font-size: 13px; font-weight: 700; }
+    .head .why { font-size: 14px; color: var(--text-3); margin-top: 14px; }
+    .head .why strong { color: var(--text-2); }
+
+    .change-strip {
+      max-width: 1500px; margin: 24px auto 32px;
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+    }
+    @media (max-width: 880px) { .change-strip { grid-template-columns: 1fr; } }
+    .change-strip .c { background: var(--card); border: 1px solid var(--line-soft); border-radius: 14px; padding: 14px 16px; }
+    .change-strip .c .lbl { font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: #F2B5BD; font-weight: 700; margin-bottom: 6px; }
+    .change-strip .c .val { font-size: 14px; color: var(--text-2); line-height: 1.55; }
+    .change-strip .c .val strong { color: var(--text-1); }
+
+    .sec-title { max-width: 1500px; margin: 36px auto 14px; display: flex; align-items: baseline; gap: 14px; }
+    .sec-title h2 { font-size: 20px; font-weight: 800; margin: 0; letter-spacing: -0.01em; }
+    .sec-title .kind { font-size: 13px; color: var(--text-3); }
+
+    .col { max-width: 1500px; margin: 0 auto; }
+
+    .device { background: var(--canvas-solid); color: var(--text-1); border-radius: 18px; overflow: hidden; position: relative; box-shadow: 0 20px 50px -18px rgba(0,0,0,0.75); border: 1px solid var(--line-soft); }
+    .device.desktop { width: 100%; min-height: 640px; }
+    .device.mobile { width: 360px; min-height: 720px; margin: 0 auto; border-radius: 28px; }
+
+    /* ─── SHELL (dark unified, narrower 240px) ─── */
+    .shell { display: grid; grid-template-columns: 240px 1fr; min-height: 640px; }
+
+    /* SIDEBAR — dark, unified */
+    .sidebar {
+      background: linear-gradient(180deg, var(--side-bg-soft) 0%, var(--side-bg) 60%);
+      color: var(--side-t1);
+      display: flex; flex-direction: column;
+      border-inline-end: 1px solid var(--side-line);
+      position: relative;
+    }
+    .sidebar::after {
+      content: ''; position: absolute; top: 0; bottom: 0; inset-inline-end: 0;
+      width: 1px;
+      background: linear-gradient(180deg, rgba(236,72,153,0.30) 0%, rgba(236,72,153,0.05) 35%, transparent 100%);
+    }
+
+    /* COUPLE CARD — personal anchor at top */
+    .couple-card {
+      padding: 14px 14px 12px;
+      border-bottom: 1px solid var(--side-line);
+    }
+    .couple-card .row { display: flex; align-items: center; gap: 8px; }
+    .couple-card .av-pair { display: flex; align-items: center; position: relative; flex-shrink: 0; }
+    .couple-card .av {
+      width: 34px; height: 34px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; color: #FFFFFF; font-size: 13px;
+      border: 2px solid var(--side-bg);
+    }
+    .couple-card .av:nth-child(1) { background: linear-gradient(135deg, #EC4899 0%, #B83C4D 100%); }
+    .couple-card .av:nth-child(2) { background: linear-gradient(135deg, #F59E0B 0%, #B83C4D 100%); margin-inline-start: -10px; }
+    .couple-card .who { flex: 1; min-width: 0; }
+    .couple-card .who-name { font-weight: 700; font-size: 14px; color: var(--side-t1); line-height: 1.15; }
+    .couple-card .who-sub { font-size: 11px; color: var(--side-t2); margin-top: 2px; }
+    .couple-card .menu-btn { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--side-t2); background: transparent; border: 0; cursor: pointer; flex-shrink: 0; }
+    .couple-card .menu-btn:hover { background: var(--side-hover); color: var(--side-t1); }
+
+    /* NAV */
+    .nav { flex: 1; padding: 8px 8px; display: flex; flex-direction: column; gap: 1px; overflow-y: auto; }
+    .group-h { font-size: 10.5px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--side-t3); padding: 12px 10px 4px; }
+
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 10px; border-radius: 10px;
+      font-size: 14px; font-weight: 600;
+      color: var(--side-t1); cursor: pointer; min-height: 38px;
+      position: relative;
+    }
+    .nav-item .icn { width: 19px; height: 19px; flex-shrink: 0; color: var(--side-t2); }
+    .nav-item .lbl { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .nav-item .end {
+      font-size: 11px; padding: 1px 7px; border-radius: 999px;
+      background: var(--wine); color: #FFFFFF; font-weight: 800;
+      flex-shrink: 0; min-width: 18px; text-align: center;
+    }
+    .nav-item .end.dot { background: var(--wine); width: 8px; height: 8px; border-radius: 50%; padding: 0; min-width: 0; }
+    .nav-item:hover { background: var(--side-hover); }
+    .nav-item:hover .icn { color: var(--side-t1); }
+    .nav-item.active {
+      background: var(--cta-grad);
+      color: #FFFFFF;
+      box-shadow: 0 8px 18px -10px rgba(236,72,153,0.5);
+    }
+    .nav-item.active .icn { color: #FFFFFF; }
+    .nav-item.active .end { background: rgba(255,255,255,0.22); color: #FFFFFF; }
+
+    /* EXPERT MINI CARD at bottom */
+    .expert-mini {
+      padding: 12px 12px 16px;
+      border-top: 1px solid var(--side-line);
+    }
+    .expert-mini .row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .expert-mini .av {
+      width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; position: relative;
+      background: linear-gradient(135deg, var(--wine) 0%, var(--wine-deep) 100%);
+      display: flex; align-items: center; justify-content: center;
+      color: #FFFFFF; font-weight: 800; font-size: 13px;
+    }
+    .expert-mini .av .presence {
+      position: absolute; bottom: -2px; right: -2px;
+      width: 9px; height: 9px; border-radius: 50%;
+      background: var(--sage); border: 2px solid var(--side-bg);
+    }
+    .expert-mini .who { flex: 1; min-width: 0; }
+    .expert-mini .name { font-size: 13px; font-weight: 700; color: var(--side-t1); }
+    .expert-mini .stat { font-size: 11px; color: var(--side-t2); margin-top: 1px; }
+    .expert-mini .pre { font-size: 13px; color: var(--side-t2); line-height: 1.4; padding: 8px 10px; background: var(--side-hover); border-radius: 10px; margin-bottom: 8px;
+      overflow: hidden; text-overflow: ellipsis;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    }
+    .expert-mini .ask {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 10px; border-radius: 10px;
+      background: var(--cta-grad); color: #FFFFFF;
+      font-weight: 700; font-size: 13px;
+      box-shadow: 0 6px 18px -8px rgba(236,72,153,0.5);
+    }
+    .expert-mini .ask .icn { width: 14px; height: 14px; }
+
+    /* CONTENT */
+    .area { display: flex; flex-direction: column; min-width: 0; background: var(--canvas-grad); }
+    .area-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 22px; border-bottom: 1px solid var(--line-soft); background: rgba(15,8,40,0.55); backdrop-filter: blur(8px); min-height: 60px; }
+    .area-top .crumb { font-size: 13px; color: var(--text-3); }
+    .area-top .crumb .here { color: var(--text-1); font-weight: 600; }
+    .area-top .actions { display: flex; gap: 6px; }
+    .iconbtn { width: 32px; height: 32px; border-radius: 9px; background: rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: center; color: var(--text-1); position: relative; cursor: pointer; }
+    .iconbtn:hover { background: rgba(255,255,255,0.10); }
+    .iconbtn .icn { width: 16px; height: 16px; }
+    .iconbtn .b { position: absolute; top: -3px; left: -3px; min-width: 16px; height: 16px; padding: 0 4px; background: var(--amber); color: #1A1410; font-size: 10px; font-weight: 800; border-radius: 999px; display: flex; align-items: center; justify-content: center; border: 2px solid var(--canvas-solid); }
+
+    .area-body { flex: 1; padding: 22px; display: flex; flex-direction: column; gap: 14px; max-width: 880px; width: 100%; margin: 0 auto; }
+
+    .focus-pill { display: inline-flex; align-items: center; gap: 10px; padding: 7px 14px; border-radius: 999px; background: var(--wine-soft); border: 1px solid var(--wine-edge); color: #F2B5BD; font-weight: 700; font-size: 14px; align-self: flex-start; }
+    .focus-pill .icn { width: 16px; height: 16px; }
+
+    .secHead { display: flex; align-items: baseline; justify-content: space-between; padding-top: 4px; }
+    .secHead h3 { font-size: 17px; font-weight: 800; margin: 0; color: var(--text-1); letter-spacing: -0.01em; }
+    .secHead .a { font-size: 13px; color: #F2B5BD; font-weight: 600; }
+    .secHead .count { font-size: 13px; color: var(--text-3); }
+
+    .hero { background: linear-gradient(160deg, rgba(236,72,153,0.12) 0%, var(--card-elev) 40%, var(--card) 100%); border: 1px solid rgba(236,72,153,0.28); border-radius: 18px; padding: 20px; position: relative; box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 14px 30px -16px rgba(236,72,153,0.30); }
+    .hero[data-new="true"]::after { content: 'נפתח עכשיו'; position: absolute; top: 14px; right: 14px; background: var(--amber); color: #1A0F00; font-size: 12px; font-weight: 800; padding: 3px 9px; border-radius: 999px; }
+    .hero[data-new="true"] .pre { padding-inline-start: 92px; }
+    .hero .pre { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
+    .hero .category { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: #F2B5BD; letter-spacing: 0.10em; text-transform: uppercase; }
+    .hero .category .icn { width: 13px; height: 13px; }
+    .hero .chip { font-size: 13px; padding: 4px 11px; border-radius: 999px; background: var(--wine-soft); color: #F2B5BD; font-weight: 700; border: 1px solid var(--wine-edge); }
+    .hero h2 { font-size: 26px; font-weight: 800; margin: 4px 0 8px; letter-spacing: -0.015em; line-height: 1.18; color: var(--text-1); }
+    .hero .desc { font-size: 16px; line-height: 1.55; color: var(--text-2); margin: 0 0 16px; }
+    .hero .meta { display: flex; gap: 8px; font-size: 13px; color: var(--text-2); margin-bottom: 16px; flex-wrap: wrap; }
+    .hero .meta span { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: rgba(255,255,255,0.05); font-weight: 600; }
+    .hero .meta .icn { width: 12px; height: 12px; opacity: 0.85; }
+    .hero .cta { display: flex; align-items: center; justify-content: center; gap: 8px; max-width: 300px; padding: 14px 14px; border-radius: 12px; color: #FFFFFF; font-weight: 800; font-size: 16px; letter-spacing: -0.01em; background: var(--cta-grad); box-shadow: 0 8px 24px -10px rgba(236,72,153,0.55); cursor: pointer; }
+    .hero .cta .icn { width: 16px; height: 16px; }
+
+    .chat-row { background: var(--card); border: 1px solid var(--line-soft); border-radius: 14px; padding: 14px; display: flex; gap: 12px; align-items: center; }
+    .chat-row .avatar { width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0; position: relative; background: linear-gradient(135deg, var(--wine) 0%, var(--wine-deep) 100%); display: flex; align-items: center; justify-content: center; color: #FFFFFF; font-weight: 800; font-size: 15px; }
+    .chat-row .presence { position: absolute; bottom: 0; right: 0; width: 11px; height: 11px; border-radius: 50%; background: var(--sage); border: 2px solid var(--card); }
+    .chat-row .body { flex: 1; min-width: 0; }
+    .chat-row .h { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 3px; }
+    .chat-row .name { font-weight: 700; font-size: 15px; color: var(--text-1); }
+    .chat-row .when { font-size: 13px; color: var(--text-3); }
+    .chat-row .msg { font-size: 14px; color: var(--text-2); line-height: 1.45; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+    .chat-row .unread { align-self: center; min-width: 26px; height: 26px; padding: 0 8px; background: var(--cta-grad); color: #FFFFFF; font-size: 13px; font-weight: 800; border-radius: 999px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+    .list { display: flex; flex-direction: column; gap: 8px; }
+    .litem { display: flex; gap: 12px; align-items: center; background: var(--card); border: 1px solid var(--line-soft); padding: 12px; border-radius: 12px; }
+    .litem .num { width: 32px; height: 32px; border-radius: 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+    .litem .num .icn { width: 16px; height: 16px; }
+    .litem .text { flex: 1; min-width: 0; }
+    .litem .title { font-size: 16px; font-weight: 700; color: var(--text-1); line-height: 1.3; }
+    .litem .sub { font-size: 13px; color: var(--text-3); margin-top: 2px; }
+    .litem .when { font-size: 13px; color: var(--text-3); flex-shrink: 0; }
+    .litem.done { background: rgba(29,14,54,0.55); border-color: rgba(255,255,255,0.04); }
+    .litem.done .num { background: var(--sage-soft); color: var(--sage); }
+    .litem.done .title { color: var(--text-2); font-weight: 600; }
+    .litem.done .sub { color: var(--text-3); }
+    .litem.locked { background: rgba(29,14,54,0.30); border-color: rgba(255,255,255,0.04); opacity: 0.72; }
+    .litem.locked .num { background: rgba(255,255,255,0.04); color: var(--text-3); }
+    .litem.locked .title { color: var(--text-2); font-weight: 500; }
+
+    /* share — more emotional */
+    .share-hero {
+      background: linear-gradient(135deg, rgba(236,72,153,0.16) 0%, var(--card) 100%);
+      border: 1px solid var(--wine-edge); border-radius: 18px;
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .share-hero::before {
+      content: ''; position: absolute; top: -40px; right: -40px;
+      width: 160px; height: 160px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(236,72,153,0.30) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .share-hero .ghost-pair {
+      display: flex; align-items: center; margin-bottom: 14px;
+      position: relative; z-index: 1;
+    }
+    .share-hero .you {
+      width: 42px; height: 42px; border-radius: 50%;
+      background: linear-gradient(135deg, #EC4899 0%, #B83C4D 100%);
+      display: flex; align-items: center; justify-content: center;
+      color: #FFFFFF; font-weight: 800; font-size: 16px;
+      border: 3px solid var(--card);
+    }
+    .share-hero .ghost {
+      width: 42px; height: 42px; border-radius: 50%;
+      background: var(--card);
+      border: 2px dashed var(--wine-edge);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-3); font-weight: 700; font-size: 17px;
+      margin-inline-start: -10px;
+    }
+    .share-hero h2 { font-size: 24px; font-weight: 800; margin: 0 0 8px; letter-spacing: -0.015em; position: relative; z-index: 1; }
+    .share-hero p { font-size: 15px; color: var(--text-2); margin: 0 0 18px; line-height: 1.55; position: relative; z-index: 1; max-width: 480px; }
+    .share-hero .code-row { display: flex; gap: 8px; align-items: center; margin-bottom: 14px; position: relative; z-index: 1; }
+    .share-hero .code-box { flex: 1; background: rgba(15,4,41,0.55); border: 1px solid var(--line-mid); padding: 12px 14px; border-radius: 11px; font-family: ui-monospace, monospace; font-size: 16px; color: var(--text-1); font-weight: 700; letter-spacing: 0.1em; text-align: center; }
+    .share-hero .copy-btn { padding: 12px 16px; border-radius: 11px; background: var(--cta-grad); color: #FFFFFF; font-weight: 700; font-size: 14px; cursor: pointer; }
+    .share-hero .share-buttons { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; position: relative; z-index: 1; }
+    .share-hero .sb { padding: 12px 8px; border-radius: 11px; background: rgba(255,255,255,0.05); border: 1px solid var(--line-soft); text-align: center; font-weight: 700; font-size: 13px; color: var(--text-1); display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; }
+    .share-hero .sb .icn { width: 18px; height: 18px; }
+
+    /* settings rows */
+    .set-row { background: var(--card); border: 1px solid var(--line-soft); border-radius: 12px; padding: 14px 16px; display: flex; gap: 12px; align-items: center; cursor: pointer; }
+    .set-row:hover { background: var(--card-elev); }
+    .set-row .ic { width: 32px; height: 32px; border-radius: 9px; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; color: var(--text-2); flex-shrink: 0; }
+    .set-row .ic .icn { width: 16px; height: 16px; }
+    .set-row .b { flex: 1; }
+    .set-row .b .ttl { font-size: 15px; font-weight: 700; color: var(--text-1); }
+    .set-row .b .sub { font-size: 13px; color: var(--text-3); margin-top: 2px; }
+    .set-row .arrow { color: var(--text-3); }
+    .set-row .arrow .icn { width: 14px; height: 14px; }
+    .set-row .badge-mini { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--sage-soft); color: var(--sage); font-weight: 700; }
+
+    /* MOBILE */
+    .m-top { padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; background: var(--header-grad); border-bottom: 1px solid var(--line-soft); }
+    .m-top .brand-row { display: flex; align-items: center; gap: 9px; font-weight: 700; font-size: 14px; }
+    .m-top .av-pair { display: flex; align-items: center; }
+    .m-top .av-pair .av { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #FFFFFF; font-size: 11px; border: 2px solid var(--canvas-solid); }
+    .m-top .av-pair .av:nth-child(1) { background: linear-gradient(135deg, #EC4899 0%, #B83C4D 100%); }
+    .m-top .av-pair .av:nth-child(2) { background: linear-gradient(135deg, #F59E0B 0%, #B83C4D 100%); margin-inline-start: -8px; }
+    .m-top .crumb-here { font-size: 12px; color: var(--text-2); }
+    .m-top .crumb-here strong { color: var(--text-1); font-weight: 700; display: block; line-height: 1.2; }
+    .m-top .right { display: flex; gap: 6px; }
+
+    /* mobile tab bar — UNIFIED dark, same family as sidebar */
+    .m-tabs {
+      position: absolute; bottom: 0; right: 0; left: 0;
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px;
+      padding: 6px 6px 22px;
+      background: linear-gradient(180deg, var(--side-bg) 0%, var(--canvas-solid) 100%);
+      border-top: 1px solid var(--side-line-mid);
+    }
+    .m-tabs::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent 0%, rgba(236,72,153,0.40) 50%, transparent 100%);
+    }
+    .m-tabs .t {
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+      padding: 7px 4px; border-radius: 11px;
+      font-size: 10.5px; font-weight: 700;
+      color: var(--side-t2);
+    }
+    .m-tabs .t .g {
+      width: 24px; height: 24px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--side-t2); position: relative;
+    }
+    .m-tabs .t .g .icn { width: 17px; height: 17px; }
+    .m-tabs .t.active { color: #FFFFFF; }
+    .m-tabs .t.active .g { background: var(--cta-grad); color: #FFFFFF; box-shadow: 0 6px 14px -6px rgba(236,72,153,0.5); }
+    .m-tabs .t .g[data-new]::after {
+      content: ''; position: absolute; top: -2px; left: -2px;
+      width: 8px; height: 8px; border-radius: 50%; background: var(--wine);
+      border: 2px solid var(--side-bg);
+    }
+
+    .m-scroll { padding: 14px 14px 110px; display: flex; flex-direction: column; gap: 12px; background: var(--canvas-grad); }
+
+    .annot { font-size: 13px; color: var(--text-3); padding: 6px 4px 0; line-height: 1.55; max-width: 1500px; margin: 0 auto; }
+    .annot strong { color: var(--text-2); }
+
+    .pair { display: grid; grid-template-columns: 1fr 360px; gap: 24px; align-items: start; max-width: 1500px; margin: 0 auto; }
+    @media (max-width: 1100px) { .pair { grid-template-columns: 1fr; max-width: 380px; } }
+    .pair > .col-label { font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-3); font-weight: 700; padding: 4px 0; }
+
+  </style>
+</head>
+<body>
+
+  <!-- SVG library -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-today" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></symbol>
+      <symbol id="i-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></symbol>
+      <symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+      <symbol id="i-cards" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="14" height="18" rx="2"/><path d="M7 21h13a2 2 0 0 0 2-2V7"/></symbol>
+      <symbol id="i-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></symbol>
+      <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+      <symbol id="i-gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+      <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+      <symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></symbol>
+      <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></symbol>
+      <symbol id="i-chev-r" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></symbol>
+      <symbol id="i-chev-l" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 6 9 12 15 18"/></symbol>
+      <symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></symbol>
+      <symbol id="i-dots" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1.5"/><circle cx="5" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+      <symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+      <symbol id="i-bell2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/></symbol>
+      <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
+      <symbol id="i-card" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></symbol>
+      <symbol id="i-logout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></symbol>
+      <symbol id="i-whatsapp" viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4c-.3-.1-1.6-.8-1.9-.9-.3-.1-.4-.1-.6.1-.2.2-.6.8-.8 1-.1.2-.3.2-.5.1-.7-.4-1.5-.8-2.1-1.5-.6-.6-1.1-1.3-1.5-2-.1-.3 0-.4.1-.5.1-.1.3-.3.4-.5.1-.1.2-.3.3-.4.1-.2 0-.3 0-.5-.1-.1-.6-1.4-.8-1.9-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.1-.6.3-.7.7-1 1.5-1 2.4 0 1.6.9 3.1 2.1 4.5 2 2.8 4.9 4.1 7.5 4.1 1.3 0 2.4-.4 3.2-1.2.4-.4.8-1 1-1.7.1-.3.1-.6.1-.8 0-.1-.1-.1-.3-.2-.2-.1-1.8-.9-2.1-1z"/><path d="M12 2C6.5 2 2 6.5 2 12c0 1.8.5 3.6 1.4 5.1L2.1 22l5-1.3c1.5.8 3.2 1.2 4.9 1.2 5.5 0 10-4.5 10-10S17.5 2 12 2zm0 18c-1.6 0-3.1-.4-4.4-1.2l-.3-.2L4.4 19l.5-2.9-.2-.3C3.7 14.5 3 13 3 11c0-5 4-9 9-9s9 4 9 9-4 9-9 9z"/></symbol>
+      <symbol id="i-sms" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="14" rx="2"/><polyline points="22 4 12 13 2 4"/></symbol>
+      <symbol id="i-qr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="3" height="3"/><rect x="18" y="14" width="3" height="3"/><rect x="14" y="18" width="3" height="3"/><rect x="18" y="18" width="3" height="3"/></symbol>
+      <symbol id="i-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22 6 12 13 2 6"/></symbol>
+    </defs>
+  </svg>
+
+  <header class="head">
+    <span class="pill">Studio v11 · אחדות</span>
+    <h1 style="margin-top:10px">פלטה מאוחדת — לא ״תפריט עליי תוכן״ אלא חלל אחד</h1>
+    <p>הסייד-בר הקרם הרגיש זר כי הוא היה <strong>שפה ויזואלית אחרת</strong> שהודבקה למוצר. ב-v11 הסייד-בר הוא חלק מאותו עולם — אותו רקע סגול-יין, רק טון אחד למעלה. הניווט מובחן דרך typography ו-active state מואצן (גרדיאנט מלא), לא דרך panel קרם נפרד. כל ה-views כאן עם desktop + mobile זה ליד זה.</p>
+  </header>
+
+  <div class="change-strip">
+    <div class="c">
+      <div class="lbl">סייד-בר</div>
+      <div class="val">קודם: קרם <code>#EDE8E7</code>. עכשיו: <strong>אותו עולם סגול-יין</strong> <code>#150829</code> עם גרדיאנט עדין. אקטיב = גרדיאנט CTA מלא, לא חילוף panel.</div>
+    </div>
+    <div class="c">
+      <div class="lbl">פרטים אנושיים</div>
+      <div class="val">בראש ה-sidebar: <strong>זוג</strong> נועה ויואב עם שני אבטרים מצורפים (לא תמונה אחת). למטה: <strong>צ׳אט-מיני מהמומחית</strong> עם תצוגה מקדימה של ההודעה האחרונה — לא רק כפתור.</div>
+    </div>
+    <div class="c">
+      <div class="lbl">מובייל</div>
+      <div class="val">Tab-bar באותה פלטה כהה. גבול עליון <strong>קו גרדיאנט ורוד דק</strong> — מבדיל אבל לא חוצה. אקטיב = גרדיאנט CTA זוהר.</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       1. ״היום״ — desktop + mobile
+       ═══════════════════════════════════════════════════════════════════ -->
+  <div class="sec-title">
+    <h2>1. ״היום״</h2>
+    <span class="kind">דף הנחיתה אחרי התחברות.</span>
+  </div>
+
+  <div class="pair">
+    <div>
+      <div class="col-label">דסקטופ</div>
+      <div class="device desktop">
+        <div class="shell">
+          <aside class="sidebar">
+            <div class="couple-card">
+              <div class="row">
+                <div class="av-pair">
+                  <div class="av">נ</div>
+                  <div class="av">י</div>
+                </div>
+                <div class="who"><div class="who-name">נועה ויואב</div><div class="who-sub">המסע פעיל · החודש 1</div></div>
+                <button class="menu-btn"><svg class="icn" width="16" height="16"><use href="#i-dots"/></svg></button>
+              </div>
+            </div>
+
+            <nav class="nav">
+              <div class="group-h">המסע שלי</div>
+              <div class="nav-item active"><svg class="icn"><use href="#i-today"/></svg><span class="lbl">היום</span></div>
+              <div class="nav-item"><svg class="icn"><use href="#i-book"/></svg><span class="lbl">השיעורים שלי</span><span class="end">1</span></div>
+              <div class="nav-item"><svg class="icn"><use href="#i-chat"/></svg><span class="lbl">צ׳אט עם מומחה</span><span class="end">2</span></div>
+              <div class="group-h">משחקים</div>
+              <div class="nav-item"><svg class="icn"><use href="#i-cards"/></svg><span class="lbl">משחקי הזוגות</span></div>
+              <div class="nav-item"><svg class="icn"><use href="#i-heart"/></svg><span class="lbl">מיאושי למבוגרים</span></div>
+              <div class="group-h">החשבון</div>
+              <div class="nav-item"><svg class="icn"><use href="#i-users"/></svg><span class="lbl">שיתוף עם בן/בת זוג</span><span class="end dot"></span></div>
+              <div class="nav-item"><svg class="icn"><use href="#i-gear"/></svg><span class="lbl">הגדרות</span></div>
+            </nav>
+
+            <div class="expert-mini">
+              <div class="row">
+                <div class="av">ע<span class="presence"></span></div>
+                <div class="who"><div class="name">ענת ר.</div><div class="stat">המומחית שלכם · online</div></div>
+              </div>
+              <div class="pre">״חשבתי עליכם השבוע. איך עבר השיעור?…״</div>
+              <div class="ask"><svg class="icn"><use href="#i-chat"/></svg><span>שאלה לענת</span></div>
+            </div>
+          </aside>
+
+          <section class="area">
+            <div class="area-top">
+              <div class="crumb">מיאושי שלי · <span class="here">היום</span></div>
+              <div class="actions">
+                <div class="iconbtn"><svg class="icn"><use href="#i-search"/></svg></div>
+                <div class="iconbtn"><svg class="icn"><use href="#i-bell"/></svg><span class="b">2</span></div>
+                <div class="iconbtn"><svg class="icn"><use href="#i-gear"/></svg></div>
+              </div>
+            </div>
+            <div class="area-body">
+              <div class="focus-pill"><svg class="icn"><use href="#i-heart"/></svg><span>המוקד הנוכחי: מיניות ואינטימיות</span></div>
+              <article class="hero" data-new="true">
+                <div class="pre"><span class="category"><svg class="icn"><use href="#i-chat"/></svg> תקשורת</span><span class="chip">השיעור הנוכחי</span></div>
+                <h2>שפת האהבה שלי — ושלך</h2>
+                <p class="desc">תרגיל קצר שעוזר לכם לזהות איך אתם מבטאים אהבה — ואיך בן/בת הזוג מבקש/ת אותה.</p>
+                <div class="meta"><span><svg class="icn"><use href="#i-clock"/></svg>12 דקות</span></div>
+                <a class="cta"><span>פתחו את השיעור</span><svg class="icn"><use href="#i-arrow"/></svg></a>
+              </article>
+              <article class="chat-row">
+                <div class="avatar">ע<span class="presence"></span></div>
+                <div class="body">
+                  <div class="h"><span class="name">ענת ר.</span><span class="when">לפני 2ש</span></div>
+                  <div class="msg">״חשבתי עליכם השבוע. איך עבר השיעור על שפת האהבה?…״</div>
+                </div>
+                <span class="unread">2</span>
+              </article>
+              <div class="secHead"><h3>ההיסטוריה שלכם</h3><span class="a">הכל (9)</span></div>
+              <div class="list">
+                <div class="litem done"><div class="num"><svg class="icn"><use href="#i-check"/></svg></div><div class="text"><div class="title">להגיד תודה — בכוונה</div><div class="sub">חיבור רגשי · הושלם</div></div><div class="when">לפני 3 ימים</div></div>
+                <div class="litem done"><div class="num"><svg class="icn"><use href="#i-check"/></svg></div><div class="text"><div class="title">השיחה שאף פעם לא הייתה</div><div class="sub">תקשורת · הושלם</div></div><div class="when">לפני 6 ימים</div></div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="col-label">מובייל</div>
+      <div class="device mobile">
+        <div class="m-top">
+          <div class="brand-row">
+            <div class="av-pair"><div class="av">נ</div><div class="av">י</div></div>
+            <div class="crumb-here">המוקד · מיניות ואינטימיות<strong>היום</strong></div>
+          </div>
+          <div class="right">
+            <div class="iconbtn"><svg class="icn"><use href="#i-bell"/></svg><span class="b">2</span></div>
+          </div>
+        </div>
+        <div class="m-scroll">
+          <article class="hero" data-new="true">
+            <div class="pre"><span class="category"><svg class="icn"><use href="#i-chat"/></svg> תקשורת</span><span class="chip">השיעור הנוכחי</span></div>
+            <h2 style="font-size:22px">שפת האהבה שלי — ושלך</h2>
+            <p class="desc">תרגיל קצר שעוזר לכם לזהות איך אתם מבטאים אהבה.</p>
+            <div class="meta"><span><svg class="icn"><use href="#i-clock"/></svg>12 דקות</span></div>
+            <a class="cta"><span>פתחו את השיעור</span><svg class="icn"><use href="#i-arrow"/></svg></a>
+          </article>
+          <article class="chat-row">
+            <div class="avatar">ע<span class="presence"></span></div>
+            <div class="body">
+              <div class="h"><span class="name">ענת ר.</span><span class="when">לפני 2ש</span></div>
+              <div class="msg">״חשבתי עליכם השבוע. איך עבר השיעור?…״</div>
+            </div>
+            <span class="unread">2</span>
+          </article>
+          <div class="secHead"><h3>ההיסטוריה</h3><span class="a">הכל</span></div>
+          <div class="list">
+            <div class="litem done"><div class="num"><svg class="icn"><use href="#i-check"/></svg></div><div class="text"><div class="title">להגיד תודה — בכוונה</div><div class="sub">חיבור רגשי</div></div><div class="when">לפני 3ימ׳</div></div>
+            <div class="litem done"><div class="num"><svg class="icn"><use href="#i-check"/></svg></div><div class="text"><div class="title">השיחה שאף פעם לא הייתה</div><div class="sub">תקשורת</div></div><div class="when">לפני 6ימ׳</div></div>
+          </div>
+        </div>
+        <nav class="m-tabs">
+          <div class="t active"><span class="g"><svg class="icn"><use href="#i-today"/></svg></span><span>היום</span></div>
+          <div class="t"><span class="g" data-new><svg class="icn"><use href="#i-book"/></svg></span><span>שיעורים</span></div>
+          <div class="t"><span class="g" data-new><svg class="icn"><use href="#i-chat"/></svg></span><span>מומחה</span></div>
+          <div class="t"><span class="g"><svg class="icn"><use href="#i-cards"/></svg></span><span>משחקים</span></div>
+          <div class="t"><span class="g"><svg class="icn"><use href="#i-menu"/></svg></span><span>עוד</span></div>
+        </nav>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       2. ״שיתוף עם בן/בת זוג״
+       ═══════════════════════════════════════════════════════════════════ -->
+  <div class="sec-title">
+    <h2>2. ״שיתוף עם בן/בת זוג״</h2>
+    <span class="kind">״רוח״ של הזוג השני — אבטר ריק עם קונטור מקווקו = הזמנה אישית.</span>
+  </div>
+
+  <div class="pair">
+    <div>
+      <div class="col-label">דסקטופ</div>
+      <div class="device desktop">
+        <div class="shell">
+          <aside class="sidebar">
+            <div class="couple-card">
+              <div class="row">
+                <div class="av-pair"><div class="av">נ</div><div class="av">י</div></div>
+                <div class="who"><div class="who-name">נועה ויואב</div><div class="who-sub">המסע פעיל</div></div>
+                <button class="menu-btn"><svg class="icn" width="16" height="16"><use href="#i-dots"/></svg></button>
+              </div>
+            </div>
+            <nav class="nav">
+              <div class="group-h">המסע שלי</div>
+              <div class="nav-item"><svg class="icn"><use href="#i-today"/></svg><span class="lbl">היום</span></div>
+              <div class="nav-item"><svg class="icn"><use href="#i-book"/></svg><span class="lbl">השיעורים שלי</span><span class="end">1</span></div>
+              <div class="nav-item"><svg class="icn"><use href="#i-chat"/></svg><span class="lbl">צ׳אט עם מומחה</span><span class="end">2</span></div>
+              <div class="group-h">משחקים</div>
+              <div class="nav-item"><svg class="icn"><use href="#i-cards"/></svg><span class="lbl">משחקי הזוגות</span></div>
+              <div class="nav-item"><svg class="icn"><use href="#i-heart"/></svg><span class="lbl">מיאושי למבוגרים</span></div>
+              <div class="group-h">החשבון</div>
+              <div class="nav-item active"><svg class="icn"><use href="#i-users"/></svg><span class="lbl">שיתוף עם בן/בת זוג</span></div>
+              <div class="nav-item"><svg class="icn"><use href="#i-gear"/></svg><span class="lbl">הגדרות</span></div>
+            </nav>
+            <div class="expert-mini">
+              <div class="row">
+                <div class="av">ע<span class="presence"></span></div>
+                <div class="who"><div class="name">ענת ר.</div><div class="stat">online</div></div>
+              </div>
+              <div class="ask"><svg class="icn"><use href="#i-chat"/></svg><span>שאלה לענת</span></div>
+            </div>
+          </aside>
+
+          <section class="area">
+            <div class="area-top">
+              <div class="crumb">מיאושי שלי · <span class="here">שיתוף עם בן/בת זוג</span></div>
+              <div class="actions"><div class="iconbtn"><svg class="icn"><use href="#i-bell"/></svg><span class="b">2</span></div></div>
+            </div>
+            <div class="area-body" style="max-width:640px">
+              <div class="share-hero">
+                <div class="ghost-pair">
+                  <div class="you">נ</div>
+                  <div class="ghost">+</div>
+                </div>
+                <h2>הזמינו את בן/בת הזוג למסע</h2>
+                <p>הם יקבלו גישה מלאה לכל מה שיש לכם — שיעורים, צ׳אט עם המומחית, ובעתיד גם משחקים. בלי תוספת תשלום, רק בני זוג בלבד.</p>
+                <div class="code-row">
+                  <div class="code-box">JOIN-MIO-7K4P</div>
+                  <a class="copy-btn">העתקה</a>
+                </div>
+                <div class="share-buttons">
+                  <a class="sb"><svg class="icn"><use href="#i-whatsapp"/></svg><span>WhatsApp</span></a>
+                  <a class="sb"><svg class="icn"><use href="#i-sms"/></svg><span>SMS</span></a>
+                  <a class="sb"><svg class="icn"><use href="#i-mail"/></svg><span>Email</span></a>
+                  <a class="sb"><svg class="icn"><use href="#i-qr"/></svg><span>QR</span></a>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="col-label">מובייל</div>
+      <div class="device mobile">
+        <div class="m-top">
+          <div class="brand-row">
+            <div class="av-pair"><div class="av">נ</div><div class="av">י</div></div>
+            <div class="crumb-here">החשבון<strong>שיתוף עם בן/בת זוג</strong></div>
+          </div>
+          <div class="right"><div class="iconbtn"><svg class="icn"><use href="#i-bell"/></svg><span class="b">2</span></div></div>
+        </div>
+        <div class="m-scroll">
+          <div class="share-hero">
+            <div class="ghost-pair">
+              <div class="you">נ</div>
+              <div class="ghost">+</div>
+            </div>
+            <h2 style="font-size:22px">הזמינו את בן/בת הזוג</h2>
+            <p style="font-size:14px">הם יקבלו גישה מלאה למסע שלכם — בלי תוספת תשלום.</p>
+            <div class="code-row">
+              <div class="code-box" style="font-size:14px">JOIN-MIO-7K4P</div>
+            </div>
+            <a class="copy-btn" style="display:flex;justify-content:center;margin-bottom:12px">העתקת קישור</a>
+            <div class="share-buttons">
+              <a class="sb"><svg class="icn"><use href="#i-whatsapp"/></svg><span>WhatsApp</span></a>
+              <a class="sb"><svg class="icn"><use href="#i-sms"/></svg><span>SMS</span></a>
+              <a class="sb"><svg class="icn"><use href="#i-mail"/></svg><span>Email</span></a>
+              <a class="sb"><svg class="icn"><use href="#i-qr"/></svg><span>QR</span></a>
+            </div>
+          </div>
+        </div>
+        <nav class="m-tabs">
+          <div class="t"><span class="g"><svg class="icn"><use href="#i-today"/></svg></span><span>היום</span></div>
+          <div class="t"><span class="g" data-new><svg class="icn"><use href="#i-book"/></svg></span><span>שיעורים</span></div>
+          <div class="t"><span class="g" data-new><svg class="icn"><use href="#i-chat"/></svg></span><span>מומחה</span></div>
+          <div class="t"><span class="g"><svg class="icn"><use href="#i-cards"/></svg></span><span>משחקים</span></div>
+          <div class="t active"><span class="g"><svg class="icn"><use href="#i-menu"/></svg></span><span>עוד</span></div>
+        </nav>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       3. ״הגדרות״
+       ═══════════════════════════════════════════════════════════════════ -->
+  <div class="sec-title">
+    <h2>3. ״הגדרות״</h2>
+    <span class="kind">פרופיל · מנוי · חשבון. נקי ופחות ״system preferences״.</span>
+  </div>
+
+  <div class="pair">
+    <div>
+      <div class="col-label">דסקטופ</div>
+      <div class="device desktop">
+        <div class="shell">
+          <aside class="sidebar">
+            <div class="couple-card">
+              <div class="row">
+                <div class="av-pair"><div class="av">נ</div><div class="av">י</div></div>
+                <div class="who"><div class="who-name">נועה ויואב</div><div class="who-sub">המסע פעיל</div></div>
+                <button class="menu-btn"><svg class="icn" width="16" height="16"><use href="#i-dots"/></svg></button>
+              </div>
+            </div>
+            <nav class="nav">
+              <div class="group-h">המסע שלי</div>
+              <div class="nav-item"><svg class="icn"><use href="#i-today"/></svg><span class="lbl">היום</span></div>
+              <div class="nav-item"><svg class="icn"><use href="#i-book"/></svg><span class="lbl">השיעורים שלי</span><span class="end">1</span></div>
+              <div class="nav-item"><svg class="icn"><use href="#i-chat"/></svg><span class="lbl">צ׳אט עם מומחה</span><span class="end">2</span></div>
+              <div class="group-h">משחקים</div>
+              <div class="nav-item"><svg class="icn"><use href="#i-cards"/></svg><span class="lbl">משחקי הזוגות</span></div>
+              <div class="nav-item"><svg class="icn"><use href="#i-heart"/></svg><span class="lbl">מיאושי למבוגרים</span></div>
+              <div class="group-h">החשבון</div>
+              <div class="nav-item"><svg class="icn"><use href="#i-users"/></svg><span class="lbl">שיתוף עם בן/בת זוג</span><span class="end dot"></span></div>
+              <div class="nav-item active"><svg class="icn"><use href="#i-gear"/></svg><span class="lbl">הגדרות</span></div>
+            </nav>
+            <div class="expert-mini">
+              <div class="row">
+                <div class="av">ע<span class="presence"></span></div>
+                <div class="who"><div class="name">ענת ר.</div><div class="stat">online</div></div>
+              </div>
+              <div class="ask"><svg class="icn"><use href="#i-chat"/></svg><span>שאלה לענת</span></div>
+            </div>
+          </aside>
+
+          <section class="area">
+            <div class="area-top">
+              <div class="crumb">מיאושי שלי · <span class="here">הגדרות</span></div>
+              <div class="actions"><div class="iconbtn"><svg class="icn"><use href="#i-bell"/></svg><span class="b">2</span></div></div>
+            </div>
+            <div class="area-body" style="max-width:600px">
+              <div class="secHead"><h3>פרופיל</h3></div>
+              <div class="list">
+                <div class="set-row"><div class="ic"><svg class="icn"><use href="#i-user"/></svg></div><div class="b"><div class="ttl">פרטים אישיים</div><div class="sub">שם, אימייל, טלפון</div></div><div class="arrow"><svg class="icn"><use href="#i-chev-l"/></svg></div></div>
+                <div class="set-row"><div class="ic"><svg class="icn"><use href="#i-bell2"/></svg></div><div class="b"><div class="ttl">התראות</div><div class="sub">אימייל / SMS / push</div></div><div class="arrow"><svg class="icn"><use href="#i-chev-l"/></svg></div></div>
+                <div class="set-row"><div class="ic"><svg class="icn"><use href="#i-shield"/></svg></div><div class="b"><div class="ttl">פרטיות וביטחון</div><div class="sub">סיסמה, חיבורים פעילים</div></div><div class="arrow"><svg class="icn"><use href="#i-chev-l"/></svg></div></div>
+              </div>
+
+              <div class="secHead" style="margin-top:6px"><h3>מנוי וחיוב</h3></div>
+              <div class="list">
+                <div class="set-row"><div class="ic"><svg class="icn"><use href="#i-card"/></svg></div><div class="b"><div class="ttl">המנוי שלכם</div><div class="sub">ליווי שבועי · החיוב הבא 5.6</div></div><span class="badge-mini">פעיל</span></div>
+                <div class="set-row"><div class="ic"><svg class="icn"><use href="#i-arrow"/></svg></div><div class="b"><div class="ttl">היסטוריית חיובים</div><div class="sub">חשבוניות וקבלות</div></div><div class="arrow"><svg class="icn"><use href="#i-chev-l"/></svg></div></div>
+              </div>
+
+              <div class="secHead" style="margin-top:6px"><h3>חשבון</h3></div>
+              <div class="list">
+                <div class="set-row"><div class="ic"><svg class="icn"><use href="#i-logout"/></svg></div><div class="b"><div class="ttl">יציאה</div></div><div class="arrow"><svg class="icn"><use href="#i-chev-l"/></svg></div></div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="col-label">מובייל</div>
+      <div class="device mobile">
+        <div class="m-top">
+          <div class="brand-row">
+            <div class="av-pair"><div class="av">נ</div><div class="av">י</div></div>
+            <div class="crumb-here">החשבון<strong>הגדרות</strong></div>
+          </div>
+          <div class="right"><div class="iconbtn"><svg class="icn"><use href="#i-bell"/></svg><span class="b">2</span></div></div>
+        </div>
+        <div class="m-scroll">
+          <div class="secHead"><h3>פרופיל</h3></div>
+          <div class="list">
+            <div class="set-row"><div class="ic"><svg class="icn"><use href="#i-user"/></svg></div><div class="b"><div class="ttl">פרטים אישיים</div><div class="sub">שם, אימייל, טלפון</div></div><div class="arrow"><svg class="icn"><use href="#i-chev-l"/></svg></div></div>
+            <div class="set-row"><div class="ic"><svg class="icn"><use href="#i-bell2"/></svg></div><div class="b"><div class="ttl">התראות</div><div class="sub">אימייל / SMS / push</div></div><div class="arrow"><svg class="icn"><use href="#i-chev-l"/></svg></div></div>
+            <div class="set-row"><div class="ic"><svg class="icn"><use href="#i-shield"/></svg></div><div class="b"><div class="ttl">פרטיות וביטחון</div><div class="sub">סיסמה, חיבורים</div></div><div class="arrow"><svg class="icn"><use href="#i-chev-l"/></svg></div></div>
+          </div>
+
+          <div class="secHead"><h3>מנוי וחיוב</h3></div>
+          <div class="list">
+            <div class="set-row"><div class="ic"><svg class="icn"><use href="#i-card"/></svg></div><div class="b"><div class="ttl">המנוי שלכם</div><div class="sub">ליווי שבועי · 5.6</div></div><span class="badge-mini">פעיל</span></div>
+            <div class="set-row"><div class="ic"><svg class="icn"><use href="#i-arrow"/></svg></div><div class="b"><div class="ttl">היסטוריית חיובים</div><div class="sub">חשבוניות</div></div><div class="arrow"><svg class="icn"><use href="#i-chev-l"/></svg></div></div>
+          </div>
+
+          <div class="secHead"><h3>חשבון</h3></div>
+          <div class="list">
+            <div class="set-row"><div class="ic"><svg class="icn"><use href="#i-logout"/></svg></div><div class="b"><div class="ttl">יציאה</div></div><div class="arrow"><svg class="icn"><use href="#i-chev-l"/></svg></div></div>
+          </div>
+        </div>
+        <nav class="m-tabs">
+          <div class="t"><span class="g"><svg class="icn"><use href="#i-today"/></svg></span><span>היום</span></div>
+          <div class="t"><span class="g" data-new><svg class="icn"><use href="#i-book"/></svg></span><span>שיעורים</span></div>
+          <div class="t"><span class="g" data-new><svg class="icn"><use href="#i-chat"/></svg></span><span>מומחה</span></div>
+          <div class="t"><span class="g"><svg class="icn"><use href="#i-cards"/></svg></span><span>משחקים</span></div>
+          <div class="t active"><span class="g"><svg class="icn"><use href="#i-menu"/></svg></span><span>עוד</span></div>
+        </nav>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

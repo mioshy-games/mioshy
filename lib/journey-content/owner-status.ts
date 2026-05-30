@@ -27,9 +27,10 @@ export interface OwnerJourneyStatus {
   hasActiveAssignments: boolean;
   hasInProgressAssessment: boolean;
   /**
-   * The user finished the questionnaire - `journeys.status === 'completed'`
-   * on the most-recent row. Drives the "כניסה לליווי עם מיאושי" CTA copy
-   * (see docs/my-page-redesign-spec.md §5).
+   * The user finished the questionnaire - `journeys.status === 'complete'`
+   * (or the legacy 'completed' spelling) on the most-recent row. Drives
+   * the "כניסה לליווי עם מיאושי" CTA copy (see
+   * docs/my-page-redesign-spec.md §5).
    */
   hasCompletedAssessment: boolean;
 }
@@ -80,14 +81,22 @@ export async function getOwnerJourneyStatus(args: {
     !assignmentRes.error && (assignmentRes.count ?? 0) > 0;
 
   const assessmentRow = assessmentRes.data as { status: string } | null;
+  // Itzik 2026-05-29 bugfix — api/journey/answer writes status='complete'
+  // (singular, no 'd') when the user finishes the questionnaire, but
+  // earlier revisions of this file checked for 'completed'. The
+  // mismatch meant every paying user came back as
+  // hasCompletedAssessment=false → derivePillarState sent the "ליווי
+  // עם מיאושי" CTA to /journey/assessment instead of /my/journey, so
+  // clicking it bounced the user to the analysis summary page. We
+  // accept BOTH spellings defensively in case any pre-existing row
+  // somewhere uses 'completed'.
+  const isDone =
+    assessmentRow?.status === "complete" ||
+    assessmentRow?.status === "completed";
   const hasInProgressAssessment =
-    !assessmentRes.error &&
-    !!assessmentRow &&
-    assessmentRow.status !== "completed";
+    !assessmentRes.error && !!assessmentRow && !isDone;
   const hasCompletedAssessment =
-    !assessmentRes.error &&
-    !!assessmentRow &&
-    assessmentRow.status === "completed";
+    !assessmentRes.error && !!assessmentRow && isDone;
 
   return {
     owner,

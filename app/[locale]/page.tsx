@@ -122,7 +122,11 @@ export default async function HomePage({
     const {
       data: { user },
     } = await supabaseAuth.auth.getUser();
-    if (user) redirect(`/${params.locale}/my`);
+    // Go-live 2026-05-29 — direct authenticated visitors at /my/today
+    // (the AppShell landing) instead of the legacy /my hub. Middleware
+    // catches stragglers, but routing direct keeps the SSR cost flat
+    // and avoids an extra redirect hop.
+    if (user) redirect(`/${params.locale}/my/today`);
   }
 
   // ── Feature flag: HomepageV2 is now the DEFAULT.

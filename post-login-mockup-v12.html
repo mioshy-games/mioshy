@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mioshy — Studio v12 · Final + implementation plan</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --canvas-grad: linear-gradient(160deg, rgba(236,72,153,0.10) 0%, #320F37 23.53%, #0D0429 100%);
+      --canvas-deep: #060217;
+      --canvas-solid:#0D0429;
+
+      --side-bg:     #150829;
+      --side-bg-soft:#1B0E33;
+      --side-line:   rgba(244,229,234,0.06);
+      --side-line-mid: rgba(244,229,234,0.12);
+      --side-t1:     #F4ECEE;
+      --side-t2:     rgba(244,236,238,0.66);
+      --side-t3:     rgba(244,236,238,0.42);
+      --side-hover:  rgba(244,236,238,0.05);
+
+      --card:        #1D0E36;
+      --card-elev:   #28154A;
+      --line-soft:   rgba(255,255,255,0.07);
+      --line-mid:    rgba(255,255,255,0.13);
+
+      --text-1:      #FAF6F7;
+      --text-2:      #C9C0DC;
+      --text-3:      #897FA6;
+      --wine:        #B83C4D;
+      --wine-deep:   #6C2E40;
+      --wine-soft:   rgba(184,60,77,0.16);
+      --wine-edge:   rgba(184,60,77,0.32);
+      --amber:       #F59E0B;
+      --sage:        #87A878;
+      --sage-soft:   rgba(135,168,120,0.20);
+
+      --cta-grad:    linear-gradient(110deg, #B83C4D 0%, #EC4899 55%, #F59E0B 100%);
+      --header-grad: linear-gradient(135deg, #0F0828 0%, #09051C 50%, #0E0726 100%);
+    }
+
+    *,*::before,*::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: 'Assistant', system-ui, sans-serif;
+      background: var(--canvas-deep);
+      color: var(--text-1);
+      padding: 36px 16px 80px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .head { max-width: 1500px; margin: 0 auto 22px; }
+    .head h1 { font-size: 30px; margin: 0 0 8px; font-weight: 800; letter-spacing: -0.02em; }
+    .head p { font-size: 15px; color: var(--text-2); margin: 0 0 12px; max-width: 880px; line-height: 1.6; }
+    .head .pill { display: inline-block; padding: 4px 12px; border-radius: 999px; background: var(--wine-soft); border: 1px solid var(--wine-edge); color: #F2B5BD; font-size: 13px; font-weight: 700; }
+
+    .sec-title { max-width: 1500px; margin: 36px auto 14px; display: flex; align-items: baseline; gap: 14px; }
+    .sec-title h2 { font-size: 22px; font-weight: 800; margin: 0; letter-spacing: -0.01em; }
+    .sec-title .kind { font-size: 13px; color: var(--text-3); }
+
+    .col { max-width: 1500px; margin: 0 auto; }
+
+    .device { background: var(--canvas-solid); color: var(--text-1); border-radius: 18px; overflow: hidden; position: relative; box-shadow: 0 20px 50px -18px rgba(0,0,0,0.75); border: 1px solid var(--line-soft); }
+    .device.desktop { width: 100%; min-height: 700px; }
+    .device.mobile { width: 360px; min-height: 780px; margin: 0 auto; border-radius: 28px; }
+
+    /* SHELL */
+    .shell { display: grid; grid-template-columns: 240px 1fr; min-height: 700px; }
+
+    .sidebar {
+      background: linear-gradient(180deg, var(--side-bg-soft) 0%, var(--side-bg) 60%);
+      color: var(--side-t1);
+      display: flex; flex-direction: column;
+      border-inline-end: 1px solid var(--side-line);
+      position: relative;
+    }
+    .sidebar::after {
+      content: ''; position: absolute; top: 0; bottom: 0; inset-inline-end: 0;
+      width: 1px;
+      background: linear-gradient(180deg, rgba(236,72,153,0.30) 0%, rgba(236,72,153,0.05) 35%, transparent 100%);
+    }
+
+    .couple-card { padding: 14px 14px 12px; border-bottom: 1px solid var(--side-line); }
+    .couple-card .row { display: flex; align-items: center; gap: 8px; }
+    .couple-card .av-pair { display: flex; align-items: center; position: relative; flex-shrink: 0; }
+    .couple-card .av { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #FFFFFF; font-size: 13px; border: 2px solid var(--side-bg); }
+    .couple-card .av:nth-child(1) { background: linear-gradient(135deg, #EC4899 0%, #B83C4D 100%); }
+    .couple-card .av:nth-child(2) { background: linear-gradient(135deg, #F59E0B 0%, #B83C4D 100%); margin-inline-start: -10px; }
+    .couple-card .who { flex: 1; min-width: 0; }
+    .couple-card .who-name { font-weight: 700; font-size: 14px; color: var(--side-t1); line-height: 1.15; }
+    .couple-card .who-sub { font-size: 12px; color: var(--side-t2); margin-top: 2px; }
+    .couple-card .menu-btn { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--side-t2); background: transparent; border: 0; cursor: pointer; flex-shrink: 0; }
+
+    .nav { flex: 1; padding: 8px 8px; display: flex; flex-direction: column; gap: 1px; overflow-y: auto; }
+    .group-h { font-size: 11px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--side-t3); padding: 12px 10px 4px; }
+
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 10px; border-radius: 10px;
+      font-size: 15px; font-weight: 600;
+      color: var(--side-t1); cursor: pointer; min-height: 40px;
+      position: relative;
+    }
+    .nav-item .icn { width: 19px; height: 19px; flex-shrink: 0; color: var(--side-t2); }
+    .nav-item .lbl { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .nav-item .end { font-size: 11px; padding: 1px 7px; border-radius: 999px; background: var(--wine); color: #FFFFFF; font-weight: 800; flex-shrink: 0; min-width: 18px; text-align: center; }
+    .nav-item .end.dot { background: var(--wine); width: 8px; height: 8px; border-radius: 50%; padding: 0; min-width: 0; }
+    .nav-item:hover { background: var(--side-hover); }
+    .nav-item:hover .icn { color: var(--side-t1); }
+    /* Active = subtle presence indicator (not a button) */
+    .nav-item.active {
+      background: rgba(244,236,238,0.04);
+      color: var(--side-t1);
+      font-weight: 700;
+    }
+    .nav-item.active .icn { color: #F2B5BD; }
+    .nav-item.active::before {
+      content: '';
+      position: absolute;
+      inset: 8px auto 8px 0;
+      width: 2.5px;
+      background: var(--cta-grad);
+      border-radius: 2px;
+    }
+    .nav-item.logout { color: var(--side-t2); margin-top: 4px; }
+    .nav-item.logout:hover { background: rgba(184,60,77,0.10); color: #F2B5BD; }
+    .nav-item.logout:hover .icn { color: #F2B5BD; }
+
+    .nav-divider { height: 1px; background: var(--side-line); margin: 8px 12px 4px; }
+
+    /* EXPERT MINI */
+    .expert-mini { padding: 12px 12px 16px; border-top: 1px solid var(--side-line); }
+    .expert-mini .row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .expert-mini .av { width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; position: relative; background: linear-gradient(135deg, var(--wine) 0%, var(--wine-deep) 100%); display: flex; align-items: center; justify-content: center; color: #FFFFFF; font-weight: 800; font-size: 13px; }
+    .expert-mini .av .presence { position: absolute; bottom: -2px; right: -2px; width: 9px; height: 9px; border-radius: 50%; background: var(--sage); border: 2px solid var(--side-bg); }
+    .expert-mini .who { flex: 1; min-width: 0; }
+    .expert-mini .name { font-size: 13px; font-weight: 700; color: var(--side-t1); }
+    .expert-mini .stat { font-size: 11px; color: var(--side-t2); margin-top: 1px; }
+    .expert-mini .pre { font-size: 13px; color: var(--side-t2); line-height: 1.4; padding: 8px 10px; background: var(--side-hover); border-radius: 10px; margin-bottom: 8px;
+      overflow: hidden; text-overflow: ellipsis;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    }
+    /* Expert chat affordance — subtle text link, not a button */
+    .expert-mini .ask {
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 8px 10px; border-radius: 8px;
+      background: transparent; color: #F2B5BD;
+      font-weight: 600; font-size: 13px;
+      border: 1px solid rgba(242,181,189,0.18);
+    }
+    .expert-mini .ask:hover { background: rgba(242,181,189,0.06); border-color: rgba(242,181,189,0.28); }
+    .expert-mini .ask .icn { width: 13px; height: 13px; }
+
+    /* CONTENT */
+    .area { display: flex; flex-direction: column; min-width: 0; background: var(--canvas-grad); }
+    .area-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 22px; border-bottom: 1px solid var(--line-soft); background: rgba(15,8,40,0.55); backdrop-filter: blur(8px); min-height: 60px; }
+    .area-top .crumb { font-size: 14px; color: var(--text-3); }
+    .area-top .crumb .here { color: var(--text-1); font-weight: 600; }
+    .area-top .actions { display: flex; gap: 6px; }
+    .iconbtn { width: 32px; height: 32px; border-radius: 9px; background: rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: center; color: var(--text-1); position: relative; cursor: pointer; }
+    .iconbtn:hover { background: rgba(255,255,255,0.10); }
+    .iconbtn .icn { width: 16px; height: 16px; }
+    .iconbtn .b { position: absolute; top: -3px; left: -3px; min-width: 16px; height: 16px; padding: 0 4px; background: var(--amber); color: #1A1410; font-size: 10px; font-weight: 800; border-radius: 999px; display: flex; align-items: center; justify-content: center; border: 2px solid var(--canvas-solid); }
+
+    .area-body { flex: 1; padding: 24px; display: flex; flex-direction: column; gap: 16px; max-width: 880px; width: 100%; margin: 0 auto; }
+
+    .focus-pill { display: inline-flex; align-items: center; gap: 10px; padding: 7px 14px; border-radius: 999px; background: var(--wine-soft); border: 1px solid var(--wine-edge); color: #F2B5BD; font-weight: 700; font-size: 15px; align-self: flex-start; }
+    .focus-pill .icn { width: 16px; height: 16px; }
+
+    .secHead { display: flex; align-items: baseline; justify-content: space-between; padding-top: 4px; }
+    .secHead h3 { font-size: 18px; font-weight: 800; margin: 0; color: var(--text-1); letter-spacing: -0.01em; }
+    .secHead .a { font-size: 14px; color: #F2B5BD; font-weight: 600; }
+    .secHead .count { font-size: 14px; color: var(--text-3); }
+
+    /* HERO — body text 20px */
+    .hero { background: linear-gradient(160deg, rgba(236,72,153,0.12) 0%, var(--card-elev) 40%, var(--card) 100%); border: 1px solid rgba(236,72,153,0.28); border-radius: 18px; padding: 22px; position: relative; box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 14px 30px -16px rgba(236,72,153,0.30); }
+    .hero[data-new="true"]::after { content: 'נפתח עכשיו'; position: absolute; top: 14px; right: 14px; background: var(--amber); color: #1A0F00; font-size: 14px; font-weight: 800; padding: 4px 10px; border-radius: 999px; }
+    .hero[data-new="true"] .pre { padding-inline-start: 100px; }
+    .hero .pre { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
+    .hero .category { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; color: #F2B5BD; letter-spacing: 0.10em; text-transform: uppercase; }
+    .hero .category .icn { width: 14px; height: 14px; }
+    .hero .chip { font-size: 14px; padding: 4px 11px; border-radius: 999px; background: var(--wine-soft); color: #F2B5BD; font-weight: 700; border: 1px solid var(--wine-edge); }
+    .hero h2 { font-size: 28px; font-weight: 800; margin: 4px 0 10px; letter-spacing: -0.015em; line-height: 1.18; color: var(--text-1); }
+    .hero .desc { font-size: 20px; line-height: 1.55; color: var(--text-1); margin: 0 0 18px; }
+    .hero .meta { display: flex; gap: 8px; font-size: 14px; color: var(--text-2); margin-bottom: 18px; flex-wrap: wrap; }
+    .hero .meta span { display: inline-flex; align-items: center; gap: 6px; padding: 4px 11px; border-radius: 999px; background: rgba(255,255,255,0.05); font-weight: 600; }
+    .hero .meta .icn { width: 13px; height: 13px; opacity: 0.85; }
+    .hero .cta { display: flex; align-items: center; justify-content: center; gap: 8px; max-width: 320px; padding: 15px 14px; border-radius: 13px; color: #FFFFFF; font-weight: 800; font-size: 18px; letter-spacing: -0.01em; background: var(--cta-grad); box-shadow: 0 10px 28px -10px rgba(236,72,153,0.55); cursor: pointer; }
+    .hero .cta .icn { width: 17px; height: 17px; }
+
+    /* chat row — message 20px */
+    .chat-row { background: var(--card); border: 1px solid var(--line-soft); border-radius: 14px; padding: 16px; display: flex; gap: 12px; align-items: center; }
+    .chat-row .avatar { width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0; position: relative; background: linear-gradient(135deg, var(--wine) 0%, var(--wine-deep) 100%); display: flex; align-items: center; justify-content: center; color: #FFFFFF; font-weight: 800; font-size: 17px; }
+    .chat-row .presence { position: absolute; bottom: 0; right: 0; width: 11px; height: 11px; border-radius: 50%; background: var(--sage); border: 2px solid var(--card); }
+    .chat-row .body { flex: 1; min-width: 0; }
+    .chat-row .h { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+    .chat-row .name { font-weight: 700; font-size: 16px; color: var(--text-1); }
+    .chat-row .when { font-size: 14px; color: var(--text-3); }
+    .chat-row .msg { font-size: 20px; color: var(--text-1); line-height: 1.4; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+    .chat-row .unread { align-self: center; min-width: 28px; height: 28px; padding: 0 9px; background: var(--cta-grad); color: #FFFFFF; font-size: 14px; font-weight: 800; border-radius: 999px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+    /* list — title 20px on key views */
+    .list { display: flex; flex-direction: column; gap: 10px; }
+    .litem { display: flex; gap: 14px; align-items: center; background: var(--card); border: 1px solid var(--line-soft); padding: 14px; border-radius: 13px; }
+    .litem .num { width: 36px; height: 36px; border-radius: 11px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+    .litem .num .icn { width: 17px; height: 17px; }
+    .litem .text { flex: 1; min-width: 0; }
+    .litem .title { font-size: 20px; font-weight: 700; color: var(--text-1); line-height: 1.3; }
+    .litem .sub { font-size: 14px; color: var(--text-3); margin-top: 2px; }
+    .litem .when { font-size: 14px; color: var(--text-3); flex-shrink: 0; }
+    .litem.done { background: rgba(29,14,54,0.55); border-color: rgba(255,255,255,0.04); }
+    .litem.done .num { background: var(--sage-soft); color: var(--sage); }
+    .litem.done .title { color: var(--text-2); font-weight: 600; }
+    .litem.done .sub { color: var(--text-3); }
+    .litem.locked { background: rgba(29,14,54,0.30); border-color: rgba(255,255,255,0.04); opacity: 0.72; }
+    .litem.locked .num { background: rgba(255,255,255,0.04); color: var(--text-3); }
+    .litem.locked .title { color: var(--text-2); font-weight: 500; }
+
+    /* share */
+    .share-hero {
+      background: linear-gradient(135deg, rgba(236,72,153,0.16) 0%, var(--card) 100%);
+      border: 1px solid var(--wine-edge); border-radius: 18px;
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .share-hero::before { content: ''; position: absolute; top: -40px; right: -40px; width: 160px; height: 160px; border-radius: 50%; background: radial-gradient(circle, rgba(236,72,153,0.30) 0%, transparent 70%); pointer-events: none; }
+    .share-hero .ghost-pair { display: flex; align-items: center; margin-bottom: 14px; position: relative; z-index: 1; }
+    .share-hero .you { width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, #EC4899 0%, #B83C4D 100%); display: flex; align-items: center; justify-content: center; color: #FFFFFF; font-weight: 800; font-size: 16px; border: 3px solid var(--card); }
+    .share-hero .ghost { width: 42px; height: 42px; border-radius: 50%; background: var(--card); border: 2px dashed var(--wine-edge); display: flex; align-items: center; justify-content: center; color: var(--text-3); font-weight: 700; font-size: 17px; margin-inline-start: -10px; }
+    .share-hero h2 { font-size: 26px; font-weight: 800; margin: 0 0 10px; letter-spacing: -0.015em; position: relative; z-index: 1; }
+    .share-hero p { font-size: 20px; color: var(--text-1); margin: 0 0 20px; line-height: 1.55; position: relative; z-index: 1; max-width: 500px; }
+    .share-hero .code-row { display: flex; gap: 8px; align-items: center; margin-bottom: 14px; position: relative; z-index: 1; }
+    .share-hero .code-box { flex: 1; background: rgba(15,4,41,0.55); border: 1px solid var(--line-mid); padding: 13px 14px; border-radius: 11px; font-family: ui-monospace, monospace; font-size: 18px; color: var(--text-1); font-weight: 700; letter-spacing: 0.1em; text-align: center; }
+    .share-hero .copy-btn { padding: 13px 18px; border-radius: 11px; background: var(--cta-grad); color: #FFFFFF; font-weight: 700; font-size: 16px; cursor: pointer; }
+    .share-hero .share-buttons { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; position: relative; z-index: 1; }
+    .share-hero .sb { padding: 12px 8px; border-radius: 11px; background: rgba(255,255,255,0.05); border: 1px solid var(--line-soft); text-align: center; font-weight: 700; font-size: 14px; color: var(--text-1); display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; }
+    .share-hero .sb .icn { width: 18px; height: 18px; }
+
+    /* MOBILE */
+    .m-top { padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; background: var(--header-grad); border-bottom: 1px solid var(--line-soft); }
+    .m-top .brand-row { display: flex; align-items: center; gap: 9px; }
+    .m-top .av-pair { display: flex; align-items: center; }
+    .m-top .av-pair .av { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #FFFFFF; font-size: 11px; border: 2px solid var(--canvas-solid); }
+    .m-top .av-pair .av:nth-child(1) { background: linear-gradient(135deg, #EC4899 0%, #B83C4D 100%); }
+    .m-top .av-pair .av:nth-child(2) { background: linear-gradient(135deg, #F59E0B 0%, #B83C4D 100%); margin-inline-start: -8px; }
+    .m-top .crumb-here { font-size: 13px; color: var(--text-2); }
+    .m-top .crumb-here strong { color: var(--text-1); font-weight: 700; display: block; line-height: 1.2; font-size: 14px; }
+    .m-top .right { display: flex; gap: 6px; }
+
+    .m-tabs {
+      position: absolute; bottom: 0; right: 0; left: 0;
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px;
+      padding: 6px 6px 22px;
+      background: linear-gradient(180deg, var(--side-bg) 0%, var(--canvas-solid) 100%);
+      border-top: 1px solid var(--side-line-mid);
+    }
+    .m-tabs::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent 0%, rgba(236,72,153,0.40) 50%, transparent 100%); }
+    .m-tabs .t { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 7px 4px; border-radius: 11px; font-size: 11px; font-weight: 700; color: var(--side-t2); }
+    .m-tabs .t .g { width: 24px; height: 24px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--side-t2); position: relative; }
+    .m-tabs .t .g .icn { width: 17px; height: 17px; }
+    .m-tabs .t.active { color: #FFFFFF; }
+    .m-tabs .t.active .g { background: var(--cta-grad); color: #FFFFFF; box-shadow: 0 6px 14px -6px rgba(236,72,153,0.5); }
+    .m-tabs .t .g[data-new]::after { content: ''; position: absolute; top: -2px; left: -2px; width: 8px; height: 8px; border-radius: 50%; background: var(--wine); border: 2px solid var(--side-bg); }
+
+    .m-scroll { padding: 14px 14px 110px; display: flex; flex-direction: column; gap: 12px; background: var(--canvas-grad); }
+
+    .annot { font-size: 14px; color: var(--text-3); padding: 6px 4px 0; line-height: 1.6; max-width: 1500px; margin: 0 auto; }
+    .annot strong { color: var(--text-2); }
+
+    .pair { display: grid; grid-template-columns: 1fr 360px; gap: 24px; align-items: start; max-width: 1500px; margin: 0 auto; }
+    @media (max-width: 1100px) { .pair { grid-template-columns: 1fr; max-width: 380px; } }
+    .col-label { font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-3); font-weight: 700; padding: 4px 0; }
+
+    /* === IMPLEMENTATION PLAN === */
+    .plan { max-width: 1500px; margin: 56px auto 0; }
+    .plan h2 { font-size: 26px; font-weight: 800; margin: 0 0 14px; letter-spacing: -0.015em; }
+    .plan .lead { font-size: 16px; color: var(--text-2); margin-bottom: 28px; max-width: 800px; line-height: 1.65; }
+    .plan-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    @media (max-width: 980px) { .plan-grid { grid-template-columns: 1fr; } }
+    .plan-card {
+      background: var(--card); border: 1px solid var(--line-soft);
+      border-radius: 16px; padding: 22px;
+    }
+    .plan-card .num { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #F2B5BD; margin-bottom: 8px; }
+    .plan-card .num .badge { width: 24px; height: 24px; border-radius: 7px; background: var(--cta-grad); color: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; }
+    .plan-card h3 { font-size: 20px; font-weight: 800; margin: 0 0 10px; letter-spacing: -0.01em; }
+    .plan-card .body { font-size: 15px; color: var(--text-2); line-height: 1.65; margin: 0 0 12px; }
+    .plan-card .body strong { color: var(--text-1); }
+    .plan-card .body code { background: var(--canvas-solid); padding: 2px 7px; border-radius: 5px; font-family: ui-monospace, monospace; font-size: 13px; color: #F2B5BD; }
+    .plan-card .checklist { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+    .plan-card .checklist li { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; color: var(--text-1); line-height: 1.5; }
+    .plan-card .checklist li::before { content: '✓'; flex-shrink: 0; width: 18px; height: 18px; border-radius: 50%; background: var(--sage-soft); color: var(--sage); font-weight: 800; font-size: 11px; display: inline-flex; align-items: center; justify-content: center; margin-top: 2px; }
+    .plan-card .effort { display: inline-flex; gap: 8px; align-items: center; margin-top: 12px; padding: 6px 12px; border-radius: 999px; background: rgba(255,255,255,0.05); font-size: 13px; color: var(--text-2); }
+    .plan-card .effort strong { color: var(--text-1); }
+
+    .risks {
+      max-width: 1500px; margin: 32px auto 0;
+      padding: 24px 28px; border-radius: 16px;
+      background: linear-gradient(180deg, rgba(184,60,77,0.10) 0%, var(--card) 100%);
+      border: 1px solid var(--wine-edge);
+    }
+    .risks h3 { font-size: 20px; font-weight: 800; margin: 0 0 14px; letter-spacing: -0.015em; color: #F2B5BD; }
+    .risks ul { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    @media (max-width: 760px) { .risks ul { grid-template-columns: 1fr; } }
+    .risks li { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; color: var(--text-1); line-height: 1.55; }
+    .risks li .mk { flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%; background: var(--wine); color: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; margin-top: 1px; }
+    .risks li .txt { flex: 1; }
+    .risks li .txt strong { color: var(--text-1); font-weight: 700; }
+    .risks li .txt .small { display: block; font-size: 13px; color: var(--text-3); margin-top: 2px; }
+
+    .total {
+      max-width: 1500px; margin: 32px auto 0;
+      padding: 28px 32px; border-radius: 16px;
+      background: var(--canvas-grad);
+      border: 1px solid var(--wine-edge);
+      display: flex; gap: 28px; align-items: center; flex-wrap: wrap;
+    }
+    .total .num-big { font-size: 64px; font-weight: 900; background: var(--cta-grad); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; line-height: 1; letter-spacing: -0.04em; }
+    .total .label { font-size: 14px; color: var(--text-3); letter-spacing: 0.12em; text-transform: uppercase; font-weight: 700; }
+    .total .desc { font-size: 16px; color: var(--text-2); flex: 1; min-width: 300px; line-height: 1.6; }
+  </style>
+</head>
+<body>
+
+  <!-- SVG library -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-today" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></symbol>
+      <symbol id="i-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></symbol>
+      <symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+      <symbol id="i-cards" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="14" height="18" rx="2"/><path d="M7 21h13a2 2 0 0 0 2-2V7"/></symbol>
+      <symbol id="i-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></symbol>
+      <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+      <symbol id="i-gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+      <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+      <symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></symbol>
+      <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></symbol>
+      <symbol id="i-chev-l" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 6 9 12 15 18"/></symbol>
+      <symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></symbol>
+      <symbol id="i-dots" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1.5"/><circle cx="5" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></symbol>
+      <symbol id="i-logout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></symbol>
+      <symbol id="i-whatsapp" viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4c-.3-.1-1.6-.8-1.9-.9-.3-.1-.4-.1-.6.1-.2.2-.6.8-.8 1-.1.2-.3.2-.5.1-.7-.4-1.5-.8-2.1-1.5-.6-.6-1.1-1.3-1.5-2-.1-.3 0-.4.1-.5.1-.1.3-.3.4-.5.1-.1.2-.3.3-.4.1-.2 0-.3 0-.5-.1-.1-.6-1.4-.8-1.9-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.1-.6.3-.7.7-1 1.5-1 2.4 0 1.6.9 3.1 2.1 4.5 2 2.8 4.9 4.1 7.5 4.1 1.3 0 2.4-.4 3.2-1.2.4-.4.8-1 1-1.7.1-.3.1-.6.1-.8 0-.1-.1-.1-.3-.2-.2-.1-1.8-.9-2.1-1z"/></symbol>
+      <symbol id="i-sms" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="14" rx="2"/><polyline points="22 4 12 13 2 4"/></symbol>
+      <symbol id="i-qr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></symbol>
+      <symbol id="i-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22 6 12 13 2 6"/></symbol>
+    </defs>
+  </svg>
+
+  <header class="head">
+    <span class="pill">Studio v12 · אישור + תוכנית הטמעה</span>
+    <h1 style="margin-top:10px">״התנתקות״ בתפריט · גוף 20px · ותוכנית הטמעה מלאה</h1>
+    <p>שני תיקונים אחרונים: התנתקות עברה לתחתית ה-sidebar (לא בתוך הגדרות), טקסט הגוף הראשי בכל ה-views בקריאות 20px (מטא ותגיות נשארו 14-16px כפי שביקשת). למטה: בדיוק מה צריך לעשות כדי להטמיע את העיצוב על כל העמודים אחרי התחברות.</p>
+  </header>
+
+  <!-- ═══ 1. ״היום״ ═══ -->
+  <div class="sec-title"><h2>1. ״היום״ · גוף 20px, התנתקות ב-sidebar</h2></div>
+
+  <div class="pair">
+    <div>
+      <div class="col-label">דסקטופ</div>
+      <div class="device desktop">
+        <div class="shell">
+          <aside class="sidebar">
+            <div class="couple-card">
+              <div class="row">
+                <div class="av-pair"><div class="av">נ</div><div class="av">י</div></div>
+                <div class="who"><div class="who-name">נועה ויואב</div><div class="who-sub">המסע פעיל · החודש 1</div></div>
+                <button class="menu-btn"><svg class="icn" width="16" height="16"><use href="#i-dots"/></svg></button>
+              </div>
+            </div>
+            <nav class="nav">
+              <div class="group-h">המסע שלי</div>
+              <div class="nav-item active"><svg class="icn"><use href="#i-today"/></svg><span class="lbl">היום</span></div>
+              <div class="nav-item"><svg class="icn"><use href="#i-book"/></svg><span class="lbl">השיעורים שלי</span><span class="end">1</span></div>
+              <div class="nav-item"><svg class="icn"><use href="#i-chat"/></svg><span class="lbl">צ׳אט עם מומחה</span><span class="end">2</span></div>
+              <div class="group-h">משחקים</div>
+              <div class="nav-item"><svg class="icn"><use href="#i-cards"/></svg><span class="lbl">משחקי הזוגות</span></div>
+              <div class="nav-item"><svg class="icn"><use href="#i-heart"/></svg><span class="lbl">מיאושי למבוגרים</span></div>
+              <div class="group-h">החשבון</div>
+              <div class="nav-item"><svg class="icn"><use href="#i-users"/></svg><span class="lbl">שיתוף עם בן/בת זוג</span><span class="end dot"></span></div>
+              <div class="nav-item"><svg class="icn"><use href="#i-gear"/></svg><span class="lbl">הגדרות</span></div>
+              <div class="nav-divider"></div>
+              <div class="nav-item logout"><svg class="icn"><use href="#i-logout"/></svg><span class="lbl">התנתקות</span></div>
+            </nav>
+            <div class="expert-mini">
+              <div class="row">
+                <div class="av">ע<span class="presence"></span></div>
+                <div class="who"><div class="name">ענת ר.</div><div class="stat">online</div></div>
+              </div>
+              <div class="pre">״חשבתי עליכם השבוע. איך עבר השיעור?״</div>
+              <div class="ask"><svg class="icn"><use href="#i-chat"/></svg><span>שאלה לענת</span></div>
+            </div>
+          </aside>
+          <section class="area">
+            <div class="area-top">
+              <div class="crumb">מיאושי שלי · <span class="here">היום</span></div>
+              <div class="actions">
+                <div class="iconbtn"><svg class="icn"><use href="#i-search"/></svg></div>
+                <div class="iconbtn"><svg class="icn"><use href="#i-bell"/></svg><span class="b">2</span></div>
+                <div class="iconbtn"><svg class="icn"><use href="#i-gear"/></svg></div>
+              </div>
+            </div>
+            <div class="area-body">
+              <div class="focus-pill"><svg class="icn"><use href="#i-heart"/></svg><span>המוקד הנוכחי: מיניות ואינטימיות</span></div>
+              <article class="hero" data-new="true">
+                <div class="pre"><span class="category"><svg class="icn"><use href="#i-chat"/></svg> תקשורת</span><span class="chip">השיעור הנוכחי</span></div>
+                <h2>שפת האהבה שלי — ושלך</h2>
+                <p class="desc">תרגיל קצר שעוזר לכם לזהות איך אתם מבטאים אהבה — ואיך בן/בת הזוג מבקש/ת אותה. כשיש לזה שם, פתאום קל יותר להתאמן.</p>
+                <div class="meta"><span><svg class="icn"><use href="#i-clock"/></svg>12 דקות</span></div>
+                <a class="cta"><span>פתחו את השיעור</span><svg class="icn"><use href="#i-arrow"/></svg></a>
+              </article>
+              <article class="chat-row">
+                <div class="avatar">ע<span class="presence"></span></div>
+                <div class="body">
+                  <div class="h"><span class="name">ענת ר.</span><span class="when">לפני 2 שעות</span></div>
+                  <div class="msg">״חשבתי עליכם השבוע. איך עבר השיעור על שפת האהבה? שאלה אחת לפני שאני שולחת את הבא…״</div>
+                </div>
+                <span class="unread">2</span>
+              </article>
+              <div class="secHead"><h3>ההיסטוריה שלכם</h3><span class="a">הכל (9)</span></div>
+              <div class="list">
+                <div class="litem done"><div class="num"><svg class="icn"><use href="#i-check"/></svg></div><div class="text"><div class="title">להגיד תודה — בכוונה</div><div class="sub">חיבור רגשי · הושלם</div></div><div class="when">לפני 3 ימים</div></div>
+                <div class="litem done"><div class="num"><svg class="icn"><use href="#i-check"/></svg></div><div class="text"><div class="title">השיחה שאף פעם לא הייתה</div><div class="sub">תקשורת · הושלם</div></div><div class="when">לפני 6 ימים</div></div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="col-label">מובייל</div>
+      <div class="device mobile">
+        <div class="m-top">
+          <div class="brand-row">
+            <div class="av-pair"><div class="av">נ</div><div class="av">י</div></div>
+            <div class="crumb-here">המוקד · מיניות ואינטימיות<strong>היום</strong></div>
+          </div>
+          <div class="right"><div class="iconbtn"><svg class="icn"><use href="#i-bell"/></svg><span class="b">2</span></div></div>
+        </div>
+        <div class="m-scroll">
+          <article class="hero" data-new="true">
+            <div class="pre"><span class="category"><svg class="icn"><use href="#i-chat"/></svg> תקשורת</span><span class="chip">השיעור הנוכחי</span></div>
+            <h2 style="font-size:24px">שפת האהבה שלי — ושלך</h2>
+            <p class="desc">תרגיל קצר שעוזר לכם לזהות איך אתם מבטאים אהבה — ואיך בן/בת הזוג מבקש/ת אותה.</p>
+            <div class="meta"><span><svg class="icn"><use href="#i-clock"/></svg>12 דקות</span></div>
+            <a class="cta"><span>פתחו את השיעור</span><svg class="icn"><use href="#i-arrow"/></svg></a>
+          </article>
+          <article class="chat-row">
+            <div class="avatar">ע<span class="presence"></span></div>
+            <div class="body">
+              <div class="h"><span class="name">ענת ר.</span><span class="when">לפני 2ש</span></div>
+              <div class="msg">״חשבתי עליכם השבוע. איך עבר השיעור על שפת האהבה?״</div>
+            </div>
+            <span class="unread">2</span>
+          </article>
+          <div class="secHead"><h3>ההיסטוריה</h3><span class="a">הכל</span></div>
+          <div class="list">
+            <div class="litem done"><div class="num"><svg class="icn"><use href="#i-check"/></svg></div><div class="text"><div class="title">להגיד תודה — בכוונה</div><div class="sub">חיבור רגשי · הושלם</div></div><div class="when">לפני 3ימ׳</div></div>
+            <div class="litem done"><div class="num"><svg class="icn"><use href="#i-check"/></svg></div><div class="text"><div class="title">השיחה שאף פעם לא הייתה</div><div class="sub">תקשורת · הושלם</div></div><div class="when">לפני 6ימ׳</div></div>
+          </div>
+        </div>
+        <nav class="m-tabs">
+          <div class="t active"><span class="g"><svg class="icn"><use href="#i-today"/></svg></span><span>היום</span></div>
+          <div class="t"><span class="g" data-new><svg class="icn"><use href="#i-book"/></svg></span><span>שיעורים</span></div>
+          <div class="t"><span class="g" data-new><svg class="icn"><use href="#i-chat"/></svg></span><span>מומחה</span></div>
+          <div class="t"><span class="g"><svg class="icn"><use href="#i-cards"/></svg></span><span>משחקים</span></div>
+          <div class="t"><span class="g"><svg class="icn"><use href="#i-menu"/></svg></span><span>עוד</span></div>
+        </nav>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ 2. ״שיתוף״ ═══ -->
+  <div class="sec-title" style="margin-top:48px"><h2>2. ״שיתוף עם בן/בת זוג״</h2></div>
+
+  <div class="pair">
+    <div>
+      <div class="col-label">דסקטופ</div>
+      <div class="device desktop">
+        <div class="shell">
+          <aside class="sidebar">
+            <div class="couple-card">
+              <div class="row">
+                <div class="av-pair"><div class="av">נ</div><div class="av">י</div></div>
+                <div class="who"><div class="who-name">נועה ויואב</div><div class="who-sub">המסע פעיל</div></div>
+                <button class="menu-btn"><svg class="icn" width="16" height="16"><use href="#i-dots"/></svg></button>
+              </div>
+            </div>
+            <nav class="nav">
+              <div class="group-h">המסע שלי</div>
+              <div class="nav-item"><svg class="icn"><use href="#i-today"/></svg><span class="lbl">היום</span></div>
+              <div class="nav-item"><svg class="icn"><use href="#i-book"/></svg><span class="lbl">השיעורים שלי</span><span class="end">1</span></div>
+              <div class="nav-item"><svg class="icn"><use href="#i-chat"/></svg><span class="lbl">צ׳אט עם מומחה</span><span class="end">2</span></div>
+              <div class="group-h">משחקים</div>
+              <div class="nav-item"><svg class="icn"><use href="#i-cards"/></svg><span class="lbl">משחקי הזוגות</span></div>
+              <div class="nav-item"><svg class="icn"><use href="#i-heart"/></svg><span class="lbl">מיאושי למבוגרים</span></div>
+              <div class="group-h">החשבון</div>
+              <div class="nav-item active"><svg class="icn"><use href="#i-users"/></svg><span class="lbl">שיתוף עם בן/בת זוג</span></div>
+              <div class="nav-item"><svg class="icn"><use href="#i-gear"/></svg><span class="lbl">הגדרות</span></div>
+              <div class="nav-divider"></div>
+              <div class="nav-item logout"><svg class="icn"><use href="#i-logout"/></svg><span class="lbl">התנתקות</span></div>
+            </nav>
+            <div class="expert-mini">
+              <div class="row">
+                <div class="av">ע<span class="presence"></span></div>
+                <div class="who"><div class="name">ענת ר.</div><div class="stat">online</div></div>
+              </div>
+              <div class="ask"><svg class="icn"><use href="#i-chat"/></svg><span>שאלה לענת</span></div>
+            </div>
+          </aside>
+          <section class="area">
+            <div class="area-top">
+              <div class="crumb">מיאושי שלי · <span class="here">שיתוף עם בן/בת זוג</span></div>
+              <div class="actions"><div class="iconbtn"><svg class="icn"><use href="#i-bell"/></svg><span class="b">2</span></div></div>
+            </div>
+            <div class="area-body" style="max-width:660px">
+              <div class="share-hero">
+                <div class="ghost-pair">
+                  <div class="you">נ</div>
+                  <div class="ghost">+</div>
+                </div>
+                <h2>הזמינו את בן/בת הזוג למסע</h2>
+                <p>הם יקבלו גישה מלאה לכל מה שיש לכם — שיעורים, צ׳אט עם המומחית, ובעתיד גם משחקים. בלי תוספת תשלום, רק בני זוג בלבד.</p>
+                <div class="code-row">
+                  <div class="code-box">JOIN-MIO-7K4P</div>
+                  <a class="copy-btn">העתקה</a>
+                </div>
+                <div class="share-buttons">
+                  <a class="sb"><svg class="icn"><use href="#i-whatsapp"/></svg><span>WhatsApp</span></a>
+                  <a class="sb"><svg class="icn"><use href="#i-sms"/></svg><span>SMS</span></a>
+                  <a class="sb"><svg class="icn"><use href="#i-mail"/></svg><span>Email</span></a>
+                  <a class="sb"><svg class="icn"><use href="#i-qr"/></svg><span>QR</span></a>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="col-label">מובייל</div>
+      <div class="device mobile">
+        <div class="m-top">
+          <div class="brand-row">
+            <div class="av-pair"><div class="av">נ</div><div class="av">י</div></div>
+            <div class="crumb-here">החשבון<strong>שיתוף עם בן/בת זוג</strong></div>
+          </div>
+          <div class="right"><div class="iconbtn"><svg class="icn"><use href="#i-bell"/></svg><span class="b">2</span></div></div>
+        </div>
+        <div class="m-scroll">
+          <div class="share-hero">
+            <div class="ghost-pair"><div class="you">נ</div><div class="ghost">+</div></div>
+            <h2 style="font-size:22px">הזמינו את בן/בת הזוג</h2>
+            <p>הם יקבלו גישה מלאה למסע שלכם — בלי תוספת תשלום.</p>
+            <div class="code-row"><div class="code-box" style="font-size:15px">JOIN-MIO-7K4P</div></div>
+            <a class="copy-btn" style="display:flex;justify-content:center;margin-bottom:12px">העתקת קישור</a>
+            <div class="share-buttons">
+              <a class="sb"><svg class="icn"><use href="#i-whatsapp"/></svg><span>WhatsApp</span></a>
+              <a class="sb"><svg class="icn"><use href="#i-sms"/></svg><span>SMS</span></a>
+              <a class="sb"><svg class="icn"><use href="#i-mail"/></svg><span>Email</span></a>
+              <a class="sb"><svg class="icn"><use href="#i-qr"/></svg><span>QR</span></a>
+            </div>
+          </div>
+        </div>
+        <nav class="m-tabs">
+          <div class="t"><span class="g"><svg class="icn"><use href="#i-today"/></svg></span><span>היום</span></div>
+          <div class="t"><span class="g" data-new><svg class="icn"><use href="#i-book"/></svg></span><span>שיעורים</span></div>
+          <div class="t"><span class="g" data-new><svg class="icn"><use href="#i-chat"/></svg></span><span>מומחה</span></div>
+          <div class="t"><span class="g"><svg class="icn"><use href="#i-cards"/></svg></span><span>משחקים</span></div>
+          <div class="t active"><span class="g"><svg class="icn"><use href="#i-menu"/></svg></span><span>עוד</span></div>
+        </nav>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       IMPLEMENTATION PLAN
+       ═══════════════════════════════════════════════════════════════════ -->
+
+  <section class="plan">
+    <div class="sec-title" style="margin-bottom:6px"><h2 style="font-size:28px">מה צריך כדי להטמיע את העיצוב בכל העמודים</h2></div>
+    <p class="lead">6 צעדים מסודרים. אחרי שלב 3 הקונספט כבר עובד; שלבים 4-6 מלטשים. כל שלב עומד בפני עצמו — אפשר לעצור ולשחרר לפרודקשן באמצע.</p>
+
+    <div class="plan-grid">
+
+      <!-- step 1 -->
+      <div class="plan-card">
+        <div class="num"><span class="badge">1</span> תשתית</div>
+        <h3>קומפוננטת AppShell משותפת</h3>
+        <p class="body">קומפוננטה חדשה <code>components/shell/AppShell.tsx</code> שמכילה: <strong>sidebar</strong> ימני, <strong>top-bar</strong>, <strong>content slot</strong>, <strong>mobile bottom-tabs</strong>. responsive — sidebar מוסתר מתחת ל-<code>md</code>, tab-bar מוסתר מעל.</p>
+        <ul class="checklist">
+          <li>AppShell.tsx + SideNav.tsx + MobileTabs.tsx + CoupleCard.tsx + ExpertMini.tsx</li>
+          <li>טוקני CSS חדשים ב-<code>globals.css</code> (canvas-grad, cta-grad, side-bg)</li>
+          <li>הוספת פונט Assistant ל-<code>app/layout.tsx</code></li>
+          <li>16 אייקוני SVG בספרייה משותפת</li>
+        </ul>
+        <span class="effort">⏱ <strong>4-6 שעות</strong></span>
+      </div>
+
+      <!-- step 2 -->
+      <div class="plan-card">
+        <div class="num"><span class="badge">2</span> ראוטינג</div>
+        <h3>Layout מפוצל — shell vs naked</h3>
+        <p class="body">יצירת <code>app/[locale]/(shell)/layout.tsx</code> שעוטף ב-AppShell. כל ה-routes שמופיעים בניווט עוברים תחתיו. <strong>החריגים</strong>: <code>/games/[slug]</code>, <code>/mioshy-sex/[slug]</code>, ה-onboarding ו-checkout נשארים בעמודים עצמאיים מסך מלא.</p>
+        <ul class="checklist">
+          <li>העברת <code>/my</code>, <code>/my/journey/*</code>, <code>/games</code>, <code>/mioshy-sex</code> תחת <code>(shell)</code></li>
+          <li>הגדרת <code>app/(naked)/layout.tsx</code> ל-game-in-play</li>
+          <li>middleware: re-route <code>/my</code> → <code>/my/today</code> (הומופוגי)</li>
+          <li>שמירת marketing pages, /auth, /pricing בלי shell</li>
+        </ul>
+        <span class="effort">⏱ <strong>3-4 שעות</strong></span>
+      </div>
+
+      <!-- step 3 -->
+      <div class="plan-card">
+        <div class="num"><span class="badge">3</span> דף ״היום״ החדש</div>
+        <h3>החלפת /my בעמוד ״היום״</h3>
+        <p class="body">דף ראשי חדש <code>app/(shell)/[locale]/my/today/page.tsx</code> עם: focus-pill (מהמוקד), hero-card (השיעור הנוכחי), chat-row preview (latest expert msg), היסטוריה (5 אחרונים). שולף מאותם hooks שיש היום.</p>
+        <ul class="checklist">
+          <li>קומפוננטות: FocusPill, CurrentLessonHero, ChatRowPreview, HistoryList</li>
+          <li>שאילתות: getCurrentItem + getLatestExpertMessage + getCompletedItems</li>
+          <li>3 CMS keys חדשים (כותרת היום, eyebrow, sub)</li>
+        </ul>
+        <span class="effort">⏱ <strong>6-8 שעות</strong></span>
+      </div>
+
+      <!-- step 4 -->
+      <div class="plan-card">
+        <div class="num"><span class="badge">4</span> השיעורים + צ׳אט</div>
+        <h3>הרחבת ״השיעורים שלי״ ו״צ׳אט עם מומחה״</h3>
+        <p class="body">דף ״השיעורים שלי״ מציג <strong>אבחון בראש</strong> (assess-row), פעיל עכשיו, הושלמו, בקרוב. ״צ׳אט עם מומחה״ הופך לעמוד מלא עם conversation + composer (לוקח מ-<code>JourneyAnalysisCard</code> ו-<code>ChatRow</code> הקיימים).</p>
+        <ul class="checklist">
+          <li>אבחון = link ל-/journey/assessment-summary (קיים)</li>
+          <li>שימוש חוזר ב-<code>journey-content/queries.ts</code> הקיים</li>
+          <li>צ׳אט: ניצול הקיים <code>messages.ts</code> + sender hook</li>
+        </ul>
+        <span class="effort">⏱ <strong>5-7 שעות</strong></span>
+      </div>
+
+      <!-- step 5 -->
+      <div class="plan-card">
+        <div class="num"><span class="badge">5</span> שיתוף + הגדרות</div>
+        <h3>שני עמודים חדשים</h3>
+        <p class="body"><strong>שיתוף</strong>: ניצול <code>PartnerShareCard</code> הקיים — מעצבים מחדש ל-ghost-pair + 4 ערוצים. <strong>הגדרות</strong>: רשימת set-rows שמובילים למקומות הקיימים (פרופיל, התראות, מנוי). מוסיפים <strong>התנתקות</strong> ב-sidebar (לא בהגדרות).</p>
+        <ul class="checklist">
+          <li>הזזת מנוי וחיוב פנימה להגדרות (קיימים מ-<code>/account/billing</code>)</li>
+          <li>action חדש: logout button → <code>supabase.auth.signOut()</code></li>
+          <li>קומפוננטה Settings-Row משותפת</li>
+        </ul>
+        <span class="effort">⏱ <strong>4-5 שעות</strong></span>
+      </div>
+
+      <!-- step 6 -->
+      <div class="plan-card">
+        <div class="num"><span class="badge">6</span> Badges + notification state</div>
+        <h3>צבירת badges דינמיים</h3>
+        <p class="body">hook <code>useNavBadges()</code> שמחזיר <code>{ lessons: 1, chat: 2, partnerShareNew: true }</code>. הסייד-בר ו-tab-bar קוראים ממנו. ספירת unread בצ׳אט קיימת ב-<code>fresh-replies.ts</code>, רק להוסיף את ״1 שיעור חדש״.</p>
+        <ul class="checklist">
+          <li>שאילתה — חדש מאז last_seen_at של profile</li>
+          <li>״סיום צפייה״ — POST מה-client מוריד את ה-counter</li>
+          <li>גם /my/today מציג ״נפתח עכשיו״ על השיעור הנוכחי כשרלוונטי</li>
+        </ul>
+        <span class="effort">⏱ <strong>3-4 שעות</strong></span>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Risks -->
+  <div class="risks">
+    <h3>סיכונים ונקודות לזהירות</h3>
+    <ul>
+      <li>
+        <span class="mk">!</span>
+        <div class="txt"><strong>מעבר חלק מהאתר השיווקי.</strong>
+          <span class="small">דף הבית והדפים השיווקיים נשארים בעיצוב הנוכחי. צריך לוודא ש-/auth עובר באותו רקע, כדי שהמעבר לא ירגיש "כניסה לאתר אחר".</span>
+        </div>
+      </li>
+      <li>
+        <span class="mk">!</span>
+        <div class="txt"><strong>iOS Safari + safe-area.</strong>
+          <span class="small">ה-mobile tab-bar חייב <code>env(safe-area-inset-bottom)</code> כפי שכבר הוטמע ב-<code>MobileServicesBar</code>. אחרת — סקרול גורם לחור שקוף.</span>
+        </div>
+      </li>
+      <li>
+        <span class="mk">!</span>
+        <div class="txt"><strong>לחיצה על משחק מתוך הקטלוג.</strong>
+          <span class="small">ה-shell צריך לעטוף את /games (catalog) אבל לא את /games/[slug]. הראוטר ב-Next App Router דורש 2 layout groups <code>(shell)</code> ו-<code>(naked)</code>.</span>
+        </div>
+      </li>
+      <li>
+        <span class="mk">!</span>
+        <div class="txt"><strong>״עוד״ במובייל מסתיר את שיתוף.</strong>
+          <span class="small">לוויראליות זה קריטי. בנוסף לטאב — להוסיף קארד "שתפו עם בן/בת זוג" בדף ״היום״ עד שהמשתמש שיתף.</span>
+        </div>
+      </li>
+      <li>
+        <span class="mk">!</span>
+        <div class="txt"><strong>״התקדמות״ ו״האבחון״ ירדו מהניווט.</strong>
+          <span class="small">אם משתמשים קיימים מחפשים אותם — להפנות אוטומטית: <code>/my/progress → /my/today</code>, <code>/my/assessment → /my/lessons#assessment</code>.</span>
+        </div>
+      </li>
+      <li>
+        <span class="mk">!</span>
+        <div class="txt"><strong>ביצועים.</strong>
+          <span class="small">SideNav, ExpertMini, badges — צריך לוודא שהם נשארים static-ish ולא מטריגרים render-loop על כל מעבר טאב. Sticky + memo.</span>
+        </div>
+      </li>
+    </ul>
+  </div>
+
+  <!-- Total -->
+  <div class="total">
+    <div>
+      <div class="label">סה״כ זמן הטמעה</div>
+      <div class="num-big">25–34</div>
+      <div style="font-size:14px;color:var(--text-3);font-weight:600;letter-spacing:0.10em;text-transform:uppercase;margin-top:6px">שעות עבודה</div>
+    </div>
+    <div class="desc">
+      פריסה לאורך 4-5 ימי עבודה. <strong>אבן דרך אחרי שלב 3</strong> (~13 שעות) — ניתן לשחרר את הקונספט כ-beta על דף ״היום״ בלבד ולקבל פידבק. השאר משתפר באיטרציה. <strong>לא נוגעים</strong>: עמודי משחק (גלגל, סולמות), /mioshy-sex slugs, האבחון עצמו (רק link אליו), הצ׳קאאוט, הומפייג שיווקי.
+    </div>
+  </div>
+
+</body>
+</html>

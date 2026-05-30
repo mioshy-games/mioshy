@@ -72,7 +72,9 @@ export function LoginForm({ kicked = false, next, pairCode }: Props) {
       }
 
       // Honour caller-supplied next if present and same-origin.
-      const target = safeNext(next, "/my");
+      // Fallback target updated 2026-05-29 from /my → /my/today (go-live
+      // of the AppShell). Middleware also catches stragglers hitting /my.
+      const target = safeNext(next, "/my/today");
       router.push(target);
     });
   }
@@ -80,7 +82,7 @@ export function LoginForm({ kicked = false, next, pairCode }: Props) {
   // Preserve the next param + ?code= when the user clicks through to
   // signup so neither piece of context is lost mid-funnel.
   const signupParams = new URLSearchParams();
-  if (next) signupParams.set("next", safeNext(next, "/my"));
+  if (next) signupParams.set("next", safeNext(next, "/my/today"));
   if (normalizedCode) signupParams.set("code", normalizedCode);
   const signupQs = signupParams.toString();
   const signupHref = signupQs ? `/auth/signup?${signupQs}` : "/auth/signup";

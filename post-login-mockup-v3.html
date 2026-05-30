@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mioshy — Studio Dark (post-login v3)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    /* ─────────────────────────────────────────────────────────────────
+       Tokens. All contrasts verified against WCAG 2.1 AA on the
+       primary surface (#1B1115). Notes inline.
+       ───────────────────────────────────────────────────────────────── */
+    :root {
+      --bg-canvas:   #1B1115;   /* page background — luminance ~0.005 */
+      --bg-card:     #261821;   /* secondary surface */
+      --bg-elev:    #2F1D27;   /* elevated row over a card */
+      --border-soft: rgba(245,225,232,0.08);
+      --border-mid:  rgba(245,225,232,0.14);
+      --text-1:      #F4EFE5;   /* primary text — contrast 14.6:1 ✓ AAA */
+      --text-2:      #D2C7BC;   /* secondary — contrast 9.2:1 ✓ AAA */
+      --text-3:      #9F968D;   /* tertiary meta — contrast 5.1:1 ✓ AA */
+      --accent:      #D77086;   /* warm pink — used on dark text */
+      --accent-soft: rgba(215,112,134,0.18);
+      --accent-text: #E89AAC;   /* lighter pink for text on dark — 6.5:1 */
+      --warn:        #E07A5F;   /* notif badge background */
+      --ok:          #A8C28F;   /* completed status */
+      --line:        #3A222C;
+    }
+
+    *,*::before,*::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: 'Heebo', system-ui, sans-serif;
+      background: #0F0A0C; color: var(--text-1);
+      padding: 36px 16px 80px;
+      line-height: 1.45;
+    }
+
+    .head { max-width: 1340px; margin: 0 auto 28px; }
+    .head h1 { font-size: 30px; margin: 0 0 6px; font-weight: 800; letter-spacing: -0.02em; }
+    .head p { font-size: 15px; color: var(--text-3); margin: 0 0 18px; max-width: 760px; line-height: 1.6; }
+
+    /* Spec strip */
+    .spec { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 28px; max-width: 1340px; margin-inline: auto; }
+    @media (max-width: 880px) { .spec { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 540px) { .spec { grid-template-columns: 1fr; } }
+    .spec .item { background: #14090D; border: 1px solid #2A1820; border-radius: 12px; padding: 14px; }
+    .spec .lbl { font-size: 14px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-text); font-weight: 700; margin-bottom: 6px; }
+    .spec .val { font-size: 14px; color: var(--text-2); line-height: 1.6; }
+    .spec code { background: #261821; padding: 1px 6px; border-radius: 4px; font-family: ui-monospace, monospace; font-size: 13px; color: var(--text-1); }
+
+    /* frames grid */
+    .row { max-width: 1340px; margin: 32px auto 0; display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 22px; }
+    @media (max-width: 1100px) { .row { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 760px)  { .row { grid-template-columns: 1fr; max-width: 380px; } }
+    .row > h2 { grid-column: 1 / -1; font-size: 18px; font-weight: 700; margin: 0 0 -4px; color: var(--text-1); letter-spacing: -0.01em; }
+    .row > h2 small { font-weight: 400; color: var(--text-3); font-size: 14px; margin-inline-start: 8px; }
+
+    .wrap { display: flex; flex-direction: column; gap: 10px; }
+    .caption { font-size: 14px; color: var(--text-2); display: flex; gap: 8px; align-items: center; }
+    .caption .pill { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent-text); font-weight: 600; }
+
+    /* device frame */
+    .device {
+      width: 100%; max-width: 380px; margin: 0 auto;
+      border-radius: 32px; overflow: hidden; position: relative;
+      background: var(--bg-canvas); color: var(--text-1);
+      box-shadow: 0 24px 60px -22px rgba(0,0,0,0.65), 0 4px 10px -4px rgba(0,0,0,0.40);
+      min-height: 800px;
+    }
+
+    /* ─── top dark nav ─── */
+    .topnav {
+      position: sticky; top: 0; z-index: 5;
+      background: #14080C;
+      padding: 14px 18px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid var(--line);
+    }
+    .topnav .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; }
+    .topnav .brand .logo {
+      width: 30px; height: 30px; border-radius: 9px;
+      background: linear-gradient(135deg, #D77086 0%, #8B3343 100%);
+      display: flex; align-items: center; justify-content: center;
+      color: #FFFFFF; font-weight: 800; font-size: 14px;
+    }
+    .topnav .right { display: flex; align-items: center; gap: 10px; }
+    .iconbtn {
+      width: 38px; height: 38px; border-radius: 11px;
+      background: rgba(255,255,255,0.05);
+      display: flex; align-items: center; justify-content: center;
+      position: relative; font-size: 16px;
+    }
+    .iconbtn[aria-label="messages"]::after,
+    .iconbtn[data-new="true"]::after {
+      content: attr(data-count);
+      position: absolute; top: -4px; left: -4px;
+      min-width: 18px; height: 18px; padding: 0 5px;
+      background: var(--warn); color: #1B1115;
+      font-size: 11px; font-weight: 800;
+      border-radius: 999px;
+      display: flex; align-items: center; justify-content: center;
+      border: 2px solid #14080C;
+    }
+    .iconbtn[data-count=""]::after,
+    .iconbtn[data-count="0"]::after { display: none; }
+
+    .crumb { padding: 12px 18px 0; font-size: 14px; color: var(--text-3); }
+
+    /* ─── bottom dark tabs ─── */
+    .tabbar {
+      position: absolute; bottom: 0; right: 0; left: 0;
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
+      padding: 8px 8px 22px; background: #14080C;
+      border-top: 1px solid var(--line); z-index: 5;
+    }
+    .tab {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      font-size: 12px; color: rgba(244,239,229,0.55); padding: 8px 4px;
+      border-radius: 10px; font-weight: 600;
+    }
+    .tab .g { width: 22px; height: 22px; border-radius: 7px; background: rgba(255,255,255,0.10); position: relative; }
+    .tab.active { color: var(--text-1); background: rgba(255,255,255,0.04); }
+    .tab.active .g { background: var(--accent); }
+    .tab .g[data-new]::after {
+      content: ''; position: absolute; top: -2px; left: -2px;
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--warn); border: 2px solid #14080C;
+    }
+
+    /* ─── scroll area ─── */
+    .scroll { padding: 14px 18px 110px; display: flex; flex-direction: column; gap: 16px; }
+
+    /* progress */
+    .prog {
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 14px; color: var(--text-3);
+      gap: 12px;
+    }
+    .prog .bar { flex: 1; height: 5px; background: #281520; border-radius: 999px; overflow: hidden; }
+    .prog .bar > span { display: block; height: 100%; background: linear-gradient(90deg, #C25A6E 0%, #D77086 100%); border-radius: 999px; }
+
+    /* section heading */
+    .secHead { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 4px; }
+    .secHead h3 { font-size: 18px; font-weight: 800; margin: 0; color: var(--text-1); letter-spacing: -0.01em; }
+    .secHead .a { font-size: 14px; color: var(--accent-text); font-weight: 600; }
+    .secHead .count { font-size: 14px; color: var(--text-3); }
+
+    /* ─── HERO current item ─── */
+    .hero {
+      background: linear-gradient(160deg, #2E1A23 0%, #261821 60%, #20141C 100%);
+      border: 1px solid #4A2A36;
+      border-radius: 20px;
+      padding: 20px;
+      position: relative;
+      /* subtle accent glow drawing the eye */
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 12px 30px -16px rgba(215,112,134,0.30);
+    }
+    .hero .pre {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 10px;
+    }
+    .hero .focus { font-size: 14px; color: var(--text-2); font-weight: 500; }
+    .hero .chip {
+      font-size: 14px; padding: 5px 12px; border-radius: 999px;
+      background: var(--accent); color: #1B1115; font-weight: 800;
+      letter-spacing: -0.005em;
+    }
+    .hero h2 {
+      font-size: 26px; font-weight: 900; margin: 6px 0 12px;
+      letter-spacing: -0.015em; line-height: 1.18; color: var(--text-1);
+    }
+    .hero .meta {
+      display: flex; gap: 8px; font-size: 14px; color: var(--text-2);
+      margin-bottom: 16px; flex-wrap: wrap;
+    }
+    .hero .meta span {
+      padding: 4px 10px; border-radius: 999px;
+      background: rgba(255,255,255,0.05); font-weight: 600;
+    }
+    .hero .cta {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      width: 100%;
+      background: var(--accent); color: #1B1115;   /* contrast 4.9:1 — large text ≥18px bold qualifies AAA */
+      padding: 16px 14px; border-radius: 14px;
+      font-weight: 800; font-size: 18px; letter-spacing: -0.01em;
+      box-shadow: 0 8px 22px -8px rgba(215,112,134,0.50);
+    }
+    .hero .cta .arrow { font-size: 18px; }
+
+    /* "new" indicator on hero — disappears once user taps */
+    .hero[data-new="true"]::after {
+      content: 'נפתח עכשיו';
+      position: absolute;
+      top: 14px; right: 14px;
+      background: var(--warn); color: #1B1115;
+      font-size: 13px; font-weight: 800;
+      padding: 4px 10px; border-radius: 999px;
+      letter-spacing: -0.005em;
+    }
+    .hero[data-new="true"] .pre { padding-inline-start: 92px; }
+
+    /* ─── chat preview ─── */
+    .chat {
+      background: var(--bg-card); border: 1px solid var(--border-soft);
+      border-radius: 16px; padding: 16px;
+      display: flex; gap: 14px; align-items: center;
+      position: relative;
+    }
+    .chat[data-unread="0"] { /* viewed state — same chrome, no badge */ }
+    .chat .avatar {
+      width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0;
+      background: linear-gradient(135deg, #D77086 0%, #8B3343 100%);
+      display: flex; align-items: center; justify-content: center;
+      color: #FFFFFF; font-weight: 800; font-size: 16px;
+      position: relative;
+    }
+    .chat .avatar .presence {
+      position: absolute; bottom: 0; right: 0;
+      width: 12px; height: 12px; border-radius: 50%;
+      background: #A8C28F; border: 2px solid var(--bg-card);
+    }
+    .chat .body { flex: 1; min-width: 0; }
+    .chat .head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+    .chat .name { font-weight: 700; font-size: 16px; color: var(--text-1); }
+    .chat .when { font-size: 14px; color: var(--text-3); flex-shrink: 0; }
+    .chat .msg {
+      font-size: 16px; color: var(--text-2); line-height: 1.45;
+      overflow: hidden; text-overflow: ellipsis;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    }
+    .chat .unread {
+      align-self: center; flex-shrink: 0;
+      min-width: 28px; height: 28px; padding: 0 9px;
+      background: var(--accent); color: #1B1115;
+      font-size: 14px; font-weight: 800;
+      border-radius: 999px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .chat[data-unread="0"] .unread { display: none; }
+    .chat[data-unread="0"] .name { font-weight: 600; }
+    .chat[data-unread="0"] .msg { color: var(--text-3); }
+
+    /* ─── item list ─── */
+    .list { display: flex; flex-direction: column; gap: 10px; }
+    .litem {
+      display: flex; gap: 14px; align-items: center;
+      background: var(--bg-card); border: 1px solid var(--border-soft);
+      padding: 14px 14px; border-radius: 14px;
+      position: relative;
+    }
+    .litem .num {
+      width: 36px; height: 36px; border-radius: 11px; flex-shrink: 0;
+      background: var(--accent-soft); color: var(--accent-text);
+      font-weight: 800; font-size: 16px;
+      display: flex; align-items: center; justify-content: center;
+      position: relative;
+    }
+    .litem.done .num { background: rgba(168,194,143,0.18); color: #BFD09F; }
+    .litem.locked .num { background: rgba(255,255,255,0.06); color: var(--text-3); }
+    .litem .text { flex: 1; min-width: 0; }
+    .litem .title { font-size: 18px; font-weight: 700; color: var(--text-1); line-height: 1.3; }
+    .litem .sub { font-size: 14px; color: var(--text-3); margin-top: 2px; }
+    .litem .when { font-size: 14px; color: var(--text-3); flex-shrink: 0; }
+
+    /* "new" badge on a list item — clearable */
+    .litem[data-new="true"] {
+      background: linear-gradient(120deg, #2A1B27 0%, var(--bg-card) 100%);
+      border-color: #4A2A36;
+    }
+    .litem[data-new="true"] .num::after {
+      content: ''; position: absolute; top: -2px; left: -2px;
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--warn); border: 2px solid var(--bg-card);
+    }
+    .litem[data-new="true"] .badge-new {
+      font-size: 12px; font-weight: 800; padding: 3px 8px;
+      background: var(--warn); color: #1B1115;
+      border-radius: 999px; letter-spacing: -0.005em;
+    }
+    .litem:not([data-new="true"]) .badge-new { display: none; }
+
+    /* ─── chat conversation ─── */
+    .conv { display: flex; flex-direction: column; gap: 10px; padding: 8px 0; }
+    .bubble { max-width: 80%; padding: 12px 14px; font-size: 18px; line-height: 1.5; border-radius: 16px; }
+    .bubble.them { align-self: flex-start; background: var(--bg-card); border: 1px solid var(--border-soft); color: var(--text-1); border-bottom-right-radius: 4px; }
+    .bubble.me   { align-self: flex-end;   background: var(--accent); color: #1B1115; border-bottom-left-radius: 4px; font-weight: 500; }
+    .ts { font-size: 14px; color: var(--text-3); text-align: center; padding: 6px 0; }
+    .composer {
+      display: flex; gap: 10px; align-items: center;
+      background: var(--bg-card); border: 1px solid var(--border-mid);
+      border-radius: 999px; padding: 8px 8px 8px 18px;
+    }
+    .composer .input { flex: 1; font-size: 16px; color: var(--text-3); }
+    .composer .send {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: var(--accent); color: #1B1115;
+      display: flex; align-items: center; justify-content: center; font-size: 16px;
+      font-weight: 800;
+    }
+
+    /* annotation arrow callouts */
+    .annot { font-size: 13px; color: var(--text-3); line-height: 1.55; padding: 0 6px; }
+    .annot strong { color: var(--text-2); }
+
+  </style>
+</head>
+<body>
+
+  <header class="head">
+    <h1>Studio Dark — חלופה מאושרת (post-login v3)</h1>
+    <p>שינויי איפיון לפני הטמעה: ניגודיות WCAG AA על כל הטקסטים והכפתורים, פונט קריאה 20px, תגיות 14–16px, מערכת נוטיפיקציות עם מצב ״נצפה״. שתי שורות מסכים: <strong>״לפני לחיצה״</strong> (עם סימוני חדש) ו<strong>״אחרי לחיצה״</strong> (סימונים נעלמים). אופציה אחת — לא לבחירה — לאישור.</p>
+  </header>
+
+  <section class="spec">
+    <div class="item"><div class="lbl">ניגודיות (WCAG AA)</div><div class="val">טקסט ראשי <code>#F4EFE5</code> על <code>#1B1115</code> = <strong>14.6:1</strong>. כפתור CTA טקסט <code>#1B1115</code> על <code>#D77086</code> = <strong>4.9:1</strong> (Large Text AAA). תגית "חדש" <code>#1B1115</code> על <code>#E07A5F</code> = <strong>6.4:1</strong>.</div></div>
+    <div class="item"><div class="lbl">פונטים</div><div class="val">גוף שיעור <code>20px/1.45</code>, כותרת אייטם <code>26px/1.18 weight 900</code>, מטא ותגיות <code>14–16px</code>. רק Heebo, ניגוד דרך משקל.</div></div>
+    <div class="item"><div class="lbl">נוטיפיקציות</div><div class="val">אייטם חדש שנפתח: <code>data-new=true</code> → תג ״נפתח עכשיו״ + נקודה כתומה ב-num. לחיצה → state מתחלף ל-״נצפה״, התגיות נעלמות. צ׳אט: <code>data-unread=N</code> → צ׳יפ בולט. לחיצה מפלסת ל־0.</div></div>
+    <div class="item"><div class="lbl">היררכיה ולחיצה</div><div class="val">CTA יחיד גדול (״פתחו את השיעור״) עם זוהר עדין מתחת + חץ → תפיסה מיידית. תפריט עליון ותחתון <code>#14080C</code> תמיד כהים — wayfinding קבוע בין מסכים. <strong>חל רק על /my/journey לעת עתה</strong>; שאר העמודים נשארים בעיצוב הקיים עד אישור גלי גלילה.</div></div>
+  </section>
+
+  <!-- ─────────────────────  BEFORE TAP  ───────────────────── -->
+  <h2 style="max-width:1340px;margin:8px auto 16px;font-size:20px;font-weight:800;color:var(--text-1)">לפני לחיצה — סימוני חדש פעילים</h2>
+
+  <section class="row">
+
+    <!-- B1: Today (with notifications) -->
+    <div class="wrap">
+      <div class="caption">״היום״ <span class="pill">1 חדש · 2 מהמומחית</span></div>
+      <div class="device">
+        <header class="topnav">
+          <div class="brand"><div class="logo">M</div><span>המסע שלי</span></div>
+          <div class="right">
+            <div class="iconbtn"><span>✶</span></div>
+            <div class="iconbtn" aria-label="messages" data-count="2"><span>✉</span></div>
+          </div>
+        </header>
+        <div class="crumb">דף הבית › המסע שלי</div>
+        <div class="scroll">
+
+          <div class="prog">
+            <span>חודש 1</span>
+            <div class="bar"><span style="width:18%"></span></div>
+            <span>שבוע 2 / 12</span>
+          </div>
+
+          <article class="hero" data-new="true">
+            <div class="pre">
+              <span class="focus">המוקד שלכם · מיניות ואינטימיות</span>
+              <span class="chip">השיעור הנוכחי</span>
+            </div>
+            <h2>שפת האהבה שלי — ושלך</h2>
+            <div class="meta">
+              <span>12 דקות</span>
+              <span>תקשורת</span>
+              <span>מתאים לערב</span>
+            </div>
+            <a class="cta">פתחו את השיעור <span class="arrow">←</span></a>
+          </article>
+
+          <article class="chat" data-unread="2">
+            <div class="avatar">ע<span class="presence"></span></div>
+            <div class="body">
+              <div class="head">
+                <span class="name">ענת ר.</span>
+                <span class="when">לפני 2ש</span>
+              </div>
+              <div class="msg">״חשבתי עליכם השבוע. איך עבר השיעור על שפת האהבה? שאלה אחת לפני שאני שולחת את הבא…״</div>
+            </div>
+            <span class="unread">2</span>
+          </article>
+
+          <div class="secHead"><h3>ההיסטוריה שלכם</h3><a class="a">הכל</a></div>
+          <div class="list">
+            <div class="litem done"><div class="num">✓</div><div class="text"><div class="title">להגיד תודה — בכוונה</div><div class="sub">חיבור רגשי · הושלם</div></div><div class="when">לפני 3ימ׳</div></div>
+            <div class="litem done"><div class="num">✓</div><div class="text"><div class="title">השיחה שאף פעם לא הייתה</div><div class="sub">תקשורת · הושלם</div></div><div class="when">לפני 6ימ׳</div></div>
+            <div class="litem done"><div class="num">✓</div><div class="text"><div class="title">חמש דקות שמשנות יום</div><div class="sub">חברות · הושלם</div></div><div class="when">השבוע שעבר</div></div>
+          </div>
+
+        </div>
+        <nav class="tabbar">
+          <div class="tab active"><span class="g"></span><span>היום</span></div>
+          <div class="tab"><span class="g" data-new></span><span>השיעורים</span></div>
+          <div class="tab"><span class="g" data-new></span><span>צ׳אט</span></div>
+          <div class="tab"><span class="g"></span><span>חשבון</span></div>
+        </nav>
+      </div>
+      <p class="annot"><strong>סימני חדש:</strong> תג ״נפתח עכשיו״ על כרטיס הגיבור, סופר ״2״ על אייקון הודעות, נקודה אדומה ב-tab-bar.</p>
+    </div>
+
+    <!-- B2: Items list with NEW badges -->
+    <div class="wrap">
+      <div class="caption">״השיעורים״ <span class="pill">1 חדש</span></div>
+      <div class="device">
+        <header class="topnav">
+          <div class="brand"><div class="logo">M</div><span>השיעורים שלי</span></div>
+          <div class="right">
+            <div class="iconbtn"><span>⌕</span></div>
+            <div class="iconbtn" aria-label="messages" data-count="2"><span>✉</span></div>
+          </div>
+        </header>
+        <div class="crumb">המסע שלי › השיעורים</div>
+        <div class="scroll">
+
+          <div class="secHead"><h3>פעיל עכשיו</h3><span class="count">1 פתוח</span></div>
+          <article class="hero" data-new="true" style="padding:16px">
+            <div class="pre"><span class="focus">המוקד · מיניות ואינטימיות</span><span class="chip">המשך</span></div>
+            <h2 style="font-size:22px">שפת האהבה שלי — ושלך</h2>
+            <a class="cta" style="padding:14px;font-size:17px">פתחו את השיעור <span class="arrow">←</span></a>
+          </article>
+
+          <div class="secHead"><h3>הושלמו</h3><a class="a">9 סה״כ</a></div>
+          <div class="list">
+            <div class="litem done"><div class="num">✓</div><div class="text"><div class="title">להגיד תודה — בכוונה</div><div class="sub">חיבור רגשי</div></div><div class="when">לפני 3ימ׳</div></div>
+            <div class="litem done"><div class="num">✓</div><div class="text"><div class="title">השיחה שאף פעם לא הייתה</div><div class="sub">תקשורת</div></div><div class="when">לפני 6ימ׳</div></div>
+            <div class="litem done"><div class="num">✓</div><div class="text"><div class="title">חמש דקות שמשנות יום</div><div class="sub">חברות</div></div><div class="when">שבוע שעבר</div></div>
+          </div>
+
+          <div class="secHead"><h3>בקרוב</h3><a class="a">4 ממתינים</a></div>
+          <div class="list">
+            <div class="litem locked"><div class="num">⌛</div><div class="text"><div class="title">מתי כבר נגעתם זה בזה?</div><div class="sub">אינטימיות · ייפתח מחר</div></div></div>
+            <div class="litem locked"><div class="num">⌛</div><div class="text"><div class="title">להתנצל כמו מבוגרים</div><div class="sub">תקשורת · יום ראשון</div></div></div>
+          </div>
+
+        </div>
+        <nav class="tabbar">
+          <div class="tab"><span class="g"></span><span>היום</span></div>
+          <div class="tab active"><span class="g"></span><span>השיעורים</span></div>
+          <div class="tab"><span class="g" data-new></span><span>צ׳אט</span></div>
+          <div class="tab"><span class="g"></span><span>חשבון</span></div>
+        </nav>
+      </div>
+      <p class="annot"><strong>סימן חדש:</strong> תג ״נפתח עכשיו״ על האייטם הפעיל. אחרי לחיצה הוא נעלם. השיעורים שהושלמו בלי תגי חדש.</p>
+    </div>
+
+    <!-- B3: Chat with unread -->
+    <div class="wrap">
+      <div class="caption">״צ׳אט״ <span class="pill">2 לא נקראו</span></div>
+      <div class="device">
+        <header class="topnav">
+          <div class="brand">
+            <div class="logo">ע</div>
+            <div style="display:flex;flex-direction:column;gap:1px">
+              <span style="font-size:16px;font-weight:700">ענת ר.</span>
+              <span style="font-size:13px;color:var(--text-3);font-weight:400">המומחית שלכם · online</span>
+            </div>
+          </div>
+          <div class="right"><div class="iconbtn"><span>☎</span></div></div>
+        </header>
+        <div class="scroll" style="gap:0;padding-bottom:140px">
+
+          <div class="ts">היום · 9:18</div>
+          <div class="conv">
+            <div class="bubble them">חשבתי עליכם השבוע. איך עבר השיעור על שפת האהבה?</div>
+            <div class="bubble them">שאלה אחת לפני שאני שולחת את הבא — מי משניכם הופתע יותר?</div>
+            <div class="bubble me">היה מאתגר אבל פתח שיחה ארוכה. נועה הופתעה יותר :)</div>
+            <div class="bubble them">יפה. תרגיל קטן לסוף השבוע — תשלחו אחד לשני מסר אחד בשפה של השני. ננתח ביחד בשבוע הבא.</div>
+          </div>
+
+        </div>
+        <div style="position:absolute;bottom:80px;right:14px;left:14px">
+          <div class="composer">
+            <span class="input">כתבו הודעה…</span>
+            <span class="send">↑</span>
+          </div>
+        </div>
+        <nav class="tabbar">
+          <div class="tab"><span class="g"></span><span>היום</span></div>
+          <div class="tab"><span class="g"></span><span>השיעורים</span></div>
+          <div class="tab active"><span class="g"></span><span>צ׳אט</span></div>
+          <div class="tab"><span class="g"></span><span>חשבון</span></div>
+        </nav>
+      </div>
+      <p class="annot"><strong>כניסה לצ׳אט</strong> מפלסת את הסופר ל־0 (״ענת ר.״ ב-tab-bar ללא נקודה אדומה). חיצים אדומים נעלמים אוטומטית.</p>
+    </div>
+
+  </section>
+
+  <!-- ─────────────────────  AFTER TAP  ───────────────────── -->
+  <h2 style="max-width:1340px;margin:48px auto 16px;font-size:20px;font-weight:800;color:var(--text-1)">אחרי לחיצה — סימוני חדש נעלמים</h2>
+
+  <section class="row">
+
+    <!-- A1: Today after tap -->
+    <div class="wrap">
+      <div class="caption">״היום״ <span class="pill" style="background:rgba(168,194,143,0.18);color:#BFD09F">הכל נצפה</span></div>
+      <div class="device">
+        <header class="topnav">
+          <div class="brand"><div class="logo">M</div><span>המסע שלי</span></div>
+          <div class="right">
+            <div class="iconbtn"><span>✶</span></div>
+            <div class="iconbtn" aria-label="messages" data-count=""><span>✉</span></div>
+          </div>
+        </header>
+        <div class="crumb">דף הבית › המסע שלי</div>
+        <div class="scroll">
+
+          <div class="prog">
+            <span>חודש 1</span>
+            <div class="bar"><span style="width:18%"></span></div>
+            <span>שבוע 2 / 12</span>
+          </div>
+
+          <article class="hero">
+            <div class="pre">
+              <span class="focus">המוקד שלכם · מיניות ואינטימיות</span>
+              <span class="chip">השיעור הנוכחי</span>
+            </div>
+            <h2>שפת האהבה שלי — ושלך</h2>
+            <div class="meta">
+              <span>12 דקות</span>
+              <span>תקשורת</span>
+              <span>מתאים לערב</span>
+            </div>
+            <a class="cta">המשיכו בשיעור <span class="arrow">←</span></a>
+          </article>
+
+          <article class="chat" data-unread="0">
+            <div class="avatar">ע<span class="presence"></span></div>
+            <div class="body">
+              <div class="head">
+                <span class="name">ענת ר.</span>
+                <span class="when">לפני 2ש</span>
+              </div>
+              <div class="msg">״חשבתי עליכם השבוע. איך עבר השיעור על שפת האהבה?…״</div>
+            </div>
+            <span class="unread">0</span>
+          </article>
+
+          <div class="secHead"><h3>ההיסטוריה שלכם</h3><a class="a">הכל</a></div>
+          <div class="list">
+            <div class="litem done"><div class="num">✓</div><div class="text"><div class="title">להגיד תודה — בכוונה</div><div class="sub">חיבור רגשי · הושלם</div></div><div class="when">לפני 3ימ׳</div></div>
+            <div class="litem done"><div class="num">✓</div><div class="text"><div class="title">השיחה שאף פעם לא הייתה</div><div class="sub">תקשורת · הושלם</div></div><div class="when">לפני 6ימ׳</div></div>
+            <div class="litem done"><div class="num">✓</div><div class="text"><div class="title">חמש דקות שמשנות יום</div><div class="sub">חברות · הושלם</div></div><div class="when">השבוע שעבר</div></div>
+          </div>
+
+        </div>
+        <nav class="tabbar">
+          <div class="tab active"><span class="g"></span><span>היום</span></div>
+          <div class="tab"><span class="g"></span><span>השיעורים</span></div>
+          <div class="tab"><span class="g"></span><span>צ׳אט</span></div>
+          <div class="tab"><span class="g"></span><span>חשבון</span></div>
+        </nav>
+      </div>
+      <p class="annot">תג ״נפתח עכשיו״ נעלם, סופר ההודעות התרוקן, נקודות אדומות ב-tab-bar נעלמו. CTA מתעדכן ל-״המשיכו בשיעור״.</p>
+    </div>
+
+    <!-- A2: Items after tap -->
+    <div class="wrap">
+      <div class="caption">״השיעורים״ <span class="pill" style="background:rgba(168,194,143,0.18);color:#BFD09F">נצפה</span></div>
+      <div class="device">
+        <header class="topnav">
+          <div class="brand"><div class="logo">M</div><span>השיעורים שלי</span></div>
+          <div class="right">
+            <div class="iconbtn"><span>⌕</span></div>
+            <div class="iconbtn" aria-label="messages" data-count=""><span>✉</span></div>
+          </div>
+        </header>
+        <div class="crumb">המסע שלי › השיעורים</div>
+        <div class="scroll">
+
+          <div class="secHead"><h3>פעיל עכשיו</h3><span class="count">1 פתוח</span></div>
+          <article class="hero" style="padding:16px">
+            <div class="pre"><span class="focus">המוקד · מיניות ואינטימיות</span><span class="chip">המשך</span></div>
+            <h2 style="font-size:22px">שפת האהבה שלי — ושלך</h2>
+            <a class="cta" style="padding:14px;font-size:17px">המשיכו בשיעור <span class="arrow">←</span></a>
+          </article>
+
+          <div class="secHead"><h3>הושלמו</h3><a class="a">9 סה״כ</a></div>
+          <div class="list">
+            <div class="litem done"><div class="num">✓</div><div class="text"><div class="title">להגיד תודה — בכוונה</div><div class="sub">חיבור רגשי</div></div><div class="when">לפני 3ימ׳</div></div>
+            <div class="litem done"><div class="num">✓</div><div class="text"><div class="title">השיחה שאף פעם לא הייתה</div><div class="sub">תקשורת</div></div><div class="when">לפני 6ימ׳</div></div>
+            <div class="litem done"><div class="num">✓</div><div class="text"><div class="title">חמש דקות שמשנות יום</div><div class="sub">חברות</div></div><div class="when">שבוע שעבר</div></div>
+          </div>
+
+          <div class="secHead"><h3>בקרוב</h3><a class="a">4 ממתינים</a></div>
+          <div class="list">
+            <div class="litem locked"><div class="num">⌛</div><div class="text"><div class="title">מתי כבר נגעתם זה בזה?</div><div class="sub">אינטימיות · ייפתח מחר</div></div></div>
+            <div class="litem locked"><div class="num">⌛</div><div class="text"><div class="title">להתנצל כמו מבוגרים</div><div class="sub">תקשורת · יום ראשון</div></div></div>
+          </div>
+
+        </div>
+        <nav class="tabbar">
+          <div class="tab"><span class="g"></span><span>היום</span></div>
+          <div class="tab active"><span class="g"></span><span>השיעורים</span></div>
+          <div class="tab"><span class="g"></span><span>צ׳אט</span></div>
+          <div class="tab"><span class="g"></span><span>חשבון</span></div>
+        </nav>
+      </div>
+      <p class="annot">תג ״נפתח עכשיו״ של האייטם הפעיל הוסר. ה-CTA עכשיו ״המשיכו בשיעור״ — הצבעה ברורה שהמשתמש כבר התחיל.</p>
+    </div>
+
+    <!-- A3: Chat after open -->
+    <div class="wrap">
+      <div class="caption">״צ׳אט״ <span class="pill" style="background:rgba(168,194,143,0.18);color:#BFD09F">נקרא</span></div>
+      <div class="device">
+        <header class="topnav">
+          <div class="brand">
+            <div class="logo">ע</div>
+            <div style="display:flex;flex-direction:column;gap:1px">
+              <span style="font-size:16px;font-weight:700">ענת ר.</span>
+              <span style="font-size:13px;color:var(--text-3);font-weight:400">המומחית שלכם · online</span>
+            </div>
+          </div>
+          <div class="right"><div class="iconbtn"><span>☎</span></div></div>
+        </header>
+        <div class="scroll" style="gap:0;padding-bottom:140px">
+
+          <div class="ts">היום · 9:18</div>
+          <div class="conv">
+            <div class="bubble them">חשבתי עליכם השבוע. איך עבר השיעור על שפת האהבה?</div>
+            <div class="bubble them">שאלה אחת לפני שאני שולחת את הבא — מי משניכם הופתע יותר?</div>
+            <div class="bubble me">היה מאתגר אבל פתח שיחה ארוכה. נועה הופתעה יותר :)</div>
+            <div class="bubble them">יפה. תרגיל קטן לסוף השבוע — תשלחו אחד לשני מסר אחד בשפה של השני. ננתח ביחד בשבוע הבא.</div>
+            <div class="bubble me">סגור. נדבר ביום ראשון.</div>
+          </div>
+
+        </div>
+        <div style="position:absolute;bottom:80px;right:14px;left:14px">
+          <div class="composer">
+            <span class="input">כתבו הודעה…</span>
+            <span class="send">↑</span>
+          </div>
+        </div>
+        <nav class="tabbar">
+          <div class="tab"><span class="g"></span><span>היום</span></div>
+          <div class="tab"><span class="g"></span><span>השיעורים</span></div>
+          <div class="tab active"><span class="g"></span><span>צ׳אט</span></div>
+          <div class="tab"><span class="g"></span><span>חשבון</span></div>
+        </nav>
+      </div>
+      <p class="annot">סופרי ההודעות מתאפסים אוטומטית ברגע שהצ׳אט נפתח. הגדלת bubble לקריאות מובייל (18px).</p>
+    </div>
+
+  </section>
+
+</body>
+</html>

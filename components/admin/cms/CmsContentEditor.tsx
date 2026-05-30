@@ -17,6 +17,9 @@ const PAGE_LABELS: Record<CmsPage, string> = {
   my: "My / Account",
   about: "About",
   shared: "Shared",
+  // 2026-05-29 — post-login AppShell strings (migrations 098 + 100).
+  // 69 + 13 = 82 keys live under page='app-shell'.
+  "app-shell": "App Shell (post-login)",
 };
 
 // Sprint 4 #3 Phase 2 (A–D) shipped — every public route is now
@@ -33,6 +36,7 @@ const ENABLED_PAGES = new Set<CmsPage>([
   "my",
   "about",
   "shared",
+  "app-shell",
 ]);
 
 /**

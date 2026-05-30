@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mioshy — Studio v9 · Games in Shell + Full-screen play</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --canvas-grad: linear-gradient(160deg, rgba(236,72,153,0.10) 0%, #320F37 23.53%, #0D0429 100%);
+      --canvas-deep: #060217;
+      --canvas-solid:#0D0429;
+      --card:        #1B0F33;
+      --card-elev:   #251642;
+      --card-hi:     #2E1A50;
+      --line-soft:   rgba(255,255,255,0.07);
+      --line-mid:    rgba(255,255,255,0.13);
+
+      --side-bg:     #EDE8E7;
+      --side-text:   #1F1426;
+      --side-text-2: #6B5B66;
+      --side-text-3: #9A8B96;
+      --side-line:   rgba(31,20,38,0.10);
+      --side-active-bg: #1F0E2E;
+      --side-active-fg: #EDE8E7;
+      --side-hover:  rgba(31,20,38,0.06);
+
+      --text-1:      #FAF6F7;
+      --text-2:      #C9C0DC;
+      --text-3:      #897FA6;
+      --wine:        #B83C4D;
+      --wine-deep:   #6C2E40;
+      --wine-soft:   rgba(184,60,77,0.16);
+      --wine-edge:   rgba(184,60,77,0.32);
+      --amber:       #F59E0B;
+      --sage:        #87A878;
+
+      --cta-grad:    linear-gradient(110deg, #B83C4D 0%, #EC4899 55%, #F59E0B 100%);
+      --header-grad: linear-gradient(135deg, #0F0828 0%, #09051C 50%, #0E0726 100%);
+    }
+
+    *,*::before,*::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: 'Assistant', system-ui, sans-serif;
+      background: var(--canvas-deep);
+      color: var(--text-1);
+      padding: 36px 16px 80px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .head { max-width: 1500px; margin: 0 auto 22px; }
+    .head h1 { font-size: 30px; margin: 0 0 8px; font-weight: 800; letter-spacing: -0.02em; }
+    .head p { font-size: 15px; color: var(--text-2); margin: 0 0 14px; max-width: 880px; line-height: 1.6; }
+
+    .principle { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; max-width: 1500px; margin: 0 auto 28px; }
+    @media (max-width: 720px) { .principle { grid-template-columns: 1fr; } }
+    .principle .b { background: var(--card); border: 1px solid var(--line-soft); border-radius: 14px; padding: 16px 18px; }
+    .principle .b .h { display: flex; align-items: center; gap: 10px; font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: #F2B5BD; font-weight: 700; margin-bottom: 8px; }
+    .principle .b .h .icn { width: 16px; height: 16px; }
+    .principle .b .v { font-size: 14px; color: var(--text-2); line-height: 1.55; }
+    .principle .b .v strong { color: var(--text-1); font-weight: 700; }
+
+    .sec-title { max-width: 1500px; margin: 36px auto 14px; display: flex; align-items: baseline; gap: 14px; }
+    .sec-title h2 { font-size: 20px; font-weight: 800; margin: 0; letter-spacing: -0.01em; }
+    .sec-title .kind { font-size: 13px; color: var(--text-3); }
+
+    .col { max-width: 1500px; margin: 0 auto; }
+
+    .device { background: var(--canvas-solid); color: var(--text-1); border-radius: 22px; overflow: hidden; position: relative; box-shadow: 0 28px 60px -22px rgba(0,0,0,0.75); border: 1px solid var(--line-soft); }
+    .device.desktop { width: 100%; min-height: 760px; }
+    .device.mobile { width: 380px; min-height: 800px; margin: 0 auto; border-radius: 32px; }
+
+    /* SHELL (same as v8) */
+    .shell { display: grid; grid-template-columns: 288px 1fr; min-height: 760px; }
+
+    .sidebar { background: var(--side-bg); color: var(--side-text); display: flex; flex-direction: column; border-inline-end: 1px solid var(--side-line); }
+    .sidebar .who { display: flex; align-items: center; gap: 12px; padding: 16px 14px 14px; border-bottom: 1px solid var(--side-line); min-height: 72px; }
+    .sidebar .who .av { width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0; background: var(--cta-grad); display: flex; align-items: center; justify-content: center; color: #FFFFFF; font-weight: 800; font-size: 15px; box-shadow: 0 4px 14px -4px rgba(236,72,153,0.45); }
+    .who-text { flex: 1; min-width: 0; }
+    .who-name { font-weight: 700; font-size: 15px; line-height: 1.15; }
+    .who-sub { font-size: 12px; color: var(--side-text-2); margin-top: 2px; }
+    .collapse-btn { width: 32px; height: 32px; border-radius: 9px; display: flex; align-items: center; justify-content: center; color: var(--side-text-2); cursor: pointer; flex-shrink: 0; background: transparent; border: 0; }
+
+    .nav { flex: 1; padding: 10px 8px; display: flex; flex-direction: column; gap: 1px; }
+    .group-h { font-size: 11px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--side-text-3); padding: 14px 10px 6px; }
+    .nav-item { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 10px; font-size: 15px; font-weight: 600; color: var(--side-text); cursor: pointer; min-height: 40px; position: relative; }
+    .nav-item .icn { width: 22px; height: 22px; flex-shrink: 0; color: var(--side-text); }
+    .nav-item .lbl { flex: 1; }
+    .nav-item .end { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--wine); color: #FFFFFF; font-weight: 800; flex-shrink: 0; }
+    .nav-item .end.dot { width: 8px; height: 8px; border-radius: 50%; padding: 0; }
+    .nav-item.active { background: var(--side-active-bg); color: var(--side-active-fg); }
+    .nav-item.active .icn { color: var(--side-active-fg); }
+    .nav-item.active::before { content: ''; position: absolute; inset: 6px auto 6px 0; width: 3px; background: var(--cta-grad); border-radius: 2px; }
+
+    .quick { padding: 12px 14px 16px; border-top: 1px solid var(--side-line); }
+    .quick .cta-mini { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-radius: 12px; background: var(--cta-grad); color: #FFFFFF; font-weight: 700; font-size: 14px; justify-content: center; box-shadow: 0 6px 18px -8px rgba(236,72,153,0.5); }
+    .quick .cta-mini .icn { width: 18px; height: 18px; }
+    .quick .sub-line { font-size: 11px; color: var(--side-text-2); text-align: center; margin-top: 8px; }
+
+    .area { display: flex; flex-direction: column; min-width: 0; background: var(--canvas-grad); }
+    .area-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 24px; border-bottom: 1px solid var(--line-soft); background: rgba(15,8,40,0.55); backdrop-filter: blur(8px); min-height: 70px; }
+    .area-top .crumb { font-size: 13px; color: var(--text-3); }
+    .area-top .crumb .here { color: var(--text-1); font-weight: 600; }
+    .area-top .actions { display: flex; gap: 8px; }
+    .iconbtn { width: 36px; height: 36px; border-radius: 10px; background: rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: center; color: var(--text-1); position: relative; cursor: pointer; }
+    .iconbtn .icn { width: 18px; height: 18px; }
+    .iconbtn .b { position: absolute; top: -3px; left: -3px; min-width: 16px; height: 16px; padding: 0 4px; background: var(--amber); color: #1A1410; font-size: 10px; font-weight: 800; border-radius: 999px; display: flex; align-items: center; justify-content: center; border: 2px solid var(--canvas-solid); }
+
+    .area-body { flex: 1; padding: 28px 24px; display: flex; flex-direction: column; gap: 18px; max-width: 1000px; width: 100%; margin: 0 auto; }
+
+    /* CATALOG sections */
+    .cat-head { display: flex; align-items: baseline; justify-content: space-between; }
+    .cat-head h2 { font-size: 26px; font-weight: 800; margin: 0; letter-spacing: -0.015em; }
+    .cat-head .sub { font-size: 14px; color: var(--text-3); }
+
+    .filter-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .chip-f { font-size: 14px; padding: 7px 14px; border-radius: 999px; background: var(--card); border: 1px solid var(--line-soft); color: var(--text-2); font-weight: 600; cursor: pointer; }
+    .chip-f.on { background: var(--wine-soft); color: #F2B5BD; border-color: var(--wine-edge); }
+
+    .games-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+    .game-card {
+      background: var(--card); border: 1px solid var(--line-soft); border-radius: 16px;
+      overflow: hidden; cursor: pointer; transition: transform .15s, border-color .15s;
+      position: relative;
+    }
+    .game-card:hover { transform: translateY(-2px); border-color: var(--wine-edge); }
+    .game-card .cover {
+      height: 130px; position: relative;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 38px; font-weight: 800; color: #FFFFFF;
+      text-shadow: 0 4px 18px rgba(0,0,0,0.4);
+    }
+    .game-card .cover.wheel { background: radial-gradient(circle at 30% 30%, #EC4899, #B83C4D 60%, #6C2E40); }
+    .game-card .cover.snake { background: radial-gradient(circle at 70% 30%, #F59E0B, #B83C4D 60%, #320F37); }
+    .game-card .cover.cards { background: radial-gradient(circle at 50% 30%, #A855F7, #6C2E40 60%, #320F37); }
+    .game-card .cover.sex   { background: radial-gradient(circle at 40% 30%, #EC4899, #320F37 70%); }
+    .game-card .cover.flame { background: radial-gradient(circle at 30% 30%, #F59E0B, #EC4899 50%, #6C2E40); }
+    .game-card .cover.quiz  { background: radial-gradient(circle at 60% 30%, #87A878, #320F37 80%); }
+    .game-card .cover .glyph { width: 56px; height: 56px; color: rgba(255,255,255,0.95); }
+    .game-card .body { padding: 14px 16px; }
+    .game-card .title { font-size: 17px; font-weight: 800; color: var(--text-1); margin-bottom: 4px; letter-spacing: -0.01em; }
+    .game-card .sub { font-size: 13px; color: var(--text-3); }
+    .game-card .tags { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+    .game-card .tag { font-size: 11px; padding: 3px 9px; border-radius: 999px; background: rgba(255,255,255,0.06); color: var(--text-2); font-weight: 600; }
+    .game-card .lock {
+      position: absolute; top: 10px; left: 10px;
+      background: rgba(15,8,40,0.85); color: var(--amber);
+      width: 32px; height: 32px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid var(--line-mid);
+    }
+    .game-card .lock .icn { width: 16px; height: 16px; }
+    .game-card .new-flag {
+      position: absolute; top: 10px; right: 10px;
+      background: var(--amber); color: #1A0F00;
+      font-size: 11px; font-weight: 800; padding: 3px 9px; border-radius: 999px;
+    }
+
+    /* FULL-SCREEN GAME MODE — wheel example */
+    .fullscreen {
+      position: relative;
+      background: radial-gradient(ellipse at top right, #1F0E2E 0%, #0D0429 70%);
+      min-height: 760px;
+      display: flex; flex-direction: column;
+    }
+    .fs-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 22px;
+      background: rgba(15,8,40,0.50);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--line-soft);
+    }
+    .fs-bar .left { display: flex; align-items: center; gap: 12px; }
+    .fs-bar .exit-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 14px; border-radius: 10px;
+      background: rgba(255,255,255,0.06); color: var(--text-1);
+      font-weight: 600; font-size: 14px;
+      border: 1px solid var(--line-soft);
+    }
+    .fs-bar .exit-btn .icn { width: 16px; height: 16px; }
+    .fs-bar .gn { font-size: 16px; font-weight: 700; color: var(--text-1); }
+    .fs-bar .right { display: flex; gap: 8px; }
+
+    .fs-body { flex: 1; display: flex; align-items: center; justify-content: center; padding: 30px; position: relative; }
+
+    /* the wheel mockup */
+    .wheel-mock { width: 360px; height: 360px; position: relative; }
+    .wheel-mock .ring {
+      position: absolute; inset: 0; border-radius: 50%;
+      background: conic-gradient(
+        #EC4899 0 60deg,
+        #F59E0B 60deg 120deg,
+        #B83C4D 120deg 180deg,
+        #A855F7 180deg 240deg,
+        #87A878 240deg 300deg,
+        #6C2E40 300deg 360deg
+      );
+      box-shadow: 0 30px 80px -20px rgba(236,72,153,0.40), inset 0 0 0 6px rgba(15,8,40,0.45);
+    }
+    .wheel-mock .hub {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%,-50%);
+      width: 96px; height: 96px; border-radius: 50%;
+      background: var(--cta-grad);
+      display: flex; align-items: center; justify-content: center;
+      color: #FFFFFF; font-weight: 800; font-size: 15px;
+      box-shadow: 0 8px 24px -6px rgba(236,72,153,0.55);
+      cursor: pointer;
+    }
+    .wheel-mock .pointer {
+      position: absolute; top: -8px; left: 50%; transform: translateX(-50%);
+      width: 0; height: 0;
+      border-left: 14px solid transparent; border-right: 14px solid transparent;
+      border-top: 22px solid var(--amber);
+      filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4));
+    }
+    .wheel-labels { position: absolute; top: 0; left: 0; right: 0; bottom: 0; }
+    .wheel-label { position: absolute; color: #FFFFFF; font-weight: 800; font-size: 13px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+
+    .fs-side {
+      position: absolute; bottom: 26px; right: 26px;
+      background: rgba(15,8,40,0.75); backdrop-filter: blur(10px);
+      border: 1px solid var(--line-mid); border-radius: 18px;
+      padding: 18px; max-width: 320px;
+    }
+    .fs-side .lbl { font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: #F2B5BD; font-weight: 700; margin-bottom: 4px; }
+    .fs-side .q { font-size: 22px; font-weight: 800; color: var(--text-1); line-height: 1.25; margin-bottom: 14px; }
+    .fs-side .acts { display: flex; gap: 8px; }
+    .fs-side .acts a { flex: 1; padding: 10px; border-radius: 10px; background: rgba(255,255,255,0.06); color: var(--text-1); font-weight: 700; font-size: 14px; text-align: center; border: 1px solid var(--line-soft); }
+    .fs-side .acts a.primary { background: var(--cta-grad); border: 0; }
+
+    /* MOBILE bottom tabs */
+    .m-top { padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; background: var(--header-grad); border-bottom: 1px solid var(--line-soft); }
+    .m-top .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; }
+    .m-top .logo { width: 30px; height: 30px; border-radius: 9px; background: var(--cta-grad); display: flex; align-items: center; justify-content: center; color: #FFFFFF; font-weight: 800; font-size: 14px; }
+    .m-top .right { display: flex; gap: 8px; }
+
+    .m-tabs { position: absolute; bottom: 0; right: 0; left: 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; padding: 6px 6px 22px; background: var(--side-bg); border-top: 1px solid var(--side-line); }
+    .m-tabs .t { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 4px; border-radius: 12px; font-size: 11px; font-weight: 700; color: var(--side-text-2); }
+    .m-tabs .t .g { width: 24px; height: 24px; border-radius: 7px; display: flex; align-items: center; justify-content: center; color: var(--side-text); position: relative; }
+    .m-tabs .t .g .icn { width: 18px; height: 18px; }
+    .m-tabs .t.active { color: var(--side-text); }
+    .m-tabs .t.active .g { background: var(--cta-grad); color: #FFFFFF; }
+
+    .m-scroll { padding: 14px 16px 120px; display: flex; flex-direction: column; gap: 14px; background: var(--canvas-grad); }
+
+    /* mobile full-screen exit chip */
+    .m-exit { position: absolute; top: 12px; right: 12px; z-index: 10; background: rgba(15,8,40,0.85); backdrop-filter: blur(6px); padding: 8px 12px; border-radius: 999px; font-size: 13px; font-weight: 600; color: var(--text-1); border: 1px solid var(--line-soft); display: inline-flex; align-items: center; gap: 6px; }
+    .m-exit .icn { width: 14px; height: 14px; }
+
+    .annot { font-size: 13px; color: var(--text-3); padding: 6px 4px 0; line-height: 1.55; max-width: 1500px; margin: 0 auto; }
+    .annot strong { color: var(--text-2); }
+
+    .twin { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; max-width: 1500px; margin: 0 auto; align-items: start; }
+    @media (max-width: 1100px) { .twin { grid-template-columns: 1fr; max-width: 380px; } }
+  </style>
+</head>
+<body>
+
+  <!-- SVG library -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-today" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></symbol>
+      <symbol id="i-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></symbol>
+      <symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+      <symbol id="i-cards" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="14" height="18" rx="2"/><path d="M7 21h13a2 2 0 0 0 2-2V7"/></symbol>
+      <symbol id="i-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></symbol>
+      <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+      <symbol id="i-gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+      <symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></symbol>
+      <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></symbol>
+      <symbol id="i-chev-r" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></symbol>
+      <symbol id="i-chev-l" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 6 9 12 15 18"/></symbol>
+      <symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></symbol>
+      <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+      <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+      <symbol id="i-dice" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="2.5" width="19" height="19" rx="3"/><circle cx="8" cy="8" r="1"/><circle cx="16" cy="8" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="8" cy="16" r="1"/><circle cx="16" cy="16" r="1"/></symbol>
+      <symbol id="i-wheel" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></symbol>
+      <symbol id="i-flame" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></symbol>
+      <symbol id="i-pause" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></symbol>
+    </defs>
+  </svg>
+
+  <header class="head">
+    <h1>Studio v9 — משחקים: catalog בתוך ה-shell, גיים-פליי במצב מלא</h1>
+    <p>שאלת המשחקים — אמת או חובה / סולמות ונחשים / סקס של מיאושי — דורשת שתי תצוגות שונות. <strong>Catalog</strong> (לבחור משחק) נשאר בתוך ה-shell המוכר. <strong>Game-in-play</strong> (משחק פעיל) עובר ל-Focused Mode: ה-shell מסתלק, המסך כולו של המשחק, עם כפתור ״חזרה לתפריט״ עדין בפינה. אותו הגיון של Figma/Notion בעמודי focused.</p>
+  </header>
+
+  <section class="principle">
+    <div class="b">
+      <div class="h"><svg class="icn"><use href="#i-cards"/></svg> Catalog — בתוך ה-shell</div>
+      <div class="v">״משחקי הזוגות״ ו״מיאושי למבוגרים״ מפורקים לכרטיסי משחק עם כיסוי צבעוני, כותרת, תיאור קצר ותגיות. ניתן לפלטר. <strong>הסייד-בר נשאר.</strong></div>
+    </div>
+    <div class="b">
+      <div class="h"><svg class="icn"><use href="#i-wheel"/></svg> Game-in-play — מסך מלא</div>
+      <div class="v">ברגע שלוחצים על משחק, ה-shell נעלם. הגלגל / הלוח / הקלפים מקבלים את כל המסך. בר עליון דק עם <strong>״חזרה לתפריט״</strong> + שם המשחק.</div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════════════════════
+       1) Catalog inside shell (desktop)
+       ════════════════════════════════════════════════════════════ -->
+  <div class="sec-title">
+    <h2>1. דסקטופ · קטלוג משחקים בתוך ה-shell</h2>
+    <span class="kind">״משחקי הזוגות״ נבחר ב-sidebar. כרטיסים בתוך ה-content.</span>
+  </div>
+
+  <div class="col">
+    <div class="device desktop">
+      <div class="shell">
+        <aside class="sidebar">
+          <div class="who">
+            <div class="av">נ</div>
+            <div class="who-text"><div class="who-name">נועה ויואב</div><div class="who-sub">המסע פעיל · החודש 1</div></div>
+            <button class="collapse-btn"><svg class="icn" width="18" height="18"><use href="#i-chev-r"/></svg></button>
+          </div>
+          <nav class="nav">
+            <div class="group-h">המסע שלי</div>
+            <div class="nav-item"><svg class="icn"><use href="#i-today"/></svg><span class="lbl">היום</span></div>
+            <div class="nav-item"><svg class="icn"><use href="#i-book"/></svg><span class="lbl">השיעורים שלי</span></div>
+            <div class="nav-item"><svg class="icn"><use href="#i-chat"/></svg><span class="lbl">צ׳אט עם מומחה</span><span class="end">2</span></div>
+            <div class="group-h">משחקים</div>
+            <div class="nav-item active"><svg class="icn"><use href="#i-cards"/></svg><span class="lbl">משחקי הזוגות</span></div>
+            <div class="nav-item"><svg class="icn"><use href="#i-heart"/></svg><span class="lbl">מיאושי למבוגרים</span></div>
+            <div class="group-h">החשבון</div>
+            <div class="nav-item"><svg class="icn"><use href="#i-users"/></svg><span class="lbl">שיתוף עם בן/בת זוג</span><span class="end dot"></span></div>
+            <div class="nav-item"><svg class="icn"><use href="#i-gear"/></svg><span class="lbl">הגדרות</span></div>
+          </nav>
+          <div class="quick">
+            <div class="cta-mini"><svg class="icn"><use href="#i-chat"/></svg><span>שאלה למומחה</span></div>
+            <div class="sub-line">מענה תוך 24 שעות</div>
+          </div>
+        </aside>
+
+        <section class="area">
+          <div class="area-top">
+            <div class="crumb">מיאושי שלי · <span class="here">משחקי הזוגות</span></div>
+            <div class="actions">
+              <div class="iconbtn"><svg class="icn"><use href="#i-search"/></svg></div>
+              <div class="iconbtn"><svg class="icn"><use href="#i-bell"/></svg><span class="b">2</span></div>
+              <div class="iconbtn"><svg class="icn"><use href="#i-gear"/></svg></div>
+            </div>
+          </div>
+
+          <div class="area-body">
+            <div class="cat-head">
+              <div>
+                <h2>משחקי הזוגות</h2>
+                <div class="sub">42 משחקים זמינים · בחרו אחד והתחילו לשחק</div>
+              </div>
+            </div>
+
+            <div class="filter-row">
+              <span class="chip-f on">הכל</span>
+              <span class="chip-f">חיבור רגשי</span>
+              <span class="chip-f">תקשורת</span>
+              <span class="chip-f">חברות</span>
+              <span class="chip-f">מצחיק</span>
+              <span class="chip-f">חדשים</span>
+            </div>
+
+            <div class="games-grid">
+              <article class="game-card">
+                <div class="cover wheel">
+                  <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/><line x1="12" y1="3" x2="12" y2="21"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="5.6" y1="5.6" x2="18.4" y2="18.4"/><line x1="18.4" y1="5.6" x2="5.6" y2="18.4"/></svg>
+                  <span class="new-flag">חדש</span>
+                </div>
+                <div class="body">
+                  <div class="title">אמת או חובה</div>
+                  <div class="sub">סובבו את הגלגל, ענו או בחרו אתגר</div>
+                  <div class="tags"><span class="tag">חיבור</span><span class="tag">12-30 דק׳</span></div>
+                </div>
+              </article>
+
+              <article class="game-card">
+                <div class="cover snake">
+                  <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>
+                </div>
+                <div class="body">
+                  <div class="title">סולמות ונחשים</div>
+                  <div class="sub">לוח קלאסי עם שאלות וחוויות בכל משבצת</div>
+                  <div class="tags"><span class="tag">קלאסי</span><span class="tag">45 דק׳</span></div>
+                </div>
+              </article>
+
+              <article class="game-card">
+                <div class="cover cards">
+                  <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="14" height="18" rx="2"/><path d="M7 21h13a2 2 0 0 0 2-2V7"/></svg>
+                </div>
+                <div class="body">
+                  <div class="title">50 שאלות עומק</div>
+                  <div class="sub">קלפים שמובילים לשיחה אמיתית</div>
+                  <div class="tags"><span class="tag">עומק</span><span class="tag">25 דק׳</span></div>
+                </div>
+              </article>
+
+              <article class="game-card">
+                <div class="cover quiz">
+                  <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9.5 9a3 3 0 1 1 5 2c-1 1-2.5 1.5-2.5 3"/><circle cx="12" cy="17.5" r="0.8" fill="currentColor"/></svg>
+                </div>
+                <div class="body">
+                  <div class="title">כמה אנחנו מכירים?</div>
+                  <div class="sub">חידון שמראה למי באמת מקשיבים</div>
+                  <div class="tags"><span class="tag">חברות</span><span class="tag">15 דק׳</span></div>
+                </div>
+              </article>
+
+              <article class="game-card">
+                <div class="cover flame">
+                  <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+                  <span class="new-flag">חדש</span>
+                </div>
+                <div class="body">
+                  <div class="title">לא יודעים — אז יודעים</div>
+                  <div class="sub">מצא 3 דברים שלא ידעת על בן/בת הזוג</div>
+                  <div class="tags"><span class="tag">חברות</span><span class="tag">20 דק׳</span></div>
+                </div>
+              </article>
+
+              <article class="game-card">
+                <div class="cover sex">
+                  <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                  <div class="lock"><svg class="icn"><use href="#i-lock"/></svg></div>
+                </div>
+                <div class="body">
+                  <div class="title">לוהט במיטה</div>
+                  <div class="sub">משחק אינטימי לבני זוג מוכרים</div>
+                  <div class="tags"><span class="tag">מבוגרים</span><span class="tag">למנויי הליווי</span></div>
+                </div>
+              </article>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+    <p class="annot"><strong>הסייד-בר ניווט נשאר.</strong> כל אחד מהמשחקים הוא כרטיס עם cover גרדיאנט (יוצר נוכחות חזקה בלי תמונה אמיתית), קטגוריה ב-tag, זמן משחק משוער. אייקון נעילה על משחקים הדורשים מנוי. הגרידז responsive — auto-fill עם min 220px.</p>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════
+       2) Full-screen game (desktop) — wheel
+       ════════════════════════════════════════════════════════════ -->
+  <div class="sec-title">
+    <h2>2. דסקטופ · ״אמת או חובה״ במשחק פעיל — Focused Mode</h2>
+    <span class="kind">ה-shell נעלם. הגלגל מקבל את הבמה. כפתור ״חזרה לתפריט״ בפינה.</span>
+  </div>
+
+  <div class="col">
+    <div class="device desktop">
+      <div class="fullscreen">
+        <div class="fs-bar">
+          <div class="left">
+            <a class="exit-btn">
+              <svg class="icn"><use href="#i-x"/></svg>
+              <span>חזרה לתפריט</span>
+            </a>
+            <span class="gn">אמת או חובה · נועה ויואב</span>
+          </div>
+          <div class="right">
+            <div class="iconbtn"><svg class="icn"><use href="#i-pause"/></svg></div>
+            <div class="iconbtn"><svg class="icn"><use href="#i-gear"/></svg></div>
+          </div>
+        </div>
+
+        <div class="fs-body">
+          <div class="wheel-mock">
+            <div class="ring"></div>
+            <div class="hub">סובבו!</div>
+            <div class="pointer"></div>
+            <div class="wheel-labels">
+              <div class="wheel-label" style="top:18%;right:30%">אמת</div>
+              <div class="wheel-label" style="top:30%;right:12%">חובה</div>
+              <div class="wheel-label" style="bottom:30%;right:14%">סודות</div>
+              <div class="wheel-label" style="bottom:18%;right:35%">חוויה</div>
+              <div class="wheel-label" style="bottom:30%;left:14%">אתגר</div>
+              <div class="wheel-label" style="top:30%;left:14%">אהבה</div>
+            </div>
+          </div>
+
+          <div class="fs-side">
+            <div class="lbl">השאלה האחרונה · אמת</div>
+            <div class="q">מה הדבר הראשון שמשך אותך אליי כשהכרנו?</div>
+            <div class="acts">
+              <a class="primary">סובב שוב</a>
+              <a>סיום</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="annot"><strong>ההבדל הקריטי:</strong> הסייד-בר אינו קיים. הכותרת הדקה (״אמת או חובה · נועה ויואב״) רק כדי להזכיר איפה אנחנו. ה-״חזרה לתפריט״ מחזיר אותך ל-shell בקליק אחד. סולמות ונחשים יראה דומה — לוח באמצע, בר תחתון עם מצב השחקנים, אותה התנהגות כניסה/יציאה. סקס של מיאושי — באותו pattern, רק עם warning gate ראשון.</p>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════
+       3) Mobile catalog + game
+       ════════════════════════════════════════════════════════════ -->
+  <div class="sec-title">
+    <h2>3. מובייל · אותו pattern</h2>
+    <span class="kind">קטלוג בתוך ה-shell · משחק פעיל מסך מלא עם כפתור יציאה</span>
+  </div>
+
+  <div class="col" style="display:grid;grid-template-columns:repeat(2,380px);gap:24px;justify-content:start">
+    <!-- mobile catalog -->
+    <div>
+      <h3 style="font-size:13px;font-weight:700;color:var(--text-3);margin:0 0 10px;letter-spacing:0.12em;text-transform:uppercase">קטלוג ב-shell</h3>
+      <div class="device mobile">
+        <div class="m-top">
+          <div class="brand"><div class="logo">M</div><span>משחקי הזוגות</span></div>
+          <div class="right">
+            <div class="iconbtn"><svg class="icn"><use href="#i-search"/></svg></div>
+            <div class="iconbtn"><svg class="icn"><use href="#i-bell"/></svg><span class="b">2</span></div>
+          </div>
+        </div>
+        <div class="m-scroll">
+          <div class="filter-row">
+            <span class="chip-f on">הכל</span>
+            <span class="chip-f">חיבור</span>
+            <span class="chip-f">תקשורת</span>
+            <span class="chip-f">מצחיק</span>
+          </div>
+
+          <article class="game-card">
+            <div class="cover wheel" style="height:120px">
+              <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/><line x1="12" y1="3" x2="12" y2="21"/><line x1="3" y1="12" x2="21" y2="12"/></svg>
+              <span class="new-flag">חדש</span>
+            </div>
+            <div class="body">
+              <div class="title">אמת או חובה</div>
+              <div class="sub">סובבו את הגלגל</div>
+              <div class="tags"><span class="tag">חיבור</span><span class="tag">12-30 דק׳</span></div>
+            </div>
+          </article>
+
+          <article class="game-card">
+            <div class="cover snake" style="height:120px">
+              <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>
+            </div>
+            <div class="body">
+              <div class="title">סולמות ונחשים</div>
+              <div class="sub">לוח קלאסי</div>
+              <div class="tags"><span class="tag">קלאסי</span><span class="tag">45 דק׳</span></div>
+            </div>
+          </article>
+
+          <article class="game-card">
+            <div class="cover cards" style="height:120px">
+              <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="14" height="18" rx="2"/><path d="M7 21h13a2 2 0 0 0 2-2V7"/></svg>
+            </div>
+            <div class="body">
+              <div class="title">50 שאלות עומק</div>
+              <div class="sub">קלפים לשיחה אמיתית</div>
+              <div class="tags"><span class="tag">עומק</span><span class="tag">25 דק׳</span></div>
+            </div>
+          </article>
+        </div>
+        <nav class="m-tabs">
+          <div class="t"><span class="g"><svg class="icn"><use href="#i-today"/></svg></span><span>היום</span></div>
+          <div class="t"><span class="g"><svg class="icn"><use href="#i-book"/></svg></span><span>שיעורים</span></div>
+          <div class="t"><span class="g"><svg class="icn"><use href="#i-chat"/></svg></span><span>מומחה</span></div>
+          <div class="t active"><span class="g"><svg class="icn"><use href="#i-cards"/></svg></span><span>משחקים</span></div>
+          <div class="t"><span class="g"><svg class="icn"><use href="#i-menu"/></svg></span><span>עוד</span></div>
+        </nav>
+      </div>
+    </div>
+
+    <!-- mobile full-screen game -->
+    <div>
+      <h3 style="font-size:13px;font-weight:700;color:var(--text-3);margin:0 0 10px;letter-spacing:0.12em;text-transform:uppercase">משחק פעיל · מסך מלא</h3>
+      <div class="device mobile">
+        <div class="fullscreen" style="min-height:800px">
+          <a class="m-exit">
+            <svg class="icn"><use href="#i-x"/></svg>
+            <span>חזרה</span>
+          </a>
+          <div class="fs-body" style="padding:60px 20px 30px;flex-direction:column;gap:24px">
+            <div class="wheel-mock" style="width:280px;height:280px">
+              <div class="ring"></div>
+              <div class="hub" style="width:76px;height:76px;font-size:13px">סובבו!</div>
+              <div class="pointer"></div>
+            </div>
+            <div class="fs-side" style="position:static;max-width:none;width:100%">
+              <div class="lbl">השאלה האחרונה · אמת</div>
+              <div class="q" style="font-size:20px">מה משך אותך אליי כשהכרנו?</div>
+              <div class="acts">
+                <a class="primary">סובב שוב</a>
+                <a>סיום</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="annot" style="margin-top:32px;font-size:14px;color:var(--text-2)">
+    <strong>תשובה לשאלה ״האם צריך את המבנה הנוכחי?״</strong> — לא לעמודי המשחק הקיימים. ה-pattern הזה מחליף אותם. הסידור: <strong>1)</strong> /games (קטלוג) חי בתוך ה-shell. <strong>2)</strong> /games/[slug] (משחק עצמו) נכנס ל-Focused Mode עם ה-fs-bar הדק. <strong>3)</strong> חזרה לתפריט מחזירה ל-shell עם הטאב ״משחקים״ פעיל. <strong>4)</strong> סקס של מיאושי = אותו pattern עם confirmation gate ראשוני (״הוסכם״ → כניסה לקטלוג). אותו עיקרון לכל המשחקים — לא צריך לעצב כל אחד מאפס.
+  </p>
+
+</body>
+</html>
