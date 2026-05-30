@@ -20,6 +20,11 @@ export interface UpcomingItem {
   /** Where to go if the user clicks it (deep link still works even
    *  while locked — the journey reader handles the lock screen). */
   href: string;
+  /** When true the row renders as a non-interactive preview. Used for
+   *  curriculum "what's coming" rows when nothing is actually scheduled
+   *  yet — the user can see the shape of the journey ahead without us
+   *  promising a delivery date. */
+  disabled?: boolean;
 }
 
 interface Props {
@@ -103,44 +108,87 @@ export function UpcomingList({
 
       <ul className="m-0 flex list-none flex-col gap-2.5 p-0">
         {items.map((item) => (
-          <li key={item.id}>
-            <Link
-              href={item.href}
-              className="flex items-center gap-3.5 rounded-[13px] border p-3.5 opacity-[0.72] transition hover:opacity-100"
-              style={{
-                background: "rgba(29,14,54,0.30)",
-                borderColor: "rgba(255,255,255,0.04)",
-              }}
-            >
-              <div
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px]"
-                style={{
-                  background: "rgba(255,255,255,0.04)",
-                  color: "var(--shell-text-3)",
-                }}
-              >
-                <Clock className="h-[17px] w-[17px]" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div
-                  className="truncate text-[20px] font-medium leading-snug"
-                  style={{ color: "var(--shell-text-2)" }}
-                >
-                  {item.title}
-                </div>
-                <div
-                  className="mt-0.5 truncate text-[14px]"
-                  style={{ color: "var(--shell-text-3)" }}
-                >
-                  {item.categoryName
-                    ? `${item.categoryName} · ${item.whenLabel}`
-                    : item.whenLabel}
-                </div>
-              </div>
-            </Link>
-          </li>
+          <UpcomingRow key={item.id} item={item} />
         ))}
       </ul>
     </section>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Single row. Two render modes:
+//   • scheduled   → <Link>, hover lifts opacity from 72% → 100%
+//   • preview     → static <div>, opacity locked at 55%, no hover. Tells
+//                   the user "this is a curriculum preview, not a
+//                   click target yet".
+// Both modes share the same visual chrome so the section feels
+// cohesive — only the affordance differs.
+// ─────────────────────────────────────────────────────────────────────
+
+function UpcomingRow({ item }: { item: UpcomingItem }) {
+  const Row = (
+    <>
+      <div
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px]"
+        style={{
+          background: "rgba(255,255,255,0.04)",
+          color: "var(--shell-text-3)",
+        }}
+        aria-hidden
+      >
+        <Clock className="h-[17px] w-[17px]" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div
+          className="truncate text-[20px] font-medium leading-snug"
+          style={{ color: "var(--shell-text-2)" }}
+        >
+          {item.title}
+        </div>
+        <div
+          className="mt-0.5 truncate text-[14px]"
+          style={{ color: "var(--shell-text-3)" }}
+        >
+          {item.categoryName
+            ? `${item.categoryName} · ${item.whenLabel}`
+            : item.whenLabel}
+        </div>
+      </div>
+    </>
+  );
+
+  const classBase =
+    "flex items-center gap-3.5 rounded-[13px] border p-3.5 transition";
+  const styleBase: React.CSSProperties = {
+    background: "rgba(29,14,54,0.30)",
+    borderColor: "rgba(255,255,255,0.04)",
+  };
+
+  if (item.disabled) {
+    return (
+      <li>
+        <div
+          className={`${classBase} cursor-not-allowed opacity-[0.55]`}
+          style={styleBase}
+          aria-disabled="true"
+          // Title attribute gives sighted users a hover hint that this
+          // is a preview, not a navigable item.
+          title={item.whenLabel}
+        >
+          {Row}
+        </div>
+      </li>
+    );
+  }
+  return (
+    <li>
+      <Link
+        href={item.href}
+        className={`${classBase} opacity-[0.72] hover:opacity-100`}
+        style={styleBase}
+      >
+        {Row}
+      </Link>
+    </li>
   );
 }

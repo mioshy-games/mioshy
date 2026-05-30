@@ -24,6 +24,117 @@ import type { HistoryItem } from "@/components/shell/today/HistoryList";
 import type { UpcomingItem } from "@/components/shell/lessons/UpcomingList";
 import type { AssessmentRowData } from "@/components/shell/lessons/AssessmentRow";
 
+/**
+ * Pull up to 5 items from the canonical journey curriculum to show as
+ * disabled "previews" in the בקרוב section. Used only when the user's
+ * actual timeline has no scheduled future items — gives them a sense
+ * of "what's next" without claiming a delivery date.
+ *
+ * Selection logic:
+ *   1. Resolve the canonical journey program (product_slug='journey').
+ *   2. Fetch active items joined with their category names, ordered
+ *      by sort_order ascending.
+ *   3. Exclude items that already appear in the timeline (by id),
+ *      so previews never duplicate something the user has already
+ *      seen / completed.
+ *
+ * Returns empty array on any failure — caller treats this as "no
+ * preview to show" and falls back to the static empty state.
+ */
+async function getUpcomingPreviewItems(args: {
+  excludeItemIds: Set<string>;
+  locale: "he" | "en";
+  isHe: boolean;
+}): Promise<UpcomingItem[]> {
+  try {
+    const admin = createServiceRoleClient();
+    if (!admin) return [];
+
+    const { data: program } = await admin
+      .from("journey_programs")
+      .select("id")
+      .eq("product_slug", "journey")
+      .eq("is_active", true)
+      .maybeSingle();
+    const programId = (program as { id: string } | null)?.id;
+    if (!programId) return [];
+
+    // We over-fetch (5 + exclude buffer) so post-filtering by
+    // already-seen item ids still leaves 5. 20 is a generous ceiling
+    // — the early/middle catalogue rarely has more than a few stale
+    // entries per user.
+    const { data: items } = await admin
+      .from("journey_items")
+      .select("id, title_he, title_en, category_id, sort_order")
+      .eq("is_active", true)
+      .in(
+        "category_id",
+        // Subquery substitute: fetch all category ids for the program
+        // in one shot, then `.in()` filter. Two queries vs a join, but
+        // mirrors the pattern used elsewhere in lib/journey-content.
+        (
+          await admin
+            .from("journey_categories")
+            .select("id")
+            .eq("program_id", programId)
+            .eq("is_active", true)
+        ).data?.map((c) => (c as { id: string }).id) ?? [],
+      )
+      .order("sort_order", { ascending: true })
+      .limit(20);
+    const rows = (items ?? []) as Array<{
+      id: string;
+      title_he: string;
+      title_en: string | null;
+      category_id: string;
+      sort_order: number;
+    }>;
+
+    const filtered = rows.filter((r) => !args.excludeItemIds.has(r.id));
+    if (filtered.length === 0) return [];
+    const head = filtered.slice(0, 5);
+
+    // Resolve category names for the items we picked.
+    const catIds = Array.from(new Set(head.map((r) => r.category_id)));
+    const { data: catsData } = await admin
+      .from("journey_categories")
+      .select("id, name_he, name_en")
+      .in("id", catIds);
+    const catMap = new Map<string, { name_he: string; name_en: string | null }>();
+    for (const c of (catsData ?? []) as Array<{
+      id: string;
+      name_he: string;
+      name_en: string | null;
+    }>) {
+      catMap.set(c.id, { name_he: c.name_he, name_en: c.name_en });
+    }
+
+    return head.map((r) => {
+      const cat = catMap.get(r.category_id);
+      const title = args.isHe ? r.title_he : r.title_en || r.title_he;
+      const categoryName = cat
+        ? args.isHe
+          ? cat.name_he
+          : cat.name_en || cat.name_he
+        : null;
+      return {
+        // Prefix preview ids so they never collide with scheduled-item
+        // ids. UpcomingList renders these as non-interactive static
+        // rows (cursor:not-allowed, no link).
+        id: `preview:${r.id}`,
+        title,
+        categoryName,
+        whenLabel: args.isHe ? "בקרוב במסע" : "Coming soon",
+        href: "/journey",
+        disabled: true,
+      };
+    });
+  } catch (err) {
+    console.warn("[lessons.getUpcomingPreviewItems] failed", err);
+    return [];
+  }
+}
+
 interface Args {
   userId: string;
   locale: "he" | "en";
@@ -249,6 +360,27 @@ export async function getLessonsData(args: Args): Promise<LessonsPageData> {
     whenLabel: relativeStamp(entry.scheduled.unlock_at, isHe),
     href: `/journey/timeline/${entry.scheduled.id}`,
   }));
+
+  // ── Preview "what's coming" when no real upcoming items exist ─────
+  // The shell promised users a 5-item preview of upcoming curriculum.
+  // We only run this fallback when the timeline has no scheduled future
+  // items — otherwise we'd duplicate what the user already sees above.
+  // Items already present anywhere in the timeline (completed, open,
+  // upcoming) are excluded so we don't preview something the user has
+  // already encountered.
+  if (upcoming.length === 0) {
+    const excludeItemIds = new Set<string>();
+    for (const entry of timeline) {
+      const itemId = (entry.item as { id?: string }).id;
+      if (itemId) excludeItemIds.add(itemId);
+    }
+    const previews = await getUpcomingPreviewItems({
+      excludeItemIds,
+      locale,
+      isHe,
+    });
+    upcoming.push(...previews);
+  }
 
   return {
     assessments,

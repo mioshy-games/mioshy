@@ -27,10 +27,14 @@ function shouldHideChrome(pathname: string) {
   //
   // Also hide on post-login AppShell routes (Studio v12, 2026-05-29) —
   // /my/today, /my/lessons, /my/expert, /my/share, /my/settings,
-  // /my/notifications, /my/more. The shell ships its own PageHeader,
-  // so the marketing SiteHeader stacks awkwardly above it. Existing
-  // /my and /my/games and /my/adults and /my/journey are NOT in the
-  // shell yet → they still get the marketing chrome until migrated.
+  // /my/notifications, /my/more, /my/games, /my/adults. The shell ships
+  // its own PageHeader, so the marketing SiteHeader stacks awkwardly
+  // above it. /my (index) and /my/journey are NOT in the shell yet →
+  // they still get the marketing chrome until migrated.
+  //
+  // 2026-05-30 — /my/games and /my/adults moved INTO the shell layout
+  // group; appended here so the legacy SiteHeader stops painting above
+  // their PageHeader.
   //
   // Support any locale prefix (/[locale]/...) and also non-localized routes.
   return (
@@ -44,7 +48,7 @@ function shouldHideChrome(pathname: string) {
     /^\/[^/]+\/auth(\/|$)/.test(pathname) ||
     /^\/auth(\/|$)/.test(pathname) ||
     // AppShell routes — post-login surface ships its own header
-    /^\/(en|he)\/my\/(today|lessons|expert|share|settings|notifications|more)(\/|$)/.test(pathname)
+    /^\/(en|he)\/my\/(today|lessons|expert|share|settings|notifications|more|games|adults)(\/|$)/.test(pathname)
   );
 }
 
