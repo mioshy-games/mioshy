@@ -81,38 +81,56 @@ interface Args {
   now?: Date;
 }
 
-// Embedded-select shape returned from PostgREST. Categories embed inside
-// items, completion is a left-joined array (PostgREST returns reverse
-// relations as arrays even when 1-1, so we take [0] below).
+// Embedded-select shape returned from PostgREST.
+//
+// PostgREST gotcha: at runtime, forward FKs (many-to-one) return single
+// objects while reverse FKs return arrays. The TypeScript types from
+// @supabase/postgrest-js, however, model EVERY embedded relation as an
+// array. Our union/array tolerance below absorbs the mismatch — we use
+// `pickOne` at the call site to flatten either shape.
+type ItemEmbedded = {
+  id: string;
+  title_he: string;
+  title_en: string | null;
+  body_he: string | null;
+  body_en: string | null;
+  expert_insight_he: string | null;
+  expert_insight_en: string | null;
+  est_minutes: number | null;
+  is_active: boolean;
+  category_id: string;
+  journey_categories: CategoryEmbedded | CategoryEmbedded[] | null;
+};
+
+type CategoryEmbedded = {
+  id: string;
+  slug: string;
+  name_he: string;
+  name_en: string | null;
+};
+
+type CompletionEmbedded = { completed_at: string | null };
+
 type RawRow = {
   id: string;
   assignment_id: string;
   audience: "both" | "owner" | "partner";
   unlock_at: string;
   item_id: string;
-  journey_items: {
-    id: string;
-    title_he: string;
-    title_en: string | null;
-    body_he: string | null;
-    body_en: string | null;
-    expert_insight_he: string | null;
-    expert_insight_en: string | null;
-    est_minutes: number | null;
-    is_active: boolean;
-    category_id: string;
-    journey_categories: {
-      id: string;
-      slug: string;
-      name_he: string;
-      name_en: string | null;
-    } | null;
-  } | null;
+  journey_items: ItemEmbedded | ItemEmbedded[] | null;
   journey_item_completions:
-    | Array<{ completed_at: string | null }>
-    | { completed_at: string | null }
+    | CompletionEmbedded
+    | CompletionEmbedded[]
     | null;
 };
+
+/** Defensive helper — PostgREST returns single objects for many-to-one
+ *  relations at runtime but the TS types model them as arrays. This
+ *  unwraps either shape into the singular form (or null). */
+function pickOne<T>(value: T | T[] | null | undefined): T | null {
+  if (value == null) return null;
+  return Array.isArray(value) ? value[0] ?? null : value;
+}
 
 export async function getShellTimelineEntries(
   args: Args,
@@ -155,7 +173,7 @@ export async function getShellTimelineEntries(
     return [];
   }
 
-  const rows = (data ?? []) as RawRow[];
+  const rows = (data ?? []) as unknown as RawRow[];
 
   // 3. Audience filter (couple-owned only) + dropping rows whose item or
   //    category didn't resolve (is_active=false or admin deleted).
@@ -168,19 +186,17 @@ export async function getShellTimelineEntries(
         if (r.audience !== viewerCoupleRole) continue;
       }
     }
-    const item = r.journey_items;
+    const item = pickOne(r.journey_items);
     if (!item) continue;
     if (!item.is_active) continue;
-    const category = item.journey_categories;
+    const category = pickOne(item.journey_categories);
     if (!category) continue;
 
-    // PostgREST returns 1-1 reverse-embedded relations as arrays; pick
-    // the first row (there's at most one due to PRIMARY KEY constraint
-    // on journey_item_completions.scheduled_item_id).
-    const completionRaw = r.journey_item_completions;
-    const completionRow = Array.isArray(completionRaw)
-      ? completionRaw[0] ?? null
-      : completionRaw ?? null;
+    // PRIMARY KEY constraint on journey_item_completions.scheduled_item_id
+    // means at most one completion row. pickOne handles both the array
+    // shape the TS types model and the single-object PostgREST runtime
+    // returns for reverse 1-1 relations.
+    const completionRow = pickOne(r.journey_item_completions);
 
     out.push({
       scheduled: {
