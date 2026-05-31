@@ -26,6 +26,12 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
 import { getRequestUser } from "@/lib/auth/getRequestUser";
 import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
+import { makeLogger } from "@/lib/observability/log";
+
+// 2026-05-31 — every shell render emits start/phaseA/phaseB/done lines so
+// slow renders are visible without manual digging. Filter Vercel logs by
+// `scope=shell.data` to see per-render timing breakdowns.
+const log = makeLogger("shell.data");
 import { getCurrentCoupleContext } from "@/lib/between-us/couples";
 import { getCoachPersonaForUser } from "@/lib/journey/coach";
 import { getUnreadCountForUser } from "@/lib/journey-content/notifications-read";
@@ -327,11 +333,19 @@ export const getShellData = cache(_getShellData);
 async function _getShellData(args: {
   locale: "he" | "en";
 }): Promise<ShellData | null> {
+  const t0 = Date.now();
+  log.info("start", { locale: args.locale });
+
   // 2026-05-31 — pull the request-scoped user + supabase client.
   // getRequestUser dedupes across every shell-side helper in the same
   // render — without this we paid 4-5 Supabase Auth round-trips per nav.
   const { user } = await getRequestUser();
-  if (!user) return null;
+  if (!user) {
+    log.warn("no_user", { dur_ms: Date.now() - t0 });
+    return null;
+  }
+  const tAuth = Date.now();
+  log.info("auth_ok", { user_id: user.id, dur_ms: tAuth - t0 });
 
   const hebrew = args.locale === "he";
   const admin = createServiceRoleClient();
@@ -370,11 +384,19 @@ async function _getShellData(args: {
         .maybeSingle() as unknown as Promise<{ data: OwnerRow | null }>)
     : Promise.resolve({ data: null });
 
+  const phaseAStart = Date.now();
   const [entitlements, coupleCtx, { data: ownerRow }] = await Promise.all([
     getUserEntitlements(),
     getCurrentCoupleContext(),
     ownerProfileP,
   ]);
+  log.info("phaseA_done", {
+    user_id: user.id,
+    has_journey: !!entitlements?.journey,
+    has_couple: !!coupleCtx?.couple_id,
+    has_profile: !!ownerRow,
+    dur_ms: Date.now() - phaseAStart,
+  });
 
   const hasJourney = !!entitlements?.journey;
   const fullName = ownerRow?.full_name?.trim() || null;
@@ -441,6 +463,7 @@ async function _getShellData(args: {
     ? getUnreadCountForUser(user.id).catch(() => 0)
     : Promise.resolve(0);
 
+  const phaseBStart = Date.now();
   const [
     partnerName,
     coachPersona,
@@ -456,6 +479,15 @@ async function _getShellData(args: {
     freshLessonsP,
     unreadP,
   ]);
+  log.info("phaseB_done", {
+    user_id: user.id,
+    has_partner: !!partnerName,
+    has_coach: !!coachPersona,
+    fresh_replies: freshReplies,
+    fresh_lessons: freshLessons,
+    unread_count: unread,
+    dur_ms: Date.now() - phaseBStart,
+  });
 
   const ownerName = resolveOwnerName({
     fullName,
@@ -509,6 +541,15 @@ async function _getShellData(args: {
   if (freshReplies > 0) badges.expert = freshReplies;
   if (freshLessons > 0) badges.lessons = freshLessons;
   const notificationCount = unread;
+
+  const total = Date.now() - t0;
+  // Total > 1500ms is the threshold where the user starts to perceive
+  // the navigation as slow. Bump those to warn so they're easy to spot.
+  if (total > 1500) {
+    log.warn("done", { user_id: user.id, dur_ms: total, slow: true });
+  } else {
+    log.info("done", { user_id: user.id, dur_ms: total });
+  }
 
   return {
     userId: user.id,

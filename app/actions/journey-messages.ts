@@ -36,6 +36,13 @@ import { createAdminClient } from "@/lib/supabase-admin";
 import { requireCompleteProfile } from "@/lib/auth/profile-gate";
 import { requireExpert } from "@/lib/auth/expert";
 import { ensureUserChannel } from "@/lib/journey-content/messages";
+import { makeLogger } from "@/lib/observability/log";
+
+// 2026-05-31 — scoped logger for the four server actions in this file.
+// Every action emits `start` + `viewer.ok|viewer.fail` + per-step rows
+// + `done` (with ok=true|false). Pattern: filter Vercel logs by
+// `scope=shell.action.chat` to see the whole conversation pipeline.
+const log = makeLogger("shell.action.chat");
 import {
   notifyExpertPool,
   notifyUser,
@@ -141,23 +148,64 @@ export async function postPerItemMessage(args: {
   /** v3 default: per-item threads are partner-visible (false). */
   isPrivate?: boolean;
 }): Promise<Ok<{ messageId: string }> | Err> {
-  if (!args.scheduledItemId) return { ok: false, error: "missing_id" };
+  const t0 = Date.now();
+  log.info("item.send.start", {
+    scheduled_id: args.scheduledItemId,
+    body_len: (args.body ?? "").trim().length,
+    private: !!args.isPrivate,
+  });
+
+  if (!args.scheduledItemId) {
+    log.warn("item.send.rejected", { reason: "missing_id" });
+    return { ok: false, error: "missing_id" };
+  }
   const trimmed = (args.body ?? "").trim();
-  if (trimmed.length === 0) return { ok: false, error: "empty_body" };
+  if (trimmed.length === 0) {
+    log.warn("item.send.rejected", {
+      scheduled_id: args.scheduledItemId,
+      reason: "empty_body",
+    });
+    return { ok: false, error: "empty_body" };
+  }
   if (trimmed.length > MESSAGE_MAX_LEN) {
+    log.warn("item.send.rejected", {
+      scheduled_id: args.scheduledItemId,
+      reason: "body_too_long",
+      body_len: trimmed.length,
+    });
     return { ok: false, error: "body_too_long" };
   }
 
   const viewer = await resolveViewer();
-  if (!viewer.ok) return viewer;
+  if (!viewer.ok) {
+    log.error("item.send.viewer_failed", {
+      scheduled_id: args.scheduledItemId,
+      reason: viewer.error,
+    });
+    return viewer;
+  }
 
   const scope = await loadScheduledForViewer({
     scheduledItemId: args.scheduledItemId,
     userId: viewer.userId,
     coupleIds: viewer.coupleIds,
   });
-  if (!scope.ok) return scope;
-  if (!isUnlocked(scope.scheduled)) return { ok: false, error: "locked" };
+  if (!scope.ok) {
+    log.error("item.send.scope_failed", {
+      scheduled_id: args.scheduledItemId,
+      user_id: viewer.userId,
+      reason: scope.error,
+    });
+    return scope;
+  }
+  if (!isUnlocked(scope.scheduled)) {
+    log.warn("item.send.locked", {
+      scheduled_id: args.scheduledItemId,
+      user_id: viewer.userId,
+      unlock_at: scope.scheduled.unlock_at,
+    });
+    return { ok: false, error: "locked" };
+  }
 
   const admin = await createAdminClient();
   const isPrivate = !!args.isPrivate;
@@ -242,6 +290,12 @@ export async function postPerItemMessage(args: {
   });
 
   revalidateMessageSurfaces();
+  log.info("item.send.done", {
+    scheduled_id: args.scheduledItemId,
+    user_id: viewer.userId,
+    message_id: String(msgRow.id),
+    dur_ms: Date.now() - t0,
+  });
   return { ok: true, messageId: msgRow.id as string };
 }
 
@@ -384,24 +438,50 @@ export async function postExpertReplyToItem(args: {
 export async function postGeneralChannelMessage(args: {
   body: string;
 }): Promise<Ok<{ messageId: string }> | Err> {
+  const t0 = Date.now();
   const trimmed = (args.body ?? "").trim();
-  if (trimmed.length === 0) return { ok: false, error: "empty_body" };
+  log.info("channel.send.start", { body_len: trimmed.length });
+
+  if (trimmed.length === 0) {
+    log.warn("channel.send.rejected", { reason: "empty_body" });
+    return { ok: false, error: "empty_body" };
+  }
   if (trimmed.length > MESSAGE_MAX_LEN) {
+    log.warn("channel.send.rejected", {
+      reason: "body_too_long",
+      body_len: trimmed.length,
+      max: MESSAGE_MAX_LEN,
+    });
     return { ok: false, error: "body_too_long" };
   }
 
   const viewer = await resolveViewer();
-  if (!viewer.ok) return viewer;
+  if (!viewer.ok) {
+    // The MOST common cause of "the send button does nothing" — the
+    // viewer hits a profile/login gate before any DB write. Surface it
+    // in logs so Itzik can spot it from Vercel without UI debugging.
+    log.error("channel.send.viewer_failed", { reason: viewer.error });
+    return viewer;
+  }
+  log.info("channel.send.viewer_ok", {
+    user_id: viewer.userId,
+    couple_count: viewer.coupleIds.length,
+  });
 
-  await ensureUserChannel(viewer.userId);
+  try {
+    await ensureUserChannel(viewer.userId);
+  } catch (err) {
+    log.error("channel.send.ensure_channel_failed", {
+      user_id: viewer.userId,
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return { ok: false, error: "ensure_channel_failed" };
+  }
 
   const admin = await createAdminClient();
-
-  // Resolve couple context so the legacy table mirrors the existing
-  // shape (it has couple_id for inbox grouping).
   const coupleId = viewer.coupleIds[0] ?? null;
 
-  // Step 1 - legacy row first.
+  // Step 1 — legacy table mirror.
   const { data: legacyRow, error: legacyErr } = await admin
     .from("journey_user_messages")
     .insert({
@@ -412,13 +492,17 @@ export async function postGeneralChannelMessage(args: {
     .select("id")
     .single();
   if (legacyErr || !legacyRow) {
+    log.error("channel.send.legacy_insert_failed", {
+      user_id: viewer.userId,
+      reason: legacyErr?.message ?? "no_row_returned",
+    });
     return {
       ok: false,
       error: legacyErr?.message ?? "legacy_insert_failed",
     };
   }
 
-  // Step 2 - canonical journey_messages row.
+  // Step 2 — canonical journey_messages row.
   const { data: msgRow, error: msgErr } = await admin
     .from("journey_messages")
     .insert({
@@ -426,15 +510,17 @@ export async function postGeneralChannelMessage(args: {
       author_user_id: viewer.userId,
       author_kind: "user",
       body: trimmed,
-      // Itzik #7: general-channel posts default to private (partner
-      // can't see). The trigger touches journey_user_channels.last_message_at.
       is_private: true,
       legacy_user_message_id: legacyRow.id as string,
     })
     .select("id")
     .single();
   if (msgErr || !msgRow) {
-    console.error("[postGeneralChannelMessage] insert failed", msgErr);
+    log.error("channel.send.canonical_insert_failed", {
+      user_id: viewer.userId,
+      legacy_id: String(legacyRow.id),
+      reason: msgErr?.message ?? "no_row_returned",
+    });
     return { ok: false, error: msgErr?.message ?? "messages_insert_failed" };
   }
 
@@ -448,7 +534,6 @@ export async function postGeneralChannelMessage(args: {
     },
   });
 
-  // Phase 4 — fire-and-forget AI classification.
   void classifyAndStampMessage({
     table: "journey_messages",
     messageId: msgRow.id as string,
@@ -456,6 +541,11 @@ export async function postGeneralChannelMessage(args: {
   });
 
   revalidateMessageSurfaces();
+  log.info("channel.send.done", {
+    user_id: viewer.userId,
+    message_id: String(msgRow.id),
+    dur_ms: Date.now() - t0,
+  });
   return { ok: true, messageId: msgRow.id as string };
 }
 

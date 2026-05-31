@@ -28,6 +28,7 @@ import { AppShell, buildNavItems } from "@/components/shell";
 import type { NavKey, ShellChrome } from "@/components/shell";
 import { getShellData } from "@/lib/shell/getShellData";
 import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
+import { Toaster } from "@/components/ui/sonner";
 
 export const dynamic = "force-dynamic";
 
@@ -105,14 +106,21 @@ export default async function ShellLayout({
     : null;
 
   return (
-    <AppShell
-      navItems={navItems}
-      couple={data.couple}
-      expert={expert}
-      chrome={chrome}
-      moreLabel={t("moreTab")}
-    >
-      {children}
-    </AppShell>
+    <>
+      <AppShell
+        navItems={navItems}
+        couple={data.couple}
+        expert={expert}
+        chrome={chrome}
+        moreLabel={t("moreTab")}
+      >
+        {children}
+      </AppShell>
+      {/* 2026-05-31 — mount Sonner Toaster for the shell. Without this,
+          `toast.error(...)` calls in shell client components (chat send,
+          mark-seen errors, etc.) were silent — explaining "the button
+          does nothing" reports. Marketing layouts mount their own. */}
+      <Toaster position={isHe ? "top-left" : "top-right"} richColors closeButton />
+    </>
   );
 }

@@ -26,29 +26,53 @@
 
 import { revalidatePath } from "next/cache";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { makeLogger } from "@/lib/observability/log";
+
+// 2026-05-31 — surface every mark-seen call in Vercel logs. Both helpers
+// are silent no-ops on session-loss, which can hide a regression in the
+// auth path. Filter by `scope=shell.action.mark_seen` to see each call.
+const log = makeLogger("shell.action.mark_seen");
 
 async function stamp(field: "expert_messages_seen_at" | "lessons_seen_at") {
+  const t0 = Date.now();
+  log.info("start", { surface: field });
   const supabase = await createServerSupabaseClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return; // no session → silent no-op
+  if (!user) {
+    log.warn("no_session", { surface: field });
+    return;
+  }
 
-  await supabase
+  const { error } = await supabase
     .from("profiles")
     .update({ [field]: new Date().toISOString() })
     .eq("id", user.id);
+  if (error) {
+    log.error("update_failed", {
+      surface: field,
+      user_id: user.id,
+      reason: error.message,
+    });
+    return;
+  }
 
   // Revalidate every shell route that reads the badge — the layout
-  // (which calls getShellData) re-renders on next navigation. We
-  // can't revalidate a locale prefix wildcard, so we hit the two
-  // most likely landings.
+  // (which calls getShellData) re-renders on next navigation. We can't
+  // revalidate a locale prefix wildcard, so we hit the likely landings.
   revalidatePath("/he/my/today");
   revalidatePath("/en/my/today");
   revalidatePath("/he/my/lessons");
   revalidatePath("/en/my/lessons");
   revalidatePath("/he/my/expert");
   revalidatePath("/en/my/expert");
+
+  log.info("done", {
+    surface: field,
+    user_id: user.id,
+    dur_ms: Date.now() - t0,
+  });
 }
 
 export async function markExpertSurfaceSeen(): Promise<void> {

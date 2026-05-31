@@ -91,17 +91,31 @@ export function ExpertConversation({
     const trimmed = draft.trim();
     if (!trimmed || posting) return;
     setPosting(true);
-    const res = await postGeneralChannelMessage({ body: trimmed });
-    setPosting(false);
-    if (!res.ok) {
+    // 2026-05-31 — wrap the await in try/finally so an exception inside
+    // the server action never leaves the button stuck in `posting`
+    // (which the user reports as "the button does nothing"). Also adds
+    // a generic catch so a network blow-up surfaces a real toast
+    // instead of a silent dead UI.
+    try {
+      const res = await postGeneralChannelMessage({ body: trimmed });
+      if (!res.ok) {
+        toast.error(
+          isHe ? `שמירה נכשלה: ${res.error}` : `Send failed: ${res.error}`,
+        );
+        return;
+      }
+      setDraft("");
+      router.refresh();
+      composerRef.current?.focus();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("[ExpertConversation.handlePost]", err);
       toast.error(
-        isHe ? `שמירה נכשלה: ${res.error}` : `Send failed: ${res.error}`,
+        isHe ? `שגיאה בשליחה: ${msg}` : `Send error: ${msg}`,
       );
-      return;
+    } finally {
+      setPosting(false);
     }
-    setDraft("");
-    router.refresh();
-    composerRef.current?.focus();
   }
 
   // Group messages by "today / yesterday" — currently single "today"

@@ -39,6 +39,12 @@ import "server-only";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { listAssignmentsForOwner } from "@/lib/journey-content/queries";
 import type { JourneyOwner } from "@/lib/journey-content/types";
+import { makeLogger } from "@/lib/observability/log";
+
+// 2026-05-31 — surface slow timeline calls. The embedded select replaced
+// 6 queries with 1, but we still want to spot regressions if the join
+// gets heavy. Filter `scope=shell.timeline` to see every call's timing.
+const log = makeLogger("shell.timeline");
 
 /**
  * Minimal entry shape consumed by the shell's today + lessons fetchers.
@@ -135,21 +141,38 @@ function pickOne<T>(value: T | T[] | null | undefined): T | null {
 export async function getShellTimelineEntries(
   args: Args,
 ): Promise<ShellTimelineEntry[]> {
+  const t0 = Date.now();
   const { owner, viewerCoupleRole, sourceKinds, now } = args;
   const clockIso = (now ?? new Date()).toISOString();
+  const ownerKey =
+    owner.kind === "couple" ? `couple:${owner.coupleId}` : `user:${owner.userId}`;
 
   // 1. Assignment ids — cached helper, free on repeat within a render.
+  const tAssign = Date.now();
   const assignments = await listAssignmentsForOwner(owner, {
     onlyActive: true,
     sourceKinds,
   });
-  if (assignments.length === 0) return [];
+  log.info("assignments_fetched", {
+    owner: ownerKey,
+    kinds: sourceKinds.join(","),
+    count: assignments.length,
+    dur_ms: Date.now() - tAssign,
+  });
+  if (assignments.length === 0) {
+    log.info("empty_short_circuit", {
+      owner: ownerKey,
+      dur_ms: Date.now() - t0,
+    });
+    return [];
+  }
   const assignmentIds = assignments.map((a) => a.id);
 
   // 2. The one embedded select that replaces the 5 sibling reads in
   //    getTimelineForOwner. Supabase auto-resolves FK names; if the
   //    schema ever grows a second FK between the same tables we'll
   //    need to qualify with `journey_items!fk_name(...)`.
+  const tFetch = Date.now();
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from("journey_scheduled_items")
@@ -167,10 +190,31 @@ export async function getShellTimelineEntries(
     .in("assignment_id", assignmentIds)
     .lte("unlock_at", clockIso)
     .order("unlock_at", { ascending: true });
+  const fetchDur = Date.now() - tFetch;
 
   if (error) {
-    console.warn("[shell-timeline] embedded select failed", error);
+    log.error("embedded_select_failed", {
+      owner: ownerKey,
+      reason: error.message,
+      dur_ms: fetchDur,
+    });
     return [];
+  }
+
+  // Anything > 500ms here usually means cross-region traffic or a
+  // missing index, both worth surfacing immediately.
+  if (fetchDur > 500) {
+    log.warn("embedded_select_slow", {
+      owner: ownerKey,
+      rows: (data ?? []).length,
+      dur_ms: fetchDur,
+    });
+  } else {
+    log.info("embedded_select_done", {
+      owner: ownerKey,
+      rows: (data ?? []).length,
+      dur_ms: fetchDur,
+    });
   }
 
   const rows = (data ?? []) as unknown as RawRow[];
@@ -226,5 +270,11 @@ export async function getShellTimelineEntries(
     });
   }
 
+  log.info("done", {
+    owner: ownerKey,
+    raw_rows: rows.length,
+    out_rows: out.length,
+    dur_ms: Date.now() - t0,
+  });
   return out;
 }
