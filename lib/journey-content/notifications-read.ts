@@ -45,7 +45,13 @@ async function _getUnreadCountForUser(userId: string): Promise<number> {
   return count ?? 0;
 }
 
-export async function getNotificationsForUser(
+// 2026-05-31 — React.cache wrap. Same userId/opts in the same request
+// only re-walks the in-memory result. Opts is an object literal so the
+// cache key uses identity; identical-arg duplicate calls within a single
+// page render will dedupe.
+export const getNotificationsForUser = cache(_getNotificationsForUser);
+
+async function _getNotificationsForUser(
   userId: string,
   opts: { limit?: number; unreadOnly?: boolean } = {},
 ): Promise<NotificationRow[]> {

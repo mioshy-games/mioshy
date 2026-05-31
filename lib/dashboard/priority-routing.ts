@@ -35,6 +35,8 @@ import "server-only";
  *     existing `audience` filter in journey_scheduled_items.
  */
 
+import { cache } from "react";
+
 import { createServiceRoleClient } from "@/lib/supabase-admin";
 import { isPriorityKey, type PriorityKey } from "@/lib/journey/priorities";
 import type { RailEntry } from "@/lib/dashboard/journey-rail";
@@ -45,7 +47,11 @@ import type { RailEntry } from "@/lib/dashboard/journey-rail";
  * user has not completed the priority question - caller falls back
  * to natural sort_order.
  */
-export async function getViewerPriorityOrder(
+// 2026-05-31 — React.cache so /my/today's priority lookup is shared
+// with anything else in the same render that asks for it.
+export const getViewerPriorityOrder = cache(_getViewerPriorityOrder);
+
+async function _getViewerPriorityOrder(
   userId: string,
 ): Promise<PriorityKey[] | null> {
   const admin = createServiceRoleClient();

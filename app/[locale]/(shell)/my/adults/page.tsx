@@ -26,6 +26,7 @@
 
 import { redirect } from "next/navigation";
 import { setRequestLocale } from "next-intl/server";
+import Image from "next/image";
 import { Link } from "@/navigation";
 import {
   ArrowRight,
@@ -49,7 +50,7 @@ import type { ExperienceGame } from "@/lib/between-us/types";
 import { CmsText } from "@/components/cms/CmsText";
 import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
 
-export const dynamic = "force-dynamic";
+// `dynamic = "force-dynamic"` is inherited from the (shell) layout.
 
 export default async function ShellMyAdultsPage({
   params,
@@ -254,11 +255,12 @@ function OwnedGameCard({ game, isHe }: { game: OwnedGame; isHe: boolean }) {
       >
         <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-rose-500/30 via-fuchsia-500/20 to-violet-500/20">
           {game.cover_image_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={game.cover_image_url}
               alt={title}
-              className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.06]"
+              fill
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              className="object-cover transition duration-500 group-hover:scale-[1.06]"
               loading="lazy"
             />
           ) : (
@@ -360,11 +362,12 @@ function AvailableGameCard({
       >
         <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-rose-500/20 via-fuchsia-500/15 to-violet-500/15">
           {game.cover_image_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={game.cover_image_url}
               alt={title}
-              className="h-full w-full object-cover opacity-90 transition duration-500 group-hover:scale-[1.05] group-hover:opacity-100"
+              fill
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              className="object-cover opacity-90 transition duration-500 group-hover:scale-[1.05] group-hover:opacity-100"
               loading="lazy"
             />
           ) : (

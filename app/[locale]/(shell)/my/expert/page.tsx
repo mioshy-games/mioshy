@@ -32,7 +32,7 @@ import {
 } from "@/lib/journey-content/messages";
 import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
 
-export const dynamic = "force-dynamic";
+// `dynamic = "force-dynamic"` is inherited from the (shell) layout.
 
 export default async function ExpertPage({
   params,

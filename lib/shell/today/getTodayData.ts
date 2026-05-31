@@ -14,14 +14,14 @@
 
 import "server-only";
 
-import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getCurrentCoupleContext } from "@/lib/between-us/couples";
-import { getTimelineForOwner } from "@/lib/journey-content/queries";
+import {
+  getShellTimelineEntries,
+  type ShellTimelineEntry,
+} from "@/lib/shell/shell-timeline";
 import { journeyOwnerForUser, preferCoupleOwner } from "@/lib/journey-content/owner";
 import { getViewerPriorityOrder } from "@/lib/dashboard/priority-routing";
 import { getPriorityLabels } from "@/lib/journey-content/priority-categories";
-import { getGeneralChannelThread } from "@/lib/journey-content/messages";
-import { getFreshClinicianReplies } from "@/lib/journey-content/fresh-replies";
 
 import type { CurrentLessonHeroData } from "@/components/shell/today/CurrentLessonHero";
 import type { ChatRowPreviewData } from "@/components/shell/today/ChatRowPreview";
@@ -47,6 +47,15 @@ interface Args {
    *  chat row preview. Null = no expert assigned. */
   expertName: string | null;
   expertInitial: string;
+  /** Latest expert-channel message body, already fetched once by the
+   *  shell layout. /my/today shows the same preview as the sidebar so we
+   *  pass it through instead of re-fetching. Null = no thread yet. */
+  expertLastMessage?: string | null;
+  /** ISO timestamp of the last message — drives the "X ago" stamp. */
+  expertLastMessageAt?: string | null;
+  /** Unread clinician-reply count, already computed for the shell badge.
+   *  Surfaces directly in the chat-row "unread" affordance. */
+  expertUnreadCount?: number;
 }
 
 /**
@@ -76,7 +85,15 @@ function relativeStamp(iso: string, hebrew: boolean): string {
 }
 
 export async function getTodayData(args: Args): Promise<TodayPageData> {
-  const { userId, locale, expertName, expertInitial } = args;
+  const {
+    userId,
+    locale,
+    expertName,
+    expertInitial,
+    expertLastMessage,
+    expertLastMessageAt,
+    expertUnreadCount,
+  } = args;
   const isHe = locale === "he";
 
   // ── 1. Focus label (priorities) ────────────────────────────────────
@@ -95,9 +112,10 @@ export async function getTodayData(args: Args): Promise<TodayPageData> {
   }
 
   // ── 2. Timeline (single source for hero + history) ─────────────────
-  // We reuse the existing dashboard fetch path so cadence + legacy
-  // assignments are merged the same way as /my/journey. Errors are
-  // tolerated — the page just hides those sections.
+  // 2026-05-31 — switched from `getTimelineForOwner` (~6 DB reads per
+  // call × 2 axes = ~12 reads) to `getShellTimelineEntries` (~1 read per
+  // axis via PostgREST embedded select). Same audience filter rules,
+  // same scheduled+item+category+completion data, no responses/rules.
   const couple = await getCurrentCoupleContext();
   const legacyOwner = preferCoupleOwner(userId, couple?.couple_id ?? null);
   const cadenceOwner = journeyOwnerForUser(userId);
@@ -106,18 +124,16 @@ export async function getTodayData(args: Args): Promise<TodayPageData> {
       ? couple.role
       : null;
 
-  let timeline: Awaited<ReturnType<typeof getTimelineForOwner>> = [];
+  let timeline: ShellTimelineEntry[] = [];
   try {
     const [legacy, cadence] = await Promise.all([
-      getTimelineForOwner({
+      getShellTimelineEntries({
         owner: legacyOwner,
-        viewerUserId: userId,
         viewerCoupleRole: viewerRole,
         sourceKinds: ["program", "category", "item"],
       }),
-      getTimelineForOwner({
+      getShellTimelineEntries({
         owner: cadenceOwner,
-        viewerUserId: userId,
         viewerCoupleRole: null,
         sourceKinds: ["cadence"],
       }),
@@ -197,28 +213,22 @@ export async function getTodayData(args: Args): Promise<TodayPageData> {
   }
 
   // ── 4. Expert chat preview ─────────────────────────────────────────
+  // 2026-05-31 — built from shell-provided data (expertLastMessage +
+  // expertLastMessageAt + expertUnreadCount). The shell layout already
+  // fetched these for the sidebar ExpertMini, so we don't re-query.
+  // Removes 2 DB calls per /my/today render (getGeneralChannelThread +
+  // getFreshClinicianReplies) — both were paying for data we already had.
   let chat: ChatRowPreviewData | null = null;
-  if (expertName) {
-    try {
-      const thread = await getGeneralChannelThread(userId, userId);
-      // newest message — could be from user or expert; we show it
-      // either way because the preview is "last thing said".
-      const newest = thread[thread.length - 1];
-      if (newest) {
-        const fresh = await getFreshClinicianReplies(userId);
-        chat = {
-          expertName,
-          expertInitial,
-          message: newest.body ?? "",
-          whenLabel: relativeStamp(newest.created_at, isHe),
-          unread: fresh.recentReplyCount ?? 0,
-          href: "/my/expert",
-          online: true,
-        };
-      }
-    } catch (err) {
-      console.warn("[today.getTodayData] expert thread read failed", err);
-    }
+  if (expertName && expertLastMessage && expertLastMessageAt) {
+    chat = {
+      expertName,
+      expertInitial,
+      message: expertLastMessage,
+      whenLabel: relativeStamp(expertLastMessageAt, isHe),
+      unread: expertUnreadCount ?? 0,
+      href: "/my/expert",
+      online: true,
+    };
   }
 
   // ── 5. History (last 3 completed) ──────────────────────────────────
@@ -249,10 +259,6 @@ export async function getTodayData(args: Args): Promise<TodayPageData> {
   // items. The timeline read above paginates internally so trusting it
   // for the total is OK; we just use its length to save another query.
   const historyTotal = completedItems.length;
-
-  // No-op: keeps the supabase client warm for future helper calls
-  // colocated to this page (e.g. notifications count).
-  await createServerSupabaseClient();
 
   return {
     focusLabel,

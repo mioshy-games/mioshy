@@ -18,6 +18,7 @@
 // ============================================================
 
 import "server-only";
+import { cache } from "react";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { Locale } from "@/lib/journey/types";
 import type { PriorityKey } from "@/lib/journey/priorities";
@@ -41,7 +42,13 @@ export interface PriorityCategory {
  * the seed is missing or partial - that's an installation error and we
  * want to fail loudly, not render a silently-broken assessment.
  */
-export async function getPriorityCategories(): Promise<PriorityCategory[]> {
+// 2026-05-31 — React.cache. Five rows that anyone in the same request
+// can pull without re-firing the journey_categories read. Shared by
+// getPriorityLabels (which is itself called by /my/today and by any
+// assessment-replay surface).
+export const getPriorityCategories = cache(_getPriorityCategories);
+
+async function _getPriorityCategories(): Promise<PriorityCategory[]> {
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from("journey_categories")

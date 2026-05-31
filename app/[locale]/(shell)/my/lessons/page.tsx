@@ -30,7 +30,7 @@ import { getShellData } from "@/lib/shell/getShellData";
 import { getLessonsData } from "@/lib/shell/lessons/getLessonsData";
 import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
 
-export const dynamic = "force-dynamic";
+// `dynamic = "force-dynamic"` is inherited from the (shell) layout.
 
 export default async function LessonsPage({
   params,

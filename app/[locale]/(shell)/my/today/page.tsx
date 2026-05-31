@@ -36,7 +36,7 @@ import { getShellData } from "@/lib/shell/getShellData";
 import { getTodayData } from "@/lib/shell/today/getTodayData";
 import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
 
-export const dynamic = "force-dynamic";
+// `dynamic = "force-dynamic"` is inherited from the (shell) layout.
 
 export default async function TodayPage({
   params,
@@ -62,6 +62,11 @@ export default async function TodayPage({
     locale: isHe ? "he" : "en",
     expertName: shell.expert?.expertName ?? null,
     expertInitial: shell.expert?.expertInitial ?? " ",
+    // 2026-05-31 — pass shell-resolved chat data through so getTodayData
+    // doesn't re-fetch the thread + clinician replies it already has.
+    expertLastMessage: shell.expert?.lastMessage ?? null,
+    expertLastMessageAt: shell.expert?.lastMessageAt ?? null,
+    expertUnreadCount: shell.badges.expert ?? 0,
   });
 
   // Build the page-level sub-line (mobile only): "המוקד · מיניות ואינטימיות".

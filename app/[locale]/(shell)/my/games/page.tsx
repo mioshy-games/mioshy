@@ -34,7 +34,7 @@ import { pickGameThumbnail } from "@/lib/games-thumbnail";
 import { CmsText } from "@/components/cms/CmsText";
 import type { GameRow } from "@/lib/types/database";
 
-export const dynamic = "force-dynamic";
+// `dynamic = "force-dynamic"` is inherited from the (shell) layout.
 
 export default async function ShellMyGamesPage({
   params,

@@ -19,7 +19,7 @@ import { getShellData } from "@/lib/shell/getShellData";
 import { getShareData } from "@/lib/shell/share/getShareData";
 import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
 
-export const dynamic = "force-dynamic";
+// `dynamic = "force-dynamic"` is inherited from the (shell) layout.
 
 export default async function SharePage({
   params,

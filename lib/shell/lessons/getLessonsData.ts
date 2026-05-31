@@ -15,7 +15,10 @@
 import "server-only";
 
 import { getCurrentCoupleContext } from "@/lib/between-us/couples";
-import { getTimelineForOwner } from "@/lib/journey-content/queries";
+import {
+  getShellTimelineEntries,
+  type ShellTimelineEntry,
+} from "@/lib/shell/shell-timeline";
 import { journeyOwnerForUser, preferCoupleOwner } from "@/lib/journey-content/owner";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
 
@@ -245,18 +248,20 @@ export async function getLessonsData(args: Args): Promise<LessonsPageData> {
       ? couple.role
       : null;
 
-  let timeline: Awaited<ReturnType<typeof getTimelineForOwner>> = [];
+  // 2026-05-31 — replaced `getTimelineForOwner` (×2 axes × 6 reads each)
+  // with `getShellTimelineEntries` (×2 axes × 1 embedded select). Same
+  // visibility rules; we no longer load responses/rules/status because
+  // /my/lessons doesn't render them.
+  let timeline: ShellTimelineEntry[] = [];
   try {
     const [legacy, cadence] = await Promise.all([
-      getTimelineForOwner({
+      getShellTimelineEntries({
         owner: legacyOwner,
-        viewerUserId: userId,
         viewerCoupleRole: viewerRole,
         sourceKinds: ["program", "category", "item"],
       }),
-      getTimelineForOwner({
+      getShellTimelineEntries({
         owner: cadenceOwner,
-        viewerUserId: userId,
         viewerCoupleRole: null,
         sourceKinds: ["cadence"],
       }),

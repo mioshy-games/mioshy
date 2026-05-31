@@ -12,7 +12,7 @@
 // ============================================================
 
 import { cache } from "react";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getRequestUser } from "@/lib/auth/getRequestUser";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 
 export type PillarKey = "games" | "journey" | "adults";
@@ -73,23 +73,20 @@ export const getUserEntitlements = cache(_getUserEntitlements);
 async function _getUserEntitlements(
   userId?: string,
 ): Promise<UserEntitlements | null> {
-  const supabase = await createServerSupabaseClient();
+  // 2026-05-31 — pull the request-scoped {user, supabase} once instead of
+  // making this file's own auth.getUser round-trip. Reuses the cached
+  // client for all downstream queries on the same render.
+  const { user: cachedUser, supabase } = await getRequestUser();
 
   // Resolve userId from the session when none is passed
   let uid = userId;
   let email: string | null = null;
   if (!uid) {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return null;
-    uid = user.id;
-    email = user.email ?? null;
+    if (!cachedUser) return null;
+    uid = cachedUser.id;
+    email = cachedUser.email ?? null;
   } else {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    email = user?.email ?? null;
+    email = cachedUser?.email ?? null;
   }
 
   // ── Couple membership - needed to look up `adults` entitlements AND

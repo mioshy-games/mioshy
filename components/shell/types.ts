@@ -73,6 +73,9 @@ export interface ExpertMiniData {
   online?:       boolean;
   /** Last message snippet (≤120 chars recommended; component clamps). */
   lastMessage?:  string | null;
+  /** ISO timestamp of the last message. Lets the /my/today ChatRowPreview
+   *  build its "X ago" stamp without a second DB round-trip. */
+  lastMessageAt?: string | null;
   /** Where the bottom CTA links to (usually /my/expert). */
   askHref:       string;
   /** Label for the CTA. CMS-controlled via the layout. */

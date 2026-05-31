@@ -21,7 +21,7 @@ import { getShellData } from "@/lib/shell/getShellData";
 import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
 import { getNotificationsForUser } from "@/lib/journey-content/notifications-read";
 
-export const dynamic = "force-dynamic";
+// `dynamic = "force-dynamic"` is inherited from the (shell) layout.
 
 export default async function NotificationsPage({
   params,

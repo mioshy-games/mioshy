@@ -5,7 +5,7 @@ import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import { Chrome } from "@/components/Chrome";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getRequestUser } from "@/lib/auth/getRequestUser";
 import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
 import { getUnreadCountForUser } from "@/lib/journey-content/notifications-read";
 
@@ -56,10 +56,11 @@ export default async function LocaleLayout({
   // request so the header bell badge renders without a flash of zero.
   let unreadNotifications = 0;
   try {
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    // 2026-05-31 — getRequestUser shares this read with every downstream
+    // helper in the same render (getUserEntitlements, getShellData, etc.)
+    // so we collapse the 4-5 sequential Auth round-trips that the shell
+    // used to pay on every navigation.
+    const { user } = await getRequestUser();
     isAuthed = !!user;
     if (isAuthed && user) {
       const [ent, unread] = await Promise.all([

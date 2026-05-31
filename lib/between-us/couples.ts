@@ -3,6 +3,7 @@
 // ============================================================
 import { cache } from "react";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getRequestUser } from "@/lib/auth/getRequestUser";
 
 export interface CoupleContext {
   user_id: string;
@@ -34,10 +35,9 @@ export async function getCurrentCoupleContextFresh(): Promise<CoupleContext | nu
 }
 
 async function _getCurrentCoupleContext(): Promise<CoupleContext | null> {
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // 2026-05-31 — reuse the request-scoped {user, supabase} pair so the
+  // shell doesn't pay another Auth round-trip just to resolve identity.
+  const { user, supabase } = await getRequestUser();
   if (!user) return null;
 
   // Current user's couple membership (at most one active)

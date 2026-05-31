@@ -7,6 +7,8 @@
 // user-facing pages.
 // ============================================================
 
+import { cache } from "react";
+
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
 import type {
@@ -290,6 +292,42 @@ export async function getProgramWithContent(
 // Assignments
 // ------------------------------------------------------------
 
+// 2026-05-31 — request-scoped cache wrapper.
+//
+// Several shell paths fetch assignments for the same owner+filter in the
+// same render: `countFreshUnlockedItems` in `lib/shell/getShellData`,
+// the cadence/legacy axis of `getTimelineForOwner` itself, and
+// `/my/today` + `/my/lessons` page fetchers. React.cache keys on
+// argument identity, so we build a primitive cache key (owner-id +
+// active flag + sorted sourceKinds) and dedupe by that.
+//
+// Function signature is unchanged — callers don't need to know about
+// the cache.
+const _listAssignmentsForOwnerCached = cache(
+  async (
+    _cacheKey: string,
+    owner: JourneyOwner,
+    onlyActive: boolean,
+    sourceKinds: string,
+  ): Promise<JourneyAssignment[]> => {
+    const supabase = await createServerSupabaseClient();
+    const { column, value } = ownerFilter(owner);
+    let q = supabase
+      .from("journey_assignments")
+      .select("*")
+      .eq(column, value)
+      .order("created_at", { ascending: false });
+    if (onlyActive) q = q.eq("is_active", true);
+    if (sourceKinds.length > 0) {
+      q = q.in("source_kind", sourceKinds.split(","));
+    }
+
+    const { data, error } = await q;
+    if (error) throw new Error(error.message);
+    return (data ?? []) as JourneyAssignment[];
+  },
+);
+
 export async function listAssignmentsForOwner(
   owner: JourneyOwner,
   opts: {
@@ -300,21 +338,17 @@ export async function listAssignmentsForOwner(
     sourceKinds?: Array<"program" | "category" | "item" | "cadence">;
   } = {},
 ): Promise<JourneyAssignment[]> {
-  const supabase = await createServerSupabaseClient();
-  const { column, value } = ownerFilter(owner);
-  let q = supabase
-    .from("journey_assignments")
-    .select("*")
-    .eq(column, value)
-    .order("created_at", { ascending: false });
-  if (opts.onlyActive) q = q.eq("is_active", true);
-  if (opts.sourceKinds && opts.sourceKinds.length > 0) {
-    q = q.in("source_kind", opts.sourceKinds);
-  }
-
-  const { data, error } = await q;
-  if (error) throw new Error(error.message);
-  return (data ?? []) as JourneyAssignment[];
+  const onlyActive = !!opts.onlyActive;
+  // Sort so {program,item} and {item,program} produce the same key.
+  const sourceKinds = (opts.sourceKinds ?? []).slice().sort().join(",");
+  const ownerId = owner.kind === "couple" ? owner.coupleId : owner.userId;
+  const cacheKey = `${owner.kind}:${ownerId}:${onlyActive ? "1" : "0"}:${sourceKinds}`;
+  return _listAssignmentsForOwnerCached(
+    cacheKey,
+    owner,
+    onlyActive,
+    sourceKinds,
+  );
 }
 
 export async function getAssignmentById(

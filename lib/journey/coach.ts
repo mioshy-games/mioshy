@@ -13,6 +13,8 @@
  * that case — never assume non-null.
  */
 
+import { cache } from "react";
+
 import { createServiceRoleClient } from "@/lib/supabase-admin";
 import {
   DEFAULT_COACH_CAMEL,
@@ -42,7 +44,11 @@ export interface CoachPersona {
  * race where a user has no couple yet (signup flow) or the link
  * hasn't been created.
  */
-export async function getCoachPersonaForUser(
+// 2026-05-31 — wrapped in React.cache so getShellData + any per-page
+// caller in the same request share one resolution (3 admin reads each).
+export const getCoachPersonaForUser = cache(_getCoachPersonaForUser);
+
+async function _getCoachPersonaForUser(
   userId: string,
 ): Promise<CoachPersona> {
   const admin = createServiceRoleClient();

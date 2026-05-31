@@ -22,7 +22,7 @@ import { SettingsRow } from "@/components/shell/settings/SettingsRow";
 import { getShellData } from "@/lib/shell/getShellData";
 import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
 
-export const dynamic = "force-dynamic";
+// `dynamic = "force-dynamic"` is inherited from the (shell) layout.
 
 export default async function MorePage({
   params,

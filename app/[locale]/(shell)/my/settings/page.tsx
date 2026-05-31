@@ -23,7 +23,7 @@ import { getShellData } from "@/lib/shell/getShellData";
 import { getSettingsData } from "@/lib/shell/settings/getSettingsData";
 import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
 
-export const dynamic = "force-dynamic";
+// `dynamic = "force-dynamic"` is inherited from the (shell) layout.
 
 export default async function SettingsPage({
   params,

@@ -1,5 +1,7 @@
 import "server-only";
 
+import { cache } from "react";
+
 import { getTranslations } from "next-intl/server";
 import { loadCmsTextsForPage } from "./server";
 import type { CmsPage } from "./types";
@@ -30,26 +32,41 @@ import type { CmsPage } from "./types";
  *     table) silently fall back to JSON — the public site never
  *     breaks because of a CMS issue.
  */
+// 2026-05-31 — share the Map construction across namespace lookups.
+//
+// The (shell) layout calls `getCmsTranslations` 3-4 times with the SAME
+// `page` value but different `namespace`s. Pre-change, each call:
+//   1. Re-awaited `loadCmsTextsForPage(page)` — already React.cache'd, free.
+//   2. Re-built a fresh Map<string, …> from the row array — same data, 5×.
+//
+// Wrapping `getCmsTranslations` itself in React.cache wouldn't help —
+// React.cache keys on argument identity, and every callsite passes a new
+// object literal. So we cache the heavy step (the Map) by primitive
+// `page` key, and let the outer function rebuild only the namespace-
+// scoped closure each call (which is cheap).
+type RowEntry = { he: string | null; en: string | null };
+
+const getPageMap = cache(async (page: CmsPage): Promise<Map<string, RowEntry>> => {
+  const rows = await loadCmsTextsForPage(page);
+  const map = new Map<string, RowEntry>();
+  for (const row of rows) {
+    map.set(row.key, { he: row.he_text, en: row.en_text });
+  }
+  return map;
+});
+
 export async function getCmsTranslations(opts: {
   locale: "he" | "en";
   namespace: string;
   page: CmsPage;
 }): Promise<(key: string) => string> {
-  // Load both sources in parallel — same cost as a single
-  // getTranslations call because they're independent.
-  const [t, rows] = await Promise.all([
+  // getTranslations is internally memoized by next-intl per locale +
+  // namespace; getPageMap is React.cache'd per page. Both calls are
+  // effectively free after the first request-scoped invocation.
+  const [t, map] = await Promise.all([
     getTranslations({ locale: opts.locale, namespace: opts.namespace }),
-    loadCmsTextsForPage(opts.page),
+    getPageMap(opts.page),
   ]);
-
-  // Build a Map for O(1) lookups by fully-qualified key.
-  const map = new Map<
-    string,
-    { he: string | null; en: string | null }
-  >();
-  for (const row of rows) {
-    map.set(row.key, { he: row.he_text, en: row.en_text });
-  }
 
   return (key: string) => {
     const fullKey = `${opts.namespace}.${key}`;

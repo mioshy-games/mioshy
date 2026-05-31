@@ -24,6 +24,7 @@ import { cache } from "react";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
+import { getRequestUser } from "@/lib/auth/getRequestUser";
 import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
 import { getCurrentCoupleContext } from "@/lib/between-us/couples";
 import { getCoachPersonaForUser } from "@/lib/journey/coach";
@@ -278,36 +279,38 @@ async function countFreshClinicianReplies(args: {
 }
 
 /**
- * Single-row body-only fetch of the latest message in the user's
- * general channel — used to populate ExpertMini.lastMessage in the
- * sidebar. The full thread is fetched lazily on /my/expert; here we
- * only need a preview string.
+ * Single-row body+timestamp fetch of the latest message in the user's
+ * general channel — populates ExpertMini.lastMessage in the sidebar AND
+ * the /my/today ChatRowPreview. Both consumers read from the same shell
+ * data shape so /my/today doesn't need to refetch.
  *
  * Why this lives in the shell file rather than next to
- * getGeneralChannelThread: it's a shell-specific shape (1 row, body
- * only, no personas) and pulling it in via the existing helper would
- * either re-introduce the over-fetch or muddy that helper's contract.
+ * getGeneralChannelThread: it's a shell-specific shape (1 row, body +
+ * created_at, no personas) and pulling it in via the existing helper
+ * would either re-introduce the over-fetch or muddy that helper's
+ * contract.
  */
 async function fetchLastMessagePreview(
   channelUserId: string,
-): Promise<string | null> {
+): Promise<{ body: string | null; createdAt: string | null }> {
   try {
     const admin = createServiceRoleClient();
-    if (!admin) return null;
+    if (!admin) return { body: null, createdAt: null };
     const { data, error } = await admin
       .from("journey_messages")
-      .select("body, is_private")
+      .select("body, created_at")
       .eq("channel_user_id", channelUserId)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-    if (error || !data) return null;
+    if (error || !data) return { body: null, createdAt: null };
     // The channel owner sees everything in their channel, including
     // private rows — same rule as getGeneralChannelThread.
-    return (data as { body: string | null }).body ?? null;
+    const row = data as { body: string | null; created_at: string | null };
+    return { body: row.body ?? null, createdAt: row.created_at ?? null };
   } catch (err) {
     console.warn("[shell.fetchLastMessagePreview]", err);
-    return null;
+    return { body: null, createdAt: null };
   }
 }
 
@@ -324,11 +327,10 @@ export const getShellData = cache(_getShellData);
 async function _getShellData(args: {
   locale: "he" | "en";
 }): Promise<ShellData | null> {
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  // 2026-05-31 — pull the request-scoped user + supabase client.
+  // getRequestUser dedupes across every shell-side helper in the same
+  // render — without this we paid 4-5 Supabase Auth round-trips per nav.
+  const { user } = await getRequestUser();
   if (!user) return null;
 
   const hebrew = args.locale === "he";
@@ -414,9 +416,12 @@ async function _getShellData(args: {
   const coachPersonaP: Promise<CoachPersonaResult | null> = hasJourney
     ? getCoachPersonaForUser(user.id)
     : Promise.resolve(null);
-  const lastMessageP: Promise<string | null> = hasJourney
+  const lastMessageP: Promise<{
+    body: string | null;
+    createdAt: string | null;
+  }> = hasJourney
     ? fetchLastMessagePreview(user.id)
-    : Promise.resolve(null);
+    : Promise.resolve({ body: null, createdAt: null });
 
   // Badge reads — same gating as before.
   const freshRepliesP: Promise<number> = hasJourney
@@ -480,7 +485,8 @@ async function _getShellData(args: {
         expertName: displayName,
         expertInitial: initialOf(displayName),
         online: true, // we don't track presence yet — UI implies availability
-        lastMessage,
+        lastMessage: lastMessage.body,
+        lastMessageAt: lastMessage.createdAt,
         askHref: "/my/expert",
         // Caller (layout) overrides via CMS string — fallback in Hebrew.
         askLabel: hebrew ? "שאלה למומחה" : "Ask your expert",

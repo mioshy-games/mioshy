@@ -11,7 +11,7 @@
 
 import "server-only";
 
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getRequestUser } from "@/lib/auth/getRequestUser";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
 
 interface Args {
@@ -39,10 +39,9 @@ export async function getSettingsData(args: Args): Promise<SettingsData> {
   const { userId, locale } = args;
   const isHe = locale === "he";
 
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // 2026-05-31 — request-scoped auth read; reuses the same getUser
+  // resolution every other shell helper paid for already.
+  const { user } = await getRequestUser();
 
   // Defensive — shell auth gate already ran, but skip queries if the
   // session vanished mid-render.
