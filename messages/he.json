@@ -46,6 +46,7 @@
     },
     "lessons": {
       "pageTitle": "השיעורים שלי",
+      "todayChip": "היום",
       "assessmentsTitle": "האבחונים שלכם",
       "assessmentsCount": "{count} כרגע · עוד בהמשך",
       "assessmentOpen": "לפתוח",

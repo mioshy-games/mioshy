@@ -94,20 +94,18 @@ export async function middleware(request: NextRequest) {
     return supabaseResponse;
   }
 
-  // ── Post-login landing: /{locale}/my → /{locale}/my/today ───────────────
-  // 2026-05-29 — go-live of the AppShell. The legacy hub at /my still
-  // exists as the file app/[locale]/my/page.tsx and would render if hit
-  // directly; this redirect makes /my/today the canonical post-login
-  // landing for everyone. Easy rollback: delete this block.
+  // ── Post-login landing: /{locale}/my → /{locale}/my/lessons ────────────
+  // 2026-05-29 — go-live of the AppShell.
+  // 2026-05-31 — /my/today was merged into /my/lessons (single landing).
+  // Old /my/today still resolves via the route's own 307 redirect, so
+  // bookmarks pointing at it stay alive.
   //
   // Matches EXACT /{locale}/my and /{locale}/my/ only — anything deeper
-  // (/my/journey, /my/games, /my/today, /my/lessons, …) falls through
-  // untouched. Existing bookmarks to those routes keep working.
+  // falls through untouched.
   const myExact = /^\/(en|he)\/my\/?$/.exec(request.nextUrl.pathname);
   if (myExact) {
     const locale = myExact[1];
-    const target = new URL(`/${locale}/my/today`, request.url);
-    // Preserve any query string the caller passed in (e.g. ?from=email).
+    const target = new URL(`/${locale}/my/lessons`, request.url);
     target.search = request.nextUrl.search;
     const redirect = NextResponse.redirect(target);
     copyAuthCookiesToResponse(supabaseResponse, redirect);

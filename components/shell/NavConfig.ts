@@ -28,7 +28,10 @@ import type { NavItem, NavKey } from "./types";
  * (Step 2) read from this.
  */
 export const NAV_HREF: Record<NavKey, string> = {
-  today:    "/my/today",
+  // 2026-05-31 — `today` dropped from nav. The "Today" content (current
+  // lesson + chat preview + focus pill) now lives at the top of
+  // /my/lessons under a "Today" pill. /my/today still resolves via 308
+  // redirect for legacy links.
   lessons:  "/my/lessons",
   expert:   "/my/expert",
   // 2026-05-30 — was pointing at the marketing catalogues (/games and
@@ -55,7 +58,6 @@ export function buildNavItems(args: {
 
   return [
     // ── המסע שלי ────────────────────────────────
-    { key: "today",    group: "journey", label: labels.today,    href: NAV_HREF.today,    badge: badges.today    ?? null, dot: dots.today    ?? false },
     { key: "lessons",  group: "journey", label: labels.lessons,  href: NAV_HREF.lessons,  badge: badges.lessons  ?? null, dot: dots.lessons  ?? false },
     { key: "expert",   group: "journey", label: labels.expert,   href: NAV_HREF.expert,   badge: badges.expert   ?? null, dot: dots.expert   ?? false },
 
@@ -73,22 +75,22 @@ export function buildNavItems(args: {
  * Pick which 4 nav items appear in the mobile bottom-tab bar. The fifth
  * slot is always "עוד" → opens a sheet with the remaining items.
  *
- * Order is fixed by product priority — see Studio v12 mobile mock:
- *   1. היום   (today)
- *   2. שיעורים (lessons)
- *   3. מומחה  (expert)
- *   4. משחקים (games)
- *   5. עוד    → adults, share, settings
+ * 2026-05-31 — Itzik: "Today" merged into "Lessons" + bring Adults up
+ * to the primary bar. New order:
+ *   1. שיעורים שלי (lessons — now also the landing post-login)
+ *   2. מומחה        (expert)
+ *   3. משחקים       (games)
+ *   4. למבוגרים     (adults)  ← promoted from overflow
+ *   5. עוד          → share, settings
  */
 export const MOBILE_PRIMARY_KEYS: NavKey[] = [
-  "today",
   "lessons",
   "expert",
   "games",
+  "adults",
 ];
 
 export const MOBILE_OVERFLOW_KEYS: NavKey[] = [
-  "adults",
   "share",
   "settings",
 ];
@@ -116,8 +118,23 @@ export function isNavActive(item: NavItem, pathname: string): boolean {
   // Strip the locale prefix if present (he|en).
   const path = pathname.replace(/^\/(he|en)(?=\/|$)/, "") || "/";
 
-  // Treat /my as /my/today (legacy landing).
-  const normalized = path === "/my" ? "/my/today" : path;
+  // 2026-05-31 — /my (no segment) and /my/today both treated as
+  // /my/lessons (the new landing). The /my/today route itself ships a
+  // 308 redirect, so this branch only fires for the brief render before
+  // navigation completes.
+  const normalized =
+    path === "/my" || path === "/my/today" ? "/my/lessons" : path;
 
-  return normalized === item.href || normalized.startsWith(item.href + "/");
+  // Highlight the Lessons tab when the user is inside a journey/timeline
+  // detail page (which now also lives under the shell wrapper).
+  const lessonsAlias =
+    item.href === "/my/lessons" &&
+    (normalized.startsWith("/journey/timeline") ||
+      normalized === "/journey/timeline");
+
+  return (
+    lessonsAlias ||
+    normalized === item.href ||
+    normalized.startsWith(item.href + "/")
+  );
 }

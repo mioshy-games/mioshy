@@ -1,25 +1,34 @@
 /**
- * /[locale]/journey/timeline/[scheduledId]
+ * /journey/timeline/[scheduledId] — single-lesson detail (shell-wrapped).
  *
- * Detail view for a single scheduled item. Loads the item content, the
- * owning assignment, the completion state, and the responses visible to
- * the viewer (private-filtered). Hands off to ItemDetailClient for the
- * interactive surface.
+ * 2026-05-31 — moved into the (shell) route group so the sidebar +
+ * mobile tabs + brand backdrop persist while the user reads a lesson.
+ * Previously this page lived under `app/[locale]/journey/timeline/...`
+ * with its own marketing-style header (breadcrumb + aurora blobs),
+ * which broke the "stay inside the menu" UX promise.
  *
- * Ownership gate: viewer must either be the assignment's user_id or a
- * member of the assignment's couple. Otherwise we render 404 so we don't
- * leak the item's existence.
+ * Behaviour preserved verbatim from the old page:
+ *   • Auth + pause + view-as gates.
+ *   • Ownership gate (user-owned OR couple member).
+ *   • Audience gate (couple-targeted rows hidden from the other partner).
+ *   • Locked-item bounce back to /journey/timeline.
+ *   • LessonView (9-block) + ItemDetailClient (legacy fields) + WhyThisItem
+ *     + AssessmentItemForm + ItemFeedbackBar + PerItemThread.
+ *
+ * What's new:
+ *   • Replaces the marketing breadcrumb header with the shell PageHeader.
+ *   • Drops the aurora blob CSS — shell already paints a brand backdrop.
+ *   • Container collapses to the shell's standard 880px column.
+ *   • getShellData() supplies the crumb + notification bell.
  */
 
-import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { setRequestLocale } from "next-intl/server";
-import { Link } from "@/navigation";
-import { ArrowLeft, ArrowRight, Compass } from "lucide-react";
 import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
 import { loadCmsTextsForPage } from "@/lib/cms/server";
 import { CmsTextProvider } from "@/components/cms/CmsTextProvider";
 import { CmsText } from "@/components/cms/CmsText";
+import { Compass } from "lucide-react";
 import { routing } from "@/i18n/routing";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
@@ -45,13 +54,16 @@ import { PerItemThread } from "@/components/journey/timeline/PerItemThread";
 import { getPerItemThread } from "@/lib/journey-content/messages";
 import { AssessmentItemForm } from "@/components/my/AssessmentItemForm";
 
-export const dynamic = "force-dynamic";
+import { PageHeader } from "@/components/shell/PageHeader";
+import { getShellData } from "@/lib/shell/getShellData";
+
+// `dynamic = "force-dynamic"` is inherited from the (shell) layout.
 
 export async function generateMetadata({
   params,
 }: {
   params: { locale: string; scheduledId: string };
-}): Promise<Metadata> {
+}) {
   const t = await getCmsTranslations({
     locale: params.locale === "he" ? "he" : "en",
     namespace: "journeyTimeline.itemPage",
@@ -76,14 +88,22 @@ export default async function JourneyTimelineItemPage({
 
   const isHe = locale === "he";
   const cmsRows = await loadCmsTextsForPage("journey");
-  // Server-side translator for raw-string slots — PerItemThread takes
-  // promptLabel as a plain string, not a React node.
   const t = await getCmsTranslations({
     locale: isHe ? "he" : "en",
     namespace: "journeyTimeline.itemPage",
     page: "journey",
   });
   const threadPromptLabel = t("threadPromptLabel");
+
+  // Shell identity for the PageHeader (crumb + bell). Same React.cache'd
+  // resolver every other shell page uses — free on cache hit.
+  const shellPage = await getCmsTranslations({
+    locale: isHe ? "he" : "en",
+    namespace: "appShell",
+    page: "app-shell",
+  });
+  const shell = await getShellData({ locale: isHe ? "he" : "en" });
+  if (!shell) redirect(`/${locale}/auth`);
 
   // ── Auth ─────────────────────────────────────────────────────────────
   const supabase = await createServerSupabaseClient();
@@ -92,22 +112,15 @@ export default async function JourneyTimelineItemPage({
   } = await supabase.auth.getUser();
   if (!user) redirect(`/${locale}/auth`);
 
-  // L3 follow-up — when paused, content surfaces are hidden behind
-  // the pause screen on /my/journey. Direct deep-links bounce there.
+  // L3 follow-up — paused subscriptions hide content surfaces.
   const pauseState = await getCurrentUserPauseState();
   if (pauseState.isActive) redirect(`/${locale}/my/journey`);
 
-  // FU6.S3 — view-as substitution. When a coach is impersonating, the
-  // ownership gate is satisfied by the impersonated user's membership,
-  // every read uses `effectiveUserId`, and side-effect writes
-  // (markFirstSessionCompleted, logActivity) are SKIPPED so the coach
-  // never mutates the user's profile by accident.
+  // FU6.S3 — view-as substitution.
   const viewAsContext = await getActiveViewAs();
   const effectiveUserId = viewAsContext?.viewedUserId ?? user.id;
 
-  // ── Load scheduled + assignment (admin client - RLS would allow this
-  // read for legit owners but admin is simpler and authorisation is
-  // enforced below by explicit ownership checks).
+  // ── Load scheduled + assignment ─────────────────────────────────────
   const admin = createServiceRoleClient();
   if (!admin) throw new Error("service role unavailable");
 
@@ -127,10 +140,7 @@ export default async function JourneyTimelineItemPage({
   if (!assignmentRow) notFound();
   const assignment = assignmentRow as JourneyAssignment;
 
-  // ── Ownership gate: viewer is the user (or impersonated user), or a
-  //    member of the couple. The check uses effectiveUserId so a coach
-  //    in view-as mode satisfies the gate via the impersonated user's
-  //    membership — without an audit row this is a no-op (coach blocked).
+  // ── Ownership gate ──────────────────────────────────────────────────
   let ownedByMe = false;
   let viewerCoupleRole: "owner" | "partner" | null = null;
   if (assignment.user_id && assignment.user_id === effectiveUserId) {
@@ -150,21 +160,17 @@ export default async function JourneyTimelineItemPage({
   }
   if (!ownedByMe) notFound();
 
-  // Audience gate - if this scheduled row is targeted at the OTHER partner,
-  // bounce back to the timeline. ('both' is always allowed; user-owned
-  // assignments are always 'both' by the migration's invariants but we still
-  // check defensively for stored values.)
+  // Audience gate — partner-targeted rows bounce back to /my/lessons.
   if (
     assignment.couple_id &&
     scheduled.audience !== "both" &&
     scheduled.audience !== viewerCoupleRole
   ) {
-    redirect(`/${locale}/journey/timeline`);
+    redirect(`/${locale}/my/lessons`);
   }
 
-  // Cancelled assignments should not surface deep-links.
   if (!assignment.is_active) {
-    redirect(`/${locale}/journey/timeline`);
+    redirect(`/${locale}/my/lessons`);
   }
 
   // ── Item + category + completion + responses + match rule + feedback ──
@@ -186,18 +192,13 @@ export default async function JourneyTimelineItemPage({
       .select("*")
       .eq("scheduled_item_id", scheduledId)
       .order("created_at", { ascending: true }),
-    // Migration 066 — fetch the rule attribution so we can render
-    // "Why this item?" alongside the body. Skip the lookup entirely
-    // when matched_by_rule_id is null (legacy rows).
     scheduled.matched_by_rule_id
       ? admin
           .from("journey_match_rules")
           .select("id, slug, rationale_he, rationale_en")
           .eq("id", scheduled.matched_by_rule_id)
           .maybeSingle()
-      : Promise.resolve({ data: null, error: null }),
-    // Migration 066 — pull this user's pre-existing feedback so the bar
-    // hydrates with their previous choice rather than starting blank.
+      : Promise.resolve({ data: null }),
     admin
       .from("journey_item_feedback")
       .select("rating")
@@ -221,22 +222,12 @@ export default async function JourneyTimelineItemPage({
   const completion =
     (completionRes.data as JourneyItemCompletion | null) ?? null;
 
-  // Private-response filter: only the author sees their own private notes.
-  // In view-as mode, the coach should see what the user sees → use
-  // effectiveUserId here as well so private-by-the-user notes still show.
   const responses = ((responsesRes.data ?? []) as JourneyItemResponse[]).filter(
     (r) => !r.is_private || r.user_id === effectiveUserId,
   );
 
-  // v3 slice 6 - load the threaded messages for this scheduled item.
-  // Drives the new PerItemThread UI; the legacy `responses` list above
-  // is kept for the existing ItemDetailClient surfaces during the
-  // dual-write transition.
   const threadMessages = await getPerItemThread(scheduled.id, effectiveUserId);
 
-  // Phase 3 step 2 - for assessment-kind items, the form pre-fills
-  // from the user's most-recent prior response (if any) so they can
-  // revise rather than re-answer from scratch.
   const myExistingResponse =
     item.kind === "assessment"
       ? responses
@@ -251,19 +242,10 @@ export default async function JourneyTimelineItemPage({
     hasCompletion: !!completion,
   });
 
-  // Locked items shouldn't be reachable (TimelineList wraps them in a
-  // non-link), but if someone manually hit the URL we redirect back to
-  // the list rather than showing a half-functional page.
   if (!isOpenable(status)) {
-    redirect(`/${locale}/journey/timeline`);
+    redirect(`/${locale}/my/lessons`);
   }
 
-  // Log item_opened for the unread-count badge on /my. Idempotent on the
-  // user side - multiple visits all count as "opened" and the badge stays
-  // off. Failure-tolerant (logActivity catches its own errors).
-  // FU6.S3 — skip both side-effect writes when a coach is impersonating;
-  // we never want a view-as session to mark the user's first-session done
-  // or pollute their activity feed.
   if (!viewAsContext) {
     await logActivity({
       userId: user.id,
@@ -272,10 +254,6 @@ export default async function JourneyTimelineItemPage({
       verb: "item_opened",
     });
 
-    // Layer-1 first-session marker: the moment a user opens ANY item
-    // (likely the day-1 unlocked one), flip the column so /my/journey
-    // falls through to its full dashboard on the next visit. Idempotent
-    // — only writes when the column is currently null.
     await markFirstSessionCompleted().catch((err) => {
       console.warn(
         "[/journey/timeline/scheduledId] markFirstSessionCompleted failed (non-fatal)",
@@ -297,88 +275,64 @@ export default async function JourneyTimelineItemPage({
     viewAsLabel = fullName || viewAsContext.viewedUserId.slice(0, 8);
   }
 
-  const Arrow = isHe ? ArrowLeft : ArrowRight;
+  const categoryName = category
+    ? isHe
+      ? category.name_he
+      : category.name_en ?? category.name_he
+    : null;
+
+  const itemTitle = isHe
+    ? item.title_he
+    : item.title_en || item.title_he;
 
   return (
     <CmsTextProvider rows={cmsRows}>
-    <div
-      dir={isHe ? "rtl" : "ltr"}
-      className="relative min-h-[100dvh] overflow-hidden text-white"
-    >
       {viewAsContext && viewAsLabel ? (
         <ViewAsBanner viewedLabel={viewAsLabel} isHe={isHe} />
       ) : null}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-[80vh] opacity-65 animate-aurora-drift"
-        style={{
-          background:
-            "radial-gradient(1000px 500px at 15% -10%, rgba(99,102,241,0.22), transparent 60%), radial-gradient(800px 400px at 85% 10%, rgba(16,185,129,0.14), transparent 60%)",
-        }}
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-[55vh] h-[80vh] opacity-50 animate-aurora-breathe"
-        style={{
-          background:
-            "radial-gradient(800px 400px at 80% 40%, rgba(236,72,153,0.10), transparent 60%), radial-gradient(700px 380px at 15% 65%, rgba(99,102,241,0.12), transparent 60%)",
-        }}
+
+      <PageHeader
+        rootLabel={shellPage("rootCrumb")}
+        pageLabel={itemTitle}
+        subLine={categoryName}
+        bellCount={shell.notificationCount}
       />
 
-      <main className="relative mx-auto max-w-3xl px-4 pb-24 pt-10 sm:pt-14">
-        <Link
-          href="/journey/timeline"
-          className="inline-flex items-center gap-1 text-xs font-medium text-white/55 transition hover:text-white/90"
+      <div className="mx-auto flex w-full max-w-[880px] flex-col gap-5 px-5 py-6">
+        {/* Category + source chip — kept as a thin meta line so users
+            know where this lesson sits in the curriculum. */}
+        <div
+          className="flex flex-wrap items-center gap-2 text-[13px]"
+          style={{ color: "var(--shell-text-3)" }}
         >
-          <Arrow className="h-3 w-3 rotate-180" />
-          <CmsText cmsKey="journeyTimeline.itemPage.backToTimeline" />
-        </Link>
-
-        <div className="mt-5 flex flex-wrap items-center gap-2 text-xs text-white/60">
-          <Compass className="h-3.5 w-3.5 text-indigo-300" />
-          {category ? (
-            <span>
-              {isHe ? category.name_he : category.name_en ?? category.name_he}
-            </span>
+          <Compass className="h-3.5 w-3.5" style={{ color: "var(--shell-pink-text)" }} />
+          {categoryName ? (
+            <span>{categoryName}</span>
           ) : (
             <CmsText cmsKey="journeyTimeline.itemPage.chapterFallback" />
           )}
-          {/* v3 slice 8 - source badge for expert pushes. Subtle chip
-              so the user knows this isn't a regular cadence pick. */}
           {scheduled.source === "expert_push" ? (
             <CmsText
               cmsKey="journeyTimeline.itemPage.expertPushBadge"
-              className="inline-flex items-center gap-1 rounded-full border border-emerald-300/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-100"
+              className="inline-flex items-center gap-1 rounded-full border border-emerald-300/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-100"
             />
           ) : null}
         </div>
 
-        {/* Phase 3 step 2: when this is an assessment-kind item, render
-            the structured form ABOVE the standard detail block. The
-            standard ItemDetailClient still renders the body / category
-            / past responses underneath; the assessment form is just
-            a richer way to collect a response.
-            For 'content' items (the existing default), the form is
-            skipped - ItemDetailClient handles everything. */}
+        {/* Assessment-kind items render the structured form ABOVE the
+            standard detail block (same logic as before). */}
         {item.kind === "assessment" && item.assessment_payload ? (
-          <div className="mt-6">
-            <AssessmentItemForm
-              isHe={isHe}
-              scheduledItemId={scheduled.id}
-              payload={item.assessment_payload}
-              initialAnswers={
-                myExistingResponse?.structured_answer ?? undefined
-              }
-              initialSummary={myExistingResponse?.response_text}
-              initialPrivate={myExistingResponse?.is_private}
-            />
-          </div>
+          <AssessmentItemForm
+            isHe={isHe}
+            scheduledItemId={scheduled.id}
+            payload={item.assessment_payload}
+            initialAnswers={myExistingResponse?.structured_answer ?? undefined}
+            initialSummary={myExistingResponse?.response_text}
+            initialPrivate={myExistingResponse?.is_private}
+          />
         ) : null}
 
-        {/* Layer 1 (#1) — "Why this item?" disclosure. Renders the
-            user-facing rationale from the match rule that produced
-            this scheduled item. Falls back to a generic line when
-            the row predates rule attribution. */}
+        {/* "Why this item?" disclosure. */}
         <WhyThisItem
           isHe={isHe}
           rationale={
@@ -390,11 +344,7 @@ export default async function JourneyTimelineItemPage({
           }
         />
 
-        {/* Phase 1 — LessonView renders the structured 9-block lesson
-            (insight / mistake / metaphor / body / exercise / measure /
-            do / don't / progress / source). Only renders blocks that
-            are populated; legacy items with empty blocks fall through
-            to ItemDetailClient's body/task/challenge below. */}
+        {/* LessonView for the structured 9-block lesson. */}
         {(() => {
           const hasLesson = !!(
             item.expert_insight_he ||
@@ -428,9 +378,6 @@ export default async function JourneyTimelineItemPage({
           )}
         />
 
-        {/* Layer 1 (#3) — 4-button feedback bar.
-            Only renders after completion: feedback before completion
-            measures the prompt, not the experience. */}
         {completion ? (
           <ItemFeedbackBar
             isHe={isHe}
@@ -442,18 +389,21 @@ export default async function JourneyTimelineItemPage({
           />
         ) : null}
 
-        {/* v3 slice 6 - threaded messaging. Per Update B "every item
-            is a prompt expecting a response": composer is the primary
-            affordance, focused on mount, with thread history below.
-            For assessment-kind items the AssessmentItemForm above
-            already collects a structured answer, so we only show the
-            thread for content/reflection kinds. */}
+        {/* Per-item thread — content-kind items only. Assessment items
+            collect their answer through AssessmentItemForm above. */}
         {item.kind !== "assessment" ? (
-          <section className="mt-10 rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur sm:p-6">
+          <section
+            className="rounded-[16px] border p-5"
+            style={{
+              background: "rgba(29,14,54,0.30)",
+              borderColor: "var(--shell-line-soft)",
+            }}
+          >
             <CmsText
               cmsKey="journeyTimeline.itemPage.threadHeading"
               as="h2"
-              className="mb-4 text-base font-semibold text-white/85"
+              className="mb-4 m-0 text-[16px] font-semibold"
+              style={{ color: "var(--shell-text-1)" }}
             />
             <PerItemThread
               scheduledItemId={scheduled.id}
@@ -464,8 +414,7 @@ export default async function JourneyTimelineItemPage({
             />
           </section>
         ) : null}
-      </main>
-    </div>
+      </div>
     </CmsTextProvider>
   );
 }

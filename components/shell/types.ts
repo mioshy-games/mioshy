@@ -10,8 +10,11 @@
  * Visual spec: post-login-mockup-v12.html.
  */
 
+// 2026-05-31 — `today` removed from the nav graph: the post-login spec
+// now collapses היום + השיעורים שלי into a single "השיעורים שלי" tab.
+// The /my/today route still exists as a 308 redirect to /my/lessons so
+// any old links / bookmarks keep working.
 export type NavKey =
-  | "today"
   | "lessons"
   | "expert"
   | "games"

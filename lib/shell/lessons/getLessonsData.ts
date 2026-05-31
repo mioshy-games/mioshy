@@ -21,6 +21,8 @@ import {
 } from "@/lib/shell/shell-timeline";
 import { journeyOwnerForUser, preferCoupleOwner } from "@/lib/journey-content/owner";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
+import { getViewerPriorityOrder } from "@/lib/dashboard/priority-routing";
+import { getPriorityLabels } from "@/lib/journey-content/priority-categories";
 
 import type { CurrentLessonHeroData } from "@/components/shell/today/CurrentLessonHero";
 import type { HistoryItem } from "@/components/shell/today/HistoryList";
@@ -144,6 +146,11 @@ interface Args {
 }
 
 export interface LessonsPageData {
+  /** 2026-05-31 — Today section now lives at the top of /my/lessons.
+   *  This field carries the focus-area label ("מיניות ואינטימיות" etc.)
+   *  for the FocusPill rendered above the current-lesson hero. Null when
+   *  the user hasn't completed the priorities assessment yet. */
+  focusLabel: string | null;
   /** Assessment rows (newest first). Always non-empty for users who
    *  finished the funnel — empty means we redirect upstream. */
   assessments: AssessmentRowData[];
@@ -184,6 +191,25 @@ function relativeStamp(iso: string, hebrew: boolean): string {
 export async function getLessonsData(args: Args): Promise<LessonsPageData> {
   const { userId, locale } = args;
   const isHe = locale === "he";
+
+  // ── Focus label (top of page, "Today" section) ─────────────────────
+  // 2026-05-31 — Today's "המוקד הנוכחי" pill now lives at the top of
+  // /my/lessons (the page absorbed the standalone /my/today surface).
+  // Both helpers are React.cache-wrapped, so calling them here is free
+  // for any peer caller that already resolved them in the same render.
+  let focusLabel: string | null = null;
+  try {
+    const viewerPriorities = await getViewerPriorityOrder(userId);
+    const top = viewerPriorities?.[0] ?? null;
+    if (top) {
+      const labels = await getPriorityLabels();
+      focusLabel = isHe
+        ? labels.labelsHe[top] ?? null
+        : labels.labelsEn[top] ?? null;
+    }
+  } catch (err) {
+    console.warn("[lessons.getLessonsData] focus label fetch failed", err);
+  }
 
   // ── Assessments ────────────────────────────────────────────────────
   // We surface a single "your first assessment" row per the launch
@@ -388,6 +414,7 @@ export async function getLessonsData(args: Args): Promise<LessonsPageData> {
   }
 
   return {
+    focusLabel,
     assessments,
     current,
     completed,

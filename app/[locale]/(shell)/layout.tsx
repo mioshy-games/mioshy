@@ -74,7 +74,7 @@ export default async function ShellLayout({
   // The translation function in next-intl v3 isn't generic over the
   // string-literal key, so a tiny wrapper keeps the call sites typed.
   const labels: Record<NavKey, string> = {
-    today:    tNav("today"),
+    // 2026-05-31 — `today` dropped; Lessons is the post-login landing.
     lessons:  tNav("lessons"),
     expert:   tNav("expert"),
     games:    tNav("games"),

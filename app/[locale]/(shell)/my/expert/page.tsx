@@ -49,7 +49,7 @@ export default async function ExpertPage({
   // No expert → no chat surface. Send them home (they'll see the empty
   // state for "no journey yet"). Avoids a confusing "blank chat".
   if (!shell.expert) {
-    redirect(`/${locale}/my/today`);
+    redirect(`/${locale}/my/lessons`);
   }
 
   const tLoc = isHe ? "he" : "en";

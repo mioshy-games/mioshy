@@ -48,7 +48,11 @@ function shouldHideChrome(pathname: string) {
     /^\/[^/]+\/auth(\/|$)/.test(pathname) ||
     /^\/auth(\/|$)/.test(pathname) ||
     // AppShell routes — post-login surface ships its own header
-    /^\/(en|he)\/my\/(today|lessons|expert|share|settings|notifications|more|games|adults)(\/|$)/.test(pathname)
+    /^\/(en|he)\/my\/(today|lessons|expert|share|settings|notifications|more|games|adults)(\/|$)/.test(pathname) ||
+    // 2026-05-31 — /journey/timeline/[scheduledId] (single-lesson view)
+    // now lives INSIDE the shell layout group too, so the marketing
+    // SiteHeader stops painting above its PageHeader.
+    /^\/(en|he)\/journey\/timeline\/[^/]+/.test(pathname)
   );
 }
 

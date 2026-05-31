@@ -46,6 +46,7 @@
     },
     "lessons": {
       "pageTitle": "My Lessons",
+      "todayChip": "Today",
       "assessmentsTitle": "Your assessments",
       "assessmentsCount": "{count} right now · more to come",
       "assessmentOpen": "Open",

@@ -32,7 +32,6 @@ import {
   Menu,
   MessageCircle,
   Settings,
-  Sun,
   Users,
 } from "lucide-react";
 
@@ -50,7 +49,6 @@ import type { NavItem, NavKey } from "./types";
  * (server → client cannot carry function references).
  */
 const NAV_ICONS: Record<NavKey, ComponentType<SVGProps<SVGSVGElement>>> = {
-  today:    Sun,
   lessons:  BookOpen,
   expert:   MessageCircle,
   games:    LayoutGrid,
