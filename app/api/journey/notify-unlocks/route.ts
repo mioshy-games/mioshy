@@ -27,6 +27,19 @@ import { runJourneyUnlockNotifier } from "@/lib/journey-content/notify-unlocks";
 import { runWithCronLog } from "@/lib/journey-content/cron-log";
 
 export async function POST(req: Request) {
+  return handle(req);
+}
+
+// 2026-05-31 — Vercel cron pings with GET, not POST. The original GET
+// handler returned 405 as a "health check" hint, which silently broke
+// the hourly unlock-notifier cron every run. Accept both methods now,
+// same as /api/journey/cadence/advance does. The bearer-token check
+// inside `handle` still gates execution — uncredentialed pings get 401.
+export async function GET(req: Request) {
+  return handle(req);
+}
+
+async function handle(req: Request): Promise<Response> {
   const secret =
     process.env.JOURNEY_UNLOCK_CRON_SECRET ||
     process.env.CARDCOM_BILLING_CRON_SECRET;
@@ -91,12 +104,6 @@ export async function POST(req: Request) {
   }
 }
 
-// GET is a no-op health check so operators can curl without a secret to
-// confirm the route is deployed. Returns 405 so monitors don't accidentally
-// use it as a success signal for the cron itself.
-export async function GET() {
-  return NextResponse.json(
-    { ok: true, hint: "POST with bearer token to dispatch unlock emails" },
-    { status: 405 },
-  );
-}
+// (The previous unauthenticated GET no-op was removed when GET became
+//  the cron entry point. Operators can curl with the bearer token now,
+//  same as POST.)
