@@ -2,6 +2,8 @@ import type { ReactNode } from "react";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { Assistant, Frank_Ruhl_Libre } from "next/font/google";
+import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import {
@@ -223,6 +225,14 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body className="min-h-[100dvh] antialiased">
         <GoogleTagManagerNoscript />
         {children}
+        {/* Real-user perf monitoring (Itzik 2026-05-31). SpeedInsights
+            samples Core Web Vitals from production sessions; Analytics
+            tracks page-view counts. Both are tree-shaken in dev — they
+            only ship + transmit on Vercel production. The dashboards
+            live under /vercel.com/<team>/<project>/{speed-insights,
+            analytics}. */}
+        <SpeedInsights />
+        <Analytics />
       </body>
     </html>
   );
