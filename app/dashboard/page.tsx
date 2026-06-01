@@ -14,6 +14,8 @@ import Link from "next/link";
 import { requireExpert } from "@/lib/auth/expert";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
 import { CoachOverviewPanel } from "@/components/dashboard/coach/CoachOverviewPanel";
+import { PendingMessagesCard } from "@/components/dashboard/PendingMessagesCard";
+import { getPendingExpertMessages } from "@/lib/journey/pending-messages";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -41,8 +43,16 @@ export default async function DashboardHomePage() {
 
   // ── Coach branch (Phase 8) ───────────────────────────────────
   if (!session.isAdmin) {
+    // 2026-06-01 — surface pending user messages above the queue. Coach
+    // walks in here, the first thing they see is "X clients need a reply".
+    const pending = await getPendingExpertMessages({ limit: 8 });
     return (
-      <div className="mx-auto max-w-6xl">
+      <div className="mx-auto max-w-6xl space-y-6">
+        <PendingMessagesCard
+          rows={pending.rows}
+          totalCount={pending.count}
+          degraded={!pending.ok}
+        />
         <CoachOverviewPanel expertId={session.user.id} />
       </div>
     );
@@ -61,15 +71,22 @@ export default async function DashboardHomePage() {
     );
   }
 
-  const [{ count: totalGames }, { count: totalQuestions }, { count: activeGames }] =
-    await Promise.all([
-      admin.from("games").select("*", { count: "exact", head: true }),
-      admin.from("questions").select("*", { count: "exact", head: true }),
-      admin
-        .from("games")
-        .select("*", { count: "exact", head: true })
-        .eq("is_active", true),
-    ]);
+  const [
+    { count: totalGames },
+    { count: totalQuestions },
+    { count: activeGames },
+    pending,
+  ] = await Promise.all([
+    admin.from("games").select("*", { count: "exact", head: true }),
+    admin.from("questions").select("*", { count: "exact", head: true }),
+    admin
+      .from("games")
+      .select("*", { count: "exact", head: true })
+      .eq("is_active", true),
+    // 2026-06-01 — same pending-messages list the coaches see; admin
+    // sees it too so escalations don't slip past during off-hours.
+    getPendingExpertMessages({ limit: 8 }),
+  ]);
 
   const { data: games } = await admin
     .from("games")
@@ -85,6 +102,14 @@ export default async function DashboardHomePage() {
           Overview of games and content.
         </p>
       </div>
+
+      {/* Pending user messages — first widget on the page so escalations
+          are visible to admins the moment they walk in. */}
+      <PendingMessagesCard
+        rows={pending.rows}
+        totalCount={pending.count}
+        degraded={!pending.ok}
+      />
 
       <div className="grid gap-4 sm:grid-cols-3">
         <Card>

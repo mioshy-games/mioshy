@@ -428,7 +428,10 @@ export default async function CoupleDetailPage({
           channel - partners never see each other's. Sits with the
           same visual weight as the per-item reply UI above so the
           on-duty clinician can pick the right surface in one glance. */}
-      <section className="space-y-2">
+      {/* 2026-06-01 — `id="general"` is the anchor PendingMessagesCard
+          rows deep-link to. `scroll-mt-20` keeps the heading clear of
+          the sticky top bar after the scroll-into-view jump. */}
+      <section id="general" className="scroll-mt-20 space-y-2">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           Reply in private channel
         </h2>

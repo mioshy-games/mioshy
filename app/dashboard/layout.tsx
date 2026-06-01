@@ -4,6 +4,7 @@ import { requireExpert } from "@/lib/auth/expert";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { Toaster } from "@/components/ui/sonner";
 import { getAdminLocale, isRtl } from "@/lib/admin/locale";
+import { getPendingExpertMessages } from "@/lib/journey/pending-messages";
 
 export default async function DashboardRootLayout({
   children,
@@ -22,6 +23,11 @@ export default async function DashboardRootLayout({
   const locale = getAdminLocale();
   const dir    = isRtl(locale) ? "rtl" : "ltr";
 
+  // 2026-06-01 — sidebar badges. The pending-messages count drives the
+  // "My Clients" red pill so an on-duty coach sees pending volume from
+  // any admin page. Failure-tolerant: pending.count falls back to 0.
+  const pending = await getPendingExpertMessages({ limit: 1 });
+
   return (
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
       <div
@@ -29,7 +35,11 @@ export default async function DashboardRootLayout({
         lang={locale}
         className="bg-background text-foreground flex min-h-[100dvh]"
       >
-        <Sidebar isAdmin={session.isAdmin} locale={locale} />
+        <Sidebar
+          isAdmin={session.isAdmin}
+          locale={locale}
+          badges={{ pending_messages: pending.count }}
+        />
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <main className="flex-1 p-4 md:p-8">{children}</main>
         </div>

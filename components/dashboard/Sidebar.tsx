@@ -68,6 +68,10 @@ type NavLeaf = {
   adminOnly?: boolean;
   /** i18n key for the tooltip. Optional. */
   tooltipKey?: string;
+  /** 2026-06-01 — stable id used to inject runtime badge counts (e.g.
+   *  pending expert messages). Optional; only items expected to carry
+   *  a badge declare one. */
+  badgeId?: string;
 };
 
 type NavGroup = {
@@ -81,6 +85,10 @@ type NavGroup = {
   children: NavLeaf[];
   /** Hide this whole group from non-admin sidebars. Optional. */
   adminOnly?: boolean;
+  /** 2026-06-01 — propagate the SUM of badge counts from descendants up
+   *  to the group header so a collapsed group still shows the unread
+   *  affordance. Computed by the renderer from `badgeId` matches; do
+   *  NOT set manually. */
 };
 
 type NavItem = NavLeaf | NavGroup;
@@ -97,7 +105,7 @@ const NAV: NavItem[] = [
       { kind: "leaf", href: "/dashboard/help",           labelKey: "nav.help",           icon: HelpCircle },
       { kind: "leaf", href: "/dashboard/coaching-guide", labelKey: "nav.coaching_guide", icon: BookMarked, tooltipKey: "tip.coaching_guide" },
       { kind: "leaf", href: "/dashboard/clinician",      labelKey: "nav.todays_queue",   icon: Stethoscope },
-      { kind: "leaf", href: "/dashboard/my-clients",     labelKey: "nav.my_clients",     icon: HeartHandshake },
+      { kind: "leaf", href: "/dashboard/my-clients",     labelKey: "nav.my_clients",     icon: HeartHandshake, badgeId: "pending_messages" },
       { kind: "leaf", href: "/dashboard/coach-profile",  labelKey: "nav.my_profile",     icon: UserCog, tooltipKey: "tip.my_profile" },
       { kind: "leaf", href: "/dashboard/coach-library",  labelKey: "nav.my_library",     icon: BookOpenText, tooltipKey: "tip.my_library" },
       { kind: "leaf", href: "/dashboard/experts",        labelKey: "nav.experts",        icon: UserCog, adminOnly: true },
@@ -226,11 +234,16 @@ function LeafLink({
   pathname,
   indent,
   locale,
+  badgeCount = 0,
 }: {
   item: NavLeaf;
   pathname: string;
   indent?: boolean;
   locale: Loc;
+  /** 2026-06-01 — when > 0 we paint a small rose-tinted count badge at
+   *  the trailing edge of the row. The badge is purely visual; the
+   *  click target stays the whole link. */
+  badgeCount?: number;
 }) {
   const active = isHrefActive(pathname, item.href);
   const Icon = item.icon;
@@ -247,7 +260,15 @@ function LeafLink({
       )}
     >
       <Icon className={cn("size-4 shrink-0", indent && "opacity-70")} />
-      <span className="truncate">{t(locale, item.labelKey)}</span>
+      <span className="truncate flex-1">{t(locale, item.labelKey)}</span>
+      {badgeCount > 0 ? (
+        <span
+          className="ms-auto inline-flex h-5 min-w-[22px] items-center justify-center rounded-full bg-rose-500/90 px-1.5 text-[11px] font-extrabold text-white"
+          aria-label={`${badgeCount} pending`}
+        >
+          {badgeCount > 99 ? "99+" : badgeCount}
+        </span>
+      ) : null}
     </Link>
   );
 }
@@ -258,17 +279,28 @@ function GroupNav({
   expanded,
   onToggle,
   locale,
+  badges,
 }: {
   group: NavGroup;
   pathname: string;
   expanded: boolean;
   onToggle: () => void;
   locale: Loc;
+  badges: Partial<Record<string, number>>;
 }) {
   const active = isGroupActive(pathname, group);
   const Icon = group.icon;
   const Chevron = expanded ? ChevronDown : ChevronRight;
   const hasChildren = group.children.length > 0;
+
+  // 2026-06-01 — sum every descendant's badge so a COLLAPSED group still
+  // surfaces the unread count on its own header. When the group is
+  // expanded the count moves down to the individual leaf (the per-leaf
+  // badge still renders below regardless).
+  const groupBadgeTotal = group.children.reduce<number>(
+    (acc, c) => acc + (c.badgeId ? badges[c.badgeId] ?? 0 : 0),
+    0,
+  );
 
   // A group header is a row with two click targets so we can satisfy both
   // navigation (click the label) and disclosure (click the chevron) without
@@ -285,6 +317,17 @@ function GroupNav({
     <>
       <Icon className="size-4 shrink-0" />
       <span className="flex-1 truncate">{t(locale, group.labelKey)}</span>
+      {/* Only render the rollup badge when the group is COLLAPSED — once
+          expanded, the children carry their own badges so showing both
+          double-counts visually. */}
+      {!expanded && groupBadgeTotal > 0 ? (
+        <span
+          className="inline-flex h-5 min-w-[22px] items-center justify-center rounded-full bg-rose-500/90 px-1.5 text-[11px] font-extrabold text-white"
+          aria-label={`${groupBadgeTotal} pending in ${t(locale, group.labelKey)}`}
+        >
+          {groupBadgeTotal > 99 ? "99+" : groupBadgeTotal}
+        </span>
+      ) : null}
     </>
   );
 
@@ -342,6 +385,7 @@ function GroupNav({
               pathname={pathname}
               indent
               locale={locale}
+              badgeCount={child.badgeId ? badges[child.badgeId] ?? 0 : 0}
             />
           ))}
         </div>
@@ -451,19 +495,32 @@ function filterNav(items: NavItem[], isAdmin: boolean): NavItem[] {
 export function Sidebar({
   isAdmin = true,
   locale = "en",
+  badges,
 }: {
   isAdmin?: boolean;
   locale?: Loc;
+  /** 2026-06-01 — runtime badge counts keyed by NavLeaf.badgeId. Server
+   *  layout resolves these once per render (e.g. pending-messages) and
+   *  passes them down. The Sidebar itself is a client component and
+   *  can't fetch — keeps the data flow one-way. */
+  badges?: Partial<Record<string, number>>;
 }) {
   const pathname = usePathname();
   const { expanded, toggle } = useExpandedGroups(pathname);
   const visibleNav = useMemo(() => filterNav(NAV, isAdmin), [isAdmin]);
+  const safeBadges = badges ?? {};
 
   const nav = (
     <nav className="flex flex-col gap-1">
       {visibleNav.map((item) =>
         item.kind === "leaf" ? (
-          <LeafLink key={item.href} item={item} pathname={pathname} locale={locale} />
+          <LeafLink
+            key={item.href}
+            item={item}
+            pathname={pathname}
+            locale={locale}
+            badgeCount={item.badgeId ? safeBadges[item.badgeId] ?? 0 : 0}
+          />
         ) : (
           <GroupNav
             key={item.id}
@@ -472,6 +529,7 @@ export function Sidebar({
             expanded={expanded.has(item.id)}
             onToggle={() => toggle(item.id)}
             locale={locale}
+            badges={safeBadges}
           />
         ),
       )}
