@@ -170,7 +170,7 @@ export default async function LessonsPage({
               {data.focusLabel ? (
                 <FocusPill
                   prefix={tToday("focusPrefix")}
-                  label={data.focusLabel}
+                  focusLabel={data.focusLabel}
                 />
               ) : null}
             </div>
@@ -191,12 +191,11 @@ export default async function LessonsPage({
             {/* Expert chat preview — the latest line from the expert
                 channel. Built entirely from shell.expert; no extra DB. */}
             {chatPreview ? (
-              <ChatRowPreview chat={chatPreview} />
+              <ChatRowPreview data={chatPreview} />
             ) : shell.expert ? (
               <ExpertSoonCard
                 title={tToday("expertSoonTitle")}
                 body={tToday("expertSoonBody")}
-                expertName={shell.expert.expertName!}
               />
             ) : null}
           </section>
