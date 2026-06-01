@@ -84,27 +84,34 @@ export async function setTestUserByEmail(args: {
   }
 
   // 2026-06-01 — email lives in auth.users, exposed to admin readers
-  // via the `admin_users_overview` view (used by notify-unlocks +
-  // other expert-side helpers). We look up the user there to get the
-  // id, then fetch full_name from profiles.
+  // via the `admin_users_overview` view. That view only carries
+  // {user_id, email} — full_name lives on profiles. Two-step lookup:
+  // (1) match email → user_id via the view, (2) fetch full_name from
+  // profiles by id.
   const { data: viewRow, error: lookupErr } = await admin
     .from("admin_users_overview")
-    .select("user_id, email, full_name")
+    .select("user_id, email")
     .ilike("email", email)
     .maybeSingle();
   if (lookupErr) {
     log.error("set_by_email.lookup_failed", { email, reason: lookupErr.message });
     return { ok: false, error: "lookup_failed" };
   }
-  const profile = viewRow
-    ? {
-        id: (viewRow as { user_id: string }).user_id,
-        full_name:
-          ((viewRow as { full_name: string | null }).full_name ?? null) as
-            | string
-            | null,
-      }
-    : null;
+
+  let profile: { id: string; full_name: string | null } | null = null;
+  if (viewRow) {
+    const userId = (viewRow as { user_id: string }).user_id;
+    const { data: nameRow } = await admin
+      .from("profiles")
+      .select("full_name")
+      .eq("id", userId)
+      .maybeSingle();
+    profile = {
+      id: userId,
+      full_name:
+        (nameRow as { full_name: string | null } | null)?.full_name ?? null,
+    };
+  }
 
   const noteTrimmed =
     typeof args.note === "string" ? args.note.trim() || null : null;

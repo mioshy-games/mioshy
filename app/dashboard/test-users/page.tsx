@@ -97,8 +97,9 @@ export default async function TestUsersPage() {
     );
   }
 
-  // Resolve the "marked by" admin names. Same admin_users_overview
-  // view powers this — the admin who flipped the flag has a row too.
+  // Resolve the "marked by" admin names. admin_users_overview only
+  // carries {user_id, email}, so we batch-fetch full_name separately
+  // from profiles and merge.
   const markerIds = Array.from(
     new Set(
       raw.map((r) => r.test_user_marked_by).filter((x): x is string => !!x),
@@ -106,16 +107,28 @@ export default async function TestUsersPage() {
   );
   const markerNames = new Map<string, string | null>();
   if (markerIds.length > 0) {
-    const { data: markers } = await admin
-      .from("admin_users_overview")
-      .select("user_id, full_name, email")
-      .in("user_id", markerIds);
-    for (const m of (markers ?? []) as Array<{
-      user_id: string;
-      full_name: string | null;
-      email: string | null;
-    }>) {
-      markerNames.set(m.user_id, m.full_name?.trim() || m.email || null);
+    const [emailRes, nameRes] = await Promise.all([
+      admin
+        .from("admin_users_overview")
+        .select("user_id, email")
+        .in("user_id", markerIds),
+      admin
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", markerIds),
+    ]);
+    const emailByUser = new Map(
+      ((emailRes.data ?? []) as Array<{ user_id: string; email: string | null }>)
+        .map((r) => [r.user_id, r.email]),
+    );
+    const nameByUser = new Map(
+      ((nameRes.data ?? []) as Array<{ id: string; full_name: string | null }>)
+        .map((r) => [r.id, r.full_name]),
+    );
+    for (const id of markerIds) {
+      const name = nameByUser.get(id)?.trim();
+      const email = emailByUser.get(id);
+      markerNames.set(id, name || email || null);
     }
   }
 
@@ -153,16 +166,28 @@ export default async function TestUsersPage() {
     ),
   );
   if (pendingMarkerIds.length > 0) {
-    const { data: extraMarkers } = await admin
-      .from("admin_users_overview")
-      .select("user_id, full_name, email")
-      .in("user_id", pendingMarkerIds);
-    for (const p of (extraMarkers ?? []) as Array<{
-      user_id: string;
-      full_name: string | null;
-      email: string | null;
-    }>) {
-      markerNames.set(p.user_id, p.full_name?.trim() || p.email || null);
+    const [emailRes2, nameRes2] = await Promise.all([
+      admin
+        .from("admin_users_overview")
+        .select("user_id, email")
+        .in("user_id", pendingMarkerIds),
+      admin
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", pendingMarkerIds),
+    ]);
+    const emailByUser = new Map(
+      ((emailRes2.data ?? []) as Array<{ user_id: string; email: string | null }>)
+        .map((r) => [r.user_id, r.email]),
+    );
+    const nameByUser = new Map(
+      ((nameRes2.data ?? []) as Array<{ id: string; full_name: string | null }>)
+        .map((r) => [r.id, r.full_name]),
+    );
+    for (const id of pendingMarkerIds) {
+      const name = nameByUser.get(id)?.trim();
+      const email = emailByUser.get(id);
+      markerNames.set(id, name || email || null);
     }
   }
   const pending: PendingInvitationRow[] = pendingRows.map((r) => ({
