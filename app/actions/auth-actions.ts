@@ -137,6 +137,48 @@ export async function signupAction(formData: FormData): Promise<SignupResult> {
       { onConflict: "id" },
     );
 
+    // ── Test-user invitation auto-claim (Itzik 2026-06-01) ─────────────
+    // If an admin added this email to test_user_invitations BEFORE the
+    // signup, claim it now: flip is_test_user on the new profile and
+    // stamp the invitation as claimed. The entitlements gate will now
+    // grant every product on the first /my visit.
+    //
+    // Failure-tolerant: any error here is logged but does NOT block the
+    // signup itself. The admin can re-mark the user manually.
+    try {
+      const { data: invite } = await admin
+        .from("test_user_invitations")
+        .select("email, note, invited_by")
+        .eq("email", email.toLowerCase())
+        .is("claimed_at", null)
+        .maybeSingle();
+      if (invite) {
+        await admin
+          .from("profiles")
+          .update({
+            is_test_user: true,
+            test_user_note: (invite as { note: string | null }).note,
+            test_user_marked_at: new Date().toISOString(),
+            test_user_marked_by:
+              (invite as { invited_by: string | null }).invited_by,
+          })
+          .eq("id", userId);
+        await admin
+          .from("test_user_invitations")
+          .update({
+            claimed_at: new Date().toISOString(),
+            claimed_user_id: userId,
+          })
+          .eq("email", (invite as { email: string }).email);
+        console.log("[signup] test-user invitation claimed", {
+          email,
+          user_id: userId,
+        });
+      }
+    } catch (claimErr) {
+      console.warn("[signup] test-user claim failed (non-fatal)", claimErr);
+    }
+
     // Fire-and-forget Brevo sync. Israeli Communications Act §30A:
     // marketing emails require prior explicit consent, so we only call
     // Brevo when the user ticked the box. Auth + profile creation are

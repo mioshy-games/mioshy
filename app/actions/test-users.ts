@@ -20,6 +20,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth/admin";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
 import { makeLogger } from "@/lib/observability/log";
+import { sendTestUserInvite } from "@/lib/email/test-user-invite";
 
 const log = makeLogger("admin.test_users");
 
@@ -36,11 +37,32 @@ type Err = { ok: false; error: string };
  * twice with the same email leaves the flag in its current state and
  * just refreshes the audit fields.
  */
+/**
+ * Add (or remove) an email from the test-user whitelist.
+ *
+ * Two code paths:
+ *   • Profile exists → flip `profiles.is_test_user` directly.
+ *   • Profile does not exist → insert into `test_user_invitations`
+ *     (pending). `signupAction` auto-claims the invitation on signup
+ *     and flips the flag on the newly-created profile.
+ *
+ * In both cases (when `enabled=true`), we fire a transactional invite
+ * email. When `enabled=false` (admin revoking), we do NOT send any
+ * email — the silent revoke is the desired UX.
+ */
 export async function setTestUserByEmail(args: {
   email: string;
   enabled: boolean;
   note?: string;
-}): Promise<Ok<{ userId: string; displayName: string | null }> | Err> {
+  locale?: "he" | "en";
+}): Promise<
+  | Ok<{
+      mode: "registered" | "pending" | "revoked";
+      userId: string | null;
+      displayName: string | null;
+    }>
+  | Err
+> {
   let session;
   try {
     session = await requireAdmin();
@@ -70,44 +92,115 @@ export async function setTestUserByEmail(args: {
     log.error("set_by_email.lookup_failed", { email, reason: lookupErr.message });
     return { ok: false, error: "lookup_failed" };
   }
-  if (!profile) {
-    log.warn("set_by_email.not_found", { email });
-    return { ok: false, error: "user_not_found" };
-  }
-  const userId = (profile as { id: string }).id;
-  const displayName = (profile as { full_name: string | null }).full_name;
 
-  const updatePayload: Record<string, unknown> = {
-    is_test_user: args.enabled,
-    test_user_marked_at: new Date().toISOString(),
-    test_user_marked_by: adminId,
-  };
-  if (typeof args.note === "string") {
-    updatePayload.test_user_note = args.note.trim() || null;
-  }
+  const noteTrimmed =
+    typeof args.note === "string" ? args.note.trim() || null : null;
 
-  const { error: updErr } = await admin
-    .from("profiles")
-    .update(updatePayload)
-    .eq("id", userId);
-  if (updErr) {
-    log.error("set_by_email.update_failed", {
+  // ── Branch A: profile exists ────────────────────────────────────────
+  if (profile) {
+    const userId = (profile as { id: string }).id;
+    const displayName = (profile as { full_name: string | null }).full_name;
+
+    const updatePayload: Record<string, unknown> = {
+      is_test_user: args.enabled,
+      test_user_marked_at: new Date().toISOString(),
+      test_user_marked_by: adminId,
+    };
+    if (typeof args.note === "string") {
+      updatePayload.test_user_note = noteTrimmed;
+    }
+
+    const { error: updErr } = await admin
+      .from("profiles")
+      .update(updatePayload)
+      .eq("id", userId);
+    if (updErr) {
+      log.error("set_by_email.update_failed", {
+        email,
+        user_id: userId,
+        reason: updErr.message,
+      });
+      return { ok: false, error: updErr.message };
+    }
+
+    log.info("set_by_email.done", {
       email,
       user_id: userId,
-      reason: updErr.message,
+      enabled: args.enabled,
+      by_admin: adminId,
     });
-    return { ok: false, error: updErr.message };
+
+    if (args.enabled) {
+      // Fire-and-forget — the action returns to the UI immediately.
+      // Email failures get logged inside the helper.
+      await sendTestUserInvite({
+        to: email,
+        name: displayName,
+        mode: "registered",
+        note: noteTrimmed,
+        locale: args.locale ?? "he",
+      });
+    }
+
+    revalidatePath("/dashboard/test-users");
+    return {
+      ok: true,
+      mode: args.enabled ? "registered" : "revoked",
+      userId,
+      displayName,
+    };
   }
 
-  log.info("set_by_email.done", {
-    email,
-    user_id: userId,
-    enabled: args.enabled,
-    by_admin: adminId,
+  // ── Branch B: no profile yet ────────────────────────────────────────
+  // Store the email as a pending invitation. When the holder signs up,
+  // signupAction will claim it and stamp is_test_user on their profile.
+  if (!args.enabled) {
+    // Admin revoking an email we don't have a profile for — just drop
+    // the pending row if it exists.
+    await admin.from("test_user_invitations").delete().eq("email", email);
+    log.info("set_by_email.pending_revoked", { email, by_admin: adminId });
+    revalidatePath("/dashboard/test-users");
+    return { ok: true, mode: "revoked", userId: null, displayName: null };
+  }
+
+  const { error: inviteErr } = await admin
+    .from("test_user_invitations")
+    .upsert(
+      {
+        email,
+        note: noteTrimmed,
+        invited_by: adminId,
+        invited_at: new Date().toISOString(),
+        claimed_at: null,
+        claimed_user_id: null,
+      },
+      { onConflict: "email" },
+    );
+  if (inviteErr) {
+    log.error("set_by_email.invite_insert_failed", {
+      email,
+      reason: inviteErr.message,
+    });
+    return { ok: false, error: inviteErr.message };
+  }
+
+  log.info("set_by_email.invited_pending", { email, by_admin: adminId });
+
+  await sendTestUserInvite({
+    to: email,
+    name: null,
+    mode: "pending",
+    note: noteTrimmed,
+    locale: args.locale ?? "he",
   });
 
   revalidatePath("/dashboard/test-users");
-  return { ok: true, userId, displayName };
+  return {
+    ok: true,
+    mode: "pending",
+    userId: null,
+    displayName: null,
+  };
 }
 
 /** Same as setTestUserByEmail but takes the userId directly — used by

@@ -23,11 +23,15 @@ import {
   setTestUserByEmail,
   setTestUserById,
 } from "@/app/actions/test-users";
-import type { TestUserRow } from "@/app/dashboard/test-users/page";
+import type {
+  TestUserRow,
+  PendingInvitationRow,
+} from "@/app/dashboard/test-users/page";
 
 interface Props {
-  mode: "add" | "list";
+  mode: "add" | "list" | "pending";
   initialList: TestUserRow[];
+  pending?: PendingInvitationRow[];
 }
 
 function shortDate(iso: string | null): string {
@@ -44,7 +48,7 @@ function shortDate(iso: string | null): string {
   }
 }
 
-export function TestUsersClient({ mode, initialList }: Props) {
+export function TestUsersClient({ mode, initialList, pending: pendingList }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [email, setEmail] = useState("");
@@ -70,9 +74,11 @@ export function TestUsersClient({ mode, initialList }: Props) {
               toast.error(`Could not add: ${res.error}`);
               return;
             }
-            toast.success(
-              `Added ${res.displayName ?? trimmed} to test-user whitelist`,
-            );
+            const successCopy =
+              res.mode === "registered"
+                ? `Added ${res.displayName ?? trimmed}. Invitation email sent.`
+                : `${trimmed} hasn't signed up yet — invitation email sent. They'll be auto-granted on signup.`;
+            toast.success(successCopy);
             setEmail("");
             setNote("");
             router.refresh();
@@ -119,6 +125,76 @@ export function TestUsersClient({ mode, initialList }: Props) {
           Add
         </button>
       </form>
+    );
+  }
+
+  // mode === "pending" — render the pending-invitations table.
+  if (mode === "pending") {
+    const rows = pendingList ?? [];
+    if (rows.length === 0) return null;
+    return (
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse text-sm">
+          <thead>
+            <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
+              <th className="py-2 pe-3 font-semibold">Email</th>
+              <th className="py-2 pe-3 font-semibold">Note</th>
+              <th className="py-2 pe-3 font-semibold">Invited at</th>
+              <th className="py-2 pe-3 font-semibold">By</th>
+              <th className="py-2 pe-0 text-end font-semibold">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.email} className="border-b border-border/40">
+                <td className="py-2 pe-3 font-mono text-[13px]" dir="ltr">
+                  {row.email}
+                </td>
+                <td className="py-2 pe-3 text-muted-foreground">
+                  {row.note ?? "—"}
+                </td>
+                <td className="py-2 pe-3 text-muted-foreground">
+                  {shortDate(row.invitedAt)}
+                </td>
+                <td className="py-2 pe-3 text-muted-foreground">
+                  {row.invitedByName ?? "—"}
+                </td>
+                <td className="py-2 pe-0 text-end">
+                  <button
+                    type="button"
+                    disabled={pending}
+                    onClick={() => {
+                      if (
+                        !confirm(
+                          `Cancel pending invitation for ${row.email}?\n\nWhen they sign up later they will NOT be auto-granted.`,
+                        )
+                      ) {
+                        return;
+                      }
+                      startTransition(async () => {
+                        const res = await setTestUserByEmail({
+                          email: row.email,
+                          enabled: false,
+                        });
+                        if (!res.ok) {
+                          toast.error(`Could not cancel: ${res.error}`);
+                          return;
+                        }
+                        toast.success("Invitation cancelled");
+                        router.refresh();
+                      });
+                    }}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-rose-500/30 bg-rose-500/10 px-3 py-1 text-[13px] font-semibold text-rose-200 transition hover:bg-rose-500/20 disabled:opacity-50"
+                  >
+                    <Trash2 className="size-3.5" />
+                    Cancel
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     );
   }
 

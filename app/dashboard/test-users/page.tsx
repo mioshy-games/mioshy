@@ -41,6 +41,14 @@ export interface TestUserRow {
   markedByName: string | null;
 }
 
+/** Pending invitation — an email added before signup. */
+export interface PendingInvitationRow {
+  email: string;
+  note: string | null;
+  invitedAt: string | null;
+  invitedByName: string | null;
+}
+
 export default async function TestUsersPage() {
   await requireAdmin();
 
@@ -104,6 +112,48 @@ export default async function TestUsersPage() {
       : null,
   }));
 
+  // Pending invitations — emails added before the holder signed up.
+  // signupAction auto-claims these so they only live in the table until
+  // the user actually signs up.
+  const { data: pendingRaw } = await admin
+    .from("test_user_invitations")
+    .select("email, note, invited_at, invited_by")
+    .is("claimed_at", null)
+    .order("invited_at", { ascending: false });
+  type PendingRaw = {
+    email: string;
+    note: string | null;
+    invited_at: string | null;
+    invited_by: string | null;
+  };
+  const pendingRows = (pendingRaw ?? []) as PendingRaw[];
+  const pendingMarkerIds = Array.from(
+    new Set(
+      pendingRows
+        .map((r) => r.invited_by)
+        .filter((x): x is string => !!x && !markerNames.has(x)),
+    ),
+  );
+  if (pendingMarkerIds.length > 0) {
+    const { data: extraMarkers } = await admin
+      .from("profiles")
+      .select("id, full_name, email")
+      .in("id", pendingMarkerIds);
+    for (const p of (extraMarkers ?? []) as Array<{
+      id: string;
+      full_name: string | null;
+      email: string | null;
+    }>) {
+      markerNames.set(p.id, p.full_name?.trim() || p.email || null);
+    }
+  }
+  const pending: PendingInvitationRow[] = pendingRows.map((r) => ({
+    email: r.email,
+    note: r.note,
+    invitedAt: r.invited_at,
+    invitedByName: r.invited_by ? markerNames.get(r.invited_by) ?? null : null,
+  }));
+
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <div>
@@ -142,6 +192,22 @@ export default async function TestUsersPage() {
           <TestUsersClient mode="list" initialList={items} />
         </CardContent>
       </Card>
+
+      {pending.length > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Pending invitations · {pending.length}</CardTitle>
+            <CardDescription>
+              These emails were invited before they had an account. When
+              they sign up, they&apos;re auto-granted on the first page
+              render. Remove to revoke the invitation.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <TestUsersClient mode="pending" initialList={[]} pending={pending} />
+          </CardContent>
+        </Card>
+      ) : null}
     </div>
   );
 }
