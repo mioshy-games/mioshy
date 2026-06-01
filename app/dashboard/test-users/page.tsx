@@ -64,47 +64,65 @@ export default async function TestUsersPage() {
     );
   }
 
-  // Fetch the whitelist + resolve the "marked by" admin name in one
-  // shot. We deliberately allow >50 rows here (this is an internal
-  // tool — the volume will never realistically exceed a handful).
+  // Fetch the whitelist + resolve emails + the "marked by" admin name.
+  // Email lives in auth.users, exposed via the admin_users_overview
+  // view. We join client-side (two reads, in-memory merge) because
+  // PostgREST won't FK-traverse into auth.* automatically.
   const { data: rows } = await admin
     .from("profiles")
-    .select(
-      "id, full_name, email, test_user_note, test_user_marked_at, test_user_marked_by",
-    )
+    .select("id, full_name, test_user_note, test_user_marked_at, test_user_marked_by")
     .eq("is_test_user", true)
     .order("test_user_marked_at", { ascending: false });
 
   type RawRow = {
     id: string;
     full_name: string | null;
-    email: string | null;
     test_user_note: string | null;
     test_user_marked_at: string | null;
     test_user_marked_by: string | null;
   };
   const raw = (rows ?? []) as RawRow[];
+
+  // Pull emails for every whitelisted profile in one batch.
+  const profileIds = raw.map((r) => r.id);
+  let emailByUserId = new Map<string, string | null>();
+  if (profileIds.length > 0) {
+    const { data: viewRows } = await admin
+      .from("admin_users_overview")
+      .select("user_id, email")
+      .in("user_id", profileIds);
+    emailByUserId = new Map(
+      ((viewRows ?? []) as Array<{ user_id: string; email: string | null }>)
+        .map((r) => [r.user_id, r.email]),
+    );
+  }
+
+  // Resolve the "marked by" admin names. Same admin_users_overview
+  // view powers this — the admin who flipped the flag has a row too.
   const markerIds = Array.from(
     new Set(
       raw.map((r) => r.test_user_marked_by).filter((x): x is string => !!x),
     ),
   );
-  let markerNames = new Map<string, string | null>();
+  const markerNames = new Map<string, string | null>();
   if (markerIds.length > 0) {
     const { data: markers } = await admin
-      .from("profiles")
-      .select("id, full_name, email")
-      .in("id", markerIds);
-    markerNames = new Map(
-      ((markers ?? []) as Array<{ id: string; full_name: string | null; email: string | null }>)
-        .map((p) => [p.id, p.full_name?.trim() || p.email || null]),
-    );
+      .from("admin_users_overview")
+      .select("user_id, full_name, email")
+      .in("user_id", markerIds);
+    for (const m of (markers ?? []) as Array<{
+      user_id: string;
+      full_name: string | null;
+      email: string | null;
+    }>) {
+      markerNames.set(m.user_id, m.full_name?.trim() || m.email || null);
+    }
   }
 
   const items: TestUserRow[] = raw.map((r) => ({
     id: r.id,
     fullName: r.full_name?.trim() || null,
-    email: r.email,
+    email: emailByUserId.get(r.id) ?? null,
     note: r.test_user_note,
     markedAt: r.test_user_marked_at,
     markedByName: r.test_user_marked_by
@@ -136,15 +154,15 @@ export default async function TestUsersPage() {
   );
   if (pendingMarkerIds.length > 0) {
     const { data: extraMarkers } = await admin
-      .from("profiles")
-      .select("id, full_name, email")
-      .in("id", pendingMarkerIds);
+      .from("admin_users_overview")
+      .select("user_id, full_name, email")
+      .in("user_id", pendingMarkerIds);
     for (const p of (extraMarkers ?? []) as Array<{
-      id: string;
+      user_id: string;
       full_name: string | null;
       email: string | null;
     }>) {
-      markerNames.set(p.id, p.full_name?.trim() || p.email || null);
+      markerNames.set(p.user_id, p.full_name?.trim() || p.email || null);
     }
   }
   const pending: PendingInvitationRow[] = pendingRows.map((r) => ({

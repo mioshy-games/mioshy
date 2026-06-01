@@ -190,7 +190,7 @@ function Tab({ label, href, active, badge, dot, children }: TabProps) {
         ) : null}
       </span>
       <span
-        className="block w-full text-center text-[12.5px] leading-tight"
+        className="block w-full text-center text-[14.5px] leading-tight"
       >
         {label}
       </span>

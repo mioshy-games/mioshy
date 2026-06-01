@@ -110,13 +110,20 @@ export default async function SettingsPage({
             {tSet("subscriptionTitle")}
           </h3>
           <div className="flex flex-col gap-2">
+            {/* 2026-06-01 — both rows used to link to `/billing`, which
+                doesn't exist as a top-level user page (the existing
+                billing flows live at /billing/success + /billing/error
+                only). The real billing surface is `/account`, which
+                already lists every subscription + invoice link the
+                user can act on. Pointing both rows there closes the
+                404 without spinning up a new page. */}
             <SettingsRow
               Icon={CreditCard}
               title={tSet("subscriptionRowTitle")}
               subtitle={
                 data.subscription?.subtitle ?? tSet("subscriptionEmpty")
               }
-              href="/billing"
+              href="/account"
               badgeLabel={data.subscription?.statusLabel ?? null}
               badgeTone={data.subscription?.statusTone ?? "neutral"}
               isHe={isHe}
@@ -125,7 +132,7 @@ export default async function SettingsPage({
               Icon={FileText}
               title={tSet("invoicesTitle")}
               subtitle={tSet("invoicesSub")}
-              href="/billing"
+              href="/account#invoices"
               isHe={isHe}
             />
           </div>

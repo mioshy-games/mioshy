@@ -14,10 +14,11 @@
 
 import { setRequestLocale } from "next-intl/server";
 import { redirect } from "next/navigation";
-import { Heart, Settings, Users } from "lucide-react";
+import { Bell, Settings, Users } from "lucide-react";
 
 import { PageHeader } from "@/components/shell/PageHeader";
 import { SettingsRow } from "@/components/shell/settings/SettingsRow";
+import { LogoutLink } from "@/components/shell/LogoutLink";
 
 import { getShellData } from "@/lib/shell/getShellData";
 import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
@@ -50,11 +51,20 @@ export default async function MorePage({
       />
 
       <div className="mx-auto flex w-full max-w-[600px] flex-col gap-2 px-5 py-6">
+        {/* 2026-06-01 — "adults" moved to a primary mobile tab, so it's
+            no longer in the overflow. Notifications surfaced here so
+            mobile users can reach the bell page without the top bar. */}
         <SettingsRow
-          Icon={Heart}
-          title={tNav("adults")}
-          subtitle={isHe ? "משחקים אינטימיים בטעם טוב" : "Tasteful intimate games"}
-          href="/mioshy-sex"
+          Icon={Bell}
+          title={isHe ? "התראות" : "Notifications"}
+          subtitle={isHe ? "כל מה שהמומחית והמערכת שלחו" : "Everything from your expert"}
+          href="/my/notifications"
+          badgeLabel={
+            shell.notificationCount > 0
+              ? String(shell.notificationCount)
+              : null
+          }
+          badgeTone="active"
           isHe={isHe}
         />
         <SettingsRow
@@ -73,6 +83,17 @@ export default async function MorePage({
           href="/my/settings"
           isHe={isHe}
         />
+
+        {/* 2026-06-01 — logout. On desktop it lives in the sidebar;
+            mobile users need to reach it without leaving the shell, so
+            we expose it here. Same LogoutLink component the sidebar
+            uses, just dropped into the page flow with a divider above. */}
+        <div
+          className="mt-3 border-t pt-3"
+          style={{ borderColor: "var(--shell-line-soft)" }}
+        >
+          <LogoutLink label={t("logout")} />
+        </div>
       </div>
     </>
   );
