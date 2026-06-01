@@ -349,8 +349,9 @@ export default async function PrivateJourneyPage({
       //        product rule says every user needs a real assessment.)
       //
       //     On 'needs_assessment' (no q_priorities at all) we send
-      //     the user to /journey/assessment/intro. The intro page
-      //     captures the pact, then proceeds to the questions.
+      //     the user straight to the questionnaire. The /intro page
+      //     was removed from the flow 2026-06-01 — it was an extra
+      //     click that interrupted the funnel.
       //
       //     Idempotent; silent (no logs/alerts per product decision).
       const resolveResult = await resolvePrioritiesForUser(
@@ -358,7 +359,7 @@ export default async function PrivateJourneyPage({
         effectiveUserId,
       );
       if (resolveResult.kind === "needs_assessment") {
-        redirect(`/${locale}/journey/assessment/intro`);
+        redirect(`/${locale}/journey/assessment`);
       }
       // 'ready' or 'no_program' → fall through to firstSession check.
     }

@@ -41,6 +41,8 @@ import { UpcomingList } from "@/components/shell/lessons/UpcomingList";
 import { getShellData } from "@/lib/shell/getShellData";
 import { getLessonsData } from "@/lib/shell/lessons/getLessonsData";
 import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
+import { createServiceRoleClient } from "@/lib/supabase-admin";
+import { resolvePrioritiesForUser } from "@/lib/journey-content/resolve-priorities";
 
 // `dynamic = "force-dynamic"` is inherited from the (shell) layout.
 
@@ -78,6 +80,27 @@ export default async function LessonsPage({
 
   const shell = await getShellData({ locale: isHe ? "he" : "en" });
   if (!shell) redirect(`/${locale}/auth`);
+
+  // ── Universal assessment gate (Itzik 2026-06-01) ─────────────────────
+  // Every user with journey access — paid, free-tier, or test_user —
+  // must complete the assessment first. Without q_priorities there's
+  // nothing for the expert team to anchor on, and the lessons surface
+  // has nothing to show anyway (the cadence engine drives off the
+  // priority ranking). Same gate that /my/journey uses; we mirror it
+  // here so /my/lessons (now the shell's landing page) enforces it too.
+  if (shell.hasJourney) {
+    const gateAdmin = createServiceRoleClient();
+    if (gateAdmin) {
+      try {
+        const result = await resolvePrioritiesForUser(gateAdmin, shell.userId);
+        if (result.kind === "needs_assessment") {
+          redirect(`/${locale}/journey/assessment`);
+        }
+      } catch {
+        /* assessment gate is best-effort; render normally on errors */
+      }
+    }
+  }
 
   const tLoc = isHe ? "he" : "en";
   const t = await getCmsTranslations({ locale: tLoc, namespace: "appShell", page: "app-shell" });

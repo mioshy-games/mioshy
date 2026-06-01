@@ -52,7 +52,12 @@ function shouldHideChrome(pathname: string) {
     // 2026-05-31 — /journey/timeline/[scheduledId] (single-lesson view)
     // now lives INSIDE the shell layout group too, so the marketing
     // SiteHeader stops painting above its PageHeader.
-    /^\/(en|he)\/journey\/timeline\/[^/]+/.test(pathname)
+    /^\/(en|he)\/journey\/timeline\/[^/]+/.test(pathname) ||
+    // 2026-06-01 — assessment + its /intro redirect are a focused
+    // questionnaire flow. The marketing site header above the
+    // multi-step UI was visually crowding the page; hide it here so
+    // the assessment owns the viewport.
+    /^\/(en|he)\/journey\/assessment(\/|$)/.test(pathname)
   );
 }
 

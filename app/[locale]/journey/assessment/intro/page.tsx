@@ -1,47 +1,22 @@
 /**
- * /[locale]/journey/assessment/intro
+ * /[locale]/journey/assessment/intro → /[locale]/journey/assessment
  *
- * Layer-1 pre-assessment screen. Sets expectations + asks for a small
- * joint commitment + states the privacy contract.
+ * 2026-06-01 — Itzik: the pre-assessment "pact" screen was an extra
+ * click that interrupted the user mid-funnel. Removed entirely from
+ * the flow; the route stays as a permanent redirect so any
+ * historical link (emails, blog posts, share screens) still lands
+ * the user on the assessment instead of a 404.
  *
- * Three blocks:
- *   1. "10 minutes a week × 4 weeks" — duration card
- *   2. "Each of you answers separately. We don't share answers between you." — privacy
- *   3. Pact commitment — "I'm in" button that POSTs the action
- *
- * After the user commits, redirects to /journey/assessment which
- * begins the questionnaire.
- *
- * If the user already has a pact, this page redirects straight through
- * to the assessment — no re-asking.
+ * Behaviour kept by the assessment page itself: it already detects
+ * an in-progress journey and resumes where the user left off.
  */
 
-import { setRequestLocale } from "next-intl/server";
-import { notFound, redirect } from "next/navigation";
-import { routing } from "@/i18n/routing";
-import { getCurrentUserPact } from "@/lib/journey/pacts";
-import { JourneyAssessmentIntro } from "@/components/journey/JourneyAssessmentIntro";
+import { redirect } from "next/navigation";
 
-export const dynamic = "force-dynamic";
-
-export default async function AssessmentIntroPage({
+export default function AssessmentIntroRedirect({
   params,
 }: {
   params: { locale: string };
 }) {
-  const { locale } = params;
-  if (!routing.locales.includes(locale as (typeof routing.locales)[number])) {
-    notFound();
-  }
-  setRequestLocale(locale);
-
-  const isHe = locale === "he";
-
-  // Already committed? Skip straight to the assessment.
-  const existingPact = await getCurrentUserPact();
-  if (existingPact) {
-    redirect(`/${locale}/journey/assessment`);
-  }
-
-  return <JourneyAssessmentIntro isHe={isHe} locale={locale} />;
+  redirect(`/${params.locale}/journey/assessment`);
 }
