@@ -321,6 +321,56 @@ export async function POST(req: Request) {
     base_url: BASE_URL,
   })
 
+  // ── Test-user short-circuit (Itzik 2026-06-01) ──────────────────────────────
+  // When the caller's profile carries `is_test_user = true`, we skip
+  // Cardcom entirely. The entitlements gate (lib/entitlements/
+  // getUserEntitlements) ALREADY returns all-true for the same flag,
+  // so we don't need to write a subscription row — the user lands on
+  // /billing/success and the next page render sees everything unlocked.
+  //
+  // We still flip the checkout_session to status='completed' so funnel
+  // analytics + audit trail stay accurate, and we log loudly so an
+  // admin can confirm in Vercel why no charge happened.
+  {
+    const { data: testProfile } = await serviceClient
+      .from("profiles")
+      .select("is_test_user")
+      .eq("id", auth.user.id)
+      .maybeSingle()
+    const isTest = !!(testProfile as { is_test_user: boolean } | null)?.is_test_user
+    if (isTest) {
+      console.log("[checkout:CREATE] test-user bypass", {
+        session_id: sessionId,
+        user_id8: auth.user.id.slice(0, 8),
+        product,
+        plan,
+        purchase_type,
+      })
+      await serviceClient
+        .from("checkout_sessions")
+        .update({
+          status: "completed",
+          // Stamp note so the audit log is unambiguous.
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", sessionId)
+      const safeReturnPathTest =
+        typeof return_path === "string" && return_path.startsWith("/")
+          ? return_path
+          : null
+      const successQueryTest = safeReturnPathTest
+        ? `session_id=${sessionId}&return_path=${encodeURIComponent(safeReturnPathTest)}&test_user=1`
+        : `session_id=${sessionId}&test_user=1`
+      const redirectUrl = `${BASE_URL}/${urlLocale}/billing/success?${successQueryTest}`
+      return NextResponse.json({
+        success: true,
+        checkout_session_id: sessionId,
+        redirect_url: redirectUrl,
+        test_user_bypass: true,
+      })
+    }
+  }
+
   // ── Open Cardcom LowProfile ─────────────────────────────────────────────────
   const cardcomLang = trustedLanguage
 

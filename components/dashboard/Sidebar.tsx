@@ -109,6 +109,8 @@ const NAV: NavItem[] = [
       { kind: "leaf", href: "/dashboard/coach-profile",  labelKey: "nav.my_profile",     icon: UserCog, tooltipKey: "tip.my_profile" },
       { kind: "leaf", href: "/dashboard/coach-library",  labelKey: "nav.my_library",     icon: BookOpenText, tooltipKey: "tip.my_library" },
       { kind: "leaf", href: "/dashboard/experts",        labelKey: "nav.experts",        icon: UserCog, adminOnly: true },
+      // 2026-06-01 — admin-only whitelist for QA/test accounts.
+      { kind: "leaf", href: "/dashboard/test-users",     labelKey: "nav.test_users",     icon: Sparkles, adminOnly: true },
     ],
   },
 

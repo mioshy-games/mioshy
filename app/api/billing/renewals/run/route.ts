@@ -54,7 +54,40 @@ export async function POST(req: Request) {
     return NextResponse.json({ processed: 0, results })
   }
 
-  for (const sub of dueSubs) {
+  // ── Filter out test users (Itzik 2026-06-01) ────────────────────────────────
+  // Test users get all entitlements via the gate; their subscription
+  // rows (if any exist from legacy purchases) must never trigger a
+  // real charge. We fetch the flag for every due user in one batch.
+  const userIds = Array.from(new Set(dueSubs.map((s) => s.user_id as string)))
+  const { data: testFlags } = await admin
+    .from("profiles")
+    .select("id, is_test_user")
+    .in("id", userIds)
+  const testUserIdSet = new Set(
+    ((testFlags ?? []) as Array<{ id: string; is_test_user: boolean }>)
+      .filter((r) => r.is_test_user)
+      .map((r) => r.id),
+  )
+  const filteredSubs = dueSubs.filter((s) => {
+    const isTest = testUserIdSet.has(s.user_id as string)
+    if (isTest) {
+      console.log("[renewals:SKIP_TEST_USER]", {
+        sub_id: s.id,
+        user_id8: (s.user_id as string).slice(0, 8),
+      })
+    }
+    return !isTest
+  })
+  if (filteredSubs.length === 0) {
+    console.log("[renewals:END]", {
+      processed: 0,
+      skipped_test_users: dueSubs.length,
+      reason: "all_due_are_test_users",
+    })
+    return NextResponse.json({ processed: 0, skipped_test_users: dueSubs.length, results })
+  }
+
+  for (const sub of filteredSubs) {
     const subId  = sub.id
     const userId = sub.user_id
 

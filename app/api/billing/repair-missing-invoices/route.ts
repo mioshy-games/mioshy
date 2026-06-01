@@ -104,6 +104,36 @@ export async function POST(req: Request) {
     )
   }
 
+  // ── Filter out test users (Itzik 2026-06-01) ──────────────────────────────
+  // Test users skip Cardcom, so they should never produce real
+  // subscription_charges rows in the first place. We still filter
+  // defensively in case a legacy row exists — issuing a real invoice
+  // for a free QA grant would be wrong.
+  let workingCharges = charges ?? []
+  if (workingCharges.length > 0) {
+    const candidateUserIds = Array.from(
+      new Set(workingCharges.map((c) => c.user_id as string)),
+    )
+    const { data: testFlags } = await admin
+      .from("profiles")
+      .select("id, is_test_user")
+      .in("id", candidateUserIds)
+    const testUserIdSet = new Set(
+      ((testFlags ?? []) as Array<{ id: string; is_test_user: boolean }>)
+        .filter((r) => r.is_test_user)
+        .map((r) => r.id),
+    )
+    const before = workingCharges.length
+    workingCharges = workingCharges.filter(
+      (c) => !testUserIdSet.has(c.user_id as string),
+    )
+    if (workingCharges.length !== before) {
+      console.log("[repair-cron:SKIP_TEST_USERS]", {
+        skipped: before - workingCharges.length,
+      })
+    }
+  }
+
   type SubscriptionJoin = {
     id: string
     email: string | null
@@ -135,7 +165,7 @@ export async function POST(req: Request) {
   let repaired = 0
   let failed   = 0
 
-  for (const c of (charges ?? []) as ChargeRow[]) {
+  for (const c of (workingCharges ?? []) as ChargeRow[]) {
     scanned++
     const sub: SubscriptionJoin | null = Array.isArray(c.subscriptions)
       ? (c.subscriptions[0] ?? null)

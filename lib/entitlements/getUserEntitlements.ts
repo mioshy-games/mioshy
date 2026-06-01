@@ -102,6 +102,75 @@ async function _getUserEntitlements(
   const memberRole =
     (membership?.role as "owner" | "partner" | null) ?? null;
 
+  // ── Test-user short-circuit (Itzik 2026-06-01) ──────────────────────
+  // When the caller's profile carries `is_test_user = true`, grant
+  // every product immediately without consulting subscriptions /
+  // couple_entitlements / Cardcom. The signup → checkout flow stays
+  // unchanged for the user; it's billing that skips the charge step
+  // (see lib/billing/*).
+  //
+  // We check BOTH the caller's row AND the owner's row (for a partner
+  // whose owner is flagged) so a test-user setup propagates through
+  // the couple just like a real subscription would.
+  const testUserIds = memberRole === "partner" && coupleId
+    ? await (async () => {
+        // The partner's own row is read above via session client; we
+        // also fetch the owner's flag via admin (RLS doesn't expose
+        // cross-couple profiles).
+        const admin = createAdminSupabaseClient();
+        const { data: own } = await admin
+          .from("profiles")
+          .select("id, is_test_user")
+          .eq("id", uid)
+          .maybeSingle();
+        const { data: ownerMember } = await admin
+          .from("couple_members")
+          .select("user_id")
+          .eq("couple_id", coupleId)
+          .eq("role", "owner")
+          .maybeSingle();
+        let ownerFlagged = false;
+        if (ownerMember?.user_id) {
+          const { data: ownerProfile } = await admin
+            .from("profiles")
+            .select("is_test_user")
+            .eq("id", ownerMember.user_id as string)
+            .maybeSingle();
+          ownerFlagged = !!(ownerProfile as { is_test_user: boolean } | null)
+            ?.is_test_user;
+        }
+        return {
+          selfFlagged: !!(own as { is_test_user: boolean } | null)?.is_test_user,
+          ownerFlagged,
+        };
+      })()
+    : await (async () => {
+        const { data: own } = await supabase
+          .from("profiles")
+          .select("is_test_user")
+          .eq("id", uid)
+          .maybeSingle();
+        return {
+          selfFlagged: !!(own as { is_test_user: boolean } | null)?.is_test_user,
+          ownerFlagged: false,
+        };
+      })();
+
+  if (testUserIds.selfFlagged || testUserIds.ownerFlagged) {
+    return {
+      userId: uid,
+      email,
+      coupleId,
+      games: true,
+      journey: true,
+      adults: true,
+      journeyState: "active",
+      journeyGraceUntil: null,
+      anyPillar: true,
+      pillarCount: 3,
+    };
+  }
+
   // ── Partner-aware entitlement source ───────────────────────────────────
   // Decision (Itzik 2026-05-25): pairing a partner via couple_invitations
   // /pair_code grants them the owner's subscription benefits — Games,
