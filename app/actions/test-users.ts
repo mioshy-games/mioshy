@@ -174,6 +174,11 @@ export async function setTestUserByEmail(args: {
   // ── Branch B: no profile yet ────────────────────────────────────────
   // Store the email as a pending invitation. When the holder signs up,
   // signupAction will claim it and stamp is_test_user on their profile.
+  //
+  // 2026-06-01 — also stamp any matching auth.users row directly: if
+  // the user signed up via a non-signupAction path (OAuth, magic link,
+  // older flow), the auto-claim never fires. By doing the same write
+  // here we make the admin's "Add" button idempotent and self-healing.
   if (!args.enabled) {
     // Admin revoking an email we don't have a profile for — just drop
     // the pending row if it exists.
@@ -181,6 +186,67 @@ export async function setTestUserByEmail(args: {
     log.info("set_by_email.pending_revoked", { email, by_admin: adminId });
     revalidatePath("/dashboard/test-users");
     return { ok: true, mode: "revoked", userId: null, displayName: null };
+  }
+
+  // Self-healing: maybe the user signed up between when they were
+  // invited and right now. Try a direct auth.users lookup via the
+  // service role — admin_users_overview cached the absence earlier.
+  try {
+    const { data: authMatch } =
+      await admin.auth.admin.listUsers({ page: 1, perPage: 100 });
+    const match = authMatch?.users?.find(
+      (u) => (u.email ?? "").toLowerCase() === email,
+    );
+    if (match) {
+      const userId = match.id;
+      const { data: nameRow } = await admin
+        .from("profiles")
+        .select("full_name")
+        .eq("id", userId)
+        .maybeSingle();
+      const displayName =
+        (nameRow as { full_name: string | null } | null)?.full_name ?? null;
+      await admin
+        .from("profiles")
+        .update({
+          is_test_user: true,
+          test_user_note: noteTrimmed,
+          test_user_marked_at: new Date().toISOString(),
+          test_user_marked_by: adminId,
+        })
+        .eq("id", userId);
+      // Mark any existing pending invitation as claimed.
+      await admin
+        .from("test_user_invitations")
+        .update({
+          claimed_at: new Date().toISOString(),
+          claimed_user_id: userId,
+        })
+        .eq("email", email);
+      log.info("set_by_email.self_healed", {
+        email,
+        user_id: userId,
+        by_admin: adminId,
+      });
+      await sendTestUserInvite({
+        to: email,
+        name: displayName,
+        mode: "registered",
+        note: noteTrimmed,
+        locale: args.locale ?? "he",
+      });
+      revalidatePath("/dashboard/test-users");
+      return { ok: true, mode: "registered", userId, displayName };
+    }
+  } catch (selfHealErr) {
+    log.warn("set_by_email.self_heal_failed", {
+      email,
+      reason:
+        selfHealErr instanceof Error
+          ? selfHealErr.message
+          : String(selfHealErr),
+    });
+    // fall through to the regular pending path
   }
 
   const { error: inviteErr } = await admin
