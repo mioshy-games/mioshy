@@ -228,16 +228,32 @@ export async function signupAction(formData: FormData): Promise<SignupResult> {
 // Login
 // ─────────────────────────────────────────────────────────────────────────────
 
+// 2026-06-01 — error returns now carry a STABLE `code` field on top of
+// the human-readable `error` string. LoginForm consumes the code to
+// pick a friendly i18n message (HE/EN). Without the code, the form
+// was rendering raw Supabase strings like "Database error querying
+// schema" directly to users — opaque + scary.
+export type LoginErrorCode =
+  | "MISSING_FIELDS"
+  | "INVALID_CREDENTIALS" // wrong password OR email not registered (GoTrue can't tell)
+  | "EMAIL_NOT_CONFIRMED"
+  | "RATE_LIMITED"
+  | "GENERIC";
+
 export type LoginResult =
   | { success: true; isAdmin: boolean }
-  | { success: false; error: string };
+  | { success: false; error: string; code: LoginErrorCode };
 
 export async function loginAction(formData: FormData): Promise<LoginResult> {
   const email    = (formData.get("email")    as string | null)?.trim() ?? "";
   const password = (formData.get("password") as string | null) ?? "";
 
   if (!email || !password) {
-    return { success: false, error: "Email and password are required." };
+    return {
+      success: false,
+      code: "MISSING_FIELDS",
+      error: "Email and password are required.",
+    };
   }
 
   try {
@@ -250,10 +266,9 @@ export async function loginAction(formData: FormData): Promise<LoginResult> {
     });
 
     if (error) {
-      // Surface the full GoTrue payload - name / status / code / message -
-      // so we can tell apart "Invalid credentials" from "Database error
-      // querying schema" (which means a column GoTrue queries on auth.users
-      // is in an unreadable state, NOT a wrong password).
+      // Map GoTrue payloads to a small, stable code set the UI can
+      // translate. The raw message is preserved in `error` for logs +
+      // dev-time debugging, but the UI shouldn't surface it directly.
       console.error("[loginAction] sign-in failed", {
         email,
         name: error.name,
@@ -261,10 +276,26 @@ export async function loginAction(formData: FormData): Promise<LoginResult> {
         code: (error as { code?: string }).code,
         message: error.message,
       });
+      const msg = (error.message ?? "").toLowerCase();
+      const goTrueCode = String(
+        (error as { code?: string }).code ?? "",
+      ).toLowerCase();
+      let code: LoginErrorCode = "GENERIC";
+      if (msg.includes("invalid login credentials")) {
+        code = "INVALID_CREDENTIALS";
+      } else if (msg.includes("email not confirmed") || goTrueCode === "email_not_confirmed") {
+        code = "EMAIL_NOT_CONFIRMED";
+      } else if (
+        msg.includes("rate limit") ||
+        goTrueCode === "over_request_rate_limit"
+      ) {
+        code = "RATE_LIMITED";
+      }
       return {
         success: false,
+        code,
         error:
-          error.message === "Invalid login credentials"
+          code === "INVALID_CREDENTIALS"
             ? "Incorrect email or password."
             : error.message,
       };
@@ -290,7 +321,11 @@ export async function loginAction(formData: FormData): Promise<LoginResult> {
     return { success: true, isAdmin: profile?.role === "admin" };
   } catch (err) {
     console.error("[login]", err);
-    return { success: false, error: "Something went wrong. Please try again." };
+    return {
+      success: false,
+      code: "GENERIC",
+      error: "Something went wrong. Please try again.",
+    };
   }
 }
 

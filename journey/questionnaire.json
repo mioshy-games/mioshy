@@ -1,10 +1,10 @@
 {
-  "version": 4,
+  "version": 5,
   "gating": {
-    "auth_after_index": 30,
+    "auth_after_index": 33,
     "paywall_after_index": 99
   },
-  "total_questions": 29,
+  "total_questions": 32,
   "locales": [
     "he",
     "en"
@@ -26,6 +26,39 @@
     ]
   },
   "questions": [
+    {
+      "id": "q00a_why_now",
+      "category": "free",
+      "domain": null,
+      "type": "reflection",
+      "axes": [],
+      "purpose": "Open intro reflection — surfaces the trigger that pushed the user to seek help right now.",
+      "he_prompt": "מה גרם לכם דווקא עכשיו לחפש משהו שיעזור לזוגיות?",
+      "en_prompt": "What made you, right now, look for something to help your relationship?",
+      "max_length": 600
+    },
+    {
+      "id": "q00b_intimacy_frequency",
+      "category": "free",
+      "domain": null,
+      "type": "reflection",
+      "axes": [],
+      "purpose": "Open intro reflection — how often the user feels intimately connected & satisfied.",
+      "he_prompt": "באיזו תדירות החיים המיניים שלכם משאירים אתכם מחוברים ומסופקים?",
+      "en_prompt": "How often does your intimate life leave you feeling connected and satisfied?",
+      "max_length": 600
+    },
+    {
+      "id": "q00c_what_hurts",
+      "category": "free",
+      "domain": null,
+      "type": "reflection",
+      "axes": [],
+      "purpose": "Open intro reflection — the single most painful thing in the relationship today.",
+      "he_prompt": "מה הדבר שהכי כואב לך בזוגיות שלכם היום? אפילו במשפט אחד.",
+      "en_prompt": "What hurts most in your relationship today? Even in one sentence.",
+      "max_length": 600
+    },
     {
       "id": "q01_knowledge_world",
       "category": "free",

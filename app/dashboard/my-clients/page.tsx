@@ -20,6 +20,7 @@ import { getAdminLocale } from "@/lib/admin/locale";
 import { t } from "@/lib/admin/i18n";
 import { getWorkflowStatesForCouples } from "@/lib/journey/couple-workflow-state";
 import { CoupleStatusChip } from "@/components/dashboard/coach/CoupleStatusChip";
+import { ClickSwallow } from "@/components/dashboard/ClickSwallow";
 
 export const dynamic = "force-dynamic";
 
@@ -210,7 +211,16 @@ export default async function MyClientsPage() {
                       const ws = workflowMap.get(c.coupleId);
                       if (!ws) return null;
                       return (
-                        <div onClick={(e) => e.preventDefault()}>
+                        // 2026-06-01 — the click-swallow was an inline
+                        // `onClick` on a Server Component div, which
+                        // triggered "Event handlers cannot be passed
+                        // to Client Component props." once a workflow
+                        // chip actually appeared (the path was never
+                        // hit when every row had `ws == null`).
+                        // ClickSwallow is a thin "use client" wrapper
+                        // that handles the stopPropagation in the
+                        // browser instead.
+                        <ClickSwallow>
                           <CoupleStatusChip
                             coupleLabel={
                               c.displayName ||
@@ -221,7 +231,7 @@ export default async function MyClientsPage() {
                             }
                             state={ws}
                           />
-                        </div>
+                        </ClickSwallow>
                       );
                     })()}
                     <SlaChip sla={slaMap.get(c.coupleId) ?? null} />

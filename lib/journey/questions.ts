@@ -131,7 +131,11 @@ const EXPECTED_DOMAIN_COUNTS: Record<Domain, number> = {
   friendship: 5,
   family: 2,
 };
-const EXPECTED_NULL_COUNT = 6;
+// 2026-06-01 — bumped from 6 to 9 after Itzik added three new
+// intro-reflection questions (q00a_why_now, q00b_intimacy_frequency,
+// q00c_what_hurts). Each has `domain: null` so the null bucket grew
+// by 3. If a future edit removes one, drop this number to match.
+const EXPECTED_NULL_COUNT = 9;
 
 (function assertDomainDistribution() {
   const actual = getDomainCount();

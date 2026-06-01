@@ -5,7 +5,7 @@ import { useState, useTransition } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Heart } from "lucide-react";
 import { Link, useRouter } from "@/navigation";
-import { loginAction } from "@/app/actions/auth-actions";
+import { loginAction, type LoginErrorCode } from "@/app/actions/auth-actions";
 import { joinCoupleByPairCode } from "@/app/actions/between-us-couple";
 import { AuthField, AuthSubmitButton, AuthCard } from "@/components/ui/auth-field";
 import { safeNext } from "@/lib/auth/safe-next";
@@ -29,7 +29,12 @@ export function LoginForm({ kicked = false, next, pairCode }: Props) {
   const locale = useLocale() as "he" | "en";
   const isHe = locale === "he";
   const [isPending, startTransition] = useTransition();
-  const [error,     setError]        = useState<string | null>(null);
+  // 2026-06-01 — error now carries a structured code so we can pick a
+  // friendly message and decide whether to show a "sign up instead"
+  // CTA below the box. The raw server message is kept for fallback.
+  const [error, setError] = useState<
+    { code: LoginErrorCode; raw: string } | null
+  >(null);
 
   // Same normalisation rule as SignupForm — invalid code → undefined.
   const normalizedCode = (() => {
@@ -50,7 +55,10 @@ export function LoginForm({ kicked = false, next, pairCode }: Props) {
     fd.set("password", password);
     startTransition(async () => {
       const result = await loginAction(fd);
-      if (!result.success) { setError(result.error); return; }
+      if (!result.success) {
+        setError({ code: result.code, raw: result.error });
+        return;
+      }
       // Admins always land on the dashboard regardless of `next` - we
       // don't want a marketing-page next= silently demoting an admin.
       if (result.isAdmin) {
@@ -150,10 +158,51 @@ export function LoginForm({ kicked = false, next, pairCode }: Props) {
           <AuthField id="login_password" label={t("passwordLabel")} type="password" value={password} onChange={setPassword} autoComplete="current-password" required placeholder="••••••••" />
 
           {error && (
-            <motion.p initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}
-              className="rounded-xl bg-rose-500/15 px-4 py-2.5 text-sm text-rose-300">
-              {error}
-            </motion.p>
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              className="space-y-2 rounded-xl bg-rose-500/15 px-4 py-3 text-sm text-rose-100"
+            >
+              <p className="m-0 font-medium">
+                {(() => {
+                  switch (error.code) {
+                    case "MISSING_FIELDS":
+                      return isHe
+                        ? "אנא מלאו אימייל וסיסמה."
+                        : "Please fill in both email and password.";
+                    case "INVALID_CREDENTIALS":
+                      return isHe
+                        ? "לא מצאנו חשבון עם הפרטים האלה. אולי הכתובת או הסיסמה שגויות — או שעדיין לא נרשמתם."
+                        : "We couldn't find an account with these details. The email or password may be wrong — or you haven't signed up yet.";
+                    case "EMAIL_NOT_CONFIRMED":
+                      return isHe
+                        ? "הכתובת עדיין לא אומתה. בדקו את תיבת המייל לקבלת קישור האימות."
+                        : "Your email hasn't been confirmed yet. Check your inbox for the verification link.";
+                    case "RATE_LIMITED":
+                      return isHe
+                        ? "ניסיונות יתר על המידה. נסו שוב בעוד דקה."
+                        : "Too many attempts. Please wait a minute and try again.";
+                    case "GENERIC":
+                    default:
+                      return isHe
+                        ? "משהו השתבש בכניסה. נסו שוב בעוד רגע."
+                        : "Something went wrong during sign-in. Please try again in a moment.";
+                  }
+                })()}
+              </p>
+              {/* Sign-up CTA — surfaces only when the most likely cause
+                  is "no account yet". Keeps the box quiet for the rate-
+                  limit / not-confirmed branches where signing up again
+                  would make things worse. */}
+              {error.code === "INVALID_CREDENTIALS" ? (
+                <Link
+                  href={signupHref}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-rose-500/30 px-3 py-1.5 text-[13px] font-bold text-white transition hover:bg-rose-500/50"
+                >
+                  {isHe ? "להירשם עם המייל הזה" : "Sign up with this email"}
+                </Link>
+              ) : null}
+            </motion.div>
           )}
 
           <AuthSubmitButton loading={isPending} label={t("signInButton")} loadingLabel={t("signingIn")} />
