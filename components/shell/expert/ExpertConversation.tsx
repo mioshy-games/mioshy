@@ -99,22 +99,10 @@ export function ExpertConversation({
     try {
       const res = await postGeneralChannelMessage({ body: trimmed });
       if (!res.ok) {
-        // 2026-05-31 — when the gate is `profile_incomplete`, send the
-        // user straight to the profile-completion screen instead of
-        // showing a cryptic error code. Their draft survives the trip
-        // because the redirect is a soft client-side `router.push`.
-        if (res.error === "profile_incomplete") {
-          toast.message(
-            isHe
-              ? "כדי לשלוח הודעה למומחה צריך להשלים את הפרופיל. שניות בודדות ונחזור לכאן."
-              : "Please finish your profile before messaging the expert — takes a few seconds.",
-            { duration: 6000 },
-          );
-          router.push(
-            `/${isHe ? "he" : "en"}/account/profile?next=${encodeURIComponent("/my/expert")}`,
-          );
-          return;
-        }
+        // 2026-06-01 — `profile_incomplete` no longer reaches this
+        // branch (chat gate relaxed to login-only), but we keep the
+        // `login_required` redirect because a stale session can still
+        // expire mid-page.
         if (res.error === "login_required") {
           toast.error(
             isHe ? "נדרשת התחברות מחדש" : "Please sign in again",

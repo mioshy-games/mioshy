@@ -33,7 +33,6 @@
 import { revalidatePath } from "next/cache";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase-admin";
-import { requireCompleteProfile } from "@/lib/auth/profile-gate";
 import { requireExpert } from "@/lib/auth/expert";
 import { ensureUserChannel } from "@/lib/journey-content/messages";
 import { makeLogger } from "@/lib/observability/log";
@@ -67,22 +66,32 @@ type Err = { ok: false; error: string };
 // one shot when the legacy tables retire).
 // ------------------------------------------------------------
 
+// 2026-06-01 — Itzik: chat sending should NOT require the full
+// profile (mobile + password + name). Sending a message to your
+// assigned expert is a private communication — the expert team can
+// follow up via the in-app channel itself. The full-profile gate
+// remains in place for pair / redeem / purchase / play, where the
+// expert team genuinely needs phone + email to act on the request.
+//
+// New rule: just verify the visitor is logged in. The userId is the
+// only identity downstream code consumes.
 async function resolveViewer(): Promise<
   { ok: true; userId: string; coupleIds: string[] } | Err
 > {
-  const gate = await requireCompleteProfile();
-  if (!gate.ok) return { ok: false, error: gate.error };
-  const userId = gate.gate.user_id;
   const session = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await session.auth.getUser();
+  if (!user) return { ok: false, error: "login_required" };
   const { data: memberships, error } = await session
     .from("couple_members")
     .select("couple_id")
-    .eq("user_id", userId);
+    .eq("user_id", user.id);
   if (error) return { ok: false, error: error.message };
   const coupleIds = (memberships ?? [])
     .map((m) => m.couple_id as string)
     .filter(Boolean);
-  return { ok: true, userId, coupleIds };
+  return { ok: true, userId: user.id, coupleIds };
 }
 
 async function loadScheduledForViewer(args: {
