@@ -460,16 +460,12 @@ export default async function JourneyAssessmentPage({
       className="relative isolate min-h-screen"
       data-testid="assessment-bg-base"
       style={{
-        // Static wine-tinted dark backdrop. Replaces the flat #070b18
-        // black (2026-05-19 Itzik: too somber). Three radial washes in
-        // the brand palette (wine + magenta + violet) painted once,
-        // zero animation, zero JS. The base color stays dark so the
-        // questions remain the focus — the gradient just gives the
-        // page warmth so it doesn't feel like a void.
+        // Itzik 2026-06-02: simplified to a single uniform dark backdrop.
+        // The previous stack of radial gradients (wine/magenta/violet)
+        // created horizontal bands - in particular a dark strip behind
+        // the logo that didn't match the body. Single linear gradient
+        // ensures the logo sits flush with the body background.
         background:
-          "radial-gradient(1200px 720px at 18% -10%, rgba(184,60,77,0.16), transparent 65%), " +
-          "radial-gradient(1000px 600px at 86% 8%, rgba(139,38,56,0.13), transparent 62%), " +
-          "radial-gradient(900px 540px at 50% 110%, rgba(76,29,149,0.16), transparent 65%), " +
           "linear-gradient(180deg, #0b0712 0%, #0e0913 50%, #100a17 100%)",
       }}
     >
@@ -488,6 +484,27 @@ export default async function JourneyAssessmentPage({
         <div className="journey-ambient-orb journey-ambient-orb--b" />
       </div>
       <AssessmentDiagProbe />
+      {/* Itzik 2026-06-02: Mioshy logo above the funnel - present on
+          EVERY assessment screen (intro/questions/sections/auth/summary)
+          via the shared page wrapper. 150px wide, centered, modest top
+          padding so it doesn't crowd the first question. Wrapped in an
+          anchor so clicking the logo returns to the locale's home page. */}
+      <div className="relative z-10 flex justify-center pt-6 pb-2">
+        <a
+          href={`/${locale}`}
+          aria-label="Mioshy home"
+          className="inline-flex transition-opacity hover:opacity-80"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/mioshy-white.svg"
+            alt="Mioshy"
+            width={150}
+            height={48}
+            className="h-auto w-[150px]"
+          />
+        </a>
+      </div>
       <JourneyClient
         locale={locale as Locale}
         initialProgress={initialProgress}

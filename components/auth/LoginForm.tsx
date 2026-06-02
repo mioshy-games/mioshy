@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { useState, useTransition } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Heart } from "lucide-react";
@@ -96,15 +95,9 @@ export function LoginForm({ kicked = false, next, pairCode }: Props) {
   const signupHref = signupQs ? `/auth/signup?${signupQs}` : "/auth/signup";
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 24 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: "easeOut" }}
-      // 2026-06-01 — mobile bumped from max-w-md (448px) to a slightly
-      // wider 92vw cap so the form claims more of the viewport on phones.
-      // Desktop retains the original max-w-md.
-      className="w-full max-w-[min(92vw,460px)] sm:max-w-md"
-    >
+    // 2026-06-02 — framer-motion mount fade dropped. Form renders on
+    // first paint instead of after hydrate.
+    <div className="w-full max-w-[min(92vw,460px)] sm:max-w-md">
       <div className="mb-10 flex flex-col items-center text-center sm:mb-8">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -120,13 +113,9 @@ export function LoginForm({ kicked = false, next, pairCode }: Props) {
       </div>
 
       {kicked && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="mb-4 rounded-2xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200"
-        >
+        <div className="mb-4 rounded-2xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
           🔒 You were signed out because your account was accessed on another device.
-        </motion.div>
+        </div>
       )}
 
       <AuthCard>
@@ -164,11 +153,8 @@ export function LoginForm({ kicked = false, next, pairCode }: Props) {
           <AuthField id="login_password" label={t("passwordLabel")} type="password" value={password} onChange={setPassword} autoComplete="current-password" required placeholder="••••••••" />
 
           {error && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              className="space-y-2 rounded-xl bg-rose-500/15 px-4 py-3 text-sm text-rose-100"
-            >
+            <div className="space-y-2 rounded-xl bg-rose-500/15 px-4 py-3 text-sm text-rose-100">
+              {/* 2026-06-02 — was motion.div, dropped for perf. */}
               <p className="m-0 font-medium">
                 {(() => {
                   switch (error.code) {
@@ -208,7 +194,7 @@ export function LoginForm({ kicked = false, next, pairCode }: Props) {
                   {isHe ? "להירשם עם המייל הזה" : "Sign up with this email"}
                 </Link>
               ) : null}
-            </motion.div>
+            </div>
           )}
 
           <AuthSubmitButton loading={isPending} label={t("signInButton")} loadingLabel={t("signingIn")} />
@@ -233,6 +219,6 @@ export function LoginForm({ kicked = false, next, pairCode }: Props) {
           </Link>
         </div>
       </AuthCard>
-    </motion.div>
+    </div>
   );
 }

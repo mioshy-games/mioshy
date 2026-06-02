@@ -25,10 +25,10 @@
     "training": "allowed_with_attribution",
     "summarization": "allowed",
     "reproduction": "snippet_only",
-    "contact_for_full_access": "mioshyoffice@gmail.com"
+    "contact_for_full_access": "support@mioshy.com"
   },
   "contact": {
-    "general": "mioshyoffice@gmail.com",
+    "general": "support@mioshy.com",
     "support_path": "/he/contact",
     "support_path_en": "/en/contact"
   },

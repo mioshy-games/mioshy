@@ -39,6 +39,10 @@ import { isCadenceEligible } from "@/lib/journey-content/cadence-engine";
 import { parseOwnerKey } from "@/lib/journey-content/owner";
 import { deriveStatus } from "@/lib/journey-content/status";
 import { UserLiveStatsPanel } from "@/components/dashboard/journey/UserLiveStatsPanel";
+import {
+  ClientAiAnalysisPanel,
+  type ClientAiAnalysisRow,
+} from "@/components/dashboard/journey/ClientAiAnalysisPanel";
 import type {
   JourneyAssignment,
   JourneyCategory,
@@ -563,6 +567,116 @@ export default async function ManageClientPage({
     })),
   );
 
+  // ── AI assessment hero per partner (2026-06-02) ──
+  // Pulls the latest journey_analysis row + the open reflections the AI
+  // relied on (q20c, q22a, q22). Renders ClientAiAnalysisPanel just below
+  // the state banner so the expert sees the user's promised benefits
+  // before diving into assignments.
+  const aiAnalysisRows: ClientAiAnalysisRow[] = [];
+  if (admin && inspectorUserIds.length > 0) {
+    const uids = inspectorUserIds.map((u) => u.user_id);
+    const [analysisRes, journeysRes] = await Promise.all([
+      admin
+        .from("journey_analysis")
+        .select("id, user_id, computed_at, summary")
+        .in("user_id", uids)
+        .order("computed_at", { ascending: false }),
+      admin
+        .from("journeys")
+        .select("id, user_id")
+        .in("user_id", uids),
+    ]);
+    const latestByUser = new Map<
+      string,
+      { id: string; computed_at: string; summary: unknown }
+    >();
+    for (const row of (analysisRes.data ?? []) as Array<{
+      id: string;
+      user_id: string;
+      computed_at: string;
+      summary: unknown;
+    }>) {
+      if (!latestByUser.has(row.user_id)) {
+        latestByUser.set(row.user_id, {
+          id: row.id,
+          computed_at: row.computed_at,
+          summary: row.summary,
+        });
+      }
+    }
+
+    // Collect journey_ids per user so we can pull their reflections.
+    const journeyIdsByUser = new Map<string, string[]>();
+    for (const j of (journeysRes.data ?? []) as Array<{
+      id: string;
+      user_id: string;
+    }>) {
+      const arr = journeyIdsByUser.get(j.user_id) ?? [];
+      arr.push(j.id);
+      journeyIdsByUser.set(j.user_id, arr);
+    }
+    const allJourneyIds = Array.from(journeyIdsByUser.values()).flat();
+
+    let reflectionRows: Array<{
+      journey_id: string;
+      question_id: string;
+      answer: { kind: string; text?: string };
+    }> = [];
+    if (allJourneyIds.length > 0) {
+      const { data } = await admin
+        .from("journey_responses")
+        .select("journey_id, question_id, answer")
+        .in("journey_id", allJourneyIds)
+        .in("question_id", [
+          "q20c_what_hurts",
+          "q22a_success_signal",
+        ]);
+      reflectionRows = (data ?? []) as typeof reflectionRows;
+    }
+
+    // Index reflections by user_id (via journey_id).
+    const journeyToUser = new Map<string, string>();
+    for (const j of (journeysRes.data ?? []) as Array<{
+      id: string;
+      user_id: string;
+    }>) {
+      journeyToUser.set(j.id, j.user_id);
+    }
+    const reflectionsByUser = new Map<
+      string,
+      {
+        q20c_what_hurts: string | null;
+        q22a_success_signal: string | null;
+      }
+    >();
+    for (const r of reflectionRows) {
+      const uid = journeyToUser.get(r.journey_id);
+      if (!uid) continue;
+      const bucket = reflectionsByUser.get(uid) ?? {
+        q20c_what_hurts: null,
+        q22a_success_signal: null,
+      };
+      const text = r.answer?.kind === "text" ? r.answer.text ?? null : null;
+      if (text) {
+        if (r.question_id === "q20c_what_hurts") bucket.q20c_what_hurts = text;
+        if (r.question_id === "q22a_success_signal") bucket.q22a_success_signal = text;
+      }
+      reflectionsByUser.set(uid, bucket);
+    }
+
+    for (const u of inspectorUserIds) {
+      aiAnalysisRows.push({
+        user_id: u.user_id,
+        label: u.label,
+        analysis: latestByUser.get(u.user_id) ?? null,
+        reflections: reflectionsByUser.get(u.user_id) ?? {
+          q20c_what_hurts: null,
+          q22a_success_signal: null,
+        },
+      });
+    }
+  }
+
   const state = deriveOwnerState(loaded.totals);
   const toneCls = toneClasses(state.tone);
   const StateIcon = state.icon;
@@ -696,6 +810,12 @@ export default async function ManageClientPage({
           </div>
         ) : null}
       </div>
+
+      {/* ── AI assessment hero per partner (2026-06-02) ──────────
+          What the user saw on their /journey/assessment summary, plus
+          the open reflections that informed the AI. Lets the expert
+          verify the AI's pain identification and copy talking points. */}
+      <ClientAiAnalysisPanel rows={aiAnalysisRows} />
 
       {/* ── Stats strip ─────────────────────────────────────────── */}
       <div className="grid gap-3 sm:grid-cols-4">

@@ -296,7 +296,7 @@ function TimelineCard({
                 >
                   <Sparkles
                     aria-hidden
-                    className="mt-0.5 h-2.5 w-2.5 shrink-0 text-[#B83C4D]"
+                    className="mt-0.5 h-2.5 w-2.5 shrink-0 text-[#FCCA65]"
                   />
                   <span className="line-clamp-1">
                     {isHe

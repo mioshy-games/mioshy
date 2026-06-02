@@ -65,7 +65,11 @@ export function PerItemThread({
   const router = useRouter();
   const [messages, setMessages] = React.useState<JourneyMessage[]>(initialMessages);
   const [draft, setDraft] = React.useState("");
-  const [isPrivate, setIsPrivate] = React.useState(false);
+  // Default to PRIVATE (2026-06-02 — Itzik): users were confused
+  // about who reads per-item messages. The thread is now framed as a
+  // 1:1 line to the expert, so a private default matches the framing.
+  // Users who want their partner to read along can still flip the toggle.
+  const [isPrivate, setIsPrivate] = React.useState(true);
   const [posting, setPosting] = React.useState(false);
   const composerRef = React.useRef<HTMLTextAreaElement | null>(null);
 
@@ -138,14 +142,32 @@ export function PerItemThread({
 
   return (
     <div className="space-y-6" dir={isHe ? "rtl" : "ltr"}>
+      {/* Header — frames the whole surface as a 1:1 line to the
+          expert about THIS chapter. Replaces the old optional
+          promptLabel which was easy to miss. */}
+      <header
+        className="rounded-2xl border px-4 py-3 sm:px-5"
+        style={{
+          borderColor: "rgba(252,202,101,0.35)",
+          background: "linear-gradient(160deg, rgba(252,202,101,0.10) 0%, rgba(184,143,50,0.04) 100%)",
+        }}
+      >
+        <div className="flex items-center gap-2 text-[13px] font-semibold text-[#FAF6F7]">
+          <Sparkle className="size-4 text-amber-200" aria-hidden />
+          <CmsText cmsKey="journeyTimeline.thread.expertHeader" />
+        </div>
+        <CmsText
+          cmsKey="journeyTimeline.thread.expertSubheader"
+          as="p"
+          className="mt-1 text-[12px] text-white/65"
+        />
+        {promptLabel ? (
+          <p className="mt-2 text-[12px] italic text-white/55">{promptLabel}</p>
+        ) : null}
+      </header>
+
       {/* Composer - primary affordance, open by default */}
       <form onSubmit={handlePost} className="space-y-3">
-        {promptLabel ? (
-          <div className="flex items-center gap-2 text-xs text-white/55">
-            <Sparkle className="size-3.5 text-fuchsia-300/80" aria-hidden />
-            <span>{promptLabel}</span>
-          </div>
-        ) : null}
         <Textarea
           ref={composerRef}
           value={draft}
@@ -245,7 +267,7 @@ function MessageRow({
   // The layout is RTL-aware via flexbox justify-* (which respects `dir`).
   const align = isExpert ? "justify-start" : "justify-end";
   const bubbleTone = isExpert
-    ? "border-[#B83C4D]/40 bg-gradient-to-br from-[#B83C4D]/15 via-[#B83C4D]/8 to-transparent text-white"
+    ? "border-[#FCCA65]/40 bg-gradient-to-br from-[#FCCA65]/15 via-[#FCCA65]/8 to-transparent text-white"
     : isMine
       ? "border-white/15 bg-white/[0.06] text-white"
       : "border-amber-300/25 bg-amber-400/[0.06] text-white";
@@ -287,15 +309,23 @@ function MessageRow({
           <img
             src={expertAvatarUrl}
             alt={senderLabel}
-            className="mt-1 h-9 w-9 shrink-0 self-start rounded-full border-2 border-[#B83C4D]/40 object-cover"
+            className="mt-1 h-9 w-9 shrink-0 self-start rounded-full border-2 border-[#FCCA65]/40 object-cover"
           />
         ) : (
+          // High-contrast avatar (Itzik 2026-06-02). The previous
+          // white-text-on-burgundy gradient was unreadable against
+          // the dark page background. New scheme: solid warm-cream
+          // fill with the burgundy persona-initial — contrast ratio
+          // ~10:1 — plus a subtle burgundy ring so it still reads
+          // as "Mioshy-branded".
           <span
             aria-hidden
-            className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center self-start rounded-full text-[15px] font-bold text-[#FAF6F7]"
+            className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center self-start rounded-full text-[15px] font-bold"
             style={{
-              background: "linear-gradient(135deg, #B83C4D 0%, #6C2E40 100%)",
-              boxShadow: "0 8px 20px -8px rgba(184,60,77,0.6)",
+              background: "#FAF6F7",
+              color: "#8A1F33",
+              border: "2px solid rgba(252,202,101,0.55)",
+              boxShadow: "0 6px 16px -8px rgba(252,202,101,0.55)",
             }}
           >
             {avatarInitial}
@@ -337,7 +367,7 @@ function MessageRow({
             isExpert ? "rounded-ss-md" : "rounded-se-md",
           )}
         >
-          <p className="whitespace-pre-wrap text-[15px] leading-[1.55] text-white/95">
+          <p className="whitespace-pre-wrap text-[17px] leading-[1.55] text-white/95">
             {message.body}
           </p>
         </div>
@@ -367,7 +397,7 @@ function MessageRow({
                 className={cn(
                   "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition",
                   mine
-                    ? "border-[#B83C4D]/40 bg-[#B83C4D]/15 text-white"
+                    ? "border-[#FCCA65]/40 bg-[#FCCA65]/15 text-white"
                     : "border-white/10 bg-white/5 text-white/70 hover:bg-white/10",
                 )}
                 aria-pressed={mine}

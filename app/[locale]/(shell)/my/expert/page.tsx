@@ -24,6 +24,7 @@ import { PageHeader } from "@/components/shell/PageHeader";
 import { MarkSurfaceSeen } from "@/components/shell/MarkSurfaceSeen";
 import { ExpertChatHeader } from "@/components/shell/expert/ExpertChatHeader";
 import { ExpertConversation } from "@/components/shell/expert/ExpertConversation";
+import { NoJourneyUpsell } from "@/components/shell/today/NoJourneyUpsell";
 
 import { getShellData } from "@/lib/shell/getShellData";
 import {
@@ -31,6 +32,7 @@ import {
   getGeneralChannelThread,
 } from "@/lib/journey-content/messages";
 import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
+import { getOwnerJourneyStatus } from "@/lib/journey-content/owner-status";
 
 // `dynamic = "force-dynamic"` is inherited from the (shell) layout.
 
@@ -46,15 +48,60 @@ export default async function ExpertPage({
   const shell = await getShellData({ locale: isHe ? "he" : "en" });
   if (!shell) redirect(`/${locale}/auth`);
 
-  // No expert → no chat surface. Send them home (they'll see the empty
-  // state for "no journey yet"). Avoids a confusing "blank chat".
-  if (!shell.expert) {
-    redirect(`/${locale}/my/lessons`);
-  }
-
   const tLoc = isHe ? "he" : "en";
   const t = await getCmsTranslations({ locale: tLoc, namespace: "appShell", page: "app-shell" });
   const tExpert = await getCmsTranslations({ locale: tLoc, namespace: "appShell.expert", page: "app-shell" });
+
+  // 2026-06-02 (Itzik): non-journey users used to be silently
+  // redirected to /my/lessons, with no explanation. The new behaviour
+  // is to render this page with a contextual explainer + state-aware
+  // CTA so the user understands *why* the chat is gated and what to
+  // do next. The CTA forks on assessment status — no point asking
+  // someone who already completed the assessment to retake it.
+  if (!shell.expert) {
+    // coupleId=null is safe here: if we got past the !shell.expert
+    // gate, the user has no journey entitlement (and partner-shared
+    // entitlement would have filled shell.expert via getShellData).
+    // The assessment lookup keys on user_id directly anyway.
+    const status = await getOwnerJourneyStatus({
+      userId: shell.userId,
+      coupleId: null,
+    });
+    const ctaHref = status.hasCompletedAssessment ? "/journey" : "/journey/assessment";
+    const ctaLabel = status.hasCompletedAssessment
+      ? tExpert("gateCtaSubscribe")
+      : tExpert("gateCtaAssessment");
+    const title = status.hasCompletedAssessment
+      ? tExpert("gateTitleHasAssessment")
+      : tExpert("gateTitleNoAssessment");
+    const body = status.hasCompletedAssessment
+      ? tExpert("gateBodyHasAssessment")
+      : tExpert("gateBodyNoAssessment");
+
+    return (
+      <>
+        <PageHeader
+          rootLabel={t("rootCrumb")}
+          pageLabel={tExpert("pageTitle")}
+          bellCount={shell.notificationCount}
+        />
+        <div className="mx-auto w-full max-w-[760px] px-5 py-6 pb-32 lg:pb-12">
+          <NoJourneyUpsell
+            chip={tExpert("gateChip")}
+            title={title}
+            body={body}
+            ctaLabel={ctaLabel}
+            ctaHref={ctaHref}
+            bullets={[
+              tExpert("gateBullet1"),
+              tExpert("gateBullet2"),
+              tExpert("gateBullet3"),
+            ]}
+          />
+        </div>
+      </>
+    );
+  }
 
   // Ensure the channel row exists (no-op when present). This is the
   // same step /my/journey performs before reading the thread.

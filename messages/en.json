@@ -67,7 +67,17 @@
       "composerPlaceholder": "Write a message to the expert…",
       "emptyLabel": "No messages yet. Send the first one here — we'll be back within 24 hours.",
       "todayLabel": "Today",
-      "sendLabel": "Send"
+      "sendLabel": "Send",
+      "gateChip": "Private relationship expert",
+      "gateTitleNoAssessment": "Chat with an expert starts with the assessment",
+      "gateTitleHasAssessment": "Your assessment is ready — just join the program",
+      "gateBodyNoAssessment": "Private chat with a relationship expert is part of the Mioshy program. So your expert can guide you the right way, we start with a short 10-minute assessment that shows where the connection is strong and where there's room to grow.",
+      "gateBodyHasAssessment": "Assessment done — nice. The next step is to join the weekly program, then you can open the chat with your matched expert and start receiving personalized chapters.",
+      "gateCtaAssessment": "Start the free assessment",
+      "gateCtaSubscribe": "Join the program",
+      "gateBullet1": "Private relationship expert in chat, 7 days a week",
+      "gateBullet2": "Personalized chapters based on your assessment",
+      "gateBullet3": "Replies within 24 hours, cancel any time"
     },
     "share": {
       "pageTitle": "Share with partner",
@@ -350,7 +360,7 @@
     "nameLabel": "Full name",
     "emailLabel": "Email",
     "emailPlaceholder": "you@example.com",
-    "phoneLabel": "Phone (optional)",
+    "phoneLabel": "Phone",
     "phonePlaceholder": "+1 555 000 0000",
     "passwordLabel": "Password",
     "passwordPlaceholder": "At least 6 characters",
@@ -358,7 +368,7 @@
     "hidePassword": "Hide password",
     "signingIn": "Signing in…",
     "creatingAccount": "Creating account…",
-    "createAccountButton": "Create account →",
+    "createAccountButton": "Create account",
     "signInButton": "Sign in",
     "noAccount": "No account?",
     "createFree": "Create one free",
@@ -409,7 +419,7 @@
       "legalName": "Bugo Media LTD",
       "regNumber": "Reg. no. 515960508",
       "address": "Adar 9, Modiin Macabim Reut 7176346, Israel",
-      "email": "mioshyoffice@gmail.com",
+      "email": "support@mioshy.com",
       "footnote": "Mioshy is a brand owned and operated by Bugo Media LTD. Direct any legal inquiries to the email above."
     },
     "terms": {
@@ -507,7 +517,7 @@
         "contact": {
           "heading": "12. Contact Us",
           "body": [
-            "For any question, request or notice of a terms breach - please email us at mioshyoffice@gmail.com. We will do our best to respond within 14 business days."
+            "For any question, request or notice of a terms breach - please email us at support@mioshy.com. We will do our best to respond within 14 business days."
           ]
         }
       }
@@ -546,7 +556,7 @@
           "heading": "Billing Errors",
           "body": [
             "If you believe you were charged in error (a duplicate charge, an incorrect amount, a charge after cancellation, etc.) - that is a billing dispute, not a refund request, and we are happy to look into it.",
-            "Email us at mioshyoffice@gmail.com with the charge details. We will get back to you within 5 business days, and where an actual error is confirmed we will refund the relevant amount."
+            "Email us at support@mioshy.com with the charge details. We will get back to you within 5 business days, and where an actual error is confirmed we will refund the relevant amount."
           ]
         },
         "consumer": {
@@ -563,7 +573,7 @@
       "title": "Privacy Policy",
       "lastUpdated": "May 6, 2026",
       "intro": [
-        "Your privacy matters. This document explains what information we collect, how it is stored, and who may have access to it. For any question, contact us at mioshyoffice@gmail.com."
+        "Your privacy matters. This document explains what information we collect, how it is stored, and who may have access to it. For any question, contact us at support@mioshy.com."
       ],
       "sections": {
         "dataCollected": {
@@ -619,7 +629,7 @@
         "contact": {
           "heading": "Contact Us About Privacy",
           "body": [
-            "For any privacy-related request, question or complaint - please email us at mioshyoffice@gmail.com. We will do our best to respond within 14 business days."
+            "For any privacy-related request, question or complaint - please email us at support@mioshy.com. We will do our best to respond within 14 business days."
           ]
         }
       }
@@ -664,7 +674,7 @@
           "heading": "Accessibility Coordinator",
           "body": [
             "You can contact Mioshy's accessibility coordinator for any question, request or report:",
-            "{TODO: Itzik - please fill in the accessibility coordinator's name, phone number and dedicated contact email. Temporary fallback: mioshyoffice@gmail.com}"
+            "{TODO: Itzik - please fill in the accessibility coordinator's name, phone number and dedicated contact email. Temporary fallback: support@mioshy.com}"
           ]
         },
         "audit": {
@@ -676,7 +686,7 @@
         "report": {
           "heading": "How to Report an Accessibility Issue",
           "body": [
-            "If you encounter an accessibility issue on the site - please let us know. Email mioshyoffice@gmail.com with a description of the issue, the page on which you encountered it, and any detail that will help us reproduce and resolve it.",
+            "If you encounter an accessibility issue on the site - please let us know. Email support@mioshy.com with a description of the issue, the page on which you encountered it, and any detail that will help us reproduce and resolve it.",
             "We undertake to respond to accessibility reports within 14 business days, and to remediate substantive issues within a reasonable time."
           ]
         }
@@ -1681,7 +1691,8 @@
       "gain5": "Improving communication and intimacy in your relationship",
       "topicsLabel": "Areas we'll work on",
       "topicsTitle": "Five domains. We start with the one you ranked first.",
-      "topicsSub": "Each domain combines proven tools, exercises, and research — Gottman, Chapman, Perel, Sue Johnson. Personal to you, not a generic course.",
+      "topicsSub": "In every domain we work with leading counsellors from Israel and around the world, hand-picked to be part of the service.",
+      "topicsAfterJoin": "After joining you can change the priority order.",
       "topic1Name": "Couple Communication",
       "topic1Desc": "How we talk, listen, and resolve disagreements.",
       "topic2Name": "Sexuality & Intimacy",
@@ -1695,10 +1706,10 @@
       "expertLabel": "Personal guidance",
       "expertTitle": "A real couples expert, waiting for you in a private chat",
       "expertBody": "Not a bot. Not a queue. Not a 9am appointment. A real person who knows your story — what you answered, what your partner answered, and what's been working for you these last few weeks.",
-      "expertBullet1": "Available seven days a week — send a question the moment it comes up, get a real reply when ready",
-      "expertBullet2": "Learns you as a couple — how you talk, what weighs you down, what lights you up",
-      "expertBullet3": "Your content and exercises update to match where you actually are — every week, fresh",
-      "expertBullet4": "A private 1:1 chat, just yours — no forums, no shared app",
+      "expertBullet1": "Available seven days a week",
+      "expertBullet2": "Learns you, and improves your relationship",
+      "expertBullet3": "Content and exercises that update with you, week after week",
+      "expertBullet4": "A private chat with a dedicated expert just for you",
       "preparingAnalysis": "Preparing your analysis…",
       "checkoutErrorGeneric": "Could not open checkout. Please try again.",
       "checkoutErrorNetwork": "Network error. Check your connection and try again.",
@@ -1760,7 +1771,9 @@
       "senderYou": "You",
       "senderPartner": "Your partner",
       "privateBadge": "Private",
-      "addReaction": "Add reaction"
+      "addReaction": "Add reaction",
+      "expertHeader": "Ask the expert about this chapter",
+      "expertSubheader": "Private by default. Just you and the expert. Flip the toggle below to share with your partner."
     },
     "itemDetail": {
       "markedNotDone": "Marked as not done",
@@ -1970,7 +1983,7 @@
     "faqQ4": "Does my partner get access to what I purchased?",
     "faqA4": "Yes, automatically. When you purchase, a 'couple space' opens for both of you — a shared area. Anything one of you buys is immediately accessible to the other. One purchase = both of you in. No need to buy twice.",
     "faqQ5": "Can we get a refund if it's not a fit?",
-    "faqA5": "Yes. Up to 14 days from purchase, if you haven't started playing, we'll refund in full — email us at mioshyoffice@gmail.com and we'll handle it. Once you've started, the content has been revealed so the purchase becomes non-refundable.",
+    "faqA5": "Yes. Up to 14 days from purchase, if you haven't started playing, we'll refund in full — email us at support@mioshy.com and we'll handle it. Once you've started, the content has been revealed so the purchase becomes non-refundable.",
     "faqQ6": "Do I need to buy sex toys?",
     "faqA6": "Depends on the game. Some games incorporate toys — clearly listed on each game's page. Others require no equipment at all. You choose upfront.",
     "faqQ7": "Is this discreet?",

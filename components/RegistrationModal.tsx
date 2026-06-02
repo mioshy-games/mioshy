@@ -134,7 +134,7 @@ export function RegistrationModal({
             {/* Fields - AuthField tokens */}
             <div className="space-y-4">
               <AuthField id="reg_fullname" label={t.fullName} value={fullName} onChange={setFullName} autoComplete="name" required />
-              <AuthField id="reg_mobile"   label={t.mobile}   value={mobile}   onChange={setMobile}   autoComplete="tel" optional />
+              <AuthField id="reg_mobile"   label={t.mobile}   value={mobile}   onChange={setMobile}   autoComplete="tel" />
               <AuthField id="reg_email"    label={t.email}    type="email" value={email} onChange={setEmail} autoComplete="email" required />
               <AuthField id="reg_password" label={t.password} type="password" value={password} onChange={setPassword} autoComplete="new-password" required minLength={8} />
             </div>
@@ -144,7 +144,6 @@ export function RegistrationModal({
               checked={marketingConsent}
               onChange={setMarketingConsent}
               label={t.consentLabel}
-              hint={t.consentHint}
               dir={isHe ? "rtl" : "ltr"}
             />
 

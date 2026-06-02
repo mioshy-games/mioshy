@@ -9,6 +9,7 @@ import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { analyze } from "@/lib/journey/analysis";
+import { analyzeAssessment } from "@/lib/ai/analyze-assessment";
 import { getPriorityLabels } from "@/lib/journey-content/priority-categories";
 import type { AnswerValue, Locale, Response } from "@/lib/journey/types";
 
@@ -205,6 +206,63 @@ export async function POST() {
   }));
   const priorityLabels = await getPriorityLabels();
   const analysis = analyze(responses, priorityLabels);
+
+  // ── AI hero generation (2026-06-02) ──
+  // Best-effort enrichment. We fetch the user's profile name + gender +
+  // demographic answers, hand them to Claude Sonnet 4.6 along with the
+  // deterministic Analysis, and stamp the returned AiHeroBlock into
+  // summary.ai_hero. On any failure (rate-limit, parse error, missing
+  // key, network) we log and continue with summary.ai_hero=null - the
+  // UI falls back to the deterministic narrative. The AI call NEVER
+  // blocks the persistence of the assessment.
+  try {
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("full_name, gender")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    const firstName = (() => {
+      const full = (profile?.full_name ?? "").trim();
+      if (!full) return null;
+      // Heuristic: first whitespace-separated token, capped at 30 chars.
+      // Hebrew names tend to be a single word in this field; English may
+      // be "First Last".
+      return full.split(/\s+/)[0].slice(0, 30);
+    })();
+
+    // Demographic labels - pull HE labels off the matching question option.
+    const yearsAnswer = responses.find((r) => r.question_id === "q_relationship_years");
+    const kidsAnswer = responses.find((r) => r.question_id === "q_kids_count");
+    const yearsLabel = yearsAnswer && yearsAnswer.answer.kind === "single"
+      ? yearsAnswer.answer.option
+      : null;
+    const kidsLabel = kidsAnswer && kidsAnswer.answer.kind === "single"
+      ? kidsAnswer.answer.option
+      : null;
+
+    const aiHero = await analyzeAssessment({
+      analysis,
+      responses,
+      user_name: firstName,
+      gender: profile?.gender ?? null,
+      relationship_years_label: yearsLabel,
+      kids_count_label: kidsLabel,
+    });
+    analysis.summary.ai_hero = aiHero;
+    console.log("[api/journey/analyze POST] ai_hero", {
+      userId: user.id,
+      generated: !!aiHero,
+      expert: aiHero?.expert_mentioned ?? null,
+      signal: aiHero?.pain_signal ?? null,
+    });
+  } catch (e) {
+    console.warn("[api/journey/analyze POST] ai_hero threw, falling back", {
+      userId: user.id,
+      err: e instanceof Error ? e.message : String(e),
+    });
+    analysis.summary.ai_hero = null;
+  }
 
   const { error: insertErr } = await admin.from("journey_analysis").insert({
     journey_id: journey.id,

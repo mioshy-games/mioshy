@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { useState, useTransition } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Heart } from "lucide-react";
@@ -98,13 +97,9 @@ export function SignupForm({ next, pairCode }: Props) {
   const loginHref = loginQs ? `/auth?${loginQs}` : "/auth";
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 24 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: "easeOut" }}
-      // 2026-06-01 — mobile-first sizing pass. Same logic as LoginForm.
-      className="w-full max-w-[min(92vw,460px)] sm:max-w-md"
-    >
+    // 2026-06-02 — framer-motion mount fade dropped. The form should
+    // render immediately on first paint, not stagger in after JS hydrates.
+    <div className="w-full max-w-[min(92vw,460px)] sm:max-w-md">
       <div className="mb-10 flex flex-col items-center text-center sm:mb-8">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -152,7 +147,7 @@ export function SignupForm({ next, pairCode }: Props) {
         <form onSubmit={handleSubmit} className="mt-7 space-y-5 sm:mt-6 sm:space-y-4">
           <AuthField id="signup_name"     label={t("nameLabel")}     value={fullName} onChange={setFullName} autoComplete="name"         required placeholder={t("namePlaceholder")} />
           <AuthField id="signup_email"    label={t("emailLabel")}    type="email" value={email} onChange={setEmail} autoComplete="email"  required placeholder={t("emailPlaceholder")} />
-          <AuthField id="signup_phone"    label={t("phoneLabel")}    type="tel"   value={phone} onChange={setPhone} autoComplete="tel"    optional  placeholder={t("phonePlaceholder")} />
+          <AuthField id="signup_phone"    label={t("phoneLabel")}    type="tel"   value={phone} onChange={setPhone} autoComplete="tel"              placeholder={t("phonePlaceholder")} />
           <AuthField id="signup_password" label={t("passwordLabel")} type="password" value={password} onChange={setPassword} autoComplete="new-password" required minLength={6} placeholder={t("passwordPlaceholder")} />
 
           <ConsentCheckbox
@@ -160,17 +155,12 @@ export function SignupForm({ next, pairCode }: Props) {
             checked={marketingConsent}
             onChange={setMarketingConsent}
             label={t("consentLabel")}
-            hint={t("consentHint")}
           />
 
           {error && (
-            <motion.p
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              className="rounded-xl bg-rose-500/15 px-4 py-2.5 text-sm text-rose-300"
-            >
+            <p className="rounded-xl bg-rose-500/15 px-4 py-2.5 text-sm text-rose-300">
               {error}
-            </motion.p>
+            </p>
           )}
 
           <AuthSubmitButton loading={isPending} label={t("createAccountButton")} loadingLabel={t("creatingAccount")} />
@@ -195,6 +185,6 @@ export function SignupForm({ next, pairCode }: Props) {
           </Link>
         </div>
       </AuthCard>
-    </motion.div>
+    </div>
   );
 }

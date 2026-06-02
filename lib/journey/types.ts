@@ -192,6 +192,53 @@ export interface Response {
 
 export type AxisScoreMap = Partial<Record<Axis, number>>;
 
+/**
+ * Five-category scoring bundle (2026-06-02). Computed deterministically
+ * alongside the legacy 3 scores (friendship/conflict/passion) to drive the
+ * new bar-chart visualisation at the top of /journey/assessment. Each
+ * value is 0..100 where higher = healthier. The lowest of the five is
+ * tagged in `lowest_key` so the UI can render the "נקודת ההתחלה שלכם"
+ * label next to it. Stored inside `summary` JSONB (no migration needed).
+ */
+export interface CategoryScores {
+  communication: number;
+  intimacy: number;
+  emotional_connection: number;
+  friendship: number;
+  family: number;
+  /** Lowest-scoring category, surfaced as the "starting point" in the UI. */
+  lowest_key: "communication" | "intimacy" | "emotional_connection" | "friendship" | "family";
+}
+
+/**
+ * AI-generated hero block (2026-06-02). Filled by Claude Sonnet 4.6 in
+ * lib/ai/analyze-assessment.ts. Stored inside `summary` JSONB. When the
+ * AI call fails or ANTHROPIC_API_KEY is missing this field is `null` and
+ * the UI falls back to the deterministic narrative/recommendations.
+ *
+ * Voice rules baked into the prompt:
+ *   - Benefit-stack only ("תקבלו / תרגישו / תתאהבו"), no process talk.
+ *   - No em-dash, no foreign-feel ("אנחנו רואים", "מסע", "טרנספורמציה").
+ *   - Vague time promises only ("מהר מאוד") - never N days/weeks.
+ *   - Expert mention conditional on `expert_mentioned`.
+ *   - Name + gender-correct pronouns when supplied.
+ */
+export interface AiHeroBlock {
+  hero_he: string;
+  hero_en: string;
+  recommendations_he: string[];
+  recommendations_en: string[];
+  /** Whether the model chose to reference the in-chat expert ("מומחה
+   *  צמוד זמין בצ'אט") - tracked for analytics and to let the expert
+   *  dashboard show "this user was promised expert support". */
+  expert_mentioned: boolean;
+  /** Where the AI sourced the pain signal from. */
+  pain_signal: "reflection" | "top_priority" | "horsemen" | "scores";
+  model: string;
+  generated_at: string;
+  latency_ms: number;
+}
+
 export interface AnalysisSummaryBilingual {
   narrative_he: string;
   narrative_en: string;
@@ -213,6 +260,11 @@ export interface AnalysisSummaryBilingual {
     he: string;
     en: string;
   }>;
+  /** 5-category deterministic scoring bundle (2026-06-02). Always present. */
+  category_scores?: CategoryScores;
+  /** AI-generated hero block (2026-06-02). Null on AI failure -> UI falls
+   *  back to narrative + deterministic recommendations. */
+  ai_hero?: AiHeroBlock | null;
 }
 
 export interface Analysis {

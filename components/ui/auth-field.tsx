@@ -29,8 +29,6 @@ interface AuthFieldProps {
   placeholder?: string;
   autoComplete?: string;
   required?: boolean;
-  /** If true the field is not required and shows "(אופציונלי)" hint */
-  optional?: boolean;
   minLength?: number;
 }
 
@@ -43,7 +41,6 @@ export function AuthField({
   placeholder = "",
   autoComplete,
   required,
-  optional,
   minLength,
 }: AuthFieldProps) {
   const [showPw, setShowPw] = useState(false);
@@ -54,15 +51,18 @@ export function AuthField({
     <div>
       {/* Label sizing — mobile reads 15px (a touch larger so it feels
           confident under a thumb), desktop steps down to 14px since
-          the field already has more horizontal weight there. */}
+          the field already has more horizontal weight there.
+
+          2026-06-02 (Itzik): the auto-injected "(אופציונלי)" suffix
+          dropped. It collided with i18n strings that already carried
+          the same word and the result was duplicated. The `optional`
+          prop is kept (callers still use it to flip `required` off
+          on the input) but no longer renders text. */}
       <label
         htmlFor={id}
         className="flex items-center gap-1.5 text-[15px] font-semibold tracking-wide text-white sm:text-[14px]"
       >
         {label}
-        {optional && (
-          <span className="font-normal text-white/65">(אופציונלי)</span>
-        )}
       </label>
 
       <div className="relative mt-2">
@@ -155,24 +155,12 @@ export function AuthSubmitButton({
 // The frosted-glass card wrapping the form - consistent across all auth surfaces.
 
 export function AuthCard({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  // Mobile: 28px padding feels grown-up without crowding the edges of
-  // a small screen. Desktop steps up to 36px to match the proportionally
-  // wider container. Border radius matches the inputs (18→24) for
-  // visual coherence at every breakpoint.
+  // Itzik 2026-06-02: frame removed (border, background, shadow, blur).
+  // The form fields now sit directly on the page background, consistent
+  // across InlineAuthStep / LoginForm / SignupForm / ForgotPasswordForm.
+  // Padding kept so the form has breathing room from screen edges on
+  // small viewports.
   return (
-    <div
-      className={`rounded-[28px] p-7 sm:rounded-3xl sm:p-9 ${className}`}
-      style={{
-        background:
-          "linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.04) 100%)",
-        backdropFilter: "blur(28px)",
-        WebkitBackdropFilter: "blur(28px)",
-        border: "1px solid rgba(255,255,255,0.14)",
-        boxShadow:
-          "0 32px 80px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.12)",
-      }}
-    >
-      {children}
-    </div>
+    <div className={`p-2 sm:p-4 ${className}`}>{children}</div>
   );
 }

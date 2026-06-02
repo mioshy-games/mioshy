@@ -3,15 +3,12 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import {
-  Lock,
-  CalendarDays,
   MessageCircle,
   CheckCircle2,
-  Sparkles,
   ArrowLeft,
   ArrowRight,
 } from "lucide-react";
-import type { Analysis, Locale } from "@/lib/journey/types";
+import type { Analysis, CategoryScores, Locale } from "@/lib/journey/types";
 import { axisLabel } from "@/lib/journey/analysis";
 import {
   getFocusMonthCopy,
@@ -132,6 +129,22 @@ export function AnalysisSummary({
     }
   };
 
+  // ── AI hero + category bundle (2026-06-02) ───────────────────────────
+  // When the AI call succeeded `summary.ai_hero` is populated and we render
+  // the new benefit-stack hero. When null we render NOTHING in its place —
+  // Itzik 2026-06-02: the deterministic "narrative" was confusing users
+  // because it didn't reference their actual answers, so it's been removed
+  // from the visible flow entirely. The personalized recommendation body
+  // below remains (it references the user's chosen priority).
+  const aiHero = analysis.summary.ai_hero ?? null;
+  const categoryScores = analysis.summary.category_scores ?? null;
+  const heroText = aiHero
+    ? isHe ? aiHero.hero_he : aiHero.hero_en
+    : null;
+  const heroRecs = aiHero
+    ? isHe ? aiHero.recommendations_he : aiHero.recommendations_en
+    : [];
+
   return (
     <motion.div
       dir={isHe ? "rtl" : "ltr"}
@@ -142,81 +155,92 @@ export function AnalysisSummary({
       // the desktop default since the sticky CTA is mobile-only.
       className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 py-10 pb-32 lg:pb-10"
     >
-      {/* ── Hero ─────────────────────────────────────────────────────── */}
-      <header className="flex flex-col gap-2.5">
-        <span className="inline-flex items-center gap-2 self-start rounded-full border border-white/15 bg-white/[0.04] px-3 py-1 text-[13px] font-semibold uppercase tracking-wider text-white/75">
-          <Sparkles className="h-3.5 w-3.5" />
-          <CmsText cmsKey="journeyAssessment.analysis.sectionLabel" />
-        </span>
-        <CmsText
-          cmsKey="journeyAssessment.analysis.title"
-          as="h1"
-          className="text-balance text-start font-heading text-[34px] font-extrabold leading-tight text-white sm:text-[42px]"
-        />
-        <CmsText
-          cmsKey="journeyAssessment.analysis.subtitle"
-          as="p"
-          className="text-pretty text-start text-[22px] leading-[1.3] text-white/70 sm:text-[19px] sm:leading-[1.55]"
-        />
-      </header>
+      {/* Mioshy logo lives on the page wrapper (app/[locale]/journey/
+          assessment/page.tsx) so it appears on every screen of the flow,
+          not just the summary. Don't duplicate it here. */}
 
-      {/* ── Score cards ──────────────────────────────────────────────── */}
-      {/* Itzik 2026-05-29 (mobile): 3-up grid on ALL widths (was 1-up on
-          mobile), label bumped 16→20px, value 28→36px on mobile. Desktop
-          sizes preserved via sm: overrides per mobile-only rule. */}
-      <div className="grid grid-cols-3 gap-2 sm:gap-3">
-        <ScoreCard
-          labelKey="journeyAssessment.analysis.friendship"
-          value={analysis.friendship_score}
-        />
-        <ScoreCard
-          labelKey="journeyAssessment.analysis.conflict"
-          value={analysis.conflict_health}
-        />
-        <ScoreCard
-          labelKey="journeyAssessment.analysis.passion"
-          value={analysis.passion_risk}
-          invert
-        />
-      </div>
+      {/* ── Bar chart - the new hero (2026-06-02) ──────────────────────
+          Order per Itzik: chart first (establishes "we read you"), then
+          AI benefit-stack hero, then personalized method body, then
+          recommendation bullets, then the existing sections. */}
+      {categoryScores ? (
+        <CategoryBarChart scores={categoryScores} isHe={isHe} />
+      ) : (
+        // Fallback to legacy 3-card grid for older assessments without
+        // the 5-category bundle.
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
+          <ScoreCard
+            labelKey="journeyAssessment.analysis.friendship"
+            value={analysis.friendship_score}
+          />
+          <ScoreCard
+            labelKey="journeyAssessment.analysis.conflict"
+            value={analysis.conflict_health}
+          />
+          <ScoreCard
+            labelKey="journeyAssessment.analysis.passion"
+            value={analysis.passion_risk}
+            invert
+          />
+        </div>
+      )}
 
-      {/* ── Narrative ────────────────────────────────────────────────── */}
-      <section className="rounded-3xl border border-white/10 bg-white/[0.025] p-5 sm:p-6">
-        <CmsText
-          cmsKey="journeyAssessment.analysis.narrativeLabel"
-          as="div"
-          className="text-start text-[20px] leading-[1.3] font-semibold uppercase tracking-wider text-[#B83C4D]/85 sm:text-[13px] sm:leading-normal"
-        />
-        <p className="mt-2 text-pretty text-start text-[22px] leading-[1.3] text-white/90 sm:text-[19px] sm:leading-[1.7]">
-          {isHe ? analysis.summary.narrative_he : analysis.summary.narrative_en}
-        </p>
-      </section>
+      {/* ── AI benefit-stack hero ─────────────────────────────────────── */}
+      {heroText ? (
+        <section className="px-2 py-2">
+          <p className="text-balance text-start font-heading text-[26px] font-extrabold leading-tight text-white sm:text-[32px]">
+            {heroText}
+          </p>
+        </section>
+      ) : null}
 
-      {/* ── Focus for the first month ────────────────────────────────── */}
-      {focusLabel && (() => {
+      {/* Personalized method body REMOVED (Itzik 2026-06-02): the same
+          content is already covered by the three feature tiles in the
+          offer card below ("חדר אישי", "תוכן שבועי", "שיחה שמתפתחת"),
+          so a long paragraph above duplicated the value prop. */}
+
+      {/* ── "מה תקבלו בליווי" - AI recommendations as benefit bullets ── */}
+      {heroRecs.length > 0 ? (
+        <section>
+          <h2 className="text-balance text-start font-heading text-[24px] font-extrabold text-white sm:text-[28px]">
+            {isHe ? "מה תקבלו בליווי" : "What you'll get in the program"}
+          </h2>
+          <ul className="mt-4 flex flex-col gap-2.5">
+            {heroRecs.map((rec, i) => (
+              <li
+                key={i}
+                className="flex items-start gap-3 px-2 py-2"
+              >
+                <span
+                  className="mt-2.5 inline-block h-2 w-2 shrink-0 rounded-full"
+                  style={{ background: "#FCCA65" }}
+                  aria-hidden
+                />
+                <span className="flex-1 text-pretty text-start text-[22px] leading-[1.3] text-white/95 sm:text-[19px] sm:leading-[1.65]">
+                  {rec}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {/* ── Focus for the first month (legacy - only when AI failed) ──
+          Itzik 2026-06-02: when the AI hero rendered above, the focus
+          block is redundant. Keep it as a fallback so older assessments
+          (without ai_hero) still see a structured "focus" prompt. */}
+      {!heroText && focusLabel && (() => {
         const priority = isPriorityKey(analysis.summary.top_priority)
           ? analysis.summary.top_priority
           : null;
         const focus = getFocusMonthCopy(priority, locale);
         return (
-          <section
-            className="relative overflow-hidden rounded-3xl border p-5 sm:p-7"
-            style={{
-              borderColor: "rgba(184,60,77,0.35)",
-              background:
-                "linear-gradient(135deg, rgba(184,60,77,0.18) 0%, rgba(108,46,64,0.10) 60%, rgba(255,255,255,0.02) 100%)",
-            }}
-          >
-            <div
-              aria-hidden
-              className="pointer-events-none absolute -end-20 -top-20 h-56 w-56 rounded-full opacity-30 blur-3xl"
-              style={{ background: "#B83C4D" }}
-            />
-            <div className="relative">
+          <section className="px-2 py-2">
+            <div>
               <CmsText
                 cmsKey="journeyAssessment.analysis.topGap"
                 as="div"
-                className="text-start text-[20px] leading-[1.3] font-semibold uppercase tracking-wider text-[#FAF6F7]/75 sm:text-[13px] sm:leading-normal"
+                className="text-start text-[14px] font-semibold uppercase tracking-wider text-[#FCCA65] leading-normal"
               />
               <div className="mt-1.5 text-balance text-start font-heading text-[28px] font-extrabold leading-tight text-white sm:text-[32px]">
                 {focusLabel}
@@ -229,7 +253,7 @@ export function AnalysisSummary({
                       className="flex items-start gap-3 text-pretty text-start text-[22px] leading-[1.3] text-white/90 sm:text-[19px] sm:leading-[1.7]"
                     >
                       <CheckCircle2
-                        className="mt-1.5 h-4 w-4 shrink-0 text-[#B83C4D]"
+                        className="mt-1.5 h-4 w-4 shrink-0 text-[#FCCA65]"
                         aria-hidden
                       />
                       <span className={`flex-1 ${i === 2 ? "font-semibold text-[#FAF6F7]" : ""}`}>
@@ -244,40 +268,14 @@ export function AnalysisSummary({
         );
       })()}
 
-      {/* ── Recommendations as bullets ───────────────────────────────── */}
-      <section>
-        <CmsText
-          cmsKey="journeyAssessment.analysis.recs"
-          as="h2"
-          className="text-balance text-start font-heading text-[24px] font-extrabold text-white sm:text-[28px]"
-        />
-        <ul className="mt-4 flex flex-col gap-2.5">
-          {analysis.summary.recommendations.map((rec) => (
-            <li
-              key={rec.id}
-              className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.025] px-4 py-3.5 sm:px-5 sm:py-4"
-            >
-              <span
-                className="mt-2.5 inline-block h-2 w-2 shrink-0 rounded-full"
-                style={{ background: "#B83C4D" }}
-                aria-hidden
-              />
-              <span className="flex-1 text-pretty text-start text-[22px] leading-[1.3] text-white/90 sm:text-[19px] sm:leading-[1.65]">
-                {isHe ? rec.he : rec.en}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </section>
-
       {/* W3.2 (Itzik #14) — what you'll gain. Placed between the
           recommendations and the offer so the user reads concrete
           benefits before they see the price. */}
-      <section className="rounded-3xl border border-emerald-400/20 bg-emerald-500/[0.04] p-5 sm:p-7">
+      <section className="p-2 sm:p-3">
         <CmsText
           cmsKey="journeyAssessment.analysis.gainsLabel"
           as="div"
-          className="text-start text-[20px] leading-[1.3] font-semibold uppercase tracking-wider text-emerald-300/80 sm:text-[13px] sm:leading-normal"
+          className="text-start text-[14px] font-semibold uppercase tracking-wider text-[#FCCA65] leading-normal"
         />
         <CmsText
           cmsKey="journeyAssessment.analysis.gainsTitle"
@@ -291,7 +289,7 @@ export function AnalysisSummary({
               className="flex items-start gap-3 text-[22px] leading-[1.3] text-white/90 sm:text-[19px] sm:leading-[1.65]"
             >
               <CheckCircle2
-                className="mt-1 h-5 w-5 shrink-0 text-emerald-300"
+                className="mt-1 h-5 w-5 shrink-0 text-[#FCCA65]"
                 aria-hidden
               />
               <CmsText
@@ -309,11 +307,11 @@ export function AnalysisSummary({
           friendship / family). Each row: name (bold) + short desc.
           Placed after Gains ("what change") so users see "what areas"
           next, before WhoFor / Expert / Offer. */}
-      <section className="rounded-3xl border border-white/10 bg-white/[0.025] p-5 sm:p-7">
+      <section className="p-2 sm:p-3">
         <CmsText
           cmsKey="journeyAssessment.analysis.topicsLabel"
           as="div"
-          className="text-start text-[20px] leading-[1.3] font-semibold uppercase tracking-wider text-[#B83C4D]/85 sm:text-[13px] sm:leading-normal"
+          className="text-start text-[14px] font-semibold uppercase tracking-wider text-[#FCCA65] leading-normal"
         />
         <CmsText
           cmsKey="journeyAssessment.analysis.topicsTitle"
@@ -329,7 +327,7 @@ export function AnalysisSummary({
           {[1, 2, 3, 4, 5].map((n) => (
             <li
               key={n}
-              className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3.5 sm:px-5 sm:py-4"
+              className="px-2 py-2.5"
             >
               <CmsText
                 cmsKey={`journeyAssessment.analysis.topic${n}Name`}
@@ -344,15 +342,22 @@ export function AnalysisSummary({
             </li>
           ))}
         </ul>
+        {/* Itzik 2026-06-02: reassurance line below the list - the user
+            can re-rank priorities later from inside the journey. */}
+        <CmsText
+          cmsKey="journeyAssessment.analysis.topicsAfterJoin"
+          as="p"
+          className="mt-4 text-start text-[15px] leading-[1.45] italic text-white/60 sm:text-[14px]"
+        />
       </section>
 
       {/* W3.2 (Itzik #13) — who is this for. Below the gains so the
           user reads "what" before "who" — natural decision order. */}
-      <section className="rounded-3xl border border-white/10 bg-white/[0.025] p-5 sm:p-7">
+      <section className="p-2 sm:p-3">
         <CmsText
           cmsKey="journeyAssessment.analysis.whoForLabel"
           as="div"
-          className="text-start text-[20px] leading-[1.3] font-semibold uppercase tracking-wider text-[#B83C4D]/85 sm:text-[13px] sm:leading-normal"
+          className="text-start text-[14px] font-semibold uppercase tracking-wider text-[#FCCA65] leading-normal"
         />
         <CmsText
           cmsKey="journeyAssessment.analysis.whoForTitle"
@@ -367,7 +372,7 @@ export function AnalysisSummary({
             >
               <span
                 className="mt-2.5 inline-block h-2 w-2 shrink-0 rounded-full"
-                style={{ background: "#B83C4D" }}
+                style={{ background: "#FCCA65" }}
                 aria-hidden
               />
               <CmsText
@@ -386,24 +391,12 @@ export function AnalysisSummary({
           "premium delivery" voice. Placed right before the offer so
           the human face is the last thing the user sees before the
           price. */}
-      <section
-        className="relative overflow-hidden rounded-3xl border p-5 sm:p-7"
-        style={{
-          borderColor: "rgba(184,60,77,0.45)",
-          background:
-            "linear-gradient(135deg, rgba(184,60,77,0.22) 0%, rgba(108,46,64,0.12) 60%, rgba(255,255,255,0.02) 100%)",
-        }}
-      >
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -end-20 -top-20 h-56 w-56 rounded-full opacity-30 blur-3xl"
-          style={{ background: "#B83C4D" }}
-        />
-        <div className="relative">
+      <section className="px-2 py-2">
+        <div>
           <CmsText
             cmsKey="journeyAssessment.analysis.expertLabel"
             as="div"
-            className="text-start text-[20px] leading-[1.3] font-semibold uppercase tracking-wider text-[#FAF6F7]/75 sm:text-[13px] sm:leading-normal"
+            className="text-start text-[14px] font-semibold uppercase tracking-wider text-[#FCCA65] leading-normal"
           />
           <CmsText
             cmsKey="journeyAssessment.analysis.expertTitle"
@@ -422,7 +415,7 @@ export function AnalysisSummary({
                 className="flex items-start gap-3 text-[22px] leading-[1.3] text-white/95 sm:text-[19px] sm:leading-[1.65]"
               >
                 <MessageCircle
-                  className="mt-1 h-5 w-5 shrink-0 text-[#B83C4D]"
+                  className="mt-1 h-5 w-5 shrink-0 text-[#FCCA65]"
                   aria-hidden
                 />
                 <CmsText
@@ -459,8 +452,8 @@ export function AnalysisSummary({
           style={{
             paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)",
             background:
-              "linear-gradient(180deg, rgba(184,60,77,0.95) 0%, rgba(108,46,64,0.98) 100%)",
-            boxShadow: "0 -16px 40px -12px rgba(184,60,77,0.55)",
+              "linear-gradient(180deg, rgba(252,202,101,0.95) 0%, rgba(184,143,50,0.98) 100%)",
+            boxShadow: "0 -16px 40px -12px rgba(252,202,101,0.55)",
           }}
           dir={isHe ? "rtl" : "ltr"}
         >
@@ -468,8 +461,9 @@ export function AnalysisSummary({
             type="button"
             onClick={startCheckout}
             disabled={checkoutBusy}
-            className="flex h-[50px] w-full items-center justify-center gap-2 rounded-full bg-white text-[18px] font-bold text-[#6C2E40] transition disabled:opacity-60"
+            className="flex h-[50px] w-full items-center justify-center gap-2 rounded-full text-[18px] font-semibold text-black transition disabled:opacity-60"
             style={{
+              background: "#FCCA65",
               boxShadow: "0 8px 24px -8px rgba(0,0,0,0.5)",
             }}
           >
@@ -498,12 +492,12 @@ function ScoreCard({
   const tone = invert
     ? value >= 60
       ? "text-rose-300"
-      : "text-emerald-300"
+      : "text-[#FCCA65]"
     : value >= 60
-      ? "text-emerald-300"
+      ? "text-[#FCCA65]"
       : "text-amber-300";
   return (
-    <div className="flex flex-col items-center rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-center transition hover:border-white/15 sm:p-4">
+    <div className="flex flex-col items-center p-3 text-center sm:p-4">
       {/* Itzik 2026-05-29 (mobile): label 20px (was 16), value 36px
           (was 28). min-h on label reserves 3 lines so the three score
           numbers align vertically even when one label wraps to 3 lines
@@ -529,19 +523,12 @@ function ScoreCard({
 
 function ActiveSubscriberCard({ locale }: { locale: string }) {
   return (
-    <section
-      className="flex flex-col items-center gap-3 rounded-3xl border p-7 text-center"
-      style={{
-        borderColor: "rgba(184,60,77,0.35)",
-        background:
-          "linear-gradient(135deg, rgba(184,60,77,0.18) 0%, rgba(108,46,64,0.08) 100%)",
-      }}
-    >
+    <section className="flex flex-col items-center gap-3 px-2 py-4 text-center">
       <div
         className="flex h-14 w-14 items-center justify-center rounded-full"
         style={{
-          background: "linear-gradient(135deg, #B83C4D 0%, #6C2E40 100%)",
-          boxShadow: "0 12px 30px -10px rgba(184,60,77,0.55)",
+          background: "linear-gradient(135deg, #FCCA65 0%, #B88F32 100%)",
+          boxShadow: "0 12px 30px -10px rgba(252,202,101,0.55)",
         }}
       >
         <CheckCircle2 className="h-7 w-7 text-[#FAF6F7]" />
@@ -558,9 +545,9 @@ function ActiveSubscriberCard({ locale }: { locale: string }) {
       />
       <a
         href={`/${locale}/my`}
-        className="mt-2 inline-flex min-h-[52px] items-center justify-center rounded-full px-7 text-[15px] font-bold text-white transition hover:brightness-110"
+        className="mt-2 inline-flex min-h-[52px] items-center justify-center rounded-full px-7 text-[15px] font-semibold text-black transition hover:brightness-110"
         style={{
-          background: "linear-gradient(135deg, #B83C4D 0%, #6C2E40 100%)",
+          background: "linear-gradient(135deg, #FCCA65 0%, #B88F32 100%)",
         }}
       >
         <CmsText cmsKey="journeyAssessment.analysis.goAccount" />
@@ -593,26 +580,12 @@ function OfferCard({
   const [priceAmount, ...periodParts] = priceRaw.split(/\s*\/\s*/);
   const pricePeriod = periodParts.join(" / ");
   return (
-    <section
-      className="relative overflow-hidden rounded-3xl border p-5 sm:p-8"
-      style={{
-        borderColor: "rgba(184,60,77,0.45)",
-        background:
-          "linear-gradient(160deg, #1a0f15 0%, #0E0810 60%, #0E0810 100%)",
-        boxShadow: "0 30px 80px -30px rgba(184,60,77,0.5)",
-      }}
-    >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -start-24 -top-24 h-64 w-64 rounded-full opacity-30 blur-3xl"
-        style={{ background: "#B83C4D" }}
-      />
-
-      <div className="relative">
+    <section className="px-2 py-4 sm:py-6">
+      <div>
         <CmsText
           cmsKey="journeyAssessment.analysis.offerLabel"
-          as="span"
-          className="inline-flex items-center gap-2 rounded-full border border-[#B83C4D]/40 bg-[#B83C4D]/15 px-3 py-1 text-[12px] font-semibold uppercase tracking-wider text-[#FAF6F7]"
+          as="div"
+          className="text-start text-[14px] font-semibold uppercase tracking-wider text-[#FCCA65] leading-normal"
         />
         <CmsText
           cmsKey="journeyAssessment.analysis.offerHero"
@@ -625,23 +598,11 @@ function OfferCard({
           className="mt-2 text-pretty text-start text-[17px] font-semibold text-[#FAF6F7]/85"
         />
 
-        <div className="mt-6 flex flex-col gap-3 sm:grid sm:grid-cols-3">
-          <FeatureTile
-            icon={<Lock className="size-5" />}
-            titleKey="journeyAssessment.analysis.feat1Title"
-            bodyKey="journeyAssessment.analysis.feat1Body"
-          />
-          <FeatureTile
-            icon={<CalendarDays className="size-5" />}
-            titleKey="journeyAssessment.analysis.feat2Title"
-            bodyKey="journeyAssessment.analysis.feat2Body"
-          />
-          <FeatureTile
-            icon={<MessageCircle className="size-5" />}
-            titleKey="journeyAssessment.analysis.feat3Title"
-            bodyKey="journeyAssessment.analysis.feat3Body"
-          />
-        </div>
+        {/* 3 FeatureTiles removed (Itzik 2026-06-02): the value props
+            they carried (private expert chat, weekly tailored content,
+            ongoing conversation) are already covered upstream by the
+            AI hero, the "מה תקבלו בליווי" bullets, and the topics
+            section. The tile row was a third repetition. */}
 
         <div className="mt-6 flex flex-col items-center gap-1.5 sm:flex-row sm:justify-between sm:gap-4">
           <div
@@ -666,10 +627,10 @@ function OfferCard({
           type="button"
           onClick={onCheckout}
           disabled={checkoutBusy}
-          className="group mt-5 inline-flex min-h-[58px] w-full items-center justify-center gap-3 rounded-full px-8 text-[17px] font-bold text-white transition hover:brightness-110 disabled:opacity-60"
+          className="group mt-5 inline-flex min-h-[58px] w-full items-center justify-center gap-3 rounded-full px-8 text-[17px] font-semibold text-black transition hover:brightness-110 disabled:opacity-60"
           style={{
-            background: "linear-gradient(135deg, #B83C4D 0%, #6C2E40 100%)",
-            boxShadow: "0 18px 40px -12px rgba(184,60,77,0.55)",
+            background: "linear-gradient(135deg, #FCCA65 0%, #B88F32 100%)",
+            boxShadow: "0 18px 40px -12px rgba(252,202,101,0.55)",
           }}
         >
           {checkoutBusy ? (
@@ -698,41 +659,132 @@ function OfferCard({
 
 // ─────────────────────────────────────────────────────────────────────
 
-function FeatureTile({
-  icon,
-  titleKey,
-  bodyKey,
+// ─────────────────────────────────────────────────────────────────────
+// Category bar chart - 5-bar visualisation that opens the summary
+// (replaces the legacy 3-card score grid as the new hero).
+// Each bar is 0-100, higher = healthier. The lowest-scoring category
+// gets a "נקודת ההתחלה שלכם" label on the side, motivating engagement
+// without scaring the user (Itzik #4, 2026-06-02).
+// ─────────────────────────────────────────────────────────────────────
+
+function CategoryBarChart({
+  scores,
+  isHe,
 }: {
-  icon: React.ReactNode;
-  titleKey: string;
-  bodyKey: string;
+  scores: CategoryScores;
+  isHe: boolean;
 }) {
-  // Itzik 2026-05-29 (mobile UX):
-  //   - icon + title on the same row (mobile), icon above on desktop
-  //   - title takes flex-1 with text-balance so it wraps to even lines
-  //   - body uses text-pretty to avoid orphan words on the last line
-  //   - All text explicitly text-start so RTL/LTR resolves correctly
+  const labelsHe: Record<CategoryScores["lowest_key"], string> = {
+    communication: "תקשורת",
+    intimacy: "אינטימיות",
+    emotional_connection: "חיבור רגשי",
+    friendship: "חברות",
+    family: "משפחה",
+  };
+  const labelsEn: Record<CategoryScores["lowest_key"], string> = {
+    communication: "Communication",
+    intimacy: "Intimacy",
+    emotional_connection: "Emotional",
+    friendship: "Friendship",
+    family: "Family",
+  };
+
+  // Order: always render in the same priority order so the visual
+  // is comparable across users.
+  const rows: Array<{ key: CategoryScores["lowest_key"]; value: number }> = [
+    { key: "communication",         value: scores.communication },
+    { key: "intimacy",              value: scores.intimacy },
+    { key: "emotional_connection",  value: scores.emotional_connection },
+    { key: "friendship",            value: scores.friendship },
+    { key: "family",                value: scores.family },
+  ];
+
+  const startingPointLabel = isHe ? "נקודת ההתחלה שלכם" : "your starting point";
+
+  // Itzik 2026-06-02: horizontal 5-column layout. Yellow gradient bars
+  // (logo gold #FCCA65 → deeper amber #B88F32), high contrast on dark
+  // background per Itzik feedback (red-on-black was unreadable). Square
+  // corners, score number SITS INSIDE each bar near the top.
   return (
-    <div className="flex flex-col gap-2 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-      <div className="flex flex-row items-center gap-3 sm:flex-col sm:items-start sm:gap-2">
-        <span
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#FAF6F7]"
-          style={{ background: "rgba(184,60,77,0.25)" }}
-          aria-hidden
-        >
-          {icon}
-        </span>
-        <CmsText
-          cmsKey={titleKey}
-          as="div"
-          className="flex-1 text-balance text-start text-[20px] leading-[1.3] font-bold text-white sm:flex-none sm:text-[16px] sm:leading-snug"
-        />
+    <section className="px-2 py-4">
+      <div>
+        <div className="mb-6 flex flex-col gap-1.5">
+          <span className="text-start text-[14px] font-semibold uppercase tracking-wider text-[#FCCA65] leading-normal">
+            {isHe ? "האבחון שלכם" : "Your assessment"}
+          </span>
+          <h2 className="text-balance text-start font-heading text-[26px] font-extrabold leading-tight text-white sm:text-[30px]">
+            {isHe ? "האבחון שלכם כיום" : "Your assessment today"}
+          </h2>
+          <p className="mt-1 text-start text-[13px] leading-snug text-white/55">
+            {isHe
+              ? "ציון 0-100 לכל תחום, גבוה = חזק יותר. הציון נגזר ישירות מהתשובות שלכם."
+              : "0-100 per area, higher = stronger. Scores are derived directly from your answers."}
+          </p>
+        </div>
+
+        {/* 5 vertical bars in a single horizontal row, square corners.
+            Number sits BELOW the bar (aligned across all columns) and
+            above the category name. */}
+        <div className="grid grid-cols-5 items-end gap-2 sm:gap-3">
+          {rows.map((row) => {
+            const isLowest = row.key === scores.lowest_key;
+            const heightPct = Math.max(14, Math.min(100, row.value));
+            return (
+              <div key={row.key} className="flex flex-col items-center">
+                {/* Bar */}
+                <div
+                  className="relative w-full overflow-hidden"
+                  style={{
+                    height: 160,
+                    background: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.06)",
+                  }}
+                >
+                  <div
+                    className="absolute inset-x-0 bottom-0 transition-all"
+                    style={{
+                      height: `${heightPct}%`,
+                      background: "#FCCA65",
+                      boxShadow: isLowest
+                        ? "0 0 28px rgba(252,202,101,0.55)"
+                        : "none",
+                    }}
+                  />
+                </div>
+                {/* Score number BELOW the bar, aligned across all columns */}
+                <span
+                  className={`mt-2 text-center text-[20px] font-extrabold tabular-nums leading-none sm:text-[22px] ${
+                    isLowest ? "text-[#FCCA65]" : "text-white"
+                  }`}
+                >
+                  {row.value}
+                </span>
+                {/* Category label below the number */}
+                <span
+                  className={`mt-1.5 text-balance text-center text-[12px] font-semibold leading-tight sm:text-[13px] ${
+                    isLowest ? "text-[#FCCA65]" : "text-white/75"
+                  }`}
+                >
+                  {isHe ? labelsHe[row.key] : labelsEn[row.key]}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* "Starting point" caption, anchored to the lowest column */}
+        <div className="mt-4 flex flex-col items-center gap-1 text-center sm:mt-5">
+          <span className="text-[12px] font-semibold uppercase tracking-wider text-[#FCCA65]">
+            {isHe ? labelsHe[scores.lowest_key] : labelsEn[scores.lowest_key]}
+            {" · "}
+            {startingPointLabel}
+          </span>
+        </div>
       </div>
-      <CmsText
-        cmsKey={bodyKey}
-        as="p"
-        className="text-pretty text-start text-[22px] leading-[1.3] text-white/70 sm:text-[14px] sm:leading-[1.55]"
-      />
-    </div>
+    </section>
   );
 }
+
+// FeatureTile removed (Itzik 2026-06-02): the 3-tile row inside the
+// OfferCard was a third repetition of the value props already covered
+// by the AI hero, the "מה תקבלו בליווי" bullets, and the topics list.

@@ -21,32 +21,24 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import {
   CheckCircle2,
   CircleDashed,
   Loader2,
   Lock,
-  MessageCircle,
   Play,
   Target,
-  Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type {
   JourneyItem,
   JourneyItemCompletion,
-  JourneyItemResponse,
   JourneyScheduledItem,
   ScheduledItemStatus,
 } from "@/lib/journey-content/types";
 import {
   markScheduledItemComplete,
   unmarkScheduledItemComplete,
-  addScheduledItemResponse,
-  deleteScheduledItemResponse,
 } from "@/app/actions/journey-content-user";
 import { CompletionCelebrationModal } from "@/components/journey/timeline/CompletionCelebrationModal";
 import { useCmsText } from "@/hooks/useCmsText";
@@ -57,7 +49,6 @@ interface Props {
   scheduled: JourneyScheduledItem;
   status: ScheduledItemStatus;
   completion: JourneyItemCompletion | null;
-  responses: JourneyItemResponse[];
   viewerUserId: string;
   locale: string;
   /** Phase 1 lesson view — when true, suppress this component's
@@ -97,7 +88,6 @@ export function ItemDetailClient({
   scheduled,
   status: initialStatus,
   completion: initialCompletion,
-  responses: initialResponses,
   viewerUserId,
   locale,
   hideContent = false,
@@ -111,9 +101,6 @@ export function ItemDetailClient({
   const [completion, setCompletion] = React.useState<
     JourneyItemCompletion | null
   >(initialCompletion);
-  const [responses, setResponses] = React.useState<JourneyItemResponse[]>(
-    initialResponses,
-  );
   const [busyToggle, setBusyToggle] = React.useState(false);
   const [celebrationOpen, setCelebrationOpen] = React.useState(false);
 
@@ -121,8 +108,6 @@ export function ItemDetailClient({
   // (headings, body copy) use <CmsText as="..."> inline below.
   const errBundle = useErrorCopyBundle();
   const markedNotDoneMsg = useCmsText("journeyTimeline.itemDetail.markedNotDone").text;
-  const responseSavedMsg = useCmsText("journeyTimeline.itemDetail.responseSaved").text;
-  const responseDeletedMsg = useCmsText("journeyTimeline.itemDetail.responseDeleted").text;
   const completedOnPrefix = useCmsText("journeyTimeline.itemDetail.completedOnPrefix").text;
 
   const title = isHe ? item.title_he : item.title_en ?? item.title_he;
@@ -169,36 +154,6 @@ export function ItemDetailClient({
     } finally {
       setBusyToggle(false);
     }
-  }
-
-  async function handleAddResponse(text: string, isPrivate: boolean) {
-    const res = await addScheduledItemResponse({
-      scheduledItemId: scheduled.id,
-      text,
-      isPrivate,
-    });
-    if (!res.ok) {
-      toast.error(errorCopy(res.error, errBundle));
-      return false;
-    }
-    setResponses((prev) => [...prev, res.response]);
-    toast.success(responseSavedMsg);
-    router.refresh();
-    return true;
-  }
-
-  async function handleDeleteResponse(responseId: string) {
-    // Optimistic removal
-    const snapshot = responses;
-    setResponses((prev) => prev.filter((r) => r.id !== responseId));
-    const res = await deleteScheduledItemResponse(responseId);
-    if (!res.ok) {
-      setResponses(snapshot);
-      toast.error(errorCopy(res.error, errBundle));
-      return;
-    }
-    toast.success(responseDeletedMsg);
-    router.refresh();
   }
 
   return (
@@ -250,7 +205,7 @@ export function ItemDetailClient({
           {/* Body - preserve paragraphs from the admin textarea */}
           <section
             dir={isHe ? "rtl" : "ltr"}
-            className="whitespace-pre-wrap text-base leading-relaxed text-white/85"
+            className="whitespace-pre-wrap text-[20px] leading-[1.7] text-white/90"
           >
             {body}
           </section>
@@ -333,31 +288,11 @@ export function ItemDetailClient({
         </div>
       </div>
 
-      {/* Response thread */}
-      <section className="space-y-4">
-        <header className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <MessageCircle className="h-4 w-4 text-indigo-300" />
-            <CmsText
-              cmsKey="journeyTimeline.itemDetail.reflectionsHeading"
-              as="h2"
-              className="text-lg font-semibold"
-            />
-            <span className="text-xs text-white/50">
-              {responses.length > 0 ? `(${responses.length})` : null}
-            </span>
-          </div>
-        </header>
-
-        <ResponseList
-          responses={responses}
-          viewerUserId={viewerUserId}
-          onDelete={(id) => void handleDeleteResponse(id)}
-          isHe={isHe}
-        />
-
-        <ResponseForm onSubmit={handleAddResponse} />
-      </section>
+      {/* General "Reflections" surface removed 2026-06-02 (Itzik):
+          users + partners + expert were confused which thread was
+          which. The only response surface now is the private
+          per-item thread with the expert, mounted by the parent
+          route as <PerItemThread />. */}
 
       <CompletionCelebrationModal
         open={celebrationOpen}
@@ -429,7 +364,7 @@ function Callout({
         {icon}
         <CmsText cmsKey={titleKey} as="span" />
       </div>
-      <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-white/90">
+      <p className="mt-2 whitespace-pre-wrap text-[19px] leading-[1.6] text-white/95">
         {children}
       </p>
     </aside>
@@ -482,211 +417,7 @@ function extractYouTubeId(url: string): string | null {
   }
 }
 
-// ------------------------------------------------------------
-// ResponseList
-// ------------------------------------------------------------
-
-function ResponseList({
-  responses,
-  viewerUserId,
-  onDelete,
-  isHe,
-}: {
-  responses: JourneyItemResponse[];
-  viewerUserId: string;
-  onDelete: (id: string) => void;
-  isHe: boolean;
-}) {
-  const deleteResponseLabel = useCmsText("journeyTimeline.itemDetail.deleteResponse").text;
-
-  if (responses.length === 0) {
-    return (
-      <div className="rounded-xl border border-dashed border-white/15 bg-white/2 px-4 py-6 text-center text-sm text-white/50">
-        <CmsText cmsKey="journeyTimeline.itemDetail.noResponsesYet" />
-      </div>
-    );
-  }
-  return (
-    <ul className="space-y-3">
-      {responses.map((r) => {
-        const mine = r.user_id === viewerUserId;
-        return (
-          <li
-            key={r.id}
-            className={cn(
-              "rounded-xl border px-4 py-3 backdrop-blur",
-              mine
-                ? "border-indigo-400/30 bg-indigo-500/8"
-                : "border-white/10 bg-white/4",
-            )}
-          >
-            <div className="flex items-center justify-between gap-3 text-xs">
-              <span className="font-semibold text-white/80">
-                <CmsText
-                  cmsKey={
-                    mine
-                      ? "journeyTimeline.itemDetail.responseAuthorMe"
-                      : "journeyTimeline.itemDetail.responseAuthorPartner"
-                  }
-                />
-              </span>
-              <div className="flex items-center gap-2 text-white/40">
-                {r.is_private ? (
-                  <span className="inline-flex items-center gap-1 rounded-full border border-white/15 px-2 py-0.5 text-xs uppercase tracking-wide">
-                    <Lock className="h-3 w-3" />
-                    <CmsText cmsKey="journeyTimeline.itemDetail.responsePrivate" />
-                  </span>
-                ) : null}
-                <time dateTime={r.created_at}>
-                  {new Date(r.created_at).toLocaleString(
-                    isHe ? "he-IL" : "en-US",
-                    {
-                      month: "short",
-                      day: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    },
-                  )}
-                </time>
-                {mine ? (
-                  <button
-                    type="button"
-                    onClick={() => onDelete(r.id)}
-                    className="text-white/45 transition hover:text-red-300"
-                    aria-label={deleteResponseLabel}
-                    title={deleteResponseLabel}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                ) : null}
-              </div>
-            </div>
-            <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-white/90">
-              {r.response_text}
-            </p>
-            {r.clinician_reply_text ? (
-              <ClinicianReplyPanel
-                replyText={r.clinician_reply_text}
-                repliedAt={r.clinician_replied_at ?? null}
-                isHe={isHe}
-              />
-            ) : null}
-          </li>
-        );
-      })}
-    </ul>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────
-// ClinicianReplyPanel - read-only inset showing the clinician's reply.
-// ─────────────────────────────────────────────────────────────────────
-
-function ClinicianReplyPanel({
-  replyText,
-  repliedAt,
-  isHe,
-}: {
-  replyText: string;
-  repliedAt: string | null;
-  isHe: boolean;
-}) {
-  return (
-    <div className="mt-3 rounded-xl border border-emerald-400/20 bg-emerald-500/[0.05] p-3">
-      <div className="flex items-center justify-between gap-2">
-        <CmsText
-          cmsKey="journeyTimeline.itemDetail.clinicianReplyLabel"
-          as="span"
-          className="text-[11px] font-semibold uppercase tracking-wider text-emerald-200/85"
-        />
-        {repliedAt ? (
-          <time
-            className="text-[11px] text-emerald-200/55"
-            dateTime={repliedAt}
-            title={new Date(repliedAt).toLocaleString(isHe ? "he-IL" : "en-US")}
-          >
-            {new Date(repliedAt).toLocaleDateString(isHe ? "he-IL" : "en-US", {
-              month: "short",
-              day: "numeric",
-            })}
-          </time>
-        ) : null}
-      </div>
-      <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-emerald-50/95">
-        {replyText}
-      </p>
-    </div>
-  );
-}
-
-// ------------------------------------------------------------
-// ResponseForm
-// ------------------------------------------------------------
-
-const RESPONSE_MAX_LEN = 4000;
-
-function ResponseForm({
-  onSubmit,
-}: {
-  onSubmit: (text: string, isPrivate: boolean) => Promise<boolean>;
-}) {
-  const [text, setText] = React.useState("");
-  const [isPrivate, setIsPrivate] = React.useState(false);
-  const [busy, setBusy] = React.useState(false);
-
-  const placeholder = useCmsText("journeyTimeline.itemDetail.responsePlaceholder").text;
-  const charactersLeftTpl = useCmsText("journeyTimeline.itemDetail.charactersLeft").text;
-
-  const disabled = busy || text.trim().length === 0;
-  const remaining = RESPONSE_MAX_LEN - text.length;
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (disabled) return;
-    setBusy(true);
-    const ok = await onSubmit(text, isPrivate);
-    setBusy(false);
-    if (ok) {
-      setText("");
-      setIsPrivate(false);
-    }
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-3">
-      <Textarea
-        value={text}
-        onChange={(e) => setText(e.target.value.slice(0, RESPONSE_MAX_LEN))}
-        placeholder={placeholder}
-        rows={3}
-        className="bg-white/5 text-white placeholder:text-white/40 border-white/15"
-      />
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <Switch
-              id="response-private"
-              checked={isPrivate}
-              onCheckedChange={setIsPrivate}
-            />
-            <Label htmlFor="response-private" className="text-sm text-white/70">
-              <CmsText cmsKey="journeyTimeline.itemDetail.privateOnlyMe" />
-            </Label>
-          </div>
-          <span className="text-sm text-white/40">
-            {charactersLeftTpl.replace("{n}", String(remaining))}
-          </span>
-        </div>
-        <Button
-          type="submit"
-          size="lg"
-          disabled={disabled}
-          className="min-h-[44px] bg-gradient-to-r from-indigo-500 via-emerald-500 to-teal-500 px-6 text-white hover:brightness-110"
-        >
-          {busy ? <Loader2 className="me-2 h-4 w-4 animate-spin" /> : null}
-          <CmsText cmsKey="journeyTimeline.itemDetail.sendResponse" />
-        </Button>
-      </div>
-    </form>
-  );
-}
+// ResponseList / ResponseForm / ClinicianReplyPanel removed 2026-06-02.
+// The general response thread was confusing alongside the private
+// per-item expert thread. Reply data + admin-side views still exist on
+// the server; the user-facing surface is now PerItemThread only.

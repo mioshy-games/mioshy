@@ -18,19 +18,20 @@ export function ConsentCheckbox({
   checked,
   onChange,
   label,
-  hint,
   dir,
 }: {
   id: string;
   checked: boolean;
   onChange: (next: boolean) => void;
   label: string;
-  hint: string;
   /** Optional override; defaults to inheriting from the surrounding form */
   dir?: "ltr" | "rtl";
 }) {
   return (
-    <div className="space-y-1" dir={dir}>
+    // Itzik 2026-06-02: hint line ("ניתן לבטל בכל עת") dropped — it was
+    // duplicated visually and the unsubscribe assurance lives in the
+    // terms link directly below the form anyway.
+    <div dir={dir}>
       <label
         htmlFor={id}
         className="flex cursor-pointer items-start gap-3 select-none"
@@ -63,7 +64,6 @@ export function ConsentCheckbox({
           {label}
         </span>
       </label>
-      <p className="ps-8 text-[12px] text-white/45">{hint}</p>
     </div>
   );
 }

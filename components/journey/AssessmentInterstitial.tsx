@@ -103,23 +103,23 @@ export function AssessmentInterstitial({ def, onContinue }: Props) {
       className="relative overflow-hidden rounded-3xl border border-white/10 p-6 sm:p-8"
       style={{
         background:
-          "linear-gradient(160deg, rgba(184,60,77,0.18) 0%, rgba(8,4,12,0.6) 60%, rgba(8,4,12,0.6) 100%)",
-        boxShadow: "0 30px 80px -30px rgba(184,60,77,0.4)",
+          "linear-gradient(160deg, rgba(252,202,101,0.18) 0%, rgba(8,4,12,0.6) 60%, rgba(8,4,12,0.6) 100%)",
+        boxShadow: "0 30px 80px -30px rgba(252,202,101,0.4)",
       }}
       aria-live="polite"
     >
       <div
         aria-hidden
         className="pointer-events-none absolute -end-24 -top-24 h-56 w-56 rounded-full opacity-30 blur-3xl"
-        style={{ background: "#B83C4D" }}
+        style={{ background: "#FCCA65" }}
       />
       <div className="relative">
         <div className="flex items-center gap-2">
           <span
             className="inline-flex h-7 w-7 items-center justify-center rounded-full text-[#FAF6F7]"
             style={{
-              background: "linear-gradient(135deg, #B83C4D 0%, #6C2E40 100%)",
-              boxShadow: "0 6px 16px -6px rgba(184,60,77,0.7)",
+              background: "linear-gradient(135deg, #FCCA65 0%, #B88F32 100%)",
+              boxShadow: "0 6px 16px -6px rgba(252,202,101,0.7)",
             }}
             aria-hidden
           >
@@ -150,7 +150,7 @@ export function AssessmentInterstitial({ def, onContinue }: Props) {
             onClick={onContinue}
             className="min-h-[50px] rounded-full px-7 text-[18px] font-bold"
             style={{
-              background: "linear-gradient(135deg, #B83C4D 0%, #6C2E40 100%)",
+              background: "linear-gradient(135deg, #FCCA65 0%, #B88F32 100%)",
             }}
           >
             <CmsText cmsKey="journeyAssessment.interstitial.continue" />

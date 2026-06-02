@@ -194,7 +194,7 @@ export default async function JourneyMarketingPage({
           className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[85vh] animate-aurora-drift"
           style={{
             background:
-              "radial-gradient(1100px 640px at 14% 0%, rgba(184,60,77,0.45), transparent 62%), " +
+              "radial-gradient(1100px 640px at 14% 0%, rgba(252,202,101,0.45), transparent 62%), " +
               "radial-gradient(900px 520px at 88% 12%, rgba(217,70,239,0.32), transparent 48%), " +
               "radial-gradient(700px 460px at 50% 40%, rgba(139,38,56,0.22), transparent 65%)",
           }}
@@ -335,7 +335,7 @@ export default async function JourneyMarketingPage({
   // cms indices [1,2,3] while indexing `whyMeta` 0..2 — that keeps the
   // admin's existing rows stable instead of renumbering them.
   const whyMeta = [
-    { Icon: Clock,          iconBg: "bg-[#8B2638]" },
+    { Icon: Clock,          iconBg: "bg-[#B88F32]" },
     { Icon: BookOpen,       iconBg: "bg-[#4A1721]" },
     { Icon: HeartHandshake, iconBg: "bg-[#3D1F3D]" },
   ];
@@ -367,7 +367,7 @@ export default async function JourneyMarketingPage({
       {/* Hero backdrop - kept dark voyage palette as the journey identity */}
       {/* Base dark gradient — switched 2026-05-19 from indigo-voyage
           to wine-charcoal so the page sits in the Mioshy brand family
-          (wine #B83C4D + magenta + violet), not in the cool emerald
+          (wine #FCCA65 + magenta + violet), not in the cool emerald
           voyage that didn't fit the brand identity. */}
       <div
         aria-hidden
@@ -390,7 +390,7 @@ export default async function JourneyMarketingPage({
         data-testid="journey-aurora"
         style={{
           background:
-            "radial-gradient(1100px 640px at 14% 0%, rgba(184,60,77,0.55), transparent 62%), " +
+            "radial-gradient(1100px 640px at 14% 0%, rgba(252,202,101,0.55), transparent 62%), " +
             "radial-gradient(900px 520px at 88% 12%, rgba(217,70,239,0.45), transparent 60%), " +
             "radial-gradient(900px 560px at 50% 65%, rgba(168,85,247,0.40), transparent 60%)",
         }}
@@ -589,7 +589,7 @@ export default async function JourneyMarketingPage({
             <div className="mx-auto max-w-6xl">
               <div className="mx-auto max-w-3xl text-center">
                 <span className="inline-flex items-center gap-2.5 text-[13px] font-semibold uppercase tracking-[0.2em] text-[#170E14]">
-                  <span className="h-[7px] w-[7px] rounded-sm bg-[#B83C4D] shadow-[0_0_0_3px_rgba(184,60,77,0.18)]" />
+                  <span className="h-[7px] w-[7px] rounded-sm bg-[#FCCA65] shadow-[0_0_0_3px_rgba(252,202,101,0.18)]" />
                   <CmsText cmsKey="journeyHub.why.badge" />
                 </span>
                 <CmsText
@@ -617,7 +617,7 @@ export default async function JourneyMarketingPage({
                     >
                       <div
                         aria-hidden
-                        className="absolute inset-x-0 top-0 h-[3px] origin-right scale-x-0 rounded-t-3xl bg-[#B83C4D] transition-transform duration-400 group-hover:scale-x-100"
+                        className="absolute inset-x-0 top-0 h-[3px] origin-right scale-x-0 rounded-t-3xl bg-[#FCCA65] transition-transform duration-400 group-hover:scale-x-100"
                       />
                       {/* Icon + badge unified into one row.
                           2026-05-21 — Itzik asked for the icon-tile
@@ -633,7 +633,7 @@ export default async function JourneyMarketingPage({
                         </span>
                         <CmsText
                           cmsKey={`journeyHub.why.stats.${cmsIndex}.label`}
-                          className="inline-block rounded-full border border-[#EAE0E3] bg-[#FBE9EC] px-3 py-1 text-[12px] font-semibold uppercase tracking-[0.05em] text-[#8B2638]"
+                          className="inline-block rounded-full border border-[#EAE0E3] bg-[#FBE9EC] px-3 py-1 text-[12px] font-semibold uppercase tracking-[0.05em] text-[#B88F32]"
                         />
                       </div>
                       <CmsText
@@ -677,14 +677,14 @@ export default async function JourneyMarketingPage({
               className="pointer-events-none absolute inset-0 -z-0"
               style={{
                 background:
-                  "radial-gradient(900px 500px at 50% -10%, rgba(184,60,77,0.07), transparent 48%)",
+                  "radial-gradient(900px 500px at 50% -10%, rgba(252,202,101,0.07), transparent 48%)",
               }}
             />
 
             <div className="relative mx-auto max-w-6xl">
               <div className="mx-auto max-w-2xl text-center">
                 <span className="inline-flex items-center gap-2.5 text-[12px] font-semibold uppercase tracking-[0.32em] text-[#170E14]">
-                  <span className="h-[7px] w-[7px] rounded-sm bg-[#B83C4D] shadow-[0_0_0_3px_rgba(184,60,77,0.18)]" />
+                  <span className="h-[7px] w-[7px] rounded-sm bg-[#FCCA65] shadow-[0_0_0_3px_rgba(252,202,101,0.18)]" />
                   <CmsText cmsKey="journeyHub.how.badge" />
                 </span>
                 <CmsText
@@ -707,13 +707,13 @@ export default async function JourneyMarketingPage({
                     {/* hover gradient accent */}
                     <div
                       aria-hidden
-                      className="pointer-events-none absolute -end-16 -top-16 h-48 w-48 rounded-full bg-gradient-to-br from-[#B83C4D]/0 via-[#B83C4D]/0 to-[#B83C4D]/0 opacity-0 blur-3xl transition duration-700 group-hover:from-[#B83C4D]/20 group-hover:via-[#8B2638]/15 group-hover:opacity-100"
+                      className="pointer-events-none absolute -end-16 -top-16 h-48 w-48 rounded-full bg-gradient-to-br from-[#FCCA65]/0 via-[#FCCA65]/0 to-[#FCCA65]/0 opacity-0 blur-3xl transition duration-700 group-hover:from-[#FCCA65]/20 group-hover:via-[#B88F32]/15 group-hover:opacity-100"
                     />
 
                     {/* Chapter number + animated line */}
                     <div className="relative flex items-baseline gap-4">
                       <span
-                        className="text-[72px] leading-none text-[#B83C4D]/25 transition-colors duration-500 group-hover:text-[#B83C4D]/50 sm:text-[80px]"
+                        className="text-[72px] leading-none text-black/15 transition-colors duration-500 group-hover:text-black/30 sm:text-[80px]"
                         style={{
                           fontFamily: "'Frank Ruhl Libre', serif",
                           fontWeight: 600,
@@ -721,14 +721,14 @@ export default async function JourneyMarketingPage({
                       >
                         0{i + 1}
                       </span>
-                      <span className="h-px flex-1 bg-[#EAE0E3] transition-colors duration-500 group-hover:bg-[#B83C4D]/40" />
+                      <span className="h-px flex-1 bg-[#EAE0E3] transition-colors duration-500 group-hover:bg-[#FCCA65]/40" />
                     </div>
 
                     {/* Italic tag */}
                     <CmsText
                       cmsKey={`journeyHub.how.steps.${i}.tag`}
                       as="p"
-                      className="relative mt-6 text-[14px] uppercase tracking-[0.22em] text-[#B83C4D]"
+                      className="relative mt-6 text-[14px] uppercase tracking-[0.22em] text-black/70 font-semibold"
                       style={{
                         fontFamily: "'Frank Ruhl Libre', serif",
                         fontStyle: "italic",
@@ -775,7 +775,7 @@ export default async function JourneyMarketingPage({
           <section className="relative bg-[#FAF6F7] px-4 pt-[85px] pb-20 lg:pb-24">
             <div className="relative mx-auto max-w-3xl text-center">
               <span className="inline-flex items-center gap-2.5 text-[12px] font-semibold uppercase tracking-[0.32em] text-[#170E14]">
-                <span className="h-[7px] w-[7px] rounded-sm bg-[#B83C4D] shadow-[0_0_0_3px_rgba(184,60,77,0.18)]" />
+                <span className="h-[7px] w-[7px] rounded-sm bg-[#FCCA65] shadow-[0_0_0_3px_rgba(252,202,101,0.18)]" />
                 <CmsText cmsKey="journeyHub.ctaBlock.badge" />
               </span>
               <CmsText

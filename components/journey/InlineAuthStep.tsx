@@ -203,26 +203,23 @@ export function InlineAuthStep({ locale, deviceId, onAuthenticated }: InlineAuth
       dir={isHe ? "rtl" : "ltr"}
       className="flex w-full max-w-2xl flex-col gap-6"
     >
-      {/* Heading */}
-      <div className="flex flex-col gap-1">
+      {/* Heading - centered per Itzik 2026-06-02. */}
+      <div className="flex flex-col items-center gap-2 text-center">
         <CmsText
           cmsKey="journeyAssessment.inlineAuth.heading"
           as="h2"
-          className="text-2xl font-bold text-white"
+          className="text-2xl font-bold text-white md:text-3xl"
         />
         <CmsText
           cmsKey="journeyAssessment.inlineAuth.sub"
           as="p"
-          className="text-sm text-white/60"
+          className="max-w-md text-sm text-white/60"
         />
       </div>
 
-      {/* Trust badges.
-          2026-05-28 — badge3 ("ניתן לביטול בכל עת") removed from the
-          render per Itzik. The JSON key (and the cms_texts seed) stay
-          on disk so the badge can be brought back by switching the
-          loop back to [1, 2, 3]. */}
-      <div className="flex flex-wrap gap-2">
+      {/* Trust badges - centered. Badge3 ("ניתן לביטול בכל עת") still
+          omitted from the render; CMS keys kept on disk for re-enable. */}
+      <div className="flex flex-wrap justify-center gap-2">
         {[1, 2].map((n) => (
           <CmsText
             key={n}
@@ -254,7 +251,6 @@ export function InlineAuthStep({ locale, deviceId, onAuthenticated }: InlineAuth
                 value={phone}
                 onChange={setPhone}
                 autoComplete="tel"
-                optional
               />
             </>
           )}

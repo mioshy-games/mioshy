@@ -45,16 +45,7 @@ export function NoJourneyUpsell({
   bullets,
 }: Props) {
   return (
-    <article
-      className="relative overflow-hidden rounded-[18px] border p-6"
-      style={{
-        background:
-          "linear-gradient(160deg, rgba(236,72,153,0.12) 0%, var(--shell-card-elev) 40%, var(--shell-card) 100%)",
-        borderColor: "rgba(236,72,153,0.28)",
-        boxShadow:
-          "inset 0 1px 0 rgba(255,255,255,0.06), 0 14px 30px -16px rgba(236,72,153,0.30)",
-      }}
-    >
+    <article className="px-2 py-2">{/* Itzik 2026-06-02: frame removed (border, gradient, shadow). Content sits directly on the page. */}
       {/* eyebrow chip */}
       <div className="mb-3 flex items-center justify-between gap-2">
         <span
@@ -101,10 +92,10 @@ export function NoJourneyUpsell({
 
       <Link
         href={ctaHref}
-        className="inline-flex max-w-[320px] items-center justify-center gap-2 rounded-[13px] px-4 py-3.5 text-[18px] font-extrabold tracking-tight text-white"
+        className="inline-flex max-w-[320px] items-center justify-center gap-2 rounded-[13px] px-4 py-3.5 text-[18px] font-semibold tracking-tight text-black"
         style={{
-          background: "var(--shell-cta-grad)",
-          boxShadow: "0 10px 28px -10px rgba(236,72,153,0.55)",
+          background: "#FCCA65",
+          boxShadow: "0 10px 28px -10px rgba(252,202,101,0.55)",
         }}
       >
         <span>{ctaLabel}</span>

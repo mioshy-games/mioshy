@@ -1,10 +1,10 @@
 {
-  "version": 6,
+  "version": 7,
   "gating": {
-    "auth_after_index": 34,
+    "auth_after_index": 28,
     "paywall_after_index": 99
   },
-  "total_questions": 33,
+  "total_questions": 28,
   "locales": [
     "he",
     "en"
@@ -521,36 +521,14 @@
       "max_length": 600
     },
     {
-      "id": "q21_reflect_strength",
-      "category": "paid",
-      "domain": null,
-      "type": "reflection",
-      "axes": [],
-      "purpose": "Open reflection - surfaces the user's own framing (qualitative data for coach).",
-      "he_prompt": "באיזה רגע בחודש האחרון הרגשת הכי קרוב/ה לבן/בת הזוג? תכתוב/י קצר, אפילו משפט אחד.",
-      "en_prompt": "In the past month, when did you feel closest to your partner? A short answer is enough - even one sentence.",
-      "max_length": 600
-    },
-    {
-      "id": "q22_reflect_friction",
-      "category": "paid",
-      "domain": "friendship",
-      "type": "reflection",
-      "axes": [],
-      "purpose": "Open reflection - friction point (coach input).",
-      "he_prompt": "ומה הרגע בחודש האחרון שבו הרגשת הכי רחוק/ה? (ללא האשמות, רק תיאור קצר)",
-      "en_prompt": "And when did you feel furthest away? (No blame - just a short description.)",
-      "max_length": 600
-    },
-    {
       "id": "q22a_success_signal",
       "category": "paid",
       "domain": null,
       "type": "reflection",
       "axes": [],
-      "purpose": "Open reflection — what change in the relationship (including intimacy) would feel like real success to the user. Bridges 'pain points' (q20c) with 'desired outcome'.",
-      "he_prompt": "מה היה צריך להשתנות בזוגיות שלכם — כולל בחיים המיניים — כדי שתרגישו שמשהו אמיתי קרה?",
-      "en_prompt": "What would need to change in your relationship — including your intimate life — for you to feel something real has truly happened?",
+      "purpose": "Open reflection - what is missing in the relationship that, if resolved, could transform it for the better. Bridges 'pain points' (q20c) with 'desired outcome'. Itzik 2026-06-02 rewrite.",
+      "he_prompt": "מה חסר לדעתכם שאם תפתרו בזוגיות יוכל לשנות את הזוגיות לחלוטין לצורה הטובה ביותר?",
+      "en_prompt": "What do you feel is missing in your relationship that, if solved, could transform it for the better?",
       "max_length": 600
     },
     {

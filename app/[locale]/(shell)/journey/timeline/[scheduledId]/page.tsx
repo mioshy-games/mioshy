@@ -364,7 +364,6 @@ export default async function JourneyTimelineItemPage({
           scheduled={scheduled}
           status={status}
           completion={completion}
-          responses={responses}
           viewerUserId={effectiveUserId}
           locale={locale}
           hideContent={!!(

@@ -594,23 +594,17 @@ export function JourneyClient({
   // the spec: finish all questions → register before seeing the
   // summary.
   if (isDone && !authenticated) {
+    // Itzik 2026-06-02: removed the "מסע הזוגיות שלכם" title + 100%
+    // progress bar from this screen. Once the assessment is done and
+    // the user is on the registration step, the focus is on completing
+    // signup, not on celebrating progress. The InlineAuthStep below
+    // renders its own centered celebration headline + badges.
     return (
       <div
         dir={locale === "he" ? "rtl" : "ltr"}
-        className="relative mx-auto flex min-h-[80vh] w-full max-w-3xl flex-col gap-8 px-4 py-10"
+        className="relative mx-auto flex min-h-[80vh] w-full max-w-3xl flex-col gap-6 px-4 py-10"
       >
         <JourneyOutroBackdrop />
-        <header className="flex flex-col gap-2 text-start">
-          <CmsText
-            cmsKey="journeyAssessment.client.title"
-            as="h1"
-            className="text-2xl font-bold text-white md:text-3xl"
-          />
-        </header>
-
-        {/* Show 100% progress - no lock, all questions are done */}
-        <ProgressBar current={total} total={total} />
-
         <AnimatePresence mode="wait">
           <InlineAuthStep
             key="inline-auth"
@@ -829,11 +823,11 @@ function JourneyOutroBackdrop() {
       className="pointer-events-none absolute inset-0 -z-10"
       style={{
         // Wine/burgundy palette matching the Mioshy brand
-        // (--accent #B83C4D + magenta + violet). Replaces the earlier
+        // (--accent #FCCA65 + magenta + violet). Replaces the earlier
         // voyage palette (emerald/amber/sky) per Itzik 2026-05-19 —
         // the green didn't fit the brand identity.
         background:
-          "radial-gradient(1100px 640px at 14% 0%, rgba(184,60,77,0.32), transparent 62%), " +
+          "radial-gradient(1100px 640px at 14% 0%, rgba(252,202,101,0.32), transparent 62%), " +
           "radial-gradient(900px 520px at 88% 12%, rgba(217,70,239,0.22), transparent 60%), " +
           "radial-gradient(700px 460px at 50% 40%, rgba(139,38,56,0.20), transparent 65%)",
       }}

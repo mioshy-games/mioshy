@@ -15,6 +15,7 @@ import type {
   Axis,
   AxisScoreMap,
   AxisWeight,
+  CategoryScores,
   LoveLanguage,
   Response,
 } from "./types";
@@ -97,6 +98,56 @@ const PASSION_AXES: Axis[] = [
   "passion_anticipation",
   "passion_play",
   "passion_context",
+];
+
+// ---------------------------------------------------------------------------
+// 5-category score bundle (2026-06-02) - drives the new bar-chart visual at
+// the top of the assessment summary. Each category is a curated mapping
+// from axes to a 0..100 score where higher = healthier.
+//
+// Note: HORSEMEN axes encode bad behaviour (higher = worse), so we invert
+// them inside `categoryFromAxes` when they appear in COMMUNICATION_AXES.
+// ---------------------------------------------------------------------------
+
+const COMMUNICATION_AXES: Axis[] = [
+  "influence",
+  "repair",
+  "four_horsemen_criticism",
+  "four_horsemen_contempt",
+  "four_horsemen_defensive",
+  "four_horsemen_stonewall",
+];
+
+const INTIMACY_AXES: Axis[] = [
+  "passion_anticipation",
+  "passion_play",
+  "love_language_touch",
+];
+
+const EMOTIONAL_CONNECTION_AXES: Axis[] = [
+  "fondness",
+  "love_map",
+  "turn_toward",
+  "pso",
+];
+
+const FRIENDSHIP_CATEGORY_AXES: Axis[] = [
+  "love_map",
+  "turn_toward",
+  "passion_play",
+];
+
+const FAMILY_AXES: Axis[] = [
+  "shared_meaning",
+  "passion_context",
+];
+
+/** Inverted axes - higher raw score = unhealthier. We flip to 1-x for scoring. */
+const INVERT_FOR_HEALTH: Axis[] = [
+  "four_horsemen_criticism",
+  "four_horsemen_contempt",
+  "four_horsemen_defensive",
+  "four_horsemen_stonewall",
 ];
 
 // --- Core scoring -----------------------------------------------------------
@@ -197,6 +248,72 @@ function passionRisk(scores: AxisScoreMap): number {
   // passion_context is already negatively-weighted in the JSON, so higher = better.
   const passionAvg = avgOf(scores, PASSION_AXES);
   return Math.max(0, Math.min(100, Math.round((1 - passionAvg) * 100)));
+}
+
+/**
+ * Compute a single category score (0..100, higher = healthier) by averaging
+ * the listed axes. Inverted axes are flipped before averaging. Missing axes
+ * are skipped; if no axis contributes, returns 50 (neutral default).
+ */
+function categoryFromAxes(scores: AxisScoreMap, axes: Axis[]): number {
+  const vals: number[] = [];
+  for (const a of axes) {
+    const raw = scores[a];
+    if (typeof raw !== "number") continue;
+    const v = INVERT_FOR_HEALTH.includes(a) ? 1 - raw : raw;
+    vals.push(v);
+  }
+  if (!vals.length) return 50;
+  const avg = vals.reduce((s, v) => s + v, 0) / vals.length;
+  return Math.max(0, Math.min(100, Math.round(avg * 100)));
+}
+
+/**
+ * Compute the 5-category bundle + identify the lowest-scoring category for
+ * the "נקודת ההתחלה שלכם" label.
+ *
+ * intimacy gets a special q20b override (2026-06-02 new question):
+ * if q20b was answered, its raw Likert (1..5) feeds directly into the
+ * intimacy score with 60% weight (axes carry the remaining 40%). q20b is
+ * the most direct sexual-satisfaction signal in the questionnaire and
+ * should dominate the intimacy bar.
+ */
+function computeCategoryScores(
+  scores: AxisScoreMap,
+  responses: Response[],
+): CategoryScores {
+  const communication = categoryFromAxes(scores, COMMUNICATION_AXES);
+  const emotional_connection = categoryFromAxes(scores, EMOTIONAL_CONNECTION_AXES);
+  const friendship = categoryFromAxes(scores, FRIENDSHIP_CATEGORY_AXES);
+  const family = categoryFromAxes(scores, FAMILY_AXES);
+
+  // intimacy with q20b override.
+  let intimacy = categoryFromAxes(scores, INTIMACY_AXES);
+  const q20b = responses.find((r) => r.question_id === "q20b_intimacy_satisfaction");
+  if (q20b && q20b.answer.kind === "likert") {
+    const direct = ((q20b.answer.value - 1) / 4) * 100; // 1..5 -> 0..100
+    intimacy = Math.round(direct * 0.6 + intimacy * 0.4);
+  }
+
+  // Identify lowest.
+  const entries: Array<[CategoryScores["lowest_key"], number]> = [
+    ["communication", communication],
+    ["intimacy", intimacy],
+    ["emotional_connection", emotional_connection],
+    ["friendship", friendship],
+    ["family", family],
+  ];
+  entries.sort((a, b) => a[1] - b[1]);
+  const lowest_key = entries[0][0];
+
+  return {
+    communication,
+    intimacy,
+    emotional_connection,
+    friendship,
+    family,
+    lowest_key,
+  };
 }
 
 function primaryLoveLanguage(scores: AxisScoreMap): LoveLanguage | null {
@@ -335,13 +452,17 @@ function generateSummary(params: {
       "בעזרת כלים מעולם הפסיכולוגיה הזוגית, הניסיון של מאות זוגות שעברו אצלנו, " +
       "ועם המומחים שלנו בתחום - בנינו תוכן מעמיק שיעבוד בדיוק איפה שאתם רוצים. " +
       "הכי חשוב: השירות אישי לחלוטין. אנחנו לומדים אתכם, " +
-      "והמומחים שלנו מתאימים את התוכן עבורכם לאורך כל הדרך.",
+      "והמומחים שלנו מתאימים את התוכן עבורכם לאורך כל הדרך. " +
+      "עם פרק בשבוע בנושא זוגיות תקבלו כלים, תשוחחו עליהם עם המומחים שלנו, " +
+      "תשאלו שאלות, ותשתפרו משבוע לשבוע.",
     en:
       `We'll start with the priority you chose: ${focusEn}. ` +
       "Using tools from couples psychology, the experience of hundreds of couples who walked this path with us, " +
       "and our in-house experts - we've built deep content that works exactly where you want it to. " +
       "Most importantly: this service is fully personal. " +
-      "We learn you, and our experts adapt the content for you, every step of the way.",
+      "We learn you, and our experts adapt the content for you, every step of the way. " +
+      "With a weekly chapter on your relationship, you'll receive tools, discuss them with our experts, " +
+      "ask questions, and improve week by week.",
   });
 
   return {
@@ -380,6 +501,11 @@ export function analyze(
     horsemenFlag,
     priorityLabels,
   });
+
+  // 2026-06-02: also compute the 5-category bundle for the new bar-chart
+  // visual at the top of the assessment summary. Attached to summary so
+  // it travels with the existing JSONB blob (no migration needed).
+  summary.category_scores = computeCategoryScores(scores, responses);
 
   return {
     axis_scores: scores,

@@ -112,16 +112,16 @@ export function JourneyCheckoutButton({
   // Variant → base classes (size/typography preserved across surfaces).
   const base =
     variant === "wine"
-      ? "rounded-full text-white px-9 text-[18px] font-bold"
+      ? "rounded-full text-black px-9 text-[18px] font-semibold"
       : variant === "white"
-        ? "rounded-full bg-white text-emerald-700 px-9 text-[18px] font-semibold shadow-2xl shadow-emerald-500/30 hover:bg-emerald-50"
-        : "rounded-full bg-white text-emerald-700 px-9 text-[18px] font-semibold shadow-2xl shadow-emerald-500/30 hover:bg-emerald-50";
+        ? "rounded-full bg-[#FCCA65] text-black px-9 text-[18px] font-semibold shadow-2xl shadow-[#FCCA65]/30 hover:brightness-110"
+        : "rounded-full bg-[#FCCA65] text-black px-9 text-[18px] font-semibold shadow-2xl shadow-[#FCCA65]/30 hover:brightness-110";
 
   const wineStyle =
     variant === "wine"
       ? {
-          background: "linear-gradient(135deg, #B83C4D 0%, #6C2E40 100%)",
-          boxShadow: "0 18px 40px -12px rgba(184,60,77,0.55)",
+          background: "linear-gradient(135deg, #FCCA65 0%, #B88F32 100%)",
+          boxShadow: "0 18px 40px -12px rgba(252,202,101,0.55)",
         }
       : undefined;
 

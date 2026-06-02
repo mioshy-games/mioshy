@@ -35,12 +35,12 @@ export function WhyThisItem({ rationale }: Props) {
 
   return (
     <aside
-      className="mt-5 flex items-start gap-3 rounded-2xl border border-[#B83C4D]/25 bg-gradient-to-br from-[#B83C4D]/[0.10] via-[#B83C4D]/[0.04] to-transparent px-4 py-3"
+      className="mt-5 flex items-start gap-3 rounded-2xl border border-[#FCCA65]/25 bg-gradient-to-br from-[#FCCA65]/[0.10] via-[#FCCA65]/[0.04] to-transparent px-4 py-3"
       aria-label={ariaLabel}
     >
       <span
         aria-hidden
-        className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#B83C4D]/20 text-[#FAF6F7]"
+        className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#FCCA65]/20 text-[#FAF6F7]"
       >
         <Sparkles className="h-3 w-3" />
       </span>

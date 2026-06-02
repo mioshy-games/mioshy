@@ -128,21 +128,13 @@ const EXPECTED_DOMAIN_COUNTS: Record<Domain, number> = {
   communication: 7,
   intimacy: 3,
   emotional_connection: 3,
-  friendship: 5,
+  friendship: 4,
   family: 2,
 };
-// 2026-06-01 — restructured. Total null-domain questions:
-//   • q_priorities                  (existing, ranking)
-//   • q21_reflect_strength           (existing, reflection)
-//   • q22_reflect_friction was domain='friendship' before; left as-is
-//   • the 5 original null intro/banner items (unchanged from 29-item
-//     baseline, which had 6 nulls including the ones above)
-//   • q20a_urgency_now               (likert5, NEW)
-//   • q20b_intimacy_satisfaction     (likert5, NEW)
-//   • q20c_what_hurts                (reflection, NEW)
-//   • q22a_success_signal            (reflection, NEW)
-// Net effect from 29→33 questions: null bucket grew by 4 (6 → 10).
-const EXPECTED_NULL_COUNT = 10;
+// 2026-06-02 (Itzik) — q21_reflect_strength + q22_reflect_friction removed
+// (the "closest moment / furthest moment" pair). q22a_success_signal
+// rewritten ("מה חסר שתפתרו…"). Net: total 28 questions, null bucket = 9.
+const EXPECTED_NULL_COUNT = 9;
 
 (function assertDomainDistribution() {
   const actual = getDomainCount();

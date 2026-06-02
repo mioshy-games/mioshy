@@ -33,7 +33,7 @@ export async function generateMetadata({
  *   • Background flipped from the dark site bg to the cream palette
  *     (#FBF5F2) used on /journey, /mioshy-sex marketing wrappers — the
  *     contact page is editorial, not utility-dark.
- *   • Email is now `mioshyoffice@gmail.com` (was hello@mioshy.com).
+ *   • Email is now `support@mioshy.com` (was hello@mioshy.com).
  *   • Removed the "Sun–Thu 9-18 Israel time" availability box — replaced
  *     with a calmer "we reply within 48h" line.
  *   • Added a WhatsApp option to +972 545215193 — opens wa.me with a
@@ -87,7 +87,7 @@ export default function ContactPage({
         <div className="mt-10 space-y-4">
           {/* Email */}
           <a
-            href="mailto:mioshyoffice@gmail.com"
+            href="mailto:support@mioshy.com"
             className="group flex items-start gap-4 rounded-2xl border border-[#EAE0E3] bg-white p-6 shadow-sm transition hover:border-[#B83C4D]/40 hover:shadow-lg"
           >
             <span className="mt-1 grid size-11 shrink-0 place-items-center rounded-full bg-[#FBE9EC] text-[#B83C4D] transition group-hover:bg-[#B83C4D] group-hover:text-white">
@@ -103,7 +103,7 @@ export default function ContactPage({
                   : "For anything — support, questions, suggestions, refunds."}
               </p>
               <p className="mt-3 text-[18px] font-semibold text-[#B83C4D] underline-offset-4 group-hover:underline">
-                mioshyoffice@gmail.com
+                support@mioshy.com
               </p>
             </div>
           </a>

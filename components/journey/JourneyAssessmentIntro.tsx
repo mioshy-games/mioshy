@@ -63,12 +63,12 @@ export function JourneyAssessmentIntro({ isHe, locale }: Props) {
         className="pointer-events-none absolute left-1/2 top-12 h-[420px] w-[420px] -translate-x-1/2 rounded-full opacity-25 blur-3xl"
         style={{
           background:
-            "radial-gradient(circle, #B83C4D 0%, transparent 70%)",
+            "radial-gradient(circle, #FCCA65 0%, transparent 70%)",
         }}
       />
 
       <header className="relative space-y-3">
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-[#B83C4D]/40 bg-[#B83C4D]/15 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[#FAF6F7]">
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-[#FCCA65]/40 bg-[#FCCA65]/15 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[#FAF6F7]">
           <Sparkles className="h-3 w-3" />
           <CmsText cmsKey="journeyAssessment.intro.eyebrow" />
         </span>
@@ -90,7 +90,7 @@ export function JourneyAssessmentIntro({ isHe, locale }: Props) {
           aria-hidden
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[#FAF6F7]"
           style={{
-            background: "linear-gradient(135deg, #B83C4D 0%, #6C2E40 100%)",
+            background: "linear-gradient(135deg, #FCCA65 0%, #B88F32 100%)",
           }}
         >
           <Clock className="h-5 w-5" />
@@ -136,16 +136,16 @@ export function JourneyAssessmentIntro({ isHe, locale }: Props) {
       <section
         className="relative overflow-hidden rounded-3xl border p-6 sm:p-7"
         style={{
-          borderColor: "rgba(184,60,77,0.45)",
+          borderColor: "rgba(252,202,101,0.45)",
           background:
             "linear-gradient(160deg, #1a0f15 0%, #0E0810 60%, #0E0810 100%)",
-          boxShadow: "0 30px 80px -28px rgba(184,60,77,0.5)",
+          boxShadow: "0 30px 80px -28px rgba(252,202,101,0.5)",
         }}
       >
         <div
           aria-hidden
           className="pointer-events-none absolute -end-20 -top-20 h-56 w-56 rounded-full opacity-30 blur-3xl"
-          style={{ background: "#B83C4D" }}
+          style={{ background: "#FCCA65" }}
         />
         <div className="relative">
           <CmsText
@@ -174,8 +174,8 @@ export function JourneyAssessmentIntro({ isHe, locale }: Props) {
               className="min-h-[54px] rounded-full px-8 text-[16px] font-bold"
               style={{
                 background:
-                  "linear-gradient(135deg, #B83C4D 0%, #6C2E40 100%)",
-                boxShadow: "0 16px 36px -12px rgba(184,60,77,0.55)",
+                  "linear-gradient(135deg, #FCCA65 0%, #B88F32 100%)",
+                boxShadow: "0 16px 36px -12px rgba(252,202,101,0.55)",
               }}
             >
               {committing ? (

@@ -3,7 +3,6 @@
 import { useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/navigation";
-import { motion } from "framer-motion";
 import { AuthCard, AuthField, AuthSubmitButton } from "@/components/ui/auth-field";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
@@ -58,12 +57,9 @@ export function ForgotPasswordForm() {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 24 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: "easeOut" }}
-      className="w-full max-w-md"
-    >
+    // 2026-06-02 — framer-motion mount fade dropped for perf parity
+    // with LoginForm + SignupForm.
+    <div className="w-full max-w-md">
       <div className="mb-8 flex flex-col items-center text-center">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -102,13 +98,9 @@ export function ForgotPasswordForm() {
             />
 
             {error ? (
-              <motion.p
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                className="rounded-xl bg-rose-500/15 px-4 py-2.5 text-sm text-rose-300"
-              >
+              <p className="rounded-xl bg-rose-500/15 px-4 py-2.5 text-sm text-rose-300">
                 {error}
-              </motion.p>
+              </p>
             ) : null}
 
             <AuthSubmitButton
@@ -128,6 +120,6 @@ export function ForgotPasswordForm() {
           </Link>
         </div>
       </AuthCard>
-    </motion.div>
+    </div>
   );
 }

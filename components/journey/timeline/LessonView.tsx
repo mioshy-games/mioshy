@@ -74,7 +74,7 @@ export function LessonView({ item, isHe }: LessonViewProps) {
             <Sparkles className="size-3.5 text-amber-300/70" />
             <CmsText cmsKey="journeyTimeline.lesson.insightLabel" />
           </div>
-          <p className="whitespace-pre-line text-[16px] leading-[1.7] text-white/90">
+          <p className="whitespace-pre-line text-[20px] leading-[1.65] text-white/90">
             {insight}
           </p>
         </section>
@@ -87,7 +87,7 @@ export function LessonView({ item, isHe }: LessonViewProps) {
             <AlertTriangle className="size-3.5" />
             <CmsText cmsKey="journeyTimeline.lesson.mistakesLabel" />
           </div>
-          <p className="whitespace-pre-line text-[15px] leading-[1.65] text-amber-50/95">
+          <p className="whitespace-pre-line text-[19px] leading-[1.6] text-amber-50/95">
             {mistakes}
           </p>
         </section>
@@ -97,13 +97,13 @@ export function LessonView({ item, isHe }: LessonViewProps) {
       {metaphor ? (
         <section
           className="border-s-[3px] ps-5 sm:ps-6 italic"
-          style={{ borderColor: "rgba(184,60,77,0.55)" }}
+          style={{ borderColor: "rgba(252,202,101,0.55)" }}
         >
           <div className="mb-2 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-white/55 not-italic">
             <Quote className="size-3" />
             <CmsText cmsKey="journeyTimeline.lesson.metaphorLabel" />
           </div>
-          <p className="whitespace-pre-line text-[16px] leading-[1.65] text-white/85">
+          <p className="whitespace-pre-line text-[19px] leading-[1.6] text-white/85">
             {metaphor}
           </p>
         </section>
@@ -116,7 +116,7 @@ export function LessonView({ item, isHe }: LessonViewProps) {
             <BookOpen className="size-3.5" />
             <CmsText cmsKey="journeyTimeline.lesson.bodyLabel" />
           </div>
-          <div className="whitespace-pre-line text-[16px] leading-[1.75] text-white/85">
+          <div className="whitespace-pre-line text-[20px] leading-[1.7] text-white/90">
             {body}
           </div>
         </section>
@@ -127,15 +127,15 @@ export function LessonView({ item, isHe }: LessonViewProps) {
         <section
           className="rounded-2xl border p-5 sm:p-6"
           style={{
-            borderColor: "rgba(184,60,77,0.4)",
-            background: "linear-gradient(160deg, rgba(184,60,77,0.10) 0%, rgba(108,46,64,0.05) 100%)",
+            borderColor: "rgba(252,202,101,0.4)",
+            background: "linear-gradient(160deg, rgba(252,202,101,0.10) 0%, rgba(184,143,50,0.05) 100%)",
           }}
         >
           <div className="mb-3 flex items-center gap-2 text-[12px] font-bold uppercase tracking-wider text-[#FAF6F7]">
             <Target className="size-3.5" />
             <CmsText cmsKey="journeyTimeline.lesson.exerciseLabel" />
           </div>
-          <p className="whitespace-pre-line text-[16px] leading-[1.7] font-medium text-white/95">
+          <p className="whitespace-pre-line text-[20px] leading-[1.65] font-medium text-white/95">
             {exercise}
           </p>
         </section>
@@ -148,7 +148,7 @@ export function LessonView({ item, isHe }: LessonViewProps) {
             <Activity className="size-3.5 text-blue-200/70" />
             <CmsText cmsKey="journeyTimeline.lesson.measurementLabel" />
           </div>
-          <p className="whitespace-pre-line text-[14px] leading-[1.6] text-white/80">
+          <p className="whitespace-pre-line text-[18px] leading-[1.55] text-white/85">
             {measurement}
           </p>
         </section>
@@ -163,7 +163,7 @@ export function LessonView({ item, isHe }: LessonViewProps) {
                 <Check className="size-3.5" />
                 <CmsText cmsKey="journeyTimeline.lesson.doThisLabel" />
               </div>
-              <p className="whitespace-pre-line text-[14px] leading-[1.55] text-emerald-50/95">
+              <p className="whitespace-pre-line text-[18px] leading-[1.5] text-emerald-50/95">
                 {doThis}
               </p>
             </div>
@@ -174,7 +174,7 @@ export function LessonView({ item, isHe }: LessonViewProps) {
                 <X className="size-3.5" />
                 <CmsText cmsKey="journeyTimeline.lesson.dontThisLabel" />
               </div>
-              <p className="whitespace-pre-line text-[14px] leading-[1.55] text-rose-50/95">
+              <p className="whitespace-pre-line text-[18px] leading-[1.5] text-rose-50/95">
                 {dontThis}
               </p>
             </div>
@@ -195,7 +195,7 @@ export function LessonView({ item, isHe }: LessonViewProps) {
             <Sparkles className="size-3.5" />
             <CmsText cmsKey="journeyTimeline.lesson.progressLabel" />
           </div>
-          <p className="whitespace-pre-line text-[14px] leading-[1.55] italic text-amber-50/90">
+          <p className="whitespace-pre-line text-[18px] leading-[1.5] italic text-amber-50/90">
             {progress}
           </p>
         </section>

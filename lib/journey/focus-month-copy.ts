@@ -32,69 +32,69 @@ const COPY: Record<Locale, Record<PriorityKey, FocusMonthCopy>> = {
     communication: {
       reflection:
         "בחרתם בתקשורת כעדיפות הראשונה. זאת לא במקרה הבחירה שלכם - אנחנו רואים בניתוח שלכם בדיוק מה צריך לתקן.",
-      plan: "בחודש הקרוב המומחה שלכם יוביל אתכם דרך 4 כלים מעשיים שמשנים איך אתם מדברים אחד עם השנייה.",
+      plan: "בשבועות הקרובים תקבלו גישה לכלים ייחודיים שיעשו מהפך בתקשורת ביניכם, עם מומחה שילווה אתכם ויענה על שאלות בזמן אמת.",
       close:
-        "זו לא תיאוריה - זה שבוע ראשון, אתם כבר עושים אחרת.",
+        "השינוי שיורגש כבר בחודש הראשון - התקשורת תתעצם והקרבה תגדל.",
     },
     intimacy: {
       reflection:
         "בחרתם באינטימיות כעדיפות הראשונה. הניתוח שלכם תומך בכך - וזה אומר שאתם מודעים בדיוק לאן צריך להתמקד.",
-      plan: "בחודש הקרוב המומחה שלכם יוביל אתכם דרך תרגילים מעשיים שמחזירים קרבה - בלי להיתקע על שיחות שאינן מובילות לכלום.",
+      plan: "בשבועות הקרובים תקבלו גישה לכלים ייחודיים שיעשו מהפך באינטימיות ביניכם, עם מומחה שילווה אתכם ויענה על שאלות בזמן אמת.",
       close:
-        "זו לא תיאוריה - תוך שבועיים תרגישו את ההבדל בחיבור ביניכם.",
+        "השינוי שיורגש כבר בחודש הראשון - האינטימיות תגדל והחברות תצמח.",
     },
     emotional_connection: {
       reflection:
         "בחרתם בקשר רגשי כעדיפות הראשונה. זאת בחירה חכמה - היא הבסיס לכל מה שיבוא אחר כך בזוגיות שלכם.",
-      plan: "בחודש הקרוב המומחה שלכם ילמד אתכם איך להישמע ולשמוע באמת - דרך כלים שאתם מתחילים ליישם כבר מהשבוע הראשון.",
+      plan: "בשבועות הקרובים תקבלו גישה לכלים ייחודיים שיחזקו את החיבור הרגשי ביניכם, עם מומחה שילווה אתכם ויענה על שאלות בזמן אמת.",
       close:
-        "זו לא תיאוריה - זה תהליך שבונה אמון מחדש, צעד אחר צעד.",
+        "השינוי שיורגש כבר בחודש הראשון - החיבור הרגשי יתעצם והאמון יתעמק.",
     },
     friendship: {
       reflection:
         "בחרתם בחברות זוגית כעדיפות הראשונה. זאת בחירה מבוססת - הניתוח שלכם מראה שכאן נמצא המנוף שיניע את כל השאר.",
-      plan: "בחודש הקרוב תקבלו מהמומחה שלכם תוכנית בנויה לחיזוק החברות בזוגיות - תרגילים יומיים, שיחות מנוהלות, ובניית רגעים משותפים.",
+      plan: "בשבועות הקרובים תקבלו גישה לכלים ייחודיים שיעשו מהפך בחברות הזוגית שלכם, עם מומחה שילווה אתכם ויענה על שאלות בזמן אמת.",
       close:
-        "זו לא תיאוריה - אתם כבר השבוע הראשון מתחילים להרגיש כמו שותפים, לא רק כשני אנשים שגרים יחד.",
+        "השינוי שיורגש כבר בחודש הראשון - החברות תצמח והכיף יחזור.",
     },
     family: {
       reflection:
         "בחרתם במשפחה כעדיפות הראשונה. זאת לא במקרה - הניתוח שלכם מראה שזה התחום שבו תרגישו הכי מהר את ההשפעה.",
-      plan: "בחודש הקרוב המומחה שלכם יוביל אתכם דרך כלים מעשיים לתיאום בין הוריות, תקשורת עם הילדים, ושמירה על הזמן הזוגי בתוך החיים המשפחתיים.",
+      plan: "בשבועות הקרובים תקבלו גישה לכלים ייחודיים שישנו את הדינמיקה המשפחתית, עם מומחה שילווה אתכם ויענה על שאלות בזמן אמת.",
       close:
-        "זו לא תיאוריה - כבר בשבוע הראשון תראו שינוי בדינמיקה בבית.",
+        "השינוי שיורגש כבר בחודש הראשון - הדינמיקה תשתפר והזמן הזוגי יחזור.",
     },
   },
   en: {
     communication: {
       reflection:
         "You chose communication as your top priority. That's not by chance - your analysis shows exactly what needs fixing.",
-      plan: "In the coming month your dedicated expert will guide you through 4 practical tools that change how you speak to each other.",
-      close: "This isn't theory - it's week one, you're already doing it differently.",
+      plan: "In the coming weeks you'll get access to unique tools that will transform your communication, with an expert who'll guide you and answer questions in real time.",
+      close: "Change you'll feel within the first month - communication will strengthen and closeness will grow.",
     },
     intimacy: {
       reflection:
         "You chose intimacy as your top priority. Your analysis backs this - meaning you're aware exactly where to focus.",
-      plan: "In the coming month your dedicated expert will guide you through practical exercises that restore closeness - without getting stuck in conversations that lead nowhere.",
-      close: "This isn't theory - within two weeks you'll feel the difference in your connection.",
+      plan: "In the coming weeks you'll get access to unique tools that will transform your intimacy, with an expert who'll guide you and answer questions in real time.",
+      close: "Change you'll feel within the first month - intimacy will grow and friendship will bloom.",
     },
     emotional_connection: {
       reflection:
         "You chose emotional connection as your top priority. That's a smart choice - it's the foundation for everything else in your relationship.",
-      plan: "In the coming month your dedicated expert will teach you how to truly hear and be heard - through tools you start applying from the first week.",
-      close: "This isn't theory - it's a process that rebuilds trust, step by step.",
+      plan: "In the coming weeks you'll get access to unique tools that will strengthen your emotional connection, with an expert who'll guide you and answer questions in real time.",
+      close: "Change you'll feel within the first month - emotional connection will deepen and trust will grow.",
     },
     friendship: {
       reflection:
         "You chose friendship as your top priority. A grounded choice - your analysis shows this is the lever that moves everything else.",
-      plan: "In the coming month you'll get a structured plan from your dedicated expert for strengthening friendship in your relationship - daily exercises, guided conversations, and building shared moments.",
-      close: "This isn't theory - by week one you start feeling like partners, not just two people living together.",
+      plan: "In the coming weeks you'll get access to unique tools that will transform your couple friendship, with an expert who'll guide you and answer questions in real time.",
+      close: "Change you'll feel within the first month - friendship will bloom and fun will return.",
     },
     family: {
       reflection:
         "You chose family as your top priority. Not by chance - your analysis shows this is the area where you'll feel impact fastest.",
-      plan: "In the coming month your dedicated expert will guide you through practical tools for co-parenting, communication with kids, and protecting your couple time inside family life.",
-      close: "This isn't theory - by week one you'll see a change in the dynamic at home.",
+      plan: "In the coming weeks you'll get access to unique tools that will shift your family dynamic, with an expert who'll guide you and answer questions in real time.",
+      close: "Change you'll feel within the first month - the dynamic will improve and couple time will return.",
     },
   },
 };
