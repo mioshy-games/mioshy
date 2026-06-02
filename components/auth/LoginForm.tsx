@@ -100,21 +100,23 @@ export function LoginForm({ kicked = false, next, pairCode }: Props) {
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
-      className="w-full max-w-md"
+      // 2026-06-01 — mobile bumped from max-w-md (448px) to a slightly
+      // wider 92vw cap so the form claims more of the viewport on phones.
+      // Desktop retains the original max-w-md.
+      className="w-full max-w-[min(92vw,460px)] sm:max-w-md"
     >
-      {/* Logo replaces the previous text "mioshy" lockup per Itzik
-          2026-05-07. The SVG is the official wordmark; same drop-shadow
-          treatment so the visual weight is preserved. */}
-      <div className="mb-8 flex flex-col items-center text-center">
+      <div className="mb-10 flex flex-col items-center text-center sm:mb-8">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/mioshy-white.svg"
           alt="Mioshy"
           width={171}
           height={81}
-          className="h-14 w-auto drop-shadow-lg sm:h-16"
+          className="h-16 w-auto drop-shadow-lg sm:h-16"
         />
-        <p className="mt-3 text-[15px] text-white/70">{t("loginTagline")}</p>
+        <p className="mt-4 text-[17px] text-white/75 sm:mt-3 sm:text-[15px]">
+          {t("loginTagline")}
+        </p>
       </div>
 
       {kicked && (
@@ -128,8 +130,12 @@ export function LoginForm({ kicked = false, next, pairCode }: Props) {
       )}
 
       <AuthCard>
-        <h1 className="text-2xl font-bold text-white">{t("loginTitle")}</h1>
-        <p className="mt-1 text-[15px] text-white/85">{t("loginSubtitle")}</p>
+        <h1 className="text-[30px] font-bold leading-tight text-white sm:text-[26px]">
+          {t("loginTitle")}
+        </h1>
+        <p className="mt-2 text-[17px] leading-snug text-white/85 sm:mt-1 sm:text-[15px]">
+          {t("loginSubtitle")}
+        </p>
 
         {normalizedCode ? (
           <div className="mt-5 flex items-start gap-3 rounded-2xl border border-fuchsia-300/40 bg-fuchsia-500/15 px-4 py-3 text-[14px] leading-[1.55] text-fuchsia-50">
@@ -153,7 +159,7 @@ export function LoginForm({ kicked = false, next, pairCode }: Props) {
           </div>
         ) : null}
 
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+        <form onSubmit={handleSubmit} className="mt-7 space-y-5 sm:mt-6 sm:space-y-4">
           <AuthField id="login_email"    label={t("emailLabel")}    type="email"    value={email}    onChange={setEmail}    autoComplete="email"            required placeholder={t("emailPlaceholder")} />
           <AuthField id="login_password" label={t("passwordLabel")} type="password" value={password} onChange={setPassword} autoComplete="current-password" required placeholder="••••••••" />
 

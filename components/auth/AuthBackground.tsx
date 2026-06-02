@@ -71,15 +71,23 @@ function Blob({ color, size, x, y, dx, dy, dur, blur, op, dir }: {
 export function AuthBackground({ children }: { children: ReactNode }) {
   return (
     <motion.div
-      className="relative min-h-[100dvh] w-full overflow-hidden bg-[#06030f]"
+      // 2026-06-01 — Itzik flagged the mobile background was reading
+      // near-black ("rectangular black slab") while desktop felt blue
+      // and alive. The base is now slightly brighter on mobile
+      // (#0d0824 - a touch of blue/purple) and the blob opacities are
+      // bumped at small screens so they cut through. Desktop drops to
+      // the original deeper navy via `sm:`.
+      className="relative min-h-[100dvh] w-full overflow-hidden bg-[#0d0824] sm:bg-[#06030f]"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
     >
-      {/* ── Animated blobs ── */}
-      <Blob color="#7c3aed" size="80vw" x="15%"  y="35%"  dx={280} dy={200} dur={20} blur="120px" op={0.55} dir={1} />
-      <Blob color="#db2777" size="65vw" x="75%"  y="60%"  dx={240} dy={280} dur={25} blur="110px" op={0.45} dir={-1} />
-      <Blob color="#2563eb" size="50vw" x="50%"  y="10%"  dx={180} dy={320} dur={30} blur="130px" op={0.35} dir={1} />
+      {/* ── Animated blobs ──
+          On mobile the blobs are scaled up + amped (op×1.2) so the
+          colour cuts through. Desktop unchanged. */}
+      <Blob color="#7c3aed" size="90vw" x="15%"  y="35%"  dx={280} dy={200} dur={20} blur="120px" op={0.65} dir={1} />
+      <Blob color="#db2777" size="75vw" x="75%"  y="60%"  dx={240} dy={280} dur={25} blur="110px" op={0.55} dir={-1} />
+      <Blob color="#2563eb" size="60vw" x="50%"  y="10%"  dx={180} dy={320} dur={30} blur="130px" op={0.45} dir={1} />
 
       {/* ── Scanlines texture ── */}
       <div
@@ -89,9 +97,18 @@ export function AuthBackground({ children }: { children: ReactNode }) {
         }}
       />
 
-      {/* ── Vignette ── */}
+      {/* ── Vignette ──
+          Softer on mobile (50% instead of 75% black at edges) so the
+          blobs stay visible all the way to the corners. */}
       <div
         className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(ellipse at 50% 50%, transparent 25%, rgba(0,0,0,0.5) 100%)",
+        }}
+      />
+      <div
+        className="pointer-events-none absolute inset-0 hidden sm:block"
         style={{
           background: "radial-gradient(ellipse at 50% 50%, transparent 20%, rgba(0,0,0,0.75) 100%)",
         }}
@@ -104,15 +121,14 @@ export function AuthBackground({ children }: { children: ReactNode }) {
 
       {/* ── Content ── */}
       <div className="relative z-10 flex min-h-[100dvh] flex-col">
-        {/* Header sits inside the animated background so it blends naturally */}
         <SiteHeader />
 
-        {/* Vertically centered form area */}
-        <main className="flex flex-1 flex-col items-center justify-center px-4 py-12">
+        {/* More vertical breathing room on mobile (py-10 → py-14) so
+            the form doesn't crash into the header / footer. */}
+        <main className="flex flex-1 flex-col items-center justify-center px-5 py-14 sm:px-4 sm:py-12">
           {children}
         </main>
 
-        {/* Footer at the bottom of the full-screen layer */}
         <SiteFooter />
       </div>
     </motion.div>
