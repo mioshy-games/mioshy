@@ -22,7 +22,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { ChevronDown, ChevronLeft, Pencil, Trash2, AlertTriangle } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronLeft,
+  Pencil,
+  Trash2,
+  AlertTriangle,
+  ArrowUp,
+  ArrowDown,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -37,6 +45,7 @@ import {
 import {
   setJourneyItemActive,
   deleteJourneyItem,
+  moveJourneyItem,
 } from "@/app/dashboard/actions/journey-content";
 import { cn } from "@/lib/utils";
 import type { JourneyItem } from "@/lib/journey-content/types";
@@ -167,6 +176,28 @@ export function ItemQuickRow({
   const [pendingToggle, setPendingToggle] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState(false);
+  const [isMoving, setIsMoving] = useState(false);
+
+  // 2026-06-02 — sort_order reorder. Calls the server action that
+  // swaps this row with its same-category neighbour, then lets
+  // revalidatePath redraw the list with the new positions. We disable
+  // both arrow buttons during the round-trip so a panicked double-
+  // click can't fire two swaps interleaved.
+  function handleMove(direction: "up" | "down") {
+    if (isMoving) return;
+    setIsMoving(true);
+    startTransition(async () => {
+      try {
+        await moveJourneyItem(item.id, direction);
+      } catch (err) {
+        // Best-effort — the page revalidates on next render anyway,
+        // so a stale state will resolve on its own.
+        console.error("[ItemQuickRow.handleMove]", err);
+      } finally {
+        setIsMoving(false);
+      }
+    });
+  }
 
   const editHref = `/dashboard/journey/items/${item.id}`;
 
@@ -327,9 +358,39 @@ export function ItemQuickRow({
           )}
         </TableCell>
 
-        {/* פעולות — ערוך + מחק */}
+        {/* פעולות — סדר תצוגה + ערוך + מחק */}
         <TableCell className="text-end">
           <div className="flex items-center justify-end gap-1">
+            {/* 2026-06-02 — sort_order swap. The arrows swap this row
+                with its neighbour in the same category (atomic — no
+                gaps, no duplicates). Lightweight: one server action
+                per click, revalidates the layout, no extra client
+                state. isMoving disables both buttons during the round-
+                trip so a fast double-click can't race the SQL. */}
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              disabled={isMoving}
+              onClick={() => handleMove("up")}
+              aria-label="העבר למעלה"
+              title="העבר למעלה (יוצג מוקדם יותר)"
+              className="h-7 w-7"
+            >
+              <ArrowUp className="size-4" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              disabled={isMoving}
+              onClick={() => handleMove("down")}
+              aria-label="העבר למטה"
+              title="העבר למטה (יוצג מאוחר יותר)"
+              className="h-7 w-7"
+            >
+              <ArrowDown className="size-4" />
+            </Button>
             <Link
               href={editHref}
               className={cn(

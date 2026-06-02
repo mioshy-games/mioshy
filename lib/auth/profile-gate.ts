@@ -45,13 +45,14 @@ export async function getProfileGate(): Promise<ProfileGate | null> {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, mobile")
+    .select("full_name, mobile, is_test_user")
     .eq("id", user.id)
     .maybeSingle();
 
   const full_name = ((profile?.full_name as string | null) ?? "").trim() || null;
   const mobile = ((profile?.mobile as string | null) ?? "").trim() || null;
   const email = (user.email ?? "").trim() || null;
+  const isTestUser = !!(profile as { is_test_user?: boolean } | null)?.is_test_user;
 
   // An "email" identity means the account was created with a
   // password. OAuth-only accounts (e.g. Google) won't list it.
@@ -68,9 +69,22 @@ export async function getProfileGate(): Promise<ProfileGate | null> {
   if (!email) missing.push("email");
   if (!hasPassword) missing.push("password");
 
+  // 2026-06-02 — internal/QA bypass.
+  //
+  // Whitelisted test users (profiles.is_test_user = TRUE) are marked
+  // `complete: true` regardless of missing fields. This lets the QA
+  // team end-to-end-test every privileged action — pair, redeem, play,
+  // chat — without filling fake phone numbers on every dummy account
+  // they spin up before the launch. Production users are completely
+  // unaffected: the gate still enforces full_name + mobile + email +
+  // password for anyone whose `is_test_user` is false / null.
+  //
+  // We still expose the raw `missing` list to callers in case they
+  // want to surface a soft hint in the UI; the binary `complete` flag
+  // is what every gate keys on.
   return {
     user_id: user.id,
-    complete: missing.length === 0,
+    complete: isTestUser || missing.length === 0,
     missing,
     full_name,
     mobile,

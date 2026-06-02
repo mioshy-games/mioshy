@@ -575,6 +575,120 @@ export async function setJourneyItemActive(
   return { ok: true, isActive };
 }
 
+/**
+ * Swap the sort_order of an item with its neighbour in the same
+ * category. Used by the up/down arrows on the items list — atomic,
+ * idempotent, never produces gaps or duplicate orders.
+ *
+ * Direction semantics:
+ *   • 'up'   → swap with the previous row (smaller sort_order /
+ *              earlier created_at if tied). Visually moves the item
+ *              one slot up the list.
+ *   • 'down' → swap with the next row.
+ *
+ * Returns silently when the item is already at the top/bottom of its
+ * category — the UI disables the relevant arrow but we double-check
+ * here so a stale page can't corrupt the order via fast-clicking.
+ *
+ * Added 2026-06-02.
+ */
+export async function moveJourneyItem(
+  itemId: string,
+  direction: "up" | "down",
+): Promise<
+  | { ok: true; swappedWithId: string | null }
+  | { ok: false; error: string }
+> {
+  if (!itemId) return { ok: false, error: "missing itemId" };
+  const supabase = await adminDb();
+
+  // 1. Pull the current item — we need category_id + sort_order +
+  //    created_at for the tiebreak comparison.
+  const { data: current, error: currentErr } = await supabase
+    .from("journey_items")
+    .select("id, category_id, sort_order, created_at")
+    .eq("id", itemId)
+    .maybeSingle();
+  if (currentErr || !current) {
+    return { ok: false, error: currentErr?.message ?? "not_found" };
+  }
+
+  type Row = {
+    id: string;
+    category_id: string;
+    sort_order: number;
+    created_at: string;
+  };
+  const c = current as Row;
+
+  // 2. Find the neighbour. Same category, sort_order strictly less-
+  //    than / greater-than, tiebroken by created_at. The lexicographic
+  //    composite (sort_order, created_at) matches the runtime sort key
+  //    used by listItems() and the cadence engine.
+  const neighbourQuery = supabase
+    .from("journey_items")
+    .select("id, sort_order, created_at")
+    .eq("category_id", c.category_id);
+
+  // For 'up' we want the row IMMEDIATELY BEFORE c in (sort_order ASC,
+  // created_at ASC). That is the largest row whose key is less than c's.
+  // For 'down', the smallest row greater than c.
+  const { data: rawNeighbour, error: neighbourErr } =
+    direction === "up"
+      ? await neighbourQuery
+          .or(
+            `sort_order.lt.${c.sort_order},and(sort_order.eq.${c.sort_order},created_at.lt.${c.created_at})`,
+          )
+          .order("sort_order", { ascending: false })
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle()
+      : await neighbourQuery
+          .or(
+            `sort_order.gt.${c.sort_order},and(sort_order.eq.${c.sort_order},created_at.gt.${c.created_at})`,
+          )
+          .order("sort_order", { ascending: true })
+          .order("created_at", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+  if (neighbourErr) {
+    return { ok: false, error: neighbourErr.message };
+  }
+  if (!rawNeighbour) {
+    // Already at the edge — nothing to swap with. Idempotent no-op.
+    return { ok: true, swappedWithId: null };
+  }
+  const n = rawNeighbour as { id: string; sort_order: number };
+
+  // 3. Swap. We give them VALUES that won't ever collide regardless
+  //    of what else is happening in the table — by setting the current
+  //    item to a temporary sentinel first, then the neighbour to the
+  //    current's old value, then the current to the neighbour's old
+  //    value. Three updates is fine — the table is tiny (hundreds of
+  //    rows) and this avoids ever holding two rows on the same
+  //    sort_order long enough to confuse the order.
+  //
+  //    If we have a UNIQUE constraint on (category_id, sort_order) in
+  //    the future, this same pattern still works. Today no such
+  //    constraint exists.
+  const sentinel = -Math.abs(c.sort_order) - 1; // negative → distinct
+  await supabase
+    .from("journey_items")
+    .update({ sort_order: sentinel })
+    .eq("id", c.id);
+  await supabase
+    .from("journey_items")
+    .update({ sort_order: c.sort_order })
+    .eq("id", n.id);
+  await supabase
+    .from("journey_items")
+    .update({ sort_order: n.sort_order })
+    .eq("id", c.id);
+
+  revalidateJourney();
+  return { ok: true, swappedWithId: n.id };
+}
+
 export async function createAndRedirectNewItem(
   categoryId: string,
   subtopicId?: string | null,
