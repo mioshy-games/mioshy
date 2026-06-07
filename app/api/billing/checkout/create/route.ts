@@ -112,7 +112,7 @@ export async function POST(req: Request) {
 
   // ── Server-trusted locale/tax fields, derived from request IP ───────────────
   // Tax compliance: we cannot let the client decide whether they're charged
-  // 17% Israeli VAT or 0%. Vercel's edge attaches an ISO-2 country code via
+  // 18% Israeli VAT or 0%. Vercel's edge attaches an ISO-2 country code via
   // `x-vercel-ip-country` (see lib/geo-from-request.ts). This becomes the
   // single source of truth for downstream pricing, VAT, currency, and
   // invoice language. The client-supplied fields above are kept only for
@@ -146,7 +146,7 @@ export async function POST(req: Request) {
   const trustedCountryCode = geo.countryCode ?? "XX"
   const trustedIsIsraeli   = geo.isIsraeli
   const trustedLanguage    = localeFromGeo(geo)
-  const trustedVatPercent  = trustedIsIsraeli ? 17 : 0
+  const trustedVatPercent  = trustedIsIsraeli ? 18 : 0
   const trustedCurrency    = currencyFromGeo(geo)
 
   // Subscription plans must be one of weekly/monthly/annual.

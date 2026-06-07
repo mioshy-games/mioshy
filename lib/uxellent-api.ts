@@ -62,10 +62,10 @@ export type CreateDocumentInput = {
  *   • is_vat_free: false  → standard Israeli sale, the `amount` is
  *                            the gross/inclusive total — the issuer
  *                            splits VAT out backwards
- *                            (base = amount/1.17, vat = amount * 0.17/1.17).
+ *                            (base = amount/1.18, vat = amount * 0.18/1.18).
  *
- * Without this field, the issuer was defaulting to "add 17% on top",
- * which is why a ₪1.00 charge produced a 1.17 line item.
+ * Without this field, the issuer was defaulting to "add 18% on top",
+ * which is why a ₪1.00 charge produced a 1.18 line item.
  *
  * Mapping rule: Israeli customer → not VAT-free; non-Israeli → VAT-free.
  * Geo is server-trusted (Vercel edge headers), so we read it off the
@@ -115,8 +115,8 @@ export async function createBillingDocument(
     idempotency_key: idempotencyKey, // forward-compatible - issuer may use this to dedupe
     /* Tell the issuer whether this transaction is VAT-exempt. For
        Israeli customers (the default) the amount we send already
-       includes 17% VAT, so the issuer must split it backwards instead
-       of adding 17% on top. */
+       includes 18% VAT, so the issuer must split it backwards instead
+       of adding 18% on top. */
     is_vat_free: deriveIsVatFree(input.is_israeli),
   }
 

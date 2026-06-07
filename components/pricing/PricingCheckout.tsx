@@ -427,8 +427,8 @@ function CountryConfirmDialog({
           <p className="mt-3 text-center text-xs text-white/55">
             {countryCode === "IL"
               ? isHe
-                ? "המחיר כולל מע״מ 17%"
-                : "Price includes 17% VAT"
+                ? "המחיר כולל מע״מ 18%"
+                : "Price includes 18% VAT"
               : isHe
                 ? "פטור ממע״מ - יצוא"
                 : "VAT-exempt — export"}

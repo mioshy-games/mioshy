@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>תשלום • מיאושי</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════════════
+   MIOSHY — Cardcom payment skin (single-file production version)
+   =================================================================== */
+*,*::before,*::after{ box-sizing:border-box; }
+html,body{ margin:0; padding:0; }
+html{ font-size:16px; }
+body{
+  font-family:'Heebo',system-ui,-apple-system,Segoe UI,sans-serif;
+  background:#06030f;
+  color:#fff;
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  position:relative;
+  overflow-x:hidden;
+}
+
+/* ── Background blobs ── */
+.bg-layer{ position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
+.bg-layer .blob{ position:absolute; border-radius:50%; filter:blur(120px); will-change:auto; }
+.bg-layer .blob.b1{ width:80vw; height:80vw; left:15%; top:35%; transform:translate(-50%,-50%); background:#7c3aed; opacity:.55; }
+.bg-layer .blob.b2{ width:65vw; height:65vw; left:75%; top:60%; transform:translate(-50%,-50%); background:#db2777; opacity:.45; }
+.bg-layer .blob.b3{ width:50vw; height:50vw; left:50%; top:10%; transform:translate(-50%,-50%); background:#2563eb; opacity:.35; }
+.bg-layer .scanlines{ position:absolute; inset:0; background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.02) 0,rgba(255,255,255,.02) 1px,transparent 1px,transparent 5px); }
+.bg-layer .vignette{ position:absolute; inset:0; background:radial-gradient(ellipse at 50% 50%, transparent 20%, rgba(0,0,0,.75) 100%); }
+
+/* ── Page shell ── */
+.shell{ position:relative; z-index:10; min-height:100vh; display:flex; flex-direction:column; padding:32px 16px 24px; }
+.shell-inner{ width:100%; max-width:520px; margin:0 auto; flex:1; display:flex; flex-direction:column; }
+
+/* ── Logo lockup ── */
+.brand{ display:flex; flex-direction:column; align-items:center; text-align:center; margin-bottom:28px; }
+.brand svg{ height:54px; width:auto; filter:drop-shadow(0 4px 16px rgba(0,0,0,.4)); }
+.brand .tagline{ margin-top:12px; font-size:15px; color:rgba(255,255,255,.70); font-weight:400; letter-spacing:.01em; }
+
+/* ── Merchant header ── */
+.merchant{ display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:6px 14px; text-align:center; margin-bottom:22px; font-size:13px; color:rgba(255,255,255,.55); line-height:1.5; }
+.merchant .company-name{ font-size:13px; font-weight:600; color:rgba(255,255,255,.85); }
+.merchant > div{ display:inline-flex; align-items:center; }
+.merchant > div + div::before{ content:""; display:inline-block; width:3px; height:3px; border-radius:50%; background:rgba(255,255,255,.30); margin-left:14px; }
+.merchant .info-line:empty, .merchant > div:empty{ display:none; }
+
+/* ── Frosted glass card ── */
+.glass{
+  border-radius:28px; padding:28px 24px;
+  background:rgba(255,255,255,.06);
+  backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px);
+  border:1px solid rgba(255,255,255,.12);
+  box-shadow:0 32px 80px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.10);
+}
+.glass + .glass{ margin-top:16px; }
+
+/* ── Headings ── */
+.page-title{ font-size:24px; font-weight:700; color:#fff; margin:0 0 4px; letter-spacing:-.01em; }
+.section-title{ font-size:13px; font-weight:700; color:rgba(255,255,255,.55); text-transform:uppercase; letter-spacing:.14em; margin:0 0 18px; }
+.page-title:empty, .section-title:empty, .section-title > span:empty{ display:none; }
+
+/* ── Summary strip (mobile) ── */
+.summary-strip{ display:flex; justify-content:space-between; align-items:baseline; padding:16px 18px; border-radius:18px; background:linear-gradient(135deg, rgba(217,70,239,.14), rgba(244,63,94,.12)); border:1px solid rgba(217,70,239,.22); }
+.summary-strip .label{ font-size:14px; color:rgba(255,255,255,.75); font-weight:500; }
+.summary-strip .amount{
+  font-size:26px; font-weight:800; color:#fff; letter-spacing:-.01em;
+  white-space:nowrap; direction:ltr; unicode-bidi:isolate; text-align:left;
+}
+
+/* ── Desktop order table ── */
+.products-table{ display:none; }
+@media (min-width:760px){ .products-table{ display:block; } }
+.products-table table{ width:100%; border-collapse:collapse; table-layout:fixed; font-size:14px; color:rgba(255,255,255,.85); }
+.products-table th:nth-child(1), .products-table td:nth-child(1){ width:20%; text-align:right; }
+.products-table th:nth-child(2), .products-table td:nth-child(2){ width:10%; text-align:center; }
+.products-table th:nth-child(3), .products-table td:nth-child(3){ width:18%; text-align:center; }
+.products-table th:nth-child(4), .products-table td:nth-child(4){ width:52%; text-align:left; }
+.products-table th{ font-size:12px; font-weight:600; color:rgba(255,255,255,.50); text-transform:uppercase; letter-spacing:.10em; padding:10px 8px; border-bottom:1px solid rgba(255,255,255,.10); }
+.products-table td{ padding:12px 8px; border-bottom:1px solid rgba(255,255,255,.06); color:#fff; }
+.products-table tr.even td{ background:rgba(255,255,255,.02); }
+.products-table tfoot td{ padding-top:18px; border-bottom:none; }
+.paymentDetailsFlexBox{ display:flex; flex-direction:column; align-items:flex-end; gap:4px; font-size:15px; color:#fff; }
+.paymentDetailsFlexBox > div{ display:flex; gap:10px; align-items:baseline; direction:rtl; unicode-bidi:isolate; }
+.paymentDetailsFlexBox .num{ font-weight:800; font-size:20px; color:#fff; white-space:nowrap; direction:ltr; unicode-bidi:isolate; display:inline-block; }
+.products-table td .directionLTR, .products-table td .num{ white-space:nowrap; direction:ltr; unicode-bidi:isolate; display:inline-block; }
+.products-table tbody td:nth-child(1),
+.products-table tbody td:nth-child(3){ direction:ltr; unicode-bidi:isolate; }
+.commission-summery > div{ font-size:13px; color:rgba(255,255,255,.55); }
+
+/* ── Form rows ── */
+.formRow{ display:flex; flex-direction:column; gap:6px; margin-bottom:16px; }
+.formRow .fieldName, .formRow label{
+  font-size:14px; font-weight:600; color:#fff; letter-spacing:.01em;
+  direction:rtl; text-align:right; unicode-bidi:plaintext;
+}
+.formRow .fieldInput{ display:block; position:relative; margin-top:2px; }
+.formRow input:not(.directionLTR):not([type=number]),
+.formRow select{ direction:rtl; text-align:right; }
+.formRow input,
+.formRow input[type=text],
+.formRow input[type=tel],
+.formRow input[type=email],
+.formRow input[type=number],
+.formRow input[type=password],
+.formRow select{
+  width:100%;
+  background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.15);
+  color:#fff;
+  font:inherit; font-size:16px;
+  padding:12px 14px;
+  border-radius:16px;
+  outline:none;
+  transition:border-color .15s, box-shadow .15s, background .15s;
+  -webkit-appearance:none; appearance:none;
+}
+.formRow input::placeholder{ color:rgba(255,255,255,.25); }
+.formRow input:focus, .formRow select:focus{
+  border-color:rgba(232,121,249,.60);
+  background:rgba(255,255,255,.07);
+  box-shadow:0 0 0 3px rgba(232,121,249,.20);
+}
+
+/* ── Validity month + year on a single row ── */
+.validityDate{ display:flex !important; flex-direction:row !important; flex-wrap:nowrap !important; gap:10px; width:100%; }
+.validityDate select{ width:auto !important; min-width:0; flex:1 1 0; }
+.validityDate select.tiny{ flex:0 0 38%; }
+.validityDate select.mini{ flex:1 1 62%; }
+
+/* ── Expiry + CVV side by side ── */
+.formRow-pair{ display:flex; gap:12px; align-items:flex-start; margin-bottom:16px; }
+.formRow-pair > .formRow{ flex:1 1 0; min-width:0; margin-bottom:0; }
+.formRow-pair > .formRow.cvv-cell{ flex:0 0 35%; }
+.formRow-pair > .formRow .fieldInput input{ width:100%; }
+
+/* ── Select chevron ── */
+.formRow select{
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23ffffff90' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+  background-repeat:no-repeat;
+  background-position:left 14px center;
+  padding-left:38px;
+}
+
+/* ── Checkbox + CVV help ── */
+.formRow input.checkbox{ width:18px; height:18px; accent-color:#e879f9; margin-left:8px; vertical-align:middle; }
+.fieldname.checkbox{ color:#f0abfc; text-decoration:underline; text-underline-offset:3px; }
+.WhatIsCvvLightBox img{ width:14px; height:14px; opacity:.5; margin-right:4px; vertical-align:middle; }
+
+/* ── Validation states ── */
+.cssValid input, .cssValid select{ border-color:rgba(134,239,172,.55)!important; }
+.cssInValid input, .cssInValid select{ border-color:rgba(251,113,133,.65)!important; box-shadow:0 0 0 3px rgba(251,113,133,.18); }
+.hide{ display:none!important; }
+
+/* ── Submit button (CTA) ── */
+.submitDiv{ margin-top:22px; display:flex; flex-direction:column; gap:14px; }
+.buttonDiv input[type=button]{
+  width:100%; min-height:54px;
+  background:linear-gradient(90deg,#d946ef 0%,#f43f5e 100%);
+  color:#fff; border:none; border-radius:18px;
+  font-family:inherit; font-weight:700; font-size:17px; letter-spacing:.01em;
+  cursor:pointer;
+  box-shadow:0 18px 40px -16px rgba(217,70,239,.55), inset 0 1px 0 rgba(255,255,255,.18);
+  transition:transform .12s, filter .15s;
+}
+.buttonDiv input[type=button]:hover{ filter:brightness(1.08); }
+.buttonDiv input[type=button]:active{ transform:scale(.98); }
+.homeLink{ text-align:center; }
+.homeLink a{ color:rgba(255,255,255,.55); font-size:14px; text-decoration:none; border-bottom:1px dashed transparent; transition:color .15s, border-color .15s; }
+.homeLink a:hover{ color:#f0abfc; border-color:rgba(240,171,252,.5); }
+
+/* ── Alt-payment containers ── */
+.paypalDiv, .masterPassDiv, .uPayBitContainer, .BitContainer, .ApplePayDiv, .GooglePayDiv{ margin-bottom:10px; }
+#bit-payment-button{ width:100%; min-height:50px; background:#0066FF; color:#fff; border:none; border-radius:16px; font-weight:700; font-size:16px; cursor:pointer; }
+.apple-pay-button{ width:100%!important; min-height:50px!important; border-radius:16px!important; }
+
+/* ── Errors ── */
+.errorDiv{ margin-top:14px; background:rgba(251,113,133,.12); border:1px solid rgba(251,113,133,.32); border-radius:14px; padding:12px 14px; }
+.errorDiv ul{ margin:0; padding:0; list-style:none; }
+.errorDiv li{ color:#fda4af; font-size:14px; }
+
+/* ── Captcha ── */
+.googleCaptchaBox{ background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.15); border-radius:14px; padding:10px; display:inline-block; }
+
+/* ── Footer ── */
+.footer{ margin-top:28px; }
+.footerIn{ text-align:center; padding:18px 12px 6px; font-size:12px; color:rgba(255,255,255,.50); line-height:1.7; }
+.footer-logo{ display:inline-flex; align-items:center; gap:8px; margin-bottom:10px; padding:8px 16px; border-radius:999px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.10); }
+.footer-logo img{ height:18px; opacity:.85; }
+.footer-logo img[src=""], .footer-logo img:not([src]){ display:none; }
+.footer-logo svg{ height:18px; width:auto; }
+.footer-logo .cardcom-text{ font-family:'Heebo','Arial Black',sans-serif; font-weight:800; font-size:13px; letter-spacing:.05em; color:#fff; direction:ltr; }
+.footer-text span{ display:block; }
+.footer-text span:empty{ display:none; }
+.footer-text a{ color:rgba(255,255,255,.65); }
+.cardcom-fallback-copy a{ color:#f0abfc; text-decoration:underline; text-underline-offset:3px; }
+
+/* ── Helpers ── */
+.directionLTR{ direction:ltr; text-align:left; unicode-bidi:plaintext; }
+
+/* ── Popups ── */
+.white-popup{ background:rgba(20,12,38,.95); color:#fff; padding:24px; border-radius:24px; max-width:420px; margin:40px auto; border:1px solid rgba(255,255,255,.12); backdrop-filter:blur(24px); }
+.mfp-hide{ display:none; }
+
+/* ── Cookies banner ── */
+#cookies-banner{ position:fixed; bottom:0; left:0; right:0; background:rgba(13,8,33,.95); color:rgba(255,255,255,.85); padding:14px 18px; display:flex; gap:10px; align-items:center; justify-content:center; border-top:1px solid rgba(255,255,255,.10); font-size:13px; z-index:50; backdrop-filter:blur(20px); }
+#btn-cookies-accept{ background:linear-gradient(90deg,#d946ef,#f43f5e); color:#fff; border:none; padding:8px 18px; border-radius:10px; font-weight:700; cursor:pointer; }
+
+/* ── Tighten credit-card glass card ── */
+.paymentDetails .blockDetailsIn{ padding:0; }
+.paymentDetails > .section-title:first-child{ margin-top:0; }
+
+/* ── Hard-hide rows that Knockout might otherwise show ── */
+.mioshy-hide-always{ display:none !important; }
+
+/* ── Top-level RTL safety ── */
+.merchant, .section-title, .page-title, .tagline{
+  direction:rtl; text-align:center; unicode-bidi:plaintext;
+}
+.section-title{ text-align:right; }
+.shell-inner, .glass, .blockDetails{ direction:rtl; }
+</style>
+</head>
+<body>
+
+<div class="bg-layer">
+  <div class="blob b1"></div>
+  <div class="blob b2"></div>
+  <div class="blob b3"></div>
+  <div class="scanlines"></div>
+  <div class="vignette"></div>
+</div>
+
+<div class="shell">
+  <div class="shell-inner">
+
+    <!-- Logo + tagline -->
+    <div class="brand">
+      <svg viewBox="0 0 171 81" xmlns="http://www.w3.org/2000/svg" aria-label="Mioshy">
+        <path d="M107.487 32.6652C107.036 32.394 106.526 32.2433 106.016 32.2433C105.656 32.2433 105.295 32.2433 104.965 32.3638C104.875 32.0324 104.725 31.7009 104.545 31.3996C104.275 30.9475 103.885 30.6161 103.434 30.3449C101.874 29.4408 99.8625 29.9833 98.962 31.5502C98.3017 32.9665 98.1816 34.5636 98.6919 36.0703C99.0521 37.4866 99.5924 38.8728 100.283 40.1685L100.373 40.3795H100.613C102.084 40.3192 103.524 40.0781 104.935 39.6864C106.466 39.3549 107.787 38.481 108.687 37.1853C109.588 35.6183 109.047 33.5993 107.487 32.6953" fill="#FFE047"/>
+        <path d="M64.9242 5.21317C64.9242 6.87054 62.703 9.67299 58.2607 13.6507C58.5608 11.4509 59.3412 9.34152 60.5719 7.47321C61.7725 5.63505 63.0632 4.70089 64.4439 4.70089C64.684 4.67076 64.8942 4.82143 64.9542 5.0625C64.9542 5.09263 64.9542 5.1529 64.9542 5.18304M51.8373 20.8527C51.5071 22.8717 50.7867 24.8304 49.6761 26.548C48.6256 28.1451 47.575 28.9587 46.5545 28.9587C46.2844 28.9587 46.1343 28.7478 46.1343 28.2958C46.1343 26.7589 48.0253 24.2578 51.8073 20.8527H51.8373ZM64.9842 8.5279C66.6051 6.71987 67.4155 5.27344 67.4155 4.18862C67.4155 3.10379 66.9953 2.59152 66.1848 2.59152C63.6035 2.59152 61.4123 3.88728 59.6414 6.50893C57.9005 9.01005 56.8799 11.933 56.7299 14.9766L53.6082 17.6886V16.9353C53.6983 13.2288 52.4976 9.58259 50.1564 6.71987C47.8452 3.94755 44.2133 2.53125 39.2907 2.53125C35.8689 2.53125 32.4471 3.07366 29.2054 4.18862C26.4139 5.0625 23.7125 6.29799 21.2212 7.83482C19.09 9.22098 17.079 10.7879 15.248 12.5658C13.5671 14.1027 12.0363 15.8203 10.7156 17.6886C10.7156 17.9598 10.8957 18.2009 11.2859 18.442C11.4961 18.442 11.9163 17.99 12.5166 17.1161C12.8167 16.6942 13.1469 16.3326 13.5071 15.971C17.5292 11.0592 22.872 7.44308 28.9052 5.54464C31.6367 4.61049 34.5182 4.09821 37.3997 4.06808C42.6224 4.06808 46.4044 5.36384 48.7457 7.92522C51.0869 10.5167 52.3476 13.9219 52.2575 17.3873C52.2575 17.9297 52.2575 18.5022 52.1675 19.0446C47.0047 23.625 44.4234 26.9096 44.4234 28.8984C44.3033 29.7422 44.8736 30.5257 45.7141 30.6462C45.8641 30.6462 46.0142 30.6462 46.1343 30.6462C47.9052 30.6462 49.466 29.5313 50.8768 27.3013C52.3476 24.8906 53.218 22.2087 53.4882 19.4063L56.7899 16.5134C57.06 20.0391 58.6209 21.817 61.5024 21.817C62.8231 21.9074 64.1438 21.5759 65.2844 20.9129C65.6145 20.702 65.9447 20.4609 66.2449 20.2199C66.485 20.0089 66.7551 19.8583 67.0253 19.7076C67.2654 19.6172 67.3855 19.3761 67.3555 19.135C67.3555 18.8337 67.2654 18.683 67.0553 18.683C66.6951 18.7734 66.3649 18.9241 66.0948 19.1953C64.9242 20.1897 63.4234 20.6719 61.8926 20.6116C59.4313 20.6116 58.1706 18.9844 58.1706 15.7299V15.308C60.5719 13.1987 62.8831 10.9688 65.0442 8.6183M111.899 46.6172C111.899 47.1897 111.899 47.7623 111.809 48.3047C110.008 47.8527 109.077 46.5268 109.077 44.2667C109.077 43.8147 109.318 43.6038 109.828 43.6038C110.398 43.6339 110.938 43.9654 111.239 44.4777C111.689 45.1105 111.929 45.8638 111.899 46.6473M111.329 49.5703C111.329 49.5703 111.419 49.5703 111.479 49.5703C110.788 51.6797 109.468 53.4877 107.697 54.8136C106.316 56.0792 104.605 56.8326 102.744 57.0134C100.613 57.0134 99.5324 55.9888 99.5324 53.9397C99.6524 51.8002 100.523 49.7812 101.964 48.1842C103.585 46.1652 105.325 45.1406 107.186 45.0804C107.096 47.4609 108.957 49.4498 111.329 49.5402M20.6809 41.1931C20.861 41.7656 20.951 42.3984 20.921 43.0011C20.861 43.9654 20.5008 44.8996 19.8404 45.6529C19.3302 46.4665 18.4297 47.0089 17.4392 47.0692C17.049 47.0692 16.8689 46.8281 16.8689 46.3761C17.019 45.5625 17.3791 44.8092 17.8894 44.1763C18.6698 43.0614 19.6003 42.067 20.6509 41.1931M122.705 46.0145L122.284 45.5926C121.204 46.346 120.003 46.9185 118.742 47.3404C117.032 48.0636 115.231 48.4554 113.4 48.4855C113.64 47.6417 113.76 46.7679 113.73 45.8638C113.76 44.8694 113.4 43.9051 112.709 43.2121C111.959 42.4888 110.938 42.1272 109.918 42.1875C108.837 42.1272 107.817 42.76 107.397 43.7545C104.995 43.8147 102.594 45.0804 100.283 47.5513C98.5118 49.4196 97.4313 51.2277 96.981 52.9453C96.981 52.9453 96.981 52.9754 96.951 53.0056C96.951 53.0056 96.951 52.9754 96.951 52.9453C94.1896 55.4163 92.0284 56.6518 90.4976 56.6518C89.9273 56.6518 89.5972 56.5011 89.4471 56.1696C89.4471 56.1696 89.4171 56.1696 89.387 56.1998C89.387 56.1998 89.387 56.1395 89.4171 56.1395C89.4171 56.1395 89.4171 56.1395 89.4171 56.1696C89.5371 56.0792 89.6872 55.9888 89.8073 55.8984C89.9573 55.7779 90.0474 55.5971 90.0474 55.4163C90.0474 55.115 89.8373 54.9643 89.5071 54.904C89.8073 54.1205 90.4376 53.1864 91.4581 52.1016L97.6414 45.0804C97.9115 44.8694 98.0916 44.5681 98.1216 44.2667C98.1216 44.0558 98.0016 43.8147 97.8215 43.6942C97.6114 43.5134 97.3412 43.423 97.0711 43.4531C96.7709 43.4531 96.5008 43.5435 96.2907 43.7545C95.8404 44.2065 95.4202 44.6886 95 45.2009C94.3697 45.9844 93.4992 47.0089 92.3886 48.3047C91.278 49.6004 90.5577 50.4743 90.1975 50.9263C89.8373 51.3783 89.4471 51.8605 88.9968 52.3728C88.5466 52.885 88.2164 53.3371 87.9163 53.6685C87.316 54.3917 86.9258 55.2958 86.8357 56.2299C86.8357 56.3203 86.8357 56.3806 86.8657 56.4408C86.8657 56.4408 86.5656 56.6518 86.4155 56.8025C82.9937 59.5145 79.842 60.8404 76.9305 60.8404C74.7994 60.8404 73.7188 59.5446 73.7188 56.9531C73.7188 53.5781 76.6603 47.8828 82.4834 39.8672C88.3965 31.7913 94.7899 24.077 101.694 16.8147C108.627 9.49219 114 4.48996 117.812 1.83817C118.202 1.65737 118.382 1.47656 118.382 1.26563C118.382 0.753348 118.082 0.512277 117.482 0.512277C116.942 0.602679 116.401 0.753349 115.921 1.02455C110.158 3.94755 104.755 7.50335 99.8025 11.6618C93.5592 16.6641 88.0063 21.5458 83.1137 26.3069C78.2212 31.0681 73.6288 35.6183 69.3065 39.9275C66.8752 42.4888 64.2938 44.9297 61.5924 47.2199C65.4044 41.7355 68.9163 36.0402 72.128 30.1641C76.3002 22.7813 79.9921 16.5134 83.2038 11.3304C86.4155 6.17746 89.0569 2.92299 91.158 1.5971C91.5482 1.44643 91.8183 1.05469 91.8183 0.632813C91.8183 0.210938 91.5782 0.0301342 91.0679 0.0301342C89.357 0.0301342 86.5656 1.80804 82.6635 5.39397C80.8025 7.11161 78.9415 8.88951 77.1106 10.7277C75.2796 12.5658 73.2686 14.7355 71.0474 17.1763C68.8562 19.6473 66.3949 22.3594 63.7235 25.3728C61.0221 28.3862 58.7409 31.0078 56.8799 33.2679L53.3381 37.2455C52.5276 38.1194 51.0269 39.6864 48.8657 41.8862C46.7046 44.0859 44.8136 45.8638 43.2528 47.1897C41.6919 48.5156 39.6809 50.0826 37.1896 51.9208C29.7156 57.4353 22.4218 60.1775 15.278 60.1775C11.1058 60.1775 7.86414 59.0022 5.52291 56.6217C3.30174 54.5123 2.04107 51.5592 2.01106 48.4855C1.95103 45.6228 3.0316 42.8203 5.01264 40.7411C7.17378 38.5714 10.1754 37.4263 13.207 37.6071C16.6588 37.6071 18.97 38.481 20.1406 40.2589C17.049 42.7299 15.5182 44.8996 15.5182 46.7076C15.5182 47.5815 16.1485 48.0335 17.4092 48.0335C18.7299 48.0335 19.9605 47.4007 20.8009 46.3761C21.7014 45.4721 22.2417 44.2969 22.2717 43.0312C22.3017 42.0971 22.1216 41.1328 21.7615 40.2589C25.4834 37.4565 30.0458 35.9498 34.6983 35.9498C35.2686 35.9498 35.8689 35.9799 36.4392 36.1004C36.7694 36.1908 37.1295 36.2511 37.4597 36.2813C37.6998 36.2813 37.8499 36.1908 37.91 36.0402C37.91 35.4375 37.4597 35.106 36.5893 35.0458L34.9384 34.9554C30.0458 34.9252 25.2433 36.4621 21.2512 39.3248C19.8104 37.3962 17.169 36.4319 13.297 36.4319C9.6951 36.3114 6.21327 37.6674 3.66193 40.1987C1.38073 42.4587 0 45.683 0 49.058C0 52.433 1.38073 55.6574 3.87204 57.9174C6.4534 60.3884 10.0253 61.654 14.6177 61.654C19.3902 61.6239 24.1027 60.5391 28.455 58.5502C33.0174 56.5313 37.2796 53.9096 41.0916 50.7455C49.5561 43.6339 57.3302 35.7388 64.3239 27.1808C73.0585 16.7545 80.1722 9.34152 85.6651 4.91183C83.0237 7.77455 77.891 15.7902 70.297 28.9888C62.673 42.1574 57.8705 49.9319 55.8294 52.3125C54.7788 53.5781 53.4881 55.2958 51.9573 57.4353C51.6272 57.9174 51.267 58.3996 50.8768 58.8516C50.6967 59.0022 50.6066 59.2433 50.6367 59.4542C50.6667 59.7556 50.8468 60.0268 51.1169 60.1473C51.5671 60.0871 51.9874 59.8158 52.1975 59.394C58.1406 53.0357 66.7251 44.2969 77.981 33.1775C84.6145 26.6083 91.0979 20.6417 97.4013 15.2779C103.705 9.91406 108.597 6.35826 112.109 4.64063L111.299 5.39397L109.498 7.05134C103.825 11.692 96.0205 19.9788 86.0853 31.942C82.1532 36.6127 78.5814 41.5547 75.3397 46.7076C72.3381 51.529 70.8373 55.1451 70.8373 57.4955C70.8373 60.6295 72.5182 62.2266 75.8799 62.2266C78.7314 62.2266 82.5735 60.6897 87.316 57.6161C87.316 57.6161 87.316 57.6161 87.346 57.6161C87.6461 57.9475 88.0964 58.0982 88.6967 58.0982C90.8578 57.9475 92.9289 57.2243 94.6698 55.9587C95.5403 55.4163 96.1706 54.9342 96.7109 54.4821C96.7109 54.5424 96.7109 54.5725 96.7109 54.6328C96.7109 57.0737 98.3318 58.279 101.573 58.279C104.095 58.2188 106.496 57.3147 108.417 55.6875C110.488 54.1205 112.079 52.0112 113.039 49.6004C114.9 49.51 116.731 49.1183 118.472 48.4554C119.733 48.0636 120.904 47.5212 122.014 46.798C122.464 46.4062 122.675 46.1652 122.675 46.0446M136.332 46.7377C136.812 46.2254 137.082 45.5324 137.112 44.8393C137.112 44.1462 136.662 43.5134 136.032 43.2121C135.101 42.76 134.081 42.5491 133.06 42.5792C131.739 42.5792 130.479 43.1518 129.548 44.1161C128.468 45.1708 127.657 46.4364 127.147 47.8828C126.637 49.3594 126.156 50.8359 125.706 52.3125C125.316 53.6685 124.656 54.9342 123.755 56.0491C123.035 57.0134 121.894 57.5859 120.694 57.5859C119.703 57.6763 118.742 57.2545 118.082 56.5011C117.512 55.7176 117.212 54.7835 117.272 53.8192C117.272 52.7645 117.692 51.74 118.472 51.0167C119.133 50.2935 120.033 49.8415 120.994 49.8114C121.864 49.8114 122.314 50.2935 122.314 51.2277C122.284 51.6194 122.074 51.981 121.774 52.2221C121.444 52.4632 121.264 52.8549 121.234 53.2467C121.234 53.6083 121.474 53.7891 121.924 53.7891C122.494 53.7288 122.975 53.3973 123.245 52.885C123.635 52.3426 123.845 51.7098 123.875 51.077C123.875 49.6909 123.095 48.9978 121.534 48.9978C119.943 48.9978 118.412 49.5703 117.212 50.5647C115.951 51.529 115.201 53.0357 115.231 54.6328L115.381 55.6272C115.531 56.4408 116.011 57.1641 116.701 57.6161C117.692 58.3393 118.863 58.6708 120.093 58.6105C122.194 58.7009 124.235 57.827 125.616 56.26C126.937 54.8136 127.837 53.0357 128.288 51.1373C128.678 49.3594 129.308 47.6417 130.149 46.0145C130.959 44.4475 131.979 43.6641 133.21 43.6641C134.441 43.6641 135.011 44.1161 135.011 44.99C135.011 45.6529 134.831 46.0446 134.501 46.135C133.9 46.4665 133.6 46.8583 133.6 47.2801C133.66 47.5513 133.991 47.702 134.591 47.702C135.251 47.6719 135.882 47.3404 136.272 46.798M150.949 34.5937C159.954 24.3783 165.357 19.2857 167.128 19.2857C167.578 19.2857 167.788 19.4665 167.788 19.8583C167.788 21.0636 166.017 23.2634 162.506 26.4275C158.994 29.5915 155.122 32.3337 150.979 34.5636M151.97 66.7768C144.166 75.5458 138.283 79.9152 134.351 79.9152C133.57 79.9453 132.82 79.6741 132.25 79.1618C131.739 78.6797 131.439 77.9866 131.469 77.2634C131.469 74.4609 133.39 71.9297 137.232 69.7299C140.744 67.6205 144.766 66.4755 148.848 66.4152C149.899 66.4152 150.949 66.5056 151.97 66.7467M152.24 73.9788C153.321 73.0145 154.581 72.231 155.902 71.6585C155.842 72.9241 155.362 74.1295 154.551 75.0938C153.981 75.9375 153.051 76.51 152.03 76.6306C151.19 76.6306 150.799 76.4498 150.799 76.1484C150.799 75.606 151.28 74.8828 152.24 73.9788ZM153.111 55.567C153.111 55.567 153.111 55.356 153.111 55.2656C153.111 54.0904 154.882 51.5893 158.453 47.7321L160.855 45.1708C161.185 44.8996 161.395 44.4777 161.425 44.0558C161.425 43.6942 161.185 43.5134 160.735 43.5134C160.284 43.5134 158.243 45.5324 154.671 49.5402C153.621 50.6853 152.66 51.9208 151.82 53.2165C151.82 53.2467 151.79 53.2768 151.76 53.3069L151.7 53.4576C151.73 53.3973 151.76 53.3371 151.79 53.3069C149.239 55.5067 147.227 56.6217 145.787 56.6217C145.006 56.6217 144.646 56.3203 144.646 55.7176C144.646 54.8438 145.727 53.2165 147.858 50.8661C149.989 48.5156 151.07 46.7076 151.07 45.442C150.889 44.7489 150.499 44.1462 149.959 43.6942C149.359 43.3025 148.668 43.0915 147.948 43.1217C145.607 43.3326 143.355 44.1462 141.434 45.5324C144.466 42.0067 147.077 38.9933 149.269 36.5223C154.401 33.9609 159.204 30.7667 163.586 27.0603C168.118 23.2333 170.4 20.5212 170.37 18.9241C170.37 18.5324 170.19 18.1708 169.889 17.9297C169.619 17.6886 169.259 17.5379 168.899 17.5078C165.837 17.5078 158.543 23.8359 147.077 36.4621C141.585 42.5792 136.002 49.0882 130.359 55.9888C129.968 56.26 129.698 56.7121 129.698 57.1942C129.698 57.6462 129.878 57.8873 130.269 57.8873C130.479 57.8873 130.809 57.6462 131.259 57.1339L132.1 56.3203C132.43 55.9888 134.891 53.1864 139.513 47.8828C142.545 46.0748 144.796 45.1406 146.297 45.1105C147.798 45.0804 148.578 45.442 148.548 46.2254C148.548 47.0089 147.498 48.5458 145.427 50.8962C143.325 53.2467 142.305 55.0246 142.305 56.2299C142.185 57.1038 142.785 57.9174 143.656 58.0379C143.806 58.0379 143.956 58.0379 144.106 58.0379C146.267 57.8873 148.338 57.1641 150.079 55.8984C150.379 55.7176 150.589 55.5368 150.859 55.356C150.739 55.7478 150.619 56.1094 150.559 56.5011C150.559 57.6161 151.25 58.1585 152.63 58.1585C154.311 58.0681 155.962 57.5859 157.403 56.7422C158.123 56.3504 159.294 55.6272 160.945 54.5725C162.085 53.9096 163.166 53.1261 164.156 52.2522C163.616 52.8549 162.055 54.7533 159.504 57.9475C156.953 61.1417 154.761 63.7333 152.961 65.7221C151.76 65.4509 150.499 65.3002 149.269 65.3002C144.616 65.3304 140.024 66.596 136.002 68.9464C131.649 71.3873 129.488 74.25 129.488 77.5647C129.488 79.8248 130.899 80.9699 133.69 80.9699C139.123 80.9699 145.817 76.4799 153.711 67.4699C154.972 68.1027 155.812 69.3683 155.932 70.7846C154.161 71.5681 152.54 72.5926 151.1 73.8884C150.049 74.6417 149.359 75.7868 149.179 77.0826C149.179 77.7455 149.809 78.077 151.07 78.077C152.6 77.9263 154.011 77.1429 154.942 75.9375C156.202 74.6719 156.983 72.9844 157.163 71.2065C158.964 70.6339 160.825 70.3627 162.716 70.3929C164.787 70.3929 166.227 70.875 167.038 71.8694C167.308 72.2009 167.488 72.3516 167.608 72.3516C167.938 72.3516 168.118 72.1105 168.118 71.5982C168.118 70.9353 167.458 70.3929 166.167 69.9408C164.907 69.4888 163.556 69.2779 162.205 69.2779C160.494 69.3382 158.814 69.6696 157.223 70.2723C157.163 68.5547 156.142 67.048 154.581 66.385C157.043 63.5826 160.134 59.7254 163.856 54.8739C167.548 50.0223 169.889 47.1295 170.82 46.1953L171.09 45.5324C171.09 45.2009 170.85 45.0502 170.34 45.0502C169.829 45.0502 168.869 45.8337 167.368 47.4007C165.327 49.4799 163.106 51.3482 160.765 53.0659C157.853 55.2656 155.722 56.3806 154.341 56.3806C153.771 56.471 153.261 56.0792 153.201 55.5067" fill="#fff"/>
+      </svg>
+      <div class="tagline">המסע שלכם מתחיל כאן</div>
+    </div>
+
+    <!-- Merchant info (CompanyName + InfoLine1-3 from Cardcom admin) -->
+    <div class="merchant header user-header">
+      <div class="logoDiv hide"><img alt="" data-bind="attr: { src: images.companyLogo }"/></div>
+      <div class="adress company"><span class="company-name title" data-bind="text: labels.CompanyName"></span></div>
+      <div class="Line1"><span class="info-line title" data-bind="text: labels.InfoLine1"></span></div>
+      <div class="Line2"><span class="info-line title" data-bind="text: labels.InfoLine2"></span></div>
+      <div class="Line3"><span class="info-line title" data-bind="text: labels.InfoLine3"></span></div>
+      <div class="clear"></div>
+    </div>
+
+    <!-- Page title -->
+    <h1 class="page-title" data-bind="text: lph1" style="text-align:center; margin-bottom:18px;"></h1>
+
+    <!-- Shop-owner HTML notes -->
+    <div class="glass" data-bind="visible : labels.HtmlComments" style="display:none">
+      <div class="htmlCommentsDiv" data-bind="html: labels.HtmlComments"></div>
+    </div>
+
+    <!-- Order summary (mobile strip) -->
+    <!-- ko if: !IsHideInvoiceInfo -->
+    <div class="glass productsDetails showProductsTabs" style="padding:0; background:transparent; border:none; box-shadow:none;">
+      <div class="summary-strip">
+        <div><div class="label" data-bind="text: labels.Summary"></div></div>
+        <div class="amount" data-bind="text: summaryTotalSign"></div>
+      </div>
+      <div data-bind="visible: showOriginalSum" style="display:none; margin-top:8px; font-size:13px; color:rgba(255,255,255,.55); text-align:left;">
+        <span data-bind="text: labels.OriginalSummary"></span>
+        <span data-bind="text: originalSum"></span>
+      </div>
+      <div data-bind="visible: showCoinConvert" style="display:none; margin-top:8px;">
+        <span data-bind="text: labels.TotalInfo"></span>
+        <select data-bind="options: currencyRates, optionsText: 'AlphabeticCode', value: selectedCurrencyRate"></select>
+        <span data-bind="text: currencyRateTotalSign"></span>
+      </div>
+    </div>
+    <!-- /ko -->
+
+    <!-- Order summary (desktop table) -->
+    <!-- ko if: !IsHideInvoiceInfo -->
+    <div class="glass productsDetails products-table showProductsTables">
+      <table class="productsTbl">
+        <thead>
+          <!-- Column order (per user 2026-06-07): RTL right-to-left
+               reading is: תאור → מחיר → כמות → סה"כ. That means in
+               HTML source order (which renders rightmost first in RTL),
+               we put סה"כ FIRST and תאור LAST. -->
+          <tr class="title">
+            <th><span data-bind="text:order.total"></span></th>
+            <th><span data-bind="text:order.quantity"></span></th>
+            <th><span data-bind="text:order.unitPrice"></span></th>
+            <th class="align"><span data-bind="text:order.name"></span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- ko template: { foreach: order.lines }  -->
+          <tr data-bind="css: $index() % 2 == 0 ? 'odd' : 'even' ">
+            <td><span class="directionLTR" data-bind="text: total"></span></td>
+            <td><span class="directionLTR" data-bind="text: quantity"></span></td>
+            <td><span class="directionLTR" data-bind="text: unitPrice"></span></td>
+            <td class="align"><span data-bind="text: name"></span></td>
+          </tr>
+          <!-- /ko -->
+        </tbody>
+        <tfoot>
+          <tr>
+            <td>
+              <div class="paymentDetailsFlexBox">
+                <div>
+                  <span data-bind="text: labels.Summary"></span>
+                  <span class="num" data-bind="text: summaryTotalSign"></span>
+                </div>
+                <div data-bind="visible: showCommissionSummery" class="commission-summery" style="display:none">
+                  <div>
+                    <span data-bind="text: labels.PaymentsCommission"></span>
+                    <span class="num" data-bind="text: totalCommissionSign"></span>
+                  </div>
+                  <div>
+                    <span data-bind="text: labels.TotalIncludePaymentsCommission"></span>
+                    <span class="num" data-bind="text: summeryTotalIncludeCommissionSign"></span>
+                  </div>
+                </div>
+                <div data-bind="visible: showOriginalSum" style="display:none">
+                  <span data-bind="text: labels.OriginalSummary"></span>
+                  <span class="num" data-bind="text: originalSum"></span>
+                </div>
+                <div data-bind="visible: showCoinConvert" style="display:none">
+                  <span data-bind="text: labels.TotalInfo"></span>
+                  <select data-bind="options: currencyRates, optionsText: 'AlphabeticCode', value: selectedCurrencyRate"></select>
+                  <span class="num" data-bind="text: currencyRateTotalSign"></span>
+                </div>
+              </div>
+            </td>
+            <td colspan="3" style="visibility:hidden"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    <!-- /ko -->
+
+    <!-- Invoice details (פרטים לחשבונית) — hidden hard.
+         Customer data is already passed from Mioshy to Cardcom server-to-server.
+         The mioshy-hide-always class beats Knockout's visible: binding. -->
+    <div class="glass blockDetails OrderDetails mioshy-hide-always" data-bind="visible: order.showInvoiceHead">
+      <h2 class="section-title"><span data-bind="text: labels.InvoiceInfo"></span></h2>
+
+      <div class="formRow cardRow" data-bind="hide:order.custName.hide, css:order.custName.CssValid">
+        <label data-bind="text:order.custName.label" for="txtCustName"></label>
+        <span class="fieldInput"><input type="text" data-testid="txtCustNameInput" data-bind="value:order.custName.value" id="txtCustName"></span>
+      </div>
+      <div class="formRow cardRow" data-bind="hide:order.compID.hide, css:order.compID.CssValid">
+        <label data-bind="text:order.compID.label" for="txtCompID"></label>
+        <span class="fieldInput"><input type="text" data-testid="txtCompIDInput" data-bind="value:order.compID.value" id="txtCompID"></span>
+      </div>
+      <div class="formRow cardRow" data-bind="hide:order.custCity.hide, css:order.custCity.CssValid">
+        <label data-bind="text:order.custCity.label" for="txtCustCity"></label>
+        <span class="fieldInput"><input type="text" data-testid="txtCustCityInput" data-bind="value:order.custCity.value" id="txtCustCity"></span>
+      </div>
+      <div class="formRow cardRow" data-bind="hide:order.custAddresLine1.hide, css:order.custAddresLine1.CssValid">
+        <label data-bind="text:order.custAddresLine1.label" for="txtCustAddresLine1"></label>
+        <span class="fieldInput"><input type="text" data-testid="txtCustAddresLine1Input" data-bind="value:order.custAddresLine1.value" id="txtCustAddresLine1"></span>
+      </div>
+      <div class="formRow cardRow" data-bind="hide:order.custAddresLine2.hide, css:order.custAddresLine2.CssValid">
+        <label data-bind="text:order.custAddresLine2.label" for="txtCustAddresLine2"></label>
+        <span class="fieldInput"><input type="text" data-testid="zipcodeInput" data-bind="value:order.custAddresLine2.value" id="txtCustAddresLine2"></span>
+      </div>
+      <div class="formRow cardRow" data-bind="hide:order.custMobilePH.hide, css:order.custMobilePH.CssValid">
+        <label data-bind="text:order.custMobilePH.label" for="txtCustMobilePH"></label>
+        <span class="fieldInput"><input type="tel" data-testid="txtCustMobilePHInput" data-bind="value:order.custMobilePH.value" id="txtCustMobilePH"></span>
+      </div>
+      <div class="formRow cardRow" data-bind="hide:order.custLinePH.hide, css:order.custLinePH.CssValid">
+        <label data-bind="text:order.custLinePH.label" for="txtCustLinePH"></label>
+        <span class="fieldInput"><input type="tel" data-testid="txtCustLinePHInput" data-bind="value:order.custLinePH.value" id="txtCustLinePH"></span>
+      </div>
+      <div class="formRow cardRow" data-bind="hide:order.email.hide, css:order.email.CssValid">
+        <label data-bind="text:order.email.label" for="txtEmail"></label>
+        <span class="fieldInput"><input type="email" data-testid="txtEmailInput" class="directionLTR" data-bind="value:order.email.value" id="txtEmail"></span>
+      </div>
+    </div>
+
+    <!-- Custom fields -->
+    <div class="glass blockDetails customDetails" data-bind="visible: customFields.length > 0" style="display:none">
+      <h2 class="section-title"><span data-bind="text: labels.MoreDetails"></span></h2>
+      <!-- ko template: { name:customDisplayMode , foreach: customFields}  -->
+      <!-- /ko -->
+      <script type="text/html" id="customFieldText">
+        <div class="formRow nameRow" data-bind="hide: hide, css: CssValid">
+          <label data-bind="text: label"></label>
+          <span class="fieldInput"><input type="text" autocomplete="chrome-off" name="name" data-bind="value: value, attr: { id: 'custom_' + $index() }" /></span>
+        </div>
+      </script>
+      <script type="text/html" id="customFieldSelect">
+        <div class="formRow nameRow" data-bind="hide: hide, css: CssValid">
+          <label data-bind="text: label"></label>
+          <span class="fieldInput"><select data-bind="options: selectValues, value: value, optionsCaption: optionsCaption" /></span>
+        </div>
+      </script>
+    </div>
+
+    <!-- Payments -->
+    <div class="glass blockDetails paymentDetails">
+      <h2 class="section-title" style="display:none"><span data-bind="text: labels.MethodsOfPayment"></span></h2>
+
+      <div class="paypalDiv" data-bind="hide: hidePayPal">
+        <a href="#" title=""><img data-bind="attr: { src: images.paypal }, click: sendPayPalData" border="0"></a>
+      </div>
+
+      <div id="ApplePayDivContainer"></div>
+      <div class="ApplePayDiv" data-bind="if: IsApplePayActive">
+        <div id="apple-pay-button-setup" class="apple-pay apple-pay-button button-with-text button-text-setup"
+             data-bind="attr: { lang : ApplePay.language }, click:ApplePay.attemptApplePaySetup, visible: ApplePay.applePayInstance.flagsComputed._SetupBtn"></div>
+        <div id="apple-pay-button-start" class="apple-pay apple-pay-button button-with-text button-color-black"
+             data-bind="attr: { lang : ApplePay.language }, click: ApplePay.startApplePay, visible: ApplePay.applePayInstance.flagsComputed._PaymentBtn">
+          <span class="logo logo-color-white"></span>
+        </div>
+        <div id="apple-pay-button-popup" class="apple-pay apple-pay-button button-color-black"
+             data-bind="attr: { lang : ApplePay.language }, click: ApplePay.applePayPopup, visible: ApplePay.applePayInstance.flagsComputed._PopupBtn">
+          <span class="logo logo-color-white"></span>
+        </div>
+        <div id="apple-pay-notices" class="apple-pay apple-pay-notices">
+          <span id="apple-pay-button-popup-notice" class="apple-pay-notices"
+                data-bind="attr: { lang : ApplePay.language }, visible: ApplePay.applePayInstance.flagsComputed._PopupBtn">
+            <small>*<span data-bind="text: labels.ApplePay_mightOpenPopupWindow"></span></small>
+          </span>
+          <span id="apple-pay-button-focus-notice" class="apple-pay-notices"
+                data-bind="attr: { lang : ApplePay.language }, visible: ApplePay.isApplePayExt">
+            <small>* <span data-bind="text: labels.ApplePay_extPopup_keepOpen"></span> *</small>
+          </span>
+        </div>
+        <span data-bind="visible: ApplePay.AddPaddingBelowComponent"><br/><br/><br/></span>
+      </div>
+
+      <div class="GooglePayDiv" id="GooglePayDiv"></div>
+      <div id="BitDivContainer"></div>
+
+      <div id="uPayBitDiv" data-bind="ifnot: hideUpayBitBtn">
+        <div class="uPayBitContainer">
+          <button id="bit-payment-button" type="button" data-bind="click: sendData_uPayBit"></button>
+        </div>
+      </div>
+
+      <div id="PayMeBitDiv" data-bind="ifnot: hidePayMeBitBtn">
+        <div class="BitContainer">
+          <button id="bit-payment-button" type="button" data-bind="click: sendData_PayMeBit"></button>
+        </div>
+        <div id="payme-container-div">
+          <label class="payme-payment-txt" data-bind="text: PayMePaymentText"></label>
+          <label class="payme-payment-txt error" data-bind="text: PayMePaymentError"></label>
+          <div id="payme-countdown" class="payme-payment-txt" data-bind="visible: ShowPayMeCountdown"></div>
+          <div id="payme-window-container"></div>
+        </div>
+      </div>
+
+      <div id="CardcomBitDiv" data-bind="ifnot: hideCardcomBitBtn">
+        <div class="BitContainer">
+          <button id="bit-payment-button" type="button" data-bind="click: sendData_CardcomBit"></button>
+        </div>
+        <div id="cardcom-bit-container-div">
+          <!-- ko if: CardcomBitUrl -->
+          <a id="cardcom-bit-ref" data-bind="text: CardcomBitUrlText, attr: {href:CardcomBitUrl, target:'_blank'}" style="text-decoration:none; font-weight:bold;"></a>
+          <!-- /ko -->
+          <label class="cardcom-bit-payment-txt" data-bind="text: CardcomBitPaymentText"></label>
+          <label class="cardcom-bit-payment-txt error" data-bind="text: CardcomBitPaymentError"></label>
+          <div id="cardcom-bit-countdown" class="cardcom-bit-payment-txt" data-bind="visible: ShowCardcomBitCountdown"></div>
+          <img id="qrBarcode" data-bind="if:CardcomBitQrBarcodeUrl, attr: {src:CardcomBitQrBarcodeUrl}" width="200" />
+        </div>
+      </div>
+
+      <div class="masterPassDiv" data-bind="hide: hideMasterPass">
+        <a href="#" title=""><img data-bind="attr: { src: images.masterPass }, click: sendMasterPassData" border="0"></a>
+      </div>
+
+      <div class="section-title" style="margin-top:6px;" data-bind="hide: (hideCreditCardInputs || hidePayPal && hideMasterPass && hideApplePay && hideUpayBitBtn && hidePayMeBitBtn)">
+        <span data-bind="text: labels.PayByCreditCard"></span>
+      </div>
+
+      <div class="formRow cardRow" data-bind="hide:openSum.hide, class: openSum.CssValid">
+        <label data-bind="text:openSum.label" for="txtopenSum"></label>
+        <span class="fieldInput"><input type="number" maxlength="15" data-bind="value:openSum.value" id="txtopenSum"></span>
+      </div>
+
+      <div id="CreditCardDiv" data-bind="ifnot: hideCreditCardInputs">
+
+        <div class="formRow cardRow" data-bind="hide:cardNumber.hide, css:cardNumber.CssValid">
+          <label data-bind="text:cardNumber.label" for="txtCardNumber"></label>
+          <span class="fieldInput">
+            <input type="text" data-bind="value:cardNumber.value, disable:cardNumber.disabled , visible:IsMobile==false || IsToken, event: { keyup: checkCreditCardBrand }, class: CardBrandClass" data-testid="credit-card-number-text-field" id="txtCardNumber" inputmode="numeric" autocomplete="cc-number">
+            <input type="number" data-bind="value:cardNumber.value, disable:cardNumber.disabled , visible:IsMobile==true && !IsToken, event: { keyup: checkCreditCardBrand }, class: CardBrandClass" data-testid="credit-card-number-field" id="txtCardNumber-number" autocomplete="cc-number">
+          </span>
+        </div>
+
+        <div class="formRow-pair">
+          <div class="formRow">
+            <label data-bind="text: lblExpiration"></label>
+            <span class="fieldInput validityDate">
+              <select id="validityMonth" class="tiny" name="validityMonth" data-testid="credit-card-months-field" data-bind="value: expirationMonth.value, disable: expirationMonth.disabled, att:{'aria-label':expirationMonth.label}">
+                <option value="1">01</option><option value="2">02</option><option value="3">03</option>
+                <option value="4">04</option><option value="5">05</option><option value="6">06</option>
+                <option value="7">07</option><option value="8">08</option><option value="9">09</option>
+                <option value="10">10</option><option value="11">11</option><option value="12">12</option>
+              </select>
+              <select id="validityYear" class="mini" name="validityYear" data-testid="credit-card-years-field" data-bind="options: expirationYear.selectValues, value: expirationYear.value, disable: expirationYear.disabled, att:{'aria-label':expirationYear.label}"></select>
+            </span>
+          </div>
+
+          <div class="formRow cvvRow cvv-cell" data-bind="hide:cvv.hide, css:cvv.CssValid">
+            <label for="txtCvv" data-bind="text:cvv.label"></label>
+            <span class="fieldInput"><input type="text" maxlength="4" data-bind="hide:cvv.hide,value:cvv.value" data-testid="credit-card-cvv-field" id="txtCvv" inputmode="numeric" autocomplete="cc-csc" placeholder="•••"></span>
+          </div>
+        </div>
+
+        <div class="formRow cardRow" data-bind="hide:cardOwnerID.hide, css:cardOwnerID.CssValid">
+          <label data-bind="text:cardOwnerID.label" for="txtTZ"></label>
+          <span class="fieldInput"><input type="text" maxlength="20" data-bind="value:cardOwnerID.value" data-testid="credit-card-tz-field" id="txtTZ" inputmode="numeric"></span>
+        </div>
+
+        <div class="formRow cardRow" data-bind="hide:cardOwnerName.hide, css:cardOwnerName.CssValid">
+          <label data-bind="text:cardOwnerName.label" for="txtCardOwnerName"></label>
+          <span class="fieldInput"><input type="text" maxlength="50" data-bind="value:cardOwnerName.value" data-testid="credit-card-number-field" id="txtCardOwnerName" autocomplete="cc-name"></span>
+        </div>
+
+        <div class="formRow cardRow" data-bind="hide:cardOwnerPhone.hide, css:cardOwnerPhone.CssValid">
+          <label data-bind="text:cardOwnerPhone.label" for="txtCardOwnerPhone"></label>
+          <span class="fieldInput"><input type="tel" maxlength="20" data-bind="value:cardOwnerPhone.value" data-testid="credit-card-owner-phone-number-field" id="txtCardOwnerPhone"></span>
+        </div>
+
+        <div class="formRow cardRow" data-bind="hide:cardOwnerEmail.hide, css:cardOwnerEmail.CssValid">
+          <label data-bind="text:cardOwnerEmail.label" for="txtCardOwnerEmail"></label>
+          <span class="fieldInput"><input type="email" class="directionLTR" maxlength="150" data-bind="value:cardOwnerEmail.value" data-testid="credit-card-owner-email-field" id="txtCardOwnerEmail"></span>
+        </div>
+
+        <div class="formRow cardRow" data-bind="hide:avsCity.hide, css:avsCity.CssValid">
+          <label data-bind="text:avsCity.label" for="txtAvsCity"></label>
+          <span class="fieldInput"><input type="text" maxlength="20" data-bind="value:avsCity.value" id="txtAvsCity"></span>
+        </div>
+        <div class="formRow cardRow" data-bind="hide:avsAddress.hide, css:avsAddress.CssValid">
+          <label data-bind="text:avsAddress.label" for="txtAvsAddress"></label>
+          <span class="fieldInput"><input type="text" maxlength="20" data-bind="value:avsAddress.value" id="txtAvsAddress"></span>
+        </div>
+        <div class="formRow cardRow" data-bind="hide:avsZip.hide, css:avsZip.CssValid">
+          <label data-bind="text:avsZip.label" for="txtAvsZip"></label>
+          <span class="fieldInput"><input type="text" maxlength="20" data-bind="value:avsZip.value" id="txtAvsZip"></span>
+        </div>
+
+        <!-- "מספר תשלומים" — hidden hard via CSS class (default = 1).
+             Cardcom's hide: binding doesn't reach the class attribute. -->
+        <div class="formRow cardRow mioshy-hide-always" data-bind="hide:numberOfPayments.hide, css:numberOfPayments.CssValid">
+          <label data-bind="text:numberOfPayments.label" for="numberOfPaymentsselect"></label>
+          <span class="fieldInput">
+            <select class="tiny" data-bind="options: numberOfPayments.selectValues, value: numberOfPayments.value" id="numberOfPaymentsselect"></select>
+          </span>
+          <span class="fieldName summaryTotal" data-bind="text: summaryTotalText, hide: hideNumberOfPayments"></span>
+        </div>
+
+        <div class="formRow cardRow" data-bind="hide: condition.hide, css:condition.CssValid">
+          <span class="fieldName" data-bind="text:labels.IHaveReadTheAgreement"></span>
+          <span class="fieldInput">
+            <input class="checkbox" type="checkbox" data-bind="checked: condition.booleanValue"/>
+            <a target="_blank" href="#" data-bind="attr: { href : condition.value }">
+              <span class="fieldname checkbox" data-bind="text: condition.label"></span>
+            </a>
+          </span>
+        </div>
+      </div>
+
+      <div class="formRow cardRow" id="captcha_div" data-bind="visible: IsRecaptchaActive" render="explicit" style="display:none">
+        <span class="fieldName"></span>
+        <span class="fieldInput">
+          <div class="googleCaptchaBox">
+            <div class="tightContainer googleCaptchaRequiredErr" style="z-index:5;" data-bind="style: { 'opacity': DispCaptchaReqErr() ? 1 : 0 }"></div>
+            <div id="captcha_container" style="z-index:10;" render="explicit"
+                 data-callback="DispCaptchaReqErr_Clear" data-expired-callback="DispCaptchaReqErr_Set"></div>
+          </div>
+        </span>
+      </div>
+
+      <div class="submitDiv">
+        <div class="buttonDiv">
+          <input type="button" role="button"
+                 data-bind="value: buttonText, click: sendData, hide: hideCreditCardInputs, enable: !loadMode()"/>
+        </div>
+        <div data-bind="visible:showCancelURL" class="homeLink" style="display:none">
+          <a href="#" data-bind="attr: { href : cancelURL }, visible: showCancelURL">
+            <span data-bind="text: labels.LinkBackToSite"></span>
+          </a>
+        </div>
+      </div>
+
+      <div class="errorDiv" data-bind="visible: error.hasMessages()" style="display:none">
+        <div class="errorDivIn">
+          <ul>
+            <!-- ko template: { foreach: error.messages } -->
+            <li><span class="message message1" data-bind="text: message"></span></li>
+            <!-- /ko -->
+          </ul>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <div class="footerIn" data-bind="visible: !HideFooter()">
+        <div class="footer-logo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="height:14px;width:14px;">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          <img alt="Cardcom" data-bind="attr: { src: images.cardcomLogoEn }" border="0" onerror="this.style.display='none'">
+          <span class="cardcom-text">CARDCOM</span>
+        </div>
+        <div class="footer-text">
+          <!-- Cardcom-mandated trust copy. Kept static per user request:
+               populates only if labels.FooterTextTop is empty in Cardcom admin. -->
+          <span data-bind="html: labels.FooterTextTop"></span>
+          <span data-bind="html: labels.FooterTextBottom"></span>
+          <span class="cardcom-fallback-copy">
+            התשלום מתבצע באמצעות חברת קארדקום —
+            <a href="https://www.cardcom.solutions/" target="_blank" rel="noopener">סליקת אשראי לעסקים</a>
+            בתקן האבטחה המחמיר ביותר ובהתאם
+            <a href="https://secure.cardcom.solutions/External/lowProfileClearing/183655.aspx?lowprofilecode=AAFBBE79-8A9B-46C4-A165-D2CCA117786E&amp;ver=5&amp;Lang=he" target="_blank" rel="noopener">למדיניות הפרטיות</a>
+          </span>
+        </div>
+      </div>
+      <div class="footerIn" data-bind="visible: HideFooter()" style="display:none">
+        <div class="footer-text">
+          <span data-bind="html: labels.PaymentDoneWithTheStrictestSecurityStandards"></span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="privacy-policy-popup" style="display:none;"></div>
+
+<div data-bind="if: ShowCookiesBanner">
+  <div id="cookies-banner">
+    <span data-bind="text:labels.CookiesBannerMessage"></span>
+    <input type="button" id="btn-cookies-accept" data-bind="click:acceptCookies,value:labels.CookiesBannerAccept"/>
+  </div>
+</div>
+
+<!-- Cardcom popups -->
+<div id="PopUpRTL" class='white-popup white-popup-rtl mfp-hide'>
+  <h2 data-bind="html: PopUpDealWasSuccessfulResult"></h2>
+  <span data-bind="html: labels.PopUpRedirectTo"></span>
+  <span style="color:#fda4af" data-bind="html: labels.PopUpYouClickThis">נא לא לסגור את הדפדפן</span>
+  <a data-bind="attr: { href: PopUpRedirectTo}, hide: hideApplePay"><span data-bind="html: labels.PopUpThis">כאן</span></a>
+  <img src="/Images/2015/ajax-loader.gif"/>
+</div>
+<div id="PopUpLTR" class='white-popup mfp-hide'>
+  <h2 data-bind="html: PopUpDealWasSuccessfulResult"></h2>
+  <span data-bind="html: labels.PopUpRedirectTo"></span><br/>
+  <span data-bind="html: labels.PopUpYouClickThis"></span>
+  <a data-bind="attr: { href: PopUpRedirectTo}, hide: hideApplePay"><span data-bind="html: labels.PopUpThis">Here</span></a>
+  <img src="/Images/2015/ajax-loader.gif"/>
+</div>
+<div id="PopUpRTLBit" class='white-popup white-popup-rtl mfp-hide'>
+  <div>
+    <h2 style="display:flex; justify-content:space-between; flex-direction:row;">
+      מיד תועברו לתשלום ב-Bit...
+      <img src="/Images/2015/ajax-loader.gif" style="height:1em; width:1em;"/>
+    </h2>
+  </div>
+  <span>רגע קצר ומעבירים אתכם לתשלום ב-Bit (באפליקציה או באתר).</span>
+  <br/><br/>
+  <div data-bind="if: shouldDisplayBitLinks" style="display: inline-flex;">
+    <div style="flex-grow:1; margin-left:20px">
+      <span>אם במקרה לא הועברתם באופן אוטומטי:</span>
+      <ul>
+        <li data-bind="visible: BitMobilePageURL"><span>לגולשים ב-Mobile, <a href="" target="_blank" data-bind="attr: { href: BitMobilePageURL }">לחצו כאן</a> לפתיחת האפליקציה</span></li>
+        <li data-bind="visible: BitWebPageURL"><span><span data-bind="if: BitMobilePageURL">או, </span><a href="" data-bind="attr: { href: BitWebPageURL }">לחצו כאן</a> לפתיחת העמוד מכל דפדפן ומחשב</span></li>
+      </ul>
+    </div>
+    <div data-bind="visible: BitQrCodeURL" style="display:flex; flex-direction:column; align-items:center;">
+      <img id="UpayBitQrImg" src="" data-bind="attr: { src: BitQrCodeURL }" style="flex:1; height:5em; width:5em; aspect-ratio:1/1; image-rendering:pixelated;"/>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

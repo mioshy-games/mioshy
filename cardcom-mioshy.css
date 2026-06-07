@@ -1,0 +1,233 @@
+/* ═══════════════════════════════════════════════════════════════════
+   MIOSHY — Cardcom payment skin
+   Production CSS. Drop into Cardcom's custom-CSS field.
+   =================================================================== */
+
+/* ── Font ── */
+@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap');
+
+*,*::before,*::after{ box-sizing:border-box; }
+html,body{ margin:0; padding:0; }
+html{ font-size:16px; }
+body{
+  font-family:'Heebo',system-ui,-apple-system,Segoe UI,sans-serif;
+  background:#06030f;
+  color:#fff;
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  position:relative;
+  overflow-x:hidden;
+}
+
+/* ── Background blobs (no animation, no particles) ── */
+.bg-layer{ position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
+.bg-layer .blob{ position:absolute; border-radius:50%; filter:blur(120px); will-change:auto; }
+.bg-layer .blob.b1{ width:80vw; height:80vw; left:15%; top:35%; transform:translate(-50%,-50%); background:#7c3aed; opacity:.55; }
+.bg-layer .blob.b2{ width:65vw; height:65vw; left:75%; top:60%; transform:translate(-50%,-50%); background:#db2777; opacity:.45; }
+.bg-layer .blob.b3{ width:50vw; height:50vw; left:50%; top:10%; transform:translate(-50%,-50%); background:#2563eb; opacity:.35; }
+.bg-layer .scanlines{ position:absolute; inset:0; background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.02) 0,rgba(255,255,255,.02) 1px,transparent 1px,transparent 5px); }
+.bg-layer .vignette{ position:absolute; inset:0; background:radial-gradient(ellipse at 50% 50%, transparent 20%, rgba(0,0,0,.75) 100%); }
+
+/* ── Page shell ── */
+.shell{ position:relative; z-index:10; min-height:100vh; display:flex; flex-direction:column; padding:32px 16px 24px; }
+.shell-inner{ width:100%; max-width:520px; margin:0 auto; flex:1; display:flex; flex-direction:column; }
+
+/* ── Logo lockup ── */
+.brand{ display:flex; flex-direction:column; align-items:center; text-align:center; margin-bottom:28px; }
+.brand svg{ height:54px; width:auto; filter:drop-shadow(0 4px 16px rgba(0,0,0,.4)); }
+.brand .tagline{ margin-top:12px; font-size:15px; color:rgba(255,255,255,.70); font-weight:400; letter-spacing:.01em; }
+
+/* ── Cardcom merchant header (single line w/ separators) ── */
+.merchant{ display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:6px 14px; text-align:center; margin-bottom:22px; font-size:13px; color:rgba(255,255,255,.55); line-height:1.5; }
+.merchant .company-name{ font-size:13px; font-weight:600; color:rgba(255,255,255,.85); }
+.merchant > div{ display:inline-flex; align-items:center; }
+.merchant > div + div::before{ content:""; display:inline-block; width:3px; height:3px; border-radius:50%; background:rgba(255,255,255,.30); margin-left:14px; }
+.merchant .info-line:empty, .merchant > div:empty{ display:none; }
+
+/* ── Frosted glass card ── */
+.glass{
+  border-radius:28px; padding:28px 24px;
+  background:rgba(255,255,255,.06);
+  backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px);
+  border:1px solid rgba(255,255,255,.12);
+  box-shadow:0 32px 80px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.10);
+}
+.glass + .glass{ margin-top:16px; }
+
+/* ── Headings ── */
+.page-title{ font-size:24px; font-weight:700; color:#fff; margin:0 0 4px; letter-spacing:-.01em; }
+.section-title{ font-size:13px; font-weight:700; color:rgba(255,255,255,.55); text-transform:uppercase; letter-spacing:.14em; margin:0 0 18px; }
+.page-title:empty,
+.section-title:empty,
+.section-title > span:empty{ display:none; }
+
+/* ── Order summary strip (mobile) ── */
+.summary-strip{ display:flex; justify-content:space-between; align-items:baseline; padding:16px 18px; border-radius:18px; background:linear-gradient(135deg, rgba(217,70,239,.14), rgba(244,63,94,.12)); border:1px solid rgba(217,70,239,.22); }
+.summary-strip .label{ font-size:14px; color:rgba(255,255,255,.75); font-weight:500; }
+.summary-strip .amount{
+  font-size:26px; font-weight:800; color:#fff; letter-spacing:-.01em;
+  white-space:nowrap; direction:ltr; unicode-bidi:isolate; text-align:left;
+}
+
+/* ── Desktop order table ── */
+.products-table{ display:none; }
+@media (min-width:760px){ .products-table{ display:block; } }
+.products-table table{ width:100%; border-collapse:collapse; table-layout:fixed; font-size:14px; color:rgba(255,255,255,.85); }
+/* HTML source order maps to visual RIGHT→LEFT in RTL:
+     1 = סה"כ (rightmost), 2 = כמות, 3 = מחיר יחידה, 4 = תאור (leftmost) */
+.products-table th:nth-child(1), .products-table td:nth-child(1){ width:20%; text-align:right; }
+.products-table th:nth-child(2), .products-table td:nth-child(2){ width:10%; text-align:center; }
+.products-table th:nth-child(3), .products-table td:nth-child(3){ width:18%; text-align:center; }
+.products-table th:nth-child(4), .products-table td:nth-child(4){ width:52%; text-align:left; }
+.products-table th{ font-size:12px; font-weight:600; color:rgba(255,255,255,.50); text-transform:uppercase; letter-spacing:.10em; padding:10px 8px; border-bottom:1px solid rgba(255,255,255,.10); }
+.products-table td{ padding:12px 8px; border-bottom:1px solid rgba(255,255,255,.06); color:#fff; }
+.products-table tr.even td{ background:rgba(255,255,255,.02); }
+.products-table tfoot td{ padding-top:18px; border-bottom:none; }
+.paymentDetailsFlexBox{ display:flex; flex-direction:column; align-items:flex-end; gap:4px; font-size:15px; color:#fff; }
+.paymentDetailsFlexBox > div{ display:flex; gap:10px; align-items:baseline; direction:rtl; unicode-bidi:isolate; }
+.paymentDetailsFlexBox .num{ font-weight:800; font-size:20px; color:#fff; white-space:nowrap; direction:ltr; unicode-bidi:isolate; display:inline-block; }
+.products-table td .directionLTR, .products-table td .num{ white-space:nowrap; direction:ltr; unicode-bidi:isolate; display:inline-block; }
+/* Money cells (col 1 = סה"כ, col 3 = מחיר יחידה) — LTR so ₪ sits left of the digits */
+.products-table tbody td:nth-child(1),
+.products-table tbody td:nth-child(3){ direction:ltr; unicode-bidi:isolate; }
+.commission-summery > div{ font-size:13px; color:rgba(255,255,255,.55); }
+
+/* ── Form rows ── */
+.formRow{ display:flex; flex-direction:column; gap:6px; margin-bottom:16px; }
+/* Labels: explicit RTL so Hebrew text and the colon/asterisk land on the
+   correct side, regardless of any inherited LTR context Cardcom may inject. */
+.formRow .fieldName, .formRow label{
+  font-size:14px; font-weight:600; color:#fff; letter-spacing:.01em;
+  direction:rtl; text-align:right; unicode-bidi:plaintext;
+}
+.formRow .fieldInput{ display:block; position:relative; margin-top:2px; }
+/* All Hebrew inputs default to RTL; LTR is opt-in via .directionLTR */
+.formRow input:not(.directionLTR):not([type=number]),
+.formRow select{ direction:rtl; text-align:right; }
+.formRow input,
+.formRow input[type=text],
+.formRow input[type=tel],
+.formRow input[type=email],
+.formRow input[type=number],
+.formRow input[type=password],
+.formRow select{
+  width:100%;
+  background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.15);
+  color:#fff;
+  font:inherit; font-size:16px;
+  padding:12px 14px;
+  border-radius:16px;
+  outline:none;
+  transition:border-color .15s, box-shadow .15s, background .15s;
+  -webkit-appearance:none; appearance:none;
+}
+.formRow input::placeholder{ color:rgba(255,255,255,.25); }
+.formRow input:focus, .formRow select:focus{
+  border-color:rgba(232,121,249,.60);
+  background:rgba(255,255,255,.07);
+  box-shadow:0 0 0 3px rgba(232,121,249,.20);
+}
+
+/* ── Validity month + year on a single row ── */
+.validityDate{ display:flex !important; flex-direction:row !important; flex-wrap:nowrap !important; gap:10px; width:100%; }
+.validityDate select{ width:auto !important; min-width:0; flex:1 1 0; }
+.validityDate select.tiny{ flex:0 0 38%; }
+.validityDate select.mini{ flex:1 1 62%; }
+
+/* ── Expiry + CVV side by side ── */
+.formRow-pair{ display:flex; gap:12px; align-items:flex-start; margin-bottom:16px; }
+.formRow-pair > .formRow{ flex:1 1 0; min-width:0; margin-bottom:0; }
+.formRow-pair > .formRow.cvv-cell{ flex:0 0 35%; }
+.formRow-pair > .formRow .fieldInput input{ width:100%; }
+
+/* ── Select chevron ── */
+.formRow select{
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23ffffff90' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+  background-repeat:no-repeat;
+  background-position:left 14px center;
+  padding-left:38px;
+}
+
+/* ── Checkbox + CVV help ── */
+.formRow input.checkbox{ width:18px; height:18px; accent-color:#e879f9; margin-left:8px; vertical-align:middle; }
+.fieldname.checkbox{ color:#f0abfc; text-decoration:underline; text-underline-offset:3px; }
+.WhatIsCvvLightBox img{ width:14px; height:14px; opacity:.5; margin-right:4px; vertical-align:middle; }
+
+/* ── Validation states ── */
+.cssValid input, .cssValid select{ border-color:rgba(134,239,172,.55)!important; }
+.cssInValid input, .cssInValid select{ border-color:rgba(251,113,133,.65)!important; box-shadow:0 0 0 3px rgba(251,113,133,.18); }
+.hide{ display:none!important; }
+
+/* ── Submit button (CTA) ── */
+.submitDiv{ margin-top:22px; display:flex; flex-direction:column; gap:14px; }
+.buttonDiv input[type=button]{
+  width:100%; min-height:54px;
+  background:linear-gradient(90deg,#d946ef 0%,#f43f5e 100%);
+  color:#fff; border:none; border-radius:18px;
+  font-family:inherit; font-weight:700; font-size:17px; letter-spacing:.01em;
+  cursor:pointer;
+  box-shadow:0 18px 40px -16px rgba(217,70,239,.55), inset 0 1px 0 rgba(255,255,255,.18);
+  transition:transform .12s, filter .15s;
+}
+.buttonDiv input[type=button]:hover{ filter:brightness(1.08); }
+.buttonDiv input[type=button]:active{ transform:scale(.98); }
+.homeLink{ text-align:center; }
+.homeLink a{ color:rgba(255,255,255,.55); font-size:14px; text-decoration:none; border-bottom:1px dashed transparent; transition:color .15s, border-color .15s; }
+.homeLink a:hover{ color:#f0abfc; border-color:rgba(240,171,252,.5); }
+
+/* ── Alt-payment containers ── */
+.paypalDiv, .masterPassDiv, .uPayBitContainer, .BitContainer, .ApplePayDiv, .GooglePayDiv{ margin-bottom:10px; }
+#bit-payment-button{ width:100%; min-height:50px; background:#0066FF; color:#fff; border:none; border-radius:16px; font-weight:700; font-size:16px; cursor:pointer; }
+.apple-pay-button{ width:100%!important; min-height:50px!important; border-radius:16px!important; }
+
+/* ── Errors ── */
+.errorDiv{ margin-top:14px; background:rgba(251,113,133,.12); border:1px solid rgba(251,113,133,.32); border-radius:14px; padding:12px 14px; }
+.errorDiv ul{ margin:0; padding:0; list-style:none; }
+.errorDiv li{ color:#fda4af; font-size:14px; }
+
+/* ── Captcha ── */
+.googleCaptchaBox{ background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.15); border-radius:14px; padding:10px; display:inline-block; }
+
+/* ── Footer ── */
+.footer{ margin-top:28px; }
+.footerIn{ text-align:center; padding:18px 12px 6px; font-size:12px; color:rgba(255,255,255,.50); line-height:1.7; }
+.footer-logo{ display:inline-flex; align-items:center; gap:8px; margin-bottom:10px; padding:8px 16px; border-radius:999px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.10); }
+.footer-logo img{ height:18px; opacity:.85; }
+.footer-logo img[src=""], .footer-logo img:not([src]){ display:none; }
+.footer-logo svg{ height:18px; width:auto; }
+.footer-logo .cardcom-text{ font-family:'Heebo','Arial Black',sans-serif; font-weight:800; font-size:13px; letter-spacing:.05em; color:#fff; direction:ltr; }
+.footer-text span{ display:block; }
+.footer-text span:empty{ display:none; }
+.footer-text a{ color:rgba(255,255,255,.65); }
+
+/* ── Helpers ── */
+.directionLTR{ direction:ltr; text-align:left; unicode-bidi:plaintext; }
+
+/* ── Popups ── */
+.white-popup{ background:rgba(20,12,38,.95); color:#fff; padding:24px; border-radius:24px; max-width:420px; margin:40px auto; border:1px solid rgba(255,255,255,.12); backdrop-filter:blur(24px); }
+.mfp-hide{ display:none; }
+
+/* ── Cookies banner ── */
+#cookies-banner{ position:fixed; bottom:0; left:0; right:0; background:rgba(13,8,33,.95); color:rgba(255,255,255,.85); padding:14px 18px; display:flex; gap:10px; align-items:center; justify-content:center; border-top:1px solid rgba(255,255,255,.10); font-size:13px; z-index:50; backdrop-filter:blur(20px); }
+#btn-cookies-accept{ background:linear-gradient(90deg,#d946ef,#f43f5e); color:#fff; border:none; padding:8px 18px; border-radius:10px; font-weight:700; cursor:pointer; }
+
+/* ── Tighten credit-card glass card ── */
+.paymentDetails .blockDetailsIn{ padding:0; }
+.paymentDetails > .section-title:first-child{ margin-top:0; }
+
+/* ── Hard-hide the "number of payments" row.
+   Inline style="display:none" doesn't survive Knockout's hide: binding
+   (it removes the style when numberOfPayments.hide is false). A CSS
+   class with !important is untouched by Knockout. ── */
+.mioshy-hide-always{ display:none !important; }
+
+/* ── Top-level RTL safety on merchant info and section titles ── */
+.merchant, .section-title, .page-title, .tagline{
+  direction:rtl; text-align:center; unicode-bidi:plaintext;
+}
+.section-title{ text-align:right; }
+
+/* Make sure the entire shell uses RTL flow */
+.shell-inner, .glass, .blockDetails{ direction:rtl; }

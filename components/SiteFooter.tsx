@@ -86,7 +86,7 @@ export function SiteFooter() {
               <p className="text-[13px] font-semibold uppercase tracking-widest text-white/60 md:text-xs">
                 {t("exploreTitle")}
               </p>
-              <ul className="space-y-3 text-[16px] md:space-y-2.5">
+              <ul className="space-y-3 text-[13px] md:space-y-2.5 md:text-xs">
                 <li><Link href="/"          className="text-white/75 transition-colors hover:text-white md:text-white/60">{t("home")}</Link></li>
                 <li><Link href="/pricing"   className="text-white/75 transition-colors hover:text-white md:text-white/60">{tMarketing("footer.links.pricing" as never)}</Link></li>
                 <li><Link href="/articles"  className="text-white/75 transition-colors hover:text-white md:text-white/60">{tMarketing("footer.links.articles" as never)}</Link></li>
@@ -99,7 +99,7 @@ export function SiteFooter() {
               <p className="text-[13px] font-semibold uppercase tracking-widest text-white/60 md:text-xs">
                 {t("servicesTitle")}
               </p>
-              <ul className="space-y-3 text-[16px] md:space-y-2.5">
+              <ul className="space-y-3 text-[13px] md:space-y-2.5 md:text-xs">
                 <li><Link href="/games"   className="text-white/75 transition-colors hover:text-white md:text-white/60">{tNav("games")}</Link></li>
                 <li><Link href="/journey" className="text-white/75 transition-colors hover:text-white md:text-white/60">{tNav("journey")}</Link></li>
                 <li><Link href="/mioshy-sex"  className="text-white/75 transition-colors hover:text-white md:text-white/60">{tNav("adults")}</Link></li>
@@ -111,7 +111,7 @@ export function SiteFooter() {
               <p className="text-[13px] font-semibold uppercase tracking-widest text-white/60 md:text-xs">
                 {t("infoTitle")}
               </p>
-              <ul className="space-y-3 text-[16px] md:space-y-2.5">
+              <ul className="space-y-3 text-[13px] md:space-y-2.5 md:text-xs">
                 <li><Link href="/contact" className="text-white/75 transition-colors hover:text-white md:text-white/60">{t("contact")}</Link></li>
                 <li><Link href="/terms"   className="text-white/75 transition-colors hover:text-white md:text-white/60">{t("terms")}</Link></li>
                 <li><Link href="/privacy" className="text-white/75 transition-colors hover:text-white md:text-white/60">{t("privacy")}</Link></li>

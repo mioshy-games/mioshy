@@ -699,7 +699,19 @@ function CategoryBarChart({
     { key: "family",                value: scores.family },
   ];
 
-  const startingPointLabel = isHe ? "נקודת ההתחלה שלכם" : "your starting point";
+  // Itzik 2026-06-02: was "נקודת ההתחלה שלכם" — implied the user
+  // had picked this axis. The label is actually driven by the lowest
+  // score, not by the user's priorities. New copy frames it as a
+  // recommendation so it's honest about the source.
+  const recommendationPrefix = isHe
+    ? "ההמלצה שלנו להתחיל ב"
+    : "we recommend starting with ";
+  const lowestLabel = isHe ? labelsHe[scores.lowest_key] : labelsEn[scores.lowest_key];
+  // Hebrew prefix "ב" attaches directly to the noun ("באינטימיות",
+  // "בתקשורת"). English keeps a space between "with" and the label.
+  const recommendationLine = isHe
+    ? `${recommendationPrefix}${lowestLabel}`
+    : `${recommendationPrefix}${lowestLabel}`;
 
   // Itzik 2026-06-02: horizontal 5-column layout. Yellow gradient bars
   // (logo gold #FCCA65 → deeper amber #B88F32), high contrast on dark
@@ -772,12 +784,14 @@ function CategoryBarChart({
           })}
         </div>
 
-        {/* "Starting point" caption, anchored to the lowest column */}
+        {/* Recommendation caption, anchored to the lowest column.
+            2026-06-02 (Itzik): renamed from "your starting point" to
+            an explicit recommendation phrasing — clearer about who is
+            choosing, and the category name now closes the sentence
+            instead of preceding the label. */}
         <div className="mt-4 flex flex-col items-center gap-1 text-center sm:mt-5">
           <span className="text-[12px] font-semibold uppercase tracking-wider text-[#FCCA65]">
-            {isHe ? labelsHe[scores.lowest_key] : labelsEn[scores.lowest_key]}
-            {" · "}
-            {startingPointLabel}
+            {recommendationLine}
           </span>
         </div>
       </div>
