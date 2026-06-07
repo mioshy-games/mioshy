@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useLocale } from "next-intl";
-import { Check, Sparkles, X } from "lucide-react";
+import { Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -15,7 +15,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getOrCreateDeviceId } from "@/lib/device-id";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
-import { listCountries, findCountry, type Country } from "@/lib/countries";
+// Country picker removed 2026-06-02 (Itzik) — IL-only launch. The
+// imports `listCountries / findCountry / type Country` were dropped
+// together with the picker UI.
 
 // ── Translations ──────────────────────────────────────────────────────────────
 
@@ -27,9 +29,9 @@ const T = {
     subtitlePaywall:     "כל חבילה פותחת את כל המשחקים במיאושי - ביטול בקליק אחד",
     paywallGreeting:     (name: string) => `שלום ${name}`,
     paywallGreetingFallback: "שלום",
-    paywallSinglePlanSubtitle: "כל המשחקים במיאושי, פתוחים לכם - ביטול בכל עת בלחיצה אחת.",
+    paywallSinglePlanSubtitle: "משחקי זוגות אונליין - ללילה בלתי נשכח, ליום הולדת, ליום נישואין, או סתם כשהילדים סוף סוף ישנים!",
     paywallPriceSuffix:  "/שבוע",
-    paywallCancelNote:   "ניתן לעצור בכל עת. ללא חוזה, ללא דמי ביטול.",
+    paywallCancelNote:   "ניתן לעצור בכל עת. ללא התחייבות, ללא דמי ביטול.",
     paywallContinueCta:  "מעבר לתשלום",
     countrySearchPlaceholder: "חיפוש מדינה…",
     countryDetectedLabel: "המדינה שזיהינו",
@@ -85,9 +87,9 @@ const T = {
     subtitlePaywall:     "Every plan unlocks every game on Mioshy - cancel anytime with one click",
     paywallGreeting:     (name: string) => `Hi ${name}`,
     paywallGreetingFallback: "Welcome",
-    paywallSinglePlanSubtitle: "Every Mioshy game, fully unlocked - cancel anytime in one click.",
+    paywallSinglePlanSubtitle: "Online couples games - for an unforgettable night, a birthday, an anniversary, or simply when the kids are finally asleep!",
     paywallPriceSuffix:  "/week",
-    paywallCancelNote:   "Stop any time. No contract, no cancellation fees.",
+    paywallCancelNote:   "Stop any time. No commitment, no cancellation fees.",
     paywallContinueCta:  "Continue to payment",
     countrySearchPlaceholder: "Search country…",
     countryDetectedLabel: "Detected country",
@@ -292,8 +294,12 @@ export function SubscriptionModal({
   // /api/billing/checkout/create - see lib/geo-from-request.ts. Leaving the
   // state in place as a harmless no-op for now to keep this diff minimal.
   const [stage, setStage]             = useState<"select" | "confirm">("select");
-  const [countryCode, setCountryCode] = useState("");
-  const [countryName, setCountryName] = useState("");
+  // Itzik 2026-06-02: launching IL-only. Country picker removed from
+  // the paywall UI. We hardcode IL so VAT (18%) + checkout payloads
+  // continue to flow correctly without asking the user. If/when we
+  // open to other markets, re-introduce the picker from git history.
+  const countryCode = "IL";
+  const countryName = "Israel";
 
   const [busy,  setBusy]  = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -303,20 +309,14 @@ export function SubscriptionModal({
   // fetch the name from auth.users.user_metadata.full_name (the same key
   // RegistrationModal saves) the first time the paywall opens.
   const [userFullName, setUserFullName] = useState<string | null>(null);
-  // Country: pinned-top is whatever the IP geolookup returned; the user can
-  // still pick anything else from the searchable list.
-  const [detectedCountry, setDetectedCountry] = useState<Country | null>(null);
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const [pickerQuery, setPickerQuery] = useState("");
+  // Country picker state removed 2026-06-02 (Itzik). countryCode is
+  // hardcoded to "IL" in the parent state declaration above.
 
   // Reset paywall stage whenever the modal is re-opened.
-  // TODO(remove): see note above - dead since the confirm stage was removed.
   useEffect(() => {
     if (!open) {
       setStage("select");
       setError(null);
-      setPickerOpen(false);
-      setPickerQuery("");
     }
   }, [open]);
 
@@ -341,58 +341,15 @@ export function SubscriptionModal({
     return () => { cancelled = true; };
   }, [mode, open, userFullName]);
 
-  // IP-detect the country whenever the paywall opens. We resolve from
-  // ipapi.co just like the old `confirm` stage did, but now it drives the
-  // pinned-top entry of the country combobox below.
-  useEffect(() => {
-    if (mode !== "paywall") return;
-    if (!open) return;
-    if (countryCode) return;
-    let cancelled = false;
-    void (async () => {
-      try {
-        const res = await fetch("https://ipapi.co/json/", { headers: { Accept: "application/json" } });
-        if (!res.ok) return;
-        const j = (await res.json()) as { country?: string; country_name?: string };
-        if (cancelled) return;
-        const code = (j.country ?? "").toUpperCase();
-        if (!code) return;
-        const found = findCountry(code);
-        if (!found) {
-          setCountryCode(code);
-          setCountryName(j.country_name ?? "");
-          return;
-        }
-        setCountryCode(found.code);
-        setCountryName(locale === "he" ? found.he : found.en);
-        setDetectedCountry(found);
-      } catch { /* ignore */ }
-    })();
-    return () => { cancelled = true; };
-  }, [mode, open, countryCode, locale]);
+  // IP geolookup removed — IL-only launch. The server-side checkout
+  // route (lib/geo-from-request.ts) still uses the request IP as the
+  // authoritative source for billing geo; the modal no longer asks.
 
   const PRICES = isHe ? PRICES_ILS : PRICES_USD;
 
-  // Auto-detect country (paywall only, on entering confirm stage).
-  // TODO(remove): never fires now - `stage` never becomes "confirm" since
-  // the confirm UI was deleted. Server-side IP geo is authoritative.
-  useEffect(() => {
-    if (mode !== "paywall") return;
-    if (stage !== "confirm") return;
-    if (countryCode) return;
-    let cancelled = false;
-    void (async () => {
-      try {
-        const res = await fetch("https://ipapi.co/json/", { headers: { Accept: "application/json" } });
-        if (!res.ok) return;
-        const j = (await res.json()) as { country?: string; country_name?: string };
-        if (cancelled) return;
-        const code = (j.country ?? "").toUpperCase();
-        if (code) { setCountryCode(code); setCountryName(j.country_name ?? ""); }
-      } catch { /* ignore */ }
-    })();
-    return () => { cancelled = true; };
-  }, [mode, stage, countryCode]);
+  // Auto-detect country useEffect removed 2026-06-02 — IL is hardcoded.
+  // setCountryCode / setCountryName are no longer called, so the
+  // setters are kept only because TS destructured them from useState.
 
   const vatRatePercent = countryCode === "IL" ? 18 : 0;
 
@@ -810,14 +767,6 @@ export function SubscriptionModal({
               t={t}
               locale={locale}
               userFullName={userFullName}
-              detectedCountry={detectedCountry}
-              countryCode={countryCode}
-              setCountryCode={setCountryCode}
-              setCountryName={setCountryName}
-              pickerOpen={pickerOpen}
-              setPickerOpen={setPickerOpen}
-              pickerQuery={pickerQuery}
-              setPickerQuery={setPickerQuery}
               onPay={() => void startPayment("weekly")}
             />
           )}
@@ -845,14 +794,6 @@ function SinglePlanPaywall({
   t,
   locale,
   userFullName,
-  detectedCountry,
-  countryCode,
-  setCountryCode,
-  setCountryName,
-  pickerOpen,
-  setPickerOpen,
-  pickerQuery,
-  setPickerQuery,
   onPay,
 }: {
   error: string | null;
@@ -870,58 +811,19 @@ function SinglePlanPaywall({
     paywallPriceSuffix: string;
     paywallCancelNote: string;
     paywallContinueCta: string;
-    countryLabel: string;
-    countryPlaceholder: string;
-    countrySearchPlaceholder: string;
-    countryDetectedLabel: string;
-    countryAllLabel: string;
-    countryNoResults: string;
     saving: string;
   };
   locale: "he" | "en";
   userFullName: string | null;
-  detectedCountry: Country | null;
-  countryCode: string;
-  setCountryCode: (v: string) => void;
-  setCountryName: (v: string) => void;
-  pickerOpen: boolean;
-  setPickerOpen: (v: boolean) => void;
-  pickerQuery: string;
-  setPickerQuery: (v: string) => void;
   onPay: () => void;
 }) {
-  const isHe = locale === "he";
+  // isHe / country logic kept inline here would be dead code now that
+  // the picker is gone. Greeting is the only remaining locale-aware
+  // piece left in this component.
   const greeting = userFullName
     ? t.paywallGreeting(userFullName)
     : t.paywallGreetingFallback;
-
-  const selected = useMemo<Country | null>(() => {
-    if (!countryCode) return null;
-    return findCountry(countryCode);
-  }, [countryCode]);
-
-  const { pinned, rest } = useMemo(
-    () =>
-      listCountries({
-        locale,
-        pinTopCode: detectedCountry?.code ?? null,
-        query: pickerQuery,
-      }),
-    [locale, detectedCountry, pickerQuery],
-  );
-
-  const selectedDisplay = selected
-    ? isHe
-      ? selected.he
-      : selected.en
-    : t.countryPlaceholder;
-
-  const onPick = (c: Country) => {
-    setCountryCode(c.code);
-    setCountryName(isHe ? c.he : c.en);
-    setPickerOpen(false);
-    setPickerQuery("");
-  };
+  void locale; // reserved for future locale-aware copy
 
   return (
     <div className="mx-auto flex w-full max-w-sm flex-col gap-5 pt-2 sm:pt-3">
@@ -943,7 +845,9 @@ function SinglePlanPaywall({
         <h3 className="font-heading text-2xl font-extrabold leading-tight text-white sm:text-[28px]">
           {greeting}
         </h3>
-        <p className="max-w-[28ch] text-sm leading-snug text-white/70">
+        {/* Itzik 2026-06-02: subtitle bumped — white + larger so it
+            reads as part of the pitch, not muted micro-copy. */}
+        <p className="max-w-[34ch] text-[17px] leading-[1.4] font-semibold text-white">
           {t.paywallSinglePlanSubtitle}
         </p>
       </header>
@@ -962,8 +866,13 @@ function SinglePlanPaywall({
           style={{ background: accent }}
         />
         <div className="relative flex items-baseline justify-center gap-1">
+          {/* Itzik 2026-06-02: currency symbol shrunk to match the
+              suffix size so the eye lands on the number. */}
+          <span className="text-base font-semibold text-white/70">
+            {currency}
+          </span>
           <span className="text-6xl font-black tracking-tight text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.4)]">
-            {currency}{price}
+            {price}
           </span>
           <span className="text-base font-semibold text-white/70">
             {t.paywallPriceSuffix}
@@ -972,106 +881,14 @@ function SinglePlanPaywall({
         <p className="relative mt-2 text-sm text-white/70">{t.paywallCancelNote}</p>
       </div>
 
-      {/* ── Country picker - popover-style: floats above content ─────── */}
-      <div className="relative grid gap-1.5">
-        <Label className="text-sm font-semibold text-white/90">{t.countryLabel}</Label>
-        <button
-          type="button"
-          onClick={() => setPickerOpen(!pickerOpen)}
-          className={`flex h-12 items-center justify-between rounded-xl border bg-white/5 px-4 text-start text-sm text-white transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40 ${
-            pickerOpen ? "border-white/30 bg-white/10" : "border-white/15"
-          }`}
-          aria-haspopup="listbox"
-          aria-expanded={pickerOpen}
-        >
-          <span className="flex items-center gap-2">
-            {selected ? (
-              <span
-                className="rounded-md bg-white/10 px-1.5 py-0.5 text-[11px] font-bold tracking-wider text-white/70"
-                aria-hidden
-              >
-                {selected.code}
-              </span>
-            ) : null}
-            <span className={selected ? "text-white" : "text-white/40"}>
-              {selectedDisplay}
-            </span>
-          </span>
-          <span className="text-white/50">{pickerOpen ? "▴" : "▾"}</span>
-        </button>
-
-        {pickerOpen ? (
-          <>
-            {/* click-outside catch */}
-            <button
-              type="button"
-              aria-hidden
-              tabIndex={-1}
-              className="fixed inset-0 z-20 cursor-default"
-              onClick={() => setPickerOpen(false)}
-            />
-            <div
-              className="absolute inset-x-0 top-full z-30 mt-1.5 overflow-hidden rounded-xl border border-white/15 bg-[rgba(8,4,16,0.97)] shadow-2xl backdrop-blur"
-              role="listbox"
-            >
-              <div className="border-b border-white/10 p-2">
-                <Input
-                  autoFocus
-                  value={pickerQuery}
-                  onChange={(e) => setPickerQuery(e.target.value)}
-                  placeholder={t.countrySearchPlaceholder}
-                  className="h-9 border-white/15 bg-white/10 text-sm text-white placeholder:text-white/40 focus-visible:ring-white/40"
-                />
-              </div>
-              <div className="max-h-72 overflow-y-auto py-1">
-                {pinned ? (
-                  <>
-                    <div className="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wider text-white/50">
-                      {t.countryDetectedLabel}
-                    </div>
-                    <CountryRow
-                      country={pinned}
-                      selected={selected?.code === pinned.code}
-                      isHe={isHe}
-                      accent={accent}
-                      onClick={() => onPick(pinned)}
-                    />
-                    {rest.length > 0 ? (
-                      <>
-                        <div className="my-1 h-px bg-white/10" />
-                        <div className="px-3 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-wider text-white/50">
-                          {t.countryAllLabel}
-                        </div>
-                      </>
-                    ) : null}
-                  </>
-                ) : null}
-                {rest.length === 0 && !pinned ? (
-                  <div className="px-3 py-6 text-center text-sm text-white/55">
-                    {t.countryNoResults}
-                  </div>
-                ) : (
-                  rest.map((c) => (
-                    <CountryRow
-                      key={c.code}
-                      country={c}
-                      selected={selected?.code === c.code}
-                      isHe={isHe}
-                      accent={accent}
-                      onClick={() => onPick(c)}
-                    />
-                  ))
-                )}
-              </div>
-            </div>
-          </>
-        ) : null}
-      </div>
+      {/* Country picker removed 2026-06-02 (Itzik): IL-only launch.
+          Country is hardcoded to IL in the parent so VAT + checkout
+          payloads continue to flow correctly. */}
 
       {/* CTA */}
       <Button
         className="min-h-[54px] w-full rounded-full text-base font-extrabold text-white shadow-[0_18px_40px_-12px_rgba(0,0,0,0.6)] transition hover:brightness-110 disabled:opacity-50"
-        disabled={busy || !countryCode}
+        disabled={busy}
         onClick={onPay}
         style={{
           background: `linear-gradient(135deg, ${palette[0]}, ${palette[1]})`,
@@ -1092,37 +909,6 @@ function SinglePlanPaywall({
   );
 }
 
-function CountryRow({
-  country,
-  selected,
-  isHe,
-  accent,
-  onClick,
-}: {
-  country: Country;
-  selected: boolean;
-  isHe: boolean;
-  accent: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex w-full items-center justify-between gap-2 px-3 py-2 text-start text-sm transition hover:bg-white/10 ${
-        selected ? "bg-white/10" : ""
-      }`}
-      role="option"
-      aria-selected={selected}
-    >
-      <span className="text-white">{isHe ? country.he : country.en}</span>
-      {selected ? (
-        <Check className="h-4 w-4 shrink-0" style={{ color: accent }} />
-      ) : (
-        <span className="text-xs font-semibold tracking-wider text-white/40">
-          {country.code}
-        </span>
-      )}
-    </button>
-  );
-}
+// CountryRow component removed 2026-06-02 along with the country
+// picker. Restore from git history if/when we re-introduce
+// multi-market support.
