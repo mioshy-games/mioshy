@@ -287,17 +287,12 @@ export function SubscriptionModal({
   const [termsAccepted,    setTermsAccepted]    = useState(false);
 
   // paywall-mode fields
-  // TODO(remove): `stage`, `countryCode`, `countryName`, the
-  // reset useEffect, and the ipapi.co auto-detect useEffect below are dead
-  // since the confirm stage was removed (clicking a plan now jumps straight
-  // to Cardcom). Country/VAT are decided server-side from the request IP in
-  // /api/billing/checkout/create - see lib/geo-from-request.ts. Leaving the
-  // state in place as a harmless no-op for now to keep this diff minimal.
-  const [stage, setStage]             = useState<"select" | "confirm">("select");
   // Itzik 2026-06-02: launching IL-only. Country picker removed from
   // the paywall UI. We hardcode IL so VAT (18%) + checkout payloads
   // continue to flow correctly without asking the user. If/when we
   // open to other markets, re-introduce the picker from git history.
+  // `stage` (select / confirm) was also removed 2026-06-02 — the
+  // confirm UI is long gone and clicks jump straight to Cardcom.
   const countryCode = "IL";
   const countryName = "Israel";
 
@@ -312,12 +307,9 @@ export function SubscriptionModal({
   // Country picker state removed 2026-06-02 (Itzik). countryCode is
   // hardcoded to "IL" in the parent state declaration above.
 
-  // Reset paywall stage whenever the modal is re-opened.
+  // Reset transient state whenever the modal is re-opened.
   useEffect(() => {
-    if (!open) {
-      setStage("select");
-      setError(null);
-    }
+    if (!open) setError(null);
   }, [open]);
 
   // Fetch the authenticated user's full name when entering paywall mode.
@@ -817,13 +809,10 @@ function SinglePlanPaywall({
   userFullName: string | null;
   onPay: () => void;
 }) {
-  // isHe / country logic kept inline here would be dead code now that
-  // the picker is gone. Greeting is the only remaining locale-aware
-  // piece left in this component.
+  const isHe = locale === "he";
   const greeting = userFullName
     ? t.paywallGreeting(userFullName)
     : t.paywallGreetingFallback;
-  void locale; // reserved for future locale-aware copy
 
   return (
     <div className="mx-auto flex w-full max-w-sm flex-col gap-5 pt-2 sm:pt-3">
