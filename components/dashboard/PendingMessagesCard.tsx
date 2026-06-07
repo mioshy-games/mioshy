@@ -84,7 +84,7 @@ export function PendingMessagesCard({ rows, totalCount, degraded }: Props) {
           ) : null}
         </div>
         <Link
-          href="/dashboard/journey/expert-messages"
+          href="/dashboard/journey/replies"
           className="text-[13px] font-semibold text-white/70 transition hover:text-white"
         >
           לכל ההודעות →
@@ -144,9 +144,26 @@ export function PendingMessagesCard({ rows, totalCount, degraded }: Props) {
                   </p>
                   <div className="mt-1 flex flex-wrap items-center gap-2 text-[12px] text-white/55">
                     {row.email ? <span dir="ltr">{row.email}</span> : null}
+                    {/* Surface tag — tells the expert whether the latest
+                        message came from the general channel or from a
+                        specific lesson (per-item). 2026-06-02. */}
+                    {row.lastContext === "per_item" ? (
+                      <span className="rounded-full border border-amber-300/40 bg-amber-400/10 px-2 py-0.5 font-semibold text-amber-100">
+                        על פרק
+                      </span>
+                    ) : (
+                      <span className="rounded-full border border-white/10 px-2 py-0.5">
+                        צ׳אט כללי
+                      </span>
+                    )}
+                    {row.pendingPerItemThreads > 1 ? (
+                      <span className="rounded-full border border-amber-300/30 px-2 py-0.5 text-amber-100/80">
+                        {row.pendingPerItemThreads} שאלות על פרקים
+                      </span>
+                    ) : null}
                     {row.totalUserMessages > 1 ? (
                       <span className="rounded-full border border-white/10 px-2 py-0.5">
-                        {row.totalUserMessages} הודעות בשיחה
+                        {row.totalUserMessages} הודעות בסה״כ
                       </span>
                     ) : null}
                   </div>
@@ -161,7 +178,7 @@ export function PendingMessagesCard({ rows, totalCount, degraded }: Props) {
 
       {totalCount > rows.length ? (
         <Link
-          href="/dashboard/journey/expert-messages"
+          href="/dashboard/journey/replies"
           className="mt-4 block text-center text-[13px] font-semibold text-rose-300 transition hover:text-rose-200"
         >
           +{totalCount - rows.length} עוד הודעות ברשימה המלאה

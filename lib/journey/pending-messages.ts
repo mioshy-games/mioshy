@@ -1,17 +1,23 @@
 /**
  * Pending-message inbox helpers for the admin / expert dashboard.
  *
- * "Pending" = a general-channel thread whose LATEST message was sent by
- * the user (i.e. the expert hasn't replied yet). We don't track an
- * explicit `read_at` per message; the "latest writer" heuristic is the
- * cheapest reliable signal and matches the way the expert already works
- * (open the thread → read everything → reply once).
+ * "Pending" = the user's latest reply has not been answered by an expert.
+ * We don't track an explicit `read_at` per message; the "latest writer"
+ * heuristic is the cheapest reliable signal and matches the way the
+ * expert already works (open the thread → read everything → reply once).
+ *
+ * Surfaces a user can write from (both flow through journey_messages):
+ *   • General channel  (/my/expert)            → channel_user_id IS NOT NULL
+ *   • Per-item thread  (/journey/timeline/[id]) → scheduled_item_id IS NOT NULL
+ *
+ * 2026-06-02 (Itzik): per-item replies were previously invisible to the
+ * expert because this helper only queried general-channel messages.
+ * Now both surfaces are folded into the pending list, keyed by user.
  *
  * Used by:
  *   • `/dashboard` overview card ("Pending user messages")
  *   • `/dashboard/coaching/sidebar` badge (count only)
- *
- * Added 2026-06-01 (Itzik: "smart UX for experts handling messages").
+ *   • `/dashboard/journey/replies` full table (step 3)
  */
 
 import "server-only";
@@ -19,14 +25,18 @@ import "server-only";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
 
 export interface PendingMessageRow {
-  /** journey_user_channels.user_id — the message owner. Drives every
-   *  downstream link target (we use it to look up coupleId for the
-   *  /dashboard/my-clients/[coupleId] URL). */
+  /** profiles.id — the message owner. Drives every downstream link. */
   userId: string;
-  /** When the user last wrote. ISO. */
+  /** When the user last wrote (across both surfaces). ISO. */
   lastUserMessageAt: string;
   /** Last body (clipped at 140 chars by the consumer). */
   lastBody: string;
+  /** Surface the latest message came from. The detail page can use this
+   *  to route the expert to the right reply UI. */
+  lastContext: "general" | "per_item";
+  /** When `lastContext === "per_item"`, the scheduled-item id of the
+   *  thread the latest message belongs to. Null for general-channel. */
+  lastScheduledItemId: string | null;
   /** Full name when present, falls back to email local-part, then to
    *  a short uid suffix. Never null — so the row always has SOMETHING
    *  to render. */
@@ -37,9 +47,14 @@ export interface PendingMessageRow {
    *  Solo users link to /dashboard/my-clients/[userId] (TBD route) for
    *  now we just link to the journey-expert-messages page filtered. */
   coupleId: string | null;
-  /** Total user-side message count in this channel (helps the expert
-   *  see a "this person writes a lot" signal at a glance). */
+  /** Total user-side message count across BOTH surfaces (signals "this
+   *  person writes a lot"). */
   totalUserMessages: number;
+  /** Number of distinct per-item threads from this user where the last
+   *  message is theirs (i.e. needs a reply on a specific lesson). */
+  pendingPerItemThreads: number;
+  /** True when the general channel itself needs a reply right now. */
+  pendingGeneralChannel: boolean;
 }
 
 export interface PendingMessagesResult {
@@ -64,15 +79,14 @@ export async function getPendingExpertMessages(opts: {
     const admin = createServiceRoleClient();
     if (!admin) return { rows: [], count: 0, ok: false };
 
-    // 1. Pull every general-channel message into memory. The table is
-    //    write-light and we only need 4 columns. Once volume crosses a
-    //    threshold this should move to a Postgres view/RPC; for the
-    //    Mioshy scale today (~hundreds of rows per channel) the in-memory
-    //    fold beats the round-trips a paginated approach would cost.
+    // 1. Pull EVERY journey message (both general channel + per-item).
+    //    The table is write-light and we only need 5 columns. We need
+    //    author_user_id too — for per-item threads the scheduled item is
+    //    where we group, but to attribute the "who wrote" we read
+    //    author_user_id (channel_user_id is null on per-item rows).
     const { data, error } = await admin
       .from("journey_messages")
-      .select("channel_user_id, author_kind, body, created_at")
-      .not("channel_user_id", "is", null)
+      .select("channel_user_id, scheduled_item_id, author_user_id, author_kind, body, created_at")
       .order("created_at", { ascending: false });
     if (error) {
       console.warn("[pending-messages] fetch failed", error);
@@ -80,52 +94,128 @@ export async function getPendingExpertMessages(opts: {
     }
 
     type RawRow = {
-      channel_user_id: string;
+      channel_user_id: string | null;
+      scheduled_item_id: string | null;
+      author_user_id: string | null;
       author_kind: "user" | "expert";
       body: string | null;
       created_at: string;
     };
     const rows = (data ?? []) as RawRow[];
 
-    // 2. Walk the rows newest-first. For each channel, the FIRST entry
-    //    we see is the latest message. If that latest is by a user, the
-    //    thread needs a reply. We also count user-side rows per channel
-    //    while we're at it (single pass).
-    type Acc = {
+    // 2. Resolve each row to (ownerUserId, threadKey).
+    //    • General channel: ownerUserId = channel_user_id; threadKey = "general:<uid>"
+    //    • Per-item: ownerUserId = author_user_id (the writer of the
+    //      scheduled-item thread is its owner — the expert is the other
+    //      side, never the owner); threadKey = "item:<scheduled>"
+    //    Per-item threads where the LAST writer is the expert can't be
+    //    keyed by author_user_id (would be the expert's id) — instead
+    //    we resolve the owner from the FIRST message in the thread,
+    //    which is always the user. We track first-author per thread on
+    //    the fly while iterating newest→oldest by overwriting (so the
+    //    final value is the oldest = user-side seed).
+
+    type ThreadSlot = {
+      ownerUserId: string | null;
       latest: RawRow | null;
       userCount: number;
+      surface: "general" | "per_item";
     };
-    const byChannel = new Map<string, Acc>();
+    const threads = new Map<string, ThreadSlot>();
+
     for (const r of rows) {
-      const slot = byChannel.get(r.channel_user_id) ?? {
-        latest: null,
-        userCount: 0,
-      };
+      let threadKey: string;
+      let surface: "general" | "per_item";
+      let ownerCandidate: string | null;
+
+      if (r.channel_user_id) {
+        threadKey = `general:${r.channel_user_id}`;
+        surface = "general";
+        ownerCandidate = r.channel_user_id;
+      } else if (r.scheduled_item_id) {
+        threadKey = `item:${r.scheduled_item_id}`;
+        surface = "per_item";
+        // For per-item threads, owner = the user. The expert can also
+        // write here, so don't trust author_user_id on every row —
+        // pick it up from user-authored rows only.
+        ownerCandidate =
+          r.author_kind === "user" ? r.author_user_id : null;
+      } else {
+        continue; // malformed row — skip
+      }
+
+      const slot =
+        threads.get(threadKey) ??
+        ({
+          ownerUserId: null,
+          latest: null,
+          userCount: 0,
+          surface,
+        } as ThreadSlot);
       if (slot.latest === null) slot.latest = r;
+      if (ownerCandidate && !slot.ownerUserId) slot.ownerUserId = ownerCandidate;
       if (r.author_kind === "user") slot.userCount += 1;
-      byChannel.set(r.channel_user_id, slot);
+      threads.set(threadKey, slot);
     }
 
-    const pendingUserIds: string[] = [];
-    const meta = new Map<
-      string,
-      { lastUserMessageAt: string; lastBody: string; totalUserMessages: number }
-    >();
-    for (const [userId, slot] of byChannel.entries()) {
+    // 3. Fold threads → per-user pending state.
+    type UserAcc = {
+      lastUserMessageAt: string;
+      lastBody: string;
+      lastContext: "general" | "per_item";
+      lastScheduledItemId: string | null;
+      totalUserMessages: number;
+      pendingPerItemThreads: number;
+      pendingGeneralChannel: boolean;
+    };
+    const byUser = new Map<string, UserAcc>();
+
+    for (const [threadKey, slot] of threads.entries()) {
+      if (!slot.ownerUserId) continue;
       if (!slot.latest) continue;
-      if (slot.latest.author_kind !== "user") continue;
-      pendingUserIds.push(userId);
-      meta.set(userId, {
-        lastUserMessageAt: slot.latest.created_at,
-        lastBody: slot.latest.body ?? "",
-        totalUserMessages: slot.userCount,
-      });
+      const needsReply = slot.latest.author_kind === "user";
+
+      const acc =
+        byUser.get(slot.ownerUserId) ??
+        ({
+          lastUserMessageAt: "",
+          lastBody: "",
+          lastContext: "general",
+          lastScheduledItemId: null,
+          totalUserMessages: 0,
+          pendingPerItemThreads: 0,
+          pendingGeneralChannel: false,
+        } as UserAcc);
+
+      acc.totalUserMessages += slot.userCount;
+
+      if (needsReply) {
+        if (slot.surface === "per_item") acc.pendingPerItemThreads += 1;
+        if (slot.surface === "general") acc.pendingGeneralChannel = true;
+
+        if (slot.latest.created_at > acc.lastUserMessageAt) {
+          acc.lastUserMessageAt = slot.latest.created_at;
+          acc.lastBody = slot.latest.body ?? "";
+          acc.lastContext = slot.surface;
+          acc.lastScheduledItemId =
+            slot.surface === "per_item"
+              ? threadKey.replace(/^item:/, "")
+              : null;
+        }
+      }
+
+      byUser.set(slot.ownerUserId, acc);
     }
+
+    const pendingUserIds = Array.from(byUser.entries())
+      .filter(([, acc]) => acc.pendingGeneralChannel || acc.pendingPerItemThreads > 0)
+      .map(([uid]) => uid);
+
     if (pendingUserIds.length === 0) {
       return { rows: [], count: 0, ok: true };
     }
 
-    // 3. Hydrate profiles + couple membership in parallel. One round-trip
+    // 4. Hydrate profiles + couple membership in parallel. One round-trip
     //    each — both queries are bounded by the small `pendingUserIds`
     //    set, so payload stays tiny even with hundreds of pending rows.
     const [profileRes, memberRes] = await Promise.all([
@@ -149,7 +239,7 @@ export async function getPendingExpertMessages(opts: {
     );
 
     const enriched: PendingMessageRow[] = pendingUserIds.map((userId) => {
-      const m = meta.get(userId)!;
+      const acc = byUser.get(userId)!;
       const profile = profileById.get(userId) ?? null;
       const displayName =
         (profile?.full_name?.trim() ?? "") ||
@@ -157,16 +247,20 @@ export async function getPendingExpertMessages(opts: {
         `user ${userId.slice(0, 8)}`;
       return {
         userId,
-        lastUserMessageAt: m.lastUserMessageAt,
-        lastBody: m.lastBody,
+        lastUserMessageAt: acc.lastUserMessageAt,
+        lastBody: acc.lastBody,
+        lastContext: acc.lastContext,
+        lastScheduledItemId: acc.lastScheduledItemId,
         displayName,
         email: profile?.email ?? null,
         coupleId: coupleByUser.get(userId) ?? null,
-        totalUserMessages: m.totalUserMessages,
+        totalUserMessages: acc.totalUserMessages,
+        pendingPerItemThreads: acc.pendingPerItemThreads,
+        pendingGeneralChannel: acc.pendingGeneralChannel,
       };
     });
 
-    // 4. Sort newest-first and cap. The display layer further clips per
+    // 5. Sort newest-first and cap. The display layer further clips per
     //    its own surface budget.
     enriched.sort((a, b) => b.lastUserMessageAt.localeCompare(a.lastUserMessageAt));
     return {

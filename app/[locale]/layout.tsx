@@ -8,6 +8,7 @@ import { Chrome } from "@/components/Chrome";
 import { getRequestUser } from "@/lib/auth/getRequestUser";
 import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
 import { getUnreadCountForUser } from "@/lib/journey-content/notifications-read";
+import { PostHogIdentify } from "@/components/analytics/PostHogIdentify";
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -55,6 +56,8 @@ export default async function LocaleLayout({
   // v3 slice 10 - fetch the unread notifications count once per
   // request so the header bell badge renders without a flash of zero.
   let unreadNotifications = 0;
+  // PostHog identity — pseudonymous user id only, no PII (see PostHogIdentify).
+  let userId: string | null = null;
   try {
     // 2026-05-31 — getRequestUser shares this read with every downstream
     // helper in the same render (getUserEntitlements, getShellData, etc.)
@@ -62,6 +65,7 @@ export default async function LocaleLayout({
     // used to pay on every navigation.
     const { user } = await getRequestUser();
     isAuthed = !!user;
+    userId = user?.id ?? null;
     if (isAuthed && user) {
       const [ent, unread] = await Promise.all([
         getUserEntitlements(),
@@ -83,6 +87,7 @@ export default async function LocaleLayout({
 
   return (
     <NextIntlClientProvider messages={messages}>
+      <PostHogIdentify userId={userId} />
       <Chrome
         isAuthed={isAuthed}
         entitlements={entitlements}

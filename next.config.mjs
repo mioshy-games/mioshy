@@ -25,6 +25,10 @@ function supabaseHost() {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // PostHog (EU) is reverse-proxied through /ingest (see rewrites below).
+  // PostHog's API is sensitive to a trailing-slash redirect on those paths,
+  // so opt out of Next's automatic trailing-slash handling for them.
+  skipTrailingSlashRedirect: true,
   images: {
     // AVIF first so the optimizer prefers it when the browser advertises
     // support — typically 25-35% smaller than the same WebP at the same
@@ -64,6 +68,25 @@ const nextConfig = {
           ]
         : []),
     ],
+  },
+  // ─── PostHog reverse proxy (EU) ──────────────────────────────────────────
+  // Ingest analytics/replay through our own origin so requests are first-party:
+  //   • far fewer ad-blocker / tracking-protection drops (better data quality)
+  //   • no third-party PostHog domain in the user's network tab
+  //   • everything stays inside `connect-src 'self'` in the CSP
+  // The browser hits /ingest/* on mioshy.com; Vercel proxies to eu.posthog.com.
+  // Static assets (recorder.js etc.) go to the eu-assets host.
+  async rewrites() {
+    return [
+      {
+        source: "/ingest/static/:path*",
+        destination: "https://eu-assets.i.posthog.com/static/:path*",
+      },
+      {
+        source: "/ingest/:path*",
+        destination: "https://eu.i.posthog.com/:path*",
+      },
+    ];
   },
   async redirects() {
     return [
@@ -111,7 +134,14 @@ const nextConfig = {
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com data:",
       "img-src 'self' data: blob: https:",
-      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://*.googletagmanager.com https://*.cardcom.solutions https://*.cardcom.co.il",
+      // PostHog session replay (rrweb) spins up a blob: web worker to compress
+      // recordings off the main thread. Without an explicit worker-src it falls
+      // back to script-src, which doesn't allow blob: — so declare it here.
+      "worker-src 'self' blob:",
+      // PostHog ingest is first-party via the /ingest proxy, so 'self' already
+      // covers it. eu.i.posthog.com / eu-assets.i.posthog.com are listed as a
+      // belt-and-suspenders fallback in case the proxy is ever bypassed.
+      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://*.googletagmanager.com https://*.cardcom.solutions https://*.cardcom.co.il https://eu.i.posthog.com https://eu-assets.i.posthog.com",
       "frame-src 'self' https://www.googletagmanager.com https://*.googletagmanager.com https://*.cardcom.solutions https://*.cardcom.co.il",
       "frame-ancestors 'none'",
       "form-action 'self' https://*.cardcom.solutions https://*.cardcom.co.il",

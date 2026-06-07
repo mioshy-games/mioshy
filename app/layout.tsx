@@ -10,6 +10,7 @@ import {
   GoogleTagManager,
   GoogleTagManagerNoscript,
 } from "@/components/analytics/GoogleTagManager";
+import { PostHogProvider } from "@/components/analytics/PostHogProvider";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Root metadata - inherited by every page, with per-page metadata overriding
@@ -224,7 +225,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       </head>
       <body className="min-h-[100dvh] antialiased">
         <GoogleTagManagerNoscript />
-        {children}
+        {/* PostHog (product analytics + heatmaps + masked session replay).
+            Prod-only, idle-deferred, EU region via the /ingest proxy. The
+            provider also tracks App-Router pageviews. See PostHogProvider.tsx
+            for the privacy/masking rationale. */}
+        <PostHogProvider>{children}</PostHogProvider>
         {/* Real-user perf monitoring (Itzik 2026-05-31). SpeedInsights
             samples Core Web Vitals from production sessions; Analytics
             tracks page-view counts. Both are tree-shaken in dev — they

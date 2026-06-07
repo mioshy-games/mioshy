@@ -91,11 +91,13 @@ export function PerItemThread({
     }
   }, [initialMessages]);
 
-  // Focus composer on mount per Update B (primary affordance).
-  React.useEffect(() => {
-    const t = window.setTimeout(() => composerRef.current?.focus(), 200);
-    return () => window.clearTimeout(t);
-  }, []);
+  // 2026-06-02 (Itzik): auto-focus removed.
+  // The composer sits at the BOTTOM of the page (under LessonView +
+  // Complete card + thread history). Programmatically focusing it on
+  // mount makes iOS/Android scroll the textarea into view, which
+  // jumped the user past the lesson content. We want the page to land
+  // at the top so the user reads the chapter first; if they want to
+  // write to the expert, they tap the textarea themselves.
 
   async function handlePost(e: React.FormEvent) {
     e.preventDefault();
