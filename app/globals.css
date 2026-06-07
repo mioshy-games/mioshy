@@ -26,6 +26,41 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+/* ── Dark scrollbars ───────────────────────────────────────
+   The whole product is dark-themed; the OS-default scrollbar
+   reads as a bright gray stripe and looks foreign. We override
+   to a subtle translucent style that fades into the page.
+   Itzik 2026-06-02.
+   • Firefox: scrollbar-* properties.
+   • WebKit (Chrome/Safari/Edge): ::-webkit-scrollbar pseudo.
+   Applies to the page-level scroller and any inner overflow
+   container; respects RTL automatically since it's pseudo-only.
+   ═════════════════════════════════════════════════════════ */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.28);
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 /* ── Paragraph / running text ───────────────────────────── */
 p, li, dd, figcaption, blockquote, td, th {
   /* 18 px on mobile → 20 px on wide screens */
