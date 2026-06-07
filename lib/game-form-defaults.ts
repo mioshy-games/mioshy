@@ -21,6 +21,7 @@ export function getDefaultGameFormValues(): GameFormValues {
     og_image_url: "",
     keywords_csv: "",
     sort_order: 0,
+    instructions: { title: "", intro: "", steps_text: "", footer: "" },
     wheel: {
       slices: defaultSlices(6),
       pointer_color: "#ffffff",

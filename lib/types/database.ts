@@ -9,6 +9,20 @@ export type WheelSlice = {
   question_type: QuestionType;
 };
 
+/** Per-locale "how it works" content for a single game (migration 108). */
+export type GameInstructionsContent = {
+  title?: string;
+  intro?: string;
+  steps?: string[];
+  footer?: string;
+};
+
+/** Per-game instructions, keyed by locale. Hebrew-only for now. */
+export type GameInstructions = {
+  he?: GameInstructionsContent;
+  en?: GameInstructionsContent;
+};
+
 export type GameRow = {
   id: string;
   name_he: string;
@@ -33,6 +47,8 @@ export type GameRow = {
   og_image_url?: string | null;
   keywords?: string[] | null;
   sort_order?: number | null;
+  /** Per-game tutorial/rules - added by migration 108. Null → generic fallback. */
+  instructions?: GameInstructions | null;
 };
 
 export type WheelConfigRow = {

@@ -568,6 +568,88 @@ export function GameForm({
           </div>
         </SettingsSection>
 
+        {/* ── Instructions ("how it works" popup) ─────────────────────────── */}
+        <SettingsSection
+          title="הנחיות המשחק"
+          subtitle="הטקסט שמופיע בפופאפ 'ככה זה עובד' של המשחק. ריק = הנחיות ברירת מחדל גנריות."
+          defaultOpen={false}
+        >
+          <div className="space-y-4" dir="rtl">
+            <div className="space-y-1.5">
+              <Label htmlFor="instr_title">כותרת</Label>
+              <Controller
+                control={control}
+                name="instructions.title"
+                render={({ field }) => (
+                  <Input
+                    id="instr_title"
+                    dir="rtl"
+                    placeholder='לדוגמה: הנחיות למשחק "מעולם לא?"'
+                    {...field}
+                    value={field.value ?? ""}
+                  />
+                )}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="instr_intro">פתיחה</Label>
+              <Controller
+                control={control}
+                name="instructions.intro"
+                render={({ field }) => (
+                  <Textarea
+                    id="instr_intro"
+                    rows={2}
+                    dir="rtl"
+                    placeholder="פסקת פתיחה קצרה (הכנה לפני המשחק)."
+                    {...field}
+                    value={field.value ?? ""}
+                  />
+                )}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="instr_steps">שלבים</Label>
+              <Controller
+                control={control}
+                name="instructions.steps_text"
+                render={({ field }) => (
+                  <Textarea
+                    id="instr_steps"
+                    rows={4}
+                    dir="rtl"
+                    placeholder={"שלב אחד בכל שורה.\nסובבו את הגלגל.\nאם נכון – לא שותים; אם לא – כוסית צ'ייסר!"}
+                    {...field}
+                    value={field.value ?? ""}
+                  />
+                )}
+              />
+              <p className="text-muted-foreground text-xs">
+                שורה אחת = שלב אחד. השלבים מוצגים ממוספרים בפופאפ.
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="instr_footer">הערת סיום</Label>
+              <Controller
+                control={control}
+                name="instructions.footer"
+                render={({ field }) => (
+                  <Input
+                    id="instr_footer"
+                    dir="rtl"
+                    placeholder="לדוגמה: המפסיד הוא הראשון לשתות 5 כוסות."
+                    {...field}
+                    value={field.value ?? ""}
+                  />
+                )}
+              />
+            </div>
+          </div>
+        </SettingsSection>
+
         {/* ── Page & Background ───────────────────────────────────────────── */}
         {gameId && (
           <SettingsSection title="Page & Background" subtitle="רקע, חלקיקים, תנועה ופריסת עמוד" defaultOpen={false}>

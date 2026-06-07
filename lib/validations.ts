@@ -87,6 +87,18 @@ export const gameFormSchema = z.object({
   og_image_url: z.union([z.string().url(), z.literal(""), z.null()]).optional(),
   keywords_csv: z.string().optional().nullable(),
   sort_order: z.number().int().optional().nullable(),
+  // Per-game "how it works" instructions (migration 108). Hebrew only for now.
+  // `steps_text` is one step per line in the UI; the save action splits it into
+  // a string[] before writing the jsonb. All parts optional → empty means
+  // "use the generic global tutorial".
+  instructions: z
+    .object({
+      title: z.string().optional().nullable(),
+      intro: z.string().optional().nullable(),
+      steps_text: z.string().optional().nullable(),
+      footer: z.string().optional().nullable(),
+    })
+    .optional(),
   wheel: wheelConfigFormSchema,
 });
 

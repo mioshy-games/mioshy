@@ -1924,7 +1924,8 @@
       "step2": "Reveal a Truth or Dare",
       "step3": "Answer or do it — then spin again",
       "cta": "Got it, let's start",
-      "dismiss": "Close"
+      "dismiss": "Close",
+      "reopen": "Instructions"
     }
   },
   "mioshySexPage": {

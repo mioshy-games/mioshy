@@ -1,27 +1,47 @@
 "use client";
 
 /**
- * TutorialPopup — first-time tutorial overlay for the wheel games.
+ * TutorialPopup — first-visit "how it works" overlay for a game.
  * ──────────────────────────────────────────────────────────────────
- * Shows once per device on the first visit to a wheel game, then
- * never again. Persistence is handled in localStorage under the
- * key `mioshy:tod-tutorial-seen`.
+ * Shows once per device on the first visit to a *given* game, then
+ * never again automatically — but stays reopenable via a small
+ * "instructions" button in the corner. Persistence is per-game under
+ * the key `mioshy:tutorial-seen:<slug>` so a new game's rules still
+ * surface to someone who already saw another game's tutorial.
  *
- * Three-line message: spin → reveal → choose. No fluff. Tapping
- * anywhere outside the card or on the dismiss button closes it
- * forever for that browser.
+ * Content is per-game (migration 108): when the game row carries an
+ * `instructions` jsonb for the active locale we render its
+ * title / intro / steps / footer. When it doesn't, we fall back to the
+ * generic three-step wheel tutorial from the CMS — so every existing
+ * game keeps working unchanged.
  *
- * Created 2026-05-07 (Itzik #52).
+ * Created 2026-05-07 (Itzik #52). Per-game rewrite 2026-06-07.
  */
 
 import { useEffect, useState } from "react";
-import { Sparkles, MousePointerClick, Eye, Heart, X } from "lucide-react";
+import { useLocale } from "next-intl";
+import {
+  Sparkles,
+  MousePointerClick,
+  Eye,
+  Heart,
+  HelpCircle,
+  X,
+} from "lucide-react";
 import { useCmsText } from "@/hooks/useCmsText";
 import { CmsText } from "@/components/cms/CmsText";
+import type { GameInstructions } from "@/lib/types/database";
 
-const STORAGE_KEY = "mioshy:tod-tutorial-seen";
+export function TutorialPopup({
+  instructions,
+  gameSlug,
+}: {
+  instructions?: GameInstructions | null;
+  gameSlug: string;
+}) {
+  const locale = useLocale();
+  const storageKey = `mioshy:tutorial-seen:${gameSlug}`;
 
-export function TutorialPopup() {
   // Default to NOT showing — flip to true only after we've verified the
   // user hasn't seen it yet. Doing it the other way around would flash
   // the modal for users who've already dismissed it on every page load.
@@ -30,7 +50,7 @@ export function TutorialPopup() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
-      const seen = window.localStorage.getItem(STORAGE_KEY);
+      const seen = window.localStorage.getItem(storageKey);
       if (!seen) setOpen(true);
     } catch {
       // localStorage may be blocked (private mode, embedded webview).
@@ -39,29 +59,58 @@ export function TutorialPopup() {
       // close normally for the duration of the session.
       setOpen(true);
     }
-  }, []);
+  }, [storageKey]);
 
   const dismiss = () => {
     try {
-      window.localStorage.setItem(STORAGE_KEY, "1");
+      window.localStorage.setItem(storageKey, "1");
     } catch {
       /* ignore — see comment above */
     }
     setOpen(false);
   };
 
-  // Resolve labels used as string props (aria-label, dismiss aria-label)
-  // up front; hooks can't sit below the open-guard return.
+  // Resolve labels used as string props (aria-label etc.) up front;
+  // hooks can't sit below the open-guard return.
   const dialogTitle = useCmsText("gamesSlug.tutorial.title").text;
   const dismissLabel = useCmsText("gamesSlug.tutorial.dismiss").text;
+  const reopenLabel = useCmsText("gamesSlug.tutorial.reopen").text;
 
-  if (!open) return null;
+  // Per-game content for the active locale. Hebrew-only for now: on other
+  // locales (or games without instructions) we fall back to the generic
+  // CMS tutorial below.
+  const content =
+    instructions?.[locale === "he" ? "he" : "en"] ?? undefined;
+  const hasCustom = Boolean(
+    content &&
+      (content.title ||
+        content.intro ||
+        (content.steps && content.steps.length > 0) ||
+        content.footer),
+  );
+
+  // When closed, keep a low-key corner button so the player can reopen the
+  // rules at any time. Top corners are free on both layouts (logo is centred,
+  // the back/sound buttons live in the bottom corners).
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-label={reopenLabel}
+        className="fixed end-3 top-3 z-40 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-sm font-medium text-white backdrop-blur transition hover:bg-white/25"
+      >
+        <HelpCircle className="h-4 w-4" />
+        <span>{reopenLabel}</span>
+      </button>
+    );
+  }
 
   return (
     <div
       role="dialog"
       aria-modal="true"
-      aria-label={dialogTitle}
+      aria-label={hasCustom && content?.title ? content.title : dialogTitle}
       className="fixed inset-0 z-[60] flex items-center justify-center px-5"
       onClick={dismiss}
     >
@@ -73,7 +122,7 @@ export function TutorialPopup() {
       />
 
       <div
-        className="relative w-full max-w-[420px] rounded-3xl border p-6 sm:p-7"
+        className="relative max-h-[88dvh] w-full max-w-[420px] overflow-y-auto rounded-3xl border p-6 sm:p-7"
         style={{
           borderColor: "rgba(255,255,255,0.10)",
           background:
@@ -108,37 +157,18 @@ export function TutorialPopup() {
             <CmsText cmsKey="gamesSlug.tutorial.badge" />
           </span>
 
-          <CmsText
-            cmsKey="gamesSlug.tutorial.title"
-            as="h2"
-            className="mt-3 font-heading text-[26px] font-extrabold leading-tight text-white sm:text-[28px]"
-          />
-
-          <ol className="mt-5 flex flex-col gap-3.5">
-            <Step
-              n={1}
-              icon={<MousePointerClick className="h-4 w-4" />}
-              cmsKey="gamesSlug.tutorial.step1"
-            />
-            <Step
-              n={2}
-              icon={<Eye className="h-4 w-4" />}
-              cmsKey="gamesSlug.tutorial.step2"
-            />
-            <Step
-              n={3}
-              icon={<Heart className="h-4 w-4" />}
-              cmsKey="gamesSlug.tutorial.step3"
-            />
-          </ol>
+          {hasCustom ? (
+            <CustomInstructions content={content!} fallbackTitle={dialogTitle} />
+          ) : (
+            <GenericInstructions />
+          )}
 
           <button
             type="button"
             onClick={dismiss}
             className="mt-6 inline-flex min-h-[52px] w-full items-center justify-center rounded-full px-6 text-[16px] font-bold text-white transition hover:brightness-110"
             style={{
-              background:
-                "linear-gradient(135deg, #B83C4D 0%, #6C2E40 100%)",
+              background: "linear-gradient(135deg, #B83C4D 0%, #6C2E40 100%)",
               boxShadow: "0 16px 36px -12px rgba(184,60,77,0.55)",
             }}
           >
@@ -147,6 +177,95 @@ export function TutorialPopup() {
         </div>
       </div>
     </div>
+  );
+}
+
+/** Per-game instructions rendered from the game's `instructions` jsonb. */
+function CustomInstructions({
+  content,
+  fallbackTitle,
+}: {
+  content: NonNullable<GameInstructions["he"]>;
+  fallbackTitle: string;
+}) {
+  return (
+    <>
+      <h2 className="mt-3 font-heading text-[28px] font-extrabold leading-tight text-white sm:text-[32px]">
+        {content.title || fallbackTitle}
+      </h2>
+
+      {content.intro ? (
+        <p className="mt-3 text-[20px] leading-relaxed text-white/80">
+          {content.intro}
+        </p>
+      ) : null}
+
+      {content.steps && content.steps.length > 0 ? (
+        <ol className="mt-5 flex flex-col gap-3.5">
+          {content.steps.map((step, i) => (
+            <li key={i} className="flex items-start gap-3">
+              <span
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[13px] font-bold text-[#FAF6F7]"
+                style={{
+                  background: "rgba(184,60,77,0.22)",
+                  boxShadow: "inset 0 0 0 1px rgba(184,60,77,0.35)",
+                }}
+                aria-hidden
+              >
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              <span className="pt-0.5 text-[20px] leading-snug text-white/90">
+                {step}
+              </span>
+            </li>
+          ))}
+        </ol>
+      ) : null}
+
+      {content.footer ? (
+        <p
+          className="mt-5 rounded-2xl px-4 py-3 text-[20px] font-semibold leading-snug text-white"
+          style={{
+            background: "rgba(184,60,77,0.18)",
+            boxShadow: "inset 0 0 0 1px rgba(184,60,77,0.30)",
+          }}
+        >
+          {content.footer}
+        </p>
+      ) : null}
+    </>
+  );
+}
+
+/** Generic three-step wheel tutorial — the fallback when a game has no
+ *  per-game instructions. Same content as before the per-game rewrite. */
+function GenericInstructions() {
+  return (
+    <>
+      <CmsText
+        cmsKey="gamesSlug.tutorial.title"
+        as="h2"
+        className="mt-3 font-heading text-[28px] font-extrabold leading-tight text-white sm:text-[32px]"
+      />
+
+      <ol className="mt-5 flex flex-col gap-3.5">
+        <Step
+          n={1}
+          icon={<MousePointerClick className="h-4 w-4" />}
+          cmsKey="gamesSlug.tutorial.step1"
+        />
+        <Step
+          n={2}
+          icon={<Eye className="h-4 w-4" />}
+          cmsKey="gamesSlug.tutorial.step2"
+        />
+        <Step
+          n={3}
+          icon={<Heart className="h-4 w-4" />}
+          cmsKey="gamesSlug.tutorial.step3"
+        />
+      </ol>
+    </>
   );
 }
 
@@ -171,7 +290,7 @@ function Step({
       >
         {icon}
       </span>
-      <span className="flex items-baseline gap-2 text-[16px] leading-snug text-white/90">
+      <span className="flex items-baseline gap-2 text-[20px] leading-snug text-white/90">
         <span
           className="text-[12px] font-bold tracking-wider text-white/45"
           aria-hidden

@@ -655,9 +655,11 @@ export function TruthOrDareClient({
       backgroundSrc={transparent ? false : undefined}
       showVignette={!transparent}
     >
-      {/* First-visit tutorial — shows once per device, then never again.
-          Self-gates on localStorage so safe to mount unconditionally. */}
-      <TutorialPopup />
+      {/* First-visit tutorial — per game, shows once per device then stays
+          reopenable via the corner button. Renders this game's own
+          instructions when set, else the generic fallback. Self-gates on
+          localStorage so safe to mount unconditionally. */}
+      <TutorialPopup instructions={game.instructions} gameSlug={game.slug} />
       {pageLayout === "side-by-side" ? (
         /* ── SIDE-BY-SIDE LAYOUT ─────────────────────────────────────────────
            Desktop (≥ md): wheel on the left, controls on the right.

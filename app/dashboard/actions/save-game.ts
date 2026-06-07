@@ -72,6 +72,25 @@ export async function saveGame(gameId: string | null, raw: unknown) {
       .filter((k) => k.length > 0 && k.length < 60) // sanity: drop unreasonably long tags
       .slice(0, 25); // cap so the row stays small
 
+  // ── Build per-game instructions jsonb (migration 108) ───────────────────
+  // The editor edits steps as one-per-line text; split into a clean string[].
+  // If every part is empty we store NULL so the game falls back to the generic
+  // global tutorial rather than rendering an empty popup.
+  const instrTitle = (v.instructions?.title ?? "").trim();
+  const instrIntro = (v.instructions?.intro ?? "").trim();
+  const instrFooter = (v.instructions?.footer ?? "").trim();
+  const instrSteps = (v.instructions?.steps_text ?? "")
+    .split(/\r?\n/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const heInstructions: Record<string, unknown> = {};
+  if (instrTitle) heInstructions.title = instrTitle;
+  if (instrIntro) heInstructions.intro = instrIntro;
+  if (instrSteps.length) heInstructions.steps = instrSteps;
+  if (instrFooter) heInstructions.footer = instrFooter;
+  const instructions =
+    Object.keys(heInstructions).length > 0 ? { he: heInstructions } : null;
+
   const gamePayload = {
     name_he: v.name_he,
     name_en: v.name_en,
@@ -92,6 +111,7 @@ export async function saveGame(gameId: string | null, raw: unknown) {
     og_image_url: (v.og_image_url ?? "").trim() || null,
     keywords,
     sort_order: Number.isFinite(v.sort_order) ? Number(v.sort_order) : 0,
+    instructions,
   };
 
   const wheelPayload = {

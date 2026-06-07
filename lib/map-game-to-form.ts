@@ -54,6 +54,15 @@ export function mapToGameFormValues(
     og_image_url: game.og_image_url ?? "",
     keywords_csv: Array.isArray(game.keywords) ? game.keywords.join(", ") : "",
     sort_order: game.sort_order ?? 0,
+    instructions: {
+      title: game.instructions?.he?.title ?? "",
+      intro: game.instructions?.he?.intro ?? "",
+      // Steps are stored as an array; the editor edits them as one-per-line text.
+      steps_text: Array.isArray(game.instructions?.he?.steps)
+        ? game.instructions!.he!.steps!.join("\n")
+        : "",
+      footer: game.instructions?.he?.footer ?? "",
+    },
     wheel: {
       ...base.wheel,
       ...(wheel
