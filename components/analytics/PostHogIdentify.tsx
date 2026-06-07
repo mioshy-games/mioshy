@@ -34,14 +34,14 @@ export function PostHogIdentify({ userId }: { userId: string | null }) {
 
     // posthog init is deferred to the browser idle window, so on first mount it
     // may not be loaded yet. Poll briefly until it is, then apply once.
-    if ((posthog as any).__loaded) {
+    if ((posthog as unknown as { __loaded?: boolean }).__loaded) {
       apply();
       return;
     }
     let tries = 0;
     const timer = setInterval(() => {
       tries += 1;
-      if ((posthog as any).__loaded) {
+      if ((posthog as unknown as { __loaded?: boolean }).__loaded) {
         clearInterval(timer);
         apply();
       } else if (tries > 40) {

@@ -158,13 +158,21 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
 
     // Defer to idle so init never blocks first paint. requestIdleCallback
     // where supported, otherwise a short timeout.
+    // requestIdleCallback isn't in the standard lib.dom types, so we
+    // narrow window to a shape that optionally exposes it. Fallback to
+    // setTimeout when the browser doesn't have it (Safari < 16, etc.).
+    type IdleWindow = Window & {
+      requestIdleCallback?: (cb: () => void) => number;
+      cancelIdleCallback?: (handle: number) => void;
+    };
+    const w = window as IdleWindow;
     const ric =
-      (window as any).requestIdleCallback ||
-      ((cb: () => void) => setTimeout(cb, 2000));
+      w.requestIdleCallback ??
+      ((cb: () => void) => setTimeout(cb, 2000) as unknown as number);
     const handle = ric(() => initPostHog());
 
     return () => {
-      const cancel = (window as any).cancelIdleCallback;
+      const cancel = w.cancelIdleCallback;
       if (cancel && typeof handle === "number") cancel(handle);
     };
   }, []);
