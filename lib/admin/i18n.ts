@@ -31,11 +31,16 @@ const EN: Dict = {
   "nav.coaching":     "Coaching",
   "nav.games":        "Games",
   "nav.journey":      "Journey",
+  "nav.assessments":  "Assessments",
   "nav.adults":       "Adults",
   "nav.users":        "Users",
   "nav.marketing":    "Marketing",
   "nav.report":       "Report",
   "nav.system":       "System",
+
+  // Bottom-nav (mobile)
+  "nav.couples":          "Couples",
+  "nav.more":             "More",
 
   // Sidebar leaves
   "nav.overview":         "Overview",
@@ -446,11 +451,16 @@ const HE: Dict = {
   "nav.coaching":     "ליווי",
   "nav.games":        "משחקים",
   "nav.journey":      "מסע",
+  "nav.assessments":  "אבחונים",
   "nav.adults":       "למבוגרים",
   "nav.users":        "משתמשים",
   "nav.marketing":    "שיווק",
   "nav.report":       "דוחות",
   "nav.system":       "מערכת",
+
+  // Bottom-nav (mobile)
+  "nav.couples":          "זוגות",
+  "nav.more":             "עוד",
 
   // Sidebar leaves
   "nav.overview":         "סקירה",

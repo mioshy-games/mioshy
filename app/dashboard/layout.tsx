@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { ThemeProvider } from "next-themes";
 import { requireExpert } from "@/lib/auth/expert";
 import { Sidebar } from "@/components/dashboard/Sidebar";
+import { BottomNav } from "@/components/dashboard/BottomNav";
 import { Toaster } from "@/components/ui/sonner";
 import { getAdminLocale, isRtl } from "@/lib/admin/locale";
 import { getPendingExpertMessages } from "@/lib/journey/pending-messages";
@@ -41,9 +42,15 @@ export default async function DashboardRootLayout({
           badges={{ pending_messages: pending.count }}
         />
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-          <main className="flex-1 p-4 md:p-8">{children}</main>
+          {/* pb on mobile clears the fixed BottomNav (md:hidden). Desktop
+              keeps its original padding — no visual change above md. */}
+          <main className="flex-1 p-4 pb-24 md:p-8 md:pb-8">{children}</main>
         </div>
       </div>
+      <BottomNav
+        locale={locale}
+        badges={{ pending_messages: pending.count }}
+      />
       <Toaster richColors position="top-center" />
     </ThemeProvider>
   );

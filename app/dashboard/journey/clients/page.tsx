@@ -18,6 +18,7 @@ import { createServiceRoleClient } from "@/lib/supabase-admin";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { CoupleCardList } from "@/components/dashboard/journey/CoupleCardList";
 
 export const dynamic = "force-dynamic";
 
@@ -287,6 +288,15 @@ export default async function JourneyClientsIndexPage({
         </Link>
       </div>
 
+      {/* Mobile (<md): accordion cards + AI smart search. The whole list is
+          handed to the client island, which filters in-memory. */}
+      <div className="md:hidden">
+        <CoupleCardList items={summaries} />
+      </div>
+
+      {/* Desktop (md+): existing table-style list, unchanged. */}
+      <div className="hidden md:block md:space-y-6">
+
       {/* Search */}
       <form
         action="/dashboard/journey/clients"
@@ -378,6 +388,7 @@ export default async function JourneyClientsIndexPage({
           })}
         </ul>
       )}
+      </div>
     </div>
   );
 }
