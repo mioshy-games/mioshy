@@ -43,6 +43,10 @@ import {
   ClientAiAnalysisPanel,
   type ClientAiAnalysisRow,
 } from "@/components/dashboard/journey/ClientAiAnalysisPanel";
+import { CoupleAiSummaryCard } from "@/components/dashboard/journey/CoupleAiSummaryCard";
+import type { CoupleAiDigest } from "@/app/dashboard/journey/clients/[ownerKey]/ai-actions";
+import { getAdminLocale, type AdminLocale } from "@/lib/admin/locale";
+import { t } from "@/lib/admin/i18n";
 import type {
   JourneyAssignment,
   JourneyCategory,
@@ -404,54 +408,55 @@ interface OwnerState {
   caption: string;
 }
 
-function deriveOwnerState(totals: LoadedOwner["totals"]): OwnerState {
+function deriveOwnerState(
+  totals: LoadedOwner["totals"],
+  locale: AdminLocale,
+): OwnerState {
   if (totals.active_assignments === 0) {
     if (totals.cancelled_assignments > 0) {
       return {
         tone: "slate",
         icon: PauseCircle,
-        title: "Paused",
-        caption:
-          "All assignments are cancelled. Reactivate one below or add a new one.",
+        title: t(locale, "clientdetail.state_paused_title"),
+        caption: t(locale, "clientdetail.state_paused_caption"),
       };
     }
     return {
       tone: "slate",
       icon: Compass,
-      title: "No content yet",
-      caption: "Assign this client a program, category, or single item to begin.",
+      title: t(locale, "clientdetail.state_nocontent_title"),
+      caption: t(locale, "clientdetail.state_nocontent_caption"),
     };
   }
   if (totals.total_items === 0) {
     return {
       tone: "sky",
       icon: Compass,
-      title: "Active - but empty",
-      caption:
-        "Active assignments exist but have no scheduled items. Try re-materialize.",
+      title: t(locale, "clientdetail.state_empty_title"),
+      caption: t(locale, "clientdetail.state_empty_caption"),
     };
   }
   if (totals.completed_items >= totals.total_items) {
     return {
       tone: "emerald",
       icon: CheckCircle2,
-      title: "Complete",
-      caption: "Every scheduled item across active assignments is done.",
+      title: t(locale, "clientdetail.state_complete_title"),
+      caption: t(locale, "clientdetail.state_complete_caption"),
     };
   }
   if (totals.completed_items > 0) {
     return {
       tone: "amber",
       icon: Flame,
-      title: "Progressing",
-      caption: `${totals.completed_items} of ${totals.total_items} items completed.`,
+      title: t(locale, "clientdetail.state_progressing_title"),
+      caption: `${totals.completed_items} ${t(locale, "clientdetail.of")} ${totals.total_items} ${t(locale, "clientdetail.items_completed")}.`,
     };
   }
   return {
     tone: "sky",
     icon: Clock,
-    title: "Active",
-    caption: "Timeline is ready - waiting for the first item to be completed.",
+    title: t(locale, "clientdetail.state_active_title"),
+    caption: t(locale, "clientdetail.state_active_caption"),
   };
 }
 
@@ -489,6 +494,27 @@ function toneClasses(tone: OwnerStateTone) {
   }
 }
 
+// Pull the bits of an ai_hero block we feed to the couple-summary /
+// email-draft actions. Defensive: returns nulls when absent.
+function pickHero(summary: unknown): {
+  hero_he: string | null;
+  recommendations_he: string[];
+  pain_signal: string | null;
+} {
+  const empty = { hero_he: null, recommendations_he: [] as string[], pain_signal: null };
+  if (!summary || typeof summary !== "object") return empty;
+  const ai = (summary as Record<string, unknown>).ai_hero;
+  if (!ai || typeof ai !== "object") return empty;
+  const o = ai as Record<string, unknown>;
+  return {
+    hero_he: typeof o.hero_he === "string" ? o.hero_he : null,
+    recommendations_he: Array.isArray(o.recommendations_he)
+      ? (o.recommendations_he as unknown[]).filter((x): x is string => typeof x === "string")
+      : [],
+    pain_signal: typeof o.pain_signal === "string" ? o.pain_signal : null,
+  };
+}
+
 // ------------------------------------------------------------
 // Page
 // ------------------------------------------------------------
@@ -498,7 +524,8 @@ export default async function ManageClientPage({
 }: {
   params: { ownerKey: string };
 }) {
-  await requireAdmin();
+  const { user: adminUser } = await requireAdmin();
+  const locale = getAdminLocale();
 
   const ownerKey = decodeURIComponent(params.ownerKey);
   const owner = parseOwnerKey(ownerKey);
@@ -677,7 +704,40 @@ export default async function ManageClientPage({
     }
   }
 
-  const state = deriveOwnerState(loaded.totals);
+  // Expert display name for the email signature (full_name → email).
+  let expertName: string | null = adminUser.email ?? null;
+  if (admin) {
+    const { data: prof } = await admin
+      .from("profiles")
+      .select("full_name")
+      .eq("id", adminUser.id)
+      .maybeSingle();
+    const fn = (prof?.full_name as string | null)?.trim();
+    if (fn) expertName = fn;
+  }
+
+  // Compact digest for the AI summary + email-draft client islands. Built
+  // from the per-partner analysis we already loaded — no extra round-trip.
+  const aiDigest: CoupleAiDigest = {
+    ownerKey,
+    coupleLabel: ownerLabel ?? t(locale, "clientdetail.unknown_owner"),
+    kind: owner.kind,
+    expertName,
+    partners: aiAnalysisRows.map((r) => {
+      const hero = pickHero(r.analysis?.summary);
+      return {
+        label: r.label,
+        heroHe: hero.hero_he,
+        recommendationsHe: hero.recommendations_he,
+        painSignal: hero.pain_signal,
+        whatHurts: r.reflections.q20c_what_hurts,
+        successSignal: r.reflections.q22a_success_signal,
+        hasAssessment: !!r.analysis,
+      };
+    }),
+  };
+
+  const state = deriveOwnerState(loaded.totals, locale);
   const toneCls = toneClasses(state.tone);
   const StateIcon = state.icon;
   const OwnerIcon = owner.kind === "couple" ? Users : UserRound;
@@ -705,23 +765,25 @@ export default async function ManageClientPage({
         href="/dashboard/journey/clients"
         className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-sm"
       >
-        <ArrowLeft className="size-4" />
-        Back to clients
+        <ArrowLeft className="size-4 rtl:-scale-x-100" />
+        {t(locale, "clientdetail.back")}
       </Link>
 
       {/* ── Header - identity + primary CTA ─────────────────────── */}
-      <header classN-me="flex flex-wrap items-start justify-between gap-4">
+      <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-start gap-3">
           <div className="bg-muted text-muted-foreground flex size-12 shrink-0 items-center justify-center rounded-full border">
             <OwnerIcon className="size-5" />
           </div>
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
-              {ownerLabel ?? "Unknown owner"}
+              {ownerLabel ?? t(locale, "clientdetail.unknown_owner")}
             </h1>
             <div className="mt-1.5 flex flex-wrap items-center gap-2 text-sm">
-              <Badge variant="outline" className="text-[10px] uppercase">
-                {owner.kind}
+              <Badge variant="outline" className="text-[10px]">
+                {owner.kind === "couple"
+                  ? t(locale, "clientdetail.kind_couple")
+                  : t(locale, "clientdetail.kind_user")}
               </Badge>
               <span className="text-muted-foreground font-mono text-xs">
                 {ownerKey}
@@ -733,7 +795,7 @@ export default async function ManageClientPage({
           href={assignHref}
           className={cn(buttonVariants({ variant: "default" }))}
         >
-          + Assign to this client
+          {t(locale, "clientdetail.assign")}
         </Link>
       </header>
 
@@ -805,11 +867,16 @@ export default async function ManageClientPage({
               <div className={cn("font-medium", toneCls.text)}>
                 {loaded.totals.completed_items} / {loaded.totals.total_items}
               </div>
-              <div className={toneCls.accent}>items completed</div>
+              <div className={toneCls.accent}>{t(locale, "clientdetail.items_completed")}</div>
             </div>
           </div>
         ) : null}
       </div>
+
+      {/* ── סיכום AI — couple-level briefing + email draft (top of page).
+          Generates on the client from the digest we already built, so the
+          assignment data below paints first. */}
+      <CoupleAiSummaryCard digest={aiDigest} />
 
       {/* ── AI assessment hero per partner (2026-06-02) ──────────
           What the user saw on their /journey/assessment summary, plus
@@ -820,20 +887,20 @@ export default async function ManageClientPage({
       {/* ── Stats strip ─────────────────────────────────────────── */}
       <div className="grid gap-3 sm:grid-cols-4">
         <StatPill
-          label="Active assignments"
+          label={t(locale, "clientdetail.stat_active")}
           value={loaded.totals.active_assignments}
         />
         <StatPill
-          label="Cancelled"
+          label={t(locale, "clientdetail.stat_cancelled")}
           value={loaded.totals.cancelled_assignments}
           muted
         />
         <StatPill
-          label="Items done"
+          label={t(locale, "clientdetail.stat_items_done")}
           value={`${loaded.totals.completed_items}/${loaded.totals.total_items}`}
         />
         <StatPill
-          label="Last added"
+          label={t(locale, "clientdetail.stat_last_added")}
           value={fmtDate(loaded.totals.last_activity)}
         />
       </div>
@@ -843,12 +910,12 @@ export default async function ManageClientPage({
         <section className="space-y-4">
           <div>
             <h2 className="text-lg font-semibold tracking-tight">
-              Cadence inspector
+              {t(locale, "clientdetail.cadence_title")}
             </h2>
             <p className="text-muted-foreground mt-0.5 text-xs">
-              Per-partner queue + engagement + eligibility verdict.
+              {t(locale, "clientdetail.cadence_caption")}
               {owner.kind === "couple"
-                ? " Each partner has their own panel - no aggregation."
+                ? t(locale, "clientdetail.cadence_couple_note")
                 : ""}
             </p>
           </div>
@@ -876,24 +943,23 @@ export default async function ManageClientPage({
       <section className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold tracking-tight">
-            Active assignments
+            {t(locale, "clientdetail.active_title")}
           </h2>
           <span className="text-muted-foreground text-xs">
-            {activeAssignments.length} assignment
-            {activeAssignments.length === 1 ? "" : "s"}
+            {activeAssignments.length} {t(locale, "clientdetail.assignments_word")}
           </span>
         </div>
 
         {activeAssignments.length === 0 ? (
           <div className="border-border bg-muted/30 text-muted-foreground rounded-lg border border-dashed p-8 text-center text-sm">
-            No active assignments yet.{" "}
+            {t(locale, "clientdetail.empty_active_pre")}
             <Link
               href={assignHref}
               className="text-foreground underline-offset-4 hover:underline"
             >
-              Assign a program
-            </Link>{" "}
-            to get started.
+              {t(locale, "clientdetail.empty_active_link")}
+            </Link>
+            {t(locale, "clientdetail.empty_active_post")}
           </div>
         ) : (
           <div className="space-y-4">
@@ -916,7 +982,7 @@ export default async function ManageClientPage({
         <section className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-muted-foreground text-sm font-semibold uppercase tracking-wide">
-              Cancelled
+              {t(locale, "clientdetail.cancelled_title")}
             </h2>
             <span className="text-muted-foreground text-xs">
               {cancelledAssignments.length}

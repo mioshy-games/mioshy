@@ -35,5 +35,21 @@ branch: `dashboard/mobile-refactor` · שלב 1 מתוך הריפקטור.
 
 > screenshots אמיתיים ב-376px דורשים הרצת dev server מקומית (אין לי דרך להריץ אותו מכאן) — ה-mockup המעודכן בצ'אט משקף את המצב אחרי התיקון.
 
+## שלב 3 — כרטיס הזוג + שכבת AI
+עמוד `/dashboard/journey/clients/[ownerKey]`.
+
+קבצים חדשים:
+- `app/.../[ownerKey]/ai-actions.ts` — שני server actions (graceful, ללא תלות npm): `generateCoupleSummary` (תקציר 3-4 שורות למאמן: חולשות, צורך בולט, כיוון מומלץ) ו-`generateEmailDraft` (טיוטת אימייל חמה לזוג בקול המותג — אתם/שלכם, בלי "כלים", בלי rule-of-three — חתומה בשם המאמן). Haiku לתקציר, Sonnet לאימייל.
+- `components/dashboard/journey/CoupleAiSummaryCard.tsx` — כרטיס "סיכום AI" בראש העמוד, נוצר ב-client על mount מה-digest שכבר הורכב בשרת (לא חוסם רינדור), עם "רענן".
+- `components/dashboard/journey/EmailDraftSheet.tsx` — Sheet תחתון: טיוטה נוצרת בפתיחה, נושא+גוף ניתנים לעריכה, "העתק" / "פתח במייל" (mailto) / "רענן". כשל AI → שדות ריקים לכתיבה ידנית.
+
+שינויים:
+- `[ownerKey]/page.tsx` — בונה digest מנתוני האבחון שכבר נטענים (per-partner ai_hero + רפלקציות) + שם המאמן (profiles.full_name → email); מרנדר את `CoupleAiSummaryCard` בראש; **תוקן באג `classN-me`→`className` בכותרת**; וכל chrome העמוד עבר לעברית (back, כותרת, badge, באנר מצב, סטטיסטיקות, סקציות, מצבים ריקים) דרך מפתחות `clientdetail.*`.
+- `lib/admin/i18n.ts` — מפתחות `clientdetail.*` (he+en).
+
+נשאר באנגלית (פאס קטן הבא, לא קריטי לראש העמוד): רכיב `AssignmentCard` הפנימי ופאנל ה-`ClientAiAnalysisPanel` המפורט (פאנל אימות למומחה, כבר דו-לשוני). הסיכום הנקי בעברית כבר יושב מעליו.
+
+> "שליחה" אמיתית של האימייל לא חוברה (לא לגעת ב-endpoints) — כרגע העתקה/פתיחה במייל. חיבור לשליחה הקיימת = צעד נפרד.
+
 ## אילוצים שנשמרו
 schema לא שונה · endpoints לא שונו · בלי תלות npm חדשה · דסקטופ/טאבלט ללא שינוי · `/journey` של המשתמש לא נגע.
