@@ -181,35 +181,37 @@ export function CoupleCardList({ items }: { items: CoupleListItem[] }) {
 
   return (
     <div className="space-y-3">
-      {/* Smart search */}
+      {/* Smart search — one visible field, with the search + AI icons INSIDE
+          it. Typing then Enter does a literal text match; tapping the AI
+          button sends the text to aiSearchCouples for a Hebrew question. */}
       <form
         onSubmit={(e) => {
           e.preventDefault();
           runText();
         }}
-        className="flex items-center gap-2"
+        className="border-input bg-background focus-within:ring-ring flex h-12 items-center gap-2 rounded-xl border ps-3 pe-1.5 focus-within:ring-2"
       >
-        <div className="relative flex-1">
-          <Search className="text-muted-foreground pointer-events-none absolute inset-y-0 start-3 my-auto size-4" />
-          <input
-            type="search"
-            inputMode="search"
-            enterKeyHint="search"
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              if (spec) setSpec(null);
-            }}
-            placeholder='חפש או שאל… "מי לא סיים השבוע"'
-            className="border-input bg-background focus-visible:ring-ring h-12 w-full rounded-xl border ps-9 pe-3 text-base focus-visible:outline-none focus-visible:ring-2"
-          />
-        </div>
+        <Search className="text-muted-foreground pointer-events-none size-5 shrink-0" />
+        <input
+          type="search"
+          inputMode="search"
+          enterKeyHint="search"
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            if (spec) setSpec(null);
+          }}
+          placeholder="חפש או שאל שאלה..."
+          aria-label="חפש או שאל שאלה"
+          className="h-full min-w-0 flex-1 border-0 bg-transparent text-base outline-none"
+        />
         <button
           type="button"
           onClick={runAi}
           disabled={pending || query.trim().length < 2}
           aria-label="שאל AI"
-          className="bg-primary text-primary-foreground inline-flex h-12 min-w-12 items-center justify-center gap-1.5 rounded-xl px-3 text-sm font-medium disabled:opacity-50"
+          title="שאל שאלה ב-AI"
+          className="bg-primary text-primary-foreground inline-flex size-10 shrink-0 items-center justify-center rounded-lg disabled:opacity-40"
         >
           {pending ? (
             <Loader2 className="size-5 animate-spin" />
@@ -244,6 +246,12 @@ export function CoupleCardList({ items }: { items: CoupleListItem[] }) {
             const pct = pctOf(s);
             const isOpen = open.has(s.ownerKey);
             const Icon = s.kind === "couple" ? Users : UserRound;
+            // Name is the load-bearing field: never let a row render
+            // without one. Fall back to pair-code, then a typed placeholder.
+            const name =
+              s.label?.trim() ||
+              s.sublabel?.trim() ||
+              (s.kind === "couple" ? "זוג ללא שם" : "ללא שם");
             return (
               <li
                 key={s.ownerKey}
@@ -259,8 +267,8 @@ export function CoupleCardList({ items }: { items: CoupleListItem[] }) {
                     <Icon className="size-5" />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate font-semibold">
-                      {s.label}
+                    <span className="block truncate text-[15px] font-bold leading-tight">
+                      {name}
                     </span>
                     <span
                       className={cn(

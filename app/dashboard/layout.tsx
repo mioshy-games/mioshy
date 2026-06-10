@@ -34,14 +34,14 @@ export default async function DashboardRootLayout({
       <div
         dir={dir}
         lang={locale}
-        className="bg-background text-foreground flex min-h-[100dvh]"
+        className="bg-background text-foreground flex min-h-[100dvh] flex-col md:flex-row"
       >
         <Sidebar
           isAdmin={session.isAdmin}
           locale={locale}
           badges={{ pending_messages: pending.count }}
         />
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <div className="flex w-full min-h-0 min-w-0 flex-1 flex-col">
           {/* pb on mobile clears the fixed BottomNav (md:hidden). Desktop
               keeps its original padding — no visual change above md. */}
           <main className="flex-1 p-4 pb-24 md:p-8 md:pb-8">{children}</main>

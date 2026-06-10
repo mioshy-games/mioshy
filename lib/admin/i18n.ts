@@ -42,6 +42,36 @@ const EN: Dict = {
   "nav.couples":          "Couples",
   "nav.more":             "More",
 
+  // Dashboard home (admin)
+  "home.title":           "Dashboard",
+  "home.subtitle":        "Overview of games and content.",
+  "home.total_games":     "Total games",
+  "home.total_questions": "Total questions",
+  "home.active_games":    "Active games",
+  "home.games":           "Games",
+  "home.quick_actions":   "Quick actions and status",
+  "home.new_game":        "New game",
+  "home.col_name_en":     "Name (EN)",
+  "home.col_slug":        "Slug",
+  "home.col_status":      "Status",
+  "home.col_actions":     "Actions",
+  "home.no_games":        "No games yet. Create one to get started.",
+  "home.service_unavailable": "Service role unavailable — check Supabase env vars.",
+
+  // Clients list
+  "clients.back":         "Back to Journey",
+  "clients.title":        "Clients",
+  "clients.subtitle":     "Users and couples with a Journey timeline. Tap a card to manage their programs, timing, and content.",
+  "clients.assign":       "+ Assign to owner",
+  "clients.search":       "Search",
+  "clients.search_placeholder": "Search by name, email, or pair code",
+  "clients.empty":        "No clients yet — clients appear here once they're assigned a program, category, or item.",
+  "clients.no_match":     "No clients match",
+
+  // Common
+  "common.active":        "Active",
+  "common.inactive":      "Inactive",
+
   // Sidebar leaves
   "nav.overview":         "Overview",
   "nav.help":             "Help",
@@ -461,6 +491,36 @@ const HE: Dict = {
   // Bottom-nav (mobile)
   "nav.couples":          "זוגות",
   "nav.more":             "עוד",
+
+  // Dashboard home (admin)
+  "home.title":           "לוח בקרה",
+  "home.subtitle":        "סקירת משחקים ותוכן.",
+  "home.total_games":     "סך המשחקים",
+  "home.total_questions": "סך השאלות",
+  "home.active_games":    "משחקים פעילים",
+  "home.games":           "משחקים",
+  "home.quick_actions":   "פעולות מהירות וסטטוס",
+  "home.new_game":        "משחק חדש",
+  "home.col_name_en":     "שם (אנגלית)",
+  "home.col_slug":        "Slug",
+  "home.col_status":      "סטטוס",
+  "home.col_actions":     "פעולות",
+  "home.no_games":        "אין עדיין משחקים. צרו אחד כדי להתחיל.",
+  "home.service_unavailable": "שירות ה-Service Role לא זמין — בדקו את משתני הסביבה של Supabase.",
+
+  // Clients list
+  "clients.back":         "חזרה למסע",
+  "clients.title":        "לקוחות",
+  "clients.subtitle":     "משתמשים וזוגות עם ציר זמן במסע. הקליקו על כרטיס לניהול התוכניות, התזמון והתוכן.",
+  "clients.assign":       "+ שיוך לבעלים",
+  "clients.search":       "חיפוש",
+  "clients.search_placeholder": "חיפוש לפי שם, אימייל או קוד צימוד",
+  "clients.empty":        "אין עדיין לקוחות — לקוחות מופיעים כאן לאחר שיוך תוכנית, קטגוריה או פריט.",
+  "clients.no_match":     "אין לקוחות התואמים ל",
+
+  // Common
+  "common.active":        "פעיל",
+  "common.inactive":      "לא פעיל",
 
   // Sidebar leaves
   "nav.overview":         "סקירה",

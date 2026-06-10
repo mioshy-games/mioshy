@@ -18,6 +18,8 @@ import { PendingMessagesCard } from "@/components/dashboard/PendingMessagesCard"
 import { getPendingExpertMessages } from "@/lib/journey/pending-messages";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { getAdminLocale } from "@/lib/admin/locale";
+import { t } from "@/lib/admin/i18n";
 import {
   Card,
   CardContent,
@@ -40,6 +42,7 @@ export const dynamic = "force-dynamic";
 
 export default async function DashboardHomePage() {
   const session = await requireExpert();
+  const locale = getAdminLocale();
 
   // ── Coach branch (Phase 8) ───────────────────────────────────
   if (!session.isAdmin) {
@@ -63,9 +66,11 @@ export default async function DashboardHomePage() {
   if (!admin) {
     return (
       <div className="mx-auto max-w-6xl space-y-4">
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        <h1 className="text-3xl font-bold tracking-tight">
+          {t(locale, "home.title")}
+        </h1>
         <p className="text-muted-foreground text-sm">
-          Service role unavailable — check Supabase env vars.
+          {t(locale, "home.service_unavailable")}
         </p>
       </div>
     );
@@ -97,9 +102,11 @@ export default async function DashboardHomePage() {
   return (
     <div className="mx-auto max-w-6xl space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        <h1 className="text-3xl font-bold tracking-tight">
+          {t(locale, "home.title")}
+        </h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          Overview of games and content.
+          {t(locale, "home.subtitle")}
         </p>
       </div>
 
@@ -114,7 +121,7 @@ export default async function DashboardHomePage() {
       <div className="grid gap-4 sm:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Total games</CardDescription>
+            <CardDescription>{t(locale, "home.total_games")}</CardDescription>
             <CardTitle className="text-3xl tabular-nums">
               {totalGames ?? 0}
             </CardTitle>
@@ -122,7 +129,7 @@ export default async function DashboardHomePage() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Total questions</CardDescription>
+            <CardDescription>{t(locale, "home.total_questions")}</CardDescription>
             <CardTitle className="text-3xl tabular-nums">
               {totalQuestions ?? 0}
             </CardTitle>
@@ -130,7 +137,7 @@ export default async function DashboardHomePage() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Active games</CardDescription>
+            <CardDescription>{t(locale, "home.active_games")}</CardDescription>
             <CardTitle className="text-3xl tabular-nums">
               {activeGames ?? 0}
             </CardTitle>
@@ -141,24 +148,24 @@ export default async function DashboardHomePage() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle>Games</CardTitle>
-            <CardDescription>Quick actions and status</CardDescription>
+            <CardTitle>{t(locale, "home.games")}</CardTitle>
+            <CardDescription>{t(locale, "home.quick_actions")}</CardDescription>
           </div>
           <Link
             href="/dashboard/games/new"
             className={cn(buttonVariants({ variant: "default" }))}
           >
-            New game
+            {t(locale, "home.new_game")}
           </Link>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name (EN)</TableHead>
-                <TableHead>Slug</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{t(locale, "home.col_name_en")}</TableHead>
+                <TableHead>{t(locale, "home.col_slug")}</TableHead>
+                <TableHead>{t(locale, "home.col_status")}</TableHead>
+                <TableHead className="text-right">{t(locale, "home.col_actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -171,7 +178,7 @@ export default async function DashboardHomePage() {
                     </TableCell>
                     <TableCell>
                       <Badge variant={g.is_active ? "default" : "secondary"}>
-                        {g.is_active ? "Active" : "Inactive"}
+                        {g.is_active ? t(locale, "common.active") : t(locale, "common.inactive")}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
@@ -182,7 +189,7 @@ export default async function DashboardHomePage() {
               ) : (
                 <TableRow>
                   <TableCell colSpan={4} className="text-muted-foreground h-24 text-center">
-                    No games yet. Create one to get started.
+                    {t(locale, "home.no_games")}
                   </TableCell>
                 </TableRow>
               )}

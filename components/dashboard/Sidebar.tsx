@@ -152,6 +152,8 @@ const NAV: NavItem[] = [
     ],
   },
 
+  { kind: "leaf", href: "/dashboard/assessments", labelKey: "nav.assessments", icon: FileText, adminOnly: true },
+
   {
     kind: "group",
     id: "adults",
@@ -554,7 +556,7 @@ export function Sidebar({
         </div>
         <div className="px-2 pb-4 overflow-y-auto">{nav}</div>
       </aside>
-      <div className="border-border bg-background flex items-center justify-between gap-2 border-b p-3 md:hidden">
+      <div className="border-border bg-background/95 supports-[backdrop-filter]:bg-background/80 sticky top-0 z-30 flex items-center justify-between gap-2 border-b p-3 backdrop-blur md:hidden">
         <span className="font-semibold">
           {isAdmin
             ? t(locale, "brand.admin")

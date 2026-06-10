@@ -19,6 +19,8 @@ import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { CoupleCardList } from "@/components/dashboard/journey/CoupleCardList";
+import { getAdminLocale } from "@/lib/admin/locale";
+import { t } from "@/lib/admin/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -259,6 +261,7 @@ export default async function JourneyClientsIndexPage({
   searchParams: { q?: string };
 }) {
   await requireAdmin();
+  const locale = getAdminLocale();
 
   const search = searchParams?.q ?? "";
   const summaries = await collectOwnerSummaries(search);
@@ -271,20 +274,21 @@ export default async function JourneyClientsIndexPage({
             href="/dashboard/journey"
             className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-sm"
           >
-            <ArrowLeft className="size-4" />
-            Back to Journey
+            <ArrowLeft className="size-4 rtl:-scale-x-100" />
+            {t(locale, "clients.back")}
           </Link>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight">Clients</h1>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight">
+            {t(locale, "clients.title")}
+          </h1>
           <p className="text-muted-foreground mt-1 max-w-2xl text-sm">
-            Users and couples with a Journey timeline. Click a row to manage
-            their programs, timing, and content.
+            {t(locale, "clients.subtitle")}
           </p>
         </div>
         <Link
           href="/dashboard/journey/assignments/new"
           className={cn(buttonVariants({ variant: "default" }))}
         >
-          + Assign to owner
+          {t(locale, "clients.assign")}
         </Link>
       </div>
 
@@ -309,7 +313,7 @@ export default async function JourneyClientsIndexPage({
             type="search"
             name="q"
             defaultValue={search}
-            placeholder="Search by name, email, or pair code"
+            placeholder={t(locale, "clients.search_placeholder")}
             className="border-input bg-background focus-visible:ring-ring w-full rounded-md border px-9 py-2 text-sm focus-visible:outline-none focus-visible:ring-2"
           />
         </div>
@@ -317,7 +321,7 @@ export default async function JourneyClientsIndexPage({
           type="submit"
           className={cn(buttonVariants({ variant: "outline" }))}
         >
-          Search
+          {t(locale, "clients.search")}
         </button>
       </form>
 
@@ -325,8 +329,8 @@ export default async function JourneyClientsIndexPage({
       {summaries.length === 0 ? (
         <div className="border-border bg-muted/30 text-muted-foreground rounded-lg border p-8 text-center text-sm">
           {search
-            ? `No clients match “${search}”.`
-            : "No clients yet - clients appear here once they're assigned a program, category, or item."}
+            ? `${t(locale, "clients.no_match")} “${search}”.`
+            : t(locale, "clients.empty")}
         </div>
       ) : (
         <ul className="divide-border border-border overflow-hidden rounded-lg border divide-y">
