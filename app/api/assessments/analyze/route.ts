@@ -13,6 +13,7 @@ import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { getAssessment } from "@/lib/assessments/catalog";
+import { loadAssessmentQuestions } from "@/lib/assessments/questions-db";
 import { scoreAssessment } from "@/lib/assessments/scoring";
 import { generateAssessmentHero } from "@/lib/assessments/ai-hero";
 import type { AnswerValue, AssessmentResponse, Locale } from "@/lib/assessments/types";
@@ -85,7 +86,8 @@ export async function POST(req: Request) {
     locale: r.locale as Locale,
   }));
 
-  const analysis = scoreAssessment(def, responses);
+  const questions = await loadAssessmentQuestions(admin, assessmentId);
+  const analysis = scoreAssessment(def, questions, responses);
 
   // ── AI hero (best-effort; never blocks persistence) ────────────────────────
   try {

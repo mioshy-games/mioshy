@@ -14,6 +14,7 @@ import { routing } from "@/i18n/routing";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
 import { getAssessment } from "@/lib/assessments/catalog";
+import { loadAssessmentQuestions } from "@/lib/assessments/questions-db";
 import { AssessmentClient } from "@/components/assessments/AssessmentClient";
 import type { AnswerValue, Locale } from "@/lib/assessments/types";
 
@@ -33,6 +34,9 @@ export default async function AssessmentRunnerPage({
 
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
+
+  // Live questions from the DB (admin-editable); falls back to the static bank.
+  const questions = await loadAssessmentQuestions(supabase, assessmentId);
 
   let initialStep = 0;
   let subscriptionActive = false;
@@ -93,7 +97,16 @@ export default async function AssessmentRunnerPage({
   return (
     <div
       className="relative isolate min-h-screen"
-      style={{ background: "linear-gradient(180deg, #0b0712 0%, #0e0913 50%, #100a17 100%)" }}
+      style={{
+        // Brand-warm backdrop (not flat near-black): deep wine/purple base
+        // with a soft gold glow top-start, wine glow top-end and a violet
+        // wash at the bottom. CSS-only, paint-once. Itzik 2026-06-07.
+        background:
+          "radial-gradient(1200px 760px at 12% -10%, rgba(252,202,101,0.18), transparent 58%)," +
+          "radial-gradient(1000px 700px at 92% 2%, rgba(184,60,77,0.38), transparent 60%)," +
+          "radial-gradient(980px 780px at 50% 110%, rgba(168,85,247,0.32), transparent 66%)," +
+          "linear-gradient(180deg, #2a1730 0%, #221334 48%, #271637 100%)",
+      }}
     >
       <div className="relative z-10 flex justify-center pt-6 pb-2">
         <a href={`/${locale}`} aria-label="Mioshy home" className="inline-flex transition-opacity hover:opacity-80">
@@ -106,8 +119,8 @@ export default async function AssessmentRunnerPage({
         assessmentId={def.id}
         assessmentTitleHe={def.he_title}
         assessmentTitleEn={def.en_title}
-        questions={def.questions}
-        total={def.total}
+        questions={questions}
+        total={questions.length}
         authenticated={!!user}
         subscriptionActive={subscriptionActive}
         initialStep={initialStep}

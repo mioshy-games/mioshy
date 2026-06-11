@@ -921,6 +921,20 @@
   .media-press-row-c-a .arrow{transition:transform .25s var(--t);display:inline-block;font-style:normal}
   .media-press-row-cta:hover .arrow{transform:translateX(-4px)}
 
+  /* 2026-06-09 — logo wall (replaced the quote rows). Logos sit in a
+     centered, wrapping row. */
+  .media-press-logos{
+    list-style:none;padding:0;margin:0;
+    display:flex;flex-wrap:wrap;align-items:center;justify-content:center;
+    gap:clamp(32px,6vw,72px);
+  }
+  .media-press-logo-item a{display:inline-flex;align-items:center}
+  .media-press-logo-item img{
+    height:54px;width:auto;max-width:200px;object-fit:contain;display:block;
+    opacity:0.85;transition:opacity .25s var(--t);
+  }
+  .media-press-logo-item a:hover img{opacity:1}
+
   /* Desktop layout - 2-column grid: [Logo | Content] */
   @media (min-width:768px){
     .media-press-row{grid-template-columns:160px 1fr;gap:36px;align-items:start}
@@ -1156,13 +1170,17 @@
     margin-bottom:24px;
     /* 2026-05-20 — padding-top added per Itzik so the +18 / brand /
        privacy pills sit clear of the CTA button above them. The CTA
-       has its own shadow that extends ~14px below; this 18px gap
-       puts the pills cleanly clear of that shadow on desktop. */
-    padding-top:18px;
+       has its own shadow that extends ~14px below; this gap
+       puts the pills cleanly clear of that shadow on desktop.
+       2026-06-09 — bumped 18→34 per Itzik for more breathing room
+       between the CTA button and the pill row beneath it. */
+    padding-top:34px;
   }
   .ag-pill{
     padding:4px 18px;
-    font-size:11px;
+    /* 2026-06-09 — desktop bumped 11→14 per Itzik. Mobile keeps its own
+       13px via the max-width:640px override below. */
+    font-size:14px;
     letter-spacing:0.22em;
     text-transform:uppercase;
     color:#EC4899;
@@ -1228,16 +1246,33 @@
      warm-rose against the cream text. */
 
   .ag-lead{
-    font-size:18px;
-    line-height:1.75;
-    color:rgba(242,230,226,0.78);
+    /* Itzik 2026-06-02: bumped to 20px + brighter (0.78→0.92), tightened
+       to the h2 above with a small negative top margin, and re-opened
+       the gap to the pillars below (10px→32px) so the lead reads as a
+       proper sub-headline instead of fading into both neighbours. */
+    font-size:20px;
+    line-height:1.65;
+    color:rgba(249,243,240,0.92);
     max-width:680px;
-    /* margin-bottom 90→10 per Itzik 2026-05-07 — the gap between the
-       lead and the pillars below was excessive. */
-    margin:0 auto 10px;
-    font-weight:300;
+    margin:-8px auto 32px;
+    font-weight:400;
   }
   .ag-lead strong{color:#FBF3F0;font-weight:500}
+
+  /* Hero image — replaced the three pillars 2026-06-09 (Itzik). */
+  .ag-pillars-image{
+    margin:0 0 50px;
+    border-radius:18px;
+    overflow:hidden;
+    border:1px solid rgba(236,72,153,0.25);
+  }
+  .ag-pillars-img{
+    display:block;
+    width:100%;
+    height:auto;
+  }
+  /* Mobile-specific crop hidden on desktop; toggled in the 640px query. */
+  .ag-img-mobile{display:none}
 
   /* Three pillars - curation manifesto */
   .ag-pillars{
@@ -1357,8 +1392,9 @@
     /* 2026-05-19 — bumped 16→18 to match `.btn`/`.btn-primary`
        ("לכל המשחקים") so the two CTAs in the homepage feel like one
        button family, not two different ones. Weight (600) and family
-       (inherit) already matched, just the size needed to align. */
-    font-size:18px;
+       (inherit) already matched, just the size needed to align.
+       2026-06-09 — bumped 18→20 per Itzik. */
+    font-size:20px;
     font-weight:600;
     line-height:1.2;
     letter-spacing:0.01em;
@@ -1987,7 +2023,14 @@
        - Inter-section margins trimmed ~40% to bring eye flow back. */
     .adult-games{padding:48px 0 28px}
     .ag-frame{padding:0 20px}
-    .ag-pills{margin-bottom:18px;padding:4px;flex-wrap:wrap;gap:4px}
+    /* padding-top keeps the +18/brand/privacy pills clear of the CTA
+       button above (the shorthand previously reset it to 4px, killing
+       the gap on mobile). Itzik 2026-06-09. */
+    .ag-pills{margin-bottom:18px;padding:30px 4px 4px;flex-wrap:wrap;gap:4px}
+    /* Mobile: swap to the dedicated near-square crop (sexhero-m.webp)
+       instead of the wide desktop strip. Itzik 2026-06-09. */
+    .ag-img-desktop{display:none}
+    .ag-img-mobile{display:block}
     .ag-pill{padding:4px 10px;font-size:13px;letter-spacing:0.08em;white-space:nowrap}
     .ag-pill+.ag-pill::before{height:11px}
     .ag-eyebrow{font-size:17px;letter-spacing:0.14em;margin-bottom:14px}

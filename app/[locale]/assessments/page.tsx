@@ -52,7 +52,13 @@ export default async function AssessmentsHubPage({
     <div
       dir={isHe ? "rtl" : "ltr"}
       className="relative isolate min-h-screen"
-      style={{ background: "linear-gradient(180deg, #0b0712 0%, #0e0913 50%, #100a17 100%)" }}
+      style={{
+        background:
+          "radial-gradient(1100px 720px at 14% -10%, rgba(252,202,101,0.18), transparent 58%)," +
+          "radial-gradient(950px 660px at 90% 4%, rgba(184,60,77,0.36), transparent 60%)," +
+          "radial-gradient(900px 700px at 50% 108%, rgba(168,85,247,0.30), transparent 66%)," +
+          "linear-gradient(180deg, #2a1730 0%, #221334 48%, #271637 100%)",
+      }}
     >
       <div className="mx-auto w-full max-w-3xl px-4 py-10">
         <header className="mb-8 text-center">

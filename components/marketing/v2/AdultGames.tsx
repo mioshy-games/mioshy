@@ -6,6 +6,7 @@
 // AdultGames is rendered, even on pages that don't import HomepageV2.
 // Safe because CSS imports are de-duplicated by Next.js.
 import "./styles.css";
+import Image from "next/image";
 import { Link } from "@/navigation";
 import { CmsText } from "@/components/cms/CmsText";
 
@@ -33,22 +34,29 @@ export function AdultGames() {
           <CmsText cmsKey="homeV2.adultGames.headline" as="h2" />
           <CmsText cmsKey="homeV2.adultGames.lead" as="p" className="ag-lead" />
 
-          <div className="ag-pillars">
-            <article className="ag-pillar">
-              <span className="ag-pillar-num">I</span>
-              <CmsText cmsKey="homeV2.adultGames.pillar1Title" as="h3" />
-              <CmsText cmsKey="homeV2.adultGames.pillar1Body" as="p" />
-            </article>
-            <article className="ag-pillar">
-              <span className="ag-pillar-num">II</span>
-              <CmsText cmsKey="homeV2.adultGames.pillar2Title" as="h3" />
-              <CmsText cmsKey="homeV2.adultGames.pillar2Body" as="p" />
-            </article>
-            <article className="ag-pillar">
-              <span className="ag-pillar-num">III</span>
-              <CmsText cmsKey="homeV2.adultGames.pillar3Title" as="h3" />
-              <CmsText cmsKey="homeV2.adultGames.pillar3Body" as="p" />
-            </article>
+          {/* 2026-06-09 — the three numbered pillars (I/II/III) were
+              replaced with a single hero image per Itzik. The CMS keys
+              homeV2.adultGames.pillar1-3Title/Body and the `.ag-pillars`
+              / `.ag-pillar*` CSS rules are kept on disk for reuse. */}
+          <div className="ag-pillars-image">
+            {/* Two crops: wide for desktop, near-square for mobile.
+                CSS toggles visibility at the 640px breakpoint. */}
+            <Image
+              src="/images/sexhero.webp"
+              alt="הסקס של מיאושי"
+              width={1200}
+              height={350}
+              sizes="1100px"
+              className="ag-pillars-img ag-img-desktop"
+            />
+            <Image
+              src="/images/sexhero-m.webp"
+              alt="הסקס של מיאושי"
+              width={750}
+              height={466}
+              sizes="92vw"
+              className="ag-pillars-img ag-img-mobile"
+            />
           </div>
 
           {/* Signature row ("משחקי מין לאמיצים בלבד" with hairline

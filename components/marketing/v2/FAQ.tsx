@@ -3,6 +3,12 @@
 // and <CmsText> for every editable string. CmsText itself stays a
 // client island, but FAQ no longer needs its own client chunk + its
 // own hydration. Removed "use client" → FAQ is now a Server Component.
+// 2026-06-09 — self-import the v2 stylesheet so the FAQ is styled
+// wherever it's mounted. On the homepage styles.css loads via other
+// v2 sections, but on /games no other component pulled it in, so the
+// FAQ rendered unstyled. CSS imports are de-duped by Next.js, so this
+// is a no-op on pages that already load styles.css.
+import "./styles.css";
 import { Link } from "@/navigation";
 import { CmsText } from "@/components/cms/CmsText";
 

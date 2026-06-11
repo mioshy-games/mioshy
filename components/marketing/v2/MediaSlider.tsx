@@ -38,17 +38,24 @@ export function MediaSlider() {
               <em>Em</em> as separate JSX children. Same pattern as
               ForWhom + Intimacy. See memory: project_nextintl_em_pitfall. */}
           <h2 className="media-press-title">
-            <CmsText cmsKey="homeV2.media.headlinePart1" />{" "}
-            <em>
-              <CmsText cmsKey="homeV2.media.headlineEm" />
-            </em>
+            <CmsText cmsKey="homeV2.media.headlinePart1" />
           </h2>
         </header>
 
-        <ul className="media-press-rows">
+        {/* 2026-06-09 — simplified to a logo wall per Itzik. The
+            per-outlet quote, name/date meta, and "read article" CTA
+            were removed; only the publication logos remain, side by
+            side. CMS keys homeV2.media.item{n}Quote/Name/Date +
+            readArticle and the `.media-press-row*` CSS stay on disk. */}
+        <ul className="media-press-logos">
           {ITEMS.map((item) => (
-            <li key={item.n} className="media-press-row">
-              <div className="media-press-row-logo">
+            <li key={item.n} className="media-press-logo-item">
+              <a
+                href={item.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={item.logoAlt}
+              >
                 <Image
                   src={item.logoSrc}
                   alt={item.logoAlt}
@@ -56,44 +63,9 @@ export function MediaSlider() {
                   height={64}
                   unoptimized
                 />
-              </div>
-
-              <div className="media-press-row-content">
-                <p className="media-press-quote">
-                  <span aria-hidden="true">״</span>
-                  <CmsText cmsKey={`homeV2.media.item${item.n}Quote`} />
-                  <span aria-hidden="true">״</span>
-                </p>
-
-                <div className="media-press-row-meta">
-                  <CmsText
-                    cmsKey={`homeV2.media.item${item.n}Name`}
-                    className="media-press-name"
-                  />
-                  <span className="media-press-sep" aria-hidden="true">
-                    ·
-                  </span>
-                  <CmsText
-                    cmsKey={`homeV2.media.item${item.n}Date`}
-                    className="media-press-date"
-                  />
-                </div>
-
-                <a
-                  href={item.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="media-press-row-cta"
-                >
-                  <CmsText cmsKey="homeV2.media.readArticle" />
-                  <span className="arrow" aria-hidden="true">
-                    ←
-                  </span>
-                </a>
-              </div>
+              </a>
             </li>
           ))}
-          <li aria-hidden className="media-press-row-end" />
         </ul>
       </div>
     </section>

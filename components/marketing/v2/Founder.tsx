@@ -19,10 +19,10 @@ export function Founder() {
         <div className="founder-grid">
           <div className="founder-image">
             <ParallaxImage
-              src="/images/itzik-barlev.webp"
+              src="/images/itzik-barlev_new.webp"
               alt={imageAlt.text}
-              width={600}
-              height={750}
+              width={700}
+              height={700}
               className="founder-img"
               range={14}
               // PERF 2026-05-21 — without `sizes`, next/image defaults to 100vw
@@ -34,17 +34,10 @@ export function Founder() {
               //   • desktop: 480px (right column ~0.95fr of grid)
               sizes="(max-width: 640px) calc(100vw - 40px), (max-width: 1100px) 480px, 480px"
             />
-            <div className="founder-badge">
-              <CmsText
-                cmsKey="homeV2.founder.badgeIcon"
-                as="div"
-                className="founder-badge-icon"
-              />
-              <div className="founder-badge-text">
-                <CmsText cmsKey="homeV2.founder.badgeTitle" as="div" className="t1" />
-                <CmsText cmsKey="homeV2.founder.badgeName" as="div" className="t2" />
-              </div>
-            </div>
+            {/* 2026-06-09 — floating founder badge (יב / מייסד מיאושי /
+                יצחק ברלב) removed per Itzik. CMS keys homeV2.founder.
+                badgeIcon/badgeTitle/badgeName and the `.founder-badge*`
+                CSS stay on disk for possible re-use. */}
           </div>
 
           <RevealOnScroll

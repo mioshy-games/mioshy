@@ -2,6 +2,8 @@ import { getTranslations } from "next-intl/server";
 import type { Metadata } from "next";
 import "@/components/marketing/v2/styles.css";
 import { JourneyStages } from "@/components/marketing/v2/JourneyStages";
+import { CmsTextProvider } from "@/components/cms/CmsTextProvider";
+import { loadCmsTextsForPage } from "@/lib/cms/server";
 
 function siteUrl() {
   return (process.env.NEXT_PUBLIC_SITE_URL || "https://mioshy.com").replace(
@@ -88,13 +90,23 @@ export default async function PricingPage({
   const { locale } = await params;
   const isHe = locale === "he";
 
+  // Itzik 2026-06-02: load the homepage CMS rows so JourneyStages
+  // (which uses `homeV2.journeyStages.*` keys) renders the SAME live
+  // CMS values as on /. Without this provider the component falls back
+  // to messages/he.json — which is why /pricing was showing stale copy
+  // even after admin edits in /admin/content. Single source of truth:
+  // edit a key once in CMS, both / and /pricing update together.
+  const cmsRows = await loadCmsTextsForPage("homepage");
+
   return (
     <main
       dir={isHe ? "rtl" : "ltr"}
       lang={locale}
       className="home-v2 relative min-h-[100dvh] bg-white text-[#170E14]"
     >
-      <JourneyStages />
+      <CmsTextProvider rows={cmsRows}>
+        <JourneyStages />
+      </CmsTextProvider>
     </main>
   );
 }

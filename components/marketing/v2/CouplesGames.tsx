@@ -31,18 +31,10 @@ export function CouplesGames() {
             </h2>
             <CmsText cmsKey="homeV2.couplesGames.lead" as="p" className="lead" />
 
-            <div className="cg-callout">
-              <CmsText cmsKey="homeV2.couplesGames.callout" as="p" />
-              {/* Attribution name below the quote — added 2026-05-19
-                  per Itzik. Hebrew "ענת", English a non-Israeli name
-                  ("Sarah"). Styling lives in `.cg-callout-name` —
-                  bold, not italic, slightly muted color. */}
-              <CmsText
-                cmsKey="homeV2.couplesGames.calloutName"
-                as="p"
-                className="cg-callout-name"
-              />
-            </div>
+            {/* 2026-06-09 — testimonial callout ("15 שנים ביחד...", ענת)
+                removed per Itzik. CMS keys homeV2.couplesGames.callout +
+                calloutName and the `.cg-callout` / `.cg-callout-name` CSS
+                stay on disk for possible re-use. */}
 
             {/* Stats block (+500 משימות, +100 המלצות, 3 רמות) removed
                 2026-05-19 per Itzik — the numbers were marketing claims

@@ -104,19 +104,10 @@ export function Hero() {
                 </div>
                 <div className="hero-meta-item">
                   <span className="num">
-                    <Counter to={10} prefix="+" />
+                    <Counter to={3} />
                   </span>
                   <CmsText
                     cmsKey="homeV2.hero.statExpertsLabel"
-                    className="label"
-                  />
-                </div>
-                <div className="hero-meta-item">
-                  <span className="num">
-                    <Counter to={4.8} decimals={1} suffix="★" thousands={false} />
-                  </span>
-                  <CmsText
-                    cmsKey="homeV2.hero.statRatingLabel"
                     className="label"
                   />
                 </div>

@@ -11,6 +11,12 @@ import {
 import type { Analysis, CategoryScores, Locale } from "@/lib/journey/types";
 import { axisLabel } from "@/lib/journey/analysis";
 import {
+  CATEGORY_FEEDBACK,
+  CATEGORY_ORDER,
+  CATEGORY_WEAK_BELOW,
+  type CategoryKey,
+} from "@/lib/journey/category-feedback";
+import {
   getFocusMonthCopy,
   isPriorityKey,
 } from "@/lib/journey/focus-month-copy";
@@ -184,6 +190,75 @@ export function AnalysisSummary({
           />
         </div>
       )}
+
+      {/* ── Personal feedback per category (2026-06-07, Itzik approved) ──
+          Additive: driven by the existing category_scores; no scoring change.
+          Two bands per category (strong / needs-work) selected by the real
+          score, grounded in the content library. Lowest is highlighted. */}
+      {categoryScores ? (
+        <section className="px-2">
+          <span className="text-start text-[14px] font-semibold uppercase tracking-wider leading-normal text-[#FCCA65]">
+            {isHe ? "מה התשובות שלכם מספרות" : "What your answers tell"}
+          </span>
+          <h2 className="mt-1 text-balance text-start font-heading text-[24px] font-extrabold leading-tight text-white sm:text-[28px]">
+            {isHe ? "המשוב האישי שלכם" : "Your personal feedback"}
+          </h2>
+          <ul className="mt-4 flex flex-col gap-3">
+            {CATEGORY_ORDER.map((key: CategoryKey) => {
+              const score = categoryScores[key];
+              const fb = CATEGORY_FEEDBACK[key];
+              const weak = score < CATEGORY_WEAK_BELOW;
+              const text = isHe
+                ? weak ? fb.weak_he : fb.strong_he
+                : weak ? fb.weak_en : fb.strong_en;
+              const isLowest = key === categoryScores.lowest_key;
+              return (
+                <li
+                  key={key}
+                  className="rounded-2xl border p-4 sm:p-5"
+                  style={{
+                    borderColor: isLowest ? "rgba(252,202,101,0.55)" : "rgba(255,255,255,0.12)",
+                    background: isLowest ? "rgba(252,202,101,0.10)" : "rgba(255,255,255,0.05)",
+                  }}
+                >
+                  <div className="flex items-start gap-4">
+                    <div
+                      className="flex shrink-0 flex-col items-center justify-center rounded-xl px-3 py-2"
+                      style={{
+                        minWidth: 78,
+                        background: isLowest ? "rgba(252,202,101,0.16)" : "rgba(255,255,255,0.06)",
+                        border: `1px solid ${isLowest ? "rgba(252,202,101,0.5)" : "rgba(255,255,255,0.12)"}`,
+                      }}
+                    >
+                      <span
+                        className="font-heading text-[40px] font-extrabold leading-none tabular-nums"
+                        style={{ color: isLowest ? "#FCCA65" : "#fff" }}
+                      >
+                        {score}
+                      </span>
+                      <span className="mt-1 text-[12px] font-semibold text-white">{isHe ? "מתוך 100" : "of 100"}</span>
+                    </div>
+                    <div className="flex-1">
+                      <span className="text-[22px] font-bold leading-tight text-white">{isHe ? fb.he : fb.en}</span>
+                      {isLowest ? (
+                        <span
+                          className="ms-2 inline-block rounded-full px-2.5 py-0.5 text-[13px] font-bold"
+                          style={{ background: "#FCCA65", color: "#1a1018" }}
+                        >
+                          {isHe ? "נתחיל מכאן" : "start here"}
+                        </span>
+                      ) : null}
+                      <p className="mt-2 text-pretty text-start text-[20px] leading-[1.5] text-white/90">
+                        {text}
+                      </p>
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ) : null}
 
       {/* ── AI benefit-stack hero ─────────────────────────────────────── */}
       {heroText ? (

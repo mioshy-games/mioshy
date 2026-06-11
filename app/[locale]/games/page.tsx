@@ -19,7 +19,7 @@ import type { WheelSegment } from "@/components/Wheel";
 // they stay. Lucide tree-shaking handles the bundle delta in prod;
 // removing the import names just satisfies ESLint's unused-vars rule
 // for the strict build.
-import { ArrowRight, Gamepad2, Users } from "lucide-react";
+import { ArrowRight, Gamepad2, Users, Wifi } from "lucide-react";
 import { AdminThumbnailEdit } from "@/components/games/AdminThumbnailEdit";
 // Lazy wrapper: code-splits LiveDemoHero (which embeds the full Wheel +
 // framer-motion + sound effects) out of the initial /games bundle. The
@@ -424,12 +424,11 @@ export default async function GamesHubPage({
   //   { Icon: Shield,         iconBg: "bg-[#3D1F3D]", stat: t("statPrivate") },
   // ];
 
-  const trust: { icon: "sparkles" | "heart" | "zap" | "infinity"; label: string }[] = [
-    { icon: "sparkles", label: t("trustTry") },
-    { icon: "heart",    label: t("trustForCouples") },
-    { icon: "zap",      label: t("statNoInstall") },
-    { icon: "infinity", label: t("trustWorldwide") },
-  ];
+  // 2026-06-09 — trust row (התנסות חינמית · לשני בני הזוג · ללא התקנה ·
+  // בלי הגבלת זמן) removed from the games hero per Itzik. The labels
+  // (trustTry/trustForCouples/statNoInstall/trustWorldwide) stay in the
+  // messages files, and LiveDemoHero still supports the `trust` prop —
+  // it's simply no longer passed here.
 
   // V2 wine palette - three subtle warm gradients for tile hover glows
   const accents = [
@@ -447,7 +446,7 @@ export default async function GamesHubPage({
   // Personas - magazine chapters on light. Three couple archetypes.
   // Chapter numerals (01/02/03) stay inline (static); tag/title/body/quote
   // are CMS-managed via gamesHub.personas.{i}.*.
-  const personaNumerals = ["01", "02", "03"];
+  // 2026-06-09 — personaNumerals removed together with the Personas section.
 
   return (
     <CmsTextProvider rows={cmsRows}>
@@ -582,7 +581,6 @@ export default async function GamesHubPage({
             ctaSecondary={undefined}
             ctaSecondaryHref={undefined}
             badge={t("heroBadge")}
-            trust={trust}
             gameHref={demoGame ? `/games/${demoGame.slug}` : "#catalogue"}
             sampleQuestionType={t("sampleQuestionType")}
             sampleQuestion={t("sampleQuestion")}
@@ -636,7 +634,9 @@ export default async function GamesHubPage({
               {/* Header - right-aligned (RTL natural). Single reading axis, no
                   center→right awkwardness. */}
               <RevealOnScroll variant="scale-up">
-                <div className="text-start">
+                {/* 2026-06-09 — centered on desktop, right-aligned on
+                    mobile, per Itzik (approved mockup). */}
+                <div className="text-start lg:text-center">
                   <span className="inline-flex items-center gap-2.5 text-[12px] font-semibold uppercase tracking-[0.32em] text-[#170E14]">
                     <span className="h-[7px] w-[7px] rounded-sm bg-[#B83C4D] shadow-[0_0_0_3px_rgba(184,60,77,0.18)]" />
                     <CmsText cmsKey="gamesHub.whyItWorks.eyebrow" />
@@ -649,7 +649,7 @@ export default async function GamesHubPage({
                       <CmsText> below; for now the headline shows just
                       titleLine1. */}
                   <h2
-                    className="mt-7 text-[40px] leading-[1.05] tracking-[-0.02em] text-[#170E14] sm:text-5xl lg:text-[60px]"
+                    className="mt-7 text-[32px] leading-[1.12] tracking-[-0.02em] text-[#170E14] sm:text-[40px] lg:mx-auto lg:max-w-[820px] lg:text-[44px]"
                     style={{
                       fontFamily: "'Frank Ruhl Libre', serif",
                       fontWeight: 600,
@@ -660,7 +660,7 @@ export default async function GamesHubPage({
                   <CmsText
                     cmsKey="gamesHub.whyItWorks.lede"
                     as="p"
-                    className="mt-6 max-w-2xl text-[19px] leading-[1.65] text-[#4A3A45]"
+                    className="mt-2 max-w-2xl text-[22px] leading-[1.5] text-[#3D2C36] lg:mx-auto lg:text-[24px]"
                   />
                 </div>
               </RevealOnScroll>
@@ -685,9 +685,8 @@ export default async function GamesHubPage({
                   of script direction. `first:before:hidden` strips
                   the line from the first column so we don't get a
                   stray hairline on the leading edge. */}
-              <div className="mt-[33px] grid gap-12 sm:grid-cols-2 sm:gap-x-10 sm:gap-y-14 lg:mt-[33px] lg:grid-cols-3 lg:gap-x-12 lg:gap-y-0">
+              <div className="mt-[52px] grid gap-12 sm:grid-cols-2 sm:gap-x-10 sm:gap-y-14 lg:mt-[52px] lg:grid-cols-3 lg:gap-x-12 lg:gap-y-0">
                 {[0, 1, 2].map((i) => {
-                  const glyph = ["♡", "✦", "✺"][i]!;
                   return (
                     <RevealOnScroll
                       key={i}
@@ -695,24 +694,15 @@ export default async function GamesHubPage({
                       delay={0.1 + i * 0.08}
                     >
                       <article
-                        className="group relative px-2 lg:px-6 lg:before:absolute lg:before:inset-y-6 lg:before:start-0 lg:before:w-px lg:before:bg-gradient-to-b lg:before:from-transparent lg:before:via-[#B83C4D]/25 lg:before:to-transparent lg:first:before:hidden"
+                        className="group relative px-2 text-start lg:px-6 lg:text-center"
                       >
-                        {/* Glyph eyebrow — large, serif, half-opacity
-                            wine. Acts as a typographic accent above
-                            the word. */}
-                        <span
-                          aria-hidden
-                          className="block text-[40px] leading-none text-[#B83C4D]/55 transition-colors duration-300 group-hover:text-[#B83C4D]/80 lg:text-[44px]"
-                          style={{ fontFamily: "'Frank Ruhl Libre', serif" }}
-                        >
-                          {glyph}
-                        </span>
-
-                        {/* Wine italic word — dominant element.
-                            Period stays in ink-black so the
-                            statement reads as a declaration. */}
+                        {/* 2026-06-09 — glyph (♡ ✦ ✺), the divider
+                            hairline (before:*), and the ink-black period
+                            after the word were all removed per Itzik
+                            (approved mockup). The card opens straight on
+                            the centered word. */}
                         <h3
-                          className="mt-5 text-[44px] leading-[0.95] text-[#B83C4D] sm:text-[48px] lg:mt-6 lg:text-[56px]"
+                          className="text-[34px] leading-[1] text-[#B83C4D] sm:text-[38px] lg:text-[40px]"
                           style={{
                             fontFamily: "'Frank Ruhl Libre', serif",
                             fontStyle: "italic",
@@ -720,7 +710,6 @@ export default async function GamesHubPage({
                           }}
                         >
                           <CmsText cmsKey={`gamesHub.benefits.${i}.title`} />
-                          <span className="text-[#170E14]">.</span>
                         </h3>
 
                         {/* Body — natural readable size, ink-dark
@@ -728,7 +717,7 @@ export default async function GamesHubPage({
                         <CmsText
                           cmsKey={`gamesHub.benefits.${i}.body`}
                           as="p"
-                          className="mt-5 text-[17px] leading-[1.65] text-[#3D2C36] lg:mt-6 lg:text-[18px]"
+                          className="mt-4 text-[17px] leading-[1.65] text-[#3D2C36] lg:mx-auto lg:mt-5 lg:max-w-[15rem] lg:text-[18px]"
                         />
                       </article>
                     </RevealOnScroll>
@@ -889,13 +878,13 @@ export default async function GamesHubPage({
                               the catalogue serif (Frank Ruhl Libre) so
                               they read as named things, not labels. */}
                           <h3
-                            className="text-[26px] font-bold leading-[1.15] tracking-[-0.01em] text-white"
+                            className="text-[32px] font-bold leading-[1.15] tracking-[-0.01em] text-white"
                             style={{ fontFamily: "var(--font-frank-ruhl), 'Frank Ruhl Libre', serif" }}
                           >
                             {name}
                           </h3>
                           {desc ? (
-                            <p className="mt-2 line-clamp-3 text-[20px] leading-[1.5] text-white/70 transition-[max-height,color] duration-500 ease-in-out group-hover:line-clamp-none sm:text-[18px]">
+                            <p className="mt-2 line-clamp-3 text-[25px] leading-[1.5] text-white transition-[max-height,color] duration-500 ease-in-out group-hover:line-clamp-none sm:text-[22px]">
                               {desc}
                             </p>
                           ) : null}
@@ -946,20 +935,29 @@ export default async function GamesHubPage({
 
                     <div className="flex flex-1 flex-col p-6">
                       {/* Multi-player badge - on-dark variant */}
-                      <span className="mb-3 inline-flex items-center gap-1.5 self-start rounded-full border border-rose-300/30 bg-rose-500/15 px-2.5 py-0.5 text-xs font-semibold text-rose-100">
-                        <Users className="h-3 w-3" />
-                        <CmsText cmsKey="gamesHub.snakesPlayers" />
-                      </span>
+                      {/* 2026-06-09 — second badge ("גם מרחוק") added per
+                          Itzik: snakes & ladders is playable even when the
+                          partners aren't side by side. */}
+                      <div className="mb-3 flex flex-wrap items-center gap-2">
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-rose-300/30 bg-rose-500/15 px-2.5 py-0.5 text-xs font-semibold text-rose-100">
+                          <Users className="h-3 w-3" />
+                          <CmsText cmsKey="gamesHub.snakesPlayers" />
+                        </span>
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-rose-300/30 bg-rose-500/15 px-2.5 py-0.5 text-xs font-semibold text-rose-100">
+                          <Wifi className="h-3 w-3" />
+                          <CmsText cmsKey="gamesHub.snakesRemote" />
+                        </span>
+                      </div>
                       <CmsText
                         cmsKey="gamesHub.snakesName"
                         as="h3"
-                        className="text-[26px] font-bold leading-[1.15] tracking-[-0.01em] text-white"
+                        className="text-[32px] font-bold leading-[1.15] tracking-[-0.01em] text-white"
                         style={{ fontFamily: "var(--font-frank-ruhl), 'Frank Ruhl Libre', serif" }}
                       />
                       <CmsText
                         cmsKey="gamesHub.snakesDesc"
                         as="p"
-                        className="mt-2 line-clamp-3 text-[20px] leading-[1.5] text-white/70 transition-[max-height,color] duration-500 ease-in-out group-hover:line-clamp-none sm:text-[18px]"
+                        className="mt-2 line-clamp-3 text-[25px] leading-[1.5] text-white transition-[max-height,color] duration-500 ease-in-out group-hover:line-clamp-none sm:text-[22px]"
                       />
                       <span className="mt-auto inline-flex items-center gap-2 pt-5 text-[18px] font-semibold text-rose-200 transition group-hover:text-white">
                         <CmsText cmsKey="gamesHub.playNow" />
@@ -1127,134 +1125,7 @@ export default async function GamesHubPage({
               }}
             />
           </section>
-          {/* ════════════════════════════════════════════════════════════
-              5. PERSONAS - "למי זה מתאים" (magazine chapters on cream)
-                  3 cards w/ giant chapter number, persona title, italic
-                  tag, body, and italic quote at the bottom.
-          ════════════════════════════════════════════════════════════ */}
-          <section
-            id="personas"
-            className="relative overflow-hidden bg-[#FAF6F7] px-4 py-[80px]"
-          >
-            {/* Soft accent glow at top */}
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-0 -z-0"
-              style={{
-                background:
-                  "radial-gradient(900px 500px at 50% -10%, rgba(184,60,77,0.07), transparent 60%)",
-              }}
-            />
-
-            <div className="relative mx-auto max-w-7xl">
-              <RevealOnScroll variant="scale-up">
-                <div className="mx-auto max-w-2xl text-center">
-                  <span className="inline-flex items-center gap-2.5 text-[12px] font-semibold uppercase tracking-[0.32em] text-[#170E14]">
-                    <span className="h-[7px] w-[7px] rounded-sm bg-[#B83C4D] shadow-[0_0_0_3px_rgba(184,60,77,0.18)]" />
-                    <CmsText cmsKey="gamesHub.personasHeader.eyebrow" />
-                  </span>
-                  <h2
-                    className="mt-7 text-[40px] leading-[1.05] tracking-[-0.02em] text-[#170E14] sm:text-5xl lg:text-[58px]"
-                    style={{
-                      fontFamily: "'Frank Ruhl Libre', serif",
-                      fontWeight: 600,
-                    }}
-                  >
-                    <CmsText cmsKey="gamesHub.personasHeader.titleLine1" />
-                    <br className="hidden sm:block" />
-                    <CmsText
-                      cmsKey="gamesHub.personasHeader.titleLine2"
-                      className="text-[#B83C4D]"
-                      style={{ fontStyle: "italic", fontWeight: 500 }}
-                    />
-                  </h2>
-                  <CmsText
-                    cmsKey="gamesHub.personasHeader.lede"
-                    as="p"
-                    className="mx-auto mt-6 max-w-xl text-[19px] leading-[1.65] text-[#4A3A45]"
-                  />
-                </div>
-              </RevealOnScroll>
-
-              {/* 3 magazine chapters */}
-              <div className="mt-[33px] grid gap-8 lg:grid-cols-3 lg:gap-7">
-                {personaNumerals.map((num, i) => (
-                  <RevealOnScroll
-                    key={i}
-                    variant="fade-up"
-                    delay={0.05 + i * 0.1}
-                  >
-                    <article className="group relative flex h-full flex-col overflow-hidden rounded-[28px] border border-[#EAE0E3] bg-white p-9 shadow-sm transition duration-500 hover:-translate-y-2 hover:border-transparent hover:shadow-[0_28px_56px_-20px_rgba(74,23,33,0.22)] sm:p-10">
-                      {/* Hover gradient accent (top-right corner) */}
-                      <div
-                        aria-hidden
-                        className="pointer-events-none absolute -end-16 -top-16 h-48 w-48 rounded-full bg-gradient-to-br from-[#B83C4D]/0 via-[#B83C4D]/0 to-[#B83C4D]/0 opacity-0 blur-3xl transition duration-700 group-hover:from-[#B83C4D]/20 group-hover:via-[#8B2638]/15 group-hover:opacity-100"
-                      />
-
-                      {/* Chapter number + animated line */}
-                      <div className="relative flex items-baseline gap-4">
-                        <span
-                          className="text-[72px] leading-none text-[#B83C4D]/25 transition-colors duration-500 group-hover:text-[#B83C4D]/50 sm:text-[80px]"
-                          style={{
-                            fontFamily: "'Frank Ruhl Libre', serif",
-                            fontWeight: 600,
-                          }}
-                        >
-                          {num}
-                        </span>
-                        <span className="h-px flex-1 bg-[#EAE0E3] transition-colors duration-500 group-hover:bg-[#B83C4D]/40" />
-                      </div>
-
-                      {/* Italic tag (small, accent) */}
-                      <CmsText
-                        cmsKey={`gamesHub.personas.${i}.tag`}
-                        as="p"
-                        className="relative mt-6 text-[14px] uppercase tracking-[0.22em] text-[#B83C4D]"
-                        style={{
-                          fontFamily: "'Frank Ruhl Libre', serif",
-                          fontStyle: "italic",
-                          fontWeight: 500,
-                        }}
-                      />
-
-                      {/* Persona title */}
-                      <CmsText
-                        cmsKey={`gamesHub.personas.${i}.title`}
-                        as="h3"
-                        className="relative mt-3 text-[30px] leading-[1.1] tracking-[-0.01em] text-[#170E14] sm:text-[34px]"
-                        style={{
-                          fontFamily: "'Frank Ruhl Libre', serif",
-                          fontWeight: 600,
-                        }}
-                      />
-
-                      {/* Body */}
-                      <CmsText
-                        cmsKey={`gamesHub.personas.${i}.body`}
-                        as="p"
-                        className="relative mt-5 text-[18px] leading-[1.7] text-[#4A3A45]"
-                      />
-
-                      {/* Italic quote - bottom */}
-                      <div className="relative mt-auto pt-8">
-                        <div className="mb-4 h-px w-12 bg-[#B83C4D]/30" />
-                        <CmsText
-                          cmsKey={`gamesHub.personas.${i}.quote`}
-                          as="p"
-                          className="text-[18px] leading-[1.5] text-[#170E14]/80"
-                          style={{
-                            fontFamily: "'Frank Ruhl Libre', serif",
-                            fontStyle: "italic",
-                            fontWeight: 500,
-                          }}
-                        />
-                      </div>
-                    </article>
-                  </RevealOnScroll>
-                ))}
-              </div>
-            </div>
-          </section>
+          {/* 2026-06-09 — Personas section ("למי זה מתאים", 3 chapter cards) removed per Itzik. CMS keys gamesHub.personasHeader.* and gamesHub.personas.* stay on disk for reuse. */}
           {/* 2026-05-20 — original BENEFITS section was here at the
               bottom of the cream wrapper. Moved to right below the
               hero (see above, right after the wave-divider). */}

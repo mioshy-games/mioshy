@@ -145,6 +145,19 @@ function safeT(t: ReturnType<typeof useTranslations>, key: string): string {
   try {
     return t(key);
   } catch (err) {
+    // next-intl's t() THROWS when a JSON value contains rich-text
+    // markup (<p>, <em>, …) and no tag handlers are passed — the
+    // documented "<em>/<p> JSON pitfall". This bit /games FAQ answers
+    // (gamesHub.faq.item*A) which ship `<p>…</p>` in messages and have
+    // no cms_texts row to win first. Fall back to the RAW message so
+    // the HTML survives; CmsText's markup safety-net then renders it
+    // as rich. (2026-06-09)
+    try {
+      const raw = t.raw(key);
+      if (typeof raw === "string" && raw.length > 0) return raw;
+    } catch {
+      /* key genuinely missing — fall through to returning the key */
+    }
     if (process.env.NODE_ENV !== "production") {
       // eslint-disable-next-line no-console
       console.warn(`[cms] missing translation for key "${key}"`, err);

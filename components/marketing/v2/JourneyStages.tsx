@@ -551,9 +551,11 @@ const STYLES = `
 
   .mood-timeline .js-stop-head-text{display:flex;flex-direction:column;gap:8px}
   .mood-timeline .js-stop-label{
-    font-size:12px;font-weight:600;letter-spacing:0.18em;
+    /* 2026-06-09 — bumped 12→14px and 600→700 weight per Itzik. */
+    font-size:14px;font-weight:700;letter-spacing:0.18em;
     text-transform:uppercase;color:var(--tone-ink);
   }
+
   .mood-timeline .js-stop-hook{
     font-family:'Frank Ruhl Libre','Noto Serif Hebrew',serif;
     font-size:34px;line-height:1.16;font-weight:700;
@@ -627,12 +629,14 @@ const STYLES = `
   }
   .mood-timeline .js-stop-block{margin-bottom:16px}
   .mood-timeline .js-stop-block-title{
-    font-size:11px;font-weight:700;letter-spacing:0.18em;
+    /* 2026-06-09 — labels bumped 11→14 per Itzik. */
+    font-size:14px;font-weight:700;letter-spacing:0.18em;
     text-transform:uppercase;color:#170E14;
     margin-bottom:5px;
   }
   .mood-timeline .js-stop-block-body{
-    font-size:19px;line-height:1.55;color:#170E14;
+    /* 2026-06-09 — body bumped 19→20 per Itzik. */
+    font-size:20px;line-height:1.55;color:#170E14;
     margin:0;
   }
   .mood-timeline .js-stop-block-includes{
@@ -687,7 +691,8 @@ const STYLES = `
     display:inline-flex;align-items:center;gap:8px;
     padding:14px 24px;border-radius:999px;
     background:var(--tone-ink);color:#FFFFFF;
-    font-size:15px;font-weight:600;
+    /* 2026-06-09 — CTA text bumped 15→20 per Itzik. */
+    font-size:20px;font-weight:600;
     text-decoration:none;
     transition:gap .25s ease, transform .25s ease, box-shadow .25s ease;
     box-shadow:0 8px 22px -10px var(--tone-ink);
@@ -740,7 +745,7 @@ const STYLES = `
     .mood-timeline .js-stop-desc{font-size:20px;line-height:1.55;margin:20px 0 24px}
     .mood-timeline .js-stop-block-body{font-size:20px;line-height:1.55}
     .mood-timeline .js-stop-block-includes{font-size:17px}
-    .mood-timeline .js-stop-block-title{font-size:13px;letter-spacing:0.16em}
+    .mood-timeline .js-stop-block-title{font-size:14px;letter-spacing:0.16em}
 
     .mood-timeline .js-stop-foot{
       flex-direction:column;align-items:stretch;

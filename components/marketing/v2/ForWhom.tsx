@@ -1,6 +1,7 @@
 "use client";
 
 import { TrackedLink } from "./TrackedLink";
+import { Link } from "@/navigation";
 import { CmsText } from "@/components/cms/CmsText";
 
 /**
@@ -24,9 +25,9 @@ export function ForWhom() {
   //   2. persona5  — "מחפשים בילוי אינטימי מהנה"
   //   3. persona6  — "רוצים לפלפל את חיי המין"
   const PERSONAS = [
-    { icon: "✦", n: 1, href: "#journey" },
-    { icon: "★", n: 5, href: "#couples-games" },
-    { icon: "♨", n: 6, href: "#adult-games" },
+    { n: 1, href: "/journey" },
+    { n: 5, href: "/games" },
+    { n: 6, href: "/mioshy-sex" },
   ] as const;
 
   return (
@@ -48,7 +49,7 @@ export function ForWhom() {
 
         <div className="personas-grid">
           {PERSONAS.map((p) => (
-            <Persona key={p.n} n={p.n} icon={p.icon} href={p.href} />
+            <Persona key={p.n} n={p.n} href={p.href} />
           ))}
         </div>
 
@@ -73,21 +74,18 @@ export function ForWhom() {
 
 function Persona({
   n,
-  icon,
   href,
 }: {
   n: 1 | 2 | 3 | 4 | 5 | 6;
-  icon: string;
   href: string;
 }) {
   return (
-    <a href={href} className="persona">
-      <div className="persona-icon">{icon}</div>
+    <Link href={href} className="persona">
       <CmsText cmsKey={`homeV2.forWhom.persona${n}Title`} as="h3" />
       <CmsText cmsKey={`homeV2.forWhom.persona${n}Desc`} as="p" />
       <span className="persona-link">
         <CmsText cmsKey={`homeV2.forWhom.persona${n}Link`} /> <span>←</span>
       </span>
-    </a>
+    </Link>
   );
 }

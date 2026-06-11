@@ -13,18 +13,20 @@
 import type {
   AssessmentDef,
   AssessmentAnalysis,
+  AssessmentQuestion,
   AssessmentResponse,
   DimensionScore,
 } from "./types";
 
 export function scoreAssessment(
   def: AssessmentDef,
+  questions: AssessmentQuestion[],
   responses: AssessmentResponse[],
 ): AssessmentAnalysis {
   const byId = new Map(responses.map((r) => [r.question_id, r]));
 
   const dimension_scores: DimensionScore[] = def.dimensions.map((dim) => {
-    const items = def.questions.filter(
+    const items = questions.filter(
       (qq) => qq.type === "likert5" && qq.dimension === dim.key,
     );
     const values: number[] = [];
@@ -49,7 +51,7 @@ export function scoreAssessment(
     .map((d) => d.key);
 
   // Open reflection (Q21) — authentic free text for the coaching team + AI.
-  const openQ = def.questions.find(
+  const openQ = questions.find(
     (qq) => qq.type === "reflection" && qq.isOpen === true,
   );
   const openRow = openQ ? byId.get(openQ.id) : undefined;

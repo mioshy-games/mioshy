@@ -254,9 +254,11 @@ export async function getLessonsData(args: Args): Promise<LessonsPageData> {
             id: j.id,
             title: isHe ? "האבחון הראשון שלכם" : "Your first assessment",
             subtitle,
-            // Route to the existing analysis surface (/journey/assessment
-            // detects complete + subscribed and renders the summary).
-            href: done ? "/journey/assessment" : "/journey/assessment",
+            // 2026-06-02 (Itzik): completed users pass ?summary=1 so
+            // /journey/assessment renders AnalysisSummary instead of
+            // bouncing them to /my/journey. In-flight users go to the
+            // questionnaire as before.
+            href: done ? "/journey/assessment?summary=1" : "/journey/assessment",
           },
         ];
       }

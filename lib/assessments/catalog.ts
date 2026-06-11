@@ -11,8 +11,9 @@
 
 import type { AssessmentDef, AssessmentQuestion, Locale } from "./types";
 import { INTIMACY_ASSESSMENT } from "./banks/intimacy";
+import { FRIENDSHIP_ASSESSMENT } from "./banks/friendship";
 
-export const ASSESSMENTS: AssessmentDef[] = [INTIMACY_ASSESSMENT];
+export const ASSESSMENTS: AssessmentDef[] = [INTIMACY_ASSESSMENT, FRIENDSHIP_ASSESSMENT];
 
 export function listAssessments(): AssessmentDef[] {
   return ASSESSMENTS;

@@ -314,7 +314,11 @@ export function LiveDemoHero({
   const settledCtaLabel = useCmsText("homeV2.liveDemo.ctaSettledPlay");
   const isSettled = phase === "settled";
   const primaryLabel = isSettled ? settledCtaLabel.text : ctaPrimary;
-  const primaryHref = isSettled ? gameHref : ctaPrimaryHref;
+  // 2026-06-09 — primary CTA now always points to the catalogue
+  // section per Itzik (previously the settled state deep-linked into
+  // the demo game). The "play this exact game" path still lives on the
+  // secondary CTA (gameHref, below).
+  const primaryHref = ctaPrimaryHref;
 
   return (
     <section
@@ -416,7 +420,7 @@ export function LiveDemoHero({
           >
             <Link
               href={primaryHref}
-              className="group relative inline-flex min-h-[56px] items-center justify-center overflow-hidden rounded-full px-8 text-[16px] font-semibold text-white shadow-xl shadow-[#B83C4D]/30 transition hover:brightness-110"
+              className="group relative inline-flex min-h-[56px] items-center justify-center overflow-hidden rounded-full px-8 text-[20px] font-semibold text-white shadow-xl shadow-[#B83C4D]/30 transition hover:brightness-110"
             >
               {/* 2026-05-20 — `animation: mio-gradient-shift` removed.
                   Was animating `background-position` to create a slow

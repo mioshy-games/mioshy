@@ -57,7 +57,12 @@ function shouldHideChrome(pathname: string) {
     // questionnaire flow. The marketing site header above the
     // multi-step UI was visually crowding the page; hide it here so
     // the assessment owns the viewport.
-    /^\/(en|he)\/journey\/assessment(\/|$)/.test(pathname)
+    /^\/(en|he)\/journey\/assessment(\/|$)/.test(pathname) ||
+    // 2026-06-07 — standalone assessments runner (/assessments/<id>) is a
+    // focused funnel just like the journey assessment: hide the marketing
+    // header so only the Mioshy logo (rendered by the page) shows. The hub
+    // index (/assessments) keeps chrome — it's a catalogue.
+    /^\/(en|he)\/assessments\/[^/]+/.test(pathname)
   );
 }
 

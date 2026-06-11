@@ -98,16 +98,8 @@ export function Intimacy() {
  * line. The whole pillars row reads as one composition, not 3 boxes.
  */
 function Pillar({ n }: { n: 1 | 2 | 3 }) {
-  const ICONS: Record<1 | 2 | 3, string> = {
-    1: "✦", // personalised path
-    2: "◐", // time-light, fits into life
-    3: "◇", // playful, not therapeutic
-  };
   return (
     <div className="intimacy-pillar">
-      <span className="pillar-icon" aria-hidden="true">
-        {ICONS[n]}
-      </span>
       <CmsText
         cmsKey={`homeV2.intimacy.pillar${n}Title`}
         as="h3"

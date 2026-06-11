@@ -172,7 +172,21 @@ export function JourneyClient({
   }, [needsAuth]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Whether we've completed all questions.
-  const isDone = index >= total;
+  //
+  // 2026-06-02 (Itzik): legacy users whose `current_step` is below the
+  // CURRENT totalQuestions() (because the schema grew after they took
+  // the assessment) used to be dumped back into the questionnaire when
+  // they re-visited /journey/assessment. The durable signal is the
+  // `journey.status === "complete"` flag written by /api/journey/answer
+  // on submit — once true, the user has finished and should see the
+  // summary forever. We honour both: step count for in-flight users,
+  // status for finished ones. An admin pushing a NEW assessment in the
+  // future will create a fresh row whose status is in_progress, so
+  // this doesn't lock anyone out of a re-do.
+  const wasCompleted =
+    initialProgress?.status === "complete" ||
+    initialProgress?.status === "completed";
+  const isDone = wasCompleted || index >= total;
 
   // 🎉 Confetti - fires ONCE EVER when the questionnaire is done.
   //

@@ -19,7 +19,8 @@ import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
-import { getAssessment, getAssessmentQuestion, totalQuestions } from "@/lib/assessments/catalog";
+import { getAssessment } from "@/lib/assessments/catalog";
+import { loadAssessmentQuestions } from "@/lib/assessments/questions-db";
 import type { AnswerValue, Locale } from "@/lib/assessments/types";
 
 export const runtime = "nodejs";
@@ -57,7 +58,11 @@ export async function POST(req: Request) {
   const def = getAssessment(assessment_id);
   if (!def) return NextResponse.json({ error: "unknown_assessment" }, { status: 400 });
 
-  const q = getAssessmentQuestion(assessment_id, question_id);
+  // Load the live question set from the DB (falls back to the static bank).
+  const admin = createAdminSupabaseClient();
+  const questions = await loadAssessmentQuestions(admin, assessment_id);
+
+  const q = questions.find((x) => x.id === question_id);
   if (!q) return NextResponse.json({ error: "unknown_question" }, { status: 400 });
   if (!isValidAnswer(q.type, answer))
     return NextResponse.json({ error: "invalid_answer_shape", expected: q.type }, { status: 400 });
@@ -97,10 +102,8 @@ export async function POST(req: Request) {
     );
   }
 
-  const index = def.questions.findIndex((x) => x.id === question_id);
+  const index = questions.findIndex((x) => x.id === question_id);
   if (index < 0) return NextResponse.json({ error: "unknown_question_index" }, { status: 400 });
-
-  const admin = createAdminSupabaseClient();
 
   // ── Find or create the session for THIS assessment ─────────────────────────
   let sessionId: string | undefined;
@@ -189,7 +192,7 @@ export async function POST(req: Request) {
 
   // ── Advance step ────────────────────────────────────────────────────────────
   const nextStep = index + 1;
-  const isComplete = nextStep >= totalQuestions(assessment_id);
+  const isComplete = nextStep >= questions.length;
 
   await admin
     .from("assessment_sessions")

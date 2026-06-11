@@ -93,6 +93,24 @@ export interface AssessmentAnalysis {
   summary: AssessmentSummary;
 }
 
+// --- Admin question editing --------------------------------------------------
+
+/** Shape the admin sends to upsert a question. Lives here (not in the
+ *  "use server" actions file) so it can be imported by client components. */
+export interface QuestionInput {
+  assessment_id: string;
+  slug: string;
+  position: number;
+  dimension_key: string | null;
+  type: "likert5" | "reflection";
+  reverse: boolean;
+  is_open: boolean;
+  text_he: string;
+  text_en: string;
+  source_slugs: string;
+  is_active: boolean;
+}
+
 // --- Stored answer rows (from assessment_responses) --------------------------
 
 export interface AssessmentResponse {

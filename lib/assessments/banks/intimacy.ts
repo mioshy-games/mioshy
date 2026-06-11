@@ -42,35 +42,40 @@ function q(
   };
 }
 
+// Final approved wording (Itzik, 2026-06-07): gendered slash phrasing,
+// grounded in the Hebrew content items (book/items-cleaned.csv, intimacy).
+// This static array is the SEED-of-record + runtime fallback; the live
+// questions are managed in the DB table assessment_questions (migration 109)
+// and edited from the admin. Keep this in sync when the canonical text changes.
 const QUESTIONS: AssessmentLikert[] = [
   // ── ממד א — תדירות וזמינות ──
   q("q01", DIM.frequency, "תדירות הסקס שלנו מספקת אותי", "The frequency of our sex satisfies me"),
-  q("q02", DIM.frequency, "כשאחד מאיתנו רוצה סקס, השני נענה ברצון", "When one of us wants sex, the other responds willingly"),
-  q("q03", DIM.frequency, "אני מצליחה ליזום סקס בקלות כשאני רוצה", "I can initiate sex easily when I want to"),
-  q("q04", DIM.frequency, "יש מקום לסקס בחיים העמוסים שלנו", "There's room for sex in our busy lives"),
+  q("q02", DIM.frequency, "כשבן/בת הזוג שלי יוזם/ת סקס, אני נענה/ית ברצון", "When my partner initiates sex, I respond willingly"),
+  q("q03", DIM.frequency, "בדרך כלל אני זה/זאת שיוזם/ת סקס", "I'm usually the one who initiates sex"),
+  q("q04", DIM.frequency, "אני מצליח/ה לפנות מקום לסקס גם בחיים העמוסים שלנו", "I manage to make room for sex even in our busy life"),
 
   // ── ממד ב — שביעות רצון גופנית ──
-  q("q05", DIM.physical, "הסקס שלנו מספק אותי גופנית", "Our sex satisfies me physically"),
-  q("q06", DIM.physical, "אני יודעת לבקש את מה שאני אוהבת במגע", "I know how to ask for what I like in touch"),
-  q("q07", DIM.physical, "הסקס שלנו מתנהל בקצב שמתאים לי", "Our sex moves at a pace that suits me"),
-  q("q08", DIM.physical, "אני מרגישה נינוחה גופנית בסקס שלנו", "I feel physically at ease during our sex"),
+  q("q05", DIM.physical, "אני מסופק/ת גופנית מהסקס שלנו", "I'm physically satisfied with our sex"),
+  q("q06", DIM.physical, "אני יודע/ת מה מסב לי הנאה גופנית, וקשוב/ה לאותות הגוף בסקס", "I know what gives me physical pleasure, and I'm attuned to my body's signals during sex"),
+  q("q07", DIM.physical, "אני מרגיש/ה שהסקס שלנו מתנהל בקצב שמתאים לי", "I feel our sex moves at a pace that suits me"),
+  q("q08", DIM.physical, "אני מרגיש/ה נינוח/ה גופנית בסקס שלנו", "I feel physically at ease during our sex"),
 
   // ── ממד ג — תקשורת מינית ──
-  q("q09", DIM.communication, "אנחנו מדברים על הסקס שלנו ברגיעה ובלי בושה", "We talk about our sex calmly and without shame"),
-  q("q10", DIM.communication, "אני מבקשת את מה שאני זקוקה לו בסקס", "I ask for what I need in sex"),
-  q("q11", DIM.communication, "כשמשהו לא עובד טוב, אנחנו מצליחים לדבר עליו מחוץ לחדר השינה", "When something isn't working, we manage to talk about it outside the bedroom"),
-  q("q12", DIM.communication, "אני יודעת בוודאות מה בן הזוג שלי אוהב", "I know for sure what my partner likes"),
+  q("q09", DIM.communication, "אני מצליח/ה לדבר על הסקס שלנו בלי בושה ובלי שזה הופך לריב", "I can talk about our sex without shame and without it turning into a fight"),
+  q("q10", DIM.communication, "אני יכול/ה לבקש בנוחות מבן/בת הזוג שלי משהו חדש במיטה, ולהרגיש בנוח עם זה", "I can comfortably ask my partner for something new in bed, and feel at ease with it"),
+  q("q11", DIM.communication, "אני מחזר/ת אחרי בן/בת הזוג שלי גם מחוץ למיטה", "I court my partner outside the bedroom too"),
+  q("q12", DIM.communication, "אני יודע/ת בוודאות מה בן/בת הזוג שלי אוהב/ת", "I know for sure what my partner likes"),
 
   // ── ממד ד — מסתורין ותשוקה ──
-  q("q13", DIM.desire, "אני מרגישה משיכה לבן הזוג שלי", "I feel attracted to my partner"),
+  q("q13", DIM.desire, "אני מרגיש/ה משיכה לבן/בת הזוג שלי", "I feel attracted to my partner"),
   q("q14", DIM.desire, "הסקס שלנו מרגיש כחוויה חדשה, לא חזרה", "Our sex feels like a new experience, not a repeat"),
-  q("q15", DIM.desire, "אני מגלה צדדים מפתיעים בבן הזוג שלי", "I discover surprising sides of my partner"),
-  q("q16", DIM.desire, "בן הזוג שלי רואה אותי כאדם נחשק - לא רק כאמא או שותפה", "My partner sees me as desirable - not just as a mother or a partner"),
+  q("q15", DIM.desire, "אני מגלה צדדים מפתיעים בבן/בת הזוג שלי", "I discover surprising sides of my partner"),
+  q("q16", DIM.desire, "בן/בת הזוג שלי רואה אותי כאדם נחשק/ת - לא רק כהורה או שותף/ה", "My partner sees me as desirable - not just as a parent or a partner"),
 
   // ── ממד ה — חיבור רגשי בסקס ──
-  q("q17", DIM.emotional, "הסקס שלנו מרגיש לי אינטימי ולא רק טכני", "Our sex feels intimate to me, not just technical"),
-  q("q18", DIM.emotional, "אחרי סקס אני מרגישה קרובה רגשית לבן הזוג", "After sex I feel emotionally close to my partner"),
-  q("q19", DIM.emotional, "אני מרשה לעצמי להיות פגיעה בסקס", "I allow myself to be vulnerable during sex"),
+  q("q17", DIM.emotional, "אני חש/ה שהסקס שלנו אינטימי ולא רק טכני", "I sense our sex is intimate, not just technical"),
+  q("q18", DIM.emotional, "אחרי סקס אני מרגיש/ה קרוב/ה רגשית לבן/בת הזוג", "After sex I feel emotionally close to my partner"),
+  q("q19", DIM.emotional, "אני מרשה לעצמי להיות פגיע/ה בסקס", "I allow myself to be vulnerable during sex"),
   q("q20", DIM.emotional, "הסקס מרגיש לי כחלק טבעי מהזוגיות, לא משימה", "Sex feels to me like a natural part of the relationship, not a chore"),
 ];
 

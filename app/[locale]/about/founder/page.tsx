@@ -88,7 +88,7 @@ export async function generateMetadata({
       ...buildOgLocale(locale),
       type: "article",
       authors: ["Itzik Berlev"],
-      images: ["/images/yitzhak.webp"],
+      images: ["/images/itzik-barlev_new.webp"],
     },
   };
 }
@@ -187,7 +187,7 @@ export default async function FounderStoryPage({
             <div className="aspect-[4/5] w-full bg-stone-200">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/images/yitzhak.webp"
+                src="/images/itzik-barlev_new.webp"
                 alt={imageAlt}
                 className="h-full w-full object-cover"
                 style={{ objectPosition: "center top" }}

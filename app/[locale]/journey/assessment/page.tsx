@@ -40,10 +40,17 @@ export const dynamic = "force-dynamic";
 
 export default async function JourneyAssessmentPage({
   params,
+  searchParams,
 }: {
   params: { locale: string };
+  searchParams?: { summary?: string };
 }) {
   const { locale } = params;
+  // Itzik 2026-06-02: when an authed completed user clicks "האבחון
+  // הראשון שלכם" on /my/lessons we route here with ?summary=1 so the
+  // Phase A guard below knows the user *wants* the analysis summary
+  // surface and shouldn't be silently redirected to /my/journey.
+  const explicitSummaryIntent = searchParams?.summary === "1";
   if (!routing.locales.includes(locale as (typeof routing.locales)[number])) {
     notFound();
   }
@@ -367,8 +374,16 @@ export default async function JourneyAssessmentPage({
     // Edge case we're tolerant to: completed=true but no subscription -
     // that's the natural state of an anon → registered user who hasn't
     // paid yet. We let them see AnalysisSummary with the CTA, as designed.
+    // Itzik 2026-06-02: was `current_step >= totalQuestions()` only,
+    // which broke for legacy users when new questions were added — they
+    // got dumped back into the questionnaire on every visit even though
+    // their `status` was 'complete' the whole time. The status flag is
+    // the durable signal; the step count is a soft signal for in-flight.
     const completed =
-      !!journey && journey.current_step >= totalQuestions();
+      !!journey &&
+      (journey.status === "complete" ||
+        journey.status === "completed" ||
+        journey.current_step >= totalQuestions());
     console.log("[/journey/assessment] guard check", {
       subscriptionActive,
       hasJourneyRow: !!journey,
@@ -392,12 +407,18 @@ export default async function JourneyAssessmentPage({
         .select("user_id")
         .eq("user_id", user.id)
         .maybeSingle();
-      if (priorityCheck) {
+      if (priorityCheck && !explicitSummaryIntent) {
         console.log(
           "[/journey/assessment] ✅ Phase A guard fired - redirecting to /my/journey",
           { user_id: user.id },
         );
         redirect(`/${locale}/my/journey`);
+      }
+      if (priorityCheck && explicitSummaryIntent) {
+        console.log(
+          "[/journey/assessment] explicit summary intent — falling through to JourneyClient (AnalysisSummary)",
+          { user_id: user.id },
+        );
       }
       // No priorities row → fall through. The questionnaire UI will
       // pick up from where the user left off (their current_step is
