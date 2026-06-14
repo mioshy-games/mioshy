@@ -31,6 +31,7 @@ const T = {
     paywallGreetingFallback: "שלום",
     paywallSinglePlanSubtitle: "משחקי זוגות אונליין - ללילה בלתי נשכח, ליום הולדת, ליום נישואין, או סתם כשהילדים סוף סוף ישנים!",
     paywallPriceSuffix:  "/שבוע",
+    paywallBilledNote:   "מחויב ₪39/חודש",
     paywallCancelNote:   "ניתן לעצור בכל עת. ללא התחייבות, ללא דמי ביטול.",
     paywallContinueCta:  "מעבר לתשלום",
     countrySearchPlaceholder: "חיפוש מדינה…",
@@ -89,6 +90,7 @@ const T = {
     paywallGreetingFallback: "Welcome",
     paywallSinglePlanSubtitle: "Online couples games - for an unforgettable night, a birthday, an anniversary, or simply when the kids are finally asleep!",
     paywallPriceSuffix:  "/week",
+    paywallBilledNote:   "Billed $13/month",
     paywallCancelNote:   "Stop any time. No commitment, no cancellation fees.",
     paywallContinueCta:  "Continue to payment",
     countrySearchPlaceholder: "Search country…",
@@ -801,6 +803,7 @@ function SinglePlanPaywall({
     paywallGreetingFallback: string;
     paywallSinglePlanSubtitle: string;
     paywallPriceSuffix: string;
+    paywallBilledNote: string;
     paywallCancelNote: string;
     paywallContinueCta: string;
     saving: string;
@@ -867,6 +870,9 @@ function SinglePlanPaywall({
             {t.paywallPriceSuffix}
           </span>
         </div>
+        {/* C2.4: subtle transparency line — display stays weekly, actual
+            charge is monthly. */}
+        <p className="relative mt-1 text-xs text-white/55">{t.paywallBilledNote}</p>
         <p className="relative mt-2 text-sm text-white/70">{t.paywallCancelNote}</p>
       </div>
 

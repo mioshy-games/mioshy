@@ -25,6 +25,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server"
 import { createAdminClient }   from "@/lib/supabase-admin"
 import { openLowProfile }      from "@/lib/cardcom"
 import { getPlanPrice }        from "@/lib/billing"
+import { resolveCheckoutCadence } from "@/lib/billing/pricing-queries"
 import { geoFromRequest, localeFromGeo, currencyFromGeo } from "@/lib/geo-from-request"
 
 function baseUrl(req: Request) {
@@ -159,22 +160,7 @@ export async function POST(req: Request) {
       { status: 400 },
     )
   }
-  if (purchase_type === "subscription") {
-    // 2026-05-22: subscriptions are weekly-only. Monthly + annual plans
-    // were retired (Itzik). The CHECK constraint in migration 092 also
-    // enforces this at the DB layer, but we reject early here to give
-    // the client a clean error code.
-    if (plan !== "weekly") {
-      return NextResponse.json(
-        {
-          success: false,
-          code: "INVALID_PLAN",
-          message: "Only the weekly plan is available",
-        },
-        { status: 400 },
-      )
-    }
-  } else {
+  if (purchase_type === "one_time") {
     if (plan !== "one_time") {
       return NextResponse.json(
         { success: false, code: "INVALID_PLAN", message: "One-time purchase must use plan='one_time'" },
@@ -188,6 +174,12 @@ export async function POST(req: Request) {
       )
     }
   }
+  // C2.2: for subscriptions the billing cadence is NOT trusted from the
+  // client. It's resolved server-side from subscription_prices in the
+  // pricing block below (requested cadence honoured only if enabled for
+  // the product, else the product's default enabled cadence). This
+  // replaces the old weekly-only reject so monthly/quarterly/yearly can
+  // go live purely by enabling rows in the admin — no code change.
   if (!["games", "journey", "adults"].includes(product)) {
     return NextResponse.json(
       { success: false, code: "INVALID_PRODUCT", message: "Invalid product pillar" },
@@ -208,10 +200,12 @@ export async function POST(req: Request) {
   let amount: number
   let currency: string
   let coinId: number | undefined
+  // The cadence actually charged. For subscriptions it's resolved from
+  // subscription_prices (C2.2); for one-time game purchases it stays
+  // 'one_time'. Persisted on the session so indicator + renewals advance
+  // the billing period by the correct interval.
+  let effectivePlan: string = plan
   if (purchase_type === "subscription") {
-    // Subscription pricing is product-aware (Itzik 2026-05-06):
-    //   games → 9/37/369 ILS
-    //   journey → 57/219/2199 ILS
     //   adults pillar isn't a subscription (one-time only) — guard.
     if (product === "adults") {
       return NextResponse.json(
@@ -223,7 +217,24 @@ export async function POST(req: Request) {
         { status: 400 },
       )
     }
-    const planPrice = getPlanPrice(plan, trustedIsIsraeli, product as "games" | "journey")
+    // Resolve cadence server-side: requested plan if enabled, else the
+    // product's default enabled cadence. Null = no enabled plan → refuse.
+    const resolvedCadence = await resolveCheckoutCadence(
+      product as "games" | "journey",
+      typeof plan === "string" ? plan : null,
+    )
+    if (!resolvedCadence) {
+      return NextResponse.json(
+        {
+          success: false,
+          code: "NO_ENABLED_PLAN",
+          message: "No purchasable plan is configured for this product",
+        },
+        { status: 400 },
+      )
+    }
+    effectivePlan = resolvedCadence
+    const planPrice = await getPlanPrice(resolvedCadence, trustedIsIsraeli, product as "games" | "journey")
     amount = planPrice.amount
     currency = planPrice.currency
     coinId = planPrice.coinId
@@ -279,7 +290,7 @@ export async function POST(req: Request) {
       lead_id:          lead_id || null,
       email,
       name:             name || null,
-      plan,
+      plan:             effectivePlan,
       product,
       // One-time vs subscription is distinguished here; the indicator
       // webhook reads this back to know which entitlement code path to
