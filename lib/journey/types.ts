@@ -112,6 +112,11 @@ export interface QuestionReflection {
   he_prompt: string;
   en_prompt: string;
   max_length?: number;
+  /** F3.1 — per-question editable placeholder (admin-set via F2,
+   *  stored in journey_questions.meta). When present the reflection
+   *  input uses it; otherwise it falls back to the global CMS key. */
+  placeholder_he?: string;
+  placeholder_en?: string;
 }
 
 /**

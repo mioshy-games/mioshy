@@ -52,6 +52,8 @@ interface JourneyQuestionMeta {
   he_subline?: string;
   en_subline?: string;
   categories?: QuestionRankingCategory[];
+  placeholder_he?: string;
+  placeholder_en?: string;
 }
 
 const COLUMNS =
@@ -135,6 +137,8 @@ export function rowToJourneyQuestion(r: JourneyQuestionRow): Question {
     he_prompt: he,
     en_prompt: en,
     ...(meta.max_length !== undefined ? { max_length: meta.max_length } : {}),
+    ...(meta.placeholder_he !== undefined ? { placeholder_he: meta.placeholder_he } : {}),
+    ...(meta.placeholder_en !== undefined ? { placeholder_en: meta.placeholder_en } : {}),
   };
 }
 

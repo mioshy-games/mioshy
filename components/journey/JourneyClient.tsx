@@ -3,14 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getOrCreateDeviceId } from "@/lib/device-id";
-import { QUESTIONS, QUESTIONNAIRE, totalQuestions } from "@/lib/journey/questions";
-import type { AnswerValue, Analysis, Locale } from "@/lib/journey/types";
+import type { AnswerValue, Analysis, Locale, Question } from "@/lib/journey/types";
 import { ProgressBar } from "./ProgressBar";
 import { QuestionStep } from "./QuestionStep";
 import { PriorityRankingStep } from "./PriorityRankingStep";
 import { InlineAuthStep } from "./InlineAuthStep";
 import { PaywallGateModal } from "./PaywallGateModal";
 import { AnalysisSummary } from "./AnalysisSummary";
+import type { CadenceOption } from "@/lib/billing/pricing-validations";
 import {
   AssessmentInterstitial,
   INTERSTITIALS,
@@ -36,6 +36,15 @@ interface JourneyClientProps {
   initialAnswers?: Record<string, unknown>;
   subscriptionActive?: boolean;
   authenticated?: boolean;
+  journeyCadences?: CadenceOption[];
+  /** F3.1 — render source. Questions are loaded from the DB
+   *  (journey_questions, JSON fallback) server-side and passed in, replacing
+   *  the static questionnaire.json import for RENDER. likertLabels + gating
+   *  are still JSON-sourced this step, carried as props. Flow/gating logic is
+   *  unchanged (F3.2). */
+  questions: Question[];
+  likertLabels: Record<Locale, string[]>;
+  gating: { auth_after_index: number; paywall_after_index: number };
 }
 
 // ── Engagement reveal: per-question "X% of couples answered like you" ──
@@ -81,6 +90,10 @@ export function JourneyClient({
   initialAnswers,
   subscriptionActive = false,
   authenticated = false,
+  journeyCadences = [],
+  questions,
+  likertLabels,
+  gating,
 }: JourneyClientProps) {
   const [index, setIndex] = useState(initialProgress?.current_step ?? 0);
   // In-memory map of answers, seeded with the server-hydrated set and
@@ -132,8 +145,8 @@ export function JourneyClient({
       subscriptionActive,
       initialProgress,
       initialIndex: initialProgress?.current_step ?? 0,
-      totalQuestions: totalQuestions(),
-      authGateAt: QUESTIONNAIRE.gating.auth_after_index,
+      totalQuestions: questions.length,
+      authGateAt: gating.auth_after_index,
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -160,8 +173,10 @@ export function JourneyClient({
     if (index === 0) track("journey_started", { locale });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const total = totalQuestions();
-  const gating = QUESTIONNAIRE.gating;
+  // F3.1 — `total` is the rendered set length (full DB set, JSON fallback).
+  // Stays GLOBAL this step (not phase-aware — that's F3.2). With DB == seed
+  // this equals the old totalQuestions(). `gating` is now a prop (JSON-sourced).
+  const total = questions.length;
 
   // Whether we've passed the auth gate and the user is not yet authenticated.
   const needsAuth = !authenticated && index > gating.auth_after_index;
@@ -172,7 +187,21 @@ export function JourneyClient({
   }, [needsAuth]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Whether we've completed all questions.
-  const isDone = index >= total;
+  //
+  // 2026-06-02 (Itzik): legacy users whose `current_step` is below the
+  // CURRENT totalQuestions() (because the schema grew after they took
+  // the assessment) used to be dumped back into the questionnaire when
+  // they re-visited /journey/assessment. The durable signal is the
+  // `journey.status === "complete"` flag written by /api/journey/answer
+  // on submit — once true, the user has finished and should see the
+  // summary forever. We honour both: step count for in-flight users,
+  // status for finished ones. An admin pushing a NEW assessment in the
+  // future will create a fresh row whose status is in_progress, so
+  // this doesn't lock anyone out of a re-do.
+  const wasCompleted =
+    initialProgress?.status === "complete" ||
+    initialProgress?.status === "completed";
+  const isDone = wasCompleted || index >= total;
 
   // 🎉 Confetti - fires ONCE EVER when the questionnaire is done.
   //
@@ -375,7 +404,7 @@ export function JourneyClient({
     void run();
   }, [isDone, authenticated, analysis, analysisLoading, index, total]);
 
-  const question = QUESTIONS[Math.min(index, total - 1)];
+  const question = questions[Math.min(index, total - 1)];
 
   // Submit handler: advances UI immediately for auto-advance types,
   // then saves to the server in the background.
@@ -672,6 +701,7 @@ export function JourneyClient({
           analysis={analysis}
           locale={locale}
           subscriptionActive={subscriptionActive}
+          journeyCadences={journeyCadences}
         />
       </div>
     );
@@ -733,6 +763,7 @@ export function JourneyClient({
               key={question.id}
               question={question}
               locale={locale}
+              likertLabels={likertLabels}
               onSubmit={submitAnswer}
               busy={busy}
               initial={answersById[question.id] ?? null}
