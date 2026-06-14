@@ -17,10 +17,21 @@ import type {
   AxisWeight,
   CategoryScores,
   LoveLanguage,
+  Question,
   Response,
 } from "./types";
 import { getQuestion } from "./questions";
 import { isPriorityKey, type PriorityKey } from "./priorities";
+
+/**
+ * Resolves a question definition by its slug (== journey_responses.question_id).
+ * Defaults to the bundled questionnaire.json (`getQuestion`); the analyze API
+ * route injects a DB-backed resolver (lib/journey/questions-db.ts) so scoring
+ * reads admin-editable definitions. This ONLY changes the SOURCE of question
+ * defs — the scoring math is identical either way (see F1 identical-result
+ * test in tests/journey/scoring-source-parity.test.ts).
+ */
+export type QuestionResolver = (slug: string) => Question | undefined;
 import type { PriorityLabelsBundle } from "@/lib/journey-content/priority-categories";
 
 // Axis labels (bilingual) for narrative rendering ----------------------------
@@ -158,7 +169,10 @@ const INVERT_FOR_HEALTH: Axis[] = [
  * Forced/single choice → option's scores (weight 1 per option).
  * Horsemen questions use the raw Likert score; higher = worse.
  */
-export function scoreResponses(responses: Response[]): {
+export function scoreResponses(
+  responses: Response[],
+  resolve: QuestionResolver = getQuestion,
+): {
   scores: AxisScoreMap;
   counts: Partial<Record<Axis, number>>;
 } {
@@ -166,7 +180,7 @@ export function scoreResponses(responses: Response[]): {
   const counts: Partial<Record<Axis, number>> = {};
 
   for (const r of responses) {
-    const q = getQuestion(r.question_id);
+    const q = resolve(r.question_id);
     if (!q) continue;
 
     // LIKERT → one value applied to every axis listed on the question,
@@ -480,8 +494,9 @@ function generateSummary(params: {
 export function analyze(
   responses: Response[],
   priorityLabels: PriorityLabelsBundle,
+  resolve: QuestionResolver = getQuestion,
 ): Analysis {
-  const { scores } = scoreResponses(responses);
+  const { scores } = scoreResponses(responses, resolve);
   const friendship = friendshipScore(scores);
   const conflict = conflictHealth(scores);
   const passion = passionRisk(scores);

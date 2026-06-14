@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<!--
+  F2 MOCKUP — Journey Questions Admin (CMS)
+  Static HTML for owner review ONLY. Not a component, not wired to anything.
+  Mirrors the existing assessments CMS (QuestionsManager) visual language,
+  adds journey-specific fields: phase toggle, domain, axes (LOCKED), options
+  with per-option scores (labels editable / scores LOCKED).
+  RTL Hebrew to match /dashboard/assessments/[id].
+-->
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>F2 Mockup · ניהול שאלות המסע</title>
+<style>
+  :root{
+    --fuchsia:#c026d3; --fuchsia-dark:#a21caf; --fuchsia-50:#fdf4ff;
+    --gray-50:#f9fafb; --gray-100:#f3f4f6; --gray-200:#e5e7eb; --gray-300:#d1d5db;
+    --gray-400:#9ca3af; --gray-500:#6b7280; --gray-600:#4b5563; --gray-700:#374151;
+    --amber-100:#fef3c7; --amber-700:#b45309; --rose-100:#ffe4e6; --rose-700:#be123c;
+    --sky-100:#e0f2fe; --sky-700:#0369a1; --emerald-100:#d1fae5; --emerald-700:#047857;
+    --lock-bg:#f4f4f5; --lock-border:#e4e4e7; --lock-text:#71717a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#fff;color:#111827;font-family:'Heebo',-apple-system,Segoe UI,Arial,sans-serif;font-size:14px;line-height:1.5}
+  .wrap{max-width:1100px;margin:0 auto;padding:28px 20px 80px}
+  a{color:var(--fuchsia);text-decoration:none}
+  h1{font-size:28px;font-weight:800;letter-spacing:-.01em;margin:6px 0 2px}
+  .muted{color:var(--gray-500);font-size:13px}
+  .crumb{color:var(--gray-500);font-size:12px}
+
+  /* note banner */
+  .note{margin-top:14px;border:1px solid var(--lock-border);background:var(--lock-bg);border-radius:10px;padding:10px 14px;font-size:12.5px;color:var(--gray-600);display:flex;gap:8px;align-items:flex-start}
+  .note b{color:var(--gray-700)}
+
+  /* toolbar */
+  .toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:18px}
+  .btn{border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--gray-300);background:#fff}
+  .btn.primary{background:var(--fuchsia);color:#fff;border-color:var(--fuchsia)}
+  .btn.primary:hover{background:var(--fuchsia-dark)}
+  .btn:hover{background:var(--gray-50)}
+  .spacer{flex:1}
+  .filters{display:flex;gap:4px;background:var(--gray-100);border-radius:9px;padding:3px}
+  .filters button{border:0;background:transparent;border-radius:7px;padding:6px 14px;font-size:13px;font-weight:600;color:var(--gray-600);cursor:pointer}
+  .filters button.active{background:#fff;color:var(--fuchsia);box-shadow:0 1px 2px rgba(0,0,0,.06)}
+
+  /* table */
+  .card{margin-top:16px;border:1px solid var(--gray-200);border-radius:12px;overflow:hidden}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  thead{background:var(--gray-50);color:var(--gray-600)}
+  th,td{padding:10px 12px;text-align:start;vertical-align:top}
+  tbody tr{border-top:1px solid var(--gray-100)}
+  tbody tr.inactive{background:#fafafa;color:var(--gray-400)}
+  .pos{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--gray-400)}
+  .qtext{max-width:430px}
+  .qslug{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--gray-400);margin-top:2px}
+  .chip{display:inline-block;border-radius:6px;padding:1px 7px;font-size:11px;font-weight:600;margin-inline-start:6px;white-space:nowrap}
+  .chip.open{background:var(--amber-100);color:var(--amber-700)}
+  .chip.rev{background:var(--rose-100);color:var(--rose-700)}
+  .chip.dom{background:var(--sky-100);color:var(--sky-700)}
+  .chip.type{background:var(--gray-100);color:var(--gray-600);font-family:ui-monospace,monospace}
+
+  /* phase toggle (segmented) */
+  .phase{display:inline-flex;border:1px solid var(--gray-300);border-radius:8px;overflow:hidden;font-size:12px;font-weight:700}
+  .phase span{padding:4px 10px;cursor:pointer;color:var(--gray-500);background:#fff}
+  .phase span.on-short{background:var(--emerald-100);color:var(--emerald-700)}
+  .phase span.on-full{background:var(--fuchsia-50);color:var(--fuchsia-dark)}
+
+  /* axes read-only badge */
+  .axes{display:flex;flex-wrap:wrap;gap:4px}
+  .axis{display:inline-flex;align-items:center;gap:4px;background:var(--lock-bg);border:1px solid var(--lock-border);border-radius:6px;padding:1px 7px;font-size:11px;color:var(--lock-text);font-family:ui-monospace,monospace}
+  .axis .w{color:#111827;font-weight:700}
+  .axis .neg{color:var(--rose-700)}
+  .lockico{font-size:10px;opacity:.7}
+
+  .row-actions{display:flex;gap:2px;align-items:center;white-space:nowrap}
+  .iconbtn{border:0;background:transparent;border-radius:6px;padding:3px 7px;cursor:pointer;color:var(--gray-500)}
+  .iconbtn:hover{background:var(--gray-100)}
+  .iconbtn.edit{color:var(--fuchsia)}
+  .iconbtn.off{color:var(--rose-700)}
+
+  /* editor panel */
+  .editor{margin-top:16px;border:1px solid #f0abfc;background:rgba(253,244,255,.5);border-radius:12px;padding:18px}
+  .editor h3{margin:0 0 12px;font-size:15px}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  label.f{display:block;font-size:11px;font-weight:700;color:var(--gray-600)}
+  .ctrl{width:100%;margin-top:4px;border:1px solid var(--gray-300);border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit}
+  textarea.ctrl{resize:vertical}
+  .full{grid-column:1 / -1}
+  .checks{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;margin-top:4px}
+  .checks label{display:flex;gap:6px;align-items:center}
+
+  /* locked section */
+  .locked{margin-top:14px;border:1px dashed var(--lock-border);background:var(--lock-bg);border-radius:10px;padding:14px}
+  .locked .hd{display:flex;align-items:center;gap:8px;font-weight:700;color:var(--gray-700);font-size:13px}
+  .locked .sub{font-size:12px;color:var(--gray-500);margin:4px 0 12px}
+  .opt{display:grid;grid-template-columns:90px 1fr 1fr 180px;gap:10px;align-items:center;padding:7px 0;border-top:1px solid var(--lock-border)}
+  .opt:first-of-type{border-top:0}
+  .opt .oid{font-family:ui-monospace,monospace;font-size:11px;color:var(--gray-400)}
+  .opt input{border:1px solid var(--gray-300);border-radius:6px;padding:6px 8px;font-size:12.5px;font-family:inherit;width:100%}
+  .opt .score{font-family:ui-monospace,monospace;font-size:11px;color:var(--lock-text);background:#fff;border:1px solid var(--lock-border);border-radius:6px;padding:5px 8px}
+  .editbtns{display:flex;gap:8px;margin-top:16px}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;margin-top:10px;font-size:12px;color:var(--gray-500)}
+  .legend b{color:var(--gray-700)}
+  .keycap{display:inline-block;border:1px solid var(--gray-300);border-radius:4px;padding:0 5px;font-size:11px;background:#fff}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumb">← כל המסעות / האבחונים</div>
+  <h1>שאלון המסע — ניהול שאלות</h1>
+  <div class="muted">28 שאלות · עריכת טקסט, שלב (לפני/אחרי רכישה), סדר, הוספה והשבתה · ייבוא/ייצוא CSV</div>
+
+  <div class="note">
+    <span>🔒</span>
+    <div>
+      <b>מה ניתן לערוך כאן:</b> טקסט השאלה (עב/אנ), תוויות התשובות, <b>שלב</b> (קצר=לפני רכישה / מלא=אחרי), סוג, תחום, סדר, והפעלה/השבתה.
+      <b>ניקוד (צירים, משקלים, ניקוד-תשובה) נעול</b> כברירת מחדל — שינוי ניקוד משנה את תקפות האבחון ומתבצע בנתיב נפרד (ייצוא/ייבוא CSV עם אישור). הצירים מוצגים כאן לקריאה בלבד.
+    </div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <button class="btn primary">+ שאלה חדשה (מלא)</button>
+    <button class="btn">ייצוא CSV</button>
+    <button class="btn">ייבוא CSV</button>
+    <div class="spacer"></div>
+    <div class="filters">
+      <button class="active">הכל · 28</button>
+      <button>קצר · 11</button>
+      <button>מלא · 17</button>
+      <button>מושבתות · 0</button>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:34px">#</th>
+          <th>שאלה</th>
+          <th style="width:120px">תחום</th>
+          <th style="width:150px">ניקוד (נעול)</th>
+          <th style="width:120px">שלב</th>
+          <th style="width:60px">פעילה</th>
+          <th style="width:150px">פעולות</th>
+        </tr>
+      </thead>
+      <tbody>
+
+        <!-- q01 short likert -->
+        <tr>
+          <td class="pos">0</td>
+          <td class="qtext">
+            בשבועיים האחרונים, עד כמה אני מודע/ת למה שעובר על בן/בת הזוג שלי…
+            <div class="qslug">q01_knowledge_world · likert5</div>
+          </td>
+          <td><span class="chip dom">חיבור רגשי</span></td>
+          <td><div class="axes"><span class="axis"><span class="lockico">🔒</span>love_map <span class="w">×1</span></span></div></td>
+          <td><div class="phase"><span class="on-short">קצר</span><span>מלא</span></div></td>
+          <td>✓</td>
+          <td><div class="row-actions">
+            <button class="iconbtn" title="למעלה">↑</button>
+            <button class="iconbtn" title="למטה">↓</button>
+            <button class="iconbtn edit">עריכה</button>
+            <button class="iconbtn off" title="השבתה">השבת</button>
+          </div></td>
+        </tr>
+
+        <!-- q17 negative-weight likert -->
+        <tr>
+          <td class="pos">17</td>
+          <td class="qtext">
+            כשיש לנו זמן רק לשנינו - באיזו תדירות השיחה עדיין מסתיימת בסופרמרקט, לו"ז…
+            <span class="chip rev">משקל שלילי</span>
+            <div class="qslug">q17_context_logistics · likert5</div>
+          </td>
+          <td><span class="chip dom">משפחה</span></td>
+          <td><div class="axes"><span class="axis"><span class="lockico">🔒</span>passion_context <span class="w neg">×−1</span></span></div></td>
+          <td><div class="phase"><span class="on-short">קצר</span><span>מלא</span></div></td>
+          <td>✓</td>
+          <td><div class="row-actions">
+            <button class="iconbtn" title="למעלה">↑</button>
+            <button class="iconbtn" title="למטה">↓</button>
+            <button class="iconbtn edit">עריכה</button>
+            <button class="iconbtn off" title="השבתה">השבת</button>
+          </div></td>
+        </tr>
+
+        <!-- q24 multi-axis likert (currently selected for edit) -->
+        <tr style="background:var(--fuchsia-50)">
+          <td class="pos">24</td>
+          <td class="qtext">
+            באיזו תדירות יש בינינו קרבה פיזית לא-מינית (חיבוק ארוך, יד על הכתף…)?
+            <div class="qslug">q24_physical_closeness · likert5 · ✎ בעריכה</div>
+          </td>
+          <td><span class="chip dom">אינטימיות</span></td>
+          <td><div class="axes">
+            <span class="axis"><span class="lockico">🔒</span>love_language_touch <span class="w">×.5</span></span>
+            <span class="axis"><span class="lockico">🔒</span>passion_play <span class="w">×.5</span></span>
+          </div></td>
+          <td><div class="phase"><span class="on-short">קצר</span><span>מלא</span></div></td>
+          <td>✓</td>
+          <td><div class="row-actions">
+            <button class="iconbtn" title="למעלה">↑</button>
+            <button class="iconbtn" title="למטה">↓</button>
+            <button class="iconbtn edit">עריכה</button>
+            <button class="iconbtn off" title="השבתה">השבת</button>
+          </div></td>
+        </tr>
+
+        <!-- q20_biggest_gap single_choice -->
+        <tr>
+          <td class="pos">19</td>
+          <td class="qtext">
+            אם היה אפשר לשפר דבר אחד בלבד בזוגיות שלכם בחודש הקרוב - מה זה היה?
+            <div class="qslug">q20_biggest_gap · single_choice · 6 תשובות</div>
+          </td>
+          <td><span class="chip" style="color:var(--gray-400)">—</span></td>
+          <td><div class="axes"><span class="axis"><span class="lockico">🔒</span>ניקוד לפי תשובה</span></div></td>
+          <td><div class="phase"><span class="on-short">קצר</span><span>מלא</span></div></td>
+          <td>✓</td>
+          <td><div class="row-actions">
+            <button class="iconbtn" title="למעלה">↑</button>
+            <button class="iconbtn" title="למטה">↓</button>
+            <button class="iconbtn edit">עריכה</button>
+            <button class="iconbtn off" title="השבתה">השבת</button>
+          </div></td>
+        </tr>
+
+        <!-- q22a reflection -->
+        <tr>
+          <td class="pos">23</td>
+          <td class="qtext">
+            מה חסר לדעתכם שאם תפתרו בזוגיות יוכל לשנות את הזוגיות לחלוטין…?
+            <span class="chip open">פתוחה</span>
+            <div class="qslug">q22a_success_signal · reflection</div>
+          </td>
+          <td><span class="chip" style="color:var(--gray-400)">—</span></td>
+          <td><span class="axis" style="opacity:.55"><span class="lockico">🔒</span>לא מנוקדת</span></td>
+          <td><div class="phase"><span class="on-short">קצר</span><span>מלא</span></div></td>
+          <td>✓</td>
+          <td><div class="row-actions">
+            <button class="iconbtn" title="למעלה">↑</button>
+            <button class="iconbtn" title="למטה">↓</button>
+            <button class="iconbtn edit">עריכה</button>
+            <button class="iconbtn off" title="השבתה">השבת</button>
+          </div></td>
+        </tr>
+
+        <!-- a deactivated example -->
+        <tr class="inactive">
+          <td class="pos">—</td>
+          <td class="qtext">
+            (דוגמה) שאלה שהושבתה — לא תופיע בשאלון ולא תשפיע על הניקוד
+            <div class="qslug">q08_influence_decisions · likert5 · מושבתת</div>
+          </td>
+          <td><span class="chip dom" style="opacity:.5">תקשורת</span></td>
+          <td><div class="axes"><span class="axis" style="opacity:.5"><span class="lockico">🔒</span>influence <span class="w">×1</span></span></div></td>
+          <td><div class="phase" style="opacity:.5"><span>קצר</span><span class="on-full">מלא</span></div></td>
+          <td>—</td>
+          <td><div class="row-actions">
+            <button class="iconbtn edit">עריכה</button>
+            <button class="iconbtn" title="הפעלה מחדש" style="color:var(--emerald-700)">הפעל</button>
+          </div></td>
+        </tr>
+
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Editor panel (for q24, expanded) -->
+  <div class="editor">
+    <h3>עריכת שאלה · <span style="font-family:ui-monospace,monospace;font-size:13px;color:var(--gray-500)">q24_physical_closeness</span></h3>
+
+    <div class="grid">
+      <label class="f">מזהה (slug)
+        <input class="ctrl" value="q24_physical_closeness" disabled style="background:var(--lock-bg);color:var(--lock-text)">
+      </label>
+      <label class="f">מיקום
+        <input class="ctrl" type="number" value="24">
+      </label>
+      <label class="f">סוג
+        <select class="ctrl"><option>likert5 (סולם)</option><option>single_choice</option><option>multi_choice</option><option>reflection (פתוחה)</option><option>ranking</option></select>
+      </label>
+      <label class="f">תחום
+        <select class="ctrl"><option>אינטימיות</option><option>תקשורת</option><option>חיבור רגשי</option><option>חברות</option><option>משפחה</option><option>— ללא —</option></select>
+      </label>
+
+      <div class="full">
+        <label class="f">שלב (לפני / אחרי רכישה)</label>
+        <div class="phase" style="margin-top:6px;font-size:13px">
+          <span class="on-short">קצר · לפני רכישה</span><span>מלא · אחרי רכישה</span>
+        </div>
+        <div class="muted" style="margin-top:4px">דרישת ליבה: ניהול תמהיל הדו"ח הראשוני מהאדמין, ללא דיפלוי.</div>
+      </div>
+
+      <label class="f full">טקסט עברית
+        <textarea class="ctrl" rows="2">באיזו תדירות יש בינינו קרבה פיזית לא-מינית (חיבוק ארוך, יד על הכתף, להירדם צמודים)?</textarea>
+      </label>
+      <label class="f full">טקסט אנגלית
+        <textarea class="ctrl" rows="2" dir="ltr">How often do we have non-sexual physical closeness (long hug, hand on shoulder, falling asleep close)?</textarea>
+      </label>
+    </div>
+
+    <div class="checks">
+      <label><input type="checkbox" checked> פעילה</label>
+    </div>
+
+    <!-- LOCKED scoring section -->
+    <div class="locked">
+      <div class="hd">🔒 ניקוד — לקריאה בלבד</div>
+      <div class="sub">צירים ומשקלים נקבעים בקוד/CSV כדי לשמור על תקפות האבחון. לשינוי: ייצוא → עריכה מבוקרת → ייבוא CSV (עם אישור).</div>
+      <div class="axes">
+        <span class="axis"><span class="lockico">🔒</span>love_language_touch <span class="w">×0.5</span></span>
+        <span class="axis"><span class="lockico">🔒</span>passion_play <span class="w">×0.5</span></span>
+      </div>
+    </div>
+
+    <div class="editbtns">
+      <button class="btn primary">שמירה</button>
+      <button class="btn">ביטול</button>
+    </div>
+  </div>
+
+  <!-- Second editor variant: a choice question, to show option labels editable / scores locked -->
+  <div class="editor" style="border-color:var(--gray-200);background:#fff">
+    <h3>עריכת שאלת-בחירה · <span style="font-family:ui-monospace,monospace;font-size:13px;color:var(--gray-500)">q20_biggest_gap</span> <span class="muted">(single_choice)</span></h3>
+    <label class="f full">טקסט עברית
+      <textarea class="ctrl" rows="1">אם היה אפשר לשפר דבר אחד בלבד בזוגיות שלכם בחודש הקרוב - מה זה היה?</textarea>
+    </label>
+
+    <div class="locked" style="background:#fff;border-style:solid">
+      <div class="hd">תשובות — תוויות פתוחות לעריכה · ניקוד 🔒 נעול</div>
+      <div class="sub">ניתן לערוך את תוויות התצוגה (עב/אנ). מזהה התשובה והניקוד נעולים (משפיעים על האבחון).</div>
+
+      <div class="opt">
+        <span class="oid">🔒 knowing</span>
+        <input value="להרגיש שמכירים אחד את השני באמת">
+        <input dir="ltr" value="Feeling we really know each other again">
+        <span class="score">🔒 love_map ×1</span>
+      </div>
+      <div class="opt">
+        <span class="oid">🔒 passion</span>
+        <input value="להרגיש יותר תשוקה ומשיכה">
+        <input dir="ltr" value="Bringing back desire and attraction">
+        <span class="score">🔒 passion_anticipation ×1</span>
+      </div>
+      <div class="opt">
+        <span class="oid">🔒 fights</span>
+        <input value="לריב פחות">
+        <input dir="ltr" value="Fighting less / recovering faster">
+        <span class="score">🔒 repair ×1</span>
+      </div>
+    </div>
+
+    <div class="editbtns">
+      <button class="btn primary">שמירה</button>
+      <button class="btn">ביטול</button>
+    </div>
+  </div>
+
+  <div class="legend">
+    <span><b>ניתן לעריכה:</b> טקסט · תוויות · שלב · סוג · תחום · סדר · פעילה</span>
+    <span><b>🔒 נעול:</b> slug · צירים+משקלים · ניקוד-תשובה</span>
+    <span><b>שינוי ניקוד:</b> דרך CSV מבוקר</span>
+  </div>
+
+</div>
+</body>
+</html>

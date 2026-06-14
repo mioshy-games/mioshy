@@ -32,12 +32,15 @@ import { createAdminClient } from "@/lib/supabase-admin";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import {
   QUESTIONNAIRE,
-  getQuestion,
   totalQuestions,
   requiresAuthAt,
   requiresPaywallAt,
 } from "@/lib/journey/questions";
 import { analyze } from "@/lib/journey/analysis";
+import {
+  buildQuestionResolver,
+  loadJourneyQuestions,
+} from "@/lib/journey/questions-db";
 import { isValidOrder } from "@/lib/journey/priorities";
 import { getPriorityLabels } from "@/lib/journey-content/priority-categories";
 import { onPriorityRankingSubmitted } from "@/lib/journey-content/cadence-trigger";
@@ -84,7 +87,15 @@ export async function POST(req: Request) {
   }
 
   const { question_id, answer, locale } = body;
-  const q = getQuestion(question_id);
+
+  // F2 — resolve question definitions from the DB (journey_questions), so
+  // admin-added / edited questions are accepted by validation and scored on
+  // completion. loadJourneyQuestions falls back to questionnaire.json when the
+  // table is empty or the read fails. Built once here (service-role client) and
+  // reused for the completion analyze() call below.
+  const admin = await createAdminClient();
+  const resolveQuestion = buildQuestionResolver(await loadJourneyQuestions(admin));
+  const q = resolveQuestion(question_id);
   if (!q) return NextResponse.json({ error: "unknown_question" }, { status: 400 });
   if (!isValidAnswer(q.type, answer))
     return NextResponse.json({ error: "invalid_answer_shape", expected: q.type }, { status: 400 });
@@ -135,8 +146,6 @@ export async function POST(req: Request) {
       { status: 401 },
     );
   }
-
-  const admin = await createAdminClient();
 
   // Paywall: check active subscription if the index requires it.
   if (requiresPaywallAt(index - 1) && trusted_user_id) {
@@ -363,7 +372,7 @@ export async function POST(req: Request) {
       locale:      r.locale as Locale,
     }));
     const priorityLabels = await getPriorityLabels();
-    analysis = analyze(parsed, priorityLabels);
+    analysis = analyze(parsed, priorityLabels, resolveQuestion);
 
     await admin.from("journey_analysis").insert({
       journey_id:              journeyId,
