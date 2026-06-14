@@ -28,6 +28,7 @@
 import "server-only";
 import type {
   AiHeroBlock,
+  AiHeroFailReason,
   Analysis,
   Response,
 } from "@/lib/journey/types";
@@ -35,6 +36,18 @@ import type {
 const ANTHROPIC_URL    = "https://api.anthropic.com/v1/messages";
 const ANTHROPIC_MODEL  = "claude-sonnet-4-6";
 const MAX_OUTPUT_TOKENS = 800;
+
+// ── Stage 1 (2026-06-14) retry / timeout budget ──────────────────────────
+// The user waits synchronously on the results screen (a real call was
+// observed at ~12.8s), so the total wall-clock is hard-bounded. We retry
+// only FAST transient failures: with an 18s per-attempt timeout and a 22s
+// total budget, a retry is only allowed when ~3s or less has elapsed, so a
+// full timeout falls straight through to the fallback instead of doubling
+// the wait. Worst case stays under the budget.
+const PER_ATTEMPT_TIMEOUT_MS = 18_000;
+const TOTAL_BUDGET_MS        = 22_000;
+const MAX_ATTEMPTS           = 2;
+const BACKOFF_MS             = 800;
 
 // ---------------------------------------------------------------------------
 // Inputs the route hands us, expanded by the prompt builder.
@@ -87,6 +100,14 @@ const SYSTEM_PROMPT = `אתה כותב את ה-hero של דף סיכום אבח�
 
 חשוב: אסור להמציא רגעים ספציפיים שהמשתמש לא כתב. אם q20c או q22a ריקים - אל תכתוב משפטים שמתחילים ב"כשאת חוזרת מהעבודה..." או "כשהוא מסתכל בטלפון..." - השתמש רק במידע שיש לך.
 
+== שיקוף הקלט (desire-led, כשיש reflection אמיתי) ==
+1. העדף תמיד להדהד את השאיפה: אם q22a_success_signal מולא - שלב מילה או צירוף קצר שהמשתמש כתב בו (verbatim, מהטקסט שלו בלבד) בתוך משפט התועלת הראשון, בלשון "תקבלו / תחזרו / תהיו".
+2. הדהד את הכאב (q20c) רק כש-q22a ריק. גם אז תמיד במסגור הקלה ("התחושה ש... תיעלם", "במקום ש..."), לעולם לא שקיעה בכאב ולא הגזמה או דרמטיזציה. (הכאב תמיד מנחה אילו תועלות לבחור, גם כשלא מהדהדים אותו verbatim.)
+3. אסור לשנות, לפרש או להוסיף דרמה למה שכתב. אם הטקסט קצר/מבולבל/לא ברור - אל תשקף, בנה תועלות מהציונים.
+
+== גשר קדימה (חובה, סגירה עקבית) ==
+סיים תמיד את hero_he בסגירה מוטיבציונית קצרה שמשדרת שהשינוי בהישג יד ומתחיל עכשיו ("הכול לפניכם", "וזה מתחיל כבר עכשיו", "מכאן זה רק עולה"), בלשון תועלת בלבד. אסור לתאר תהליך, אסור "הליווי/התוכנית", אסור המילה "מסע". אם expert_mentioned=true - משפט המומחה בא לפני הסגירה.
+
 == זיהוי שילוב של תחומים ==
 שילוב = שני תחומים שונים שכואבים יחד. סמנים:
 - q20c או q22a מזכירים שני תחומים → שילוב.
@@ -103,10 +124,10 @@ expert_mentioned=true רק כשמתקיים אחד:
 - pain_signal="horsemen" ואין שילוב (תועלת בודדת — יש מקום למשפט מומחה).
 אחרת expert_mentioned=false. השפע של התועלות עושה את העבודה לבד.
 
-כשמזכירים — נוסחה אחת בלבד בסוף: "עם מומחה זמין בצ'אט לכל שאלה."
+כשמזכירים — נוסחה אחת בלבד, ממש לפני הסגירה המוטיבציונית: "עם מומחה זמין בצ'אט לכל שאלה."
 
 == מבנה הפלט ==
-hero_he: שורה אחת, 1-2 משפטים, 22-45 מילים. אם expert_mentioned=true — הוסף את משפט המומחה בסוף.
+hero_he: שורה אחת, 1-2 משפטים, 22-45 מילים. תמיד מסתיים בסגירה המוטיבציונית. אם expert_mentioned=true — משפט המומחה בא ממש לפני הסגירה.
 hero_en: תרגום מקביל, אותו מבנה (אם השם בעברית — השאר אותו בעברית גם באנגלית).
 recommendations_he: מערך של 3 פריטים, כל אחד משפט תועלת קצר (עד 12 מילים), מתחיל ב"תקבלו / תהיו / תחזרו / תרגישו / תגלו / תתאהבו / תפרח / תתחדש / תתעצם".
 recommendations_en: 3 פריטים מקבילים.
@@ -153,7 +174,7 @@ INPUT:
  four_horsemen_flag:true, q20a_urgency:5, q20c:"אנחנו רבים על הכל ואני לא יודע כבר איך לדבר איתה בלי שזה מסתיים רע"}
 
 OUTPUT:
-{"hero_he":"אורי, מהר מאוד תהפכו לזוג שמדבר בלי להאשים, ויכוחים שעד היום התפוצצו ייגמרו תוך דקות בלי שיישאר טעם רע. עם מומחה זמין בצ'אט לכל שאלה.","hero_en":"Uri, very quickly you'll become a couple that talks without blame, fights that used to explode will end within minutes with no bitter aftertaste. With an expert available in chat for any question.","recommendations_he":["תלמדו להתווכח בלי שזה יהיה פיצוץ.","שיחות אמיתיות יחזרו.","תקבלו ליווי אישי בכל שאלה."],"recommendations_en":["You'll learn to argue without it exploding.","Real conversations will return.","You'll receive personal guidance for every question."],"expert_mentioned":true,"pain_signal":"horsemen"}
+{"hero_he":"אורי, מהר מאוד תהפכו לזוג שמדבר בלי להאשים, ויכוחים שעד היום התפוצצו ייגמרו תוך דקות בלי שיישאר טעם רע. עם מומחה זמין בצ'אט לכל שאלה. הכול לפניכם.","hero_en":"Uri, very quickly you'll become a couple that talks without blame, fights that used to explode will end within minutes with no bitter aftertaste. With an expert available in chat for any question. It's all ahead of you.","recommendations_he":["תלמדו להתווכח בלי שזה יהיה פיצוץ.","שיחות אמיתיות יחזרו.","תקבלו ליווי אישי בכל שאלה."],"recommendations_en":["You'll learn to argue without it exploding.","Real conversations will return.","You'll receive personal guidance for every question."],"expert_mentioned":true,"pain_signal":"horsemen"}
 
 == חוקי פלט ==
 - החזר JSON אובייקט אחד בלבד, בלי markdown fences, בלי טקסט נלווה.
@@ -166,21 +187,104 @@ OUTPUT:
 // ---------------------------------------------------------------------------
 
 /**
- * Generate the AI hero block. Returns null on any failure - the caller
- * MUST handle null and fall back to the deterministic narrative.
+ * Discriminated result so the caller can persist observability (Stage 1):
+ * a success carries the hero; a failure carries the reason + attempt count.
+ * NEVER throws — the caller falls back to the deterministic template.
+ */
+export type AiHeroResult =
+  | { ok: true; hero: AiHeroBlock; attempts: number; latency_ms: number }
+  | { ok: false; reason: AiHeroFailReason; attempts: number; latency_ms: number };
+
+/**
+ * Generate the AI hero block, with bounded retry. Returns an AiHeroResult
+ * — the caller MUST handle the failure case and fall back to the
+ * deterministic template (lib/journey/hero-fallback.ts).
  */
 export async function analyzeAssessment(
   inputs: AssessmentAiInputs,
-): Promise<AiHeroBlock | null> {
+): Promise<AiHeroResult> {
+  const startAll = Date.now();
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     console.warn("[ai/analyze-assessment] ANTHROPIC_API_KEY missing - skipping");
-    return null;
+    return { ok: false, reason: "no_key", attempts: 0, latency_ms: 0 };
   }
 
-  const start = Date.now();
   const userPayload = buildUserPayload(inputs);
+  let attempt = 0;
+  let lastReason: AiHeroFailReason = "threw";
 
+  while (attempt < MAX_ATTEMPTS) {
+    attempt++;
+    const one = await attemptOnce(apiKey, userPayload);
+
+    if (one.ok) {
+      const latency = Date.now() - startAll;
+      console.log("[ai/analyze-assessment] success", {
+        attempt,
+        latency,
+        expert: one.hero.expert_mentioned,
+        signal: one.hero.pain_signal,
+      });
+      return {
+        ok: true,
+        hero: {
+          ...one.hero,
+          model: ANTHROPIC_MODEL,
+          generated_at: new Date().toISOString(),
+          latency_ms: latency,
+        },
+        attempts: attempt,
+        latency_ms: latency,
+      };
+    }
+
+    lastReason = one.reason;
+
+    // Retry only fast transient failures, and only if the per-attempt
+    // timeout still fits inside the total budget. A real timeout (~18s) or
+    // a config error (4xx, no_key) never qualifies.
+    const transient =
+      one.reason === "http_429" ||
+      one.reason === "http_5xx" ||
+      one.reason === "empty" ||
+      one.reason === "parse_fail" ||
+      one.reason === "threw";
+    const elapsed = Date.now() - startAll;
+    const fitsBudget =
+      elapsed + BACKOFF_MS + PER_ATTEMPT_TIMEOUT_MS <= TOTAL_BUDGET_MS;
+
+    if (attempt < MAX_ATTEMPTS && transient && fitsBudget) {
+      console.warn("[ai/analyze-assessment] retrying", {
+        attempt,
+        reason: one.reason,
+        elapsed,
+      });
+      await sleep(BACKOFF_MS);
+      continue;
+    }
+    break;
+  }
+
+  return {
+    ok: false,
+    reason: lastReason,
+    attempts: attempt,
+    latency_ms: Date.now() - startAll,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Single attempt: one HTTP call with an AbortController timeout. Returns a
+// parsed hero or a typed failure reason. Never throws.
+// ---------------------------------------------------------------------------
+
+async function attemptOnce(
+  apiKey: string,
+  userPayload: ReturnType<typeof buildUserPayload>,
+): Promise<{ ok: true; hero: ParsedHero } | { ok: false; reason: AiHeroFailReason }> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), PER_ATTEMPT_TIMEOUT_MS);
   try {
     const res = await fetch(ANTHROPIC_URL, {
       method: "POST",
@@ -193,25 +297,23 @@ export async function analyzeAssessment(
         model: ANTHROPIC_MODEL,
         max_tokens: MAX_OUTPUT_TOKENS,
         system: SYSTEM_PROMPT,
-        messages: [
-          {
-            role: "user",
-            content: JSON.stringify(userPayload),
-          },
-        ],
+        messages: [{ role: "user", content: JSON.stringify(userPayload) }],
       }),
+      signal: ctrl.signal,
     });
-
-    const latency = Date.now() - start;
 
     if (!res.ok) {
       const text = await res.text().catch(() => "<unreadable>");
+      const reason: AiHeroFailReason =
+        res.status === 429 ? "http_429" :
+        res.status >= 500  ? "http_5xx" :
+                             "http_4xx";
       console.warn("[ai/analyze-assessment] non-200", {
         status: res.status,
-        latency,
-        body: text.slice(0, 400),
+        reason,
+        body: text.slice(0, 300),
       });
-      return null;
+      return { ok: false, reason };
     }
 
     const data = (await res.json()) as {
@@ -220,39 +322,33 @@ export async function analyzeAssessment(
     const block = (data.content ?? []).find((b) => b.type === "text");
     const raw = (block?.text ?? "").trim();
     if (!raw) {
-      console.warn("[ai/analyze-assessment] empty content", { latency });
-      return null;
+      console.warn("[ai/analyze-assessment] empty content");
+      return { ok: false, reason: "empty" };
     }
 
     const parsed = parseAndValidate(raw);
     if (!parsed) {
       console.warn("[ai/analyze-assessment] parse failed", {
-        latency,
         rawPreview: raw.slice(0, 200),
       });
-      return null;
+      return { ok: false, reason: "parse_fail" };
     }
 
-    console.log("[ai/analyze-assessment] success", {
-      latency,
-      hero_len: parsed.hero_he.length,
-      expert: parsed.expert_mentioned,
-      signal: parsed.pain_signal,
-    });
-
-    return {
-      ...parsed,
-      model: ANTHROPIC_MODEL,
-      generated_at: new Date().toISOString(),
-      latency_ms: latency,
-    };
+    return { ok: true, hero: parsed };
   } catch (e) {
-    console.warn("[ai/analyze-assessment] threw", {
-      latency: Date.now() - start,
+    const aborted = e instanceof Error && e.name === "AbortError";
+    const reason: AiHeroFailReason = aborted ? "timeout" : "threw";
+    console.warn(`[ai/analyze-assessment] ${reason}`, {
       err: e instanceof Error ? e.message : String(e),
     });
-    return null;
+    return { ok: false, reason };
+  } finally {
+    clearTimeout(timer);
   }
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms));
 }
 
 // ---------------------------------------------------------------------------
