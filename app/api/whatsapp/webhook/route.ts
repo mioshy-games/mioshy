@@ -17,6 +17,13 @@ export const dynamic = "force-dynamic";
 
 const STOP_WORDS = ["הסר", "הסירו", "בטל", "ביטול", "stop", "unsubscribe", "cancel"];
 
+type WaStatus = { id?: string; status?: string; errors?: unknown[] };
+type WaMessage = { from?: string; type?: string; id?: string; text?: { body?: string } };
+type WaValue = { statuses?: WaStatus[]; messages?: WaMessage[] };
+type WaChange = { value?: WaValue };
+type WaEntry = { changes?: WaChange[] };
+type WaWebhookBody = { entry?: WaEntry[] };
+
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const challenge = verifyWebhookChallenge(searchParams);
@@ -34,7 +41,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "bad-signature" }, { status: 401 });
   }
 
-  let body: any;
+  let body: WaWebhookBody;
   try {
     body = JSON.parse(raw);
   } catch {
@@ -51,13 +58,13 @@ export async function POST(req: Request) {
   return NextResponse.json({ ok: true }, { status: 200 });
 }
 
-async function handleEvent(body: any) {
+async function handleEvent(body: WaWebhookBody) {
   const admin = createServiceRoleClient();
   if (!admin) return;
 
-  const entries: any[] = body?.entry ?? [];
+  const entries = body?.entry ?? [];
   for (const entry of entries) {
-    const changes: any[] = entry?.changes ?? [];
+    const changes = entry?.changes ?? [];
     for (const change of changes) {
       const value = change?.value ?? {};
 

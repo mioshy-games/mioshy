@@ -67,7 +67,7 @@ export async function sendWhatsAppToUser(
       category: args.category,
       wa_message_id: result.ok ? result.waMessageId : null,
       status: result.ok ? "sent" : "failed",
-      error: result.ok ? null : { status: result.status, code: (result as any).errorCode, message: result.message },
+      error: result.ok ? null : { status: result.status, code: result.errorCode, message: result.message },
       payload: { components: args.components },
     })
     .then(

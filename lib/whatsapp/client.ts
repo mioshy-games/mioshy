@@ -30,6 +30,11 @@ function endpoint(cfg: WhatsAppConfig): string {
   return `https://graph.facebook.com/${cfg.apiVersion}/${cfg.phoneNumberId}/messages`;
 }
 
+type WaApiResponse = {
+  messages?: Array<{ id?: string }>;
+  error?: { code?: number | string; message?: string };
+};
+
 const RETRY_DELAYS_MS = [500, 1000, 2000];
 
 async function post(cfg: WhatsAppConfig, body: unknown): Promise<SendResult> {
@@ -46,7 +51,7 @@ async function post(cfg: WhatsAppConfig, body: unknown): Promise<SendResult> {
         body: JSON.stringify(body),
       });
 
-      const json = (await res.json().catch(() => null)) as any;
+      const json = (await res.json().catch(() => null)) as WaApiResponse | null;
 
       if (res.ok) {
         const waMessageId: string | undefined = json?.messages?.[0]?.id;
@@ -60,8 +65,8 @@ async function post(cfg: WhatsAppConfig, body: unknown): Promise<SendResult> {
 
       // Retry only on 5xx / 429. 4xx (bad number, unapproved template) is permanent.
       if (res.status < 500 && res.status !== 429) return lastErr;
-    } catch (e: any) {
-      lastErr = { ok: false, status: 0, message: e?.message || "Network error" };
+    } catch (e: unknown) {
+      lastErr = { ok: false, status: 0, message: e instanceof Error ? e.message : "Network error" };
     }
 
     if (attempt < RETRY_DELAYS_MS.length) {
