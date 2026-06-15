@@ -22,13 +22,13 @@ import {
 } from "@/lib/between-us/invitations";
 import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
 import { JourneyGraceBanner } from "@/components/my/JourneyGraceBanner";
-import { CompleteFullAssessmentCard } from "@/components/my/CompleteFullAssessmentCard";
+import { OnboardingReminderCard } from "@/components/my/OnboardingReminderCard";
+import { isFullAssessmentPending } from "@/lib/journey/full-assessment-pending";
 import { UpgradeToJourneyCard } from "@/components/my/UpgradeToJourneyCard";
 import { getOwnerJourneyStatus } from "@/lib/journey-content/owner-status";
 import { countUnreadJourneyItems } from "@/lib/journey-content/unread";
 import { getFreshClinicianReplies } from "@/lib/journey-content/fresh-replies";
 import { getProfileGate } from "@/lib/auth/profile-gate";
-import { PartnerShareCard } from "@/components/between-us/PartnerShareCard";
 import { RedeemCodeButton } from "@/components/between-us/RedeemCodeButton";
 import { InvitePartnerByEmail } from "@/components/between-us/InvitePartnerByEmail";
 import type { PillarKey } from "@/lib/entitlements/getUserEntitlements";
@@ -164,6 +164,7 @@ export default async function MyHubPage({
     profileGate,
     pendingInvitationRow,
     partnerFullName,
+    fullAssessmentPending,
   ] = await Promise.all([
     tPromise,
     countUnreadJourneyItems({
@@ -217,6 +218,23 @@ export default async function MyHubPage({
         return null;
       }
     })(),
+    // ─── Full-assessment pending (item-2 of the onboarding reminder) ──────
+    // PER-USER: keyed on ctx.user_id, so one partner finishing does NOT clear
+    // the other's reminder. Admin (service-role) read mirrors the former
+    // CompleteFullAssessmentCard. Fail-open to "not pending" so a transient
+    // read error never nags a user who may already be done.
+    hasCouple
+      ? (async () => {
+          try {
+            const admin = await adminClientPromise;
+            if (!admin) return false;
+            return await isFullAssessmentPending(admin, ctx.user_id);
+          } catch (err) {
+            console.warn("[/my] full-assessment pending check failed", err);
+            return false;
+          }
+        })()
+      : Promise.resolve(false),
   ]);
 
   const journeyNotificationCount =
@@ -226,6 +244,12 @@ export default async function MyHubPage({
   const pendingInvitation = toInvitationUiSummary(pendingInvitationRow);
   const needsPartner = hasCouple && (ctx.partner_count ?? 0) < 2;
   const isOwner = !hasCouple || ctx.role === "owner";
+
+  // Consolidated onboarding reminder (NON-BLOCKING): shown while EITHER step is
+  // outstanding — partner not yet joined OR this user's full assessment still
+  // pending. Auto-hides per-user once both are done. Subscribers only (hasCouple
+  // ⇒ pillarCount > 0 ⇒ a couple+pair_code already exist). Gates no content.
+  const showOnboarding = hasCouple && (needsPartner || fullAssessmentPending);
 
   // ─── Pillar state derivation ─────────────────────────────────────────
   // One pure helper computes badge + CTA per pillar. UI just renders.
@@ -334,23 +358,27 @@ export default async function MyHubPage({
               about products, not admin chrome. Admin lives in /my/account. */}
         </section>
 
-        {/* ─────── Top-of-page partner status (Itzik 2026-05-27) ───────
-            Two mutually-exclusive states, both surfaced *above the fold*:
-            (a) Has couple + still no partner → prominent PartnerShareCard
-                so the very first action a new subscriber sees is "send
-                the code to your partner".
-            (b) Couple is fully paired → small acknowledgement banner
-                "משוייך ל [partner full name]" so the buyer can see at
-                a glance that the link is live.
-            Free-tier users (no couple) see nothing — they have no code
-            yet and no partner to acknowledge. */}
-        {hasCouple && needsPartner && ctx.pair_code ? (
+        {/* ─────── Consolidated onboarding reminder (top-of-page) ───────
+            Replaces the former standalone PartnerShareCard banner AND the
+            CompleteFullAssessmentCard. One NON-BLOCKING card with two checklist
+            items (connect partner / complete full assessment), each with a ✓
+            state, composing PartnerShareCard + RedeemCodeButton for the invite
+            and a CTA to the assessment. Auto-hides per-user when both are done.
+            Free-tier users (no couple) see nothing. */}
+        {showOnboarding ? (
           <section className="mt-6">
-            <PartnerShareCard pairCode={ctx.pair_code} />
+            <OnboardingReminderCard
+              pairCode={ctx.pair_code}
+              partnerConnected={!needsPartner}
+              fullAssessmentPending={fullAssessmentPending}
+            />
           </section>
         ) : null}
 
-        {hasCouple && !needsPartner ? (
+        {/* Fully-onboarded acknowledgement — only once the reminder is gone, so
+            the "משוייך ל X" banner never doubles up with the reminder's own
+            item-1 ✓. */}
+        {hasCouple && !needsPartner && !showOnboarding ? (
           <section className="mt-6">
             <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/30 bg-emerald-400/10 px-4 py-2 text-sm text-emerald-50 backdrop-blur">
               <Users className="h-4 w-4 text-emerald-300" />
@@ -379,11 +407,8 @@ export default async function MyHubPage({
           </section>
         ) : null}
 
-        {/* F3.2 — "complete later": a subscriber who saw the short report but
-            hasn't finished the full assessment. Self-renders null otherwise. */}
-        <section className="mt-8">
-          <CompleteFullAssessmentCard userId={ctx.user_id} locale={locale} />
-        </section>
+        {/* F3.2 "complete later" prompt now lives inside the consolidated
+            OnboardingReminderCard above (item 2). */}
 
         {/* ─────── Membership-status banner ───────
             Lights up immediately after the title so a returning user sees

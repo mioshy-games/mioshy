@@ -2127,6 +2127,27 @@
       "qrCaption": "Scan with the camera to jump straight to signup — the code fills itself in.",
       "downloadQr": "Download QR as image",
       "close": "Close"
+    },
+    "onboarding": {
+      "title": "Two small steps — and you're set",
+      "subtitle": "Everything is already unlocked. These two steps get the most out of your journey.",
+      "progress": "{done} of 2 done",
+      "footer": "You can keep using everything anytime — this reminder disappears once both steps are done.",
+      "item1": {
+        "title": "Connect your partner",
+        "desc": "Share the code — once they join, you get the full couple picture.",
+        "doneLabel": "Done ✓",
+        "doneDesc": "Your partner is connected — great!",
+        "entryQ": "Got a code from your partner?",
+        "entryCta": "Enter code to connect"
+      },
+      "item2": {
+        "title": "Complete your full assessment",
+        "desc": "About 2 more minutes — for a sharper picture and tools tailored to you.",
+        "doneLabel": "Done ✓",
+        "doneDesc": "Full assessment complete — excellent!",
+        "cta": "Continue to assessment"
+      }
     }
   },
   "shareGuide": {
