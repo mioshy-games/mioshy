@@ -36,6 +36,7 @@ import {
   QUESTIONNAIRE,
 } from "@/lib/journey/questions";
 import { resolveJourneyFlow } from "@/lib/journey/phase";
+import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
 import type { Locale } from "@/lib/journey/types";
 import { listAllPrices } from "@/lib/billing/pricing-queries";
 import type { CadenceOption } from "@/lib/billing/pricing-validations";
@@ -147,6 +148,13 @@ export default async function JourneyAssessmentPage({
 
   let initialProgress: { current_step: number; status: string; language: Locale } | null = null;
   let subscriptionActive = false;
+  // F3.3 — journey-specific entitlement signal for the report. Distinct from
+  // `subscriptionActive` (which is any active sub, product-agnostic): the
+  // pre-purchase "join now" selling sections in AnalysisSummary must be hidden
+  // for users who hold a JOURNEY subscription/entitlement specifically, even
+  // before they finish the full assessment (report_phase still 'short'). We
+  // read getUserEntitlements().journey (active|grace) as the source of truth.
+  let journeySubscribed = false;
   // Prior answers, keyed by question_id. Hydrated below for both
   // authenticated + anon journeys so the client can pre-fill the
   // selected answer when the user navigates back to a previously-
@@ -371,6 +379,12 @@ export default async function JourneyAssessmentPage({
       .maybeSingle();
     subscriptionActive = !!sub;
 
+    // F3.3 — resolve the journey entitlement (active|grace) for this user.
+    // getUserEntitlements is request-cached and product-aware, so this is the
+    // clean signal for gating the pre-purchase selling sections.
+    const entitlements = await getUserEntitlements(user.id);
+    journeySubscribed = !!entitlements?.journey;
+
     // ── Post-purchase guard ─────────────────────────────────────────────────
     // Per spec §4 + §6.0: a user with an active subscription should NEVER
     // re-encounter the assessment. They've paid; they're done; their seat
@@ -573,6 +587,7 @@ export default async function JourneyAssessmentPage({
         initialProgress={initialProgress}
         initialAnswers={initialAnswers}
         subscriptionActive={subscriptionActive}
+        journeySubscribed={journeySubscribed}
         authenticated={!!user}
         journeyCadences={journeyCadences}
         questions={flow.remaining}

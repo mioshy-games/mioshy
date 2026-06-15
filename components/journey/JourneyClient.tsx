@@ -35,6 +35,11 @@ interface JourneyClientProps {
    *  site once before passing into the question components. */
   initialAnswers?: Record<string, unknown>;
   subscriptionActive?: boolean;
+  /** F3.3 — journey-specific entitlement (active|grace). Drives whether the
+   *  AnalysisSummary pre-purchase selling sections render. Distinct from
+   *  `subscriptionActive` (product-agnostic) so a journey subscriber who is
+   *  still in report_phase 'short' is correctly treated as a subscriber. */
+  journeySubscribed?: boolean;
   authenticated?: boolean;
   journeyCadences?: CadenceOption[];
   /** F3.1 — render source. Questions are loaded from the DB
@@ -95,6 +100,7 @@ export function JourneyClient({
   initialProgress,
   initialAnswers,
   subscriptionActive = false,
+  journeySubscribed = false,
   authenticated = false,
   journeyCadences = [],
   questions,
@@ -696,7 +702,7 @@ export function JourneyClient({
         <AnalysisSummary
           analysis={analysis}
           locale={locale}
-          subscriptionActive={subscriptionActive}
+          journeySubscribed={journeySubscribed}
           journeyCadences={journeyCadences}
         />
       </div>

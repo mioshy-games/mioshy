@@ -43,7 +43,16 @@ const CADENCE_ORDER: Record<string, number> = {
 interface AnalysisSummaryProps {
   analysis: Analysis | null;
   locale: Locale;
-  subscriptionActive?: boolean;
+  /** F3.3 — true when the user holds a journey subscription/entitlement
+   *  (active|grace), owner-swapped via getUserEntitlements so a PARTNER of a
+   *  paying subscriber counts as subscribed. Drives everything that depends on
+   *  "has journey access": the ActiveSubscriberCard-vs-OfferCard decision + the
+   *  sticky buy CTA, AND hides the three pre-purchase selling sections (gains /
+   *  who-for / expert) plus the non-subscriber CTA copy. Gated on entitlement —
+   *  NOT report_phase, and NOT the caller-keyed `subscriptionActive` — so a
+   *  just-subscribed user (still report_phase 'short') and a partner with free
+   *  journey access both correctly read as subscribed. */
+  journeySubscribed?: boolean;
   journeyCadences?: CadenceOption[];
 }
 
@@ -67,7 +76,7 @@ interface AnalysisSummaryProps {
 export function AnalysisSummary({
   analysis,
   locale,
-  subscriptionActive = false,
+  journeySubscribed = false,
   journeyCadences = [],
 }: AnalysisSummaryProps) {
   const [checkoutBusy, setCheckoutBusy] = useState(false);
@@ -428,36 +437,40 @@ export function AnalysisSummary({
 
       {/* W3.2 (Itzik #14) — what you'll gain. Placed between the
           recommendations and the offer so the user reads concrete
-          benefits before they see the price. */}
-      <section className="p-2 sm:p-3">
-        <CmsText
-          cmsKey="journeyAssessment.analysis.gainsLabel"
-          as="div"
-          className="text-start text-[14px] font-semibold uppercase tracking-wider text-[#FCCA65] leading-normal"
-        />
-        <CmsText
-          cmsKey="journeyAssessment.analysis.gainsTitle"
-          as="h2"
-          className="mt-2 text-balance text-start font-heading text-[24px] font-extrabold leading-tight text-white sm:text-[28px]"
-        />
-        <ul className="mt-4 flex flex-col gap-2.5">
-          {[1, 2, 3, 4, 5].map((n) => (
-            <li
-              key={n}
-              className="flex items-start gap-3 text-[22px] leading-[1.3] text-white/90 sm:text-[19px] sm:leading-[1.65]"
-            >
-              <CheckCircle2
-                className="mt-1 h-5 w-5 shrink-0 text-[#FCCA65]"
-                aria-hidden
-              />
-              <CmsText
-                cmsKey={`journeyAssessment.analysis.gain${n}`}
-                className="flex-1 text-pretty text-start"
-              />
-            </li>
-          ))}
-        </ul>
-      </section>
+          benefits before they see the price.
+          F3.3 — pre-purchase selling section: hidden for journey
+          subscribers (gated on entitlement, not report_phase). */}
+      {!journeySubscribed ? (
+        <section className="p-2 sm:p-3">
+          <CmsText
+            cmsKey="journeyAssessment.analysis.gainsLabel"
+            as="div"
+            className="text-start text-[14px] font-semibold uppercase tracking-wider text-[#FCCA65] leading-normal"
+          />
+          <CmsText
+            cmsKey="journeyAssessment.analysis.gainsTitle"
+            as="h2"
+            className="mt-2 text-balance text-start font-heading text-[24px] font-extrabold leading-tight text-white sm:text-[28px]"
+          />
+          <ul className="mt-4 flex flex-col gap-2.5">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <li
+                key={n}
+                className="flex items-start gap-3 text-[22px] leading-[1.3] text-white/90 sm:text-[19px] sm:leading-[1.65]"
+              >
+                <CheckCircle2
+                  className="mt-1 h-5 w-5 shrink-0 text-[#FCCA65]"
+                  aria-hidden
+                />
+                <CmsText
+                  cmsKey={`journeyAssessment.analysis.gain${n}`}
+                  className="flex-1 text-pretty text-start"
+                />
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       {/* Itzik 2026-05-29 — Topics covered. Concrete answer to "what
           will we actually work on?" using the 5 journey priority
@@ -510,37 +523,41 @@ export function AnalysisSummary({
       </section>
 
       {/* W3.2 (Itzik #13) — who is this for. Below the gains so the
-          user reads "what" before "who" — natural decision order. */}
-      <section className="p-2 sm:p-3">
-        <CmsText
-          cmsKey="journeyAssessment.analysis.whoForLabel"
-          as="div"
-          className="text-start text-[14px] font-semibold uppercase tracking-wider text-[#FCCA65] leading-normal"
-        />
-        <CmsText
-          cmsKey="journeyAssessment.analysis.whoForTitle"
-          as="h2"
-          className="mt-2 text-balance text-start font-heading text-[24px] font-extrabold leading-tight text-white sm:text-[28px]"
-        />
-        <ul className="mt-4 flex flex-col gap-2.5">
-          {[1, 2, 3, 4].map((n) => (
-            <li
-              key={n}
-              className="flex items-start gap-3 text-[22px] leading-[1.3] text-white/90 sm:text-[19px] sm:leading-[1.65]"
-            >
-              <span
-                className="mt-2.5 inline-block h-2 w-2 shrink-0 rounded-full"
-                style={{ background: "#FCCA65" }}
-                aria-hidden
-              />
-              <CmsText
-                cmsKey={`journeyAssessment.analysis.whoFor${n}`}
-                className="flex-1 text-pretty text-start"
-              />
-            </li>
-          ))}
-        </ul>
-      </section>
+          user reads "what" before "who" — natural decision order.
+          F3.3 — pre-purchase selling section: hidden for journey
+          subscribers (gated on entitlement, not report_phase). */}
+      {!journeySubscribed ? (
+        <section className="p-2 sm:p-3">
+          <CmsText
+            cmsKey="journeyAssessment.analysis.whoForLabel"
+            as="div"
+            className="text-start text-[14px] font-semibold uppercase tracking-wider text-[#FCCA65] leading-normal"
+          />
+          <CmsText
+            cmsKey="journeyAssessment.analysis.whoForTitle"
+            as="h2"
+            className="mt-2 text-balance text-start font-heading text-[24px] font-extrabold leading-tight text-white sm:text-[28px]"
+          />
+          <ul className="mt-4 flex flex-col gap-2.5">
+            {[1, 2, 3, 4].map((n) => (
+              <li
+                key={n}
+                className="flex items-start gap-3 text-[22px] leading-[1.3] text-white/90 sm:text-[19px] sm:leading-[1.65]"
+              >
+                <span
+                  className="mt-2.5 inline-block h-2 w-2 shrink-0 rounded-full"
+                  style={{ background: "#FCCA65" }}
+                  aria-hidden
+                />
+                <CmsText
+                  cmsKey={`journeyAssessment.analysis.whoFor${n}`}
+                  className="flex-1 text-pretty text-start"
+                />
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       {/* Itzik 2026-05-29 — Expert emphasis. The unique human element
           before the price: real couples expert in a private 1:1 chat,
@@ -549,45 +566,67 @@ export function AnalysisSummary({
           "premium delivery" voice. Placed right before the offer so
           the human face is the last thing the user sees before the
           price. */}
-      <section className="px-2 py-2">
-        <div>
-          <CmsText
-            cmsKey="journeyAssessment.analysis.expertLabel"
-            as="div"
-            className="text-start text-[14px] font-semibold uppercase tracking-wider text-[#FCCA65] leading-normal"
-          />
-          <CmsText
-            cmsKey="journeyAssessment.analysis.expertTitle"
-            as="h2"
-            className="mt-1.5 text-balance text-start font-heading text-[26px] font-extrabold leading-tight text-white sm:text-[30px]"
-          />
-          <CmsText
-            cmsKey="journeyAssessment.analysis.expertBody"
-            as="p"
-            className="mt-3 text-pretty text-start text-[20px] leading-[1.4] text-white/90 sm:text-[18px] sm:leading-[1.7]"
-          />
-          <ul className="mt-4 flex flex-col gap-2.5">
-            {[1, 2, 3, 4].map((n) => (
-              <li
-                key={n}
-                className="flex items-start gap-3 text-[22px] leading-[1.3] text-white/95 sm:text-[19px] sm:leading-[1.65]"
-              >
+      {/* F3.3 — pre-purchase selling section: hidden for journey
+          subscribers (gated on entitlement, not report_phase). */}
+      {!journeySubscribed ? (
+        <section className="px-2 py-2">
+          <div>
+            <CmsText
+              cmsKey="journeyAssessment.analysis.expertLabel"
+              as="div"
+              className="text-start text-[14px] font-semibold uppercase tracking-wider text-[#FCCA65] leading-normal"
+            />
+            <CmsText
+              cmsKey="journeyAssessment.analysis.expertTitle"
+              as="h2"
+              className="mt-1.5 text-balance text-start font-heading text-[26px] font-extrabold leading-tight text-white sm:text-[30px]"
+            />
+            <CmsText
+              cmsKey="journeyAssessment.analysis.expertBody"
+              as="p"
+              className="mt-3 text-pretty text-start text-[20px] leading-[1.4] text-white/90 sm:text-[18px] sm:leading-[1.7]"
+            />
+            <ul className="mt-4 flex flex-col gap-2.5">
+              {[1, 2, 3, 4].map((n) => (
+                <li
+                  key={n}
+                  className="flex items-start gap-3 text-[22px] leading-[1.3] text-white/95 sm:text-[19px] sm:leading-[1.65]"
+                >
+                  <MessageCircle
+                    className="mt-1 h-5 w-5 shrink-0 text-[#FCCA65]"
+                    aria-hidden
+                  />
+                  <CmsText
+                    cmsKey={`journeyAssessment.analysis.expertBullet${n}`}
+                    className="flex-1 text-pretty text-start"
+                  />
+                </li>
+              ))}
+              {/* F3.3 (b) — additional expert bullet for non-subscribers,
+                  matching the styling of the four bullets above. */}
+              <li className="flex items-start gap-3 text-[22px] leading-[1.3] text-white/95 sm:text-[19px] sm:leading-[1.65]">
                 <MessageCircle
                   className="mt-1 h-5 w-5 shrink-0 text-[#FCCA65]"
                   aria-hidden
                 />
-                <CmsText
-                  cmsKey={`journeyAssessment.analysis.expertBullet${n}`}
-                  className="flex-1 text-pretty text-start"
-                />
+                <span className="flex-1 text-pretty text-start">
+                  {isHe
+                    ? "בדיקת התקדמות זוגית כל 8 שבועות — והמומחה שלכם מדייק את הליווי בהתאם."
+                    : "A couples progress check every 8 weeks — and your expert fine-tunes the guidance accordingly."}
+                </span>
               </li>
-            ))}
-          </ul>
-        </div>
-      </section>
+            </ul>
+          </div>
+        </section>
+      ) : null}
 
-      {/* ── CTA / Active subscriber ──────────────────────────────────── */}
-      {subscriptionActive ? (
+      {/* ── CTA / Active subscriber ──────────────────────────────────────
+          F3.3 — driven by journeySubscribed (owner-swapped journey
+          entitlement), NOT the caller-keyed subscriptionActive: a PARTNER
+          of a paying subscriber has free journey access and must see the
+          ActiveSubscriberCard, not the buy CTA. A games-only subscriber
+          (no journey access) correctly falls through to the OfferCard. */}
+      {journeySubscribed ? (
         <ActiveSubscriberCard locale={locale} />
       ) : (
         <OfferCard
@@ -608,8 +647,11 @@ export function AnalysisSummary({
           F3 (#1) — bar background itself is now the wine gradient so
           the whole strip pulls the eye, not just a button on a black
           plate. The button reads as a clean lighter-tinted overlay on
-          top of the wine field. */}
-      {!subscriptionActive ? (
+          top of the wine field.
+          F3.3 — same journeySubscribed gate as the CTA card above so the
+          mobile buy button never shows to a user (incl. a partner) who
+          already has journey access. */}
+      {!journeySubscribed ? (
         <div
           className="fixed inset-x-0 bottom-0 z-30 border-t border-white/10 px-4 py-3 lg:hidden"
           style={{
@@ -943,6 +985,15 @@ function OfferCard({
             ))}
           </ul>
         </div>
+
+        {/* F3.3 (a) — intro line for the full assessment, shown to
+            non-subscribers right above the join CTA. OfferCard only
+            renders on the non-subscriber path, so no extra gate needed. */}
+        <p className="mt-5 text-start text-[20px] leading-snug text-white/80">
+          {isHe
+            ? "מיד עם ההצטרפות נשלים את האבחון המלא — לתמונה מדויקת יותר ולכלים שמתאימים בדיוק אליכם."
+            : "Right after you join, we'll complete the full assessment — for a more accurate picture and tools tailored exactly to you."}
+        </p>
 
         <button
           type="button"
