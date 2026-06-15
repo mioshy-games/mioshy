@@ -32,7 +32,6 @@ import { createAdminClient } from "@/lib/supabase-admin";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import {
   QUESTIONNAIRE,
-  totalQuestions,
   requiresAuthAt,
   requiresPaywallAt,
 } from "@/lib/journey/questions";
@@ -41,6 +40,8 @@ import {
   buildQuestionResolver,
   loadJourneyQuestions,
 } from "@/lib/journey/questions-db";
+import { resolveJourneyFlow } from "@/lib/journey/phase";
+import { computeGate, reportPhaseForMode } from "@/lib/journey/gating";
 import { isValidOrder } from "@/lib/journey/priorities";
 import { getPriorityLabels } from "@/lib/journey-content/priority-categories";
 import { onPriorityRankingSubmitted } from "@/lib/journey-content/cadence-trigger";
@@ -330,23 +331,58 @@ export async function POST(req: Request) {
     }
   }
 
-  // ── Advance step ────────────────────────────────────────────────────────────
-  const nextStep   = index + 1;
-  const isComplete = nextStep >= totalQuestions();
-  const newStatus  =
-    isComplete
-      ? "complete"
-      : nextStep > QUESTIONNAIRE.gating.paywall_after_index && !trusted_user_id
-        ? "paywall"
-        : "in_progress";
+  // ── F3.2 — phase-aware completion + gating ───────────────────────────────────
+  const nextStep = index + 1; // kept for back-compat logging (client uses its
+                              // own local index over the served `remaining`).
+
+  // Subscription drives the active phase (short pre-purchase / full post).
+  let subscriptionActive = false;
+  if (trusted_user_id) {
+    const { data: sub } = await admin
+      .from("subscriptions")
+      .select("status")
+      .eq("user_id", trusted_user_id)
+      .eq("status", "active")
+      .maybeSingle();
+    subscriptionActive = !!sub;
+  }
+
+  // All answers for this journey (includes the one just upserted) → drives the
+  // answer-driven active set + completion.
+  const { data: allResponses } = await admin
+    .from("journey_responses")
+    .select("question_id, answer, locale")
+    .eq("journey_id", journeyId);
+  const parsed: Response[] = (allResponses ?? []).map((r) => ({
+    question_id: r.question_id,
+    answer:      r.answer as AnswerValue,
+    locale:      r.locale as Locale,
+  }));
+  const answeredSlugs = new Set(parsed.map((r) => r.question_id));
+
+  // SAME helper + SAME gate the client uses → no client/server boundary drift.
+  const flow = await resolveJourneyFlow({ client: admin, subscriptionActive, answeredSlugs });
+  const gate = computeGate({
+    mode: flow.mode,
+    phaseTotal: flow.phaseTotal,
+    answeredInPhaseCount: flow.answeredInPhaseCount,
+    authenticated: !!trusted_user_id,
+    subscriptionActive,
+  });
+  const reportPhase = reportPhaseForMode(flow.mode); // 'short' | 'full'
+  const isComplete  = gate.phaseComplete;
+  // short complete → 'paywall' (awaiting purchase); full/single complete → 'complete'.
+  const newStatus = isComplete
+    ? (reportPhase === "full" ? "complete" : "paywall")
+    : "in_progress";
 
   await admin
     .from("journeys")
     .update({
-      current_step:     nextStep,
+      current_step:     flow.answeredInPhaseCount, // phase-relative cache
       status:           newStatus,
       last_activity_at: new Date().toISOString(),
-      completed_at:     isComplete ? new Date().toISOString() : null,
+      completed_at:     isComplete && reportPhase === "full" ? new Date().toISOString() : null,
     })
     .eq("id", journeyId);
 
@@ -355,24 +391,18 @@ export async function POST(req: Request) {
     user_id:  trusted_user_id,
     actor_id: trusted_user_id,
     action:   "answer_saved",
-    metadata: { question_id, index, journey_id: journeyId },
+    metadata: { question_id, index, journey_id: journeyId, mode: flow.mode },
   });
 
-  // ── Compute analysis eagerly on completion ─────────────────────────────────
+  // ── Compute analysis eagerly on PHASE completion ───────────────────────────
+  // Short report = analyze over short answers only; full report = short ∪ full.
+  // (For full/single modes phaseSet is the whole set, so the filter is a no-op.)
   let analysis = null;
   if (isComplete) {
-    const { data: allResponses } = await admin
-      .from("journey_responses")
-      .select("question_id, answer, locale")
-      .eq("journey_id", journeyId);
-
-    const parsed: Response[] = (allResponses ?? []).map((r) => ({
-      question_id: r.question_id,
-      answer:      r.answer as AnswerValue,
-      locale:      r.locale as Locale,
-    }));
+    const phaseSlugs = new Set(flow.phaseSet.map((qd) => qd.id));
+    const phaseResponses = parsed.filter((r) => phaseSlugs.has(r.question_id));
     const priorityLabels = await getPriorityLabels();
-    analysis = analyze(parsed, priorityLabels, resolveQuestion);
+    analysis = analyze(phaseResponses, priorityLabels, resolveQuestion);
 
     await admin.from("journey_analysis").insert({
       journey_id:              journeyId,
@@ -386,17 +416,21 @@ export async function POST(req: Request) {
       top_gap:                 analysis.top_gap,
       four_horsemen_flag:      analysis.four_horsemen_flag,
       summary:                 analysis.summary,
+      report_phase:            reportPhase, // F1 column 119; 'short' | 'full'
     });
   }
 
   return NextResponse.json({
-    ok:          true,
-    journey_id:  journeyId,
-    next_index:  nextStep,
-    status:      newStatus,
-    gating: {
-      auth_required_next:    requiresAuthAt(nextStep - 1) && !trusted_user_id,
-      paywall_required_next: requiresPaywallAt(nextStep - 1) && !!trusted_user_id,
+    ok:         true,
+    journey_id: journeyId,
+    next_index: nextStep,
+    status:     newStatus,
+    // F3.2 — authoritative gate the client adopts.
+    gate: {
+      mode:          flow.mode,
+      phaseComplete: gate.phaseComplete,
+      needsAuth:     gate.needsAuth,
+      needsPaywall:  gate.needsPaywall,
     },
     analysis,
   });

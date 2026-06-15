@@ -45,6 +45,12 @@ interface JourneyClientProps {
   questions: Question[];
   likertLabels: Record<Locale, string[]>;
   gating: { auth_after_index: number; paywall_after_index: number };
+  /** F3.2 — `questions` is the UNANSWERED remainder of the active phase;
+   *  phaseTotal/phaseAnsweredBefore drive the honest progress bar across the
+   *  whole phase (completion + the auth/paywall gate are server-authoritative,
+   *  adopted from the answer response's `gate`). */
+  phaseTotal: number;
+  phaseAnsweredBefore: number;
 }
 
 // ── Engagement reveal: per-question "X% of couples answered like you" ──
@@ -94,8 +100,13 @@ export function JourneyClient({
   questions,
   likertLabels,
   gating,
+  phaseTotal,
+  phaseAnsweredBefore,
 }: JourneyClientProps) {
-  const [index, setIndex] = useState(initialProgress?.current_step ?? 0);
+  // F3.2 — `questions` is the UNANSWERED remainder of the active phase, so we
+  // always start at its index 0 (resume = first unanswered, computed server-
+  // side). `current_step` is no longer trusted for positioning.
+  const [index, setIndex] = useState(0);
   // In-memory map of answers, seeded with the server-hydrated set and
   // updated as the user submits new ones. Lookup by question_id when
   // we need an `initial` value for QuestionStep / PriorityRankingStep.
@@ -537,22 +548,19 @@ export function JourneyClient({
       const data = await res.json();
       if (data.analysis) setAnalysis(data.analysis);
 
-      const serverNext = data.next_index ?? optimisticNext;
-      // Inline log so we can see at a glance whether the server is
-      // advancing the user (serverNext === capturedIndex + 1) or
-      // keeping them on the same question (serverNext === capturedIndex).
-      // Diagnostic for the "stuck on q13" report 2026-05-18.
+      // F3.2 — positioning is LOCAL to the active phase's `remaining` set; the
+      // server's next_index is phase/global and is no longer used for the
+      // client index. The server's `gate.phaseComplete` is AUTHORITATIVE for
+      // "done" (reconciles any is_active skew between load and submit).
+      const serverPhaseComplete: boolean = !!data.gate?.phaseComplete;
       // eslint-disable-next-line no-console
       console.log(
         "[answer] server response",
         `qid=${question.id}`,
         `captured=${capturedIndex}`,
         `optimistic=${optimisticNext}`,
-        `serverNext=${serverNext}`,
-        `serverNextRaw=${data.next_index}`,
-        `willRevert=${serverNext === capturedIndex}`,
-        `willAdvance=${serverNext === optimisticNext}`,
-        `willCorrect=${serverNext !== optimisticNext && serverNext !== capturedIndex}`,
+        `phaseComplete=${serverPhaseComplete}`,
+        `mode=${data.gate?.mode ?? "?"}`,
         `dataKeys=${Object.keys(data).join(",")}`,
       );
       track("journey_question_answered", {
@@ -560,37 +568,25 @@ export function JourneyClient({
         question_id: question.id,
         locale,
       });
-      if (serverNext >= total)
+      if (serverPhaseComplete || optimisticNext >= total)
         track("journey_completed", { total_steps: total, locale });
 
       if (!isAutoAdvance) {
         // Hold the reveal on screen for at least dwellMs even if the API
-        // responded faster than the dwell - keeps the social-proof feedback
-        // consistent across question types. When skipReveal is true,
-        // dwellMs is 0 so we advance immediately.
+        // responded faster than the dwell. When skipReveal, dwellMs is 0.
         if (dwellMs > 0) {
           await new Promise((r) => window.setTimeout(r, dwellMs));
         }
-        // eslint-disable-next-line no-console
-        console.log("[reveal] cleared (manual)", {
-          qid: question.id,
-          actualDwellMs: Math.round(performance.now() - __revealStartTs),
-          configuredDwellMs: dwellMs,
-        });
         setReveal(null);
-        setIndex(serverNext);
-        if (serverNext > highWaterRef.current) {
-          highWaterRef.current = serverNext;
-        }
-      } else if (serverNext !== optimisticNext) {
-        // Server corrected the index (e.g. skip logic) - let the dwell
-        // timer running above still clear `reveal`; here we only need to
-        // override the destination index.
+        const dest = serverPhaseComplete ? total : optimisticNext;
+        setIndex(dest);
+        if (dest > highWaterRef.current) highWaterRef.current = dest;
+      } else if (serverPhaseComplete && optimisticNext < total) {
+        // Skew: server says the phase is complete before the client's
+        // remaining set is exhausted — jump to done after the dwell.
         window.setTimeout(() => {
-          setIndex(serverNext);
-          if (serverNext > highWaterRef.current) {
-            highWaterRef.current = serverNext;
-          }
+          setIndex(total);
+          if (total > highWaterRef.current) highWaterRef.current = total;
         }, dwellMs);
       }
     } catch (err) {
@@ -724,7 +720,7 @@ export function JourneyClient({
           the progress bar and the first question now that the header
           slot is gone. */}
       <div className="sticky top-2 z-20 -mx-4 px-4 pb-6 sm:static sm:px-0 sm:pb-8">
-        <ProgressBar current={index} total={total} />
+        <ProgressBar current={phaseAnsweredBefore + index} total={phaseTotal} />
       </div>
 
       <AnimatePresence mode="wait">

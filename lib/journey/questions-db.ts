@@ -154,16 +154,23 @@ export interface LoadJourneyQuestionsOptions {
   phase?: "short" | "full";
 }
 
+/** Where a load resolved from: the editable DB table, or the bundled JSON. */
+export type JourneyQuestionsSource = "db" | "json";
+
 /**
  * Load journey question definitions from the DB, falling back to the bundled
- * questionnaire.json when the table is empty or the query errors. Logs which
- * source was used. The returned array is in `position` order (DB) or
- * questionnaire.json order (fallback).
+ * questionnaire.json when the table is empty or the query errors, AND report
+ * which source was used. The `source` signal lets F3.2 decide split-flow (db)
+ * vs single-flow (json fallback) — when unseeded we must behave exactly like
+ * today's single questionnaire.
+ *
+ * The returned array is in `position` order (DB) or questionnaire.json order
+ * (fallback).
  */
-export async function loadJourneyQuestions(
+export async function loadJourneyQuestionsWithSource(
   client: SupabaseClient,
   opts: LoadJourneyQuestionsOptions = {},
-): Promise<Question[]> {
+): Promise<{ questions: Question[]; source: JourneyQuestionsSource }> {
   try {
     let query = client
       .from("journey_questions")
@@ -183,7 +190,10 @@ export async function loadJourneyQuestions(
         count: data.length,
         phase: opts.phase ?? "all",
       });
-      return mapRowsToJourneyQuestions(data as unknown as JourneyQuestionRow[]);
+      return {
+        questions: mapRowsToJourneyQuestions(data as unknown as JourneyQuestionRow[]),
+        source: "db",
+      };
     } else {
       console.log(
         "[journey/questions-db] table empty, falling back to questionnaire.json",
@@ -196,14 +206,27 @@ export async function loadJourneyQuestions(
     );
   }
 
-  // Fallback: bundled JSON. When a phase filter is requested we cannot honor
-  // it (the JSON carries no phase), so we return the full set — scoring is
-  // phase-agnostic, and this only happens pre-migration / on DB failure.
+  // Fallback: bundled JSON. A phase filter can't be honored (the JSON carries
+  // no phase), so we return the full set — callers MUST treat source==='json'
+  // as single-flow (no short/full split).
   console.log("[journey/questions-db] source=json_fallback", {
     count: STATIC_QUESTIONS.length,
     phase: opts.phase ?? "all",
   });
-  return STATIC_QUESTIONS;
+  return { questions: STATIC_QUESTIONS, source: "json" };
+}
+
+/**
+ * Backwards-compatible loader (questions only). Unchanged behaviour for the
+ * scoring/validation callers from F1; new F3.2 flow code uses
+ * loadJourneyQuestionsWithSource for the source signal.
+ */
+export async function loadJourneyQuestions(
+  client: SupabaseClient,
+  opts: LoadJourneyQuestionsOptions = {},
+): Promise<Question[]> {
+  const { questions } = await loadJourneyQuestionsWithSource(client, opts);
+  return questions;
 }
 
 /**

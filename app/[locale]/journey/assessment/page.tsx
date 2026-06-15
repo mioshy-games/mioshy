@@ -35,7 +35,7 @@ import {
   QUESTIONS as STATIC_QUESTIONS,
   QUESTIONNAIRE,
 } from "@/lib/journey/questions";
-import { loadJourneyQuestions } from "@/lib/journey/questions-db";
+import { resolveJourneyFlow } from "@/lib/journey/phase";
 import type { Locale } from "@/lib/journey/types";
 import { listAllPrices } from "@/lib/billing/pricing-queries";
 import type { CadenceOption } from "@/lib/billing/pricing-validations";
@@ -496,16 +496,27 @@ export default async function JourneyAssessmentPage({
       is_default,
     }));
 
-  // F3.1 — RENDER source: load the questionnaire from the DB
-  // (journey_questions) via the service-role client. loadJourneyQuestions
-  // falls back to questionnaire.json on empty table / read error; if the
-  // service-role client is unavailable we use the static set directly. Either
-  // way render degrades to today's behaviour. likertLabels + gating stay
-  // JSON-sourced this step, carried as props (flow/gating unchanged — F3.2).
+  // F3.2 — resolve the ACTIVE flow (short pre-purchase / full post-purchase /
+  // single when unseeded) and serve only the UNANSWERED questions of the
+  // active phase. Position is answer-driven (resume = first unanswered), so we
+  // never re-ask a short question post-purchase. Falls back to the full static
+  // set as a single flow if the service-role client is unavailable.
+  const answeredSlugs = new Set(Object.keys(initialAnswers));
   const questionsClient = createServiceRoleClient();
-  const questions = questionsClient
-    ? await loadJourneyQuestions(questionsClient)
-    : STATIC_QUESTIONS;
+  const flow = questionsClient
+    ? await resolveJourneyFlow({
+        client: questionsClient,
+        subscriptionActive,
+        answeredSlugs,
+      })
+    : {
+        mode: "single" as const,
+        phaseSet: STATIC_QUESTIONS,
+        remaining: STATIC_QUESTIONS.filter((q) => !answeredSlugs.has(q.id)),
+        phaseTotal: STATIC_QUESTIONS.length,
+        answeredInPhaseCount: STATIC_QUESTIONS.filter((q) => answeredSlugs.has(q.id)).length,
+        source: "json" as const,
+      };
 
   return (
     <div
@@ -564,9 +575,11 @@ export default async function JourneyAssessmentPage({
         subscriptionActive={subscriptionActive}
         authenticated={!!user}
         journeyCadences={journeyCadences}
-        questions={questions}
+        questions={flow.remaining}
         likertLabels={QUESTIONNAIRE.likert_labels}
         gating={QUESTIONNAIRE.gating}
+        phaseTotal={flow.phaseTotal}
+        phaseAnsweredBefore={flow.answeredInPhaseCount}
       />
     </div>
   );
