@@ -72,6 +72,22 @@ export default async function LeadsAdminPage({
             Converted
           </Link>
         </div>
+        {/* G4 — CSV export for manual (WhatsApp) outreach. Plain <a> so the
+            route's attachment download fires instead of client navigation. */}
+        <div className="mt-3 flex flex-wrap gap-3 text-sm">
+          <a
+            className="rounded-md border px-3 py-1.5 font-medium hover:bg-accent"
+            href="/dashboard/leads/export"
+          >
+            ⬇ Export all (CSV)
+          </a>
+          <a
+            className="rounded-md border px-3 py-1.5 font-medium hover:bg-accent"
+            href="/dashboard/leads/export?source=marathon-7day"
+          >
+            ⬇ Export marathon (CSV)
+          </a>
+        </div>
       </div>
 
       <Card>

@@ -17,6 +17,7 @@ const PAGE_LABELS: Record<CmsPage, string> = {
   my: "My / Account",
   about: "About",
   shared: "Shared",
+  marathon: "Marathon (7-day)",
   // 2026-05-29 — post-login AppShell strings (migrations 098 + 100).
   // 69 + 13 = 82 keys live under page='app-shell'.
   "app-shell": "App Shell (post-login)",

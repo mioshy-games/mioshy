@@ -27,8 +27,52 @@ import { NextResponse }             from "next/server"
 import { createAdminClient }        from "@/lib/supabase-admin"
 import { createServerSupabaseClient } from "@/lib/supabase/server"
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit"
+import { sendBrevoEmail }           from "@/lib/email/brevo"
 
 const FK_VIOLATION_CODE = "23503"
+
+// G3 — notify the site owner when a NEW marathon lead lands, so Itzik can do
+// the manual WhatsApp outreach. Fire-and-forget (never blocks/throws the API
+// response). Recipient: MARATHON_OWNER_EMAIL, else the Brevo sender (owner)
+// address; if neither is set, sendBrevoEmail itself no-ops.
+async function notifyOwnerOfMarathonLead(lead: {
+  name: string | null
+  phone: string | null
+  email: string
+  source: string
+}) {
+  const to = process.env.MARATHON_OWNER_EMAIL || process.env.BREVO_SENDER_EMAIL
+  if (!to) return
+  try {
+    const esc = (s: string) =>
+      s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    const rows: Array<[string, string]> = [
+      ["שם / Name", lead.name || "—"],
+      ["טלפון / Phone", lead.phone || "—"],
+      ["אימייל / Email", lead.email],
+      ["מקור / Source", lead.source],
+    ]
+    const html =
+      `<h2 style="font-family:sans-serif">ליד חדש למרתון 🎉</h2>` +
+      `<table style="font-family:sans-serif;font-size:15px;border-collapse:collapse">` +
+      rows
+        .map(
+          ([k, v]) =>
+            `<tr><td style="padding:4px 12px 4px 0;color:#666">${esc(k)}</td>` +
+            `<td style="padding:4px 0;font-weight:600">${esc(v)}</td></tr>`,
+        )
+        .join("") +
+      `</table>`
+    await sendBrevoEmail({
+      to: [{ email: to }],
+      subject: `ליד חדש למרתון — ${lead.name || lead.email}`,
+      htmlContent: html,
+      tags: ["marathon-lead"],
+    })
+  } catch (err) {
+    console.warn("[leads/upsert] owner marathon notification failed", err)
+  }
+}
 
 export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}))
@@ -44,6 +88,8 @@ export async function POST(req: Request) {
     marketing_consent  = false,
     terms_accepted     = false,
     terms_accepted_at  = null,
+    phone            = null,  // G — mobile (WhatsApp) for marathon leads
+    source           = null,  // G — acquisition tag, e.g. 'marathon-7day'
     // NOTE: we intentionally ignore `user_id` from the body - it is
     // re-derived server-side from the session cookie. This prevents a
     // malicious client from associating a lead with someone else's account
@@ -88,6 +134,11 @@ export async function POST(req: Request) {
     ? full_name.trim()
     : typeof name === "string" && name.trim() ? name.trim() : null
 
+  const resolvedPhone =
+    typeof phone === "string" && phone.trim() ? phone.trim() : null
+  const resolvedSource =
+    typeof source === "string" && source.trim() ? source.trim() : null
+
   async function tryInsert(uid: string | null) {
     return admin
       .from("leads")
@@ -104,6 +155,8 @@ export async function POST(req: Request) {
         marketing_consent: !!marketing_consent,
         terms_accepted:    !!terms_accepted,
         terms_accepted_at: terms_accepted && terms_accepted_at ? terms_accepted_at : null,
+        phone:             resolvedPhone,
+        source:            resolvedSource,
         user_id:           uid,
       })
       .select("id")
@@ -127,6 +180,17 @@ export async function POST(req: Request) {
   }
 
   if (!insertErr && inserted?.id) {
+    // G3 — notify the owner only for genuinely NEW marathon leads (not on the
+    // duplicate path below, so re-submits don't spam). Awaited but guarded so a
+    // mail hiccup never fails the signup.
+    if (resolvedSource === "marathon-7day") {
+      await notifyOwnerOfMarathonLead({
+        name:   resolvedName,
+        phone:  resolvedPhone,
+        email:  email.trim().toLowerCase(),
+        source: resolvedSource,
+      })
+    }
     return NextResponse.json({ success: true, lead_id: inserted.id, created: true })
   }
 

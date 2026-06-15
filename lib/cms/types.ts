@@ -52,6 +52,9 @@ export const CMS_PAGES = [
   "my",
   "about",
   "shared",
+  // G2 — free 7-day couples marathon lead-capture landing (/[locale]/marathon).
+  // marathon.* copy; falls back to messages/*.json until cms_texts rows exist.
+  "marathon",
   // 2026-05-29 — post-login AppShell strings (Studio v12). 69 rows
   // backfilled by migration 098_cms_texts_app_shell.sql. Components
   // under components/shell/* and app/[locale]/(shell)/* read these
