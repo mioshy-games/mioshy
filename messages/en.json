@@ -822,6 +822,10 @@
     "langHebrew": "Hebrew",
     "langEnglish": "English"
   },
+  "games": {
+    "freeBadge": "Free",
+    "subscriptionTag": "Subscription"
+  },
   "gamesHub": {
     "title": "Mioshy · Couples Games That Spark the Conversation",
     "subtitle": "Truth-or-dare wheels, snakes & ladders with deep questions, challenges and more. One device or two — all in your browser, no downloads.",
@@ -2106,7 +2110,8 @@
     "invitePartnerLede": "Send an email invitation. Once they join, this section will disappear from your dashboard.",
     "gameSessionCodeLabel": "Game session code (second device)",
     "pairProfilePrereq": "To pair a partner or redeem a code, you need a full name, mobile and password.",
-    "redeemHint": "Enter the code and your account links to theirs instantly.",
+    "redeemHint": "Enter it to connect and unlock your shared access.",
+    "redeemBtn": "Enter code",
     "footerAccountLink": "My account · invoices · subscription",
     "pillarGamesTitle": "Online couples games",
     "pillarJourneyTitle": "Journey with Mioshy",
@@ -2141,7 +2146,8 @@
         "doneLabel": "Done ✓",
         "doneDesc": "Your partner is connected — great!",
         "entryQ": "Got a code from your partner?",
-        "entryCta": "Enter code to connect"
+        "entryBody": "Enter it to connect and unlock your shared access.",
+        "entryCta": "Enter code"
       },
       "item2": {
         "title": "Complete your full assessment",

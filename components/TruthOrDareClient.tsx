@@ -268,6 +268,13 @@ export function TruthOrDareClient({
       return;
     }
 
+    // H (free game): a registered user plays a free game with no cap. Guests
+    // fall through to the standard 3-spin teaser → RegistrationModal below.
+    if (game.is_free && userId) {
+      wheelRef.current?.spin();
+      return;
+    }
+
     const slug = game.slug;
 
     // ── Guest ────────────────────────────────────────────────────────────────
@@ -436,6 +443,9 @@ export function TruthOrDareClient({
       setCompletedSpins((c) => c + 1);
 
       if (subscribed) return;
+      // H (free game): registered users aren't play-capped on a free game, so
+      // skip counting + the paywall. Guests still count toward the teaser.
+      if (game.is_free && userId) return;
 
       const slug = game.slug;
 
@@ -459,7 +469,7 @@ export function TruthOrDareClient({
         }
       }
     },
-    [completedSpins, game.player_mode, game.slug, pickNextQuestion, subscribed, userId, leadCaptured, setIsSpinning],
+    [completedSpins, game.player_mode, game.slug, game.is_free, pickNextQuestion, subscribed, userId, leadCaptured, setIsSpinning],
   );
 
   const handleNext = () => setCurrent(null);

@@ -31,6 +31,7 @@ import { getShellData } from "@/lib/shell/getShellData";
 import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
 import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
 import { pickGameThumbnail } from "@/lib/games-thumbnail";
+import { FreeBadge } from "@/components/games/FreeBadge";
 import { CmsText } from "@/components/cms/CmsText";
 import type { GameRow } from "@/lib/types/database";
 
@@ -143,6 +144,11 @@ export default async function ShellMyGamesPage({
                           <Gamepad2 className="h-12 w-12 text-white/40" />
                         </div>
                       )}
+                      {/* H — free-game marker. No "דרוש מנוי" tag here: /my/games
+                          is gated to games-entitled members, so it'd be wrong. */}
+                      {g.is_free ? (
+                        <FreeBadge className="absolute start-3 top-3 z-10" />
+                      ) : null}
                       <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/70 to-transparent" />
                     </div>
                     <div className="flex flex-1 flex-col p-5">

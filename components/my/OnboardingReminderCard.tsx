@@ -78,6 +78,7 @@ export function OnboardingReminderCard({
   const item1DoneLabel = useCmsText("myHub.onboarding.item1.doneLabel").text;
   const item1DoneDesc = useCmsText("myHub.onboarding.item1.doneDesc").text;
   const item1EntryQ = useCmsText("myHub.onboarding.item1.entryQ").text;
+  const item1EntryBody = useCmsText("myHub.onboarding.item1.entryBody").text;
   const item1EntryCta = useCmsText("myHub.onboarding.item1.entryCta").text;
 
   const item2Title = useCmsText("myHub.onboarding.item2.title").text;
@@ -162,13 +163,23 @@ export function OnboardingReminderCard({
         {pairCode ? <PartnerShareCard pairCode={pairCode} /> : null}
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-dashed border-white/15 pt-4">
-          <span className="text-[18px] text-white/70" data-cms-key="myHub.onboarding.item1.entryQ">
-            {cmsOr(item1EntryQ, isHe ? "קיבלתם קוד מבן/בת הזוג?" : "Got a code from your partner?")}
-          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-[18px] font-semibold text-white" data-cms-key="myHub.onboarding.item1.entryQ">
+              {cmsOr(item1EntryQ, isHe ? "קיבלתם קוד מבן/בת הזוג?" : "Got a code from your partner?")}
+            </p>
+            <p className="mt-0.5 text-[16px] leading-snug text-white/65" data-cms-key="myHub.onboarding.item1.entryBody">
+              {cmsOr(
+                item1EntryBody,
+                isHe
+                  ? "הזינו אותו כדי להתחבר ולפתוח את הגישה המשותפת שלכם."
+                  : "Enter it to connect and unlock your shared access.",
+              )}
+            </p>
+          </div>
           <RedeemCodeButton
             isHe={isHe}
             variant="pill"
-            label={cmsOr(item1EntryCta, isHe ? "הזנת קוד לחיבור" : "Enter code to connect")}
+            label={cmsOr(item1EntryCta, isHe ? "הזנת קוד" : "Enter code")}
           />
         </div>
       </ChecklistItem>

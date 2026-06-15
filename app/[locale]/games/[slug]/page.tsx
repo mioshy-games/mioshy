@@ -1,4 +1,5 @@
 import { TruthOrDareClient } from "@/components/TruthOrDareClient";
+import { FreeBadge } from "@/components/games/FreeBadge";
 // 2026-05-20 — replaced GamePageBackground import with GameSurfaceShell,
 // which adds the WheelSpinContext on top so blob animations only run
 // while the wheel is actively spinning. See GameSurfaceShell.tsx and
@@ -241,6 +242,9 @@ export default async function GameBySlugPage({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
         />
+        {/* H — "חינם" marker on the free game's play page. Corner pill (no title
+            header on the live wheel); top-start avoids the top-end controls. */}
+        {g.is_free ? <FreeBadge className="fixed start-3 top-3 z-40" /> : null}
         <TruthOrDareClient game={g} wheel={w} questions={qs} gameSettings={gameSettings} />
       </div>
     );
@@ -252,6 +256,8 @@ export default async function GameBySlugPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
       />
+      {/* H — "חינם" marker on the free game's play page (corner pill). */}
+      {g.is_free ? <FreeBadge className="fixed start-3 top-3 z-40" /> : null}
       <TruthOrDareClient game={g} wheel={w} questions={qs} transparent gameSettings={gameSettings} />
     </GameSurfaceShell>
   );

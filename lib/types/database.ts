@@ -35,6 +35,10 @@ export type GameRow = {
   /** English-locale catalogue thumbnail (carries baked-in English copy). */
   thumbnail_url_en: string | null;
   is_active: boolean;
+  /** H (migration 121): when true, registered users play with no spin cap
+   *  (free game). Guests still get the standard free-spin teaser. Optional for
+   *  back-compat with rows fetched before the column existed → treated falsy. */
+  is_free?: boolean;
   bg_type: "color" | "image";
   bg_value: string;
   player_mode?: boolean;

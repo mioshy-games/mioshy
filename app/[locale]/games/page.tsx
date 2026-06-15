@@ -37,6 +37,7 @@ import { LazyLiveDemoHero } from "@/components/marketing/v2/LazyLiveDemoHero";
 import { RevealOnScroll } from "@/components/marketing/v2/RevealOnScroll";
 import { FAQ } from "@/components/marketing/v2/FAQ";
 import { pickGameThumbnail } from "@/lib/games-thumbnail";
+import { FreeBadge, SubscriptionTag } from "@/components/games/FreeBadge";
 import { GamesPageAtmosphere } from "@/components/games/GamesPageAtmosphere";
 // `GamesOrbsDiagProbe` import removed 2026-05-19 along with the
 // orbs field. Probe file kept on disk for future debugging.
@@ -257,6 +258,13 @@ export default async function GamesHubPage({
                             unoptimized
                           />
                         ) : null}
+                        {/* H — free game gets the "חינם" badge; others a quiet
+                            "דרוש מנוי" tag (public marketing catalogue). */}
+                        {g.is_free ? (
+                          <FreeBadge className="absolute start-3 top-3 z-10" />
+                        ) : (
+                          <SubscriptionTag className="absolute start-3 top-3 z-10" />
+                        )}
                         <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/70 to-transparent" />
                       </div>
                       <div className="p-5">

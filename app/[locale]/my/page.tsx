@@ -688,6 +688,7 @@ export default async function MyHubPage({
                 <RedeemCodeButton
                   isHe={isHe}
                   variant="primary"
+                  label={t("redeemBtn")}
                   redirectTo={`/${locale}/my`}
                 />
               </div>
