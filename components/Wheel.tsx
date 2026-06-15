@@ -1,17 +1,37 @@
 "use client";
 
-import { motion, useMotionValue, animate } from "framer-motion";
 import {
   forwardRef,
   useCallback,
   useEffect,
   useImperativeHandle,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import type { QuestionType } from "@/lib/game-engine";
 import { startSpinSound, stopSpinSound } from "@/lib/sounds";
 import { fitSvgToContainer } from "@/lib/utils";
+
+// A.2 perf fix (Option Y): map the `spinEasing` prop (string | number[]) to a
+// CSS transition-timing-function. A 4-number array → cubic-bezier(...). A string
+// passes through only if it's a valid CSS keyword (the only one used is
+// "linear"); anything else falls back to a sensible ease-out so the transition
+// is always valid.
+const CSS_EASE_KEYWORDS = new Set([
+  "linear",
+  "ease",
+  "ease-in",
+  "ease-out",
+  "ease-in-out",
+]);
+function cssEasing(e: string | number[] | undefined): string {
+  if (Array.isArray(e) && e.length === 4 && e.every((n) => typeof n === "number" && Number.isFinite(n))) {
+    return `cubic-bezier(${e[0]}, ${e[1]}, ${e[2]}, ${e[3]})`;
+  }
+  if (typeof e === "string" && CSS_EASE_KEYWORDS.has(e)) return e;
+  return "cubic-bezier(0.12, 0.8, 0.12, 1)"; // default ease-out (matches prior default)
+}
 
 export type WheelSegment = {
   type: QuestionType;
@@ -253,13 +273,32 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
   ref,
 ) {
   const [spinning, setSpinning] = useState(false);
-  const rotation = useMotionValue(0);
-  const [displayRotation, setDisplayRotation] = useState(0);
 
-  useEffect(() => {
-    const unsub = rotation.on("change", (v) => setDisplayRotation(v));
-    return () => unsub();
-  }, [rotation]);
+  // A.2 perf fix (Option Y, work-order 2026-06-15): the spin is now a single CSS
+  // transition on an HTML wrapper around the SVG — GPU-composited, ZERO per-frame
+  // JS and ZERO SVG repaint (the old framer-motion motion-value sampled an SVG
+  // <g> every frame: measured ~294ms scripting + ~90ms layout / 4 long-tasks per
+  // spin). `angleRef` accumulates monotonically (never resets/modulos the applied
+  // transform) so an interrupted/repeated spin continues forward with no jump.
+  // `appliedAngle` drives the transform; `animating` toggles the transition.
+  // Fix #1 (a11y) is preserved: the sr-only status below keys off `spinning`.
+  const angleRef = useRef(0);                 // accumulated target angle (deg)
+  const [appliedAngle, setAppliedAngle] = useState(0);
+  const [animating, setAnimating] = useState(false);
+  const spinIdRef = useRef(0);                // bumped per spin (settle idempotency)
+  const settledIdRef = useRef(-1);            // last spin id that already settled
+  const soundOnRef = useRef(false);           // whether spin sound is currently playing
+  const fallbackRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const rotorRef = useRef<HTMLDivElement | null>(null);
+
+  // Clear any pending fallback timer on unmount (interrupted spin → no setState
+  // on an unmounted component, no leaked timer).
+  useEffect(
+    () => () => {
+      if (fallbackRef.current) clearTimeout(fallbackRef.current);
+    },
+    [],
+  );
 
   // 2026-05-20 — [Wheel/DIAG] diagnostic useEffect removed. Was
   // firing on every prop change (and every Wheel re-render in
@@ -339,6 +378,32 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
     [options.length, segmentAngle],
   );
 
+  // Runs the stop logic EXACTLY ONCE per spin — called by both the rotor's
+  // `transitionend` and the fallback timer (whichever fires first). Idempotent
+  // via settledIdRef; ignores stale spins via spinIdRef.
+  const settle = useCallback(
+    (id: number, finalAngle: number) => {
+      if (settledIdRef.current === id) return; // already settled this spin
+      if (id !== spinIdRef.current) return; // a newer spin superseded this one
+      settledIdRef.current = id;
+      if (fallbackRef.current) {
+        clearTimeout(fallbackRef.current);
+        fallbackRef.current = null;
+      }
+      if (soundOnRef.current) {
+        stopSpinSound();
+        soundOnRef.current = false;
+      }
+      setSpinning(false);
+      setAnimating(false); // transition off; transform stays at finalAngle (no jump)
+      const idx = indexAtPointer(finalAngle);
+      const t = options[idx]?.type ?? options[0]!.type;
+      onSpinComplete?.(t, idx);
+      onSettled({ index: idx, type: t });
+    },
+    [indexAtPointer, options, onSpinComplete, onSettled],
+  );
+
   const spin = useCallback(() => {
     if (disabled || spinning || options.length === 0) return;
     onSpinStart?.();
@@ -358,46 +423,41 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
     // always stopping at the dead centre of the slice.
     const sliceJitter = (Math.random() - 0.5) * segmentAngle * 0.76;
     const targetDeg = middleDeg + sliceJitter;
-    const startRot = rotation.get();
-    const fullSpins = 4 + Math.floor(Math.random() * 3); // 4–6 spins (was 4–5)
+    // Accumulate forward from the last applied angle (monotonic) so a repeated/
+    // interrupted spin continues smoothly — the CSS transition eases from the
+    // current computed rotation to the new, larger target with no reset/jump.
+    const startRot = angleRef.current;
+    const fullSpins = 4 + Math.floor(Math.random() * 3); // 4–6 spins
     const delta = fullSpins * 360 + (360 - (targetDeg % 360));
     const targetRot = startRot + delta;
-    const playAudio = isSpinSoundEnabled;
+    angleRef.current = targetRot;
 
-    if (playAudio) {
+    const myId = ++spinIdRef.current;
+    if (isSpinSoundEnabled) {
       startSpinSound();
+      soundOnRef.current = true;
     }
-
     setSpinning(true);
-    animate(rotation, targetRot, {
-      duration: spinDuration,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ease: spinEasing as any,
-      onComplete: () => {
-        if (playAudio) {
-          stopSpinSound();
-        }
-        setSpinning(false);
-        const idx = indexAtPointer(rotation.get());
-        const t = options[idx]?.type ?? options[0]!.type;
-        onSpinComplete?.(t, idx);
-        onSettled({ index: idx, type: t });
-      },
-    });
+    setAnimating(true); // enable the CSS transition
+    setAppliedAngle(targetRot); // drives the transform → CSS animates to target
+
+    // Fallback: if `transitionend` never fires (backgrounded tab, interrupted
+    // transition, etc.) settle anyway after the duration + a small buffer.
+    if (fallbackRef.current) clearTimeout(fallbackRef.current);
+    fallbackRef.current = setTimeout(
+      () => settle(myId, targetRot),
+      Math.round(spinDuration * 1000) + 400,
+    );
   }, [
     disabled,
     spinning,
     options,
     segmentAngle,
-    rotation,
-    onSettled,
-    onSpinComplete,
     onSpinStart,
     isSpinSoundEnabled,
     forbiddenType,
-    indexAtPointer,
     spinDuration,
-    spinEasing,
+    settle,
   ]);
 
   useImperativeHandle(ref, () => ({ spin }), [spin]);
@@ -473,6 +533,14 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
     ? `min(92vw, ${wheelSizeRem}rem)`
     : `min(92vw, clamp(${floor}, ${preferred}, ${effectiveMax}rem))`;
 
+  // A.2 (Option Y): shared rotor style — the GPU-composited CSS transition that
+  // drives the spin. Both the disc SVG and the marker SVG sit in a rotor wrapper
+  // using this, so they stay in sync. Transition is "none" at rest.
+  const rotorTransform = `rotate(${appliedAngle}deg)`;
+  const rotorTransition = animating
+    ? `transform ${spinDuration}s ${cssEasing(spinEasing)}`
+    : "none";
+
   return (
     <div
       className="relative mx-auto aspect-square"
@@ -543,6 +611,21 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
               : `0 0 0 4px ${borderColor}, 0 20px 60px -15px rgba(0,0,0,0.35)`, // legacy ring (only when no outerBorder prop)
         }}
       >
+        <div
+          ref={rotorRef}
+          className="h-full w-full"
+          style={{
+            transformOrigin: "50% 50%",
+            transform: rotorTransform,
+            transition: rotorTransition,
+            willChange: animating ? "transform" : undefined,
+          }}
+          onTransitionEnd={(e) => {
+            if (e.target === rotorRef.current && e.propertyName === "transform") {
+              settle(spinIdRef.current, angleRef.current);
+            }
+          }}
+        >
         <svg className="h-full w-full" viewBox="0 0 300 300" aria-label="Wheel">
           <defs>
             {/* Default soft shadow always applied to the inner circle.
@@ -580,7 +663,7 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
               </filter>
             ) : null}
           </defs>
-          <motion.g style={{ rotate: rotation, transformOrigin: "150px 150px" }}>
+          <g>
             {options.map((opt, i) => {
               const start = -Math.PI / 2 + i * segRad;
               const end = start + segRad;
@@ -806,8 +889,9 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
                 filter={centerShadow?.enabled ? "url(#mioCenterShadow)" : "url(#mioInnerCircleShadow)"}
               />
             ) : null}
-          </motion.g>
+          </g>
         </svg>
+        </div>
 
         {/* Subtle rim highlight. Hide when outerBorder is explicitly disabled to avoid a "ghost border". */}
         {hasCustomBorder || !hasOuterBorderProp ? (
@@ -821,15 +905,25 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
       {/* z-20: above border ring (z-[5]) and wheel disc (z-auto),             */}
       {/* but below the pointer triangle (z-30).                               */}
       {markerType !== "none" && markerAngles.length > 0 ? (
+        <div
+          className="pointer-events-none absolute inset-0 z-20"
+          style={{
+            transformOrigin: "50% 50%",
+            transform: rotorTransform,
+            transition: rotorTransition,
+            willChange: animating ? "transform" : undefined,
+            overflow: "visible",
+          }}
+        >
         <svg
-          className="pointer-events-none absolute inset-0 z-20 h-full w-full"
+          className="h-full w-full"
           viewBox="0 0 300 300"
           // overflow:visible lets markers bleed past the SVG bounding box
           // when positioned near or slightly outside the wheel edge.
           style={{ overflow: "visible" }}
           aria-hidden
         >
-          <motion.g style={{ rotate: rotation, transformOrigin: "150px 150px" }}>
+          <g>
             {markerAngles.map((ang, idx) => {
               const p = polar(ang, markerRadius);
               if (markerType === "circle") {
@@ -855,12 +949,13 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
                 </g>
               );
             })}
-          </motion.g>
+          </g>
         </svg>
+        </div>
       ) : null}
 
       <span className="sr-only" aria-live="polite">
-        {spinning ? "Spinning" : `Rotation ${Math.round(displayRotation % 360)}`}
+        {spinning ? "Spinning" : ""}
       </span>
     </div>
   );

@@ -376,6 +376,29 @@ small, .text-small {
     }
   }
 
+  /* A.2 Option B (work-order 2026-06-15) — game-page background blobs drift via
+     a compositor-only CSS keyframe (transform/opacity ONLY) instead of
+     framer-motion sampling 3 motion.divs every frame (the measured spin-time
+     choke: ~318ms scripting / 4–5 long-tasks). It runs ONLY while the wheel is
+     spinning: GamePageBackground renders this animated variant when frozen=false
+     and a static div when frozen=true, so will-change/translateZ promote a GPU
+     layer for the spin's duration only — never held permanently (see the
+     mio-adults-bg note above). Offsets/duration are per-blob CSS vars. */
+  @keyframes mio-blob-drift {
+    from { transform: translateZ(0) translate(0, 0); }
+    to   { transform: translateZ(0) translate(var(--mio-bx, 0px), var(--mio-by, 0px)); }
+  }
+  .mio-blob-anim {
+    will-change: transform;
+    animation: mio-blob-drift var(--mio-dur, 20s) ease-in-out infinite alternate;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .mio-blob-anim {
+      animation: none !important;
+      will-change: auto;
+    }
+  }
+
   /* 2026-05-20 — `.mio-adults-bg` + `mio-adults-bg-drift` REMOVED.
      The 26s scale+translate transform on a viewport-sized double
      radial-gradient was allocating a giant compositor layer that
