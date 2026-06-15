@@ -8,9 +8,19 @@
  *   • Journey subscription: 57 ₪/week ($17/week).
  *   • Adults: one-time per game purchase (handled outside this file via
  *     experience_games.price_ils/usd).
+ *
+ * C1 2026-06-13 — prices moved to the DB table `subscription_prices`
+ * (migration 112), edited live from the admin. getPlanPrice() reads it;
+ * the PLAN_AMOUNTS_* constants below remain only as a resilience fallback.
  */
 
-export type Plan = "weekly"
+import { getSubscriptionPrice, type Cadence } from "@/lib/billing/pricing-queries"
+
+// C2 (2026-06-14): the plan IS the billing cadence. Display to the
+// customer stays weekly; the actual charge interval follows this value.
+// Structurally identical to `Cadence` in pricing-queries — kept as its
+// own exported name for the many `Plan`-typed call sites.
+export type Plan = "weekly" | "monthly" | "quarterly" | "yearly"
 export type SubscriptionProduct = "games" | "journey"
 
 /**
@@ -32,18 +42,22 @@ export const PLAN_AMOUNTS_USD: Record<SubscriptionProduct, number> = {
 }
 
 /**
- * Return plan price info based on product and country.
+ * Return plan price info based on product, plan/cadence, and country.
  * Israeli users pay ILS (CoinId=1), others pay USD (CoinId=2).
  *
- * If NEXT_PUBLIC_BILLING_TEST_PRICE is set (e.g. "1"), overrides the amount
- * to that value — useful for testing real Cardcom charges without paying
- * full price.
+ * C1 (2026-06-13): prices now live in the DB table `subscription_prices`
+ * (migration 112), edited live from the admin. The `plan` argument is the
+ * cadence to price; today the only enabled cadence is "weekly". We read
+ * that row and, if the read fails or the row is missing, fall back to the
+ * PLAN_AMOUNTS_* constants below so a transient DB issue never blocks a
+ * checkout.
  *
- * The `_plan` parameter is kept in the signature for backwards-compatible
- * call sites but is ignored: there is now only one plan (weekly).
+ * If NEXT_PUBLIC_BILLING_TEST_PRICE is set (e.g. "1"), it overrides the
+ * amount — useful for testing real Cardcom charges without paying full
+ * price. (Checked first, before any DB read.)
  */
-export function getPlanPrice(
-  _plan: Plan,
+export async function getPlanPrice(
+  plan: Plan,
   isIsraeli: boolean,
   product: SubscriptionProduct = "journey",
 ) {
@@ -56,6 +70,17 @@ export function getPlanPrice(
         : { amount: amt, currency: "USD", coinId: 2 }
     }
   }
+
+  // Settings-driven: read the DB price for this product + cadence.
+  // `plan` is the cadence string (currently always "weekly").
+  const dbPrice = await getSubscriptionPrice(product, plan as Cadence)
+  if (dbPrice) {
+    return isIsraeli
+      ? { amount: dbPrice.price_ils, currency: "ILS", coinId: 1 }
+      : { amount: dbPrice.price_usd, currency: "USD", coinId: 2 }
+  }
+
+  // Fallback: hardcoded constants (DB read failed / row missing).
   return isIsraeli
     ? { amount: PLAN_AMOUNTS_ILS[product], currency: "ILS", coinId: 1 }
     : { amount: PLAN_AMOUNTS_USD[product], currency: "USD", coinId: 2 }
@@ -71,13 +96,51 @@ export function getCardcomLanguage(locale: string, isIsraeli: boolean): string {
 }
 
 /**
- * Calculate the next billing period end from a given start date.
- * All subscriptions are weekly — always advance by 7 days.
+ * Calculate the next billing period end from a given start date, by
+ * cadence. weekly = +7 days; monthly/quarterly/yearly advance by
+ * calendar months (1 / 3 / 12).
+ *
+ * Month arithmetic clamps the day-of-month to the target month's last
+ * day so a charge anchored on the 31st (or Jan-29/30/31) NEVER skips a
+ * month — the bug in the pre-092 code, which used naive
+ * Date.setMonth(+1)/setFullYear(+1) and rolled e.g. Jan-31 → Mar-3.
+ * All math is in UTC to match how next_billing_date is stored (ISO/UTC).
  */
-export function addPlanPeriod(from: Date, _plan: Plan = "weekly"): Date {
+export function addPlanPeriod(from: Date, plan: Plan = "weekly"): Date {
+  if (plan === "weekly") return addDaysUTC(from, 7)
+  const months = plan === "monthly" ? 1 : plan === "quarterly" ? 3 : 12
+  return addMonthsUTC(from, months)
+}
+
+/** Add whole days in UTC. */
+function addDaysUTC(from: Date, days: number): Date {
   const d = new Date(from.getTime())
-  d.setDate(d.getDate() + 7)
+  d.setUTCDate(d.getUTCDate() + days)
   return d
+}
+
+/**
+ * Add whole calendar months in UTC, clamping the day to the target
+ * month's last valid day (so the 31st never overflows into the next
+ * month). Preserves the time-of-day.
+ */
+function addMonthsUTC(from: Date, months: number): Date {
+  const year  = from.getUTCFullYear()
+  const month = from.getUTCMonth() + months
+  const targetYear  = year + Math.floor(month / 12)
+  const targetMonth = ((month % 12) + 12) % 12
+  // Day 0 of (month+1) = last day of the target month.
+  const lastDay = new Date(Date.UTC(targetYear, targetMonth + 1, 0)).getUTCDate()
+  const day = Math.min(from.getUTCDate(), lastDay)
+  return new Date(Date.UTC(
+    targetYear,
+    targetMonth,
+    day,
+    from.getUTCHours(),
+    from.getUTCMinutes(),
+    from.getUTCSeconds(),
+    from.getUTCMilliseconds(),
+  ))
 }
 
 /**

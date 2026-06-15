@@ -5,9 +5,7 @@ import { safeJsonLd } from "@/lib/seo/jsonLd";
 import {
   ArrowRight,
   CheckCircle2,
-  Flame,
   Heart,
-  MessageCircleHeart,
   Sparkles,
   Target,
 } from "@/components/icons/Icons";
@@ -536,24 +534,8 @@ export default async function BetweenUsGameDetailPage({
               </div>
             ) : null}
 
-            {/* Levels */}
-            <div className="mt-10 flex flex-wrap gap-3">
-              <LevelPill
-                icon={<Heart className="h-4 w-4 text-rose-200" />}
-                label={t("metricIntimacy")}
-                level={game.intimacy_level}
-              />
-              <LevelPill
-                icon={<MessageCircleHeart className="h-4 w-4 text-sky-200" />}
-                label={t("metricCommunication")}
-                level={game.communication_level}
-              />
-              <LevelPill
-                icon={<Flame className="h-4 w-4 text-orange-200" />}
-                label={t("metricHeat")}
-                level={game.heat_level}
-              />
-            </div>
+            {/* 2026-06-09 — level pills (intimacy / communication / heat)
+                removed per Itzik. */}
 
             {gameTags.length > 0 ? (
               <div className="mt-4 flex flex-wrap gap-2 sm:gap-1.5">
@@ -740,7 +722,9 @@ export default async function BetweenUsGameDetailPage({
   );
 }
 
-function LevelPill({
+// 2026-06-09 — no longer rendered (level pills removed). Underscore-
+// prefixed so eslint no-unused-vars ignores it; kept on disk.
+function _LevelPill({
   icon,
   label,
   level,

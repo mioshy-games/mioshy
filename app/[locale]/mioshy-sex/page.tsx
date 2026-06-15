@@ -21,6 +21,7 @@ import { CmsTextProvider } from "@/components/cms/CmsTextProvider";
 // the per-product /mioshy-sex/[slug] pages so the after-dark
 // atmosphere is continuous across the surface.
 import { SexHeroBlobs } from "@/components/adults/SexHeroBlobs";
+import { FAQ } from "@/components/marketing/v2/FAQ";
 
 /**
  * /mioshy-sex — flagship adult-games surface (built 2026-05-20).
@@ -333,12 +334,16 @@ export default async function MioshySexLandingPage({
               line beside the headline already carry the brand /
               age-gate identity. */}
 
-          <div className="relative mx-auto mt-8 grid max-w-7xl items-center gap-12 sm:mt-12 lg:mt-20 lg:grid-cols-12 lg:gap-16">
+          {/* 2026-06-09 — lg gap widened 16→24 per Itzik so the hero text
+              keeps clear space from the card fan. */}
+          <div className="relative mx-auto mt-8 grid max-w-7xl items-center gap-12 sm:mt-12 lg:mt-20 lg:grid-cols-12 lg:gap-24">
             {/* TEXT COLUMN ──────────────────────────────────────────────
                 lg:col-span-7. On mobile this is the only column visible,
                 centred. On desktop it sits start-aligned with the card
                 fan to its side. */}
-            <div className="text-center lg:col-span-7 lg:text-start">
+            {/* 2026-06-09 — desktop text column capped at 560px per Itzik
+                (was ~706px) so it stays clear of the card fan. */}
+            <div className="text-center lg:col-span-7 lg:max-w-[560px] lg:text-start">
               {/* Kicker — single line, age-gate only. Per Itzik
                   2026-05-20 the `heroFlagshipLabel` ("רב מכר") row
                   was dropped from the page entirely; the kicker now
@@ -569,7 +574,7 @@ export default async function MioshySexLandingPage({
               </span>
               {/* h2 sizing inherited from globals.css. */}
               <h2
-                className="mt-5 text-balance font-semibold tracking-tight text-slate-900"
+                className="mt-5 section-h2 text-balance font-semibold tracking-tight text-slate-900"
                 style={{
                   fontFamily: "'Frank Ruhl Libre', serif",
                   fontWeight: 600,
@@ -596,7 +601,7 @@ export default async function MioshySexLandingPage({
                 + color_override per row. */}
             <div className="mx-auto mt-8 max-w-2xl space-y-5 text-center text-[18px] leading-[1.7] text-slate-700 sm:text-[19px]">
               <CmsText cmsKey="mioshySexPage.manifestoBody1" as="p" />
-              <CmsText cmsKey="mioshySexPage.manifestoBody2" as="p" />
+              {/* 2026-06-09 — manifestoBody2 removed per Itzik (manifesto condensed). */}
               <CmsText
                 cmsKey="mioshySexPage.manifestoBody3"
                 as="p"
@@ -637,7 +642,7 @@ export default async function MioshySexLandingPage({
                 <CmsText cmsKey="mioshySexPage.catalogueKicker" />
               </span>
               <h2
-                className="mt-4 tracking-tight text-white"
+                className="mt-4 section-h2 tracking-tight text-white"
                 style={{
                   fontFamily: "'Frank Ruhl Libre', serif",
                   fontWeight: 600,
@@ -783,7 +788,7 @@ export default async function MioshySexLandingPage({
                           </div>
                           <div className="absolute inset-x-0 bottom-0 p-4">
                             <h3
-                              className="line-clamp-2 text-[19px] font-bold leading-tight text-white"
+                              className="line-clamp-2 text-[28px] font-bold leading-tight text-white"
                               style={{
                                 fontFamily: "'Frank Ruhl Libre', serif",
                               }}
@@ -795,7 +800,7 @@ export default async function MioshySexLandingPage({
                                 {cardCats.map((c) => (
                                   <span
                                     key={c!.id}
-                                    className="inline-flex items-center gap-1 text-[10.5px] font-medium uppercase tracking-wider text-white/75"
+                                    className="inline-flex items-center gap-1 text-[14px] font-medium uppercase tracking-wider text-white/75"
                                   >
                                     {c!.color_hex ? (
                                       <span
@@ -822,35 +827,14 @@ export default async function MioshySexLandingPage({
                               {cardDesc}
                             </p>
                           ) : null}
-                          {/* Level chips — "X/5 + icon" pill row.
-                              Matches the legacy card vocabulary Itzik
-                              referenced in the 2026-05-20 screenshot.
-                              Tooltip carries the metric label so the
-                              chip stays compact while remaining
-                              legible to screen readers. */}
-                          <div className="mt-auto flex flex-wrap items-center gap-2">
-                            <LevelChip
-                              label={t("metricIntimacy")}
-                              level={game.intimacy_level}
-                              variant="intimacy"
-                            />
-                            <LevelChip
-                              label={t("metricCommunication")}
-                              level={game.communication_level}
-                              variant="communication"
-                            />
-                            <LevelChip
-                              label={t("metricHeat")}
-                              level={game.heat_level}
-                              variant="heat"
-                            />
-                          </div>
+                          {/* 2026-06-09 — metric level chips (intimacy /
+                              communication / heat) removed per Itzik. */}
                           {cardTags.length > 0 ? (
-                            <div className="flex flex-wrap gap-1.5">
+                            <div className="mt-auto flex flex-wrap gap-1.5">
                               {cardTags.map((tg) => (
                                 <span
                                   key={tg!.id}
-                                  className="rounded-full bg-white/[0.05] px-2 py-0.5 text-[11px] text-white/65 ring-1 ring-white/10"
+                                  className="rounded-full bg-white/[0.05] px-2 py-0.5 text-[14px] text-white/65 ring-1 ring-white/10"
                                 >
                                   #
                                   {isHe
@@ -870,28 +854,36 @@ export default async function MioshySexLandingPage({
                               side can size independently. */}
                           <div className="mt-2 flex items-end justify-between gap-3 border-t border-white/10 pt-3">
                             <div>
-                              <div className="text-[10.5px] font-medium uppercase tracking-wider text-white/45">
+                              <div className="text-[14px] font-medium uppercase tracking-wider text-white/45">
                                 {isHe ? "מחיר" : "Price"}
                               </div>
-                              <div className="mt-0.5 font-bold text-white leading-none">
+                              <div className="mt-0.5 leading-none">
                                 {game.price_ils ? (
-                                  <>
-                                    <span className="text-[18px] align-baseline">
-                                      {isHe ? "₪" : "$"}
+                                  <div className="flex items-baseline gap-2">
+                                    <span className="font-bold text-white">
+                                      <span className="text-[27px] align-baseline">
+                                        {isHe
+                                          ? game.price_ils
+                                          : (game.price_usd ?? game.price_ils)}
+                                      </span>
+                                      <span className="text-[18px] align-baseline">
+                                        {" "}
+                                        {isHe ? "₪" : "$"}
+                                      </span>
                                     </span>
-                                    <span className="text-[27px] align-baseline">
-                                      {isHe
-                                        ? game.price_ils
-                                        : (game.price_usd ?? game.price_ils)}
+                                    {/* 2026-06-09 — fixed marketing anchor
+                                        price (157), struck through, per Itzik. */}
+                                    <span className="text-[16px] font-medium text-white/40 line-through">
+                                      157 {isHe ? "₪" : "$"}
                                     </span>
-                                  </>
+                                  </div>
                                 ) : (
-                                  <span className="text-[18px]">—</span>
+                                  <span className="text-[18px] font-bold text-white">—</span>
                                 )}
                               </div>
                             </div>
                             <div className="inline-flex items-center gap-1 text-[12px] font-semibold uppercase tracking-wider text-rose-200">
-                              {isHe ? "פרטים" : "Details"}
+                              {t("cardDetailsCta")}
                               <svg
                                 width="14"
                                 height="14"
@@ -923,90 +915,17 @@ export default async function MioshySexLandingPage({
               Zero JS. Opens/closes via the browser's built-in behaviour.
               All 8 Q&A from CMS.
         ════════════════════════════════════════════════════════════ */}
-        <section className="relative bg-[#FAF6F2] text-slate-900">
-          <div className="mx-auto max-w-3xl px-5 py-20 lg:py-24">
-            <div className="text-center">
-              {/* Kicker — plain text + dot, no pill. */}
-              <span className="inline-flex items-center gap-2.5 text-[13px] font-semibold uppercase tracking-[0.22em] text-[#8B2638] sm:text-[11px] sm:tracking-[0.32em]">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#B83C4D] shadow-[0_0_8px_rgba(184,60,77,0.3)]" />
-                <CmsText cmsKey="mioshySexPage.faqKicker" />
-              </span>
-              {/* h2 sizing inherited from globals.css. */}
-              <h2
-                className="mt-5 tracking-tight text-slate-900"
-                style={{
-                  fontFamily: "'Frank Ruhl Libre', serif",
-                  fontWeight: 600,
-                }}
-              >
-                <CmsText cmsKey="mioshySexPage.faqHeadlinePrefix" />{" "}
-                <CmsText
-                  cmsKey="mioshySexPage.faqHeadlineEmphasis"
-                  as="span"
-                  className="italic"
-                  style={{
-                    backgroundImage:
-                      "linear-gradient(110deg,#B91C3C 0%,#BE185D 50%,#7E22CE 100%)",
-                    WebkitBackgroundClip: "text",
-                    backgroundClip: "text",
-                    color: "transparent",
-                  }}
-                />
-              </h2>
-            </div>
-            <div className="mt-10 divide-y divide-slate-200">
-              {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => {
-                // Existence probe via the server-side resolver: if the
-                // CMS row is missing AND the JSON fallback is missing,
-                // `t()` returns the raw key string — skip those rows
-                // silently instead of rendering the key as text. The
-                // actual visible rendering goes through CmsText below
-                // so admin rich-text (br, mark, color_override) flows
-                // through identically to the rest of the site.
-                const q = t(`faqQ${n}`);
-                const a = t(`faqA${n}`);
-                if (!q || q === `faqQ${n}` || !a || a === `faqA${n}`) {
-                  return null;
-                }
-                return (
-                  <details
-                    key={n}
-                    className="group py-5 [&_summary::-webkit-details-marker]:hidden"
-                  >
-                    <summary className="flex cursor-pointer items-start justify-between gap-4 text-start text-[18px] font-semibold leading-snug text-slate-900 sm:text-[19px]">
-                      <CmsText
-                        cmsKey={`mioshySexPage.faqQ${n}`}
-                        as="span"
-                      />
-                      <span
-                        aria-hidden
-                        className="mt-1 inline-flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border border-rose-300/60 bg-rose-50 text-rose-700 transition-transform group-open:rotate-45"
-                      >
-                        <svg
-                          width="12"
-                          height="12"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path d="M12 5v14M5 12h14" />
-                        </svg>
-                      </span>
-                    </summary>
-                    <CmsText
-                      cmsKey={`mioshySexPage.faqA${n}`}
-                      as="p"
-                      className="mt-3 text-[18px] leading-[1.7] text-slate-700"
-                    />
-                  </details>
-                );
-              })}
-            </div>
-          </div>
-        </section>
+        {/* 2026-06-09 — FAQ swapped to the shared two-column <FAQ>
+            component (same as homepage / games / journey) per Itzik.
+            Content: mioshySexPage.faq.item{N}Q/A + header keys.
+            Wrapped in .home-v2 so the shared `.faq` styling applies. */}
+        <div className="home-v2">
+          <FAQ
+            cmsKeyPrefix="mioshySexPage.faq"
+            numbers={[1, 2, 3, 4, 5, 6, 7, 8]}
+            anchorId="faq-sex"
+          />
+        </div>
 
         {/* ════════════════════════════════════════════════════════════
               CLOSING CTA section removed 2026-05-20 per Itzik. The
@@ -1128,7 +1047,9 @@ function ChipButton({
  *   • communication — speech bubble
  *   • heat          — flame
  */
-function LevelChip({
+// 2026-06-09 — no longer rendered (metric chips removed). Kept on disk
+// per convention; underscore-prefixed so eslint no-unused-vars ignores it.
+function _LevelChip({
   label,
   level,
   variant,

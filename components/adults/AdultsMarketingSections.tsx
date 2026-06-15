@@ -94,15 +94,8 @@ export function AdultsManifestoSection({ isHe: _isHe }: { isHe: boolean }) {
             className="text-[20px] leading-[1.55] text-[#170E14] sm:text-[20px] sm:leading-[1.7] md:text-[22px]"
           />
 
-          {/* Per Itzik 2026-05-07: bumped from 18-19px to 20px for
-              parity with the lead paragraph above — the two should
-              read as one continuous voice, not a stepdown. */}
-          <CmsText
-            cmsKey="mioshySexPage.manifestoBody2"
-            as="p"
-            className="mt-4 text-[20px] leading-[1.6] text-[#4A3A45] sm:mt-7 sm:text-[20px] sm:leading-[1.7]"
-          />
-
+          {/* 2026-06-09 — manifestoBody2 removed per Itzik (manifesto
+              condensed to one paragraph). CMS key/JSON stays on disk. */}
           <CmsText
             cmsKey="mioshySexPage.manifestoBody3"
             as="p"
@@ -515,7 +508,7 @@ export function AdultsFaqSection({ isHe: _isHe }: { isHe: boolean }) {
           {items.map((it) => (
             <li key={it.qKey}>
               <details className="group border-b border-[#EAE0E3] transition hover:border-[#B83C4D]/30">
-                <summary className="flex cursor-pointer list-none items-start justify-between gap-4 py-6 text-[18px] font-semibold text-[#170E14] transition group-open:text-[#B83C4D] [&::-webkit-details-marker]:hidden">
+                <summary className="flex cursor-pointer list-none items-start justify-between gap-4 py-6 text-[22px] font-semibold text-[#170E14] transition group-open:text-[#B83C4D] [&::-webkit-details-marker]:hidden">
                   <CmsText cmsKey={it.qKey} className="text-start" />
                   <span
                     aria-hidden
@@ -527,7 +520,7 @@ export function AdultsFaqSection({ isHe: _isHe }: { isHe: boolean }) {
                 <CmsText
                   cmsKey={it.aKey}
                   as="p"
-                  className="pb-6 text-[16px] leading-[1.7] text-[#4A3A45]"
+                  className="pb-6 text-[18px] leading-[1.7] text-[#4A3A45]"
                 />
               </details>
             </li>

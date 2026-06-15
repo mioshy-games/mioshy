@@ -9,6 +9,7 @@ import { ProgressBar } from "@/components/journey/ProgressBar";
 import type { AnswerValue, AssessmentQuestion, Locale } from "@/lib/assessments/types";
 import { AssessmentInlineAuthStep } from "./AssessmentInlineAuthStep";
 import { AssessmentSummary, type AssessmentResult } from "./AssessmentSummary";
+import type { CadenceOption } from "@/lib/billing/pricing-validations";
 
 interface Props {
   locale: Locale;
@@ -21,6 +22,7 @@ interface Props {
   subscriptionActive?: boolean;
   initialStep?: number;
   initialAnswers?: Record<string, AnswerValue>;
+  journeyCadences?: CadenceOption[];
 }
 
 /**
@@ -39,6 +41,7 @@ export function AssessmentClient({
   subscriptionActive = false,
   initialStep = 0,
   initialAnswers = {},
+  journeyCadences = [],
 }: Props) {
   const isHe = locale === "he";
   const [index, setIndex] = useState(initialStep);
@@ -206,6 +209,7 @@ export function AssessmentClient({
         assessmentTitleEn={assessmentTitleEn}
         result={result}
         subscriptionActive={subscriptionActive}
+        journeyCadences={journeyCadences}
       />
     );
   }

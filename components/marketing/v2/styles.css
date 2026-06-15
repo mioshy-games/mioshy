@@ -86,7 +86,7 @@
   .display{font-family:'Noto Serif Hebrew','Frank Ruhl Libre',serif;font-size:var(--fs-display);line-height:var(--lh-display);letter-spacing:var(--ls-display);font-weight:900}
   .serif{font-family:'Frank Ruhl Libre',serif;letter-spacing:-0.015em}
   h1{font-family:'Noto Serif Hebrew','Frank Ruhl Libre',serif;font-size:var(--fs-display);line-height:var(--lh-display);font-weight:900;letter-spacing:var(--ls-display);color:var(--ink)}
-  h2{font-family:'Noto Serif Hebrew','Frank Ruhl Libre',serif;font-size:var(--fs-h2);line-height:var(--lh-tight);font-weight:800;letter-spacing:var(--ls-heading);color:var(--ink)}
+  h2{font-family:'Noto Serif Hebrew','Frank Ruhl Libre',serif;font-size:var(--fs-h2);line-height:1.2;font-weight:800;letter-spacing:var(--ls-heading);color:var(--ink)}
   h3{font-family:'Frank Ruhl Libre',serif;font-size:var(--fs-h3);line-height:var(--lh-snug);font-weight:700;color:var(--ink)}
   h4{font-family:'Frank Ruhl Libre',serif;font-size:var(--fs-h4);line-height:var(--lh-snug);font-weight:700;color:var(--ink)}
   p{color:var(--ink-2);font-size:var(--fs-body);line-height:var(--lh-loose)}
@@ -458,7 +458,7 @@
   .hero-tag{font-size:13px;color:rgba(255,255,255,0.85);letter-spacing:0.18em;text-transform:uppercase;margin-bottom:32px;display:flex;align-items:center;gap:14px;font-weight:600}
   .hero-tag .dot{width:8px;height:8px;border-radius:50%;background:var(--accent-soft);animation:pulse 2.6s infinite;box-shadow:0 0 12px rgba(233,196,202,0.7)}
   @keyframes pulse{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:1;transform:scale(1.4)}}
-  .hero h1{margin-bottom:32px;color:#fff}
+  .hero h1{margin-bottom:32px;color:#fff;line-height:1.15}
   .hero h1 em{font-style:italic;color:#F1C8CF;font-family:'Frank Ruhl Libre',serif;font-weight:700;position:relative;display:inline-block}
   .hero h1 em::af-er{content:"";position:absolute;left:-4px;right:-4px;bottom:8px;height:14px;background:rgba(184,60,77,0.4);z-index:-1;border-radius:4px}
   .hero p.lead{margin-bottom:44px;max-width:540px;color:rgba(255,255,255,0.85)}
@@ -875,7 +875,9 @@
      rows of [logo | quote | CTA] divided by hairlines. White-radial drift
      layers underneath the cream surface for soft, page-of-magazine depth.
      Outer page section provides the bg colour + vertical padding. */
-  .media-press{padding:50px 0 0 0;back-round:transparent;position:relative}
+  .media-press{padding:60px 0;background:transparent;position:relative}
+  /* 2026-06-09 — panel background removed per Itzik; the section sits on
+     the page bg with no frame. */
   .media-press-wrap{max-width:var(--max);margin:0 auto;padding:0 40px;position:relative}
 
   /* Single peach blob drift - heavy blur, gentle L↔R sway.
@@ -921,19 +923,61 @@
   .media-press-row-c-a .arrow{transition:transform .25s var(--t);display:inline-block;font-style:normal}
   .media-press-row-cta:hover .arrow{transform:translateX(-4px)}
 
-  /* 2026-06-09 — logo wall (replaced the quote rows). Logos sit in a
-     centered, wrapping row. */
+  /* 2026-06-09 — logo wall (replaced the quote rows). Each item is a
+     centered column: logo on top, an action link beneath. */
   .media-press-logos{
     list-style:none;padding:0;margin:0;
-    display:flex;flex-wrap:wrap;align-items:center;justify-content:center;
+    display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:center;
     gap:clamp(32px,6vw,72px);
   }
-  .media-press-logo-item a{display:inline-flex;align-items:center}
+  .media-press-logo-item{
+    display:flex;flex-direction:column;align-items:center;gap:12px;
+    text-align:center;
+  }
+  .media-press-logo-link,
+  .media-press-logo-btn{
+    display:flex;align-items:center;justify-content:center;
+    height:54px;background:none;border:0;padding:0;cursor:pointer;
+  }
   .media-press-logo-item img{
     height:54px;width:auto;max-width:200px;object-fit:contain;display:block;
-    opacity:0.85;transition:opacity .25s var(--t);
+    opacity:0.9;transition:opacity .25s var(--t);
   }
-  .media-press-logo-item a:hover img{opacity:1}
+  .media-press-logo-link:hover img,
+  .media-press-logo-btn:hover img{opacity:1}
+  /* Subtle action link, centered beneath each logo (מעבר לכתבה / לצפייה). */
+  .media-press-go{
+    font-family:'Heebo',sans-serif;font-weight:500;
+    font-size:18px;letter-spacing:0.02em;
+    color:var(--accent,#B83C4D);
+    text-decoration:underline;text-underline-offset:5px;text-decoration-thickness:1px;
+    background:none;border:0;cursor:pointer;padding:0;
+    transition:font-weight .15s var(--t);
+  }
+  .media-press-go:hover{font-weight:700}
+
+  /* Video lightbox (כל מה שטוב). */
+  .media-press-modal-overlay{
+    position:fixed;inset:0;z-index:1000;
+    background:rgba(0,0,0,0.8);
+    display:flex;align-items:center;justify-content:center;padding:24px;
+  }
+  .media-press-modal{position:relative;width:min(900px,92vw)}
+  .media-press-modal-video{
+    position:relative;width:100%;padding-top:56.25%;
+    border-radius:14px;overflow:hidden;background:#000;
+  }
+  .media-press-modal-video iframe{
+    position:absolute;inset:0;width:100%;height:100%;border:0;
+  }
+  .media-press-modal-close{
+    position:absolute;top:-46px;inset-inline-end:0;
+    width:38px;height:38px;border-radius:50%;border:0;cursor:pointer;
+    background:rgba(255,255,255,0.16);color:#fff;
+    font-size:26px;line-height:1;display:flex;align-items:center;justify-content:center;
+    transition:background .2s var(--t);
+  }
+  .media-press-modal-close:hover{background:rgba(255,255,255,0.3)}
 
   /* Desktop layout - 2-column grid: [Logo | Content] */
   @media (min-width:768px){
@@ -1702,7 +1746,7 @@
   .faq-side p{font-size:18px;color:var(--ink-3);margin-bottom:32px;max-width:380px;line-height:1.6}
   .faq-list{display:flex;flex-direction:column}
   .faq-item{border-bottom:1px solid var(--line)}
-  .faq-item summary{padding:28px 0;font-size:19px;font-weight:600;color:var(--ink);cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:24px;font-family:'Frank Ruhl Libre',serif;transition:color .25s ease}
+  .faq-item summary{padding:28px 0;font-size:22px;font-weight:600;color:var(--ink);cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:24px;font-family:'Frank Ruhl Libre',serif;transition:color .25s ease}
   .faq-item summary:hover{color:var(--accent)}
   .faq-item summary::-webkit-details-marker{display:none}
   .faq-icon{width:32px;height:32px;border-radius:50%;background:var(--bg-soft);display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--accent);transition:transform .35s var(--t),box-shadow .35s var(--t),border-color .35s var(--t),background-color .35s var(--t),color .35s var(--t),opacity .35s var(--t);font-family:'Heebo',sans-serif;font-weight:300;flex-shrink:0;line-height:1}
@@ -2078,7 +2122,7 @@
        cap unchanged (96px). Noticeable but not screen-dominating.
        Line-height +10% over the base 0.98 (→1.08) for breathing room
        on mobile where the Hebrew serif headlines run multi-line. */
-    .hero h1{margin-bottom:18px;font-size:clamp(52px,7.4vw,96px);line-height:1.08}
+    .hero h1{margin-bottom:18px;font-size:clamp(52px,7.4vw,96px);line-height:1.15}
     .hero p.lead{margin-bottom:24px}
     /* Mobile DOM diet (Lighthouse 2026-05-06): the hero ships ~36
        decorative ambient elements (5 blobs, 1 floating circle, 18
@@ -2189,7 +2233,7 @@
     /* FAQ mobile */
     /* J1 — Question summary: bumped 19→20px and explicit so the
        question is comfortably scannable above its open answer. */
-    .faq-item summary{padding:18px 0;font-size:20px}
+    .faq-item summary{padding:18px 0;font-size:22px}
     .faq-answer{padding:0 0 20px}
     /* J2 — Answer body keeps 20px font, line-height 1.65→1.4 to
        match the rest of the Phase-3 mobile typography pass (denser

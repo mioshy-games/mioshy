@@ -25,9 +25,6 @@ import { notFound, redirect } from "next/navigation";
 import { Link } from "@/navigation";
 import {
   ArrowLeft,
-  Flame,
-  Heart,
-  MessageCircleHeart,
   Sparkles,
   Star,
 } from "lucide-react";
@@ -266,24 +263,8 @@ export default async function PlayExperienceGamePage({
             </p>
           ) : null}
 
-          {/* Levels strip - quick reminder of the intensity profile */}
-          <div className="mt-6 flex flex-wrap gap-2.5">
-            <LevelChip
-              icon={<Heart className="h-3.5 w-3.5 text-rose-200" />}
-              label={t("metricIntimacy")}
-              level={game.intimacy_level}
-            />
-            <LevelChip
-              icon={<MessageCircleHeart className="h-3.5 w-3.5 text-sky-200" />}
-              label={t("metricCommunication")}
-              level={game.communication_level}
-            />
-            <LevelChip
-              icon={<Flame className="h-3.5 w-3.5 text-orange-200" />}
-              label={t("metricHeat")}
-              level={game.heat_level}
-            />
-          </div>
+          {/* 2026-06-09 — levels strip (intimacy / communication / heat)
+              removed per Itzik. */}
 
           {/* Cover image - capped to the same reading column width
               (680px) at a 16:10 ratio so it doesn't dwarf the text. The
@@ -522,7 +503,9 @@ function SectionEyebrow({ children }: { children: React.ReactNode }) {
   );
 }
 
-function LevelChip({
+// 2026-06-09 — no longer rendered (levels strip removed). Underscore-
+// prefixed so eslint no-unused-vars ignores it; kept on disk.
+function _LevelChip({
   icon,
   label,
   level,

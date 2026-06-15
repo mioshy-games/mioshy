@@ -149,8 +149,11 @@ export function HomepageV2() {
       <CouplesGames />
       <JourneyStages />
       <Founder />
-      <MediaSlider />
+      {/* 2026-06-09 — MediaSlider ("כתבו עלינו") moved below
+          ReviewsGrid per Itzik, so the press logos close the
+          social-proof block instead of opening it. */}
       <ReviewsGrid />
+      <MediaSlider />
       <FAQ />
     </div>
   );

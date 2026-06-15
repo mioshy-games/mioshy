@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import type { Question, QuestionChoice, QuestionReflection, AnswerValue, Locale } from "@/lib/journey/types";
-import { likertLabel, promptFor } from "@/lib/journey/questions";
+import { promptFor, QUESTIONNAIRE } from "@/lib/journey/questions";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useCmsText } from "@/hooks/useCmsText";
@@ -12,6 +12,11 @@ import { CmsText } from "@/components/cms/CmsText";
 interface QuestionStepProps {
   question: Question;
   locale: Locale;
+  /** F3.1 — likert labels carried as a prop (sourced from JSON in the page)
+   *  for the journey render path. Optional: the shared assessments flow
+   *  (intimacy/friendship) doesn't pass it and falls back to the static
+   *  questionnaire labels — its behaviour is unchanged. */
+  likertLabels?: Record<Locale, string[]>;
   onSubmit: (answer: AnswerValue) => Promise<void> | void;
   initial?: AnswerValue | null;
   busy?: boolean;
@@ -25,7 +30,7 @@ interface QuestionStepProps {
  * - multi_choice → show "Continue" button after at least one selection
  * - reflection → always show "Continue" button
  */
-export function QuestionStep({ question, locale, onSubmit, initial, busy }: QuestionStepProps) {
+export function QuestionStep({ question, locale, likertLabels, onSubmit, initial, busy }: QuestionStepProps) {
   const [answer, setAnswer] = useState<AnswerValue | null>(initial ?? null);
   const [error, setError] = useState<string | null>(null);
 
@@ -71,7 +76,7 @@ export function QuestionStep({ question, locale, onSubmit, initial, busy }: Ques
       </h2>
 
       {question.type === "likert5" ? (
-        <LikertControl locale={locale} value={answer} onChange={handleAutoSelect} busy={busy} />
+        <LikertControl locale={locale} likertLabels={likertLabels ?? QUESTIONNAIRE.likert_labels} value={answer} onChange={handleAutoSelect} busy={busy} />
       ) : question.type === "forced_choice" || question.type === "single_choice" ? (
         <SingleChoiceControl
           question={question as QuestionChoice}
@@ -83,7 +88,7 @@ export function QuestionStep({ question, locale, onSubmit, initial, busy }: Ques
       ) : question.type === "multi_choice" ? (
         <MultiChoiceControl question={question as QuestionChoice} locale={locale} value={answer} onChange={setAnswer} />
       ) : (
-        <ReflectionControl question={question as QuestionReflection} value={answer} onChange={setAnswer} />
+        <ReflectionControl question={question as QuestionReflection} locale={locale} value={answer} onChange={setAnswer} />
       )}
 
       {error ? <p className="text-sm text-rose-300">{error}</p> : null}
@@ -127,11 +132,13 @@ export function QuestionStep({ question, locale, onSubmit, initial, busy }: Ques
 
 function LikertControl({
   locale,
+  likertLabels,
   value,
   onChange,
   busy,
 }: {
   locale: Locale;
+  likertLabels: Record<Locale, string[]>;
   value: AnswerValue | null;
   onChange: (v: AnswerValue) => void;
   busy?: boolean;
@@ -178,7 +185,7 @@ function LikertControl({
               unchanged because the desktop column layout is tighter. */}
           <span className="order-1 sm:order-none w-7 text-center text-[28px] font-semibold sm:w-auto sm:text-[26px]">{n}</span>
           <span className="order-2 sm:order-none text-[20px] font-semibold leading-snug sm:mt-1.5 sm:text-[17px] sm:font-medium">
-            {likertLabel(n, locale)}
+            {likertLabels[locale][n - 1] ?? String(n)}
           </span>
         </button>
       ))}
@@ -275,15 +282,22 @@ function MultiChoiceControl({
 
 function ReflectionControl({
   question,
+  locale,
   value,
   onChange,
 }: {
   question: QuestionReflection;
+  locale: Locale;
   value: AnswerValue | null;
   onChange: (v: AnswerValue) => void;
 }) {
   const text = value?.kind === "text" ? value.text : "";
-  const placeholder = useCmsText("journeyAssessment.question.reflectionPlaceholder").text;
+  // F3.1 — prefer the per-question placeholder (admin-set via F2, stored in
+  // journey_questions.meta) when present; otherwise fall back to the global
+  // CMS key (today's behaviour).
+  const cmsPlaceholder = useCmsText("journeyAssessment.question.reflectionPlaceholder").text;
+  const perQuestion = locale === "he" ? question.placeholder_he : question.placeholder_en;
+  const placeholder = perQuestion && perQuestion.trim() !== "" ? perQuestion : cmsPlaceholder;
   return (
     <Textarea
       value={text}

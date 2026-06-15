@@ -9,7 +9,12 @@ import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { analyze } from "@/lib/journey/analysis";
+import {
+  buildQuestionResolver,
+  loadJourneyQuestions,
+} from "@/lib/journey/questions-db";
 import { analyzeAssessment } from "@/lib/ai/analyze-assessment";
+import { buildFallbackHero } from "@/lib/journey/hero-fallback";
 import { getPriorityLabels } from "@/lib/journey-content/priority-categories";
 import type { AnswerValue, Locale, Response } from "@/lib/journey/types";
 
@@ -205,7 +210,14 @@ export async function POST() {
     locale: r.locale as Locale,
   }));
   const priorityLabels = await getPriorityLabels();
-  const analysis = analyze(responses, priorityLabels);
+
+  // F1 — resolve question definitions (axes/weights/options) from the DB
+  // (journey_questions), falling back to questionnaire.json if the table is
+  // empty or the read fails. This only changes the SOURCE of the defs; the
+  // scoring math is unchanged. Loaded via the admin client (service-role).
+  const journeyQuestions = await loadJourneyQuestions(admin);
+  const resolveQuestion = buildQuestionResolver(journeyQuestions);
+  const analysis = analyze(responses, priorityLabels, resolveQuestion);
 
   // ── AI hero generation (2026-06-02) ──
   // Best-effort enrichment. We fetch the user's profile name + gender +
@@ -241,7 +253,7 @@ export async function POST() {
       ? kidsAnswer.answer.option
       : null;
 
-    const aiHero = await analyzeAssessment({
+    const aiResult = await analyzeAssessment({
       analysis,
       responses,
       user_name: firstName,
@@ -249,19 +261,65 @@ export async function POST() {
       relationship_years_label: yearsLabel,
       kids_count_label: kidsLabel,
     });
-    analysis.summary.ai_hero = aiHero;
+
+    const nowIso = new Date().toISOString();
+    if (aiResult.ok) {
+      analysis.summary.ai_hero = aiResult.hero;
+      analysis.summary.ai_hero_status = {
+        ok: true,
+        reason: "ok",
+        source: "ai",
+        attempts: aiResult.attempts,
+        latency_ms: aiResult.latency_ms,
+        at: nowIso,
+      };
+    } else {
+      // AI failed — render the deterministic fallback (templated hero +
+      // recs + fairness-guarded reflection echo) so the page keeps a
+      // strong hero. ai_hero_status records WHY for observability.
+      analysis.summary.ai_hero = buildFallbackHero(
+        analysis.summary.category_scores?.lowest_key,
+        responses,
+        nowIso,
+      );
+      analysis.summary.ai_hero_status = {
+        ok: false,
+        reason: aiResult.reason,
+        source: "fallback_template",
+        attempts: aiResult.attempts,
+        latency_ms: aiResult.latency_ms,
+        at: nowIso,
+      };
+    }
     console.log("[api/journey/analyze POST] ai_hero", {
       userId: user.id,
-      generated: !!aiHero,
-      expert: aiHero?.expert_mentioned ?? null,
-      signal: aiHero?.pain_signal ?? null,
+      source: analysis.summary.ai_hero_status.source,
+      reason: analysis.summary.ai_hero_status.reason,
+      attempts: analysis.summary.ai_hero_status.attempts,
+      latency_ms: analysis.summary.ai_hero_status.latency_ms,
+      signal: analysis.summary.ai_hero?.pain_signal ?? null,
     });
   } catch (e) {
-    console.warn("[api/journey/analyze POST] ai_hero threw, falling back", {
+    // Anything around the AI path threw (profile fetch, etc.) — still
+    // give the page a fallback hero rather than nothing.
+    console.warn("[api/journey/analyze POST] ai_hero threw, using fallback", {
       userId: user.id,
       err: e instanceof Error ? e.message : String(e),
     });
-    analysis.summary.ai_hero = null;
+    const nowIso = new Date().toISOString();
+    analysis.summary.ai_hero = buildFallbackHero(
+      analysis.summary.category_scores?.lowest_key,
+      responses,
+      nowIso,
+    );
+    analysis.summary.ai_hero_status = {
+      ok: false,
+      reason: "threw",
+      source: "fallback_template",
+      attempts: 0,
+      latency_ms: 0,
+      at: nowIso,
+    };
   }
 
   const { error: insertErr } = await admin.from("journey_analysis").insert({

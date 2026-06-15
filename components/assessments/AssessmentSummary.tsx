@@ -6,6 +6,8 @@ import { ArrowLeft, ArrowRight, CheckCircle2 } from "lucide-react";
 import type { AiHeroBlock, DimensionScore, Locale } from "@/lib/assessments/types";
 import { getResultContent } from "@/lib/assessments/result-content";
 import { PROGRAM_VALUE } from "@/lib/assessments/result-content/program";
+import type { CadenceOption } from "@/lib/billing/pricing-validations";
+import { CmsText } from "@/components/cms/CmsText";
 
 export interface AssessmentResult {
   assessment_id: string;
@@ -21,9 +23,24 @@ interface Props {
   assessmentTitleEn: string;
   result: AssessmentResult | null;
   subscriptionActive?: boolean;
+  journeyCadences?: CadenceOption[];
 }
 
 const GOLD = "#FCCA65";
+
+// Precise weeks per cadence (internal math; display rounds to whole units).
+const WEEKS_PER_CADENCE: Record<string, number> = {
+  weekly: 1,
+  monthly: 4.345,
+  quarterly: 13.04,
+  yearly: 52.14,
+};
+const CADENCE_ORDER: Record<string, number> = {
+  weekly: 0,
+  monthly: 1,
+  quarterly: 2,
+  yearly: 3,
+};
 
 export function AssessmentSummary({
   locale,
@@ -32,11 +49,24 @@ export function AssessmentSummary({
   assessmentTitleEn,
   result,
   subscriptionActive = false,
+  journeyCadences = [],
 }: Props) {
   const isHe = locale === "he";
   const t = (he: string, en: string) => (isHe ? he : en);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // C2.4 cadence picker: enabled cadences are the options; the weekly row
+  // (display unit) is the savings baseline. Picker shows only when ≥2
+  // cadences are enabled — with one (current state: monthly only) we just
+  // show the transparency line. Hooks must run before the early return.
+  const enabledCadences = journeyCadences
+    .filter((c) => c.enabled)
+    .sort((a, b) => CADENCE_ORDER[a.cadence] - CADENCE_ORDER[b.cadence]);
+  const defaultCadence =
+    (enabledCadences.find((c) => c.is_default) ?? enabledCadences[0])?.cadence ??
+    "monthly";
+  const [selectedCadence, setSelectedCadence] = useState<string>(defaultCadence);
 
   if (!result) {
     return (
@@ -61,6 +91,39 @@ export function AssessmentSummary({
 
   const Arrow = isHe ? ArrowLeft : ArrowRight;
 
+  // ── Cadence picker derived values (C2.4) ──────────────────────────────
+  const sym = isHe ? "₪" : "$";
+  const fmt = (n: number) => n.toLocaleString(isHe ? "he-IL" : "en-US");
+  const amtOf = (c: CadenceOption) => (isHe ? c.price_ils : c.price_usd);
+  const weeklyRow = journeyCadences.find((c) => c.cadence === "weekly");
+  const baselineWeekly = weeklyRow ? amtOf(weeklyRow) : null;
+  const periodLabel = (cadence: string) =>
+    cadence === "yearly"
+      ? t("/שנה", "/yr")
+      : cadence === "quarterly"
+        ? t("/רבעון", "/quarter")
+        : cadence === "weekly"
+          ? t("/שבוע", "/wk")
+          : t("/חודש", "/mo");
+  const effWeeklyOf = (c: CadenceOption) =>
+    Math.round(amtOf(c) / (WEEKS_PER_CADENCE[c.cadence] ?? 1));
+  const savingsOf = (c: CadenceOption) =>
+    baselineWeekly && baselineWeekly > 0
+      ? Math.round(
+          ((baselineWeekly - amtOf(c) / (WEEKS_PER_CADENCE[c.cadence] ?? 1)) /
+            baselineWeekly) *
+            100,
+        )
+      : null;
+  const selectedOption =
+    enabledCadences.find((c) => c.cadence === selectedCadence) ??
+    enabledCadences[0] ??
+    null;
+  const showPicker = enabledCadences.length >= 2;
+  // plan to send: the selected cadence when we have options, else let the
+  // server resolve (it falls back to the product default).
+  const checkoutPlan = selectedOption ? selectedOption.cadence : "weekly";
+
   const startCheckout = async () => {
     setBusy(true);
     setError(null);
@@ -69,7 +132,7 @@ export function AssessmentSummary({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          plan: "weekly",
+          plan: checkoutPlan,
           product: "journey",
           source: `assessment_${assessmentId}`,
           language: locale,
@@ -379,6 +442,119 @@ export function AssessmentSummary({
               </span>
             </div>
           ) : null}
+
+          {/* C2.4: billed transparency line — the price above stays weekly,
+              this notes the actual charge for the selected cadence. */}
+          {selectedOption ? (
+            <p className="mt-1 text-start text-[13px] text-white/55">
+              {t("מחויב", "Billed")} {sym}
+              {fmt(amtOf(selectedOption))}
+              {periodLabel(selectedOption.cadence)} ·{" "}
+              {t("ביטול בכל עת", "cancel anytime")}
+            </p>
+          ) : null}
+
+          {/* C2.4: cadence picker — only when ≥2 cadences are enabled.
+              Each option shows its effective per-week + actual billed +
+              savings vs the weekly baseline. */}
+          {showPicker ? (
+            <div className="mt-5 flex flex-col gap-2.5">
+              {enabledCadences.map((c) => {
+                const selected = c.cadence === selectedCadence;
+                const sv = savingsOf(c);
+                const title =
+                  c.cadence === "monthly"
+                    ? t("חודשי", "Monthly")
+                    : c.cadence === "quarterly"
+                      ? t("רבעוני", "Quarterly")
+                      : c.cadence === "yearly"
+                        ? t("שנתי", "Yearly")
+                        : t("שבועי", "Weekly");
+                return (
+                  <button
+                    key={c.cadence}
+                    type="button"
+                    onClick={() => setSelectedCadence(c.cadence)}
+                    aria-pressed={selected}
+                    className={`group relative flex w-full items-center gap-3 rounded-2xl border p-4 text-start transition ${
+                      selected
+                        ? "border-amber-300/60 bg-white/10 ring-2 ring-amber-400/40"
+                        : "border-white/15 bg-white/[0.04] hover:border-white/30 hover:bg-white/[0.08]"
+                    }`}
+                  >
+                    <span
+                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[13px] ${
+                        selected
+                          ? "bg-gradient-to-br from-amber-400 to-rose-500 text-white"
+                          : "bg-white/10 text-white/70"
+                      }`}
+                    >
+                      {selected ? "✓" : ""}
+                    </span>
+                    <span className="flex-1">
+                      <span className="flex items-baseline justify-between gap-3">
+                        <span className="text-[15px] font-semibold text-white">
+                          {title}
+                        </span>
+                        <span className="text-[15px] font-bold text-white">
+                          {sym}
+                          {fmt(effWeeklyOf(c))}
+                          <span className="text-[12px] font-medium text-white/65">
+                            {t("/שבוע", "/wk")}
+                          </span>
+                        </span>
+                      </span>
+                      <span className="mt-0.5 block text-[12px] text-white/60">
+                        {t("מחויב", "billed")} {sym}
+                        {fmt(amtOf(c))}
+                        {periodLabel(c.cadence)}
+                      </span>
+                    </span>
+                    {sv && sv > 0 ? (
+                      <span className="absolute -top-2 end-3 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-400 to-rose-500 px-2 py-0.5 text-[11px] font-bold text-white shadow">
+                        {t("חיסכון", "Save")} {sv}%
+                      </span>
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
+
+          {/* C2.4: "what's included" value-points. CMS-driven
+              (page='journey', section='assessment') so the copy is
+              editable from /admin/content without a deploy; falls back to
+              messages. Same dark/gold styling as the CTA. */}
+          <div className="mt-5 text-start">
+            <CmsText
+              cmsKey="journeyAssessment.valuePoints.title"
+              as="span"
+              className="text-[13px] font-semibold tracking-wide"
+              style={{ color: GOLD }}
+            />
+            <ul className="mt-2.5 flex flex-col gap-2.5">
+              {["point1", "point2", "point3"].map((p) => (
+                <li key={p} className="flex items-center gap-2.5">
+                  <span
+                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[13px] font-bold text-[#1a1014]"
+                    style={{
+                      background:
+                        "linear-gradient(135deg, #FCCA65 0%, #B88F32 100%)",
+                    }}
+                    aria-hidden
+                  >
+                    ✓
+                  </span>
+                  <CmsText
+                    cmsKey={`journeyAssessment.valuePoints.${p}`}
+                    as="span"
+                    className="text-[15px] font-medium text-white"
+                  />
+                </li>
+              ))}
+            </ul>
+          </div>
+
           <button
             type="button"
             onClick={startCheckout}

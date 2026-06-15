@@ -8,6 +8,9 @@ import { Chrome } from "@/components/Chrome";
 import { getRequestUser } from "@/lib/auth/getRequestUser";
 import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
 import { getUnreadCountForUser } from "@/lib/journey-content/notifications-read";
+import { getBillingBannerState } from "@/lib/billing/failure-banner";
+import type { BillingBannerState } from "@/lib/billing/failure-banner";
+import { SubscriptionBillingBanner } from "@/components/billing/SubscriptionBillingBanner";
 import { PostHogIdentify } from "@/components/analytics/PostHogIdentify";
 
 export function generateStaticParams() {
@@ -56,6 +59,9 @@ export default async function LocaleLayout({
   // v3 slice 10 - fetch the unread notifications count once per
   // request so the header bell badge renders without a flash of zero.
   let unreadNotifications = 0;
+  // Display-only billing-failure state for the global banner. Separate
+  // from entitlements — never affects access (see lib/billing/failure-banner).
+  let billingBannerState: BillingBannerState | null = null;
   // PostHog identity — pseudonymous user id only, no PII (see PostHogIdentify).
   let userId: string | null = null;
   try {
@@ -67,9 +73,10 @@ export default async function LocaleLayout({
     isAuthed = !!user;
     userId = user?.id ?? null;
     if (isAuthed && user) {
-      const [ent, unread] = await Promise.all([
+      const [ent, unread, banner] = await Promise.all([
         getUserEntitlements(),
         getUnreadCountForUser(user.id).catch(() => 0),
+        getBillingBannerState().catch(() => null),
       ]);
       if (ent) {
         entitlements = {
@@ -79,6 +86,7 @@ export default async function LocaleLayout({
         };
       }
       unreadNotifications = unread;
+      billingBannerState = banner;
     }
   } catch {
     isAuthed = false;
@@ -88,6 +96,7 @@ export default async function LocaleLayout({
   return (
     <NextIntlClientProvider messages={messages}>
       <PostHogIdentify userId={userId} />
+      <SubscriptionBillingBanner state={billingBannerState} isHe={locale === "he"} />
       <Chrome
         isAuthed={isAuthed}
         entitlements={entitlements}

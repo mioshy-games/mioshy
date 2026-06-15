@@ -365,6 +365,16 @@ function Stop({
                   className="js-stop-price-period"
                 />
               </div>
+              {/* C2.4: subtle transparency line — the displayed price stays
+                  weekly; this notes the actual monthly charge. Subscriptions
+                  only (stages 1 + 3); stage 2 is a one-time game purchase. */}
+              {id !== "2" ? (
+                <CmsText
+                  cmsKey={`homeV2.journeyStages.stage${id}Billed`}
+                  as="p"
+                  className="js-stop-price-billed"
+                />
+              ) : null}
             </div>
             <Link href={STAGE_HREFS[id]} className="js-stop-cta">
               <CmsText cmsKey={`homeV2.journeyStages.stage${id}Cta`} />{" "}
@@ -678,6 +688,12 @@ const STYLES = `
   }
   .mood-timeline .js-stop-price-period{
     font-size:13px;color:#7A6A75;font-weight:500;
+  }
+  /* C2.4: subtle billed-monthly transparency line under the weekly price. */
+  .mood-timeline .js-stop-price-billed{
+    margin-top:3px;
+    font-size:12px;color:#9C8B91;font-weight:500;
+    line-height:1.3;
   }
   /* Stage 1 free-trial framing — replaces the price block. Compact,
      friendly, reassuring (no credit card). */

@@ -5,6 +5,7 @@ import { useSearchParams }      from "next/navigation"
 import { useParams }            from "next/navigation"
 import { Check, Loader2, AlertTriangle } from "lucide-react"
 import { createBrowserSupabaseClient } from "@/lib/supabase/client"
+import { postPaymentTarget } from "@/lib/billing/post-payment-target"
 
 type Phase = "loading" | "activating" | "active" | "error"
 
@@ -44,6 +45,9 @@ export function BillingSuccessContent() {
 
   const [phase, setPhase]       = useState<Phase>("loading")
   const [attempts, setAttempts] = useState(0)
+  // F3.2 — the purchased pillar, so a journey buyer continues straight into
+  // the (full) assessment instead of /my (locked decision A).
+  const [product, setProduct]   = useState<string | null>(null)
 
   useEffect(() => {
     if (!sessionId) { setPhase("error"); return }
@@ -55,11 +59,13 @@ export function BillingSuccessContent() {
       const supabase = createBrowserSupabaseClient()
       const { data } = await supabase
         .from("checkout_sessions")
-        .select("status")
+        .select("status, product")
         .eq("id", sessionId)
         .maybeSingle()
 
       if (cancelled) return
+
+      if (data?.product) setProduct(data.product as string)
 
       if (data?.status === "paid") {
         setPhase("active")
@@ -96,14 +102,17 @@ export function BillingSuccessContent() {
   // a product page (which is what return_path used to do for Adults
   // one-time purchases) hid that widget and lost partner-pair conversion.
   // The safeReturnPath is intentionally unused below.
+  // F3.2 — journey-funnel buyers continue IMMEDIATELY into the assessment so
+  // they finish the full set ("2 more minutes"); all other pillars land on /my.
+  const target = postPaymentTarget(product, locale)
+
   useEffect(() => {
     if (phase !== "active") return
-    const target = `/${locale}/my`
     const t = setTimeout(() => {
       window.location.assign(target)
     }, 1800)
     return () => clearTimeout(t)
-  }, [phase, locale, sessionId])
+  }, [phase, target])
 
   const t = isHe
     ? {
@@ -171,7 +180,7 @@ export function BillingSuccessContent() {
             sub={t.activeSub}
             note={t.activeNote}
             ctaLabel={t.goAccount}
-            href={`/${locale}/my`}
+            href={target}
           />
         ) : (
           <ErrorView

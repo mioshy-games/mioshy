@@ -1438,6 +1438,7 @@
       "stage1Trial": "",
       "stage1Price": "₪9",
       "stage1Period": "/ per week",
+      "stage1Billed": "Billed ₪39/month",
       "stage1Tag": "Start small",
       "stage1Cta": "Start playing",
       "stage2Label": "Bold",
@@ -1464,6 +1465,7 @@
       "stage3Product": "Journey with Mioshy",
       "stage3Price": "₪57",
       "stage3Period": "/ week · all included",
+      "stage3Billed": "Billed ₪249/month",
       "stage3Tag": "Everything included",
       "stage3Cta": "Start the journey",
       "includedRail": ""
@@ -1546,6 +1548,12 @@
     }
   },
   "journeyAssessment": {
+    "valuePoints": {
+      "title": "What's included",
+      "point1": "Weekly personal guidance with an expert",
+      "point2": "All online couples games",
+      "point3": "Mioshy's Sex"
+    },
     "authGate": {
       "title": "Save your progress",
       "body": "To continue we need a quick account. Your first 3 answers are safe - you won't lose anything.",
@@ -1924,7 +1932,30 @@
     }
   },
   "mioshySexPage": {
+    "faq": {
+      "eyebrow": "FAQ",
+      "headline": "Questions couples ask before they buy.",
+      "description": "The questions couples ask us before they buy. Still haven't found an answer?",
+      "contactCta": "Talk to us",
+      "item1Q": "Why is this good? How is it different from tips I'd find online?",
+      "item1A": "Our games are written by leading sexologists and couples therapists, and designed as a complete experience — not a tip list. Each game is a staged journey with rising tension and a peak you'll remember. That's what an internet article can't give you: not ideas, but a framework that walks you through the evening.",
+      "item2Q": "What do we get when we finish purchasing?",
+      "item2A": "Immediate access to the game you bought, for life, for both partners. A private space opens up in 'My Mioshy' with all your games — replay as many times as you want, no limits. No downloads, no installs. Open it on any device through your browser.",
+      "item3Q": "When is it recommended to play? Do we need to prepare?",
+      "item3A": "The best time is when you're relaxed, free, and in the mood. A weekend evening, a short getaway, any time you set aside for yourselves with no distractions. No prep needed — open the game and it leads you. Each game lists what's needed (if anything) before you start.",
+      "item4Q": "Does my partner get access to what I purchased?",
+      "item4A": "Yes, automatically. When you purchase, a 'couple space' opens for both of you — a shared area. Anything one of you buys is immediately accessible to the other. One purchase = both of you in. No need to buy twice.",
+      "item5Q": "Can we get a refund if it's not a fit?",
+      "item5A": "Yes. Up to 14 days from purchase, if you haven't started playing, we'll refund in full — email us at support@mioshy.com and we'll handle it. Once you've started, the content has been revealed so the purchase becomes non-refundable.",
+      "item6Q": "Do I need to buy sex toys?",
+      "item6A": "Depends on the game. Some games incorporate toys — clearly listed on each game's page. Others require no equipment at all. You choose upfront.",
+      "item7Q": "Is this discreet?",
+      "item7A": "Completely. Billing shows only as Mioshy — no game titles, no other words. All data is encrypted, we don't sell information, and there are no ads.",
+      "item8Q": "What if one of us isn't ready?",
+      "item8A": "Then start at level one — talk and questions, no pressure. Most couples who start there find the other opens up naturally."
+    },
     "comingSoonTitle": "Coming soon",
+    "cardDetailsCta": "Details & Purchase",
     "comingSoonBody": "We're preparing something special for couples. Check back soon.",
     "backHome": "Back home",
     "privateChamber": "The private chamber",

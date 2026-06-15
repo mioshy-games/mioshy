@@ -24,6 +24,23 @@ export default async function DashboardSettingsPage() {
 
       <Card>
         <CardHeader>
+          <CardTitle>Subscription pricing</CardTitle>
+          <CardDescription>
+            Edit games/journey prices per cadence. Live on save — no deploy.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Link
+            href="/dashboard/settings/pricing"
+            className={cn(buttonVariants({ variant: "outline" }))}
+          >
+            Open Pricing
+          </Link>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Game wheel</CardTitle>
           <CardDescription>
             Set global default wheel size and label position for all games.

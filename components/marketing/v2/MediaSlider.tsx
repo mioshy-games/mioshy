@@ -3,23 +3,81 @@
 // Side-effect import — ensures v2 scoped styles load.
 import "./styles.css";
 
+import { useState } from "react";
 import Image from "next/image";
 import { useCmsText } from "@/hooks/useCmsText";
 import { CmsText } from "@/components/cms/CmsText";
 
 /**
- * MediaSlider — editorial press table.
- * Sprint 4 #1 closeout: every DOM text via <CmsText>. `LogoAlt`
- * keys stay on useCmsText since they feed <Image alt={…}>.
+ * MediaSlider — press / social-proof logo wall.
+ *
+ * 2026-06-09 — each logo now has an action link beneath it: press
+ * outlets link to their article; the "כל מה שטוב" TV item opens a
+ * YouTube video in a centred lightbox. The old per-outlet quote rows
+ * were removed per Itzik. Eyebrow + headline (homeV2.media.eyebrow /
+ * headlinePart1) stay; the headline copy is managed in the CMS.
  */
+type PressItem =
+  | {
+      n: number;
+      kind: "article";
+      url: string;
+      cta: string;
+      logoSrc: string;
+      logoAlt: string;
+      w: number;
+      h: number;
+    }
+  | {
+      n: number;
+      kind: "video";
+      youtubeId: string;
+      cta: string;
+      logoSrc: string;
+      logoAlt: string;
+      w: number;
+      h: number;
+    };
+
 export function MediaSlider() {
   const item1LogoAlt = useCmsText("homeV2.media.item1LogoAlt");
   const item2LogoAlt = useCmsText("homeV2.media.item2LogoAlt");
+  const [videoId, setVideoId] = useState<string | null>(null);
 
-  const ITEMS = [
-    { n: 1, url: "https://www.israelhayom.co.il/mumlazim/article/13374120", logoSrc: "/images/israel.webp", logoAlt: item1LogoAlt.text },
-    { n: 2, url: "https://tld.walla.co.il/item/3528908",                    logoSrc: "/images/walla.webp",  logoAlt: item2LogoAlt.text },
-  ] as const;
+  // Order (RTL, right → left): ישראל היום · כל מה שטוב · וואלה.
+  // The "כל מה שטוב" video item sits in the middle per Itzik.
+  const ITEMS: PressItem[] = [
+    {
+      n: 1,
+      kind: "article",
+      url: "https://www.israelhayom.co.il/mumlazim/article/13374120",
+      cta: "מעבר לכתבה",
+      logoSrc: "/images/israel.webp",
+      logoAlt: item1LogoAlt.text,
+      w: 200,
+      h: 64,
+    },
+    {
+      n: 3,
+      kind: "video",
+      youtubeId: "fpkGvFzIlSY",
+      cta: "לצפייה",
+      logoSrc: "/images/logo.webp",
+      logoAlt: "כל מה שטוב",
+      w: 225,
+      h: 225,
+    },
+    {
+      n: 2,
+      kind: "article",
+      url: "https://tld.walla.co.il/item/3528908",
+      cta: "מעבר לכתבה",
+      logoSrc: "/images/walla.webp",
+      logoAlt: item2LogoAlt.text,
+      w: 200,
+      h: 64,
+    },
+  ];
 
   return (
     <section className="media-press">
@@ -29,45 +87,100 @@ export function MediaSlider() {
             <span className="media-press-dot" aria-hidden="true" />
             <CmsText cmsKey="homeV2.media.eyebrow" />
           </div>
-          {/* 2026-05-20 — next-intl JSON-with-<em> pitfall. The
-              original `headline` JSON value had inline <em>…</em>,
-              which causes next-intl's t() to throw
-              FORMATTING_ERROR when no matching cms_texts row exists
-              (because <em> is parsed as a context variable). Now we
-              keep `headline` as a plain fallback and render Part1 +
-              <em>Em</em> as separate JSX children. Same pattern as
-              ForWhom + Intimacy. See memory: project_nextintl_em_pitfall. */}
           <h2 className="media-press-title">
             <CmsText cmsKey="homeV2.media.headlinePart1" />
           </h2>
         </header>
 
-        {/* 2026-06-09 — simplified to a logo wall per Itzik. The
-            per-outlet quote, name/date meta, and "read article" CTA
-            were removed; only the publication logos remain, side by
-            side. CMS keys homeV2.media.item{n}Quote/Name/Date +
-            readArticle and the `.media-press-row*` CSS stay on disk. */}
         <ul className="media-press-logos">
           {ITEMS.map((item) => (
             <li key={item.n} className="media-press-logo-item">
-              <a
-                href={item.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={item.logoAlt}
-              >
-                <Image
-                  src={item.logoSrc}
-                  alt={item.logoAlt}
-                  width={200}
-                  height={64}
-                  unoptimized
-                />
-              </a>
+              {item.kind === "article" ? (
+                <>
+                  <a
+                    href={item.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={item.logoAlt}
+                    className="media-press-logo-link"
+                  >
+                    <Image
+                      src={item.logoSrc}
+                      alt={item.logoAlt}
+                      width={item.w}
+                      height={item.h}
+                      unoptimized
+                    />
+                  </a>
+                  <a
+                    href={item.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="media-press-go"
+                  >
+                    {item.cta}
+                  </a>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className="media-press-logo-btn"
+                    onClick={() => setVideoId(item.youtubeId)}
+                    aria-label={`${item.logoAlt} — ${item.cta}`}
+                  >
+                    <Image
+                      src={item.logoSrc}
+                      alt={item.logoAlt}
+                      width={item.w}
+                      height={item.h}
+                      unoptimized
+                    />
+                  </button>
+                  <button
+                    type="button"
+                    className="media-press-go"
+                    onClick={() => setVideoId(item.youtubeId)}
+                  >
+                    {item.cta}
+                  </button>
+                </>
+              )}
             </li>
           ))}
         </ul>
       </div>
+
+      {videoId ? (
+        <div
+          className="media-press-modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setVideoId(null)}
+        >
+          <div
+            className="media-press-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="media-press-modal-close"
+              onClick={() => setVideoId(null)}
+              aria-label="סגירה"
+            >
+              ×
+            </button>
+            <div className="media-press-modal-video">
+              <iframe
+                src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`}
+                title="כל מה שטוב — מיאושי"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

@@ -16,6 +16,10 @@ import { createServiceRoleClient } from "@/lib/supabase-admin";
 import { getAssessment } from "@/lib/assessments/catalog";
 import { loadAssessmentQuestions } from "@/lib/assessments/questions-db";
 import { AssessmentClient } from "@/components/assessments/AssessmentClient";
+import { CmsTextProvider } from "@/components/cms/CmsTextProvider";
+import { loadCmsTextsForPage } from "@/lib/cms/server";
+import { listAllPrices } from "@/lib/billing/pricing-queries";
+import type { CadenceOption } from "@/lib/billing/pricing-validations";
 import type { AnswerValue, Locale } from "@/lib/assessments/types";
 
 export const dynamic = "force-dynamic";
@@ -37,6 +41,24 @@ export default async function AssessmentRunnerPage({
 
   // Live questions from the DB (admin-editable); falls back to the static bank.
   const questions = await loadAssessmentQuestions(supabase, assessmentId);
+
+  // Journey subscription cadences for the post-assessment upsell picker
+  // (C2.4). Display-only: the picker renders enabled cadences; the weekly
+  // row stays the savings baseline. Falls back to [] on error → no picker.
+  const journeyCadences: CadenceOption[] = (await listAllPrices())
+    .filter((p) => p.product === "journey")
+    .map(({ cadence, price_ils, price_usd, enabled, is_default }) => ({
+      cadence,
+      price_ils,
+      price_usd,
+      enabled,
+      is_default,
+    }));
+
+  // CMS rows for the post-assessment journey upsell value-points
+  // (admin-editable via /admin/content, page='journey'). Falls back to
+  // messages when a row is absent.
+  const cmsRows = await loadCmsTextsForPage("journey");
 
   let initialStep = 0;
   let subscriptionActive = false;
@@ -114,18 +136,21 @@ export default async function AssessmentRunnerPage({
           <img src="/mioshy-white.svg" alt="Mioshy" width={150} height={48} className="h-auto w-[150px]" />
         </a>
       </div>
-      <AssessmentClient
-        locale={locale as Locale}
-        assessmentId={def.id}
-        assessmentTitleHe={def.he_title}
-        assessmentTitleEn={def.en_title}
-        questions={questions}
-        total={questions.length}
-        authenticated={!!user}
-        subscriptionActive={subscriptionActive}
-        initialStep={initialStep}
-        initialAnswers={initialAnswers}
-      />
+      <CmsTextProvider rows={cmsRows}>
+        <AssessmentClient
+          locale={locale as Locale}
+          assessmentId={def.id}
+          assessmentTitleHe={def.he_title}
+          assessmentTitleEn={def.en_title}
+          questions={questions}
+          total={questions.length}
+          authenticated={!!user}
+          subscriptionActive={subscriptionActive}
+          initialStep={initialStep}
+          initialAnswers={initialAnswers}
+          journeyCadences={journeyCadences}
+        />
+      </CmsTextProvider>
     </div>
   );
 }

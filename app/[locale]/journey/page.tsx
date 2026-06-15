@@ -40,10 +40,8 @@ import { safeJsonLd } from "@/lib/seo/jsonLd";
 import { unstable_noStore as noStore } from "next/cache";
 import {
   ArrowRight,
-  HeartHandshake,
   Sparkles,
   Clock,
-  BookOpen,
 } from "lucide-react";
 import { Link } from "@/navigation";
 import { routing } from "@/i18n/routing";
@@ -334,11 +332,9 @@ export default async function JourneyMarketingPage({
   // the loop back to [0,1,2,3]. The loop below intentionally iterates
   // cms indices [1,2,3] while indexing `whyMeta` 0..2 — that keeps the
   // admin's existing rows stable instead of renumbering them.
-  const whyMeta = [
-    { Icon: Clock,          iconBg: "bg-[#B88F32]" },
-    { Icon: BookOpen,       iconBg: "bg-[#4A1721]" },
-    { Icon: HeartHandshake, iconBg: "bg-[#3D1F3D]" },
-  ];
+  // 2026-06-09 — the per-card icon tiles (Clock / BookOpen /
+  // HeartHandshake) were removed from the "why" cards per Itzik, so the
+  // whyMeta presentation array is no longer needed.
 
   // `insideMeta` removed 2026-05-21 alongside the INSIDE section
   // (id="inside"). If the section is brought back, restore from
@@ -577,17 +573,19 @@ export default async function JourneyMarketingPage({
         {/* ════════════════════════════════════════════════════════════
             LIGHT WRAPPER - V2 cream language for everything below
         ════════════════════════════════════════════════════════════ */}
-        <div className="bg-[#FAF6F7] text-slate-900">
+        <div className="bg-white text-slate-900">
 
           {/* ════════════════════════════════════════════════════════════
               2. WHY - light cream, 4 unified cards w/ stat chips
           ════════════════════════════════════════════════════════════ */}
           <section
             id="why"
-            className="relative bg-[#FAF6F7] px-4 pb-[30px] pt-[75px]"
+            className="relative bg-white px-4 pb-[30px] pt-[75px]"
           >
             <div className="mx-auto max-w-6xl">
-              <div className="mx-auto max-w-3xl text-center">
+              {/* 2026-06-09 — widened max-w-3xl (768px) → 820px per Itzik
+                  so the "למי זה מתאים" headline has more room per line. */}
+              <div className="mx-auto max-w-[890px] text-center">
                 <span className="inline-flex items-center gap-2.5 text-[13px] font-semibold uppercase tracking-[0.2em] text-[#170E14]">
                   <span className="h-[7px] w-[7px] rounded-sm bg-[#FCCA65] shadow-[0_0_0_3px_rgba(252,202,101,0.18)]" />
                   <CmsText cmsKey="journeyHub.why.badge" />
@@ -595,7 +593,7 @@ export default async function JourneyMarketingPage({
                 <CmsText
                   cmsKey="journeyHub.why.title"
                   as="h2"
-                  className="mt-5 text-3xl font-bold leading-[1.05] tracking-[-0.02em] text-[#170E14] sm:text-4xl lg:text-5xl"
+                  className="mt-5 section-h2 font-bold tracking-[-0.02em] text-[#170E14]"
                   style={{
                     fontFamily: "'Frank Ruhl Libre', serif",
                     fontWeight: 600,
@@ -607,44 +605,35 @@ export default async function JourneyMarketingPage({
                   so the cards stretch slightly wider than they did at
                   4-up but don't fill the whole 6xl section width — keeps
                   visual balance with the section heading above. */}
-              <div className="mx-auto mt-14 grid max-w-5xl gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {[1, 2, 3].map((cmsIndex, arrayIndex) => {
-                  const { Icon, iconBg } = whyMeta[arrayIndex]!;
+              {/* 2026-06-09 — widened max-w-5xl → 1158px per Itzik so each
+                  of the 3 columns is ~370px (was ~325px), fitting more
+                  words per line. 3×370 + 2×24(gap) = 1158. */}
+              <div className="mx-auto mt-7 grid max-w-[1158px] gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {[1, 2, 3].map((cmsIndex) => {
                   return (
                     <div
                       key={cmsIndex}
-                      className="group relative flex flex-col gap-3 overflow-hidden rounded-3xl border border-[#EAE0E3] bg-[#FBF5F2] p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-transparent hover:shadow-md sm:p-7"
+                      className="group relative flex flex-col gap-3 p-5 sm:p-7"
                     >
-                      <div
-                        aria-hidden
-                        className="absolute inset-x-0 top-0 h-[3px] origin-right scale-x-0 rounded-t-3xl bg-[#FCCA65] transition-transform duration-400 group-hover:scale-x-100"
-                      />
-                      {/* Icon + badge unified into one row.
-                          2026-05-21 — Itzik asked for the icon-tile
-                          (was 56px) and the pill badge to read as a
-                          single chip-row, with the icon shrunk hard.
-                          New: 32px tile, 16px lucide glyph. */}
-                      <div className="flex items-center gap-2.5">
-                        <span
-                          aria-hidden
-                          className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${iconBg} text-white shadow-sm`}
-                        >
-                          <Icon className="h-4 w-4" />
-                        </span>
-                        <CmsText
-                          cmsKey={`journeyHub.why.stats.${cmsIndex}.label`}
-                          className="inline-block rounded-full border border-[#EAE0E3] bg-[#FBE9EC] px-3 py-1 text-[12px] font-semibold uppercase tracking-[0.05em] text-[#B88F32]"
-                        />
-                      </div>
+                      {/* 2026-06-09 — card chrome (bg/border/shadow/accent
+                          line), the icon tile, and the category label pill
+                          (journeyHub.why.stats.*.label) were all removed
+                          per Itzik. Cards are now just heading + body, flat
+                          on the section bg. The stats.*.label CMS rows stay
+                          on disk. */}
                       <CmsText
                         cmsKey={`journeyHub.why.items.${cmsIndex}.h`}
                         as="h3"
-                        className="font-heading text-2xl font-bold leading-snug text-[#170E14] sm:text-xl"
+                        className="text-[26px] leading-[1.1] tracking-[-0.01em] text-[#170E14]"
+                        style={{
+                          fontFamily: "'Frank Ruhl Libre', serif",
+                          fontWeight: 600,
+                        }}
                       />
                       <CmsText
                         cmsKey={`journeyHub.why.items.${cmsIndex}.p`}
                         as="p"
-                        className="text-[18px] leading-[1.6] text-[#4A3A45] sm:flex-1"
+                        className="text-[20px] leading-[1.5] text-[#170E14] sm:flex-1"
                       />
                     </div>
                   );
@@ -669,7 +658,7 @@ export default async function JourneyMarketingPage({
           ════════════════════════════════════════════════════════════ */}
           <section
             id="how"
-            className="relative overflow-hidden bg-[#FAF6F7] px-4 pb-20 pt-[35px] lg:pb-24"
+            className="relative overflow-hidden bg-white px-4 pb-6 pt-[35px] lg:pb-7"
           >
             {/* Soft accent glow at top */}
             <div
@@ -682,7 +671,9 @@ export default async function JourneyMarketingPage({
             />
 
             <div className="relative mx-auto max-w-6xl">
-              <div className="mx-auto max-w-2xl text-center">
+              {/* 2026-06-09 — widened max-w-2xl (672px) → 750px per Itzik
+                  so the "איך תוכנית הליווי..." headline has more room. */}
+              <div className="mx-auto max-w-[750px] text-center">
                 <span className="inline-flex items-center gap-2.5 text-[12px] font-semibold uppercase tracking-[0.32em] text-[#170E14]">
                   <span className="h-[7px] w-[7px] rounded-sm bg-[#FCCA65] shadow-[0_0_0_3px_rgba(252,202,101,0.18)]" />
                   <CmsText cmsKey="journeyHub.how.badge" />
@@ -690,7 +681,7 @@ export default async function JourneyMarketingPage({
                 <CmsText
                   cmsKey="journeyHub.how.title"
                   as="h2"
-                  className="mt-7 text-[40px] leading-[1.05] tracking-[-0.02em] text-[#170E14] sm:text-5xl lg:text-[56px]"
+                  className="mt-7 section-h2 tracking-[-0.02em] text-[#170E14]"
                   style={{
                     fontFamily: "'Frank Ruhl Libre', serif",
                     fontWeight: 600,
@@ -698,22 +689,21 @@ export default async function JourneyMarketingPage({
                 />
               </div>
 
-              <div className="mt-16 grid gap-8 lg:grid-cols-3 lg:gap-7">
+              {/* 2026-06-09 — width matched to the "why" grid (1158px →
+                  ~370px columns) per Itzik so both sections line up. */}
+              <div className="mx-auto mt-8 grid max-w-[1158px] gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {[0, 1, 2].map((i) => (
                   <article
                     key={i}
-                    className="group relative flex h-full flex-col overflow-hidden rounded-[28px] border border-[#EAE0E3] bg-[#FBF5F2] p-9 shadow-sm transition duration-500 hover:-translate-y-2 hover:border-transparent hover:shadow-[0_28px_56px_-20px_rgba(74,23,33,0.22)] sm:p-10"
+                    className="group relative flex h-full flex-col p-9 sm:p-10"
                   >
-                    {/* hover gradient accent */}
-                    <div
-                      aria-hidden
-                      className="pointer-events-none absolute -end-16 -top-16 h-48 w-48 rounded-full bg-gradient-to-br from-[#FCCA65]/0 via-[#FCCA65]/0 to-[#FCCA65]/0 opacity-0 blur-3xl transition duration-700 group-hover:from-[#FCCA65]/20 group-hover:via-[#B88F32]/15 group-hover:opacity-100"
-                    />
-
-                    {/* Chapter number + animated line */}
+                    {/* 2026-06-09 — card bg/border/shadow + hover blob
+                        removed per Itzik; flat cards, and the step number
+                        + line now carry the CTA button gradient. */}
+                    {/* Chapter number + gradient line */}
                     <div className="relative flex items-baseline gap-4">
                       <span
-                        className="text-[72px] leading-none text-black/15 transition-colors duration-500 group-hover:text-black/30 sm:text-[80px]"
+                        className="bg-[linear-gradient(110deg,#F43F5E_0%,#EC4899_45%,#A855F7_100%)] bg-clip-text text-[72px] leading-none text-transparent sm:text-[80px]"
                         style={{
                           fontFamily: "'Frank Ruhl Libre', serif",
                           fontWeight: 600,
@@ -721,26 +711,26 @@ export default async function JourneyMarketingPage({
                       >
                         0{i + 1}
                       </span>
-                      <span className="h-px flex-1 bg-[#EAE0E3] transition-colors duration-500 group-hover:bg-[#FCCA65]/40" />
+                      {/* 2026-06-09 — gradient line removed; the step tag
+                          (האבחון / הניתוח / המסלול) now sits beside the
+                          number, in its place. Per Itzik. */}
+                      <CmsText
+                        cmsKey={`journeyHub.how.steps.${i}.tag`}
+                        as="span"
+                        className="flex-1 text-[15px] uppercase tracking-[0.22em] text-black/70"
+                        style={{
+                          fontFamily: "'Frank Ruhl Libre', serif",
+                          fontStyle: "italic",
+                          fontWeight: 500,
+                        }}
+                      />
                     </div>
-
-                    {/* Italic tag */}
-                    <CmsText
-                      cmsKey={`journeyHub.how.steps.${i}.tag`}
-                      as="p"
-                      className="relative mt-6 text-[14px] uppercase tracking-[0.22em] text-black/70 font-semibold"
-                      style={{
-                        fontFamily: "'Frank Ruhl Libre', serif",
-                        fontStyle: "italic",
-                        fontWeight: 500,
-                      }}
-                    />
 
                     {/* Title */}
                     <CmsText
                       cmsKey={`journeyHub.how.steps.${i}.title`}
                       as="h3"
-                      className="relative mt-3 text-[28px] leading-[1.1] tracking-[-0.01em] text-[#170E14] sm:text-[32px]"
+                      className="relative mt-3 text-[26px] leading-[1.1] tracking-[-0.01em] text-[#170E14]"
                       style={{
                         fontFamily: "'Frank Ruhl Libre', serif",
                         fontWeight: 600,
@@ -751,7 +741,7 @@ export default async function JourneyMarketingPage({
                     <CmsText
                       cmsKey={`journeyHub.how.steps.${i}.body`}
                       as="p"
-                      className="relative mt-5 text-[18px] leading-[1.7] text-[#4A3A45]"
+                      className="relative mt-5 text-[20px] leading-[1.5] text-[#170E14]"
                     />
                   </article>
                 ))}
@@ -772,7 +762,10 @@ export default async function JourneyMarketingPage({
           {/* ════════════════════════════════════════════════════════════
               5. CTA BLOCK - light cream manifesto closer
           ════════════════════════════════════════════════════════════ */}
-          <section className="relative bg-[#FAF6F7] px-4 pt-[85px] pb-20 lg:pb-24">
+          {/* 2026-06-09 — bg colour removed, and bottom padding trimmed
+              ~30% (pb-20/24 → pb-14/16) per Itzik to tighten the gap to
+              the next section. */}
+          <section className="relative px-4 pt-[85px] pb-14 lg:pb-16">
             <div className="relative mx-auto max-w-3xl text-center">
               <span className="inline-flex items-center gap-2.5 text-[12px] font-semibold uppercase tracking-[0.32em] text-[#170E14]">
                 <span className="h-[7px] w-[7px] rounded-sm bg-[#FCCA65] shadow-[0_0_0_3px_rgba(252,202,101,0.18)]" />
@@ -781,7 +774,7 @@ export default async function JourneyMarketingPage({
               <CmsText
                 cmsKey="journeyHub.ctaBlock.title"
                 as="h2"
-                className="mt-6 text-[40px] leading-[1.05] tracking-[-0.02em] text-[#170E14] sm:text-5xl lg:text-[56px]"
+                className="mt-6 section-h2 tracking-[-0.02em] text-[#170E14]"
                 style={{
                   fontFamily: "'Frank Ruhl Libre', serif",
                   fontWeight: 600,

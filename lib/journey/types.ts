@@ -112,6 +112,11 @@ export interface QuestionReflection {
   he_prompt: string;
   en_prompt: string;
   max_length?: number;
+  /** F3.1 — per-question editable placeholder (admin-set via F2,
+   *  stored in journey_questions.meta). When present the reflection
+   *  input uses it; otherwise it falls back to the global CMS key. */
+  placeholder_he?: string;
+  placeholder_en?: string;
 }
 
 /**
@@ -237,6 +242,40 @@ export interface AiHeroBlock {
   model: string;
   generated_at: string;
   latency_ms: number;
+  /** Stage 1 (2026-06-14) — fallback only. A fairness-guarded VERBATIM
+   *  quote of the user's reflection ("כתבתם: …") rendered as a muted line
+   *  beneath the templated hero. Set ONLY by the deterministic fallback
+   *  builder (never by the AI, which weaves the reflection into hero_he
+   *  itself), and only when the reflection passes the quality gate. Null
+   *  when the reflection was empty/garbage. */
+  reflection_echo_he?: string | null;
+  reflection_echo_en?: string | null;
+}
+
+/** Stage 1 (2026-06-14) — why the hero render is what it is. Persisted in
+ *  summary JSONB (no migration) so null-rate + reasons are queryable from
+ *  the DB and the admin panel can distinguish real AI from the fallback. */
+export type AiHeroFailReason =
+  | "no_key"
+  | "http_429"
+  | "http_4xx"
+  | "http_5xx"
+  | "empty"
+  | "parse_fail"
+  | "timeout"
+  | "threw";
+
+export interface AiHeroStatus {
+  /** true when the real AI produced the hero. */
+  ok: boolean;
+  /** "ok" on success, else the failure reason. */
+  reason: "ok" | AiHeroFailReason;
+  /** "ai" = real Claude output; "fallback_template" = deterministic. */
+  source: "ai" | "fallback_template";
+  /** Attempts made against the AI (0 when the key was missing). */
+  attempts: number;
+  latency_ms: number;
+  at: string;
 }
 
 export interface AnalysisSummaryBilingual {
@@ -262,9 +301,14 @@ export interface AnalysisSummaryBilingual {
   }>;
   /** 5-category deterministic scoring bundle (2026-06-02). Always present. */
   category_scores?: CategoryScores;
-  /** AI-generated hero block (2026-06-02). Null on AI failure -> UI falls
-   *  back to narrative + deterministic recommendations. */
+  /** Hero block shown at the top of the results. Real AI output when the
+   *  Claude call succeeded; otherwise a deterministic fallback template
+   *  (Stage 1, 2026-06-14) so the page never loses its hero/recs. Check
+   *  `ai_hero_status.source` to tell which. */
   ai_hero?: AiHeroBlock | null;
+  /** Stage 1 observability — whether the AI fired, the failure reason if
+   *  not, and whether the rendered hero is AI or fallback. */
+  ai_hero_status?: AiHeroStatus;
 }
 
 export interface Analysis {

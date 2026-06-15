@@ -30,8 +30,15 @@ import { JourneyClient } from "@/components/journey/JourneyClient";
 // question pages stay visually quiet and the per-frame budget drops
 // to zero. Component kept on disk for possible later use.
 import { AssessmentDiagProbe } from "@/components/journey/AssessmentDiagProbe";
-import { totalQuestions } from "@/lib/journey/questions";
+import {
+  totalQuestions,
+  QUESTIONS as STATIC_QUESTIONS,
+  QUESTIONNAIRE,
+} from "@/lib/journey/questions";
+import { resolveJourneyFlow } from "@/lib/journey/phase";
 import type { Locale } from "@/lib/journey/types";
+import { listAllPrices } from "@/lib/billing/pricing-queries";
+import type { CadenceOption } from "@/lib/billing/pricing-validations";
 
 // Force fresh render on EVERY request - never cache. Critical for an
 // auth-aware page: we don't want a stale Cookie+user pair to be served
@@ -476,6 +483,41 @@ export default async function JourneyAssessmentPage({
     }
   }
 
+  // Journey subscription cadences for the post-assessment purchase
+  // picker (C2.4). Display-only: AnalysisSummary renders enabled cadences
+  // with effective-weekly + the actual billed line. [] on error → no picker.
+  const journeyCadences: CadenceOption[] = (await listAllPrices())
+    .filter((p) => p.product === "journey")
+    .map(({ cadence, price_ils, price_usd, enabled, is_default }) => ({
+      cadence,
+      price_ils,
+      price_usd,
+      enabled,
+      is_default,
+    }));
+
+  // F3.2 — resolve the ACTIVE flow (short pre-purchase / full post-purchase /
+  // single when unseeded) and serve only the UNANSWERED questions of the
+  // active phase. Position is answer-driven (resume = first unanswered), so we
+  // never re-ask a short question post-purchase. Falls back to the full static
+  // set as a single flow if the service-role client is unavailable.
+  const answeredSlugs = new Set(Object.keys(initialAnswers));
+  const questionsClient = createServiceRoleClient();
+  const flow = questionsClient
+    ? await resolveJourneyFlow({
+        client: questionsClient,
+        subscriptionActive,
+        answeredSlugs,
+      })
+    : {
+        mode: "single" as const,
+        phaseSet: STATIC_QUESTIONS,
+        remaining: STATIC_QUESTIONS.filter((q) => !answeredSlugs.has(q.id)),
+        phaseTotal: STATIC_QUESTIONS.length,
+        answeredInPhaseCount: STATIC_QUESTIONS.filter((q) => answeredSlugs.has(q.id)).length,
+        source: "json" as const,
+      };
+
   return (
     <div
       className="relative isolate min-h-screen"
@@ -532,6 +574,12 @@ export default async function JourneyAssessmentPage({
         initialAnswers={initialAnswers}
         subscriptionActive={subscriptionActive}
         authenticated={!!user}
+        journeyCadences={journeyCadences}
+        questions={flow.remaining}
+        likertLabels={QUESTIONNAIRE.likert_labels}
+        gating={QUESTIONNAIRE.gating}
+        phaseTotal={flow.phaseTotal}
+        phaseAnsweredBefore={flow.answeredInPhaseCount}
       />
     </div>
   );

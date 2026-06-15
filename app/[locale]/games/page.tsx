@@ -649,7 +649,7 @@ export default async function GamesHubPage({
                       <CmsText> below; for now the headline shows just
                       titleLine1. */}
                   <h2
-                    className="mt-7 text-[32px] leading-[1.12] tracking-[-0.02em] text-[#170E14] sm:text-[40px] lg:mx-auto lg:max-w-[820px] lg:text-[44px]"
+                    className="mt-7 section-h2 tracking-[-0.02em] text-[#170E14] lg:mx-auto lg:max-w-[820px]"
                     style={{
                       fontFamily: "'Frank Ruhl Libre', serif",
                       fontWeight: 600,
@@ -804,7 +804,7 @@ export default async function GamesHubPage({
                 <CmsText
                   cmsKey="gamesHub.catalogueTitle"
                   as="h2"
-                  className="font-heading text-3xl font-bold leading-[1.05] tracking-[-0.02em] text-white sm:text-4xl lg:text-5xl"
+                  className="font-heading section-h2 font-bold tracking-[-0.02em] text-white"
                 />
                 <CmsText
                   cmsKey="gamesHub.catalogueHint"

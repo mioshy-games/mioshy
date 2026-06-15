@@ -22,6 +22,7 @@ import {
 } from "@/lib/between-us/invitations";
 import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
 import { JourneyGraceBanner } from "@/components/my/JourneyGraceBanner";
+import { CompleteFullAssessmentCard } from "@/components/my/CompleteFullAssessmentCard";
 import { UpgradeToJourneyCard } from "@/components/my/UpgradeToJourneyCard";
 import { getOwnerJourneyStatus } from "@/lib/journey-content/owner-status";
 import { countUnreadJourneyItems } from "@/lib/journey-content/unread";
@@ -377,6 +378,12 @@ export default async function MyHubPage({
             />
           </section>
         ) : null}
+
+        {/* F3.2 — "complete later": a subscriber who saw the short report but
+            hasn't finished the full assessment. Self-renders null otherwise. */}
+        <section className="mt-8">
+          <CompleteFullAssessmentCard userId={ctx.user_id} locale={locale} />
+        </section>
 
         {/* ─────── Membership-status banner ───────
             Lights up immediately after the title so a returning user sees
