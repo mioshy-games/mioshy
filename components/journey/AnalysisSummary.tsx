@@ -616,6 +616,13 @@ export function AnalysisSummary({
                 </span>
               </li>
             </ul>
+            {/* "Serious ongoing process" framing — honest, desire-led, NOT a
+                numeric guarantee. CMS-keyed so it's editable without a deploy. */}
+            <CmsText
+              cmsKey="journeyAssessment.analysis.ongoingProcess"
+              as="p"
+              className="mt-4 text-pretty text-start text-[20px] leading-[1.5] text-white/85 sm:text-[18px] sm:leading-[1.7]"
+            />
           </div>
         </section>
       ) : null}
@@ -925,15 +932,17 @@ function OfferCard({
             "ניתן לעצור בכל עת" reassurance is preserved as the subline. */}
         {selectedOption ? (
           <div className="mt-6 text-start">
+            {/* Body (Assistant) font, not font-heading. Label + period in full
+                white; the ₪ symbol renders smaller than the number. */}
             <p className="flex items-baseline gap-1.5">
-              <span className="text-[20px] font-medium text-white/65">
-                {isHe ? "מחויב" : "Billed"}
+              <span className="text-[20px] font-medium text-white">
+                {isHe ? "לתשלום" : "To pay"}
               </span>
-              <span className="font-heading text-[32px] font-extrabold text-white">
-                {sym}
-                {fmt(amtOf(selectedOption))}
+              <span className="font-extrabold leading-none text-white">
+                <span className="text-[20px]">{sym}</span>
+                <span className="text-[32px]">{fmt(amtOf(selectedOption))}</span>
               </span>
-              <span className="text-[20px] font-semibold text-white/65">
+              <span className="text-[20px] font-semibold text-white">
                 {periodLabel(selectedOption.cadence)}
               </span>
             </p>
@@ -947,12 +956,13 @@ function OfferCard({
             anchor the monthly price. Worded carefully: Mioshy is ongoing
             guidance + content ("ליווי וכלים"), NOT a substitute for
             professional couples therapy, so we never claim it replaces a
-            counselor — only contrast a one-off session's cost. */}
-        <p className="mt-2 text-start text-[20px] leading-snug text-white/55">
-          {isHe
-            ? "פגישת ייעוץ זוגית בודדת עולה לרוב ₪500–600. כאן מקבלים ליווי וכלים מתמשכים — לאורך כל חודש."
-            : "A single couples-counseling session usually costs ₪500–600. Here you get ongoing guidance and tools — all month long."}
-        </p>
+            counselor — only contrast a one-off session's cost. CMS-keyed so
+            the comparison copy is editable without a deploy. */}
+        <CmsText
+          cmsKey="journeyAssessment.analysis.valueAnchor"
+          as="p"
+          className="mt-2 text-start text-[20px] leading-snug text-white/55"
+        />
 
         {/* C2.4: "what's included" value-points. CMS-driven (falls back to
             messages). Same dark/gold styling as the CTA. */}

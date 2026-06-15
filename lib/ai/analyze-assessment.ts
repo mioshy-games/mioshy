@@ -105,8 +105,10 @@ const SYSTEM_PROMPT = `אתה כותב את ה-hero של דף סיכום אבח�
 2. הדהד את הכאב (q20c) רק כש-q22a ריק. גם אז תמיד במסגור הקלה ("התחושה ש... תיעלם", "במקום ש..."), לעולם לא שקיעה בכאב ולא הגזמה או דרמטיזציה. (הכאב תמיד מנחה אילו תועלות לבחור, גם כשלא מהדהדים אותו verbatim.)
 3. אסור לשנות, לפרש או להוסיף דרמה למה שכתב. אם הטקסט קצר/מבולבל/לא ברור - אל תשקף, בנה תועלות מהציונים.
 
-== גשר קדימה (חובה, סגירה עקבית) ==
-סיים תמיד את hero_he בסגירה מוטיבציונית קצרה שמשדרת שהשינוי בהישג יד ומתחיל עכשיו ("הכול לפניכם", "וזה מתחיל כבר עכשיו", "מכאן זה רק עולה"), בלשון תועלת בלבד. אסור לתאר תהליך, אסור "הליווי/התוכנית", אסור המילה "מסע". אם expert_mentioned=true - משפט המומחה בא לפני הסגירה.
+== סגירה (חובה, על השאיפה של הזוג) ==
+סיים תמיד את hero_he על התוצאה שהזוג עצמו רוצה - נגזרת מהתשובות שלהם (q22a_success_signal אם מולא, אחרת q20c, top_priority והציונים), בלשון תועלת קונקרטית וספציפית לזוג הזה ("ושוב תרגישו...", "תחזרו להיות...", "תהיו שוב..."). הסגירה חייבת להיות משפט שמתאים רק לזוג הזה - לא משפט שאפשר להדביק לכל אחד.
+אסור בתכלית סגירה גנרית/קלישאתית: אסור "הכול לפניכם", אסור "וזה מתחיל כבר עכשיו", אסור "מכאן זה רק עולה", ואסור כל סיסמה מוטיבציונית כללית מאותו סוג ("השמיים הגבול", "אתם בדרך הנכונה" וכו').
+שמור על כל המגבלות: לשון תועלת בלבד, לא הבטחה מספרית, אסור לתאר תהליך, אסור "הליווי/התוכנית", אסור המילה "מסע". אם expert_mentioned=true - משפט המומחה בא לפני הסגירה.
 
 == זיהוי שילוב של תחומים ==
 שילוב = שני תחומים שונים שכואבים יחד. סמנים:
@@ -174,7 +176,7 @@ INPUT:
  four_horsemen_flag:true, q20a_urgency:5, q20c:"אנחנו רבים על הכל ואני לא יודע כבר איך לדבר איתה בלי שזה מסתיים רע"}
 
 OUTPUT:
-{"hero_he":"אורי, מהר מאוד תהפכו לזוג שמדבר בלי להאשים, ויכוחים שעד היום התפוצצו ייגמרו תוך דקות בלי שיישאר טעם רע. עם מומחה זמין בצ'אט לכל שאלה. הכול לפניכם.","hero_en":"Uri, very quickly you'll become a couple that talks without blame, fights that used to explode will end within minutes with no bitter aftertaste. With an expert available in chat for any question. It's all ahead of you.","recommendations_he":["תלמדו להתווכח בלי שזה יהיה פיצוץ.","שיחות אמיתיות יחזרו.","תקבלו ליווי אישי בכל שאלה."],"recommendations_en":["You'll learn to argue without it exploding.","Real conversations will return.","You'll receive personal guidance for every question."],"expert_mentioned":true,"pain_signal":"horsemen"}
+{"hero_he":"אורי, מהר מאוד תהפכו לזוג שמדבר בלי להאשים, ויכוחים שעד היום התפוצצו ייגמרו תוך דקות בלי שיישאר טעם רע. עם מומחה זמין בצ'אט לכל שאלה. ושוב תרגישו שאתם באותו צד.","hero_en":"Uri, very quickly you'll become a couple that talks without blame, fights that used to explode will end within minutes with no bitter aftertaste. With an expert available in chat for any question. And you'll feel you're on the same side again.","recommendations_he":["תלמדו להתווכח בלי שזה יהיה פיצוץ.","שיחות אמיתיות יחזרו.","תקבלו ליווי אישי בכל שאלה."],"recommendations_en":["You'll learn to argue without it exploding.","Real conversations will return.","You'll receive personal guidance for every question."],"expert_mentioned":true,"pain_signal":"horsemen"}
 
 == חוקי פלט ==
 - החזר JSON אובייקט אחד בלבד, בלי markdown fences, בלי טקסט נלווה.
