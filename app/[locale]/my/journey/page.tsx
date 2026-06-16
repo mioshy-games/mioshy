@@ -42,6 +42,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
 import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
 import { getCurrentCoupleContext } from "@/lib/between-us/couples";
+import { getOnboardingGate } from "@/lib/journey/onboarding-gate";
 import { getOwnerJourneyStatus } from "@/lib/journey-content/owner-status";
 import {
   buildDynamicRail,
@@ -261,6 +262,18 @@ export default async function PrivateJourneyPage({
       { user_id: user.id, entitlements },
     );
     redirect(`/${locale}/journey`);
+  }
+
+  // ── C.2 — "complete your setup" gate ──────────────────────────────────────
+  // The journey area is blocked until the user connects a partner AND finishes
+  // the full assessment; both-incomplete → the /my/setup checklist is the main
+  // page. Skipped under coach impersonation (view-as) so a coach can still
+  // inspect a user's private journey.
+  if (!viewAsContext) {
+    const onboarding = await getOnboardingGate();
+    if (onboarding.gated) {
+      redirect(`/${locale}/my/setup`);
+    }
   }
 
   // Layer-3 follow-up — if the user has an active pause, replace

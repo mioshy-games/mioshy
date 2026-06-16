@@ -22,6 +22,7 @@ import { routing } from "@/i18n/routing";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
 import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
+import { getOnboardingGate } from "@/lib/journey/onboarding-gate";
 import {
   getCoupleChannelThread,
   ensureCoupleChannel,
@@ -88,6 +89,13 @@ export default async function TogetherPage({
   // surface (their partner, their channel, their joint progress).
   const viewAsContext = await getActiveViewAs();
   const effectiveUserId = viewAsContext?.viewedUserId ?? user.id;
+
+  // C.2 — onboarding gate: until partner-connect AND the full assessment are
+  // both done, the setup checklist is the main page. Skipped under view-as.
+  if (!viewAsContext) {
+    const onboarding = await getOnboardingGate();
+    if (onboarding.gated) redirect(`/${locale}/my/setup`);
+  }
 
   // Resolve couple. Solo users never see this page.
   const admin = createServiceRoleClient();

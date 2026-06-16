@@ -122,8 +122,8 @@ export function OnboardingReminderCard({
             {cmsOr(
               subtitleText,
               isHe
-                ? "כל התכנים כבר פתוחים לכם. שני הצעדים האלה יפיקו מהמסע את המקסימום."
-                : "Everything is already unlocked. These two steps get the most out of your journey.",
+                ? "שני צעדים קטנים נשארו, ואז המסע המלא נפתח לפניכם."
+                : "Two small steps remain, and then your full journey opens.",
             )}
           </p>
         </div>
@@ -192,8 +192,8 @@ export function OnboardingReminderCard({
         desc={cmsOr(
           item2Desc,
           isHe
-            ? "עוד כ-2 דקות — לתמונה מדויקת יותר ולכלים שמותאמים בדיוק אליכם."
-            : "About 2 more minutes — for a sharper picture and tools tailored to you.",
+            ? "עוד כ-2 דקות — לתמונה מדויקת יותר ולצעדים שמותאמים בדיוק אליכם."
+            : "About 2 more minutes — for a sharper picture and steps tailored to you.",
         )}
         doneLabel={cmsOr(item2DoneLabel, isHe ? "הושלם ✓" : "Done ✓")}
         doneDesc={cmsOr(item2DoneDesc, isHe ? "האבחון המלא הושלם — מצוין!" : "Full assessment complete — excellent!")}
@@ -217,8 +217,8 @@ export function OnboardingReminderCard({
         {cmsOr(
           footerText,
           isHe
-            ? "אפשר להמשיך לתכנים בכל רגע — התזכורת תיעלם אוטומטית כששני הצעדים יושלמו."
-            : "You can keep using everything anytime — this reminder disappears once both steps are done.",
+            ? "ברגע ששני הצעדים יושלמו, נמשיך יחד אל המסע."
+            : "Once both steps are done, we'll continue together into your journey.",
         )}
       </p>
     </div>

@@ -50,6 +50,7 @@
       "assessmentsTitle": "Your assessments",
       "assessmentsCount": "{count} right now · more to come",
       "assessmentOpen": "Open",
+      "nextAssessmentNotice": "In 8 weeks, on {date}, we'll send you another assessment and our experts' responses — based on getting to know you, to see your progress and sharpen your goals.",
       "activeTitle": "Active now",
       "activeCountOne": "1 open",
       "activeChip": "Continue",
@@ -60,6 +61,10 @@
       "waitingSuffix": "waiting",
       "upcomingEmptyTitle": "You're caught up",
       "upcomingEmptyBody": "The next lesson opens when your expert adds it. No need to wait on the screen — we'll notify you."
+    },
+    "setup": {
+      "pageTitle": "Complete setup",
+      "lead": "Just before we set off — let's close the last two steps, and your full journey opens."
     },
     "expert": {
       "pageTitle": "Chat with expert",
@@ -2162,9 +2167,9 @@
     },
     "onboarding": {
       "title": "Two small steps — and you're set",
-      "subtitle": "Everything is already unlocked. These two steps get the most out of your journey.",
+      "subtitle": "Two small steps remain, and then your full journey opens.",
       "progress": "{done} of 2 done",
-      "footer": "You can keep using everything anytime — this reminder disappears once both steps are done.",
+      "footer": "Once both steps are done, we'll continue together into your journey.",
       "item1": {
         "title": "Connect your partner",
         "desc": "Share the code — once they join, you get the full couple picture.",
@@ -2176,7 +2181,7 @@
       },
       "item2": {
         "title": "Complete your full assessment",
-        "desc": "About 2 more minutes — for a sharper picture and tools tailored to you.",
+        "desc": "About 2 more minutes — for a sharper picture and steps tailored to you.",
         "doneLabel": "Done ✓",
         "doneDesc": "Full assessment complete — excellent!",
         "cta": "Continue to assessment"
