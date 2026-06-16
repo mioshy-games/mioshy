@@ -203,11 +203,15 @@ export async function chargeToken(args: {
       form.set("TokenToCharge.CardValidityYear",  `20${yy}`)                   // "2030"
     }
   }
-  // JParameter=5 marks this as a recurring/standing-order charge. Cardcom
-  // requires this for ChargeToken renewals; without it, some terminals
-  // reject the call even with a valid token + expiry. Per the official
-  // example URL.
-  form.set("TokenToCharge.JParameter", "5")
+  // NOTE (2026-06-16 audit): we intentionally do NOT send a J parameter here.
+  // Per Cardcom's official docs, JParameter=5 is "אישור בלבד" (authorization
+  // only / credit-limit hold) — it does NOT actually charge the card, it just
+  // reserves the amount and auto-releases after days/weeks. The previous J5
+  // caused issuer declines (60000004) across multiple valid cards and
+  // ghost "successful" renewals that never settled.
+  // The default ChargeToken transaction is a regular, immediate debit —
+  // identical to the initial purchase (LowProfile Operation=2), which works.
+  // See docs/cardcom-token-charge-audit-2026-06-16.md.
 
   const res    = await fetch("https://secure.cardcom.solutions/interface/ChargeToken.aspx", {
     method:  "POST",
