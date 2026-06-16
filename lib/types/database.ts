@@ -56,6 +56,9 @@ export type GameRow = {
   /** Scheduled open time (migration 127). NULL = immediate; future = coming-soon
    *  (locked + countdown); past = open. Computed live. */
   opens_at?: string | null;
+  /** Admin-set image alt text (migration 129, a11y M5). Null/empty → fall back
+   *  to the game name. */
+  alt_text?: string | null;
 };
 
 export type WheelConfigRow = {

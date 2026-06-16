@@ -332,6 +332,20 @@ export function ExperienceGameForm({
                     }
                   />
                 </div>
+                {/* a11y M5 — image alt text (optional). */}
+                <div className="sm:col-span-2">
+                  <Field
+                    label="טקסט חלופי לתמונה (alt)"
+                    hint="אם ריק — ישתמש בשם המשחק."
+                  >
+                    <Input
+                      value={watch("alt_text") ?? ""}
+                      onChange={(e) =>
+                        setValue("alt_text", e.target.value, { shouldDirty: true })
+                      }
+                    />
+                  </Field>
+                </div>
               </div>
             </Section>
 

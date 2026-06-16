@@ -489,7 +489,7 @@ export default async function BetweenUsGameDetailPage({
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={game.cover_image_url}
-                  alt={title}
+                  alt={game.alt_text || title}
                   className="h-full w-full object-cover"
                 />
               ) : (

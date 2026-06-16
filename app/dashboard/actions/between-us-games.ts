@@ -72,6 +72,8 @@ export async function saveExperienceGame(
     published_at: v.is_active ? new Date().toISOString() : null,
     // D — scheduled open time (null = immediate). Stored verbatim (ISO).
     opens_at: v.opens_at ?? null,
+    // a11y M5 — image alt text; null-out empty so the UI falls back to the title.
+    alt_text: (v.alt_text ?? "").trim() || null,
   };
 
   let savedId = gameId;

@@ -22,6 +22,7 @@ export function getDefaultGameFormValues(): GameFormValues {
     keywords_csv: "",
     sort_order: 0,
     opens_at: null,
+    alt_text: null,
     instructions: { title: "", intro: "", steps_text: "", footer: "" },
     wheel: {
       slices: defaultSlices(6),

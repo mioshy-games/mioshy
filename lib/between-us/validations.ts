@@ -116,6 +116,9 @@ export const experienceGameSchema = z.object({
   // D — scheduled "Coming Soon" open time. ISO string, or null = immediate.
   opens_at: z.string().nullable().optional(),
 
+  // a11y M5 — admin-set image alt text. Empty → fall back to the game title.
+  alt_text: z.string().optional().nullable(),
+
   category_ids: z.array(z.string().uuid()),
   tag_ids: z.array(z.string().uuid()),
 });

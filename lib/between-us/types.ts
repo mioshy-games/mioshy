@@ -105,6 +105,9 @@ export interface ExperienceGame {
   /** Scheduled open time (migration 127). NULL = immediate; future = coming-soon
    *  (locked + countdown); past = open. Computed live. */
   opens_at: string | null;
+  /** Admin-set image alt text (migration 129, a11y M5). Null/empty → fall back
+   *  to the game title. */
+  alt_text: string | null;
   created_at: string;
   updated_at: string;
 }

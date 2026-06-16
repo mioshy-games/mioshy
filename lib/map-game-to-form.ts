@@ -55,6 +55,7 @@ export function mapToGameFormValues(
     keywords_csv: Array.isArray(game.keywords) ? game.keywords.join(", ") : "",
     sort_order: game.sort_order ?? 0,
     opens_at: game.opens_at ?? null,
+    alt_text: game.alt_text ?? null,
     instructions: {
       title: game.instructions?.he?.title ?? "",
       intro: game.instructions?.he?.intro ?? "",

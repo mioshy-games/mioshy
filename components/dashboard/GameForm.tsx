@@ -359,6 +359,26 @@ export function GameForm({
               )}
             />
 
+            {/* a11y M5 — image alt text (optional). */}
+            <div className="space-y-1.5">
+              <Label htmlFor="alt_text">טקסט חלופי לתמונה (alt)</Label>
+              <Controller
+                control={control}
+                name="alt_text"
+                render={({ field }) => (
+                  <Input
+                    id="alt_text"
+                    value={field.value ?? ""}
+                    onChange={(e) => field.onChange(e.target.value)}
+                    className="h-10"
+                  />
+                )}
+              />
+              <p className="text-muted-foreground text-xs">
+                אם ריק — ישתמש בשם המשחק.
+              </p>
+            </div>
+
             <div className="space-y-1.5">
               <Label>Player mode</Label>
               <Controller

@@ -48,6 +48,10 @@ export function PageHeader({
         borderColor: "var(--shell-line-soft)",
       }}
     >
+      {/* a11y (h1): the page's single, programmatic heading. The visible
+          breadcrumb/title below are styled spans; this sr-only h1 gives every
+          shell page exactly one h1 without changing the layout. */}
+      <h1 className="sr-only">{pageLabel}</h1>
       {/* Breadcrumb / page name. Desktop = single line. Mobile = stacked. */}
       <div className="min-w-0 flex-1">
         <div className="text-[13px] leading-tight" style={{ color: "var(--shell-text-3)" }}>

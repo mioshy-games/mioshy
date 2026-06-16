@@ -89,6 +89,8 @@ export const gameFormSchema = z.object({
   sort_order: z.number().int().optional().nullable(),
   // D — scheduled "Coming Soon" open time. ISO string, or null = immediate.
   opens_at: z.string().nullable().optional(),
+  // a11y M5 — admin-set image alt text. Empty → fall back to the game name.
+  alt_text: z.string().optional().nullable(),
   // Per-game "how it works" instructions (migration 108). Hebrew only for now.
   // `steps_text` is one step per line in the UI; the save action splits it into
   // a string[] before writing the jsonb. All parts optional → empty means

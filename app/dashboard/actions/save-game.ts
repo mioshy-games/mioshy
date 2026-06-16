@@ -113,6 +113,8 @@ export async function saveGame(gameId: string | null, raw: unknown) {
     sort_order: Number.isFinite(v.sort_order) ? Number(v.sort_order) : 0,
     // D — scheduled open time (null = immediate). Stored verbatim (ISO).
     opens_at: v.opens_at ?? null,
+    // a11y M5 — image alt text; null-out empty so the UI falls back to the name.
+    alt_text: (v.alt_text ?? "").trim() || null,
     instructions,
   };
 

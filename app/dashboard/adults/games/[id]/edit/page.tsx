@@ -71,6 +71,7 @@ export default async function EditExperienceGamePage({
     is_active: game.is_active,
     sort_weight: game.sort_weight ?? 0,
     opens_at: game.opens_at ?? null,
+    alt_text: game.alt_text ?? null,
     category_ids: categoryIds,
     tag_ids: tagIds,
   };

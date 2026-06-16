@@ -255,7 +255,7 @@ export default async function GamesHubPage({
                     {thumb ? (
                       <Image
                         src={thumb}
-                        alt={name || g.name_he}
+                        alt={g.alt_text || name || g.name_he}
                         width={640}
                         height={400}
                         className={`h-full w-full object-cover ${
@@ -893,7 +893,7 @@ export default async function GamesHubPage({
                         <>
                           <Image
                             src={thumb}
-                            alt={name || g.name_he}
+                            alt={g.alt_text || name || g.name_he}
                             fill
                             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                             className={`object-cover transition duration-700 ${
