@@ -44,9 +44,17 @@ import { PostHogProvider as PHProvider } from "posthog-js/react";
  */
 
 const PH_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY;
-// UI host is the real EU dashboard origin; api_host is our first-party proxy.
+// Region must match the project the API key belongs to (the #1 cause of a stuck
+// "waiting for events" is a US key proxied to EU, or vice-versa). Defaults to
+// EU; set NEXT_PUBLIC_POSTHOG_REGION=us to switch. The /ingest proxy + CSP in
+// next.config.mjs read the same env so all three stay in sync.
+const PH_REGION =
+  (process.env.NEXT_PUBLIC_POSTHOG_REGION || "eu").toLowerCase() === "us"
+    ? "us"
+    : "eu";
+// UI host is the real dashboard origin; api_host is our first-party proxy.
 const PH_UI_HOST =
-  process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://eu.posthog.com";
+  process.env.NEXT_PUBLIC_POSTHOG_HOST || `https://${PH_REGION}.posthog.com`;
 
 // Query params we never want to leave the browser, even inside a URL string.
 const REDACT_QUERY_PARAMS = ["code", "token", "email", "invite", "ref_code"];
@@ -131,6 +139,16 @@ function initPostHog() {
     loaded: (ph) => {
       // Belt-and-suspenders: if a future env flips this off, honour it.
       if (process.env.NEXT_PUBLIC_POSTHOG_DEBUG === "true") ph.debug();
+      // Capture the LANDING pageview here. Init is deferred to browser idle,
+      // but PageviewTracker's first effect already ran (with initialised=false)
+      // and won't re-fire until a route change — so without this the very first
+      // page of a session never sent a $pageview (and a bounce sent nothing,
+      // which reads as "no events"). Subsequent SPA navigations still flow
+      // through PageviewTracker.
+      const url = sanitizeUrl(
+        window.location.pathname + window.location.search,
+      );
+      ph.capture("$pageview", { $current_url: url });
     },
   });
 }

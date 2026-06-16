@@ -23,6 +23,19 @@ function supabaseHost() {
   }
 }
 
+// PostHog region (QA 2026-06-16). Events are reverse-proxied through /ingest;
+// the proxy destinations AND the CSP MUST target the cloud where the project's
+// API key actually lives. A US key proxied to the EU host (or vice-versa) means
+// every event is silently dropped — the #1 cause of a stuck "waiting for
+// events". Defaults to EU; set NEXT_PUBLIC_POSTHOG_REGION=us in Vercel to flip
+// the whole proxy + CSP to the US cloud with no code change (then redeploy).
+const PH_REGION =
+  (process.env.NEXT_PUBLIC_POSTHOG_REGION || "eu").toLowerCase() === "us"
+    ? "us"
+    : "eu";
+const PH_INGEST_HOST = `https://${PH_REGION}.i.posthog.com`;
+const PH_ASSETS_HOST = `https://${PH_REGION}-assets.i.posthog.com`;
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // PostHog (EU) is reverse-proxied through /ingest (see rewrites below).
@@ -80,11 +93,11 @@ const nextConfig = {
     return [
       {
         source: "/ingest/static/:path*",
-        destination: "https://eu-assets.i.posthog.com/static/:path*",
+        destination: `${PH_ASSETS_HOST}/static/:path*`,
       },
       {
         source: "/ingest/:path*",
-        destination: "https://eu.i.posthog.com/:path*",
+        destination: `${PH_INGEST_HOST}/:path*`,
       },
     ];
   },
@@ -139,9 +152,10 @@ const nextConfig = {
       // back to script-src, which doesn't allow blob: — so declare it here.
       "worker-src 'self' blob:",
       // PostHog ingest is first-party via the /ingest proxy, so 'self' already
-      // covers it. eu.i.posthog.com / eu-assets.i.posthog.com are listed as a
-      // belt-and-suspenders fallback in case the proxy is ever bypassed.
-      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://*.googletagmanager.com https://*.cardcom.solutions https://*.cardcom.co.il https://eu.i.posthog.com https://eu-assets.i.posthog.com",
+      // covers it. The region hosts (PH_INGEST_HOST / PH_ASSETS_HOST) are listed
+      // as a belt-and-suspenders fallback in case the proxy is ever bypassed —
+      // and follow NEXT_PUBLIC_POSTHOG_REGION so EU/US stay in sync.
+      `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://*.googletagmanager.com https://*.cardcom.solutions https://*.cardcom.co.il ${PH_INGEST_HOST} ${PH_ASSETS_HOST}`,
       "frame-src 'self' https://www.googletagmanager.com https://*.googletagmanager.com https://*.cardcom.solutions https://*.cardcom.co.il",
       "frame-ancestors 'none'",
       "form-action 'self' https://*.cardcom.solutions https://*.cardcom.co.il",
