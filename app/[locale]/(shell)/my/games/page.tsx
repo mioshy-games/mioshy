@@ -81,7 +81,8 @@ export default async function ShellMyGamesPage({
   const { data } = await supabase
     .from("games")
     .select("*")
-    .eq("is_active", true)
+    // A.9 — free game(s) first (admin-controlled via is_free), then newest.
+    .order("is_free", { ascending: false })
     .order("created_at", { ascending: false });
   const games = (data ?? []) as GameRow[];
 

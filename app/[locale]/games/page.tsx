@@ -162,7 +162,9 @@ export default async function GamesHubPage({
   const { data } = await supabase
     .from("games")
     .select("*")
-    .eq("is_active", true)
+    // A.9 — free game(s) first (admin-controlled via is_free, no slug hardcode),
+    // then newest. Puts "כנות ואתגר" at the top of the catalogue.
+    .order("is_free", { ascending: false })
     .order("created_at", { ascending: false });
   const games = (data ?? []) as GameRow[];
 
