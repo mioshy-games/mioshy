@@ -102,6 +102,9 @@ export interface ExperienceGame {
   is_active: boolean;
   sort_weight: number;
   published_at: string | null;
+  /** Scheduled open time (migration 127). NULL = immediate; future = coming-soon
+   *  (locked + countdown); past = open. Computed live. */
+  opens_at: string | null;
   created_at: string;
   updated_at: string;
 }

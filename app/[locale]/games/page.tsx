@@ -38,6 +38,8 @@ import { RevealOnScroll } from "@/components/marketing/v2/RevealOnScroll";
 import { FAQ } from "@/components/marketing/v2/FAQ";
 import { pickGameThumbnail } from "@/lib/games-thumbnail";
 import { FreeBadge, SubscriptionTag } from "@/components/games/FreeBadge";
+import { isComingSoon, comingSoonFirst } from "@/lib/games/coming-soon";
+import { ComingSoonCountdown } from "@/components/games/ComingSoonCountdown";
 import { GamesPageAtmosphere } from "@/components/games/GamesPageAtmosphere";
 // `GamesOrbsDiagProbe` import removed 2026-05-19 along with the
 // orbs field. Probe file kept on disk for future debugging.
@@ -166,7 +168,8 @@ export default async function GamesHubPage({
     // then newest. Puts "כנות ואתגר" at the top of the catalogue.
     .order("is_free", { ascending: false })
     .order("created_at", { ascending: false });
-  const games = (data ?? []) as GameRow[];
+  // D — a scheduled (coming-soon) game always sorts FIRST, with its countdown.
+  const games = comingSoonFirst((data ?? []) as GameRow[], (g) => g.opens_at);
 
   // 2026-05-20 — TEMP DIAGNOSTIC. Itzik reports the recent edits
   // (benefits-moved-below-hero, bg-white removed, alignment fix)
@@ -243,50 +246,90 @@ export default async function GamesHubPage({
                 const name = isHe ? g.name_he : g.name_en;
                 const desc = isHe ? g.description_he : g.description_en;
                 const thumb = pickGameThumbnail(g, locale);
+                // D — coming-soon: card shows name/image/description, but entry
+                // is disabled and a live countdown runs until it opens.
+                const soon = isComingSoon(g.opens_at);
+
+                const media = (
+                  <div className="relative aspect-[16/10] w-full overflow-hidden bg-gradient-to-br from-rose-500/30 to-fuchsia-500/20">
+                    {thumb ? (
+                      <Image
+                        src={thumb}
+                        alt={name ?? ""}
+                        width={640}
+                        height={400}
+                        className={`h-full w-full object-cover ${
+                          soon ? "opacity-60" : "transition group-hover:scale-105"
+                        }`}
+                        unoptimized
+                      />
+                    ) : null}
+                    {soon ? (
+                      <>
+                        <div className="absolute inset-0 bg-black/45" aria-hidden />
+                        <span className="absolute start-3 top-3 z-10 inline-flex items-center gap-1.5 rounded-full bg-black/55 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-rose-100 ring-1 ring-white/20">
+                          <span className="h-1.5 w-1.5 rounded-full bg-rose-300" />
+                          {isHe ? "בקרוב" : "Coming soon"}
+                        </span>
+                        <div className="absolute inset-0 z-10 flex items-center justify-center p-4">
+                          <ComingSoonCountdown opensAt={g.opens_at!} isHe={isHe} />
+                        </div>
+                      </>
+                    ) : g.is_free ? (
+                      <FreeBadge className="absolute start-3 top-3 z-10" />
+                    ) : (
+                      <SubscriptionTag className="absolute start-3 top-3 z-10" />
+                    )}
+                    <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/70 to-transparent" />
+                  </div>
+                );
+
+                const textBody = (
+                  <div className="p-5">
+                    <h3 className="text-xl font-bold text-white group-hover:text-rose-100">
+                      {name}
+                    </h3>
+                    {desc ? (
+                      <p className="mt-2 line-clamp-2 text-sm text-white/70 transition-[max-height,color] duration-500 ease-in-out group-hover:line-clamp-none">
+                        {desc}
+                      </p>
+                    ) : null}
+                    <div className="mt-5 flex items-center justify-between">
+                      {soon ? (
+                        <span className="text-sm font-semibold text-white/45">
+                          {isHe ? "ייפתח בקרוב" : "Opening soon"}
+                        </span>
+                      ) : (
+                        <CmsText
+                          cmsKey="gamesHub.playArrow"
+                          as="span"
+                          className="text-sm text-rose-200 group-hover:text-white"
+                        />
+                      )}
+                    </div>
+                  </div>
+                );
+
                 return (
                   <li key={g.id}>
-                    <Link
-                      href={`/games/${g.slug}`}
-                      className="group block overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/10 to-white/5 shadow-xl backdrop-blur transition hover:border-rose-300/40 hover:from-white/20"
-                    >
-                      <div className="relative aspect-[16/10] w-full overflow-hidden bg-gradient-to-br from-rose-500/30 to-fuchsia-500/20">
-                        {thumb ? (
-                          <Image
-                            src={thumb}
-                            alt={name ?? ""}
-                            width={640}
-                            height={400}
-                            className="h-full w-full object-cover transition group-hover:scale-105"
-                            unoptimized
-                          />
-                        ) : null}
-                        {/* H — free game gets the "חינם" badge; others a quiet
-                            "דרוש מנוי" tag (public marketing catalogue). */}
-                        {g.is_free ? (
-                          <FreeBadge className="absolute start-3 top-3 z-10" />
-                        ) : (
-                          <SubscriptionTag className="absolute start-3 top-3 z-10" />
-                        )}
-                        <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/70 to-transparent" />
+                    {soon ? (
+                      // Disabled: a <div>, not a <Link> — no entry until it opens.
+                      <div
+                        aria-disabled="true"
+                        className="group block cursor-default overflow-hidden rounded-3xl border border-rose-300/30 bg-gradient-to-br from-white/10 to-white/5 shadow-xl backdrop-blur"
+                      >
+                        {media}
+                        {textBody}
                       </div>
-                      <div className="p-5">
-                        <h3 className="text-xl font-bold text-white group-hover:text-rose-100">
-                          {name}
-                        </h3>
-                        {desc ? (
-                          <p className="mt-2 line-clamp-2 text-sm text-white/70 transition-[max-height,color] duration-500 ease-in-out group-hover:line-clamp-none">
-                            {desc}
-                          </p>
-                        ) : null}
-                        <div className="mt-5 flex items-center justify-between">
-                          <CmsText
-                            cmsKey="gamesHub.playArrow"
-                            as="span"
-                            className="text-sm text-rose-200 group-hover:text-white"
-                          />
-                        </div>
-                      </div>
-                    </Link>
+                    ) : (
+                      <Link
+                        href={`/games/${g.slug}`}
+                        className="group block overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/10 to-white/5 shadow-xl backdrop-blur transition hover:border-rose-300/40 hover:from-white/20"
+                      >
+                        {media}
+                        {textBody}
+                      </Link>
+                    )}
                   </li>
                 );
               })}

@@ -27,6 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { OpensAtField } from "@/components/dashboard/OpensAtField";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 
@@ -322,6 +323,15 @@ export function ExperienceGameForm({
                     })}
                   />
                 </Field>
+                {/* D — scheduled "Coming Soon" open time (empty = immediate). */}
+                <div className="sm:col-span-2">
+                  <OpensAtField
+                    value={watch("opens_at") ?? null}
+                    onChange={(v) =>
+                      setValue("opens_at", v, { shouldDirty: true })
+                    }
+                  />
+                </div>
               </div>
             </Section>
 

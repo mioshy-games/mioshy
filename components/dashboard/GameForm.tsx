@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { OpensAtField } from "@/components/dashboard/OpensAtField";
 import {
   Select,
   SelectContent,
@@ -345,6 +346,18 @@ export function GameForm({
                 />
               </div>
             </div>
+
+            {/* D — scheduled "Coming Soon" open time (empty = immediate). */}
+            <Controller
+              control={control}
+              name="opens_at"
+              render={({ field }) => (
+                <OpensAtField
+                  value={field.value ?? null}
+                  onChange={field.onChange}
+                />
+              )}
+            />
 
             <div className="space-y-1.5">
               <Label>Player mode</Label>

@@ -70,6 +70,8 @@ export async function saveExperienceGame(
     is_active: v.is_active,
     sort_weight: v.sort_weight,
     published_at: v.is_active ? new Date().toISOString() : null,
+    // D — scheduled open time (null = immediate). Stored verbatim (ISO).
+    opens_at: v.opens_at ?? null,
   };
 
   let savedId = gameId;

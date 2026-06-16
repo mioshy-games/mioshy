@@ -111,6 +111,8 @@ export async function saveGame(gameId: string | null, raw: unknown) {
     og_image_url: (v.og_image_url ?? "").trim() || null,
     keywords,
     sort_order: Number.isFinite(v.sort_order) ? Number(v.sort_order) : 0,
+    // D — scheduled open time (null = immediate). Stored verbatim (ISO).
+    opens_at: v.opens_at ?? null,
     instructions,
   };
 
