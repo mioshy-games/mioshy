@@ -3,43 +3,30 @@
 /**
  * components/my/OnboardingReminderCard.tsx
  *
- * Consolidated, NON-BLOCKING onboarding reminder shown at the top of /my for a
- * logged-in subscriber until they complete TWO items:
- *   1. Connect their partner   (couple partner_count >= 2)
- *   2. Complete the full assessment   (!isFullAssessmentPending)
+ * The body of the /my/setup landing (work-order 2026-06-15, part C — revised).
  *
- * Each item shows a ✓ when done; a small "X מתוך 2 הושלם" progress line sits
- * under the header. The card auto-hides per-user when BOTH are done (the PAGE
- * decides visibility — see `showOnboarding` in app/[locale]/my/page.tsx — so
- * the per-user assessment read stays server-side / RLS-safe).
+ * Concept: NON-BLOCKING landing shown only while the user's assessment is still
+ * pending. The ASSESSMENT is the single thing that matters — finishing it is
+ * what makes this landing go away. Connecting a partner is NEVER mandatory and
+ * never affects whether the page appears; it is presented per `partnerMode`:
+ *   · "task"     — journey buyer: a recommended (optional) invite step.
+ *   · "optional" — bought another product: an optional recommendation.
+ *   · "disabled" — no purchase: a visible but greyed, inert row.
  *
- * Composition (we REUSE, never rebuild):
- *   - item-1 invite body  → <PartnerShareCard>      (code / copy / WhatsApp / QR
- *                            + "how it works"), CMS keys `myHub.share.*`.
- *   - partner "got a code?" → <RedeemCodeButton>     (opens the redeem dialog →
- *                            joinCoupleByPairCode).
- *   - item-2 CTA          → <Link href="/journey/assessment"> (same target as
- *                            the former CompleteFullAssessmentCard).
- *
- * This card REPLACES the two previously-scattered cards on /my (the standalone
- * PartnerShareCard top banner + CompleteFullAssessmentCard). It gates NOTHING —
- * pillars/lessons and all content stay fully open.
- *
- * Copy is CMS-configurable via useCmsText under `myHub.onboarding.*` (seeded in
- * messages/{he,en}.json). Each string keeps an inline he/en fallback, matching
- * the PartnerShareCard convention, so a blanked/unseeded key never renders raw.
+ * Composition (we REUSE, never rebuild): <PartnerShareCard> for the invite and
+ * <RedeemCodeButton> for "got a code?". Copy is CMS-configurable via useCmsText
+ * under `myHub.onboarding.*` with inline he/en fallbacks.
  */
 
 import { Link } from "@/navigation";
 import { useLocale } from "next-intl";
-import { Check, Sparkles, ArrowLeft, ArrowRight } from "lucide-react";
+import { Check, Sparkles, ArrowLeft, ArrowRight, Users } from "lucide-react";
 import { useCmsText } from "@/hooks/useCmsText";
 import { PartnerShareCard } from "@/components/between-us/PartnerShareCard";
 import { RedeemCodeButton } from "@/components/between-us/RedeemCodeButton";
+import type { PartnerInviteMode } from "@/lib/journey/setup-landing";
 
-// Logo gold → deep amber, shared with the journey/assessment surfaces
-// (AnalysisSummary). Used for the ✓ ticks, progress fill and item-2 CTA so the
-// reminder reads as "gold-on-fuchsia".
+// Logo gold → deep amber, shared with the journey/assessment surfaces.
 const GOLD_GRADIENT = "linear-gradient(135deg, #FCCA65 0%, #B88F32 100%)";
 
 /** useCmsText with an inline fallback when the key is blank/unseeded. */
@@ -50,27 +37,22 @@ function cmsOr(text: string, fallback: string): string {
 export function OnboardingReminderCard({
   pairCode,
   partnerConnected,
-  fullAssessmentPending,
+  partnerMode,
 }: {
   /** The couple's pair_code — needed by the invite widget. */
   pairCode: string | null;
-  /** item-1 ✓ : the partner has joined (couple partner_count >= 2). */
+  /** The partner has joined (couple partner_count >= 2). */
   partnerConnected: boolean;
-  /** item-2 driver : true while this user's full assessment is still pending. */
-  fullAssessmentPending: boolean;
+  /** How to present the partner-invite row. Never a blocking task. */
+  partnerMode: PartnerInviteMode;
 }) {
   const locale = useLocale() as "he" | "en";
   const isHe = locale === "he";
   const Arrow = isHe ? ArrowLeft : ArrowRight;
 
-  const item1Done = partnerConnected;
-  const item2Done = !fullAssessmentPending;
-  const doneCount = (item1Done ? 1 : 0) + (item2Done ? 1 : 0);
-
   // ── CMS copy (myHub.onboarding.*) ──────────────────────────────────────────
   const titleText = useCmsText("myHub.onboarding.title").text;
   const subtitleText = useCmsText("myHub.onboarding.subtitle").text;
-  const progressTpl = useCmsText("myHub.onboarding.progress").text;
   const footerText = useCmsText("myHub.onboarding.footer").text;
 
   const item1Title = useCmsText("myHub.onboarding.item1.title").text;
@@ -80,17 +62,18 @@ export function OnboardingReminderCard({
   const item1EntryQ = useCmsText("myHub.onboarding.item1.entryQ").text;
   const item1EntryBody = useCmsText("myHub.onboarding.item1.entryBody").text;
   const item1EntryCta = useCmsText("myHub.onboarding.item1.entryCta").text;
+  const item1OptionalTag = useCmsText("myHub.onboarding.item1.optionalTag").text;
+  const item1OptionalDesc = useCmsText("myHub.onboarding.item1.optionalDesc").text;
+  const item1DisabledDesc = useCmsText("myHub.onboarding.item1.disabledDesc").text;
 
   const item2Title = useCmsText("myHub.onboarding.item2.title").text;
   const item2Desc = useCmsText("myHub.onboarding.item2.desc").text;
-  const item2DoneLabel = useCmsText("myHub.onboarding.item2.doneLabel").text;
-  const item2DoneDesc = useCmsText("myHub.onboarding.item2.doneDesc").text;
   const item2Cta = useCmsText("myHub.onboarding.item2.cta").text;
 
-  const progressLabel = cmsOr(
-    progressTpl,
-    isHe ? "{done} מתוך 2 הושלם" : "{done} of 2 done",
-  ).replace("{done}", String(doneCount));
+  const partnerTitle = cmsOr(
+    item1Title,
+    isHe ? "צרפו את בן/בת הזוג" : "Connect your partner",
+  );
 
   return (
     <div
@@ -113,7 +96,7 @@ export function OnboardingReminderCard({
             className="text-[25px] font-extrabold leading-tight text-white"
             data-cms-key="myHub.onboarding.title"
           >
-            {cmsOr(titleText, isHe ? "עוד שני צעדים קטנים — וזה מוכן" : "Two small steps — and you're set")}
+            {cmsOr(titleText, isHe ? "צעד אחרון לפני שמתחילים" : "One last step before we begin")}
           </h2>
           <p
             className="mt-1 text-[20px] leading-snug text-white/75"
@@ -122,92 +105,162 @@ export function OnboardingReminderCard({
             {cmsOr(
               subtitleText,
               isHe
-                ? "כל התכנים כבר פתוחים לכם. שני הצעדים האלה יפיקו מהמסע את המקסימום."
-                : "Everything is already unlocked. These two steps get the most out of your journey.",
+                ? "נשאר להשלים את האבחון — וכל המסע ייפתח לפניכם."
+                : "Just the assessment left — and your whole journey opens.",
             )}
           </p>
         </div>
       </div>
 
-      {/* Progress */}
-      <div className="mt-5 flex items-center gap-3">
-        <div className="h-[9px] flex-1 overflow-hidden rounded-full bg-white/10">
-          <div
-            className="h-full rounded-full transition-all"
-            style={{ width: `${(doneCount / 2) * 100}%`, background: GOLD_GRADIENT }}
-          />
-        </div>
-        <span
-          className="shrink-0 whitespace-nowrap text-[18px] text-white/70"
-          data-cms-key="myHub.onboarding.progress"
-        >
-          {progressLabel}
-        </span>
-      </div>
-
-      {/* ── Item 1 — connect partner ──────────────────────────────────────── */}
-      <ChecklistItem
-        index={1}
-        done={item1Done}
-        title={cmsOr(item1Title, isHe ? "חברו את בן/בת הזוג" : "Connect your partner")}
-        desc={cmsOr(
-          item1Desc,
-          isHe
-            ? "שתפו את הקוד — וברגע שהם יצטרפו, תקבלו תמונה זוגית מלאה."
-            : "Share the code — once they join, you get the full couple picture.",
-        )}
-        doneLabel={cmsOr(item1DoneLabel, isHe ? "הושלם ✓" : "Done ✓")}
-        doneDesc={cmsOr(item1DoneDesc, isHe ? "בן/בת הזוג מחוברים — נהדר!" : "Your partner is connected — great!")}
-      >
-        {/* invite body — reuses PartnerShareCard + RedeemCodeButton */}
-        {pairCode ? <PartnerShareCard pairCode={pairCode} /> : null}
-
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-dashed border-white/15 pt-4">
+      {/* ── Primary: complete the assessment ─────────────────────────────── */}
+      <div className="mt-5 rounded-2xl border border-[rgba(252,202,101,0.45)] bg-[rgba(252,202,101,0.08)] p-[18px]">
+        <div className="flex items-start gap-3.5">
+          <span
+            className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full"
+            style={{ background: GOLD_GRADIENT, color: "#1a1014", boxShadow: "0 6px 16px -6px rgba(252,202,101,0.7)" }}
+            aria-hidden
+          >
+            <Sparkles className="h-5 w-5" />
+          </span>
           <div className="min-w-0 flex-1">
-            <p className="text-[18px] font-semibold text-white" data-cms-key="myHub.onboarding.item1.entryQ">
-              {cmsOr(item1EntryQ, isHe ? "קיבלתם קוד מבן/בת הזוג?" : "Got a code from your partner?")}
+            <p className="text-[22px] font-bold leading-tight text-white" data-cms-key="myHub.onboarding.item2.title">
+              {cmsOr(item2Title, isHe ? "השלימו את האבחון המלא" : "Complete your full assessment")}
             </p>
-            <p className="mt-0.5 text-[16px] leading-snug text-white/65" data-cms-key="myHub.onboarding.item1.entryBody">
+            <p className="mt-1 text-[19px] leading-snug text-white/70" data-cms-key="myHub.onboarding.item2.desc">
               {cmsOr(
-                item1EntryBody,
+                item2Desc,
                 isHe
-                  ? "הזינו אותו כדי להתחבר ולפתוח את הגישה המשותפת שלכם."
-                  : "Enter it to connect and unlock your shared access.",
+                  ? "עוד כ-2 דקות — לתמונה מדויקת יותר ולצעדים שמותאמים בדיוק אליכם."
+                  : "About 2 more minutes — for a sharper picture and steps tailored to you.",
               )}
             </p>
+            <Link
+              href="/journey/assessment"
+              className="mt-3 inline-flex items-center gap-2 rounded-full px-6 py-3 text-[20px] font-extrabold text-[#1a1014] transition hover:brightness-110"
+              style={{ background: GOLD_GRADIENT, boxShadow: "0 14px 30px -12px rgba(252,202,101,0.6)" }}
+              data-cms-key="myHub.onboarding.item2.cta"
+            >
+              {cmsOr(item2Cta, isHe ? "המשך לאבחון" : "Continue to assessment")}
+              <Arrow className="h-5 w-5" />
+            </Link>
           </div>
-          <RedeemCodeButton
-            isHe={isHe}
-            variant="pill"
-            label={cmsOr(item1EntryCta, isHe ? "הזנת קוד" : "Enter code")}
-          />
         </div>
-      </ChecklistItem>
+      </div>
 
-      {/* ── Item 2 — complete full assessment ─────────────────────────────── */}
-      <ChecklistItem
-        index={2}
-        done={item2Done}
-        title={cmsOr(item2Title, isHe ? "השלימו את האבחון המלא" : "Complete your full assessment")}
-        desc={cmsOr(
-          item2Desc,
-          isHe
-            ? "עוד כ-2 דקות — לתמונה מדויקת יותר ולכלים שמותאמים בדיוק אליכם."
-            : "About 2 more minutes — for a sharper picture and tools tailored to you.",
-        )}
-        doneLabel={cmsOr(item2DoneLabel, isHe ? "הושלם ✓" : "Done ✓")}
-        doneDesc={cmsOr(item2DoneDesc, isHe ? "האבחון המלא הושלם — מצוין!" : "Full assessment complete — excellent!")}
-      >
-        <Link
-          href="/journey/assessment"
-          className="mt-3 inline-flex items-center gap-2 rounded-full px-6 py-3 text-[20px] font-extrabold text-[#1a1014] transition hover:brightness-110"
-          style={{ background: GOLD_GRADIENT, boxShadow: "0 14px 30px -12px rgba(252,202,101,0.6)" }}
-          data-cms-key="myHub.onboarding.item2.cta"
-        >
-          {cmsOr(item2Cta, isHe ? "המשך לאבחון" : "Continue to assessment")}
-          <Arrow className="h-5 w-5" />
-        </Link>
-      </ChecklistItem>
+      {/* ── Secondary: connect a partner — NEVER mandatory ───────────────────
+          Presentation depends on `partnerMode`; none of it affects whether
+          this landing appears (only the assessment above does). */}
+      {partnerMode === "disabled" ? (
+        // No purchase yet → visible but greyed and inert.
+        <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-[18px] opacity-60">
+          <div className="flex items-start gap-3.5">
+            <span
+              className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full border-2 border-white/20 text-white/40"
+              aria-hidden
+            >
+              <Users className="h-4 w-4" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[22px] font-bold leading-tight text-white/60">{partnerTitle}</p>
+              <p className="mt-1 text-[19px] leading-snug text-white/45" data-cms-key="myHub.onboarding.item1.disabledDesc">
+                {cmsOr(
+                  item1DisabledDesc,
+                  isHe
+                    ? "זמין כשתצטרפו לליווי — אז תוכלו לצרף את בן/בת הזוג לתמונה משותפת."
+                    : "Available once you join the program — then you can add your partner for a shared picture.",
+                )}
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : partnerConnected ? (
+        // Already paired → quiet confirmation.
+        <div className="mt-4 rounded-2xl border border-[rgba(252,202,101,0.5)] bg-[rgba(252,202,101,0.08)] p-[18px]">
+          <div className="flex items-start gap-3.5">
+            <span
+              className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full"
+              style={{ background: GOLD_GRADIENT, color: "#1a1014" }}
+              aria-hidden
+            >
+              <Check className="h-5 w-5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[22px] font-bold leading-tight text-white">
+                {partnerTitle}
+                <span className="ms-2 text-[18px] font-semibold text-[#FCCA65]">
+                  {cmsOr(item1DoneLabel, isHe ? "הושלם ✓" : "Done ✓")}
+                </span>
+              </p>
+              <p className="mt-1 text-[19px] leading-snug text-white/70" data-cms-key="myHub.onboarding.item1.doneDesc">
+                {cmsOr(item1DoneDesc, isHe ? "בן/בת הזוג מחוברים — נהדר!" : "Your partner is connected — great!")}
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : (
+        // "task" (journey) or "optional" (other product) → actionable invite,
+        // framed as recommended, not required.
+        <div className="mt-4 rounded-2xl border border-white/12 bg-white/5 p-[18px]">
+          <div className="flex items-start gap-3.5">
+            <span
+              className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full border-2 border-white/30 text-white/72"
+              aria-hidden
+            >
+              <Users className="h-4 w-4" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[22px] font-bold leading-tight text-white">
+                {partnerTitle}
+                <span className="ms-2 rounded-full bg-white/10 px-2 py-0.5 text-[14px] font-semibold text-white/70">
+                  {cmsOr(item1OptionalTag, isHe ? "לא חובה" : "Optional")}
+                </span>
+              </p>
+              <p className="mt-1 text-[19px] leading-snug text-white/70">
+                {partnerMode === "optional"
+                  ? cmsOr(
+                      item1OptionalDesc,
+                      isHe
+                        ? "אפשר לצרף את בן/בת הזוג ולגלות יחד עוד על הזוגיות שלכם."
+                        : "You can add your partner and discover more about your relationship together.",
+                    )
+                  : cmsOr(
+                      item1Desc,
+                      isHe
+                        ? "שתפו את הקוד — וברגע שהם יצטרפו, תקבלו תמונה זוגית מלאה."
+                        : "Share the code — once they join, you get the full couple picture.",
+                    )}
+              </p>
+
+              {pairCode ? (
+                <div className="mt-3">
+                  <PartnerShareCard pairCode={pairCode} />
+                </div>
+              ) : null}
+
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-dashed border-white/15 pt-4">
+                <div className="min-w-0 flex-1">
+                  <p className="text-[18px] font-semibold text-white" data-cms-key="myHub.onboarding.item1.entryQ">
+                    {cmsOr(item1EntryQ, isHe ? "קיבלתם קוד מבן/בת הזוג?" : "Got a code from your partner?")}
+                  </p>
+                  <p className="mt-0.5 text-[16px] leading-snug text-white/65" data-cms-key="myHub.onboarding.item1.entryBody">
+                    {cmsOr(
+                      item1EntryBody,
+                      isHe
+                        ? "הזינו אותו כדי להתחבר ולפתוח את הגישה המשותפת שלכם."
+                        : "Enter it to connect and unlock your shared access.",
+                    )}
+                  </p>
+                </div>
+                <RedeemCodeButton
+                  isHe={isHe}
+                  variant="pill"
+                  label={cmsOr(item1EntryCta, isHe ? "הזנת קוד" : "Enter code")}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Footer — sets the non-blocking expectation */}
       <p
@@ -217,68 +270,10 @@ export function OnboardingReminderCard({
         {cmsOr(
           footerText,
           isHe
-            ? "אפשר להמשיך לתכנים בכל רגע — התזכורת תיעלם אוטומטית כששני הצעדים יושלמו."
-            : "You can keep using everything anytime — this reminder disappears once both steps are done.",
+            ? "אפשר להמשיך לכל מקום בכל רגע — העמוד הזה ילווה אתכם עד שתשלימו את האבחון."
+            : "Feel free to go anywhere anytime — this page stays with you until the assessment is done.",
         )}
       </p>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// One checklist row: gold ✓ tick when done (collapsed to a confirmation line),
-// numbered tick + `children` (the action body) when not.
-// ─────────────────────────────────────────────────────────────────────────────
-function ChecklistItem({
-  index,
-  done,
-  title,
-  desc,
-  doneLabel,
-  doneDesc,
-  children,
-}: {
-  index: number;
-  done: boolean;
-  title: string;
-  desc: string;
-  doneLabel: string;
-  doneDesc: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div
-      className={`mt-4 rounded-2xl border p-[18px] ${
-        done
-          ? "border-[rgba(252,202,101,0.5)] bg-[rgba(252,202,101,0.08)]"
-          : "border-white/12 bg-white/5"
-      }`}
-    >
-      <div className="flex items-start gap-3.5">
-        <span
-          className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full text-[19px] font-extrabold"
-          style={
-            done
-              ? { background: GOLD_GRADIENT, color: "#1a1014", boxShadow: "0 6px 16px -6px rgba(252,202,101,0.7)" }
-              : { border: "2px solid rgba(255,255,255,0.3)", color: "rgba(255,255,255,0.72)" }
-          }
-          aria-hidden
-        >
-          {done ? <Check className="h-5 w-5" /> : index}
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="text-[22px] font-bold leading-tight text-white">
-            {title}
-            {done ? (
-              <span className="ms-2 text-[18px] font-semibold text-[#FCCA65]">{doneLabel}</span>
-            ) : null}
-          </p>
-          <p className="mt-1 text-[19px] leading-snug text-white/70">
-            {done ? doneDesc : desc}
-          </p>
-          {done ? null : children}
-        </div>
-      </div>
     </div>
   );
 }

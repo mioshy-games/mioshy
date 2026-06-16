@@ -20,33 +20,19 @@ import { UserDetailClient } from "@/components/dashboard/UserDetailClient";
 // Sits next to the Analysis card so the operator has all the context
 // (scores, narrative) plus the recovery affordance in one place.
 import { ForceMaterializeDay1Button } from "@/components/dashboard/ForceMaterializeDay1Button";
-import { QUESTIONS } from "@/lib/journey/questions";
 import { axisLabel } from "@/lib/journey/analysis";
 import type { Axis } from "@/lib/journey/types";
+import {
+  loadUserAssessmentAnswers,
+  type AssessmentPhase,
+} from "@/lib/dashboard/assessment-answers";
 
-function answerToText(qId: string, answer: unknown, locale: "he" | "en" = "en"): string {
-  const q = QUESTIONS.find((x) => x.id === qId);
-  if (!q) return JSON.stringify(answer);
-  const a = answer as { kind?: string; value?: number; option?: string; options?: string[]; text?: string; order?: string[] };
-  if (a.kind === "likert") return `${a.value}/5`;
-  // Narrow to choice-shaped questions before reading .options. The Question
-  // union now includes QuestionRanking (no .options) - that variant is
-  // handled by the kind === "ranking" branch below.
-  const hasOptions = q.type === "forced_choice" || q.type === "single_choice" || q.type === "multi_choice";
-  if (a.kind === "single" && hasOptions) {
-    const opt = q.options.find((o: { id: string; he: string; en: string }) => o.id === a.option);
-    return opt ? (locale === "he" ? opt.he : opt.en) : a.option ?? "-";
-  }
-  if (a.kind === "multi" && q.type === "multi_choice") {
-    return (a.options ?? [])
-      .map((id) => {
-        const opt = q.options.find((o: { id: string; he: string; en: string }) => o.id === id);
-        return opt ? (locale === "he" ? opt.he : opt.en) : id;
-      })
-      .join(", ");
-  }
-  if (a.kind === "text") return a.text ?? "";
-  return JSON.stringify(answer);
+// B.5 — short/full grouping labels for the admin. Hebrew first (the expert
+// reads the user's Hebrew answers) with the en tag alongside.
+function phaseLabel(p: AssessmentPhase): string {
+  if (p === "short") return "אבחון קצר · Short";
+  if (p === "full") return "אבחון מלא · Full";
+  return "נוסף · Other";
 }
 
 export default async function UserDetailPage({ params }: { params: { id: string } }) {
@@ -99,15 +85,9 @@ export default async function UserDetailPage({ params }: { params: { id: string 
     supabase.from("message_templates").select("id, key, channel, subject_en, body_en").eq("is_active", true).order("key"),
   ]);
 
-  let responses: Array<{ question_id: string; answer: unknown; locale: string; created_at: string }> = [];
-  if (journey?.id) {
-    const { data } = await supabase
-      .from("journey_responses")
-      .select("question_id, answer, locale, created_at")
-      .eq("journey_id", journey.id)
-      .order("created_at", { ascending: true });
-    responses = data ?? [];
-  }
+  // B.5 — gather ALL of this user's journey-assessment answers (short + full),
+  // grouped by phase and labeled with question text + readable answer values.
+  const answers = await loadUserAssessmentAnswers(supabase, userId);
 
   return (
     <div className="flex flex-col gap-6 p-6">
@@ -173,24 +153,52 @@ export default async function UserDetailPage({ params }: { params: { id: string 
         </CardContent>
       </Card>
 
+      {/* B.5 — Assessment answers, gathered under the user. All of the short
+          (pre-purchase) and full (long) journey-assessment answers in one
+          place, split by phase, each shown as question + readable answer. */}
       <Card>
         <CardHeader>
-          <CardTitle>Answers ({responses.length})</CardTitle>
+          <CardTitle>Assessment answers ({answers.total})</CardTitle>
+          <CardDescription>
+            All of this user&apos;s diagnostic answers — short and full — in one
+            place.
+            {answers.journeyCount > 1
+              ? ` · ${answers.journeyCount} journeys (latest answer per question shown)`
+              : ""}
+            {answers.source === "json"
+              ? " · question text from bundled fallback"
+              : ""}
+          </CardDescription>
         </CardHeader>
-        <CardContent>
-          <ul className="flex flex-col gap-2 text-sm">
-            {responses.map((r) => {
-              const q = QUESTIONS.find((x) => x.id === r.question_id);
-              return (
-                <li key={r.question_id} className="rounded border px-3 py-2">
-                  <div className="text-xs text-muted-foreground">{q?.id}</div>
-                  <div className="font-medium">{q && ("en" in q ? q.en : q.en_prompt)}</div>
-                  <div>{answerToText(r.question_id, r.answer, "en")}</div>
-                </li>
-              );
-            })}
-            {!responses.length ? <li className="text-muted-foreground">No answers yet.</li> : null}
-          </ul>
+        <CardContent className="flex flex-col gap-5">
+          {answers.groups.map((g) => (
+            <div key={g.phase} className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary">{phaseLabel(g.phase)}</Badge>
+                <span className="text-xs text-muted-foreground">
+                  {g.items.length}
+                </span>
+              </div>
+              <ul className="flex flex-col gap-2 text-sm">
+                {g.items.map((it) => (
+                  <li key={it.questionId} className="rounded border px-3 py-2">
+                    <div className="text-xs text-muted-foreground">
+                      {it.questionId}
+                    </div>
+                    <div className="font-medium" dir="auto">
+                      {it.prompt}
+                    </div>
+                    <div dir="auto" className="whitespace-pre-wrap text-foreground/90">
+                      {it.answerText}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+          {!answers.total ? (
+            <p className="text-sm text-muted-foreground">No answers yet.</p>
+          ) : null}
         </CardContent>
       </Card>
 

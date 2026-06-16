@@ -39,7 +39,7 @@
       "upsellBody": "A full assessment, personalized lessons, and an open chat with a relationship expert — all in one weekly subscription. Stop anytime.",
       "upsellBullet1": "A 10-minute assessment that maps where your connection is strong — and where to work",
       "upsellBullet2": "A new lesson every day or two, tuned to the focus you pick",
-      "upsellBullet3": "Your own relationship expert, available 7 days a week",
+      "upsellBullet3": "Your own relationship expert, available 5 days a week",
       "upsellCta": "Start the free assessment",
       "expertSoonTitle": "Your expert is on the way",
       "expertSoonBody": "We're matching you with a relationship expert in the coming days. The first messages will land here as soon as the pairing closes."
@@ -50,6 +50,7 @@
       "assessmentsTitle": "Your assessments",
       "assessmentsCount": "{count} right now · more to come",
       "assessmentOpen": "Open",
+      "nextAssessmentNotice": "In 8 weeks, on {date}, we'll send you another assessment and our experts' responses — based on getting to know you, to see your progress and sharpen your goals.",
       "activeTitle": "Active now",
       "activeCountOne": "1 open",
       "activeChip": "Continue",
@@ -60,6 +61,10 @@
       "waitingSuffix": "waiting",
       "upcomingEmptyTitle": "You're caught up",
       "upcomingEmptyBody": "The next lesson opens when your expert adds it. No need to wait on the screen — we'll notify you."
+    },
+    "setup": {
+      "pageTitle": "Complete setup",
+      "lead": "Just before we set off — finish the assessment, and that's all it takes."
     },
     "expert": {
       "pageTitle": "Chat with expert",
@@ -75,7 +80,7 @@
       "gateBodyHasAssessment": "Assessment done — nice. The next step is to join the weekly program, then you can open the chat with your matched expert and start receiving personalized chapters.",
       "gateCtaAssessment": "Start the free assessment",
       "gateCtaSubscribe": "Join the program",
-      "gateBullet1": "Private relationship expert in chat, 7 days a week",
+      "gateBullet1": "Private relationship expert in chat, 5 days a week",
       "gateBullet2": "Personalized chapters based on your assessment",
       "gateBullet3": "Replies within 24 hours, cancel any time"
     },
@@ -1709,7 +1714,7 @@
       "ctaLoading": "Preparing checkout…",
       "activeTitle": "You're already on the journey",
       "activeSub": "Your personal plan is active. Weekly tasks will be delivered to you soon.",
-      "goAccount": "Open My Mioshy",
+      "goAccount": "Go to my dashboard",
       "whoForLabel": "Who is this for?",
       "whoForTitle": "Couples ready to work on their relationship",
       "whoFor1": "Couples who feel the closeness has faded and want it back",
@@ -1740,7 +1745,7 @@
       "expertLabel": "Personal guidance",
       "expertTitle": "A real couples expert, waiting for you in a private chat",
       "expertBody": "Not a bot. Not a queue. Not a 9am appointment. A real person who knows your story — what you answered, what your partner answered, and what's been working for you these last few weeks.",
-      "expertBullet1": "Available seven days a week",
+      "expertBullet1": "Available five days a week",
       "expertBullet2": "Learns you, and improves your relationship",
       "expertBullet3": "Content and exercises that update with you, week after week",
       "expertBullet4": "A private chat with a dedicated expert just for you",
@@ -2161,10 +2166,10 @@
       "close": "Close"
     },
     "onboarding": {
-      "title": "Two small steps — and you're set",
-      "subtitle": "Everything is already unlocked. These two steps get the most out of your journey.",
+      "title": "One last step before we begin",
+      "subtitle": "Just the assessment left — and your whole journey opens.",
       "progress": "{done} of 2 done",
-      "footer": "You can keep using everything anytime — this reminder disappears once both steps are done.",
+      "footer": "Feel free to go anywhere anytime — this page stays with you until the assessment is done.",
       "item1": {
         "title": "Connect your partner",
         "desc": "Share the code — once they join, you get the full couple picture.",
@@ -2172,11 +2177,14 @@
         "doneDesc": "Your partner is connected — great!",
         "entryQ": "Got a code from your partner?",
         "entryBody": "Enter it to connect and unlock your shared access.",
-        "entryCta": "Enter code"
+        "entryCta": "Enter code",
+        "optionalTag": "Optional",
+        "optionalDesc": "You can add your partner and discover more about your relationship together.",
+        "disabledDesc": "Available once you join the program — then you can add your partner for a shared picture."
       },
       "item2": {
         "title": "Complete your full assessment",
-        "desc": "About 2 more minutes — for a sharper picture and tools tailored to you.",
+        "desc": "About 2 more minutes — for a sharper picture and steps tailored to you.",
         "doneLabel": "Done ✓",
         "doneDesc": "Full assessment complete — excellent!",
         "cta": "Continue to assessment"

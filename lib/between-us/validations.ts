@@ -113,6 +113,9 @@ export const experienceGameSchema = z.object({
 
   sort_weight: z.number().int().min(0).max(9999),
 
+  // D — scheduled "Coming Soon" open time. ISO string, or null = immediate.
+  opens_at: z.string().nullable().optional(),
+
   category_ids: z.array(z.string().uuid()),
   tag_ids: z.array(z.string().uuid()),
 });

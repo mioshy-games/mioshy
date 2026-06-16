@@ -79,9 +79,10 @@ export function SignupForm({ next, pairCode }: Props) {
       }
 
       // Honour caller-supplied next if present and same-origin.
-      // Fallback target updated 2026-05-29 from /my → /my/today (go-live
-      // of the AppShell). Middleware also catches stragglers hitting /my.
-      const target = safeNext(next, "/my/lessons");
+      // Default landing → /my/start, the post-login decider: it sends users
+      // whose assessment is still pending to /my/setup (non-blocking landing),
+      // and everyone else to /my/lessons (work-order 2026-06-15, part C).
+      const target = safeNext(next, "/my/start");
       router.push(target);
     });
   }

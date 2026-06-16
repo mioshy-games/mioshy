@@ -22,6 +22,8 @@ import { CmsTextProvider } from "@/components/cms/CmsTextProvider";
 // atmosphere is continuous across the surface.
 import { SexHeroBlobs } from "@/components/adults/SexHeroBlobs";
 import { FAQ } from "@/components/marketing/v2/FAQ";
+import { isComingSoon, comingSoonFirst } from "@/lib/games/coming-soon";
+import { ComingSoonCountdown } from "@/components/games/ComingSoonCountdown";
 
 /**
  * /mioshy-sex — flagship adult-games surface (built 2026-05-20).
@@ -732,7 +734,7 @@ export default async function MioshySexLandingPage({
               </div>
             ) : (
               <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {filteredCards.map(({ game, category_ids, tag_ids }) => {
+                {comingSoonFirst(filteredCards, (c) => c.game.opens_at).map(({ game, category_ids, tag_ids }) => {
                   const cardTitle = isHe
                     ? game.title_he
                     : game.title_en || game.title_he;
@@ -747,19 +749,19 @@ export default async function MioshySexLandingPage({
                     .map((id) => tagLookup.get(id))
                     .filter(Boolean)
                     .slice(0, 3);
-                  return (
-                    <li key={game.id}>
-                      <Link
-                        href={`/mioshy-sex/${game.slug}`}
-                        className="group relative flex h-full flex-col overflow-hidden rounded-3xl border border-white/10 bg-white/[0.025]"
-                      >
+                  // D — coming-soon: card shows name/image/description, but the
+                  // whole card (entry + the purchase flow it leads to) is
+                  // disabled, with a live countdown until it opens.
+                  const soon = isComingSoon(game.opens_at);
+
+                  const cardMedia = (
                         <div className="relative aspect-[4/5] w-full overflow-hidden bg-gradient-to-br from-fuchsia-500/20 to-violet-500/15">
                           {game.cover_image_url ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
                               src={game.cover_image_url}
                               alt=""
-                              className="h-full w-full object-cover"
+                              className={`h-full w-full object-cover ${soon ? "opacity-60" : ""}`}
                               loading="lazy"
                             />
                           ) : (
@@ -771,10 +773,24 @@ export default async function MioshySexLandingPage({
                             aria-hidden
                             className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/85 via-black/30 to-transparent"
                           />
+                          {soon ? (
+                            <>
+                              <div className="absolute inset-0 bg-black/40" aria-hidden />
+                              <div className="absolute inset-0 z-10 flex items-center justify-center p-4">
+                                <ComingSoonCountdown opensAt={game.opens_at!} isHe={isHe} />
+                              </div>
+                            </>
+                          ) : null}
                           <div
-                            className="absolute top-3 flex flex-wrap gap-1.5"
+                            className="absolute top-3 z-10 flex flex-wrap gap-1.5"
                             style={{ [isHe ? "right" : "left"]: "0.75rem" }}
                           >
+                            {soon ? (
+                              <span className="inline-flex items-center gap-1.5 rounded-full bg-black/55 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-rose-100 ring-1 ring-white/20">
+                                <span className="h-1.5 w-1.5 rounded-full bg-rose-300" />
+                                {isHe ? "בקרוב" : "SOON"}
+                              </span>
+                            ) : null}
                             {game.is_new ? (
                               <span className="rounded-full bg-gradient-to-r from-rose-500 to-amber-400 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white shadow">
                                 {isHe ? "חדש" : "NEW"}
@@ -817,6 +833,9 @@ export default async function MioshySexLandingPage({
                             ) : null}
                           </div>
                         </div>
+                  );
+
+                  const cardBody = (
                         <div className="flex flex-1 flex-col gap-4 p-5">
                           {/* Card description — bumped to 18px per
                               Itzik 2026-05-20 (running text standard:
@@ -852,56 +871,87 @@ export default async function MioshySexLandingPage({
                               at 18px so the symbol doesn't dominate
                               the card. Split into two spans so each
                               side can size independently. */}
-                          <div className="mt-2 flex items-end justify-between gap-3 border-t border-white/10 pt-3">
-                            <div>
-                              <div className="text-[14px] font-medium uppercase tracking-wider text-white/45">
-                                {isHe ? "מחיר" : "Price"}
+                          {soon ? (
+                            // Purchase disabled until the game opens.
+                            <div className="mt-2 flex items-center justify-between gap-3 border-t border-white/10 pt-3">
+                              <span className="text-[14px] font-semibold uppercase tracking-wider text-white/45">
+                                {isHe ? "ייפתח בקרוב" : "Opening soon"}
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="mt-2 flex items-end justify-between gap-3 border-t border-white/10 pt-3">
+                              <div>
+                                <div className="text-[14px] font-medium uppercase tracking-wider text-white/45">
+                                  {isHe ? "מחיר" : "Price"}
+                                </div>
+                                <div className="mt-0.5 leading-none">
+                                  {game.price_ils ? (
+                                    <div className="flex items-baseline gap-2">
+                                      <span className="font-bold text-white">
+                                        <span className="text-[27px] align-baseline">
+                                          {isHe
+                                            ? game.price_ils
+                                            : (game.price_usd ?? game.price_ils)}
+                                        </span>
+                                        <span className="text-[18px] align-baseline">
+                                          {" "}
+                                          {isHe ? "₪" : "$"}
+                                        </span>
+                                      </span>
+                                      {/* 2026-06-09 — fixed marketing anchor
+                                          price (157), struck through, per Itzik. */}
+                                      <span className="text-[16px] font-medium text-white/40 line-through">
+                                        157 {isHe ? "₪" : "$"}
+                                      </span>
+                                    </div>
+                                  ) : (
+                                    <span className="text-[18px] font-bold text-white">—</span>
+                                  )}
+                                </div>
                               </div>
-                              <div className="mt-0.5 leading-none">
-                                {game.price_ils ? (
-                                  <div className="flex items-baseline gap-2">
-                                    <span className="font-bold text-white">
-                                      <span className="text-[27px] align-baseline">
-                                        {isHe
-                                          ? game.price_ils
-                                          : (game.price_usd ?? game.price_ils)}
-                                      </span>
-                                      <span className="text-[18px] align-baseline">
-                                        {" "}
-                                        {isHe ? "₪" : "$"}
-                                      </span>
-                                    </span>
-                                    {/* 2026-06-09 — fixed marketing anchor
-                                        price (157), struck through, per Itzik. */}
-                                    <span className="text-[16px] font-medium text-white/40 line-through">
-                                      157 {isHe ? "₪" : "$"}
-                                    </span>
-                                  </div>
-                                ) : (
-                                  <span className="text-[18px] font-bold text-white">—</span>
-                                )}
+                              <div className="inline-flex items-center gap-1 text-[12px] font-semibold uppercase tracking-wider text-rose-200">
+                                {t("cardDetailsCta")}
+                                <svg
+                                  width="14"
+                                  height="14"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2.4"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  aria-hidden
+                                  className={isHe ? "rotate-180" : ""}
+                                >
+                                  <path d="M5 12h14M13 5l7 7-7 7" />
+                                </svg>
                               </div>
                             </div>
-                            <div className="inline-flex items-center gap-1 text-[12px] font-semibold uppercase tracking-wider text-rose-200">
-                              {t("cardDetailsCta")}
-                              <svg
-                                width="14"
-                                height="14"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2.4"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                aria-hidden
-                                className={isHe ? "rotate-180" : ""}
-                              >
-                                <path d="M5 12h14M13 5l7 7-7 7" />
-                              </svg>
-                            </div>
-                          </div>
+                          )}
                         </div>
-                      </Link>
+                  );
+
+                  return (
+                    <li key={game.id}>
+                      {soon ? (
+                        // Disabled: a <div>, not a <Link> — no entry/purchase
+                        // until it opens.
+                        <div
+                          aria-disabled="true"
+                          className="group relative flex h-full cursor-default flex-col overflow-hidden rounded-3xl border border-rose-300/30 bg-white/[0.025]"
+                        >
+                          {cardMedia}
+                          {cardBody}
+                        </div>
+                      ) : (
+                        <Link
+                          href={`/mioshy-sex/${game.slug}`}
+                          className="group relative flex h-full flex-col overflow-hidden rounded-3xl border border-white/10 bg-white/[0.025]"
+                        >
+                          {cardMedia}
+                          {cardBody}
+                        </Link>
+                      )}
                     </li>
                   );
                 })}

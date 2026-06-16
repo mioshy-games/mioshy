@@ -127,7 +127,7 @@ export function AnalysisSummary({
         <CmsText
           cmsKey="journeyAssessment.analysis.preparingAnalysis"
           as="p"
-          className="font-heading text-[22px] font-bold text-white"
+          className="font-heading text-[24px] sm:text-[24px] font-bold text-white"
         />
         {/* Rotating reassurance during the synchronous analyze wait
             (~13-18s). No fake progress %, just honest "working on it"
@@ -285,7 +285,7 @@ export function AnalysisSummary({
             <span className="text-start text-[14px] font-semibold uppercase tracking-wider leading-normal text-[#FCCA65]">
               {isHe ? "מה שמצאנו אצלכם" : "What we found"}
             </span>
-            <p className="mt-2 text-balance text-start font-heading text-[28px] font-extrabold leading-tight text-white sm:text-[34px]">
+            <p className="mt-2 text-balance text-start font-heading text-[24px] font-extrabold leading-tight text-white sm:text-[24px]">
               {heroText}
             </p>
             {heroEcho ? (
@@ -300,7 +300,7 @@ export function AnalysisSummary({
       {/* ── "מה תקבלו בליווי" - benefit bullets, directly beneath the hero ── */}
       {heroRecs.length > 0 ? (
         <section>
-          <h2 className="text-balance text-start font-heading text-[24px] font-extrabold text-white sm:text-[28px]">
+          <h2 className="text-balance text-start font-heading text-[24px] font-extrabold text-white sm:text-[24px]">
             {isHe ? "מה תקבלו בליווי" : "What you'll get in the program"}
           </h2>
           <ul className="mt-4 flex flex-col gap-2.5">
@@ -311,7 +311,7 @@ export function AnalysisSummary({
                   style={{ background: "#FCCA65" }}
                   aria-hidden
                 />
-                <span className="flex-1 text-pretty text-start text-[22px] leading-[1.3] text-white/95 sm:text-[19px] sm:leading-[1.65]">
+                <span className="flex-1 text-pretty text-start text-[20px] leading-[1.3] text-white/95 sm:text-[20px] sm:leading-[1.65]">
                   {rec}
                 </span>
               </li>
@@ -329,7 +329,7 @@ export function AnalysisSummary({
           <span className="text-start text-[14px] font-semibold uppercase tracking-wider leading-normal text-[#FCCA65]">
             {isHe ? "מה התשובות שלכם מספרות" : "What your answers tell"}
           </span>
-          <h2 className="mt-1 text-balance text-start font-heading text-[24px] font-extrabold leading-tight text-white sm:text-[28px]">
+          <h2 className="mt-1 text-balance text-start font-heading text-[24px] font-extrabold leading-tight text-white sm:text-[24px]">
             {isHe ? "המשוב האישי שלכם" : "Your personal feedback"}
           </h2>
           <ul className="mt-4 flex flex-col gap-3">
@@ -368,7 +368,7 @@ export function AnalysisSummary({
                       <span className="mt-1 text-[12px] font-semibold text-white">{isHe ? "מתוך 100" : "of 100"}</span>
                     </div>
                     <div className="flex-1">
-                      <span className="text-[22px] font-bold leading-tight text-white">{isHe ? fb.he : fb.en}</span>
+                      <span className="text-[24px] sm:text-[24px] font-bold leading-tight text-white">{isHe ? fb.he : fb.en}</span>
                       {isLowest ? (
                         <span
                           className="ms-2 inline-block rounded-full px-2.5 py-0.5 text-[13px] font-bold"
@@ -377,7 +377,7 @@ export function AnalysisSummary({
                           {isHe ? "נתחיל מכאן" : "start here"}
                         </span>
                       ) : null}
-                      <p className="mt-2 text-pretty text-start text-[20px] leading-[1.5] text-white/90">
+                      <p className="mt-2 text-pretty text-start text-[20px] sm:text-[20px] leading-[1.5] text-white/90">
                         {text}
                       </p>
                     </div>
@@ -409,7 +409,7 @@ export function AnalysisSummary({
                 as="div"
                 className="text-start text-[14px] font-semibold uppercase tracking-wider text-[#FCCA65] leading-normal"
               />
-              <div className="mt-1.5 text-balance text-start font-heading text-[28px] font-extrabold leading-tight text-white sm:text-[32px]">
+              <div className="mt-1.5 text-balance text-start font-heading text-[24px] font-extrabold leading-tight text-white sm:text-[24px]">
                 {focusLabel}
               </div>
               {focus ? (
@@ -417,7 +417,7 @@ export function AnalysisSummary({
                   {[focus.reflection, focus.plan, focus.close].map((line, i) => (
                     <li
                       key={i}
-                      className="flex items-start gap-3 text-pretty text-start text-[22px] leading-[1.3] text-white/90 sm:text-[19px] sm:leading-[1.7]"
+                      className="flex items-start gap-3 text-pretty text-start text-[20px] leading-[1.3] text-white/90 sm:text-[20px] sm:leading-[1.7]"
                     >
                       <CheckCircle2
                         className="mt-1.5 h-4 w-4 shrink-0 text-[#FCCA65]"
@@ -450,13 +450,13 @@ export function AnalysisSummary({
           <CmsText
             cmsKey="journeyAssessment.analysis.gainsTitle"
             as="h2"
-            className="mt-2 text-balance text-start font-heading text-[24px] font-extrabold leading-tight text-white sm:text-[28px]"
+            className="mt-2 text-balance text-start font-heading text-[24px] font-extrabold leading-tight text-white sm:text-[24px]"
           />
           <ul className="mt-4 flex flex-col gap-2.5">
             {[1, 2, 3, 4, 5].map((n) => (
               <li
                 key={n}
-                className="flex items-start gap-3 text-[22px] leading-[1.3] text-white/90 sm:text-[19px] sm:leading-[1.65]"
+                className="flex items-start gap-3 text-[20px] leading-[1.3] text-white/90 sm:text-[20px] sm:leading-[1.65]"
               >
                 <CheckCircle2
                   className="mt-1 h-5 w-5 shrink-0 text-[#FCCA65]"
@@ -487,12 +487,12 @@ export function AnalysisSummary({
         <CmsText
           cmsKey="journeyAssessment.analysis.topicsTitle"
           as="h2"
-          className="mt-2 text-balance text-start font-heading text-[24px] font-extrabold leading-tight text-white sm:text-[28px]"
+          className="mt-2 text-balance text-start font-heading text-[24px] font-extrabold leading-tight text-white sm:text-[24px]"
         />
         <CmsText
           cmsKey="journeyAssessment.analysis.topicsSub"
           as="p"
-          className="mt-2 text-pretty text-start text-[18px] leading-[1.4] text-white/70 sm:text-[16px] sm:leading-[1.55]"
+          className="mt-2 text-pretty text-start text-[20px] leading-[1.4] text-white/70 sm:text-[20px] sm:leading-[1.55]"
         />
         <ul className="mt-4 flex flex-col gap-2.5">
           {[1, 2, 3, 4, 5].map((n) => (
@@ -503,12 +503,12 @@ export function AnalysisSummary({
               <CmsText
                 cmsKey={`journeyAssessment.analysis.topic${n}Name`}
                 as="div"
-                className="text-balance text-start text-[20px] leading-[1.3] font-bold text-white sm:text-[18px]"
+                className="text-balance text-start text-[24px] leading-[1.3] font-bold text-white sm:text-[24px]"
               />
               <CmsText
                 cmsKey={`journeyAssessment.analysis.topic${n}Desc`}
                 as="p"
-                className="mt-1 text-pretty text-start text-[18px] leading-[1.4] text-white/70 sm:text-[15px] sm:leading-[1.55]"
+                className="mt-1 text-pretty text-start text-[20px] leading-[1.4] text-white/70 sm:text-[20px] sm:leading-[1.55]"
               />
             </li>
           ))}
@@ -518,7 +518,7 @@ export function AnalysisSummary({
         <CmsText
           cmsKey="journeyAssessment.analysis.topicsAfterJoin"
           as="p"
-          className="mt-4 text-start text-[15px] leading-[1.45] italic text-white/60 sm:text-[14px]"
+          className="mt-4 text-start text-[20px] leading-[1.45] italic text-white/60 sm:text-[20px]"
         />
       </section>
 
@@ -536,13 +536,13 @@ export function AnalysisSummary({
           <CmsText
             cmsKey="journeyAssessment.analysis.whoForTitle"
             as="h2"
-            className="mt-2 text-balance text-start font-heading text-[24px] font-extrabold leading-tight text-white sm:text-[28px]"
+            className="mt-2 text-balance text-start font-heading text-[24px] font-extrabold leading-tight text-white sm:text-[24px]"
           />
           <ul className="mt-4 flex flex-col gap-2.5">
             {[1, 2, 3, 4].map((n) => (
               <li
                 key={n}
-                className="flex items-start gap-3 text-[22px] leading-[1.3] text-white/90 sm:text-[19px] sm:leading-[1.65]"
+                className="flex items-start gap-3 text-[20px] leading-[1.3] text-white/90 sm:text-[20px] sm:leading-[1.65]"
               >
                 <span
                   className="mt-2.5 inline-block h-2 w-2 shrink-0 rounded-full"
@@ -579,18 +579,18 @@ export function AnalysisSummary({
             <CmsText
               cmsKey="journeyAssessment.analysis.expertTitle"
               as="h2"
-              className="mt-1.5 text-balance text-start font-heading text-[26px] font-extrabold leading-tight text-white sm:text-[30px]"
+              className="mt-1.5 text-balance text-start font-heading text-[24px] font-extrabold leading-tight text-white sm:text-[24px]"
             />
             <CmsText
               cmsKey="journeyAssessment.analysis.expertBody"
               as="p"
-              className="mt-3 text-pretty text-start text-[20px] leading-[1.4] text-white/90 sm:text-[18px] sm:leading-[1.7]"
+              className="mt-3 text-pretty text-start text-[20px] leading-[1.4] text-white/90 sm:text-[20px] sm:leading-[1.7]"
             />
             <ul className="mt-4 flex flex-col gap-2.5">
               {[1, 2, 3, 4].map((n) => (
                 <li
                   key={n}
-                  className="flex items-start gap-3 text-[22px] leading-[1.3] text-white/95 sm:text-[19px] sm:leading-[1.65]"
+                  className="flex items-start gap-3 text-[20px] leading-[1.3] text-white/95 sm:text-[20px] sm:leading-[1.65]"
                 >
                   <MessageCircle
                     className="mt-1 h-5 w-5 shrink-0 text-[#FCCA65]"
@@ -604,7 +604,7 @@ export function AnalysisSummary({
               ))}
               {/* F3.3 (b) — additional expert bullet for non-subscribers,
                   matching the styling of the four bullets above. */}
-              <li className="flex items-start gap-3 text-[22px] leading-[1.3] text-white/95 sm:text-[19px] sm:leading-[1.65]">
+              <li className="flex items-start gap-3 text-[20px] leading-[1.3] text-white/95 sm:text-[20px] sm:leading-[1.65]">
                 <MessageCircle
                   className="mt-1 h-5 w-5 shrink-0 text-[#FCCA65]"
                   aria-hidden
@@ -621,7 +621,7 @@ export function AnalysisSummary({
             <CmsText
               cmsKey="journeyAssessment.analysis.ongoingProcess"
               as="p"
-              className="mt-4 text-pretty text-start text-[20px] leading-[1.5] text-white/85 sm:text-[18px] sm:leading-[1.7]"
+              className="mt-4 text-pretty text-start text-[20px] font-bold leading-[1.5] text-white/85 sm:text-[20px] sm:leading-[1.7]"
             />
           </div>
         </section>
@@ -673,7 +673,7 @@ export function AnalysisSummary({
             type="button"
             onClick={startCheckout}
             disabled={checkoutBusy}
-            className="flex h-[50px] w-full items-center justify-center gap-2 rounded-full text-[18px] font-semibold text-black transition disabled:opacity-60"
+            className="flex h-[50px] w-full items-center justify-center gap-2 rounded-full text-[20px] sm:text-[20px] font-bold text-black transition disabled:opacity-60"
             style={{
               background: "#FCCA65",
               boxShadow: "0 8px 24px -8px rgba(0,0,0,0.5)",
@@ -719,9 +719,9 @@ function ScoreCard({
       <CmsText
         cmsKey={labelKey}
         as="div"
-        className="min-h-[75px] text-[20px] font-medium leading-tight text-white/75 sm:min-h-0 sm:text-[16px]"
+        className="min-h-[75px] text-[20px] font-medium leading-tight text-white/75 sm:min-h-0 sm:text-[20px]"
       />
-      <div className={`mt-auto pt-1 text-[36px] font-extrabold leading-none sm:text-[28px] ${tone}`}>
+      <div className={`mt-auto pt-1 text-[36px] font-extrabold leading-none sm:text-[24px] ${tone}`}>
         {value}
         <span className="ms-1 text-[15px] font-semibold text-white/55">
           /100
@@ -748,16 +748,16 @@ function ActiveSubscriberCard({ locale }: { locale: string }) {
       <CmsText
         cmsKey="journeyAssessment.analysis.activeTitle"
         as="h2"
-        className="font-heading text-[26px] font-extrabold text-white"
+        className="font-heading text-[30px] sm:text-[30px] font-extrabold text-white"
       />
       <CmsText
         cmsKey="journeyAssessment.analysis.activeSub"
         as="p"
-        className="max-w-md text-[16px] text-white/75"
+        className="max-w-md text-[20px] sm:text-[20px] text-white/75"
       />
       <a
         href={`/${locale}/my`}
-        className="mt-2 inline-flex min-h-[52px] items-center justify-center rounded-full px-7 text-[15px] font-semibold text-black transition hover:brightness-110"
+        className="mt-2 inline-flex min-h-[52px] items-center justify-center rounded-full px-7 text-[20px] sm:text-[20px] font-semibold text-black transition hover:brightness-110"
         style={{
           background: "linear-gradient(135deg, #FCCA65 0%, #B88F32 100%)",
         }}
@@ -842,12 +842,12 @@ function OfferCard({
         <CmsText
           cmsKey="journeyAssessment.analysis.offerHero"
           as="h2"
-          className="mt-3 text-balance text-start font-heading text-[26px] font-extrabold leading-snug text-white sm:text-[30px]"
+          className="mt-3 text-balance text-start font-heading text-[24px] font-extrabold leading-snug text-white sm:text-[24px]"
         />
         <CmsText
           cmsKey="journeyAssessment.analysis.offerSub"
           as="p"
-          className="mt-2 text-pretty text-start text-[17px] font-semibold text-[#FAF6F7]/85"
+          className="mt-2 text-pretty text-start text-[20px] sm:text-[20px] font-semibold text-[#FAF6F7]/85"
         />
 
         {/* 3 FeatureTiles removed (Itzik 2026-06-02): the value props
@@ -999,17 +999,17 @@ function OfferCard({
         {/* F3.3 (a) — intro line for the full assessment, shown to
             non-subscribers right above the join CTA. OfferCard only
             renders on the non-subscriber path, so no extra gate needed. */}
-        <p className="mt-5 text-start text-[20px] leading-snug text-white/80">
+        <p className="mt-5 text-start font-heading text-[24px] sm:text-[24px] font-bold leading-snug text-white">
           {isHe
-            ? "מיד עם ההצטרפות נשלים את האבחון המלא — לתמונה מדויקת יותר ולכלים שמתאימים בדיוק אליכם."
-            : "Right after you join, we'll complete the full assessment — for a more accurate picture and tools tailored exactly to you."}
+            ? "מיד עם ההצטרפות נשלים את האבחון המלא — לתמונה מדויקת יותר ולצעדים שמתאימים בדיוק אליכם."
+            : "Right after you join, we'll complete the full assessment — for a more accurate picture and steps tailored exactly to you."}
         </p>
 
         <button
           type="button"
           onClick={onCheckout}
           disabled={checkoutBusy}
-          className="group mt-5 inline-flex min-h-[58px] w-full items-center justify-center gap-3 rounded-full px-8 text-[17px] font-semibold text-black transition hover:brightness-110 disabled:opacity-60"
+          className="group mt-5 inline-flex min-h-[58px] w-full items-center justify-center gap-3 rounded-full px-8 text-[20px] sm:text-[20px] font-bold text-black transition hover:brightness-110 disabled:opacity-60"
           style={{
             background: "linear-gradient(135deg, #FCCA65 0%, #B88F32 100%)",
             boxShadow: "0 18px 40px -12px rgba(252,202,101,0.55)",
@@ -1106,10 +1106,10 @@ function CategoryBarChart({
           <span className="text-start text-[14px] font-semibold uppercase tracking-wider text-[#FCCA65] leading-normal">
             {isHe ? "האבחון שלכם" : "Your assessment"}
           </span>
-          <h2 className="text-balance text-start font-heading text-[26px] font-extrabold leading-tight text-white sm:text-[30px]">
+          <h2 className="text-balance text-start font-heading text-[24px] font-extrabold leading-tight text-white sm:text-[24px]">
             {isHe ? "האבחון שלכם כיום" : "Your assessment today"}
           </h2>
-          <p className="mt-1 text-start text-[13px] leading-snug text-white/55">
+          <p className="mt-1 text-start text-[20px] sm:text-[20px] leading-snug text-white/55">
             {isHe
               ? "ציון 0-100 לכל תחום, גבוה = חזק יותר. הציון נגזר ישירות מהתשובות שלכם."
               : "0-100 per area, higher = stronger. Scores are derived directly from your answers."}

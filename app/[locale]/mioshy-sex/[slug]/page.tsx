@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { isComingSoon } from "@/lib/games/coming-soon";
 import { Link } from "@/navigation";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
 import {
@@ -90,6 +91,9 @@ export default async function BetweenUsGameDetailPage({
 
   const game = await getGameBySlug(slug);
   if (!game) notFound();
+  // D — a scheduled (coming-soon) game isn't accessible/purchasable until it
+  // opens. Direct-URL visitors bounce back to the catalogue (computed live).
+  if (isComingSoon(game.opens_at)) redirect(`/${locale}/mioshy-sex`);
 
   // CMS-managed copy for this route — used for JSON-LD offer/breadcrumb
   // names (sent to search engines, must be raw strings) and as fallback

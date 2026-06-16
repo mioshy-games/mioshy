@@ -87,6 +87,8 @@ export const gameFormSchema = z.object({
   og_image_url: z.union([z.string().url(), z.literal(""), z.null()]).optional(),
   keywords_csv: z.string().optional().nullable(),
   sort_order: z.number().int().optional().nullable(),
+  // D — scheduled "Coming Soon" open time. ISO string, or null = immediate.
+  opens_at: z.string().nullable().optional(),
   // Per-game "how it works" instructions (migration 108). Hebrew only for now.
   // `steps_text` is one step per line in the UI; the save action splits it into
   // a string[] before writing the jsonb. All parts optional → empty means

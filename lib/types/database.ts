@@ -53,6 +53,9 @@ export type GameRow = {
   sort_order?: number | null;
   /** Per-game tutorial/rules - added by migration 108. Null → generic fallback. */
   instructions?: GameInstructions | null;
+  /** Scheduled open time (migration 127). NULL = immediate; future = coming-soon
+   *  (locked + countdown); past = open. Computed live. */
+  opens_at?: string | null;
 };
 
 export type WheelConfigRow = {

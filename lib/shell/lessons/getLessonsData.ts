@@ -161,7 +161,14 @@ export interface LessonsPageData {
   completedTotal: number;
   /** Locked / upcoming lessons, oldest first (closest to unlock). */
   upcoming: UpcomingItem[];
+  /** C.3 — when the next (8-week) assessment is due: the assessment/join
+   *  date + 8 weeks, ISO. Null when we have no base date to compute from.
+   *  Rendered as a notice in the "האבחונים שלכם" section. */
+  nextAssessmentAt: string | null;
 }
+
+/** 8 weeks, the cadence between recurring assessments. */
+const NEXT_ASSESSMENT_WEEKS = 8;
 
 function relativeStamp(iso: string, hebrew: boolean): string {
   const t = new Date(iso).getTime();
@@ -216,6 +223,8 @@ export async function getLessonsData(args: Args): Promise<LessonsPageData> {
   // state (one assessment per user). The row's subtitle bakes in the
   // completion date when we have one.
   let assessments: AssessmentRowData[] = [];
+  // C.3 — base date for the "next assessment in 8 weeks" notice.
+  let nextAssessmentAt: string | null = null;
   try {
     const admin = createServiceRoleClient();
     if (admin) {
@@ -261,6 +270,16 @@ export async function getLessonsData(args: Args): Promise<LessonsPageData> {
             href: done ? "/journey/assessment?summary=1" : "/journey/assessment",
           },
         ];
+
+        // C.3 — next assessment = assessment/join date + 8 weeks, computed
+        // per-user (never hardcoded). Base on the completion stamp, falling
+        // back to last activity when the journey isn't marked complete yet.
+        const baseIso = j.completed_at ?? j.last_activity_at;
+        if (baseIso) {
+          const next = new Date(baseIso);
+          next.setDate(next.getDate() + NEXT_ASSESSMENT_WEEKS * 7);
+          nextAssessmentAt = next.toISOString();
+        }
       }
     }
   } catch (err) {
@@ -422,5 +441,6 @@ export async function getLessonsData(args: Args): Promise<LessonsPageData> {
     completed,
     completedTotal: completedItems.length,
     upcoming,
+    nextAssessmentAt,
   };
 }

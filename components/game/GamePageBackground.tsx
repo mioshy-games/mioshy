@@ -1,10 +1,9 @@
 "use client";
 
 import { motion } from "framer-motion";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import type { BackgroundSettings, ParticlesSettings } from "@/lib/types/settings";
 import { FloatingParticles } from "./FloatingParticles";
-import { useWheelSpin } from "./WheelSpinContext";
 
 // ─── Color utilities ──────────────────────────────────────────────────────────
 // Pure functions - no deps - derive a palette from a single hex input
@@ -98,55 +97,47 @@ type BlobConfig = {
 function Blob({ b, i, frozen }: { b: BlobConfig; i: number; frozen?: boolean }) {
   const dir = i % 2 === 0 ? 1 : -1;
   // 2026-05-19 — `filter: blur(...)` replaced with a soft radial-gradient.
-  // 2026-05-20 — added `frozen` prop. When true, the blob renders
-  // STATIC (no `animate` prop, no infinite transition). Used by the
-  // /games LiveDemoHero: after the wheel settles, Itzik wants the
-  // entire hero to go quiet — no rAF/compositor work continuing in
-  // the background. Continuous translation of three 90vw elements
-  // even via the GPU compositor still wakes the main thread for
-  // animation frame scheduling, and on slow mobile the cost is
-  // visible. `frozen=true` halts that.
-  if (frozen) {
-    return (
-      <div
-        className="pointer-events-none absolute rounded-full"
-        style={{
-          width: b.size,
-          height: b.size,
-          left: b.x,
-          top: b.y,
-          transform: "translate(-50%,-50%)",
-          background: `radial-gradient(circle, ${b.color} 0%, transparent 70%)`,
-          opacity: b.op,
-        }}
-      />
-    );
-  }
+  // A.2 Option B (2026-06-15) — the drift is now a COMPOSITOR-ONLY CSS keyframe
+  // (`.mio-blob-drift`, transform/opacity only) instead of framer-motion sampling
+  // this motion.div every frame. framer-motion driving 3 of these during a spin
+  // was the measured choke (~318ms scripting / 4–5 long-tasks). It animates ONLY
+  // while the wheel spins (frozen=false); when frozen it's a plain static div, so
+  // will-change/translateZ promote a GPU layer for the spin duration only — never
+  // held permanently. Centring lives on the WRAPPER so the animated inner
+  // transform never fights the −50%/−50% centring. Respects prefers-reduced-motion
+  // (see app/globals.css). No JS per frame, no rerenders.
+  const wrapStyle: CSSProperties = {
+    width: b.size,
+    height: b.size,
+    left: b.x,
+    top: b.y,
+    transform: "translate(-50%,-50%)",
+  };
+  const innerBase: CSSProperties = {
+    width: "100%",
+    height: "100%",
+    borderRadius: "9999px",
+    background: `radial-gradient(circle, ${b.color} 0%, transparent 70%)`,
+    opacity: b.op,
+  };
   return (
-    <motion.div
-      className="pointer-events-none absolute rounded-full"
-      style={{
-        width: b.size,
-        height: b.size,
-        left: b.x,
-        top: b.y,
-        translateX: "-50%",
-        translateY: "-50%",
-        background: `radial-gradient(circle, ${b.color} 0%, transparent 70%)`,
-        opacity: b.op,
-        willChange: "transform",
-      }}
-      animate={{
-        x: [0, b.dx * dir, b.dx * dir * -0.6, 0],
-        y: [0, b.dy, b.dy * -0.7, b.dy * 0.3, 0],
-      }}
-      transition={{
-        duration: b.dur,
-        ease: "easeInOut",
-        repeat: Infinity,
-        repeatType: "mirror",
-      }}
-    />
+    <div className="pointer-events-none absolute" style={wrapStyle}>
+      {frozen ? (
+        <div style={innerBase} />
+      ) : (
+        <div
+          className="mio-blob-anim"
+          style={
+            {
+              ...innerBase,
+              "--mio-bx": `${b.dx * dir}px`,
+              "--mio-by": `${b.dy}px`,
+              "--mio-dur": `${b.dur}s`,
+            } as CSSProperties
+          }
+        />
+      )}
+    </div>
   );
 }
 
@@ -176,13 +167,11 @@ export function GamePageBackground({
    * LiveDemoHero post-wheel-settle to release the compositor/main
    * thread so the page reads as calm once the demo's done.
    *
-   * If `frozen` is left undefined, the component falls back to
-   * `!isSpinning` from `WheelSpinContext` — that's the path used by
-   * the actual game pages (/games/<slug>), where the GameSurfaceShell
-   * wrapper owns the context provider and the Wheel callbacks flip
-   * the state. Outside a provider the context returns `false`, so
-   * `frozen` resolves to `true` (frozen by default) which is the
-   * desired "do nothing until the user interacts" behaviour.
+   * A.2 Option A (2026-06-15) — when left undefined (the actual game pages
+   * /games/<slug>) it now defaults to TRUE: blobs are always frozen, including
+   * during a spin, because moving 3 viewport-scale gradients costs measurable
+   * paint/composite even as a CSS animation. Only LiveDemoHero passes `frozen`
+   * explicitly to keep its marketing-demo animation.
    */
   frozen,
 }: {
@@ -196,14 +185,14 @@ export function GamePageBackground({
   containerClassName?: string;
   frozen?: boolean;
 }) {
-  // 2026-05-20 — resolve `frozen` from prop OR context fallback.
-  // Explicit prop wins (used by LiveDemoHero which controls its own
-  // phase state). When prop is undefined we ask the WheelSpinContext
-  // — present only on /games/<slug> game surfaces where the
-  // GameSurfaceShell wrapper provides it. Outside any provider the
-  // hook returns isSpinning=false, so blobs freeze by default.
-  const { isSpinning } = useWheelSpin();
-  const resolvedFrozen = frozen ?? !isSpinning;
+  // A.2 Option A (work-order 2026-06-15) — on the actual game pages the blobs
+  // are ALWAYS frozen (static), INCLUDING during a spin. Moving 3 viewport-scale
+  // radial-gradient blobs cost ~200ms browser paint/composite + long-tasks per
+  // spin (measured) even as a compositor CSS animation; the freeze-test proved
+  // static blobs = 0/0/0. So when no explicit `frozen` prop is passed (the game
+  // surfaces), default to frozen. LiveDemoHero still passes `frozen` explicitly
+  // to drive its marketing-demo animation, so that surface is unchanged.
+  const resolvedFrozen = frozen ?? true;
 
   // ── If bgSettings has an image, render it directly and skip blobs ─────────
   if (bgSettings?.type === "image" && bgSettings.imageUrl) {

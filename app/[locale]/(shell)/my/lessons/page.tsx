@@ -251,6 +251,29 @@ export default async function LessonsPage({
               openLabel={tL("assessmentOpen")}
               isHe={isHe}
             />
+            {/* C.3 — next-assessment notice. Date is computed per-user
+                (assessment/join date + 8 weeks) in getLessonsData; copy is
+                CMS-driven with a {date} placeholder. Only shown while the date
+                is still ahead, so "in 8 weeks, on X" never reads a past date. */}
+            {data.nextAssessmentAt &&
+            new Date(data.nextAssessmentAt).getTime() > Date.now() ? (
+              <p
+                className="rounded-2xl border px-4 py-3 text-[15px] leading-relaxed"
+                style={{
+                  background: "var(--shell-wine-soft)",
+                  borderColor: "var(--shell-wine-edge)",
+                  color: "var(--shell-text-2)",
+                }}
+              >
+                {tL("nextAssessmentNotice").replace(
+                  "{date}",
+                  new Date(data.nextAssessmentAt).toLocaleDateString(
+                    isHe ? "he-IL" : "en-GB",
+                    { day: "numeric", month: "long", year: "numeric" },
+                  ),
+                )}
+              </p>
+            ) : null}
           </section>
         ) : null}
 

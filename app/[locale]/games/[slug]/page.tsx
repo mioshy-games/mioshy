@@ -9,6 +9,8 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
 import type { GameRow, QuestionRow, WheelConfigRow } from "@/lib/types/database";
 import { unstable_noStore as noStore } from "next/cache";
+import { redirect } from "next/navigation";
+import { isComingSoon } from "@/lib/games/coming-soon";
 import type { Metadata } from "next";
 import { fetchGameSettings } from "@/lib/settings-queries";
 import { CmsText } from "@/components/cms/CmsText";
@@ -133,6 +135,12 @@ export default async function GameBySlugPage({
         />
       </div>
     );
+  }
+
+  // D — a scheduled (coming-soon) game isn't accessible until it opens.
+  // Direct-URL visitors get bounced back to the catalogue (computed live).
+  if (isComingSoon((game as { opens_at?: string | null }).opens_at)) {
+    redirect(`/${locale}/games`);
   }
 
   const [{ data: wheel }, { data: questions }, gameSettings] = await Promise.all([

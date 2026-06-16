@@ -54,6 +54,7 @@ export function mapToGameFormValues(
     og_image_url: game.og_image_url ?? "",
     keywords_csv: Array.isArray(game.keywords) ? game.keywords.join(", ") : "",
     sort_order: game.sort_order ?? 0,
+    opens_at: game.opens_at ?? null,
     instructions: {
       title: game.instructions?.he?.title ?? "",
       intro: game.instructions?.he?.intro ?? "",
