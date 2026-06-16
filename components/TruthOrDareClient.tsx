@@ -61,6 +61,12 @@ export function TruthOrDareClient({
 
   const [completedSpins, setCompletedSpins] = useState(0);
   const [current, setCurrent] = useState<Question | null>(null);
+  // A.6 — true between the wheel's visible stop and the result popup (the ~1s
+  // gap). Disables the spin button so the player can't re-spin during the gap.
+  const [resultPending, setResultPending] = useState(false);
+  const popupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // ~1s pause between the wheel visibly stopping and the question card appearing.
+  const POPUP_DELAY_MS = 1000;
   const [spinSoundOn, setSpinSoundOn] = useState(true);
   const [players, setPlayers] = useState<string[]>([]);
   const [playerStarted, setPlayerStarted] = useState(false);
@@ -83,10 +89,13 @@ export function TruthOrDareClient({
   } | null>(null);
 
   // ── Map GameSettings → Wheel props ──────────────────────────────────────
-  // spinSpeed 1-10 maps to duration 6s-1.5s (higher speed = shorter duration)
-  const spinDuration = gameSettings
-    ? 6 - (gameSettings.motion.spinSpeed - 1) * (4.5 / 9)
-    : 3.8;
+  // spinSpeed 1-10 maps to duration 6s-1.5s (higher speed = shorter duration).
+  // A.6 — extend the total spin by ~2s for more suspense; the wheel also spins
+  // FASTER (more rotations, see Wheel.spin fullSpins) so the start feels snappy.
+  const SPIN_EXTRA_S = 2;
+  const spinDuration =
+    (gameSettings ? 6 - (gameSettings.motion.spinSpeed - 1) * (4.5 / 9) : 3.8) +
+    SPIN_EXTRA_S;
 
   const EASING_MAP: Record<string, number[] | string> = {
     linear:       "linear",
@@ -448,7 +457,16 @@ export function TruthOrDareClient({
       const category = game.player_mode ? "custom" : actualType;
       const q = pickNextQuestion(category) ?? pickNextQuestion(actualType);
       if (!q) return;
-      setCurrent(q);
+      // A.3/A.6 — this callback fires at the wheel's VISIBLE stop (the wheel's
+      // transitionend). Reveal the result card ~1s later so the player clearly
+      // sees where it landed first. `resultPending` blocks a re-spin in the gap.
+      setResultPending(true);
+      if (popupTimerRef.current) clearTimeout(popupTimerRef.current);
+      popupTimerRef.current = setTimeout(() => {
+        setCurrent(q);
+        setResultPending(false);
+        popupTimerRef.current = null;
+      }, POPUP_DELAY_MS);
       setCompletedSpins((c) => c + 1);
 
       if (subscribed) return;
@@ -482,6 +500,15 @@ export function TruthOrDareClient({
   );
 
   const handleNext = () => setCurrent(null);
+
+  // A.6 — clear the pending result-popup timer on unmount so it never fires
+  // setState on an unmounted component.
+  useEffect(
+    () => () => {
+      if (popupTimerRef.current) clearTimeout(popupTimerRef.current);
+    },
+    [],
+  );
 
   // Stop sound whenever a question is revealed (spin ended → card shows)
   useEffect(() => {
@@ -660,7 +687,7 @@ export function TruthOrDareClient({
       <button
         type="button"
         onClick={handleSpinClick}
-        disabled={!authReady || !!current}
+        disabled={!authReady || !!current || resultPending}
         className="min-h-[44px] w-full rounded-full bg-gradient-to-r from-fuchsia-500 to-rose-500 px-6 py-3 text-base font-semibold text-white shadow-lg shadow-fuchsia-900/40 transition hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 sm:text-lg"
         style={{ fontFamily: "var(--font-heading-hebrew), var(--font-heading-latin), system-ui" }}
       >

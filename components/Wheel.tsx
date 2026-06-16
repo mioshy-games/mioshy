@@ -427,7 +427,10 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
     // interrupted spin continues smoothly — the CSS transition eases from the
     // current computed rotation to the new, larger target with no reset/jump.
     const startRot = angleRef.current;
-    const fullSpins = 4 + Math.floor(Math.random() * 3); // 4–6 spins
+    // A.6 — more rotations (6–9, was 4–6) so the ease-out start feels faster/
+    // snappier; combined with the +2s duration the spin reads fast yet lasts
+    // longer for suspense.
+    const fullSpins = 6 + Math.floor(Math.random() * 4); // 6–9 spins
     const delta = fullSpins * 360 + (360 - (targetDeg % 360));
     const targetRot = startRot + delta;
     angleRef.current = targetRot;
