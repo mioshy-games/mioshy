@@ -350,9 +350,12 @@ function Stop({
                   weekly (57 ₪/שבוע), stage 2 keeps its one-time
                   per-game framing with the strikethrough original. */}
               <div className="js-stop-price">
-                {id === "2" ? (
+                {/* QA 2026-06-16 — struck anchor price. Stage 2 (one-time) and
+                    stage 3 (journey/ליווי: 127 → 57) both show the original
+                    crossed out beside the current price. CMS-driven. */}
+                {id === "2" || id === "3" ? (
                   <CmsText
-                    cmsKey="homeV2.journeyStages.stage2OriginalPrice"
+                    cmsKey={`homeV2.journeyStages.stage${id}OriginalPrice`}
                     className="js-stop-price-original"
                   />
                 ) : null}

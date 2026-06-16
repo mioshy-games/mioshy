@@ -60,7 +60,7 @@ export function ConsentCheckbox({
             />
           </svg>
         </span>
-        <span className="text-[14px] leading-[1.45] text-white/85">
+        <span className="text-[16px] leading-[1.45] text-white/85 sm:text-[14px]">
           {label}
         </span>
       </label>

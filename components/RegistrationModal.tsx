@@ -31,6 +31,7 @@ const T = {
     consentLabel:   "אני מסכים/ה לקבל עדכונים, טיפים ותכנים חדשים במייל",
     consentHint:    "ניתן לבטל בכל עת",
     rateLimit:      "הגבלת שליחת מיילים - נסו שוב בעוד מספר דקות.",
+    phoneRequired:  "נא להזין מספר טלפון נייד",
   },
   en: {
     headline:       "One sec before we play 🎲",
@@ -46,6 +47,7 @@ const T = {
     consentLabel:   "I agree to receive updates, tips and new content by email",
     consentHint:    "You can unsubscribe at any time",
     rateLimit:      "Email rate limit reached - please try again in a few minutes.",
+    phoneRequired:  "Please enter a mobile number",
   },
 } as const;
 
@@ -77,6 +79,12 @@ export function RegistrationModal({
 
   async function submit() {
     setError(null);
+    // QA 2026-06-16 — mobile number is required to play. The modal submits via
+    // onClick (not a native form), so enforce it here on both platforms.
+    if (!mobile.trim()) {
+      setError(t.phoneRequired);
+      return;
+    }
     setBusy(true);
     try {
       // Previously called supabase.auth.signUp() directly. Step C1
@@ -125,18 +133,20 @@ export function RegistrationModal({
           <div className="h-1 w-full rounded-t-2xl bg-gradient-to-r from-amber-400 via-rose-400 to-fuchsia-500" />
 
           <div className="flex flex-col gap-5 p-6">
-            {/* Header */}
+            {/* Header — QA 2026-06-16: larger title + subtitle on mobile. */}
             <div>
-              <h2 className="text-xl font-bold text-amber-50">{t.headline}</h2>
-              <p className="mt-1 text-sm text-white/50">{t.sub}</p>
+              <h2 className="text-[24px] font-bold text-amber-50 sm:text-xl">{t.headline}</h2>
+              <p className="mt-1 text-[16px] text-white/50 sm:text-sm">{t.sub}</p>
             </div>
 
-            {/* Fields - AuthField tokens */}
+            {/* Fields - AuthField tokens. QA 2026-06-16: `emphasis` bumps the
+                mobile labels to 18px (desktop unchanged); the mobile/phone
+                field is now REQUIRED (both platforms) — needed to play. */}
             <div className="space-y-4">
-              <AuthField id="reg_fullname" label={t.fullName} value={fullName} onChange={setFullName} autoComplete="name" required />
-              <AuthField id="reg_mobile"   label={t.mobile}   value={mobile}   onChange={setMobile}   autoComplete="tel" />
-              <AuthField id="reg_email"    label={t.email}    type="email" value={email} onChange={setEmail} autoComplete="email" required />
-              <AuthField id="reg_password" label={t.password} type="password" value={password} onChange={setPassword} autoComplete="new-password" required minLength={8} />
+              <AuthField id="reg_fullname" label={t.fullName} value={fullName} onChange={setFullName} autoComplete="name" required emphasis />
+              <AuthField id="reg_mobile"   label={t.mobile}   value={mobile}   onChange={setMobile}   autoComplete="tel" required emphasis />
+              <AuthField id="reg_email"    label={t.email}    type="email" value={email} onChange={setEmail} autoComplete="email" required emphasis />
+              <AuthField id="reg_password" label={t.password} type="password" value={password} onChange={setPassword} autoComplete="new-password" required minLength={8} emphasis />
             </div>
 
             <ConsentCheckbox
@@ -163,7 +173,7 @@ export function RegistrationModal({
               <button
                 type="button"
                 onClick={() => onOpenChange(false)}
-                className="w-full rounded-2xl py-2 text-sm text-white/40 transition hover:text-white/70"
+                className="w-full rounded-2xl py-2 text-[16px] text-white/40 transition hover:text-white/70 sm:text-sm"
               >
                 {t.close}
               </button>

@@ -30,6 +30,9 @@ interface AuthFieldProps {
   autoComplete?: string;
   required?: boolean;
   minLength?: number;
+  /** QA 2026-06-16 — larger mobile label (18px) for prominent forms like the
+   *  in-game RegistrationModal. Desktop is unchanged. */
+  emphasis?: boolean;
 }
 
 export function AuthField({
@@ -42,6 +45,7 @@ export function AuthField({
   autoComplete,
   required,
   minLength,
+  emphasis = false,
 }: AuthFieldProps) {
   const [showPw, setShowPw] = useState(false);
   const isPassword = type === "password";
@@ -60,7 +64,9 @@ export function AuthField({
           on the input) but no longer renders text. */}
       <label
         htmlFor={id}
-        className="flex items-center gap-1.5 text-[15px] font-semibold tracking-wide text-white sm:text-[14px]"
+        className={`flex items-center gap-1.5 ${
+          emphasis ? "text-[18px]" : "text-[15px]"
+        } font-semibold tracking-wide text-white sm:text-[14px]`}
       >
         {label}
       </label>

@@ -934,10 +934,16 @@ function OfferCard({
           <div className="mt-6 text-start">
             {/* Body (Assistant) font, not font-heading. Label + period in full
                 white; the ₪ symbol renders smaller than the number. */}
-            <p className="flex items-baseline gap-1.5">
+            <p className="flex flex-wrap items-baseline gap-1.5">
               <span className="text-[20px] font-medium text-white">
                 {isHe ? "לתשלום" : "To pay"}
               </span>
+              {/* QA 2026-06-16 — struck anchor price (127 → 57). CMS-driven. */}
+              <CmsText
+                cmsKey="journeyAssessment.analysis.anchorPrice"
+                as="span"
+                className="text-[20px] font-medium text-white/40 line-through"
+              />
               <span className="font-extrabold leading-none text-white">
                 <span className="text-[20px]">{sym}</span>
                 <span className="text-[32px]">{fmt(amtOf(selectedOption))}</span>

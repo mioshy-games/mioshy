@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { TrackedLink } from "./TrackedLink";
 import { RevealOnScroll } from "./RevealOnScroll";
 import { Counter } from "./Counter";
@@ -27,8 +28,25 @@ export function Hero() {
   const priceFromLabel = useCmsText("homeV2.hero.priceFromLabel");
   const imageAlt = useCmsText("homeV2.hero.imageAlt");
 
+  // Perf (QA 2026-06-16): pause the hero's perpetual ambient animations once
+  // the hero scrolls out of view, so they stop pinning the main thread while
+  // the user reads the rest of the page. Same idea as the wheel page freezing
+  // its blobs when idle. Pure perf — no visual change while the hero is shown.
+  const sectionRef = useRef<HTMLElement>(null);
+  const [paused, setPaused] = useState(false);
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(
+      ([entry]) => setPaused(!entry.isIntersecting),
+      { rootMargin: "120px" },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
   return (
-    <section className="hero">
+    <section ref={sectionRef} className={`hero${paused ? " is-paused" : ""}`}>
       {/* Performance: hero animation count cut nearly in half per Itzik
           2026-05-06. Was 36 simultaneous animated layers (5 blobs + 1
           circle + 18 sparkles + 12 orbits) — the audit found this was

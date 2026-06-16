@@ -352,6 +352,20 @@
      will-change forces a dedicated GPU layer; with 6 mounted orbits
      that's 6 always-resident layers eating GPU memory. The transform
      animations alone already auto-promote when needed. */
+  /* QA 2026-06-16 (perf) — freeze the hero's perpetual ambient animations
+     (blobs, floating circle, badge auras, pulse dot) once the hero scrolls
+     out of view. Mirrors the wheel page's "freeze blobs when idle" fix
+     (8b33e05): off-screen there's then zero residual main-thread paint from
+     these infinite animations. The `is-paused` class is toggled by an
+     IntersectionObserver in Hero.tsx. Platform-agnostic (perf, not layout). */
+  .hero.is-paused .hero-blob,
+  .hero.is-paused .hero-floating-circle,
+  .hero.is-paused .badge-floating,
+  .hero.is-paused .hero-tag .dot,
+  .hero.is-paused .hero-orbs-field{
+    animation-play-state:paused !important;
+  }
+
   .hero-orbit{position:absolute;border-radius:50%;z-index:2;pointer-events:none;opacity:0.5}
   .hero-orbit-1 {width:10px;height:10px;left:12%;top:22%;background:radial-gradient(circle,rgba(244,114,182,0.85) 0%,rgba(244,114,182,0) 70%);box-shadow:0 0 14px 2px rgba(244,114,182,0.45);animation:hero-orbit-a 11s ease-in-out infinite}
   .hero-orbit-2 {width:7px;height:7px;left:24%;top:68%;background:radial-gradient(circle,rgba(167,139,250,0.85) 0%,rgba(167,139,250,0) 70%);box-shadow:0 0 12px 2px rgba(167,139,250,0.4);animation:hero-orbit-b 14s ease-in-out infinite;animation-delay:.6s}
@@ -1932,35 +1946,25 @@
        Strategy: enlarge HEADINGS (24px) for visual hierarchy on phones,
        keep body copy at the base 18px so it doesn't feel inflated. */
     .personas-grid{grid-template-columns:1fr;gap:12px}
+    /* QA 2026-06-16 — the persona icon was removed; the old grid still
+       reserved a 48px icon column, squeezing the text. Drop the column so
+       the content spans the full card width on mobile. */
     .persona{
-      display:grid;
-      grid-template-columns:48px 1fr;
-      column-gap:14px;
-      row-gap:4px;
+      display:flex;
+      flex-direction:column;
       padding:20px 18px;
-      align-items:start;
     }
-    .persona-icon{
-      grid-column:1;grid-row:1 / span 3;
-      width:48px;height:48px;
-      border-radius:12px;
-      margin-bottom:0;
-      font-size:22px;
-      align-self:start;
-    }
+    .persona-icon{display:none}
     .persona h3{
-      grid-column:2;grid-row:1;
       line-height:1.25;
       margin-bottom:6px;
     }
     .persona p{
-      grid-column:2;grid-row:2;
       font-size:20px;line-height:1.55;
       margin-bottom:8px;
       flex:none;
     }
     .persona-link{
-      grid-column:2;grid-row:3;
       font-size:18px;
     }
     .section-head{margin:0 auto 24px}
@@ -2195,10 +2199,14 @@
            390px viewport → 351w × 251h
            414px viewport → 373w × 266h
            400px viewport → 360w × 257h ← Itzik's reference. */
-      aspect-ratio:7/5;
+      /* QA 2026-06-16 — the 7/5 landscape crop read as a detached thin
+         banner and barely showed the couple. Restore a near-square,
+         full-bleed image so it's clearly visible and reads as part of the
+         hero/heading on mobile. Desktop hero untouched (outside this query). */
+      aspect-ratio:1/1;
       max-width:none;
-      width:90vw;
-      margin-inline:calc(5vw - 20px);
+      width:100%;
+      margin-inline:0;
     }
     /* 2026-05-28 round 5 per Itzik — shift the crop up so we see
        more face area and less torso. The 720×900 portrait original
@@ -2209,7 +2217,7 @@
        instead of more of the hair/headroom. Desktop unchanged
        (the base rule at line 529 still uses `object-position:
        center` outside this media query). */
-    .hero-visual .hero-img{object-position:center 30%}
+    .hero-visual .hero-img{object-position:center 22%}
 
     /* Problem mobile */
     .problem-text h2{margin-bottom:10px}

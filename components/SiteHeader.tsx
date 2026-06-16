@@ -445,8 +445,10 @@ export function SiteHeader({
                   Itzik 2026-05-06 → /auth/signup ("הצטרפות בחינם"). The
                   funnel is now: free signup → /my → choose pillar →
                   /pricing → Cardcom. Lower commitment for first click. */}
+              {/* QA 2026-06-16 — funnel now leads with the assessment.
+                  Desktop keeps the label; the navigation target matches mobile. */}
               <Link
-                href="/auth/signup"
+                href="/journey/assessment"
                 className="group relative inline-flex min-h-[40px] items-center justify-center overflow-hidden rounded-full px-5 text-base font-semibold text-white shadow-lg shadow-fuchsia-500/25 transition hover:brightness-110"
               >
                 <span
@@ -493,7 +495,7 @@ export function SiteHeader({
             // signup. Slightly compact label so it fits next to the
             // hamburger on cramped mobile headers.
             <Link
-              href="/auth/signup"
+              href="/journey/assessment"
               className="group relative inline-flex min-h-[36px] items-center justify-center overflow-hidden rounded-full px-4 text-sm font-semibold text-white shadow-md shadow-fuchsia-500/25 transition hover:brightness-110 md:hidden"
             >
               <span
@@ -501,7 +503,8 @@ export function SiteHeader({
                 className="absolute inset-0 bg-[linear-gradient(110deg,#d946ef_0%,#a855f7_35%,#ec4899_70%,#f59e0b_100%)]"
               />
               <span className="relative z-10">
-                {isHe ? "אני רוצה להצטרף" : "Join now"}
+                {/* QA 2026-06-16 — mobile label leads with the assessment. */}
+                {isHe ? "אבחון והצטרפות לליווי" : "Assessment & journey"}
               </span>
             </Link>
           )}
@@ -635,11 +638,11 @@ export function SiteHeader({
                 {/* Drawer primary CTA — free signup, matching the
                     desktop + mobile header buttons. */}
                 <Link
-                  href="/auth/signup"
+                  href="/journey/assessment"
                   onClick={() => setOpen(false)}
                   className="mt-1 inline-flex min-h-[44px] items-center justify-center rounded-full bg-gradient-to-r from-fuchsia-500 via-purple-500 to-pink-500 px-5 text-base font-semibold text-white shadow-lg shadow-fuchsia-500/25"
                 >
-                  {isHe ? "אני רוצה להצטרף" : "Join now"}
+                  {isHe ? "אבחון והצטרפות לליווי" : "Assessment & journey"}
                 </Link>
               </>
             )}

@@ -880,6 +880,100 @@ export default async function GamesHubPage({
                   const desc = isHe ? g.description_he : g.description_en;
                   const accent = accents[idx % accents.length]!;
                   const thumb = pickGameThumbnail(g, locale);
+                  // QA 2026-06-16 — bring the public marketing catalogue in line
+                  // with the members' catalogue: free badge / subscription tag,
+                  // and a coming-soon countdown (locked, no entry) for scheduled
+                  // games. Ordering (free-first, coming-soon-first) already comes
+                  // from the shared `games` array above.
+                  const soon = isComingSoon(g.opens_at);
+
+                  const media = (
+                    <div className="relative aspect-[16/10] w-full overflow-hidden">
+                      {thumb ? (
+                        <>
+                          <Image
+                            src={thumb}
+                            alt={name}
+                            fill
+                            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                            className={`object-cover transition duration-700 ${
+                              soon ? "opacity-60" : "group-hover:scale-[1.05]"
+                            }`}
+                          />
+                          <div
+                            aria-hidden
+                            className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"
+                          />
+                        </>
+                      ) : (
+                        <div
+                          className={`grid h-full w-full place-items-center bg-gradient-to-br ${accent}`}
+                        >
+                          <Gamepad2 className="h-12 w-12 text-white/70" />
+                        </div>
+                      )}
+                      {soon ? (
+                        <>
+                          <div className="absolute inset-0 bg-black/45" aria-hidden />
+                          <span className="absolute start-3 top-3 z-10 inline-flex items-center gap-1.5 rounded-full bg-black/55 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-rose-100 ring-1 ring-white/20">
+                            <span className="h-1.5 w-1.5 rounded-full bg-rose-300" />
+                            {isHe ? "בקרוב" : "Coming soon"}
+                          </span>
+                          <div className="absolute inset-0 z-10 flex items-center justify-center p-4">
+                            <ComingSoonCountdown opensAt={g.opens_at!} isHe={isHe} />
+                          </div>
+                        </>
+                      ) : g.is_free ? (
+                        <FreeBadge className="absolute start-3 top-3 z-10" />
+                      ) : (
+                        <SubscriptionTag className="absolute start-3 top-3 z-10" />
+                      )}
+                      {/* Admin image-swap overlay - pre-fills with the
+                          current per-locale URLs so the admin can edit
+                          either or both. */}
+                      {isAdmin && (
+                        <AdminThumbnailEdit
+                          gameId={g.id}
+                          initialHe={g.thumbnail_url_he}
+                          initialEn={g.thumbnail_url_en}
+                        />
+                      )}
+                    </div>
+                  );
+
+                  const body = (
+                    <div className="flex flex-1 flex-col p-6">
+                      {/* Per Itzik 2026-05-07: game card titles in
+                          the catalogue serif (Frank Ruhl Libre) so
+                          they read as named things, not labels. */}
+                      <h3
+                        className="text-[32px] font-bold leading-[1.15] tracking-[-0.01em] text-white"
+                        style={{ fontFamily: "var(--font-frank-ruhl), 'Frank Ruhl Libre', serif" }}
+                      >
+                        {name}
+                      </h3>
+                      {desc ? (
+                        <p className="mt-2 line-clamp-3 text-[25px] leading-[1.5] text-white transition-[max-height,color] duration-500 ease-in-out group-hover:line-clamp-none sm:text-[22px]">
+                          {desc}
+                        </p>
+                      ) : null}
+                      {soon ? (
+                        <span className="mt-auto inline-flex items-center gap-2 pt-5 text-[18px] font-semibold text-white/45">
+                          {isHe ? "ייפתח בקרוב" : "Opening soon"}
+                        </span>
+                      ) : (
+                        <span className="mt-auto inline-flex items-center gap-2 pt-5 text-[18px] font-semibold text-rose-200 transition group-hover:text-white">
+                          {t("ctaPrimary")}
+                          <ArrowRight
+                            className={`h-5 w-5 transition group-hover:translate-x-1 ${
+                              isHe ? "rotate-180 group-hover:-translate-x-1" : ""
+                            }`}
+                          />
+                        </span>
+                      )}
+                    </div>
+                  );
+
                   return (
                     <li key={g.id} className="group relative">
                       {/* Hover glow */}
@@ -887,70 +981,24 @@ export default async function GamesHubPage({
                         aria-hidden
                         className={`pointer-events-none absolute -inset-px -z-10 rounded-[28px] bg-gradient-to-br ${accent} opacity-0 blur-xl transition duration-500 group-hover:opacity-60`}
                       />
-                      <Link
-                        href={`/games/${g.slug}`}
-                        className="relative flex h-full flex-col overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] shadow-xl shadow-black/30 backdrop-blur-sm transition duration-300 hover:-translate-y-1 hover:border-rose-300/40 hover:bg-white/[0.07]"
-                      >
-                        {/* Thumbnail */}
-                        <div className="relative aspect-[16/10] w-full overflow-hidden">
-                          {thumb ? (
-                            <>
-                              <Image
-                                src={thumb}
-                                alt={name}
-                                fill
-                                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                                className="object-cover transition duration-700 group-hover:scale-[1.05]"
-                              />
-                              <div
-                                aria-hidden
-                                className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"
-                              />
-                            </>
-                          ) : (
-                            <div
-                              className={`grid h-full w-full place-items-center bg-gradient-to-br ${accent}`}
-                            >
-                              <Gamepad2 className="h-12 w-12 text-white/70" />
-                            </div>
-                          )}
-                          {/* Admin image-swap overlay - pre-fills with the
-                              current per-locale URLs so the admin can edit
-                              either or both. */}
-                          {isAdmin && (
-                            <AdminThumbnailEdit
-                              gameId={g.id}
-                              initialHe={g.thumbnail_url_he}
-                              initialEn={g.thumbnail_url_en}
-                            />
-                          )}
+                      {soon ? (
+                        // Locked until it opens — a <div>, not a <Link>.
+                        <div
+                          aria-disabled="true"
+                          className="relative flex h-full cursor-default flex-col overflow-hidden rounded-3xl border border-rose-300/30 bg-white/[0.04] shadow-xl shadow-black/30 backdrop-blur-sm"
+                        >
+                          {media}
+                          {body}
                         </div>
-
-                        <div className="flex flex-1 flex-col p-6">
-                          {/* Per Itzik 2026-05-07: game card titles in
-                              the catalogue serif (Frank Ruhl Libre) so
-                              they read as named things, not labels. */}
-                          <h3
-                            className="text-[32px] font-bold leading-[1.15] tracking-[-0.01em] text-white"
-                            style={{ fontFamily: "var(--font-frank-ruhl), 'Frank Ruhl Libre', serif" }}
-                          >
-                            {name}
-                          </h3>
-                          {desc ? (
-                            <p className="mt-2 line-clamp-3 text-[25px] leading-[1.5] text-white transition-[max-height,color] duration-500 ease-in-out group-hover:line-clamp-none sm:text-[22px]">
-                              {desc}
-                            </p>
-                          ) : null}
-                          <span className="mt-auto inline-flex items-center gap-2 pt-5 text-[18px] font-semibold text-rose-200 transition group-hover:text-white">
-                            {t("ctaPrimary")}
-                            <ArrowRight
-                              className={`h-5 w-5 transition group-hover:translate-x-1 ${
-                                isHe ? "rotate-180 group-hover:-translate-x-1" : ""
-                              }`}
-                            />
-                          </span>
-                        </div>
-                      </Link>
+                      ) : (
+                        <Link
+                          href={`/games/${g.slug}`}
+                          className="relative flex h-full flex-col overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] shadow-xl shadow-black/30 backdrop-blur-sm transition duration-300 hover:-translate-y-1 hover:border-rose-300/40 hover:bg-white/[0.07]"
+                        >
+                          {media}
+                          {body}
+                        </Link>
+                      )}
                     </li>
                   );
                 })}
