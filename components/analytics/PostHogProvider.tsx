@@ -45,13 +45,14 @@ import { PostHogProvider as PHProvider } from "posthog-js/react";
 
 const PH_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY;
 // Region must match the project the API key belongs to (the #1 cause of a stuck
-// "waiting for events" is a US key proxied to EU, or vice-versa). Defaults to
-// EU; set NEXT_PUBLIC_POSTHOG_REGION=us to switch. The /ingest proxy + CSP in
-// next.config.mjs read the same env so all three stay in sync.
+// "waiting for events" is a US key proxied to EU, or vice-versa). Itzik's
+// project is on the US cloud → US default; set NEXT_PUBLIC_POSTHOG_REGION=eu to
+// switch. The /ingest proxy + CSP in next.config.mjs read the same env so all
+// three stay in sync.
 const PH_REGION =
-  (process.env.NEXT_PUBLIC_POSTHOG_REGION || "eu").toLowerCase() === "us"
-    ? "us"
-    : "eu";
+  (process.env.NEXT_PUBLIC_POSTHOG_REGION || "us").toLowerCase() === "eu"
+    ? "eu"
+    : "us";
 // UI host is the real dashboard origin; api_host is our first-party proxy.
 const PH_UI_HOST =
   process.env.NEXT_PUBLIC_POSTHOG_HOST || `https://${PH_REGION}.posthog.com`;

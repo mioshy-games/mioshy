@@ -27,12 +27,13 @@ function supabaseHost() {
 // the proxy destinations AND the CSP MUST target the cloud where the project's
 // API key actually lives. A US key proxied to the EU host (or vice-versa) means
 // every event is silently dropped — the #1 cause of a stuck "waiting for
-// events". Defaults to EU; set NEXT_PUBLIC_POSTHOG_REGION=us in Vercel to flip
-// the whole proxy + CSP to the US cloud with no code change (then redeploy).
+// events". Itzik's project is on the US cloud, so US is the default; set
+// NEXT_PUBLIC_POSTHOG_REGION=eu to flip the whole proxy + CSP back to EU with no
+// code change (then redeploy).
 const PH_REGION =
-  (process.env.NEXT_PUBLIC_POSTHOG_REGION || "eu").toLowerCase() === "us"
-    ? "us"
-    : "eu";
+  (process.env.NEXT_PUBLIC_POSTHOG_REGION || "us").toLowerCase() === "eu"
+    ? "eu"
+    : "us";
 const PH_INGEST_HOST = `https://${PH_REGION}.i.posthog.com`;
 const PH_ASSETS_HOST = `https://${PH_REGION}-assets.i.posthog.com`;
 
