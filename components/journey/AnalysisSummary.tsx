@@ -723,7 +723,7 @@ function ScoreCard({
       />
       <div className={`mt-auto pt-1 text-[36px] font-extrabold leading-none sm:text-[24px] ${tone}`}>
         {value}
-        <span className="ms-1 text-[15px] font-semibold text-white/55">
+        <span className="ms-1 text-[15px] font-semibold text-[#D8CFE6]">
           /100
         </span>
       </div>
@@ -938,11 +938,14 @@ function OfferCard({
               <span className="text-[20px] font-medium text-white">
                 {isHe ? "לתשלום" : "To pay"}
               </span>
-              {/* QA 2026-06-16 — struck anchor price (127 → 57). CMS-driven. */}
+              {/* QA 2026-06-16 — struck anchor price (127 → 57). CMS-driven.
+                  a11y M4: /40→/60 for contrast + sr-only "היה" so the
+                  strikethrough's meaning isn't conveyed by visual style alone. */}
+              <span className="sr-only">{isHe ? "היה " : "was "}</span>
               <CmsText
                 cmsKey="journeyAssessment.analysis.anchorPrice"
                 as="span"
-                className="text-[20px] font-medium text-white/40 line-through"
+                className="text-[20px] font-medium text-white/60 line-through"
               />
               <span className="font-extrabold leading-none text-white">
                 <span className="text-[20px]">{sym}</span>
@@ -952,7 +955,7 @@ function OfferCard({
                 {periodLabel(selectedOption.cadence)}
               </span>
             </p>
-            <p className="mt-1 text-[20px] text-white/55">
+            <p className="mt-1 text-[20px] text-[#D8CFE6]">
               <CmsText cmsKey="journeyAssessment.analysis.priceNote" />
             </p>
           </div>
@@ -967,7 +970,7 @@ function OfferCard({
         <CmsText
           cmsKey="journeyAssessment.analysis.valueAnchor"
           as="p"
-          className="mt-2 text-start text-[20px] leading-snug text-white/55"
+          className="mt-2 text-start text-[20px] leading-snug text-[#D8CFE6]"
         />
 
         {/* C2.4: "what's included" value-points. CMS-driven (falls back to
@@ -1115,7 +1118,7 @@ function CategoryBarChart({
           <h2 className="text-balance text-start font-heading text-[24px] font-extrabold leading-tight text-white sm:text-[24px]">
             {isHe ? "האבחון שלכם כיום" : "Your assessment today"}
           </h2>
-          <p className="mt-1 text-start text-[20px] sm:text-[20px] leading-snug text-white/55">
+          <p className="mt-1 text-start text-[20px] sm:text-[20px] leading-snug text-[#D8CFE6]">
             {isHe
               ? "ציון 0-100 לכל תחום, גבוה = חזק יותר. הציון נגזר ישירות מהתשובות שלכם."
               : "0-100 per area, higher = stronger. Scores are derived directly from your answers."}

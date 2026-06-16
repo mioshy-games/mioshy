@@ -247,7 +247,7 @@
   .btn-primary:hover{background:var(--accent);transform:translateY(-2px);box-shadow:0 18px 36px rgba(184,60,77,0.3)}
   .btn-ghost{background:transparent;color:var(--ink);border:1px solid var(--line-strong)}
   .btn-ghost:hover{border-color:var(--ink);background:#fff}
-  .btn-outline-light{background:transparent;color:#fff;border:1px solid rgba(255,255,255,0.4)}
+  .btn-outline-light{background:transparent;color:#fff;border:1px solid rgba(255,255,255,0.55)}
   .btn-outline-light:hover{background:#fff;color:var(--ink)}
   .btn .arrow{display:inline-block;transition:transform .35s var(--t)}
   .btn:hover .arrow{transform:translateX(-6px)}
@@ -535,7 +535,7 @@
   /* Stat labels (זוגות פעילים / מומחים / דירוג) bumped 13→15px per
      Itzik 2026-05-07 — was uncomfortably small on both desktop and
      mobile. */
-  .hero-meta-item .label{font-size:15px;color:rgba(255,255,255,0.7);letter-spacing:0.02em;line-height:1.35}
+  .hero-meta-item .label{font-size:15px;color:rgba(255,255,255,0.85);letter-spacing:0.02em;line-height:1.35}
 
   .hero-visual{position:relative;aspect-ratio:4/5}
   /* 2026-05-28 — ParallaxImage wraps the <img> in two divs (overflow

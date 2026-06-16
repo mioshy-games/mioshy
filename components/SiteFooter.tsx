@@ -61,14 +61,14 @@ export function SiteFooter() {
               height={81}
               className="h-12 w-auto"
             />
-            <p className="text-base leading-relaxed text-white/65 md:text-sm md:text-white/50">
+            <p className="text-base leading-relaxed text-[#D8CFE6] md:text-sm">
               {t("tagline")}
             </p>
 
             {/* Email */}
             <a
               href="mailto:support@mioshy.com"
-              className="inline-flex items-center gap-2 text-[15px] text-white/60 transition-colors hover:text-white/85 md:text-sm md:text-white/40"
+              className="inline-flex items-center gap-2 text-[15px] text-[#D8CFE6] transition-colors hover:text-white md:text-sm"
             >
               <Mail className="h-4 w-4 md:h-3.5 md:w-3.5" />
               support@mioshy.com
@@ -83,38 +83,38 @@ export function SiteFooter() {
 
             {/* Explore */}
             <div className="space-y-3">
-              <p className="text-[13px] font-semibold uppercase tracking-widest text-white/60 md:text-xs">
+              <p className="text-[13px] font-semibold uppercase tracking-widest text-[#D8CFE6] md:text-xs">
                 {t("exploreTitle")}
               </p>
               <ul className="space-y-3 text-[13px] md:space-y-2.5 md:text-xs">
-                <li><Link href="/"          className="text-white/75 transition-colors hover:text-white md:text-white/60">{t("home")}</Link></li>
-                <li><Link href="/pricing"   className="text-white/75 transition-colors hover:text-white md:text-white/60">{tMarketing("footer.links.pricing" as never)}</Link></li>
-                <li><Link href="/articles"  className="text-white/75 transition-colors hover:text-white md:text-white/60">{tMarketing("footer.links.articles" as never)}</Link></li>
-                <li><Link href="/account"   className="text-white/75 transition-colors hover:text-white md:text-white/60">{tMarketing("footer.links.account" as never)}</Link></li>
+                <li><Link href="/"          className="text-[#D8CFE6] transition-colors hover:text-white">{t("home")}</Link></li>
+                <li><Link href="/pricing"   className="text-[#D8CFE6] transition-colors hover:text-white">{tMarketing("footer.links.pricing" as never)}</Link></li>
+                <li><Link href="/articles"  className="text-[#D8CFE6] transition-colors hover:text-white">{tMarketing("footer.links.articles" as never)}</Link></li>
+                <li><Link href="/account"   className="text-[#D8CFE6] transition-colors hover:text-white">{tMarketing("footer.links.account" as never)}</Link></li>
               </ul>
             </div>
 
             {/* Services - the three pillars, mirrors the header nav. */}
             <div className="space-y-3">
-              <p className="text-[13px] font-semibold uppercase tracking-widest text-white/60 md:text-xs">
+              <p className="text-[13px] font-semibold uppercase tracking-widest text-[#D8CFE6] md:text-xs">
                 {t("servicesTitle")}
               </p>
               <ul className="space-y-3 text-[13px] md:space-y-2.5 md:text-xs">
-                <li><Link href="/games"   className="text-white/75 transition-colors hover:text-white md:text-white/60">{tNav("games")}</Link></li>
-                <li><Link href="/journey" className="text-white/75 transition-colors hover:text-white md:text-white/60">{tNav("journey")}</Link></li>
-                <li><Link href="/mioshy-sex"  className="text-white/75 transition-colors hover:text-white md:text-white/60">{tNav("adults")}</Link></li>
+                <li><Link href="/games"   className="text-[#D8CFE6] transition-colors hover:text-white">{tNav("games")}</Link></li>
+                <li><Link href="/journey" className="text-[#D8CFE6] transition-colors hover:text-white">{tNav("journey")}</Link></li>
+                <li><Link href="/mioshy-sex"  className="text-[#D8CFE6] transition-colors hover:text-white">{tNav("adults")}</Link></li>
               </ul>
             </div>
 
             {/* Legal / info */}
             <div className="space-y-3">
-              <p className="text-[13px] font-semibold uppercase tracking-widest text-white/60 md:text-xs">
+              <p className="text-[13px] font-semibold uppercase tracking-widest text-[#D8CFE6] md:text-xs">
                 {t("infoTitle")}
               </p>
               <ul className="space-y-3 text-[13px] md:space-y-2.5 md:text-xs">
-                <li><Link href="/contact" className="text-white/75 transition-colors hover:text-white md:text-white/60">{t("contact")}</Link></li>
-                <li><Link href="/terms"   className="text-white/75 transition-colors hover:text-white md:text-white/60">{t("terms")}</Link></li>
-                <li><Link href="/privacy" className="text-white/75 transition-colors hover:text-white md:text-white/60">{t("privacy")}</Link></li>
+                <li><Link href="/contact" className="text-[#D8CFE6] transition-colors hover:text-white">{t("contact")}</Link></li>
+                <li><Link href="/terms"   className="text-[#D8CFE6] transition-colors hover:text-white">{t("terms")}</Link></li>
+                <li><Link href="/privacy" className="text-[#D8CFE6] transition-colors hover:text-white">{t("privacy")}</Link></li>
               </ul>
             </div>
 
@@ -132,7 +132,7 @@ export function SiteFooter() {
           aria-label={t("legalLinks.ariaLabel")}
           className="mx-auto w-full max-w-7xl px-4 py-5"
         >
-          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-xs text-white/60">
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-xs text-[#D8CFE6]">
             <Link
               href="/terms"
               className="transition-colors hover:text-white"
@@ -161,7 +161,7 @@ export function SiteFooter() {
               {t("legalLinks.accessibility")}
             </Link>
             <span aria-hidden className="text-white/25">·</span>
-            <span className="text-white/45">
+            <span className="text-[#B7AECF]">
               {t("legalLinks.copyright", { year: new Date().getFullYear() })}
             </span>
           </div>
@@ -170,11 +170,11 @@ export function SiteFooter() {
 
       {/* ── Bottom bar - language switch + brand line ───────────────────── */}
       <div className="border-t border-white/[0.04]">
-        <div className="mx-auto flex w-full max-w-7xl flex-col items-start justify-between gap-3 px-4 py-5 text-[13px] text-white/60 sm:flex-row sm:items-center md:text-xs">
+        <div className="mx-auto flex w-full max-w-7xl flex-col items-start justify-between gap-3 px-4 py-5 text-[13px] text-[#D8CFE6] sm:flex-row sm:items-center md:text-xs">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
             <p>{tMarketing("footer.copyright")}</p>
             <span aria-hidden className="text-white/15">·</span>
-            <span className="inline-flex items-center gap-1.5 text-white/30">
+            <span className="inline-flex items-center gap-1.5 text-[#B7AECF]">
               <Globe className="h-3 w-3" />
               <Link
                 href={pathname}
@@ -183,7 +183,7 @@ export function SiteFooter() {
                 className={`transition-colors hover:text-white/70 ${
                   locale === "he"
                     ? "text-white/80 underline underline-offset-4 decoration-white/40"
-                    : "text-white/60"
+                    : "text-[#D8CFE6]"
                 }`}
               >
                 {t("hebrew")}
@@ -196,7 +196,7 @@ export function SiteFooter() {
                 className={`transition-colors hover:text-white/70 ${
                   locale === "en"
                     ? "text-white/80 underline underline-offset-4 decoration-white/40"
-                    : "text-white/60"
+                    : "text-[#D8CFE6]"
                 }`}
               >
                 {t("english")}

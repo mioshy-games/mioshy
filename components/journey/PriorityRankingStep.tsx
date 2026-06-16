@@ -206,7 +206,7 @@ export function PriorityRankingStep({
                   >
                     {labelFor(key)}
                   </div>
-                  <p className="mt-0.5 text-[20px] leading-snug text-white/65 sm:text-xs">
+                  <p className="mt-0.5 text-[20px] leading-snug text-[#D8CFE6] sm:text-xs">
                     {descFor(key)}
                   </p>
                 </div>

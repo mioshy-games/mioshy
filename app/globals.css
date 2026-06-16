@@ -151,14 +151,15 @@ small, .text-small {
     --shell-side-line:    rgba(244,229,234,0.06);
     --shell-side-line-mid:rgba(244,229,234,0.12);
     --shell-side-t1:      #F4ECEE;
-    --shell-side-t2:      rgba(244,236,238,0.66);
-    --shell-side-t3:      rgba(244,236,238,0.42);
+    /* a11y M4 (2026-06-16) — contrast bumps to ≥4.5:1 on the dark shell. */
+    --shell-side-t2:      rgba(244,236,238,0.80);
+    --shell-side-t3:      #B7AECF;
     --shell-side-hover:   rgba(244,236,238,0.05);
 
     /* text on content */
     --shell-text-1:       #FAF6F7;
-    --shell-text-2:       #C9C0DC;
-    --shell-text-3:       #897FA6;
+    --shell-text-2:       #D8CFE6;
+    --shell-text-3:       #B7AECF;
 
     /* accent palette (matches AnalysisSummary + SiteHeader gradient) */
     --shell-wine:         #B83C4D;
