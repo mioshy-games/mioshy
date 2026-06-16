@@ -286,6 +286,15 @@ export function TruthOrDareClient({
         return;
       }
 
+      // A.7 — the free game is unlocked by REGISTRATION alone (never a purchase).
+      // A guest out of free spins is always prompted to register (dismissible),
+      // and is NEVER escalated to the paywall — even if they already left a lead.
+      if (game.is_free) {
+        setSubLocked(false);
+        setSubOpen(true);
+        return;
+      }
+
       // Free budget spent - ask for the lead (signup) first.
       if (!hasGuestLeadCaptured() && !leadCaptured) {
         setSubLocked(false);
@@ -848,9 +857,14 @@ export function TruthOrDareClient({
         //   play 4+ land here, giving them a chance to sign up for +3 more.
         // "paywall" once they have a lead / are logged-in / bonus consumed.
         mode={
-          !userId && !leadCaptured && !hasGuestLeadCaptured()
+          // A.7 — the free game never shows the purchase ("paywall") UI; the
+          // modal is always registration ("lead"). Registered users bypass the
+          // modal entirely (handleSpinClick/handleSettled return early).
+          game.is_free
             ? "lead"
-            : "paywall"
+            : !userId && !leadCaptured && !hasGuestLeadCaptured()
+              ? "lead"
+              : "paywall"
         }
         onLeadSaved={(_, newUserId) => {
           setLeadCaptured(true);
