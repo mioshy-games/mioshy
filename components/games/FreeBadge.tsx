@@ -17,12 +17,12 @@ import { CmsText } from "@/components/cms/CmsText";
 export function FreeBadge({ className = "" }: { className?: string }) {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[14px] font-extrabold text-[#06281d] shadow-lg ${className}`}
-      style={{ background: "linear-gradient(90deg,#34d399,#10b981)" }}
+      className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[14px] font-extrabold text-[#3a2200] shadow-lg ${className}`}
+      style={{ background: "linear-gradient(135deg,#f59e0b,#FCCA65)" }}
     >
       <span
         className="h-1.5 w-1.5 rounded-full"
-        style={{ background: "#06281d", opacity: 0.55 }}
+        style={{ background: "#3a2200", opacity: 0.55 }}
         aria-hidden
       />
       <CmsText cmsKey="games.freeBadge" as="span" />
