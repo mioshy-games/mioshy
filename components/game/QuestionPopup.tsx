@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { RotateCw, Sparkles, X } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -82,6 +82,20 @@ export function QuestionPopup({
     return () => { document.body.style.overflow = ""; };
   }, [question]);
 
+  // a11y (B3): move focus into the dialog on open and restore it to whatever
+  // was focused (the spin button) on close, so keyboard/screen-reader users
+  // land on the new content and aren't left behind the modal.
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  const prevFocusRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (question) {
+      prevFocusRef.current = document.activeElement as HTMLElement | null;
+      const id = window.setTimeout(() => cardRef.current?.focus(), 0);
+      return () => window.clearTimeout(id);
+    }
+    prevFocusRef.current?.focus?.();
+  }, [question]);
+
   return (
     <AnimatePresence>
       {question && (
@@ -104,8 +118,11 @@ export function QuestionPopup({
           {/* ── Card ──────────────────────────────────────────────────────── */}
           <motion.div
             key="popup-card"
+            ref={cardRef}
+            tabIndex={-1}
             role="dialog"
             aria-modal="true"
+            aria-labelledby="qp-question"
             dir={isRtl ? "rtl" : "ltr"}
             className="relative w-full max-w-[520px] overflow-hidden rounded-[24px] border border-[#E9C4CA]/40 bg-[#FBF5F2] p-6 text-[#170E14] shadow-[0_32px_80px_rgba(14,8,16,0.55)] sm:p-8"
             variants={cardVariants}
@@ -145,6 +162,7 @@ export function QuestionPopup({
 
             {/* ── Question text - bold serif italic ─────────────────── */}
             <p
+              id="qp-question"
               className="mt-5 text-[24px] leading-[1.35] text-[#170E14] sm:text-[28px]"
               style={{
                 fontFamily: "'Frank Ruhl Libre', serif",

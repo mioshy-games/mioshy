@@ -18,7 +18,15 @@ export function ProgressBar({ current, total, lockedAt }: ProgressBarProps) {
         <span>{current} / {total}</span>
         <span>{pct}%</span>
       </div>
-      <div className="relative h-2 w-full overflow-hidden rounded-full bg-white/10">
+      {/* a11y (M10): expose progress to assistive tech. */}
+      <div
+        className="relative h-2 w-full overflow-hidden rounded-full bg-white/10"
+        role="progressbar"
+        aria-valuenow={current}
+        aria-valuemin={0}
+        aria-valuemax={total}
+        aria-valuetext={`${current} / ${total}`}
+      >
         <motion.div
           className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-fuchsia-400 to-pink-300"
           initial={{ width: 0 }}

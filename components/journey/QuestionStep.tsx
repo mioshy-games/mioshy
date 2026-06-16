@@ -40,6 +40,12 @@ export function QuestionStep({ question, locale, likertLabels, onSubmit, initial
   const selectAnswerMsg = useCmsText("journeyAssessment.question.selectAnswer").text;
   const savingLabel = useCmsText("journeyAssessment.question.saving").text;
 
+  // a11y (B1/M9): the question text labels every option group; the validation
+  // error is announced (role=alert) and linked to the group via aria-describedby.
+  const labelledById = `q-label-${question.id}`;
+  const errorId = `q-error-${question.id}`;
+  const describedById = error ? errorId : undefined;
+
   // Auto-submitting question types
   const isAutoAdvance =
     question.type === "likert5" ||
@@ -71,12 +77,12 @@ export function QuestionStep({ question, locale, likertLabels, onSubmit, initial
       className="flex w-full max-w-2xl flex-col gap-6"
       dir={isHe ? "rtl" : "ltr"}
     >
-      <h2 className="text-start text-[24px] font-semibold leading-snug text-white drop-shadow-sm">
+      <h2 id={labelledById} className="text-start text-[24px] font-semibold leading-snug text-white drop-shadow-sm">
         {promptFor(question, locale)}
       </h2>
 
       {question.type === "likert5" ? (
-        <LikertControl locale={locale} likertLabels={likertLabels ?? QUESTIONNAIRE.likert_labels} value={answer} onChange={handleAutoSelect} busy={busy} />
+        <LikertControl locale={locale} likertLabels={likertLabels ?? QUESTIONNAIRE.likert_labels} value={answer} onChange={handleAutoSelect} busy={busy} labelledById={labelledById} />
       ) : question.type === "forced_choice" || question.type === "single_choice" ? (
         <SingleChoiceControl
           question={question as QuestionChoice}
@@ -84,14 +90,15 @@ export function QuestionStep({ question, locale, likertLabels, onSubmit, initial
           value={answer}
           onChange={handleAutoSelect}
           busy={busy}
+          labelledById={labelledById}
         />
       ) : question.type === "multi_choice" ? (
-        <MultiChoiceControl question={question as QuestionChoice} locale={locale} value={answer} onChange={setAnswer} />
+        <MultiChoiceControl question={question as QuestionChoice} locale={locale} value={answer} onChange={setAnswer} labelledById={labelledById} describedById={describedById} />
       ) : (
-        <ReflectionControl question={question as QuestionReflection} locale={locale} value={answer} onChange={setAnswer} />
+        <ReflectionControl question={question as QuestionReflection} locale={locale} value={answer} onChange={setAnswer} labelledById={labelledById} describedById={describedById} />
       )}
 
-      {error ? <p className="text-sm text-rose-300">{error}</p> : null}
+      {error ? <p id={errorId} role="alert" className="text-sm text-rose-300">{error}</p> : null}
 
       {/* Show Continue button only for non-auto-advance types.
           W2.5 (Itzik #8) — explicit min-height 50px + 18px text so the
@@ -136,12 +143,14 @@ function LikertControl({
   value,
   onChange,
   busy,
+  labelledById,
 }: {
   locale: Locale;
   likertLabels: Record<Locale, string[]>;
   value: AnswerValue | null;
   onChange: (v: AnswerValue) => void;
   busy?: boolean;
+  labelledById?: string;
 }) {
   const current = value?.kind === "likert" ? value.value : null;
   // Layout - UX feedback 2026-05-05: on phones, the 5-col grid was
@@ -151,14 +160,17 @@ function LikertControl({
   // target, no wrapping). From sm breakpoint up the original 5-col grid
   // returns for the compact desktop view.
   return (
-    <div className="grid grid-cols-1 gap-2 sm:grid-cols-5">
+    <div role="radiogroup" aria-labelledby={labelledById} className="grid grid-cols-1 gap-2 sm:grid-cols-5">
       {([1, 2, 3, 4, 5] as const).map((n) => (
         <button
           type="button"
+          role="radio"
+          aria-checked={current === n}
+          aria-label={`${n} — ${likertLabels[locale][n - 1] ?? String(n)}`}
           key={n}
           onClick={() => !busy && onChange({ kind: "likert", value: n })}
           disabled={busy}
-          className={`flex items-center justify-start gap-3 rounded-2xl border px-4 py-3 transition active:scale-[0.98] sm:flex-col sm:items-center sm:justify-center sm:px-2 ${
+          className={`flex min-h-[44px] items-center justify-start gap-3 rounded-2xl border px-4 py-3 transition active:scale-[0.98] sm:flex-col sm:items-center sm:justify-center sm:px-2 ${
             current === n
               ? "border-rose-400/70 bg-gradient-to-br from-rose-500/40 via-fuchsia-500/35 to-violet-500/35 text-white ring-2 ring-rose-400/50 shadow-lg shadow-rose-500/20"
               : "border-rose-300/20 bg-gradient-to-br from-rose-950/40 via-slate-900/85 to-violet-950/40 text-white/85 hover:border-rose-300/45 hover:from-rose-900/45 hover:via-slate-800/85 hover:to-violet-900/45"
@@ -199,12 +211,14 @@ function SingleChoiceControl({
   value,
   onChange,
   busy,
+  labelledById,
 }: {
   question: QuestionChoice;
   locale: Locale;
   value: AnswerValue | null;
   onChange: (v: AnswerValue) => void;
   busy?: boolean;
+  labelledById?: string;
 }) {
   const current = value?.kind === "single" ? value.option : null;
   // mx-0 on mobile (start-aligns the column to the inline-start = right in
@@ -214,7 +228,7 @@ function SingleChoiceControl({
   // W2.2 (Itzik #5) — bumped mobile text 20→22px and padding 4→5 so the
   // tap targets feel substantial on a phone.
   return (
-    <div className="mx-0 md:mx-auto flex w-full max-w-md flex-col gap-2">
+    <div role="radiogroup" aria-labelledby={labelledById} className="mx-0 md:mx-auto flex w-full max-w-md flex-col gap-2">
       {question.options.map((opt) => {
         const label = locale === "he" ? opt.he : opt.en;
         const classes = `rounded-2xl border px-4 py-5 text-start text-[22px] font-medium leading-snug transition active:scale-[0.98] sm:py-4 sm:text-[20px] ${
@@ -225,6 +239,8 @@ function SingleChoiceControl({
         return (
           <button
             type="button"
+            role="radio"
+            aria-checked={current === opt.id}
             key={opt.id}
             onClick={() => !busy && onChange({ kind: "single", option: opt.id })}
             disabled={busy}
@@ -243,11 +259,15 @@ function MultiChoiceControl({
   locale,
   value,
   onChange,
+  labelledById,
+  describedById,
 }: {
   question: QuestionChoice;
   locale: Locale;
   value: AnswerValue | null;
   onChange: (v: AnswerValue) => void;
+  labelledById?: string;
+  describedById?: string;
 }) {
   const current = value?.kind === "multi" ? value.options : [];
   const toggle = (id: string) => {
@@ -256,7 +276,7 @@ function MultiChoiceControl({
   };
   // W2.2 (Itzik #5) — same mobile text/padding bump as SingleChoice.
   return (
-    <div className="mx-0 md:mx-auto flex w-full max-w-md flex-col gap-2">
+    <div role="group" aria-labelledby={labelledById} aria-describedby={describedById} className="mx-0 md:mx-auto flex w-full max-w-md flex-col gap-2">
       {question.options.map((opt) => {
         const label = locale === "he" ? opt.he : opt.en;
         const classes = `rounded-2xl border px-4 py-5 text-start text-[22px] font-medium leading-snug transition active:scale-[0.98] sm:py-4 sm:text-[20px] ${
@@ -267,6 +287,8 @@ function MultiChoiceControl({
         return (
           <button
             type="button"
+            role="checkbox"
+            aria-checked={current.includes(opt.id)}
             key={opt.id}
             onClick={() => toggle(opt.id)}
             className={classes}
@@ -285,11 +307,15 @@ function ReflectionControl({
   locale,
   value,
   onChange,
+  labelledById,
+  describedById,
 }: {
   question: QuestionReflection;
   locale: Locale;
   value: AnswerValue | null;
   onChange: (v: AnswerValue) => void;
+  labelledById?: string;
+  describedById?: string;
 }) {
   const text = value?.kind === "text" ? value.text : "";
   // F3.1 — prefer the per-question placeholder (admin-set via F2, stored in
@@ -305,6 +331,8 @@ function ReflectionControl({
       maxLength={question.max_length ?? 600}
       rows={5}
       placeholder={placeholder}
+      aria-labelledby={labelledById}
+      aria-describedby={describedById}
       className="bg-slate-800/70 border-white/12 text-white placeholder:text-white/40 focus-visible:border-fuchsia-400/60 focus-visible:ring-fuchsia-400/20"
     />
   );

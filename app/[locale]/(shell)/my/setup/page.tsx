@@ -53,6 +53,8 @@ export default async function SetupLandingPage({
       <PageHeader rootLabel={t("rootCrumb")} pageLabel={tS("pageTitle")} />
 
       <div className="mx-auto flex w-full max-w-[760px] flex-col gap-5 px-5 py-8">
+        {/* a11y (M3): page h1 (the PageHeader title isn't a heading element). */}
+        <h1 className="sr-only">{tS("pageTitle")}</h1>
         <p
           className="text-center text-[20px] leading-snug"
           style={{ color: "var(--shell-text-2)" }}

@@ -125,6 +125,7 @@ export function RegistrationModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         dir={isHe ? "rtl" : "ltr"}
+        aria-labelledby="reg-headline"
         className="overflow-hidden border-0 bg-transparent p-0 shadow-2xl sm:max-w-md"
       >
         {/* Dark game-style card with accent bar + frosted-glass body */}
@@ -135,7 +136,7 @@ export function RegistrationModal({
           <div className="flex flex-col gap-5 p-6">
             {/* Header — QA 2026-06-16: larger title + subtitle on mobile. */}
             <div>
-              <h2 className="text-[24px] font-bold text-amber-50 sm:text-xl">{t.headline}</h2>
+              <h2 id="reg-headline" className="text-[24px] font-bold text-amber-50 sm:text-xl">{t.headline}</h2>
               <p className="mt-1 text-[16px] text-white/50 sm:text-sm">{t.sub}</p>
             </div>
 
@@ -158,7 +159,7 @@ export function RegistrationModal({
             />
 
             {error && (
-              <p className="rounded-xl bg-rose-500/15 px-4 py-2.5 text-sm text-rose-300">{error}</p>
+              <p role="alert" className="rounded-xl bg-rose-500/15 px-4 py-2.5 text-sm text-rose-300">{error}</p>
             )}
 
             {/* Actions */}

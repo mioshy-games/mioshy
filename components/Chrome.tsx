@@ -115,6 +115,14 @@ export function Chrome({
           : "flex min-h-[100dvh] flex-col bg-[var(--mio-bg)] text-white"
       }
     >
+      {/* a11y (M1): skip-to-content — first focusable element, revealed on
+          focus. Targets the content wrapper below. */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:font-semibold focus:text-[#0E0810] focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-fuchsia-500"
+      >
+        {locale === "en" ? "Skip to content" : "דלג לתוכן"}
+      </a>
       {isAuthed ? <HomeBackground /> : null}
       <SiteHeader
         isAuthed={isAuthed}
@@ -126,7 +134,7 @@ export function Chrome({
           under the fixed <MobileServicesBar/>. The bar is ~76px tall
           including safe-area; we round up to 80px. lg+ has no bar so
           no padding. */}
-      <div className={`flex-1 ${!isAuthed ? "pb-[80px] lg:pb-0" : ""}`}>
+      <div id="main-content" tabIndex={-1} className={`flex-1 outline-none ${!isAuthed ? "pb-[80px] lg:pb-0" : ""}`}>
         {children}
       </div>
       {/* Footer is marketing surface only - hide it for signed-in users

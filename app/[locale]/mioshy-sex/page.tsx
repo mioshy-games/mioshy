@@ -505,7 +505,7 @@ export default async function MioshySexLandingPage({
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
                               src={card.game.cover_image_url}
-                              alt=""
+                              alt={isHe ? card.game.title_he : card.game.title_en || card.game.title_he}
                               className="h-full w-full object-cover"
                             />
                           ) : (
@@ -760,7 +760,7 @@ export default async function MioshySexLandingPage({
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
                               src={game.cover_image_url}
-                              alt=""
+                              alt={cardTitle}
                               className={`h-full w-full object-cover ${soon ? "opacity-60" : ""}`}
                               loading="lazy"
                             />

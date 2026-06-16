@@ -282,6 +282,10 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
   ref,
 ) {
   const [spinning, setSpinning] = useState(false);
+  // a11y (B2): the segment the wheel landed on, announced via the sr-only
+  // aria-live region below so screen-reader users know the result. The label
+  // is already in the viewer's language.
+  const [resultLabel, setResultLabel] = useState<string | null>(null);
 
   // A.2 perf fix (Option Y, work-order 2026-06-15): the spin is now a single CSS
   // transition on an HTML wrapper around the SVG — GPU-composited, ZERO per-frame
@@ -411,6 +415,7 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
       setAnimating(false); // transition off; transform stays at finalAngle (no jump)
       const idx = indexAtPointer(finalAngle);
       const t = options[idx]?.type ?? options[0]!.type;
+      setResultLabel(options[idx]?.label ?? null);
       onSpinComplete?.(t, idx);
       onSettled({ index: idx, type: t });
     },
@@ -419,6 +424,7 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
 
   const spin = useCallback(() => {
     if (disabled || spinning || options.length === 0) return;
+    setResultLabel(null); // clear so the next settle re-announces (B2)
     onSpinStart?.();
     // A.4/A.5 — pick the next CATEGORY via a shuffle-bag (no repeat until every
     // category has appeared; never two in a row), then land on a random slice of
@@ -989,7 +995,7 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
       ) : null}
 
       <span className="sr-only" aria-live="polite">
-        {spinning ? "Spinning" : ""}
+        {spinning ? "" : (resultLabel ?? "")}
       </span>
     </div>
   );

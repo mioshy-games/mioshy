@@ -90,13 +90,17 @@ export function ComingSoonCountdown({
       className={`inline-flex flex-col gap-1.5 rounded-2xl border border-white/15 bg-black/45 px-3 py-2 backdrop-blur ${className}`}
       dir={isHe ? "rtl" : "ltr"}
       role="timer"
-      aria-label={`${prefix} ${days}:${hours}:${minutes}:${seconds}`}
+      // a11y (M7): static, day-granularity label + aria-live off so the
+      // per-second ticking doesn't spam screen readers. The visual digits
+      // below are aria-hidden for the same reason.
+      aria-live="off"
+      aria-label={`${prefix} ${days} ${isHe ? "ימים" : "days"}`}
     >
       <span className="text-[11px] font-semibold uppercase tracking-wider text-rose-200">
         {prefix}
       </span>
       {/* Numbers stay LTR so the D:H:M:S reading order is stable in both dirs. */}
-      <div className="flex items-stretch gap-1.5" dir="ltr">
+      <div className="flex items-stretch gap-1.5" dir="ltr" aria-hidden="true">
         {segs.map((seg, i) => (
           <div
             key={i}

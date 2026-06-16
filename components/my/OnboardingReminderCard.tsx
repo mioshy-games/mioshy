@@ -152,7 +152,7 @@ export function OnboardingReminderCard({
           this landing appears (only the assessment above does). */}
       {partnerMode === "disabled" ? (
         // No purchase yet → visible but greyed and inert.
-        <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-[18px] opacity-60">
+        <div aria-disabled="true" className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-[18px] opacity-60">
           <div className="flex items-start gap-3.5">
             <span
               className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full border-2 border-white/20 text-white/40"

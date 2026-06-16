@@ -1134,8 +1134,10 @@ function CategoryBarChart({
             const heightPct = Math.max(14, Math.min(100, row.value));
             return (
               <div key={row.key} className="flex flex-col items-center">
-                {/* Bar */}
+                {/* Bar — decorative; the score number + label below carry the
+                    value as real text (a11y M8). */}
                 <div
+                  aria-hidden
                   className="relative w-full overflow-hidden"
                   style={{
                     height: 160,
@@ -1169,6 +1171,12 @@ function CategoryBarChart({
                   }`}
                 >
                   {isHe ? labelsHe[row.key] : labelsEn[row.key]}
+                  {/* a11y M8: mark the lowest category textually, not only by colour. */}
+                  {isLowest ? (
+                    <span className="sr-only">
+                      {isHe ? " — מומלץ להתחיל כאן" : " — recommended starting point"}
+                    </span>
+                  ) : null}
                 </span>
               </div>
             );

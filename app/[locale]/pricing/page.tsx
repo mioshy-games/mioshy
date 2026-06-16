@@ -104,6 +104,10 @@ export default async function PricingPage({
       lang={locale}
       className="home-v2 relative min-h-[100dvh] bg-white text-[#170E14]"
     >
+      {/* a11y (M3): every page needs an h1. The pricing UI is a visual
+          timeline (JourneyStages) with its own h2s, so the page title is
+          provided sr-only. */}
+      <h1 className="sr-only">{isHe ? "התמחור של מיאושי" : "Mioshy pricing"}</h1>
       <CmsTextProvider rows={cmsRows}>
         <JourneyStages />
       </CmsTextProvider>

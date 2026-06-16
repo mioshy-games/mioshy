@@ -119,7 +119,7 @@ export function HomepageV2() {
   });
 
   return (
-    <div className="home-v2 bg-white" dir={dir} lang={locale}>
+    <div className="home-v2 bg-white" dir={dir}>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: safeJsonLd(organizationJsonLd()) }}

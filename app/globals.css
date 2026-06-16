@@ -714,3 +714,14 @@ small, .text-small {
     --whatsapp-bottom-offset: 92px;
   }
 }
+
+/* a11y (M13) — global keyboard focus indicator. `:where()` keeps specificity
+   at 0 so components that already define their own focus ring keep winning;
+   anything without one gets this visible baseline. Gold reads ≥3:1 on the dark
+   surfaces that dominate the site. Only shows for keyboard focus. */
+:where(a, button, [role="button"], [role="radio"], [role="checkbox"], [role="tab"],
+  input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid #FCCA65;
+  outline-offset: 2px;
+  border-radius: 4px;
+}

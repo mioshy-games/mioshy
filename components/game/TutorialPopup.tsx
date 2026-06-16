@@ -18,7 +18,7 @@
  * Created 2026-05-07 (Itzik #52). Per-game rewrite 2026-06-07.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocale } from "next-intl";
 import {
   Sparkles,
@@ -76,6 +76,19 @@ export function TutorialPopup({
   const dismissLabel = useCmsText("gamesSlug.tutorial.dismiss").text;
   const reopenLabel = useCmsText("gamesSlug.tutorial.reopen").text;
 
+  // a11y (B3): move focus into the dialog on open, restore it (to the reopen
+  // button / trigger) on close.
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+  const prevFocusRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (open) {
+      prevFocusRef.current = document.activeElement as HTMLElement | null;
+      const id = window.setTimeout(() => dialogRef.current?.focus(), 0);
+      return () => window.clearTimeout(id);
+    }
+    prevFocusRef.current?.focus?.();
+  }, [open]);
+
   // Per-game content for the active locale. Hebrew-only for now: on other
   // locales (or games without instructions) we fall back to the generic
   // CMS tutorial below.
@@ -108,6 +121,8 @@ export function TutorialPopup({
 
   return (
     <div
+      ref={dialogRef}
+      tabIndex={-1}
       role="dialog"
       aria-modal="true"
       aria-label={hasCustom && content?.title ? content.title : dialogTitle}

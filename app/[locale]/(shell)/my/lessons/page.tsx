@@ -236,6 +236,7 @@ export default async function LessonsPage({
               <h3
                 className="m-0 text-[18px] font-extrabold tracking-tight"
                 style={{ color: "var(--shell-text-1)" }}
+                aria-label={`${tL("assessmentsTitle")} — ${tL("assessmentsCount").replace("{count}", String(data.assessments.length))}`}
               >
                 {tL("assessmentsTitle")}
               </h3>

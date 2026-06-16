@@ -97,6 +97,13 @@ export function AppShell({
         color: "var(--shell-text-1)",
       }}
     >
+      {/* a11y (M1): skip-to-content for the post-login shell. */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:font-semibold focus:text-[#0E0810] focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-fuchsia-500"
+      >
+        דלג לתוכן
+      </a>
       {/* ──────────────── Sidebar (desktop only) ────────────────
           Column 1 — inline-start side. RTL renders this on the right
           edge of the viewport, LTR on the left. Hidden under lg so the
@@ -116,7 +123,9 @@ export function AppShell({
           safe-area inset). 96px is a comfortable buffer. lg: removes
           the padding because the mobile tab-bar is hidden then. */}
       <main
-        className="relative min-h-[100dvh] pb-[96px] lg:pb-0"
+        id="main-content"
+        tabIndex={-1}
+        className="relative min-h-[100dvh] pb-[96px] outline-none lg:pb-0"
         style={{ background: "var(--shell-canvas-grad)" }}
       >
         {children}

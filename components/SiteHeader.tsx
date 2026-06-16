@@ -340,7 +340,7 @@ export function SiteHeader({
         </Link>
 
         {/* ─────── Pillar links (desktop) ─────── */}
-        <nav className="hidden items-center gap-1 lg:flex">
+        <nav aria-label={isHe ? "ניווט ראשי" : "Main navigation"} className="hidden items-center gap-1 lg:flex">
           {visiblePillars.map((p) => {
             const isActive = pathname.startsWith(p.href);
             return (
@@ -510,7 +510,7 @@ export function SiteHeader({
           )}
 
           <button
-            className={`rounded-full border p-2 transition ${ghostBorder} ${textFg}`}
+            className={`inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full border p-2 transition ${ghostBorder} ${textFg}`}
             onClick={() => setOpen((o) => !o)}
             aria-label={t("menu")}
             aria-expanded={open}

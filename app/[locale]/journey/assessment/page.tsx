@@ -582,6 +582,9 @@ export default async function JourneyAssessmentPage({
           />
         </a>
       </div>
+      {/* a11y (M3): page h1. The funnel UI uses per-question h2s, so the
+          overall page title is provided sr-only. */}
+      <h1 className="sr-only">{locale === "en" ? "Relationship assessment" : "אבחון הזוגיות שלכם"}</h1>
       <JourneyClient
         locale={locale as Locale}
         initialProgress={initialProgress}
