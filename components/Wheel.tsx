@@ -33,6 +33,15 @@ function cssEasing(e: string | number[] | undefined): string {
   return "cubic-bezier(0.12, 0.8, 0.12, 1)"; // default ease-out (matches prior default)
 }
 
+// A.5 — Fisher-Yates shuffle (returns the same array, shuffled in place).
+function shuffle<T>(arr: T[]): T[] {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
 export type WheelSegment = {
   type: QuestionType;
   label: string;
@@ -290,6 +299,10 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
   const soundOnRef = useRef(false);           // whether spin sound is currently playing
   const fallbackRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const rotorRef = useRef<HTMLDivElement | null>(null);
+  // A.4/A.5 — category shuffle-bag: which categories remain in the current cycle
+  // + the last one landed on, so we never repeat a category until all have shown
+  // and never land on the same category twice in a row.
+  const catBagRef = useRef<{ bag: string[]; last: string | null }>({ bag: [], last: null });
 
   // Clear any pending fallback timer on unmount (interrupted spin → no setState
   // on an unmounted component, no leaked timer).
@@ -407,16 +420,34 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
   const spin = useCallback(() => {
     if (disabled || spinning || options.length === 0) return;
     onSpinStart?.();
-    const eligible =
-      forbiddenType && options.length > 1
-        ? options
-            .map((o, i) => ({ o, i }))
-            .filter(({ o }) => o.type !== forbiddenType)
-            .map(({ i }) => i)
-        : null;
-    const winIndex = eligible?.length
-      ? eligible[Math.floor(Math.random() * eligible.length)]
-      : Math.floor(Math.random() * options.length);
+    // A.4/A.5 — pick the next CATEGORY via a shuffle-bag (no repeat until every
+    // category has appeared; never two in a row), then land on a random slice of
+    // that category. `forbiddenType` is honoured as an extra exclusion at the
+    // cycle seam. (Per-question shuffle-bag lives in pickNextQuestion.)
+    const cats = Array.from(new Set(options.map((o) => o.type)));
+    let bag = catBagRef.current.bag.filter((c) => cats.includes(c));
+    const lastCat = catBagRef.current.last;
+    if (bag.length === 0) {
+      bag = shuffle([...cats]);
+      // avoid an immediate repeat (or a forbidden type) across the cycle seam
+      if (bag.length > 1 && (bag[0] === lastCat || bag[0] === forbiddenType)) {
+        const swap = bag.findIndex(
+          (c, i) => i > 0 && c !== lastCat && c !== forbiddenType,
+        );
+        if (swap > 0) [bag[0], bag[swap]] = [bag[swap], bag[0]];
+      }
+    }
+    const chosenCat = bag.shift() ?? cats[0];
+    catBagRef.current = { bag, last: chosenCat };
+
+    const sliceIdxs = options
+      .map((o, i) => ({ o, i }))
+      .filter(({ o }) => o.type === chosenCat)
+      .map(({ i }) => i);
+    const winIndex =
+      sliceIdxs.length > 0
+        ? sliceIdxs[Math.floor(Math.random() * sliceIdxs.length)]
+        : Math.floor(Math.random() * options.length);
     const middleDeg = winIndex * segmentAngle + segmentAngle / 2;
     // Land within ±38% of the segment width - keeps the pointer clearly inside
     // the winning slice while making each spin look visually unique instead of
