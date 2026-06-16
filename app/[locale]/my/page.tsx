@@ -370,7 +370,13 @@ export default async function MyHubPage({
             <OnboardingReminderCard
               pairCode={ctx.pair_code}
               partnerConnected={!needsPartner}
-              fullAssessmentPending={fullAssessmentPending}
+              partnerMode={
+                entitlements.journey
+                  ? "task"
+                  : entitlements.pillarCount > 0
+                    ? "optional"
+                    : "disabled"
+              }
             />
           </section>
         ) : null}

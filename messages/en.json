@@ -2166,10 +2166,10 @@
       "close": "Close"
     },
     "onboarding": {
-      "title": "Two small steps — and you're set",
-      "subtitle": "Two small steps remain, and then your full journey opens.",
+      "title": "One last step before we begin",
+      "subtitle": "Just the assessment left — and your whole journey opens.",
       "progress": "{done} of 2 done",
-      "footer": "Once both steps are done, we'll continue together into your journey.",
+      "footer": "Feel free to go anywhere anytime — this page stays with you until the assessment is done.",
       "item1": {
         "title": "Connect your partner",
         "desc": "Share the code — once they join, you get the full couple picture.",
@@ -2177,7 +2177,10 @@
         "doneDesc": "Your partner is connected — great!",
         "entryQ": "Got a code from your partner?",
         "entryBody": "Enter it to connect and unlock your shared access.",
-        "entryCta": "Enter code"
+        "entryCta": "Enter code",
+        "optionalTag": "Optional",
+        "optionalDesc": "You can add your partner and discover more about your relationship together.",
+        "disabledDesc": "Available once you join the program — then you can add your partner for a shared picture."
       },
       "item2": {
         "title": "Complete your full assessment",

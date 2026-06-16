@@ -43,7 +43,6 @@ import { getLessonsData } from "@/lib/shell/lessons/getLessonsData";
 import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
 import { resolvePrioritiesForUser } from "@/lib/journey-content/resolve-priorities";
-import { getOnboardingGate } from "@/lib/journey/onboarding-gate";
 
 // `dynamic = "force-dynamic"` is inherited from the (shell) layout.
 
@@ -100,16 +99,6 @@ export default async function LessonsPage({
       } catch {
         /* assessment gate is best-effort; render normally on errors */
       }
-    }
-
-    // ── C.2 — "complete your setup" gate ─────────────────────────────────
-    // After the short assessment, the journey is the user's main surface ONLY
-    // once they've connected a partner AND finished the full assessment. While
-    // either is outstanding, /my/setup takes over as the landing. The gate
-    // recomputes live, so it vanishes for good the moment both are done.
-    const onboarding = await getOnboardingGate();
-    if (onboarding.gated) {
-      redirect(`/${locale}/my/setup`);
     }
   }
 

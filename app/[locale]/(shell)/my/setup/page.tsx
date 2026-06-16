@@ -1,21 +1,15 @@
 /**
- * /my/setup — the "complete your setup" gate (C, work-order 2026-06-15).
+ * /my/setup — non-blocking "complete your setup" landing (C, work-order
+ * 2026-06-15, revised concept).
  *
- * A journey subscriber who finished the SHORT assessment lands here until they
- * (1) connect a partner and (2) finish the FULL assessment. While EITHER is
- * outstanding this is the main surface: the journey landing (/my/lessons) and
- * the journey area (/my/journey) redirect here (see getOnboardingGate callers).
+ * This is NOT a gate. It is the post-login landing surface shown only while the
+ * user's assessment is still pending (decided at /my/start). It blocks nothing:
+ * the user is free to navigate to lessons / journey / settings from here. The
+ * sole condition for it to exist is the assessment — partner connection never
+ * affects it (see getSetupLandingState).
  *
- * The checklist itself is the existing <OnboardingReminderCard> — the same
- * source of truth that drove the old non-blocking /my reminder (partner_count
- * for item 1, full-assessment-pending for item 2), now promoted to a blocker.
- *
- * Escape hatches stay open by design: this page renders INSIDE the AppShell, so
- * the settings gear (PageHeader) and logout (shell nav) are always one tap away
- * — the gate blocks the journey, never the ability to leave or manage the
- * account. The gate is NOT applied to this route, so there is no redirect loop;
- * and once both tasks are done getOnboardingGate returns gated:false forever, so
- * this page bounces to /my/lessons and never shows again.
+ * Once the assessment is done it stops being the landing (it bounces to
+ * /my/lessons), and a manual visit also bounces — computed live, no sticky flag.
  */
 
 import { redirect } from "next/navigation";
@@ -23,12 +17,12 @@ import { setRequestLocale } from "next-intl/server";
 
 import { PageHeader } from "@/components/shell/PageHeader";
 import { OnboardingReminderCard } from "@/components/my/OnboardingReminderCard";
-import { getOnboardingGate } from "@/lib/journey/onboarding-gate";
+import { getSetupLandingState } from "@/lib/journey/setup-landing";
 import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
 
 // `dynamic = "force-dynamic"` is inherited from the (shell) layout.
 
-export default async function SetupGatePage({
+export default async function SetupLandingPage({
   params,
 }: {
   params: { locale: string };
@@ -37,9 +31,10 @@ export default async function SetupGatePage({
   setRequestLocale(locale);
   const isHe = locale === "he";
 
-  const gate = await getOnboardingGate();
-  // Both tasks complete (or not a journey user) → the gate is gone for good.
-  if (!gate.gated) redirect(`/${locale}/my/lessons`);
+  const state = await getSetupLandingState();
+  // Assessment complete (or no pending-assessment state) → this is no longer
+  // the landing; a manual visit bounces to the normal hub.
+  if (!state.pending) redirect(`/${locale}/my/lessons`);
 
   const tLoc = isHe ? "he" : "en";
   const t = await getCmsTranslations({
@@ -66,9 +61,9 @@ export default async function SetupGatePage({
         </p>
 
         <OnboardingReminderCard
-          pairCode={gate.pairCode}
-          partnerConnected={gate.partnerConnected}
-          fullAssessmentPending={gate.fullAssessmentPending}
+          pairCode={state.pairCode}
+          partnerConnected={state.partnerConnected}
+          partnerMode={state.partnerMode}
         />
       </div>
     </>
