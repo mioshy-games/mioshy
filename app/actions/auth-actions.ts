@@ -83,8 +83,8 @@ export async function signupAction(formData: FormData): Promise<SignupResult> {
   if (!fullName || !email || !phone || !password) {
     return { success: false, error: "Please fill in all required fields." };
   }
-  if (password.length < 6) {
-    return { success: false, error: "Password must be at least 6 characters." };
+  if (password.length < 8) {
+    return { success: false, error: "Password must be at least 8 characters." };
   }
 
   try {

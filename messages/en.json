@@ -368,7 +368,7 @@
     "phoneLabel": "Phone",
     "phonePlaceholder": "+1 555 000 0000",
     "passwordLabel": "Password",
-    "passwordPlaceholder": "At least 6 characters",
+    "passwordPlaceholder": "At least 8 characters",
     "showPassword": "Show password",
     "hidePassword": "Hide password",
     "signingIn": "Signing in…",

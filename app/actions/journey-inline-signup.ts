@@ -115,10 +115,10 @@ export async function journeyInlineSignup(args: {
   if (args.mode === "register" && !phone) {
     return { success: false, error: "Mobile number is required to register." };
   }
-  if (args.mode === "register" && password.length < 6) {
+  if (args.mode === "register" && password.length < 8) {
     return {
       success: false,
-      error: "Password must be at least 6 characters.",
+      error: "Password must be at least 8 characters.",
     };
   }
   if (!args.deviceId || args.deviceId.length < 8) {
