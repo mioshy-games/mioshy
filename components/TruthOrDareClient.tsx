@@ -23,6 +23,8 @@ import {
 import { RegistrationModal } from "@/components/RegistrationModal";
 import { SubscriptionModal } from "@/components/SubscriptionModal";
 import { stopSpinSound } from "@/lib/sounds";
+import { track } from "@/lib/analytics";
+import { useDwellTracking } from "@/hooks/useDwellTracking";
 // 2026-05-20 — read the wheel-spin setter from the GameSurfaceShell
 // context provider so the ambient blob animations on GamePageBackground
 // only run while the wheel is actively spinning. Outside the shell
@@ -58,6 +60,11 @@ export function TruthOrDareClient({
   const { setIsSpinning } = useWheelSpin();
   const gameTitle =
     locale === "he" ? (game.name_he ?? game.name_en ?? "") : (game.name_en ?? game.name_he ?? "");
+
+  // Dwell-time tracking for this wheel game (admin-analytics-spec §6). Doubles
+  // as the Phase-0 end-to-end smoke test of the beacon → intake → analytics
+  // pipeline, and is the permanent per-game dwell mount for Phase 1.
+  useDwellTracking("games", game.slug);
 
   const [completedSpins, setCompletedSpins] = useState(0);
   const [current, setCurrent] = useState<Question | null>(null);
@@ -262,6 +269,45 @@ export function TruthOrDareClient({
     [locale],
   );
 
+  // ── Analytics: play duration + abandonment (spec §5.5) ────────────────────
+  // Wheel games are open-ended (no winner / completion), so per §6 the session
+  // end IS the abandonment signal: game_start fires on the first real spin, and
+  // game_abandoned (carrying duration_ms + spins) fires when the player leaves.
+  const playStartRef = useRef<number | null>(null);
+  const playStartedRef = useRef(false);
+  const completedSpinsRef = useRef(0);
+  completedSpinsRef.current = completedSpins;
+
+  const triggerSpin = useCallback(() => {
+    if (!playStartedRef.current) {
+      playStartedRef.current = true;
+      playStartRef.current = Date.now();
+      track("game_start", {
+        game_type:   "wheel",
+        game_slug:   game.slug,
+        player_mode: !!game.player_mode,
+      });
+    }
+    wheelRef.current?.spin();
+  }, [game.slug, game.player_mode]);
+
+  // Emit game_abandoned with the elapsed duration when the player leaves a
+  // started wheel session (unmount / route change).
+  useEffect(() => {
+    return () => {
+      if (playStartedRef.current && playStartRef.current !== null) {
+        track("game_abandoned", {
+          game_type:   "wheel",
+          game_slug:   game.slug,
+          player_mode: !!game.player_mode,
+          duration_ms: Date.now() - playStartRef.current,
+          spins:       completedSpinsRef.current,
+        });
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // ── Spin gate ─────────────────────────────────────────────────────────────
   // 1. subscribed         → unlimited
   // 2. guest, plays < 3   → free
@@ -273,14 +319,14 @@ export function TruthOrDareClient({
     if (!authReady) return;
 
     if (subscribed) {
-      wheelRef.current?.spin();
+      triggerSpin();
       return;
     }
 
     // H (free game): a registered user plays a free game with no cap. Guests
     // fall through to the standard 3-spin teaser → RegistrationModal below.
     if (game.is_free && userId) {
-      wheelRef.current?.spin();
+      triggerSpin();
       return;
     }
 
@@ -291,7 +337,7 @@ export function TruthOrDareClient({
       const used = getGuestGamePlays(slug);
 
       if (used < FREE_PLAYS_PER_GAME) {
-        wheelRef.current?.spin();
+        triggerSpin();
         return;
       }
 
@@ -325,7 +371,7 @@ export function TruthOrDareClient({
       return;
     }
 
-    wheelRef.current?.spin();
+    triggerSpin();
   };
 
   const lastTwoTypesRef = useRef<string[]>([]);

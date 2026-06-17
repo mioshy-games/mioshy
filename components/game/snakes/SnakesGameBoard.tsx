@@ -13,6 +13,7 @@ import type { GameAdapter } from "@/lib/snakes/adapter";
 import type { GamePlayer } from "@/lib/snakes/types";
 import { cellToBoardPercent } from "@/lib/snakes/boardUtils";
 import { playSound } from "@/lib/sounds";
+import { track } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 // Gating (mirrors TruthOrDareClient - same lead/paywall flow per Itzik
 // 2026-05-06): non-subscribers get FREE_PLAYS_PER_GAME (=3) dice rolls
@@ -92,6 +93,17 @@ export function SnakesGameBoard({
   const winFiredRef = useRef(false);
   // Ref on the board section so we can compute viewport origin for confetti
   const boardSectionRef = useRef<HTMLElement>(null);
+
+  // ── Analytics: play duration + abandonment (admin-analytics-spec §5.5) ────
+  // game_start is emitted by the lobby (remote: game/ui.tsx, local:
+  // game/local/ui.tsx). Here on the board we time the play: game_completed
+  // with duration_ms on win, game_abandoned with duration_ms if the player
+  // leaves before the game ends. startTimeRef is seeded on first state load.
+  const playStartRef = useRef<number | null>(null);
+  const playCompletedRef = useRef(false);
+  // Latest state for the unmount cleanup (avoids a stale closure).
+  const stateRef = useRef(state);
+  stateRef.current = state;
 
   // ── Gating state (mirrors TruthOrDareClient) ────────────────────────────
   // 1. subscribed              → unlimited
@@ -522,6 +534,36 @@ export function SnakesGameBoard({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state?.turnCount]);
 
+  // Seed the play-timer the moment the board has a live game state.
+  useEffect(() => {
+    if (state && playStartRef.current === null) {
+      playStartRef.current = Date.now();
+    }
+  }, [state]);
+
+  // Abandonment: if the board unmounts (exit / route change) while the game is
+  // still in progress, emit game_abandoned with the elapsed duration. Guarded
+  // by playCompletedRef so a normal win never also counts as an abandon.
+  useEffect(() => {
+    return () => {
+      const s = stateRef.current;
+      if (
+        !playCompletedRef.current &&
+        s &&
+        s.phase !== "ended" &&
+        playStartRef.current !== null
+      ) {
+        track("game_abandoned", {
+          game_type:   "snakes",
+          mode,
+          duration_ms: Date.now() - playStartRef.current,
+          turn_count:  s.turnCount ?? 0,
+        });
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // ── Sound cues + confetti on win ──────────────────────────────────────────
   // Snake/ladder sounds are now handled by the walk effect at the right moment.
   // This effect only handles win confetti (and leaves the door open for other
@@ -532,6 +574,16 @@ export function SnakesGameBoard({
     // Walk effect handles snake / ladder / move sounds - skip them here
     if (state.phase === "ended" && prev !== "ended" && !winFiredRef.current) {
       winFiredRef.current = true;
+      // Analytics: game completed (spec §5.5) - duration from board mount.
+      if (!playCompletedRef.current && playStartRef.current !== null) {
+        playCompletedRef.current = true;
+        track("game_completed", {
+          game_type:   "snakes",
+          mode,
+          duration_ms: Date.now() - playStartRef.current,
+          turn_count:  state.turnCount ?? 0,
+        });
+      }
       playSound("win");
       // Win burst - centred on the board, not three full-screen fountains
       const getBoardOrigin = () => {
@@ -552,7 +604,7 @@ export function SnakesGameBoard({
       winFiredRef.current = false;
     }
     lastPhaseRef.current = state.phase;
-  }, [state]);
+  }, [state, mode]);
 
   // Local confetti burst when any player climbs a ladder.
   // We debounce by tracking log length so the same entry never re-triggers on

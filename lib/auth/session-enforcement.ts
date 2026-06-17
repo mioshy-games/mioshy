@@ -11,6 +11,8 @@
  *  • No match → user was logged in on another device → redirect to /auth?kicked=1
  */
 
+import { cookies, headers } from "next/headers";
+
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 
 export const SESSION_COOKIE = "mioshy_session";
@@ -49,7 +51,42 @@ export async function createSession(
     throw new Error("Failed to create session record.");
   }
 
+  // Append-only login history for admin behavior analytics (spec §5.2).
+  // Best-effort: a failure here must never block a successful login.
+  await recordLoginEvent(userId, deviceInfo);
+
   return token;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Append one login-history row (auth_login_events). Reads device_id from the
+// mioshy_device_id cookie and country from the Vercel geo header — both
+// best-effort. Awaited (not fire-and-forget) so the row is committed before a
+// serverless function freezes, but wrapped so it can never break login.
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function recordLoginEvent(
+  userId: string,
+  deviceInfo: DeviceInfo,
+): Promise<void> {
+  try {
+    const [cookieStore, hdrs] = await Promise.all([cookies(), headers()]);
+    const deviceId = cookieStore.get("mioshy_device_id")?.value ?? null;
+    const country = hdrs.get("x-vercel-ip-country") ?? null;
+
+    const admin = createAdminSupabaseClient();
+    await admin.from("auth_login_events").insert({
+      user_id:     userId,
+      device_id:   deviceId,
+      device_info: deviceInfo,
+      country,
+    });
+  } catch (err) {
+    console.warn(
+      "[session-enforcement] login-event insert failed:",
+      err instanceof Error ? err.message : err,
+    );
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
