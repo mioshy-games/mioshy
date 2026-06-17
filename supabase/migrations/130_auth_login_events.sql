@@ -23,9 +23,9 @@ CREATE TABLE IF NOT EXISTS auth_login_events (
 );
 
 -- Primary access pattern: a user's login history, most-recent first.
-CREATE INDEX auth_login_events_user_time_idx ON auth_login_events(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS auth_login_events_user_time_idx ON auth_login_events(user_id, created_at DESC);
 -- Time-range scans for "peak hours" aggregates + retention purge.
-CREATE INDEX auth_login_events_time_idx      ON auth_login_events(created_at DESC);
+CREATE INDEX IF NOT EXISTS auth_login_events_time_idx      ON auth_login_events(created_at DESC);
 
 -- RLS: writes happen server-side via the service-role client (which bypasses
 -- RLS), so no anon/authenticated insert policy is needed. Only service_role
