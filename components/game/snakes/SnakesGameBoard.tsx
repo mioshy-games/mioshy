@@ -14,6 +14,7 @@ import type { GamePlayer } from "@/lib/snakes/types";
 import { cellToBoardPercent } from "@/lib/snakes/boardUtils";
 import { playSound } from "@/lib/sounds";
 import { track } from "@/lib/analytics";
+import { useDwellTracking } from "@/hooks/useDwellTracking";
 import { cn } from "@/lib/utils";
 // Gating (mirrors TruthOrDareClient - same lead/paywall flow per Itzik
 // 2026-05-06): non-subscribers get FREE_PLAYS_PER_GAME (=3) dice rolls
@@ -85,6 +86,10 @@ export function SnakesGameBoard({
     myPlayerId,
     updateGameState,
   });
+
+  // Per-game dwell tracking (admin-analytics-spec §6). Snakes has no games-row
+  // slug, so we use the stable play-counter slug as the ref.
+  useDwellTracking("games", SNAKES_PLAYS_SLUG);
 
   const [toast, setToast] = useState<string | null>(null);
   const lastTurnPlayerId = useRef<string | null>(null);
