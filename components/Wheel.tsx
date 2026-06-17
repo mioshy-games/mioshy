@@ -468,7 +468,19 @@ export const Wheel = forwardRef<WheelApi, WheelProps>(function Wheel(
     // snappier; combined with the +2s duration the spin reads fast yet lasts
     // longer for suspense.
     const fullSpins = 6 + Math.floor(Math.random() * 4); // 6–9 spins
-    const delta = fullSpins * 360 + (360 - (targetDeg % 360));
+    // Land the pointer on the chosen slice on EVERY spin, not just the first.
+    // indexAtPointer() reads `targetRot mod 360`, which must equal
+    // `360 - (targetDeg mod 360)` for the pointer to sit on winIndex. The
+    // previous formula added that fractional target without accounting for
+    // where the last spin left the wheel (startRot mod 360 ≠ 0 after spin #1),
+    // so spins after the first drifted off the chosen slice. We now compute the
+    // forward distance from the current angle to the correct landing angle and
+    // add whole spins on top — still ONE monotonic forward CSS transition
+    // (no reset/jump, same 6–9 rotations, perf unchanged). The shuffle-bag pick
+    // (winIndex) is untouched; this just makes the wheel actually stop on it.
+    const landingMod = normalizeDeg(360 - (targetDeg % 360));
+    const forwardToLanding = normalizeDeg(landingMod - startRot);
+    const delta = fullSpins * 360 + forwardToLanding;
     const targetRot = startRot + delta;
     angleRef.current = targetRot;
 
