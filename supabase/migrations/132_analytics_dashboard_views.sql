@@ -17,8 +17,13 @@
 --   • chapter abandoned  = item_opened with no completion after 7 days
 --   • checkout abandoned = checkout_started with no subscription_activated in
 --                          the same session_id
---   • game/adult abandoned = a play session (game_start / adult_game_opened)
---                          with no game_completed in the same session_id
+--   • game abandoned     = a SNAKES play session (game_start, game_type='snakes')
+--                          with no game_completed in the same session. Snakes is
+--                          the only game with a real end state. Wheel & adults
+--                          are open-ended (never emit a completion, §6), so
+--                          counting them here would force a misleading ~100%
+--                          abandonment — they are EXCLUDED; their signal is
+--                          dwell engagement in v_service_dwell, not abandonment.
 --   • activity level     = active ≤7d · cooling 8–30d · churned >30d since last
 --                          activity (login or any analytics event)
 -- ───────────────────────────────────────────────────────────────────────────
@@ -115,10 +120,12 @@ GROUP BY user_id, (properties->>'pillar');
 
 -- ── v_abandonment ───────────────────────────────────────────────────────────
 -- Reads: journey_user_activity + journey_item_completions (chapter), and
---        analytics_events (checkout + game/adult sessions).
+--        analytics_events (checkout sessions + snakes play sessions).
 -- Returns: aggregate abandonment per context with started / abandoned / pct,
 -- using the §10.4 thresholds. `started` counts everything entered (including
--- not-yet-eligible recent opens), so the pct is conservative.
+-- not-yet-eligible recent opens), so the pct is conservative. Only games with a
+-- real end state are measured for abandonment (snakes); open-ended wheel/adult
+-- play is engagement, not abandonment — see v_service_dwell.
 CREATE OR REPLACE VIEW public.v_abandonment AS
 WITH chapter AS (
   SELECT
@@ -151,17 +158,24 @@ checkout AS (
   ) s
 ),
 game AS (
+  -- Snakes only: the one game that emits game_completed. A snakes session is a
+  -- session containing a game_start with game_type='snakes'; it is abandoned if
+  -- that session has no game_completed. Wheel/adults are intentionally excluded
+  -- (open-ended → no completion → would always read as abandoned).
   SELECT
-    'game'::text                           AS context,
+    'game_snakes'::text                    AS context,
     count(*)                               AS started,
     count(*) FILTER (WHERE NOT completed)  AS abandoned
   FROM (
     SELECT session_id, bool_or(event = 'game_completed') AS completed
     FROM public.analytics_events
-    WHERE event IN ('game_start', 'adult_game_opened', 'game_completed')
-      AND session_id IS NOT NULL
+    WHERE session_id IS NOT NULL
+      AND (
+        (event = 'game_start' AND properties->>'game_type' = 'snakes')
+        OR event = 'game_completed'
+      )
     GROUP BY session_id
-    HAVING bool_or(event IN ('game_start', 'adult_game_opened'))
+    HAVING bool_or(event = 'game_start' AND properties->>'game_type' = 'snakes')
   ) s
 )
 SELECT context, started, abandoned,
