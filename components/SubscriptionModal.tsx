@@ -42,17 +42,20 @@ const T = {
     subtitleConfirm:     "נאשר את המדינה ואת המע״מ ונעביר לעמוד הסליקה המאובטח",
     fullNameLabel:       "שם מלא",
     fullNamePlaceholder: "שמך המלא",
+    mobileLabel:         "טלפון נייד",
+    mobilePlaceholder:   "מספר הטלפון שלכם",
     emailLabel:          "אימייל",
     emailPlaceholder:    "you@example.com",
     passwordLabel:       "סיסמה",
-    passwordPlaceholder: "לפחות 6 תווים",
+    passwordPlaceholder: "לפחות 8 תווים",
     showPwd:             "הצג",
     hidePwd:             "הסתר",
     marketingLabel:      "אני מסכים/ה לקבל עדכונים ומבצעים ממיאושי",
     termsLabel:          "קראתי ואני מאשר/ת את ",
     termsLink:           "תנאי השימוש ומדיניות הפרטיות",
     termsRequired:       "יש לאשר את תנאי השימוש להמשך",
-    weakPassword:        "הסיסמה חייבת להכיל לפחות 6 תווים",
+    phoneRequired:       "נא להזין מספר טלפון נייד",
+    weakPassword:        "הסיסמה חייבת להכיל לפחות 8 תווים",
     emailExists:         "אימייל זה כבר רשום - בדוק את הסיסמה ונסה שוב",
     countryLabel:        "מדינה",
     countryPlaceholder:  "בחר מדינה",
@@ -101,17 +104,20 @@ const T = {
     subtitleConfirm:     "We'll confirm your country + VAT and send you to the secure checkout",
     fullNameLabel:       "Full name",
     fullNamePlaceholder: "Your full name",
+    mobileLabel:         "Mobile",
+    mobilePlaceholder:   "Your mobile number",
     emailLabel:          "Email",
     emailPlaceholder:    "you@example.com",
     passwordLabel:       "Password",
-    passwordPlaceholder: "At least 6 characters",
+    passwordPlaceholder: "At least 8 characters",
     showPwd:             "Show",
     hidePwd:             "Hide",
     marketingLabel:      "I agree to receive updates and offers from Mioshy",
     termsLabel:          "I have read and accept the ",
     termsLink:           "Terms of Service and Privacy Policy",
     termsRequired:       "You must accept the terms to continue",
-    weakPassword:        "Password must be at least 6 characters",
+    phoneRequired:       "Please enter a mobile number",
+    weakPassword:        "Password must be at least 8 characters",
     emailExists:         "This email is already registered - check your password and try again",
     countryLabel:        "Country",
     countryPlaceholder:  "Select country",
@@ -282,6 +288,7 @@ export function SubscriptionModal({
 
   // lead-mode fields
   const [fullName,         setFullName]         = useState("");
+  const [mobile,           setMobile]           = useState("");
   const [email,            setEmail]            = useState("");
   const [password,         setPassword]         = useState("");
   const [showPassword,     setShowPassword]     = useState(false);
@@ -349,8 +356,9 @@ export function SubscriptionModal({
 
   const leadFormValid =
     fullName.trim().length >= 2 &&
+    mobile.trim().length > 0 &&
     email.trim().includes("@") &&
-    password.length >= 6 &&
+    password.length >= 8 &&
     termsAccepted;
 
   // ── Upsert lead row ────────────────────────────────────────────────────────
@@ -384,6 +392,7 @@ export function SubscriptionModal({
         email:             resolvedEmail,
         full_name:         fullName.trim() || null,
         name:              fullName.trim() || null,
+        phone:             mobile.trim() || null,
         language:          locale,
         device_id:         deviceId,
         country_code:      countryCode || null,
@@ -409,17 +418,22 @@ export function SubscriptionModal({
   // ── Lead mode: create account + save lead ─────────────────────────────────
   async function saveLead() {
     if (!termsAccepted) { setError(t.termsRequired); return; }
-    if (password.length < 6) { setError(t.weakPassword); return; }
+    if (!mobile.trim()) { setError(t.phoneRequired); return; }
+    if (password.length < 8) { setError(t.weakPassword); return; }
     setError(null);
     setBusy(true);
     try {
       const supabase = createBrowserSupabaseClient();
 
       // Create Supabase account
+      // The "mobile" UI field maps to `phone` everywhere downstream (same as
+      // RegistrationModal → profiles.phone / leads.phone). This modal never
+      // wrote to `profiles`, so we stash phone in auth metadata alongside
+      // full_name and also send it to /api/leads/upsert (leads.phone, below).
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email:   email.trim().toLowerCase(),
         password,
-        options: { data: { full_name: fullName.trim() } },
+        options: { data: { full_name: fullName.trim(), phone: mobile.trim() } },
       });
 
       // Resolve the real user id - Supabase has a privacy quirk: when the
@@ -624,18 +638,33 @@ export function SubscriptionModal({
              * game page behind bleeds through and the colours wash through. */
             <div className="mx-auto mt-5 flex w-full max-w-sm flex-col gap-4">
               <div className="grid gap-1.5">
-                <Label className="text-sm font-semibold text-white/90">{t.fullNameLabel}</Label>
+                <Label className="text-[18px] font-semibold text-white/90 sm:text-sm">{t.fullNameLabel}</Label>
                 <Input
                   autoComplete="name"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder={t.fullNamePlaceholder}
-                  className="border-white/15 bg-white/10 text-white placeholder:text-white/40 focus-visible:ring-white/40"
+                  className="min-h-[52px] border-white/15 bg-white/10 text-[17px] text-white placeholder:text-white/40 focus-visible:ring-white/40 sm:min-h-[50px] sm:text-base"
+                />
+              </div>
+
+              {/* Mobile — QA 2026-06-17: required for every signup (Itzik). Maps
+                  to `phone` in leads.phone + auth metadata (see saveLead). */}
+              <div className="grid gap-1.5">
+                <Label className="text-[18px] font-semibold text-white/90 sm:text-sm">{t.mobileLabel}</Label>
+                <Input
+                  type="tel"
+                  autoComplete="tel"
+                  dir="ltr"
+                  value={mobile}
+                  onChange={(e) => setMobile(e.target.value)}
+                  placeholder={t.mobilePlaceholder}
+                  className="min-h-[52px] border-white/15 bg-white/10 text-[17px] text-white placeholder:text-white/40 focus-visible:ring-white/40 sm:min-h-[50px] sm:text-base"
                 />
               </div>
 
               <div className="grid gap-1.5">
-                <Label className="text-sm font-semibold text-white/90">{t.emailLabel}</Label>
+                <Label className="text-[18px] font-semibold text-white/90 sm:text-sm">{t.emailLabel}</Label>
                 <Input
                   type="email"
                   autoComplete="email"
@@ -643,12 +672,12 @@ export function SubscriptionModal({
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder={t.emailPlaceholder}
-                  className="border-white/15 bg-white/10 text-white placeholder:text-white/40 focus-visible:ring-white/40"
+                  className="min-h-[52px] border-white/15 bg-white/10 text-[17px] text-white placeholder:text-white/40 focus-visible:ring-white/40 sm:min-h-[50px] sm:text-base"
                 />
               </div>
 
               <div className="grid gap-1.5">
-                <Label className="text-sm font-semibold text-white/90">{t.passwordLabel}</Label>
+                <Label className="text-[18px] font-semibold text-white/90 sm:text-sm">{t.passwordLabel}</Label>
                 <div className="relative">
                   <Input
                     type={showPassword ? "text" : "password"}
@@ -657,7 +686,7 @@ export function SubscriptionModal({
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder={t.passwordPlaceholder}
-                    className={`border-white/15 bg-white/10 text-white placeholder:text-white/40 focus-visible:ring-white/40 ${isHe ? "pl-14" : "pr-14"}`}
+                    className={`min-h-[52px] border-white/15 bg-white/10 text-[17px] text-white placeholder:text-white/40 focus-visible:ring-white/40 sm:min-h-[50px] sm:text-base ${isHe ? "pl-14" : "pr-14"}`}
                   />
                   <button
                     type="button"
