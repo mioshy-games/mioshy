@@ -74,11 +74,15 @@ async function recordLoginEvent(
     const deviceId = cookieStore.get("mioshy_device_id")?.value ?? null;
     const country = hdrs.get("x-vercel-ip-country") ?? null;
 
+    // Privacy approach A (spec §10.1): store metadata only, no PII. Strip the
+    // raw IP here — keeping it append-only for 12 months would be PII; `country`
+    // already covers the geographic need. user_sessions keeps the full
+    // deviceInfo (short-lived, single-row) and is left untouched.
     const admin = createAdminSupabaseClient();
     await admin.from("auth_login_events").insert({
       user_id:     userId,
       device_id:   deviceId,
-      device_info: deviceInfo,
+      device_info: { ua: deviceInfo.ua ?? null },
       country,
     });
   } catch (err) {
