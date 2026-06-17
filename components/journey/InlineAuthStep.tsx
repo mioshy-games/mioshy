@@ -251,6 +251,7 @@ export function InlineAuthStep({ locale, deviceId, onAuthenticated }: InlineAuth
                 value={phone}
                 onChange={setPhone}
                 autoComplete="tel"
+                required
               />
             </>
           )}

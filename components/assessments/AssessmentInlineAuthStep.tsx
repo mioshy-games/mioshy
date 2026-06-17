@@ -115,6 +115,7 @@ export function AssessmentInlineAuthStep({ locale, deviceId, assessmentId, onAut
                 value={phone}
                 onChange={setPhone}
                 autoComplete="tel"
+                required
               />
             </>
           )}

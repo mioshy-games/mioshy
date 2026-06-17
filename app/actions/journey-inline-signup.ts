@@ -110,6 +110,11 @@ export async function journeyInlineSignup(args: {
   if (args.mode === "register" && !fullName) {
     return { success: false, error: "Full name is required to register." };
   }
+  // Itzik 2026-06-17: mobile number required on every signup (backstop
+  // for the client `required` on the phone field).
+  if (args.mode === "register" && !phone) {
+    return { success: false, error: "Mobile number is required to register." };
+  }
   if (args.mode === "register" && password.length < 6) {
     return {
       success: false,

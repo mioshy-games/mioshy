@@ -77,7 +77,10 @@ export async function signupAction(formData: FormData): Promise<SignupResult> {
   );
   const source = parseSignupSource(formData.get("source") as string | null);
 
-  if (!fullName || !email || !password) {
+  // Itzik 2026-06-17: every signup must collect a mobile number, so phone
+  // is now required server-side too (backstop for the client `required`).
+  // Both real callers (RegistrationModal, SignupForm) already send it.
+  if (!fullName || !email || !phone || !password) {
     return { success: false, error: "Please fill in all required fields." };
   }
   if (password.length < 6) {

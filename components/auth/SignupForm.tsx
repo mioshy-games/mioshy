@@ -148,7 +148,7 @@ export function SignupForm({ next, pairCode }: Props) {
         <form onSubmit={handleSubmit} className="mt-7 space-y-5 sm:mt-6 sm:space-y-4">
           <AuthField id="signup_name"     label={t("nameLabel")}     value={fullName} onChange={setFullName} autoComplete="name"         required placeholder={t("namePlaceholder")} />
           <AuthField id="signup_email"    label={t("emailLabel")}    type="email" value={email} onChange={setEmail} autoComplete="email"  required placeholder={t("emailPlaceholder")} />
-          <AuthField id="signup_phone"    label={t("phoneLabel")}    type="tel"   value={phone} onChange={setPhone} autoComplete="tel"              placeholder={t("phonePlaceholder")} />
+          <AuthField id="signup_phone"    label={t("phoneLabel")}    type="tel"   value={phone} onChange={setPhone} autoComplete="tel"   required   placeholder={t("phonePlaceholder")} />
           <AuthField id="signup_password" label={t("passwordLabel")} type="password" value={password} onChange={setPassword} autoComplete="new-password" required minLength={6} placeholder={t("passwordPlaceholder")} />
 
           <ConsentCheckbox
