@@ -581,6 +581,27 @@ const EN: Dict = {
   "customers.page":                "Page",
   "customers.prev":                "Previous",
   "customers.next":                "Next",
+
+  // ── Behavior insights dashboard (admin-analytics-spec §7.3, Phase 5) ──
+  "nav.behavior":                  "Behavior insights",
+  "insights.title":                "Behavior insights",
+  "insights.desc":                 "What works and what doesn't — aggregate, metadata only.",
+  "insights.no_service_role":      "Analytics unavailable (service role not configured).",
+  "insights.no_data":              "No data yet.",
+  "insights.chapter_funnel":       "Chapter funnel",
+  "insights.chapter_funnel_desc":  "Most-opened chapters — bar shows completion.",
+  "insights.opened":               "Opened",
+  "insights.completed":            "Completed",
+  "insights.abandoned":            "Abandoned",
+  "insights.abandonment":          "Abandonment by area",
+  "insights.abandonment_desc":     "Where people get stuck (chapter / checkout / snakes).",
+  "insights.ctx_chapter":          "Chapters (7+ days)",
+  "insights.ctx_checkout":         "Checkout",
+  "insights.ctx_game_snakes":      "Snakes",
+  "insights.dwell_avg":            "Avg time per area",
+  "insights.dwell_avg_desc":       "Average dwell per user, per pillar.",
+  "insights.peak_hours":           "Peak hours (Israel time)",
+  "insights.peak_hours_desc":      "Logins by hour of day (recent sample).",
 };
 
 const HE: Dict = {
@@ -1142,6 +1163,27 @@ const HE: Dict = {
   "customers.page":                "עמוד",
   "customers.prev":                "הקודם",
   "customers.next":                "הבא",
+
+  // ── Behavior insights dashboard (admin-analytics-spec §7.3, Phase 5) ──
+  "nav.behavior":                  "תובנות התנהגות",
+  "insights.title":                "תובנות התנהגות",
+  "insights.desc":                 "מה עובד ומה לא — מצרפי, מטא-דאטה בלבד.",
+  "insights.no_service_role":      "אנליטיקה לא זמינה (service role לא מוגדר).",
+  "insights.no_data":              "אין נתונים עדיין.",
+  "insights.chapter_funnel":       "משפך פרקים",
+  "insights.chapter_funnel_desc":  "הפרקים הכי נפתחים — הבר מציג השלמה.",
+  "insights.opened":               "נפתח",
+  "insights.completed":            "הושלם",
+  "insights.abandoned":            "ננטש",
+  "insights.abandonment":          "נטישה לפי תחום",
+  "insights.abandonment_desc":     "היכן נתקעים (פרק / checkout / סנייקס).",
+  "insights.ctx_chapter":          "פרקים (7+ ימים)",
+  "insights.ctx_checkout":         "Checkout",
+  "insights.ctx_game_snakes":      "סנייקס",
+  "insights.dwell_avg":            "זמן ממוצע פר-תחום",
+  "insights.dwell_avg_desc":       "שהייה ממוצעת פר-משתמש, פר-pillar.",
+  "insights.peak_hours":           "שעות שיא (שעון ישראל)",
+  "insights.peak_hours_desc":      "כניסות לפי שעה ביום (מדגם אחרון).",
 };
 
 const TABLES: Record<AdminLocale, Dict> = { en: EN, he: HE };

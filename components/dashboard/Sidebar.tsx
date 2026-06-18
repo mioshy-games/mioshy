@@ -203,10 +203,10 @@ const NAV: NavItem[] = [
     id: "report",
     labelKey: "nav.report",
     icon: BarChart3,
-    // Placeholder - no report pages shipped yet; the group is visible so admins
-    // know analytics is a first-class area we plan to fill. Remove this TODO
-    // and populate children when the analytics pages land.
-    children: [],
+    children: [
+      // Phase 5 (admin-analytics-spec §7.3) — aggregate behavior insights.
+      { kind: "leaf", href: "/dashboard/behavior", labelKey: "nav.behavior", icon: BarChart3, adminOnly: true },
+    ],
   },
 
   {
