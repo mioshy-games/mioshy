@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
-import { Link } from "@/navigation";
+import { Link, useRouter } from "@/navigation";
 import { GameLayout } from "./GameLayout";
 import { Wheel, type WheelApi } from "./Wheel";
 import { type Question, type QuestionType } from "@/lib/game-engine";
@@ -12,6 +12,7 @@ import type { GameSettings } from "@/lib/types/settings";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { hasActiveSubscription } from "@/lib/subscriptions";
 import {
+  ASSESSMENT_OFFER_MIN_SPINS,
   FREE_PLAYS_PER_GAME,
   getGuestGamePlays,
   getUserGamePlays,
@@ -20,6 +21,15 @@ import {
   incrementGuestGamePlays,
   incrementUserGamePlays,
 } from "@/lib/spins";
+import { AssessmentOfferCard } from "@/components/marketing/AssessmentOfferCard";
+import {
+  fetchEligibility,
+  fetchOfferTexts,
+  markOfferShown,
+  shouldSuppress,
+  wasOfferShownThisSession,
+  type OfferTexts,
+} from "@/lib/marketing/assessment-offer";
 import { RegistrationModal } from "@/components/RegistrationModal";
 import { SubscriptionModal } from "@/components/SubscriptionModal";
 import { stopSpinSound } from "@/lib/sounds";
@@ -98,6 +108,36 @@ export function TruthOrDareClient({
   // AFTER the player closes that round's question (handleNext) — never flashes
   // over it.
   const gatePendingRef = useRef(false);
+
+  // ── In-game quick-assessment offer (round 6+, Itzik 2026-06-18) ────────────
+  // Targets free / games-only players without journey; suppressed if they
+  // already did the assessment or own journey (checked via the eligibility
+  // API). CRM copy; at most once/session (shared flag with the global offer).
+  const router = useRouter();
+  const offerLocale: "he" | "en" = locale === "en" ? "en" : "he";
+  const offerHandledRef = useRef(false);
+  const [offerTexts, setOfferTexts] = useState<OfferTexts | null>(null);
+  const [offerOpen, setOfferOpen] = useState(false);
+
+  useEffect(() => {
+    if (completedSpins < ASSESSMENT_OFFER_MIN_SPINS) return;
+    if (offerHandledRef.current) return;
+    offerHandledRef.current = true; // gate-check runs once per mount
+    if (wasOfferShownThisSession()) return;
+    let cancelled = false;
+    void (async () => {
+      const elig = await fetchEligibility();
+      if (cancelled || shouldSuppress(elig)) return;
+      const t = await fetchOfferTexts(offerLocale, "ingame");
+      if (cancelled) return;
+      markOfferShown();
+      setOfferTexts(t);
+      setOfferOpen(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [completedSpins, offerLocale]);
   /** Local cache of whether the post-signup +3 bonus has been consumed for
    *  this game. When true, the paywall shows at play #{FREE_PLAYS_PER_GAME}+1
    *  (no more bonus); when false we grant the bonus right after signup and
@@ -911,6 +951,23 @@ export function TruthOrDareClient({
             </Link>
           </div>
         </div>
+      ) : null}
+
+      {/* In-game quick-assessment offer (round 6+). Non-blocking bottom banner;
+          hidden while a question popup is up so it never clashes. */}
+      {offerOpen && offerTexts && !current ? (
+        <AssessmentOfferCard
+          title={offerTexts.title}
+          body={offerTexts.body}
+          cta={offerTexts.cta}
+          dismiss={offerTexts.dismiss}
+          locale={offerLocale}
+          onAccept={() => {
+            setOfferOpen(false);
+            router.push("/journey/assessment");
+          }}
+          onDismiss={() => setOfferOpen(false)}
+        />
       ) : null}
 
       <RegistrationModal

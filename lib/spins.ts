@@ -17,6 +17,9 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 export const FREE_PLAYS_PER_GAME = 3;
 export const POST_SIGNUP_BONUS = 3;
+/** Spin count from which the in-game quick-assessment offer may appear
+ *  (admin-analytics funnel, Itzik 2026-06-18). Central config — no hardcode. */
+export const ASSESSMENT_OFFER_MIN_SPINS = 6;
 
 // ───────────────────────────────────────────────────────────────────────
 // Logged-in users: user_game_plays table (migration 034)

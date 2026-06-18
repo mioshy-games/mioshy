@@ -12,6 +12,7 @@ import {
 } from "@/components/analytics/GoogleTagManager";
 import { PostHogProvider } from "@/components/analytics/PostHogProvider";
 import { CookieConsentBar } from "@/components/analytics/CookieConsentBar";
+import { GlobalAssessmentOffer } from "@/components/marketing/GlobalAssessmentOffer";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Root metadata - inherited by every page, with per-page metadata overriding
@@ -234,6 +235,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         {/* Google Consent Mode v2 grantor — the one-time bottom bar that flips
             ad/analytics consent from the denied default. Global overlay. */}
         <CookieConsentBar locale={locale} />
+        {/* Quick-assessment offer — "after login" + "return after 24h" touch
+            points (the in-game touch point lives in TruthOrDareClient). CRM
+            copy, suppressed for assessment-done / journey-owners, once/session. */}
+        <GlobalAssessmentOffer locale={locale} />
         {/* Real-user perf monitoring (Itzik 2026-05-31). SpeedInsights
             samples Core Web Vitals from production sessions; Analytics
             tracks page-view counts. Both are tree-shaken in dev — they
