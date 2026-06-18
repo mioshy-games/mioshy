@@ -15,6 +15,23 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getOrCreateDeviceId } from "@/lib/device-id";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
+import { fetchCmsTextMap } from "@/lib/cms/client-text-map";
+
+// CRM-managed copy for the lead-capture modal (category "marketing",
+// migration 135). Read client-side; the `T` strings below stay as the in-code
+// defaults / safety net (an empty or missing CMS row falls back to them).
+const LEAD_CMS_KEYS = [
+  "lead_modal_title", "lead_modal_subtitle",
+  "lead_modal_label_name", "lead_modal_ph_name",
+  "lead_modal_label_phone", "lead_modal_ph_phone",
+  "lead_modal_label_email", "lead_modal_ph_email",
+  "lead_modal_label_password", "lead_modal_ph_password", "lead_modal_password_show",
+  "lead_modal_consent_marketing",
+  "lead_modal_consent_terms_pre", "lead_modal_consent_terms_link",
+  "lead_modal_submit",
+  "lead_modal_have_account", "lead_modal_login_link",
+  "lead_modal_close_aria",
+] as const;
 // Country picker removed 2026-06-02 (Itzik) — IL-only launch. The
 // imports `listCountries / findCountry / type Country` were dropped
 // together with the picker UI.
@@ -308,6 +325,20 @@ export function SubscriptionModal({
   const [busy,  setBusy]  = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // CRM copy for lead mode. `lt(key, fallback)` returns the CMS value when
+  // present and non-blank, else the in-code default — so a blank/missing row
+  // never renders an empty label/placeholder (trap 2).
+  const [cmsLead, setCmsLead] = useState<Record<string, string>>({});
+  const lt = (key: string, fallback: string) => cmsLead[key] ?? fallback;
+  useEffect(() => {
+    if (!open || mode !== "lead") return;
+    let cancelled = false;
+    void fetchCmsTextMap(LEAD_CMS_KEYS as unknown as string[], isHe ? "he" : "en").then(
+      (m) => { if (!cancelled) setCmsLead(m); },
+    );
+    return () => { cancelled = true; };
+  }, [open, mode, isHe]);
+
   // ── Single-plan paywall extras (2026-05-06 Itzik redesign) ──────────────
   // Greeting: shows "שלום {full_name}" once the user is authenticated. We
   // fetch the name from auth.users.user_metadata.full_name (the same key
@@ -568,8 +599,8 @@ export function SubscriptionModal({
 
   // Confirm stage was removed - clicking a plan jumps straight to Cardcom,
   // so the title/subtitle only need lead vs paywall-select copy.
-  const headerTitle = mode === "lead" ? t.titleLead : t.titlePaywallSelect;
-  const headerSubtitle = mode === "lead" ? t.subtitleLead : t.subtitlePaywall;
+  const headerTitle = mode === "lead" ? lt("lead_modal_title", t.titleLead) : t.titlePaywallSelect;
+  const headerSubtitle = mode === "lead" ? lt("lead_modal_subtitle", t.subtitleLead) : t.subtitlePaywall;
 
   // Paywall mode is a single-plan checkout - the SinglePlanPaywall
   // subcomponent supplies its own headline (greeting), so we hide the
@@ -595,7 +626,7 @@ export function SubscriptionModal({
           <button
             type="button"
             onClick={() => onOpenChange(false)}
-            aria-label={t.close}
+            aria-label={lt("lead_modal_close_aria", t.close)}
             className="absolute top-3 end-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white/80 backdrop-blur-sm transition hover:bg-white/20 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/40"
           >
             <X className="h-4 w-4" />
@@ -638,12 +669,12 @@ export function SubscriptionModal({
              * game page behind bleeds through and the colours wash through. */
             <div className="mx-auto mt-5 flex w-full max-w-sm flex-col gap-4">
               <div className="grid gap-1.5">
-                <Label className="text-[18px] font-semibold text-white/90 sm:text-sm">{t.fullNameLabel}</Label>
+                <Label className="text-[18px] font-semibold text-white/90 sm:text-sm">{lt("lead_modal_label_name", t.fullNameLabel)}</Label>
                 <Input
                   autoComplete="name"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  placeholder={t.fullNamePlaceholder}
+                  placeholder={lt("lead_modal_ph_name", t.fullNamePlaceholder)}
                   className="min-h-[52px] border-white/15 bg-white/10 text-[17px] text-white placeholder:text-white/40 focus-visible:ring-white/40 sm:min-h-[50px] sm:text-base"
                 />
               </div>
@@ -651,33 +682,33 @@ export function SubscriptionModal({
               {/* Mobile — QA 2026-06-17: required for every signup (Itzik). Maps
                   to `phone` in leads.phone + auth metadata (see saveLead). */}
               <div className="grid gap-1.5">
-                <Label className="text-[18px] font-semibold text-white/90 sm:text-sm">{t.mobileLabel}</Label>
+                <Label className="text-[18px] font-semibold text-white/90 sm:text-sm">{lt("lead_modal_label_phone", t.mobileLabel)}</Label>
                 <Input
                   type="tel"
                   autoComplete="tel"
                   dir="ltr"
                   value={mobile}
                   onChange={(e) => setMobile(e.target.value)}
-                  placeholder={t.mobilePlaceholder}
+                  placeholder={lt("lead_modal_ph_phone", t.mobilePlaceholder)}
                   className="min-h-[52px] border-white/15 bg-white/10 text-[17px] text-white placeholder:text-white/40 focus-visible:ring-white/40 sm:min-h-[50px] sm:text-base"
                 />
               </div>
 
               <div className="grid gap-1.5">
-                <Label className="text-[18px] font-semibold text-white/90 sm:text-sm">{t.emailLabel}</Label>
+                <Label className="text-[18px] font-semibold text-white/90 sm:text-sm">{lt("lead_modal_label_email", t.emailLabel)}</Label>
                 <Input
                   type="email"
                   autoComplete="email"
                   dir="ltr"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder={t.emailPlaceholder}
+                  placeholder={lt("lead_modal_ph_email", t.emailPlaceholder)}
                   className="min-h-[52px] border-white/15 bg-white/10 text-[17px] text-white placeholder:text-white/40 focus-visible:ring-white/40 sm:min-h-[50px] sm:text-base"
                 />
               </div>
 
               <div className="grid gap-1.5">
-                <Label className="text-[18px] font-semibold text-white/90 sm:text-sm">{t.passwordLabel}</Label>
+                <Label className="text-[18px] font-semibold text-white/90 sm:text-sm">{lt("lead_modal_label_password", t.passwordLabel)}</Label>
                 <div className="relative">
                   <Input
                     type={showPassword ? "text" : "password"}
@@ -685,7 +716,7 @@ export function SubscriptionModal({
                     dir="ltr"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder={t.passwordPlaceholder}
+                    placeholder={lt("lead_modal_ph_password", t.passwordPlaceholder)}
                     className={`min-h-[52px] border-white/15 bg-white/10 text-[17px] text-white placeholder:text-white/40 focus-visible:ring-white/40 sm:min-h-[50px] sm:text-base ${isHe ? "pl-14" : "pr-14"}`}
                   />
                   <button
@@ -693,7 +724,7 @@ export function SubscriptionModal({
                     onClick={() => setShowPassword((v) => !v)}
                     className={`absolute inset-y-0 flex items-center px-3 text-xs font-semibold text-white/70 hover:text-white ${isHe ? "left-0" : "right-0"}`}
                   >
-                    {showPassword ? t.hidePwd : t.showPwd}
+                    {showPassword ? t.hidePwd : lt("lead_modal_password_show", t.showPwd)}
                   </button>
                 </div>
               </div>
@@ -708,7 +739,7 @@ export function SubscriptionModal({
                   style={{ accentColor: accent }}
                 />
                 <span className="text-sm leading-snug text-white/90">
-                  {t.marketingLabel}
+                  {lt("lead_modal_consent_marketing", t.marketingLabel)}
                 </span>
               </label>
 
@@ -722,7 +753,10 @@ export function SubscriptionModal({
                   style={{ accentColor: accent }}
                 />
                 <span className="text-sm leading-snug text-white/90">
-                  {t.termsLabel}
+                  {/* Trap 1: NO markup in a CMS string — the <a> lives here in
+                      JSX; only the link TEXT is a separate CMS key. The explicit
+                      space guarantees separation regardless of the CMS value. */}
+                  {lt("lead_modal_consent_terms_pre", t.termsLabel)}{" "}
                   <a
                     href={isHe ? "/he/terms" : "/en/terms"}
                     target="_blank"
@@ -731,7 +765,7 @@ export function SubscriptionModal({
                     onClick={(e) => e.stopPropagation()}
                     style={{ color: accent }}
                   >
-                    {t.termsLink}
+                    {lt("lead_modal_consent_terms_link", t.termsLink)}
                   </a>
                 </span>
               </label>
@@ -750,12 +784,12 @@ export function SubscriptionModal({
                   background: `linear-gradient(135deg, ${palette[0]}, ${palette[1]})`,
                 }}
               >
-                {busy ? t.saving : t.saveCta}
+                {busy ? t.saving : lt("lead_modal_submit", t.saveCta)}
               </Button>
 
               {/* Already-a-member shortcut - takes the user to the sign-in flow */}
               <p className="text-center text-xs text-white/70">
-                {t.alreadyMember}{" "}
+                {lt("lead_modal_have_account", t.alreadyMember)}{" "}
                 <button
                   type="button"
                   onClick={() => {
@@ -766,7 +800,7 @@ export function SubscriptionModal({
                   className="font-semibold underline underline-offset-4 transition hover:text-white disabled:opacity-60"
                   style={{ color: accent }}
                 >
-                  {t.signInCta}
+                  {lt("lead_modal_login_link", t.signInCta)}
                 </button>
               </p>
             </div>
