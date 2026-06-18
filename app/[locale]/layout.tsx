@@ -12,6 +12,7 @@ import { getBillingBannerState } from "@/lib/billing/failure-banner";
 import type { BillingBannerState } from "@/lib/billing/failure-banner";
 import { SubscriptionBillingBanner } from "@/components/billing/SubscriptionBillingBanner";
 import { PostHogIdentify } from "@/components/analytics/PostHogIdentify";
+import { organizationJsonLd, webSiteJsonLd, safeJsonLd } from "@/lib/seo/jsonLd";
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -95,6 +96,18 @@ export default async function LocaleLayout({
 
   return (
     <NextIntlClientProvider messages={messages}>
+      {/* Global Organization + WebSite JSON-LD — centralised here so EVERY
+          page (incl. /contact, /how-to-share-with-partner) carries them. Page
+          content schema (Article/Product/SoftwareApplication/FAQPage) stays
+          per-page. Generic per-page Org/WebSite injections were removed. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(organizationJsonLd()) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(webSiteJsonLd(locale === "he" ? "he" : "en")) }}
+      />
       <PostHogIdentify userId={userId} />
       <SubscriptionBillingBanner state={billingBannerState} isHe={locale === "he"} />
       <Chrome

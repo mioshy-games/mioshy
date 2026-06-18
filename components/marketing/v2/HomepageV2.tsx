@@ -2,11 +2,6 @@ import "./styles.css";
 import ReactDOM from "react-dom";
 import dynamic from "next/dynamic";
 import { useLocale } from "next-intl";
-import {
-  organizationJsonLd,
-  safeJsonLd,
-  webSiteJsonLd,
-} from "@/lib/seo/jsonLd";
 import { Hero } from "./Hero";
 // `Problem` (./Problem.tsx) was removed from the homepage on
 // 2026-05-11 (K1, content brief). The component file is intentionally
@@ -97,7 +92,6 @@ import { FAQ } from "./FAQ";
 export function HomepageV2() {
   const locale = useLocale();
   const dir = locale === "he" ? "rtl" : "ltr";
-  const localeKey: "he" | "en" = locale === "en" ? "en" : "he";
 
   // LCP preload (2026-05-21) — hero.webp is the LCP candidate on this
   // page only. ReactDOM.preload() emits a <link rel="preload"> that
@@ -120,16 +114,9 @@ export function HomepageV2() {
 
   return (
     <div className="home-v2 bg-white" dir={dir}>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: safeJsonLd(organizationJsonLd()) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: safeJsonLd(webSiteJsonLd(localeKey)),
-        }}
-      />
+      {/* Organization + WebSite JSON-LD moved to the shared [locale]/layout.tsx
+          (centralised, no duplication). Homepage-specific schema
+          (SoftwareApplication + ItemList) stays in page.tsx. */}
       {/* Section order set 2026-05-19 by Itzik. Authority also
          removed this day. Current storyline:
             1. Hero            — hook + price floor

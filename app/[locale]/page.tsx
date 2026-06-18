@@ -238,29 +238,12 @@ export default async function HomePage({
         }
       : undefined;
 
+  // Organization + WebSite (incl. the SearchAction) are now emitted globally by
+  // [locale]/layout.tsx — removed from this @graph to avoid duplicate nodes.
+  // Homepage-specific schema (SoftwareApplication + ItemList) stays here.
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
-      {
-        "@type": "WebSite",
-        "@id": `${base}/#website`,
-        url: base,
-        name: "Mioshy",
-        inLanguage: ["en", "he"],
-        potentialAction: {
-          "@type": "SearchAction",
-          target: `${base}/${locale}/articles?query={search_term_string}`,
-          "query-input": "required name=search_term_string",
-        },
-      },
-      {
-        "@type": "Organization",
-        "@id": `${base}/#organization`,
-        name: "Mioshy",
-        url: base,
-        logo: `${base}/mioshy-white.svg`,
-        sameAs: [] as string[],
-      },
       {
         "@type": "SoftwareApplication",
         "@id": `${base}/#app`,

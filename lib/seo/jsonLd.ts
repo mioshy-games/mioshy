@@ -74,6 +74,16 @@ export function webSiteJsonLd(locale: "he" | "en"): WebSiteJsonLd {
       name: "Mioshy",
       url: base,
     },
+    // Sitewide search action (preserved when centralising — was previously
+    // inline on the homepage @graph). Lets engines offer a sitelinks searchbox.
+    potentialAction: {
+      "@type": "SearchAction",
+      target: {
+        "@type": "EntryPoint",
+        urlTemplate: `${base}/${locale}/articles?query={search_term_string}`,
+      },
+      "query-input": "required name=search_term_string",
+    },
   };
 }
 
