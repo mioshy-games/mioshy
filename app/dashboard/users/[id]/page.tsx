@@ -26,6 +26,11 @@ import {
   loadUserAssessmentAnswers,
   type AssessmentPhase,
 } from "@/lib/dashboard/assessment-answers";
+// Phase 3 (admin-analytics-spec §7.2) — per-user behavior 360°.
+import { createServiceRoleClient } from "@/lib/supabase-admin";
+import { getAdminLocale, isRtl } from "@/lib/admin/locale";
+import { loadUserBehavior } from "@/lib/dashboard/user-behavior";
+import { UserBehaviorTabs } from "@/components/dashboard/UserBehaviorTabs";
 
 // B.5 — short/full grouping labels for the admin. Hebrew first (the expert
 // reads the user's Hebrew answers) with the en tag alongside.
@@ -89,6 +94,14 @@ export default async function UserDetailPage({ params }: { params: { id: string 
   // grouped by phase and labeled with question text + readable answer values.
   const answers = await loadUserAssessmentAnswers(supabase, userId);
 
+  // Phase 3 — per-user behavior. The Phase-2 views + analytics_events +
+  // auth_login_events are RLS-locked to service_role, so we read them with the
+  // service-role client (requireAdmin already gated this route). Null only if
+  // the service-role env is missing — then the section is simply omitted.
+  const adminDb = createServiceRoleClient();
+  const behavior = adminDb ? await loadUserBehavior(adminDb, userId) : null;
+  const adminLocale = getAdminLocale();
+
   return (
     <div className="flex flex-col gap-6 p-6">
       <Card>
@@ -102,6 +115,15 @@ export default async function UserDetailPage({ params }: { params: { id: string 
           </CardDescription>
         </CardHeader>
       </Card>
+
+      {behavior ? (
+        <UserBehaviorTabs
+          userId={userId}
+          locale={adminLocale}
+          isRtl={isRtl(adminLocale)}
+          data={behavior}
+        />
+      ) : null}
 
       {analysis ? (
         <Card>

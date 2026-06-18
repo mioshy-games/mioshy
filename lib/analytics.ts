@@ -55,7 +55,20 @@ export type AnalyticsEvent =
 
   // Homepage V2 (new marketing surface)
   | "home_v2_section_viewed"   // user scrolled a v2 section into view
-  | "home_v2_cta_click";       // user clicked any v2 CTA - see properties for which
+  | "home_v2_cta_click"        // user clicked any v2 CTA - see properties for which
+
+  // ── Behavior analytics (admin-analytics-spec §5.1) ────────────────────────
+  // Cross-pillar instrumentation feeding the per-user behavior dashboard.
+  // Metadata-only by design (privacy approach A, spec §10.1) - never carry
+  // intimate content (response text, adult content) in `properties`.
+  | "service_opened"           // entered a pillar surface: { pillar, surface, item_id? }
+  | "chapter_opened"           // journey chapter opened (unified-events option; journey
+                               // already covered by journey_user_activity - reserved)
+  | "adult_game_opened"        // adults: experience game opened: { game_id, ... }
+  | "adult_level_viewed"       // adults: a level viewed: { game_id, level }
+  | "dwell"                    // dwell heartbeat (useDwellTracking): { pillar, path, ms, item_id? }
+  | "abandoned"                // unified abandonment: { context, ref_id, last_step }
+  | "click";                   // marked-element click (not blanket): { target, pillar, path }
 
 export type EventProperties = Record<string, string | number | boolean | null | undefined>;
 
@@ -85,17 +98,15 @@ function readDeviceId(): string | null {
 
 const DEBUG = process.env.NODE_ENV === "development";
 
-/**
- * Fire-and-forget analytics event.
- *
- * @param event  - One of the AnalyticsEvent strings
- * @param props  - Additional key-value context
- */
-export function track(event: AnalyticsEvent, props: EventProperties = {}): void {
-  if (typeof window === "undefined") return; // no-op during SSR
+const INTAKE_URL = "/api/analytics/event";
 
-  // Merge standard context into properties
-  const payload = {
+/**
+ * Build the wire payload shared by every send path (fetch + sendBeacon).
+ * Centralises the session_id / device_id / locale enrichment so the dwell
+ * hook's beacon and the regular `track()` call produce identical rows.
+ */
+function buildPayload(event: AnalyticsEvent, props: EventProperties) {
+  return {
     event,
     session_id: getSessionId(),
     device_id: readDeviceId(),
@@ -107,13 +118,25 @@ export function track(event: AnalyticsEvent, props: EventProperties = {}): void 
       ...props,
     },
   };
+}
+
+/**
+ * Fire-and-forget analytics event.
+ *
+ * @param event  - One of the AnalyticsEvent strings
+ * @param props  - Additional key-value context
+ */
+export function track(event: AnalyticsEvent, props: EventProperties = {}): void {
+  if (typeof window === "undefined") return; // no-op during SSR
+
+  const payload = buildPayload(event, props);
 
   if (DEBUG) {
     console.debug("[analytics]", payload.event, payload.properties);
   }
 
   // Fire-and-forget - never await, never throw into the caller
-  void fetch("/api/analytics/event", {
+  void fetch(INTAKE_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -122,6 +145,47 @@ export function track(event: AnalyticsEvent, props: EventProperties = {}): void 
   }).catch(() => {
     /* silently swallow - analytics must never break the app */
   });
+}
+
+/**
+ * Beacon-based event send, for use during page-hide / unload where a normal
+ * fetch may be cancelled. Prefers `navigator.sendBeacon` (queued by the
+ * browser, survives navigation) and falls back to `fetch(..., keepalive)`.
+ *
+ * Used by `useDwellTracking` to flush the final dwell span. Same payload
+ * shape as `track()`, so it lands in `analytics_events` identically and the
+ * edge route still resolves the user from the (same-origin) session cookie.
+ */
+export function sendBeaconEvent(
+  event: AnalyticsEvent,
+  props: EventProperties = {},
+): void {
+  if (typeof window === "undefined") return;
+
+  const payload = buildPayload(event, props);
+
+  if (DEBUG) {
+    console.debug("[analytics:beacon]", payload.event, payload.properties);
+  }
+
+  try {
+    const body = JSON.stringify(payload);
+    if (typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
+      // sendBeacon sends text/plain by default; the intake route reads
+      // req.json() which parses the body regardless of content-type.
+      const ok = navigator.sendBeacon(INTAKE_URL, new Blob([body], { type: "application/json" }));
+      if (ok) return;
+    }
+    // Fallback: keepalive fetch (best-effort during unload).
+    void fetch(INTAKE_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body,
+      keepalive: true,
+    }).catch(() => {});
+  } catch {
+    /* analytics must never break the app */
+  }
 }
 
 // ─── Convenience wrappers ─────────────────────────────────────────────────────

@@ -1,12 +1,19 @@
 /**
- * /dashboard/users
+ * /dashboard/users — admin customer list (admin-analytics-spec §7.1, Phase 4).
  *
- * Admin users list with journey + subscription overview. Reads from the
- * `admin_users_overview` view created in migration 026.
+ * Search (name / email / phone) + filters (last-login date, entitlement pillar,
+ * activity level) + sort (last login / activity level) + pagination — all done
+ * IN THE DB against v_user_directory (migration 133), so there is no per-user
+ * loop and no N+1. The view is RLS-locked to service_role, so we read it with
+ * the service-role client (requireAdmin already gated the route). Metadata only
+ * (privacy approach A, §10.1).
  */
 
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth/admin";
+import { createServiceRoleClient } from "@/lib/supabase-admin";
+import { getAdminLocale, isRtl } from "@/lib/admin/locale";
+import { t } from "@/lib/admin/i18n";
 import {
   Card,
   CardContent,
@@ -23,83 +30,231 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
-function fmt(iso?: string | null) {
-  if (!iso) return "-";
-  return new Date(iso).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+const PAGE_SIZE = 25;
+const PILLARS = ["journey", "games", "adults"] as const;
+const LEVELS = ["active", "cooling", "churned"] as const;
+const SORTS = ["last_login_at", "activity_level"] as const;
+
+type SearchParams = {
+  q?: string;
+  from?: string;
+  pillar?: string;
+  level?: string;
+  sort?: string;
+  dir?: string;
+  page?: string;
+};
+
+const inputCls =
+  "h-9 rounded-md border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring";
+
+function levelBadge(level: string | null, label: string) {
+  if (!level) return <span className="text-muted-foreground">—</span>;
+  const variant =
+    level === "active" ? "default" : level === "cooling" ? "secondary" : "destructive";
+  return <Badge variant={variant}>{label}</Badge>;
 }
 
-export default async function AdminUsersPage() {
-  const { supabase } = await requireAdmin();
+export default async function AdminUsersPage({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
+  await requireAdmin(); // gate
+  const locale = getAdminLocale();
+  const tt = (k: string) => t(locale, k);
+  const rtl = isRtl(locale);
+  const dateLocale = locale === "he" ? "he-IL" : "en-US";
 
-  const { data: rows } = await supabase
-    .from("admin_users_overview")
-    .select("*")
-    .order("last_activity_at", { ascending: false, nullsFirst: false })
-    .limit(200);
+  const admin = createServiceRoleClient();
+
+  // ── Parse params ───────────────────────────────────────────────────────────
+  const q = (searchParams.q ?? "").trim();
+  // Strip PostgREST .or() control chars so a search term can't break the filter.
+  const qSafe = q.replace(/[,()*%\\]/g, "").slice(0, 80);
+  const from = (searchParams.from ?? "").trim();
+  const pillar = PILLARS.includes(searchParams.pillar as never) ? searchParams.pillar! : "";
+  const level = LEVELS.includes(searchParams.level as never) ? searchParams.level! : "";
+  const sort = SORTS.includes(searchParams.sort as never) ? (searchParams.sort as string) : "last_login_at";
+  const ascending = searchParams.dir === "asc";
+  const page = Math.max(1, parseInt(searchParams.page ?? "1", 10) || 1);
+
+  // ── Query (filter + sort + paginate, all in the DB) ────────────────────────
+  let rows: Record<string, unknown>[] = [];
+  let count = 0;
+  if (admin) {
+    let query = admin.from("v_user_directory").select("*", { count: "exact" });
+    if (qSafe) {
+      query = query.or(
+        `email.ilike.%${qSafe}%,full_name.ilike.%${qSafe}%,phone.ilike.%${qSafe}%`,
+      );
+    }
+    if (from) query = query.gte("last_login_at", from);
+    // Entitlement filter uses the bool_or flags (a user can own >1 pillar).
+    if (pillar === "journey") query = query.eq("owns_journey", true);
+    else if (pillar === "games") query = query.eq("owns_games", true);
+    else if (pillar === "adults") query = query.eq("owns_adults", true);
+    if (level) query = query.eq("activity_level", level);
+    query = query
+      .order(sort, { ascending, nullsFirst: false })
+      .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
+    const res = await query;
+    rows = (res.data ?? []) as Record<string, unknown>[];
+    count = res.count ?? 0;
+  }
+
+  const totalPages = Math.max(1, Math.ceil(count / PAGE_SIZE));
+
+  // Build an href preserving current params with overrides.
+  const hrefWith = (overrides: Partial<SearchParams>) => {
+    const sp = new URLSearchParams();
+    const merged: SearchParams = {
+      q, from, pillar, level, sort,
+      dir: ascending ? "asc" : "desc",
+      ...overrides,
+    };
+    for (const [k, v] of Object.entries(merged)) if (v) sp.set(k, String(v));
+    const s = sp.toString();
+    return s ? `/dashboard/users?${s}` : "/dashboard/users";
+  };
+
+  // Sortable column header — toggles direction on the active column.
+  const sortHeader = (key: (typeof SORTS)[number], label: string) => {
+    const active = sort === key;
+    const nextDir = active && !ascending ? "asc" : "desc";
+    const arrow = active ? (ascending ? " ▲" : " ▼") : "";
+    return (
+      <Link href={hrefWith({ sort: key, dir: nextDir, page: "1" })} className="underline-offset-4 hover:underline">
+        {label}{arrow}
+      </Link>
+    );
+  };
+
+  const fmtDate = (v: unknown) =>
+    v ? new Date(v as string).toLocaleDateString(dateLocale, { year: "numeric", month: "short", day: "numeric" }) : "—";
 
   return (
-    <div className="flex flex-col gap-6 p-6">
+    <div className="flex flex-col gap-6 p-6" dir={rtl ? "rtl" : "ltr"}>
       <Card>
         <CardHeader>
-          <CardTitle>Users</CardTitle>
-          <CardDescription>
-            Every user who has started the journey. Click a row for full detail.
-          </CardDescription>
+          <CardTitle>{tt("customers.title")}</CardTitle>
+          <CardDescription>{tt("customers.desc")}</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-col gap-4">
+          {/* Search + filters — native GET form (SSR, no client fetch). */}
+          <form method="get" className="flex flex-wrap items-end gap-2">
+            <input type="hidden" name="sort" value={sort} />
+            <input type="hidden" name="dir" value={ascending ? "asc" : "desc"} />
+            <input
+              type="search"
+              name="q"
+              defaultValue={q}
+              placeholder={tt("customers.search_ph")}
+              className={cn(inputCls, "min-w-[220px] flex-1")}
+            />
+            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+              {tt("customers.filter_from")}
+              <input type="date" name="from" defaultValue={from} className={inputCls} />
+            </label>
+            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+              {tt("customers.filter_pillar")}
+              <select name="pillar" defaultValue={pillar} className={inputCls}>
+                <option value="">{tt("customers.all")}</option>
+                {PILLARS.map((p) => (
+                  <option key={p} value={p}>{tt(`customers.pillar_${p}`)}</option>
+                ))}
+              </select>
+            </label>
+            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+              {tt("customers.filter_level")}
+              <select name="level" defaultValue={level} className={inputCls}>
+                <option value="">{tt("customers.all")}</option>
+                {LEVELS.map((l) => (
+                  <option key={l} value={l}>{tt(`customers.level_${l}`)}</option>
+                ))}
+              </select>
+            </label>
+            <button type="submit" className={cn(buttonVariants({ variant: "default", size: "sm" }))}>
+              {tt("customers.apply")}
+            </button>
+            <Link href="/dashboard/users" className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}>
+              {tt("customers.clear")}
+            </Link>
+          </form>
+
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Email</TableHead>
-                <TableHead>Journey</TableHead>
-                <TableHead>Sub</TableHead>
-                <TableHead>Friendship</TableHead>
-                <TableHead>Conflict</TableHead>
-                <TableHead>Passion risk</TableHead>
-                <TableHead>Flags</TableHead>
-                <TableHead>Last activity</TableHead>
+                <TableHead>{tt("customers.col_name")}</TableHead>
+                <TableHead>{tt("customers.col_email")}</TableHead>
+                <TableHead>{sortHeader("last_login_at", tt("customers.col_last_login"))}</TableHead>
+                <TableHead>{tt("customers.col_chapters")}</TableHead>
+                <TableHead>{tt("customers.col_games")}</TableHead>
+                <TableHead>{sortHeader("activity_level", tt("customers.col_status"))}</TableHead>
+                <TableHead>{tt("customers.col_sub")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {(rows ?? []).map((r) => (
-                <TableRow key={r.user_id}>
-                  <TableCell>
-                    <Link href={`/dashboard/users/${r.user_id}`} className="underline underline-offset-4">
-                      {r.email}
-                    </Link>
-                  </TableCell>
-                  <TableCell>
-                    {r.journey_status ? (
-                      <Badge variant="secondary">
-                        {r.journey_status} · {r.current_step}
-                      </Badge>
-                    ) : "-"}
-                  </TableCell>
-                  <TableCell>
-                    {r.subscription_status ? (
-                      <Badge variant={r.subscription_status === "active" ? "default" : "outline"}>
-                        {r.plan ?? ""} {r.subscription_status}
-                      </Badge>
-                    ) : "-"}
-                  </TableCell>
-                  <TableCell>{r.friendship_score ?? "-"}</TableCell>
-                  <TableCell>{r.conflict_health ?? "-"}</TableCell>
-                  <TableCell>{r.passion_risk ?? "-"}</TableCell>
-                  <TableCell>
-                    {r.four_horsemen_flag ? <Badge variant="destructive">horsemen</Badge> : null}
-                    {r.open_tasks_count ? <Badge variant="secondary" className="ml-1">{r.open_tasks_count} tasks</Badge> : null}
-                  </TableCell>
-                  <TableCell>{fmt(r.last_activity_at)}</TableCell>
-                </TableRow>
-              ))}
-              {!rows?.length ? (
+              {rows.length ? (
+                rows.map((r) => (
+                  <TableRow key={r.user_id as string}>
+                    <TableCell className="font-medium" dir="auto">
+                      <Link href={`/dashboard/users/${r.user_id}`} className="underline underline-offset-4">
+                        {(r.full_name as string) || "—"}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground" dir="ltr">{(r.email as string) || "—"}</TableCell>
+                    <TableCell className="whitespace-nowrap">{fmtDate(r.last_login_at)}</TableCell>
+                    <TableCell className="tabular-nums">{(r.completed_chapters as number) ?? 0}</TableCell>
+                    <TableCell className="tabular-nums">{(r.games_played as number) ?? 0}</TableCell>
+                    <TableCell>
+                      {levelBadge(
+                        r.activity_level as string | null,
+                        tt(`customers.level_${(r.activity_level as string) || "none"}`),
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {r.subscription_status ? (
+                        <Badge variant={r.subscription_status === "active" ? "default" : "outline"}>
+                          {(r.subscription_product as string) || (r.plan as string) || ""} {r.subscription_status as string}
+                        </Badge>
+                      ) : <span className="text-muted-foreground">—</span>}
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-muted-foreground">No users yet.</TableCell>
+                  <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                    {admin ? tt("customers.none") : tt("customers.no_service_role")}
+                  </TableCell>
                 </TableRow>
-              ) : null}
+              )}
             </TableBody>
           </Table>
+
+          {/* Pagination */}
+          <div className="flex items-center justify-between text-sm text-muted-foreground">
+            <span>{tt("customers.page")} {page} / {totalPages} · {count}</span>
+            <div className="flex gap-2">
+              <Link
+                href={hrefWith({ page: String(Math.max(1, page - 1)) })}
+                aria-disabled={page <= 1}
+                className={cn(buttonVariants({ variant: "outline", size: "sm" }), page <= 1 && "pointer-events-none opacity-50")}
+              >
+                {tt("customers.prev")}
+              </Link>
+              <Link
+                href={hrefWith({ page: String(Math.min(totalPages, page + 1)) })}
+                aria-disabled={page >= totalPages}
+                className={cn(buttonVariants({ variant: "outline", size: "sm" }), page >= totalPages && "pointer-events-none opacity-50")}
+              >
+                {tt("customers.next")}
+              </Link>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>

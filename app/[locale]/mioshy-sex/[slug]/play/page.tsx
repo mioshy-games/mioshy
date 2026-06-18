@@ -31,6 +31,7 @@ import {
 import { getGameBySlug } from "@/lib/between-us/queries";
 import { getCurrentCoupleContext } from "@/lib/between-us/couples";
 import { PlayAmbience } from "@/components/adults/PlayAmbience";
+import { AdultsPlayTracker } from "@/components/adults/AdultsPlayTracker";
 import { CmsText } from "@/components/cms/CmsText";
 import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
 
@@ -198,6 +199,9 @@ export default async function PlayExperienceGamePage({
       // blobs and you see flat black. See AmbienceDebugProbe for details.
       className="relative isolate min-h-[100dvh] overflow-hidden bg-[#040114] text-white"
     >
+      {/* Analytics-only island (renders nothing): adult_game_opened + dwell. */}
+      <AdultsPlayTracker gameId={game.id} slug={slug} />
+
       {/* Deep-midnight base - slightly cooler than /adults so the play
           surface feels distinct. The animated PlayAmbience layer paints
           blue + red mood lighting on top. */}

@@ -20,6 +20,7 @@ import * as React from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useDwellTracking } from "@/hooks/useDwellTracking";
 import { Button } from "@/components/ui/button";
 import {
   CheckCircle2,
@@ -94,6 +95,11 @@ export function ItemDetailClient({
 }: Props) {
   const isHe = locale === "he";
   const router = useRouter();
+
+  // Per-chapter dwell tracking (admin-analytics-spec §6). Adds the missing
+  // dwell signal for journey; open/complete are already in journey_user_activity.
+  // Keyed by scheduled-item id to match that log's scheduled_item_id.
+  useDwellTracking("journey", scheduled.id);
 
   // Optimistic state - completion + responses. The parent route hydrates
   // them on revalidate, but keeping local state makes the action feel
