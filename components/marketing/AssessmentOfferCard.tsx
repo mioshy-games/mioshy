@@ -9,9 +9,17 @@
  * Mobile-first: full-width bottom card, lifted above the MobileServicesBar
  * (z-40) so neither covers the other; safe-area aware. No backdrop — the page
  * stays fully usable (non-blocking).
+ *
+ * PostHog measurement lives here (one place for all controllers): fires
+ * assessment_offer_shown on mount and _clicked / _dismissed on action, each
+ * tagged with the trigger.
  */
 
+import { useEffect } from "react";
+import { captureOfferEvent, type OfferTrigger } from "@/lib/marketing/assessment-offer";
+
 interface Props {
+  trigger: OfferTrigger;
   title: string;
   body: string;
   cta: string;
@@ -21,8 +29,22 @@ interface Props {
   onDismiss: () => void;
 }
 
-export function AssessmentOfferCard({ title, body, cta, dismiss, locale, onAccept, onDismiss }: Props) {
+export function AssessmentOfferCard({ trigger, title, body, cta, dismiss, locale, onAccept, onDismiss }: Props) {
   const isHe = locale === "he";
+
+  useEffect(() => {
+    captureOfferEvent("shown", trigger, locale);
+  }, [trigger, locale]);
+
+  const handleAccept = () => {
+    captureOfferEvent("clicked", trigger, locale);
+    onAccept();
+  };
+  const handleDismiss = () => {
+    captureOfferEvent("dismissed", trigger, locale);
+    onDismiss();
+  };
+
   return (
     <div
       role="dialog"
@@ -33,7 +55,7 @@ export function AssessmentOfferCard({ title, body, cta, dismiss, locale, onAccep
       <div className="relative w-full max-w-md rounded-2xl border border-white/15 bg-[#1a0a2e]/95 p-4 pe-9 text-white shadow-[0_18px_50px_-12px_rgba(0,0,0,0.7)] backdrop-blur-md">
         <button
           type="button"
-          onClick={onDismiss}
+          onClick={handleDismiss}
           aria-label={isHe ? "סגירה" : "Close"}
           className="absolute end-2.5 top-2.5 grid h-7 w-7 place-items-center rounded-full text-white/55 transition hover:bg-white/10 hover:text-white"
         >
@@ -48,14 +70,14 @@ export function AssessmentOfferCard({ title, body, cta, dismiss, locale, onAccep
         <div className="mt-3 flex items-center gap-3">
           <button
             type="button"
-            onClick={onAccept}
+            onClick={handleAccept}
             className="flex-1 rounded-full bg-gradient-to-r from-amber-400 to-rose-400 px-4 py-2.5 text-[14px] font-bold text-stone-900 transition hover:brightness-105"
           >
             {cta}
           </button>
           <button
             type="button"
-            onClick={onDismiss}
+            onClick={handleDismiss}
             className="shrink-0 px-1 text-[13px] text-white/60 underline-offset-4 transition hover:text-white/90"
           >
             {dismiss}

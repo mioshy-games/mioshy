@@ -28,6 +28,7 @@ import {
   markOfferShown,
   shouldSuppress,
   wasOfferShownThisSession,
+  type OfferEligibility,
   type OfferTexts,
 } from "@/lib/marketing/assessment-offer";
 import { RegistrationModal } from "@/components/RegistrationModal";
@@ -109,35 +110,65 @@ export function TruthOrDareClient({
   // over it.
   const gatePendingRef = useRef(false);
 
-  // ── In-game quick-assessment offer (round 6+, Itzik 2026-06-18) ────────────
-  // Targets free / games-only players without journey; suppressed if they
-  // already did the assessment or own journey (checked via the eligibility
-  // API). CRM copy; at most once/session (shared flag with the global offer).
+  // ── Quick-assessment offer: round-6 + exit-intent (Itzik 2026-06-18) ───────
+  // Free / games-only players without journey; suppressed if assessment done or
+  // journey owned. CRM copy; ONE offer per session (shared global ceiling).
+  // Eligibility is fetched once and reused by both triggers.
   const router = useRouter();
   const offerLocale: "he" | "en" = locale === "en" ? "en" : "he";
-  const offerHandledRef = useRef(false);
+  const eligibilityRef = useRef<OfferEligibility | null>(null);
+  const [eligLoaded, setEligLoaded] = useState(false);
+  const spin6HandledRef = useRef(false);
+  const pendingExitRef = useRef<string | null>(null);
+  const [offerTrigger, setOfferTrigger] = useState<"ingame" | "exitintent" | null>(null);
   const [offerTexts, setOfferTexts] = useState<OfferTexts | null>(null);
-  const [offerOpen, setOfferOpen] = useState(false);
 
   useEffect(() => {
-    if (completedSpins < ASSESSMENT_OFFER_MIN_SPINS) return;
-    if (offerHandledRef.current) return;
-    offerHandledRef.current = true; // gate-check runs once per mount
-    if (wasOfferShownThisSession()) return;
     let cancelled = false;
-    void (async () => {
-      const elig = await fetchEligibility();
-      if (cancelled || shouldSuppress(elig)) return;
-      const t = await fetchOfferTexts(offerLocale, "ingame");
+    void fetchEligibility().then((e) => {
       if (cancelled) return;
+      eligibilityRef.current = e;
+      setEligLoaded(true);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  // Claim the global ceiling and show the offer. Returns false if it couldn't
+  // (already shown this session / suppressed / eligibility not loaded yet).
+  const requestOffer = useCallback(
+    async (trigger: "ingame" | "exitintent"): Promise<boolean> => {
+      if (wasOfferShownThisSession()) return false;
+      const elig = eligibilityRef.current;
+      if (!elig || shouldSuppress(elig)) return false;
+      const t = await fetchOfferTexts(offerLocale, trigger);
+      if (wasOfferShownThisSession()) return false;
       markOfferShown();
       setOfferTexts(t);
-      setOfferOpen(true);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [completedSpins, offerLocale]);
+      setOfferTrigger(trigger);
+      return true;
+    },
+    [offerLocale],
+  );
+
+  // Round-6 trigger — runs once eligibility is loaded and the threshold is hit.
+  useEffect(() => {
+    if (completedSpins < ASSESSMENT_OFFER_MIN_SPINS || !eligLoaded) return;
+    if (spin6HandledRef.current) return;
+    spin6HandledRef.current = true;
+    void requestOffer("ingame");
+  }, [completedSpins, eligLoaded, requestOffer]);
+
+  // Exit-intent — intercept the in-game back/exit control. Last chance for a
+  // player who hasn't met any other offer this session. Falls through to a
+  // normal navigation when the offer can't show.
+  const handleExitClick = (e: React.MouseEvent) => {
+    if (wasOfferShownThisSession()) return; // let the link navigate
+    const elig = eligibilityRef.current;
+    if (!elig || shouldSuppress(elig)) return; // navigate normally
+    e.preventDefault();
+    pendingExitRef.current = "/games";
+    void requestOffer("exitintent");
+  };
   /** Local cache of whether the post-signup +3 bonus has been consumed for
    *  this game. When true, the paywall shows at play #{FREE_PLAYS_PER_GAME}+1
    *  (no more bonus); when false we grant the bonus right after signup and
@@ -649,6 +680,7 @@ export function TruthOrDareClient({
     <div className="flex w-full items-center justify-between md:hidden">
       <Link
         href="/games"
+        onClick={handleExitClick}
         className="rounded-full bg-white/15 px-4 py-2 text-sm font-medium text-white backdrop-blur hover:bg-white/25"
       >
         {t("back")}
@@ -953,20 +985,28 @@ export function TruthOrDareClient({
         </div>
       ) : null}
 
-      {/* In-game quick-assessment offer (round 6+). Non-blocking bottom banner;
-          hidden while a question popup is up so it never clashes. */}
-      {offerOpen && offerTexts && !current ? (
+      {/* Quick-assessment offer (round 6 OR exit-intent). Non-blocking bottom
+          banner; hidden while a question popup is up so it never clashes. On
+          exit-intent dismiss we honour the player's original intent (leave). */}
+      {offerTrigger && offerTexts && !current ? (
         <AssessmentOfferCard
+          trigger={offerTrigger}
           title={offerTexts.title}
           body={offerTexts.body}
           cta={offerTexts.cta}
           dismiss={offerTexts.dismiss}
           locale={offerLocale}
           onAccept={() => {
-            setOfferOpen(false);
+            setOfferTrigger(null);
             router.push("/journey/assessment");
           }}
-          onDismiss={() => setOfferOpen(false)}
+          onDismiss={() => {
+            const dest = pendingExitRef.current;
+            const wasExit = offerTrigger === "exitintent";
+            pendingExitRef.current = null;
+            setOfferTrigger(null);
+            if (wasExit && dest) router.push(dest);
+          }}
         />
       ) : null}
 
@@ -994,6 +1034,7 @@ export function TruthOrDareClient({
       {/* ── Desktop corner buttons - fixed position, hidden on mobile ── */}
       <Link
         href="/games"
+        onClick={handleExitClick}
         className="hidden md:flex fixed bottom-5 right-5 z-30 rounded-full bg-white/15 px-4 py-2 text-sm font-medium text-white backdrop-blur hover:bg-white/25"
       >
         {t("back")}

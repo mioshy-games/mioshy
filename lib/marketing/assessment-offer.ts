@@ -7,10 +7,20 @@
  * suppression rules keep the offer from ever spamming.
  */
 
+import posthog from "posthog-js";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { getOrCreateDeviceId } from "@/lib/device-id";
 
-export type OfferTrigger = "ingame" | "login" | "return24h";
+export type OfferTrigger = "ingame" | "login" | "return24h" | "browse2min" | "exitintent";
+
+/** PostHog `trigger` property name per offer trigger (for conversion-per-trigger). */
+export const PH_TRIGGER: Record<OfferTrigger, string> = {
+  ingame: "ingame_spin6",
+  login: "after_login",
+  return24h: "return_24h",
+  browse2min: "browse_2min",
+  exitintent: "exit_intent",
+};
 export type OfferTexts = { title: string; body: string; cta: string; dismiss: string };
 
 /** Seeded in migration 134 too — kept here as the last-resort safety net. */
@@ -34,6 +44,18 @@ const DEFAULTS: Record<"he" | "en", Record<OfferTrigger, OfferTexts>> = {
       cta: "לאבחון",
       dismiss: "לא עכשיו",
     },
+    browse2min: {
+      title: "כבר כמה דקות איתנו 💜",
+      body: "רוצים לדעת איפה הזוגיות שלכם עומדת? 11 שאלות קצרות, ותמונה אישית שלכם.",
+      cta: "קחו את האבחון",
+      dismiss: "אחר כך",
+    },
+    exitintent: {
+      title: "רגע לפני שאתם הולכים",
+      body: "לפני שתצאו — 11 שאלות קצרות שיראו לכם לאן הזוגיות שלכם יכולה להמשיך.",
+      cta: "כן, קחו אותי לאבחון",
+      dismiss: "המשיכו ליציאה",
+    },
   },
   en: {
     ingame: {
@@ -53,6 +75,18 @@ const DEFAULTS: Record<"he" | "en", Record<OfferTrigger, OfferTexts>> = {
       body: "The quick assessment is waiting: 11 questions, and the path to a better relationship opens up.",
       cta: "To the assessment",
       dismiss: "Not now",
+    },
+    browse2min: {
+      title: "A few minutes in 💜",
+      body: "Want to know where your relationship stands? 11 short questions and a personal snapshot.",
+      cta: "Take the assessment",
+      dismiss: "Later",
+    },
+    exitintent: {
+      title: "One moment before you go",
+      body: "Before you leave — 11 short questions to show where your relationship can go next.",
+      cta: "Yes, take me to the assessment",
+      dismiss: "Continue to exit",
     },
   },
 };
@@ -143,5 +177,46 @@ export function touchLastVisit(): void {
     localStorage.setItem(LAST_VISIT_KEY, String(Date.now()));
   } catch {
     /* ignore */
+  }
+}
+
+// ── Context exclusion (central, not scattered) ───────────────────────────────
+// The 2-min-browse trigger must never fire on the adults/sex surfaces.
+export const ADULTS_OFFER_BLOCKED_PATHS = ["/mioshy-sex", "/sex-game"] as const;
+
+export function isAdultsPath(pathname: string): boolean {
+  return ADULTS_OFFER_BLOCKED_PATHS.some((p) => pathname.includes(p));
+}
+
+// ── Priority when more than one trigger is eligible at the same moment ───────
+// (the shared once-per-session flag means first-to-claim wins; this documents +
+// orders the simultaneous case). Highest first.
+export const TRIGGER_PRIORITY: OfferTrigger[] = [
+  "exitintent",
+  "login",
+  "return24h",
+  "ingame",
+  "browse2min",
+];
+
+// ── PostHog measurement (existing EU integration via /ingest; identify=user) ─
+export type OfferEventKind = "shown" | "dismissed" | "clicked";
+
+/** Fire one of the three offer events with { trigger, page, locale }. No-op if
+ *  PostHog isn't initialised (dev / pre-consent) — never throws. */
+export function captureOfferEvent(
+  kind: OfferEventKind,
+  trigger: OfferTrigger,
+  locale: "he" | "en",
+): void {
+  if (typeof window === "undefined") return;
+  try {
+    posthog.capture(`assessment_offer_${kind}`, {
+      trigger: PH_TRIGGER[trigger],
+      page: window.location.pathname,
+      locale,
+    });
+  } catch {
+    /* posthog not initialised → no-op */
   }
 }
