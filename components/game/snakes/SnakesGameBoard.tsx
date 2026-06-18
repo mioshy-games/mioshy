@@ -252,24 +252,6 @@ export function SnakesGameBoard({
   // moving in the background of the popup."
   const [walkDoneForTurn, setWalkDoneForTurn] = useState<number>(-1);
 
-  // Diagnostic - log every change to the modal-open state so the
-  // walk → modal sequence is visible in DevTools console.
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const open =
-      state?.phase === "question" &&
-      !isWalking &&
-      walkDoneForTurn === (state?.turnCount ?? 0);
-    // eslint-disable-next-line no-console
-    console.log("[snk-modal] gate", {
-      open,
-      phase: state?.phase,
-      isWalking,
-      walkDoneForTurn,
-      turnCount: state?.turnCount,
-    });
-  }, [state?.phase, isWalking, walkDoneForTurn, state?.turnCount]);
-
   // Pass-the-phone toast + gentle turn indicator
   useEffect(() => {
     if (!currentPlayer) return;
@@ -325,14 +307,11 @@ export function SnakesGameBoard({
 
   // ── Walk effect: fires once per new dice roll ─────────────────────────────
   useEffect(() => {
-    const t0 = performance.now();
     if (!state || !config) return;
     const turnCount = state.turnCount ?? 0;
 
     // Seed refs on first render without triggering animation
     if (prevTurnCountRef.current === null) {
-      // eslint-disable-next-line no-console
-      console.log("[snk-walk] seed", { turnCount, positions: state.positions });
       prevTurnCountRef.current = turnCount;
       prevPositionsRef.current = { ...state.positions };
       setVisualPositions({ ...state.positions });
@@ -340,18 +319,11 @@ export function SnakesGameBoard({
     }
     // No new turn yet
     if (turnCount <= prevTurnCountRef.current) {
-      // eslint-disable-next-line no-console
-      console.log("[snk-walk] skip (no new turn)", {
-        turnCount,
-        prevTurnCount: prevTurnCountRef.current,
-      });
       return;
     }
 
     const diceResult = state.lastDiceResult;
     if (!diceResult) {
-      // eslint-disable-next-line no-console
-      console.log("[snk-walk] skip (no dice)", { turnCount });
       prevTurnCountRef.current = turnCount;
       return;
     }
@@ -359,8 +331,6 @@ export function SnakesGameBoard({
     // currentPlayer is still the roller (currentPlayerIndex changes only after answer())
     const playerId = currentPlayer?.id;
     if (!playerId) {
-      // eslint-disable-next-line no-console
-      console.log("[snk-walk] skip (no playerId)", { turnCount });
       prevTurnCountRef.current = turnCount;
       return;
     }
@@ -368,18 +338,6 @@ export function SnakesGameBoard({
     const prevPos = prevPositionsRef.current?.[playerId] ?? 1;
     const finalPos = state.positions[playerId] ?? 1;
     const boardSize = config.boardSize || 100;
-    // eslint-disable-next-line no-console
-    console.log("[snk-walk] START", {
-      turnCount,
-      playerId,
-      playerName: currentPlayer?.user_name,
-      diceResult,
-      prevPos,
-      finalPos,
-      phase: state.phase,
-      walkDoneForTurn,
-      effectStartTimestamp: Math.round(t0),
-    });
 
     // Build the naive walk path (no snake/ladder resolution).
     // The visual token hops from prevPos+1 … min(prevPos+dice, boardSize).
@@ -393,15 +351,11 @@ export function SnakesGameBoard({
     prevTurnCountRef.current = turnCount;
 
     if (steps.length === 0) {
-      // eslint-disable-next-line no-console
-      console.log("[snk-walk] zero-step (already at finalPos)", { turnCount, finalPos });
       setVisualPositions((prev) => ({ ...prev, [playerId]: finalPos }));
       prevPositionsRef.current = { ...(prevPositionsRef.current ?? {}), [playerId]: finalPos };
       setWalkDoneForTurn(turnCount);
       return;
     }
-    // eslint-disable-next-line no-console
-    console.log("[snk-walk] steps planned", { turnCount, steps, naiveEnd, finalPos, willTeleport: finalPos !== naiveEnd });
 
     // ms per tile hop. Round 6 (2026-05-05): tightened 370 → 200 so
     // the walk feels snappy - the previous pacing made the token
@@ -424,11 +378,6 @@ export function SnakesGameBoard({
     const DICE_REVEAL_DELAY_MS = 2700;
 
     const safetyTimer = setTimeout(() => {
-      // eslint-disable-next-line no-console
-      console.warn("[snk-walk] SAFETY TIMER fired (walk took too long)", {
-        turnCount,
-        elapsed: Math.round(performance.now() - t0),
-      });
       isWalkingRef.current = false;
       setIsWalking(false);
       setArrivingPlayerId(null);
@@ -445,31 +394,13 @@ export function SnakesGameBoard({
     let interval: ReturnType<typeof setInterval> | undefined;
     let stepIdx = 0;
     const startWalk = () => {
-      // eslint-disable-next-line no-console
-      console.log("[snk-walk] startWalk fired", {
-        turnCount,
-        elapsedSinceEffect: Math.round(performance.now() - t0),
-      });
       interval = setInterval(() => {
       if (stepIdx < steps.length) {
         const cell = steps[stepIdx];
-        // eslint-disable-next-line no-console
-        console.log("[snk-walk] step", {
-          turnCount,
-          stepIdx,
-          cell,
-          totalSteps: steps.length,
-          elapsedSinceEffect: Math.round(performance.now() - t0),
-        });
         setVisualPositions((prev) => ({ ...prev, [playerId]: cell }));
         playSound("move");
         stepIdx++;
       } else {
-        // eslint-disable-next-line no-console
-        console.log("[snk-walk] all steps done - preparing bounce", {
-          turnCount,
-          elapsedSinceEffect: Math.round(performance.now() - t0),
-        });
         clearInterval(interval);
         clearTimeout(safetyTimer); // walk completed normally - disarm the watchdog
 
@@ -489,11 +420,6 @@ export function SnakesGameBoard({
           setArrivingPlayerId(playerId);
 
           setTimeout(() => {
-            // eslint-disable-next-line no-console
-            console.log("[snk-walk] DONE → modal will open", {
-              turnCount,
-              totalElapsed: Math.round(performance.now() - t0),
-            });
             setArrivingPlayerId(null);
             isWalkingRef.current = false;
             setIsWalking(false);
