@@ -18,7 +18,10 @@
 --   activity_level                          — v_user_activity_level (active/cooling/churned)
 --   completed_chapters                      — count from journey_item_completions
 --   games_played                            — distinct games from user_game_plays
---   subscription_status, subscription_product, plan — latest active subscription
+--   subscription_status, subscription_product, plan — latest active subscription (display)
+--   owns_journey / owns_games / owns_adults — bool_or over ALL active
+--     subscriptions, so a user who owns two pillars matches the filter on both
+--     (the latest-sub LATICE above is display-only, not the entitlement filter)
 --
 -- Performance: regular view (not materialized). Per §10.2, revisit as a
 -- materialized view / table only if real volume forces it.
@@ -36,7 +39,10 @@ SELECT
   coalesce(gp.games_played, 0)                  AS games_played,
   sub.status                                    AS subscription_status,
   sub.product                                   AS subscription_product,
-  sub.plan                                      AS plan
+  sub.plan                                      AS plan,
+  coalesce(ent.owns_journey, false)             AS owns_journey,
+  coalesce(ent.owns_games,   false)             AS owns_games,
+  coalesce(ent.owns_adults,  false)             AS owns_adults
 FROM auth.users u
 LEFT JOIN public.profiles pr               ON pr.id = u.id
 LEFT JOIN public.v_user_last_login ll      ON ll.user_id = u.id
@@ -58,7 +64,16 @@ LEFT JOIN LATERAL (
   WHERE user_id = u.id AND status = 'active'
   ORDER BY created_at DESC
   LIMIT 1
-) sub ON true;
+) sub ON true
+LEFT JOIN (
+  SELECT user_id,
+         bool_or(product = 'journey') AS owns_journey,
+         bool_or(product = 'games')   AS owns_games,
+         bool_or(product = 'adults')  AS owns_adults
+  FROM public.subscriptions
+  WHERE status = 'active'
+  GROUP BY user_id
+) ent ON ent.user_id = u.id;
 
 -- Admin-only access (mirrors the Phase-2 views + analytics_events pattern).
 REVOKE ALL ON public.v_user_directory FROM anon, authenticated;

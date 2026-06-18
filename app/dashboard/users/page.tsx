@@ -93,7 +93,10 @@ export default async function AdminUsersPage({
       );
     }
     if (from) query = query.gte("last_login_at", from);
-    if (pillar) query = query.eq("subscription_product", pillar);
+    // Entitlement filter uses the bool_or flags (a user can own >1 pillar).
+    if (pillar === "journey") query = query.eq("owns_journey", true);
+    else if (pillar === "games") query = query.eq("owns_games", true);
+    else if (pillar === "adults") query = query.eq("owns_adults", true);
     if (level) query = query.eq("activity_level", level);
     query = query
       .order(sort, { ascending, nullsFirst: false })
