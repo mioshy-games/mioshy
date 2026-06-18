@@ -1242,6 +1242,7 @@ export default async function GamesHubPage({
           <div className="home-v2">
             <FAQ
               cmsKeyPrefix="gamesHub.faq"
+              cmsPage="games"
               numbers={[1, 2, 3, 4, 5, 6, 7, 8]}
               anchorId="faq-games"
             />

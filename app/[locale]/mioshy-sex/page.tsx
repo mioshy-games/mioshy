@@ -972,6 +972,7 @@ export default async function MioshySexLandingPage({
         <div className="home-v2">
           <FAQ
             cmsKeyPrefix="mioshySexPage.faq"
+            cmsPage="mioshy-sex"
             numbers={[1, 2, 3, 4, 5, 6, 7, 8]}
             anchorId="faq-sex"
           />

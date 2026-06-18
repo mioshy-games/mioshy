@@ -76,3 +76,32 @@ export function webSiteJsonLd(locale: "he" | "en"): WebSiteJsonLd {
     },
   };
 }
+
+// ── FAQPage (AI-readiness P0) ────────────────────────────────────────────────
+// Makes the native <details> Q&A machine-readable for AI engines + Google rich
+// results. Built from the same CMS keys the FAQ section renders; the caller
+// resolves + cleans the strings (plain text, no markup) before passing them.
+
+export type FaqJsonLdItem = { question: string; answer: string };
+
+type FaqPageJsonLd = {
+  "@context": "https://schema.org";
+  "@type": "FAQPage";
+  mainEntity: {
+    "@type": "Question";
+    name: string;
+    acceptedAnswer: { "@type": "Answer"; text: string };
+  }[];
+};
+
+export function faqPageJsonLd(items: FaqJsonLdItem[]): FaqPageJsonLd {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: items.map((it) => ({
+      "@type": "Question",
+      name: it.question,
+      acceptedAnswer: { "@type": "Answer", text: it.answer },
+    })),
+  };
+}
