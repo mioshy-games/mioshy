@@ -85,6 +85,19 @@ export function TruthOrDareClient({
   const [regOpen, setRegOpen] = useState(false);
   const [subOpen, setSubOpen] = useState(false);
   const [subLocked, setSubLocked] = useState(false);
+  // ── End-of-round-3 CTA (funnel capture, Itzik 2026-06-18) ──────────────────
+  // Instead of auto-popping the capture modal the moment the free-play budget
+  // (FREE_PLAYS_PER_GAME) is spent, we show a user-initiated "continue" CTA at
+  // the emotional peak. Its button opens the SAME capture (SubscriptionModal,
+  // mode=lead). `roundGateLocked` mirrors the lock the original gate path
+  // intended (free game → false; non-free hard paywall → true). Shared on
+  // desktop + mobile; UI is mobile-first. The spin-gating itself is unchanged.
+  const [roundGateOpen, setRoundGateOpen] = useState(false);
+  const [roundGateLocked, setRoundGateLocked] = useState(false);
+  // Set when the budget is spent ON the settling spin, so the CTA appears only
+  // AFTER the player closes that round's question (handleNext) — never flashes
+  // over it.
+  const gatePendingRef = useRef(false);
   /** Local cache of whether the post-signup +3 bonus has been consumed for
    *  this game. When true, the paywall shows at play #{FREE_PLAYS_PER_GAME}+1
    *  (no more bonus); when false we grant the bonus right after signup and
@@ -299,33 +312,37 @@ export function TruthOrDareClient({
       // A guest out of free spins is always prompted to register (dismissible),
       // and is NEVER escalated to the paywall — even if they already left a lead.
       if (game.is_free) {
-        setSubLocked(false);
-        setSubOpen(true);
+        openRoundGate(false);
         return;
       }
 
       // Free budget spent - ask for the lead (signup) first.
       if (!hasGuestLeadCaptured() && !leadCaptured) {
-        setSubLocked(false);
-        setSubOpen(true);
+        openRoundGate(false);
         return;
       }
 
       // Lead captured but the user never completed account creation. Hard
       // paywall - they must subscribe (or sign in elsewhere) to continue.
-      setSubLocked(true);
-      setSubOpen(true);
+      openRoundGate(true);
       return;
     }
 
     // ── Logged-in non-subscriber ─────────────────────────────────────────────
     if (completedSpins >= FREE_PLAYS_PER_GAME) {
-      setSubLocked(true);
-      setSubOpen(true);
+      openRoundGate(true);
       return;
     }
 
     triggerSpin();
+  };
+
+  // Show the end-of-round CTA (replaces the old auto-pop of SubscriptionModal).
+  // `locked` mirrors the lock the gate path intended, carried to the modal when
+  // the player taps the CTA button.
+  const openRoundGate = (locked: boolean) => {
+    setRoundGateLocked(locked);
+    setRoundGateOpen(true);
   };
 
   const lastTwoTypesRef = useRef<string[]>([]);
@@ -479,27 +496,37 @@ export function TruthOrDareClient({
       // Persist per-game play counter.
       if (!userId) {
         const next = incrementGuestGamePlays(slug);
-        // Guest just hit the budget → pop the lead signup modal when they
-        // try to spin again. We don't interrupt the current round.
+        // Guest just spent the free budget on THIS spin. Don't interrupt the
+        // round — mark the gate pending so the CTA appears right after the
+        // player closes this question (handleNext). Lock=false (free game →
+        // registration is dismissible).
         if (next >= FREE_PLAYS_PER_GAME && !hasGuestLeadCaptured() && !leadCaptured) {
-          setSubLocked(false);
-          setSubOpen(true);
+          gatePendingRef.current = true;
+          setRoundGateLocked(false);
         }
       } else {
         void incrementUserGamePlays(createBrowserSupabaseClient(), slug);
         const nextSpins = completedSpins + 1;
         if (nextSpins >= FREE_PLAYS_PER_GAME) {
-          // Logged-in non-subscriber hit their per-game budget → hard paywall
-          // on the next click.
-          setSubLocked(true);
-          setSubOpen(true);
+          // Logged-in non-subscriber spent their per-game budget. Same deferred
+          // CTA; lock=true (non-free hard paywall path).
+          gatePendingRef.current = true;
+          setRoundGateLocked(true);
         }
       }
     },
     [completedSpins, game.player_mode, game.slug, game.is_free, pickNextQuestion, subscribed, userId, leadCaptured, setIsSpinning],
   );
 
-  const handleNext = () => setCurrent(null);
+  // Closing a question. If the budget was spent on the round just closed, raise
+  // the end-of-round CTA now (so it never flashes over the question).
+  const handleNext = () => {
+    setCurrent(null);
+    if (gatePendingRef.current) {
+      gatePendingRef.current = false;
+      setRoundGateOpen(true);
+    }
+  };
 
   // A.6 — clear the pending result-popup timer on unmount so it never fires
   // setState on an unmounted component.
@@ -822,6 +849,69 @@ export function TruthOrDareClient({
           />
         );
       })()}
+
+      {/* ── End-of-round-3 CTA (funnel capture, Itzik 2026-06-18) ──────────────
+          Appears after the player closes the round that spent the free budget
+          (or when they tap spin while gated). Experience-led; the button opens
+          the existing capture (SubscriptionModal mode=lead). Mobile-first:
+          bottom sheet on phones, centered card on desktop. Same logic both. */}
+      {roundGateOpen && !current ? (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="round-gate-title"
+          dir={locale === "he" ? "rtl" : "ltr"}
+          className="fixed inset-0 z-[60] flex items-end justify-center p-4 sm:items-center"
+        >
+          <div
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            onClick={() => setRoundGateOpen(false)}
+            aria-hidden
+          />
+          <div className="relative w-full max-w-md rounded-3xl border border-white/15 bg-gradient-to-br from-[#2a0a3e] to-[#140225] p-6 pt-7 text-center text-white shadow-2xl">
+            <button
+              type="button"
+              onClick={() => setRoundGateOpen(false)}
+              aria-label={locale === "he" ? "סגירה" : "Close"}
+              className="absolute end-3 top-3 grid h-8 w-8 place-items-center rounded-full text-white/55 transition hover:bg-white/10 hover:text-white"
+            >
+              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
+                <path strokeLinecap="round" d="M6 6l12 12M18 6L6 18" />
+              </svg>
+            </button>
+
+            <h2 id="round-gate-title" className="text-2xl font-extrabold leading-tight sm:text-[28px]">
+              {locale === "he" ? "הגעתם לרגע הכי טוב" : "You're at the best part"}
+            </h2>
+            <p className="mt-2 text-[17px] leading-snug text-white/85">
+              {locale === "he"
+                ? "שלושה סיבובים מאחוריכם, והאווירה כבר בוערת. רוצים לרדת לעומק?"
+                : "Three rounds in and the air is already on fire. Want to go deeper?"}
+            </p>
+
+            <button
+              type="button"
+              onClick={() => {
+                setRoundGateOpen(false);
+                setSubLocked(roundGateLocked);
+                setSubOpen(true);
+              }}
+              className="mt-5 w-full rounded-full bg-gradient-to-r from-amber-400 to-rose-400 px-5 py-3.5 text-base font-bold text-stone-900 shadow-lg transition hover:brightness-105"
+            >
+              {locale === "he" ? "כן, בואו נמשיך" : "Yes, let's continue"}
+            </button>
+
+            <Link
+              href="/journey"
+              className="mt-4 inline-block text-sm leading-snug text-white/70 underline underline-offset-4 transition hover:text-white"
+            >
+              {locale === "he"
+                ? "החוויה המלאה מחכה לכם — המסע הזוגי של מיאושי, מ-9 ₪ לשבוע"
+                : "The full experience awaits — Mioshy's couples journey, from ₪9/week"}
+            </Link>
+          </div>
+        </div>
+      ) : null}
 
       <RegistrationModal
         open={regOpen}
