@@ -16,7 +16,11 @@
  */
 
 import { useEffect, useState } from "react";
-import { useRouter } from "@/navigation";
+// next/navigation (NOT @/navigation): this component is mounted in the ROOT
+// layout, OUTSIDE NextIntlClientProvider, so next-intl's locale-aware useRouter
+// (which calls useLocale) would throw "No intl context" and crash every page.
+// We have `locale` as a prop, so we prefix the path manually instead.
+import { useRouter } from "next/navigation";
 import { AssessmentOfferCard } from "@/components/marketing/AssessmentOfferCard";
 import {
   fetchEligibility,
@@ -100,7 +104,7 @@ export function GlobalAssessmentOffer({ locale }: { locale: "he" | "en" }) {
       locale={locale}
       onAccept={() => {
         setTrigger(null);
-        router.push("/journey/assessment");
+        router.push(`/${locale}/journey/assessment`);
       }}
       onDismiss={() => setTrigger(null)}
     />
