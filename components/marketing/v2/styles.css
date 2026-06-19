@@ -1892,6 +1892,26 @@
     .cg-card-2{right:120px;top:30px}
     .cg-card-3{right:210px;top:60px}
   }
+  /* ── Hero image position — MOBILE ONLY (≤768px) ──────────────────────────
+     Move the EXISTING hero image so it sits directly under the H1 and above the
+     lead ("בואו נודה באמת"); every other hero element stays put. Desktop/tablet
+     (>768px) are completely untouched. Technique: .hero-text carries no box
+     styling of its own, so flattening it with display:contents promotes its
+     children to grid items of .hero-grid alongside .hero-visual — then `order`
+     interleaves the image between the H1 and the lead. row-gap is zeroed so the
+     promoted items keep their own existing margins (spacing unchanged); only the
+     image's position moves. Same image, same size, same aspect ratio. */
+  @media (max-width:768px){
+    .hero .hero-grid > .hero-text{display:contents}
+    .hero .hero-grid{row-gap:0}
+    .hero .hero-grid > .hero-text > :nth-child(1){order:1} /* tag        */
+    .hero .hero-grid > .hero-text > :nth-child(2){order:2} /* H1         */
+    .hero .hero-grid > .hero-visual{order:3}               /* hero image */
+    .hero .hero-grid > .hero-text > :nth-child(3){order:4} /* lead       */
+    .hero .hero-grid > .hero-text > :nth-child(4){order:5} /* CTA        */
+    .hero .hero-grid > .hero-text > :nth-child(5){order:6} /* price      */
+    .hero .hero-grid > .hero-text > :nth-child(6){order:7} /* meta       */
+  }
   @media (max-width:640px){
     .container,.media-wrap,.media-press-wrap{padding:0 20px}
     .hero-meta{gap:24px;flex-wrap:wrap}
