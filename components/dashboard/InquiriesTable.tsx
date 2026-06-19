@@ -18,6 +18,8 @@ export interface InquiryTableRow {
   userId: string;
   coupleId: string | null;
   displayName: string;
+  phone: string | null;
+  email: string | null;
   inquiryAt: string; // ISO
   assessmentDone: boolean;
   replyPending: boolean;
@@ -83,7 +85,14 @@ export function InquiriesTable({
             {visible.length ? (
               visible.map((r) => (
                 <tr key={r.userId} className="border-b last:border-0">
-                  <td className="px-3 py-2 font-medium">{r.displayName}</td>
+                  <td className="px-3 py-2">
+                    <div className="font-medium">{r.displayName}</div>
+                    {r.phone || r.email ? (
+                      <div className="text-muted-foreground text-xs" dir="ltr">
+                        {r.phone ?? r.email}
+                      </div>
+                    ) : null}
+                  </td>
                   <td className="text-muted-foreground px-3 py-2 tabular-nums">{fmt(r.inquiryAt)}</td>
                   <td className="px-3 py-2">
                     <span

@@ -89,6 +89,8 @@ export async function AdminOverview({
     userId: r.userId,
     coupleId: r.coupleId,
     displayName: r.displayName,
+    phone: r.phone,
+    email: r.email,
     inquiryAt: r.lastUserMessageAt,
     assessmentDone: r.assessmentDone,
     replyPending: true,

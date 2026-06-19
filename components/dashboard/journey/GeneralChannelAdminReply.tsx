@@ -124,6 +124,16 @@ function ChannelPanel({ partner }: { partner: PartnerChannel }) {
   const [pending, setPending] = React.useState(false);
   const [feedback, setFeedback] = React.useState<string | null>(null);
 
+  // Messages are sorted oldest→newest, so the latest sit at the bottom of the
+  // scroller. Jump to the bottom on open (and when new messages arrive) so the
+  // expert lands on the most recent exchange — at least the last few replies
+  // are visible without having to scroll.
+  const listRef = React.useRef<HTMLUListElement>(null);
+  React.useEffect(() => {
+    const el = listRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [partner.userId, partner.messages.length]);
+
   const trimmed = body.trim();
   const tooLong = body.length > MAX_LEN;
   const disabled = pending || trimmed.length === 0 || tooLong;
@@ -157,7 +167,7 @@ function ChannelPanel({ partner }: { partner: PartnerChannel }) {
           their channel.
         </div>
       ) : (
-        <ul className="max-h-[320px] space-y-2 overflow-y-auto pr-1">
+        <ul ref={listRef} className="max-h-[320px] space-y-2 overflow-y-auto pr-1">
           {partner.messages.map((m) => (
             <ChannelMessageRow key={m.id} message={m} />
           ))}

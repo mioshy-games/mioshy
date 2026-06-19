@@ -41,8 +41,13 @@ export interface PendingMessageRow {
    *  a short uid suffix. Never null — so the row always has SOMETHING
    *  to render. */
   displayName: string;
-  /** Email — for the secondary line under the name. May be null. */
+  /** Email — for the secondary line under the name. Sourced from auth.users
+   *  (via v_user_directory) so it's present even when the profiles row is bare.
+   *  May be null only for the rare account with no email at all. */
   email: string | null;
+  /** Mobile/phone when available (profiles.phone ?? profiles.mobile, via
+   *  v_user_directory). Shown as a sub-line. Null when not on file. */
+  phone: string | null;
   /** Couple membership when present — drives the deep-link target.
    *  Solo users link to /dashboard/my-clients/[userId] (TBD route) for
    *  now we just link to the journey-expert-messages page filtered. */
@@ -215,24 +220,35 @@ export async function getPendingExpertMessages(opts: {
       return { rows: [], count: 0, ok: true };
     }
 
-    // 4. Hydrate profiles + couple membership in parallel. One round-trip
-    //    each — both queries are bounded by the small `pendingUserIds`
-    //    set, so payload stays tiny even with hundreds of pending rows.
-    const [profileRes, memberRes] = await Promise.all([
+    // 4. Hydrate identity (v_user_directory) + couple membership in parallel.
+    //    One round-trip each, bounded by the small `pendingUserIds` set.
+    //    v_user_directory is admin-only and built FROM auth.users LEFT JOIN
+    //    profiles, so it carries the auth-backed email (always present) +
+    //    phone (profiles.phone ?? mobile) + the signup-metadata name. That's
+    //    why names no longer collapse to "user <id>" when profiles.full_name
+    //    is blank. `select("*")` keeps this resilient to migration 137 (which
+    //    adds `meta_name`): the field is simply undefined until that runs.
+    const [dirRes, memberRes] = await Promise.all([
       admin
-        .from("profiles")
-        .select("id, full_name, email")
-        .in("id", pendingUserIds),
+        .from("v_user_directory")
+        .select("*")
+        .in("user_id", pendingUserIds),
       admin
         .from("couple_members")
         .select("user_id, couple_id")
         .in("user_id", pendingUserIds),
     ]);
 
-    type ProfileRow = { id: string; full_name: string | null; email: string | null };
+    type DirRow = {
+      user_id: string;
+      email: string | null;
+      full_name: string | null;
+      phone: string | null;
+      meta_name?: string | null;
+    };
     type MemberRow = { user_id: string; couple_id: string };
-    const profileById = new Map<string, ProfileRow>(
-      ((profileRes.data ?? []) as ProfileRow[]).map((p) => [p.id, p]),
+    const dirByUser = new Map<string, DirRow>(
+      ((dirRes.data ?? []) as DirRow[]).map((d) => [d.user_id, d]),
     );
     const coupleByUser = new Map<string, string>(
       ((memberRes.data ?? []) as MemberRow[]).map((m) => [m.user_id, m.couple_id]),
@@ -240,10 +256,14 @@ export async function getPendingExpertMessages(opts: {
 
     const enriched: PendingMessageRow[] = pendingUserIds.map((userId) => {
       const acc = byUser.get(userId)!;
-      const profile = profileById.get(userId) ?? null;
+      const dir = dirByUser.get(userId) ?? null;
+      const email = dir?.email ?? null;
+      // Name fallback chain: profiles.full_name → auth signup-metadata name →
+      // email local-part → "user <id>" (true last resort).
       const displayName =
-        (profile?.full_name?.trim() ?? "") ||
-        (profile?.email ? profile.email.split("@")[0] : "") ||
+        (dir?.full_name?.trim() || "") ||
+        (dir?.meta_name?.trim() || "") ||
+        (email ? email.split("@")[0] : "") ||
         `user ${userId.slice(0, 8)}`;
       return {
         userId,
@@ -252,7 +272,8 @@ export async function getPendingExpertMessages(opts: {
         lastContext: acc.lastContext,
         lastScheduledItemId: acc.lastScheduledItemId,
         displayName,
-        email: profile?.email ?? null,
+        email,
+        phone: dir?.phone ?? null,
         coupleId: coupleByUser.get(userId) ?? null,
         totalUserMessages: acc.totalUserMessages,
         pendingPerItemThreads: acc.pendingPerItemThreads,
