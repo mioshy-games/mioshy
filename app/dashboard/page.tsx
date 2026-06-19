@@ -16,6 +16,7 @@ import { createServiceRoleClient } from "@/lib/supabase-admin";
 import { CoachOverviewPanel } from "@/components/dashboard/coach/CoachOverviewPanel";
 import { PendingMessagesCard } from "@/components/dashboard/PendingMessagesCard";
 import { getPendingExpertMessages } from "@/lib/journey/pending-messages";
+import { AdminOverview } from "@/components/dashboard/AdminOverview";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getAdminLocale } from "@/lib/admin/locale";
@@ -40,7 +41,11 @@ import { GameActions } from "@/components/dashboard/GameActions";
 
 export const dynamic = "force-dynamic";
 
-export default async function DashboardHomePage() {
+export default async function DashboardHomePage({
+  searchParams,
+}: {
+  searchParams?: { range?: string; from?: string; to?: string };
+}) {
   const session = await requireExpert();
   const locale = getAdminLocale();
 
@@ -80,7 +85,6 @@ export default async function DashboardHomePage() {
     { count: totalGames },
     { count: totalQuestions },
     { count: activeGames },
-    pending,
   ] = await Promise.all([
     admin.from("games").select("*", { count: "exact", head: true }),
     admin.from("questions").select("*", { count: "exact", head: true }),
@@ -88,9 +92,6 @@ export default async function DashboardHomePage() {
       .from("games")
       .select("*", { count: "exact", head: true })
       .eq("is_active", true),
-    // 2026-06-01 — same pending-messages list the coaches see; admin
-    // sees it too so escalations don't slip past during off-hours.
-    getPendingExpertMessages({ limit: 8 }),
   ]);
 
   const { data: games } = await admin
@@ -110,13 +111,11 @@ export default async function DashboardHomePage() {
         </p>
       </div>
 
-      {/* Pending user messages — first widget on the page so escalations
-          are visible to admins the moment they walk in. */}
-      <PendingMessagesCard
-        rows={pending.rows}
-        totalCount={pending.count}
-        degraded={!pending.ok}
-      />
+      {/* Admin overview — range metrics + inquiries list (admin-only). The
+          inquiries list reuses the same pending-replies source the coaches'
+          PendingMessagesCard uses, so it replaces that card here (no duplicate
+          source / no duplicate widget). Coaches keep their card untouched. */}
+      <AdminOverview searchParams={searchParams} locale={locale} />
 
       <div className="grid gap-4 sm:grid-cols-3">
         <Card>
