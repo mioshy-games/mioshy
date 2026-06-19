@@ -73,7 +73,13 @@ function applyGrantedConsent(): void {
   }
 }
 
-export function CookieConsentBar({ locale = "he" }: { locale?: "he" | "en" }) {
+export function CookieConsentBar({
+  locale = "he",
+  isAuthed = false,
+}: {
+  locale?: "he" | "en";
+  isAuthed?: boolean;
+}) {
   const isHe = locale !== "en";
   const [visible, setVisible] = useState(false);
   const barRef = useRef<HTMLDivElement>(null);
@@ -83,12 +89,17 @@ export function CookieConsentBar({ locale = "he" }: { locale?: "he" | "en" }) {
     const existing = readConsentCookie();
     if (existing === "granted") {
       // Returning consenter — re-apply so analytics works this session too.
+      // (Still runs for authed users: it's invisible consent plumbing, not the
+      // banner.)
       applyGrantedConsent();
       return;
     }
     if (existing === "dismissed") return; // chose not to consent — respect it
-    setVisible(true); // first visit, no decision yet
-  }, []);
+    // Signed-in users never see the banner — they've already onboarded, so we
+    // don't interrupt them with the consent prompt.
+    if (isAuthed) return;
+    setVisible(true); // anonymous first visit, no decision yet
+  }, [isAuthed]);
 
   // While the strip is shown, publish its measured height (so the spacer and
   // the mobile WhatsApp lift match it exactly) and flag the document. The
@@ -166,7 +177,11 @@ export function CookieConsentBar({ locale = "he" }: { locale?: "he" | "en" }) {
           type="button"
           onClick={onDismiss}
           aria-label={t.close}
-          className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-white/60 transition hover:bg-white/10 hover:text-white"
+          // Visual size stays 28px (h-7 w-7) so the design is unchanged, but on
+          // mobile a transparent ::before extends the *touch* target to 44×44px
+          // (WCAG 2.5.5) without affecting layout — clicks on that area still
+          // hit the button. Disabled on desktop (lg) where the mouse is precise.
+          className="relative grid h-7 w-7 shrink-0 place-items-center rounded-full text-white/60 transition before:absolute before:left-1/2 before:top-1/2 before:h-11 before:w-11 before:-translate-x-1/2 before:-translate-y-1/2 before:content-[''] hover:bg-white/10 hover:text-white lg:before:hidden"
         >
           <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
             <path strokeLinecap="round" d="M6 6l12 12M18 6L6 18" />

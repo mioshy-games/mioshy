@@ -12,6 +12,7 @@ import {
 } from "@/components/analytics/GoogleTagManager";
 import { PostHogProvider } from "@/components/analytics/PostHogProvider";
 import { CookieConsentBar } from "@/components/analytics/CookieConsentBar";
+import { getRequestUser } from "@/lib/auth/getRequestUser";
 import { GlobalAssessmentOffer } from "@/components/marketing/GlobalAssessmentOffer";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -167,7 +168,7 @@ const SUPABASE_ORIGIN = (() => {
   }
 })();
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
   // Locale is stamped on the request by `middleware.ts` (header
   // `x-mioshy-locale`). Reading it here lets us render `<html lang dir>` on
   // the server — without this, the initial HTML had no `lang` attribute and
@@ -175,6 +176,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   // / Google flag as a SEO + a11y failure (`tech.html_lang_present`).
   const locale = headers().get("x-mioshy-locale") === "en" ? "en" : "he";
   const dir = locale === "he" ? "rtl" : "ltr";
+
+  // Signed-in users never get the cookie banner (see CookieConsentBar).
+  // getRequestUser is React-cached and shared with the [locale] layout, so this
+  // adds no extra auth round-trip; it never throws (returns { user: null }).
+  const isAuthed = await getRequestUser()
+    .then(({ user }) => !!user)
+    .catch(() => false);
 
   return (
     <html
@@ -234,7 +242,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <PostHogProvider>{children}</PostHogProvider>
         {/* Google Consent Mode v2 grantor — the one-time bottom bar that flips
             ad/analytics consent from the denied default. Global overlay. */}
-        <CookieConsentBar locale={locale} />
+        <CookieConsentBar locale={locale} isAuthed={isAuthed} />
         {/* Quick-assessment offer — "after login" + "return after 24h" touch
             points (the in-game touch point lives in TruthOrDareClient). CRM
             copy, suppressed for assessment-done / journey-owners, once/session. */}
