@@ -1917,6 +1917,10 @@
       width:90%;
       max-width:504px;     /* 10% under the 560px cap used in the 641–768 range */
       margin-inline:auto;  /* re-centre the slightly narrower image */
+      /* Clean air below the image: the bottom floating badge ("הלילה /
+         אינטימיות וחיבור זוגי") pokes ~47px under the image box and was
+         overlapping the lead ("בואו נודה באמת"). Push the lead clear of it. */
+      margin-bottom:64px;
     }
     .hero .hero-grid > .hero-text > :nth-child(3){order:4} /* lead       */
     .hero .hero-grid > .hero-text > :nth-child(4){order:5} /* CTA        */
