@@ -1906,7 +1906,18 @@
     .hero .hero-grid{row-gap:0}
     .hero .hero-grid > .hero-text > :nth-child(1){order:1} /* tag        */
     .hero .hero-grid > .hero-text > :nth-child(2){order:2} /* H1         */
-    .hero .hero-grid > .hero-visual{order:3}               /* hero image */
+    .hero .hero-grid > .hero-visual{
+      order:3;              /* hero image — placed between the H1 and the lead */
+      /* Clean air below the H1: push the image AND its floating top badge clear
+         of the heading (the badge was rising ~38px into the H1). */
+      margin-top:52px;
+      /* Shrink the image container ~10% — aspect-ratio is left untouched so the
+         height drops proportionally with the width; the image is never
+         stretched or distorted. */
+      width:90%;
+      max-width:504px;     /* 10% under the 560px cap used in the 641–768 range */
+      margin-inline:auto;  /* re-centre the slightly narrower image */
+    }
     .hero .hero-grid > .hero-text > :nth-child(3){order:4} /* lead       */
     .hero .hero-grid > .hero-text > :nth-child(4){order:5} /* CTA        */
     .hero .hero-grid > .hero-text > :nth-child(5){order:6} /* price      */
