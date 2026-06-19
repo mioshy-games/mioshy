@@ -713,6 +713,15 @@ small, .text-small {
   :root {
     --whatsapp-bottom-offset: 92px;
   }
+
+  /* While the cookie-consent strip is pinned at the bottom (mobile only), lift
+     the WhatsApp button by the strip's measured height so it sits clearly above
+     it. `html.cookie-bar-open` + `--cookie-bar-h` are set by CookieConsentBar
+     while it's shown and removed on dismiss, so the button returns to 92px
+     automatically. Higher specificity than the :root rule above, so it wins. */
+  html.cookie-bar-open {
+    --whatsapp-bottom-offset: calc(92px + var(--cookie-bar-h, 56px));
+  }
 }
 
 /* a11y (M13) — global keyboard focus indicator. `:where()` keeps specificity

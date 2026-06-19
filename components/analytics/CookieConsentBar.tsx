@@ -22,12 +22,18 @@
  * pushing the consent command onto window.dataLayer, which GTM drains on load.
  * In dev (no GTM) these calls are harmless no-ops on a local dataLayer.
  *
- * Global overlay: fixed, does not change layout. z-50 keeps it above the mobile
- * MobileServicesBar (z-40); on mobile it is lifted above that bar so neither
- * covers the other; honours safe-area-inset-bottom.
+ * Global overlay: a fixed full-width strip pinned to the bottom of the screen
+ * (sticky through scroll until the visitor decides). z-50 keeps it above the
+ * mobile MobileServicesBar (z-40); honours safe-area-inset-bottom.
+ *
+ * Mobile coordination while the strip is shown (all reverted on dismiss):
+ *  • lift the floating WhatsApp button above the strip — globals.css reads
+ *    `--cookie-bar-h` under the `html.cookie-bar-open` class (mobile media
+ *    query only), so desktop is untouched.
+ *  • render a same-height spacer so the fixed strip never covers page content.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const COOKIE = "mioshy_cookie_consent";
 const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365; // ~12 months
@@ -70,6 +76,8 @@ function applyGrantedConsent(): void {
 export function CookieConsentBar({ locale = "he" }: { locale?: "he" | "en" }) {
   const isHe = locale !== "en";
   const [visible, setVisible] = useState(false);
+  const barRef = useRef<HTMLDivElement>(null);
+  const [barHeight, setBarHeight] = useState(0);
 
   useEffect(() => {
     const existing = readConsentCookie();
@@ -81,6 +89,27 @@ export function CookieConsentBar({ locale = "he" }: { locale?: "he" | "en" }) {
     if (existing === "dismissed") return; // chose not to consent — respect it
     setVisible(true); // first visit, no decision yet
   }, []);
+
+  // While the strip is shown, publish its measured height (so the spacer and
+  // the mobile WhatsApp lift match it exactly) and flag the document. The
+  // consuming CSS lives in a mobile-only media query, so this is a no-op on
+  // desktop. Everything is reverted the moment the strip is dismissed.
+  useEffect(() => {
+    if (!visible) return;
+    const measure = () => {
+      const h = barRef.current?.offsetHeight ?? 0;
+      setBarHeight(h);
+      document.documentElement.style.setProperty("--cookie-bar-h", `${h}px`);
+    };
+    measure();
+    document.documentElement.classList.add("cookie-bar-open");
+    window.addEventListener("resize", measure);
+    return () => {
+      window.removeEventListener("resize", measure);
+      document.documentElement.classList.remove("cookie-bar-open");
+      document.documentElement.style.removeProperty("--cookie-bar-h");
+    };
+  }, [visible]);
 
   if (!visible) return null;
 
@@ -104,15 +133,19 @@ export function CookieConsentBar({ locale = "he" }: { locale?: "he" | "en" }) {
   };
 
   return (
+    <>
     <div
       role="region"
       aria-label={isHe ? "הודעת עוגיות" : "Cookie notice"}
       dir={isHe ? "rtl" : "ltr"}
-      // Fixed thin bar. z-50 sits above MobileServicesBar (z-40); on mobile we
-      // lift it above that bar so they never cover each other. Safe-area aware.
-      className="fixed inset-x-0 z-50 bottom-[calc(env(safe-area-inset-bottom,0px)+78px)] lg:bottom-[env(safe-area-inset-bottom,0px)]"
+      // Full-width strip flush to the very bottom edge (bottom:0) so its
+      // background fills under the iPhone home-indicator — no transparent gap.
+      // The safe-area inset is applied as inner padding-bottom below instead, so
+      // the buttons stay above the indicator while the background reaches the
+      // edge. Sticky through scroll. z-50 sits above MobileServicesBar (z-40).
+      className="fixed inset-x-0 bottom-0 z-50"
     >
-      <div className="mx-auto flex max-w-5xl items-center gap-3 border-t border-white/10 bg-[#1a0a2e]/95 px-4 py-2.5 text-white shadow-[0_-8px_24px_-12px_rgba(0,0,0,0.6)] backdrop-blur-md sm:gap-4">
+      <div ref={barRef} className="mx-auto flex max-w-5xl items-center gap-3 border-t border-white/10 bg-[#1a0a2e]/95 px-4 pt-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom,0px))] text-white shadow-[0_-8px_24px_-12px_rgba(0,0,0,0.6)] backdrop-blur-md sm:gap-4">
         <p className="min-w-0 flex-1 text-[13px] leading-snug text-white/85">
           {t.msg}{" "}
           <a
@@ -141,5 +174,10 @@ export function CookieConsentBar({ locale = "he" }: { locale?: "he" | "en" }) {
         </button>
       </div>
     </div>
+    {/* Mobile-only spacer the same height as the strip, so the fixed strip
+        never covers the bottom of the page content. Hidden on desktop (lg+),
+        where the layout already accounts for the bottom strip. */}
+    <div aria-hidden className="lg:hidden" style={{ height: barHeight }} />
+    </>
   );
 }
