@@ -2,6 +2,7 @@ import { getTranslations } from "next-intl/server";
 import { Link } from "@/navigation";
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getRequestUser } from "@/lib/auth/getRequestUser";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
 import { unstable_noStore as noStore } from "next/cache";
 import type { GameRow, SiteSettingsRow } from "@/lib/types/database";
@@ -118,10 +119,10 @@ export default async function HomePage({
   //    Escape hatch: ?marketing=1 lets admins / QA preview the
   //    marketing page while signed in.
   if (searchParams?.marketing !== "1") {
-    const supabaseAuth = await createServerSupabaseClient();
-    const {
-      data: { user },
-    } = await supabaseAuth.auth.getUser();
+    // Reuse the request-cached auth read shared with the root + locale layouts
+    // (getRequestUser is React.cache'd) instead of opening a second Supabase
+    // client + a duplicate Auth round-trip here (~120ms on a cold connection).
+    const { user } = await getRequestUser();
     // Go-live 2026-05-29 — direct authenticated visitors at the AppShell
     // landing instead of the legacy /my hub. Middleware catches
     // stragglers, but routing direct keeps the SSR cost flat and avoids
@@ -136,13 +137,17 @@ export default async function HomePage({
   //    (analytics + QA stable for ~2 weeks), the legacy code below can be
   //    deleted entirely.
   if (searchParams?.old !== "1") {
-    // CMS — load every editable string for the homepage in ONE query,
-    // cached for 60s (see lib/cms/server.ts). The provider hydrates the
-    // client tree below; useCmsText(key) inside any component reads
-    // from this Map without doing its own database round-trip.
-    // If the query fails or the table is empty, rows is [] and every
-    // useCmsText call falls back to messages/*.json via next-intl —
-    // i.e. the public site keeps rendering exactly like it does today.
+    // CMS — load the homepage's editable strings in ONE query. NOTE: this is
+    // request-scoped React.cache only (see lib/cms/server.ts) — there is NO
+    // cross-request cache (the old `unstable_cache(revalidate:60)` was removed
+    // because revalidateTag didn't propagate on Vercel), so an admin Save shows
+    // on the very next render. The cache key MUST stay `("homepage")` with no
+    // extra args: FAQ.tsx also reads this page via getCmsTranslations("homepage")
+    // and React.cache dedupes the two into a single Supabase round-trip — adding
+    // a locale arg here splits the key and silently fires a SECOND full query
+    // (measured +~320ms TTFB, 2026-06-21). The provider hydrates the client
+    // tree; useCmsText(key) reads from this Map without its own round-trip. On
+    // failure/empty, rows is [] and every useCmsText falls back to messages/*.json.
     const cmsRows = await loadCmsTextsForPage("homepage");
     return (
       <CmsTextProvider rows={cmsRows}>

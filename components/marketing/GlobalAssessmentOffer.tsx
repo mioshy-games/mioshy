@@ -65,29 +65,51 @@ export function GlobalAssessmentOffer({ locale }: { locale: "he" | "en" }) {
       setTrigger(which);
     };
 
-    void (async () => {
-      if (wasOfferShownThisSession()) return;
-      const elig = await fetchEligibility();
-      if (cancelled || shouldSuppress(elig)) return; // done / owns journey → never
+    const resolveOffer = () => {
+      if (cancelled) return;
+      void (async () => {
+        if (wasOfferShownThisSession()) return;
+        const elig = await fetchEligibility();
+        if (cancelled || shouldSuppress(elig)) return; // done / owns journey → never
 
-      // Immediate pass (priority login > return-24h). Skipped on blocked paths.
-      if (!onBlocked(window.location.pathname)) {
-        if (elig.loggedIn) return void (await show("login"));
-        if (returning) return void (await show("return24h"));
-      }
+        // Immediate pass (priority login > return-24h). Skipped on blocked paths.
+        if (!onBlocked(window.location.pathname)) {
+          if (elig.loggedIn) return void (await show("login"));
+          if (returning) return void (await show("return24h"));
+        }
 
-      // Nothing immediate → arm the 2-min-browse timer (excludes adults/sex at
-      // fire time, and any blocked path).
-      timer = setTimeout(() => {
-        if (cancelled || wasOfferShownThisSession()) return;
-        const path = window.location.pathname;
-        if (onBlocked(path) || isAdultsPath(path)) return;
-        void show("browse2min");
-      }, BROWSE_DELAY_MS);
-    })();
+        // Nothing immediate → arm the 2-min-browse timer (excludes adults/sex at
+        // fire time, and any blocked path).
+        timer = setTimeout(() => {
+          if (cancelled || wasOfferShownThisSession()) return;
+          const path = window.location.pathname;
+          if (onBlocked(path) || isAdultsPath(path)) return;
+          void show("browse2min");
+        }, BROWSE_DELAY_MS);
+      })();
+    };
+
+    // Perf 2026-06-21 — defer the eligibility round-trip (~0.5s to
+    // /api/marketing/offer-eligibility) off the critical load path. The offer
+    // never needs to resolve during first paint — an anonymous visitor is
+    // essentially never immediately eligible — so wait for browser idle,
+    // mirroring PostHogProvider. requestIdleCallback where available, else a
+    // short timeout. (touchLastVisit above stays synchronous so the visit is
+    // always stamped even on a fast bounce.)
+    type IdleWindow = Window & {
+      requestIdleCallback?: (cb: () => void) => number;
+      cancelIdleCallback?: (handle: number) => void;
+    };
+    const w = window as IdleWindow;
+    const ric =
+      w.requestIdleCallback ??
+      ((cb: () => void) => window.setTimeout(cb, 2000) as unknown as number);
+    const idleHandle = ric(resolveOffer);
 
     return () => {
       cancelled = true;
+      const cancelIdle = w.cancelIdleCallback;
+      if (cancelIdle && typeof idleHandle === "number") cancelIdle(idleHandle);
       if (timer) clearTimeout(timer);
     };
   }, [locale]);
