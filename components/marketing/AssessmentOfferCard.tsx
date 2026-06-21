@@ -36,6 +36,23 @@ export function AssessmentOfferCard({ trigger, title, body, cta, dismiss, locale
     captureOfferEvent("shown", trigger, locale);
   }, [trigger, locale]);
 
+  // Perf (2026-06-21): while this full-screen blurred modal is open, freeze the
+  // homepage hero's perpetual ambient animations underneath it. `backdrop-blur-md`
+  // (line 65) re-rasterises every frame the background moves, which pins the main
+  // thread and spiked homepage INP (input-delay) the whole time the offer was
+  // shown. The blobs/badges sit fully behind the dimmed backdrop, so freezing
+  // them is invisible. A <body> flag bridges this modal (mounted in the root
+  // layout / in-game tree) and the hero (a separate subtree, which only knows to
+  // pause on scroll via its own IntersectionObserver); styles.css pauses the
+  // `.hero-*` animations while the flag is set. Cleared on unmount, so the
+  // animations resume the moment the offer closes. The card only mounts while the
+  // offer is open, so mount/unmount == open/close. See styles.css
+  // `body.offer-modal-open`.
+  useEffect(() => {
+    document.body.classList.add("offer-modal-open");
+    return () => document.body.classList.remove("offer-modal-open");
+  }, []);
+
   const handleAccept = () => {
     captureOfferEvent("clicked", trigger, locale);
     onAccept();

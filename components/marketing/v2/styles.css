@@ -2390,6 +2390,26 @@
   }
 }
 
+/* Perf (2026-06-21) — freeze the hero's perpetual ambient animations while a
+   full-screen blurred assessment-offer modal is open above them. The modal's
+   `backdrop-blur-md` re-rasterises every frame the moving background changes,
+   which pins the main thread and spiked homepage INP (input-delay) the whole
+   time the offer was shown. The blobs/badges/dot sit fully behind the dimmed
+   backdrop, so freezing them is invisible. The `offer-modal-open` flag is
+   toggled on <body> by AssessmentOfferCard.tsx for the modal's lifetime — it
+   bridges the modal (root-layout / in-game subtree) and the hero (a separate
+   subtree). Same animation set as `.hero.is-paused` above; works desktop +
+   mobile (the longhand `animation-play-state: paused !important` overrides the
+   mobile `.hero-blob-*` shorthand `!important` rules). Top-level rather than
+   nested in .home-v2 because it keys off <body>. */
+body.offer-modal-open .hero-blob,
+body.offer-modal-open .hero-floating-circle,
+body.offer-modal-open .badge-floating,
+body.offer-modal-open .hero-tag .dot,
+body.offer-modal-open .hero-orbs-field {
+  animation-play-state: paused !important;
+}
+
 /* ════════════════════════════════════════════════════════════
    TOP-LEVEL @keyframes - must NOT be nested inside .home-v2 { … }
    because the CSS spec disallows nested @keyframes; nested ones
