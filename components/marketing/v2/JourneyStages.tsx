@@ -39,10 +39,19 @@ import { CmsText } from "@/components/cms/CmsText";
 
 type StageId = "1" | "2" | "3";
 
-const STAGE_HREFS: Record<StageId, "/games" | "/mioshy-sex" | "/journey"> = {
+const STAGE_HREFS: Record<
+  StageId,
+  "/games" | "/mioshy-sex" | "/journey?start=1"
+> = {
   "1": "/games",
   "2": "/mioshy-sex",
-  "3": "/journey",
+  // Stage 3 funnel-entry: skip the /journey marketing landing and drop the
+  // visitor straight on the assessment's first question. `?start=1` lets the
+  // /journey page run its state gating first, then auto-forward (anonymous → Q1,
+  // in-progress → resume), while a signed-in member without a Journey
+  // entitlement still gets their locked upsell. Stages 1 & 2 keep their own
+  // product landings.
+  "3": "/journey?start=1",
 };
 
 const STAGE_TONE: Record<

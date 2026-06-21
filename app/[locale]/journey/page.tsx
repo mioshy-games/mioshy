@@ -35,7 +35,7 @@ import { loadCmsTextsForPage } from "@/lib/cms/server";
 import { CmsTextProvider } from "@/components/cms/CmsTextProvider";
 import { CmsText } from "@/components/cms/CmsText";
 import Image from "next/image";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
 import { unstable_noStore as noStore } from "next/cache";
 import {
@@ -122,8 +122,10 @@ export async function generateMetadata({
 
 export default async function JourneyMarketingPage({
   params,
+  searchParams,
 }: {
   params: { locale: string };
+  searchParams?: { start?: string };
 }) {
   noStore();
   const { locale } = params;
@@ -272,6 +274,24 @@ export default async function JourneyMarketingPage({
         </main>
       </div>
       </CmsTextProvider>
+    );
+  }
+
+  // ── Deep-link from the homepage CTAs (?start=1) ─────────────────────────
+  // The hero + journey-stage-3 CTAs link here with ?start=1 to skip this
+  // marketing landing and drop the visitor straight into the assessment's
+  // first question. We forward AFTER the locked-member return above, so a
+  // signed-in member without a Journey entitlement still gets their dedicated
+  // upsell (logged-in state preserved). Everyone else is sent to the same
+  // destination this page's primary CTA points at — the timeline when they
+  // already have an active journey (never bury an assignment behind the funnel),
+  // otherwise the assessment, which itself resumes any in-progress run. The
+  // forward is a server redirect, so there's no marketing flash in between.
+  if (searchParams?.start === "1") {
+    redirect(
+      hasActiveAssignments
+        ? `/${locale}/journey/timeline`
+        : `/${locale}/journey/assessment`,
     );
   }
 

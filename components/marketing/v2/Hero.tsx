@@ -84,7 +84,14 @@ export function Hero() {
             <RevealOnScroll variant="fade-up" delay={0.25}>
               <div className="hero-actions">
                 <TrackedLink
-                  href="/journey"
+                  // Funnel-entry CTA: skip the /journey marketing landing and
+                  // drop the visitor straight on the assessment's first
+                  // question. `?start=1` lets the /journey page run its existing
+                  // state gating first, then auto-forward — so anonymous → Q1,
+                  // in-progress → resume, but a signed-in member without a
+                  // Journey entitlement still gets their locked upsell (logged-in
+                  // state preserved). Locale-aware Link keeps he/en correct.
+                  href="/journey?start=1"
                   className="btn btn-primary"
                   ctaId="hero_primary"
                   section="hero"
