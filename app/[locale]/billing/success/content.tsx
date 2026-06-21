@@ -1,11 +1,12 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useSearchParams }      from "next/navigation"
 import { useParams }            from "next/navigation"
 import { Check, Loader2, AlertTriangle } from "lucide-react"
 import { createBrowserSupabaseClient } from "@/lib/supabase/client"
 import { postPaymentTarget } from "@/lib/billing/post-payment-target"
+import { metaTrack, metaEventId } from "@/lib/analytics/meta-pixel"
 
 type Phase = "loading" | "activating" | "active" | "error"
 
@@ -45,6 +46,9 @@ export function BillingSuccessContent() {
 
   const [phase, setPhase]       = useState<Phase>("loading")
   const [attempts, setAttempts] = useState(0)
+  // Guards the browser Purchase pixel to fire exactly once, and only on a real
+  // "paid" confirmation (not the poll timeout fallback below).
+  const purchaseFiredRef        = useRef(false)
   // F3.2 — the purchased pillar, so a journey buyer continues straight into
   // the (full) assessment instead of /my (locked decision A).
   const [product, setProduct]   = useState<string | null>(null)
@@ -59,7 +63,7 @@ export function BillingSuccessContent() {
       const supabase = createBrowserSupabaseClient()
       const { data } = await supabase
         .from("checkout_sessions")
-        .select("status, product")
+        .select("status, product, amount, currency")
         .eq("id", sessionId)
         .maybeSingle()
 
@@ -68,6 +72,22 @@ export function BillingSuccessContent() {
       if (data?.product) setProduct(data.product as string)
 
       if (data?.status === "paid") {
+        // Browser Purchase — dedupes with the CAPI Purchase (indicator route)
+        // via the shared deterministic event_id. Fire ONLY here, on the real
+        // "paid" status, never the MAX_ATTEMPTS timeout fallback below.
+        if (!purchaseFiredRef.current) {
+          purchaseFiredRef.current = true
+          metaTrack(
+            "Purchase",
+            {
+              value: data.amount,
+              currency: data.currency,
+              content_name: data.product,
+              content_type: "product",
+            },
+            metaEventId.purchase(sessionId),
+          )
+        }
         setPhase("active")
         return
       }

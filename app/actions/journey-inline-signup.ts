@@ -36,6 +36,7 @@ import {
   SESSION_MAX_AGE,
   createSession,
 } from "@/lib/auth/session-enforcement";
+import { fireCompleteRegistrationCapi } from "@/lib/analytics/meta-capi";
 
 /**
  * The `debug` field is included on every result so the browser console
@@ -426,6 +427,11 @@ export async function journeyInlineSignup(args: {
       journey_responses_count: responsesCount,
       will_loop_at_my_journey: !!journey?.id && responsesCount === 0,
     });
+    // Meta CompleteRegistration (CAPI) — register branch only, fire-and-forget.
+    if (args.mode === "register") {
+      fireCompleteRegistrationCapi({ userId, email, phone });
+    }
+
     return { success: true, userId, journey: journey ?? null, debug };
   } catch (err) {
     console.error("[journeyInlineSignup] unhandled error", err);

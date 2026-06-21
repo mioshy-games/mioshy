@@ -16,6 +16,7 @@ import {
   SESSION_MAX_AGE,
   createSession,
 } from "@/lib/auth/session-enforcement";
+import { fireCompleteRegistrationCapi } from "@/lib/analytics/meta-capi";
 
 export type AssessmentInlineSignupResult =
   | { success: true; userId: string }
@@ -134,6 +135,12 @@ export async function assessmentInlineSignup(args: {
         "[assessmentInlineSignup] session claim failed (non-fatal)",
         claimErr.message,
       );
+    }
+
+    // Meta CompleteRegistration (CAPI) — only for a real new registration, not
+    // the login branch. Fire-and-forget; never blocks the funnel.
+    if (args.mode === "register") {
+      fireCompleteRegistrationCapi({ userId, email, phone });
     }
 
     return { success: true, userId };

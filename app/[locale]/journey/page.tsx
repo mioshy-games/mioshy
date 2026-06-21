@@ -34,6 +34,7 @@ import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
 import { loadCmsTextsForPage } from "@/lib/cms/server";
 import { CmsTextProvider } from "@/components/cms/CmsTextProvider";
 import { CmsText } from "@/components/cms/CmsText";
+import { MetaViewContent } from "@/components/analytics/MetaViewContent";
 import Image from "next/image";
 import { notFound, redirect } from "next/navigation";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
@@ -376,6 +377,7 @@ export default async function JourneyMarketingPage({
 
   return (
     <CmsTextProvider rows={cmsRows}>
+    <MetaViewContent contentIds={["journey"]} contentName="journey" contentCategory="journey" />
     <div
       className="relative min-h-[100dvh] overflow-hidden text-white"
       dir={isHe ? "rtl" : "ltr"}

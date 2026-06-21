@@ -24,6 +24,7 @@ import { createAdminClient }         from "@/lib/supabase-admin"
 import { assignJourneyOnPurchase }   from "@/lib/journey-content/auto-assign"
 import type { JourneyProductSlug }   from "@/lib/journey-content/types"
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit"
+import { sendMetaCapiEvent, metaEventId } from "@/lib/analytics/meta-capi"
 
 /** Narrow the free-form checkout_sessions.product to the pillar union. */
 function normalizeProduct(raw: unknown): JourneyProductSlug {
@@ -762,6 +763,35 @@ export async function GET(req: Request) {
       errorCode: invoiceResult.errorCode,
     })
   }
+
+  // ── Meta Purchase (CAPI) — the critical campaign conversion ─────────────────
+  // CONTRACT (Itzik 2026-06-21): this ALWAYS fires on a confirmed payment, but a
+  // Meta outage must NEVER break the flow above (entitlements are already
+  // granted + the invoice already issued by this point). sendMetaCapiEvent is
+  // try/catch + 3s-timeout-bounded and never throws; we await it so the event
+  // reliably leaves a serverless function before it freezes. It runs ONCE per
+  // real payment — Cardcom retries hit the idempotent short-circuits above and
+  // return before reaching here; even if one slipped through, the deterministic
+  // event_id dedupes against the browser Purchase. No client IP is used (not
+  // stored); fbp/fbc/UA come off the checkout_sessions row + hashed email/phone.
+  await sendMetaCapiEvent({
+    eventName: "Purchase",
+    eventId: metaEventId.purchase(sessionId),
+    userData: {
+      email:           session.email,
+      phone:           customerPhone,
+      externalId:      userId,
+      fbp:             session.fbp,
+      fbc:             session.fbc,
+      clientUserAgent: session.client_user_agent,
+    },
+    customData: {
+      value:        session.amount,
+      currency:     session.currency,
+      content_name: productName,
+      content_type: "product",
+    },
+  })
 
   // ── Mark event as processed ─────────────────────────────────────────────────
   await admin.from("billing_events").update({ processed: true }).eq("idempotency_key", idempotencyKey)

@@ -14,6 +14,7 @@ import { isComingSoon } from "@/lib/games/coming-soon";
 import type { Metadata } from "next";
 import { fetchGameSettings } from "@/lib/settings-queries";
 import { CmsText } from "@/components/cms/CmsText";
+import { MetaViewContent } from "@/components/analytics/MetaViewContent";
 
 // Disable any form of static caching for this route.
 //   - `noStore()` (called below) disables Next's per-request fetch cache.
@@ -253,6 +254,11 @@ export default async function GameBySlugPage({
         {/* H — "חינם" marker on the free game's play page. Corner pill (no title
             header on the live wheel); top-start avoids the top-end controls. */}
         {g.is_free ? <FreeBadge className="fixed start-3 top-3 z-40" /> : null}
+        <MetaViewContent
+          contentIds={[g.slug]}
+          contentName={g.name_he ?? g.name_en ?? g.slug}
+          contentCategory="games"
+        />
         <TruthOrDareClient game={g} wheel={w} questions={qs} gameSettings={gameSettings} />
       </div>
     );
@@ -266,6 +272,11 @@ export default async function GameBySlugPage({
       />
       {/* H — "חינם" marker on the free game's play page (corner pill). */}
       {g.is_free ? <FreeBadge className="fixed start-3 top-3 z-40" /> : null}
+      <MetaViewContent
+        contentIds={[g.slug]}
+        contentName={g.name_he ?? g.name_en ?? g.slug}
+        contentCategory="games"
+      />
       <TruthOrDareClient game={g} wheel={w} questions={qs} transparent gameSettings={gameSettings} />
     </GameSurfaceShell>
   );

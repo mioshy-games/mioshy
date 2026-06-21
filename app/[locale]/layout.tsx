@@ -12,6 +12,7 @@ import { getBillingBannerState } from "@/lib/billing/failure-banner";
 import type { BillingBannerState } from "@/lib/billing/failure-banner";
 import { SubscriptionBillingBanner } from "@/components/billing/SubscriptionBillingBanner";
 import { PostHogIdentify } from "@/components/analytics/PostHogIdentify";
+import { MetaPixelProvider } from "@/components/analytics/MetaPixelProvider";
 import { organizationJsonLd, webSiteJsonLd, safeJsonLd } from "@/lib/seo/jsonLd";
 
 export function generateStaticParams() {
@@ -109,6 +110,7 @@ export default async function LocaleLayout({
         dangerouslySetInnerHTML={{ __html: safeJsonLd(webSiteJsonLd(locale === "he" ? "he" : "en")) }}
       />
       <PostHogIdentify userId={userId} />
+      <MetaPixelProvider />
       <SubscriptionBillingBanner state={billingBannerState} isHe={locale === "he"} />
       <Chrome
         isAuthed={isAuthed}

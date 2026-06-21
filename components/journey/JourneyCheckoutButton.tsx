@@ -19,6 +19,7 @@ import { useState } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCmsText } from "@/hooks/useCmsText";
+import { metaTrack, metaEventId } from "@/lib/analytics/meta-pixel";
 
 interface Props {
   isHe:      boolean;
@@ -96,6 +97,19 @@ export function JourneyCheckoutButton({
       }
 
       if (data?.redirect_url) {
+        // Meta InitiateCheckout (browser) — dedupes with the CAPI event via the
+        // shared session-derived event_id. No-op without the pixel; never throws.
+        if (data.checkout_session_id && !data.test_user_bypass) {
+          metaTrack(
+            "InitiateCheckout",
+            {
+              currency: isHe ? "ILS" : "USD",
+              content_name: "journey:weekly",
+              content_category: "journey",
+            },
+            metaEventId.checkout(data.checkout_session_id as string),
+          );
+        }
         window.location.href = data.redirect_url;
         return;
       }

@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { getOrCreateDeviceId } from "@/lib/device-id";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { fetchCmsTextMap } from "@/lib/cms/client-text-map";
+import { metaTrack, metaEventId } from "@/lib/analytics/meta-pixel";
 
 // CRM-managed copy for the lead-capture modal (category "marketing",
 // migration 135). Read client-side; the `T` strings below stay as the in-code
@@ -586,6 +587,19 @@ export function SubscriptionModal({
       if (!json.redirect_url) {
         setError(isHe ? "התקבלה תגובה ריקה משער התשלומים. נסו שוב." : "Empty response from payment gateway. Please try again.");
         return;
+      }
+      // Meta InitiateCheckout (browser) — dedupes with the CAPI event via the
+      // shared session-derived event_id. Skip the test-user bypass. No-op
+      // without the pixel. Never throws.
+      if (json.checkout_session_id && !json.test_user_bypass) {
+        metaTrack(
+          "InitiateCheckout",
+          {
+            currency: countryCode === "IL" ? "ILS" : "USD",
+            content_name: `subscription:${plan}`,
+          },
+          metaEventId.checkout(json.checkout_session_id as string),
+        );
       }
       window.location.href = json.redirect_url;
     } catch (err: unknown) {

@@ -33,6 +33,7 @@ import { CmsTextProvider } from "@/components/cms/CmsTextProvider";
 import { MaybeRichText } from "@/components/cms/MaybeRichText";
 import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
 import { loadCmsTextsForPage } from "@/lib/cms/server";
+import { MetaViewContent } from "@/components/analytics/MetaViewContent";
 
 export const dynamic = "force-dynamic";
 
@@ -338,6 +339,9 @@ export default async function BetweenUsGameDetailPage({
 
   return (
     <CmsTextProvider rows={cmsRows}>
+    {/* Privacy (§6): adults pillar uses the NEUTRAL slug as content_name —
+        never the explicit title — so a view can't expose what's being viewed. */}
+    <MetaViewContent contentIds={[slug]} contentName={slug} contentCategory="adults" />
     <div
       dir={isHe ? "rtl" : "ltr"}
       // `isolate` (CSS isolation: isolate) is CRITICAL here.

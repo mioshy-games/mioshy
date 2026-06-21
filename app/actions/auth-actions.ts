@@ -10,6 +10,7 @@ import {
   invalidateAllSessions,
 } from "@/lib/auth/session-enforcement";
 import { tagAsRegistered } from "@/lib/email/brevo-segments-sync";
+import { fireCompleteRegistrationCapi } from "@/lib/analytics/meta-capi";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -218,6 +219,9 @@ export async function signupAction(formData: FormData): Promise<SignupResult> {
     // Single-session record
     const token = await createSession(userId, await getDeviceInfo());
     await writeSessionCookie(token);
+
+    // Meta CompleteRegistration (CAPI) — fire-and-forget, never blocks signup.
+    fireCompleteRegistrationCapi({ userId, email, phone });
 
     return { success: true };
   } catch (err) {

@@ -27,6 +27,14 @@ import { openLowProfile }      from "@/lib/cardcom"
 import { getPlanPrice }        from "@/lib/billing"
 import { resolveCheckoutCadence } from "@/lib/billing/pricing-queries"
 import { geoFromRequest, localeFromGeo, currencyFromGeo } from "@/lib/geo-from-request"
+import { getClientIp } from "@/lib/rate-limit"
+import { sendMetaCapiEvent, metaEventId, sanitizeMetaUrl } from "@/lib/analytics/meta-capi"
+
+/** Read a single cookie value out of a raw Cookie header. */
+function readCookie(cookieHeader: string, name: string): string | null {
+  const m = cookieHeader.match(new RegExp(`(?:^|; )${name}=([^;]*)`))
+  return m ? decodeURIComponent(m[1]) : null
+}
 
 function baseUrl(req: Request) {
   const envUrl = process.env.PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL
@@ -110,6 +118,17 @@ export async function POST(req: Request) {
     lead_id        = null,
     return_path   = null,                  // optional post-payment landing path
   } = body
+
+  // ── Meta (Facebook) attribution capture ────────────────────────────────────
+  // _fbp/_fbc are Meta's first-party cookies; UA + IP come off THIS live browser
+  // request. fbp/fbc/UA are persisted on the session so the Purchase CAPI (fired
+  // later from the Cardcom webhook, which can't see the browser) can reuse them.
+  // The IP is used ONLY here, in-memory, for the InitiateCheckout CAPI below — it
+  // is never written to the DB (privacy decision, Itzik 2026-06-21).
+  const fbp             = readCookie(cookieHeader, "_fbp")
+  const fbc             = readCookie(cookieHeader, "_fbc")
+  const clientUserAgent = req.headers.get("user-agent")
+  const clientIp        = getClientIp(req)
 
   // ── Server-trusted locale/tax fields, derived from request IP ───────────────
   // Tax compliance: we cannot let the client decide whether they're charged
@@ -307,6 +326,10 @@ export async function POST(req: Request) {
       is_israeli:       trustedIsIsraeli,
       vat_rate_percent: trustedVatPercent,
       status:           "created",
+      // Meta attribution for the later Purchase CAPI (NO client IP stored).
+      fbp:               fbp || null,
+      fbc:               fbc || null,
+      client_user_agent: clientUserAgent || null,
     })
     .select("id")
     .single()
@@ -462,6 +485,32 @@ export async function POST(req: Request) {
     session_id: sessionId,
     low_profile_code: cardcomResult.lowProfileCode,
     redirect_url: cardcomResult.redirectUrl,
+  })
+
+  // ── Meta InitiateCheckout (CAPI) ────────────────────────────────────────────
+  // Fire-and-forget: NOT awaited so it never delays the user's redirect to
+  // Cardcom, and sendMetaCapiEvent is itself try/catch + timeout-bounded so a
+  // Meta failure can never break checkout. The browser Pixel fires the matching
+  // InitiateCheckout (shared event_id) — Meta dedupes. The IP is passed here from
+  // the live request only (not stored).
+  void sendMetaCapiEvent({
+    eventName: "InitiateCheckout",
+    eventId: metaEventId.checkout(sessionId),
+    eventSourceUrl: sanitizeMetaUrl(req.headers.get("referer")),
+    userData: {
+      email,
+      externalId: auth.user.id,
+      fbp,
+      fbc,
+      clientIpAddress: clientIp,
+      clientUserAgent,
+    },
+    customData: {
+      value: amount,
+      currency: trustedCurrency,
+      content_name: `${product}:${effectivePlan}`,
+      content_category: product,
+    },
   })
 
   return NextResponse.json({

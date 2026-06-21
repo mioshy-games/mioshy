@@ -22,6 +22,7 @@ import {
   incrementUserGamePlays,
 } from "@/lib/spins";
 import { AssessmentOfferCard } from "@/components/marketing/AssessmentOfferCard";
+import { metaTrackCustom } from "@/lib/analytics/meta-pixel";
 import {
   fetchEligibility,
   fetchOfferTexts,
@@ -557,6 +558,9 @@ export function TruthOrDareClient({
       }, POPUP_DELAY_MS);
       setCompletedSpins((c) => c + 1);
 
+      // Meta custom FreeGameSpin (global, browser-only). No-op without pixel.
+      metaTrackCustom("FreeGameSpin", { spin_number: completedSpins + 1 });
+
       if (subscribed) return;
       // H (free game): registered users aren't play-capped on a free game, so
       // skip counting + the paywall. Guests still count toward the teaser.
@@ -997,6 +1001,8 @@ export function TruthOrDareClient({
           dismiss={offerTexts.dismiss}
           locale={offerLocale}
           onAccept={() => {
+            // Meta custom FreeGameCTAClick — the in-game assessment CTA click.
+            metaTrackCustom("FreeGameCTAClick");
             setOfferTrigger(null);
             router.push("/journey/assessment");
           }}
