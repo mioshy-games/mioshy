@@ -144,7 +144,11 @@ const nextConfig = {
 
     const cspDirectives = [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://*.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com",
+      // Meta (Facebook) Pixel loads fbevents.js from connect.facebook.net — must
+      // be in script-src or the browser blocks the pixel entirely (no fbq, no
+      // events). CAPI is server-side so it was unaffected; this is what was
+      // missing (2026-06-21).
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://*.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://connect.facebook.net",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com data:",
       "img-src 'self' data: blob: https:",
@@ -156,7 +160,10 @@ const nextConfig = {
       // covers it. The region hosts (PH_INGEST_HOST / PH_ASSETS_HOST) are listed
       // as a belt-and-suspenders fallback in case the proxy is ever bypassed —
       // and follow NEXT_PUBLIC_POSTHOG_REGION so EU/US stay in sync.
-      `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://*.googletagmanager.com https://*.cardcom.solutions https://*.cardcom.co.il ${PH_INGEST_HOST} ${PH_ASSETS_HOST}`,
+      // Meta Pixel event beacons go to www.facebook.com/tr (and fbevents.js may
+      // fetch config from connect.facebook.net). img-src already allows https:
+      // so the image-beacon path was fine, but the fetch/XHR path needs these.
+      `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://*.googletagmanager.com https://*.cardcom.solutions https://*.cardcom.co.il ${PH_INGEST_HOST} ${PH_ASSETS_HOST} https://www.facebook.com https://connect.facebook.net`,
       "frame-src 'self' https://www.googletagmanager.com https://*.googletagmanager.com https://*.cardcom.solutions https://*.cardcom.co.il",
       "frame-ancestors 'none'",
       "form-action 'self' https://*.cardcom.solutions https://*.cardcom.co.il",
