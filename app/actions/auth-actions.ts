@@ -220,8 +220,10 @@ export async function signupAction(formData: FormData): Promise<SignupResult> {
     const token = await createSession(userId, await getDeviceInfo());
     await writeSessionCookie(token);
 
-    // Meta CompleteRegistration (CAPI) — fire-and-forget, never blocks signup.
-    fireCompleteRegistrationCapi({ userId, email, phone });
+    // Meta CompleteRegistration (CAPI) — awaited for reliable serverless
+    // delivery (no browser backup); bounded + non-throwing so it never blocks
+    // or breaks signup.
+    await fireCompleteRegistrationCapi({ userId, email, phone });
 
     return { success: true };
   } catch (err) {

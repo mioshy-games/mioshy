@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, CheckCircle2 } from "lucide-react";
+import { metaTrackCustom } from "@/lib/analytics/meta-pixel";
 import type { AiHeroBlock, DimensionScore, Locale } from "@/lib/assessments/types";
 import { getResultContent } from "@/lib/assessments/result-content";
 import { PROGRAM_VALUE } from "@/lib/assessments/result-content/program";
@@ -55,6 +56,16 @@ export function AssessmentSummary({
   const t = (he: string, en: string) => (isHe ? he : en);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Meta CompleteFullAssessment (custom, browser) — MEASUREMENT only (not a
+  // campaign optimization event). Fires once when the long (21-question)
+  // assessment results render. Neutral assessment_type (the assessment slug/id).
+  const fullAssessmentFiredRef = useRef(false);
+  useEffect(() => {
+    if (fullAssessmentFiredRef.current) return;
+    fullAssessmentFiredRef.current = true;
+    metaTrackCustom("CompleteFullAssessment", { assessment_type: assessmentId });
+  }, [assessmentId]);
 
   // C2.4 cadence picker: enabled cadences are the options; the weekly row
   // (display unit) is the savings baseline. Picker shows only when ≥2

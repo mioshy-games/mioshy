@@ -427,9 +427,11 @@ export async function journeyInlineSignup(args: {
       journey_responses_count: responsesCount,
       will_loop_at_my_journey: !!journey?.id && responsesCount === 0,
     });
-    // Meta CompleteRegistration (CAPI) — register branch only, fire-and-forget.
+    // Meta CompleteRegistration (CAPI) — register branch only. Awaited for
+    // reliable serverless delivery (no browser backup); bounded + non-throwing,
+    // so it never blocks or breaks the funnel.
     if (args.mode === "register") {
-      fireCompleteRegistrationCapi({ userId, email, phone });
+      await fireCompleteRegistrationCapi({ userId, email, phone });
     }
 
     return { success: true, userId, journey: journey ?? null, debug };

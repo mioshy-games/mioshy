@@ -227,17 +227,21 @@ export function readMetaRequestContext(): Pick<
 }
 
 /**
- * Fire a CompleteRegistration event to CAPI for a just-registered user.
- * Fire-and-forget (not awaited) and non-throwing — safe to call inline at the
- * end of an auth server action; it can never affect the signup result. The
- * browser Pixel fires the matching event (shared event_id) for dedup.
+ * Send a CompleteRegistration event to CAPI for a just-registered user.
+ *
+ * AWAIT this (reliability fix, Itzik 2026-06-21): CompleteRegistration is
+ * CAPI-only with no browser backup, so a fire-and-forget call could be dropped
+ * when a serverless function freezes after returning. We therefore await it —
+ * but `sendMetaCapiEvent` is itself 3s-timeout-bounded and never throws, so the
+ * await can add at most ~3s and can NEVER break the signup result. Mirrors the
+ * Purchase posture.
  */
-export function fireCompleteRegistrationCapi(args: {
+export async function fireCompleteRegistrationCapi(args: {
   userId: string;
   email: string;
   phone?: string | null;
-}): void {
-  void sendMetaCapiEvent({
+}): Promise<void> {
+  await sendMetaCapiEvent({
     eventName: "CompleteRegistration",
     eventId: metaEventId.registration(args.userId),
     userData: {

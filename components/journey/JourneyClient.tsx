@@ -18,6 +18,7 @@ import {
   markInterstitialShown,
 } from "./AssessmentInterstitial";
 import { track } from "@/lib/analytics";
+import { metaTrackCustom } from "@/lib/analytics/meta-pixel";
 import { CmsText } from "@/components/cms/CmsText";
 
 interface JourneyClientProps {
@@ -219,6 +220,18 @@ export function JourneyClient({
     initialProgress?.status === "complete" ||
     initialProgress?.status === "completed";
   const isDone = wasCompleted || index >= total;
+
+  // Meta CompleteAssessment (custom, browser) — the SHORT-assessment campaign
+  // optimization event. Fires once when the user reaches the summary/analysis
+  // screen (isDone). Neutral assessment_type; browser-only (no CAPI). The ref
+  // guards against re-render double-fires.
+  const completeAssessmentFiredRef = useRef(false);
+  useEffect(() => {
+    if (isDone && !completeAssessmentFiredRef.current) {
+      completeAssessmentFiredRef.current = true;
+      metaTrackCustom("CompleteAssessment", { assessment_type: "journey_short" });
+    }
+  }, [isDone]);
 
   // 🎉 Confetti - fires ONCE EVER when the questionnaire is done.
   //

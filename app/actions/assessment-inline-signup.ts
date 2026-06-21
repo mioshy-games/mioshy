@@ -137,10 +137,11 @@ export async function assessmentInlineSignup(args: {
       );
     }
 
-    // Meta CompleteRegistration (CAPI) — only for a real new registration, not
-    // the login branch. Fire-and-forget; never blocks the funnel.
+    // Meta CompleteRegistration (CAPI) — register branch only. Awaited for
+    // reliable serverless delivery (no browser backup); bounded + non-throwing,
+    // so it never blocks or breaks the funnel.
     if (args.mode === "register") {
-      fireCompleteRegistrationCapi({ userId, email, phone });
+      await fireCompleteRegistrationCapi({ userId, email, phone });
     }
 
     return { success: true, userId };
