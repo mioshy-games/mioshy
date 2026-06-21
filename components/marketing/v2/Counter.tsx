@@ -63,9 +63,17 @@ export function Counter({
     return () => controls.stop();
   }, [inView, to, duration, motionValue, prefersReducedMotion]);
 
-  // motion.span renders a MotionValue<string> as live-updating text content
+  // motion.span renders a MotionValue<string> as live-updating text content —
+  // i.e. the text node mutates on every animation frame during the ~1.4s
+  // count-up. Perf (2026-06-21): with PostHog session replay's
+  // `maskTextSelector: "*"`, rrweb would serialise + mask each of those
+  // mutations, a needless main-thread burst on first paint. `data-ph-no-capture`
+  // matches the configured `blockSelector` in PostHogProvider, so replay ignores
+  // this subtree entirely — no per-frame recording. Live visuals are unchanged
+  // (the attribute only affects what replay captures); the number is a public
+  // marketing stat, so blocking it from replay loses nothing.
   return (
-    <motion.span ref={ref} aria-label={`${prefix}${to}${suffix}`}>
+    <motion.span ref={ref} aria-label={`${prefix}${to}${suffix}`} data-ph-no-capture="">
       {display}
     </motion.span>
   );

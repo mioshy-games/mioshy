@@ -36,21 +36,65 @@ export function AssessmentOfferCard({ trigger, title, body, cta, dismiss, locale
     captureOfferEvent("shown", trigger, locale);
   }, [trigger, locale]);
 
-  // Perf (2026-06-21): while this full-screen blurred modal is open, freeze the
-  // homepage hero's perpetual ambient animations underneath it. `backdrop-blur-md`
-  // (line 65) re-rasterises every frame the background moves, which pins the main
-  // thread and spiked homepage INP (input-delay) the whole time the offer was
-  // shown. The blobs/badges sit fully behind the dimmed backdrop, so freezing
-  // them is invisible. A <body> flag bridges this modal (mounted in the root
-  // layout / in-game tree) and the hero (a separate subtree, which only knows to
-  // pause on scroll via its own IntersectionObserver); styles.css pauses the
-  // `.hero-*` animations while the flag is set. Cleared on unmount, so the
-  // animations resume the moment the offer closes. The card only mounts while the
-  // offer is open, so mount/unmount == open/close. See styles.css
-  // `body.offer-modal-open`.
+  // Perf (2026-06-21): while this full-screen blurred modal is open we touch the
+  // <body> two ways, both fully reverted on unmount. The card only mounts while
+  // the offer is open, so mount/unmount == open/close.
+  //
+  //  1. `offer-modal-open` class — pauses the homepage hero's perpetual ambient
+  //     animations underneath the `backdrop-blur-md` (line 65). They otherwise
+  //     re-rasterise at 60fps over a moving background, pinning the main thread
+  //     and spiking homepage INP the whole time the offer is shown. The
+  //     blobs/badges sit fully behind the dimmed backdrop, so freezing them is
+  //     invisible; styles.css `body.offer-modal-open` does the pausing. Harmless
+  //     on pages without a hero — the selector simply matches nothing.
+  //
+  //  2. Scroll-lock the background. `overflow:hidden` alone doesn't hold on iOS
+  //     Safari, so we pin <body> with `position:fixed` at its current scroll
+  //     offset (restored on close), which stops the background moving on desktop
+  //     AND mobile. The modal itself is `position:fixed` to the viewport and
+  //     <body> has no transform, so it isn't trapped by the pinned body.
+  //
+  //     Removing the body's scrollbar must not shift the page sideways. Instead
+  //     of physical right-padding (wrong side in RTL — and Hebrew is the primary
+  //     locale here), we reserve the scrollbar's channel with
+  //     `scrollbar-gutter: stable` on <html>: the browser keeps it on whichever
+  //     side the scrollbar actually sat (right in WebKit, left in Firefox-RTL),
+  //     so the layout doesn't move. Gated on a real space-occupying scrollbar
+  //     existing (gap > 0), so it's a no-op on mobile overlay scrollbars and on
+  //     short pages with no scrollbar — neither of which can shift.
   useEffect(() => {
-    document.body.classList.add("offer-modal-open");
-    return () => document.body.classList.remove("offer-modal-open");
+    const body = document.body;
+    const root = document.documentElement;
+    const scrollY = window.scrollY;
+    const scrollbarGap = window.innerWidth - root.clientWidth;
+
+    body.classList.add("offer-modal-open");
+    const prev = {
+      position: body.style.position,
+      top: body.style.top,
+      left: body.style.left,
+      right: body.style.right,
+      overscrollBehavior: body.style.overscrollBehavior,
+      gutter: root.style.getPropertyValue("scrollbar-gutter"),
+    };
+    body.style.position = "fixed";
+    body.style.top = `-${scrollY}px`;
+    body.style.left = "0";
+    body.style.right = "0";
+    body.style.overscrollBehavior = "contain";
+    if (scrollbarGap > 0) root.style.setProperty("scrollbar-gutter", "stable");
+
+    return () => {
+      body.classList.remove("offer-modal-open");
+      body.style.position = prev.position;
+      body.style.top = prev.top;
+      body.style.left = prev.left;
+      body.style.right = prev.right;
+      body.style.overscrollBehavior = prev.overscrollBehavior;
+      if (prev.gutter) root.style.setProperty("scrollbar-gutter", prev.gutter);
+      else root.style.removeProperty("scrollbar-gutter");
+      window.scrollTo(0, scrollY);
+    };
   }, []);
 
   const handleAccept = () => {
