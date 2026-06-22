@@ -20,8 +20,11 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase-admin";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { ensureCoupleChannel } from "@/lib/journey-content/couple-channel";
 import { classifyAndStampMessage } from "@/lib/ai/classify-message";
+import { sendWhatsAppMessage } from "@/lib/whatsapp/notifications";
+import { coachNudgeTemplate } from "@/lib/whatsapp/templates";
 
 const partnerSchema = z.object({
   coupleId: z.string().uuid(),
@@ -30,6 +33,9 @@ const partnerSchema = z.object({
 
 const coachSchema = partnerSchema.extend({
   libraryId: z.string().uuid().optional().nullable(),
+  // Delivery channel. Default email = zero regression vs the existing flow.
+  // WhatsApp is admin-only (enforced below) and additive.
+  channel:   z.enum(["email", "whatsapp", "both"]).optional().default("email"),
 });
 
 type Result<T = void> =
@@ -173,6 +179,25 @@ export async function postCoachCoupleMessage(
     .update({ last_message_at: new Date().toISOString() })
     .eq("couple_id", parsed.data.coupleId);
 
+  // WhatsApp delivery (additive, admin-only). Best-effort — never blocks or
+  // fails the action; the message is already saved to the channel above and
+  // the email path is unaffected. Each partner is sent free text if their 24h
+  // window is open, else the coach_nudge template (handled in the WA layer).
+  if (
+    role === "admin" &&
+    (parsed.data.channel === "whatsapp" || parsed.data.channel === "both")
+  ) {
+    try {
+      await sendCoupleWhatsApp(admin, {
+        coupleId: parsed.data.coupleId,
+        body: parsed.data.body.trim(),
+        adminId: auth.user.id,
+      });
+    } catch (err) {
+      console.warn("[postCoachCoupleMessage] whatsapp send failed (non-fatal)", err);
+    }
+  }
+
   // Bump library use_count if the message came from a saved snippet.
   if (parsed.data.libraryId) {
     try {
@@ -189,4 +214,65 @@ export async function postCoachCoupleMessage(
   revalidatePath(`/dashboard/my-clients/${parsed.data.coupleId}`, "layout");
 
   return { ok: true, data: { messageId: (data as { id: string }).id } };
+}
+
+/**
+ * Fan a couple-addressed message out to each partner over WhatsApp and record
+ * a unified-history row in sent_messages. The WA layer (sendWhatsAppMessage)
+ * resolves opt-in / phone / 24h window per partner and picks free text vs the
+ * coach_nudge template, logging each attempt to whatsapp_messages. Partners who
+ * aren't reachable (no opt-in / no phone) are simply skipped — they still got
+ * the in-app message + email. Best-effort throughout.
+ */
+async function sendCoupleWhatsApp(
+  admin: SupabaseClient,
+  args: { coupleId: string; body: string; adminId: string },
+): Promise<void> {
+  const { data: members } = await admin
+    .from("couple_members")
+    .select("user_id")
+    .eq("couple_id", args.coupleId);
+  const ids = ((members ?? []) as Array<{ user_id: string }>).map((m) => m.user_id);
+  if (ids.length === 0) return;
+
+  const { data: profs } = await admin
+    .from("profiles")
+    .select("id, full_name, mobile")
+    .in("id", ids);
+
+  const base = (process.env.NEXT_PUBLIC_SITE_URL || "https://mioshy.com").replace(/\/$/, "");
+  const conversationUrl = `${base}/he/my/journey/together`;
+
+  for (const p of (profs ?? []) as Array<{
+    id: string;
+    full_name: string | null;
+    mobile: string | null;
+  }>) {
+    const name = p.full_name?.trim() || "";
+    const outcome = await sendWhatsAppMessage({
+      userId: p.id,
+      freeText: args.body,
+      template: coachNudgeTemplate({ name, conversationUrl }),
+    });
+
+    // Record history only when we actually attempted a send (success, or a
+    // real send failure). Eligibility fallbacks (no opt-in / no phone) aren't
+    // failures — those partners are reachable by email only.
+    const attempted = outcome.sent || outcome.reason?.startsWith("send-failed");
+    if (!attempted) continue;
+
+    await admin
+      .from("sent_messages")
+      .insert({
+        user_id: p.id,
+        channel: "whatsapp",
+        body: args.body,
+        to_address: p.mobile ?? "",
+        sent_by: "admin",
+        sent_by_admin: args.adminId,
+        provider_id: outcome.waMessageId ?? null,
+        status: outcome.sent ? "sent" : "failed",
+      })
+      .then(() => undefined, () => undefined);
+  }
 }

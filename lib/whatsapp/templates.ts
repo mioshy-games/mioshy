@@ -72,4 +72,29 @@ export function partnerInviteTemplate(args: {
   };
 }
 
+/**
+ * coach_nudge (UTILITY)
+ * The out-of-window "you have a new message" nudge sent from the admin compose
+ * when free text isn't allowed. Body (per spec §6): a greeting with {{1}} name
+ * and {{2}} a link to the conversation in the app. The full message content
+ * stays in-app / email; this just pulls the user back in.
+ *
+ * IMPORTANT: the visible wording lives in the Meta-approved template, NOT here.
+ * This builder only fixes the template NAME + variable ORDER. Itzik finalises
+ * the copy and submits it to WhatsApp Manager separately. If the approved
+ * template adds a URL button, wire urlButton(suffix) into `components`.
+ */
+export function coachNudgeTemplate(args: {
+  name: string;
+  conversationUrl: string;
+  languageCode?: "he" | "en";
+}): TemplateSend {
+  return {
+    templateName: "coach_nudge",
+    languageCode: args.languageCode ?? "he",
+    category: "utility",
+    components: [bodyText(args.name, args.conversationUrl)],
+  };
+}
+
 export { urlButton };

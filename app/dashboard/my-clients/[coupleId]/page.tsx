@@ -27,6 +27,10 @@ import { CoupleTimelineCsv } from "./timeline-csv";
 import { RecentActivity } from "./recent-activity";
 import { PartnersSplit } from "./partners-split";
 import { CoupleMessageCompose } from "@/components/dashboard/coach/CoupleMessageCompose";
+import {
+  getWhatsAppRecipientStates,
+  isWhatsAppConfigured,
+} from "@/lib/whatsapp/admin";
 import { SmartSuggestionsPanel } from "@/components/dashboard/coach/SmartSuggestionsPanel";
 import { CoupleStepGuide } from "@/components/dashboard/coach/CoupleStepGuide";
 import { CoupleHistoryPanel } from "@/components/dashboard/coach/CoupleHistoryPanel";
@@ -261,6 +265,26 @@ export default async function CoupleDetailPage({
   if (partnerAId) partnerLabelsById.set(partnerAId, partnerALabel);
   if (partnerBId) partnerLabelsById.set(partnerBId, partnerBLabel);
 
+  // WhatsApp compose gating — admin only AND env configured. We pass the
+  // selector props only then; otherwise CoupleMessageCompose renders email-only
+  // exactly as before. Eligibility + 24h window are computed per partner.
+  let whatsappCompose:
+    | { eligibleCount: number; anyWindowOpen: boolean }
+    | undefined;
+  if (session.isAdmin && isWhatsAppConfigured() && partnerUserIds.length > 0) {
+    const waStates = await getWhatsAppRecipientStates(partnerUserIds);
+    let eligibleCount = 0;
+    let anyWindowOpen = false;
+    for (const id of partnerUserIds) {
+      const s = waStates.get(id);
+      if (s?.eligible) {
+        eligibleCount += 1;
+        if (s.windowOpen) anyWindowOpen = true;
+      }
+    }
+    whatsappCompose = { eligibleCount, anyWindowOpen };
+  }
+
   // Build the comparison matrix once, server-side. Empty arrays for
   // missing partners - the matrix builder treats them as "not answered".
   const responsesA = partnerAId ? responsesByUser.get(partnerAId) ?? [] : [];
@@ -341,7 +365,7 @@ export default async function CoupleDetailPage({
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           Couple message
         </h2>
-        <CoupleMessageCompose coupleId={detail.coupleId} />
+        <CoupleMessageCompose coupleId={detail.coupleId} whatsapp={whatsappCompose} />
       </section>
 
       {/* Priority alignment - both partners' rankings side by side with
