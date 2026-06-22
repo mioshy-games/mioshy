@@ -59,16 +59,6 @@ const MAX_BUFFER = 50;
 const buffer: QueuedCall[] = [];
 let pixelReady = false;
 
-// TEMP QA LOG (2026-06-22) — remove after QA confirms delivery. Tags each
-// event's fate so we can watch it in the browser console.
-function qaLog(
-  fate: "fired" | "buffered" | "drained" | "dropped:url" | "dropped:full",
-  name: string,
-): void {
-  // eslint-disable-next-line no-console
-  console.log(`[meta-pixel] ${fate}: ${name}`);
-}
-
 function emit(call: QueuedCall): boolean {
   const fbq = rawFbq();
   if (!fbq) return false;
@@ -92,21 +82,10 @@ function emit(call: QueuedCall): boolean {
 function dispatch(call: QueuedCall): void {
   // Privacy: never emit on a page whose URL carries a share/pairing token — fbq
   // auto-attaches the page URL. Checked against the CURRENT url at send time.
-  if (urlHasSensitiveParams()) {
-    qaLog("dropped:url", call.name);
-    return;
-  }
-  if (pixelReady && emit(call)) {
-    qaLog("fired", call.name);
-    return;
-  }
+  if (urlHasSensitiveParams()) return;
+  if (pixelReady && emit(call)) return;
   // Pixel not ready yet → buffer for flush on init (instead of dropping).
-  if (buffer.length < MAX_BUFFER) {
-    buffer.push(call);
-    qaLog("buffered", call.name);
-  } else {
-    qaLog("dropped:full", call.name);
-  }
+  if (buffer.length < MAX_BUFFER) buffer.push(call);
 }
 
 /**
@@ -119,12 +98,8 @@ export function flushMetaPixelQueue(): void {
   const pending = buffer.splice(0, buffer.length);
   for (const call of pending) {
     // Re-check the URL at drain time — it may have navigated since enqueue.
-    if (urlHasSensitiveParams()) {
-      qaLog("dropped:url", call.name);
-      continue;
-    }
-    if (emit(call)) qaLog("drained", call.name);
-    else if (buffer.length < MAX_BUFFER) buffer.push(call); // fbq vanished → re-buffer
+    if (urlHasSensitiveParams()) continue;
+    if (!emit(call) && buffer.length < MAX_BUFFER) buffer.push(call); // fbq vanished → re-buffer
   }
 }
 
