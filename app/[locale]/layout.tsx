@@ -14,6 +14,8 @@ import { SubscriptionBillingBanner } from "@/components/billing/SubscriptionBill
 import { PostHogIdentify } from "@/components/analytics/PostHogIdentify";
 import { MetaPixelProvider } from "@/components/analytics/MetaPixelProvider";
 import { organizationJsonLd, webSiteJsonLd, safeJsonLd } from "@/lib/seo/jsonLd";
+import { CmsTextProvider } from "@/components/cms/CmsTextProvider";
+import { loadCmsTextsForPage } from "@/lib/cms/server";
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -45,6 +47,15 @@ export default async function LocaleLayout({
   }
   setRequestLocale(locale);
   const messages = await getMessages();
+
+  // Global header CTA (and any future cross-route header/footer copy) is
+  // CMS-editable via page='shared'. The header lives in Chrome and renders on
+  // every page, so we load the shared rows here and wrap Chrome in a
+  // CmsTextProvider. Per-page providers nest INSIDE {children}, so they replace
+  // the context only for their own subtree — the header keeps seeing the shared
+  // rows. loadCmsTextsForPage is React.cache-memoised, so this is one cheap
+  // indexed read per request that downstream shared lookups reuse.
+  const sharedCmsRows = await loadCmsTextsForPage("shared");
 
   // Determine auth + entitlements once per request so the header can:
   //   1. Show "My Mioshy" instead of "Sign in" for signed-in visitors.
@@ -112,14 +123,16 @@ export default async function LocaleLayout({
       <PostHogIdentify userId={userId} />
       <MetaPixelProvider />
       <SubscriptionBillingBanner state={billingBannerState} isHe={locale === "he"} />
-      <Chrome
-        isAuthed={isAuthed}
-        entitlements={entitlements}
-        unreadNotifications={unreadNotifications}
-        locale={locale}
-      >
-        {children}
-      </Chrome>
+      <CmsTextProvider rows={sharedCmsRows}>
+        <Chrome
+          isAuthed={isAuthed}
+          entitlements={entitlements}
+          unreadNotifications={unreadNotifications}
+          locale={locale}
+        >
+          {children}
+        </Chrome>
+      </CmsTextProvider>
     </NextIntlClientProvider>
   );
 }

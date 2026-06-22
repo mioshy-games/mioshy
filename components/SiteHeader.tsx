@@ -8,6 +8,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 // cumulative React-component-overhead win is broad.
 import { Gamepad2, Heart, Home, Library, LogOut, Menu, Sparkles, X } from "@/components/icons/Icons";
 import { JourneyNotificationsBell } from "@/components/notifications/JourneyNotificationsBell";
+import { CmsText } from "@/components/cms/CmsText";
 import { logoutAction } from "@/app/actions/auth-actions";
 
 /**
@@ -455,9 +456,7 @@ export function SiteHeader({
                   aria-hidden
                   className="absolute inset-0 bg-[linear-gradient(110deg,#d946ef_0%,#a855f7_35%,#ec4899_70%,#f59e0b_100%)]"
                 />
-                <span className="relative z-10">
-                  {isHe ? "אני רוצה להצטרף" : "Join now"}
-                </span>
+                <CmsText cmsKey="header.joinCta" as="span" className="relative z-10" />
               </Link>
             </>
           )}
