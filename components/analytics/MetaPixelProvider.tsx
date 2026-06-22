@@ -2,7 +2,7 @@
 
 import { useEffect, Suspense } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { metaTrack } from "@/lib/analytics/meta-pixel";
+import { metaTrack, flushMetaPixelQueue } from "@/lib/analytics/meta-pixel";
 
 /**
  * Meta (Facebook) browser Pixel loader — deliberately a near-clone of
@@ -61,7 +61,11 @@ function initMetaPixel() {
 
   const fbq = (window as unknown as { fbq: (...a: unknown[]) => void }).fbq;
   fbq("init", PIXEL_ID);
-  // Landing PageView. metaTrack guards against sensitive-URL leakage.
+  // Pixel is ready — mark ready + drain any events that fired during the idle
+  // window before init (e.g. CompleteAssessment on a post-login summary remount)
+  // so they aren't lost to the load race.
+  flushMetaPixelQueue();
+  // Landing PageView (fires directly now). metaTrack guards sensitive URLs.
   metaTrack("PageView");
 }
 

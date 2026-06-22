@@ -34,14 +34,98 @@ function urlHasSensitiveParams(): boolean {
   }
 }
 
-function getFbq(): Fbq | null {
+/** Raw fbq presence check ONLY (no URL gate) — so we can tell "pixel not ready
+ *  yet" apart from "sensitive URL" and buffer vs drop accordingly. */
+function rawFbq(): Fbq | null {
   if (typeof window === "undefined") return null;
   const fbq = (window as unknown as { fbq?: Fbq }).fbq;
-  if (typeof fbq !== "function") return null;
-  // Never emit on a page whose URL carries a sensitive token (fbq would attach
-  // that URL to the event).
-  if (urlHasSensitiveParams()) return null;
-  return fbq;
+  return typeof fbq === "function" ? fbq : null;
+}
+
+type QueuedCall =
+  | { kind: "track"; name: string; params: Record<string, unknown>; eventId?: string }
+  | { kind: "trackCustom"; name: string; params: Record<string, unknown> };
+
+// ── Race fix (2026-06-22) ────────────────────────────────────────────────────
+// MetaPixelProvider loads the pixel at browser idle (deferred), so events fired
+// before init existed used to be dropped — explaining CompleteAssessment landing
+// only ~1/3 of the time (it fires on the post-login summary remount, where
+// isDone is already true at mount, BEFORE the idle init runs). We now BUFFER any
+// event fired before the pixel is ready and flush it on init. Module-scoped
+// (singleton) so it's shared with the provider's flushMetaPixelQueue(). Capped
+// so a pixel that never initialises (dev / DNT / missing env) can't grow it
+// unbounded.
+const MAX_BUFFER = 50;
+const buffer: QueuedCall[] = [];
+let pixelReady = false;
+
+// TEMP QA LOG (2026-06-22) — remove after QA confirms delivery. Tags each
+// event's fate so we can watch it in the browser console.
+function qaLog(
+  fate: "fired" | "buffered" | "drained" | "dropped:url" | "dropped:full",
+  name: string,
+): void {
+  // eslint-disable-next-line no-console
+  console.log(`[meta-pixel] ${fate}: ${name}`);
+}
+
+function emit(call: QueuedCall): boolean {
+  const fbq = rawFbq();
+  if (!fbq) return false;
+  try {
+    if (call.kind === "track") {
+      fbq(
+        "track",
+        call.name,
+        call.params,
+        call.eventId ? { eventID: call.eventId } : undefined,
+      );
+    } else {
+      fbq("trackCustom", call.name, call.params);
+    }
+  } catch {
+    /* analytics must never break UI */
+  }
+  return true;
+}
+
+function dispatch(call: QueuedCall): void {
+  // Privacy: never emit on a page whose URL carries a share/pairing token — fbq
+  // auto-attaches the page URL. Checked against the CURRENT url at send time.
+  if (urlHasSensitiveParams()) {
+    qaLog("dropped:url", call.name);
+    return;
+  }
+  if (pixelReady && emit(call)) {
+    qaLog("fired", call.name);
+    return;
+  }
+  // Pixel not ready yet → buffer for flush on init (instead of dropping).
+  if (buffer.length < MAX_BUFFER) {
+    buffer.push(call);
+    qaLog("buffered", call.name);
+  } else {
+    qaLog("dropped:full", call.name);
+  }
+}
+
+/**
+ * Mark the pixel ready and drain anything buffered before init. Called by
+ * MetaPixelProvider right after `fbq('init', …)`. Idempotent.
+ */
+export function flushMetaPixelQueue(): void {
+  pixelReady = true;
+  if (!buffer.length) return;
+  const pending = buffer.splice(0, buffer.length);
+  for (const call of pending) {
+    // Re-check the URL at drain time — it may have navigated since enqueue.
+    if (urlHasSensitiveParams()) {
+      qaLog("dropped:url", call.name);
+      continue;
+    }
+    if (emit(call)) qaLog("drained", call.name);
+    else if (buffer.length < MAX_BUFFER) buffer.push(call); // fbq vanished → re-buffer
+  }
 }
 
 /** Fire a STANDARD Meta event (Purchase, ViewContent, …) with a dedup eventID. */
@@ -50,25 +134,13 @@ export function metaTrack(
   params?: Record<string, unknown>,
   eventId?: string,
 ): void {
-  const fbq = getFbq();
-  if (!fbq) return;
-  try {
-    fbq("track", eventName, params ?? {}, eventId ? { eventID: eventId } : undefined);
-  } catch {
-    /* analytics must never break UI */
-  }
+  dispatch({ kind: "track", name: eventName, params: params ?? {}, eventId });
 }
 
-/** Fire a CUSTOM Meta event (FreeGameSpin, FreeGameCTAClick). */
+/** Fire a CUSTOM Meta event (FreeGameSpin, FreeGameCTAClick, CompleteAssessment). */
 export function metaTrackCustom(
   eventName: string,
   params?: Record<string, unknown>,
 ): void {
-  const fbq = getFbq();
-  if (!fbq) return;
-  try {
-    fbq("trackCustom", eventName, params ?? {});
-  } catch {
-    /* analytics must never break UI */
-  }
+  dispatch({ kind: "trackCustom", name: eventName, params: params ?? {} });
 }

@@ -222,16 +222,21 @@ export function JourneyClient({
   const isDone = wasCompleted || index >= total;
 
   // Meta CompleteAssessment (custom, browser) — the SHORT-assessment campaign
-  // optimization event. Fires once when the user reaches the summary/analysis
-  // screen (isDone). Neutral assessment_type; browser-only (no CAPI). The ref
-  // guards against re-render double-fires.
+  // optimization event. Fires once when the user reaches the AUTHENTICATED
+  // summary/analysis screen (isDone && authenticated) — the same condition that
+  // renders the summary (see `isDone && !authenticated` → registration gate
+  // below). Gating on `authenticated` avoids firing at the anonymous gate and
+  // avoids the inconsistent double-fire across the anon→login→remount
+  // transition. Delivery is race-safe regardless: metaTrackCustom buffers until
+  // the idle-loaded pixel is ready (lib/analytics/meta-pixel.ts). Neutral
+  // assessment_type; browser-only (no CAPI). Ref guards re-render double-fires.
   const completeAssessmentFiredRef = useRef(false);
   useEffect(() => {
-    if (isDone && !completeAssessmentFiredRef.current) {
+    if (isDone && authenticated && !completeAssessmentFiredRef.current) {
       completeAssessmentFiredRef.current = true;
       metaTrackCustom("CompleteAssessment", { assessment_type: "journey_short" });
     }
-  }, [isDone]);
+  }, [isDone, authenticated]);
 
   // 🎉 Confetti - fires ONCE EVER when the questionnaire is done.
   //
