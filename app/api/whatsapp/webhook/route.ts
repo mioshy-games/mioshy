@@ -110,6 +110,14 @@ async function handleEvent(body: WaWebhookBody) {
             .update({ whatsapp_opt_out_at: new Date().toISOString(), whatsapp_opt_in: false })
             .ilike("mobile", `%${last9}`)
             .then(() => undefined, () => undefined);
+          // Also stop any active marathon enrollment for this phone (marathon
+          // leads aren't profiles, so the update above wouldn't reach them).
+          await admin
+            .from("marathon_enrollments")
+            .update({ status: "stopped" })
+            .ilike("phone", `%${last9}`)
+            .eq("status", "active")
+            .then(() => undefined, () => undefined);
         }
       }
     }
