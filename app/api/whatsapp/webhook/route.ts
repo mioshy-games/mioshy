@@ -101,6 +101,19 @@ async function handleEvent(body: WaWebhookBody) {
           })
           .then(() => undefined, () => undefined);
 
+        // Stamp the 24h service-window signal on the matching profile. Suffix
+        // match (last 9 digits) mirrors the opt-out path, since stored mobile
+        // may be national-form while the inbound `from` is international.
+        // Every inbound message (not just opt-out) refreshes the window.
+        if (from) {
+          const last9 = from.slice(-9);
+          await admin
+            .from("profiles")
+            .update({ whatsapp_last_inbound_at: new Date().toISOString() })
+            .ilike("mobile", `%${last9}`)
+            .then(() => undefined, () => undefined);
+        }
+
         // Opt-out: match the sender phone against profiles.mobile (suffix match,
         // since stored mobile may be national-form and inbound is international).
         if (isStop && from) {
