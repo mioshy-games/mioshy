@@ -72,4 +72,44 @@ export function partnerInviteTemplate(args: {
   };
 }
 
+/**
+ * marathon_day (UTILITY)
+ * The daily 7-day-marathon message. Fixed scaffolding lives in the
+ * Meta-approved template; only the three variables change per day, so editing
+ * the day's copy (domain + activity, from CMS) needs NO template re-approval:
+ *   Body: "יום {{1}} מתוך 7 · {{2}}\n\nהמשימה שלכם להיום, 5 דקות יחד:\n{{3}}\n\nנתראה מחר 💛"
+ *   {{1}} day number (1-7), {{2}} domain/theme, {{3}} the activity text.
+ * Sent proactively (outside the 24h window) → MUST be an approved template.
+ */
+export function marathonDayTemplate(args: {
+  day: number;
+  domain: string;
+  activity: string;
+  languageCode?: "he" | "en";
+}): TemplateSend {
+  return {
+    templateName: "marathon_day",
+    languageCode: args.languageCode ?? "he",
+    category: "utility",
+    components: [bodyText(String(args.day), args.domain, args.activity)],
+  };
+}
+
+/**
+ * marathon_welcome (UTILITY)
+ * Enrollment confirmation, sent once on signup. Static (no variables) — the
+ * wording lives in the Meta-approved template; Itzik supplies the final copy
+ * (the §6 draft, aligned to 7 days). Also proactive → must be a template.
+ */
+export function marathonWelcomeTemplate(args?: {
+  languageCode?: "he" | "en";
+}): TemplateSend {
+  return {
+    templateName: "marathon_welcome",
+    languageCode: args?.languageCode ?? "he",
+    category: "utility",
+    components: [],
+  };
+}
+
 export { urlButton };

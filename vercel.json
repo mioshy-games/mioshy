@@ -44,6 +44,10 @@
     {
       "path": "/api/journey/weekly-recap",
       "schedule": "0 6 * * 0"
+    },
+    {
+      "path": "/api/marathon/run",
+      "schedule": "30 * * * *"
     }
   ]
 }
