@@ -268,11 +268,14 @@ export default async function CoupleDetailPage({
   // WhatsApp compose gating — admin only AND env configured. We pass the
   // selector props only then; otherwise CoupleMessageCompose renders email-only
   // exactly as before. Eligibility + 24h window are computed per partner.
+  const whatsappEnabled = session.isAdmin && isWhatsAppConfigured();
   let whatsappCompose:
     | { eligibleCount: number; anyWindowOpen: boolean }
     | undefined;
-  if (session.isAdmin && isWhatsAppConfigured() && partnerUserIds.length > 0) {
-    const waStates = await getWhatsAppRecipientStates(partnerUserIds);
+  let waStates: Awaited<ReturnType<typeof getWhatsAppRecipientStates>> | null =
+    null;
+  if (whatsappEnabled && partnerUserIds.length > 0) {
+    waStates = await getWhatsAppRecipientStates(partnerUserIds);
     let eligibleCount = 0;
     let anyWindowOpen = false;
     for (const id of partnerUserIds) {
@@ -460,11 +463,17 @@ export default async function CoupleDetailPage({
           Reply in private channel
         </h2>
         <GeneralChannelAdminReply
-          partners={channelThreadsByUser.map((t) => ({
-            userId: t.userId,
-            label: partnerLabelsById.get(t.userId) ?? "Partner",
-            messages: t.messages,
-          }))}
+          partners={channelThreadsByUser.map((t) => {
+            const s = whatsappEnabled ? waStates?.get(t.userId) : undefined;
+            return {
+              userId: t.userId,
+              label: partnerLabelsById.get(t.userId) ?? "Partner",
+              messages: t.messages,
+              whatsapp: s
+                ? { eligible: s.eligible, windowOpen: s.windowOpen }
+                : undefined,
+            };
+          })}
         />
       </section>
 
