@@ -33,6 +33,19 @@ const WEEKS_PER_CADENCE: Record<string, number> = {
   quarterly: 13.04,
   yearly: 52.14,
 };
+
+// Display-only discount anchor for the struck "original" price (ILS only).
+// `original = ANCHOR_WEEKLY_BASE_ILS × ANCHOR_WEEKS_IN_PERIOD[cadence]`
+// → 508 / 1,524 / 6,096. The weekly base is a single constant for now; it's
+// meant to move to an admin source later (like the real cadence prices). Uses
+// WHOLE period-weeks {4,12,48} on purpose — NOT the calendar WEEKS_PER_CADENCE
+// (4.345/13.04/52.14) above, which is only for the per-week math.
+const ANCHOR_WEEKLY_BASE_ILS = 127;
+const ANCHOR_WEEKS_IN_PERIOD: Record<string, number> = {
+  monthly: 4,
+  quarterly: 12,
+  yearly: 48,
+};
 const CADENCE_ORDER: Record<string, number> = {
   weekly: 0,
   monthly: 1,
@@ -942,11 +955,24 @@ function OfferCard({
                   a11y M4: /40→/60 for contrast + sr-only "היה" so the
                   strikethrough's meaning isn't conveyed by visual style alone. */}
               <span className="sr-only">{isHe ? "היה " : "was "}</span>
-              <CmsText
-                cmsKey="journeyAssessment.analysis.anchorPrice"
-                as="span"
-                className="text-[20px] font-medium text-white/60 line-through"
-              />
+              {/* ILS: struck original derived per cadence (weeklyBase × weeks),
+                  fixing the value that was stuck at ₪127 across all packages.
+                  USD/en is intentionally left on the CMS anchor — out of scope. */}
+              {isHe && ANCHOR_WEEKS_IN_PERIOD[selectedOption.cadence] ? (
+                <span className="text-[20px] font-medium text-white/60 line-through">
+                  {sym}
+                  {fmt(
+                    ANCHOR_WEEKLY_BASE_ILS *
+                      ANCHOR_WEEKS_IN_PERIOD[selectedOption.cadence],
+                  )}
+                </span>
+              ) : (
+                <CmsText
+                  cmsKey="journeyAssessment.analysis.anchorPrice"
+                  as="span"
+                  className="text-[20px] font-medium text-white/60 line-through"
+                />
+              )}
               <span className="font-extrabold leading-none text-white">
                 <span className="text-[20px]">{sym}</span>
                 <span className="text-[32px]">{fmt(amtOf(selectedOption))}</span>
