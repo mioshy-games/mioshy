@@ -20,6 +20,8 @@ function normaliseMobile(raw: string): string | null {
 export async function saveProfileDetails(input: {
   full_name: string;
   mobile: string;
+  /** WhatsApp opt-in toggle. Omitted = leave consent untouched. */
+  whatsapp_opt_in?: boolean;
 }): Promise<Ok<object> | Err> {
   const supabase = await createServerSupabaseClient();
   const {
@@ -36,9 +38,23 @@ export async function saveProfileDetails(input: {
     return { ok: false, error: "Mobile must be 8–15 digits" };
   }
 
+  const update: Record<string, unknown> = { full_name: name, mobile };
+  // WhatsApp consent (stage 2). Only touched when the field is provided.
+  // Opting in records when + source and clears any prior opt-out (re-consent).
+  if (typeof input.whatsapp_opt_in === "boolean") {
+    if (input.whatsapp_opt_in) {
+      update.whatsapp_opt_in = true;
+      update.whatsapp_opt_in_at = new Date().toISOString();
+      update.whatsapp_opt_in_source = "profile";
+      update.whatsapp_opt_out_at = null;
+    } else {
+      update.whatsapp_opt_in = false;
+    }
+  }
+
   const { error } = await supabase
     .from("profiles")
-    .update({ full_name: name, mobile })
+    .update(update)
     .eq("id", user.id);
 
   if (error) return { ok: false, error: error.message };

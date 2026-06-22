@@ -726,6 +726,10 @@
   "account": {
     "title": "Your account",
     "subtitle": "Manage your subscription, invoices, and freezes.",
+    "whatsappOptIn": {
+      "label": "Send me journey updates and coach messages on WhatsApp too",
+      "hint": "You can opt out any time by replying ‘STOP’."
+    },
     "email": "Email",
     "plan": "Plan",
     "renewal": "Renews",
