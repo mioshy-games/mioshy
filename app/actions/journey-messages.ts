@@ -46,6 +46,8 @@ import {
   notifyExpertPool,
   notifyUser,
 } from "@/lib/journey-content/notifications";
+import { sendWhatsAppMessage } from "@/lib/whatsapp/notifications";
+import { coachNudgeTemplate } from "@/lib/whatsapp/templates";
 import { logActivity } from "@/lib/journey/activity";
 import { classifyAndStampMessage } from "@/lib/ai/classify-message";
 import type {
@@ -566,6 +568,8 @@ export async function postExpertReplyToChannel(args: {
   channelUserId: string;
   body: string;
   libraryId?: string | null;
+  /** Delivery channel. Default email = zero regression. WhatsApp is admin-only. */
+  channel?: "email" | "whatsapp" | "both";
 }): Promise<Ok<{ messageId: string }> | Err> {
   if (!args.channelUserId) return { ok: false, error: "missing_id" };
   const trimmed = (args.body ?? "").trim();
@@ -624,8 +628,76 @@ export async function postExpertReplyToChannel(args: {
     },
   });
 
+  // WhatsApp delivery (additive, admin-only). Best-effort — never blocks or
+  // fails the action; the in-app message + email above are unaffected. Free
+  // text inside the 24h window, else the coach_nudge template (WA layer picks).
+  const channel = args.channel ?? "email";
+  if (channel === "whatsapp" || channel === "both") {
+    try {
+      const { data: prof } = await admin
+        .from("profiles")
+        .select("role")
+        .eq("id", expert.userId)
+        .maybeSingle();
+      if ((prof as { role: string } | null)?.role === "admin") {
+        await sendUserChannelWhatsApp(admin, {
+          userId: args.channelUserId,
+          body: trimmed,
+          adminId: expert.userId,
+        });
+      }
+    } catch (err) {
+      console.warn("[postExpertReplyToChannel] whatsapp send failed (non-fatal)", err);
+    }
+  }
+
   revalidateMessageSurfaces();
   return { ok: true, messageId: msgRow.id as string };
+}
+
+/**
+ * Send a single-recipient channel message over WhatsApp and record a
+ * unified-history row in sent_messages. sendWhatsAppMessage resolves opt-in /
+ * phone / 24h window and picks free text vs the coach_nudge template, logging
+ * to whatsapp_messages. Unreachable users (no opt-in / no phone) are skipped —
+ * they still got the in-app message + email. Best-effort.
+ */
+async function sendUserChannelWhatsApp(
+  admin: Awaited<ReturnType<typeof createAdminClient>>,
+  args: { userId: string; body: string; adminId: string },
+): Promise<void> {
+  const { data: prof } = await admin
+    .from("profiles")
+    .select("full_name, mobile")
+    .eq("id", args.userId)
+    .maybeSingle();
+  const name = (prof as { full_name: string | null } | null)?.full_name?.trim() || "";
+  const mobile = (prof as { mobile: string | null } | null)?.mobile ?? "";
+  const base = (process.env.NEXT_PUBLIC_SITE_URL || "https://mioshy.com").replace(/\/$/, "");
+  const conversationUrl = `${base}/he/my/journey`;
+
+  const outcome = await sendWhatsAppMessage({
+    userId: args.userId,
+    freeText: args.body,
+    template: coachNudgeTemplate({ name, conversationUrl }),
+  });
+
+  const attempted = outcome.sent || outcome.reason?.startsWith("send-failed");
+  if (!attempted) return;
+
+  await admin
+    .from("sent_messages")
+    .insert({
+      user_id: args.userId,
+      channel: "whatsapp",
+      body: args.body,
+      to_address: mobile,
+      sent_by: "admin",
+      sent_by_admin: args.adminId,
+      provider_id: outcome.waMessageId ?? null,
+      status: outcome.sent ? "sent" : "failed",
+    })
+    .then(() => undefined, () => undefined);
 }
 
 // ============================================================

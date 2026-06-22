@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "@/navigation";
 import { Check } from "lucide-react";
 import { saveProfileDetails } from "@/app/[locale]/account/profile/actions";
@@ -9,12 +10,15 @@ export function ProfileDetailsForm({
   isHe,
   defaultName,
   defaultMobile,
+  defaultWhatsappOptIn = false,
   highlightMissing,
   nextHref,
 }: {
   isHe: boolean;
   defaultName: string;
   defaultMobile: string;
+  /** Current WhatsApp consent, so the checkbox reflects existing state. */
+  defaultWhatsappOptIn?: boolean;
   highlightMissing: { full_name: boolean; mobile: boolean };
   /**
    * If provided, we redirect there after a successful save. If not
@@ -24,8 +28,10 @@ export function ProfileDetailsForm({
   nextHref?: string;
 }) {
   const router = useRouter();
+  const t = useTranslations("account.whatsappOptIn");
   const [fullName, setFullName] = useState(defaultName);
   const [mobile, setMobile] = useState(defaultMobile);
+  const [whatsappOptIn, setWhatsappOptIn] = useState(defaultWhatsappOptIn);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [pending, start] = useTransition();
@@ -38,6 +44,7 @@ export function ProfileDetailsForm({
       const res = await saveProfileDetails({
         full_name: fullName,
         mobile,
+        whatsapp_opt_in: whatsappOptIn,
       });
       if (!res.ok) {
         setError(res.error);
@@ -93,6 +100,22 @@ export function ProfileDetailsForm({
           autoComplete="tel"
         />
       </div>
+
+      {/* WhatsApp opt-in (stage 2). Copy lives in i18n (account.whatsappOptIn)
+          so it can change without a deploy. Mobile-first layout; additive. */}
+      <label className="flex items-start gap-2.5 rounded-2xl border border-white/15 bg-white/[0.06] px-4 py-3">
+        <input
+          type="checkbox"
+          checked={whatsappOptIn}
+          onChange={(e) => setWhatsappOptIn(e.target.checked)}
+          disabled={pending}
+          className="mt-0.5 h-4 w-4 shrink-0 rounded border-white/30 bg-white/10 accent-fuchsia-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-300"
+        />
+        <span className="text-sm text-white/85">
+          {t("label")}
+          <span className="mt-0.5 block text-xs text-white/55">{t("hint")}</span>
+        </span>
+      </label>
 
       {error ? (
         <p className="rounded-2xl border border-rose-400/40 bg-rose-500/10 px-4 py-2.5 text-sm text-rose-100">

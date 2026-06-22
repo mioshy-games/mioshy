@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Link } from "@/navigation";
 import { ArrowLeft, ShieldCheck, UserRoundCog } from "lucide-react";
 import { getProfileGate } from "@/lib/auth/profile-gate";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { ProfileDetailsForm } from "@/components/account/ProfileDetailsForm";
 import { SetPasswordForm } from "@/components/account/SetPasswordForm";
 
@@ -61,6 +62,23 @@ export default async function ProfileDetailsPage({
     redirect(
       `/${locale}/auth?next=${encodeURIComponent(`/${locale}/account/profile`)}`,
     );
+  }
+
+  // Current WhatsApp consent, so the opt-in checkbox reflects existing state.
+  // Self-read via the session client (RLS allows reading your own profile).
+  let defaultWhatsappOptIn = false;
+  {
+    const supabase = await createServerSupabaseClient();
+    const { data: auth } = await supabase.auth.getUser();
+    if (auth?.user) {
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("whatsapp_opt_in")
+        .eq("id", auth.user.id)
+        .maybeSingle();
+      defaultWhatsappOptIn = !!(prof as { whatsapp_opt_in: boolean } | null)
+        ?.whatsapp_opt_in;
+    }
   }
 
   const reason = searchParams?.reason;
@@ -122,6 +140,7 @@ export default async function ProfileDetailsPage({
               isHe={isHe}
               defaultName={gate.full_name ?? ""}
               defaultMobile={gate.mobile ?? ""}
+              defaultWhatsappOptIn={defaultWhatsappOptIn}
               highlightMissing={{
                 full_name: needsName,
                 mobile: needsMobile,

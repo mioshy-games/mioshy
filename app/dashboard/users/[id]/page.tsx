@@ -31,6 +31,12 @@ import { createServiceRoleClient } from "@/lib/supabase-admin";
 import { getAdminLocale, isRtl } from "@/lib/admin/locale";
 import { loadUserBehavior } from "@/lib/dashboard/user-behavior";
 import { UserBehaviorTabs } from "@/components/dashboard/UserBehaviorTabs";
+import { WhatsAppUserPanel } from "@/components/dashboard/WhatsAppUserPanel";
+import {
+  getWhatsAppRecipientState,
+  listRecentWhatsAppMessages,
+  isWhatsAppConfigured,
+} from "@/lib/whatsapp/admin";
 
 // B.5 — short/full grouping labels for the admin. Hebrew first (the expert
 // reads the user's Hebrew answers) with the en tag alongside.
@@ -102,6 +108,15 @@ export default async function UserDetailPage({ params }: { params: { id: string 
   const behavior = adminDb ? await loadUserBehavior(adminDb, userId) : null;
   const adminLocale = getAdminLocale();
 
+  // WhatsApp panel (spec §5.1) — read-only: mobile, opt-in, 24h window, recent
+  // messages. Reads go through the service-role helpers (whatsapp_messages is
+  // RLS-locked); requireAdmin already gated this route.
+  const [whatsappState, whatsappMessages] = await Promise.all([
+    getWhatsAppRecipientState(userId),
+    listRecentWhatsAppMessages(userId, 5),
+  ]);
+  const whatsappConfigured = isWhatsAppConfigured();
+
   return (
     <div className="flex flex-col gap-6 p-6">
       <Card>
@@ -124,6 +139,13 @@ export default async function UserDetailPage({ params }: { params: { id: string 
           data={behavior}
         />
       ) : null}
+
+      <WhatsAppUserPanel
+        state={whatsappState}
+        messages={whatsappMessages}
+        configured={whatsappConfigured}
+        isHe={isRtl(adminLocale)}
+      />
 
       {analysis ? (
         <Card>

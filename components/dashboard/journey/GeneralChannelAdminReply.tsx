@@ -28,7 +28,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Send, Lock } from "lucide-react";
+import { Loader2, Send, Lock, Mail, MessageCircle } from "lucide-react";
 import {
   Tabs,
   TabsContent,
@@ -45,7 +45,12 @@ interface PartnerChannel {
   userId: string;
   label: string;
   messages: JourneyMessage[];
+  /** Present only for admins with WhatsApp configured. Drives the channel
+   *  selector for this partner's private channel. */
+  whatsapp?: { eligible: boolean; windowOpen: boolean };
 }
+
+type Channel = "email" | "whatsapp" | "both";
 
 export function GeneralChannelAdminReply({
   partners,
@@ -121,8 +126,12 @@ export function GeneralChannelAdminReply({
 function ChannelPanel({ partner }: { partner: PartnerChannel }) {
   const router = useRouter();
   const [body, setBody] = React.useState("");
+  const [channel, setChannel] = React.useState<Channel>("email");
   const [pending, setPending] = React.useState(false);
   const [feedback, setFeedback] = React.useState<string | null>(null);
+
+  const waReachable = !!partner.whatsapp?.eligible;
+  const waSelected = channel === "whatsapp" || channel === "both";
 
   // Messages are sorted oldest→newest, so the latest sit at the bottom of the
   // scroller. Jump to the bottom on open (and when new messages arrive) so the
@@ -145,6 +154,7 @@ function ChannelPanel({ partner }: { partner: PartnerChannel }) {
     const res = await postExpertReplyToChannel({
       channelUserId: partner.userId,
       body,
+      channel,
     });
     setPending(false);
     if (!res.ok) {
@@ -176,6 +186,48 @@ function ChannelPanel({ partner }: { partner: PartnerChannel }) {
 
       {/* Composer */}
       <div className="rounded-lg border border-white/[0.08] bg-slate-950/40 p-3">
+        {/* Channel selector — admin only (whatsapp prop present). Default email. */}
+        {partner.whatsapp ? (
+          <div dir="rtl" className="mb-2 space-y-1.5">
+            <div className="flex flex-wrap gap-1.5">
+              {([
+                { key: "email", label: "מייל", Icon: Mail, disabled: false },
+                { key: "whatsapp", label: "WhatsApp", Icon: MessageCircle, disabled: !waReachable },
+                { key: "both", label: "שניהם", Icon: Send, disabled: !waReachable },
+              ] as const).map(({ key, label, Icon, disabled }) => (
+                <button
+                  key={key}
+                  type="button"
+                  disabled={disabled || pending}
+                  onClick={() => setChannel(key)}
+                  aria-pressed={channel === key}
+                  className={[
+                    "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs transition",
+                    "focus:outline-none focus:ring-2 focus:ring-white/20 disabled:cursor-not-allowed disabled:opacity-40",
+                    channel === key
+                      ? "border-emerald-400/40 bg-emerald-500/15 text-emerald-100"
+                      : "border-white/15 text-white/60 hover:bg-white/[0.04]",
+                  ].join(" ")}
+                >
+                  <Icon className="h-3.5 w-3.5" aria-hidden />
+                  {label}
+                </button>
+              ))}
+            </div>
+            {!waReachable ? (
+              <p className="text-[11px] text-amber-300/80">
+                הלקוח לא אישר WhatsApp או חסר נייד. ההודעה תישלח במייל.
+              </p>
+            ) : waSelected ? (
+              <p className="text-[11px] text-white/50">
+                {partner.whatsapp.windowOpen
+                  ? "חלון פתוח — ההודעה תישלח כפי שהיא ב-WhatsApp."
+                  : "חלון סגור — תישלח תבנית הנדנוד עם קישור לשיחה. התוכן המלא יישאר במייל ובאפליקציה."}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+
         <textarea
           value={body}
           onChange={(e) => setBody(e.target.value)}
