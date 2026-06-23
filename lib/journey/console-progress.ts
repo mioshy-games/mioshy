@@ -19,10 +19,19 @@ import { createServiceRoleClient } from "@/lib/supabase-admin";
  * = the user has a journey_item_completions row for it (Itzik 2026-06-23).
  */
 
+/**
+ * Three-state lifecycle for the current chapter:
+ *   • "unseen"    — delivered/unlocked, no seen_at (לא נצפה)
+ *   • "seen"      — opened (seen_at set) but no completion (נצפה, לא הושלם)
+ *   • "completed" — has a journey_item_completions row (הושלם / אושר)
+ * seen_at is the same open signal couple-workflow-state reads for
+ * FIRST_ITEM_PENDING_OPEN.
+ */
+export type ChapterStatus = "unseen" | "seen" | "completed";
+
 export interface ConsoleChapter {
   title: string;
-  /** Approved = a completion record exists for this scheduled item. */
-  approved: boolean;
+  status: ChapterStatus;
   unlockAt: string;
 }
 
@@ -79,16 +88,18 @@ export async function loadConsoleProgress(
         .filter(Boolean)
         .sort((x, y) => x.localeCompare(y))[0] ?? null;
 
-    // 2. Scheduled items (chapters), oldest unlock first.
+    // 2. Scheduled items (chapters), oldest unlock first. seen_at drives the
+    //    "נצפה" middle state.
     const { data: sRows } = await admin
       .from("journey_scheduled_items")
-      .select("id, item_id, unlock_at")
+      .select("id, item_id, unlock_at, seen_at")
       .in("assignment_id", assignmentIds)
       .order("unlock_at", { ascending: true });
     const scheduled = (sRows ?? []) as Array<{
       id: string;
       item_id: string;
       unlock_at: string;
+      seen_at: string | null;
     }>;
     if (scheduled.length === 0) return { ...EMPTY, startedAt };
 
@@ -128,15 +139,22 @@ export async function loadConsoleProgress(
       (s) => new Date(s.unlock_at).getTime() > now,
     );
     const toChapter = (
-      s: { id: string; item_id: string; unlock_at: string } | undefined,
-    ): ConsoleChapter | null =>
-      s
-        ? {
-            title: titleById.get(s.item_id) ?? "פריט",
-            approved: completed.has(s.id),
-            unlockAt: s.unlock_at,
-          }
-        : null;
+      s:
+        | { id: string; item_id: string; unlock_at: string; seen_at: string | null }
+        | undefined,
+    ): ConsoleChapter | null => {
+      if (!s) return null;
+      const status: ChapterStatus = completed.has(s.id)
+        ? "completed"
+        : s.seen_at
+          ? "seen"
+          : "unseen";
+      return {
+        title: titleById.get(s.item_id) ?? "פריט",
+        status,
+        unlockAt: s.unlock_at,
+      };
+    };
 
     return {
       startedAt,

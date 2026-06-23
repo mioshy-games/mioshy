@@ -9,7 +9,16 @@ import {
   ChevronLeft,
 } from "lucide-react";
 import type { ConsoleActive } from "@/lib/journey/console-active";
-import type { ConsoleProgress } from "@/lib/journey/console-progress";
+import type {
+  ConsoleProgress,
+  ChapterStatus,
+} from "@/lib/journey/console-progress";
+
+const CHAPTER_STATUS: Record<ChapterStatus, { label: string; cls: string }> = {
+  unseen: { label: "לא נצפה", cls: "bg-white/[0.08] text-white/55" },
+  seen: { label: "נצפה, לא הושלם", cls: "bg-amber-500/15 text-amber-300" },
+  completed: { label: "הושלם", cls: "bg-emerald-500/15 text-emerald-300" },
+};
 import { GeneralChannelAdminReply } from "@/components/dashboard/journey/GeneralChannelAdminReply";
 import { ClientResponsesInbox } from "@/components/dashboard/journey/ClientResponsesInbox";
 import { AdHocItemCreator } from "@/components/dashboard/coach/AdHocItemCreator";
@@ -175,14 +184,8 @@ function ConsoleProgressStrip({
           <span className="max-w-[16ch] truncate text-white/80">
             {currentChapter.title}
           </span>
-          <span
-            className={
-              currentChapter.approved
-                ? "rounded-full bg-emerald-500/15 px-1.5 py-px text-[10px] font-medium text-emerald-300"
-                : "rounded-full bg-amber-500/15 px-1.5 py-px text-[10px] font-medium text-amber-300"
-            }
-          >
-            {currentChapter.approved ? "אישר" : "לא אישר"}
+          <span className={`rounded-full px-1.5 py-px text-[10px] font-medium ${CHAPTER_STATUS[currentChapter.status].cls}`}>
+            {CHAPTER_STATUS[currentChapter.status].label}
           </span>
         </span>
       ) : null}

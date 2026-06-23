@@ -40,10 +40,22 @@ export function ConsoleFeedRow({
       ? `/dashboard/console?couple=${item.coupleId}`
       : `/dashboard/console?user=${item.userId}`;
 
-  const chipClass = item.workflow
-    ? URGENCY_CHIP[item.workflow.urgency] ?? URGENCY_CHIP.info
-    : URGENCY_CHIP.info;
-  const chipLabel = item.workflow ? item.workflow.label_he : "—";
+  // Couples carry the workflow chip; solo rows show their subscription state
+  // (so a no-sub user stays legible even when mixed into "awaiting").
+  let chipClass: string;
+  let chipLabel: string;
+  if (item.kind === "couple") {
+    chipClass = item.workflow
+      ? URGENCY_CHIP[item.workflow.urgency] ?? URGENCY_CHIP.info
+      : URGENCY_CHIP.info;
+    chipLabel = item.workflow ? item.workflow.label_he : "—";
+  } else if (item.isSubscriber) {
+    chipClass = "bg-violet-500/15 text-violet-200 border-violet-400/25";
+    chipLabel = "מנוי";
+  } else {
+    chipClass = "bg-white/[0.06] text-white/50 border-white/15";
+    chipLabel = "ללא מנוי";
+  }
 
   return (
     <Link
