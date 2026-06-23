@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Mail, MessageCircle, Clock } from "lucide-react";
 import { buildAlternates, buildOgLocale } from "@/lib/seo/alternates";
+import { SUPPORT_WHATSAPP_INTL } from "@/lib/constants/contact";
 
 export async function generateMetadata({
   params,
@@ -36,7 +37,7 @@ export async function generateMetadata({
  *   • Email is now `support@mioshy.com` (was hello@mioshy.com).
  *   • Removed the "Sun–Thu 9-18 Israel time" availability box — replaced
  *     with a calmer "we reply within 48h" line.
- *   • Added a WhatsApp option to +972 545215193 — opens wa.me with a
+ *   • Added a WhatsApp option to +972 559941658 — opens wa.me with a
  *     preset Hebrew message so the user doesn't have to type from
  *     scratch.
  */
@@ -48,7 +49,7 @@ export default function ContactPage({
   const isHe = params.locale === "he";
 
   // wa.me expects digits-only phone with country code, no plus sign.
-  const waPhone = "972545215193";
+  const waPhone = SUPPORT_WHATSAPP_INTL;
   // Optional pre-filled message — encoded for the URL.
   const waMessage = encodeURIComponent(
     isHe
@@ -128,7 +129,7 @@ export default function ContactPage({
                   : "Fast and friendly. Send a message and we'll come back to you."}
               </p>
               {/* CTA pill replaces the raw phone number. Itzik
-                  2026-05-21: don't expose +972 54-521-5193 inline —
+                  2026-05-21: don't expose +972 55-994-1658 inline —
                   visitors should land directly in WhatsApp's send-
                   message flow instead of dialling. The outer <a>
                   already points at wa.me with a pre-filled message,

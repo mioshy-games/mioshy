@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { SUPPORT_WHATSAPP_INTL } from "@/lib/constants/contact";
 
 /**
  * WhatsAppFloatingCta — persistent floating chat button.
@@ -13,8 +14,8 @@ import { usePathname } from "next/navigation";
  *   • Hides on /dashboard / /admin (Chrome itself doesn't render on
  *     authenticated admin surfaces, so this is defensive).
  *
- * Phone: 00972 545215193 → WhatsApp URL format: 972545215193
- * (no plus, no zeros, no spaces).
+ * Phone: 00972 559941658 → WhatsApp URL format: 972559941658
+ * (no plus, no zeros, no spaces). Number lives in lib/constants/contact.
  *
  * The pre-filled text saves the user from having to type the first
  * line — the conversation opens with "אפשר לדבר עם שירות הלקוחות של
@@ -29,7 +30,7 @@ import { usePathname } from "next/navigation";
  * `insetInlineStart`, which would flip to right under RTL).
  */
 
-const PHONE_INTL = "972545215193"; // 00 prefix stripped, no plus
+const PHONE_INTL = SUPPORT_WHATSAPP_INTL; // 00 prefix stripped, no plus
 const PREFILL_MSG = "אפשר לדבר עם שירות הלקוחות של מיאושי";
 
 function whatsappHref() {
