@@ -12,6 +12,10 @@ import {
   getWorkflowStatesForCouples,
   type WorkflowState,
 } from "./couple-workflow-state";
+import {
+  fetchUserIdentities,
+  type UserIdentity,
+} from "./console-identity";
 
 /**
  * Left-pane "conversation feed" for the coach chat console.
@@ -65,12 +69,20 @@ const URGENCY_RANK: Record<string, number> = {
 
 function coupleLabel(
   summary: ExpertClientSummary | null,
+  identities: Map<string, UserIdentity>,
   fallback: string | null,
   coupleId: string,
 ): string {
   if (summary?.displayName?.trim()) return summary.displayName.trim();
+  // Real names always: full_name → email local-part, joined per partner.
   const fromMembers = (summary?.members ?? [])
-    .map((m) => m.email?.split("@")[0])
+    .map((m) => {
+      const id = identities.get(m.userId);
+      const full = id?.fullName?.trim();
+      if (full) return full;
+      const email = id?.email ?? m.email ?? "";
+      return email.includes("@") ? email.split("@")[0].trim() : "";
+    })
     .filter(Boolean)
     .join(" & ");
   if (fromMembers) return fromMembers;
@@ -108,7 +120,12 @@ export async function buildConsoleFeed(opts: {
   const coupleIds = Array.from(
     new Set([...coupleRows.keys(), ...clients.map((c) => c.coupleId)]),
   );
-  const workflowMap = await getWorkflowStatesForCouples(coupleIds);
+  // Real names for every couple member (full_name → email), one batched read.
+  const memberIds = clients.flatMap((c) => c.members.map((m) => m.userId));
+  const [workflowMap, identities] = await Promise.all([
+    getWorkflowStatesForCouples(coupleIds),
+    fetchUserIdentities(memberIds),
+  ]);
 
   const items: ConsoleFeedItem[] = [];
 
@@ -128,7 +145,7 @@ export async function buildConsoleFeed(opts: {
       key: `couple:${coupleId}`,
       coupleId,
       userId: null,
-      label: coupleLabel(summary, latest?.displayName ?? null, coupleId),
+      label: coupleLabel(summary, identities, latest?.displayName ?? null, coupleId),
       subtitle: summary?.pairCode ?? null,
       lastBody: latest?.lastBody ?? null,
       lastMessageAt: latest?.lastUserMessageAt ?? summary?.lastActivityAt ?? null,
