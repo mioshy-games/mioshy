@@ -238,6 +238,23 @@ export function JourneyClient({
     }
   }, [isDone, authenticated]);
 
+  // Meta StartAssessment (custom, browser) — the mid-funnel "began the short
+  // assessment" signal that sits between Landing Page View and
+  // CompleteAssessment. Fires once when the user actually ENGAGES — i.e. has
+  // answered at least the first question (`index >= 1`) while not yet done —
+  // NOT on mere page load, so it is distinct from LPV/PageView. Returning
+  // in-flight users (index already >= 1 at mount) correctly count as "started"
+  // and still fire only once. Browser-only (no CAPI), neutral assessment_type;
+  // metaTrackCustom handles URL redaction, DNT and pre-init buffering. Ref guard
+  // prevents re-render double-fires. See docs/facebook-pixel-start-assessment-brief.md.
+  const startAssessmentFiredRef = useRef(false);
+  useEffect(() => {
+    if (!isDone && index >= 1 && !startAssessmentFiredRef.current) {
+      startAssessmentFiredRef.current = true;
+      metaTrackCustom("StartAssessment", { assessment_type: "journey_short" });
+    }
+  }, [isDone, index]);
+
   // 🎉 Confetti - fires ONCE EVER when the questionnaire is done.
   //
   // Earlier this used only `useRef` which resets on every mount, so every
