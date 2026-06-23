@@ -32,7 +32,9 @@ export function InquiriesTable({
   rows: InquiryTableRow[];
   locale: AdminLocale;
 }) {
-  const [pendingOnly, setPendingOnly] = useState(true);
+  // Default OFF — the list shows the latest conversations including answered
+  // ones (Itzik 2026-06-23). Coaches can still tick "pending only" to narrow.
+  const [pendingOnly, setPendingOnly] = useState(false);
 
   const visible = useMemo(
     () =>
@@ -107,8 +109,20 @@ export function InquiriesTable({
                     </span>
                   </td>
                   <td className="px-3 py-2">
-                    <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] text-amber-400">
-                      {t(locale, "overview.inq.reply_pending")}
+                    <span
+                      className={
+                        "rounded-full px-2 py-0.5 text-[11px] " +
+                        (r.replyPending
+                          ? "bg-amber-500/15 text-amber-400"
+                          : "bg-emerald-500/15 text-emerald-400")
+                      }
+                    >
+                      {t(
+                        locale,
+                        r.replyPending
+                          ? "overview.inq.reply_pending"
+                          : "overview.inq.reply_done",
+                      )}
                     </span>
                   </td>
                   <td className="px-3 py-2">

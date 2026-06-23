@@ -93,7 +93,7 @@ export async function AdminOverview({
     email: r.email,
     inquiryAt: r.lastUserMessageAt,
     assessmentDone: r.assessmentDone,
-    replyPending: true,
+    replyPending: r.replyPending,
   }));
 
   const awaiting = t(locale, "overview.metric.awaiting").replace(

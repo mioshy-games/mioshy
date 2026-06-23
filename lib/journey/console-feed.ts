@@ -18,6 +18,7 @@ import {
   type UserIdentity,
 } from "./console-identity";
 import { loadSoloRoster } from "./console-roster";
+import { createServiceRoleClient } from "@/lib/supabase-admin";
 
 /**
  * Left-pane "conversation feed" for the coach chat console.
@@ -75,6 +76,19 @@ export interface ConsoleFeedItem {
   isSubscriber: boolean;
   /** Which band this row renders in. */
   layer: ConsoleFeedLayer;
+  /** Lowercased haystack (name + email + phone + pair code, both partners for
+   *  couples) for the console search box. Computed server-side so the client
+   *  filter is a plain substring test. */
+  searchText: string;
+}
+
+/** Build a lowercased, space-joined search haystack from mixed parts. */
+function buildSearchText(parts: Array<string | null | undefined>): string {
+  return parts
+    .map((p) => (p ?? "").trim())
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
 }
 
 function layerFor(item: {
@@ -101,14 +115,15 @@ const URGENCY_RANK: Record<string, number> = {
 };
 
 function coupleLabel(
-  summary: ExpertClientSummary | null,
+  displayName: string | null,
+  members: Array<{ userId: string; email: string | null }>,
   identities: Map<string, UserIdentity>,
   fallback: string | null,
   coupleId: string,
 ): string {
-  if (summary?.displayName?.trim()) return summary.displayName.trim();
+  if (displayName?.trim()) return displayName.trim();
   // Real names always: full_name → email local-part, joined per partner.
-  const fromMembers = (summary?.members ?? [])
+  const fromMembers = members
     .map((m) => {
       const id = identities.get(m.userId);
       const full = id?.fullName?.trim();
@@ -127,11 +142,12 @@ export async function buildConsoleFeed(opts: {
   expertId: string;
   isAdmin: boolean;
 }): Promise<ConsoleFeedItem[]> {
-  const [pending, clients, soloRoster] = await Promise.all([
+  const [pending, clients, roster] = await Promise.all([
     getPendingExpertMessages({ limit: 50 }),
     listExpertClients({ expertId: opts.expertId, isAdmin: opts.isAdmin }),
     loadSoloRoster(),
   ]);
+  const { solo: soloRoster, coupleHistory } = roster;
 
   const clientByCouple = new Map<string, ExpertClientSummary>();
   for (const c of clients) clientByCouple.set(c.coupleId, c);
@@ -147,12 +163,58 @@ export async function buildConsoleFeed(opts: {
     }
   }
 
-  // Workflow states for every couple we'll show (pending + quiet roster).
+  // Every couple we'll show. The union is what makes the feed a SUPERSET of
+  // getPendingExpertMessages on the couple side:
+  //   • coupleRows.keys()  → every couple with a pending message (incl. couples
+  //     that have NO journey allocation — the "זוג בלי הקצאה" case).
+  //   • clients            → allocated couples (quiet ones included).
+  //   • coupleHistory      → any couple that ever exchanged a message, so a
+  //     conversation survives after the coach replies, allocated or not.
   const coupleIds = Array.from(
-    new Set([...coupleRows.keys(), ...clients.map((c) => c.coupleId)]),
+    new Set([
+      ...coupleRows.keys(),
+      ...clients.map((c) => c.coupleId),
+      ...coupleHistory.keys(),
+    ]),
   );
+
+  // Members for couples we're showing but that listExpertClients didn't return
+  // (unallocated couples surfaced via pending/history) — so we can still render
+  // real partner names instead of "Couple <id>".
+  const clientCoupleIds = new Set(clients.map((c) => c.coupleId));
+  const extraCoupleIds = coupleIds.filter((id) => !clientCoupleIds.has(id));
+  const membersByCouple = new Map<
+    string,
+    Array<{ userId: string; email: string | null }>
+  >();
+  for (const c of clients) {
+    membersByCouple.set(
+      c.coupleId,
+      c.members.map((m) => ({ userId: m.userId, email: m.email })),
+    );
+  }
+  if (extraCoupleIds.length > 0) {
+    const admin = createServiceRoleClient();
+    if (admin) {
+      const { data: extraMembers } = await admin
+        .from("couple_members")
+        .select("couple_id, user_id")
+        .in("couple_id", extraCoupleIds);
+      for (const m of (extraMembers ?? []) as Array<{
+        couple_id: string;
+        user_id: string;
+      }>) {
+        const arr = membersByCouple.get(m.couple_id) ?? [];
+        arr.push({ userId: m.user_id, email: null });
+        membersByCouple.set(m.couple_id, arr);
+      }
+    }
+  }
+
   // Real names for every couple member (full_name → email), one batched read.
-  const memberIds = clients.flatMap((c) => c.members.map((m) => m.userId));
+  const memberIds = Array.from(membersByCouple.values())
+    .flat()
+    .map((m) => m.userId);
   const [workflowMap, identities] = await Promise.all([
     getWorkflowStatesForCouples(coupleIds),
     fetchUserIdentities(memberIds),
@@ -163,6 +225,7 @@ export async function buildConsoleFeed(opts: {
   for (const coupleId of coupleIds) {
     const summary = clientByCouple.get(coupleId) ?? null;
     const rows = coupleRows.get(coupleId) ?? [];
+    const members = membersByCouple.get(coupleId) ?? [];
 
     let latest: PendingMessageRow | null = null;
     let needs = 0;
@@ -172,21 +235,40 @@ export async function buildConsoleFeed(opts: {
     }
 
     const needsReplyCount = needs;
+    const label = coupleLabel(
+      summary?.displayName ?? null,
+      members,
+      identities,
+      latest?.displayName ?? null,
+      coupleId,
+    );
     items.push({
       kind: "couple",
       key: `couple:${coupleId}`,
       coupleId,
       userId: null,
-      label: coupleLabel(summary, identities, latest?.displayName ?? null, coupleId),
+      label,
       subtitle: summary?.pairCode ?? null,
       lastBody: latest?.lastBody ?? null,
-      lastMessageAt: latest?.lastUserMessageAt ?? summary?.lastActivityAt ?? null,
+      lastMessageAt:
+        latest?.lastUserMessageAt ??
+        summary?.lastActivityAt ??
+        coupleHistory.get(coupleId) ??
+        null,
       lastContext: latest?.lastContext ?? null,
       lastScheduledItemId: latest?.lastScheduledItemId ?? null,
       needsReplyCount,
       workflow: workflowMap.get(coupleId) ?? null,
       isSubscriber: true, // a couple in the journey is a journey subscriber
       layer: layerFor({ kind: "couple", needsReplyCount, isSubscriber: true }),
+      searchText: buildSearchText([
+        label,
+        summary?.pairCode,
+        ...members.flatMap((m) => {
+          const id = identities.get(m.userId);
+          return [id?.fullName, id?.email ?? m.email, id?.phone];
+        }),
+      ]),
     });
   }
 
@@ -215,13 +297,15 @@ export async function buildConsoleFeed(opts: {
       userId,
       emptyFallback: p?.displayName,
     });
+    const email = entry?.email ?? p?.email ?? null;
+    const phone = entry?.phone ?? p?.phone ?? null;
     items.push({
       kind: "solo",
       key: `user:${userId}`,
       coupleId: null,
       userId,
       label,
-      subtitle: entry?.email ?? p?.email ?? null,
+      subtitle: email,
       lastBody: p?.lastBody ?? null,
       lastMessageAt: p?.lastUserMessageAt ?? entry?.lastActivityAt ?? null,
       lastContext: p?.lastContext ?? null,
@@ -230,7 +314,73 @@ export async function buildConsoleFeed(opts: {
       workflow: null,
       isSubscriber,
       layer: layerFor({ kind: "solo", needsReplyCount, isSubscriber }),
+      searchText: buildSearchText([label, email, phone]),
     });
+  }
+
+  // SUPERSET GUARANTEE — the feed must contain EVERY pending conversation that
+  // getPendingExpertMessages reports, no matter what. The couple/solo unions
+  // above already cover them, but this is the explicit, regression-proof check:
+  // if any pending row slipped through (e.g. a future refactor of the grouping,
+  // or a couple row whose membership lookup came back empty), synthesise it here
+  // so a waiting client is never silently dropped from the console.
+  const haveCouple = new Set(
+    items.filter((i) => i.coupleId).map((i) => i.coupleId as string),
+  );
+  const haveSolo = new Set(
+    items.filter((i) => i.userId).map((i) => i.userId as string),
+  );
+  for (const r of pending.rows) {
+    const needsReplyCount =
+      r.pendingPerItemThreads + (r.pendingGeneralChannel ? 1 : 0);
+    if (r.coupleId) {
+      if (haveCouple.has(r.coupleId)) continue;
+      haveCouple.add(r.coupleId);
+      const label = coupleLabel(null, [], identities, r.displayName, r.coupleId);
+      items.push({
+        kind: "couple",
+        key: `couple:${r.coupleId}`,
+        coupleId: r.coupleId,
+        userId: null,
+        label,
+        subtitle: null,
+        lastBody: r.lastBody,
+        lastMessageAt: r.lastUserMessageAt,
+        lastContext: r.lastContext,
+        lastScheduledItemId: r.lastScheduledItemId,
+        needsReplyCount,
+        workflow: workflowMap.get(r.coupleId) ?? null,
+        isSubscriber: true,
+        layer: layerFor({ kind: "couple", needsReplyCount, isSubscriber: true }),
+        searchText: buildSearchText([label, r.email, r.phone]),
+      });
+    } else {
+      if (haveSolo.has(r.userId)) continue;
+      haveSolo.add(r.userId);
+      const label = personName({
+        fullName: null,
+        email: r.email,
+        userId: r.userId,
+        emptyFallback: r.displayName,
+      });
+      items.push({
+        kind: "solo",
+        key: `user:${r.userId}`,
+        coupleId: null,
+        userId: r.userId,
+        label,
+        subtitle: r.email,
+        lastBody: r.lastBody,
+        lastMessageAt: r.lastUserMessageAt,
+        lastContext: r.lastContext,
+        lastScheduledItemId: r.lastScheduledItemId,
+        needsReplyCount,
+        workflow: null,
+        isSubscriber: false,
+        layer: layerFor({ kind: "solo", needsReplyCount, isSubscriber: false }),
+        searchText: buildSearchText([label, r.email, r.phone]),
+      });
+    }
   }
 
   // Three-layer sort: awaiting → active → no_sub. Within "awaiting" keep the

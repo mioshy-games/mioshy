@@ -23,8 +23,8 @@
 
 import { createServiceRoleClient } from "@/lib/supabase-admin";
 import {
-  getPendingExpertMessages,
-  type PendingMessageRow,
+  getRecentExpertConversations,
+  type RecentConversationRow,
 } from "@/lib/journey/pending-messages";
 
 export type RangeKey = "24h" | "7d" | "30d" | "custom";
@@ -82,7 +82,7 @@ function delta(current: number, previous: number): MetricDelta {
   return { current, previous, pct };
 }
 
-export type InquiryRow = PendingMessageRow & { assessmentDone: boolean };
+export type InquiryRow = RecentConversationRow & { assessmentDone: boolean };
 
 export interface OverviewData {
   signups: MetricDelta;
@@ -98,7 +98,7 @@ const EMPTY: MetricDelta = { current: 0, previous: 0, pct: null };
 
 export async function getOverviewData(
   r: ResolvedRange,
-  inquiryLimit = 50,
+  inquiryLimit = 10,
 ): Promise<OverviewData> {
   const admin = createServiceRoleClient();
   if (!admin) {
@@ -160,17 +160,20 @@ export async function getOverviewData(
     gsCur, gsPrev,
     sxCur, sxPrev,
     chCur, chPrev,
-    pending,
+    recent,
   ] = await Promise.all([
     signupCount(sIso, eIso), signupCount(pIso, sIso),
     gamesSubCount(sIso, eIso), gamesSubCount(pIso, sIso),
     sexBuyCount(sIso, eIso), sexBuyCount(pIso, sIso),
     chatCount(sIso, eIso), chatCount(pIso, sIso),
-    getPendingExpertMessages({ limit: inquiryLimit }),
+    // Latest N conversations, INCLUDING answered ones, so the list never drops
+    // a conversation the moment it's replied to. pendingCount is the true
+    // (uncapped) awaiting-reply number for the metric tile.
+    getRecentExpertConversations({ limit: inquiryLimit }),
   ]);
 
   // Assessment status for the listed inquiries — ONE batched query (no N+1).
-  const userIds = pending.rows.map((row) => row.userId);
+  const userIds = recent.rows.map((row) => row.userId);
   const doneByUser = new Map<string, boolean>();
   if (userIds.length) {
     const { data: jrows } = await admin
@@ -184,7 +187,7 @@ export async function getOverviewData(
     }
   }
 
-  const inquiries: InquiryRow[] = pending.rows.map((row) => ({
+  const inquiries: InquiryRow[] = recent.rows.map((row) => ({
     ...row,
     assessmentDone: doneByUser.get(row.userId) ?? false,
   }));
@@ -194,8 +197,8 @@ export async function getOverviewData(
     gamesSubs: delta(gsCur, gsPrev),
     sexPurchases: delta(sxCur, sxPrev),
     chatInquiries: delta(chCur, chPrev),
-    awaitingReply: pending.count,
+    awaitingReply: recent.pendingCount,
     inquiries,
-    degraded: !pending.ok,
+    degraded: !recent.ok,
   };
 }
