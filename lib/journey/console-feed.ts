@@ -12,6 +12,12 @@ import {
   getWorkflowStatesForCouples,
   type WorkflowState,
 } from "./couple-workflow-state";
+import {
+  fetchUserIdentities,
+  personName,
+  type UserIdentity,
+} from "./console-identity";
+import { loadSoloRoster } from "./console-roster";
 
 /**
  * Left-pane "conversation feed" for the coach chat console.
@@ -30,6 +36,17 @@ import {
  *     Solo users write in the general channel today and surface in /replies,
  *     so the console includes them too — otherwise it wouldn't be "one place".
  */
+
+/**
+ * Feed bands (top → bottom), so a conversation is never lost after a reply:
+ *   • "awaiting" — needs a reply now (couples + solo). Floats to the very top.
+ *   • "active"   — subscribers (every couple + solo journey owners) already
+ *     answered. Persisted, sorted by recent activity.
+ *   • "no_sub"   — solo users with NO journey subscription. Always kept (their
+ *     message history persists them) in a collapsible band; they jump to
+ *     "awaiting" the moment a new message arrives.
+ */
+export type ConsoleFeedLayer = "awaiting" | "active" | "no_sub";
 
 export interface ConsoleFeedItem {
   kind: "couple" | "solo";
@@ -54,7 +71,27 @@ export interface ConsoleFeedItem {
   needsReplyCount: number;
   /** Couples only — the "next step" chip. Null for solo. */
   workflow: WorkflowState | null;
+  /** Active journey subscription. Always true for couples. */
+  isSubscriber: boolean;
+  /** Which band this row renders in. */
+  layer: ConsoleFeedLayer;
 }
+
+function layerFor(item: {
+  kind: "couple" | "solo";
+  needsReplyCount: number;
+  isSubscriber: boolean;
+}): ConsoleFeedLayer {
+  if (item.needsReplyCount > 0) return "awaiting";
+  if (item.kind === "couple" || item.isSubscriber) return "active";
+  return "no_sub";
+}
+
+const LAYER_RANK: Record<ConsoleFeedLayer, number> = {
+  awaiting: 0,
+  active: 1,
+  no_sub: 2,
+};
 
 const URGENCY_RANK: Record<string, number> = {
   high: 0,
@@ -65,12 +102,20 @@ const URGENCY_RANK: Record<string, number> = {
 
 function coupleLabel(
   summary: ExpertClientSummary | null,
+  identities: Map<string, UserIdentity>,
   fallback: string | null,
   coupleId: string,
 ): string {
   if (summary?.displayName?.trim()) return summary.displayName.trim();
+  // Real names always: full_name → email local-part, joined per partner.
   const fromMembers = (summary?.members ?? [])
-    .map((m) => m.email?.split("@")[0])
+    .map((m) => {
+      const id = identities.get(m.userId);
+      const full = id?.fullName?.trim();
+      if (full) return full;
+      const email = id?.email ?? m.email ?? "";
+      return email.includes("@") ? email.split("@")[0].trim() : "";
+    })
     .filter(Boolean)
     .join(" & ");
   if (fromMembers) return fromMembers;
@@ -82,25 +127,23 @@ export async function buildConsoleFeed(opts: {
   expertId: string;
   isAdmin: boolean;
 }): Promise<ConsoleFeedItem[]> {
-  const [pending, clients] = await Promise.all([
+  const [pending, clients, soloRoster] = await Promise.all([
     getPendingExpertMessages({ limit: 50 }),
     listExpertClients({ expertId: opts.expertId, isAdmin: opts.isAdmin }),
+    loadSoloRoster(),
   ]);
 
   const clientByCouple = new Map<string, ExpertClientSummary>();
   for (const c of clients) clientByCouple.set(c.coupleId, c);
 
-  // Split pending rows: couples grouped by coupleId (a couple can have up to
-  // two member rows — merge them), solo users kept individually.
+  // Couple pending rows grouped by coupleId (a couple can have up to two member
+  // rows — merge them). Solo pending rows are merged with the roster below.
   const coupleRows = new Map<string, PendingMessageRow[]>();
-  const soloRows: PendingMessageRow[] = [];
   for (const r of pending.rows) {
     if (r.coupleId) {
       const arr = coupleRows.get(r.coupleId) ?? [];
       arr.push(r);
       coupleRows.set(r.coupleId, arr);
-    } else {
-      soloRows.push(r);
     }
   }
 
@@ -108,7 +151,12 @@ export async function buildConsoleFeed(opts: {
   const coupleIds = Array.from(
     new Set([...coupleRows.keys(), ...clients.map((c) => c.coupleId)]),
   );
-  const workflowMap = await getWorkflowStatesForCouples(coupleIds);
+  // Real names for every couple member (full_name → email), one batched read.
+  const memberIds = clients.flatMap((c) => c.members.map((m) => m.userId));
+  const [workflowMap, identities] = await Promise.all([
+    getWorkflowStatesForCouples(coupleIds),
+    fetchUserIdentities(memberIds),
+  ]);
 
   const items: ConsoleFeedItem[] = [];
 
@@ -123,51 +171,79 @@ export async function buildConsoleFeed(opts: {
       if (!latest || r.lastUserMessageAt > latest.lastUserMessageAt) latest = r;
     }
 
+    const needsReplyCount = needs;
     items.push({
       kind: "couple",
       key: `couple:${coupleId}`,
       coupleId,
       userId: null,
-      label: coupleLabel(summary, latest?.displayName ?? null, coupleId),
+      label: coupleLabel(summary, identities, latest?.displayName ?? null, coupleId),
       subtitle: summary?.pairCode ?? null,
       lastBody: latest?.lastBody ?? null,
       lastMessageAt: latest?.lastUserMessageAt ?? summary?.lastActivityAt ?? null,
       lastContext: latest?.lastContext ?? null,
       lastScheduledItemId: latest?.lastScheduledItemId ?? null,
-      needsReplyCount: needs,
+      needsReplyCount,
       workflow: workflowMap.get(coupleId) ?? null,
+      isSubscriber: true, // a couple in the journey is a journey subscriber
+      layer: layerFor({ kind: "couple", needsReplyCount, isSubscriber: true }),
     });
   }
 
-  for (const r of soloRows) {
+  // SOLO — driven by the persistent roster (all solo journey subscribers + all
+  // solo users who ever wrote), merged with pending state for the reply badge
+  // and preview. This is what keeps a solo conversation after the coach replies.
+  const pendingSoloByUser = new Map<string, PendingMessageRow>();
+  for (const r of pending.rows) {
+    if (!r.coupleId) pendingSoloByUser.set(r.userId, r);
+  }
+  // Union: every roster user, plus any pending solo user missing from it.
+  const soloUserIds = new Set<string>(soloRoster.map((e) => e.userId));
+  const rosterByUser = new Map(soloRoster.map((e) => [e.userId, e]));
+  for (const uid of pendingSoloByUser.keys()) soloUserIds.add(uid);
+
+  for (const userId of soloUserIds) {
+    const entry = rosterByUser.get(userId) ?? null;
+    const p = pendingSoloByUser.get(userId) ?? null;
+    const needsReplyCount = p
+      ? p.pendingPerItemThreads + (p.pendingGeneralChannel ? 1 : 0)
+      : 0;
+    const isSubscriber = entry?.isSubscriber ?? false;
+    const label = personName({
+      fullName: entry?.fullName,
+      email: entry?.email ?? p?.email,
+      userId,
+      emptyFallback: p?.displayName,
+    });
     items.push({
       kind: "solo",
-      key: `user:${r.userId}`,
+      key: `user:${userId}`,
       coupleId: null,
-      userId: r.userId,
-      label: r.displayName,
-      subtitle: r.email,
-      lastBody: r.lastBody,
-      lastMessageAt: r.lastUserMessageAt,
-      lastContext: r.lastContext,
-      lastScheduledItemId: r.lastScheduledItemId,
-      needsReplyCount:
-        r.pendingPerItemThreads + (r.pendingGeneralChannel ? 1 : 0),
+      userId,
+      label,
+      subtitle: entry?.email ?? p?.email ?? null,
+      lastBody: p?.lastBody ?? null,
+      lastMessageAt: p?.lastUserMessageAt ?? entry?.lastActivityAt ?? null,
+      lastContext: p?.lastContext ?? null,
+      lastScheduledItemId: p?.lastScheduledItemId ?? null,
+      needsReplyCount,
       workflow: null,
+      isSubscriber,
+      layer: layerFor({ kind: "solo", needsReplyCount, isSubscriber }),
     });
   }
 
-  // Sort: conversations awaiting a reply float to the top (WhatsApp-style,
-  // matches the /replies "needs reply" semantics). Then by workflow urgency
-  // (couples only — solo has none, sorts as neutral), then most-recent first.
+  // Three-layer sort: awaiting → active → no_sub. Within "awaiting" keep the
+  // urgency-then-recency order; the other bands sort by most-recent activity.
   items.sort((a, b) => {
-    const aWaiting = a.needsReplyCount > 0 ? 0 : 1;
-    const bWaiting = b.needsReplyCount > 0 ? 0 : 1;
-    if (aWaiting !== bWaiting) return aWaiting - bWaiting;
+    if (LAYER_RANK[a.layer] !== LAYER_RANK[b.layer])
+      return LAYER_RANK[a.layer] - LAYER_RANK[b.layer];
 
-    const aUrg = a.workflow ? URGENCY_RANK[a.workflow.urgency] ?? 5 : 4;
-    const bUrg = b.workflow ? URGENCY_RANK[b.workflow.urgency] ?? 5 : 4;
-    if (aUrg !== bUrg) return aUrg - bUrg;
+    if (a.layer === "awaiting") {
+      const aUrg = a.workflow ? URGENCY_RANK[a.workflow.urgency] ?? 5 : 4;
+      const bUrg = b.workflow ? URGENCY_RANK[b.workflow.urgency] ?? 5 : 4;
+      if (aUrg !== bUrg) return aUrg - bUrg;
+    }
 
     return (b.lastMessageAt ?? "").localeCompare(a.lastMessageAt ?? "");
   });

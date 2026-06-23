@@ -1,6 +1,24 @@
 import Link from "next/link";
-import { ExternalLink, BookOpen, User } from "lucide-react";
+import {
+  ExternalLink,
+  BookOpen,
+  User,
+  Users,
+  CalendarDays,
+  CheckCircle2,
+  ChevronLeft,
+} from "lucide-react";
 import type { ConsoleActive } from "@/lib/journey/console-active";
+import type {
+  ConsoleProgress,
+  ChapterStatus,
+} from "@/lib/journey/console-progress";
+
+const CHAPTER_STATUS: Record<ChapterStatus, { label: string; cls: string }> = {
+  unseen: { label: "לא נצפה", cls: "bg-white/[0.08] text-white/55" },
+  seen: { label: "נצפה, לא הושלם", cls: "bg-amber-500/15 text-amber-300" },
+  completed: { label: "הושלם", cls: "bg-emerald-500/15 text-emerald-300" },
+};
 import { GeneralChannelAdminReply } from "@/components/dashboard/journey/GeneralChannelAdminReply";
 import { ClientResponsesInbox } from "@/components/dashboard/journey/ClientResponsesInbox";
 import { AdHocItemCreator } from "@/components/dashboard/coach/AdHocItemCreator";
@@ -30,14 +48,29 @@ export function ConsoleActivePane({ active }: { active: ConsoleActive }) {
             </div>
           </div>
 
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            {/* Unified per-user profile (what they did / answered / assessment).
+                One link per partner — solo has a single entry. Primary action,
+                so it's emphasized vs the secondary couple/library links. */}
+            {active.partners.map((p) => (
+              <Link
+                key={p.userId}
+                href={`/dashboard/users/${p.userId}`}
+                className="inline-flex items-center gap-1 rounded-full border border-fuchsia-400/40 bg-fuchsia-500/15 px-2.5 py-1 text-[11px] font-medium text-fuchsia-100 transition hover:bg-fuchsia-500/25"
+              >
+                <User className="h-3.5 w-3.5" />
+                פרופיל
+                {active.partners.length > 1 ? <span>· {p.label}</span> : null}
+                <ExternalLink className="h-3 w-3 opacity-60" />
+              </Link>
+            ))}
             {active.kind === "couple" ? (
               <Link
                 href={`/dashboard/my-clients/${active.coupleId}`}
                 className="inline-flex items-center gap-1 rounded-full border border-white/15 px-2.5 py-1 text-[11px] text-white/75 transition hover:bg-white/[0.06]"
               >
-                <User className="h-3.5 w-3.5" />
-                פרופיל לקוח
+                <Users className="h-3.5 w-3.5" />
+                כרטיס זוג
                 <ExternalLink className="h-3 w-3 opacity-60" />
               </Link>
             ) : null}
@@ -51,6 +84,9 @@ export function ConsoleActivePane({ active }: { active: ConsoleActive }) {
             </Link>
           </div>
         </div>
+
+        {/* Compact journey-progress strip — sits right under the name. */}
+        <ConsoleProgressStrip progress={active.progress} />
       </header>
 
       {/* Scrollable body — reused reply surfaces stacked. */}
@@ -97,6 +133,72 @@ export function ConsoleActivePane({ active }: { active: ConsoleActive }) {
           </section>
         ) : null}
       </div>
+    </div>
+  );
+}
+
+function fmtDate(iso: string): string {
+  try {
+    return new Date(iso).toLocaleDateString("he-IL", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  } catch {
+    return iso.slice(0, 10);
+  }
+}
+
+/**
+ * Compact, read-only progress strip under the active conversation's name:
+ * start date · completed X/Y · current chapter (+ approved) · next chapter.
+ * Renders nothing when the conversation has no journey yet.
+ */
+function ConsoleProgressStrip({
+  progress,
+}: {
+  progress: ConsoleProgress | null;
+}) {
+  if (!progress || progress.scheduledCount === 0) return null;
+  const { startedAt, completedCount, scheduledCount, currentChapter, nextChapter } =
+    progress;
+
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-white/55">
+      {startedAt ? (
+        <span className="inline-flex items-center gap-1">
+          <CalendarDays className="h-3 w-3 opacity-60" />
+          התחלה: {fmtDate(startedAt)}
+        </span>
+      ) : null}
+
+      <span className="inline-flex items-center gap-1">
+        <CheckCircle2 className="h-3 w-3 opacity-60" />
+        הושלמו <span className="text-white/80">{completedCount}/{scheduledCount}</span>
+      </span>
+
+      {currentChapter ? (
+        <span className="inline-flex items-center gap-1">
+          <BookOpen className="h-3 w-3 opacity-60" />
+          פרק נוכחי:{" "}
+          <span className="max-w-[16ch] truncate text-white/80">
+            {currentChapter.title}
+          </span>
+          <span className={`rounded-full px-1.5 py-px text-[10px] font-medium ${CHAPTER_STATUS[currentChapter.status].cls}`}>
+            {CHAPTER_STATUS[currentChapter.status].label}
+          </span>
+        </span>
+      ) : null}
+
+      {nextChapter ? (
+        <span className="inline-flex items-center gap-1">
+          <ChevronLeft className="h-3 w-3 opacity-60" />
+          הבא:{" "}
+          <span className="max-w-[16ch] truncate text-white/80">
+            {nextChapter.title}
+          </span>
+        </span>
+      ) : null}
     </div>
   );
 }

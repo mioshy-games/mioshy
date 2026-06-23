@@ -14,6 +14,8 @@ import {
   type ClinicianResponseRow,
 } from "@/lib/journey-content/clinician-responses";
 import { adminListCategoriesWithItemCounts } from "@/lib/journey-content/queries";
+import { fetchUserIdentities, personName } from "./console-identity";
+import { loadConsoleProgress, type ConsoleProgress } from "./console-progress";
 
 /**
  * Right-pane "active conversation" loader for the coach chat console.
@@ -57,14 +59,8 @@ export interface ConsoleActive {
   hasPartnerB: boolean;
   partnerALabel: string;
   partnerBLabel: string;
-}
-
-function memberLabel(
-  email: string | null,
-  index: number,
-): string {
-  if (email?.includes("@")) return email.split("@")[0];
-  return index === 0 ? "פרטנר א" : "פרטנר ב";
+  /** Compact journey-progress strip data (start, X/Y, current/next chapter). */
+  progress: ConsoleProgress | null;
 }
 
 export async function loadConsoleActiveCouple(args: {
@@ -80,27 +76,40 @@ export async function loadConsoleActiveCouple(args: {
   if (!detail) return null;
 
   const partnerUserIds = detail.members.map((m) => m.userId);
+  // Real names always: profiles.full_name → email local-part → "פרטנר א/ב".
+  const identities = await fetchUserIdentities(partnerUserIds);
   const partnerLabels = new Map<string, string>();
-  detail.members.forEach((m, i) =>
-    partnerLabels.set(m.userId, memberLabel(m.email, i)),
-  );
+  detail.members.forEach((m, i) => {
+    const id = identities.get(m.userId);
+    partnerLabels.set(
+      m.userId,
+      personName({
+        fullName: id?.fullName,
+        email: id?.email ?? m.email,
+        userId: m.userId,
+        emptyFallback: i === 0 ? "פרטנר א" : "פרטנר ב",
+      }),
+    );
+  });
 
-  const [partners, responseRows, sources, categoriesRaw] = await Promise.all([
-    Promise.all(
-      partnerUserIds.map(async (uid) => ({
-        userId: uid,
-        label: partnerLabels.get(uid) ?? uid.slice(0, 6),
-        messages: await getGeneralChannelThreadForAdmin(uid).catch(() => []),
-      })),
-    ),
-    listClinicianResponsesForUsers({
-      userIds: partnerUserIds,
-      limit: 50,
-      isHe: true,
-    }).catch(() => []),
-    listAssignableSources().catch(() => []),
-    adminListCategoriesWithItemCounts().catch(() => []),
-  ]);
+  const [partners, responseRows, sources, categoriesRaw, progress] =
+    await Promise.all([
+      Promise.all(
+        partnerUserIds.map(async (uid) => ({
+          userId: uid,
+          label: partnerLabels.get(uid) ?? uid.slice(0, 6),
+          messages: await getGeneralChannelThreadForAdmin(uid).catch(() => []),
+        })),
+      ),
+      listClinicianResponsesForUsers({
+        userIds: partnerUserIds,
+        limit: 50,
+        isHe: true,
+      }).catch(() => []),
+      listAssignableSources().catch(() => []),
+      adminListCategoriesWithItemCounts().catch(() => []),
+      loadConsoleProgress({ coupleId: args.coupleId }),
+    ]);
 
   const categories: CategoryOption[] = categoriesRaw.map((c) => ({
     id: c.id,
@@ -110,8 +119,8 @@ export async function loadConsoleActiveCouple(args: {
 
   const title =
     detail.displayName?.trim() ||
-    detail.members
-      .map((m) => m.email?.split("@")[0])
+    partnerUserIds
+      .map((uid) => partnerLabels.get(uid))
       .filter(Boolean)
       .join(" & ") ||
     `Couple ${args.coupleId.slice(0, 8)}`;
@@ -132,38 +141,51 @@ export async function loadConsoleActiveCouple(args: {
     partnerBLabel: partnerUserIds[1]
       ? partnerLabels.get(partnerUserIds[1]) ?? "פרטנר ב"
       : "פרטנר ב",
+    progress,
   };
 }
 
 export async function loadConsoleActiveSolo(args: {
   userId: string;
-  /** Label resolved by the feed (avoids a second pending-messages scan). */
+  /** Label resolved by the feed. Used only as a fallback — we re-resolve from
+   *  v_user_directory so direct navigation (?user=…, no feed row) still gets a
+   *  human name instead of "user 2670046f". */
   label: string;
 }): Promise<ConsoleActive> {
-  const [thread, responseRows] = await Promise.all([
+  const [thread, responseRows, identities, progress] = await Promise.all([
     getGeneralChannelThreadForAdmin(args.userId).catch(() => []),
     listClinicianResponsesForUsers({
       userIds: [args.userId],
       limit: 50,
       isHe: true,
     }).catch(() => []),
+    fetchUserIdentities([args.userId]),
+    loadConsoleProgress({ userId: args.userId }),
   ]);
 
-  const partnerLabels = new Map<string, string>([[args.userId, args.label]]);
+  const identity = identities.get(args.userId);
+  const label = personName({
+    fullName: identity?.fullName,
+    email: identity?.email,
+    userId: args.userId,
+    emptyFallback: args.label,
+  });
+  const partnerLabels = new Map<string, string>([[args.userId, label]]);
 
   return {
     kind: "solo",
     coupleId: null,
     userId: args.userId,
-    title: args.label,
+    title: label,
     pairCode: null,
-    partners: [{ userId: args.userId, label: args.label, messages: thread }],
+    partners: [{ userId: args.userId, label, messages: thread }],
     responseRows,
     partnerLabels,
     sources: null,
     categories: null,
     hasPartnerB: false,
-    partnerALabel: args.label,
+    partnerALabel: label,
     partnerBLabel: "",
+    progress,
   };
 }
