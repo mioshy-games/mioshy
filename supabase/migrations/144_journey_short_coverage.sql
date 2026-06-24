@@ -26,7 +26,7 @@
 INSERT INTO public.journey_questions
   (slug, position, phase, type, domain, axes, reverse, he_text, en_text, options, meta)
 VALUES
-  ( 'q_family_quality_presence', 18, 'short', 'likert5', 'family',
+  ( 'q_family_quality_presence', 28, 'short', 'likert5', 'family',
     $x$[{"axis":"passion_context","weight":1.0}]$x$::jsonb, false,
     $x$כשיש לנו זמן רק לשנינו, באיזו תדירות הוא מרגיש כמו זמן איכות אמיתי שאנחנו באמת נוכחים בו?$x$,
     $x$When we finally get time just for the two of us, how often does it feel like real quality time we're truly present in?$x$,
