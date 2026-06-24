@@ -16,6 +16,7 @@ import type {
   AxisScoreMap,
   AxisWeight,
   CategoryScores,
+  CategoryKey,
   LoveLanguage,
   Question,
   Response,
@@ -304,21 +305,46 @@ function computeCategoryScores(
   // intimacy with q20b override.
   let intimacy = categoryFromAxes(scores, INTIMACY_AXES);
   const q20b = responses.find((r) => r.question_id === "q20b_intimacy_satisfaction");
+  const q20bAnswered = !!q20b && q20b.answer.kind === "likert";
   if (q20b && q20b.answer.kind === "likert") {
     const direct = ((q20b.answer.value - 1) / 4) * 100; // 1..5 -> 0..100
     intimacy = Math.round(direct * 0.6 + intimacy * 0.4);
   }
 
-  // Identify lowest.
-  const entries: Array<[CategoryScores["lowest_key"], number]> = [
+  // ── Coverage safety net ────────────────────────────────────────────────────
+  // A category needs at least MIN_COVERAGE contributing axes for its score to
+  // be trustworthy. Below that (e.g. a single reverse item, which an all-"1"
+  // answer set would invert to a misleadingly high score) we flag it as
+  // insufficient: the UI shows "requires the full assessment" rather than a
+  // bar, and it can't be picked as the lowest "starting point". Intimacy counts
+  // its direct q20b answer as one covered signal.
+  const MIN_COVERAGE = 2;
+  const coverage: Record<CategoryKey, number> = {
+    communication: coveredAxisCount(scores, COMMUNICATION_AXES),
+    intimacy: coveredAxisCount(scores, INTIMACY_AXES) + (q20bAnswered ? 1 : 0),
+    emotional_connection: coveredAxisCount(scores, EMOTIONAL_CONNECTION_AXES),
+    friendship: coveredAxisCount(scores, FRIENDSHIP_CATEGORY_AXES),
+    family: coveredAxisCount(scores, FAMILY_AXES),
+  };
+
+  // Identify lowest — among SUFFICIENTLY-covered categories only, so a thin /
+  // misleading score never becomes the headline "starting point".
+  const entries: Array<[CategoryKey, number]> = [
     ["communication", communication],
     ["intimacy", intimacy],
     ["emotional_connection", emotional_connection],
     ["friendship", friendship],
     ["family", family],
   ];
-  entries.sort((a, b) => a[1] - b[1]);
-  const lowest_key = entries[0][0];
+  const insufficient_keys = entries
+    .filter(([k]) => coverage[k] < MIN_COVERAGE)
+    .map(([k]) => k);
+  const sufficient = entries.filter(([k]) => coverage[k] >= MIN_COVERAGE);
+  // Fall back to the full set only if NOTHING is sufficiently covered.
+  const ranked = (sufficient.length ? sufficient : entries)
+    .slice()
+    .sort((a, b) => a[1] - b[1]);
+  const lowest_key = ranked[0][0];
 
   return {
     communication,
@@ -327,7 +353,15 @@ function computeCategoryScores(
     friendship,
     family,
     lowest_key,
+    ...(insufficient_keys.length ? { insufficient_keys } : {}),
   };
+}
+
+/** Count how many of the given axes actually have a numeric score (coverage). */
+function coveredAxisCount(scores: AxisScoreMap, axes: Axis[]): number {
+  let n = 0;
+  for (const a of axes) if (typeof scores[a] === "number") n++;
+  return n;
 }
 
 function primaryLoveLanguage(scores: AxisScoreMap): LoveLanguage | null {

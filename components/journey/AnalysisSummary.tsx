@@ -349,11 +349,18 @@ export function AnalysisSummary({
             {CATEGORY_ORDER.map((key: CategoryKey) => {
               const score = categoryScores[key];
               const fb = CATEGORY_FEEDBACK[key];
+              // Safety net: too little coverage to judge → show a "needs the
+              // full assessment" note instead of a misleading weak/strong score.
+              const insufficient = (categoryScores.insufficient_keys ?? []).includes(key);
               const weak = score < CATEGORY_WEAK_BELOW;
-              const text = isHe
-                ? weak ? fb.weak_he : fb.strong_he
-                : weak ? fb.weak_en : fb.strong_en;
-              const isLowest = key === categoryScores.lowest_key;
+              const text = insufficient
+                ? (isHe
+                    ? "כדי לתת לכם משוב מדויק בתחום הזה צריך עוד כמה תשובות - זה מה שהאבחון המלא עושה."
+                    : "We need a few more answers to give you accurate feedback here - that's what the full assessment does.")
+                : isHe
+                  ? weak ? fb.weak_he : fb.strong_he
+                  : weak ? fb.weak_en : fb.strong_en;
+              const isLowest = !insufficient && key === categoryScores.lowest_key;
               return (
                 <li
                   key={key}
@@ -374,11 +381,13 @@ export function AnalysisSummary({
                     >
                       <span
                         className="font-heading text-[40px] font-extrabold leading-none tabular-nums"
-                        style={{ color: isLowest ? "#FCCA65" : "#fff" }}
+                        style={{ color: insufficient ? "#9a8fb0" : isLowest ? "#FCCA65" : "#fff" }}
                       >
-                        {score}
+                        {insufficient ? "—" : score}
                       </span>
-                      <span className="mt-1 text-[12px] font-semibold text-white">{isHe ? "מתוך 100" : "of 100"}</span>
+                      <span className="mt-1 text-[12px] font-semibold text-white">
+                        {insufficient ? (isHe ? "אבחון מלא" : "full only") : isHe ? "מתוך 100" : "of 100"}
+                      </span>
                     </div>
                     <div className="flex-1">
                       <span className="text-[24px] sm:text-[24px] font-bold leading-tight text-white">{isHe ? fb.he : fb.en}</span>
@@ -1156,8 +1165,12 @@ function CategoryBarChart({
             above the category name. */}
         <div className="grid grid-cols-5 items-end gap-2 sm:gap-3">
           {rows.map((row) => {
-            const isLowest = row.key === scores.lowest_key;
-            const heightPct = Math.max(14, Math.min(100, row.value));
+            // Safety net: a category without enough answer coverage shows a
+            // muted bar + "—" + a "full assessment" note, never a misleading
+            // height/number.
+            const insufficient = (scores.insufficient_keys ?? []).includes(row.key);
+            const isLowest = !insufficient && row.key === scores.lowest_key;
+            const heightPct = insufficient ? 0 : Math.max(14, Math.min(100, row.value));
             return (
               <div key={row.key} className="flex flex-col items-center">
                 {/* Bar — decorative; the score number + label below carry the
@@ -1185,10 +1198,10 @@ function CategoryBarChart({
                 {/* Score number BELOW the bar, aligned across all columns */}
                 <span
                   className={`mt-2 text-center text-[20px] font-extrabold tabular-nums leading-none sm:text-[22px] ${
-                    isLowest ? "text-[#FCCA65]" : "text-white"
+                    insufficient ? "text-white/35" : isLowest ? "text-[#FCCA65]" : "text-white"
                   }`}
                 >
-                  {row.value}
+                  {insufficient ? "—" : row.value}
                 </span>
                 {/* Category label below the number */}
                 <span

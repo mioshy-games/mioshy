@@ -119,7 +119,9 @@ export function getDiagnosticDomainCount(): Record<Domain, number> {
 //
 // The breakdown remains uneven by design (Gottman's 4-Horsemen + repair
 // + influence + pso fill `communication` with 7 items). `family` now
-// has 2 items (kids count + 1 demographic item). Other domains land at 3-5.
+// has 3 items (2026-06-24: added q_family_quality_presence, a POSITIVE
+// passion_context item that balances q17's reverse item so the short set's
+// family score isn't driven by a single inverted signal). Other domains 3-5.
 //
 // If a future edit to questionnaire.json reshuffles the distribution,
 // this throws at module load so the mismatch surfaces in dev/build
@@ -129,7 +131,7 @@ const EXPECTED_DOMAIN_COUNTS: Record<Domain, number> = {
   intimacy: 3,
   emotional_connection: 3,
   friendship: 4,
-  family: 2,
+  family: 3,
 };
 // 2026-06-02 (Itzik) — q21_reflect_strength + q22_reflect_friction removed
 // (the "closest moment / furthest moment" pair). q22a_success_signal
