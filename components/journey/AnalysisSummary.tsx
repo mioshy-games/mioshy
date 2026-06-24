@@ -383,7 +383,7 @@ export function AnalysisSummary({
                         className="font-heading text-[40px] font-extrabold leading-none tabular-nums"
                         style={{ color: insufficient ? "#9a8fb0" : isLowest ? "#FCCA65" : "#fff" }}
                       >
-                        {insufficient ? "—" : score}
+                        {insufficient ? "–" : score}
                       </span>
                       <span className="mt-1 text-[12px] font-semibold text-white">
                         {insufficient ? (isHe ? "אבחון מלא" : "full only") : isHe ? "מתוך 100" : "of 100"}
@@ -633,8 +633,8 @@ export function AnalysisSummary({
                 />
                 <span className="flex-1 text-pretty text-start">
                   {isHe
-                    ? "בדיקת התקדמות זוגית כל 8 שבועות — והמומחה שלכם מדייק את הליווי בהתאם."
-                    : "A couples progress check every 8 weeks — and your expert fine-tunes the guidance accordingly."}
+                    ? "בדיקת התקדמות זוגית כל 8 שבועות - והמומחה שלכם מדייק את הליווי בהתאם."
+                    : "A couples progress check every 8 weeks - and your expert fine-tunes the guidance accordingly."}
                 </span>
               </li>
             </ul>
@@ -1045,8 +1045,8 @@ function OfferCard({
             renders on the non-subscriber path, so no extra gate needed. */}
         <p className="mt-5 text-start font-heading text-[24px] sm:text-[24px] font-bold leading-snug text-white">
           {isHe
-            ? "מיד עם ההצטרפות נשלים את האבחון המלא — לתמונה מדויקת יותר ולצעדים שמתאימים בדיוק אליכם."
-            : "Right after you join, we'll complete the full assessment — for a more accurate picture and steps tailored exactly to you."}
+            ? "מיד עם ההצטרפות נשלים את האבחון המלא - לתמונה מדויקת יותר ולצעדים שמתאימים בדיוק אליכם."
+            : "Right after you join, we'll complete the full assessment - for a more accurate picture and steps tailored exactly to you."}
         </p>
 
         <button
@@ -1201,7 +1201,7 @@ function CategoryBarChart({
                     insufficient ? "text-white/35" : isLowest ? "text-[#FCCA65]" : "text-white"
                   }`}
                 >
-                  {insufficient ? "—" : row.value}
+                  {insufficient ? "–" : row.value}
                 </span>
                 {/* Category label below the number */}
                 <span
@@ -1213,7 +1213,7 @@ function CategoryBarChart({
                   {/* a11y M8: mark the lowest category textually, not only by colour. */}
                   {isLowest ? (
                     <span className="sr-only">
-                      {isHe ? " — מומלץ להתחיל כאן" : " — recommended starting point"}
+                      {isHe ? " - מומלץ להתחיל כאן" : " - recommended starting point"}
                     </span>
                   ) : null}
                 </span>

@@ -26,6 +26,7 @@
  */
 
 import "server-only";
+import { stripEmDash } from "@/lib/text/sanitize-dashes";
 import type {
   AiHeroBlock,
   AiHeroFailReason,
@@ -251,6 +252,12 @@ export async function analyzeAssessment(
         ok: true,
         hero: {
           ...one.hero,
+          // Display-layer em-dash sanitiser — closes the "—" AI tell on the
+          // hero + recommendations (shared util; idempotent; en-dash kept).
+          hero_he: stripEmDash(one.hero.hero_he),
+          hero_en: stripEmDash(one.hero.hero_en),
+          recommendations_he: one.hero.recommendations_he.map(stripEmDash),
+          recommendations_en: one.hero.recommendations_en.map(stripEmDash),
           model: ANTHROPIC_MODEL,
           generated_at: new Date().toISOString(),
           latency_ms: latency,

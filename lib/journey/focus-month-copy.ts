@@ -17,6 +17,7 @@
 
 import type { PriorityKey } from "./priorities";
 import type { Locale } from "./types";
+import { stripEmDashDeep } from "@/lib/text/sanitize-dashes";
 
 export interface FocusMonthCopy {
   /** Short reflection - "You chose X. Not by chance." */
@@ -104,7 +105,10 @@ export function getFocusMonthCopy(
   locale: Locale,
 ): FocusMonthCopy | null {
   if (!priority) return null;
-  return COPY[locale]?.[priority] ?? null;
+  const copy = COPY[locale]?.[priority];
+  if (!copy) return null;
+  // Display-layer em-dash sanitiser (source constant untouched). Idempotent.
+  return stripEmDashDeep(copy);
 }
 
 /**
