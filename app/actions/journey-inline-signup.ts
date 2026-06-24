@@ -37,6 +37,7 @@ import {
   createSession,
 } from "@/lib/auth/session-enforcement";
 import { fireCompleteRegistrationCapi } from "@/lib/analytics/meta-capi";
+import { tagAsRegistered } from "@/lib/email/brevo-segments-sync";
 
 /**
  * The `debug` field is included on every result so the browser console
@@ -99,11 +100,17 @@ export async function journeyInlineSignup(args: {
   deviceId: string;
   /** "register" or "login" - login path skips createUser. */
   mode: "register" | "login";
+  /** Terms + privacy acceptance — REQUIRED to register. Recorded on profiles. */
+  termsAccepted?: boolean;
+  /** Marketing/dיוור opt-in — optional, recorded on profiles. */
+  marketingConsent?: boolean;
 }): Promise<JourneyInlineSignupResult> {
   const email = args.email.trim();
   const fullName = args.fullName.trim();
   const phone = (args.phone ?? "").trim();
   const password = args.password;
+  const termsAccepted = args.termsAccepted === true;
+  const marketingConsent = args.marketingConsent === true;
 
   if (!email || !password) {
     return { success: false, error: "Email and password are required." };
@@ -120,6 +127,14 @@ export async function journeyInlineSignup(args: {
     return {
       success: false,
       error: "Password must be at least 8 characters.",
+    };
+  }
+  // Terms acceptance is mandatory to register (client also disables the
+  // button; this is the server-side backstop). Login users accepted earlier.
+  if (args.mode === "register" && !termsAccepted) {
+    return {
+      success: false,
+      error: "You must accept the terms and privacy policy to register.",
     };
   }
   if (!args.deviceId || args.deviceId.length < 8) {
@@ -196,9 +211,18 @@ export async function journeyInlineSignup(args: {
       const userId = userData.user.id;
       console.log("[journeyInlineSignup] user created", { userId });
 
-      // Upsert profile row with name + phone (mirrors signupAction).
+      // Upsert profile row with name + phone + consent (mirrors signupAction).
+      // marketing_consent* columns already exist on profiles.
+      const nowIso = new Date().toISOString();
       const { error: profileErr } = await admin.from("profiles").upsert(
-        { id: userId, full_name: fullName, phone: phone || null },
+        {
+          id: userId,
+          full_name: fullName,
+          phone: phone || null,
+          marketing_consent: marketingConsent,
+          marketing_consent_at: marketingConsent ? nowIso : null,
+          marketing_consent_source: "journey_inline",
+        },
         { onConflict: "id" },
       );
       if (profileErr) {
@@ -206,6 +230,47 @@ export async function journeyInlineSignup(args: {
           "[journeyInlineSignup] profile upsert failed (non-fatal)",
           profileErr.message,
         );
+      }
+
+      // terms_accepted / terms_accepted_at are added by migration 141. Write
+      // them in a SEPARATE best-effort update so signup still succeeds on any
+      // environment where the migration hasn't been applied yet (the column
+      // would otherwise make the whole upsert above fail). Once 141 is live,
+      // this records the acceptance + timestamp.
+      const { error: termsErr } = await admin
+        .from("profiles")
+        .update({
+          terms_accepted: termsAccepted,
+          terms_accepted_at: termsAccepted ? nowIso : null,
+        })
+        .eq("id", userId);
+      if (termsErr) {
+        console.warn(
+          "[journeyInlineSignup] terms columns write failed (non-fatal — run migration 141)",
+          termsErr.message,
+        );
+      }
+
+      // Fire-and-forget Brevo sync. Israeli Communications Act §30A:
+      // marketing emails require prior explicit consent, so we only call
+      // Brevo when the user ticked the box. Auth + profile creation are
+      // the source of truth — Brevo failure must NEVER fail the signup.
+      if (marketingConsent) {
+        try {
+          const syncResult = await tagAsRegistered(
+            email,
+            userId,
+            args.language ?? "he",
+          );
+          if (!syncResult.success) {
+            console.warn(
+              "[journeyInlineSignup] tagAsRegistered returned non-success:",
+              syncResult.error,
+            );
+          }
+        } catch (brevoErr) {
+          console.error("[journeyInlineSignup] Brevo sync failed", brevoErr);
+        }
       }
     }
 

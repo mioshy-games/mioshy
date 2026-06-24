@@ -8,6 +8,7 @@ import { track } from "@/lib/analytics";
 import { journeyInlineSignup } from "@/app/actions/journey-inline-signup";
 import { useCmsText } from "@/hooks/useCmsText";
 import { CmsText } from "@/components/cms/CmsText";
+import { Link } from "@/navigation";
 
 // 2026-05-29 — Itzik bug report: user clicked browser-back from the
 // inline-auth gate, then forward again, and the form was empty. They
@@ -83,6 +84,10 @@ export function InlineAuthStep({ locale, deviceId, onAuthenticated }: InlineAuth
   const [email,    setEmail]    = useState("");
   const [phone,    setPhone]    = useState("");
   const [password, setPassword] = useState("");
+  // Consent checkboxes (register only). Terms is REQUIRED (gates submit);
+  // marketing defaults ON and never blocks submit.
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [marketingConsent, setMarketingConsent] = useState(true);
   const [busy,     setBusy]     = useState(false);
   const [error,    setError]    = useState<string | null>(null);
   // Skip the auto-save effect on the very first render (right after
@@ -129,6 +134,15 @@ export function InlineAuthStep({ locale, deviceId, onAuthenticated }: InlineAuth
   const errDefault = useCmsText("journeyAssessment.inlineAuth.errDefault").text;
   const errRateLimit = useCmsText("journeyAssessment.inlineAuth.errRateLimit").text;
   const errAlreadyRegistered = useCmsText("journeyAssessment.inlineAuth.errAlreadyRegistered").text;
+  // Consent copy. The terms line interleaves two locale-aware links, so its
+  // fragments are read as raw strings (useCmsText().text) to preserve the
+  // exact leading/trailing spaces around the links — CmsText's plain renderer
+  // trims outer whitespace, which would swallow them.
+  const termsPrefix = useCmsText("journeyAssessment.inlineAuth.termsPrefix").text;
+  const termsLink = useCmsText("journeyAssessment.inlineAuth.termsLink").text;
+  const termsAnd = useCmsText("journeyAssessment.inlineAuth.termsAnd").text;
+  const privacyLink = useCmsText("journeyAssessment.inlineAuth.privacyLink").text;
+  const termsSuffix = useCmsText("journeyAssessment.inlineAuth.termsSuffix").text;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -146,6 +160,8 @@ export function InlineAuthStep({ locale, deviceId, onAuthenticated }: InlineAuth
         language: locale,
         deviceId,
         mode,
+        termsAccepted,
+        marketingConsent,
       });
 
       console.log("[InlineAuthStep] journeyInlineSignup returned", {
@@ -278,6 +294,54 @@ export function InlineAuthStep({ locale, deviceId, onAuthenticated }: InlineAuth
             minLength={8}
           />
 
+          {mode === "register" && (
+            <div className="space-y-2.5">
+              {/* Terms — REQUIRED. Gates submit (button disabled until checked),
+                  not marked with a visual asterisk per spec. Links are the
+                  locale-aware @/navigation Link so they resolve to
+                  /he/terms · /he/privacy (or /en/...) in the same tab. */}
+              <label className="flex items-start gap-2.5 text-sm leading-snug text-white/70">
+                <input
+                  type="checkbox"
+                  checked={termsAccepted}
+                  onChange={(e) => setTermsAccepted(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 shrink-0 accent-fuchsia-500"
+                />
+                <span>
+                  {termsPrefix}
+                  <Link
+                    href="/terms"
+                    className="font-medium text-fuchsia-300 underline underline-offset-4 hover:text-white"
+                  >
+                    {termsLink}
+                  </Link>
+                  {termsAnd}
+                  <Link
+                    href="/privacy"
+                    className="font-medium text-fuchsia-300 underline underline-offset-4 hover:text-white"
+                  >
+                    {privacyLink}
+                  </Link>
+                  {termsSuffix}
+                </span>
+              </label>
+
+              {/* Marketing — default ON, optional (never blocks submit). */}
+              <label className="flex items-start gap-2.5 text-sm leading-snug text-white/70">
+                <input
+                  type="checkbox"
+                  checked={marketingConsent}
+                  onChange={(e) => setMarketingConsent(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 shrink-0 accent-fuchsia-500"
+                />
+                <CmsText
+                  cmsKey="journeyAssessment.inlineAuth.marketingConsent"
+                  as="span"
+                />
+              </label>
+            </div>
+          )}
+
           {error && (
             <motion.p
               initial={{ opacity: 0, height: 0 }}
@@ -292,6 +356,7 @@ export function InlineAuthStep({ locale, deviceId, onAuthenticated }: InlineAuth
             loading={busy}
             label={mode === "register" ? submitRegisterLabel : submitLoginLabel}
             loadingLabel={loadingLabel}
+            disabled={mode === "register" && !termsAccepted}
           />
         </form>
 

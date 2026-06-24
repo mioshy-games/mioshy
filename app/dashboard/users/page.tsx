@@ -136,6 +136,36 @@ export default async function AdminUsersPage({
   const fmtDate = (v: unknown) =>
     v ? new Date(v as string).toLocaleDateString(dateLocale, { year: "numeric", month: "short", day: "numeric" }) : "—";
 
+  // Short date + time for consent timestamps (e.g. "23 ביוני 2026, 14:05").
+  const fmtDateTime = (v: unknown) =>
+    v
+      ? new Date(v as string).toLocaleString(dateLocale, {
+          dateStyle: "short",
+          timeStyle: "short",
+        })
+      : "";
+
+  // Consent cell: yes/no badge + the acceptance timestamp. `undefined` means
+  // the view column isn't present yet (migration 142 not applied) → render "—".
+  const consentCell = (flag: unknown, at: unknown) => {
+    if (flag === undefined || flag === null) {
+      return <span className="text-muted-foreground">—</span>;
+    }
+    const yes = flag === true;
+    return (
+      <div className="flex flex-col gap-0.5">
+        <Badge variant={yes ? "default" : "outline"}>
+          {tt(yes ? "customers.consent_yes" : "customers.consent_no")}
+        </Badge>
+        {yes && at ? (
+          <span className="text-muted-foreground text-xs whitespace-nowrap tabular-nums">
+            {fmtDateTime(at)}
+          </span>
+        ) : null}
+      </div>
+    );
+  };
+
   return (
     <div className="flex flex-col gap-6 p-6" dir={rtl ? "rtl" : "ltr"}>
       <Card>
@@ -195,6 +225,8 @@ export default async function AdminUsersPage({
                 <TableHead>{tt("customers.col_games")}</TableHead>
                 <TableHead>{sortHeader("activity_level", tt("customers.col_status"))}</TableHead>
                 <TableHead>{tt("customers.col_sub")}</TableHead>
+                <TableHead>{tt("customers.col_marketing")}</TableHead>
+                <TableHead>{tt("customers.col_terms")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -223,11 +255,13 @@ export default async function AdminUsersPage({
                         </Badge>
                       ) : <span className="text-muted-foreground">—</span>}
                     </TableCell>
+                    <TableCell>{consentCell(r.marketing_consent, r.marketing_consent_at)}</TableCell>
+                    <TableCell>{consentCell(r.terms_accepted, r.terms_accepted_at)}</TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={9} className="h-24 text-center text-muted-foreground">
                     {admin ? tt("customers.none") : tt("customers.no_service_role")}
                   </TableCell>
                 </TableRow>
