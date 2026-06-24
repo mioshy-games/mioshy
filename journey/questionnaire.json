@@ -1,7 +1,7 @@
 {
   "version": 7,
   "gating": {
-    "auth_after_index": 28,
+    "auth_after_index": 29,
     "paywall_after_index": 99
   },
   "total_questions": 28,
@@ -637,6 +637,22 @@
           "en_desc": "Kids, in-laws, work, money, outside pressures"
         }
       ]
+    },
+    {
+      "id": "q_family_quality_presence",
+      "category": "free",
+      "domain": "family",
+      "type": "likert5",
+      "axes": [
+        {
+          "axis": "passion_context",
+          "weight": 1.0
+        }
+      ],
+      "purpose": "Passion - context (POSITIVE). Balances q17's reverse logistics item so the family category has real two-sided coverage in the short set. DB position 28 (last) — kept in sync with migration 144.",
+      "insight": "High = present, real quality time; low = together but not truly present.",
+      "he": "כשיש לנו זמן רק לשנינו, באיזו תדירות הוא מרגיש כמו זמן איכות אמיתי שאנחנו באמת נוכחים בו?",
+      "en": "When we finally get time just for the two of us, how often does it feel like real quality time we're truly present in?"
     }
   ]
 }

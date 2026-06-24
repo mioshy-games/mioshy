@@ -342,9 +342,20 @@ export function JourneyQuestionsManager({ initialQuestions }: Props) {
             </div>
           ) : null}
 
-          {/* Locked axes (read-only) */}
+          {/* Locked scoring config (read-only): axis + weight + reverse.
+              Surfaced so content editors SEE how the item is scored (and don't
+              unknowingly break ranking), while writes stay blocked server-side
+              (actions.ts SCORING LOCK). */}
           <div className="rounded-md border border-dashed border-zinc-300 bg-zinc-50 p-3">
-            <div className="text-xs font-semibold text-gray-700">🔒 ניקוד — לקריאה בלבד</div>
+            <div className="flex items-center justify-between">
+              <div className="text-xs font-semibold text-gray-700">🔒 ניקוד — לקריאה בלבד</div>
+              <span className="font-mono text-[11px] text-zinc-600">
+                reverse:{" "}
+                <b className={draft.reverse ? "text-rose-600" : "text-gray-900"}>
+                  {draft.reverse ? "true (משקל הפוך)" : "false"}
+                </b>
+              </span>
+            </div>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {draft.axes.length > 0 ? (
                 draft.axes.map((a) => (

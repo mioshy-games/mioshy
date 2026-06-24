@@ -205,14 +205,29 @@ export type AxisScoreMap = Partial<Record<Axis, number>>;
  * tagged in `lowest_key` so the UI can render the "נקודת ההתחלה שלכם"
  * label next to it. Stored inside `summary` JSONB (no migration needed).
  */
+export type CategoryKey =
+  | "communication"
+  | "intimacy"
+  | "emotional_connection"
+  | "friendship"
+  | "family";
+
 export interface CategoryScores {
   communication: number;
   intimacy: number;
   emotional_connection: number;
   friendship: number;
   family: number;
-  /** Lowest-scoring category, surfaced as the "starting point" in the UI. */
-  lowest_key: "communication" | "intimacy" | "emotional_connection" | "friendship" | "family";
+  /** Lowest-scoring category, surfaced as the "starting point" in the UI.
+   *  Chosen among SUFFICIENTLY-covered categories only (see insufficient_keys). */
+  lowest_key: CategoryKey;
+  /** Safety net (2026-06-24): categories whose score rests on too little
+   *  answer coverage (< 2 contributing axes) to be trustworthy — e.g. a single
+   *  reverse item. Their numeric score is still present but the UI should show
+   *  "requires the full assessment" instead of a potentially misleading bar,
+   *  and they are excluded from lowest_key. Optional/additive — empty or absent
+   *  means every category had adequate coverage. */
+  insufficient_keys?: CategoryKey[];
 }
 
 /**
