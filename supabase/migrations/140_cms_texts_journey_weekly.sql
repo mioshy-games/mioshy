@@ -20,6 +20,8 @@ INSERT INTO public.cms_texts (key, page, section, he_text, en_text, is_rich) VAL
    'כל שבוע, פרק חדש בזוגיות.', 'Every week, a new chapter in your relationship.', false),
   ('journeyHub.weekly.titleAccent', 'journey', 'weekly',
    'ומומחה צמוד.', 'And an expert by your side.', false),
+  ('journeyHub.weekly.cta', 'journey', 'weekly',
+   'לאבחון וקבלת תוצאות מיידיות', 'Take the assessment, get instant results', false),
   ('journeyHub.weekly.lede', 'journey', 'weekly',
    'כל שבוע נחזק אתכם בתחום אחר בזוגיות, עם שאלות ומשימות קטנות לאורך השבוע. אתם משתפים בחוויות ובמה שעולה לכם בצ׳אט עם המומחים שלנו, והם שם בשבילכם, נותנים כלים מעשיים ומלווים אתכם יד ביד בכל שלב בדרך לזוגיות עוצמתית יותר.',
    'Each week we strengthen a different area of your relationship, with small questions and tasks along the way. You share your experiences and whatever comes up in the chat with our experts, and they are there for you, giving practical tools and walking with you hand in hand at every step toward a stronger relationship.', false),

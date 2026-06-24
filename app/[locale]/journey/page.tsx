@@ -632,9 +632,14 @@ export default async function JourneyMarketingPage({
                 className="mt-5 text-[19px] leading-[1.6] text-[#170E14]"
               />
 
-              <div className="mt-9 flex flex-col gap-6">
+              <div className="mt-8 flex flex-col">
                 {[0, 1, 2, 3, 4].map((i) => (
-                  <div key={i} className="flex items-baseline gap-4">
+                  <div
+                    key={i}
+                    // items-start tops the number with the title; py-7 for breathing
+                    // room; a thin pink/purple hairline separates items (i>0).
+                    className={`flex items-start gap-4 py-7 ${i > 0 ? "border-t border-fuchsia-400/25" : ""}`}
+                  >
                     <span
                       className="min-w-[54px] shrink-0 bg-[linear-gradient(110deg,#F43F5E_0%,#EC4899_45%,#A855F7_100%)] bg-clip-text text-center text-[54px] leading-none tracking-[-0.02em] text-transparent"
                       style={{ fontFamily: "'Frank Ruhl Libre', serif", fontWeight: 600 }}
@@ -656,6 +661,18 @@ export default async function JourneyMarketingPage({
                     </div>
                   </div>
                 ))}
+              </div>
+
+              {/* CTA to the assessment — reuses primaryHref (active journey →
+                  timeline, else → assessment). Full width on mobile. */}
+              <div className="mt-10">
+                <Link
+                  href={primaryHref}
+                  className="inline-flex min-h-[56px] w-full items-center justify-center rounded-full px-8 text-[17px] font-semibold text-white shadow-xl shadow-fuchsia-500/25 transition hover:brightness-110 sm:w-auto"
+                  style={{ background: "linear-gradient(110deg,#F43F5E 0%,#EC4899 45%,#A855F7 100%)" }}
+                >
+                  <CmsText cmsKey="journeyHub.weekly.cta" />
+                </Link>
               </div>
             </div>
           </section>
