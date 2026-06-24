@@ -28,6 +28,17 @@ import { createAdminClient }        from "@/lib/supabase-admin"
 import { createServerSupabaseClient } from "@/lib/supabase/server"
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit"
 import { sendBrevoEmail }           from "@/lib/email/brevo"
+import { tagAsInterested, type InterestSource } from "@/lib/email/brevo-segments-sync"
+
+/**
+ * Map the free-text campaign `source` (e.g. "marathon-7day", null) onto the
+ * Brevo InterestSource union. Marathon / warm-list campaigns → "warm_list";
+ * everything else (homepage form, subscription modal, null) → "homepage".
+ */
+function toInterestSource(source: string | null): InterestSource {
+  if (source && /marathon|warm/i.test(source)) return "warm_list"
+  return "homepage"
+}
 
 const FK_VIOLATION_CODE = "23503"
 
@@ -191,6 +202,26 @@ export async function POST(req: Request) {
         source: resolvedSource,
       })
     }
+
+    // Fire-and-forget Brevo sync. Israeli Communications Act §30A: marketing
+    // emails require prior explicit consent, so we only tag the lead into the
+    // "interested" list when they ticked the box. Awaited for reliable
+    // serverless delivery; wrapped in try/catch so a Brevo failure can NEVER
+    // fail the lead capture.
+    if (marketing_consent === true) {
+      try {
+        const lang: "he" | "en" = language === "en" ? "en" : "he"
+        const r = await tagAsInterested(
+          email.trim().toLowerCase(),
+          lang,
+          toInterestSource(resolvedSource),
+        )
+        if (!r.success) console.warn("[leads/upsert] tagAsInterested non-success:", r.error)
+      } catch (brevoErr) {
+        console.error("[leads/upsert] Brevo sync failed", brevoErr)
+      }
+    }
+
     return NextResponse.json({ success: true, lead_id: inserted.id, created: true })
   }
 
