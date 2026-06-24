@@ -23,6 +23,12 @@ import {
 import { createAdminClient }         from "@/lib/supabase-admin"
 import { assignJourneyOnPurchase }   from "@/lib/journey-content/auto-assign"
 import type { JourneyProductSlug }   from "@/lib/journey-content/types"
+import {
+  tagAsJourneyMember,
+  tagAsGamesSubscriber,
+  tagAsAdultsBuyer,
+  type AdultsTier,
+} from "@/lib/email/brevo-segments-sync"
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit"
 import { sendMetaCapiEvent, metaEventId } from "@/lib/analytics/meta-capi"
 
@@ -586,6 +592,43 @@ export async function GET(req: Request) {
           })
         }
       }
+    }
+  }
+
+  // ── Brevo segmentation (fire-and-forget) ────────────────────────────────────
+  // Tag the buyer into the matching product list once the entitlement /
+  // subscription write above actually succeeded (subscriptionId for the
+  // journey/games subscription path, entitlementId for the adults one-time
+  // path). A purchase is a transactional relationship, so this is NOT gated on
+  // marketing consent. Brevo failures are swallowed — they must NEVER block or
+  // fail the payment webhook.
+  if (userId && session.email) {
+    const brevoLang: "he" | "en" = session.language === "he" ? "he" : "en"
+    const brevoAmount =
+      typeof session.amount === "number"
+        ? session.amount
+        : Number(session.amount ?? 0)
+    try {
+      if (product === "journey" && subscriptionId) {
+        const r = await tagAsJourneyMember(session.email, userId, brevoLang, brevoAmount)
+        if (!r.success) console.warn("[indicator:brevo] tagAsJourneyMember non-success:", r.error)
+      } else if (product === "games" && subscriptionId) {
+        const r = await tagAsGamesSubscriber(session.email, userId, brevoLang, brevoAmount)
+        if (!r.success) console.warn("[indicator:brevo] tagAsGamesSubscriber non-success:", r.error)
+      } else if (product === "adults" && entitlementId) {
+        // Adults is one-time per game today → "single"; map a future Adults
+        // subscription by plan so the tier stays correct when that path lands.
+        const tier: AdultsTier =
+          purchaseType === "one_time"
+            ? "single"
+            : /annual|year/i.test(String(session.plan ?? ""))
+              ? "annual"
+              : "monthly"
+        const r = await tagAsAdultsBuyer(session.email, userId, brevoLang, tier, brevoAmount)
+        if (!r.success) console.warn("[indicator:brevo] tagAsAdultsBuyer non-success:", r.error)
+      }
+    } catch (brevoErr) {
+      console.error("[indicator:brevo] sync failed", brevoErr)
     }
   }
 
