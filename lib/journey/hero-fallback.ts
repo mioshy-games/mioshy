@@ -19,6 +19,7 @@
  * to CMS later if non-dev editing is needed.
  */
 import "server-only";
+import { stripEmDash } from "@/lib/text/sanitize-dashes";
 import type {
   AiHeroBlock,
   CategoryScores,
@@ -182,12 +183,15 @@ export function buildFallbackHero(
   const src = pickReflection(responses);
 
   return {
-    hero_he: tpl.hero_he,
-    hero_en: tpl.hero_en,
-    recommendations_he: [...tpl.recs_he],
-    recommendations_en: [...tpl.recs_en],
-    reflection_echo_he: src ? buildEcho(src, "he") : null,
-    reflection_echo_en: src ? buildEcho(src, "en") : null,
+    // Display-layer em-dash sanitiser. The templates are clean, but
+    // reflection_echo_* echoes the USER's own reflection text, which can carry
+    // a typed em-dash — strip it here so the fallback hero is clean too.
+    hero_he: stripEmDash(tpl.hero_he),
+    hero_en: stripEmDash(tpl.hero_en),
+    recommendations_he: tpl.recs_he.map(stripEmDash),
+    recommendations_en: tpl.recs_en.map(stripEmDash),
+    reflection_echo_he: src ? stripEmDash(buildEcho(src, "he")) : null,
+    reflection_echo_en: src ? stripEmDash(buildEcho(src, "en")) : null,
     expert_mentioned: false,
     pain_signal: "scores",
     model: "fallback-template",

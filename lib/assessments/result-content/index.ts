@@ -44,6 +44,7 @@ export interface AssessmentResultContent {
 
 import { INTIMACY_RESULT_CONTENT } from "./intimacy";
 import { FRIENDSHIP_RESULT_CONTENT } from "./friendship";
+import { stripEmDashDeep } from "@/lib/text/sanitize-dashes";
 
 const REGISTRY: Record<string, AssessmentResultContent> = {
   intimacy: INTIMACY_RESULT_CONTENT,
@@ -51,5 +52,9 @@ const REGISTRY: Record<string, AssessmentResultContent> = {
 };
 
 export function getResultContent(assessmentId: string): AssessmentResultContent | null {
-  return REGISTRY[assessmentId] ?? null;
+  const content = REGISTRY[assessmentId];
+  if (!content) return null;
+  // Display-layer em-dash sanitiser over the whole copy tree (the source
+  // constant is left untouched). Idempotent; en-dash ranges preserved.
+  return stripEmDashDeep(content);
 }

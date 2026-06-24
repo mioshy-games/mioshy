@@ -3,6 +3,7 @@
 import { useLocale, useTranslations } from "next-intl";
 import { useCmsTextContext } from "@/components/cms/CmsTextProvider";
 import { resolveColorOverride } from "@/lib/cms/colors";
+import { stripEmDash } from "@/lib/text/sanitize-dashes";
 import type { CmsTextResult } from "@/lib/cms/types";
 
 /**
@@ -130,7 +131,13 @@ export function useCmsText(key: string): CmsTextResult {
   }
 
   return {
-    text,
+    // Display-layer em-dash sanitiser (brand voice forbids "—"). Applied at
+    // the single source so every consumer — <CmsText> AND direct
+    // useCmsText().text callers (labels, alt, aria) — gets clean text. Only
+    // touches the dash char, so rich HTML in `text` is preserved; en-dash
+    // (numeric ranges) is left alone. Idempotent. The DB/CMS value is NOT
+    // mutated — only what we hand to the renderer.
+    text: stripEmDash(text),
     isRich,
     style: Object.keys(style).length > 0 ? style : undefined,
   };
