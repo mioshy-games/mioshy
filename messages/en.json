@@ -1012,6 +1012,35 @@
       "2": "Custom plan",
       "3": "No credit card"
     },
+    "weekly": {
+      "eyebrow": "Your weekly guidance",
+      "title": "Every week, a new chapter in your relationship.",
+      "titleAccent": "And an expert by your side.",
+      "cta": "Take the assessment, get instant results",
+      "lede": "Each week we strengthen a different area of your relationship, with small questions and tasks along the way. You share your experiences and whatever comes up in the chat with our experts, and they are there for you, giving practical tools and walking with you hand in hand at every step toward a stronger relationship.",
+      "cats": {
+        "0": {
+          "h": "Intimacy and sexuality",
+          "p": "Build physical closeness that feels safe and natural for you both."
+        },
+        "1": {
+          "h": "Couple communication",
+          "p": "Talk and listen in a way that leaves you feeling truly heard."
+        },
+        "2": {
+          "h": "Friendship and partnership",
+          "p": "Bring back the joy in the small things you do together."
+        },
+        "3": {
+          "h": "Family and routine",
+          "p": "Face the pressures of everyday life and home together."
+        },
+        "4": {
+          "h": "Emotional connection",
+          "p": "Strengthen the closeness and trust between you, every day."
+        }
+      }
+    },
     "why": {
       "badge": "Why this journey",
       "title": "No more generic advice. A path built around you.",
