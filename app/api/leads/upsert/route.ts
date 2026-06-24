@@ -28,6 +28,7 @@ import { createAdminClient }        from "@/lib/supabase-admin"
 import { createServerSupabaseClient } from "@/lib/supabase/server"
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit"
 import { sendBrevoEmail }           from "@/lib/email/brevo"
+import { enrollLeadInMarathon }     from "@/lib/marathon/enroll"
 
 const FK_VIOLATION_CODE = "23503"
 
@@ -190,6 +191,16 @@ export async function POST(req: Request) {
         email:  email.trim().toLowerCase(),
         source: resolvedSource,
       })
+      // Enroll in the 7-day WhatsApp marathon (day 1 = tomorrow, Israel time).
+      // Best-effort: never fails the signup; welcome no-ops until WhatsApp is
+      // configured + the template is approved.
+      if (resolvedPhone) {
+        await enrollLeadInMarathon({
+          leadId:   inserted.id,
+          phone:    resolvedPhone,
+          language,
+        })
+      }
     }
     return NextResponse.json({ success: true, lead_id: inserted.id, created: true })
   }
