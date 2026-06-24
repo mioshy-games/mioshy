@@ -35,19 +35,29 @@ import type {
 
 const ANTHROPIC_URL    = "https://api.anthropic.com/v1/messages";
 const ANTHROPIC_MODEL  = "claude-sonnet-4-6";
-const MAX_OUTPUT_TOKENS = 800;
+// 800 was occasionally too tight for the HE+EN hero + 6 recommendations, so a
+// verbose run could get truncated mid-JSON → parse_fail. 1100 gives headroom
+// while staying cheap (~$0.005/run).
+const MAX_OUTPUT_TOKENS = 1100;
 
-// ── Stage 1 (2026-06-14) retry / timeout budget ──────────────────────────
-// The user waits synchronously on the results screen (a real call was
-// observed at ~12.8s), so the total wall-clock is hard-bounded. We retry
-// only FAST transient failures: with an 18s per-attempt timeout and a 22s
-// total budget, a retry is only allowed when ~3s or less has elapsed, so a
-// full timeout falls straight through to the fallback instead of doubling
-// the wait. Worst case stays under the budget.
+// ── retry / timeout budget ────────────────────────────────────────────────
+// The user waits synchronously on the results screen, so total wall-clock is
+// bounded. attemptOnce takes a per-call timeout; attempt 1 gets the full
+// PER_ATTEMPT_TIMEOUT_MS, a retry gets whatever budget remains (capped at the
+// same ceiling).
+//
+// 2026-06-24: the previous gate reserved the FULL 18s timeout for the retry,
+// so it only fired when ≤3.2s had elapsed. But parse_fail / empty happen AFTER
+// a normal ~6s model response, so the retry never ran (observed attempts:1 on
+// every parse_fail). We now allow a retry whenever enough budget REMAINS for a
+// realistic second call (RETRY_MIN_REMAINING_MS), and raised the total budget
+// so two typical ~6s calls fit. A real timeout (18s) is NOT in the transient
+// set, so it still falls straight through to the fallback (no doubling).
 const PER_ATTEMPT_TIMEOUT_MS = 18_000;
-const TOTAL_BUDGET_MS        = 22_000;
+const TOTAL_BUDGET_MS        = 30_000;
+const RETRY_MIN_REMAINING_MS = 8_000; // enough for a typical ~6s call + margin
 const MAX_ATTEMPTS           = 2;
-const BACKOFF_MS             = 800;
+const BACKOFF_MS             = 600;
 
 // ---------------------------------------------------------------------------
 // Inputs the route hands us, expanded by the prompt builder.
@@ -179,7 +189,8 @@ OUTPUT:
 {"hero_he":"אורי, מהר מאוד תהפכו לזוג שמדבר בלי להאשים, ויכוחים שעד היום התפוצצו ייגמרו תוך דקות בלי שיישאר טעם רע. עם מומחה זמין בצ'אט לכל שאלה. ושוב תרגישו שאתם באותו צד.","hero_en":"Uri, very quickly you'll become a couple that talks without blame, fights that used to explode will end within minutes with no bitter aftertaste. With an expert available in chat for any question. And you'll feel you're on the same side again.","recommendations_he":["תלמדו להתווכח בלי שזה יהיה פיצוץ.","שיחות אמיתיות יחזרו.","תקבלו ליווי אישי בכל שאלה."],"recommendations_en":["You'll learn to argue without it exploding.","Real conversations will return.","You'll receive personal guidance for every question."],"expert_mentioned":true,"pain_signal":"horsemen"}
 
 == חוקי פלט ==
-- החזר JSON אובייקט אחד בלבד, בלי markdown fences, בלי טקסט נלווה.
+- החזר JSON תקין בלבד, ללא markdown וללא טקסט נוסף. בלי code fences (אסור \`\`\`), בלי שום מילה לפני ה-{ או אחרי ה-}. התשובה כולה היא אובייקט JSON אחד שלם, שמתחיל ב-{ ונגמר ב-}.
+- ודא שכל המפתחות והסוגריים נסגרים כראוי - JSON חתוך/לא שלם פסול.
 - ללא מקף ארוך (—).
 - אם user_name לא סופק — אל תתחיל בפנייה אישית, פשוט "מהר מאוד...".
 `;
@@ -218,7 +229,15 @@ export async function analyzeAssessment(
 
   while (attempt < MAX_ATTEMPTS) {
     attempt++;
-    const one = await attemptOnce(apiKey, userPayload);
+    // Attempt 1 gets the full per-attempt timeout; a retry gets the budget
+    // that remains (still capped at the per-attempt ceiling) so the total
+    // wall-clock stays bounded.
+    const elapsedBefore = Date.now() - startAll;
+    const attemptTimeout =
+      attempt === 1
+        ? PER_ATTEMPT_TIMEOUT_MS
+        : Math.min(PER_ATTEMPT_TIMEOUT_MS, TOTAL_BUDGET_MS - elapsedBefore);
+    const one = await attemptOnce(apiKey, userPayload, attemptTimeout);
 
     if (one.ok) {
       const latency = Date.now() - startAll;
@@ -243,9 +262,11 @@ export async function analyzeAssessment(
 
     lastReason = one.reason;
 
-    // Retry only fast transient failures, and only if the per-attempt
-    // timeout still fits inside the total budget. A real timeout (~18s) or
-    // a config error (4xx, no_key) never qualifies.
+    // Retry transient failures when enough budget REMAINS for a realistic
+    // second call. parse_fail / empty are explicitly included: they occur
+    // AFTER a normal-latency response (the model answered, the output was just
+    // unusable), so a second attempt usually succeeds. A real timeout (~18s)
+    // and config errors (http_4xx, no_key) are NOT transient → no retry.
     const transient =
       one.reason === "http_429" ||
       one.reason === "http_5xx" ||
@@ -253,14 +274,14 @@ export async function analyzeAssessment(
       one.reason === "parse_fail" ||
       one.reason === "threw";
     const elapsed = Date.now() - startAll;
-    const fitsBudget =
-      elapsed + BACKOFF_MS + PER_ATTEMPT_TIMEOUT_MS <= TOTAL_BUDGET_MS;
+    const remaining = TOTAL_BUDGET_MS - elapsed - BACKOFF_MS;
 
-    if (attempt < MAX_ATTEMPTS && transient && fitsBudget) {
+    if (attempt < MAX_ATTEMPTS && transient && remaining >= RETRY_MIN_REMAINING_MS) {
       console.warn("[ai/analyze-assessment] retrying", {
         attempt,
         reason: one.reason,
         elapsed,
+        remaining,
       });
       await sleep(BACKOFF_MS);
       continue;
@@ -284,9 +305,10 @@ export async function analyzeAssessment(
 async function attemptOnce(
   apiKey: string,
   userPayload: ReturnType<typeof buildUserPayload>,
+  timeoutMs: number,
 ): Promise<{ ok: true; hero: ParsedHero } | { ok: false; reason: AiHeroFailReason }> {
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), PER_ATTEMPT_TIMEOUT_MS);
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
     const res = await fetch(ANTHROPIC_URL, {
       method: "POST",
@@ -330,8 +352,15 @@ async function attemptOnce(
 
     const parsed = parseAndValidate(raw);
     if (!parsed) {
-      console.warn("[ai/analyze-assessment] parse failed", {
-        rawPreview: raw.slice(0, 200),
+      // TEMP (2026-06-24, remove after parse_fail confirmed ~0): dump the raw
+      // model output so we can confirm the failure shape — fences vs. prose
+      // around the JSON vs. truncation (tail without a closing brace) vs.
+      // schema deviation. head+tail+length+fence flag is enough to classify.
+      console.warn("[ai/analyze-assessment] parse failed — TEMP raw dump", {
+        rawLen: raw.length,
+        hadFences: /```/.test(raw),
+        head: raw.slice(0, 300),
+        tail: raw.slice(-150),
       });
       return { ok: false, reason: "parse_fail" };
     }
@@ -406,14 +435,12 @@ function buildUserPayload(inputs: AssessmentAiInputs) {
 type ParsedHero = Omit<AiHeroBlock, "model" | "generated_at" | "latency_ms">;
 
 function parseAndValidate(raw: string): ParsedHero | null {
-  const cleaned = raw
-    .replace(/^```(?:json)?\s*/i, "")
-    .replace(/```\s*$/, "")
-    .trim();
+  const candidate = extractJsonObject(raw);
+  if (!candidate) return null;
 
   let parsed: unknown;
   try {
-    parsed = JSON.parse(cleaned);
+    parsed = JSON.parse(candidate);
   } catch {
     return null;
   }
@@ -444,6 +471,43 @@ function parseAndValidate(raw: string): ParsedHero | null {
     expert_mentioned,
     pain_signal,
   };
+}
+
+/**
+ * Pull the first complete JSON object out of a raw model response, robust to:
+ *   - ```json fences (anywhere, not just at the exact start/end),
+ *   - leading/trailing prose ("Here is the JSON: { ... } hope this helps"),
+ *   - trailing garbage after the object.
+ * Scans for the first '{' and returns the substring up to its BALANCED closing
+ * '}', tracking string literals + escapes so braces inside strings don't count.
+ * Returns null when there is no '{' or the object never closes (truncated
+ * output) — both surface as parse_fail and trigger the retry.
+ */
+function extractJsonObject(raw: string): string | null {
+  // Drop code fences entirely; the brace scan handles any surrounding text.
+  const s = raw.replace(/```(?:json)?/gi, "");
+  const start = s.indexOf("{");
+  if (start === -1) return null;
+
+  let depth = 0;
+  let inStr = false;
+  let esc = false;
+  for (let i = start; i < s.length; i++) {
+    const ch = s[i];
+    if (inStr) {
+      if (esc) esc = false;
+      else if (ch === "\\") esc = true;
+      else if (ch === '"') inStr = false;
+      continue;
+    }
+    if (ch === '"') inStr = true;
+    else if (ch === "{") depth++;
+    else if (ch === "}") {
+      depth--;
+      if (depth === 0) return s.slice(start, i + 1);
+    }
+  }
+  return null; // unbalanced → truncated/incomplete
 }
 
 /** Replace em/en dashes with a plain minus, trim whitespace, return null if empty. */
