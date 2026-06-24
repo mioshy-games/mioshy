@@ -1698,7 +1698,13 @@
       "loadingLabel": "Hold on…",
       "badge1": "🔒 100% private",
       "badge2": "Analysis in seconds",
-      "badge3": "Cancel anytime"
+      "badge3": "Cancel anytime",
+      "termsPrefix": "I have read and accept the ",
+      "termsLink": "terms of use",
+      "termsAnd": " and ",
+      "privacyLink": "privacy policy",
+      "termsSuffix": " of Mioshy.",
+      "marketingConsent": "I agree to receive updates and messages from Mioshy and its experts (you can opt out anytime)."
     },
     "interstitial": {
       "step1": {

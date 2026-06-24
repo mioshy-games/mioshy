@@ -123,6 +123,10 @@ interface AuthSubmitButtonProps {
   loadingLabel?: string;
   onClick?: () => void;
   type?: "submit" | "button";
+  /** Disable the button independently of `loading` (e.g. required consent
+   *  not yet checked). Optional and defaults to false, so existing callers
+   *  are unaffected. */
+  disabled?: boolean;
 }
 
 export function AuthSubmitButton({
@@ -131,11 +135,12 @@ export function AuthSubmitButton({
   loadingLabel = "שניה…",
   onClick,
   type = "submit",
+  disabled = false,
 }: AuthSubmitButtonProps) {
   return (
     <button
       type={type}
-      disabled={loading}
+      disabled={loading || disabled}
       onClick={onClick}
       // Mobile: 60px tall (py-[18px] + 17px text) so the CTA dominates
       // the bottom of the form like in a native iOS app. Desktop steps
