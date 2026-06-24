@@ -6,6 +6,8 @@
  * UserDetailClient.
  */
 
+import Link from "next/link";
+import { MessageCircle } from "lucide-react";
 import { requireAdmin } from "@/lib/auth/admin";
 import {
   Card,
@@ -102,17 +104,39 @@ export default async function UserDetailPage({ params }: { params: { id: string 
   const behavior = adminDb ? await loadUserBehavior(adminDb, userId) : null;
   const adminLocale = getAdminLocale();
 
+  // Deep-link target for "open chat in console": couples open the couple
+  // conversation, solo users open their own thread. One small membership read.
+  const { data: membership } = await supabase
+    .from("couple_members")
+    .select("couple_id")
+    .eq("user_id", userId)
+    .maybeSingle();
+  const consoleHref = membership?.couple_id
+    ? `/dashboard/console?couple=${membership.couple_id}`
+    : `/dashboard/console?user=${userId}`;
+
   return (
     <div className="flex flex-col gap-6 p-6">
       <Card>
         <CardHeader>
-          <CardTitle>{overview?.email ?? userId}</CardTitle>
-          <CardDescription>
-            Journey: {journey?.status ?? "-"} ({journey?.current_step ?? 0}) · Subscription:{" "}
-            <Badge variant={overview?.subscription_status === "active" ? "default" : "outline"}>
-              {overview?.plan ?? ""} {overview?.subscription_status ?? "none"}
-            </Badge>
-          </CardDescription>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <CardTitle>{overview?.email ?? userId}</CardTitle>
+              <CardDescription>
+                Journey: {journey?.status ?? "-"} ({journey?.current_step ?? 0}) · Subscription:{" "}
+                <Badge variant={overview?.subscription_status === "active" ? "default" : "outline"}>
+                  {overview?.plan ?? ""} {overview?.subscription_status ?? "none"}
+                </Badge>
+              </CardDescription>
+            </div>
+            <Link
+              href={consoleHref}
+              className="bg-primary text-primary-foreground inline-flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium whitespace-nowrap hover:brightness-110"
+            >
+              <MessageCircle className="size-4" />
+              פתח צ׳אט בקונסולה
+            </Link>
+          </div>
         </CardHeader>
       </Card>
 

@@ -7,12 +7,12 @@
  * and clips long previews so the card stays compact even for chatty
  * users.
  *
- * Each row deep-links to `/dashboard/my-clients/[coupleId]#general`
- * — that's where the existing `GeneralChannelAdminReply` component
- * lives. Solo users (no couple yet) fall back to a generic
- * `/dashboard/journey/expert-messages?user=<uid>` filter.
+ * Each row deep-links to the coach chat console
+ * (`/dashboard/console?couple=<id>` for couples, `?user=<id>` for solo) —
+ * the single place where the expert reads and replies to every conversation.
  *
  * Added 2026-06-01 (Itzik: "smart UX for experts handling messages").
+ * 2026-06-24 (Itzik): all reply entry points now route to the console.
  */
 
 import Link from "next/link";
@@ -57,15 +57,12 @@ function relativeStamp(iso: string): string {
 }
 
 function deepLinkFor(row: PendingMessageRow): string {
-  // Couple workspace is where the reply UI already lives. The
-  // `#general` anchor scrolls to the GeneralChannelAdminReply section
-  // (added in the next step — for now the page just opens at the top
-  // and the section is below the fold). Solo users fall back to the
-  // existing expert-messages filter view.
+  // The console is the one place the expert reads + replies to every
+  // conversation, so every row opens it focused on the right thread.
   if (row.coupleId) {
-    return `/dashboard/my-clients/${row.coupleId}#general`;
+    return `/dashboard/console?couple=${row.coupleId}`;
   }
-  return `/dashboard/journey/expert-messages?user=${row.userId}`;
+  return `/dashboard/console?user=${row.userId}`;
 }
 
 export function PendingMessagesCard({ rows, totalCount, degraded }: Props) {

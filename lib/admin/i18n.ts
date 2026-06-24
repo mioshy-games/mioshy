@@ -627,9 +627,10 @@ const EN: Dict = {
   "overview.inq.assess_done":  "Completed",
   "overview.inq.assess_todo":  "Not done",
   "overview.inq.reply_pending":"Awaiting",
+  "overview.inq.reply_done":   "Replied",
   "overview.inq.btn_profile":  "Profile + assessment",
   "overview.inq.btn_reply":    "Reply",
-  "overview.inq.empty":        "No pending inquiries.",
+  "overview.inq.empty":        "No inquiries.",
 };
 
 const HE: Dict = {
@@ -1237,9 +1238,10 @@ const HE: Dict = {
   "overview.inq.assess_done":  "הושלם",
   "overview.inq.assess_todo":  "לא הושלם",
   "overview.inq.reply_pending":"ממתינה",
+  "overview.inq.reply_done":   "נענתה",
   "overview.inq.btn_profile":  "פרופיל + אבחון",
   "overview.inq.btn_reply":    "מענה",
-  "overview.inq.empty":        "אין פניות ממתינות.",
+  "overview.inq.empty":        "אין פניות.",
 };
 
 const TABLES: Record<AdminLocale, Dict> = { en: EN, he: HE };

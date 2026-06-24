@@ -15,6 +15,7 @@ import { createServiceRoleClient } from "@/lib/supabase-admin";
 export interface UserIdentity {
   fullName: string | null;
   email: string | null;
+  phone: string | null;
 }
 
 /**
@@ -60,15 +61,20 @@ export async function fetchUserIdentities(
     if (!admin) return map;
     const { data, error } = await admin
       .from("v_user_directory")
-      .select("user_id, full_name, email")
+      .select("user_id, full_name, email, phone")
       .in("user_id", ids);
     if (error) return map;
     for (const r of (data ?? []) as Array<{
       user_id: string;
       full_name: string | null;
       email: string | null;
+      phone: string | null;
     }>) {
-      map.set(r.user_id, { fullName: r.full_name, email: r.email });
+      map.set(r.user_id, {
+        fullName: r.full_name,
+        email: r.email,
+        phone: r.phone ?? null,
+      });
     }
   } catch {
     // Degrade silently — callers fall back to email/id.

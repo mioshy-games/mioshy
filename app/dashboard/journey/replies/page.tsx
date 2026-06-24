@@ -7,9 +7,8 @@
  * which only shows expert-authored messages.
  *
  * Each row represents ONE user with at least one unanswered message.
- * Click → my-clients/[coupleId] (where the existing reply UIs live).
- * Per-item rows also pass the scheduled item id so the deep-link can
- * scroll the expert to the right thread.
+ * Click → /dashboard/console (?couple=<id> | ?user=<id>) — the coach chat
+ * console is the single place the expert reads and replies.
  *
  * Renders newest-first. No filters yet — the volume here is bounded by
  * "users with at least one pending reply" which stays small in practice.
@@ -46,18 +45,12 @@ function clip(body: string, n = 180): string {
 }
 
 function deepLinkFor(row: PendingMessageRow): string {
-  // Couple workspace already hosts the reply UIs. Per-item rows pass
-  // the scheduled id as a query param so the page can scroll/expand
-  // the right thread (the my-clients page handles the rest).
-  const base = row.coupleId
-    ? `/dashboard/my-clients/${row.coupleId}`
-    : `/dashboard/journey/expert-messages?user=${row.userId}`;
-  if (row.lastContext === "per_item" && row.lastScheduledItemId) {
-    const sep = base.includes("?") ? "&" : "?";
-    return `${base}${sep}scheduled=${row.lastScheduledItemId}#item-${row.lastScheduledItemId}`;
-  }
-  if (row.coupleId) return `${base}#general`;
-  return base;
+  // Every reply opens the coach chat console focused on the conversation:
+  // couples by coupleId, solo users by userId. The console is the single
+  // place the expert reads and replies (no more my-clients / expert-messages).
+  return row.coupleId
+    ? `/dashboard/console?couple=${row.coupleId}`
+    : `/dashboard/console?user=${row.userId}`;
 }
 
 export default async function RepliesPage() {

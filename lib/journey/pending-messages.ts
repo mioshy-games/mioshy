@@ -72,6 +72,21 @@ export interface PendingMessagesResult {
   ok: boolean;
 }
 
+export interface RecentConversationRow extends PendingMessageRow {
+  /** Whether this conversation is currently awaiting an expert reply (the
+   *  user's latest message in some thread has no reply yet). Answered
+   *  conversations are kept in the list with replyPending=false. */
+  replyPending: boolean;
+}
+
+export interface RecentConversationsResult {
+  rows: RecentConversationRow[];
+  /** Total conversations currently awaiting a reply (NOT capped to the list
+   *  length) — the dashboard's "awaiting reply" metric. */
+  pendingCount: number;
+  ok: boolean;
+}
+
 const HARD_CAP = 50;
 
 export async function getPendingExpertMessages(opts: {
@@ -292,5 +307,198 @@ export async function getPendingExpertMessages(opts: {
   } catch (err) {
     console.warn("[pending-messages] threw", err);
     return { rows: [], count: 0, ok: false };
+  }
+}
+
+/**
+ * Recent conversations for the dashboard inquiries list — the latest N
+ * conversations a user has written, INCLUDING ones the expert already
+ * answered (replyPending=false). getPendingExpertMessages drops a conversation
+ * the moment it's answered; this keeps it so the dashboard always shows the
+ * most recent activity (Itzik 2026-06-23: "always keep the latest 10, even if
+ * answered").
+ *
+ * Same per-user aggregation as getPendingExpertMessages, but ordered by the
+ * user's last message regardless of reply state, and not filtered to pending.
+ * `pendingCount` is the true number of awaiting conversations (uncapped).
+ */
+export async function getRecentExpertConversations(opts: {
+  limit?: number;
+} = {}): Promise<RecentConversationsResult> {
+  const limit = Math.min(opts.limit ?? 10, HARD_CAP);
+  try {
+    const admin = createServiceRoleClient();
+    if (!admin) return { rows: [], pendingCount: 0, ok: false };
+
+    const { data, error } = await admin
+      .from("journey_messages")
+      .select("channel_user_id, scheduled_item_id, author_user_id, author_kind, body, created_at")
+      .order("created_at", { ascending: false });
+    if (error) {
+      console.warn("[recent-conversations] fetch failed", error);
+      return { rows: [], pendingCount: 0, ok: false };
+    }
+
+    type RawRow = {
+      channel_user_id: string | null;
+      scheduled_item_id: string | null;
+      author_user_id: string | null;
+      author_kind: "user" | "expert";
+      body: string | null;
+      created_at: string;
+    };
+    const rows = (data ?? []) as RawRow[];
+
+    type ThreadSlot = {
+      ownerUserId: string | null;
+      latest: RawRow | null; // newest message of any author (drives pending state)
+      lastUser: RawRow | null; // newest USER-authored message (drives ordering)
+      userCount: number;
+      surface: "general" | "per_item";
+    };
+    const threads = new Map<string, ThreadSlot>();
+
+    for (const r of rows) {
+      let threadKey: string;
+      let surface: "general" | "per_item";
+      let ownerCandidate: string | null;
+
+      if (r.channel_user_id) {
+        threadKey = `general:${r.channel_user_id}`;
+        surface = "general";
+        ownerCandidate = r.channel_user_id;
+      } else if (r.scheduled_item_id) {
+        threadKey = `item:${r.scheduled_item_id}`;
+        surface = "per_item";
+        ownerCandidate = r.author_kind === "user" ? r.author_user_id : null;
+      } else {
+        continue;
+      }
+
+      const slot =
+        threads.get(threadKey) ??
+        ({ ownerUserId: null, latest: null, lastUser: null, userCount: 0, surface } as ThreadSlot);
+      if (slot.latest === null) slot.latest = r; // newest-first scan → first wins
+      if (r.author_kind === "user") {
+        if (slot.lastUser === null) slot.lastUser = r;
+        slot.userCount += 1;
+      }
+      if (ownerCandidate && !slot.ownerUserId) slot.ownerUserId = ownerCandidate;
+      threads.set(threadKey, slot);
+    }
+
+    type UserAcc = {
+      lastUserMessageAt: string;
+      lastBody: string;
+      lastContext: "general" | "per_item";
+      lastScheduledItemId: string | null;
+      totalUserMessages: number;
+      pendingPerItemThreads: number;
+      pendingGeneralChannel: boolean;
+    };
+    const byUser = new Map<string, UserAcc>();
+
+    for (const [threadKey, slot] of threads.entries()) {
+      if (!slot.ownerUserId) continue;
+      if (!slot.lastUser) continue; // no user message → not an inquiry
+      const needsReply = slot.latest?.author_kind === "user";
+
+      const acc =
+        byUser.get(slot.ownerUserId) ??
+        ({
+          lastUserMessageAt: "",
+          lastBody: "",
+          lastContext: "general",
+          lastScheduledItemId: null,
+          totalUserMessages: 0,
+          pendingPerItemThreads: 0,
+          pendingGeneralChannel: false,
+        } as UserAcc);
+
+      acc.totalUserMessages += slot.userCount;
+      if (needsReply) {
+        if (slot.surface === "per_item") acc.pendingPerItemThreads += 1;
+        if (slot.surface === "general") acc.pendingGeneralChannel = true;
+      }
+      // Order/preview by the user's last message in ANY thread, answered or not.
+      if (slot.lastUser.created_at > acc.lastUserMessageAt) {
+        acc.lastUserMessageAt = slot.lastUser.created_at;
+        acc.lastBody = slot.lastUser.body ?? "";
+        acc.lastContext = slot.surface;
+        acc.lastScheduledItemId =
+          slot.surface === "per_item" ? threadKey.replace(/^item:/, "") : null;
+      }
+      byUser.set(slot.ownerUserId, acc);
+    }
+
+    const allEntries = Array.from(byUser.entries());
+    const pendingCount = allEntries.filter(
+      ([, a]) => a.pendingGeneralChannel || a.pendingPerItemThreads > 0,
+    ).length;
+
+    // Latest conversations regardless of reply state.
+    const orderedUserIds = allEntries
+      .sort((a, b) => b[1].lastUserMessageAt.localeCompare(a[1].lastUserMessageAt))
+      .slice(0, limit)
+      .map(([uid]) => uid);
+
+    if (orderedUserIds.length === 0) {
+      return { rows: [], pendingCount, ok: true };
+    }
+
+    const [dirRes, memberRes] = await Promise.all([
+      admin.from("v_user_directory").select("*").in("user_id", orderedUserIds),
+      admin
+        .from("couple_members")
+        .select("user_id, couple_id")
+        .in("user_id", orderedUserIds),
+    ]);
+
+    type DirRow = {
+      user_id: string;
+      email: string | null;
+      full_name: string | null;
+      phone: string | null;
+      meta_name?: string | null;
+    };
+    type MemberRow = { user_id: string; couple_id: string };
+    const dirByUser = new Map<string, DirRow>(
+      ((dirRes.data ?? []) as DirRow[]).map((d) => [d.user_id, d]),
+    );
+    const coupleByUser = new Map<string, string>(
+      ((memberRes.data ?? []) as MemberRow[]).map((m) => [m.user_id, m.couple_id]),
+    );
+
+    const enriched: RecentConversationRow[] = orderedUserIds.map((userId) => {
+      const acc = byUser.get(userId)!;
+      const dir = dirByUser.get(userId) ?? null;
+      const email = dir?.email ?? null;
+      const displayName =
+        (dir?.full_name?.trim() || "") ||
+        (dir?.meta_name?.trim() || "") ||
+        (email ? email.split("@")[0] : "") ||
+        `user ${userId.slice(0, 8)}`;
+      return {
+        userId,
+        lastUserMessageAt: acc.lastUserMessageAt,
+        lastBody: acc.lastBody,
+        lastContext: acc.lastContext,
+        lastScheduledItemId: acc.lastScheduledItemId,
+        displayName,
+        email,
+        phone: dir?.phone ?? null,
+        coupleId: coupleByUser.get(userId) ?? null,
+        totalUserMessages: acc.totalUserMessages,
+        pendingPerItemThreads: acc.pendingPerItemThreads,
+        pendingGeneralChannel: acc.pendingGeneralChannel,
+        replyPending:
+          acc.pendingGeneralChannel || acc.pendingPerItemThreads > 0,
+      };
+    });
+
+    return { rows: enriched, pendingCount, ok: true };
+  } catch (err) {
+    console.warn("[recent-conversations] threw", err);
+    return { rows: [], pendingCount: 0, ok: false };
   }
 }

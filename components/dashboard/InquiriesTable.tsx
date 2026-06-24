@@ -5,8 +5,8 @@
  * pending-replies source of truth (getPendingExpertMessages, via the server).
  * "Pending only" filter (default on) + newest-first sort. Two actions per row:
  *   • Profile + assessment → /dashboard/users/[id]  (unified profile screen)
- *   • Reply               → /dashboard/my-clients/[coupleId]  (couple workspace),
- *                            or the solo expert-messages thread when no couple.
+ *   • Reply               → /dashboard/console  (the coach chat console),
+ *                            ?couple=<id> for couples, ?user=<id> for solo.
  */
 
 import Link from "next/link";
@@ -32,7 +32,9 @@ export function InquiriesTable({
   rows: InquiryTableRow[];
   locale: AdminLocale;
 }) {
-  const [pendingOnly, setPendingOnly] = useState(true);
+  // Default OFF — the list shows the latest conversations including answered
+  // ones (Itzik 2026-06-23). Coaches can still tick "pending only" to narrow.
+  const [pendingOnly, setPendingOnly] = useState(false);
 
   const visible = useMemo(
     () =>
@@ -55,8 +57,8 @@ export function InquiriesTable({
 
   const replyHref = (r: InquiryTableRow) =>
     r.coupleId
-      ? `/dashboard/my-clients/${r.coupleId}#general`
-      : `/dashboard/journey/expert-messages?user=${r.userId}`;
+      ? `/dashboard/console?couple=${r.coupleId}`
+      : `/dashboard/console?user=${r.userId}`;
 
   return (
     <div className="space-y-3">
@@ -107,8 +109,20 @@ export function InquiriesTable({
                     </span>
                   </td>
                   <td className="px-3 py-2">
-                    <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] text-amber-400">
-                      {t(locale, "overview.inq.reply_pending")}
+                    <span
+                      className={
+                        "rounded-full px-2 py-0.5 text-[11px] " +
+                        (r.replyPending
+                          ? "bg-amber-500/15 text-amber-400"
+                          : "bg-emerald-500/15 text-emerald-400")
+                      }
+                    >
+                      {t(
+                        locale,
+                        r.replyPending
+                          ? "overview.inq.reply_pending"
+                          : "overview.inq.reply_done",
+                      )}
                     </span>
                   </td>
                   <td className="px-3 py-2">
