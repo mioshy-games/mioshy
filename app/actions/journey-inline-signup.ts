@@ -37,6 +37,7 @@ import {
   createSession,
 } from "@/lib/auth/session-enforcement";
 import { fireCompleteRegistrationCapi } from "@/lib/analytics/meta-capi";
+import { tagAsRegistered } from "@/lib/email/brevo-segments-sync";
 
 /**
  * The `debug` field is included on every result so the browser console
@@ -248,6 +249,28 @@ export async function journeyInlineSignup(args: {
           "[journeyInlineSignup] terms columns write failed (non-fatal — run migration 141)",
           termsErr.message,
         );
+      }
+
+      // Fire-and-forget Brevo sync. Israeli Communications Act §30A:
+      // marketing emails require prior explicit consent, so we only call
+      // Brevo when the user ticked the box. Auth + profile creation are
+      // the source of truth — Brevo failure must NEVER fail the signup.
+      if (marketingConsent) {
+        try {
+          const syncResult = await tagAsRegistered(
+            email,
+            userId,
+            args.language ?? "he",
+          );
+          if (!syncResult.success) {
+            console.warn(
+              "[journeyInlineSignup] tagAsRegistered returned non-success:",
+              syncResult.error,
+            );
+          }
+        } catch (brevoErr) {
+          console.error("[journeyInlineSignup] Brevo sync failed", brevoErr);
+        }
       }
     }
 
