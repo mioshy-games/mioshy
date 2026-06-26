@@ -78,7 +78,9 @@
 - [x] **שלב א'** (commit `aa726d8`) — 4 מרקרים על `JourneyClient` + `journey-inline-signup` + dwell ייעודי `journey_assessment`. אומת מול הקוד.
 - [x] **שלב ב'** (commit `de123a2`) — `lib/dashboard/journey-assessment-funnel.ts`: סיום קצר (`status IN paywall/complete`), **שלבי האבחון הארוך** (fullStarted/fullCompleted), נשירה מפוצלת קצר/ארוך מ-`journey_responses`+`journey_questions`. אומת.
 - [x] **שלב ג'** (commit `6a87b51`) — עמוד `/dashboard/journey/assessment-funnel`: משפך 10 שלבים כולל הארוך, שתי טבלאות נשירה, leaf תחת קבוצת המסע. אומת.
-- [ ] **שלב ד'** — merge שרשרת `feat/journey-assessment-funnel-step-a→b→c` ל-`game` + deploy.
+- [x] **שלב ד'** — merge ל-`game` (SHA `7ea46ef`) + deploy. ✓
+- [x] **תיקונים אחרי אימות חי** (SHA `1296687`): (א) `completed` re-fire למשתמש חוזר ב-paywall תוקן (`useRef(isDone)`); (ב) **אחוז נשירה לכל שאלה** נוסף לשתי הטבלאות, מכנה מבוסס-DB-journeys (pct תמיד ≤100%).
+- [x] אימות חי ראשון: כל המרקרים נכנסו ל-`analytics_events`; שער פרטיות מחזיק (`code=redacted`, כולל מבקר FB-ads אמיתי עם utm נשמר); גישור anon→auth עובד.
 
 **אימות חי (אבחון המסע):**
 
