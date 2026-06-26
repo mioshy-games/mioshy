@@ -35,8 +35,38 @@ export type PromoRow = {
 const inputCls =
   "h-9 w-full rounded-md border border-input bg-background px-2 text-sm text-foreground";
 
-function toLocalDT(iso: string | null): string {
-  return iso ? iso.slice(0, 16) : ""; // ISO → YYYY-MM-DDTHH:mm for datetime-local
+// ── Asia/Jerusalem ⇄ UTC, DST-correct via Intl (same approach as the analytics
+// page's jerusalemParts). The datetime-local inputs hold Israel wall-clock; the
+// DB stores a UTC instant. ─────────────────────────────────────────────────────
+const TZ = "Asia/Jerusalem";
+const DT_RE = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/;
+const jpartsFmt = new Intl.DateTimeFormat("en-CA", {
+  timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit",
+  hour: "2-digit", minute: "2-digit", hour12: false,
+});
+function jParts(date: Date): { y: number; mo: number; d: number; h: number; mi: number } {
+  const p = jpartsFmt.formatToParts(date);
+  const g = (type: string) => Number(p.find((x) => x.type === type)?.value ?? "0");
+  return { y: g("year"), mo: g("month") - 1, d: g("day"), h: g("hour") % 24, mi: g("minute") };
+}
+const pad2 = (n: number) => String(n).padStart(2, "0");
+
+/** Israel wall-clock "YYYY-MM-DDTHH:mm" → UTC ISO instant (e.g. 18:32 summer → 15:32Z). */
+function israelWallToUtcIso(local: string): string {
+  const m = DT_RE.exec(local);
+  if (!m) return local; // empty/invalid — let zod reject it
+  const asUTC = Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]);
+  const p = jParts(new Date(asUTC));
+  const tzAsUTC = Date.UTC(p.y, p.mo, p.d, p.h, p.mi);
+  const offset = tzAsUTC - asUTC; // Jerusalem offset (ms) at that instant
+  return new Date(asUTC - offset).toISOString();
+}
+
+/** Stored UTC ISO → Israel wall-clock "YYYY-MM-DDTHH:mm" for the datetime-local input. */
+function utcIsoToIsraelWall(iso: string | null): string {
+  if (!iso) return "";
+  const p = jParts(new Date(iso));
+  return `${p.y}-${pad2(p.mo + 1)}-${pad2(p.d)}T${pad2(p.h)}:${pad2(p.mi)}`;
 }
 
 export function PromoDialog({
@@ -62,8 +92,8 @@ export function PromoDialog({
     amount_ils: promo?.amount_ils != null ? String(promo.amount_ils) : "",
     amount_usd: promo?.amount_usd != null ? String(promo.amount_usd) : "",
     product: promo?.product ?? "journey",
-    starts_at: toLocalDT(promo?.starts_at ?? null),
-    ends_at: toLocalDT(promo?.ends_at ?? null),
+    starts_at: utcIsoToIsraelWall(promo?.starts_at ?? null),
+    ends_at: utcIsoToIsraelWall(promo?.ends_at ?? null),
     discounted_charges: promo?.discounted_charges != null ? String(promo.discounted_charges) : "4",
     is_active: promo?.is_active ?? false,
   });
@@ -83,8 +113,9 @@ export function PromoDialog({
       amount_usd: form.amount_usd === "" ? null : Number(form.amount_usd),
       product: form.product,
       discounted_charges: form.discounted_charges === "" ? 4 : Number(form.discounted_charges),
-      starts_at: form.starts_at,
-      ends_at: form.ends_at,
+      // Inputs hold Israel wall-clock; persist a UTC instant (DST-correct).
+      starts_at: israelWallToUtcIso(form.starts_at),
+      ends_at: israelWallToUtcIso(form.ends_at),
       is_active: form.is_active,
     };
     startTransition(async () => {
@@ -153,10 +184,10 @@ export function PromoDialog({
           )}
 
           <div className="grid grid-cols-2 gap-3">
-            <Field label={tt("promos.field.starts_at")} error={err("starts_at")}>
+            <Field label={tt("promos.field.starts_at")} error={err("starts_at")} hint={tt("af.controls.israel_time")}>
               <input type="datetime-local" className={inputCls} dir="ltr" value={form.starts_at} onChange={(e) => set("starts_at", e.target.value)} />
             </Field>
-            <Field label={tt("promos.field.ends_at")} error={err("ends_at")}>
+            <Field label={tt("promos.field.ends_at")} error={err("ends_at")} hint={tt("af.controls.israel_time")}>
               <input type="datetime-local" className={inputCls} dir="ltr" value={form.ends_at} onChange={(e) => set("ends_at", e.target.value)} />
             </Field>
           </div>
