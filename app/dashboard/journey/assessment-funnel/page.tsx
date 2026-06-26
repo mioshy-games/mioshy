@@ -86,6 +86,8 @@ export default async function JourneyAssessmentFunnelPage({
   searchParams,
 }: {
   searchParams?: {
+    /** Single-day manual mode: one date + an hour range (fromTime/toTime). */
+    date?: string;
     fromDate?: string;
     fromTime?: string;
     toDate?: string;
@@ -117,21 +119,36 @@ export default async function JourneyAssessmentFunnelPage({
     ? (searchParams!.granularity as FunnelGranularity)
     : "day";
 
-  // Date + time are separate, always-visible fields. An empty time = full day
-  // (00:00 / 23:59). Legacy ?from=/?to= (YYYY-MM-DD[THH:mm]) still work.
+  // Manual control = a single DAY + an hour range (Asia/Jerusalem); an empty
+  // time = full day. The presets (and legacy ?from=/?to=) instead pass a
+  // multi-day fromDate/toDate range — kept working for backward compatibility.
   const sp = searchParams ?? {};
   const vDate = (s?: string) => (s && DATE_RE.test(s) ? s : null);
   const vTime = (s?: string) => (s && TIME_RE.test(s) ? s : "");
   const oFromT = sp.from && sp.from.length >= 16 && sp.from[10] === "T" ? sp.from.slice(11, 16) : "";
   const oToT = sp.to && sp.to.length >= 16 && sp.to[10] === "T" ? sp.to.slice(11, 16) : "";
 
-  const toDate = vDate(sp.toDate) ?? vDate(sp.to?.slice(0, 10)) ?? jToday();
-  const fromDate = vDate(sp.fromDate) ?? vDate(sp.from?.slice(0, 10)) ?? addDays(toDate, -29);
+  const singleDate = vDate(sp.date);
+  const rangeMode = !singleDate && !!(vDate(sp.fromDate) || vDate(sp.toDate) || sp.from || sp.to);
+
+  let fromDate: string;
+  let toDate: string;
+  if (rangeMode) {
+    // Preset / legacy multi-day range.
+    toDate = vDate(sp.toDate) ?? vDate(sp.to?.slice(0, 10)) ?? jToday();
+    fromDate = vDate(sp.fromDate) ?? vDate(sp.from?.slice(0, 10)) ?? addDays(toDate, -29);
+  } else {
+    // Single-day mode: explicit ?date=, else first-load default = today.
+    fromDate = toDate = singleDate ?? jToday();
+  }
   const fromTime = vTime(sp.fromTime) || oFromT;
   const toTime = vTime(sp.toTime) || oToT;
+  // The manual date field always shows a single day (today when a preset range
+  // is active — submitting the form switches back to that single day).
+  const dateField = singleDate ?? jToday();
 
-  // Combine for the lib. A bare date → the lib treats it as a full-day bound
-  // (00:00 lower / 23:59 upper), so an empty time field means "the whole day".
+  // Combine for the lib. A bare date → full-day bound (00:00 / 23:59), so an
+  // empty time field means "the whole day".
   const from = fromTime ? `${fromDate}T${fromTime}` : fromDate;
   const to = toTime ? `${toDate}T${toTime}` : toDate;
 
@@ -214,49 +231,42 @@ export default async function JourneyAssessmentFunnelPage({
             ))}
           </div>
 
+          {/* Manual control: one day + an hour range. The form submits `date`
+              (single-day mode) + fromTime/toTime; the presets above use a
+              multi-day fromDate/toDate range. dir="ltr" keeps date/time values
+              from bidi-flipping ("12:30" → "30:12") on the RTL page. */}
           <form method="get" className="flex flex-wrap items-end gap-3">
-            {/* From: date + start time (empty time = start of day). */}
             <label className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
-              {tt("af.controls.from")}
-              <div className="flex gap-1">
-                {/* dir="ltr" + text-left: keep date/time values LTR so a RTL
-                    (Hebrew) page doesn't bidi-flip "12:30" into "30:12". */}
-                <input
-                  type="date"
-                  name="fromDate"
-                  defaultValue={fromDate}
-                  dir="ltr"
-                  className="h-9 rounded-md border border-input bg-background px-2 text-sm text-foreground text-left"
-                />
-                <input
-                  type="time"
-                  name="fromTime"
-                  defaultValue={fromTime}
-                  aria-label={tt("af.controls.start_time")}
-                  dir="ltr"
-                  className="h-9 w-[88px] rounded-md border border-input bg-background px-2 text-sm text-foreground text-left"
-                />
-              </div>
+              {tt("af.controls.date")}
+              <input
+                type="date"
+                name="date"
+                defaultValue={dateField}
+                dir="ltr"
+                className="h-9 rounded-md border border-input bg-background px-2 text-sm text-foreground text-left"
+              />
             </label>
-            {/* To: date + end time (empty time = end of day). */}
             <label className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
-              {tt("af.controls.to")}
-              <div className="flex gap-1">
-                <input
-                  type="date"
-                  name="toDate"
-                  defaultValue={toDate}
-                  dir="ltr"
-                  className="h-9 rounded-md border border-input bg-background px-2 text-sm text-foreground text-left"
-                />
+              {tt("af.controls.from_hour")}
+              <input
+                type="time"
+                name="fromTime"
+                defaultValue={fromTime}
+                dir="ltr"
+                className="h-9 w-[88px] rounded-md border border-input bg-background px-2 text-sm text-foreground text-left"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
+              {tt("af.controls.to_hour")}
+              <div className="flex items-center gap-2">
                 <input
                   type="time"
                   name="toTime"
                   defaultValue={toTime}
-                  aria-label={tt("af.controls.end_time")}
                   dir="ltr"
                   className="h-9 w-[88px] rounded-md border border-input bg-background px-2 text-sm text-foreground text-left"
                 />
+                <span className="text-[10px] text-muted-foreground">{tt("af.controls.israel_time")}</span>
               </div>
             </label>
             <label className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
