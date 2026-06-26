@@ -171,8 +171,14 @@ export function PromoDialog({
           </Field>
 
           <div className="flex items-center justify-between rounded-md border border-input px-3 py-2">
-            <Label htmlFor="promo-active" className="text-sm">{tt("promos.field.is_active")}</Label>
-            <Switch id="promo-active" checked={form.is_active} onCheckedChange={(v) => set("is_active", v)} />
+            <Label htmlFor="promo-active" className="cursor-pointer text-sm">{tt("promos.field.is_active")}</Label>
+            {/* dir="ltr": the switch widget is inline-flex; in a RTL dialog the
+                flex origin flips so the thumb starts on the right and the
+                translate-x pushes it off-track. Forcing LTR keeps off=left /
+                on=right (+ data-checked:bg-primary) — the toggle now reads "on"
+                visually. The state itself already toggles (Base UI passes a
+                boolean to onCheckedChange). */}
+            <Switch id="promo-active" dir="ltr" checked={form.is_active} onCheckedChange={(v) => set("is_active", v)} />
           </div>
         </div>
 
