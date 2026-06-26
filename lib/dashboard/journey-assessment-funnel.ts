@@ -40,12 +40,19 @@ const CHUNK = 150;
 const TOP_N = 10;
 const ASSESSMENT_ID = "journey"; // constant — see §4.1
 
-export type FunnelGranularity = "day" | "week";
+export type FunnelGranularity = "5min" | "10min" | "30min" | "hour" | "day" | "week";
 
 export interface JourneyFunnelParams {
-  /** Inclusive Jerusalem calendar date, YYYY-MM-DD. */
+  /**
+   * Inclusive lower bound, Jerusalem-local. Either YYYY-MM-DD (start of that
+   * day, 00:00) or YYYY-MM-DDTHH:mm (exact minute) — the latter makes the
+   * window an "hours range".
+   */
   from: string;
-  /** Inclusive Jerusalem calendar date, YYYY-MM-DD. */
+  /**
+   * Inclusive upper bound, Jerusalem-local. YYYY-MM-DD = end of that day
+   * (23:59), or YYYY-MM-DDTHH:mm for an exact minute.
+   */
   to: string;
   granularity: FunnelGranularity;
 }
@@ -147,15 +154,35 @@ type ActivityRow = { user_id: string };
 type PageResult<T> = { data: T[] | null; error: { message: string } | null };
 
 // ── Helpers (identical to the standalone template) ───────────────────────────
-const jdateFmt = new Intl.DateTimeFormat("en-CA", {
+// Jerusalem-local parts of an instant. Intl with timeZone Asia/Jerusalem is
+// inherently DST-correct — it resolves the right offset for each instant.
+const jpartsFmt = new Intl.DateTimeFormat("en-CA", {
   timeZone: JERUSALEM_TZ,
   year: "numeric",
   month: "2-digit",
   day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
 });
 
-function jerusalemDate(iso: string): string {
-  return jdateFmt.format(new Date(iso));
+function pad2(n: number): string {
+  return n < 10 ? `0${n}` : `${n}`;
+}
+
+/** Jerusalem-local { date: YYYY-MM-DD, hour 0..23, minute 0..59 } of an instant. */
+function jerusalemParts(iso: string): { date: string; hour: number; minute: number } {
+  const parts = jpartsFmt.formatToParts(new Date(iso));
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "00";
+  // Some runtimes render midnight as hour "24" — normalise to 0.
+  const hour = parseInt(get("hour"), 10) % 24;
+  return { date: `${get("year")}-${get("month")}-${get("day")}`, hour, minute: parseInt(get("minute"), 10) };
+}
+
+/** Sortable Jerusalem-local timestamp YYYY-MM-DDTHH:mm (for window bounds). */
+function jerusalemStamp(iso: string): string {
+  const { date, hour, minute } = jerusalemParts(iso);
+  return `${date}T${pad2(hour)}:${pad2(minute)}`;
 }
 
 function weekStartSunday(dateStr: string): string {
@@ -164,9 +191,19 @@ function weekStartSunday(dateStr: string): string {
   return d.toISOString().slice(0, 10);
 }
 
+/**
+ * Bucket key for an instant at the requested granularity, in Asia/Jerusalem.
+ * Intraday floors the minute to N (5/10/30) or to the hour; day/week unchanged.
+ * Keys are lexicographically sortable: YYYY-MM-DD (day), the Sunday date (week),
+ * YYYY-MM-DDTHH:mm (hour / N-minute).
+ */
 function bucketOf(iso: string, g: FunnelGranularity): string {
-  const day = jerusalemDate(iso);
-  return g === "week" ? weekStartSunday(day) : day;
+  const { date, hour, minute } = jerusalemParts(iso);
+  if (g === "week") return weekStartSunday(date);
+  if (g === "day") return date;
+  if (g === "hour") return `${date}T${pad2(hour)}:00`;
+  const n = g === "5min" ? 5 : g === "10min" ? 10 : 30;
+  return `${date}T${pad2(hour)}:${pad2(Math.floor(minute / n) * n)}`;
 }
 
 function identity(r: {
@@ -188,9 +225,6 @@ function pnum(p: Record<string, unknown> | null, key: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-function inRange(day: string, from: string, to: string): boolean {
-  return day >= from && day <= to;
-}
 
 function rate(num: number, den: number): number | null {
   return den > 0 ? Math.round((num / den) * 100) : null;
@@ -267,9 +301,23 @@ export async function loadJourneyAssessmentFunnel(
     }
   }
 
-  const loD = new Date(`${from}T00:00:00Z`);
+  // Window bounds are Jerusalem-local, compared on the sortable
+  // YYYY-MM-DDTHH:mm stamp. A bare YYYY-MM-DD means the whole day (00:00 lower,
+  // 23:59 upper); a YYYY-MM-DDTHH:mm is an exact minute (an "hours range").
+  const HAS_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
+  const fromBound = HAS_TIME.test(from) ? from.slice(0, 16) : `${from.slice(0, 10)}T00:00`;
+  const toBound = HAS_TIME.test(to) ? to.slice(0, 16) : `${to.slice(0, 10)}T23:59`;
+  const inWindow = (iso: string): boolean => {
+    const stamp = jerusalemStamp(iso);
+    return stamp >= fromBound && stamp <= toBound;
+  };
+
+  // Widen the SQL window by ±1 day around the from/to DATES, then filter
+  // precisely by the Jerusalem-local stamp in JS — DST-safe without hardcoding
+  // an offset, and covers any sub-day time bounds.
+  const loD = new Date(`${from.slice(0, 10)}T00:00:00Z`);
   loD.setUTCDate(loD.getUTCDate() - 1);
-  const hiD = new Date(`${to}T00:00:00Z`);
+  const hiD = new Date(`${to.slice(0, 10)}T00:00:00Z`);
   hiD.setUTCDate(hiD.getUTCDate() + 2);
   const loIso = loD.toISOString();
   const hiIso = hiD.toISOString();
@@ -288,7 +336,7 @@ export async function loadJourneyAssessmentFunnel(
       .returns<MarkerRow[]>(),
   );
   const markers = markersRaw.filter((m) =>
-    inRange(jerusalemDate(m.created_at), from, to),
+    inWindow(m.created_at),
   );
 
   const totalSets: Record<string, Set<string>> = {
@@ -334,7 +382,7 @@ export async function loadJourneyAssessmentFunnel(
       .returns<JourneyRow[]>(),
   );
   const journeys = journeysRaw.filter((j) =>
-    inRange(jerusalemDate(j.started_at), from, to),
+    inWindow(j.started_at),
   );
 
   const registeredUserIds = new Set<string>(markerUserIds);
@@ -589,7 +637,7 @@ export async function loadJourneyAssessmentFunnel(
 
   const dwellPerSession = new Map<string, number>();
   for (const d of dwellRows) {
-    if (!inRange(jerusalemDate(d.created_at), from, to)) continue;
+    if (!inWindow(d.created_at)) continue;
     const key = d.session_id ?? "—";
     const ms = pnum(d.properties, "ms") ?? 0;
     dwellPerSession.set(key, (dwellPerSession.get(key) ?? 0) + ms);

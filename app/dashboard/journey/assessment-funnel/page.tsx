@@ -31,6 +31,17 @@ export const dynamic = "force-dynamic";
 
 const JERUSALEM_TZ = "Asia/Jerusalem";
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const DATETIME_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
+const GRANS: FunnelGranularity[] = ["5min", "10min", "30min", "hour", "day", "week"];
+const INTRADAY = new Set<FunnelGranularity>(["5min", "10min", "30min", "hour"]);
+const GRAN_KEY: Record<FunnelGranularity, string> = {
+  "5min": "af.controls.min5",
+  "10min": "af.controls.min10",
+  "30min": "af.controls.min30",
+  hour: "af.controls.hour",
+  day: "af.controls.day",
+  week: "af.controls.week",
+};
 
 function jToday(): string {
   return new Intl.DateTimeFormat("en-CA", {
@@ -75,13 +86,24 @@ export default async function JourneyAssessmentFunnelPage({
     );
   }
 
-  const to = searchParams?.to && DATE_RE.test(searchParams.to) ? searchParams.to : jToday();
-  const from =
-    searchParams?.from && DATE_RE.test(searchParams.from)
-      ? searchParams.from
-      : addDays(to, -29);
-  const granularity: FunnelGranularity =
-    searchParams?.granularity === "week" ? "week" : "day";
+  const granularity: FunnelGranularity = GRANS.includes(
+    searchParams?.granularity as FunnelGranularity,
+  )
+    ? (searchParams!.granularity as FunnelGranularity)
+    : "day";
+  const intraday = INTRADAY.has(granularity);
+
+  // Accept YYYY-MM-DD or YYYY-MM-DDTHH:mm (Jerusalem-local). Normalise to the
+  // active mode: intraday → datetime (so the input shows + sends a time),
+  // day/week → date only. The same `from`/`to` drive both the lib call and the
+  // input defaultValues.
+  const validBound = (s?: string) => (s && (DATE_RE.test(s) || DATETIME_RE.test(s)) ? s : null);
+  const ensureTime = (s: string, def: string) =>
+    DATETIME_RE.test(s) ? s : `${s.slice(0, 10)}T${def}`;
+  const toRaw = validBound(searchParams?.to) ?? jToday();
+  const fromRaw = validBound(searchParams?.from) ?? addDays(toRaw.slice(0, 10), -29);
+  const from = intraday ? ensureTime(fromRaw, "00:00") : fromRaw.slice(0, 10);
+  const to = intraday ? ensureTime(toRaw, "23:59") : toRaw.slice(0, 10);
 
   const funnel = await loadJourneyAssessmentFunnel(admin, { from, to, granularity });
   const { totals, completedShortFromDb, conversions, buckets, dropoffShort, dropoffFull, behavioral, warnings } = funnel;
@@ -137,10 +159,13 @@ export default async function JourneyAssessmentFunnelPage({
       <Card>
         <CardContent className="pt-6">
           <form method="get" className="flex flex-wrap items-end gap-3">
+            {/* Intraday granularities expose a time picker (datetime-local);
+                day/week stay date-only. The input type follows the CURRENT
+                granularity — switch + Apply to reveal the time picker. */}
             <label className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
               {tt("af.controls.from")}
               <input
-                type="date"
+                type={intraday ? "datetime-local" : "date"}
                 name="from"
                 defaultValue={from}
                 className="h-9 rounded-md border border-input bg-background px-2 text-sm text-foreground"
@@ -149,7 +174,7 @@ export default async function JourneyAssessmentFunnelPage({
             <label className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
               {tt("af.controls.to")}
               <input
-                type="date"
+                type={intraday ? "datetime-local" : "date"}
                 name="to"
                 defaultValue={to}
                 className="h-9 rounded-md border border-input bg-background px-2 text-sm text-foreground"
@@ -162,8 +187,11 @@ export default async function JourneyAssessmentFunnelPage({
                 defaultValue={granularity}
                 className="h-9 rounded-md border border-input bg-background px-2 text-sm text-foreground"
               >
-                <option value="day">{tt("af.controls.day")}</option>
-                <option value="week">{tt("af.controls.week")}</option>
+                {GRANS.map((g) => (
+                  <option key={g} value={g}>
+                    {tt(GRAN_KEY[g])}
+                  </option>
+                ))}
               </select>
             </label>
             <button
@@ -323,7 +351,9 @@ export default async function JourneyAssessmentFunnelPage({
                         />
                       ))}
                     </div>
-                    <span className="text-[9px] text-muted-foreground">{b.bucket.slice(5)}</span>
+                    <span className="text-[9px] text-muted-foreground">
+                      {b.bucket.includes("T") ? b.bucket.slice(11, 16) : b.bucket.slice(5)}
+                    </span>
                   </div>
                 ))}
               </div>
