@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, CheckCircle2 } from "lucide-react";
 import { metaTrackCustom } from "@/lib/analytics/meta-pixel";
+import { track } from "@/lib/analytics";
 import type { AiHeroBlock, DimensionScore, Locale } from "@/lib/assessments/types";
 import { getResultContent } from "@/lib/assessments/result-content";
 import { PROGRAM_VALUE } from "@/lib/assessments/result-content/program";
@@ -138,6 +139,11 @@ export function AssessmentSummary({
   const startCheckout = async () => {
     setBusy(true);
     setError(null);
+    // First-party purchase-attribution anchor (brief §1.0). v1 is event-based:
+    // the funnel later ties a journey subscription back to the assessment whose
+    // checkout the user started. Mirrors the `source` sent in the checkout body
+    // below. Fire-and-forget; never blocks checkout.
+    track("checkout_started", { source: `assessment_${assessmentId}` });
     try {
       const res = await fetch("/api/billing/checkout/create", {
         method: "POST",
