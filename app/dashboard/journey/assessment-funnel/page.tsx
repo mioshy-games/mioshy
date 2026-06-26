@@ -31,9 +31,8 @@ export const dynamic = "force-dynamic";
 
 const JERUSALEM_TZ = "Asia/Jerusalem";
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-const DATETIME_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
+const TIME_RE = /^\d{2}:\d{2}$/;
 const GRANS: FunnelGranularity[] = ["5min", "10min", "30min", "hour", "day", "week"];
-const INTRADAY = new Set<FunnelGranularity>(["5min", "10min", "30min", "hour"]);
 const GRAN_KEY: Record<FunnelGranularity, string> = {
   "5min": "af.controls.min5",
   "10min": "af.controls.min10",
@@ -58,6 +57,22 @@ function addDays(day: string, n: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+/** Jerusalem-local { date: YYYY-MM-DD, time: HH:mm } at now + offsetMs. */
+function jNow(offsetMs: number): { date: string; time: string } {
+  const p = new Intl.DateTimeFormat("en-CA", {
+    timeZone: JERUSALEM_TZ,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(new Date(Date.now() + offsetMs));
+  const g = (type: string) => p.find((x) => x.type === type)?.value ?? "00";
+  const hh = `${parseInt(g("hour"), 10) % 24}`.padStart(2, "0"); // "24" midnight → 00
+  return { date: `${g("year")}-${g("month")}-${g("day")}`, time: `${hh}:${g("minute")}` };
+}
+
 function pct(a: number, b: number): number | null {
   return b > 0 ? Math.round((a / b) * 100) : null;
 }
@@ -70,7 +85,16 @@ function dwellLabel(ms: number | null): string {
 export default async function JourneyAssessmentFunnelPage({
   searchParams,
 }: {
-  searchParams?: { from?: string; to?: string; granularity?: string };
+  searchParams?: {
+    fromDate?: string;
+    fromTime?: string;
+    toDate?: string;
+    toTime?: string;
+    /** Legacy combined params (YYYY-MM-DD[THH:mm]); still honoured. */
+    from?: string;
+    to?: string;
+    granularity?: string;
+  };
 }) {
   await requireAdmin();
   const locale = getAdminLocale();
@@ -86,24 +110,43 @@ export default async function JourneyAssessmentFunnelPage({
     );
   }
 
+  // Granularity is the CHART resolution only — independent of the time window.
   const granularity: FunnelGranularity = GRANS.includes(
     searchParams?.granularity as FunnelGranularity,
   )
     ? (searchParams!.granularity as FunnelGranularity)
     : "day";
-  const intraday = INTRADAY.has(granularity);
 
-  // Accept YYYY-MM-DD or YYYY-MM-DDTHH:mm (Jerusalem-local). Normalise to the
-  // active mode: intraday → datetime (so the input shows + sends a time),
-  // day/week → date only. The same `from`/`to` drive both the lib call and the
-  // input defaultValues.
-  const validBound = (s?: string) => (s && (DATE_RE.test(s) || DATETIME_RE.test(s)) ? s : null);
-  const ensureTime = (s: string, def: string) =>
-    DATETIME_RE.test(s) ? s : `${s.slice(0, 10)}T${def}`;
-  const toRaw = validBound(searchParams?.to) ?? jToday();
-  const fromRaw = validBound(searchParams?.from) ?? addDays(toRaw.slice(0, 10), -29);
-  const from = intraday ? ensureTime(fromRaw, "00:00") : fromRaw.slice(0, 10);
-  const to = intraday ? ensureTime(toRaw, "23:59") : toRaw.slice(0, 10);
+  // Date + time are separate, always-visible fields. An empty time = full day
+  // (00:00 / 23:59). Legacy ?from=/?to= (YYYY-MM-DD[THH:mm]) still work.
+  const sp = searchParams ?? {};
+  const vDate = (s?: string) => (s && DATE_RE.test(s) ? s : null);
+  const vTime = (s?: string) => (s && TIME_RE.test(s) ? s : "");
+  const oFromT = sp.from && sp.from.length >= 16 && sp.from[10] === "T" ? sp.from.slice(11, 16) : "";
+  const oToT = sp.to && sp.to.length >= 16 && sp.to[10] === "T" ? sp.to.slice(11, 16) : "";
+
+  const toDate = vDate(sp.toDate) ?? vDate(sp.to?.slice(0, 10)) ?? jToday();
+  const fromDate = vDate(sp.fromDate) ?? vDate(sp.from?.slice(0, 10)) ?? addDays(toDate, -29);
+  const fromTime = vTime(sp.fromTime) || oFromT;
+  const toTime = vTime(sp.toTime) || oToT;
+
+  // Combine for the lib. A bare date → the lib treats it as a full-day bound
+  // (00:00 lower / 23:59 upper), so an empty time field means "the whole day".
+  const from = fromTime ? `${fromDate}T${fromTime}` : fromDate;
+  const to = toTime ? `${toDate}T${toTime}` : toDate;
+
+  // Quick-range presets (Links). All bounds in Asia/Jerusalem.
+  const now = jNow(0);
+  const hourAgo = jNow(-3_600_000);
+  const today = jToday();
+  const mkHref = (p: Record<string, string>) =>
+    `?${new URLSearchParams({ granularity, ...p }).toString()}`;
+  const presets = [
+    { key: "af.range.last_hour", href: mkHref({ fromDate: hourAgo.date, fromTime: hourAgo.time, toDate: now.date, toTime: now.time }) },
+    { key: "af.range.today", href: mkHref({ fromDate: today, toDate: today }) },
+    { key: "af.range.7d", href: mkHref({ fromDate: addDays(today, -6), toDate: today }) },
+    { key: "af.range.30d", href: mkHref({ fromDate: addDays(today, -29), toDate: today }) },
+  ];
 
   const funnel = await loadJourneyAssessmentFunnel(admin, { from, to, granularity });
   const { totals, completedShortFromDb, conversions, buckets, dropoffShort, dropoffFull, behavioral, warnings } = funnel;
@@ -155,30 +198,60 @@ export default async function JourneyAssessmentFunnelPage({
         <p className="text-sm text-muted-foreground">{tt("jaf.desc")}</p>
       </div>
 
-      {/* ── Controls (native GET form — no client state, no assessment selector) ── */}
+      {/* ── Controls (native GET form — no client state) ── */}
       <Card>
-        <CardContent className="pt-6">
+        <CardContent className="flex flex-col gap-4 pt-6">
+          {/* Quick ranges (Links — set date+time bounds in Asia/Jerusalem). */}
+          <div className="flex flex-wrap gap-2">
+            {presets.map((p) => (
+              <a
+                key={p.key}
+                href={p.href}
+                className="rounded-full border border-input bg-background px-3 py-1 text-xs font-medium text-foreground transition hover:bg-accent"
+              >
+                {tt(p.key)}
+              </a>
+            ))}
+          </div>
+
           <form method="get" className="flex flex-wrap items-end gap-3">
-            {/* Intraday granularities expose a time picker (datetime-local);
-                day/week stay date-only. The input type follows the CURRENT
-                granularity — switch + Apply to reveal the time picker. */}
+            {/* From: date + start time (empty time = start of day). */}
             <label className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
               {tt("af.controls.from")}
-              <input
-                type={intraday ? "datetime-local" : "date"}
-                name="from"
-                defaultValue={from}
-                className="h-9 rounded-md border border-input bg-background px-2 text-sm text-foreground"
-              />
+              <div className="flex gap-1">
+                <input
+                  type="date"
+                  name="fromDate"
+                  defaultValue={fromDate}
+                  className="h-9 rounded-md border border-input bg-background px-2 text-sm text-foreground"
+                />
+                <input
+                  type="time"
+                  name="fromTime"
+                  defaultValue={fromTime}
+                  aria-label={tt("af.controls.start_time")}
+                  className="h-9 w-[88px] rounded-md border border-input bg-background px-2 text-sm text-foreground"
+                />
+              </div>
             </label>
+            {/* To: date + end time (empty time = end of day). */}
             <label className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
               {tt("af.controls.to")}
-              <input
-                type={intraday ? "datetime-local" : "date"}
-                name="to"
-                defaultValue={to}
-                className="h-9 rounded-md border border-input bg-background px-2 text-sm text-foreground"
-              />
+              <div className="flex gap-1">
+                <input
+                  type="date"
+                  name="toDate"
+                  defaultValue={toDate}
+                  className="h-9 rounded-md border border-input bg-background px-2 text-sm text-foreground"
+                />
+                <input
+                  type="time"
+                  name="toTime"
+                  defaultValue={toTime}
+                  aria-label={tt("af.controls.end_time")}
+                  className="h-9 w-[88px] rounded-md border border-input bg-background px-2 text-sm text-foreground"
+                />
+              </div>
             </label>
             <label className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
               {tt("af.controls.granularity")}
@@ -201,6 +274,8 @@ export default async function JourneyAssessmentFunnelPage({
               {tt("af.controls.apply")}
             </button>
           </form>
+
+          <p className="text-xs text-muted-foreground">{tt("jaf.range.hint")}</p>
         </CardContent>
       </Card>
 
