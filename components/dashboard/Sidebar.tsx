@@ -22,6 +22,7 @@ import {
   ChevronDown,
   ChevronRight,
   Megaphone,
+  BadgePercent,
   BarChart3,
   Sparkles,
   Link2,
@@ -192,6 +193,8 @@ const NAV: NavItem[] = [
       { kind: "leaf", href: "/dashboard/homepage",  labelKey: "nav.homepage",  icon: Home },
       { kind: "leaf", href: "/dashboard/articles",  labelKey: "nav.articles",  icon: BookOpenText },
       { kind: "leaf", href: "/dashboard/templates", labelKey: "nav.templates", icon: Mail },
+      // marketing-discounts-spec §7 — subscription discount promos.
+      { kind: "leaf", href: "/dashboard/marketing/discounts", labelKey: "nav.discounts", icon: BadgePercent, adminOnly: true },
       // /admin/content lives OUTSIDE the dashboard route tree
       // (different layout, different auth gate — see app/admin/...).
       // Linking from here is the natural entry point for admins who

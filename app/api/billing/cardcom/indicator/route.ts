@@ -411,13 +411,52 @@ export async function GET(req: Request) {
           : null,
       })
 
+      // ── Subscription promo lock (marketing-discounts-spec §6.2) ──────────────
+      // plan_amount stays the FULL price so renewals after the intro period are
+      // full. When the checkout carried a promo, also record the discounted
+      // intro amount + how many discounted renewals remain (the checkout charge
+      // already consumed one → remaining = discounted_charges − 1). With no
+      // promo we explicitly clear the intro fields — matters on the reactivation
+      // (update) path, which may carry stale values.
+      const fullPlanAmount = session.original_amount ?? session.amount
+      let promoFields: {
+        promo_id: string | null
+        intro_amount: number | null
+        intro_charges_remaining: number
+      } = { promo_id: null, intro_amount: null, intro_charges_remaining: 0 }
+      if (session.promo_id) {
+        try {
+          const { data: promoRow } = await admin
+            .from("subscription_promos")
+            .select("discounted_charges")
+            .eq("id", session.promo_id)
+            .maybeSingle()
+          const charges =
+            (promoRow as { discounted_charges?: number } | null)?.discounted_charges ?? 1
+          promoFields = {
+            promo_id: session.promo_id,
+            intro_amount: session.amount,
+            intro_charges_remaining: Math.max(0, charges - 1),
+          }
+          console.log("[indicator:PROMO_LOCK]", {
+            promo_id: session.promo_id,
+            full_amount: fullPlanAmount,
+            intro_amount: session.amount,
+            intro_charges_remaining: promoFields.intro_charges_remaining,
+          })
+        } catch (err) {
+          console.error("[indicator] promo lock lookup failed — full price, no intro", err)
+        }
+      }
+
       if (existingSub?.id) {
         const upd = await admin
           .from("subscriptions")
           .update({
             status:               "active",
             plan:                 session.plan,
-            plan_amount:          session.amount,
+            plan_amount:          fullPlanAmount,
+            ...promoFields,
             currency:             session.currency,
             coin_id:              session.coin_id,
             is_israeli:           session.is_israeli,
@@ -452,7 +491,8 @@ export async function GET(req: Request) {
             status:              "active",
             product,
             plan:                session.plan,
-            plan_amount:         session.amount,
+            plan_amount:         fullPlanAmount,
+            ...promoFields,
             currency:            session.currency,
             coin_id:             session.coin_id,
             is_israeli:          session.is_israeli,

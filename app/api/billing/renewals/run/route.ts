@@ -117,6 +117,14 @@ export async function POST(req: Request) {
       const periodStart = new Date(sub.current_period_end ?? now)
       const periodEnd   = addPlanPeriod(periodStart, sub.plan)
 
+      // ── First-month promo (marketing-discounts-spec §6.3) ───────────────────
+      // Charge the discounted intro amount for the first N renewals, then the
+      // full plan_amount. The remaining counter is decremented ONLY after a
+      // successful charge (see the success branch below), so a failed charge
+      // never loses or double-spends a discounted renewal.
+      const useIntro = (sub.intro_charges_remaining ?? 0) > 0 && sub.intro_amount != null
+      const billAmount = useIntro ? sub.intro_amount : sub.plan_amount
+
       // ── Idempotent asmachta ─────────────────────────────────────────────────
       const asmachta = makeAsmachta(userId, periodStart)
 
@@ -140,7 +148,7 @@ export async function POST(req: Request) {
             user_id:             userId,
             subscription_id:     subId,
             payment_method_id:   pm.id,
-            amount:              sub.plan_amount,
+            amount:              billAmount,
             currency:            sub.currency,
             status:              "created",
             uniq_asmachta:       asmachta,
@@ -155,11 +163,11 @@ export async function POST(req: Request) {
       const chargeId = charge?.id
 
       // ── Call Cardcom ChargeToken ────────────────────────────────────────────
-      console.log("[renewals:CARDCOM_CALL]", { sub_id: subId, asmachta, amount: sub.plan_amount, currency: sub.currency })
+      console.log("[renewals:CARDCOM_CALL]", { sub_id: subId, asmachta, amount: billAmount, use_intro: useIntro, intro_remaining: sub.intro_charges_remaining ?? 0, currency: sub.currency })
       const chargeResult = await chargeToken({
         token:        rawToken,
         tokenExDate:  pm.expiry_mmyy ?? undefined,
-        sumToBill:    sub.plan_amount,
+        sumToBill:    billAmount,
         coinId:       sub.coin_id,
         uniqAsmachta: asmachta,
       })
@@ -190,7 +198,9 @@ export async function POST(req: Request) {
       }
 
       // ── Charge succeeded ────────────────────────────────────────────────────
-      // Update subscription
+      // Update subscription. When this was a discounted intro charge, burn one
+      // remaining (only here, post-success — a failed charge above never gets
+      // this far, so the counter can't be lost or double-spent).
       await admin
         .from("subscriptions")
         .update({
@@ -199,6 +209,9 @@ export async function POST(req: Request) {
           next_billing_date:    periodEnd.toISOString(),
           failed_attempts:      0,
           grace_until:          null,
+          ...(useIntro
+            ? { intro_charges_remaining: Math.max(0, (sub.intro_charges_remaining ?? 0) - 1) }
+            : {}),
           // v3 slice 5: clear journey grace columns on a successful
           // renewal so the user re-enters 'active' state and the
           // cadence engine resumes on the next tick. Harmless on
@@ -260,7 +273,7 @@ export async function POST(req: Request) {
               name:           profileName,
               phone:          profilePhone,
               country:        sub.is_israeli ? "IL" : "US",
-              amount:         sub.plan_amount,
+              amount:         billAmount,
               currency:       sub.currency,
               language:       (sub.is_israeli ? "he" : "en") as "he" | "en",
               is_israeli:     sub.is_israeli,

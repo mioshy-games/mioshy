@@ -26,6 +26,7 @@ import { createAdminClient }   from "@/lib/supabase-admin"
 import { openLowProfile }      from "@/lib/cardcom"
 import { getPlanPrice }        from "@/lib/billing"
 import { resolveCheckoutCadence } from "@/lib/billing/pricing-queries"
+import { findActivePromo, applyDiscount } from "@/lib/billing/promos"
 import { geoFromRequest, localeFromGeo, currencyFromGeo } from "@/lib/geo-from-request"
 import { getClientIp } from "@/lib/rate-limit"
 import { sendMetaCapiEvent, metaEventId, sanitizeMetaUrl } from "@/lib/analytics/meta-capi"
@@ -219,6 +220,10 @@ export async function POST(req: Request) {
   let amount: number
   let currency: string
   let coinId: number | undefined
+  // Subscription promo (marketing-discounts-spec §6.1) — applied below, after
+  // pricing, for subscriptions only. Stay null when no promo applies.
+  let promoId: string | null = null
+  let originalAmount: number | null = null
   // The cadence actually charged. For subscriptions it's resolved from
   // subscription_prices (C2.2); for one-time game purchases it stays
   // 'one_time'. Persisted on the session so indicator + renewals advance
@@ -302,6 +307,38 @@ export async function POST(req: Request) {
   // ── Create checkout session in DB ───────────────────────────────────────────
   const serviceClient = await createAdminClient()
 
+  // ── Subscription marketing promo (marketing-discounts-spec §6.1) ────────────
+  // Server-side only — never trust the client (same posture as VAT/cadence). A
+  // matching active promo discounts the FIRST charge; we persist original_amount
+  // + promo_id so step 3 (webhook/renewal) can return to full price after the
+  // intro period. One-time (Adults) purchases are never discounted. A promo
+  // lookup/compute failure must NEVER break checkout → fall through at full price.
+  if (purchase_type === "subscription") {
+    try {
+      const promoCurrency = currency === "USD" ? "USD" : "ILS"
+      const { promo, warning } = await findActivePromo(serviceClient, {
+        product: product as "journey" | "games",
+      })
+      if (warning) console.warn("[checkout:CREATE] promo warning", warning)
+      if (promo) {
+        const res = applyDiscount({ amount, currency: promoCurrency, promo })
+        if (res.promoId) {
+          promoId        = res.promoId
+          originalAmount = res.originalAmount
+          amount         = res.discountedAmount // sent to Cardcom + stored below
+          console.log("[checkout:CREATE] promo applied", {
+            promo_id:          promoId,
+            original_amount:   originalAmount,
+            discounted_amount: amount,
+            currency:          promoCurrency,
+          })
+        }
+      }
+    } catch (err) {
+      console.error("[checkout:CREATE] promo lookup failed — charging full price", err)
+    }
+  }
+
   const { data: session, error: dbErr } = await serviceClient
     .from("checkout_sessions")
     .insert({
@@ -316,9 +353,13 @@ export async function POST(req: Request) {
       // run on success (couple_entitlement vs subscriptions row).
       purchase_type,
       target_game_id:   purchase_type === "one_time" ? target_game_id : null,
-      amount,
+      amount, // discounted when a promo applied (full price otherwise)
       currency:         trustedCurrency,
       coin_id:          coinId,
+      // Promo audit (marketing-discounts-spec §6.1): the full price + which
+      // promo, so step 3 charges intro now and full price on later renewals.
+      promo_id:         promoId,
+      original_amount:  originalAmount,
       // Server-trusted values (IP-derived). The client-supplied versions
       // were destructured above for audit logging only - never persisted.
       country_code:     trustedCountryCode,
