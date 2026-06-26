@@ -219,18 +219,22 @@ export default async function JourneyAssessmentFunnelPage({
             <label className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
               {tt("af.controls.from")}
               <div className="flex gap-1">
+                {/* dir="ltr" + text-left: keep date/time values LTR so a RTL
+                    (Hebrew) page doesn't bidi-flip "12:30" into "30:12". */}
                 <input
                   type="date"
                   name="fromDate"
                   defaultValue={fromDate}
-                  className="h-9 rounded-md border border-input bg-background px-2 text-sm text-foreground"
+                  dir="ltr"
+                  className="h-9 rounded-md border border-input bg-background px-2 text-sm text-foreground text-left"
                 />
                 <input
                   type="time"
                   name="fromTime"
                   defaultValue={fromTime}
                   aria-label={tt("af.controls.start_time")}
-                  className="h-9 w-[88px] rounded-md border border-input bg-background px-2 text-sm text-foreground"
+                  dir="ltr"
+                  className="h-9 w-[88px] rounded-md border border-input bg-background px-2 text-sm text-foreground text-left"
                 />
               </div>
             </label>
@@ -242,14 +246,16 @@ export default async function JourneyAssessmentFunnelPage({
                   type="date"
                   name="toDate"
                   defaultValue={toDate}
-                  className="h-9 rounded-md border border-input bg-background px-2 text-sm text-foreground"
+                  dir="ltr"
+                  className="h-9 rounded-md border border-input bg-background px-2 text-sm text-foreground text-left"
                 />
                 <input
                   type="time"
                   name="toTime"
                   defaultValue={toTime}
                   aria-label={tt("af.controls.end_time")}
-                  className="h-9 w-[88px] rounded-md border border-input bg-background px-2 text-sm text-foreground"
+                  dir="ltr"
+                  className="h-9 w-[88px] rounded-md border border-input bg-background px-2 text-sm text-foreground text-left"
                 />
               </div>
             </label>
