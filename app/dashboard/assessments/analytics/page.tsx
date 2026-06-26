@@ -164,11 +164,14 @@ export default async function AssessmentFunnelPage({
             </label>
             <label className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
               {tt("af.controls.from")}
+              {/* dir="ltr" + text-left: keep the date value LTR so a RTL
+                  (Hebrew) page doesn't bidi-flip it. */}
               <input
                 type="date"
                 name="from"
                 defaultValue={from}
-                className="h-9 rounded-md border border-input bg-background px-2 text-sm text-foreground"
+                dir="ltr"
+                className="h-9 rounded-md border border-input bg-background px-2 text-sm text-foreground text-left"
               />
             </label>
             <label className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
@@ -177,7 +180,8 @@ export default async function AssessmentFunnelPage({
                 type="date"
                 name="to"
                 defaultValue={to}
-                className="h-9 rounded-md border border-input bg-background px-2 text-sm text-foreground"
+                dir="ltr"
+                className="h-9 rounded-md border border-input bg-background px-2 text-sm text-foreground text-left"
               />
             </label>
             <label className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
