@@ -16,7 +16,6 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 
 export type PromoRow = {
   id: string;
@@ -172,13 +171,16 @@ export function PromoDialog({
 
           <div className="flex items-center justify-between rounded-md border border-input px-3 py-2">
             <Label htmlFor="promo-active" className="cursor-pointer text-sm">{tt("promos.field.is_active")}</Label>
-            {/* dir="ltr": the switch widget is inline-flex; in a RTL dialog the
-                flex origin flips so the thumb starts on the right and the
-                translate-x pushes it off-track. Forcing LTR keeps off=left /
-                on=right (+ data-checked:bg-primary) — the toggle now reads "on"
-                visually. The state itself already toggles (Base UI passes a
-                boolean to onCheckedChange). */}
-            <Switch id="promo-active" dir="ltr" checked={form.is_active} onCheckedChange={(v) => set("is_active", v)} />
+            {/* Native checkbox — always clickable (label toggles it too), no
+                Base UI Switch / RTL quirks. */}
+            <input
+              id="promo-active"
+              type="checkbox"
+              dir="ltr"
+              className="size-4 cursor-pointer accent-primary"
+              checked={form.is_active}
+              onChange={(e) => set("is_active", e.target.checked)}
+            />
           </div>
         </div>
 

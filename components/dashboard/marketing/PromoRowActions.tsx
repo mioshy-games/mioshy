@@ -7,7 +7,6 @@ import { Pencil, Trash2 } from "lucide-react";
 import { t } from "@/lib/admin/i18n";
 import type { AdminLocale } from "@/lib/admin/locale";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -37,16 +36,21 @@ export function PromoRowActions({ promo, locale }: { promo: PromoRow; locale: Ad
 
   return (
     <div className="flex items-center justify-end gap-2">
-      <Switch
+      {/* Native checkbox — always clickable, no Base UI / RTL quirks. */}
+      <input
+        type="checkbox"
+        dir="ltr"
+        className="size-4 cursor-pointer accent-primary"
         checked={promo.is_active}
         aria-label={promo.is_active ? tt("promos.deactivate") : tt("promos.activate")}
-        onCheckedChange={(v) =>
+        onChange={(e) => {
+          const v = e.target.checked;
           startToggle(async () => {
             const res = await togglePromoActive(promo.id, v);
             if (!res.ok) { toast.error(res.error); return; }
             router.refresh();
-          })
-        }
+          });
+        }}
       />
       <PromoDialog promo={promo} locale={locale}>
         <Button type="button" variant="outline" size="sm" className="gap-1.5">
