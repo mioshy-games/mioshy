@@ -208,6 +208,8 @@ const NAV: NavItem[] = [
     children: [
       // Phase 5 (admin-analytics-spec §7.3) — aggregate behavior insights.
       { kind: "leaf", href: "/dashboard/behavior", labelKey: "nav.behavior", icon: BarChart3, adminOnly: true },
+      // assessment-funnel-analytics-brief §2 — per-assessment funnel.
+      { kind: "leaf", href: "/dashboard/assessments/analytics", labelKey: "nav.assessment_funnel", icon: TrendingDown, adminOnly: true },
     ],
   },
 
