@@ -71,6 +71,24 @@
 
 ---
 
+## חלק ה' — משפך אבחון המסע (עמוד שני, נפרד)
+
+עמוד שני `/dashboard/journey/assessment-funnel` לאבחון המסע (`/he/journey/assessment`) — האבחון הפעיל כרגע. בריף: `docs/journey-assessment-funnel-brief.md`.
+
+- [x] **שלב א'** (commit `aa726d8`) — 4 מרקרים על `JourneyClient` + `journey-inline-signup` + dwell ייעודי `journey_assessment`. אומת מול הקוד.
+- [x] **שלב ב'** (commit `de123a2`) — `lib/dashboard/journey-assessment-funnel.ts`: סיום קצר (`status IN paywall/complete`), **שלבי האבחון הארוך** (fullStarted/fullCompleted), נשירה מפוצלת קצר/ארוך מ-`journey_responses`+`journey_questions`. אומת.
+- [x] **שלב ג'** (commit `6a87b51`) — עמוד `/dashboard/journey/assessment-funnel`: משפך 10 שלבים כולל הארוך, שתי טבלאות נשירה, leaf תחת קבוצת המסע. אומת.
+- [ ] **שלב ד'** — merge שרשרת `feat/journey-assessment-funnel-step-a→b→c` ל-`game` + deploy.
+
+**אימות חי (אבחון המסע):**
+
+- [ ] הרץ אבחון מסע אנונימי עם `?code=test123` → `journey_assessment_intro_viewed`/`_started` + dwell(item_id=journey_assessment) נכנסים, path/referrer `redacted`.
+- [ ] סיים את הקצר → `journey_assessment_completed`; הירשם → `journey_assessment_registered`.
+- [ ] (אם רכשת) המשך לאבחון הארוך וענה כמה שאלות → בעמוד האדמין מופיעים "התחיל ארוך" ונשירה ב-"אבחון ארוך".
+- [ ] עמוד `/dashboard/journey/assessment-funnel`: המשפך מציג את הריצה; שתי טבלאות הנשירה (קצר/ארוך); RTL/מובייל תקין.
+
+---
+
 ## הגדרת "סיום" (Definition of Done)
 
 המוצר שלם כש: כל תיבות חלק ג' מסומנות, ואתה רואה בעמוד האדמין ריצת-אבחון אמיתית מתורגמת למשפך מלא — מהכניסה ועד הזמנת הפרטנר וצפייה בפרק הראשון — עם הפילוחים לפי יום/שבוע וסינון התאריכים.

@@ -647,6 +647,18 @@ const EN: Dict = {
   "af.warnings.title":          "Partial data",
   "af.warnings.desc":           "Some stages degraded (a source table is unavailable in this environment):",
 
+  // ── Journey-assessment funnel (journey-assessment-funnel-brief §C) ──
+  "nav.journey_assessment_funnel": "Journey funnel",
+  "jaf.title":                  "Journey assessment funnel",
+  "jaf.desc":                   "Journey-assessment funnel + behaviour (short & long). Metadata only.",
+  "jaf.stage.completed_short":  "Completed short",
+  "jaf.stage.full_started":     "Started long",
+  "jaf.stage.full_completed":   "Completed long",
+  "jaf.full_rate":              "long-complete rate",
+  "jaf.dropoff_short.title":    "Drop-off — short assessment",
+  "jaf.dropoff_full.title":     "Drop-off — long assessment",
+  "jaf.dropoff.desc":           "In-progress journeys, by where they stopped in the phase.",
+
   // ── Admin overview (2026-06-19) ──────────────────────────────
   "overview.title":            "Overview",
   "overview.subtitle":         "Activity for the selected range, vs the previous period of the same length.",
@@ -1300,6 +1312,18 @@ const HE: Dict = {
   "af.sessions":                "סשנים",
   "af.warnings.title":          "נתונים חלקיים",
   "af.warnings.desc":           "חלק מהשלבים ירדו (טבלת מקור לא זמינה בסביבה הזו):",
+
+  // ── Journey-assessment funnel (journey-assessment-funnel-brief §C) ──
+  "nav.journey_assessment_funnel": "משפך אבחון המסע",
+  "jaf.title":                  "משפך אבחון המסע",
+  "jaf.desc":                   "משפך + התנהגות אבחון-המסע (קצר וארוך). מטא-דאטה בלבד.",
+  "jaf.stage.completed_short":  "סיים קצר",
+  "jaf.stage.full_started":     "התחיל ארוך",
+  "jaf.stage.full_completed":   "סיים ארוך",
+  "jaf.full_rate":              "שיעור השלמת ארוך",
+  "jaf.dropoff_short.title":    "נשירה — אבחון קצר",
+  "jaf.dropoff_full.title":     "נשירה — אבחון ארוך",
+  "jaf.dropoff.desc":           "מסעות בתהליך, לפי היכן עצרו בפאזה.",
 
   // ── Admin overview (2026-06-19) ──────────────────────────────
   "overview.title":            "סקירה",

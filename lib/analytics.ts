@@ -44,6 +44,16 @@ export type AnalyticsEvent =
   | "assessment_started"       // first answer saved
   | "assessment_completed"     // reached the end of the assessment
   | "assessment_registered"    // claimed the anon session via inline signup (server, once)
+
+  // Journey-assessment funnel markers (journey-assessment-funnel-brief §A).
+  // Twin of the standalone assessment markers, for the JOURNEY assessment.
+  // All carry a constant { assessment_id: "journey" } so the journey funnel
+  // lib catches them with a single .eq("properties->>assessment_id","journey").
+  | "journey_assessment_intro_viewed"  // JourneyClient mounted (no separate intro screen)
+  | "journey_assessment_started"       // first answer saved
+  | "journey_assessment_completed"     // reached the end of the short assessment
+  | "journey_assessment_registered"    // claimed the anon journey via inline signup (server, once)
+
   | "partner_invite_shared"    // owner shared the pair code/link: { channel }
 
   // Journey post-purchase (private space + therapeutic dashboard)

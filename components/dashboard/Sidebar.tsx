@@ -151,6 +151,8 @@ const NAV: NavItem[] = [
       { kind: "leaf", href: "/dashboard/journey/metrics",        labelKey: "nav.metrics",        icon: Activity },
       { kind: "leaf", href: "/dashboard/journey/health",         labelKey: "nav.health",         icon: Activity, adminOnly: true, tooltipKey: "tip.health" },
       { kind: "leaf", href: "/dashboard/journey-analytics",      labelKey: "nav.analytics",      icon: TrendingDown, adminOnly: true },
+      // journey-assessment-funnel-brief §C — the journey assessment funnel.
+      { kind: "leaf", href: "/dashboard/journey/assessment-funnel", labelKey: "nav.journey_assessment_funnel", icon: BarChart3, adminOnly: true },
     ],
   },
 

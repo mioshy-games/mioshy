@@ -496,6 +496,25 @@ export async function journeyInlineSignup(args: {
     // reliable serverless delivery (no browser backup); bounded + non-throwing,
     // so it never blocks or breaks the funnel.
     if (args.mode === "register") {
+      // Funnel marker (journey-assessment-funnel-brief §A.4): "registered" —
+      // emitted server-side here so it fires exactly once per new signup,
+      // deterministically (no client round-trip to miss). Constant
+      // assessment_id:"journey". Best-effort: never blocks or fails the signup.
+      const { error: markerErr } = await admin.from("analytics_events").insert({
+        event: "journey_assessment_registered",
+        session_id: null,
+        device_id: args.deviceId,
+        user_id: userId,
+        locale: args.language ?? null,
+        properties: { assessment_id: "journey" },
+      });
+      if (markerErr) {
+        console.warn(
+          "[journeyInlineSignup] registered marker insert failed (non-fatal)",
+          markerErr.message,
+        );
+      }
+
       await fireCompleteRegistrationCapi({ userId, email, phone });
     }
 

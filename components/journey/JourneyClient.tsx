@@ -18,6 +18,7 @@ import {
   markInterstitialShown,
 } from "./AssessmentInterstitial";
 import { track } from "@/lib/analytics";
+import { useDwellTracking } from "@/hooks/useDwellTracking";
 import { metaTrackCustom } from "@/lib/analytics/meta-pixel";
 import { CmsText } from "@/components/cms/CmsText";
 
@@ -172,6 +173,11 @@ export function JourneyClient({
     setDeviceId(getOrCreateDeviceId());
   }, []);
 
+  // ── Dwell on the journey-assessment surface (brief §A.3). Dedicated refId
+  // "journey_assessment" (NOT a chapter itemId) so the funnel lib can filter
+  // item_id="journey_assessment" and never swallow content-chapter dwell. ────
+  useDwellTracking("journey", "journey_assessment");
+
   // Layer-1 interstitial trigger. Runs after every index change.
   // Fires the interstitial if (a) the new index is a registered break
   // point, (b) we haven't shown it this session, and (c) we're not
@@ -220,6 +226,32 @@ export function JourneyClient({
     initialProgress?.status === "complete" ||
     initialProgress?.status === "completed";
   const isDone = wasCompleted || index >= total;
+
+  // ── Journey-assessment funnel markers (brief §A.2). Constant
+  // assessment_id:"journey" so the funnel lib's
+  // .eq("properties->>assessment_id","journey") catches all four. Refs guard
+  // Strict Mode double-fire; wasInitiallyDoneRef stops a returning, already-
+  // finished visitor counting as a fresh completion. ─────────────────────────
+  const introFiredRef = useRef(false);
+  const startedFiredRef = useRef(false);
+  const completedFiredRef = useRef(false);
+  const wasInitiallyDoneRef = useRef(wasCompleted);
+
+  // "Entered" — fires on mount (the /intro route is only a redirect; there is
+  // no separate intro screen, so mounting the questionnaire is "entered").
+  useEffect(() => {
+    if (introFiredRef.current) return;
+    introFiredRef.current = true;
+    track("journey_assessment_intro_viewed", { assessment_id: "journey" });
+  }, []);
+
+  // "Completed the short assessment" — fires once when the user reaches done
+  // during THIS visit (not for a returning, already-finished visitor).
+  useEffect(() => {
+    if (!isDone || completedFiredRef.current || wasInitiallyDoneRef.current) return;
+    completedFiredRef.current = true;
+    track("journey_assessment_completed", { assessment_id: "journey" });
+  }, [isDone]);
 
   // Meta CompleteAssessment (custom, browser) — the SHORT-assessment campaign
   // optimization event. Fires once when the user reaches the AUTHENTICATED
@@ -609,6 +641,12 @@ export function JourneyClient({
         question_id: question.id,
         locale,
       });
+      // "Started the short assessment" — first answer saved successfully. Once
+      // per visit (brief §A.2).
+      if (capturedIndex === 0 && !startedFiredRef.current) {
+        startedFiredRef.current = true;
+        track("journey_assessment_started", { assessment_id: "journey" });
+      }
       if (serverPhaseComplete || optimisticNext >= total)
         track("journey_completed", { total_steps: total, locale });
 
