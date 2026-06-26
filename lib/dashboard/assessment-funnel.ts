@@ -51,7 +51,10 @@ export interface FunnelCounts {
   completed: number;
   registered: number;
   purchased: number;
+  /** Cohort owners who shared the pair code/link (partner_invite_shared event). */
   partnerInvited: number;
+  /** Cohort owners whose couple now has a joined partner (couple_members). */
+  partnerJoined: number;
   firstChapterViewed: number;
 }
 
@@ -88,6 +91,7 @@ export interface AssessmentFunnel {
     completedRate: number | null; // completed / started
     registeredRate: number | null; // registered / completed
     purchasedRate: number | null; // purchased / registered
+    partnerJoinRate: number | null; // partnerJoined / partnerInvited
   };
   buckets: FunnelBucket[];
   dropoff: DropoffStep[];
@@ -123,7 +127,9 @@ type SessionRow = {
   created_at: string;
 };
 type SubRow = { user_id: string };
-type InviteRow = { inviter_user_id: string };
+type OwnerRow = { couple_id: string; user_id: string };
+type PartnerRow = { couple_id: string };
+type InviteEventRow = { user_id: string | null };
 type ActivityRow = { user_id: string };
 
 type PageResult<T> = { data: T[] | null; error: { message: string } | null };
@@ -393,22 +399,42 @@ export async function loadAssessmentFunnel(
   const purchasedUserIds = new Set(subs.map((s) => s.user_id));
   const purchased = purchasedUserIds.size;
 
-  // ── 4. Partner invited + first chapter viewed (cohort conversions) ────────
+  // ── 4. Partner (invited + joined) + first chapter (cohort conversions) ────
+  // couple_invitations does not exist in this DB (it was abandoned). The live
+  // pairing is couple_members (mig 029): an 'owner' row is created with the
+  // couple; a 'partner' row is added when a partner joins (both share-code and
+  // email paths). So:
+  //   • invited = cohort owners who fired partner_invite_shared (logged-in →
+  //     attribute by user_id).
+  //   • joined  = cohort owners whose couple also has a 'partner' row.
   const cohort = [...registeredUserIds];
-  const [invites, activity] = await Promise.all([
+  const [inviteEvents, owners, activity] = await Promise.all([
     cohort.length
-      ? safeFetch("couple_invitations", () =>
-          fetchByIds<InviteRow>(cohort, (chunk, f, t) =>
+      ? safeFetch("partner_invite_shared", () =>
+          fetchByIds<InviteEventRow>(cohort, (chunk, f, t) =>
             admin
-              .from("couple_invitations")
-              .select("inviter_user_id")
-              .eq("status", "accepted")
-              .in("inviter_user_id", chunk)
+              .from("analytics_events")
+              .select("user_id")
+              .eq("event", "partner_invite_shared")
+              .in("user_id", chunk)
               .range(f, t)
-              .returns<InviteRow[]>(),
+              .returns<InviteEventRow[]>(),
           ),
         )
-      : Promise.resolve([] as InviteRow[]),
+      : Promise.resolve([] as InviteEventRow[]),
+    cohort.length
+      ? safeFetch("couple_members(owner)", () =>
+          fetchByIds<OwnerRow>(cohort, (chunk, f, t) =>
+            admin
+              .from("couple_members")
+              .select("couple_id, user_id")
+              .eq("role", "owner")
+              .in("user_id", chunk)
+              .range(f, t)
+              .returns<OwnerRow[]>(),
+          ),
+        )
+      : Promise.resolve([] as OwnerRow[]),
     cohort.length
       ? safeFetch("journey_user_activity", () =>
           fetchByIds<ActivityRow>(cohort, (chunk, f, t) =>
@@ -423,7 +449,28 @@ export async function loadAssessmentFunnel(
         )
       : Promise.resolve([] as ActivityRow[]),
   ]);
-  const partnerInvited = distinctCount(invites.map((i) => i.inviter_user_id));
+  const partnerInvited = distinctCount(inviteEvents.map((e) => e.user_id));
+
+  // Which of those owners' couples have a joined partner?
+  const ownerCoupleIds = [...new Set(owners.map((o) => o.couple_id))];
+  const partners = ownerCoupleIds.length
+    ? await safeFetch("couple_members(partner)", () =>
+        fetchByIds<PartnerRow>(ownerCoupleIds, (chunk, f, t) =>
+          admin
+            .from("couple_members")
+            .select("couple_id")
+            .eq("role", "partner")
+            .in("couple_id", chunk)
+            .range(f, t)
+            .returns<PartnerRow[]>(),
+        ),
+      )
+    : [];
+  const coupleHasPartner = new Set(partners.map((p) => p.couple_id));
+  const partnerJoined = distinctCount(
+    owners.filter((o) => coupleHasPartner.has(o.couple_id)).map((o) => o.user_id),
+  );
+
   const firstChapterViewed = distinctCount(activity.map((a) => a.user_id));
 
   // ── 5. Behavioural layer (referrers / pages / exit / dwell) ───────────────
@@ -518,6 +565,7 @@ export async function loadAssessmentFunnel(
     registered: totalSets.assessment_registered.size,
     purchased,
     partnerInvited,
+    partnerJoined,
     firstChapterViewed,
   };
 
@@ -540,6 +588,7 @@ export async function loadAssessmentFunnel(
       completedRate: rate(totals.completed, totals.started),
       registeredRate: rate(totals.registered, totals.completed),
       purchasedRate: rate(totals.purchased, totals.registered),
+      partnerJoinRate: rate(totals.partnerJoined, totals.partnerInvited),
     },
     buckets,
     dropoff,

@@ -14,6 +14,7 @@ import {
   X,
 } from "lucide-react";
 import { useCmsText } from "@/hooks/useCmsText";
+import { track } from "@/lib/analytics";
 
 /**
  * PartnerShareCard
@@ -120,6 +121,9 @@ export function PartnerShareCard({
   }
 
   async function handleCopy() {
+    // Funnel: "invited a partner" — first-party share-intent marker (brief
+    // §1.5). The user is logged in here, so the funnel attributes by user_id.
+    track("partner_invite_shared", { channel: "copy" });
     try {
       await navigator.clipboard.writeText(pairCode);
       setCopied(true);
@@ -144,6 +148,7 @@ export function PartnerShareCard({
   }
 
   function handleWhatsapp() {
+    track("partner_invite_shared", { channel: "whatsapp" });
     const text = encodeURIComponent(getShareMessage());
     // wa.me/?text= opens the WhatsApp app or web; works on both mobile
     // and desktop without picking a recipient (the user chooses inside
@@ -152,6 +157,7 @@ export function PartnerShareCard({
   }
 
   function handleSms() {
+    track("partner_invite_shared", { channel: "sms" });
     // iOS expects `sms:&body=`, Android prefers `sms:?body=`. The
     // `&` form is broadly compatible on iOS while Android tolerates
     // it via the body= parameter; using a query-string `?body=` works
@@ -159,6 +165,11 @@ export function PartnerShareCard({
     // target in our analytics.
     const body = encodeURIComponent(getShareMessage());
     window.location.href = `sms:?body=${body}`;
+  }
+
+  function handleQrOpen() {
+    track("partner_invite_shared", { channel: "qr" });
+    setQrOpen(true);
   }
 
   return (
@@ -285,7 +296,7 @@ export function PartnerShareCard({
 
           <button
             type="button"
-            onClick={() => setQrOpen(true)}
+            onClick={handleQrOpen}
             className="inline-flex h-11 min-h-[44px] items-center justify-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 text-sm font-semibold text-white transition hover:bg-white/15"
           >
             <QrCode className="h-4 w-4" />

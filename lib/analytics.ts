@@ -44,6 +44,7 @@ export type AnalyticsEvent =
   | "assessment_started"       // first answer saved
   | "assessment_completed"     // reached the end of the assessment
   | "assessment_registered"    // claimed the anon session via inline signup (server, once)
+  | "partner_invite_shared"    // owner shared the pair code/link: { channel }
 
   // Journey post-purchase (private space + therapeutic dashboard)
   | "journey_dashboard_viewed"      // user landed on /my/journey
