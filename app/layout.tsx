@@ -11,6 +11,7 @@ import {
   GoogleTagManagerNoscript,
 } from "@/components/analytics/GoogleTagManager";
 import { PostHogProvider } from "@/components/analytics/PostHogProvider";
+import { FirstPartyPageView } from "@/components/analytics/FirstPartyPageView";
 import { CookieConsentBar } from "@/components/analytics/CookieConsentBar";
 import { getRequestUser } from "@/lib/auth/getRequestUser";
 import { GlobalAssessmentOffer } from "@/components/marketing/GlobalAssessmentOffer";
@@ -240,6 +241,10 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
             provider also tracks App-Router pageviews. See PostHogProvider.tsx
             for the privacy/masking rationale. */}
         <PostHogProvider>{children}</PostHogProvider>
+        {/* First-party global page_view → analytics_events. Runs in every env
+            (PostHog is prod-only), reuses track()/buildPayload, masks
+            path+referrer. See FirstPartyPageView.tsx. */}
+        <FirstPartyPageView />
         {/* Google Consent Mode v2 grantor — the one-time bottom bar that flips
             ad/analytics consent from the denied default. Global overlay. */}
         <CookieConsentBar locale={locale} isAuthed={isAuthed} />

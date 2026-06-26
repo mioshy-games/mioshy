@@ -33,7 +33,7 @@ const HEARTBEAT_MS = 15_000;
 /** Minimum cumulative active time for a span to count as a visit (spec §10.5). */
 const MIN_VISIT_MS = 5_000;
 
-export type DwellPillar = "journey" | "games" | "adults";
+export type DwellPillar = "journey" | "games" | "adults" | "assessment";
 
 export function useDwellTracking(
   pillar: DwellPillar,

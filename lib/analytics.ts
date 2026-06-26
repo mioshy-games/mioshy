@@ -13,6 +13,8 @@
  * In development, events are also printed to the console (debug mode).
  */
 
+import { sanitizeUrl } from "@/lib/analytics/redact-url";
+
 // ─── Event catalogue ─────────────────────────────────────────────────────────
 // Keep this in sync with the analytics_events table columns.
 
@@ -32,6 +34,16 @@ export type AnalyticsEvent =
   | "journey_question_answered"
   | "journey_auth_gate_shown"  // registration step shown
   | "journey_completed"        // all questions answered
+
+  // Assessment funnel markers (assessment-funnel-analytics-brief §0.3).
+  // Explicit head-of-funnel markers so the funnel lives in one source
+  // (analytics_events), not split between events and DB. Each carries
+  // { assessment_id }. assessment_sessions stays source-of-truth for
+  // per-question drop-off.
+  | "assessment_intro_viewed"  // AssessmentClient mounted (no separate intro screen)
+  | "assessment_started"       // first answer saved
+  | "assessment_completed"     // reached the end of the assessment
+  | "assessment_registered"    // claimed the anon session via inline signup (server, once)
 
   // Journey post-purchase (private space + therapeutic dashboard)
   | "journey_dashboard_viewed"      // user landed on /my/journey
@@ -106,6 +118,19 @@ const INTAKE_URL = "/api/analytics/event";
  * hook's beacon and the regular `track()` call produce identical rows.
  */
 function buildPayload(event: AnalyticsEvent, props: EventProperties) {
+  // Redaction parity with PostHog (assessment-funnel-analytics-brief §0.1):
+  // `path` now carries the query string too, but every sensitive param
+  // (code/token/email/invite/ref_code) is masked before it leaves the browser
+  // — so a partner-share `?code=` token can never reach analytics_events. Any
+  // URL-bearing prop the caller adds (e.g. `referrer`) gets the same treatment.
+  const properties: EventProperties = {
+    path: sanitizeUrl(window.location.pathname + window.location.search) as string,
+    ...props,
+  };
+  if (typeof properties.referrer === "string") {
+    properties.referrer = sanitizeUrl(properties.referrer) as string;
+  }
+
   return {
     event,
     session_id: getSessionId(),
@@ -113,10 +138,7 @@ function buildPayload(event: AnalyticsEvent, props: EventProperties) {
     locale:
       // Extract from pathname: /he/... or /en/...
       window.location.pathname.match(/^\/(he|en)\//)?.[1] ?? null,
-    properties: {
-      path: window.location.pathname,
-      ...props,
-    },
+    properties,
   };
 }
 

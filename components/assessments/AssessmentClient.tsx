@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import { getOrCreateDeviceId } from "@/lib/device-id";
+import { track } from "@/lib/analytics";
+import { useDwellTracking } from "@/hooks/useDwellTracking";
 import type { Question } from "@/lib/journey/types";
 import { QuestionStep } from "@/components/journey/QuestionStep";
 import { ProgressBar } from "@/components/journey/ProgressBar";
@@ -54,12 +56,40 @@ export function AssessmentClient({
   const [resultError, setResultError] = useState<string | null>(null);
   const resultFetchedRef = useRef(false);
 
+  // ── Funnel markers (brief §0.3) — explicit head-of-funnel events so the
+  // funnel lives in analytics_events, not split between events and DB. Each
+  // carries { assessment_id }; assessment_sessions stays source-of-truth for
+  // per-question drop-off. Refs guard against double-fire (Strict Mode).
+  const introFiredRef = useRef(false);
+  const startedFiredRef = useRef(false);
+  const completedFiredRef = useRef(false);
+  // Don't count a returning, already-finished visitor as a fresh completion.
+  const wasInitiallyDoneRef = useRef(initialStep >= total);
+
   useEffect(() => {
     setDeviceId(getOrCreateDeviceId());
   }, []);
 
+  // ── Dwell time on the assessment surface (brief §0.4). ─────────────────────
+  useDwellTracking("assessment", assessmentId);
+
   const isDone = index >= total;
   const question = questions[Math.min(index, total - 1)];
+
+  // "Entered the assessment" — fires on mount (there is no separate intro
+  // screen; the component opens on question 1).
+  useEffect(() => {
+    if (introFiredRef.current) return;
+    introFiredRef.current = true;
+    track("assessment_intro_viewed", { assessment_id: assessmentId });
+  }, [assessmentId]);
+
+  // "Completed" — fires once when the user reaches the end during THIS visit.
+  useEffect(() => {
+    if (!isDone || completedFiredRef.current || wasInitiallyDoneRef.current) return;
+    completedFiredRef.current = true;
+    track("assessment_completed", { assessment_id: assessmentId });
+  }, [isDone, assessmentId]);
 
   // ── Fetch / compute the result once the user is done AND authenticated ──────
   useEffect(() => {
@@ -148,6 +178,13 @@ export function AssessmentClient({
         return;
       }
       const data = await res.json();
+
+      // "Started" — the first answer was saved successfully. Once per visit.
+      if (captured === 0 && !startedFiredRef.current) {
+        startedFiredRef.current = true;
+        track("assessment_started", { assessment_id: assessmentId });
+      }
+
       const serverNext = data.next_index ?? next;
       if (!isAutoAdvance) setIndex(serverNext);
     } catch (err) {

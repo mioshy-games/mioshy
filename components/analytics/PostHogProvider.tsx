@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import posthog from "posthog-js";
 import { PostHogProvider as PHProvider } from "posthog-js/react";
+import { sanitizeUrl } from "@/lib/analytics/redact-url";
 
 /**
  * PostHog loader for Mioshy — product analytics + heatmaps + session replay.
@@ -57,28 +58,9 @@ const PH_REGION =
 const PH_UI_HOST =
   process.env.NEXT_PUBLIC_POSTHOG_HOST || `https://${PH_REGION}.posthog.com`;
 
-// Query params we never want to leave the browser, even inside a URL string.
-const REDACT_QUERY_PARAMS = ["code", "token", "email", "invite", "ref_code"];
-
-function sanitizeUrl(raw: unknown): unknown {
-  if (typeof raw !== "string" || !raw) return raw;
-  try {
-    // raw can be absolute or path-only; give the URL ctor a base either way.
-    const u = new URL(raw, "https://mioshy.com");
-    let touched = false;
-    for (const p of REDACT_QUERY_PARAMS) {
-      if (u.searchParams.has(p)) {
-        u.searchParams.set(p, "redacted");
-        touched = true;
-      }
-    }
-    if (!touched) return raw;
-    // Return in the same shape we got it (path-only vs absolute).
-    return raw.startsWith("http") ? u.toString() : u.pathname + u.search + u.hash;
-  } catch {
-    return raw;
-  }
-}
+// URL redaction (sanitizeUrl + REDACT_QUERY_PARAMS) now lives in
+// lib/analytics/redact-url.ts so the first-party analytics pipeline masks
+// identically. See that file for the param list and rationale.
 
 let initialised = false;
 

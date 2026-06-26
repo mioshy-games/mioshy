@@ -141,6 +141,25 @@ export async function assessmentInlineSignup(args: {
     // reliable serverless delivery (no browser backup); bounded + non-throwing,
     // so it never blocks or breaks the funnel.
     if (args.mode === "register") {
+      // Funnel marker (brief §0.3): "registered" — emitted server-side here so
+      // it fires exactly once per new signup, deterministically (no client
+      // round-trip to miss). assessment_sessions stays source-of-truth for the
+      // claim itself. Best-effort: never blocks or fails the signup.
+      const { error: markerErr } = await admin.from("analytics_events").insert({
+        event: "assessment_registered",
+        session_id: null,
+        device_id: args.deviceId,
+        user_id: userId,
+        locale: args.language ?? null,
+        properties: { assessment_id: args.assessmentId },
+      });
+      if (markerErr) {
+        console.warn(
+          "[assessmentInlineSignup] registered marker insert failed (non-fatal)",
+          markerErr.message,
+        );
+      }
+
       await fireCompleteRegistrationCapi({ userId, email, phone });
     }
 
