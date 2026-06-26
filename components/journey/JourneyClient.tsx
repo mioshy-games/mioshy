@@ -235,7 +235,12 @@ export function JourneyClient({
   const introFiredRef = useRef(false);
   const startedFiredRef = useRef(false);
   const completedFiredRef = useRef(false);
-  const wasInitiallyDoneRef = useRef(wasCompleted);
+  // Snapshot "already done at mount" from isDone (not just wasCompleted): a
+  // returning visitor can be done via index>=total too — e.g. a 'paywall'
+  // journey whose remaining-questions set is empty (total=0) — and must NOT
+  // re-fire completed on every revisit. isDone is evaluated above before this
+  // ref initialises.
+  const wasInitiallyDoneRef = useRef(isDone);
 
   // "Entered" — fires on mount (the /intro route is only a redirect; there is
   // no separate intro screen, so mounting the questionnaire is "entered").

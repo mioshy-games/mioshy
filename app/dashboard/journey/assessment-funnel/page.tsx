@@ -246,7 +246,7 @@ export default async function JourneyAssessmentFunnelPage({
                   key={d.step}
                   label={`${tt("af.dropoff.step")} ${d.step}`}
                   pct={(d.stuck / maxShortStuck) * 100}
-                  value={String(d.stuck)}
+                  value={`${d.stuck} · ${d.pct ?? "—"}%`}
                   color="bg-rose-500/70"
                 />
               ))
@@ -268,7 +268,7 @@ export default async function JourneyAssessmentFunnelPage({
                   key={d.step}
                   label={`${tt("af.dropoff.step")} ${d.step}`}
                   pct={(d.stuck / maxFullStuck) * 100}
-                  value={String(d.stuck)}
+                  value={`${d.stuck} · ${d.pct ?? "—"}%`}
                   color="bg-orange-500/70"
                 />
               ))

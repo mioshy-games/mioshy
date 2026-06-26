@@ -78,6 +78,12 @@ export interface DropoffStep {
   /** 1-based rank of the drop-off question WITHIN its phase (short or full). */
   step: number;
   stuck: number;
+  /**
+   * stuck / phase-starters, rounded (short ÷ started, long ÷ fullStarted) —
+   * "what % of starters got stuck here". Div-by-zero guarded (null when there
+   * are no starters). Across a phase, Σ pct + the phase's completion % ≈ 100%.
+   */
+  pct: number | null;
 }
 
 export interface BehavioralSummary {
@@ -385,13 +391,17 @@ export async function loadJourneyAssessmentFunnel(
     answeredByJourney.set(r.journey_id, arr);
   }
 
-  // fullStarted: cohort users whose journey answered ≥1 phase='full' question.
+  // fullStarted: users whose journey answered ≥1 phase='full' question (USER
+  // count — the displayed funnel stage). fullStartedJourneys is the same on a
+  // JOURNEY basis (incl. anonymous), used as the long drop-off denominator so
+  // the long drop-off pct shares numerator+denominator units (journeys).
   const fullStartedUserIds = new Set<string>();
+  let fullStartedJourneys = 0;
   for (const j of journeys) {
-    if (!j.user_id) continue;
     const ans = answeredByJourney.get(j.id) ?? [];
     if (ans.some((r) => qmap.get(r.question_id)?.phase === "full")) {
-      fullStartedUserIds.add(j.user_id);
+      fullStartedJourneys += 1;
+      if (j.user_id) fullStartedUserIds.add(j.user_id);
     }
   }
 
@@ -421,10 +431,21 @@ export async function loadJourneyAssessmentFunnel(
       if (idx >= 0) shortStuck.set(idx + 1, (shortStuck.get(idx + 1) ?? 0) + 1);
     }
   }
-  const toDropoff = (m: Map<number, number>): DropoffStep[] =>
-    [...m.entries()].map(([step, stuck]) => ({ step, stuck })).sort((a, b) => a.step - b.step);
-  const dropoffShort = toDropoff(shortStuck);
-  const dropoffFull = toDropoff(fullStuck);
+  // pct = stuck / phase-starters, both DB-journey based so numerator and
+  // denominator come from the SAME source (journeys) → pct is always ≤ 100% and
+  // Σ pct + the phase's completion % ≈ 100% holds on real data too.
+  //   • short denominator = every in-range journey (each journey starts short).
+  //   • long  denominator = journeys that answered ≥1 full question.
+  // NOTE: this DB-based % can differ slightly from the displayed "started" /
+  // "fullStarted" stages, which are marker- / user-based (best-effort client
+  // events vs distinct users). That divergence is expected and fine.
+  const shortStarters = journeys.length;
+  const toDropoff = (m: Map<number, number>, denom: number): DropoffStep[] =>
+    [...m.entries()]
+      .map(([step, stuck]) => ({ step, stuck, pct: rate(stuck, denom) }))
+      .sort((a, b) => a.step - b.step);
+  const dropoffShort = toDropoff(shortStuck, shortStarters);
+  const dropoffFull = toDropoff(fullStuck, fullStartedJourneys);
 
   // ── 3. Purchase attribution (no journey checkout event → cohort ∩ subs) ───
   const cohort = [...registeredUserIds];
