@@ -316,8 +316,11 @@ export async function POST(req: Request) {
   if (purchase_type === "subscription") {
     try {
       const promoCurrency = currency === "USD" ? "USD" : "ILS"
+      // Pass the resolved cadence so a cadence-restricted promo (migration 148)
+      // only discounts the matching cadence; null-cadence promos apply to all.
       const { promo, warning } = await findActivePromo(serviceClient, {
         product: product as "journey" | "games",
+        cadence: effectivePlan,
       })
       if (warning) console.warn("[checkout:CREATE] promo warning", warning)
       if (promo) {

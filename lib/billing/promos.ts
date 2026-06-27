@@ -21,6 +21,9 @@ export interface SubscriptionPromo {
   name: string;
   /** Optional customer-facing title (migration 147). null → UI shows "מבצע {name}". */
   display_text: string | null;
+  /** Cadence restriction (migration 148). null/'all' → every cadence; otherwise
+   *  the promo only applies to a checkout whose resolved cadence matches. */
+  cadence: string | null;
   code: string | null;
   discount_type: DiscountType;
   percent: number | null;
@@ -93,14 +96,31 @@ export function applyDiscount({
 }
 
 /**
+ * Cadence match (migration 148). A promo with no cadence restriction
+ * (null/'all') applies to every cadence; otherwise it applies only when the
+ * purchased cadence equals the promo's. Used by checkout (exact cadence) and by
+ * the offer UI (per-cadence card).
+ */
+export function promoAppliesToCadence(
+  promo: SubscriptionPromo,
+  cadence: string | null | undefined,
+): boolean {
+  if (promo.cadence == null || promo.cadence === "all") return true;
+  return cadence != null && promo.cadence === cadence;
+}
+
+/**
  * Pure selection. Of `promos`, keep those that are active, match the product
- * ('all' or exact), and contain `at` in [starts_at, ends_at]. Zero → null. More
- * than one → deterministic pick (latest created_at, id tiebreak) + a warning
- * (spec §8 — there should be at most one, enforced by assertNoOverlap).
+ * ('all' or exact), and contain `at` in [starts_at, ends_at]. When `cadence` is
+ * provided, also require the promo to apply to that cadence (migration 148);
+ * omit `cadence` (undefined) to ignore the cadence restriction — e.g. the offer
+ * UI fetches the promo once and then tests each card's cadence itself. Zero →
+ * null. More than one → deterministic pick (latest created_at, id tiebreak) + a
+ * warning (spec §8 — there should be at most one, enforced by assertNoOverlap).
  */
 export function selectActivePromo(
   promos: SubscriptionPromo[],
-  { product, at }: { product: PromoProduct; at: Date | string },
+  { product, at, cadence }: { product: PromoProduct; at: Date | string; cadence?: string | null },
 ): { promo: SubscriptionPromo | null; warning?: string } {
   const t = ms(at);
   const matches = promos.filter(
@@ -108,7 +128,8 @@ export function selectActivePromo(
       p.is_active &&
       (p.product === product || p.product === "all") &&
       ms(p.starts_at) <= t &&
-      t <= ms(p.ends_at),
+      t <= ms(p.ends_at) &&
+      (cadence === undefined || promoAppliesToCadence(p, cadence)),
   );
   if (matches.length === 0) return { promo: null };
   if (matches.length === 1) return { promo: matches[0] };
@@ -130,7 +151,7 @@ export function selectActivePromo(
  */
 export async function findActivePromo(
   admin: SupabaseClient,
-  { product, at }: { product: PromoProduct; at?: Date | string },
+  { product, at, cadence }: { product: PromoProduct; at?: Date | string; cadence?: string | null },
 ): Promise<{ promo: SubscriptionPromo | null; warning?: string }> {
   const when = at ?? new Date();
   const { data, error } = await admin
@@ -140,7 +161,7 @@ export async function findActivePromo(
     .in("product", [product, "all"])
     .returns<SubscriptionPromo[]>();
   if (error) throw new Error(`findActivePromo: ${error.message}`);
-  return selectActivePromo(data ?? [], { product, at: when });
+  return selectActivePromo(data ?? [], { product, at: when, cadence });
 }
 
 type PromoWindow = Pick<SubscriptionPromo, "product" | "starts_at" | "ends_at">;

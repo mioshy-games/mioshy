@@ -32,6 +32,15 @@ export const promoFormSchema = z
     amount_ils: numOrNull,
     amount_usd: numOrNull,
     product: z.enum(["journey", "games", "all"]),
+    // Cadence restriction (migration 148). "" / "all" / invalid → null (all
+    // cadences); a concrete cadence limits the promo to that plan.
+    cadence: z
+      .union([z.string(), z.null(), z.undefined()])
+      .transform((v) =>
+        typeof v === "string" && ["weekly", "monthly", "quarterly", "yearly"].includes(v)
+          ? v
+          : null,
+      ),
     discounted_charges: z.number().int().min(1, "At least 1 charge"),
     starts_at: z.string().min(1, "Start is required"),
     ends_at: z.string().min(1, "End is required"),

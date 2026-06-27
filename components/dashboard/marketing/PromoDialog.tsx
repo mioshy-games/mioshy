@@ -21,6 +21,7 @@ export type PromoRow = {
   id: string;
   name: string;
   display_text: string | null;
+  cadence: string | null;
   code: string | null;
   discount_type: "percent" | "fixed_amount";
   percent: number | null;
@@ -88,6 +89,7 @@ export function PromoDialog({
   const [form, setForm] = useState({
     name: promo?.name ?? "",
     display_text: promo?.display_text ?? "",
+    cadence: promo?.cadence ?? "",
     code: promo?.code ?? "",
     discount_type: promo?.discount_type ?? "percent",
     percent: promo?.percent != null ? String(promo.percent) : "",
@@ -109,6 +111,7 @@ export function PromoDialog({
     const raw = {
       name: form.name,
       display_text: form.display_text,
+      cadence: form.cadence,
       code: form.code,
       discount_type: form.discount_type,
       percent: form.percent === "" ? null : Number(form.percent),
@@ -174,6 +177,16 @@ export function PromoDialog({
               </select>
             </Field>
           </div>
+
+          {/* Cadence restriction (migration 148). Empty value = all plans. */}
+          <Field label={tt("promos.field.cadence")}>
+            <select className={inputCls} value={form.cadence} onChange={(e) => set("cadence", e.target.value)}>
+              <option value="">{tt("promos.cadence.all")}</option>
+              <option value="monthly">{tt("promos.cadence.monthly")}</option>
+              <option value="quarterly">{tt("promos.cadence.quarterly")}</option>
+              <option value="yearly">{tt("promos.cadence.yearly")}</option>
+            </select>
+          </Field>
 
           {isFixed ? (
             <div className="grid grid-cols-2 gap-3">

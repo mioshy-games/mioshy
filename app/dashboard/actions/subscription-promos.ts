@@ -32,6 +32,7 @@ export async function savePromo(id: string | null, raw: unknown): Promise<SaveRe
   const row = {
     name: v.name,
     display_text: v.display_text,
+    cadence: v.cadence,
     code: v.code,
     discount_type: v.discount_type,
     percent: v.discount_type === "percent" ? v.percent : null,

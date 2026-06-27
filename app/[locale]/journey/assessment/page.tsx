@@ -40,7 +40,7 @@ import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
 import type { Locale } from "@/lib/journey/types";
 import { listAllPrices } from "@/lib/billing/pricing-queries";
 import type { CadenceOption } from "@/lib/billing/pricing-validations";
-import { findActivePromo, applyDiscount } from "@/lib/billing/promos";
+import { findActivePromo, applyDiscount, promoAppliesToCadence } from "@/lib/billing/promos";
 import type { JourneyPromoSummary } from "@/components/journey/AnalysisSummary";
 
 // Force fresh render on EVERY request - never cache. Critical for an
@@ -532,6 +532,9 @@ export default async function JourneyAssessmentPage({
         const originalByCadence: JourneyPromoSummary["originalByCadence"] = {};
         for (const c of journeyCadences) {
           if (!c.enabled) continue;
+          // Cadence-restricted promo (migration 148): only the matching
+          // cadence card(s) get the discount; null-cadence promos cover all.
+          if (!promoAppliesToCadence(promo, c.cadence)) continue;
           const ils = applyDiscount({ amount: c.price_ils, currency: "ILS", promo });
           const usd = applyDiscount({ amount: c.price_usd, currency: "USD", promo });
           // Record the cadence only when the promo actually discounts at least
