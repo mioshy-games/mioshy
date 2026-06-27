@@ -241,7 +241,7 @@ export function AssessmentSummary({
                 : cp
                   ? (isHe ? cp.fallbackHero_he : cp.fallbackHero_en)
                   : isHe
-                    ? "בליווי עם מיאושי תתחזקו במקום שהכי חשוב לכם, והקרבה ביניכם תעמיק."
+                    ? "בייעוץ זוגי עם מיאושי תתחזקו במקום שהכי חשוב לכם, והקרבה ביניכם תעמיק."
                     : "With Mioshy's coaching you'll grow where it matters most, and your closeness will deepen."}
             </p>
           </div>
