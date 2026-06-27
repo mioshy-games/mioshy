@@ -549,7 +549,12 @@ export default async function JourneyAssessmentPage({
           }
         }
         if (Object.keys(firstChargeByCadence).length > 0) {
-          activePromo = { name: promo.name, firstChargeByCadence, originalByCadence };
+          activePromo = {
+            name: promo.name,
+            displayText: promo.display_text,
+            firstChargeByCadence,
+            originalByCadence,
+          };
         }
       }
     }

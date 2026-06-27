@@ -14,6 +14,13 @@ const numOrNull = z
 export const promoFormSchema = z
   .object({
     name: z.string().trim().min(1, "Name is required"),
+    // Optional customer-facing title. Empty → null (UI falls back to "מבצע {name}").
+    display_text: z
+      .union([z.string(), z.null(), z.undefined()])
+      .transform((v) => {
+        const s = typeof v === "string" ? v.trim() : "";
+        return s.length ? s : null;
+      }),
     code: z
       .union([z.string(), z.null(), z.undefined()])
       .transform((v) => {

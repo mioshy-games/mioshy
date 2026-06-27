@@ -35,6 +35,9 @@ import type { CadenceOption } from "@/lib/billing/pricing-validations";
  */
 export type JourneyPromoSummary = {
   name: string;
+  /** Optional customer-facing title (subscription_promos.display_text). When
+   *  set it replaces the default "מבצע {name}" heading on the promo line. */
+  displayText: string | null;
   firstChargeByCadence: Record<string, { ils: number; usd: number }>;
   originalByCadence: Record<string, { ils: number; usd: number }>;
 };
@@ -991,7 +994,8 @@ function OfferCard({
                         <span className="mt-2 flex flex-col gap-0.5">
                           <span className="flex flex-wrap items-baseline gap-1.5">
                             <span className="inline-flex items-center rounded-full bg-gradient-to-r from-amber-400 to-rose-500 px-2 py-0.5 text-[13px] font-bold text-white shadow">
-                              {isHe ? "מבצע" : "Promo"} {activePromo.name}
+                              {activePromo.displayText ??
+                                `${isHe ? "מבצע" : "Promo"} ${activePromo.name}`}
                             </span>
                             <span className="text-[16px] text-white/85">
                               {firstPeriodLabel(c.cadence, isHe)}
@@ -1030,7 +1034,56 @@ function OfferCard({
             now the summary: the actual amount that will be charged for the
             selected cadence. Stays dynamic with the picker selection; the
             "ניתן לעצור בכל עת" reassurance is preserved as the subline. */}
-        {selectedOption ? (
+        {selectedOption ? (() => {
+          // Single-cadence fallback: with only one enabled cadence there is no
+          // picker, so the per-cadence promo line inside the cards never
+          // renders. To keep the promo from vanishing, surface it HERE instead.
+          // When the picker IS shown the cards carry the promo and this
+          // headline stays the regular price line (no double display).
+          const cad = selectedOption.cadence;
+          const pf = activePromo?.firstChargeByCadence[cad];
+          const po = activePromo?.originalByCadence[cad];
+          if (!showPicker && activePromo && pf && po) {
+            const firstAmt = isHe ? pf.ils : pf.usd;
+            const origAmt = isHe ? po.ils : po.usd;
+            return (
+              <div className="mt-6 text-start">
+                <span className="inline-flex items-center rounded-full bg-gradient-to-r from-amber-400 to-rose-500 px-3 py-1 text-[14px] font-bold text-white shadow">
+                  {activePromo.displayText ??
+                    `${isHe ? "מבצע" : "Promo"} ${activePromo.name}`}
+                </span>
+                <p className="mt-2.5 flex flex-wrap items-baseline gap-1.5">
+                  <span className="text-[20px] font-medium text-white">
+                    {isHe ? "לתשלום" : "To pay"}
+                  </span>
+                  <span className="text-[20px] font-semibold text-white">
+                    {firstPeriodLabel(cad, isHe)}
+                  </span>
+                  <span className="font-extrabold leading-none text-white">
+                    <span className="text-[20px]">{sym}</span>
+                    <span className="text-[32px]">{fmt(firstAmt)}</span>
+                  </span>
+                  <span className="text-[20px] text-white/70">
+                    {isHe ? "במקום" : "instead of"}
+                  </span>
+                  <span className="sr-only">{isHe ? "היה " : "was "}</span>
+                  <span className="text-[20px] font-medium text-white/60 line-through">
+                    {sym}
+                    {fmt(origAmt)}
+                  </span>
+                  <span className="text-[20px] font-semibold text-white">
+                    {periodLabel(cad)}
+                  </span>
+                </p>
+                <p className="mt-1.5 text-[20px] text-[#D8CFE6]">
+                  {isHe
+                    ? "מחיר לתשלום הראשון; החידושים מלאים."
+                    : "First-payment price; renewals at full price."}
+                </p>
+              </div>
+            );
+          }
+          return (
           <div className="mt-6 text-start">
             {/* Body (Assistant) font, not font-heading. Label + period in full
                 white; the ₪ symbol renders smaller than the number.
@@ -1075,7 +1128,8 @@ function OfferCard({
               <CmsText cmsKey="journeyAssessment.analysis.priceNote" />
             </p>
           </div>
-        ) : null}
+          );
+        })() : null}
 
         {/* Value anchor (Itzik 2026-06-14) — an external cost reference to
             anchor the monthly price. Worded carefully: Mioshy is ongoing

@@ -20,6 +20,7 @@ import { Label } from "@/components/ui/label";
 export type PromoRow = {
   id: string;
   name: string;
+  display_text: string | null;
   code: string | null;
   discount_type: "percent" | "fixed_amount";
   percent: number | null;
@@ -86,6 +87,7 @@ export function PromoDialog({
 
   const [form, setForm] = useState({
     name: promo?.name ?? "",
+    display_text: promo?.display_text ?? "",
     code: promo?.code ?? "",
     discount_type: promo?.discount_type ?? "percent",
     percent: promo?.percent != null ? String(promo.percent) : "",
@@ -106,6 +108,7 @@ export function PromoDialog({
     setErrors({});
     const raw = {
       name: form.name,
+      display_text: form.display_text,
       code: form.code,
       discount_type: form.discount_type,
       percent: form.percent === "" ? null : Number(form.percent),
@@ -150,6 +153,10 @@ export function PromoDialog({
         <div className="grid gap-3">
           <Field label={tt("promos.field.name")} error={err("name")}>
             <input className={inputCls} value={form.name} onChange={(e) => set("name", e.target.value)} />
+          </Field>
+
+          <Field label={tt("promos.field.display_text")} hint={tt("promos.field.display_text_hint")}>
+            <input className={inputCls} value={form.display_text} onChange={(e) => set("display_text", e.target.value)} />
           </Field>
 
           <div className="grid grid-cols-2 gap-3">

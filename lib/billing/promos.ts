@@ -19,6 +19,8 @@ export type Currency = "ILS" | "USD";
 export interface SubscriptionPromo {
   id: string;
   name: string;
+  /** Optional customer-facing title (migration 147). null → UI shows "מבצע {name}". */
+  display_text: string | null;
   code: string | null;
   discount_type: DiscountType;
   percent: number | null;
