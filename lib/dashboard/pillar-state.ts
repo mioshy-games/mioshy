@@ -104,7 +104,7 @@ function deriveJourneyState(input: PillarStateInputs): PillarStateOutput {
       // Welcome, never re-invite.
       return {
         state: "open",
-        ctaLabel: isHe ? "כניסה לליווי עם מיאושי" : "Enter coaching with Mioshy",
+        ctaLabel: isHe ? "כניסה לייעוץ זוגי עם מיאושי" : "Enter coaching with Mioshy",
         ctaHref: "/my/journey",
       }
     case "in_progress":

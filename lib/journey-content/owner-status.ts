@@ -29,7 +29,7 @@ export interface OwnerJourneyStatus {
   /**
    * The user finished the questionnaire - `journeys.status === 'complete'`
    * (or the legacy 'completed' spelling) on the most-recent row. Drives
-   * the "כניסה לליווי עם מיאושי" CTA copy (see
+   * the "כניסה לייעוץ זוגי עם מיאושי" CTA copy (see
    * docs/my-page-redesign-spec.md §5).
    */
   hasCompletedAssessment: boolean;

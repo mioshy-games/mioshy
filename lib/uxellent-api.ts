@@ -33,7 +33,7 @@ export type CreateDocumentInput = {
   plan:             string       // "weekly" | "monthly" | "annual" | one-time slug
   /**
    * Human-readable product description (Hebrew or English) that appears
-   * on the invoice line, e.g. "הסקס של מיאושי" / "ליווי עם מיאושי" /
+   * on the invoice line, e.g. "הסקס של מיאושי" / "ייעוץ זוגי עם מיאושי" /
    * "משחקי זוגות אונליין" / a specific game title. When omitted, the
    * issuer falls back to a generic "מיאושי - עולם הזוגיות" line item,
    * which is regulatory-correct but opaque to the customer.

@@ -73,7 +73,7 @@ export const INTIMACY_RESULT_CONTENT: AssessmentResultContent = {
     offerSub_he: "פרק אישי בכל שבוע בנושאי מיניות וזוגיות, מומחה/ית זמין/ה בצ'אט, והכל מותאם בדיוק לתוצאות שלכם.",
     offerTitle_en: "Mioshy's personal coaching program",
     offerSub_en: "A personal chapter each week on intimacy and relationship, an expert available in chat, all tailored to your results.",
-    fallbackHero_he: "בליווי עם מיאושי תחזירו את התשוקה והקרבה, והסקס יחזור להרגיש אינטימי וטבעי.",
+    fallbackHero_he: "בייעוץ זוגי עם מיאושי תחזירו את התשוקה והקרבה, והסקס יחזור להרגיש אינטימי וטבעי.",
     fallbackHero_en: "With Mioshy's coaching you'll bring back desire and closeness, and sex will feel intimate and natural again.",
     priceOriginal_he: "127 ₪",
     priceOriginal_en: "$36",

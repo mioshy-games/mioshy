@@ -71,7 +71,7 @@ export const FRIENDSHIP_RESULT_CONTENT: AssessmentResultContent = {
     offerSub_he: "פרק אישי בכל שבוע על קרבה, חברות וחיבור רגשי, מומחה/ית זמין/ה בצ'אט, והכל מותאם בדיוק לתוצאות שלכם.",
     offerTitle_en: "Mioshy's personal coaching program",
     offerSub_en: "A personal chapter each week on closeness, friendship and emotional connection, an expert available in chat, all tailored to your results.",
-    fallbackHero_he: "בליווי עם מיאושי תחזרו לראות אחד את השני, החברות תתחזק והקרבה תעמיק.",
+    fallbackHero_he: "בייעוץ זוגי עם מיאושי תחזרו לראות אחד את השני, החברות תתחזק והקרבה תעמיק.",
     fallbackHero_en: "With Mioshy's coaching you'll see each other again, your friendship will grow and your closeness will deepen.",
     priceOriginal_he: "127 ₪",
     priceOriginal_en: "$36",
