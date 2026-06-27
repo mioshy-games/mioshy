@@ -35,7 +35,7 @@ export type ProductPillar = "games" | "journey" | "adults" | (string & {})
 export function pillarToProductName(pillar: ProductPillar | null | undefined): string {
   switch (pillar) {
     case "games":   return "משחקי זוגות אונליין"
-    case "journey": return "ליווי עם מיאושי"
+    case "journey": return "ייעוץ זוגי עם מיאושי"
     case "adults":  return "הסקס של מיאושי"
     default:        return "מיאושי - עולם הזוגיות"
   }
