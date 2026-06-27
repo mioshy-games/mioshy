@@ -993,23 +993,23 @@ function OfferCard({
                       return (
                         <span className="mt-2 flex flex-col gap-0.5">
                           <span className="flex flex-wrap items-baseline gap-1.5">
-                            <span className="inline-flex items-center rounded-full bg-gradient-to-r from-amber-400 to-rose-500 px-2 py-0.5 text-[13px] font-bold text-white shadow">
+                            <span className="inline-flex items-center rounded-full bg-gradient-to-r from-amber-400 to-rose-500 px-4 py-1.5 text-[33px] font-bold text-white shadow">
                               {activePromo.displayText ??
                                 `${isHe ? "מבצע" : "Promo"} ${activePromo.name}`}
                             </span>
-                            <span className="text-[16px] text-white/85">
+                            <span className="text-[36px] text-white/85">
                               {firstPeriodLabel(c.cadence, isHe)}
                             </span>
-                            <span className="text-[18px] font-extrabold text-white">
+                            <span className="text-[38px] font-extrabold text-white">
                               {sym}
                               {fmt(firstAmt)}
                             </span>
-                            <span className="text-[15px] text-white/60">
+                            <span className="text-[35px] text-white/60">
                               {isHe ? "במקום" : "instead of"}
                             </span>
                             {/* a11y: convey strikethrough to SRs, not by style alone. */}
                             <span className="sr-only">{isHe ? "היה " : "was "}</span>
-                            <span className="text-[15px] text-white/50 line-through">
+                            <span className="text-[35px] text-white/50 line-through">
                               {sym}
                               {fmt(origAmt)}
                             </span>
