@@ -989,97 +989,103 @@ function OfferCard({
             now the summary: the actual amount that will be charged for the
             selected cadence. Stays dynamic with the picker selection; the
             "ניתן לעצור בכל עת" reassurance is preserved as the subline. */}
-        {selectedOption ? (
-          <div className="mt-6 text-start">
-            {/* Body (Assistant) font, not font-heading. Label + period in full
-                white; the ₪ symbol renders smaller than the number. */}
-            <p className="flex flex-wrap items-baseline gap-1.5">
-              <span className="text-[20px] font-medium text-white">
-                {isHe ? "לתשלום" : "To pay"}
-              </span>
-              {/* QA 2026-06-16 — struck anchor price (127 → 57). CMS-driven.
-                  a11y M4: /40→/60 for contrast + sr-only "היה" so the
-                  strikethrough's meaning isn't conveyed by visual style alone. */}
-              <span className="sr-only">{isHe ? "היה " : "was "}</span>
-              {/* ILS: struck original derived per cadence (weeklyBase × weeks),
-                  fixing the value that was stuck at ₪127 across all packages.
-                  USD/en is intentionally left on the CMS anchor — out of scope. */}
-              {isHe && ANCHOR_WEEKS_IN_PERIOD[selectedOption.cadence] ? (
-                <span className="text-[20px] font-medium text-white/60 line-through">
-                  {sym}
-                  {fmt(
-                    ANCHOR_WEEKLY_BASE_ILS *
-                      ANCHOR_WEEKS_IN_PERIOD[selectedOption.cadence],
-                  )}
-                </span>
-              ) : (
-                <CmsText
-                  cmsKey="journeyAssessment.analysis.anchorPrice"
-                  as="span"
-                  className="text-[20px] font-medium text-white/60 line-through"
-                />
-              )}
-              <span className="font-extrabold leading-none text-white">
-                <span className="text-[20px]">{sym}</span>
-                <span className="text-[32px]">{fmt(amtOf(selectedOption))}</span>
-              </span>
-              <span className="text-[20px] font-semibold text-white">
-                {periodLabel(selectedOption.cadence)}
-              </span>
-            </p>
-            <p className="mt-1 text-[20px] text-[#D8CFE6]">
-              <CmsText cmsKey="journeyAssessment.analysis.priceNote" />
-            </p>
-          </div>
-        ) : null}
-
-        {/* Active marketing promo banner — server-computed (findActivePromo +
-            applyDiscount), so the discounted first charge equals what checkout
-            will bill. Renders ONLY when a journey promo is active AND covers
-            the selected cadence; otherwise nothing (zero visual change).
-            Gradient amber→rose matches the existing savings badges. Honest by
-            design: the discount is the FIRST charge only (renewals at full
-            price), and the period label is cadence-accurate. */}
-        {(() => {
-          if (!activePromo || !selectedOption) return null;
+        {selectedOption ? (() => {
+          // Promo-aware headline price. When a journey promo covers the
+          // selected cadence we REPLACE the regular price line with the promo
+          // price — discounted first charge bold, full cadence price struck,
+          // plus a "מבצע {name}" badge and an honesty note. Crucially we DROP
+          // the 508-style marketing anchor in that case so two struck prices
+          // never stack (clean, unconfusing). With NO promo the line is exactly
+          // as before (struck anchor + full price + CMS note).
           const cad = selectedOption.cadence;
-          const first = activePromo.firstChargeByCadence[cad];
-          const original = activePromo.originalByCadence[cad];
-          if (!first || !original) return null;
-          const firstAmt = isHe ? first.ils : first.usd;
-          const origAmt = isHe ? original.ils : original.usd;
-          return (
-            <div
-              className="mt-5 rounded-2xl border border-amber-300/50 bg-gradient-to-r from-amber-400/20 to-rose-500/20 p-4 text-start"
-              role="note"
-            >
-              <span className="inline-flex items-center rounded-full bg-gradient-to-r from-amber-400 to-rose-500 px-3 py-1 text-[14px] font-bold text-white shadow">
-                {isHe ? "מבצע" : "Promo"} {activePromo.name}
-              </span>
-              <p className="mt-2.5 flex flex-wrap items-baseline gap-1.5">
-                <span className="text-[20px] font-semibold text-white">
-                  {firstPeriodLabel(cad, isHe)}
+          const promoFirst = activePromo?.firstChargeByCadence[cad];
+          const promoOriginal = activePromo?.originalByCadence[cad];
+          if (activePromo && promoFirst && promoOriginal) {
+            const firstAmt = isHe ? promoFirst.ils : promoFirst.usd;
+            const origAmt = isHe ? promoOriginal.ils : promoOriginal.usd;
+            return (
+              <div className="mt-6 text-start">
+                <span className="inline-flex items-center rounded-full bg-gradient-to-r from-amber-400 to-rose-500 px-3 py-1 text-[14px] font-bold text-white shadow">
+                  {isHe ? "מבצע" : "Promo"} {activePromo.name}
                 </span>
+                <p className="mt-2.5 flex flex-wrap items-baseline gap-1.5">
+                  <span className="text-[20px] font-medium text-white">
+                    {isHe ? "לתשלום" : "To pay"}
+                  </span>
+                  <span className="text-[20px] font-semibold text-white">
+                    {firstPeriodLabel(cad, isHe)}
+                  </span>
+                  {/* Discounted first charge — the emphasised, real price. */}
+                  <span className="font-extrabold leading-none text-white">
+                    <span className="text-[20px]">{sym}</span>
+                    <span className="text-[32px]">{fmt(firstAmt)}</span>
+                  </span>
+                  <span className="text-[20px] text-white/70">
+                    {isHe ? "במקום" : "instead of"}
+                  </span>
+                  {/* a11y: convey the strikethrough meaning to SRs, not by
+                      visual style alone (same posture as the anchor line). */}
+                  <span className="sr-only">{isHe ? "היה " : "was "}</span>
+                  <span className="text-[20px] font-medium text-white/60 line-through">
+                    {sym}
+                    {fmt(origAmt)}
+                  </span>
+                  <span className="text-[20px] font-semibold text-white">
+                    {periodLabel(cad)}
+                  </span>
+                </p>
+                <p className="mt-1.5 text-[20px] text-[#D8CFE6]">
+                  {isHe
+                    ? "מחיר לתשלום הראשון; החידושים מלאים."
+                    : "First-payment price; renewals at full price."}
+                </p>
+              </div>
+            );
+          }
+          return (
+            <div className="mt-6 text-start">
+              {/* Body (Assistant) font, not font-heading. Label + period in full
+                  white; the ₪ symbol renders smaller than the number. */}
+              <p className="flex flex-wrap items-baseline gap-1.5">
+                <span className="text-[20px] font-medium text-white">
+                  {isHe ? "לתשלום" : "To pay"}
+                </span>
+                {/* QA 2026-06-16 — struck anchor price (127 → 57). CMS-driven.
+                    a11y M4: /40→/60 for contrast + sr-only "היה" so the
+                    strikethrough's meaning isn't conveyed by visual style alone. */}
+                <span className="sr-only">{isHe ? "היה " : "was "}</span>
+                {/* ILS: struck original derived per cadence (weeklyBase × weeks),
+                    fixing the value that was stuck at ₪127 across all packages.
+                    USD/en is intentionally left on the CMS anchor — out of scope. */}
+                {isHe && ANCHOR_WEEKS_IN_PERIOD[selectedOption.cadence] ? (
+                  <span className="text-[20px] font-medium text-white/60 line-through">
+                    {sym}
+                    {fmt(
+                      ANCHOR_WEEKLY_BASE_ILS *
+                        ANCHOR_WEEKS_IN_PERIOD[selectedOption.cadence],
+                    )}
+                  </span>
+                ) : (
+                  <CmsText
+                    cmsKey="journeyAssessment.analysis.anchorPrice"
+                    as="span"
+                    className="text-[20px] font-medium text-white/60 line-through"
+                  />
+                )}
                 <span className="font-extrabold leading-none text-white">
                   <span className="text-[20px]">{sym}</span>
-                  <span className="text-[30px]">{fmt(firstAmt)}</span>
+                  <span className="text-[32px]">{fmt(amtOf(selectedOption))}</span>
                 </span>
-                <span className="text-[20px] text-white/70">
-                  {isHe ? "במקום" : "instead of"}
-                </span>
-                <span className="text-[20px] font-medium text-white/60 line-through">
-                  {sym}
-                  {fmt(origAmt)}
+                <span className="text-[20px] font-semibold text-white">
+                  {periodLabel(selectedOption.cadence)}
                 </span>
               </p>
-              <p className="mt-1.5 text-[16px] leading-snug text-white/75">
-                {isHe
-                  ? "המחיר המוזל לתשלום הראשון בלבד; החידושים במחיר המלא."
-                  : "Discounted first payment only; renewals at full price."}
+              <p className="mt-1 text-[20px] text-[#D8CFE6]">
+                <CmsText cmsKey="journeyAssessment.analysis.priceNote" />
               </p>
             </div>
           );
-        })()}
+        })() : null}
 
         {/* Value anchor (Itzik 2026-06-14) — an external cost reference to
             anchor the monthly price. Worded carefully: Mioshy is ongoing
