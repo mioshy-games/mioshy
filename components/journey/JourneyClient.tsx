@@ -9,7 +9,7 @@ import { QuestionStep } from "./QuestionStep";
 import { PriorityRankingStep } from "./PriorityRankingStep";
 import { InlineAuthStep } from "./InlineAuthStep";
 import { PaywallGateModal } from "./PaywallGateModal";
-import { AnalysisSummary } from "./AnalysisSummary";
+import { AnalysisSummary, type JourneyPromoSummary } from "./AnalysisSummary";
 import type { CadenceOption } from "@/lib/billing/pricing-validations";
 import {
   AssessmentInterstitial,
@@ -44,6 +44,9 @@ interface JourneyClientProps {
   journeySubscribed?: boolean;
   authenticated?: boolean;
   journeyCadences?: CadenceOption[];
+  /** Active journey marketing promo (server-computed), forwarded to
+   *  AnalysisSummary for the discount banner. null → no banner. */
+  activePromo?: JourneyPromoSummary | null;
   /** F3.1 — render source. Questions are loaded from the DB
    *  (journey_questions, JSON fallback) server-side and passed in, replacing
    *  the static questionnaire.json import for RENDER. likertLabels + gating
@@ -105,6 +108,7 @@ export function JourneyClient({
   journeySubscribed = false,
   authenticated = false,
   journeyCadences = [],
+  activePromo = null,
   questions,
   likertLabels,
   gating,
@@ -782,6 +786,7 @@ export function JourneyClient({
           locale={locale}
           journeySubscribed={journeySubscribed}
           journeyCadences={journeyCadences}
+          activePromo={activePromo}
         />
       </div>
     );

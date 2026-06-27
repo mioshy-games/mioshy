@@ -40,6 +40,8 @@ import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
 import type { Locale } from "@/lib/journey/types";
 import { listAllPrices } from "@/lib/billing/pricing-queries";
 import type { CadenceOption } from "@/lib/billing/pricing-validations";
+import { findActivePromo, applyDiscount } from "@/lib/billing/promos";
+import type { JourneyPromoSummary } from "@/components/journey/AnalysisSummary";
 
 // Force fresh render on EVERY request - never cache. Critical for an
 // auth-aware page: we don't want a stale Cookie+user pair to be served
@@ -510,6 +512,54 @@ export default async function JourneyAssessmentPage({
       is_default,
     }));
 
+  // ── Active journey marketing promo (marketing-discounts-spec) ────────────
+  // Compute the discounted FIRST charge per enabled cadence SERVER-SIDE, via
+  // the SAME applyDiscount the checkout uses (lib/billing/promos) so the
+  // banner price equals exactly what Cardcom will bill. findActivePromo +
+  // applyDiscount are server-only; we pass the plain result down as a prop and
+  // never duplicate the discount math on the client. Any lookup/compute
+  // failure must NEVER break the page → leave activePromo null (no banner).
+  let activePromo: JourneyPromoSummary | null = null;
+  try {
+    const promoClient = createServiceRoleClient();
+    if (promoClient) {
+      const { promo, warning } = await findActivePromo(promoClient, {
+        product: "journey",
+      });
+      if (warning) console.warn("[/journey/assessment] promo warning", warning);
+      if (promo) {
+        const firstChargeByCadence: JourneyPromoSummary["firstChargeByCadence"] = {};
+        const originalByCadence: JourneyPromoSummary["originalByCadence"] = {};
+        for (const c of journeyCadences) {
+          if (!c.enabled) continue;
+          const ils = applyDiscount({ amount: c.price_ils, currency: "ILS", promo });
+          const usd = applyDiscount({ amount: c.price_usd, currency: "USD", promo });
+          // Record the cadence only when the promo actually discounts at least
+          // one currency — mirrors checkout (applyDiscount returns the original
+          // amount + null promoId when the discount wouldn't apply).
+          if (ils.promoId || usd.promoId) {
+            firstChargeByCadence[c.cadence] = {
+              ils: ils.discountedAmount,
+              usd: usd.discountedAmount,
+            };
+            originalByCadence[c.cadence] = {
+              ils: ils.originalAmount,
+              usd: usd.originalAmount,
+            };
+          }
+        }
+        if (Object.keys(firstChargeByCadence).length > 0) {
+          activePromo = { name: promo.name, firstChargeByCadence, originalByCadence };
+        }
+      }
+    }
+  } catch (err) {
+    console.error(
+      "[/journey/assessment] active promo lookup failed — no banner",
+      err,
+    );
+  }
+
   // F3.2 — resolve the ACTIVE flow (short pre-purchase / full post-purchase /
   // single when unseeded) and serve only the UNANSWERED questions of the
   // active phase. Position is answer-driven (resume = first unanswered), so we
@@ -593,6 +643,7 @@ export default async function JourneyAssessmentPage({
         journeySubscribed={journeySubscribed}
         authenticated={!!user}
         journeyCadences={journeyCadences}
+        activePromo={activePromo}
         questions={flow.remaining}
         likertLabels={QUESTIONNAIRE.likert_labels}
         gating={QUESTIONNAIRE.gating}

@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>מיאושי — תוכנית עבודה ל-100 מנויים משלמים</title>
+<style>
+  :root{
+    --bg:#0f0a14; --panel:#1a1320; --panel2:#221829; --line:#33263d;
+    --ink:#f3eef7; --muted:#b9a9c9; --dim:#8a7a9b;
+    --accent:#e0457b; --accent2:#9b5de5; --gold:#f2b134; --green:#3ec98a;
+    --r:16px; --shadow:0 8px 30px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:radial-gradient(1200px 800px at 80% -10%,#2a1730 0,transparent 60%),var(--bg);
+    color:var(--ink); font-family:"Segoe UI","Heebo","Assistant",Arial,sans-serif;
+    line-height:1.7; font-size:17px;
+  }
+  .wrap{max-width:1080px; margin:0 auto; padding:0 22px}
+  header.hero{padding:64px 0 40px; text-align:center}
+  .eyebrow{color:var(--accent);font-weight:700;letter-spacing:.5px;font-size:14px;text-transform:uppercase}
+  h1{font-size:clamp(30px,5vw,48px); margin:.3em 0 .2em; line-height:1.15}
+  .sub{color:var(--muted); font-size:19px; max-width:680px; margin:0 auto}
+  .goalbar{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin:32px 0 0}
+  .goalbar .chip{background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:10px 18px;font-size:14px;color:var(--muted)}
+  .goalbar .chip b{color:var(--ink)}
+
+  nav.toc{position:sticky;top:0;z-index:10;background:rgba(15,10,20,.85);backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);padding:12px 0;margin:24px 0 0}
+  nav.toc .wrap{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+  nav.toc a{color:var(--muted);text-decoration:none;font-size:14px;padding:6px 12px;border-radius:999px;border:1px solid transparent}
+  nav.toc a:hover{color:var(--ink);border-color:var(--line);background:var(--panel)}
+
+  section{padding:46px 0 10px}
+  h2{font-size:28px;margin:0 0 6px;display:flex;align-items:center;gap:12px}
+  h2 .num{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:10px;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));font-size:16px;color:#fff;flex:none}
+  .lead{color:var(--muted);margin:0 0 22px;max-width:760px}
+
+  .principle{background:linear-gradient(135deg,#241733,#1a1320);border:1px solid var(--line);
+    border-radius:var(--r);padding:22px 24px;box-shadow:var(--shadow)}
+  .principle b{color:var(--gold)}
+
+  /* phases */
+  .phases{display:grid;gap:18px}
+  .phase{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow)}
+  .phase .top{display:flex;align-items:center;gap:16px;padding:18px 22px;border-bottom:1px solid var(--line);
+    background:linear-gradient(90deg,rgba(224,69,123,.12),transparent)}
+  .phase .mile{font-size:30px;font-weight:800;color:var(--accent);flex:none;min-width:96px}
+  .phase .top h3{margin:0;font-size:20px}
+  .phase .top .tag{color:var(--dim);font-size:14px}
+  .phase .body{display:grid;grid-template-columns:repeat(2,1fr);gap:0}
+  .cell{padding:16px 22px;border-top:1px solid var(--line)}
+  .cell:nth-child(odd){border-left:1px solid var(--line)}
+  .cell h4{margin:0 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.5px;color:var(--accent2)}
+  .cell.gate h4{color:var(--green)}
+  .cell p{margin:0;color:var(--muted);font-size:15.5px}
+  .cell.full{grid-column:1/-1}
+  @media(max-width:680px){.phase .body{grid-template-columns:1fr}.cell:nth-child(odd){border-left:none}}
+
+  /* journey timeline */
+  .journey{display:grid;gap:0;border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+  .stage{display:grid;grid-template-columns:160px 1fr 200px;gap:0;background:var(--panel)}
+  .stage+.stage{border-top:1px solid var(--line)}
+  .stage .name{padding:16px 18px;background:var(--panel2);font-weight:700;display:flex;align-items:center;gap:10px;border-left:1px solid var(--line)}
+  .stage .name .dot{width:10px;height:10px;border-radius:50%;background:var(--accent);flex:none}
+  .stage .do{padding:16px 18px;color:var(--muted);font-size:15.5px;border-left:1px solid var(--line)}
+  .stage .kpi{padding:16px 18px;font-size:14px;color:var(--gold)}
+  .stage .kpi span{color:var(--dim);display:block;font-size:12px;text-transform:uppercase;letter-spacing:.5px}
+  @media(max-width:680px){.stage{grid-template-columns:1fr}.stage .name,.stage .do{border-left:none;border-bottom:1px solid var(--line)}}
+
+  /* tracks */
+  .tracks{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .track{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:20px}
+  .track h3{margin:0 0 4px;font-size:18px}
+  .track .when{display:inline-block;font-size:12px;color:var(--green);border:1px solid var(--green);border-radius:999px;padding:2px 10px;margin-bottom:12px;opacity:.9}
+  .track ul{margin:0;padding-inline-start:18px;color:var(--muted);font-size:15px}
+  .track li{margin:6px 0}
+  @media(max-width:780px){.tracks{grid-template-columns:1fr}}
+
+  /* decision rules */
+  .rules{display:grid;gap:14px}
+  .rule{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px 22px}
+  .rule .q{font-weight:700;font-size:17px;color:var(--ink);margin:0 0 6px}
+  .rule .a{color:var(--muted);margin:0;font-size:15.5px}
+  .rule .a b{color:var(--gold)}
+  .rule .signal{margin-top:10px;font-size:14px;color:var(--dim);background:var(--panel2);border-radius:10px;padding:10px 14px}
+  .rule .signal b{color:var(--accent)}
+
+  /* whatsapp marathon */
+  .marathon{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+  .day{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 10px;text-align:center}
+  .day .d{font-size:12px;color:var(--accent);font-weight:700}
+  .day .t{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.4}
+  @media(max-width:780px){.marathon{grid-template-columns:repeat(2,1fr)}}
+
+  /* next steps */
+  .next{background:linear-gradient(135deg,#2a1019,#1a1320);border:1px solid var(--accent);border-radius:var(--r);padding:24px}
+  .next ol{margin:0;padding-inline-start:22px}
+  .next li{margin:10px 0;color:var(--ink)}
+  .next li span{color:var(--muted);font-size:15px}
+
+  /* funnel flow */
+  .flow{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin:8px 0}
+  .flow .fstep{display:flex;gap:14px;align-items:flex-start;padding:14px 18px;background:var(--panel)}
+  .flow .fstep+.fstep{border-top:1px solid var(--line)}
+  .flow .fstep .ic{flex:none;width:30px;height:30px;border-radius:8px;display:grid;place-items:center;font-size:13px;font-weight:700;background:var(--panel2);color:var(--accent2);border:1px solid var(--line)}
+  .flow .fstep .txt{flex:1}
+  .flow .fstep .txt b{color:var(--ink)}
+  .flow .fstep .txt .ev{color:var(--dim);font-size:13px}
+  .flow .fstep.warn{background:linear-gradient(90deg,rgba(224,69,123,.16),transparent)}
+  .flow .fstep.warn .ic{color:#fff;background:var(--accent);border-color:var(--accent)}
+  /* suspects */
+  .suspect{position:relative;padding-inline-start:62px}
+  .suspect .rank{position:absolute;inset-inline-start:18px;top:18px;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:15px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff}
+  .box{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px 22px;margin:6px 0}
+  .box h4{margin:0 0 10px;font-size:16px;color:var(--accent2)}
+  .box ul{margin:0;padding-inline-start:18px;color:var(--muted);font-size:15.5px}
+  .box li{margin:8px 0}
+  .box li b{color:var(--ink)}
+  footer{padding:50px 0 70px;text-align:center;color:var(--dim);font-size:14px}
+  .editnote{background:var(--panel2);border:1px dashed var(--line);border-radius:12px;padding:12px 18px;color:var(--muted);font-size:14px;margin:20px 0 0}
+  .num-pill{font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">מיאושי · תוכנית עבודה</div>
+    <h1>מ-0 ל-100 מנויים משלמים</h1>
+    <p class="sub">תוכנית עבודה לפי שלבים — עם תנאי מעבר ברורים, מסע לקוח, מסע עסקי וכללי החלטה לפרסום ולשימור. נקודת הפתיחה: 0 משלמים. היעד: 100.</p>
+    <div class="goalbar">
+      <div class="chip">מצב נוכחי: <b>0 משלמים</b></div>
+      <div class="chip">היעד: <b>100 משלמים</b></div>
+      <div class="chip">שלב נוכחי: <b>0 — הלקוח הראשון</b></div>
+      <div class="chip">צוואר הבקבוק: <b>ההצעה, לא המודעה</b></div>
+      <div class="chip">עודכן: <b>26.06.2026</b></div>
+    </div>
+  </div>
+</header>
+
+<nav class="toc">
+  <div class="wrap">
+    <a href="#principle">העיקרון המנחה</a>
+    <a href="#phases">חמשת השלבים</a>
+    <a href="#diagnose">אבחון: איפה נופלים</a>
+    <a href="#offer">ההצעה והתמחור</a>
+    <a href="#journey">מסע הלקוח</a>
+    <a href="#business">המסע העסקי</a>
+    <a href="#tracks">שלוש המסילות</a>
+    <a href="#rules">כללי החלטה</a>
+    <a href="#marathon">מרתון וואטסאפ</a>
+    <a href="#next">הצעדים הבאים</a>
+  </div>
+</nav>
+
+<div class="wrap">
+
+<section id="principle">
+  <h2><span class="num">★</span> העיקרון המנחה</h2>
+  <p class="lead">המספרים הקטנים הם שלב למידה, לא שלב צמיחה. עד 10 משלמים המטרה היא לא "למכור יותר" אלא <b>להבין</b> — מי משלם, למה, ומה עוצר את מי שלא. רק אחרי שהמשפך מוכח ויודעים להסביר אותו, מגדילים תקציב ומכניסים אוטומציה.</p>
+  <div class="principle">
+    <p style="margin:0 0 10px"><b>הכלל:</b> אל תבצעו אופטימיזציה למשהו שעוד אין לכם בו אות חיים. ריטרגטינג, lookalike, הגדלת תקציב ואוטומציה — כולם מחכים עד שיש מספיק נתון אמיתי שמצדיק אותם.</p>
+    <p style="margin:0;color:var(--muted)">בשלבים הראשונים אתם עובדים <b style="color:var(--gold)">ידנית ובגובה העיניים</b> (concierge): כל נרשם שלא שילם מקבל פנייה אישית. זה לא בזבוז זמן — זו הדרך הכי מהירה ללמוד למה אנשים כן ולא משלמים, וזה מה שיבנה את ההמרה האוטומטית בהמשך.</p>
+  </div>
+</section>
+
+<section id="phases">
+  <h2><span class="num">1</span> חמשת השלבים</h2>
+  <p class="lead">כל שלב הוא "מצב" עם תנאי כניסה ותנאי יציאה. לא עוברים לשלב הבא רק כי הגעתם למספר — עוברים כשגם הבנתם <b>למה</b> הגעתם אליו ויודעים לחזור על זה.</p>
+
+  <div class="phases">
+
+    <!-- Phase 0 -->
+    <div class="phase">
+      <div class="top">
+        <div class="mile num-pill">0 → 1</div>
+        <div><h3>הלקוח הראשון המשלם</h3><div class="tag">אות חיים · בדיקת MVP</div></div>
+      </div>
+      <div class="body">
+        <div class="cell"><h4>מטרה</h4><p>לסגור עסקה אחת בכסף אמיתי. שמישהו זר, לא חבר, מוציא כרטיס אשראי.</p></div>
+        <div class="cell"><h4>מה לומדים</h4><p>שיש בכלל ביקוש בתשלום. שהמוצר עובר את מבחן "שווה לי לשלם על זה".</p></div>
+        <div class="cell"><h4>רכישה</h4><p>הקמפיין הקיים בפייסבוק + המשחק החינמי כפיתיון. בלי לגעת בתקציב עדיין.</p></div>
+        <div class="cell"><h4>המרה</h4><p>ידני לחלוטין. כל נרשם שלא שילם → פנייה אישית בוואטסאפ או שיחת טלפון תוך 24 שעות.</p></div>
+        <div class="cell"><h4>מדד מרכזי</h4><p>כמה נרשמים נדרשו ל-משלם אחד (יחס הרשמה→תשלום בסיסי). זה הבייסליין שלכם.</p></div>
+        <div class="cell gate"><h4>תנאי מעבר לשלב הבא ✓</h4><p>לקוח אחד שילם, השלים onboarding, ויש לכם תיעוד של מה הוא עבר בדרך.</p></div>
+      </div>
+    </div>
+
+    <!-- Phase 1 -->
+    <div class="phase">
+      <div class="top">
+        <div class="mile num-pill">1 → 10</div>
+        <div><h3>10 הראשונים</h3><div class="tag">אימות MVP · זה לא מקרי</div></div>
+      </div>
+      <div class="body">
+        <div class="cell"><h4>מטרה</h4><p>10 משלמים — להוכיח שהראשון לא היה מזל, שיש משפך שחוזר על עצמו.</p></div>
+        <div class="cell"><h4>מה לומדים</h4><p>מי הלקוח האידאלי, מה הטריגר להמרה, ומהן הסיבות החוזרות לנטישה.</p></div>
+        <div class="cell"><h4>רכישה</h4><p>אותו קמפיין, תקציב נמוך וקבוע. כל שקל נספר. עדיין לא מגדילים.</p></div>
+        <div class="cell"><h4>המרה</h4><p>עדיין concierge ידני. כפתור "קביעת שיחה" לכל נרשם שלא שילם. ראיונות קצרים עם משלמים ועם נוטשים.</p></div>
+        <div class="cell"><h4>שימור (התחלה)</h4><p>להתחיל למדוד: האם הם חוזרים לשחק שבוע אחרי? זה הסיגנל האמיתי ל-product-market-fit.</p></div>
+        <div class="cell gate"><h4>תנאי מעבר ✓</h4><p>10 משלמים + תשובה ברורה ל"מי הלקוח" ו"מה גורם לו לשלם".</p></div>
+      </div>
+    </div>
+
+    <!-- Phase 2 -->
+    <div class="phase">
+      <div class="top">
+        <div class="mile num-pill">10 → 20</div>
+        <div><h3>חזרתיות ואוטומציה</h3><div class="tag">מהפכה מ-ידני ל-מערכת</div></div>
+      </div>
+      <div class="body">
+        <div class="cell"><h4>מטרה</h4><p>20 משלמים — להפוך את מה שעשיתם ביד למנגנון שעובד גם בלעדיכם.</p></div>
+        <div class="cell"><h4>מה לומדים</h4><p>אילו מסרים שכנעו בידיים — והאם הם עובדים גם אוטומטית.</p></div>
+        <div class="cell"><h4>רכישה</h4><p>עכשיו יש מספיק תנועה בפיקסל → <b style="color:var(--green)">זה הרגע להתחיל ריטרגטינג</b>, לא לפני.</p></div>
+        <div class="cell"><h4>המרה</h4><p>אוטומציה ראשונה: רצף וואטסאפ/מייל אוטומטי לנרשם שלא שילם, מבוסס על מה שלמדתם בשיחות.</p></div>
+        <div class="cell"><h4>שימור</h4><p>להשיק את מרתון הוואטסאפ 7 ימים כ-onboarding לכל משלם חדש.</p></div>
+        <div class="cell gate"><h4>תנאי מעבר ✓</h4><p>20 משלמים + מנוע המרה אוטומטי שעובד + מרתון 7 ימים רץ בלי התערבות ידנית.</p></div>
+      </div>
+    </div>
+
+    <!-- Phase 3 -->
+    <div class="phase">
+      <div class="top">
+        <div class="mile num-pill">20 → 50</div>
+        <div><h3>הסקייל הראשון</h3><div class="tag">להגדיל את מה שעובד</div></div>
+      </div>
+      <div class="body">
+        <div class="cell"><h4>מטרה</h4><p>50 משלמים — להוכיח שהמשפך רווחי וניתן להגדלה.</p></div>
+        <div class="cell"><h4>מה לומדים</h4><p>מה ה-LTV מול ה-CAC, ומהי תקופת ההחזר (payback) על כל לקוח.</p></div>
+        <div class="cell"><h4>רכישה</h4><p>להגדיל תקציב על מה שעובד. קהלים דומים (lookalike) מבוססי המשלמים. קריאייטיב חדש לרענון עייפות.</p></div>
+        <div class="cell"><h4>המרה</h4><p>אופטימיזציה של דף הנחיתה והתמחור. בדיקות A/B ראשונות.</p></div>
+        <div class="cell"><h4>שימור</h4><p>הפעלת מנוע החזרת רדומים (winback) ללידים ישנים שנרשמו ולא שילמו + מניעת נטישה אקטיבית.</p></div>
+        <div class="cell gate"><h4>תנאי מעבר ✓</h4><p>50 משלמים + יחס LTV:CAC בריא (יעד בסביבת 3:1) + נטישה חודשית יציבה.</p></div>
+      </div>
+    </div>
+
+    <!-- Phase 4 -->
+    <div class="phase">
+      <div class="top">
+        <div class="mile num-pill">50 → 100</div>
+        <div><h3>אופטימיזציה וצמיחה</h3><div class="tag">ערוצים נוספים + מנוף ויראלי</div></div>
+      </div>
+      <div class="body">
+        <div class="cell"><h4>מטרה</h4><p>100 משלמים — להגיע ליעד דרך גיוון ערוצים, לא רק עוד תקציב פייסבוק.</p></div>
+        <div class="cell"><h4>מה לומדים</h4><p>אילו ערוצים נוספים עובדים, והאם יש לולאה ויראלית (שיתוף בן/בת זוג, הפניות).</p></div>
+        <div class="cell"><h4>רכישה</h4><p>ריבוי קמפיינים וקהלים + ערוץ שני (גוגל / אינסטגרם אורגני / תוכן). מינוף שיתוף הזוגי שכבר קיים במוצר.</p></div>
+        <div class="cell"><h4>המרה</h4><p>אופטימיזציה מתמשכת על בסיס נתונים — לא ניחושים.</p></div>
+        <div class="cell"><h4>שימור</h4><p>מנוע שימור מלא: מרתון, סיכום שבועי, winback, אנטי-churn. הרבה מזה כבר קיים במערכת.</p></div>
+        <div class="cell gate"><h4>היעד ✓</h4><p>100 מנויים משלמים, עם משפך רווחי שאפשר להמשיך להזין.</p></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section id="diagnose">
+  <h2><span class="num">🔍</span> אבחון המשפך — איפה נופלים (חוקיות 1→10)</h2>
+  <p class="lead">המצב שלך עכשיו: כ-10,000 נחשפו, ~100 סיימו אבחון, 0 רכשו. זה לא כישלון — זה אבחון מדויק. יש כאן <b>שתי נזילות נפרדות</b>, ומטפלים בהן בסדר ההפוך מהאינטואיציה: קודם התחתית (100→0), רק אחר כך הראש (10,000→100).</p>
+
+  <div class="principle">
+    <p style="margin:0 0 8px"><b>כלל הכסף #1:</b> אל תשפוך עוד שקל על תנועה עד שתבין את 100→0.</p>
+    <p style="margin:0;color:var(--muted)">100 אנשים השקיעו מאמץ, ענו על אבחון שלם, ואף אחד לא קנה. זו <b style="color:var(--gold)">לא בעיית תנועה</b> — הקמפיין כבר עושה את שלו ומביא אנשים שמסיימים. הבעיה אחרי הקליק. כל תקציב נוסף עכשיו רק שורף כסף מהר יותר לתוך משפך שלא ממיר.</p>
+  </div>
+
+  <div class="lead" style="margin-top:26px;margin-bottom:8px"><b style="color:var(--ink)">המשפך כפי שהוא בנוי אצלך היום</b> (עם האירועים שכבר מותקנים):</div>
+  <div class="flow">
+    <div class="fstep"><div class="ic">1</div><div class="txt"><b>חשיפה במודעה</b> <span class="num-pill">— 10,000</span><div class="ev">Meta reach</div></div></div>
+    <div class="fstep"><div class="ic">2</div><div class="txt"><b>קליק → כניסה לאתר</b><div class="ev">PageView / Landing Page View · PostHog $pageview</div></div></div>
+    <div class="fstep"><div class="ic">3</div><div class="txt"><b>תחילת אבחון</b> (ענה על שאלה ראשונה)<div class="ev">StartAssessment — האירוע שנוסף עכשיו, ייתן לך "התחיל ולא סיים"</div></div></div>
+    <div class="fstep"><div class="ic">4</div><div class="txt"><b>סיום אבחון → מסך תוצאה</b> <span class="num-pill">— ~100</span><div class="ev">CompleteAssessment · אחרי המתנה של ~13–18 שניות לניתוח</div></div></div>
+    <div class="fstep warn"><div class="ic">!</div><div class="txt"><b>לחיצה על "הצטרפו"</b> — וכאן קיר ההרשמה<div class="ev">משתמש לא מחובר נשלח להרשמה, לא לתשלום</div></div></div>
+    <div class="fstep warn"><div class="ic">!</div><div class="txt"><b>הרשמה מלאה</b> (שם, מייל, נייד, סיסמה) → חזרה לאבחון → לחיצה שנייה<div class="ev">רק עכשיו מגיעים לדף התשלום</div></div></div>
+    <div class="fstep"><div class="ic">7</div><div class="txt"><b>דף תשלום Cardcom</b><div class="ev">InitiateCheckout — ⚠ לא נמדד מהמסלול של האבחון, ראה חשד #3</div></div></div>
+    <div class="fstep"><div class="ic">8</div><div class="txt"><b>תשלום</b> <span class="num-pill">— 0</span><div class="ev">Purchase (CAPI שרת, על webhook של Cardcom)</div></div></div>
+  </div>
+
+  <div class="lead" style="margin-top:30px;margin-bottom:10px"><b style="color:var(--ink)">חמשת החשודים — לפי סדר עדיפות לבדיקה</b> (מבוסס על קריאה של הקוד שלך, לאימות מול נתונים):</div>
+  <div class="rules">
+
+    <div class="rule suspect"><span class="rank">1</span>
+      <p class="q">האם Purchase נמדד? ✓ נבדק 26.06 — כן, עובד</p>
+      <p class="a">בדקנו ב-Events Manager: אירוע <b>Purchase פעיל ויורה דרך Conversions API</b>. זו <b>לא</b> בעיית טראקינג. אבל יש רק רכישה <b>אחת בכל החודש — והיא טסט של איציק עצמו</b>. כלומר: 0 לקוחות אמיתיים. המסקנה השתנתה — הבעיה אינה מדידה אלא <b style="color:var(--gold)">שאף אחד עוד לא קנה</b>, וזה מפנה את הזרקור להצעה ולתמחור (ראה סעיף "ההצעה והתמחור").</p>
+      <div class="signal"><b>השלכה קריטית לפרסום:</b> אי אפשר לאופטם קמפיין ל-Purchase כשיש 0 דוגמאות — ל-Meta אין ממה ללמוד. עד שיהיו רכישות אמיתיות, מאפטמים ל-<b>Complete registration</b> (18 אירועים בחודש, אות אמיתי).</div>
+    </div>
+
+    <div class="rule suspect"><span class="rank">2</span>
+      <p class="q">קיר ההרשמה ברגע הכי חם (חשד מס' 1 בחוויית המשתמש)</p>
+      <p class="a">בקוד: לחיצה על "הצטרפו" של מי שלא מחובר <b>לא לוקחת לתשלום אלא לטופס הרשמה מלא</b> (שם, מייל, נייד, סיסמה), ואז צריך לחזור לאבחון וללחוץ שוב. שני שלבים וטופס כבד בדיוק ברגע של כוונת הקנייה — זה רוצח המרות קלאסי.</p>
+      <div class="signal"><b>מה לבדוק/לשפר:</b> כמה מגיעים לדף ההרשמה ולא חוזרים? לשקול הרשמה מינימלית (מייל בלבד) או הרשמה תוך כדי תשלום, ולהסביר למה צריך להירשם.</div>
+    </div>
+
+    <div class="rule suspect"><span class="rank">3</span>
+      <p class="q">פער מדידה — InitiateCheckout לא נורה מהאבחון</p>
+      <p class="a">כפתור התשלום בדף תוצאת האבחון (המסלול הראשי שלך) <b>לא יורה את אירוע InitiateCheckout</b> — רק הכפתור שבדף השיווק /journey כן. כלומר אתה כרגע <b>עיוור</b> לשלב "הגיע לדף תשלום" מהמסלול שדרכו רוב האנשים עוברים.</p>
+      <div class="signal"><b>תיקון קצר בקוד</b> (להוסיף metaTrack/InitiateCheckout ב-startCheckout של AnalysisSummary) ייתן לך לראות בדיוק אם הנפילה היא <b>לפני</b> דף התשלום או <b>בתוכו</b> — הבדל ענק לאבחון.</div>
+    </div>
+
+    <div class="rule suspect"><span class="rank">4</span>
+      <p class="q">המתנה של ~13–18 שניות לניתוח</p>
+      <p class="a">אחרי סיום האבחון יש המתנה ארוכה עד שמסך התוצאה וההצעה מופיעים. חלק נושרים שם <b>לפני שראו את ההצעה בכלל</b>.</p>
+      <div class="signal"><b>איך לזהות:</b> ב-PostHog בדוק נשירה בין CompleteAssessment לבין צפייה במסך ההצעה. אם גבוה — לשפר את חוויית ההמתנה או לקצר את הניתוח.</div>
+    </div>
+
+    <div class="rule suspect"><span class="rank">5</span>
+      <p class="q">כמה אמין בכלל המספר "100"?</p>
+      <p class="a">אירוע CompleteAssessment סבל מבאג שספר רק <b>כשליש</b> מהפעמים עד 22.06.2026 (תוקן). כלומר בפועל כנראה סיימו אבחון יותר מ-100 — אולי קרוב ל-300. מהיום המספר אמין, אבל אל תסמוך על נתוני אבחון מלפני התיקון.</p>
+    </div>
+
+  </div>
+
+  <div class="lead" style="margin-top:30px;margin-bottom:8px"><b style="color:var(--ink)">PostHog — בדיוק מה לפתוח</b></div>
+  <div class="box">
+    <ul>
+      <li><b>Funnels</b> — בנה משפך עם השלבים למעלה. זה ה"איפה נופלים" המדויק: אחוז המרה ונשירה בין כל שלב. השלב שבו האחוז קורס = הבעיה.</li>
+      <li><b>Session Replay</b> — צפה בהקלטות של מי שסיים אבחון ולא קנה. <b style="color:var(--accent)">⚠ אזהרה:</b> ההקלטות אצלך ממוסכות לחלוטין — כל הטקסט מוסתר (פרטיות תוכן אינטימי). תראה צורות, גלילה, קליקים והיסוס — <b>לא את המילים</b>. מספיק כדי לראות "הגיעו לכפתור? גללו? נתקעו?", לא לקרוא תוכן.</li>
+      <li><b>Heatmaps / Clickmaps</b> — על מסך תוצאת האבחון ועל דף המחיר: האם בכלל גוללים עד ה-CTA? לוחצים עליו? לוחצים על משהו שאינו לחיץ?</li>
+      <li><b>Paths</b> — לאן אנשים הולכים אחרי האבחון. אם רובם יוצאים או חוזרים אחורה — המעבר להצעה הוא הבעיה.</li>
+    </ul>
+  </div>
+
+  <div class="box">
+    <h4>איפה רואים מה</h4>
+    <ul>
+      <li><b>כמה נרשמו / כמה שילמו (אמת מוחלטת):</b> דשבורד האדמין שלך (נתוני DB) — לא Meta, שם יש קירוב.</li>
+      <li><b>איפה נופלים במשפך:</b> PostHog Funnels + Meta Events Manager.</li>
+      <li><b>מה הם עשו בפועל:</b> PostHog Session Replay (ממוסך) + Heatmaps.</li>
+      <li>הערה טכנית: PostHog יוצר פרופיל אישי רק למשתמש מחובר (identified_only). אנונימי עדיין נמדד במשפך ובהקלטות דרך מזהה סשן.</li>
+    </ul>
+  </div>
+
+  <div class="rules" style="margin-top:24px">
+    <div class="rule">
+      <p class="q">מתי להתחיל לבדוק נתונים — ועל מה?</p>
+      <p class="a"><b>תחתית המשפך (100→0): עכשיו.</b> זה לא תלוי בקמפיין — כבר יש לך 100 שסיימו, מספיק כדי לחקור את החשודים למעלה היום.<br><b>נתוני קמפיין:</b> לא ביום הראשון (1–3 ימים = שלב למידה, כל עריכה מאפסת). קריאה ראשונה ביום 4–7.</p>
+      <div class="signal"><b>על מה לשים לב לאורך המשפך:</b> CTR (איכות מודעה/הצעה) · CPM (תחרותיות קהל) · LPV מול קליקים (מהירות דף) · StartAssessment→CompleteAssessment · CompleteAssessment→Purchase · Frequency מעל ~2.5 (שחיקת קהל).</div>
+    </div>
+    <div class="rule">
+      <p class="q">מתי לשנות קמפיין / מתי כסף "מבוזבז"?</p>
+      <p class="a">למקרה שלך עכשיו: <b>אל תשנה קמפיין ואל תוסיף תקציב</b> — הוא לא הבעיה. הבעיה אחרי הקליק. רף פסילה לקמפיין (כשתגיע לזה): הוצאת <b>פי-3 מ-CPA היעד</b> בלי רכישה — ורק אחרי שווידאת שהטראקינג תקין.</p>
+      <div class="signal">התרחישים המלאים (עובד / מדשדש / לא עובד) כבר כתובים אצלך ב-<b>תוכנית-עבודה-קמפיין-רכישה.md</b>. המסמך הזה משלים אותו בצד המשפך וה-PostHog.</div>
+    </div>
+  </div>
+
+  <div class="lead" style="margin-top:30px;margin-bottom:8px"><b style="color:var(--ink)">חוקיות הלקוח הראשון (0→1)</b></div>
+  <div class="box">
+    <ul>
+      <li><b>תנאי קדם:</b> ודא ש-Purchase נמדד (חשד #1) — בלי זה אתה עף עיוור.</li>
+      <li><b>פעולה:</b> כל אחד מ-100 מסיימי האבחון הוא ליד חם. פנה אליהם ידנית / הצע שיחה. אחד מהם יכול להיות הלקוח הראשון — וגם ילמד אותך למה הם לא קנו לבד.</li>
+      <li><b>אות הצלחה:</b> רכישה אחת + הבנה ברורה מה שכנע (או מה חסם).</li>
+    </ul>
+  </div>
+
+  <div class="lead" style="margin-top:18px;margin-bottom:8px"><b style="color:var(--ink)">חוקיות 10 הראשונים (1→10)</b></div>
+  <div class="box">
+    <ul>
+      <li><b>אל תיגע בקמפיין</b> עד שההמרה עובדת. תנועה לתוך משפך שבור = בזבוז.</li>
+      <li><b>תקן חשד אחד בכל פעם</b> ומדוד שוב — בדיוק כמו כלל "שינוי בודד" בתוכנית הקמפיין. אחרת לא תדע מה עזר.</li>
+      <li><b>ראיין כל מי שקנה וכל מי שנטש</b> — שתי קבוצות ממש מלמדות.</li>
+      <li><b>תנאי מעבר:</b> 10 משלמים + יחס סיום-אבחון→רכישה שאינו אפס וניתן לחזרה.</li>
+    </ul>
+  </div>
+
+  <div class="editnote">ההערות על קיר ההרשמה ועל InitiateCheckout נובעות מקריאה ישירה של הקוד (AnalysisSummary, JourneyCheckoutButton). הן חשדות מבוססים — לאימות מול PostHog/Events Manager לפני תיקון. אם תרצה, אפשר להפוך כל אחד מהם למשימת פיתוח קצרה.</div>
+</section>
+
+<section id="offer">
+  <h2><span class="num">💳</span> ההצעה והתמחור — צוואר הבקבוק האמיתי</h2>
+  <p class="lead">מסקנת ה-26.06: <b>המדיה לא הבעיה.</b> רכישת המדיה זולה ואיכותית — CPM ₪8.68, CPC ₪0.48, CTR לינק 1.79%, ומעבר קליק→עמוד 85%. אנשים מתעניינים ומגיעים. הכסף דולף <b>אחרי הקליק</b>, וצוואר הבקבוק הוא הקפיצה מתנועה קרה למנוי יקר.</p>
+
+  <div class="principle">
+    <p style="margin:0 0 8px"><b>הבעיה:</b> הדף מבקש ממישהו שהרגע הגיע מפרסומת, למותג שלא מכיר, להתחייב ל-<b>₪222 בחודש</b> או <b>₪597 לרבעון מראש</b> (האופציה שמודגשת כ"מומלץ"). זו הבקשה הכי כבדה שאפשר לבקש מתנועה קרה.</p>
+    <p style="margin:0;color:var(--muted)">תנועה קרה כמעט אף פעם לא מתחייבת למאות שקלים בביקור ראשון. זה מסביר את ה-0 רכישות הרבה יותר טוב מ"המודעה לא טובה".</p>
+  </div>
+
+  <div class="lead" style="margin-top:26px;margin-bottom:8px"><b style="color:var(--ink)">ההחלטה: נקודת כניסה בלי חיכוך</b></div>
+  <div class="rules">
+    <div class="rule">
+      <p class="q">חודש ראשון ב-50% הנחה (יולי) — הבחירה למוצר הליווי ✓</p>
+      <p class="a">למה דווקא חודש ולא שבוע: ליווי זוגי הוא תהליך של חודשים. הדף עצמו מבטיח "שינוי כבר בחודש הראשון". שבוע לא מספיק כדי לחוות ערך — חודש כן. אז <b>~₪111 לחודש ראשון</b> נותן מספיק זמן להתאהב. פחות כמות, יותר retention.</p>
+      <div class="signal"><b>בונוס:</b> זו רכישה אמיתית שיורה אירוע Purchase מיד → סוף סוף אות לפייסבוק. <b>תחום בזמן ("יולי בלבד")</b> = דחיפות. <b>שקיפות:</b> ברור שמתחדש ב-₪222 אחרי.</div>
+    </div>
+    <div class="rule">
+      <p class="q">להריץ רק עם ההנחה — לא בלי, לא A/B ✓</p>
+      <p class="a">מחיר מלא מתנועה קרה כבר נתן 0 רכישות; אין טעם לשחזר. אנחנו בשלב <b>ולידציה, לא אופטימיזציית רווח</b> — המטרה להשיג את הרכישות הראשונות ואת האות. בתקציב ₪60/יום אין מספיק נפח ל-A/B משמעותי, אז <b>הצעה אחת ברורה</b>, לא פיצול.</p>
+      <div class="signal">בדיקת מחיר מלא מול הנחה — בעתיד, כשיהיה זרם רכישות. לא עכשיו. ואל תהפוך את ההנחה לקבועה (לא לאמן את השוק לחכות להנחות).</div>
+    </div>
+    <div class="rule">
+      <p class="q">הרבעוני והשנתי — עוגן ו-upsell, לא ברירת מחדל</p>
+      <p class="a">הרבעוני (₪597) הוא נכס ל-LTV — אבל לא כנקודת כניסה. <b>הורד אותו מהדגשת ה"מומלץ" בדף הקר</b>, השאר אותו כעוגן מחיר (ה-₪38/שבוע שנתי גורם לחודשי להיראות סביר), ומכור אותו ברגע <b>החידוש</b> — אחרי שהלקוח חווה ערך. שם מישהו ישמח להתחייב תמורת הנחה. אפשר שהמומחה האישי יציע שדרוג אחרי חודש טוב.</p>
+    </div>
+    <div class="rule">
+      <p class="q">שבוע חינם עם אשראי — נשקל, נדחה (בינתיים)</p>
+      <p class="a">מודל לגיטימי ומוכח, אבל למצב הנוכחי תשלום זול ראשון עדיף: הוא <b>יוצר אות רכישה מיד</b> (חינם לא), <b>מאמת מוכנות לשלם</b> (השאלה האמיתית), ו<b>סיכון chargeback נמוך</b> יותר בחשבון חדש. אם בכל זאת — חובה: אשראי נשמר בלי חיוב, מייל תזכורת לפני החיוב, וביטול בלחיצה.</p>
+    </div>
+  </div>
+
+  <div class="box" style="margin-top:22px">
+    <h4>מה עוד חסר בדף ההמרה (לפי עדיפות)</h4>
+    <ul>
+      <li><b>הוכחה חברתית:</b> אין המלצות אמיתיות של זוגות, שמות/פנים של מומחים, ביקורות. מותג חדש שמבקש מנוי חייב אמון לפני שמשלמים.</li>
+      <li><b>אחריות אמיתית:</b> "ביטול בכל עת" ≠ "החזר כספי". אחריות 14/30 יום מורידה סיכון לקונה ראשון.</li>
+      <li><b>פחות החלטות בדף הקר:</b> 3 מדרגות + upsell לאבחון מלא = שיתוק. הצעה אחת ברורה ממירה טוב יותר; את השדרוג שומרים לרגע החידוש.</li>
+    </ul>
+  </div>
+
+  <div class="rule" style="margin-top:18px">
+    <p class="q">המדד היחיד שקובע אם זה עובד</p>
+    <p class="a"><b>Retention מחודש 1 לחודש 2</b> — כשהמחיר עולה מ-₪111 ל-₪222. אם רובם עוזבים שם → קנית ציידי-הנחות, והבעיה היא הערך/החוויה, לא המחיר. אם נשארים → יש לך מודל.</p>
+    <div class="signal"><b>תזכורת ממסע ההמרה:</b> איציק ציין שמניסיון, ~80% שלא שילמו מיד לא חוזרים לשלם. לכן הביקור הראשון והחוויה בחודש הראשון הם הכל — אין "נציל אותם אחר כך".</div>
+  </div>
+  <div class="editnote">החלטות התמחור צריכות תיאום עם המתכנת: חודש ראשון מוזל ואז חזרה למחיר מלא חייב להיתמך במנגנון החיוב השבועי של Cardcom. שווה לוודא לפני השקה.</div>
+</section>
+
+<section id="journey">
+  <h2><span class="num">2</span> מסע הלקוח</h2>
+  <p class="lead">מהרגע שזוג נחשף אליכם ועד שהוא הופך לשגריר. בכל תחנה — מה הלקוח עושה, מה אתם עושים, ומה המדד שמעניין אתכם שם.</p>
+  <div class="journey">
+    <div class="stage"><div class="name"><span class="dot"></span>מודעות</div><div class="do">נחשפים למודעה בפייסבוק / אינסטגרם. כותרת שמדברת על זוגיות מלאת אינטימיות.</div><div class="kpi"><span>מדד</span>CTR · עלות לקליק</div></div>
+    <div class="stage"><div class="name"><span class="dot"></span>סקרנות</div><div class="do">משחקים במשחק החינמי — חווים את הטעם בלי מחויבות. זה ראש המשפך הוויראלי.</div><div class="kpi"><span>מדד</span>% שמסיימים סבב · שיתופים</div></div>
+    <div class="stage"><div class="name"><span class="dot"></span>שיקול</div><div class="do">נרשמים ומשלימים פרופיל חלקי. כאן נכנס ה-CTA לאחר הסבב השלישי.</div><div class="kpi"><span>מדד</span>% הרשמה · השלמת פרופיל</div></div>
+    <div class="stage"><div class="name"><span class="dot"></span>המרה</div><div class="do">משלמים. בשלבים מוקדמים — אחרי פנייה אישית/שיחת טלפון. בהמשך — אחרי רצף אוטומטי.</div><div class="kpi"><span>מדד</span>הרשמה→תשלום % · CAC</div></div>
+    <div class="stage"><div class="name"><span class="dot"></span>קליטה</div><div class="do">מרתון וואטסאפ 7 ימים בונה הרגל בשבוע הראשון — התקופה הקריטית ביותר לשימור.</div><div class="kpi"><span>מדד</span>שימור שבוע 1</div></div>
+    <div class="stage"><div class="name"><span class="dot"></span>שימור</div><div class="do">חוזרים לשחק שבועית. סיכום שבועי, אבני דרך, ומניעת נטישה כשמזהים ירידה.</div><div class="kpi"><span>מדד</span>נטישה חודשית · LTV</div></div>
+    <div class="stage"><div class="name"><span class="dot"></span>שגרירות</div><div class="do">משתפים את בן/בת הזוג ומפנים זוגות נוספים. הלולאה הוויראלית והזולה ביותר.</div><div class="kpi"><span>מדד</span>שיתופים · הפניות שהומרו</div></div>
+  </div>
+</section>
+
+<section id="business">
+  <h2><span class="num">3</span> המסע העסקי</h2>
+  <p class="lead">איך אופן העבודה שלכם משתנה לאורך הדרך. הטעות הנפוצה היא לעבוד במצב "סקייל" כשעדיין צריך להיות במצב "למידה".</p>
+  <div class="phases">
+    <div class="phase"><div class="top"><div class="mile" style="font-size:18px;min-width:120px">שלב 0–1</div><div><h3>מצב למידה</h3><div class="tag">ידני · גובה עיניים</div></div></div>
+      <div class="body"><div class="cell full"><p style="color:var(--muted);margin:0">עובדים אחד-על-אחד עם כל לקוח. מטרה: להבין, לא לגדול. כל שיחה היא מחקר. בלי אוטומציות, בלי הגדלת תקציב, בלי ריטרגטינג.</p></div></div>
+    </div>
+    <div class="phase"><div class="top"><div class="mile" style="font-size:18px;min-width:120px">שלב 10–20</div><div><h3>מצב חזרתיות</h3><div class="tag">ממירים ידע לאוטומציה</div></div></div>
+      <div class="body"><div class="cell full"><p style="color:var(--muted);margin:0">לוקחים את מה שעבד בידיים והופכים אותו למערכת: רצף המרה אוטומטי, מרתון onboarding, וריטרגטינג ראשון. עדיין שומרים על מגע אישי בנקודות קריטיות.</p></div></div>
+    </div>
+    <div class="phase"><div class="top"><div class="mile" style="font-size:18px;min-width:120px">שלב 20–50</div><div><h3>מצב סקייל</h3><div class="tag">מגדילים את המנוע</div></div></div>
+      <div class="body"><div class="cell full"><p style="color:var(--muted);margin:0">מגדילים תקציב על המנצחים, פותחים קהלים דומים, מרעננים קריאייטיב, ומפעילים שימור והחזרת רדומים. מתחילים לעבוד לפי יחידות כלכלה (LTV:CAC), לא לפי תחושות.</p></div></div>
+    </div>
+    <div class="phase"><div class="top"><div class="mile" style="font-size:18px;min-width:120px">שלב 50–100</div><div><h3>מצב גיוון</h3><div class="tag">ערוצים ולולאות</div></div></div>
+      <div class="body"><div class="cell full"><p style="color:var(--muted);margin:0">מפסיקים להישען על ערוץ אחד. מוסיפים ערוץ שני, ממנפים את השיתוף הזוגי כלולאה ויראלית, ומריצים דשבורד שמנהל החלטות. השימור הופך למנוע צמיחה בפני עצמו.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="tracks">
+  <h2><span class="num">4</span> שלוש המסילות המקבילות</h2>
+  <p class="lead">לאורך כל השלבים רצות שלוש מסילות. הטבלה למעלה אומרת <b>איפה אתם</b>; המסילות אומרות <b>על מה עובדים בכל רגע</b>. שימו לב מתי כל מסילה נכנסת לפעולה.</p>
+  <div class="tracks">
+    <div class="track">
+      <h3>רכישה</h3>
+      <div class="when">פעיל מהיום</div>
+      <ul>
+        <li>קמפיין פייסבуק קיים + משחק חינמי כראש משפך</li>
+        <li>ריטרגטינג — נכנס בשלב 10→20 (כשיש מספיק פיקסל)</li>
+        <li>Lookalike + קריאייטיב חדש — שלב 20→50</li>
+        <li>ערוץ שני (גוגל/אורגני/תוכן) — שלב 50→100</li>
+      </ul>
+    </div>
+    <div class="track">
+      <h3>המרה</h3>
+      <div class="when">פעיל מהיום</div>
+      <ul>
+        <li>פנייה ידנית + כפתור שיחה לכל נרשם שלא שילם</li>
+        <li>ראיונות עם משלמים ונוטשים — שלב 1→10</li>
+        <li>רצף אוטומטי (וואטסאפ/מייל) — שלב 10→20</li>
+        <li>A/B על דף נחיתה ותמחור — שלב 20→50</li>
+      </ul>
+    </div>
+    <div class="track">
+      <h3>שימור והחזרה</h3>
+      <div class="when">נכנס בשלב 10→20</div>
+      <ul>
+        <li>מדידת שימור שבוע-1 — מתחיל בשלב 1→10</li>
+        <li>מרתון וואטסאפ 7 ימים — שלב 10→20</li>
+        <li>החזרת רדומים (winback) — שלב 20→50</li>
+        <li>סיכום שבועי + אנטי-churn — שלב 50→100</li>
+      </ul>
+    </div>
+  </div>
+  <div class="editnote">הערה: חלק ניכר מתשתית השימור (סיכום שבועי, זיהוי נטישה, שיתוף בן/בת זוג, אבני דרך) כבר קיים במערכת. העבודה ברובה היא <b>להפעיל אותו בשלב הנכון</b>, לא לבנות מאפס.</div>
+</section>
+
+<section id="rules">
+  <h2><span class="num">5</span> כללי החלטה — ה"מתי"</h2>
+  <p class="lead">תשובות לשאלות שהעלית, כקריטריונים ברורים ולא כתחושות. כל החלטה מקבלת טריגר מספרי.</p>
+  <div class="rules">
+
+    <div class="rule">
+      <p class="q">האם מיצינו את הקמפיין בפייסבוק?</p>
+      <p class="a">לא לפי תחושה — לפי סימנים. קמפיין נחשב <b>מתעייף</b> כשכמה מהסימנים מופיעים יחד לאורך כמה ימים.</p>
+      <div class="signal"><b>סימני עייפות:</b> תדירות (frequency) חוצה ~2.5–3 · עלייה ב-CPM · ירידה ב-CTR · עלייה ב-CPA · פחות תוצאות באותו תקציב. כשרואים את זה — לא בהכרח לכבות, אלא <b>לרענן קריאייטיב</b> קודם.</div>
+    </div>
+
+    <div class="rule">
+      <p class="q">מתי לעשות קמפיין / קריאייטיב חדש?</p>
+      <p class="a">שתי טריגרים: <b>(א)</b> כשמופיעים סימני העייפות שלמעלה, או <b>(ב)</b> באופן יזום כל כמה שבועות לרענון, גם אם הביצועים סבירים. מתחילים מקריאייטיב חדש על אותו קהל לפני שמחליפים קהל שלם.</p>
+    </div>
+
+    <div class="rule">
+      <p class="q">מתי לבחון ריטרגטינג / רימרקטינג?</p>
+      <p class="a">רק כשיש <b>מספיק קהל בפיקסל</b> כדי שזה ישתלם — אחרת אתם מפרסמים לחלל ריק. הכלל: כש-יש מסה של מבקרים שנכנסו ולא המירו (סדר גודל של אלף+ ואירועי הרשמה מספקים). בפועל זה <b>שלב 10→20</b>, לא לפני.</p>
+      <div class="signal"><b>למה לא קודם:</b> ריטרגטינג מוקדם מדי שורף כסף על קהל זעיר. עד אז — כל התקציב לקהל קר + טיפול ידני בנרשמים.</div>
+    </div>
+
+    <div class="rule">
+      <p class="q">מתי לאסוף לידים וליצור קשר?</p>
+      <p class="a"><b>מהיום הראשון.</b> כל מי שנרשם והשלים פרטים אבל לא שילם הוא ליד חם. בשלבים מוקדמים — פנייה ידנית תוך 24 שעות. בהמשך — רצף אוטומטי שמבוסס על מה שלמדתם בשיחות הידניות.</p>
+    </div>
+
+    <div class="rule">
+      <p class="q">כפתור "קביעת שיחה טלפונית" לנרשם שלא שילם?</p>
+      <p class="a"><b>כן, מומלץ.</b> במיוחד בשלבים 0–10 זה הזהב שלכם: כל שיחה היא גם ניסיון לסגור וגם מחקר על מה שעוצר אנשים. כפתור קביעת שיחה לכל נרשם-שלא-שילם, ידני בהתחלה, ובהמשך עם תזכורת אוטומטית. אם השיחות ממירות — זה גם רמז שכדאי מגע אנושי גם בסקייל.</p>
+    </div>
+
+    <div class="rule">
+      <p class="q">לאיזה אירוע לאפטם — Purchase או הרשמה?</p>
+      <p class="a"><b>הרשמה (Complete registration), בינתיים.</b> אי אפשר לאפטם ל-Purchase עם 0 רכישות — ל-Meta אין דוגמה של קונה ללמוד ממנה. הרשמה יש לה נפח אמיתי (18/חודש) ואות אמין. <b>אחרי</b> שההצעה המוזלת תתחיל לייצר רכישות אמיתיות — עוברים/מוסיפים אופטימיזציה ל-Purchase.</p>
+      <div class="signal"><b>סיכון לדעת מראש:</b> אופטימיזציה להרשמה מביאה "ממלאי טפסים", לא בהכרח קונים. המבחן הוא יחס הרשמה→תשלום. אם נמוך — הבעיה בהצעה/בדף, לא באירוע.</div>
+    </div>
+
+    <div class="rule">
+      <p class="q">להריץ קמפיין רכישה וקמפיין הרשמה במקביל?</p>
+      <p class="a"><b>לא.</b> שני קמפיינים לאותו קהל (IL, רחב, Advantage+) גורמים ל-<b>חפיפת מכרזים</b> — הם מתחרים זה בזה, מייקרים עלויות ומפצלים אות. הרץ קמפיין אחד (הרשמה) כרגע; החזר קמפיין רכישה רק אחרי שמעקב הרכישות מקבל אות אמיתי מההצעה החדשה.</p>
+    </div>
+
+    <div class="rule">
+      <p class="q">עצרנו קמפיין רכישה אחרי 14 שעות — טעות?</p>
+      <p class="a">במקרה הזה <b>לא</b> — אבל מהסיבה הנכונה. בדרך כלל 14 שעות זה מוקדם מדי לשפוט (לא יצא מלמידה, כל עצירה מאפסת). ההבחנה: קמפיין שצריך <b>עוד זמן</b> — תן לו זמן. קמפיין ש<b>מבנית לא יכול לעבוד</b> (אין לו אות, כמו Purchase עם 0 רכישות) — אין טעם בזמן, מתקנים את המבנה. זה היה השני.</p>
+    </div>
+
+  </div>
+</section>
+
+<section id="marathon">
+  <h2><span class="num">6</span> מרתון וואטסאפ — 7 ימים</h2>
+  <p class="lead">רצף onboarding לזוג חדש בשבוע הראשון — התקופה שמכריעה אם הם יישארו. אותו רעיון, בגרסה אחרת, משמש גם להחזרת לידים רדומים. זוהי טיוטת שלד לעיצוב התוכן.</p>
+  <div class="marathon">
+    <div class="day"><div class="d">יום 1</div><div class="t">ברוכים הבאים + המשחק הראשון לעשות יחד הערב</div></div>
+    <div class="day"><div class="d">יום 2</div><div class="t">טיפ קצר על אינטימיות + הזמנה חזרה</div></div>
+    <div class="day"><div class="d">יום 3</div><div class="t">אתגר זוגי קליל לביצוע</div></div>
+    <div class="day"><div class="d">יום 4</div><div class="t">סיפור/עדות קצרה של זוג אחר</div></div>
+    <div class="day"><div class="d">יום 5</div><div class="t">תזכורת לשתף את בן/בת הזוג</div></div>
+    <div class="day"><div class="d">יום 6</div><div class="t">משחק "סוף שבוע" מיוחד</div></div>
+    <div class="day"><div class="d">יום 7</div><div class="t">סיכום השבוע + מה מחכה הלאה</div></div>
+  </div>
+  <div class="editnote">גרסת <b>החזרת רדומים</b>: אותו מבנה, אבל ממוקד למי שנרשם ולא שילם — מתחיל בהצעת ערך/תזכורת לטעם שכבר חוו, ומשלב את כפתור קביעת השיחה. נכנס לפעולה בשלב 20→50.</div>
+</section>
+
+<section id="next">
+  <h2><span class="num">7</span> הצעדים הבאים — השבוע</h2>
+  <div class="next">
+    <ol>
+      <li>להשיק את הצעת הכניסה: <b>חודש ראשון ב-50% (יולי)</b>, ביטול חופשי, שקיפות על החידוש. <span>זה הצעד הכי משפיע — מוריד את צוואר הבקבוק ויוצר אות רכישה ראשון.</span></li>
+      <li>להוריד את הרבעוני מ"מומלץ" בדף הקר, ולהדגיש את ההצעה המוזלת. <span>רבעוני/שנתי נשארים כעוגן + upsell לחידוש.</span></li>
+      <li>להעלות קמפיין אחד שמאפטם ל-<b>Complete registration</b> (לא Purchase, לא במקביל). <span>אירוע עם אות אמיתי שיכול להפיץ וללמוד.</span></li>
+      <li>להקים מעקב פשוט: כל נרשם שלא שילם, עם תאריך ופרטי קשר + כפתור "קביעת שיחה". <span>גיליון מספיק; פנייה ידנית תוך 24 שעות.</span></li>
+      <li>לחבר עם המתכנת: חודש מוזל→מחיר מלא ב-Cardcom, ולוודא ש-Purchase יורה על כל תשלום אמיתי. <span>בלי זה אין מעקב רכישות.</span></li>
+      <li>למדוד את המדד שקובע: <b>retention חודש 1 → חודש 2</b>. <span>שם מתברר אם יש מודל או רק ציידי-הנחות.</span></li>
+    </ol>
+  </div>
+  <div class="editnote">זו תוכנית חיה. נעדכן אותה תוך כדי — נסמן שלבים שהושלמו, נכוונן מספרים לפי מה שלומדים בשטח, ונוסיף כלים (ערוצים, אוטומציות) כשמגיע הרגע שלהם.</div>
+</section>
+
+</div>
+
+<footer>
+  מיאושי · יוצרים זוגיות מלאת אינטימיות · תוכנית עבודה מ-0 ל-100 מנויים משלמים · גרסה 1.1 — 26.06.2026
+</footer>
+</body>
+</html>

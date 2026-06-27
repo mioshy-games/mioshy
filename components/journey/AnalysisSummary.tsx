@@ -25,6 +25,36 @@ import { useCmsText } from "@/hooks/useCmsText";
 import { CmsText } from "@/components/cms/CmsText";
 import type { CadenceOption } from "@/lib/billing/pricing-validations";
 
+/**
+ * Active journey marketing-promo summary, computed SERVER-SIDE (the promo
+ * lookup + discount math are server-only). For each enabled cadence it carries
+ * the discounted FIRST-charge price and the full (pre-discount) price, per
+ * currency — derived via the same applyDiscount the checkout uses, so the
+ * banner shows exactly what Cardcom will charge. null when no journey promo is
+ * active. See app/[locale]/journey/assessment/page.tsx and lib/billing/promos.
+ */
+export type JourneyPromoSummary = {
+  name: string;
+  firstChargeByCadence: Record<string, { ils: number; usd: number }>;
+  originalByCadence: Record<string, { ils: number; usd: number }>;
+};
+
+// "First period only" label per cadence — the promo discounts only the first
+// charge; renewals are full price, so we say so honestly (and per-cadence-
+// accurate, not a blanket "first month" that would be wrong for yearly).
+function firstPeriodLabel(cadence: string, isHe: boolean): string {
+  switch (cadence) {
+    case "yearly":
+      return isHe ? "שנה ראשונה" : "first year";
+    case "quarterly":
+      return isHe ? "רבעון ראשון" : "first quarter";
+    case "weekly":
+      return isHe ? "שבוע ראשון" : "first week";
+    default:
+      return isHe ? "חודש ראשון" : "first month";
+  }
+}
+
 // C2.4 cadence picker — precise weeks per cadence (internal math; display
 // rounds to whole units), and stable ordering.
 const WEEKS_PER_CADENCE: Record<string, number> = {
@@ -67,6 +97,9 @@ interface AnalysisSummaryProps {
    *  journey access both correctly read as subscribed. */
   journeySubscribed?: boolean;
   journeyCadences?: CadenceOption[];
+  /** Active journey promo (server-computed) — drives the discount banner in
+   *  the OfferCard. null/undefined → no banner, zero visual change. */
+  activePromo?: JourneyPromoSummary | null;
 }
 
 /**
@@ -91,6 +124,7 @@ export function AnalysisSummary({
   locale,
   journeySubscribed = false,
   journeyCadences = [],
+  activePromo = null,
 }: AnalysisSummaryProps) {
   const [checkoutBusy, setCheckoutBusy] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
@@ -669,6 +703,7 @@ export function AnalysisSummary({
           journeyCadences={journeyCadences}
           selectedCadence={selectedCadence}
           onSelectCadence={setSelectedCadence}
+          activePromo={activePromo}
         />
       )}
 
@@ -803,6 +838,7 @@ function OfferCard({
   journeyCadences,
   selectedCadence,
   onSelectCadence,
+  activePromo,
 }: {
   checkoutBusy: boolean;
   checkoutError: string | null;
@@ -814,6 +850,7 @@ function OfferCard({
   journeyCadences: CadenceOption[];
   selectedCadence: string;
   onSelectCadence: (cadence: string) => void;
+  activePromo: JourneyPromoSummary | null;
 }) {
   // ── C2.4 cadence picker derived values ────────────────────────────────
   const sym = isHe ? "₪" : "$";
@@ -995,6 +1032,54 @@ function OfferCard({
             </p>
           </div>
         ) : null}
+
+        {/* Active marketing promo banner — server-computed (findActivePromo +
+            applyDiscount), so the discounted first charge equals what checkout
+            will bill. Renders ONLY when a journey promo is active AND covers
+            the selected cadence; otherwise nothing (zero visual change).
+            Gradient amber→rose matches the existing savings badges. Honest by
+            design: the discount is the FIRST charge only (renewals at full
+            price), and the period label is cadence-accurate. */}
+        {(() => {
+          if (!activePromo || !selectedOption) return null;
+          const cad = selectedOption.cadence;
+          const first = activePromo.firstChargeByCadence[cad];
+          const original = activePromo.originalByCadence[cad];
+          if (!first || !original) return null;
+          const firstAmt = isHe ? first.ils : first.usd;
+          const origAmt = isHe ? original.ils : original.usd;
+          return (
+            <div
+              className="mt-5 rounded-2xl border border-amber-300/50 bg-gradient-to-r from-amber-400/20 to-rose-500/20 p-4 text-start"
+              role="note"
+            >
+              <span className="inline-flex items-center rounded-full bg-gradient-to-r from-amber-400 to-rose-500 px-3 py-1 text-[14px] font-bold text-white shadow">
+                {isHe ? "מבצע" : "Promo"} {activePromo.name}
+              </span>
+              <p className="mt-2.5 flex flex-wrap items-baseline gap-1.5">
+                <span className="text-[20px] font-semibold text-white">
+                  {firstPeriodLabel(cad, isHe)}
+                </span>
+                <span className="font-extrabold leading-none text-white">
+                  <span className="text-[20px]">{sym}</span>
+                  <span className="text-[30px]">{fmt(firstAmt)}</span>
+                </span>
+                <span className="text-[20px] text-white/70">
+                  {isHe ? "במקום" : "instead of"}
+                </span>
+                <span className="text-[20px] font-medium text-white/60 line-through">
+                  {sym}
+                  {fmt(origAmt)}
+                </span>
+              </p>
+              <p className="mt-1.5 text-[16px] leading-snug text-white/75">
+                {isHe
+                  ? "המחיר המוזל לתשלום הראשון בלבד; החידושים במחיר המלא."
+                  : "Discounted first payment only; renewals at full price."}
+              </p>
+            </div>
+          );
+        })()}
 
         {/* Value anchor (Itzik 2026-06-14) — an external cost reference to
             anchor the monthly price. Worded carefully: Mioshy is ongoing
