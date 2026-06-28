@@ -15,8 +15,8 @@
 
 -- 1. CMS strings (admin-editable copy).
 UPDATE public.cms_texts
-SET    text_he = REPLACE(text_he, 'ליווי עם מיאושי', 'ייעוץ זוגי עם מיאושי')
-WHERE  text_he LIKE '%ליווי עם מיאושי%';
+SET    he_text = REPLACE(he_text, 'ליווי עם מיאושי', 'ייעוץ זוגי עם מיאושי')
+WHERE  he_text LIKE '%ליווי עם מיאושי%';
 
 -- 2. Article bodies (seed 063 — public/articles markdown).
 UPDATE public.articles
