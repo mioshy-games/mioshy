@@ -118,7 +118,7 @@ export async function getTodayData(args: Args): Promise<TodayPageData> {
   // same scheduled+item+category+completion data, no responses/rules.
   const couple = await getCurrentCoupleContext();
   const legacyOwner = preferCoupleOwner(userId, couple?.couple_id ?? null);
-  const cadenceOwner = journeyOwnerForUser(userId);
+  const cadenceOwner = await journeyOwnerForUser(userId);
   const viewerRole =
     couple?.role === "owner" || couple?.role === "partner"
       ? couple.role

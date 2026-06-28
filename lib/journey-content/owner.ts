@@ -6,6 +6,8 @@
 // it for URLs / RPC parameters.
 // ============================================================
 
+import { cache } from "react";
+
 import type { JourneyOwner, OwnerKey } from "./types";
 
 /**
@@ -65,18 +67,79 @@ export function preferCoupleOwner(
 }
 
 /**
- * v3 per-partner resolver. Always returns a user-owned JourneyOwner
- * regardless of whether the user is in a couple. Used by the cadence
- * engine, expert push v2, and group cohorts - every v3 surface where
- * each partner has their own queue.
+ * v3 per-partner resolver - now COUPLE-AWARE for shared content (journey
+ * shared-content spec, step 1).
+ *
+ *   - owner / solo / no couple  -> the user themselves (UNCHANGED).
+ *   - PARTNER (couple_members.role='partner') -> the SUBSCRIPTION OWNER of the
+ *     same couple (the role='owner' member), so the partner READS the owner's
+ *     cadence chapter queue. Cross-checked: the owner must have an ACTIVE
+ *     cadence assignment (journey_assignments source_kind='cadence',
+ *     is_active=true); if not, we fall back to the partner themselves so we
+ *     never point them at an empty / missing queue.
+ *
+ * IMPORTANT: this changes READ resolution only. Cadence CREATION stays
+ * strictly per-user - the cadence engine / trigger never call this helper.
+ *
+ * Async because it needs couple context. Wrapped in React.cache so the
+ * per-request lookup is shared across the shell + page callers. The admin
+ * client is imported lazily so this module's pure helpers stay client-safe,
+ * and ANY lookup failure degrades to self - it never throws into a render.
  *
  * Couple-aggregate views (admin /my-clients/[coupleId], journey
  * /clients/[ownerKey]) JOIN over couple_members and call this helper
  * twice (once per partner) to compose the rollup.
  */
-export function journeyOwnerForUser(userId: string): JourneyOwner {
-  return { kind: "user", userId };
-}
+export const journeyOwnerForUser = cache(
+  async (userId: string): Promise<JourneyOwner> => {
+    const self: JourneyOwner = { kind: "user", userId };
+    try {
+      const { createServiceRoleClient } = await import("@/lib/supabase-admin");
+      const admin = createServiceRoleClient();
+      if (!admin) return self;
+
+      // Only PARTNERS defer to someone else; owner / solo / no couple -> self.
+      const { data: membership } = await admin
+        .from("couple_members")
+        .select("couple_id, role")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (
+        !membership ||
+        membership.role !== "partner" ||
+        !membership.couple_id
+      ) {
+        return self;
+      }
+
+      // The subscription owner of the same couple.
+      const { data: ownerMember } = await admin
+        .from("couple_members")
+        .select("user_id")
+        .eq("couple_id", membership.couple_id as string)
+        .eq("role", "owner")
+        .maybeSingle();
+      const ownerId = (ownerMember?.user_id as string | undefined) ?? null;
+      if (!ownerId || ownerId === userId) return self;
+
+      // Cross-check: the owner must have an ACTIVE cadence assignment, else
+      // fall back to self so we never point the partner at an empty queue.
+      const { data: ownerCadence } = await admin
+        .from("journey_assignments")
+        .select("id")
+        .eq("user_id", ownerId)
+        .eq("source_kind", "cadence")
+        .eq("is_active", true)
+        .limit(1)
+        .maybeSingle();
+      if (!ownerCadence) return self;
+
+      return { kind: "user", userId: ownerId };
+    } catch {
+      return self;
+    }
+  },
+);
 
 /**
  * Convenience for building the Supabase filter pair - returns a tuple that

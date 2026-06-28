@@ -553,7 +553,7 @@ export default async function PrivateJourneyPage({
     effectiveUserId,
     couple?.couple_id ?? null,
   );
-  const cadenceOwner: JourneyOwner = journeyOwnerForUser(effectiveUserId);
+  const cadenceOwner: JourneyOwner = await journeyOwnerForUser(effectiveUserId);
   const viewerRole =
     couple?.role === "owner" || couple?.role === "partner"
       ? couple.role

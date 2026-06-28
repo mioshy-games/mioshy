@@ -125,7 +125,7 @@ export default async function JourneyTimelinePage({
   // unlock_at. Both lists feed the same downstream TimelineList.
   const couple = await getCurrentCoupleContext();
   const legacyOwner = preferCoupleOwner(user.id, couple?.couple_id ?? null);
-  const cadenceOwner = journeyOwnerForUser(user.id);
+  const cadenceOwner = await journeyOwnerForUser(user.id);
 
   // ── Load timeline ─────────────────────────────────────────────────────
   // Pass the viewer's couple_member role so audience-targeted items

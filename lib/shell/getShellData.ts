@@ -161,7 +161,7 @@ async function countFreshUnlockedItems(args: {
     const nowIso = new Date(nowMs).toISOString();
 
     const legacyOwner = preferCoupleOwner(args.userId, args.coupleId);
-    const cadenceOwner = journeyOwnerForUser(args.userId);
+    const cadenceOwner = await journeyOwnerForUser(args.userId);
 
     const [legacyAssignments, cadenceAssignments] = await Promise.all([
       listAssignmentsForOwner(legacyOwner, {
