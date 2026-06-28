@@ -29,6 +29,7 @@ import type { NavKey, ShellChrome } from "@/components/shell";
 import { getShellData } from "@/lib/shell/getShellData";
 import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
 import { Toaster } from "@/components/ui/sonner";
+import { PairingPopups } from "@/components/my/PairingPopups";
 
 export const dynamic = "force-dynamic";
 
@@ -121,6 +122,11 @@ export default async function ShellLayout({
           mark-seen errors, etc.) were silent — explaining "the button
           does nothing" reports. Marketing layouts mount their own. */}
       <Toaster position={isHe ? "top-left" : "top-right"} richColors closeButton />
+      {/* Pairing popup (invite / redeem), split by role + once-per-session.
+          Mounted at the shell level because the funnel lands users on shell
+          pages (/my/setup, /my/lessons, /my/journey), not the /my hub where the
+          popup also lives — so a buyer or a non-payer still sees it. */}
+      <PairingPopups />
     </>
   );
 }

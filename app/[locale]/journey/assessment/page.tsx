@@ -20,7 +20,6 @@ import { notFound, redirect } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
-import { getCurrentUserPact } from "@/lib/journey/pacts";
 import { JourneyClient } from "@/components/journey/JourneyClient";
 // `JourneyAmbience` (21 animated particles + fog blobs) removed
 // 2026-05-19 per Itzik — the per-frame animation cost on the question
@@ -76,71 +75,14 @@ export default async function JourneyAssessmentPage({
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Layer-1 pact gate: an authenticated user with NO pact AND no
-  // existing progress sees the intro screen first. Mid-flow users
-  // (progress > 0) skip the gate so we don't yank them out of a
-  // questionnaire they're already in. Anonymous users skip too —
-  // they need to enter the funnel first; the pact is captured after
-  // sign-up via the same intro page (which getCurrentUserPact will
-  // route them to once they're authenticated).
-  if (user) {
-    const existingPact = await getCurrentUserPact();
-    if (!existingPact) {
-      // Primary lookup — journeys owned by THIS user via the session
-      // client (RLS-aware).
-      const { data: existingJourney } = await supabase
-        .from("journeys")
-        .select("current_step")
-        .eq("user_id", user.id)
-        .order("last_activity_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      let startedAlready =
-        ((existingJourney as { current_step: number } | null)?.current_step ??
-          0) > 0;
-
-      // F10 — fallback for the post-signup race. After the inline-auth
-      // step the journey link RPC sometimes hasn't propagated to RLS by
-      // the time this server component runs (cookie set, but auth.uid
-      // hasn't reached the new row yet). Without this fallback the user
-      // gets redirected to /intro as if they never started — even
-      // though they just completed all 29 questions as anon.
-      // We check the device_id cookie via service-role: if there's an
-      // anonymous (or freshly-linked) journey on this device with
-      // progress, treat them as "started" and let them through.
-      if (!startedAlready) {
-        const deviceId = cookieStoreForLog.get("mioshy_device_id")?.value;
-        if (deviceId) {
-          const adminProbe = createServiceRoleClient();
-          if (adminProbe) {
-            const { data: anonJ } = await adminProbe
-              .from("journeys")
-              .select("current_step")
-              .eq("device_id", deviceId)
-              .order("last_activity_at", { ascending: false })
-              .limit(1)
-              .maybeSingle();
-            const anonProgress =
-              ((anonJ as { current_step: number } | null)?.current_step ?? 0) > 0;
-            if (anonProgress) {
-              startedAlready = true;
-              console.log(
-                "[/journey/assessment] device_id fallback found progress, skipping /intro redirect",
-                { deviceId, anonProgress },
-              );
-            }
-          }
-        }
-      }
-
-      if (!startedAlready) {
-        console.log(
-          "[/journey/assessment] no pact + no progress → /journey/assessment/intro",
-        );
-        redirect(`/${locale}/journey/assessment/intro`);
-      }
-    }
-  }
+  // Pact gate REMOVED (2026-06-28, loop fix): this used to redirect a
+  // pact-less, progress-less authed user to /journey/assessment/intro. But
+  // /intro is now a permanent redirect straight back here (the pre-assessment
+  // pact screen was deleted), so that branch was an infinite loop for any
+  // fresh user — most painfully a partner who just joined (no pact, no
+  // progress) and was sent to the assessment. We now simply render the
+  // assessment; it already resumes in-progress journeys and starts fresh
+  // users from question 1. Do NOT reintroduce a redirect to /intro.
 
   console.log("[/journey/assessment] entry", {
     user_id: user?.id ?? null,
