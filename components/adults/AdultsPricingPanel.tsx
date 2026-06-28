@@ -30,10 +30,7 @@ import {
 import { stubPurchaseGame } from "@/app/actions/between-us-couple";
 import { subscribeAdultsTier } from "@/app/actions/adults-subscribe";
 import type { AdultsPricing } from "@/lib/adults/pricing";
-import {
-  InvitePartnerByEmail,
-  type InvitationSummary,
-} from "@/components/between-us/InvitePartnerByEmail";
+import type { InvitationSummary } from "@/components/between-us/InvitePartnerByEmail";
 
 type Ctx = {
   user_id: string;
@@ -51,12 +48,10 @@ export function AdultsPricingPanel({
   locale,
   gameId,
   gameSlug,
-  gameTitle,
   pricing,
   ctx,
   loggedIn,
   loginHref,
-  pendingInvitation,
 }: {
   locale: string;
   gameId: string;
@@ -84,9 +79,6 @@ export function AdultsPricingPanel({
   );
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
-
-  const isOwner = !ctx?.couple_id || ctx?.role === "owner";
-  const canInvite = isOwner && (ctx?.partner_count ?? 0) < 2;
 
   // ── Not signed in ────────────────────────────────────────────────
   if (!loggedIn) {
@@ -129,30 +121,6 @@ export function AdultsPricingPanel({
           <Play className="h-5 w-5" />
           {isHe ? "פתחו את המשחק" : "Open game"}
         </Link>
-
-        {(ctx.partner_count < 2 || pendingInvitation) && (
-          <div className="rounded-3xl border border-white/15 bg-white/5 p-6 backdrop-blur">
-            <h4 className="text-sm font-semibold text-white">
-              {isHe
-                ? "רוצים לשחק יחד? הזמינו את הפרטנר/ית"
-                : "Want to play together? Invite your partner"}
-            </h4>
-            <p className="mt-1 text-sm text-white/70">
-              {isHe
-                ? "כל התכנים ייפתחו גם עבורו/ה ברגע שיצטרפו."
-                : "They'll unlock the full game too the moment they join."}
-            </p>
-            <div className="mt-4">
-              <InvitePartnerByEmail
-                locale={isHe ? "he" : "en"}
-                isHe={isHe}
-                invitation={pendingInvitation}
-                canInvite={canInvite}
-                gameTitle={gameTitle}
-              />
-            </div>
-          </div>
-        )}
       </div>
     );
   }
@@ -316,29 +284,6 @@ export function AdultsPricingPanel({
             : "* Demo checkout - no real charge yet."}
         </p>
       </div>
-
-      {/* Partner invitation surface (owner only, before couple is full). */}
-      {ctx?.couple_id && (ctx.partner_count < 2 || pendingInvitation) ? (
-        <div className="rounded-3xl border border-white/15 bg-white/5 p-6 backdrop-blur">
-          <h4 className="text-sm font-semibold text-white">
-            {isHe ? "הזמינו את הפרטנר/ית" : "Invite your partner"}
-          </h4>
-          <p className="mt-1 text-sm text-white/70">
-            {isHe
-              ? "הפרטנר/ית יקבלו קישור להצטרף לחלל הזוגי. כל מה שתרכשו פתוח לשניכם."
-              : "They'll get a link to join your couple space. Everything you buy is shared."}
-          </p>
-          <div className="mt-4">
-            <InvitePartnerByEmail
-              locale={isHe ? "he" : "en"}
-              isHe={isHe}
-              invitation={pendingInvitation}
-              canInvite={canInvite}
-              gameTitle={gameTitle}
-            />
-          </div>
-        </div>
-      ) : null}
 
       {error ? (
         <p className="rounded-2xl border border-rose-400/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">

@@ -70,7 +70,12 @@ export function RedeemCodeButton({
   );
 }
 
-function RedeemDialog({
+/**
+ * RedeemDialog — the pair-code entry modal. Exported so it can be mounted
+ * directly (auto-open) by callers that want the code-entry popup without
+ * the trigger button — e.g. the once-per-session redeem popup on /my.
+ */
+export function RedeemDialog({
   isHe,
   onClose,
   redirectTo,

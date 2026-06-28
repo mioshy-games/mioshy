@@ -23,7 +23,6 @@ import { getProfileGate } from "@/lib/auth/profile-gate";
 import { getCurrentCoupleContext } from "@/lib/between-us/couples";
 import {
   listInvitationsForCouple,
-  toInvitationUiSummary,
   type CoupleInvitationRow,
 } from "@/lib/between-us/invitations";
 import {
@@ -35,7 +34,6 @@ import { getCurrentUserPauseState } from "@/lib/billing/pause-state";
 import { PauseSubscription } from "@/components/account/PauseSubscription";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { RedeemCodeButton } from "@/components/between-us/RedeemCodeButton";
-import { InvitePartnerByEmail } from "@/components/between-us/InvitePartnerByEmail";
 
 type SubscriptionRow = {
   id: string;
@@ -104,15 +102,9 @@ export default async function AccountPage({
   const allInvitations: CoupleInvitationRow[] = coupleCtx?.couple_id
     ? await listInvitationsForCouple(coupleCtx.couple_id).catch(() => [])
     : [];
-  const pendingInvitation = toInvitationUiSummary(
-    allInvitations.find((i) => i.status === "pending") ?? null,
-  );
   const pastInvitations = allInvitations.filter(
     (i) => i.status !== "pending",
   );
-  const isCoupleOwner = coupleCtx?.role === "owner";
-  const coupleNeedsPartner =
-    !!coupleCtx?.couple_id && (coupleCtx.partner_count ?? 0) < 2;
 
   // Latest subscription (any status) - we still want to show cancelled/frozen
   const { data: subRaw } = await supabase
@@ -365,17 +357,6 @@ export default async function AccountPage({
                 </span>
               ) : null}
             </header>
-
-            {coupleCtx?.couple_id && coupleNeedsPartner ? (
-              <div className="mt-5">
-                <InvitePartnerByEmail
-                  locale={isHe ? "he" : "en"}
-                  isHe={isHe}
-                  invitation={pendingInvitation}
-                  canInvite={isCoupleOwner}
-                />
-              </div>
-            ) : null}
 
             {coupleCtx?.couple_id && coupleCtx.partner_count === 2 ? (
               <div className="mt-5 flex items-start gap-2.5 rounded-2xl border border-emerald-400/25 bg-emerald-500/[0.08] px-4 py-3 text-sm text-emerald-100">

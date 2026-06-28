@@ -16,10 +16,6 @@ import {
   getCurrentCoupleContextFresh,
   listOwnedGamesForCouple,
 } from "@/lib/between-us/couples";
-import {
-  getPendingInvitationForCouple,
-  toInvitationUiSummary,
-} from "@/lib/between-us/invitations";
 import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
 import { JourneyGraceBanner } from "@/components/my/JourneyGraceBanner";
 import { OnboardingReminderCard } from "@/components/my/OnboardingReminderCard";
@@ -30,7 +26,7 @@ import { countUnreadJourneyItems } from "@/lib/journey-content/unread";
 import { getFreshClinicianReplies } from "@/lib/journey-content/fresh-replies";
 import { getProfileGate } from "@/lib/auth/profile-gate";
 import { RedeemCodeButton } from "@/components/between-us/RedeemCodeButton";
-import { InvitePartnerByEmail } from "@/components/between-us/InvitePartnerByEmail";
+import { MyInvitePopup } from "@/components/my/MyInvitePopup";
 import type { PillarKey } from "@/lib/entitlements/getUserEntitlements";
 import {
   derivePillarState,
@@ -162,7 +158,6 @@ export default async function MyHubPage({
     journeyStatus,
     owned,
     profileGate,
-    pendingInvitationRow,
     partnerFullName,
     fullAssessmentPending,
   ] = await Promise.all([
@@ -184,9 +179,6 @@ export default async function MyHubPage({
       ? listOwnedGamesForCouple(coupleId as string)
       : Promise.resolve([] as Awaited<ReturnType<typeof listOwnedGamesForCouple>>),
     getProfileGate(),
-    hasCouple
-      ? getPendingInvitationForCouple(coupleId as string).catch(() => null)
-      : Promise.resolve(null),
     // ─── Partner profile lookup ─────────────────────────────────────
     // Used by the "משוייך ל X" banner when the couple is fully
     // paired. Two admin reads collapsed into one helper so it can
@@ -241,9 +233,7 @@ export default async function MyHubPage({
     unreadJourneyCount + freshReplies.recentReplyCount;
   const ownedCount = owned.length;
   const profileIncomplete = !!profileGate && !profileGate.complete;
-  const pendingInvitation = toInvitationUiSummary(pendingInvitationRow);
   const needsPartner = hasCouple && (ctx.partner_count ?? 0) < 2;
-  const isOwner = !hasCouple || ctx.role === "owner";
 
   // Consolidated onboarding reminder (NON-BLOCKING): shown while EITHER step is
   // outstanding — partner not yet joined OR this user's full assessment still
@@ -329,6 +319,19 @@ export default async function MyHubPage({
           own content above. */}
 
       <main className="relative mx-auto max-w-6xl px-4 pb-16 pt-10 sm:pt-14">
+        {/* ─────── Once-per-session pairing popup, split by role ───────
+            · Owner who still needs a partner → share-code popup (reuses
+              PartnerShareCard). · Registered non-purchaser (no couple yet)
+              → code-entry popup (reuses RedeemDialog). Both dismiss to
+              localStorage (distinct keys) and never reappear once the user
+              pairs (the gating conditions below stop mounting them). */}
+        {hasCouple && needsPartner && ctx.pair_code ? (
+          <MyInvitePopup mode="owner" pairCode={ctx.pair_code} />
+        ) : null}
+        {!hasCouple ? (
+          <MyInvitePopup mode="redeemer" redirectTo={`/${locale}/my`} />
+        ) : null}
+
         {/* ─────── Page title ─────── */}
         <section className="flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -607,46 +610,6 @@ export default async function MyHubPage({
           )}
         </section>
 
-        {/* ─────── Partner section - only when relevant ───────
-            Per spec §5.2: invite-partner shows ONLY if user has no
-            partner yet. Once a partner has joined, the whole block
-            disappears. Above the "got code from partner" alert because
-            most signed-in users are senders, not receivers, of codes. */}
-        {hasCouple && needsPartner ? (
-          <section className="mt-8 rounded-2xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div className="min-w-0 flex-1">
-                <h3 className="text-sm font-semibold text-white">
-                  <CmsText cmsKey="myHub.invitePartner" />
-                </h3>
-                <CmsText
-                  cmsKey="myHub.invitePartnerLede"
-                  as="p"
-                  className="mt-1 text-xs text-white/60"
-                />
-              </div>
-              <div className="w-full sm:w-auto">
-                <InvitePartnerByEmail
-                  locale={isHe ? "he" : "en"}
-                  isHe={isHe}
-                  invitation={pendingInvitation}
-                  canInvite={isOwner}
-                />
-              </div>
-            </div>
-
-            {/* Per Itzik 2026-05-27: the pair-code is now exposed
-                prominently inside the active-membership banner via
-                <PartnerShareCard> (with copy / WhatsApp / SMS / QR
-                actions). The compact PairCodeWidget that used to live
-                here was redundant — same code, two places — so we
-                removed it. If the user is on the *free* tier (no
-                pair_code yet) they don't see this section anyway
-                because hasCouple is false until they own at least one
-                purchase. */}
-          </section>
-        ) : null}
-
         {/* ─────── Profile-completion + redeem-code (Itzik 2026-05-07) ───
             These two banners now sit in ONE row directly under the
             services pillars — two equal columns on desktop, stacked
@@ -694,7 +657,11 @@ export default async function MyHubPage({
                 <RedeemCodeButton
                   isHe={isHe}
                   variant="primary"
-                  label={t("redeemBtn")}
+                  label={
+                    isHe
+                      ? "הזן את קוד ההזמנה שקיבלת"
+                      : "Enter the invite code you received"
+                  }
                   redirectTo={`/${locale}/my`}
                 />
               </div>

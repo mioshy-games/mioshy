@@ -4,10 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter, Link } from "@/navigation";
 import { stubPurchaseGame } from "@/app/actions/between-us-couple";
 import { Heart, Lock, Play } from "lucide-react";
-import {
-  InvitePartnerByEmail,
-  type InvitationSummary,
-} from "@/components/between-us/InvitePartnerByEmail";
+import type { InvitationSummary } from "@/components/between-us/InvitePartnerByEmail";
 
 type Ctx = {
   user_id: string;
@@ -22,12 +19,10 @@ type Ctx = {
 export function PairAndPurchasePanel({
   locale,
   gameId,
-  gameTitle,
   priceLabel,
   ctx,
   loggedIn,
   loginHref,
-  pendingInvitation,
 }: {
   locale: string;
   gameId: string;
@@ -70,9 +65,6 @@ export function PairAndPurchasePanel({
     );
   }
 
-  const isOwner = !ctx?.couple_id || ctx.role === "owner";
-  const canInvite = isOwner && (ctx?.partner_count ?? 0) < 2;
-
   // ── Already entitled → single "Play at My Mioshy" CTA ──────────
   if (ctx?.entitled) {
     return (
@@ -84,30 +76,6 @@ export function PairAndPurchasePanel({
           <Play className="h-5 w-5" />
           {isHe ? "לשחק במיאושי שלי" : "Play in My Mioshy"}
         </Link>
-
-        {(ctx.partner_count < 2 || pendingInvitation) && (
-          <div className="rounded-3xl border border-white/15 bg-white/5 p-6 backdrop-blur">
-            <h4 className="text-sm font-semibold text-white">
-              {isHe
-                ? "רוצים לשחק יחד? הזמינו את הפרטנר/ית"
-                : "Want to play together? Invite your partner"}
-            </h4>
-            <p className="mt-1 text-xs text-white/70">
-              {isHe
-                ? "כל התכנים ייפתחו גם עבורו/ה ברגע שיצטרפו."
-                : "They'll unlock the full game too the moment they join."}
-            </p>
-            <div className="mt-4">
-              <InvitePartnerByEmail
-                locale={isHe ? "he" : "en"}
-                isHe={isHe}
-                invitation={pendingInvitation}
-                canInvite={canInvite}
-                gameTitle={gameTitle}
-              />
-            </div>
-          </div>
-        )}
       </div>
     );
   }
@@ -193,31 +161,6 @@ export function PairAndPurchasePanel({
           </div>
         </div>
       </div>
-
-      {/* Partner preview - even before purchase the owner can already
-          line up who the game is for. Without a couple yet we just
-          show a hint; once they buy, a couple is auto-created. */}
-      {ctx?.couple_id && (ctx.partner_count < 2 || pendingInvitation) ? (
-        <div className="rounded-3xl border border-white/15 bg-white/5 p-6 backdrop-blur">
-          <h4 className="text-sm font-semibold text-white">
-            {isHe ? "הזמינו את הפרטנר/ית" : "Invite your partner"}
-          </h4>
-          <p className="mt-1 text-xs text-white/70">
-            {isHe
-              ? "הפרטנר/ית יקבלו קישור להצטרף לחלל הזוגי. כל רכישה תהיה פתוחה לשניכם."
-              : "They'll get a link to join your couple space. Every purchase is shared."}
-          </p>
-          <div className="mt-4">
-            <InvitePartnerByEmail
-              locale={isHe ? "he" : "en"}
-              isHe={isHe}
-              invitation={pendingInvitation}
-              canInvite={canInvite}
-              gameTitle={gameTitle}
-            />
-          </div>
-        </div>
-      ) : null}
 
       {error ? (
         <p className="rounded-2xl border border-rose-400/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
