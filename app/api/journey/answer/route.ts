@@ -45,6 +45,7 @@ import { computeGate, reportPhaseForMode } from "@/lib/journey/gating";
 import { isValidOrder } from "@/lib/journey/priorities";
 import { getPriorityLabels } from "@/lib/journey-content/priority-categories";
 import { onPriorityRankingSubmitted } from "@/lib/journey-content/cadence-trigger";
+import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
 import type { AnswerValue, Locale, Response } from "@/lib/journey/types";
 
 export const runtime = "nodejs";
@@ -182,13 +183,17 @@ export async function POST(req: Request) {
     journeyId = existingAuthed?.id;
 
     // Claim anon journey by device_id, if any, once the user signs in.
+    // Status filter includes terminal rows (complete/completed) too: a user
+    // who finished the anon assessment and only then signs in must REUSE that
+    // row — not spawn a fresh in_progress journey below, which would drop the
+    // prior answers and re-ask the questions (funnel regression).
     if (!journeyId && deviceId) {
       const { data: anonJourney } = await admin
         .from("journeys")
         .select("id")
         .eq("device_id", deviceId)
         .is("user_id", null)
-        .in("status", ["in_progress", "paywall"])
+        .in("status", ["in_progress", "paywall", "complete", "completed"])
         .order("last_activity_at", { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -344,7 +349,13 @@ export async function POST(req: Request) {
       .eq("user_id", trusted_user_id)
       .eq("status", "active")
       .maybeSingle();
-    subscriptionActive = !!sub;
+    // Partner fix (funnel): journey access can come via the couple entitlement
+    // (owner-swapped inside getUserEntitlements) with NO direct subscription
+    // row. Reading the phase mode from the direct sub alone left a deferred
+    // partner stuck in 'short' and bounced to the paywall mid-flow. Fold the
+    // entitlement in so the mode + gate treat partner access as subscribed.
+    const entitlements = await getUserEntitlements(trusted_user_id);
+    subscriptionActive = !!sub || !!entitlements?.journey;
   }
 
   // All answers for this journey (includes the one just upserted) → drives the

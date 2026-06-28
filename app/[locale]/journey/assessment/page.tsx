@@ -223,8 +223,13 @@ export default async function JourneyAssessmentPage({
     const journey = (allJourneys ?? [])
       .slice()
       .sort((a, b) => {
-        const aComplete = a.status === "complete" ? 1 : 0;
-        const bComplete = b.status === "complete" ? 1 : 0;
+        // Terminal status (complete/completed) wins, so a finished assessment
+        // is picked over a stray in_progress row → answeredSlugs stays full and
+        // flow.remaining empty when the user already completed the assessment.
+        const aComplete =
+          a.status === "complete" || a.status === "completed" ? 1 : 0;
+        const bComplete =
+          b.status === "complete" || b.status === "completed" ? 1 : 0;
         if (aComplete !== bComplete) return bComplete - aComplete;
         const stepDiff = (b.current_step ?? 0) - (a.current_step ?? 0);
         if (stepDiff !== 0) return stepDiff;
@@ -299,13 +304,16 @@ export default async function JourneyAssessmentPage({
           // this as two separate UPDATEs so a conflict on the second
           // doesn't roll back the first.
           if (orphan.user_id === null) {
-            // Claim COMPLETE rows first — no unique-index conflict here.
+            // Claim terminal rows first — complete AND completed (both
+            // spellings exist in the wild) sit outside the active unique
+            // index, so linking them never conflicts. Catching 'completed'
+            // here too means a finished anon row is never left orphaned.
             const { error: claimCompleteErr } = await admin
               .from("journeys")
               .update({ user_id: user.id, last_activity_at: new Date().toISOString() })
               .eq("device_id", deviceIdForLog)
               .is("user_id", null)
-              .eq("status", "complete");
+              .in("status", ["complete", "completed"]);
             if (claimCompleteErr) {
               console.warn(
                 "[/journey/assessment] race recovery: claim COMPLETE failed",
@@ -386,6 +394,15 @@ export default async function JourneyAssessmentPage({
     // clean signal for gating the pre-purchase selling sections.
     const entitlements = await getUserEntitlements(user.id);
     journeySubscribed = !!entitlements?.journey;
+
+    // Partner fix (funnel): a deferred partner has journey ACCESS via the
+    // couple entitlement (owner-swapped inside getUserEntitlements) but NO
+    // direct subscription row of their own. The active-phase mode below is
+    // driven by `subscriptionActive`, so reading it from the direct sub alone
+    // left such a partner stuck in the 'short' pre-purchase flow. Fold the
+    // entitlement in so the mode + post-purchase guard both treat journey
+    // access — direct OR via partner — as subscribed.
+    subscriptionActive = subscriptionActive || journeySubscribed;
 
     // ── Post-purchase guard ─────────────────────────────────────────────────
     // Per spec §4 + §6.0: a user with an active subscription should NEVER

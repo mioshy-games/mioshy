@@ -310,115 +310,135 @@ export async function journeyInlineSignup(args: {
       path: "/",
     });
 
-    // ── Link anon journey to user ────────────────────────────────────────
-    // Done in the SAME request as sign-in so the auth context is
-    // guaranteed established before the RPC runs.
-    //
-    // FALLBACK: the link_journey_to_user RPC uses auth.uid() under
-    // SECURITY DEFINER. If for any reason the cookie hasn't propagated
-    // even within this same request, the RPC throws "not authenticated".
-    // We therefore ALSO try a service-role direct UPDATE as a backup -
-    // it sees no auth context but trusts the userId we just signed in
-    // with. That guarantees the link happens.
-    const { data: linkedId, error: linkErr } = await supabase.rpc(
-      "link_journey_to_user",
-      { p_device_id: args.deviceId },
-    );
-    debug.rpc.linkedJourneyId = (linkedId as string | null) ?? null;
-    debug.rpc.error = linkErr?.message ?? null;
-    debug.step = "rpc-attempted";
+    // ── Claim anon journeys to the user (AUTHORITATIVE service-role) ─────
+    // We do NOT call link_journey_to_user / trust its return value. That RPC
+    // is unreliable here: it RETURNs a scalar from a multi-row UPDATE and
+    // trips the partial unique index that allows a user only ONE active
+    // (non-complete) journey
+    //   journeys_user_active_key: UNIQUE(user_id) WHERE status IN
+    //   ('in_progress','paywall')
+    // — so on a device with several anon rows it either errors or links an
+    // arbitrary subset. Instead we claim deterministically with the admin
+    // client, in an order that respects that index:
+    //   1. Claim ALL complete/completed rows first — terminal statuses sit
+    //      OUTSIDE the active index, so linking many at once never conflicts.
+    //   2. Then claim AT MOST ONE active row (in_progress/paywall), the best
+    //      by progress→recency — linking two active rows to one user would
+    //      violate the index and abort the whole statement.
+    // Primary (the row the client jumps back to) = complete → step → recency.
+    debug.step = "claim-attempted";
+    const isCompleteStatus = (s: string) =>
+      s === "complete" || s === "completed";
+    const tsOf = (r: { last_activity_at: string | null }) =>
+      r.last_activity_at ? new Date(r.last_activity_at).getTime() : 0;
 
-    if (linkErr || !linkedId) {
-      console.warn(
-        "[journeyInlineSignup] RPC didn't link, falling back to service-role UPDATE",
-        { rpcError: linkErr?.message, linkedId },
-      );
-      // 2026-05-19 — previously used `.maybeSingle()` here, which
-      // throws when MULTIPLE anon journeys exist under the same
-      // device_id. Common in dev (hot reload re-mounting JourneyClient)
-      // and possible in prod (user started+abandoned a few times).
-      // Confirmed 2026-05-19 incident: probe showed 3 anon journeys for
-      // the same device_id → fallback failed → user got 404 forever.
-      //
-      // New shape:
-      //   1. List all matching anon journeys.
-      //   2. Pick the "primary" — prefer status='complete', else most
-      //      recent — to set as linkedJourneyId for downstream UI.
-      //   3. UPDATE ALL of them to set user_id (so the user owns the
-      //      whole set and stragglers don't keep cluttering the
-      //      anon pool / get re-claimed by some other future signup).
-      const { data: candidates, error: listErr } = await admin
-        .from("journeys")
-        .select("id, status, last_activity_at, current_step")
-        .eq("device_id", args.deviceId)
-        .is("user_id", null)
-        .order("last_activity_at", { ascending: false });
+    const { data: anonRows, error: listErr } = await admin
+      .from("journeys")
+      .select("id, status, last_activity_at, current_step")
+      .eq("device_id", args.deviceId)
+      .is("user_id", null)
+      .order("last_activity_at", { ascending: false });
 
-      if (listErr) {
-        console.error(
-          "[journeyInlineSignup] fallback list failed",
-          listErr,
-        );
-        debug.rpc.error =
-          (debug.rpc.error ?? "") + " | fallback list: " + listErr.message;
-      } else {
-        const list = (candidates ?? []) as Array<{
-          id: string;
-          status: string;
-          last_activity_at: string | null;
-          current_step: number;
-        }>;
-        console.log("[journeyInlineSignup] fallback candidates", {
-          count: list.length,
-          ids: list.map((r) => r.id),
-          statuses: list.map((r) => r.status),
-          steps: list.map((r) => r.current_step),
-        });
+    if (listErr) {
+      console.error("[journeyInlineSignup] claim list failed", listErr);
+      debug.rpc.error = "claim list: " + listErr.message;
+    } else {
+      const rows = (anonRows ?? []) as Array<{
+        id: string;
+        status: string;
+        last_activity_at: string | null;
+        current_step: number;
+      }>;
+      const completes = rows.filter((r) => isCompleteStatus(r.status));
+      const actives = rows.filter((r) => !isCompleteStatus(r.status));
+      const bestActive =
+        actives
+          .slice()
+          .sort((a, b) => {
+            const stepDiff = (b.current_step ?? 0) - (a.current_step ?? 0);
+            if (stepDiff !== 0) return stepDiff;
+            return tsOf(b) - tsOf(a);
+          })[0] ?? null;
 
-        if (list.length > 0) {
-          const primary =
-            list.find((r) => r.status === "complete") ?? list[0];
+      console.log("[journeyInlineSignup] claim candidates", {
+        count: rows.length,
+        completeIds: completes.map((r) => r.id),
+        activeChosen: bestActive?.id ?? null,
+        activeDropped: actives
+          .filter((r) => r.id !== bestActive?.id)
+          .map((r) => r.id),
+      });
 
-          const { error: updErr } = await admin
-            .from("journeys")
-            .update({
-              user_id: userId,
-              last_activity_at: new Date().toISOString(),
-            })
-            .eq("device_id", args.deviceId)
-            .is("user_id", null);
+      const nowIso = new Date().toISOString();
 
-          if (updErr) {
-            console.error(
-              "[journeyInlineSignup] fallback UPDATE failed",
-              updErr,
-            );
-            debug.rpc.error =
-              (debug.rpc.error ?? "") + " | fallback update: " + updErr.message;
-          } else {
-            console.log(
-              "[journeyInlineSignup] fallback UPDATE linked journeys",
-              {
-                primaryJourneyId: primary.id,
-                primaryStatus: primary.status,
-                primarySteps: primary.current_step,
-                totalLinked: list.length,
-              },
-            );
-            debug.rpc.linkedJourneyId = primary.id;
-          }
-        } else {
-          console.warn(
-            "[journeyInlineSignup] fallback found ZERO anon journeys to link",
-            { deviceId: args.deviceId },
+      // 1. All complete/completed rows together — no index conflict.
+      if (completes.length > 0) {
+        const { error: cErr } = await admin
+          .from("journeys")
+          .update({ user_id: userId, last_activity_at: nowIso })
+          .in(
+            "id",
+            completes.map((r) => r.id),
           );
+        if (cErr) {
+          console.error(
+            "[journeyInlineSignup] claim complete rows failed",
+            cErr,
+          );
+          debug.rpc.error =
+            (debug.rpc.error ? debug.rpc.error + " | " : "") +
+            "claim complete: " +
+            cErr.message;
         }
       }
-    } else {
-      console.log("[journeyInlineSignup] linked anon journey via RPC", {
-        linkedId,
-        deviceId: args.deviceId,
-      });
+
+      // 2. At most ONE active row — tolerate an index conflict (e.g. the user
+      //    already owns an active journey); the complete claim above stands.
+      if (bestActive) {
+        const { error: aErr } = await admin
+          .from("journeys")
+          .update({ user_id: userId, last_activity_at: nowIso })
+          .eq("id", bestActive.id);
+        if (aErr) {
+          console.warn(
+            "[journeyInlineSignup] claim active row failed (tolerated)",
+            { id: bestActive.id, error: aErr.message },
+          );
+          debug.rpc.error =
+            (debug.rpc.error ? debug.rpc.error + " | " : "") +
+            "claim active: " +
+            aErr.message;
+        }
+      }
+
+      // Primary for the client: complete → most steps → most recent.
+      const claimed = [...completes, ...(bestActive ? [bestActive] : [])];
+      const primary =
+        claimed
+          .slice()
+          .sort((a, b) => {
+            const aC = isCompleteStatus(a.status) ? 1 : 0;
+            const bC = isCompleteStatus(b.status) ? 1 : 0;
+            if (aC !== bC) return bC - aC;
+            const stepDiff = (b.current_step ?? 0) - (a.current_step ?? 0);
+            if (stepDiff !== 0) return stepDiff;
+            return tsOf(b) - tsOf(a);
+          })[0] ?? null;
+      debug.rpc.linkedJourneyId = primary?.id ?? null;
+
+      if (rows.length === 0) {
+        console.warn(
+          "[journeyInlineSignup] claim found ZERO anon journeys to link",
+          { deviceId: args.deviceId },
+        );
+      } else {
+        console.log("[journeyInlineSignup] claim linked journeys", {
+          primaryJourneyId: primary?.id ?? null,
+          primaryStatus: primary?.status ?? null,
+          totalCompleteLinked: completes.length,
+          activeLinked: bestActive?.id ?? null,
+        });
+      }
     }
     debug.step = "rpc-complete";
 
@@ -447,9 +467,9 @@ export async function journeyInlineSignup(args: {
     const journey = (candidateJourneys ?? [])
       .slice()
       .sort((a, b) => {
-        // Prefer status='complete' over everything else.
-        const aComplete = a.status === "complete" ? 1 : 0;
-        const bComplete = b.status === "complete" ? 1 : 0;
+        // Prefer terminal status (complete/completed) over everything else.
+        const aComplete = isCompleteStatus(a.status) ? 1 : 0;
+        const bComplete = isCompleteStatus(b.status) ? 1 : 0;
         if (aComplete !== bComplete) return bComplete - aComplete;
         // Then prefer the one with the most progress.
         const stepDiff = (b.current_step ?? 0) - (a.current_step ?? 0);
