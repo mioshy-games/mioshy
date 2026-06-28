@@ -57,7 +57,14 @@ export async function PairingPopups() {
   }
 
   const hasCouple = !!ctx.couple_id;
-  const needsPartner = hasCouple && (ctx.partner_count ?? 0) < 2;
+  const partnerCount = ctx.partner_count ?? 0;
+
+  // Full couple → the pairing job is done; never mount either popup again.
+  // (The role-specific checks below already exclude this, but make the
+  // "stop once paired" contract explicit and robust.)
+  if (hasCouple && partnerCount >= 2) return null;
+
+  const needsPartner = hasCouple && partnerCount < 2;
   const isOwner = !hasCouple || ctx.role === "owner";
 
   // Owner (purchaser) who still needs a partner → invite/share popup.

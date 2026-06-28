@@ -85,6 +85,10 @@ export function PartnerShareCard({
   const closeText = useCmsText("myHub.share.close").text;
 
   const [copied, setCopied] = useState(false);
+  // Separate feedback for the code-chip copy (copies the bare code) vs the
+  // main action button (copies the full invite link), so clicking one doesn't
+  // flip the other's "copied" state.
+  const [codeCopied, setCodeCopied] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -143,6 +147,30 @@ export function PartnerShareCard({
         document.execCommand("copy");
         setCopied(true);
         setTimeout(() => setCopied(false), 1800);
+      } catch {
+        /* ignore */
+      }
+      document.body.removeChild(input);
+    }
+  }
+
+  // The chip next to the code copies the BARE pair code (not the link) — for
+  // when the partner is typing the code in manually rather than opening a URL.
+  async function handleCopyCode() {
+    track("partner_invite_shared", { channel: "copy_code" });
+    try {
+      await navigator.clipboard.writeText(pairCode);
+      setCodeCopied(true);
+      setTimeout(() => setCodeCopied(false), 1800);
+    } catch {
+      const input = document.createElement("input");
+      input.value = pairCode;
+      document.body.appendChild(input);
+      input.select();
+      try {
+        document.execCommand("copy");
+        setCodeCopied(true);
+        setTimeout(() => setCodeCopied(false), 1800);
       } catch {
         /* ignore */
       }
@@ -216,7 +244,7 @@ export function PartnerShareCard({
           <div className="flex w-full items-center justify-center sm:w-auto">
             <button
               type="button"
-              onClick={handleCopy}
+              onClick={handleCopyCode}
               aria-label={isHe ? "העתקת הקוד" : "Copy code"}
               className="group inline-flex items-center gap-2.5 rounded-2xl border border-white/25 bg-white/10 px-4 py-2.5 transition hover:bg-white/15 hover:border-white/40"
             >
@@ -227,7 +255,7 @@ export function PartnerShareCard({
                 {pairCode}
               </span>
               <span className="hidden h-6 w-px bg-white/15 sm:block" aria-hidden />
-              {copied ? (
+              {codeCopied ? (
                 <Check className="h-5 w-5 text-emerald-300" aria-hidden />
               ) : (
                 <Copy className="h-5 w-5 text-white/70 transition group-hover:text-white" aria-hidden />
@@ -260,8 +288,8 @@ export function PartnerShareCard({
                 : copyText && copyText.trim().length > 0
                   ? copyText
                   : isHe
-                    ? "העתק/י"
-                    : "Copy"}
+                    ? "העתקת לינק הזמנה"
+                    : "Copy invite link"}
             </span>
           </button>
 

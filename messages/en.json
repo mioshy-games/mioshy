@@ -99,7 +99,7 @@
       "closeLabel": "Close",
       "emailSubjectLabel": "Mioshy invite",
       "pairedTitle": "You're paired with {name} 💛",
-      "pairedBody": "You're both on the same journey now — same chat with the expert, same access to the games. To un-pair, head to account settings."
+      "pairedBody": "Your pairing is complete. You're setting out on this journey together, and our experts are already here to guide you along the way."
     },
     "notifications": {
       "pageTitle": "Notifications",
@@ -2195,7 +2195,7 @@
     "share": {
       "title": "Share with your partner",
       "lede": "This code lets your partner unlock everything you have — at no extra cost — as long as your subscription stays active.",
-      "copyBtn": "Copy",
+      "copyBtn": "Copy invite link",
       "copied": "Copied",
       "whatsappBtn": "WhatsApp",
       "smsBtn": "SMS",
