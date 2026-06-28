@@ -41,6 +41,7 @@ import {
   preferCoupleOwner,
   viewerIsPartnerOfOwner,
 } from "@/lib/journey-content/owner";
+import { partnerAssessmentGateState } from "@/lib/journey-content/partner-gate";
 import type {
   CoupleCardData,
   ExpertMiniData,
@@ -163,6 +164,14 @@ async function countFreshUnlockedItems(args: {
 
     const legacyOwner = preferCoupleOwner(args.userId, args.coupleId);
     const cadenceOwner = await journeyOwnerForUser(args.userId);
+
+    // Shared-content gate (spec step 3): a partner who is blocked until they
+    // finish their OWN full assessment must not get a lessons badge derived
+    // from the owner's items. partnerAssessmentGateState reuses
+    // journeyOwnerForUser (cached just above) + the completion check, so no
+    // duplicate cross-user work. The expert badge (the partner's own private
+    // chat) is computed separately and is NOT gated here.
+    if ((await partnerAssessmentGateState(args.userId)).blocked) return 0;
 
     const [legacyAssignments, cadenceAssignments] = await Promise.all([
       listAssignmentsForOwner(legacyOwner, {

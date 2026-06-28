@@ -84,11 +84,13 @@ export default async function LessonsPage({
 
   // Shared-content gate (spec step 3, shared helper): a partner deferred to the
   // owner's queue who hasn't finished their own full assessment is redirected to
-  // the assessment. This is the post-login landing (and /my/today redirects
-  // here), so it also covers the today resolver. Kept OUTSIDE any try/catch so
-  // the redirect propagates. owner/solo/view-as → never blocked.
+  // /my/journey, which renders the warm <PartnerAssessmentGate/> (a component,
+  // NOT a redirect) so there's no loop and the partner always sees the warm
+  // screen + CTA. This is the post-login landing (and /my/today redirects here),
+  // so it also covers the today resolver. Kept OUTSIDE any try/catch so the
+  // redirect propagates. owner/solo/view-as → never blocked.
   if ((await partnerAssessmentGateState(shell.userId)).blocked) {
-    redirect(`/${locale}/journey/assessment`);
+    redirect(`/${locale}/my/journey`);
   }
 
   // ── Universal assessment gate (Itzik 2026-06-01) ─────────────────────
