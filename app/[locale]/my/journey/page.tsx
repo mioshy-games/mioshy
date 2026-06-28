@@ -660,12 +660,16 @@ export default async function PrivateJourneyPage({
           assessmentStage,
         });
 
-  // Phase 5 - adaptive ordering. Pull THIS viewer's priority ranking
-  // (each partner has their own) and reorder the rail accordingly so
-  // their #1 priority surfaces first. Categories whose slug isn't in
-  // the priority taxonomy keep their natural position after the
-  // priority block.
-  const viewerPriorities = await getViewerPriorityOrder(effectiveUserId);
+  // Phase 5 - adaptive ordering. The RAIL order follows the cadence
+  // OWNER's ranking so a PARTNER sees the SAME chapter order as the
+  // subscription owner (shared-content spec step 2, Gate C). For
+  // owner/solo the cadence owner IS the viewer, so this is unchanged.
+  // The partner's OWN ranking still drives their personal priority
+  // widget below (seededPriorities). Categories whose slug isn't in the
+  // priority taxonomy keep their natural position after the priority block.
+  const railPriorityOwnerId =
+    cadenceOwner.kind === "user" ? cadenceOwner.userId : effectiveUserId;
+  const viewerPriorities = await getViewerPriorityOrder(railPriorityOwnerId);
   // Build the rail-key → category-slug lookup from the live timeline.
   // For dynamic categories the slug comes from journey_categories;
   // for the empty/static rails we pull slugs from the bucket data.

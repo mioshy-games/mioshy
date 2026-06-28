@@ -28,7 +28,48 @@ import type {
   TimelineEntry,
 } from "./types";
 import { deriveStatus } from "./status";
-import { ownerFilter } from "./owner";
+import { ownerFilter, viewerIsPartnerOfOwner } from "./owner";
+
+// ------------------------------------------------------------
+// Gate B (shared-content spec step 2): cross-user read escalation.
+//
+// Migration 035 RLS grants journey_* SELECT only when
+//   user_id = auth.uid() OR couple_id IN (my couples) OR is_admin().
+// A PARTNER reading the SUBSCRIPTION OWNER's per-user cadence rows
+// (user_id = ownerId, couple_id NULL) is therefore dropped. We can't add
+// an RLS policy (no migration), so the cross-user read goes through the
+// ADMIN (service-role) client — but ONLY after couple_members confirms
+// the viewer is that owner's partner. Every other case keeps the SESSION
+// client exactly as before (no escalation on couple-owned owners, on the
+// owner reading their own rows, or for unrelated/admin viewers).
+// ------------------------------------------------------------
+
+type ReadClient = Awaited<ReturnType<typeof createServerSupabaseClient>>;
+
+/** True only when reading a *different* user's owner queue is authorized
+ *  because the viewer is that owner's partner. */
+async function isCrossUserAuthorized(
+  owner: JourneyOwner,
+  viewerUserId: string | undefined,
+): Promise<boolean> {
+  return (
+    !!viewerUserId &&
+    owner.kind === "user" &&
+    owner.userId !== viewerUserId &&
+    (await viewerIsPartnerOfOwner(viewerUserId, owner.userId))
+  );
+}
+
+/** Pick the read client: admin when (and only when) cross-user authorized,
+ *  otherwise the RLS-scoped session client. Falls back to session if the
+ *  service-role client is unavailable (degrades to empty, never throws). */
+async function readClientFor(crossUser: boolean): Promise<ReadClient> {
+  if (crossUser) {
+    const admin = createServiceRoleClient();
+    if (admin) return admin as unknown as ReadClient;
+  }
+  return createServerSupabaseClient();
+}
 
 // ------------------------------------------------------------
 // Programs
@@ -309,8 +350,9 @@ const _listAssignmentsForOwnerCached = cache(
     owner: JourneyOwner,
     onlyActive: boolean,
     sourceKinds: string,
+    crossUser: boolean,
   ): Promise<JourneyAssignment[]> => {
-    const supabase = await createServerSupabaseClient();
+    const supabase = await readClientFor(crossUser);
     const { column, value } = ownerFilter(owner);
     let q = supabase
       .from("journey_assignments")
@@ -336,18 +378,31 @@ export async function listAssignmentsForOwner(
      *  only the per-user cadence container, or ['program','category',
      *  'item'] to fetch only legacy v2 sources. Omit for all kinds. */
     sourceKinds?: Array<"program" | "category" | "item" | "cadence">;
+    /** Gate B (shared-content step 2): the authenticated viewer. When the
+     *  owner is a *different* user and couple_members confirms the viewer
+     *  is that owner's partner, the read escalates to the admin client so
+     *  RLS doesn't drop the owner's per-user rows. Omit (or pass the
+     *  owner's own id) to keep the session client — behaves as before. */
+    viewerUserId?: string;
   } = {},
 ): Promise<JourneyAssignment[]> {
   const onlyActive = !!opts.onlyActive;
   // Sort so {program,item} and {item,program} produce the same key.
   const sourceKinds = (opts.sourceKinds ?? []).slice().sort().join(",");
   const ownerId = owner.kind === "couple" ? owner.coupleId : owner.userId;
-  const cacheKey = `${owner.kind}:${ownerId}:${onlyActive ? "1" : "0"}:${sourceKinds}`;
+  const crossUser = await isCrossUserAuthorized(owner, opts.viewerUserId);
+  // Fold the cross-user dimension into the cache key so a partner's
+  // admin-escalated result is never served to a different viewer (and the
+  // owner's own session-scoped result never bleeds into a partner's read).
+  const cacheKey = `${owner.kind}:${ownerId}:${onlyActive ? "1" : "0"}:${sourceKinds}:${
+    crossUser ? `x:${opts.viewerUserId}` : "s"
+  }`;
   return _listAssignmentsForOwnerCached(
     cacheKey,
     owner,
     onlyActive,
     sourceKinds,
+    crossUser,
   );
 }
 
@@ -395,12 +450,19 @@ export async function getTimelineForOwner(args: {
   // Same clock → no race between the SQL filter and the JS computation.
   const clock = now ?? new Date();
   const clockIso = clock.toISOString();
-  const supabase = await createServerSupabaseClient();
+  // Gate B: escalate to the admin client ONLY when the viewer is reading
+  // the subscription owner's per-user queue (partner-of-owner). All reads
+  // below (scheduled_items + siblings) then bypass RLS for the authorized
+  // owner. The private-response filter further down still hides the
+  // owner's is_private rows from the partner.
+  const crossUser = await isCrossUserAuthorized(owner, viewerUserId);
+  const supabase = await readClientFor(crossUser);
 
   // 1. Active assignments for this owner (optionally narrowed by source_kind).
   const assignments = await listAssignmentsForOwner(owner, {
     onlyActive: true,
     sourceKinds,
+    viewerUserId,
   });
   if (assignments.length === 0) return [];
   const assignmentIds = assignments.map((a) => a.id);

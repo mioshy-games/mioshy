@@ -37,7 +37,9 @@
 import "server-only";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase-admin";
 import { listAssignmentsForOwner } from "@/lib/journey-content/queries";
+import { viewerIsPartnerOfOwner } from "@/lib/journey-content/owner";
 import type { JourneyOwner } from "@/lib/journey-content/types";
 import { makeLogger } from "@/lib/observability/log";
 
@@ -83,6 +85,12 @@ interface Args {
    *  are hidden when this is null. */
   viewerCoupleRole: "owner" | "partner" | null;
   sourceKinds: Array<"program" | "category" | "item" | "cadence">;
+  /** Gate B (shared-content step 2): the authenticated viewer. When the
+   *  owner is a *different* user and the viewer is that owner's partner,
+   *  the assignment + scheduled reads escalate to the admin client so RLS
+   *  doesn't drop the owner's per-user cadence rows. Omit to keep the
+   *  session client (unchanged behaviour). */
+  viewerUserId?: string;
   /** Clock override for tests. Defaults to now. */
   now?: Date;
 }
@@ -142,16 +150,26 @@ export async function getShellTimelineEntries(
   args: Args,
 ): Promise<ShellTimelineEntry[]> {
   const t0 = Date.now();
-  const { owner, viewerCoupleRole, sourceKinds, now } = args;
+  const { owner, viewerCoupleRole, sourceKinds, viewerUserId, now } = args;
   const clockIso = (now ?? new Date()).toISOString();
   const ownerKey =
     owner.kind === "couple" ? `couple:${owner.coupleId}` : `user:${owner.userId}`;
+
+  // Gate B (shared-content step 2): escalate to the admin client only when
+  // the viewer is reading the subscription owner's per-user queue and
+  // couple_members confirms the partnership. Otherwise session client.
+  const crossUser =
+    !!viewerUserId &&
+    owner.kind === "user" &&
+    owner.userId !== viewerUserId &&
+    (await viewerIsPartnerOfOwner(viewerUserId, owner.userId));
 
   // 1. Assignment ids — cached helper, free on repeat within a render.
   const tAssign = Date.now();
   const assignments = await listAssignmentsForOwner(owner, {
     onlyActive: true,
     sourceKinds,
+    viewerUserId,
   });
   log.info("assignments_fetched", {
     owner: ownerKey,
@@ -173,7 +191,9 @@ export async function getShellTimelineEntries(
   //    schema ever grows a second FK between the same tables we'll
   //    need to qualify with `journey_items!fk_name(...)`.
   const tFetch = Date.now();
-  const supabase = await createServerSupabaseClient();
+  const supabase = crossUser
+    ? (createServiceRoleClient() ?? (await createServerSupabaseClient()))
+    : await createServerSupabaseClient();
   const { data, error } = await supabase
     .from("journey_scheduled_items")
     .select(

@@ -39,6 +39,7 @@ import { listAssignmentsForOwner } from "@/lib/journey-content/queries";
 import {
   journeyOwnerForUser,
   preferCoupleOwner,
+  viewerIsPartnerOfOwner,
 } from "@/lib/journey-content/owner";
 import type {
   CoupleCardData,
@@ -167,10 +168,12 @@ async function countFreshUnlockedItems(args: {
       listAssignmentsForOwner(legacyOwner, {
         onlyActive: true,
         sourceKinds: ["program", "category", "item"],
+        viewerUserId: args.userId,
       }),
       listAssignmentsForOwner(cadenceOwner, {
         onlyActive: true,
         sourceKinds: ["cadence"],
+        viewerUserId: args.userId,
       }),
     ]);
     if (
@@ -197,7 +200,19 @@ async function countFreshUnlockedItems(args: {
     }
     const assignmentIds = Array.from(assignmentKindById.keys());
 
-    const supabase = await createServerSupabaseClient();
+    // Gate B (shared-content step 2): when the cadence owner is the
+    // SUBSCRIPTION OWNER (partner viewer), the owner's per-user scheduled
+    // rows are RLS-invisible to the partner's session client. Escalate the
+    // scheduled + completions reads to the admin client only after
+    // couple_members confirms the partnership. The legacy ids mixed into
+    // this query are couple-owned (or self) and already authorized.
+    const crossUser =
+      cadenceOwner.kind === "user" &&
+      cadenceOwner.userId !== args.userId &&
+      (await viewerIsPartnerOfOwner(args.userId, cadenceOwner.userId));
+    const supabase = crossUser
+      ? (createServiceRoleClient() ?? (await createServerSupabaseClient()))
+      : await createServerSupabaseClient();
     const { data: scheduledRows, error: sErr } = await supabase
       .from("journey_scheduled_items")
       .select("id, assignment_id, audience")

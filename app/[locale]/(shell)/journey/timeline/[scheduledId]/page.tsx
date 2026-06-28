@@ -32,6 +32,7 @@ import { Compass } from "lucide-react";
 import { routing } from "@/i18n/routing";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
+import { viewerIsPartnerOfOwner } from "@/lib/journey-content/owner";
 import { deriveStatus, isOpenable } from "@/lib/journey-content/status";
 import { logActivity } from "@/lib/journey/activity";
 import type {
@@ -157,6 +158,13 @@ export default async function JourneyTimelineItemPage({
       viewerCoupleRole =
         ((membership as { role: string }).role as "owner" | "partner") ?? null;
     }
+  } else if (assignment.user_id) {
+    // Shared-content (spec step 2): a PARTNER may open the SUBSCRIPTION
+    // OWNER's per-user cadence item (user-owned, couple_id NULL). Authorize
+    // via couple_members — the viewer must be the owner's partner.
+    // viewerCoupleRole stays null (the audience gate below only runs for
+    // couple-owned assignments, so cadence items are unaffected).
+    ownedByMe = await viewerIsPartnerOfOwner(effectiveUserId, assignment.user_id);
   }
   if (!ownedByMe) notFound();
 

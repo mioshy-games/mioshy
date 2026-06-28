@@ -27,6 +27,7 @@ import { revalidatePath } from "next/cache";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { requireCompleteProfile } from "@/lib/auth/profile-gate";
+import { viewerIsPartnerOfOwner } from "@/lib/journey-content/owner";
 import { logActivity } from "@/lib/journey/activity";
 import type {
   JourneyAssignment,
@@ -99,9 +100,21 @@ async function loadScheduledForViewer(args: {
     return { ok: false, error: "assignment_inactive" };
   }
 
-  const ownedByMe =
-    (assignment.user_id && assignment.user_id === args.userId) ||
-    (assignment.couple_id && args.coupleIds.includes(assignment.couple_id));
+  let ownedByMe: boolean =
+    (!!assignment.user_id && assignment.user_id === args.userId) ||
+    (!!assignment.couple_id && args.coupleIds.includes(assignment.couple_id));
+
+  // Shared-content (spec step 2): a PARTNER may act on the SUBSCRIPTION
+  // OWNER's per-user cadence items — shared completions + responses. The
+  // owner's cadence assignment is user-owned (couple_id NULL, user_id =
+  // ownerId !== viewer), so the checks above miss it. Authorize via
+  // couple_members (admin, never trust the client): the viewer must be the
+  // owner's partner in the same couple. Unrelated users still hit the
+  // strict "forbidden" below. The deleteScheduledItemResponse author check
+  // (resp.user_id !== viewer) is separate and unchanged.
+  if (!ownedByMe && assignment.user_id) {
+    ownedByMe = await viewerIsPartnerOfOwner(args.userId, assignment.user_id);
+  }
 
   if (!ownedByMe) return { ok: false, error: "forbidden" };
 

@@ -306,11 +306,13 @@ export async function getLessonsData(args: Args): Promise<LessonsPageData> {
         owner: legacyOwner,
         viewerCoupleRole: viewerRole,
         sourceKinds: ["program", "category", "item"],
+        viewerUserId: userId,
       }),
       getShellTimelineEntries({
         owner: cadenceOwner,
         viewerCoupleRole: null,
         sourceKinds: ["cadence"],
+        viewerUserId: userId,
       }),
     ]);
     timeline = [...legacy, ...cadence];

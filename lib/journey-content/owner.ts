@@ -142,6 +142,63 @@ export const journeyOwnerForUser = cache(
 );
 
 /**
+ * Authorization primitive for the shared-content read/write paths
+ * (journey shared-content spec, step 2).
+ *
+ * Returns true iff `viewerUserId` is a PARTNER (couple_members.role=
+ * 'partner') in a couple whose role='owner' member is exactly
+ * `ownerUserId`. In other words: the viewer is the subscription owner's
+ * partner, so they are allowed to READ the owner's per-user cadence queue
+ * and WRITE shared completions / responses on the owner's scheduled items.
+ *
+ * ALWAYS verified via the service-role client against couple_members -
+ * never trust the client. Any failure (missing admin, no couple, role
+ * mismatch, different couple) returns false so the caller keeps its strict
+ * default (session-client read / "forbidden" write). Same membership shape
+ * as journeyOwnerForUser so the two never drift.
+ *
+ * Wrapped in React.cache so the per-request authorization is shared across
+ * Gate A (write actions) and Gate B (read queries) within one render.
+ */
+export const viewerIsPartnerOfOwner = cache(
+  async (viewerUserId: string, ownerUserId: string): Promise<boolean> => {
+    if (!viewerUserId || !ownerUserId || viewerUserId === ownerUserId) {
+      return false;
+    }
+    try {
+      const { createServiceRoleClient } = await import("@/lib/supabase-admin");
+      const admin = createServiceRoleClient();
+      if (!admin) return false;
+
+      // The viewer must be a PARTNER in some couple.
+      const { data: membership } = await admin
+        .from("couple_members")
+        .select("couple_id, role")
+        .eq("user_id", viewerUserId)
+        .maybeSingle();
+      if (
+        !membership ||
+        membership.role !== "partner" ||
+        !membership.couple_id
+      ) {
+        return false;
+      }
+
+      // ...and ownerUserId must be the role='owner' member of THAT couple.
+      const { data: ownerMember } = await admin
+        .from("couple_members")
+        .select("user_id")
+        .eq("couple_id", membership.couple_id as string)
+        .eq("role", "owner")
+        .maybeSingle();
+      return (ownerMember?.user_id as string | undefined) === ownerUserId;
+    } catch {
+      return false;
+    }
+  },
+);
+
+/**
  * Convenience for building the Supabase filter pair - returns a tuple that
  * can be spread into a query's equality filter. Callers use it like:
  *
