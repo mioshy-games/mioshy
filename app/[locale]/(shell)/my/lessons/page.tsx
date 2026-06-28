@@ -43,6 +43,7 @@ import { getLessonsData } from "@/lib/shell/lessons/getLessonsData";
 import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
 import { resolvePrioritiesForUser } from "@/lib/journey-content/resolve-priorities";
+import { partnerAssessmentGateState } from "@/lib/journey-content/partner-gate";
 
 // `dynamic = "force-dynamic"` is inherited from the (shell) layout.
 
@@ -80,6 +81,15 @@ export default async function LessonsPage({
 
   const shell = await getShellData({ locale: isHe ? "he" : "en" });
   if (!shell) redirect(`/${locale}/auth`);
+
+  // Shared-content gate (spec step 3, shared helper): a partner deferred to the
+  // owner's queue who hasn't finished their own full assessment is redirected to
+  // the assessment. This is the post-login landing (and /my/today redirects
+  // here), so it also covers the today resolver. Kept OUTSIDE any try/catch so
+  // the redirect propagates. owner/solo/view-as → never blocked.
+  if ((await partnerAssessmentGateState(shell.userId)).blocked) {
+    redirect(`/${locale}/journey/assessment`);
+  }
 
   // ── Universal assessment gate (Itzik 2026-06-01) ─────────────────────
   // Every user with journey access — paid, free-tier, or test_user —

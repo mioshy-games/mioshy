@@ -42,6 +42,8 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getCurrentCoupleContext } from "@/lib/between-us/couples";
 import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
 import { preferCoupleOwner, journeyOwnerForUser } from "@/lib/journey-content/owner";
+import { partnerAssessmentGateState } from "@/lib/journey-content/partner-gate";
+import { PartnerAssessmentGate } from "@/components/my/PartnerAssessmentGate";
 import { getTimelineForOwner } from "@/lib/journey-content/queries";
 import { countStatuses } from "@/lib/journey-content/status";
 import type { TimelineEntry } from "@/lib/journey-content/types";
@@ -123,6 +125,13 @@ export default async function JourneyTimelinePage({
   // item) assignments against the couple-preferred owner AND cadence
   // assignments against the strict per-user owner, then merge by
   // unlock_at. Both lists feed the same downstream TimelineList.
+  // Shared-content gate (spec step 3, shared helper): a deferred partner who
+  // hasn't finished their own full assessment is blocked BEFORE the owner's
+  // cadence timeline loads below. Standalone page → full-screen gate.
+  if ((await partnerAssessmentGateState(user.id)).blocked) {
+    return <PartnerAssessmentGate isHe={isHe} />;
+  }
+
   const couple = await getCurrentCoupleContext();
   const legacyOwner = preferCoupleOwner(user.id, couple?.couple_id ?? null);
   const cadenceOwner = await journeyOwnerForUser(user.id);

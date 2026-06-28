@@ -33,6 +33,7 @@ import { routing } from "@/i18n/routing";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
 import { viewerIsPartnerOfOwner } from "@/lib/journey-content/owner";
+import { partnerAssessmentGateState } from "@/lib/journey-content/partner-gate";
 import { deriveStatus, isOpenable } from "@/lib/journey-content/status";
 import { logActivity } from "@/lib/journey/activity";
 import type {
@@ -167,6 +168,14 @@ export default async function JourneyTimelineItemPage({
     ownedByMe = await viewerIsPartnerOfOwner(effectiveUserId, assignment.user_id);
   }
   if (!ownedByMe) notFound();
+
+  // Shared-content gate (spec step 3, shared helper): an authorized partner who
+  // hasn't finished their own full assessment can't open the owner's chapter.
+  // Deep shell page → redirect to the assessment (a full-screen gate wouldn't
+  // fit inside the shell chrome). owner/solo/view-as → never blocked.
+  if ((await partnerAssessmentGateState(effectiveUserId)).blocked) {
+    redirect(`/${locale}/journey/assessment`);
+  }
 
   // Audience gate — partner-targeted rows bounce back to /my/lessons.
   if (
