@@ -124,16 +124,19 @@ export function PartnerShareCard({
     // Funnel: "invited a partner" — first-party share-intent marker (brief
     // §1.5). The user is logged in here, so the funnel attributes by user_id.
     track("partner_invite_shared", { channel: "copy" });
+    // "העתקת קישור" — copy the full share URL (with the ?code= prefill), not
+    // the bare pair code, so what lands in the clipboard is a sendable link.
+    const shareUrl = getShareUrl();
     try {
-      await navigator.clipboard.writeText(pairCode);
+      await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
     } catch {
       // Some browsers (older Safari, locked-down enterprise envs) block
-      // clipboard.writeText. Fall back to selecting the code in a
+      // clipboard.writeText. Fall back to selecting the link in a
       // hidden input so the user can manually Ctrl+C.
       const input = document.createElement("input");
-      input.value = pairCode;
+      input.value = shareUrl;
       document.body.appendChild(input);
       input.select();
       try {

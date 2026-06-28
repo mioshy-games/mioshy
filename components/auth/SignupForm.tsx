@@ -78,11 +78,18 @@ export function SignupForm({ next, pairCode }: Props) {
         }
       }
 
-      // Honour caller-supplied next if present and same-origin.
-      // Default landing → /my/start, the post-login decider: it sends users
-      // whose assessment is still pending to /my/setup (non-blocking landing),
-      // and everyone else to /my/lessons (work-order 2026-06-15, part C).
-      const target = safeNext(next, "/my/start");
+      // Honour caller-supplied next if present and same-origin. A partner who
+      // arrived via a ?code= share link (auto-paired just above) goes straight
+      // to the full assessment — the next step for a freshly-joined partner.
+      // Everyone else defaults to /my/start, the post-login decider: it sends
+      // users whose assessment is still pending to /my/setup (non-blocking
+      // landing), and everyone else to /my/lessons (work-order 2026-06-15,
+      // part C). Paths are locale-relative — the @/navigation router prepends
+      // the locale itself.
+      const target = safeNext(
+        next,
+        normalizedCode ? "/journey/assessment" : "/my/start",
+      );
       router.push(target);
     });
   }

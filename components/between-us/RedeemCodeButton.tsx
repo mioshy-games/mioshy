@@ -14,9 +14,13 @@ export function RedeemCodeButton({
   className,
   /**
    * Optional path to send the user to after they successfully redeem a
-   * code. Defaults to /my (the global hub) but a game page can pass
+   * code. Defaults to /journey/assessment (the full assessment — the next
+   * step for a freshly-joined partner) but a game page can pass
    * `/adults/[slug]/play` so partners who join from a game page land
-   * directly inside that game's play surface.
+   * directly inside that game's play surface. Pass a LOCALE-RELATIVE path
+   * (e.g. "/journey/assessment", NOT "/he/journey/assessment") — the
+   * @/navigation router prepends the locale itself; a pre-prefixed path
+   * double-prefixes to /he/he/... → 404.
    */
   redirectTo,
   /**
@@ -36,7 +40,7 @@ export function RedeemCodeButton({
 }) {
   const [open, setOpen] = useState(false);
   const resolvedLabel = label ?? (isHe ? "הזנת קוד" : "Redeem code");
-  const finalRedirect = redirectTo ?? "/my";
+  const finalRedirect = redirectTo ?? "/journey/assessment";
   const finalAuthNext = authNext ?? finalRedirect;
 
   const base =
@@ -124,9 +128,10 @@ export function RedeemDialog({
       router.refresh();
       setTimeout(() => {
         onClose();
-        // Redirect to the caller-provided destination - defaults to /my
-        // when used in account/global contexts; game-page callers pass
-        // /adults/[slug]/play so the partner lands inside the game.
+        // Redirect to the caller-provided destination - defaults to
+        // /journey/assessment (the full assessment) for the couple-pairing
+        // flow; game-page callers pass /adults/[slug]/play so the partner
+        // lands inside the game instead.
         router.push(redirectTo);
       }, 900);
     });
@@ -181,7 +186,7 @@ export function RedeemDialog({
           ) : null}
           {success ? (
             <p className="rounded-xl border border-emerald-300/40 bg-emerald-400/10 px-3 py-2 text-xs text-emerald-100">
-              {isHe ? "צומדתם בהצלחה - מעבר למיאושי שלי…" : "Paired! Taking you to My Mioshy…"}
+              {isHe ? "צומדתם בהצלחה - רגע אחד…" : "Paired! One moment…"}
             </p>
           ) : null}
           <button

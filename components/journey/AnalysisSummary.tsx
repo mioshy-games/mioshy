@@ -1035,15 +1035,17 @@ function OfferCard({
             selected cadence. Stays dynamic with the picker selection; the
             "ניתן לעצור בכל עת" reassurance is preserved as the subline. */}
         {selectedOption ? (() => {
-          // Single-cadence fallback: with only one enabled cadence there is no
-          // picker, so the per-cadence promo line inside the cards never
-          // renders. To keep the promo from vanishing, surface it HERE instead.
-          // When the picker IS shown the cards carry the promo and this
-          // headline stays the regular price line (no double display).
+          // The "לתשלום" headline reflects the SELECTED cadence. When an active
+          // promo covers that cadence, surface the discounted FIRST-charge
+          // price here (e.g. ₪57 instead of ₪222) and drop the display anchor
+          // (₪508) — matching the per-cadence promo line in the picker cards.
+          // Itzik 2026-06-28: the headline must show the promo too, not stay on
+          // the regular price; double display with the selected card is fine.
+          // Without a promo for the selected cadence it stays the regular line.
           const cad = selectedOption.cadence;
           const pf = activePromo?.firstChargeByCadence[cad];
           const po = activePromo?.originalByCadence[cad];
-          if (!showPicker && activePromo && pf && po) {
+          if (activePromo && pf && po) {
             const firstAmt = isHe ? pf.ils : pf.usd;
             const origAmt = isHe ? po.ils : po.usd;
             return (
@@ -1086,10 +1088,9 @@ function OfferCard({
           return (
           <div className="mt-6 text-start">
             {/* Body (Assistant) font, not font-heading. Label + period in full
-                white; the ₪ symbol renders smaller than the number.
-                Promo is shown per-cadence inside the picker cards above, NOT
-                here — this headline stays the regular price line so the promo
-                never appears twice. */}
+                white; the ₪ symbol renders smaller than the number. Reached
+                only when no promo covers the selected cadence — the promo
+                headline branch above handles the discounted case. */}
             <p className="flex flex-wrap items-baseline gap-1.5">
               <span className="text-[20px] font-medium text-white">
                 {isHe ? "לתשלום" : "To pay"}

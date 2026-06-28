@@ -1,14 +1,13 @@
 /**
- * ExpertSoonCard — placeholder shown on /my/today when the user has
- * a Journey subscription but no expert assigned to them yet.
+ * ExpertSoonCard — shown on /my/today when the user has a Journey
+ * subscription but no expert chat preview yet.
  *
- * Replaces the ChatRowPreview slot (which would otherwise be empty).
- * Without this row the page reads as "you have a subscription but no
- * coach" — a confusing gap. With it the user sees a clear handhold:
- * "we're matching you, messages will land here".
+ * Itzik 2026-06-28: repurposed from a passive "we're matching you" placeholder
+ * into an assessment hand-off — completing the full assessment is what unlocks
+ * the tailored content and guidance, so the card now carries a CTA to it.
  *
- * Used only in the assigned-soon state; once an expert is attached
- * the regular <ChatRowPreview> takes over.
+ * `cta` is optional so the card degrades to its original text-only form when
+ * no action is supplied.
  */
 
 import { MessageCircle } from "lucide-react";
@@ -16,9 +15,13 @@ import { MessageCircle } from "lucide-react";
 interface Props {
   title: string;
   body: string;
+  /** Optional call-to-action link (e.g. the full assessment). `href` must be
+   *  an absolute, locale-prefixed path since this is a plain anchor in a
+   *  server component (no @/navigation locale handling). */
+  cta?: { href: string; label: string };
 }
 
-export function ExpertSoonCard({ title, body }: Props) {
+export function ExpertSoonCard({ title, body, cta }: Props) {
   return (
     <div
       className="flex items-start gap-3 rounded-[14px] border p-4"
@@ -51,6 +54,18 @@ export function ExpertSoonCard({ title, body }: Props) {
         >
           {body}
         </p>
+        {cta ? (
+          <a
+            href={cta.href}
+            className="mt-3 inline-flex min-h-[40px] items-center justify-center rounded-full px-5 text-[15px] font-semibold transition hover:brightness-110"
+            style={{
+              background: "var(--shell-wine-soft)",
+              color: "var(--shell-pink-text)",
+            }}
+          >
+            {cta.label}
+          </a>
+        ) : null}
       </div>
     </div>
   );

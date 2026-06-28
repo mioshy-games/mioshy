@@ -219,6 +219,10 @@ export default async function LessonsPage({
               <ExpertSoonCard
                 title={tToday("expertSoonTitle")}
                 body={tToday("expertSoonBody")}
+                cta={{
+                  href: `/${locale}/journey/assessment`,
+                  label: tToday("expertSoonCta"),
+                }}
               />
             ) : null}
           </section>

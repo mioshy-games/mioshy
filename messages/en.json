@@ -41,8 +41,9 @@
       "upsellBullet2": "A new lesson every day or two, tuned to the focus you pick",
       "upsellBullet3": "Your own relationship expert, available 5 days a week",
       "upsellCta": "Start the free assessment",
-      "expertSoonTitle": "Your expert is on the way",
-      "expertSoonBody": "We're matching you with a relationship expert in the coming days. The first messages will land here as soon as the pairing closes."
+      "expertSoonTitle": "Next step: complete your full assessment",
+      "expertSoonBody": "The full assessment is what unlocks your tailored content and guidance. Fill it in once — everything opens up from there.",
+      "expertSoonCta": "Complete the assessment"
     },
     "lessons": {
       "pageTitle": "My Lessons",
