@@ -50,6 +50,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getOwnerJourneyStatus } from "@/lib/journey-content/owner-status";
 import { getCurrentCoupleContext } from "@/lib/between-us/couples";
 import { JourneyCheckoutButton } from "@/components/journey/JourneyCheckoutButton";
+import { PairingPopups } from "@/components/my/PairingPopups";
 // `JourneyHubDiagProbe` import removed 2026-05-19 along with the
 // orbs field. Probe file kept on disk for future debugging.
 import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
@@ -274,6 +275,16 @@ export default async function JourneyMarketingPage({
           </ul>
         </main>
       </div>
+      {/* Pairing popup (redeem / invite), split by role + once-per-session.
+          This locked view is the canonical surface for a logged-in NON-paying
+          user with no journey entitlement — exactly the audience the redeemer
+          "enter your partner's code" popup targets. It never mounts in the
+          (shell) layout because such a user lands here in the funnel, not on
+          /my/*. PairingPopups self-gates: no couple → redeemer popup; paired →
+          nothing. Dismissal shares the same localStorage key as /my, so no
+          double-show. NOT mounted on /journey/assessment by design — popping it
+          over an active questionnaire would be intrusive and off-context. */}
+      <PairingPopups />
       </CmsTextProvider>
     );
   }
@@ -1131,6 +1142,12 @@ export default async function JourneyMarketingPage({
         }}
       />
     </div>
+    {/* Same role-split pairing popup as the locked view above. On this
+        (marketing) branch the viewer is either anonymous (PairingPopups
+        renders nothing) or a journey-entitled owner — in which case a
+        still-unpaired owner gets the invite popup. Once-per-session, shared
+        dismissal key with /my, so it never double-shows. */}
+    <PairingPopups />
     </CmsTextProvider>
   );
 }
