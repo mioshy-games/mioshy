@@ -2327,6 +2327,9 @@
   },
   "myJourney": {
     "metaTitle": "Your tuned clinic",
+    "partnerGateTitle": "One moment before we begin together",
+    "partnerGateBody": "To continue, complete your full assessment. We check in on your relationship's progress every 8 weeks, so our experts get to know you deeply and guide you precisely.",
+    "partnerGateCta": "Go to the assessment",
     "assessmentCompleted": "Assessment completed",
     "activityCompleted": "Completed: {title}",
     "activityJustOpened": "Just opened: {title}",

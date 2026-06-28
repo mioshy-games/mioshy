@@ -2325,6 +2325,9 @@
   },
   "myJourney": {
     "metaTitle": "הקליניקה המכווננת שלכם",
+    "partnerGateTitle": "רגע לפני שנתחיל יחד",
+    "partnerGateBody": "כדי להמשיך, השלימו את האבחון המלא. אנחנו בודקים את התקדמות הזוגיות שלכם כל 8 שבועות, וכך המומחים שלנו מכירים אתכם לעומק ומלווים אתכם מדויק.",
+    "partnerGateCta": "למעבר לאבחון",
     "assessmentCompleted": "השלמתם את האבחון האישי",
     "activityCompleted": "סיימתם: {title}",
     "activityJustOpened": "נפתח עבורכם: {title}",

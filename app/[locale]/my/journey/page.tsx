@@ -70,6 +70,7 @@ import { getDriftBannerForCurrentUser } from "@/lib/journey/drift-user";
 import { DriftAwarenessBanner } from "@/components/my/DriftAwarenessBanner";
 import { getCurrentUserPauseState } from "@/lib/billing/pause-state";
 import { PausedStateScreen } from "@/components/my/PausedStateScreen";
+import { PartnerAssessmentGate } from "@/components/my/PartnerAssessmentGate";
 import { getLatestRecapForCurrentUser } from "@/lib/journey/recap-read";
 import { WeeklyRecapCard } from "@/components/my/WeeklyRecapCard";
 import {
@@ -272,6 +273,33 @@ export default async function PrivateJourneyPage({
     return (
       <PausedStateScreen isHe={isHe} pausedUntil={pauseState.pausedUntil} />
     );
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // Shared-content gate (spec step 3): a PARTNER deferred to the
+  // subscription OWNER's chapter queue (journeyOwnerForUser resolved
+  // someone else — step 1) must finish THEIR OWN full assessment before
+  // the shared content unlocks. Placed BEFORE the P1.2 priorities gate
+  // below so the warm explanation screen REPLACES that gate's dry
+  // redirect-to-assessment for partners. Signal = the viewer's own
+  // journeys.status === 'complete' via getOwnerJourneyStatus
+  // .hasCompletedAssessment — the same completion signal the page uses
+  // elsewhere (no new check invented). owner / solo: the resolver returns
+  // self → never triggers. Skipped under view-as so a coach can inspect.
+  // ════════════════════════════════════════════════════════════════
+  if (!viewAsContext) {
+    const sharedOwner = await journeyOwnerForUser(effectiveUserId);
+    const isDeferredPartner =
+      sharedOwner.kind === "user" && sharedOwner.userId !== effectiveUserId;
+    if (isDeferredPartner) {
+      const partnerStatus = await getOwnerJourneyStatus({
+        userId: effectiveUserId,
+        coupleId: null,
+      });
+      if (!partnerStatus.hasCompletedAssessment) {
+        return <PartnerAssessmentGate isHe={isHe} />;
+      }
+    }
   }
 
   // ════════════════════════════════════════════════════════════════
