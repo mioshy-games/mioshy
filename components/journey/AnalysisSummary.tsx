@@ -848,6 +848,12 @@ export function AnalysisSummary({
           line-height: 1.12;
           color: #fff;
           margin: 12px 0 8px;
+          /* Defensive clamp: even if the AI returns a long hero, the title
+             can't take over the hero (the copy should be a short one-liner). */
+          display: -webkit-box;
+          -webkit-line-clamp: 3;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
         }
         .ar-sub {
           font-size: 22px;

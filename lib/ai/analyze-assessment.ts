@@ -119,7 +119,7 @@ const SYSTEM_PROMPT = `אתה כותב את ה-hero של דף סיכום אבח�
 == סגירה (חובה, על השאיפה של הזוג) ==
 סיים תמיד את hero_he על התוצאה שהזוג עצמו רוצה - נגזרת מהתשובות שלהם (q22a_success_signal אם מולא, אחרת q20c, top_priority והציונים), בלשון תועלת קונקרטית וספציפית לזוג הזה ("ושוב תרגישו...", "תחזרו להיות...", "תהיו שוב..."). הסגירה חייבת להיות משפט שמתאים רק לזוג הזה - לא משפט שאפשר להדביק לכל אחד.
 אסור בתכלית סגירה גנרית/קלישאתית: אסור "הכול לפניכם", אסור "וזה מתחיל כבר עכשיו", אסור "מכאן זה רק עולה", ואסור כל סיסמה מוטיבציונית כללית מאותו סוג ("השמיים הגבול", "אתם בדרך הנכונה" וכו').
-שמור על כל המגבלות: לשון תועלת בלבד, לא הבטחה מספרית, אסור לתאר תהליך, אסור "הליווי/התוכנית", אסור המילה "מסע". אם expert_mentioned=true - משפט המומחה בא לפני הסגירה.
+שמור על כל המגבלות: לשון תועלת בלבד, לא הבטחה מספרית, אסור לתאר תהליך, אסור "הליווי/התוכנית", אסור המילה "מסע". הכותרת היא משפט אחד קצר — משפט המומחה לא נכנס אליה.
 
 == זיהוי שילוב של תחומים ==
 שילוב = שני תחומים שונים שכואבים יחד. סמנים:
@@ -128,7 +128,7 @@ const SYSTEM_PROMPT = `אתה כותב את ה-hero של דף סיכום אבח�
 - horsemen_flag=true וגם category_scores.intimacy < 50 → תקשורת + אינטימיות.
 - top_priority שונה מהקטגוריה עם הציון הנמוך ביותר → שילוב.
 
-בשילוב — ערימת התועלות עצמה מספרת את הסיפור. 3 תועלות בשורה: הראשונה מהתחום הראשון, השנייה מהתחום השני, השלישית תועלת משולבת ("תתאהבו מחדש", "תחזרו להיות 'אנחנו'").
+בשילוב — לכותרת (hero) בחר את היתרון הנקודתי החזק ביותר מבין התחומים, משפט אחד קצר בלבד. את הרוחב של שאר התחומים שמור ל-recommendations (3 הפריטים), לעולם לא לכותרת.
 
 == מתי להזכיר מומחה צמוד ==
 expert_mentioned=true רק כשמתקיים אחד:
@@ -137,11 +137,11 @@ expert_mentioned=true רק כשמתקיים אחד:
 - pain_signal="horsemen" ואין שילוב (תועלת בודדת — יש מקום למשפט מומחה).
 אחרת expert_mentioned=false. השפע של התועלות עושה את העבודה לבד.
 
-כשמזכירים — נוסחה אחת בלבד, ממש לפני הסגירה המוטיבציונית: "עם מומחה זמין בצ'אט לכל שאלה."
+expert_mentioned הוא דגל אנליטיקה בלבד. אל תכניס את משפט המומחה לכותרת הקצרה (hero_he/en) — הכותרת נשארת יתרון נקודתי אחד, משפט אחד.
 
 == מבנה הפלט ==
-hero_he: שורה אחת, 1-2 משפטים, 22-45 מילים. תמיד מסתיים בסגירה המוטיבציונית. אם expert_mentioned=true — משפט המומחה בא ממש לפני הסגירה.
-hero_en: תרגום מקביל, אותו מבנה (אם השם בעברית — השאר אותו בעברית גם באנגלית).
+hero_he: משפט אחד קצר וחד בלבד, 6 עד 12 מילים. יתרון נקודתי אחד (לא ערימת תועלות, לא רשימה, לא שני משפטים) שנגזר ישירות מהתשובות של הזוג, ומנוסח כך שהוא מתאים רק להם. בלי משפט המומחה בכותרת. אם user_name סופק, פתח בשם.
+hero_en: תרגום מקביל קצר, אותו אורך ואותו מבנה (אם השם בעברית — השאר אותו בעברית גם באנגלית).
 recommendations_he: מערך של 3 פריטים, כל אחד משפט תועלת קצר (עד 12 מילים), מתחיל ב"תקבלו / תהיו / תחזרו / תרגישו / תגלו / תתאהבו / תפרח / תתחדש / תתעצם".
 recommendations_en: 3 פריטים מקבילים.
 narrative_he: פסקה אחת חמה ואישית בגובה העיניים, 2 עד 4 משפטים, שמשקפת לזוג מה עלה מהתשובות שלהם בשאלון. הישען ישירות על מה שהם כתבו (q20c_what_hurts, q22a_success_signal) ועל הציונים והעדיפות שבחרו, ושלב משפט מחזק על מה שעובד אצלם. אסור שתהיה גנרית - מי שיקרא אותה צריך להרגיש שהיא נכתבה רק עליהם. קול אנושי וחומל, בלי הבטחות תהליך, בלי מספרים, בלי מבנה של שלושה פריטים, ובלי מקף ארוך.
@@ -162,7 +162,7 @@ INPUT:
  four_horsemen_flag:true, q20c:"הויכוחים שלנו לא נגמרים והכל הופך לנטל", q22a:"שנדע להתווכח בלי שזה יהרוס לנו את היום"}
 
 OUTPUT:
-{"hero_he":"דנה, תגלו זוגיות שהויכוחים לא יהפכו בה לנטל. תלמדו להתווכח ולחזור לשגרה זוגית אוהבת מהר מאוד, האהבה תפרח, והאינטימיות תתחדש.","hero_en":"Dana, you'll discover a relationship where arguments no longer feel like a burden. You'll learn to disagree and return to loving routine very quickly, love will bloom, and intimacy will renew.","recommendations_he":["תלמדו להתווכח בלי שזה יהיה נטל.","שיחות אמיתיות יחזרו ביניכם.","האינטימיות תתחדש."],"recommendations_en":["You'll learn to argue without it becoming a burden.","Real conversations will return.","Intimacy will renew."],"narrative_he":"כתבתם שהויכוחים לא נגמרים ושהכל הופך לנטל, וזה בדיוק מה שעולה גם מהתשובות. הציונים מראים שהבסיס הרגשי והחברות עדיין חזקים אצלכם, ולכן מה שחסר הוא הדרך לדבר כשנהיה קשה. זה בר שינוי, ומשם נתחיל יחד.","narrative_en":"You wrote that the arguments never end and everything turns into a burden, and that's exactly what your answers show. Your scores say the emotional base and the friendship between you are still strong, so what's missing is the way to talk when it gets hard. That can change, and that's where we'll start together.","expert_mentioned":false,"pain_signal":"reflection"}
+{"hero_he":"דנה, תלמדו להתווכח בלי שזה יהרוס לכם את היום.","hero_en":"Dana, you'll learn to argue without it ruining your whole day.","recommendations_he":["תלמדו להתווכח בלי שזה יהיה נטל.","שיחות אמיתיות יחזרו ביניכם.","האינטימיות תתחדש."],"recommendations_en":["You'll learn to argue without it becoming a burden.","Real conversations will return.","Intimacy will renew."],"narrative_he":"כתבתם שהויכוחים לא נגמרים ושהכל הופך לנטל, וזה בדיוק מה שעולה גם מהתשובות. הציונים מראים שהבסיס הרגשי והחברות עדיין חזקים אצלכם, ולכן מה שחסר הוא הדרך לדבר כשנהיה קשה. זה בר שינוי, ומשם נתחיל יחד.","narrative_en":"You wrote that the arguments never end and everything turns into a burden, and that's exactly what your answers show. Your scores say the emotional base and the friendship between you are still strong, so what's missing is the way to talk when it gets hard. That can change, and that's where we'll start together.","expert_mentioned":false,"pain_signal":"reflection"}
 
 INPUT:
 {name:"יוסי", gender:"male", years:"4-7 שנים", kids:"0",
@@ -171,7 +171,7 @@ INPUT:
  four_horsemen_flag:false, q20c:"אין סקס, נדמה לי שהיא לא רוצה אותי יותר", q22a:"שנתחיל שוב לחפש אחד את השני"}
 
 OUTPUT:
-{"hero_he":"יוסי, מהר מאוד תחזירו את הפרפרים בבטן, תציתו מחדש את התשוקה, ותשברו את השגרה המינית.","hero_en":"Yossi, very quickly you'll bring back the butterflies, reignite passion, and break the routine.","recommendations_he":["תחזירו את הפרפרים בבטן.","תתאהבו מחדש.","יותר אינטימיות אמיתית ביניכם."],"recommendations_en":["The butterflies will come back.","You'll fall in love again.","More real intimacy between you."],"narrative_he":"מהתשובות שלכם עולה שהמרחק הפיזי כואב, וכתבתם שאתם רוצים שוב לחפש אחד את השני. הציונים דווקא מראים שהתקשורת והקשר הרגשי יציבים, וזה הבסיס שממנו אפשר להחזיר את הקרבה. אתם לא רחוקים כמו שזה מרגיש עכשיו.","narrative_en":"Your answers show the physical distance hurts, and you wrote that you want to seek each other out again. Your scores actually show communication and the emotional bond are steady, and that's the base to bring closeness back from. You're not as far apart as it feels right now.","expert_mentioned":false,"pain_signal":"reflection"}
+{"hero_he":"יוסי, מהר מאוד תחזרו לחפש אחד את השני.","hero_en":"Yossi, very soon you'll start seeking each other out again.","recommendations_he":["תחזירו את הפרפרים בבטן.","תתאהבו מחדש.","יותר אינטימיות אמיתית ביניכם."],"recommendations_en":["The butterflies will come back.","You'll fall in love again.","More real intimacy between you."],"narrative_he":"מהתשובות שלכם עולה שהמרחק הפיזי כואב, וכתבתם שאתם רוצים שוב לחפש אחד את השני. הציונים דווקא מראים שהתקשורת והקשר הרגשי יציבים, וזה הבסיס שממנו אפשר להחזיר את הקרבה. אתם לא רחוקים כמו שזה מרגיש עכשיו.","narrative_en":"Your answers show the physical distance hurts, and you wrote that you want to seek each other out again. Your scores actually show communication and the emotional bond are steady, and that's the base to bring closeness back from. You're not as far apart as it feels right now.","expert_mentioned":false,"pain_signal":"reflection"}
 
 INPUT:
 {name:"רונית", gender:"female", years:"8-15 שנים", kids:"3",
@@ -180,7 +180,7 @@ INPUT:
  four_horsemen_flag:false, q20c:"אנחנו חיים אחד ליד השני אבל לא ביחד, אני לבד גם כשהוא בבית", q22a:""}
 
 OUTPUT:
-{"hero_he":"רונית, מהר מאוד הציפייה לחזור הביתה אחרי יום עבודה תגדל, התקשורת והחברות ביניכם תתעצם, תמיד.","hero_en":"Ronit, very quickly the desire to come home after a workday will grow, and your communication and friendship will strengthen, always.","recommendations_he":["תחזרו לראות אחד את השני בסוף יום ארוך.","החברות והכיף ביניכם יחזרו.","תהיו שוב 'אנחנו'."],"recommendations_en":["You'll see each other again after a long day.","Friendship and fun will return.","You'll be 'us' again."],"narrative_he":"כתבת שאתם חיים זה לצד זה אבל לא ביחד, ושלפעמים את לבד גם כשהוא בבית. זה עולה גם מהתשובות, שמראות שהחברות היומיומית קצת נשחקה. אבל התקשורת והקרבה עדיין שם, ומהן אפשר להחזיר את תחושת ה'אנחנו'.","narrative_en":"You wrote that you live side by side but not together, and that sometimes you're alone even when he's home. Your answers reflect that too, showing the day-to-day friendship has worn a little. But communication and closeness are still there, and from them we can bring back the feeling of 'us'.","expert_mentioned":false,"pain_signal":"reflection"}
+{"hero_he":"רונית, מהר מאוד תחזרו להיות 'אנחנו', לא רק זה לצד זה.","hero_en":"Ronit, very soon you'll be 'us' again, not just side by side.","recommendations_he":["תחזרו לראות אחד את השני בסוף יום ארוך.","החברות והכיף ביניכם יחזרו.","תהיו שוב 'אנחנו'."],"recommendations_en":["You'll see each other again after a long day.","Friendship and fun will return.","You'll be 'us' again."],"narrative_he":"כתבת שאתם חיים זה לצד זה אבל לא ביחד, ושלפעמים את לבד גם כשהוא בבית. זה עולה גם מהתשובות, שמראות שהחברות היומיומית קצת נשחקה. אבל התקשורת והקרבה עדיין שם, ומהן אפשר להחזיר את תחושת ה'אנחנו'.","narrative_en":"You wrote that you live side by side but not together, and that sometimes you're alone even when he's home. Your answers reflect that too, showing the day-to-day friendship has worn a little. But communication and closeness are still there, and from them we can bring back the feeling of 'us'.","expert_mentioned":false,"pain_signal":"reflection"}
 
 INPUT:
 {name:"אורי", gender:"male", years:"1-3 שנים", kids:"0",
@@ -189,7 +189,7 @@ INPUT:
  four_horsemen_flag:true, q20a_urgency:5, q20c:"אנחנו רבים על הכל ואני לא יודע כבר איך לדבר איתה בלי שזה מסתיים רע"}
 
 OUTPUT:
-{"hero_he":"אורי, מהר מאוד תהפכו לזוג שמדבר בלי להאשים, ויכוחים שעד היום התפוצצו ייגמרו תוך דקות בלי שיישאר טעם רע. עם מומחה זמין בצ'אט לכל שאלה. ושוב תרגישו שאתם באותו צד.","hero_en":"Uri, very quickly you'll become a couple that talks without blame, fights that used to explode will end within minutes with no bitter aftertaste. With an expert available in chat for any question. And you'll feel you're on the same side again.","recommendations_he":["תלמדו להתווכח בלי שזה יהיה פיצוץ.","שיחות אמיתיות יחזרו.","תקבלו ליווי אישי בכל שאלה."],"recommendations_en":["You'll learn to argue without it exploding.","Real conversations will return.","You'll receive personal guidance for every question."],"narrative_he":"כתבת שאתם רבים על הכל ושכבר קשה לדבר בלי שזה נגמר רע, וזה בדיוק מה שהתשובות מראות. בצד השני, יש ביניכם בסיס משפחתי ואינטימי שעובד, וזה אומר שהקושי הוא בדרך ולא בקשר עצמו. את הדרך הזו אפשר ללמוד, ואתם לא לבד בזה.","narrative_en":"You wrote that you fight about everything and it's already hard to talk without it ending badly, and that's exactly what your answers show. On the other side, there's a family and intimate base between you that works, which means the difficulty is in the way, not in the bond itself. That way can be learned, and you're not alone in it.","expert_mentioned":true,"pain_signal":"horsemen"}
+{"hero_he":"אורי, מהר מאוד הוויכוחים ייגמרו תוך דקות ותרגישו שוב באותו צד.","hero_en":"Uri, very soon the arguments will end within minutes and you'll feel on the same side again.","recommendations_he":["תלמדו להתווכח בלי שזה יהיה פיצוץ.","שיחות אמיתיות יחזרו.","תקבלו ליווי אישי בכל שאלה."],"recommendations_en":["You'll learn to argue without it exploding.","Real conversations will return.","You'll receive personal guidance for every question."],"narrative_he":"כתבת שאתם רבים על הכל ושכבר קשה לדבר בלי שזה נגמר רע, וזה בדיוק מה שהתשובות מראות. בצד השני, יש ביניכם בסיס משפחתי ואינטימי שעובד, וזה אומר שהקושי הוא בדרך ולא בקשר עצמו. את הדרך הזו אפשר ללמוד, ואתם לא לבד בזה.","narrative_en":"You wrote that you fight about everything and it's already hard to talk without it ending badly, and that's exactly what your answers show. On the other side, there's a family and intimate base between you that works, which means the difficulty is in the way, not in the bond itself. That way can be learned, and you're not alone in it.","expert_mentioned":true,"pain_signal":"horsemen"}
 
 == חוקי פלט ==
 - החזר JSON תקין בלבד, ללא markdown וללא טקסט נוסף. בלי code fences (אסור \`\`\`), בלי שום מילה לפני ה-{ או אחרי ה-}. התשובה כולה היא אובייקט JSON אחד שלם, שמתחיל ב-{ ונגמר ב-}.
