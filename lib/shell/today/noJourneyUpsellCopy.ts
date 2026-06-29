@@ -10,10 +10,10 @@ import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
  *   - the no-journey upsell on /my/lessons,
  *   - the expert gate on /my/expert.
  *
- * Body + the two bullets resolve from the appShell.today.upsell* CMS keys
+ * Body + the five bullets resolve from the appShell.today.upsell* CMS keys
  * (messages/<locale>.json fallback). Call sites still own their own chip /
  * title / CTA — those vary by surface and gate state; only the body and the
- * two bullets are unified here.
+ * five bullets are unified here.
  */
 export async function getNoJourneyUpsellCopy(
   locale: "he" | "en",
@@ -25,6 +25,12 @@ export async function getNoJourneyUpsellCopy(
   });
   return {
     body: t("upsellBody"),
-    bullets: [t("upsellBullet1"), t("upsellBullet2")],
+    bullets: [
+      t("upsellBullet1"),
+      t("upsellBullet2"),
+      t("upsellBullet3"),
+      t("upsellBullet4"),
+      t("upsellBullet5"),
+    ],
   };
 }
