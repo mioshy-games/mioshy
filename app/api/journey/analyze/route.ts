@@ -265,6 +265,17 @@ export async function POST() {
     const nowIso = new Date().toISOString();
     if (aiResult.ok) {
       analysis.summary.ai_hero = aiResult.hero;
+      // Phase 3 (2026-06-29) — the same Claude call now also returns an
+      // answer-grounded personal-feedback narrative. When present, it replaces
+      // the deterministic summary.narrative_he/en that the results screen
+      // renders. On AI failure (else branch) the deterministic narrative,
+      // already built upstream, stays as the fallback.
+      if (aiResult.hero.narrative_he) {
+        analysis.summary.narrative_he = aiResult.hero.narrative_he;
+      }
+      if (aiResult.hero.narrative_en) {
+        analysis.summary.narrative_en = aiResult.hero.narrative_en;
+      }
       analysis.summary.ai_hero_status = {
         ok: true,
         reason: "ok",

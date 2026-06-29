@@ -265,6 +265,13 @@ export interface AiHeroBlock {
    *  when the reflection was empty/garbage. */
   reflection_echo_he?: string | null;
   reflection_echo_en?: string | null;
+  /** Phase 3 (2026-06-29) — warm, answer-grounded personal-feedback paragraph
+   *  rendered in the results "המשוב האישי שלכם" slot. Produced by the SAME
+   *  Claude call as the hero (no extra request). Optional: the deterministic
+   *  fallback omits it, and on AI failure the route keeps the deterministic
+   *  summary.narrative_he/en instead. */
+  narrative_he?: string;
+  narrative_en?: string;
 }
 
 /** Stage 1 (2026-06-14) — why the hero render is what it is. Persisted in

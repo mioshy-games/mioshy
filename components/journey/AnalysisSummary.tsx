@@ -133,15 +133,6 @@ function levelDesc(score: number, isLowest: boolean, isHe: boolean): string {
   return isHe ? "תחום חזק יחסית" : "a relative strength";
 }
 
-// Static included-list + improvement copy (design copy, bilingual).
-const INCLUDED: Array<{ he: string; en: string }> = [
-  { he: "פרק חדש כל שבוע", en: "A new chapter every week" },
-  { he: "מומחה זוגיות פרטי בצ'אט", en: "A private relationship expert in chat" },
-  { he: "משחקי זוגות אונליין", en: "Online couples games" },
-  { he: "הסקס של מיאושי", en: "Mioshy's sex games" },
-  { he: "ייעוץ זוגי עם מיאושי", en: "Couples coaching with Mioshy" },
-];
-
 export function AnalysisSummary({
   analysis,
   locale,
@@ -173,6 +164,47 @@ export function AnalysisSummary({
   const anchorPriceCms = useCmsText("journeyAssessment.analysis.anchorPrice").text;
   const activeTitleCms = useCmsText("journeyAssessment.analysis.activeTitle").text;
   const activeSubCms = useCmsText("journeyAssessment.analysis.activeSub").text;
+
+  // ── CMS-editable static copy (seeded by migration 152, section "results").
+  // useCmsText returns the key itself when a value is missing in BOTH cms_texts
+  // and messages JSON, so `rc` treats a value that still looks like the key as
+  // "unset" and renders the bilingual literal fallback. Prices/cadence DATA is
+  // never CMS — only labels.
+  const RK = "journeyAssessment.results";
+  const cmsEyebrow = useCmsText(`${RK}.eyebrow`).text;
+  const cmsHeroSub = useCmsText(`${RK}.heroSub`).text;
+  const cmsHeroLink = useCmsText(`${RK}.heroLink`).text;
+  const cmsFeedbackLabel = useCmsText(`${RK}.feedbackLabel`).text;
+  const cmsCategoriesLabel = useCmsText(`${RK}.categoriesLabel`).text;
+  const cmsContinueLabel = useCmsText(`${RK}.continueLabel`).text;
+  const cmsContinueP1 = useCmsText(`${RK}.continueP1`).text;
+  const cmsContinueP2 = useCmsText(`${RK}.continueP2`).text;
+  const cmsImprovementsLabel = useCmsText(`${RK}.improvementsLabel`).text;
+  const cmsImprove1 = useCmsText(`${RK}.improve1`).text;
+  const cmsImprove2 = useCmsText(`${RK}.improve2`).text;
+  const cmsImprove3 = useCmsText(`${RK}.improve3`).text;
+  const cmsImprove4 = useCmsText(`${RK}.improve4`).text;
+  const cmsImprove5 = useCmsText(`${RK}.improve5`).text;
+  const cmsImprove6 = useCmsText(`${RK}.improve6`).text;
+  const cmsPriceTitle = useCmsText(`${RK}.priceTitle`).text;
+  const cmsIncluded1 = useCmsText(`${RK}.included1`).text;
+  const cmsIncluded2 = useCmsText(`${RK}.included2`).text;
+  const cmsIncluded3 = useCmsText(`${RK}.included3`).text;
+  const cmsIncluded4 = useCmsText(`${RK}.included4`).text;
+  const cmsIncluded5 = useCmsText(`${RK}.included5`).text;
+  const cmsFullAssessment = useCmsText(`${RK}.fullAssessmentNote`).text;
+  const cmsStopNote = useCmsText(`${RK}.stopNote`).text;
+  const cmsAnchorLead = useCmsText(`${RK}.anchorLead`).text;
+  const cmsAnchorBold = useCmsText(`${RK}.anchorBold`).text;
+  const cmsCadMonthly = useCmsText(`${RK}.cadenceMonthly`).text;
+  const cmsCadQuarterly = useCmsText(`${RK}.cadenceQuarterly`).text;
+  const cmsCadYearly = useCmsText(`${RK}.cadenceYearly`).text;
+  const cmsCadWeekly = useCmsText(`${RK}.cadenceWeekly`).text;
+  const cmsPromoTag = useCmsText(`${RK}.promoTag`).text;
+  const rc = (raw: string, he: string, en: string) =>
+    raw && raw.trim().length > 0 && !raw.startsWith(`${RK}.`)
+      ? raw
+      : isHe ? he : en;
 
   // Rotating reassurance for the loading state (cycles while analysis is null).
   const loadingLines = isHe
@@ -315,12 +347,12 @@ export function AnalysisSummary({
       : null;
   const cadenceTitle = (cadence: string) =>
     cadence === "monthly"
-      ? isHe ? "חודשי" : "Monthly"
+      ? rc(cmsCadMonthly, "חודשי", "Monthly")
       : cadence === "quarterly"
-        ? isHe ? "רבעוני" : "Quarterly"
+        ? rc(cmsCadQuarterly, "רבעוני", "Quarterly")
         : cadence === "yearly"
-          ? isHe ? "שנתי" : "Yearly"
-          : isHe ? "שבועי" : "Weekly";
+          ? rc(cmsCadYearly, "שנתי", "Yearly")
+          : rc(cmsCadWeekly, "שבועי", "Weekly");
   const selectedOption =
     enabledCadences.find((c) => c.cadence === selectedCadence) ??
     enabledCadences[0] ??
@@ -337,13 +369,15 @@ export function AnalysisSummary({
         <div className="ar-hero-figure" aria-hidden />
         <div className="ar-hero-content">
           <div className="ar-eyebrow">
-            {isHe ? "תוצאות האבחון שלכם" : "Your assessment results"}
+            {rc(cmsEyebrow, "תוצאות האבחון שלכם", "Your assessment results")}
           </div>
           <h1 className="ar-h1 font-heading">{h1Text}</h1>
           <p className="ar-sub">
-            {isHe
-              ? "השלמת את האבחון. ניתחנו את הנתונים שלך, ובנינו עבורך תמונת מצב אישית שמראה איפה הזוגיות חזקה, ואיפה נמצא הפוטנציאל הגדול ביותר לשיפור."
-              : "You completed the assessment. We analysed your answers and built a personal picture showing where the relationship is strong, and where the biggest potential to improve is."}
+            {rc(
+              cmsHeroSub,
+              "השלמת את האבחון. ניתחנו את הנתונים שלך, ובנינו עבורך תמונת מצב אישית שמראה איפה הזוגיות חזקה, ואיפה נמצא הפוטנציאל הגדול ביותר לשיפור.",
+              "You completed the assessment. We analysed your answers and built a personal picture showing where the relationship is strong, and where the biggest potential to improve is.",
+            )}
           </p>
           {categoryScores ? (
             <div className="ar-bars">
@@ -374,7 +408,7 @@ export function AnalysisSummary({
             </div>
           ) : null}
           <a className="ar-herolink" href="#ar-price">
-            {isHe ? "להצטרף לייעוץ הזוגי עם מיאושי" : "Join couples coaching with Mioshy"}
+            {rc(cmsHeroLink, "להצטרף לייעוץ הזוגי עם מיאושי", "Join couples coaching with Mioshy")}
           </a>
         </div>
       </div>
@@ -387,7 +421,7 @@ export function AnalysisSummary({
             <div className="ar-fbcard">
               <div className="ar-photo" aria-hidden />
               <div className="ar-sublabel ar-center">
-                {isHe ? "המשוב האישי שלכם" : "Your personal feedback"}
+                {rc(cmsFeedbackLabel, "המשוב האישי שלכם", "Your personal feedback")}
               </div>
               <p className="ar-fbtext">{narrative}</p>
             </div>
@@ -398,7 +432,7 @@ export function AnalysisSummary({
         {categoryScores ? (
           <section className="ar-section">
             <div className="ar-sublabel">
-              {isHe ? "מה התשובות שלכם מספרות" : "What your answers tell"}
+              {rc(cmsCategoriesLabel, "מה התשובות שלכם מספרות", "What your answers tell")}
             </div>
             <div className="ar-cats">
               {CAT_ORDER.map((key) => {
@@ -435,16 +469,22 @@ export function AnalysisSummary({
               })}
             </div>
             <div className="ar-howcard">
-              <div className="ar-hl">{isHe ? "מכאן ממשיכים יחד" : "From here we continue together"}</div>
+              <div className="ar-hl">
+                {rc(cmsContinueLabel, "מכאן ממשיכים יחד", "From here we continue together")}
+              </div>
               <p>
-                {isHe
-                  ? "על כל אחד מהתחומים האלה נעבוד יחד, פרק חדש בכל שבוע, ואתם קובעים את הסדר."
-                  : "We'll work on each of these areas together, a new chapter every week, and you set the order."}
+                {rc(
+                  cmsContinueP1,
+                  "על כל אחד מהתחומים האלה נעבוד יחד, פרק חדש בכל שבוע, ואתם קובעים את הסדר.",
+                  "We'll work on each of these areas together, a new chapter every week, and you set the order.",
+                )}
               </p>
               <p>
-                {isHe
-                  ? "את האבחון המלא, לתמונה מדויקת ולתוצאות עמוקות יותר, נשלים יחד מיד אחרי ההצטרפות לתוכנית הייעוץ הזוגי של מיאושי."
-                  : "We'll complete the full assessment together, for a more accurate picture and deeper results, right after you join Mioshy's couples coaching."}
+                {rc(
+                  cmsContinueP2,
+                  "את האבחון המלא, לתמונה מדויקת ולתוצאות עמוקות יותר, נשלים יחד מיד אחרי ההצטרפות לתוכנית הייעוץ הזוגי של מיאושי.",
+                  "We'll complete the full assessment together, for a more accurate picture and deeper results, right after you join Mioshy's couples coaching.",
+                )}
               </p>
             </div>
           </section>
@@ -454,7 +494,9 @@ export function AnalysisSummary({
             Pre-purchase selling section: hidden for subscribers. */}
         {!journeySubscribed ? (
           <section className="ar-section">
-            <div className="ar-sublabel">{isHe ? "מה תקבלו בליווי" : "What you get in the program"}</div>
+            <div className="ar-sublabel">
+              {rc(cmsImprovementsLabel, "מה תקבלו בליווי", "What you get in the program")}
+            </div>
             <div className="ar-imp">
               <div className="ar-improw">
                 <span className="ar-ic">
@@ -463,7 +505,7 @@ export function AnalysisSummary({
                     <path d="M12 11v-3M10.5 9.5h3" strokeWidth="1.4" />
                   </svg>
                 </span>
-                <span>{isHe ? "האינטימיות תגדל" : "Intimacy will grow"}</span>
+                <span>{rc(cmsImprove1, "האינטימיות תגדל", "Intimacy will grow")}</span>
               </div>
               <div className="ar-improw">
                 <span className="ar-ic">
@@ -473,7 +515,7 @@ export function AnalysisSummary({
                     <path d="M12 9c3-6 9-4.5 8 .5-.8 3.8-6 4.5-8 1.5" />
                   </svg>
                 </span>
-                <span>{isHe ? "הפרפרים יחזרו לבטן" : "The butterflies will return"}</span>
+                <span>{rc(cmsImprove2, "הפרפרים יחזרו לבטן", "The butterflies will return")}</span>
               </div>
               <div className="ar-improw">
                 <span className="ar-ic">
@@ -481,7 +523,7 @@ export function AnalysisSummary({
                     <path d="M12 3c1 3-1 4-1 6a3 3 0 006 0c0-1 0-2-1-3 2 1 4 4 4 7a8 8 0 01-16 0c0-4 3-6 4-8 1 1 2 1 4-2z" />
                   </svg>
                 </span>
-                <span>{isHe ? "הסקס יהיה עוצמתי מתמיד" : "Sex will be better than ever"}</span>
+                <span>{rc(cmsImprove3, "הסקס יהיה עוצמתי מתמיד", "Sex will be better than ever")}</span>
               </div>
               <div className="ar-improw">
                 <span className="ar-ic">
@@ -491,7 +533,7 @@ export function AnalysisSummary({
                     <path d="M3.5 19a4.5 4.5 0 019 0M11.5 19a4.5 4.5 0 019 0" />
                   </svg>
                 </span>
-                <span>{isHe ? "החברות ביניכם תתחזק" : "Your friendship will strengthen"}</span>
+                <span>{rc(cmsImprove4, "החברות ביניכם תתחזק", "Your friendship will strengthen")}</span>
               </div>
               <div className="ar-improw">
                 <span className="ar-ic">
@@ -500,7 +542,7 @@ export function AnalysisSummary({
                     <path d="M5 7v12" strokeWidth="1.4" />
                   </svg>
                 </span>
-                <span>{isHe ? "הריבים יפחתו והשקט יחזור" : "Arguments will ease and calm returns"}</span>
+                <span>{rc(cmsImprove5, "הריבים יפחתו והשקט יחזור", "Arguments will ease and calm returns")}</span>
               </div>
               <div className="ar-improw">
                 <span className="ar-ic">
@@ -508,7 +550,7 @@ export function AnalysisSummary({
                     <path d="M12 20s-7-4.5-7-9a4 4 0 017-2.6A4 4 0 0119 11c0 4.5-7 9-7 9z" />
                   </svg>
                 </span>
-                <span>{isHe ? "האהבה תחזור" : "Love will return"}</span>
+                <span>{rc(cmsImprove6, "האהבה תחזור", "Love will return")}</span>
               </div>
             </div>
           </section>
@@ -518,7 +560,7 @@ export function AnalysisSummary({
         {!journeySubscribed ? (
           <section className="ar-section" id="ar-price">
             <h2 className="ar-sh font-heading">
-              {isHe ? "איזו חבילה מתאימה לכם?" : "Which plan fits you?"}
+              {rc(cmsPriceTitle, "איזו חבילה מתאימה לכם?", "Which plan fits you?")}
             </h2>
             <div className="ar-pricecard">
               {/* Packages ← journeyCadences. Price shown = promo first-charge
@@ -549,7 +591,7 @@ export function AnalysisSummary({
                     <span className="ar-opt-info">
                       <span className="ar-opt-name">
                         {cadenceTitle(c.cadence)}
-                        {hasPromo ? <span className="ar-opt-tag">{isHe ? "מבצע" : "Promo"}</span> : null}
+                        {hasPromo ? <span className="ar-opt-tag">{rc(cmsPromoTag, "מבצע", "Promo")}</span> : null}
                       </span>
                       <span className="ar-opt-note">{note}</span>
                     </span>
@@ -575,7 +617,7 @@ export function AnalysisSummary({
                       return (
                         <div className="ar-summary">
                           <span className="ar-summary-badge">
-                            {activePromo.displayText ?? `${isHe ? "מבצע" : "Promo"} ${activePromo.name}`}
+                            {activePromo.displayText ?? `${rc(cmsPromoTag, "מבצע", "Promo")} ${activePromo.name}`}
                           </span>
                           <p className="ar-summary-line">
                             <span>{isHe ? "לתשלום" : "To pay"}</span>{" "}
@@ -631,17 +673,25 @@ export function AnalysisSummary({
                 : null}
 
               <div className="ar-incl">
-                {INCLUDED.map((it, i) => (
+                {[
+                  rc(cmsIncluded1, "פרק חדש כל שבוע", "A new chapter every week"),
+                  rc(cmsIncluded2, "מומחה זוגיות פרטי בצ'אט", "A private relationship expert in chat"),
+                  rc(cmsIncluded3, "משחקי זוגות אונליין", "Online couples games"),
+                  rc(cmsIncluded4, "הסקס של מיאושי", "Mioshy's sex games"),
+                  rc(cmsIncluded5, "ייעוץ זוגי עם מיאושי", "Couples coaching with Mioshy"),
+                ].map((it, i) => (
                   <div className="ar-it" key={i}>
-                    {isHe ? it.he : it.en}
+                    {it}
                   </div>
                 ))}
               </div>
 
               <p className="ar-fulltext">
-                {isHe
-                  ? "מיד עם ההצטרפות נשלים את האבחון המלא, לתמונה מדויקת יותר ולצעדים שמתאימים בדיוק אליכם."
-                  : "Right after you join, we'll complete the full assessment, for a more accurate picture and steps tailored exactly to you."}
+                {rc(
+                  cmsFullAssessment,
+                  "מיד עם ההצטרפות נשלים את האבחון המלא, לתמונה מדויקת יותר ולצעדים שמתאימים בדיוק אליכם.",
+                  "Right after you join, we'll complete the full assessment, for a more accurate picture and steps tailored exactly to you.",
+                )}
               </p>
 
               <button
@@ -665,7 +715,7 @@ export function AnalysisSummary({
                 </p>
               ) : null}
               <div className="ar-stop">
-                {isHe ? "אפשר לעצור בכל עת בלחיצת כפתור." : "Cancel anytime with one tap."}
+                {rc(cmsStopNote, "אפשר לעצור בכל עת בלחיצת כפתור.", "Cancel anytime with one tap.")}
               </div>
             </div>
           </section>
@@ -694,17 +744,18 @@ export function AnalysisSummary({
         {/* Value anchor — pre-purchase only. */}
         {!journeySubscribed ? (
           <p className="ar-anchor">
-            {isHe ? (
-              <>
-                פגישת ייעוץ מתחילה ב-₪500 מינימום ויכולה להגיע לאלפי שקלים.{" "}
-                <b>איתנו תקבלו ליווי צמוד, כל החודש.</b>
-              </>
-            ) : (
-              <>
-                A counselling session starts at ₪500 minimum and can reach thousands.{" "}
-                <b>With us you get close guidance, all month long.</b>
-              </>
-            )}
+            {rc(
+              cmsAnchorLead,
+              "פגישת ייעוץ מתחילה ב-₪500 מינימום ויכולה להגיע לאלפי שקלים.",
+              "A counselling session starts at ₪500 minimum and can reach thousands.",
+            )}{" "}
+            <b>
+              {rc(
+                cmsAnchorBold,
+                "איתנו תקבלו ליווי צמוד, כל החודש.",
+                "With us you get close guidance, all month long.",
+              )}
+            </b>
           </p>
         ) : null}
       </div>
