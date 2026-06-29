@@ -1,28 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
-import {
-  MessageCircle,
-  CheckCircle2,
-  ArrowLeft,
-  ArrowRight,
-  Loader2,
-} from "lucide-react";
-import type { Analysis, CategoryScores, Locale } from "@/lib/journey/types";
-import { axisLabel } from "@/lib/journey/analysis";
-import {
-  CATEGORY_FEEDBACK,
-  CATEGORY_ORDER,
-  CATEGORY_WEAK_BELOW,
-  type CategoryKey,
-} from "@/lib/journey/category-feedback";
-import {
-  getFocusMonthCopy,
-  isPriorityKey,
-} from "@/lib/journey/focus-month-copy";
-import { useCmsText } from "@/hooks/useCmsText";
-import { CmsText } from "@/components/cms/CmsText";
+import { useState } from "react";
+import type { Analysis, Locale } from "@/lib/journey/types";
 import type { CadenceOption } from "@/lib/billing/pricing-validations";
 
 /**
@@ -32,1347 +11,799 @@ import type { CadenceOption } from "@/lib/billing/pricing-validations";
  * currency — derived via the same applyDiscount the checkout uses, so the
  * banner shows exactly what Cardcom will charge. null when no journey promo is
  * active. See app/[locale]/journey/assessment/page.tsx and lib/billing/promos.
+ *
+ * Kept exported — app/[locale]/journey/assessment/page.tsx imports this type.
  */
 export type JourneyPromoSummary = {
   name: string;
-  /** Optional customer-facing title (subscription_promos.display_text). When
-   *  set it replaces the default "מבצע {name}" heading on the promo line. */
   displayText: string | null;
   firstChargeByCadence: Record<string, { ils: number; usd: number }>;
   originalByCadence: Record<string, { ils: number; usd: number }>;
 };
 
-// "First period only" label per cadence — the promo discounts only the first
-// charge; renewals are full price, so we say so honestly (and per-cadence-
-// accurate, not a blanket "first month" that would be wrong for yearly).
-function firstPeriodLabel(cadence: string, isHe: boolean): string {
-  switch (cadence) {
-    case "yearly":
-      return isHe ? "שנה ראשונה" : "first year";
-    case "quarterly":
-      return isHe ? "רבעון ראשון" : "first quarter";
-    case "weekly":
-      return isHe ? "שבוע ראשון" : "first week";
-    default:
-      return isHe ? "חודש ראשון" : "first month";
-  }
-}
-
-// C2.4 cadence picker — precise weeks per cadence (internal math; display
-// rounds to whole units), and stable ordering.
-const WEEKS_PER_CADENCE: Record<string, number> = {
-  weekly: 1,
-  monthly: 4.345,
-  quarterly: 13.04,
-  yearly: 52.14,
-};
-
-// Display-only discount anchor for the struck "original" price (ILS only).
-// `original = ANCHOR_WEEKLY_BASE_ILS × ANCHOR_WEEKS_IN_PERIOD[cadence]`
-// → 508 / 1,524 / 6,096. The weekly base is a single constant for now; it's
-// meant to move to an admin source later (like the real cadence prices). Uses
-// WHOLE period-weeks {4,12,48} on purpose — NOT the calendar WEEKS_PER_CADENCE
-// (4.345/13.04/52.14) above, which is only for the per-week math.
-const ANCHOR_WEEKLY_BASE_ILS = 127;
-const ANCHOR_WEEKS_IN_PERIOD: Record<string, number> = {
-  monthly: 4,
-  quarterly: 12,
-  yearly: 48,
-};
-const CADENCE_ORDER: Record<string, number> = {
-  weekly: 0,
-  monthly: 1,
-  quarterly: 2,
-  yearly: 3,
-};
-
 interface AnalysisSummaryProps {
   analysis: Analysis | null;
   locale: Locale;
-  /** F3.3 — true when the user holds a journey subscription/entitlement
-   *  (active|grace), owner-swapped via getUserEntitlements so a PARTNER of a
-   *  paying subscriber counts as subscribed. Drives everything that depends on
-   *  "has journey access": the ActiveSubscriberCard-vs-OfferCard decision + the
-   *  sticky buy CTA, AND hides the three pre-purchase selling sections (gains /
-   *  who-for / expert) plus the non-subscriber CTA copy. Gated on entitlement —
-   *  NOT report_phase, and NOT the caller-keyed `subscriptionActive` — so a
-   *  just-subscribed user (still report_phase 'short') and a partner with free
-   *  journey access both correctly read as subscribed. */
+  /** F3.3 — true when the user holds a journey subscription/entitlement. Gates
+   *  the pre-purchase selling sections. Wired in Phase 3. */
   journeySubscribed?: boolean;
+  /** Enabled cadences + prices (server-injected). Wired in Phase 3. */
   journeyCadences?: CadenceOption[];
-  /** Active journey promo (server-computed) — drives the discount banner in
-   *  the OfferCard. null/undefined → no banner, zero visual change. */
+  /** Active journey promo (server-computed). Wired in Phase 3. */
   activePromo?: JourneyPromoSummary | null;
 }
 
 /**
- * Post-completion screen — premium edition (Itzik #62).
+ * AnalysisSummary — short-assessment results / pre-purchase paywall
+ * (route /journey/assessment, journeys.status='paywall').
  *
- * Three sections:
- *   1. Hero — title + 3 score cards in a tight row.
- *   2. Insight — narrative + focus-month + recommendation bullets,
- *      laid out as a single readable column with consistent rhythm.
- *   3. CTA — wine-palette offer card matching /pricing and the rest
- *      of the site (no fuchsia rainbow).
- *
- * Sprint 4 #3 Phase 2A migration — 42 keys under
- * journeyAssessment.analysis.*. whoFor1..4 and gain1..5 are flat keys
- * so admins get per-item editing (same pattern as PaywallGateModal
- * bullets). Data-driven copy (narrative_he/en, rec.he/en, axisLabel,
- * getFocusMonthCopy) stays as-is — those live in DB rows / library
- * functions outside the CMS scope.
+ * ── REDESIGN IN PROGRESS (mockup docs/assessment-results-mockup-v13.html) ──
+ * Phase 1 (this commit): structure + skin, STATIC content, MOBILE only.
+ *   • Faithful port of the approved mockup via scoped styled-jsx.
+ *   • Content is hardcoded placeholder (the mockup's Hebrew example values).
+ *   • Phase 2 adds the desktop @media (breakpoint 760).
+ *   • Phase 3 wires the dynamic data (AI hero/narrative, the 5 category
+ *     scores + feedback, prices/cadences/promo, JourneyCheckoutButton) using
+ *     the props above — see the data map in the redesign brief.
+ *   • Phase 4 validates displayed price == Cardcom charge.
+ * The props are intentionally not yet consumed (Phase 3). The loading guard
+ * on `analysis` is preserved so the flow still shows a wait state.
  */
-export function AnalysisSummary({
-  analysis,
-  locale,
-  journeySubscribed = false,
-  journeyCadences = [],
-  activePromo = null,
-}: AnalysisSummaryProps) {
-  const [checkoutBusy, setCheckoutBusy] = useState(false);
-  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+
+// Brand gradient (purple → magenta → orange) is defined once as the CSS
+// custom property --ar-grad on .ar-root (see styled-jsx below), so both the
+// class-driven rules and the inline bar styles reference var(--ar-grad).
+
+// Static placeholder data (Phase 1). Replaced by real props in Phase 3.
+const HERO_BARS = [
+  { v: 31, label: "אינטימיות", hot: true },
+  { v: 39, label: "חיבור רגשי", hot: false },
+  { v: 58, label: "תקשורת", hot: false },
+  { v: 43, label: "חברות", hot: false },
+  { v: 64, label: "משפחה", hot: false },
+];
+
+const CATEGORIES = [
+  {
+    score: 31,
+    exp: "הכי הרבה מקום לצמיחה",
+    name: "מיניות ואינטימיות",
+    text: "הקרבה הפיזית והתשוקה לא תמיד נוכחות. שגרה, מתח וקושי לדבר על מין מרחיקים, ואפשר להחזיר את הניצוץ.",
+    low: true,
+  },
+  {
+    score: 39,
+    exp: "מקום לחיזוק",
+    name: "אהבה וחיבור רגשי",
+    text: "החיבור הרגשי קצת דק, לפעמים חיים זה לצד זה ולא ביחד. רגעים קטנים, הערכה ופתיחות רגשית מקרבים מחדש.",
+    low: false,
+  },
+  {
+    score: 58,
+    exp: "בסיס טוב",
+    name: "תקשורת זוגית",
+    text: "התקשורת ביניכם נתקעת לפעמים, שיחות שמסלימות, או כאלה שלא נאמרות. פתיחה רכה, הקשבה לרגש שמתחת למילים ותיקון אחרי ריב משנים הכל.",
+    low: false,
+  },
+  {
+    score: 43,
+    exp: "מקום לחיזוק",
+    name: "חברות ושותפות יומיומית",
+    text: "החברות והכיף היומיומי נדחקים מעט. טקסים קטנים, צחוק משותף ורגעי 'אנחנו' מחזירים את השותפות.",
+    low: false,
+  },
+  {
+    score: 64,
+    exp: "תחום חזק יחסית",
+    name: "משפחה",
+    text: "ההתמודדות עם ההורות והמשפחה לוקחת מקום. תיאום ציפיות וגב הדדי זה לזה עושים את ההבדל.",
+    low: false,
+  },
+];
+
+const PACKAGES = [
+  { name: "חודשי", tag: "מבצע", note: "חודש ראשון, אחר כך ₪222", price: "₪57" },
+  { name: "רבעוני", tag: null, note: "חיסכון 12%", price: "₪650" },
+  { name: "שנתי", tag: null, note: "חיסכון 10%", price: "₪2,650" },
+];
+
+const INCLUDED = [
+  "פרק חדש כל שבוע",
+  "מומחה זוגיות פרטי בצ'אט",
+  "משחקי זוגות אונליין",
+  "הסקס של מיאושי",
+  "ייעוץ זוגי עם מיאושי",
+];
+
+export function AnalysisSummary({ analysis, locale }: AnalysisSummaryProps) {
   const isHe = locale === "he";
-
-  // C2.4: enabled cadences are the picker options; the weekly row stays
-  // the savings baseline. Selection drives the checkout plan + the billed
-  // transparency line. (Hooks must run before any early return below.)
-  const enabledCadences = journeyCadences
-    .filter((c) => c.enabled)
-    .sort((a, b) => CADENCE_ORDER[a.cadence] - CADENCE_ORDER[b.cadence]);
-  const defaultCadence =
-    (enabledCadences.find((c) => c.is_default) ?? enabledCadences[0])?.cadence ??
-    "monthly";
-  const [selectedCadence, setSelectedCadence] = useState<string>(defaultCadence);
-
-  // String-prop consumers — error messages and busy labels that must
-  // resolve to raw strings before they land in state or props.
-  const checkoutErrGeneric = useCmsText("journeyAssessment.analysis.checkoutErrorGeneric").text;
-  const checkoutErrNetwork = useCmsText("journeyAssessment.analysis.checkoutErrorNetwork").text;
-  const ctaLoadingLabel = useCmsText("journeyAssessment.analysis.ctaLoading").text;
-  const stickyCtaLabel = useCmsText("journeyAssessment.analysis.stickyCta").text;
-
-  // Rotating reassurance lines for the loading state (only cycles while
-  // analysis is still null). Inline he/en, consistent with other inline
-  // copy in this component.
-  const loadingLines = isHe
-    ? ["בונים את התמונה האישית שלכם", "מתאימים את ההמלצות עבורכם", "עוד רגע…"]
-    : ["Building your personal picture", "Tailoring your recommendations", "Almost there…"];
-  const [loadingLineIdx, setLoadingLineIdx] = useState(0);
-  useEffect(() => {
-    if (analysis) return;
-    const id = setInterval(
-      () => setLoadingLineIdx((i) => (i + 1) % loadingLines.length),
-      3000,
-    );
-    return () => clearInterval(id);
-  }, [analysis, loadingLines.length]);
+  // Phase 1: which package is visually selected (skin only — no price/checkout
+  // wiring yet). Phase 3 connects this to the cadence + JourneyCheckoutButton.
+  const [selected, setSelected] = useState(0);
 
   if (!analysis) {
     return (
-      <div
-        dir={isHe ? "rtl" : "ltr"}
-        className="mx-auto flex max-w-2xl flex-col items-center gap-4 p-10 text-center"
-      >
-        <Loader2 className="size-7 animate-spin text-[#FCCA65]" aria-hidden />
-        <CmsText
-          cmsKey="journeyAssessment.analysis.preparingAnalysis"
-          as="p"
-          className="font-heading text-[24px] sm:text-[24px] font-bold text-white"
-        />
-        {/* Rotating reassurance during the synchronous analyze wait
-            (~13-18s). No fake progress %, just honest "working on it"
-            lines that cycle every ~3s. */}
-        <p className="text-[20px] leading-snug text-white/60" aria-live="polite">
-          {loadingLines[loadingLineIdx]}
-        </p>
+      <div className="ar-loading" dir={isHe ? "rtl" : "ltr"}>
+        <span className="ar-spinner" aria-hidden />
+        <p>מכינים את התמונה האישית שלכם…</p>
+        <style jsx>{`
+          .ar-loading {
+            display: flex;
+            min-height: 60vh;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 18px;
+            padding: 40px 24px;
+            background: #fcfaf7;
+            color: #2e2622;
+            font-family: var(--font-heebo), "Heebo", system-ui, sans-serif;
+            font-size: 20px;
+            text-align: center;
+          }
+          .ar-spinner {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 3px solid rgba(122, 31, 43, 0.18);
+            border-top-color: #7a1f2b;
+            animation: ar-spin 0.8s linear infinite;
+          }
+          @keyframes ar-spin {
+            to {
+              transform: rotate(360deg);
+            }
+          }
+        `}</style>
       </div>
     );
   }
 
-  const bakedFocus = isHe
-    ? analysis.summary.focus_label_he
-    : analysis.summary.focus_label_en;
-  const focusLabel =
-    bakedFocus ??
-    (analysis.top_gap ? axisLabel(analysis.top_gap, locale) : null);
-
-  const Arrow = isHe ? ArrowLeft : ArrowRight;
-
-  // The cadence to charge: the selected one when it's enabled, else let
-  // the server resolve to the product default.
-  const checkoutPlan = enabledCadences.some((c) => c.cadence === selectedCadence)
-    ? selectedCadence
-    : "weekly";
-
-  const startCheckout = async () => {
-    setCheckoutBusy(true);
-    setCheckoutError(null);
-    try {
-      const res = await fetch("/api/billing/checkout/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          plan: checkoutPlan,
-          product: "journey",
-          source: "analysis_summary",
-          language: locale,
-          is_israeli: locale === "he",
-          // Land on the hub (/my), not the journey workspace, so the
-          // newly-subscribed user sees the PartnerShareCard and can
-          // invite their partner before diving into the program. Per
-          // Itzik 2026-05-27: the hub is the "first-screen" — Journey
-          // gets opened on demand from there.
-          return_path: `/${locale}/my`,
-        }),
-      });
-      const data = await res.json().catch(() => ({}));
-
-      // W1.1 — auth gate. Push the user to signup with a return path
-      // back to the assessment so they continue exactly where they were.
-      // F1 fix: strip /he|/en prefix from pathname before encoding —
-      // signup re-prepends the locale, so leaving it in caused the
-      // /he/he/journey/... 404.
-      if (res.status === 401 || data?.code === "UNAUTHORIZED") {
-        const rawPath =
-          typeof window !== "undefined"
-            ? window.location.pathname + window.location.search
-            : `/journey/assessment`;
-        const localeless =
-          rawPath.replace(/^\/(he|en)(?=\/|$)/, "") || "/journey/assessment";
-        const back = encodeURIComponent(localeless);
-        window.location.href = `/${locale}/auth/signup?next=${back}`;
-        return;
-      }
-
-      if (data?.redirect_url) {
-        window.location.href = data.redirect_url;
-        return;
-      }
-
-      setCheckoutError(data?.message || checkoutErrGeneric);
-      setCheckoutBusy(false);
-    } catch {
-      setCheckoutError(checkoutErrNetwork);
-      setCheckoutBusy(false);
-    }
-  };
-
-  // ── AI hero + category bundle (2026-06-02) ───────────────────────────
-  // When the AI call succeeded `summary.ai_hero` is populated and we render
-  // the new benefit-stack hero. When null we render NOTHING in its place —
-  // Itzik 2026-06-02: the deterministic "narrative" was confusing users
-  // because it didn't reference their actual answers, so it's been removed
-  // from the visible flow entirely. The personalized recommendation body
-  // below remains (it references the user's chosen priority).
-  const aiHero = analysis.summary.ai_hero ?? null;
-  const categoryScores = analysis.summary.category_scores ?? null;
-  const heroText = aiHero
-    ? isHe ? aiHero.hero_he : aiHero.hero_en
-    : null;
-  const heroRecs = aiHero
-    ? isHe ? aiHero.recommendations_he : aiHero.recommendations_en
-    : [];
-  // Stage 1 fallback only — a verbatim reflection quote rendered beneath
-  // the templated hero. The real AI weaves the reflection into hero_he, so
-  // this is null on the AI path.
-  const heroEcho = aiHero
-    ? (isHe ? aiHero.reflection_echo_he : aiHero.reflection_echo_en) ?? null
-    : null;
-
   return (
-    <motion.div
-      dir={isHe ? "rtl" : "ltr"}
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      // W3.1 (Itzik #11) — extra bottom padding on mobile so the sticky
-      // CTA doesn't cover the last content section. lg:pb-10 restores
-      // the desktop default since the sticky CTA is mobile-only.
-      className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 py-10 pb-32 lg:pb-10"
-    >
-      {/* Mioshy logo lives on the page wrapper (app/[locale]/journey/
-          assessment/page.tsx) so it appears on every screen of the flow,
-          not just the summary. Don't duplicate it here. */}
-
-      {/* ── Bar chart - the new hero (2026-06-02) ──────────────────────
-          Order per Itzik: chart first (establishes "we read you"), then
-          AI benefit-stack hero, then personalized method body, then
-          recommendation bullets, then the existing sections. */}
-      {categoryScores ? (
-        <CategoryBarChart scores={categoryScores} isHe={isHe} />
-      ) : (
-        // Fallback to legacy 3-card grid for older assessments without
-        // the 5-category bundle.
-        <div className="grid grid-cols-3 gap-2 sm:gap-3">
-          <ScoreCard
-            labelKey="journeyAssessment.analysis.friendship"
-            value={analysis.friendship_score}
-          />
-          <ScoreCard
-            labelKey="journeyAssessment.analysis.conflict"
-            value={analysis.conflict_health}
-          />
-          <ScoreCard
-            labelKey="journeyAssessment.analysis.passion"
-            value={analysis.passion_risk}
-            invert
-          />
-        </div>
-      )}
-
-      {/* ── Hero (Stage 2: prominence) — the centerpiece, right after the
-          chart ("we read you" → the personal punch). Accent gold card,
-          larger type, with the reflection echo (fallback only) and the
-          benefit recs pulled up directly beneath it. */}
-      {heroText ? (
-        <section className="px-2">
-          <div
-            className="rounded-2xl border p-5 sm:p-6"
-            style={{
-              borderColor: "rgba(252,202,101,0.45)",
-              background: "rgba(252,202,101,0.08)",
-            }}
-          >
-            <span className="text-start text-[14px] font-semibold uppercase tracking-wider leading-normal text-[#FCCA65]">
-              {isHe ? "מה שמצאנו אצלכם" : "What we found"}
-            </span>
-            <p className="mt-2 text-balance text-start font-heading text-[24px] font-extrabold leading-tight text-white sm:text-[24px]">
-              {heroText}
-            </p>
-            {heroEcho ? (
-              <p className="mt-3 text-start text-[20px] italic leading-snug text-white/75">
-                {heroEcho}
-              </p>
-            ) : null}
-          </div>
-        </section>
-      ) : null}
-
-      {/* ── "מה תקבלו בליווי" - benefit bullets, directly beneath the hero ── */}
-      {heroRecs.length > 0 ? (
-        <section>
-          <h2 className="text-balance text-start font-heading text-[24px] font-extrabold text-white sm:text-[24px]">
-            {isHe ? "מה תקבלו בליווי" : "What you'll get in the program"}
-          </h2>
-          <ul className="mt-4 flex flex-col gap-2.5">
-            {heroRecs.map((rec, i) => (
-              <li key={i} className="flex items-start gap-3 px-2 py-2">
-                <span
-                  className="mt-2.5 inline-block h-2 w-2 shrink-0 rounded-full"
-                  style={{ background: "#FCCA65" }}
-                  aria-hidden
+    <div className="ar-root" dir={isHe ? "rtl" : "ltr"}>
+      {/* ── HERO ───────────────────────────────────────────────────── */}
+      <div className="ar-hero">
+        <div className="ar-hero-figure" aria-hidden />
+        <div className="ar-hero-content">
+          <div className="ar-eyebrow">תוצאות האבחון שלכם</div>
+          <h1 className="ar-h1 font-heading">
+            <span style={{ color: "#fff" }}>דנה,</span> אפשר להחזיר את הקרבה.
+          </h1>
+          <p className="ar-sub">
+            השלמת את האבחון. ניתחנו את הנתונים שלך, ובנינו עבורך תמונת מצב אישית
+            שמראה איפה הזוגיות חזקה, ואיפה נמצא הפוטנציאל הגדול ביותר לשיפור.
+          </p>
+          <div className="ar-bars">
+            {HERO_BARS.map((b, i) => (
+              <div className={`ar-bar${b.hot ? " hot" : ""}`} key={i}>
+                <span className="ar-v">{b.v}</span>
+                <div
+                  className="ar-col"
+                  style={
+                    b.hot
+                      ? { height: `${b.v}%`, background: "var(--ar-grad)", border: 0 }
+                      : {
+                          height: `${b.v}%`,
+                          background:
+                            "linear-gradient(rgba(255,255,255,.07),rgba(255,255,255,.07)) padding-box, var(--ar-grad) border-box",
+                        }
+                  }
                 />
-                <span className="flex-1 text-pretty text-start text-[20px] leading-[1.3] text-white/95 sm:text-[20px] sm:leading-[1.65]">
-                  {rec}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
-
-      {/* ── Personal feedback per category (2026-06-07, Itzik approved) ──
-          Additive: driven by the existing category_scores; no scoring change.
-          Two bands per category (strong / needs-work) selected by the real
-          score, grounded in the content library. Lowest is highlighted. */}
-      {categoryScores ? (
-        <section className="px-2">
-          <span className="text-start text-[14px] font-semibold uppercase tracking-wider leading-normal text-[#FCCA65]">
-            {isHe ? "מה התשובות שלכם מספרות" : "What your answers tell"}
-          </span>
-          <h2 className="mt-1 text-balance text-start font-heading text-[24px] font-extrabold leading-tight text-white sm:text-[24px]">
-            {isHe ? "המשוב האישי שלכם" : "Your personal feedback"}
-          </h2>
-          <ul className="mt-4 flex flex-col gap-3">
-            {CATEGORY_ORDER.map((key: CategoryKey) => {
-              const score = categoryScores[key];
-              const fb = CATEGORY_FEEDBACK[key];
-              // Safety net: too little coverage to judge → show a "needs the
-              // full assessment" note instead of a misleading weak/strong score.
-              const insufficient = (categoryScores.insufficient_keys ?? []).includes(key);
-              const weak = score < CATEGORY_WEAK_BELOW;
-              const text = insufficient
-                ? (isHe
-                    ? "כדי לתת לכם משוב מדויק בתחום הזה צריך עוד כמה תשובות - זה מה שהאבחון המלא עושה."
-                    : "We need a few more answers to give you accurate feedback here - that's what the full assessment does.")
-                : isHe
-                  ? weak ? fb.weak_he : fb.strong_he
-                  : weak ? fb.weak_en : fb.strong_en;
-              const isLowest = !insufficient && key === categoryScores.lowest_key;
-              return (
-                <li
-                  key={key}
-                  className="rounded-2xl border p-4 sm:p-5"
-                  style={{
-                    borderColor: isLowest ? "rgba(252,202,101,0.55)" : "rgba(255,255,255,0.12)",
-                    background: isLowest ? "rgba(252,202,101,0.10)" : "rgba(255,255,255,0.05)",
-                  }}
-                >
-                  <div className="flex items-start gap-4">
-                    <div
-                      className="flex shrink-0 flex-col items-center justify-center rounded-xl px-3 py-2"
-                      style={{
-                        minWidth: 78,
-                        background: isLowest ? "rgba(252,202,101,0.16)" : "rgba(255,255,255,0.06)",
-                        border: `1px solid ${isLowest ? "rgba(252,202,101,0.5)" : "rgba(255,255,255,0.12)"}`,
-                      }}
-                    >
-                      <span
-                        className="font-heading text-[40px] font-extrabold leading-none tabular-nums"
-                        style={{ color: insufficient ? "#9a8fb0" : isLowest ? "#FCCA65" : "#fff" }}
-                      >
-                        {insufficient ? "–" : score}
-                      </span>
-                      <span className="mt-1 text-[12px] font-semibold text-white">
-                        {insufficient ? (isHe ? "אבחון מלא" : "full only") : isHe ? "מתוך 100" : "of 100"}
-                      </span>
-                    </div>
-                    <div className="flex-1">
-                      <span className="text-[24px] sm:text-[24px] font-bold leading-tight text-white">{isHe ? fb.he : fb.en}</span>
-                      {isLowest ? (
-                        <span
-                          className="ms-2 inline-block rounded-full px-2.5 py-0.5 text-[13px] font-bold"
-                          style={{ background: "#FCCA65", color: "#1a1018" }}
-                        >
-                          {isHe ? "נתחיל מכאן" : "start here"}
-                        </span>
-                      ) : null}
-                      <p className="mt-2 text-pretty text-start text-[20px] sm:text-[20px] leading-[1.5] text-white/90">
-                        {text}
-                      </p>
-                    </div>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      ) : null}
-
-      {/* Hero + "מה תקבלו בליווי" moved up to right after the bar chart
-          (Stage 2 — hero prominence). */}
-
-      {/* ── Focus for the first month (legacy - only when AI failed) ──
-          Itzik 2026-06-02: when the AI hero rendered above, the focus
-          block is redundant. Keep it as a fallback so older assessments
-          (without ai_hero) still see a structured "focus" prompt. */}
-      {!heroText && focusLabel && (() => {
-        const priority = isPriorityKey(analysis.summary.top_priority)
-          ? analysis.summary.top_priority
-          : null;
-        const focus = getFocusMonthCopy(priority, locale);
-        return (
-          <section className="px-2 py-2">
-            <div>
-              <CmsText
-                cmsKey="journeyAssessment.analysis.topGap"
-                as="div"
-                className="text-start text-[14px] font-semibold uppercase tracking-wider text-[#FCCA65] leading-normal"
-              />
-              <div className="mt-1.5 text-balance text-start font-heading text-[24px] font-extrabold leading-tight text-white sm:text-[24px]">
-                {focusLabel}
+                <span className="ar-lbl">{b.label}</span>
               </div>
-              {focus ? (
-                <ul className="mt-4 flex flex-col gap-2.5">
-                  {[focus.reflection, focus.plan, focus.close].map((line, i) => (
-                    <li
-                      key={i}
-                      className="flex items-start gap-3 text-pretty text-start text-[20px] leading-[1.3] text-white/90 sm:text-[20px] sm:leading-[1.7]"
-                    >
-                      <CheckCircle2
-                        className="mt-1.5 h-4 w-4 shrink-0 text-[#FCCA65]"
-                        aria-hidden
-                      />
-                      <span className={`flex-1 ${i === 2 ? "font-semibold text-[#FAF6F7]" : ""}`}>
-                        {line}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-            </div>
-          </section>
-        );
-      })()}
-
-      {/* W3.2 (Itzik #14) — what you'll gain. Placed between the
-          recommendations and the offer so the user reads concrete
-          benefits before they see the price.
-          F3.3 — pre-purchase selling section: hidden for journey
-          subscribers (gated on entitlement, not report_phase). */}
-      {!journeySubscribed ? (
-        <section className="p-2 sm:p-3">
-          <CmsText
-            cmsKey="journeyAssessment.analysis.gainsLabel"
-            as="div"
-            className="text-start text-[14px] font-semibold uppercase tracking-wider text-[#FCCA65] leading-normal"
-          />
-          <CmsText
-            cmsKey="journeyAssessment.analysis.gainsTitle"
-            as="h2"
-            className="mt-2 text-balance text-start font-heading text-[24px] font-extrabold leading-tight text-white sm:text-[24px]"
-          />
-          <ul className="mt-4 flex flex-col gap-2.5">
-            {[1, 2, 3, 4, 5].map((n) => (
-              <li
-                key={n}
-                className="flex items-start gap-3 text-[20px] leading-[1.3] text-white/90 sm:text-[20px] sm:leading-[1.65]"
-              >
-                <CheckCircle2
-                  className="mt-1 h-5 w-5 shrink-0 text-[#FCCA65]"
-                  aria-hidden
-                />
-                <CmsText
-                  cmsKey={`journeyAssessment.analysis.gain${n}`}
-                  className="flex-1 text-pretty text-start"
-                />
-              </li>
             ))}
-          </ul>
-        </section>
-      ) : null}
+          </div>
+          <a className="ar-herolink" href="#ar-price">
+            להצטרף לייעוץ הזוגי עם מיאושי
+          </a>
+        </div>
+      </div>
 
-      {/* Itzik 2026-05-29 — Topics covered. Concrete answer to "what
-          will we actually work on?" using the 5 journey priority
-          categories (communication / intimacy / emotional_connection /
-          friendship / family). Each row: name (bold) + short desc.
-          Placed after Gains ("what change") so users see "what areas"
-          next, before WhoFor / Expert / Offer. */}
-      <section className="p-2 sm:p-3">
-        <CmsText
-          cmsKey="journeyAssessment.analysis.topicsLabel"
-          as="div"
-          className="text-start text-[14px] font-semibold uppercase tracking-wider text-[#FCCA65] leading-normal"
-        />
-        <CmsText
-          cmsKey="journeyAssessment.analysis.topicsTitle"
-          as="h2"
-          className="mt-2 text-balance text-start font-heading text-[24px] font-extrabold leading-tight text-white sm:text-[24px]"
-        />
-        <CmsText
-          cmsKey="journeyAssessment.analysis.topicsSub"
-          as="p"
-          className="mt-2 text-pretty text-start text-[20px] leading-[1.4] text-white/70 sm:text-[20px] sm:leading-[1.55]"
-        />
-        <ul className="mt-4 flex flex-col gap-2.5">
-          {[1, 2, 3, 4, 5].map((n) => (
-            <li
-              key={n}
-              className="px-2 py-2.5"
-            >
-              <CmsText
-                cmsKey={`journeyAssessment.analysis.topic${n}Name`}
-                as="div"
-                className="text-balance text-start text-[24px] leading-[1.3] font-bold text-white sm:text-[24px]"
-              />
-              <CmsText
-                cmsKey={`journeyAssessment.analysis.topic${n}Desc`}
-                as="p"
-                className="mt-1 text-pretty text-start text-[20px] leading-[1.4] text-white/70 sm:text-[20px] sm:leading-[1.55]"
-              />
-            </li>
-          ))}
-        </ul>
-        {/* Itzik 2026-06-02: reassurance line below the list - the user
-            can re-rank priorities later from inside the journey. */}
-        <CmsText
-          cmsKey="journeyAssessment.analysis.topicsAfterJoin"
-          as="p"
-          className="mt-4 text-start text-[20px] leading-[1.45] italic text-white/60 sm:text-[20px]"
-        />
-      </section>
-
-      {/* W3.2 (Itzik #13) — who is this for. Below the gains so the
-          user reads "what" before "who" — natural decision order.
-          F3.3 — pre-purchase selling section: hidden for journey
-          subscribers (gated on entitlement, not report_phase). */}
-      {!journeySubscribed ? (
-        <section className="p-2 sm:p-3">
-          <CmsText
-            cmsKey="journeyAssessment.analysis.whoForLabel"
-            as="div"
-            className="text-start text-[14px] font-semibold uppercase tracking-wider text-[#FCCA65] leading-normal"
-          />
-          <CmsText
-            cmsKey="journeyAssessment.analysis.whoForTitle"
-            as="h2"
-            className="mt-2 text-balance text-start font-heading text-[24px] font-extrabold leading-tight text-white sm:text-[24px]"
-          />
-          <ul className="mt-4 flex flex-col gap-2.5">
-            {[1, 2, 3, 4].map((n) => (
-              <li
-                key={n}
-                className="flex items-start gap-3 text-[20px] leading-[1.3] text-white/90 sm:text-[20px] sm:leading-[1.65]"
-              >
-                <span
-                  className="mt-2.5 inline-block h-2 w-2 shrink-0 rounded-full"
-                  style={{ background: "#FCCA65" }}
-                  aria-hidden
-                />
-                <CmsText
-                  cmsKey={`journeyAssessment.analysis.whoFor${n}`}
-                  className="flex-1 text-pretty text-start"
-                />
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
-
-      {/* Itzik 2026-05-29 — Expert emphasis. The unique human element
-          before the price: real couples expert in a private 1:1 chat,
-          always available, learning the couple over time. Wine palette
-          mirrors the Focus and Offer cards so it reads as the same
-          "premium delivery" voice. Placed right before the offer so
-          the human face is the last thing the user sees before the
-          price. */}
-      {/* F3.3 — pre-purchase selling section: hidden for journey
-          subscribers (gated on entitlement, not report_phase). */}
-      {!journeySubscribed ? (
-        <section className="px-2 py-2">
-          <div>
-            <CmsText
-              cmsKey="journeyAssessment.analysis.expertLabel"
-              as="div"
-              className="text-start text-[14px] font-semibold uppercase tracking-wider text-[#FCCA65] leading-normal"
-            />
-            <CmsText
-              cmsKey="journeyAssessment.analysis.expertTitle"
-              as="h2"
-              className="mt-1.5 text-balance text-start font-heading text-[24px] font-extrabold leading-tight text-white sm:text-[24px]"
-            />
-            <CmsText
-              cmsKey="journeyAssessment.analysis.expertBody"
-              as="p"
-              className="mt-3 text-pretty text-start text-[20px] leading-[1.4] text-white/90 sm:text-[20px] sm:leading-[1.7]"
-            />
-            <ul className="mt-4 flex flex-col gap-2.5">
-              {[1, 2, 3, 4].map((n) => (
-                <li
-                  key={n}
-                  className="flex items-start gap-3 text-[20px] leading-[1.3] text-white/95 sm:text-[20px] sm:leading-[1.65]"
-                >
-                  <MessageCircle
-                    className="mt-1 h-5 w-5 shrink-0 text-[#FCCA65]"
-                    aria-hidden
-                  />
-                  <CmsText
-                    cmsKey={`journeyAssessment.analysis.expertBullet${n}`}
-                    className="flex-1 text-pretty text-start"
-                  />
-                </li>
-              ))}
-              {/* F3.3 (b) — additional expert bullet for non-subscribers,
-                  matching the styling of the four bullets above. */}
-              <li className="flex items-start gap-3 text-[20px] leading-[1.3] text-white/95 sm:text-[20px] sm:leading-[1.65]">
-                <MessageCircle
-                  className="mt-1 h-5 w-5 shrink-0 text-[#FCCA65]"
-                  aria-hidden
-                />
-                <span className="flex-1 text-pretty text-start">
-                  {isHe
-                    ? "בדיקת התקדמות זוגית כל 8 שבועות - והמומחה שלכם מדייק את הליווי בהתאם."
-                    : "A couples progress check every 8 weeks - and your expert fine-tunes the guidance accordingly."}
-                </span>
-              </li>
-            </ul>
-            {/* "Serious ongoing process" framing — honest, desire-led, NOT a
-                numeric guarantee. CMS-keyed so it's editable without a deploy. */}
-            <CmsText
-              cmsKey="journeyAssessment.analysis.ongoingProcess"
-              as="p"
-              className="mt-4 text-pretty text-start text-[20px] font-bold leading-[1.5] text-white/85 sm:text-[20px] sm:leading-[1.7]"
-            />
+      {/* ── SHEET ──────────────────────────────────────────────────── */}
+      <div className="ar-sheet">
+        {/* PERSONAL FEEDBACK */}
+        <section className="ar-section">
+          <div className="ar-fbcard">
+            <div className="ar-photo" aria-hidden />
+            <div className="ar-sublabel ar-center">המשוב האישי שלכם</div>
+            <p className="ar-fbtext">
+              האהבה ביניכם קיימת. כרגע נראה שהשגרה השפיעה בעיקר על הקרבה
+              והאינטימיות. החדשות הטובות: הבסיס הזוגי שלכם חזק, ולכן הפוטנציאל
+              לשינוי גבוה.
+            </p>
           </div>
         </section>
-      ) : null}
 
-      {/* ── CTA / Active subscriber ──────────────────────────────────────
-          F3.3 — driven by journeySubscribed (owner-swapped journey
-          entitlement), NOT the caller-keyed subscriptionActive: a PARTNER
-          of a paying subscriber has free journey access and must see the
-          ActiveSubscriberCard, not the buy CTA. A games-only subscriber
-          (no journey access) correctly falls through to the OfferCard. */}
-      {journeySubscribed ? (
-        <ActiveSubscriberCard locale={locale} />
-      ) : (
-        <OfferCard
-          checkoutBusy={checkoutBusy}
-          checkoutError={checkoutError}
-          onCheckout={startCheckout}
-          Arrow={Arrow}
-          ctaLoadingLabel={ctaLoadingLabel}
-          isHe={isHe}
-          enabledCadences={enabledCadences}
-          journeyCadences={journeyCadences}
-          selectedCadence={selectedCadence}
-          onSelectCadence={setSelectedCadence}
-          activePromo={activePromo}
-        />
-      )}
+        {/* CATEGORIES */}
+        <section className="ar-section">
+          <div className="ar-sublabel">מה התשובות שלכם מספרות</div>
+          <div className="ar-cats">
+            {CATEGORIES.map((c, i) => (
+              <div className={`ar-catcard${c.low ? " low" : ""}`} key={i}>
+                <div className="ar-scorerow">
+                  <span className="ar-snum font-heading">{c.score}</span>
+                  <span className="ar-sof">/ 100</span>
+                  <span className="ar-sexp">{c.exp}</span>
+                  {c.low ? <span className="ar-badge">נתחיל מכאן</span> : null}
+                </div>
+                <div className="ar-cname">{c.name}</div>
+                <p className="ar-ctxt">{c.text}</p>
+              </div>
+            ))}
+          </div>
+          <div className="ar-howcard">
+            <div className="ar-hl">מכאן ממשיכים יחד</div>
+            <p>
+              על כל אחד מהתחומים האלה נעבוד יחד, פרק חדש בכל שבוע, ואתם קובעים את
+              הסדר.
+            </p>
+            <p>
+              את האבחון המלא, לתמונה מדויקת ולתוצאות עמוקות יותר, נשלים יחד מיד
+              אחרי ההצטרפות לתוכנית הייעוץ הזוגי של מיאושי.
+            </p>
+          </div>
+        </section>
 
-      {/* W3.1 (Itzik #11) — sticky bottom CTA on mobile only.
-          F3 (#1) — bar background itself is now the wine gradient so
-          the whole strip pulls the eye, not just a button on a black
-          plate. The button reads as a clean lighter-tinted overlay on
-          top of the wine field.
-          F3.3 — same journeySubscribed gate as the CTA card above so the
-          mobile buy button never shows to a user (incl. a partner) who
-          already has journey access. */}
-      {!journeySubscribed ? (
-        <div
-          className="fixed inset-x-0 bottom-0 z-30 border-t border-white/10 px-4 py-3 lg:hidden"
-          style={{
-            paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)",
-            background:
-              "linear-gradient(180deg, rgba(252,202,101,0.95) 0%, rgba(184,143,50,0.98) 100%)",
-            boxShadow: "0 -16px 40px -12px rgba(252,202,101,0.55)",
-          }}
-          dir={isHe ? "rtl" : "ltr"}
-        >
-          <button
-            type="button"
-            onClick={startCheckout}
-            disabled={checkoutBusy}
-            className="flex h-[50px] w-full items-center justify-center gap-2 rounded-full text-[20px] sm:text-[20px] font-bold text-black transition disabled:opacity-60"
-            style={{
-              background: "#FCCA65",
-              boxShadow: "0 8px 24px -8px rgba(0,0,0,0.5)",
-            }}
-          >
-            {checkoutBusy ? ctaLoadingLabel : stickyCtaLabel}
-          </button>
-        </div>
-      ) : null}
-    </motion.div>
-  );
-}
+        {/* IMPROVEMENTS */}
+        <section className="ar-section">
+          <div className="ar-sublabel">מה תקבלו בליווי</div>
+          <div className="ar-imp">
+            <div className="ar-improw">
+              <span className="ar-ic">
+                <svg viewBox="0 0 24 24">
+                  <path d="M12 20s-7-4.5-7-9a4 4 0 017-2.6A4 4 0 0119 11c0 4.5-7 9-7 9z" />
+                  <path d="M12 11v-3M10.5 9.5h3" strokeWidth="1.4" />
+                </svg>
+              </span>
+              <span>האינטימיות תגדל</span>
+            </div>
+            <div className="ar-improw">
+              <span className="ar-ic">
+                <svg viewBox="0 0 24 24">
+                  <path d="M12 7v11" />
+                  <path d="M12 9C9 3 3 4.5 4 9.5c.8 3.8 6 4.5 8 1.5" />
+                  <path d="M12 9c3-6 9-4.5 8 .5-.8 3.8-6 4.5-8 1.5" />
+                </svg>
+              </span>
+              <span>הפרפרים יחזרו לבטן</span>
+            </div>
+            <div className="ar-improw">
+              <span className="ar-ic">
+                <svg viewBox="0 0 24 24">
+                  <path d="M12 3c1 3-1 4-1 6a3 3 0 006 0c0-1 0-2-1-3 2 1 4 4 4 7a8 8 0 01-16 0c0-4 3-6 4-8 1 1 2 1 4-2z" />
+                </svg>
+              </span>
+              <span>הסקס יהיה עוצמתי מתמיד</span>
+            </div>
+            <div className="ar-improw">
+              <span className="ar-ic">
+                <svg viewBox="0 0 24 24">
+                  <circle cx="8" cy="9" r="2.4" />
+                  <circle cx="16" cy="9" r="2.4" />
+                  <path d="M3.5 19a4.5 4.5 0 019 0M11.5 19a4.5 4.5 0 019 0" />
+                </svg>
+              </span>
+              <span>החברות ביניכם תתחזק</span>
+            </div>
+            <div className="ar-improw">
+              <span className="ar-ic">
+                <svg viewBox="0 0 24 24">
+                  <path d="M5 7h11l3 3-3 3H5z" />
+                  <path d="M5 7v12" strokeWidth="1.4" />
+                </svg>
+              </span>
+              <span>הריבים יפחתו והשקט יחזור</span>
+            </div>
+            <div className="ar-improw">
+              <span className="ar-ic">
+                <svg viewBox="0 0 24 24">
+                  <path d="M12 20s-7-4.5-7-9a4 4 0 017-2.6A4 4 0 0119 11c0 4.5-7 9-7 9z" />
+                </svg>
+              </span>
+              <span>האהבה תחזור</span>
+            </div>
+          </div>
+        </section>
 
-// ─────────────────────────────────────────────────────────────────────
-// Score card — solid surface, big numeric, label above. Invert flips
-// the colour mapping for "risk" axes (high=bad, low=good).
-// ─────────────────────────────────────────────────────────────────────
+        {/* PRICE */}
+        <section className="ar-section" id="ar-price">
+          <h2 className="ar-sh font-heading">איזו חבילה מתאימה לכם?</h2>
+          <div className="ar-pricecard">
+            {PACKAGES.map((p, i) => (
+              <button
+                type="button"
+                className={`ar-opt${selected === i ? " sel" : ""}`}
+                onClick={() => setSelected(i)}
+                key={i}
+              >
+                <span className="ar-radio" />
+                <span className="ar-opt-info">
+                  <span className="ar-opt-name">
+                    {p.name}
+                    {p.tag ? <span className="ar-opt-tag">{p.tag}</span> : null}
+                  </span>
+                  <span className="ar-opt-note">{p.note}</span>
+                </span>
+                <span className="ar-opt-price font-heading">{p.price}</span>
+              </button>
+            ))}
+            <div className="ar-incl">
+              {INCLUDED.map((it, i) => (
+                <div className="ar-it" key={i}>
+                  {it}
+                </div>
+              ))}
+            </div>
+            <a className="ar-cta">להצטרפות עכשיו</a>
+            <div className="ar-stop">אפשר לעצור בכל עת בלחיצת כפתור.</div>
+          </div>
+        </section>
 
-function ScoreCard({
-  labelKey,
-  value,
-  invert = false,
-}: {
-  labelKey: string;
-  value: number;
-  invert?: boolean;
-}) {
-  const tone = invert
-    ? value >= 60
-      ? "text-rose-300"
-      : "text-[#FCCA65]"
-    : value >= 60
-      ? "text-[#FCCA65]"
-      : "text-amber-300";
-  return (
-    <div className="flex flex-col items-center p-3 text-center sm:p-4">
-      {/* Itzik 2026-05-29 (mobile): label 20px (was 16), value 36px
-          (was 28). min-h on label reserves 3 lines so the three score
-          numbers align vertically even when one label wraps to 3 lines
-          ("סיכון לירידה בתשוקה") and others to 2. mt-auto on the score
-          pushes all numbers to the same baseline. Desktop preserved
-          via sm:. */}
-      <CmsText
-        cmsKey={labelKey}
-        as="div"
-        className="min-h-[75px] text-[20px] font-medium leading-tight text-white/75 sm:min-h-0 sm:text-[20px]"
-      />
-      <div className={`mt-auto pt-1 text-[36px] font-extrabold leading-none sm:text-[24px] ${tone}`}>
-        {value}
-        <span className="ms-1 text-[15px] font-semibold text-[#D8CFE6]">
-          /100
-        </span>
+        <p className="ar-anchor">
+          פגישת ייעוץ מתחילה ב-₪500 מינימום ויכולה להגיע לאלפי שקלים.{" "}
+          <b>איתנו תקבלו ליווי צמוד, כל החודש.</b>
+        </p>
       </div>
+
+      <style jsx>{`
+        .ar-root {
+          --ar-grad: linear-gradient(
+            95deg,
+            #6c5ce7 0%,
+            #d6409f 52%,
+            #f79154 100%
+          );
+          background: #fcfaf7;
+          color: #2e2622;
+          font-family: var(--font-heebo), "Assistant", "Heebo", system-ui,
+            sans-serif;
+          font-size: 20px;
+          line-height: 1.55;
+          -webkit-font-smoothing: antialiased;
+          position: relative;
+          overflow: hidden;
+        }
+        .font-heading {
+          font-family: var(--font-frank-ruhl), "Frank Ruhl Libre", serif;
+        }
+        .ar-eyebrow {
+          font-size: 14px;
+          font-weight: 800;
+          letter-spacing: 0.16em;
+          text-transform: uppercase;
+        }
+
+        /* HERO */
+        .ar-hero {
+          position: relative;
+          overflow: hidden;
+          color: #fff;
+          padding: 30px 24px 34px;
+          background-image: linear-gradient(
+              180deg,
+              rgba(36, 29, 26, 0.3) 0%,
+              rgba(36, 29, 26, 0.72) 60%,
+              #241d1a 100%
+            ),
+            url("/images/m-hero-assess.webp");
+          background-size: cover;
+          background-position: left center;
+          background-repeat: no-repeat;
+        }
+        .ar-hero-figure {
+          display: none;
+        }
+        .ar-hero-content {
+          position: relative;
+          z-index: 1;
+        }
+        .ar-hero .ar-eyebrow {
+          color: #e7d8c6;
+        }
+        .ar-h1 {
+          font-size: 42px;
+          font-weight: 900;
+          line-height: 1.12;
+          color: #fff;
+          margin: 12px 0 8px;
+        }
+        .ar-sub {
+          font-size: 22px;
+          font-weight: 500;
+          color: rgba(255, 255, 255, 0.85);
+          line-height: 1.45;
+          margin-bottom: 20px;
+        }
+        .ar-bars {
+          display: flex;
+          gap: 10px;
+          align-items: flex-end;
+          height: 120px;
+        }
+        .ar-bar {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: flex-end;
+          height: 100%;
+        }
+        .ar-col {
+          width: 100%;
+          border-radius: 8px 8px 4px 4px;
+          border: 2px solid transparent;
+        }
+        .ar-v {
+          font-size: 16px;
+          font-weight: 800;
+          margin-bottom: 7px;
+          color: rgba(255, 255, 255, 0.9);
+        }
+        .ar-lbl {
+          font-size: 14px;
+          color: rgba(255, 255, 255, 0.8);
+          margin-top: 9px;
+          text-align: center;
+          font-weight: 500;
+          line-height: 1.3;
+        }
+        .ar-herolink {
+          display: inline-block;
+          margin-top: 24px;
+          color: #fff;
+          font-weight: 700;
+          font-size: 20px;
+          text-decoration: underline;
+          text-underline-offset: 6px;
+          text-decoration-thickness: 2px;
+          text-decoration-color: rgba(255, 255, 255, 0.55);
+          cursor: pointer;
+        }
+
+        /* SHEET */
+        .ar-sheet {
+          background: #fcfaf7;
+          position: relative;
+          padding: 34px 24px 30px;
+        }
+        .ar-section {
+          margin-bottom: 40px;
+        }
+        .ar-sh {
+          font-size: 25px;
+          margin-bottom: 4px;
+          line-height: 1.2;
+        }
+        .ar-sublabel {
+          font-size: 14px;
+          font-weight: 800;
+          letter-spacing: 0.14em;
+          text-transform: uppercase;
+          color: #7a1f2b;
+          margin-bottom: 10px;
+        }
+        .ar-center {
+          text-align: center;
+        }
+
+        /* FEEDBACK */
+        .ar-fbcard {
+          text-align: center;
+          max-width: 640px;
+          margin: 0 auto;
+        }
+        .ar-photo {
+          width: 150px;
+          height: 150px;
+          border-radius: 50%;
+          margin: 0 auto 20px;
+          background: url("/images/assess.webp") center 25% / cover no-repeat;
+          box-shadow: 0 14px 34px -14px rgba(80, 50, 35, 0.45);
+          border: 4px solid #fff;
+        }
+        .ar-fbtext {
+          font-size: 24px;
+          font-weight: 500;
+          line-height: 1.5;
+          color: #2e2622;
+        }
+
+        /* CATEGORY cards */
+        .ar-cats {
+          display: flex;
+          flex-direction: column;
+          gap: 30px;
+          margin-top: 18px;
+          max-width: 700px;
+          margin-inline: auto;
+        }
+        .ar-catcard {
+          background: linear-gradient(155deg, #ffffff 0%, #fbf2e4 100%);
+          border-radius: 18px;
+          padding: 18px 20px;
+          box-shadow: 0 8px 24px -16px rgba(80, 50, 35, 0.3);
+          display: flex;
+          flex-direction: column;
+        }
+        .ar-catcard.low {
+          background: linear-gradient(155deg, #ffffff 0%, #fbf2e4 100%)
+              padding-box,
+            var(--ar-grad) border-box;
+          border: 2px solid transparent;
+        }
+        .ar-scorerow {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-bottom: 10px;
+        }
+        .ar-snum {
+          font-size: 36px;
+          font-weight: 900;
+          line-height: 1;
+          background: var(--ar-grad);
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent;
+        }
+        .ar-sof,
+        .ar-sexp {
+          font-size: 15px;
+          color: #7b6b5e;
+          font-weight: 600;
+        }
+        .ar-badge {
+          margin-inline-start: auto;
+          font-size: 12px;
+          font-weight: 800;
+          color: #fff;
+          background: var(--ar-grad);
+          padding: 4px 11px;
+          border-radius: 99px;
+          white-space: nowrap;
+        }
+        .ar-cname {
+          font-weight: 800;
+          font-size: 28px;
+          margin-bottom: 6px;
+          background: var(--ar-grad);
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent;
+          display: inline-block;
+        }
+        .ar-ctxt {
+          font-size: 22px;
+          line-height: 1.4;
+          color: #5a4f46;
+        }
+
+        /* HOW IT CONTINUES */
+        .ar-howcard {
+          text-align: center;
+          max-width: 620px;
+          margin: 20px auto 0;
+          padding: 0 8px;
+        }
+        .ar-hl {
+          font-size: 14px;
+          font-weight: 800;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          color: #7a1f2b;
+          margin-bottom: 12px;
+        }
+        .ar-howcard p {
+          font-size: 20px;
+          line-height: 1.55;
+          color: #2e2622;
+          font-weight: 500;
+        }
+        .ar-howcard p + p {
+          margin-top: 12px;
+        }
+
+        /* IMPROVEMENTS */
+        .ar-imp {
+          display: flex;
+          flex-direction: column;
+          gap: 13px;
+          margin-top: 18px;
+        }
+        .ar-improw {
+          display: flex;
+          gap: 15px;
+          align-items: center;
+          background: #fffdf9;
+          border-radius: 18px;
+          padding: 18px;
+          box-shadow: 0 6px 18px -14px rgba(80, 50, 35, 0.3);
+        }
+        .ar-ic {
+          flex: none;
+          width: 48px;
+          height: 48px;
+          border-radius: 14px;
+          background: linear-gradient(
+            150deg,
+            rgba(108, 92, 231, 0.16),
+            rgba(214, 64, 159, 0.12)
+          );
+          display: grid;
+          place-items: center;
+          color: #b3318c;
+        }
+        .ar-ic :global(svg) {
+          width: 25px;
+          height: 25px;
+          fill: none;
+          stroke: currentColor;
+          stroke-width: 1.7;
+          stroke-linecap: round;
+          stroke-linejoin: round;
+        }
+        .ar-improw > span:last-child {
+          font-size: 20px;
+          font-weight: 700;
+        }
+
+        /* PRICE */
+        .ar-pricecard {
+          max-width: 520px;
+          margin: 0 auto;
+          background: #ffffff;
+          border: 1px solid #ece2cf;
+          border-radius: 24px;
+          padding: 16px;
+          box-shadow: 0 18px 44px -22px rgba(120, 70, 120, 0.28);
+        }
+        .ar-opt {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          width: 100%;
+          background: #fcfaf7;
+          border: 1.5px solid #ece2cf;
+          border-radius: 16px;
+          padding: 18px;
+          cursor: pointer;
+          text-align: right;
+          margin-bottom: 12px;
+          transition: 0.15s;
+          font-family: inherit;
+        }
+        .ar-opt:last-of-type {
+          margin-bottom: 0;
+        }
+        .ar-opt.sel {
+          border: 2px solid transparent;
+          background: linear-gradient(#fff, #fff) padding-box, var(--ar-grad) border-box;
+          box-shadow: 0 8px 20px -12px rgba(150, 60, 150, 0.35);
+        }
+        .ar-radio {
+          flex: none;
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          border: 2px solid #cbb89f;
+          position: relative;
+        }
+        .ar-opt.sel .ar-radio {
+          border: 0;
+          background: var(--ar-grad);
+        }
+        .ar-opt.sel .ar-radio::after {
+          content: "";
+          position: absolute;
+          inset: 6px;
+          background: #fff;
+          border-radius: 50%;
+        }
+        .ar-opt-info {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 3px;
+          text-align: start;
+        }
+        .ar-opt-name {
+          font-weight: 800;
+          font-size: 21px;
+          color: #2e2622;
+        }
+        .ar-opt-tag {
+          font-size: 12px;
+          font-weight: 800;
+          color: #fff;
+          background: var(--ar-grad);
+          padding: 2px 9px;
+          border-radius: 99px;
+          margin-inline-start: 6px;
+          vertical-align: middle;
+        }
+        .ar-opt-note {
+          font-size: 16px;
+          color: #2e2622;
+        }
+        .ar-opt-price {
+          flex: none;
+          font-weight: 900;
+          font-size: 26px;
+          color: #2e2622;
+        }
+        .ar-opt.sel .ar-opt-price {
+          background: var(--ar-grad);
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent;
+        }
+        .ar-incl {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 0;
+          margin-top: 16px;
+          padding-top: 8px;
+        }
+        .ar-it {
+          font-size: 18px;
+          font-weight: 600;
+          color: #2e2622;
+          padding: 11px 0;
+          position: relative;
+          text-align: center;
+        }
+        .ar-it:not(:last-child)::after {
+          content: "";
+          position: absolute;
+          bottom: 0;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 66px;
+          height: 1px;
+          border-radius: 2px;
+          background: var(--ar-grad);
+        }
+        .ar-cta {
+          display: block;
+          width: 100%;
+          text-align: center;
+          border: 0;
+          cursor: pointer;
+          font-weight: 800;
+          font-size: 20px;
+          color: #fff;
+          padding: 18px;
+          border-radius: 16px;
+          background: var(--ar-grad);
+          box-shadow: 0 16px 36px -12px rgba(150, 60, 150, 0.5);
+          text-decoration: none;
+          margin-top: 18px;
+        }
+        .ar-stop {
+          text-align: center;
+          font-size: 16px;
+          color: #7b6b5e;
+          margin-top: 12px;
+        }
+
+        .ar-anchor {
+          text-align: center;
+          font-size: 20px;
+          line-height: 1.5;
+          color: #2e2622;
+          font-weight: 600;
+          max-width: 620px;
+          margin: 6px auto 0;
+          border: 1px solid #ead9c8;
+          border-radius: 18px;
+          padding: 20px 24px;
+        }
+        .ar-anchor :global(b) {
+          color: #7a1f2b;
+          font-weight: 800;
+        }
+      `}</style>
     </div>
   );
 }
-
-// ─────────────────────────────────────────────────────────────────────
-
-function ActiveSubscriberCard({ locale }: { locale: string }) {
-  return (
-    <section className="flex flex-col items-center gap-3 px-2 py-4 text-center">
-      <div
-        className="flex h-14 w-14 items-center justify-center rounded-full"
-        style={{
-          background: "linear-gradient(135deg, #FCCA65 0%, #B88F32 100%)",
-          boxShadow: "0 12px 30px -10px rgba(252,202,101,0.55)",
-        }}
-      >
-        <CheckCircle2 className="h-7 w-7 text-[#FAF6F7]" />
-      </div>
-      <CmsText
-        cmsKey="journeyAssessment.analysis.activeTitle"
-        as="h2"
-        className="font-heading text-[30px] sm:text-[30px] font-extrabold text-white"
-      />
-      <CmsText
-        cmsKey="journeyAssessment.analysis.activeSub"
-        as="p"
-        className="max-w-md text-[20px] sm:text-[20px] text-white/75"
-      />
-      <a
-        href={`/${locale}/my`}
-        className="mt-2 inline-flex min-h-[52px] items-center justify-center rounded-full px-7 text-[20px] sm:text-[20px] font-semibold text-black transition hover:brightness-110"
-        style={{
-          background: "linear-gradient(135deg, #FCCA65 0%, #B88F32 100%)",
-        }}
-      >
-        <CmsText cmsKey="journeyAssessment.analysis.goAccount" />
-      </a>
-    </section>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────
-
-function OfferCard({
-  checkoutBusy,
-  checkoutError,
-  onCheckout,
-  Arrow,
-  ctaLoadingLabel,
-  isHe,
-  enabledCadences,
-  journeyCadences,
-  selectedCadence,
-  onSelectCadence,
-  activePromo,
-}: {
-  checkoutBusy: boolean;
-  checkoutError: string | null;
-  onCheckout: () => void;
-  Arrow: typeof ArrowLeft;
-  ctaLoadingLabel: string;
-  isHe: boolean;
-  enabledCadences: CadenceOption[];
-  journeyCadences: CadenceOption[];
-  selectedCadence: string;
-  onSelectCadence: (cadence: string) => void;
-  activePromo: JourneyPromoSummary | null;
-}) {
-  // ── C2.4 cadence picker derived values ────────────────────────────────
-  const sym = isHe ? "₪" : "$";
-  const fmt = (n: number) => n.toLocaleString(isHe ? "he-IL" : "en-US");
-  const amtOf = (c: CadenceOption) => (isHe ? c.price_ils : c.price_usd);
-  const weeklyRow = journeyCadences.find((c) => c.cadence === "weekly");
-  const baselineWeekly = weeklyRow ? amtOf(weeklyRow) : null;
-  const periodLabel = (cadence: string) =>
-    cadence === "yearly"
-      ? isHe ? "/שנה" : "/yr"
-      : cadence === "quarterly"
-        ? isHe ? "/רבעון" : "/quarter"
-        : cadence === "weekly"
-          ? isHe ? "/שבוע" : "/wk"
-          : isHe ? "/חודש" : "/mo";
-  const effWeeklyOf = (c: CadenceOption) =>
-    Math.round(amtOf(c) / (WEEKS_PER_CADENCE[c.cadence] ?? 1));
-  const savingsOf = (c: CadenceOption) =>
-    baselineWeekly && baselineWeekly > 0
-      ? Math.round(
-          ((baselineWeekly - amtOf(c) / (WEEKS_PER_CADENCE[c.cadence] ?? 1)) /
-            baselineWeekly) *
-            100,
-        )
-      : null;
-  const selectedOption =
-    enabledCadences.find((c) => c.cadence === selectedCadence) ??
-    enabledCadences[0] ??
-    null;
-  const showPicker = enabledCadences.length >= 2;
-  const cadenceTitle = (cadence: string) =>
-    cadence === "monthly"
-      ? isHe ? "חודשי" : "Monthly"
-      : cadence === "quarterly"
-        ? isHe ? "רבעוני" : "Quarterly"
-        : cadence === "yearly"
-          ? isHe ? "שנתי" : "Yearly"
-          : isHe ? "שבועי" : "Weekly";
-
-  return (
-    <section className="px-2 py-4 sm:py-6">
-      <div>
-        <CmsText
-          cmsKey="journeyAssessment.analysis.offerLabel"
-          as="div"
-          className="text-start text-[14px] font-semibold uppercase tracking-wider text-[#FCCA65] leading-normal"
-        />
-        <CmsText
-          cmsKey="journeyAssessment.analysis.offerHero"
-          as="h2"
-          className="mt-3 text-balance text-start font-heading text-[24px] font-extrabold leading-snug text-white sm:text-[24px]"
-        />
-        <CmsText
-          cmsKey="journeyAssessment.analysis.offerSub"
-          as="p"
-          className="mt-2 text-pretty text-start text-[20px] sm:text-[20px] font-semibold text-[#FAF6F7]/85"
-        />
-
-        {/* 3 FeatureTiles removed (Itzik 2026-06-02): the value props
-            they carried (private expert chat, weekly tailored content,
-            ongoing conversation) are already covered upstream by the
-            AI hero, the "מה תקבלו בליווי" bullets, and the topics
-            section. The tile row was a third repetition. */}
-
-        {/* C2.4: cadence picker — only when ≥2 cadences are enabled. Each
-            option shows its effective per-week + actual billed + savings.
-            Itzik 2026-06-14: moved ABOVE the price summary so the chosen
-            plan drives the summary box below it. */}
-        {showPicker ? (
-          <div className="mt-6 flex flex-col gap-2.5">
-            {enabledCadences.map((c) => {
-              const selected = c.cadence === selectedCadence;
-              const sv = savingsOf(c);
-              return (
-                <button
-                  key={c.cadence}
-                  type="button"
-                  onClick={() => onSelectCadence(c.cadence)}
-                  aria-pressed={selected}
-                  className={`group flex w-full items-center gap-3 rounded-2xl border p-4 text-start transition ${
-                    selected
-                      ? "border-amber-300/60 bg-white/10 ring-2 ring-amber-400/40"
-                      : "border-white/15 bg-white/[0.04] hover:border-white/30 hover:bg-white/[0.08]"
-                  }`}
-                >
-                  <span
-                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[20px] ${
-                      selected
-                        ? "bg-gradient-to-br from-amber-400 to-rose-500 text-white"
-                        : "bg-white/10 text-white/70"
-                    }`}
-                  >
-                    {selected ? "✓" : ""}
-                  </span>
-                  <span className="flex-1">
-                    <span className="flex items-baseline justify-between gap-3">
-                      <span className="text-[20px] font-semibold text-white">
-                        {cadenceTitle(c.cadence)}
-                      </span>
-                      <span className="text-[22px] font-bold text-white">
-                        {sym}
-                        {fmt(effWeeklyOf(c))}
-                        <span className="text-[20px] font-medium text-white/65">
-                          {isHe ? "/שבוע" : "/wk"}
-                        </span>
-                      </span>
-                    </span>
-                    {/* Second line: billed amount (start) + savings badge
-                        (end). Itzik 2026-06-14: the badge used to be an
-                        absolute -top corner element that overlapped the
-                        per-week price; it now sits in normal flow opposite
-                        the billed text so the two never collide. */}
-                    <span className="mt-1.5 flex items-center justify-between gap-3">
-                      <span className="text-[20px] text-white/60">
-                        {isHe ? "מחויב" : "billed"} {sym}
-                        {fmt(amtOf(c))}
-                        {periodLabel(c.cadence)}
-                      </span>
-                      {sv && sv > 0 ? (
-                        <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-gradient-to-r from-amber-400 to-rose-500 px-2.5 py-0.5 text-[20px] font-bold text-white shadow">
-                          {isHe ? "חיסכון" : "Save"} {sv}%
-                        </span>
-                      ) : null}
-                    </span>
-                    {/* Per-cadence promo line — only when an active journey
-                        promo covers THIS cadence. Compact (smaller than the
-                        billed line above), sits on its own row below "מחויב"
-                        so it never collides with the "חיסכון %" badge. Prices
-                        are server-computed (= what checkout bills). The card's
-                        own selected-ring carries the "selected" emphasis. */}
-                    {(() => {
-                      const pf = activePromo?.firstChargeByCadence[c.cadence];
-                      const po = activePromo?.originalByCadence[c.cadence];
-                      if (!activePromo || !pf || !po) return null;
-                      const firstAmt = isHe ? pf.ils : pf.usd;
-                      const origAmt = isHe ? po.ils : po.usd;
-                      return (
-                        <span className="mt-2 flex flex-col gap-0.5">
-                          <span className="flex flex-wrap items-baseline gap-1.5">
-                            <span className="inline-flex items-center rounded-full bg-gradient-to-r from-amber-400 to-rose-500 px-3 py-1 text-[20px] font-bold text-white shadow">
-                              {activePromo.displayText ??
-                                `${isHe ? "מבצע" : "Promo"} ${activePromo.name}`}
-                            </span>
-                            <span className="text-[20px] text-white/85">
-                              {firstPeriodLabel(c.cadence, isHe)}
-                            </span>
-                            <span className="text-[20px] font-extrabold text-white">
-                              {sym}
-                              {fmt(firstAmt)}
-                            </span>
-                            <span className="text-[20px] text-white/60">
-                              {isHe ? "במקום" : "instead of"}
-                            </span>
-                            {/* a11y: convey strikethrough to SRs, not by style alone. */}
-                            <span className="sr-only">{isHe ? "היה " : "was "}</span>
-                            <span className="text-[20px] text-white/50 line-through">
-                              {sym}
-                              {fmt(origAmt)}
-                            </span>
-                          </span>
-                          <span className="text-[12px] text-white/55">
-                            {isHe ? "תשלום ראשון בלבד" : "first payment only"}
-                          </span>
-                        </span>
-                      );
-                    })()}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        ) : null}
-
-        {/* Selected-cadence charge — the headline price summary.
-            Itzik 2026-06-14: the old big "₪57 / שבוע · ניתן לעצור בכל עת"
-            CMS price block was removed as redundant (every cadence option
-            above already shows its /שבוע price). This emphasised line is
-            now the summary: the actual amount that will be charged for the
-            selected cadence. Stays dynamic with the picker selection; the
-            "ניתן לעצור בכל עת" reassurance is preserved as the subline. */}
-        {selectedOption ? (() => {
-          // The "לתשלום" headline reflects the SELECTED cadence. When an active
-          // promo covers that cadence, surface the discounted FIRST-charge
-          // price here (e.g. ₪57 instead of ₪222) and drop the display anchor
-          // (₪508) — matching the per-cadence promo line in the picker cards.
-          // Itzik 2026-06-28: the headline must show the promo too, not stay on
-          // the regular price; double display with the selected card is fine.
-          // Without a promo for the selected cadence it stays the regular line.
-          const cad = selectedOption.cadence;
-          const pf = activePromo?.firstChargeByCadence[cad];
-          const po = activePromo?.originalByCadence[cad];
-          if (activePromo && pf && po) {
-            const firstAmt = isHe ? pf.ils : pf.usd;
-            const origAmt = isHe ? po.ils : po.usd;
-            return (
-              <div className="mt-6 text-start">
-                <span className="inline-flex items-center rounded-full bg-gradient-to-r from-amber-400 to-rose-500 px-3 py-1 text-[14px] font-bold text-white shadow">
-                  {activePromo.displayText ??
-                    `${isHe ? "מבצע" : "Promo"} ${activePromo.name}`}
-                </span>
-                <p className="mt-2.5 flex flex-wrap items-baseline gap-1.5">
-                  <span className="text-[20px] font-medium text-white">
-                    {isHe ? "לתשלום" : "To pay"}
-                  </span>
-                  <span className="text-[20px] font-semibold text-white">
-                    {firstPeriodLabel(cad, isHe)}
-                  </span>
-                  <span className="font-extrabold leading-none text-white">
-                    <span className="text-[20px]">{sym}</span>
-                    <span className="text-[32px]">{fmt(firstAmt)}</span>
-                  </span>
-                  <span className="text-[20px] text-white/70">
-                    {isHe ? "במקום" : "instead of"}
-                  </span>
-                  <span className="sr-only">{isHe ? "היה " : "was "}</span>
-                  <span className="text-[20px] font-medium text-white/60 line-through">
-                    {sym}
-                    {fmt(origAmt)}
-                  </span>
-                  <span className="text-[20px] font-semibold text-white">
-                    {periodLabel(cad)}
-                  </span>
-                </p>
-                <p className="mt-1.5 text-[20px] text-[#D8CFE6]">
-                  {isHe
-                    ? "מחיר לתשלום הראשון; החידושים מלאים."
-                    : "First-payment price; renewals at full price."}
-                </p>
-              </div>
-            );
-          }
-          return (
-          <div className="mt-6 text-start">
-            {/* Body (Assistant) font, not font-heading. Label + period in full
-                white; the ₪ symbol renders smaller than the number. Reached
-                only when no promo covers the selected cadence — the promo
-                headline branch above handles the discounted case. */}
-            <p className="flex flex-wrap items-baseline gap-1.5">
-              <span className="text-[20px] font-medium text-white">
-                {isHe ? "לתשלום" : "To pay"}
-              </span>
-              {/* QA 2026-06-16 — struck anchor price (127 → 57). CMS-driven.
-                  a11y M4: /40→/60 for contrast + sr-only "היה" so the
-                  strikethrough's meaning isn't conveyed by visual style alone. */}
-              <span className="sr-only">{isHe ? "היה " : "was "}</span>
-              {/* ILS: struck original derived per cadence (weeklyBase × weeks),
-                  fixing the value that was stuck at ₪127 across all packages.
-                  USD/en is intentionally left on the CMS anchor — out of scope. */}
-              {isHe && ANCHOR_WEEKS_IN_PERIOD[selectedOption.cadence] ? (
-                <span className="text-[20px] font-medium text-white/60 line-through">
-                  {sym}
-                  {fmt(
-                    ANCHOR_WEEKLY_BASE_ILS *
-                      ANCHOR_WEEKS_IN_PERIOD[selectedOption.cadence],
-                  )}
-                </span>
-              ) : (
-                <CmsText
-                  cmsKey="journeyAssessment.analysis.anchorPrice"
-                  as="span"
-                  className="text-[20px] font-medium text-white/60 line-through"
-                />
-              )}
-              <span className="font-extrabold leading-none text-white">
-                <span className="text-[20px]">{sym}</span>
-                <span className="text-[32px]">{fmt(amtOf(selectedOption))}</span>
-              </span>
-              <span className="text-[20px] font-semibold text-white">
-                {periodLabel(selectedOption.cadence)}
-              </span>
-            </p>
-            <p className="mt-1 text-[20px] text-[#D8CFE6]">
-              <CmsText cmsKey="journeyAssessment.analysis.priceNote" />
-            </p>
-          </div>
-          );
-        })() : null}
-
-        {/* Value anchor (Itzik 2026-06-14) — an external cost reference to
-            anchor the monthly price. Worded carefully: Mioshy is ongoing
-            guidance + content ("ליווי וכלים"), NOT a substitute for
-            professional couples therapy, so we never claim it replaces a
-            counselor — only contrast a one-off session's cost. CMS-keyed so
-            the comparison copy is editable without a deploy. */}
-        <CmsText
-          cmsKey="journeyAssessment.analysis.valueAnchor"
-          as="p"
-          className="mt-2 text-start text-[20px] leading-snug text-[#D8CFE6]"
-        />
-
-        {/* C2.4: "what's included" value-points. CMS-driven (falls back to
-            messages). Same dark/gold styling as the CTA. */}
-        <div className="mt-5 text-start">
-          <CmsText
-            cmsKey="journeyAssessment.valuePoints.title"
-            as="span"
-            className="text-[20px] font-semibold tracking-wide"
-            style={{ color: "#FCCA65" }}
-          />
-          <ul className="mt-2.5 flex flex-col gap-2.5">
-            {["point1", "point2", "point3"].map((p) => (
-              <li key={p} className="flex items-center gap-2.5">
-                <span
-                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[20px] font-bold text-[#1a1014]"
-                  style={{
-                    background:
-                      "linear-gradient(135deg, #FCCA65 0%, #B88F32 100%)",
-                  }}
-                  aria-hidden
-                >
-                  ✓
-                </span>
-                <CmsText
-                  cmsKey={`journeyAssessment.valuePoints.${p}`}
-                  as="span"
-                  className="text-[20px] font-medium text-white"
-                />
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* F3.3 (a) — intro line for the full assessment, shown to
-            non-subscribers right above the join CTA. OfferCard only
-            renders on the non-subscriber path, so no extra gate needed. */}
-        <p className="mt-5 text-start font-heading text-[24px] sm:text-[24px] font-bold leading-snug text-white">
-          {isHe
-            ? "מיד עם ההצטרפות נשלים את האבחון המלא - לתמונה מדויקת יותר ולצעדים שמתאימים בדיוק אליכם."
-            : "Right after you join, we'll complete the full assessment - for a more accurate picture and steps tailored exactly to you."}
-        </p>
-
-        <button
-          type="button"
-          onClick={onCheckout}
-          disabled={checkoutBusy}
-          className="group mt-5 inline-flex min-h-[58px] w-full items-center justify-center gap-3 rounded-full px-8 text-[20px] sm:text-[20px] font-bold text-black transition hover:brightness-110 disabled:opacity-60"
-          style={{
-            background: "linear-gradient(135deg, #FCCA65 0%, #B88F32 100%)",
-            boxShadow: "0 18px 40px -12px rgba(252,202,101,0.55)",
-          }}
-        >
-          {checkoutBusy ? (
-            ctaLoadingLabel
-          ) : (
-            <CmsText cmsKey="journeyAssessment.analysis.cta" />
-          )}
-          {!checkoutBusy ? (
-            <Arrow className="h-4 w-4 transition-transform group-hover:translate-x-[-3px]" />
-          ) : null}
-        </button>
-
-        {/* W1.1 — surface checkout errors instead of silently failing. */}
-        {checkoutError ? (
-          <p
-            role="alert"
-            className="mt-3 rounded-lg border border-rose-400/40 bg-rose-500/10 px-3 py-2 text-center text-[13px] text-rose-200"
-          >
-            {checkoutError}
-          </p>
-        ) : null}
-      </div>
-    </section>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────
-
-// ─────────────────────────────────────────────────────────────────────
-// Category bar chart - 5-bar visualisation that opens the summary
-// (replaces the legacy 3-card score grid as the new hero).
-// Each bar is 0-100, higher = healthier. The lowest-scoring category
-// gets a "נקודת ההתחלה שלכם" label on the side, motivating engagement
-// without scaring the user (Itzik #4, 2026-06-02).
-// ─────────────────────────────────────────────────────────────────────
-
-function CategoryBarChart({
-  scores,
-  isHe,
-}: {
-  scores: CategoryScores;
-  isHe: boolean;
-}) {
-  const labelsHe: Record<CategoryScores["lowest_key"], string> = {
-    communication: "תקשורת",
-    intimacy: "אינטימיות",
-    emotional_connection: "חיבור רגשי",
-    friendship: "חברות",
-    family: "משפחה",
-  };
-  const labelsEn: Record<CategoryScores["lowest_key"], string> = {
-    communication: "Communication",
-    intimacy: "Intimacy",
-    emotional_connection: "Emotional",
-    friendship: "Friendship",
-    family: "Family",
-  };
-
-  // Order: always render in the same priority order so the visual
-  // is comparable across users.
-  const rows: Array<{ key: CategoryScores["lowest_key"]; value: number }> = [
-    { key: "communication",         value: scores.communication },
-    { key: "intimacy",              value: scores.intimacy },
-    { key: "emotional_connection",  value: scores.emotional_connection },
-    { key: "friendship",            value: scores.friendship },
-    { key: "family",                value: scores.family },
-  ];
-
-  // Itzik 2026-06-02: was "נקודת ההתחלה שלכם" — implied the user
-  // had picked this axis. The label is actually driven by the lowest
-  // score, not by the user's priorities. New copy frames it as a
-  // recommendation so it's honest about the source.
-  const recommendationPrefix = isHe
-    ? "ההמלצה שלנו להתחיל ב"
-    : "we recommend starting with ";
-  const lowestLabel = isHe ? labelsHe[scores.lowest_key] : labelsEn[scores.lowest_key];
-  // Hebrew prefix "ב" attaches directly to the noun ("באינטימיות",
-  // "בתקשורת"). English keeps a space between "with" and the label.
-  const recommendationLine = isHe
-    ? `${recommendationPrefix}${lowestLabel}`
-    : `${recommendationPrefix}${lowestLabel}`;
-
-  // Itzik 2026-06-02: horizontal 5-column layout. Yellow gradient bars
-  // (logo gold #FCCA65 → deeper amber #B88F32), high contrast on dark
-  // background per Itzik feedback (red-on-black was unreadable). Square
-  // corners, score number SITS INSIDE each bar near the top.
-  return (
-    <section className="px-2 py-4">
-      <div>
-        <div className="mb-6 flex flex-col gap-1.5">
-          <span className="text-start text-[14px] font-semibold uppercase tracking-wider text-[#FCCA65] leading-normal">
-            {isHe ? "האבחון שלכם" : "Your assessment"}
-          </span>
-          <h2 className="text-balance text-start font-heading text-[24px] font-extrabold leading-tight text-white sm:text-[24px]">
-            {isHe ? "האבחון שלכם כיום" : "Your assessment today"}
-          </h2>
-          <p className="mt-1 text-start text-[20px] sm:text-[20px] leading-snug text-[#D8CFE6]">
-            {isHe
-              ? "ציון 0-100 לכל תחום, גבוה = חזק יותר. הציון נגזר ישירות מהתשובות שלכם."
-              : "0-100 per area, higher = stronger. Scores are derived directly from your answers."}
-          </p>
-        </div>
-
-        {/* 5 vertical bars in a single horizontal row, square corners.
-            Number sits BELOW the bar (aligned across all columns) and
-            above the category name. */}
-        <div className="grid grid-cols-5 items-end gap-2 sm:gap-3">
-          {rows.map((row) => {
-            // Safety net: a category without enough answer coverage shows a
-            // muted bar + "—" + a "full assessment" note, never a misleading
-            // height/number.
-            const insufficient = (scores.insufficient_keys ?? []).includes(row.key);
-            const isLowest = !insufficient && row.key === scores.lowest_key;
-            const heightPct = insufficient ? 0 : Math.max(14, Math.min(100, row.value));
-            return (
-              <div key={row.key} className="flex flex-col items-center">
-                {/* Bar — decorative; the score number + label below carry the
-                    value as real text (a11y M8). */}
-                <div
-                  aria-hidden
-                  className="relative w-full overflow-hidden"
-                  style={{
-                    height: 160,
-                    background: "rgba(255,255,255,0.04)",
-                    border: "1px solid rgba(255,255,255,0.06)",
-                  }}
-                >
-                  <div
-                    className="absolute inset-x-0 bottom-0 transition-all"
-                    style={{
-                      height: `${heightPct}%`,
-                      background: "#FCCA65",
-                      boxShadow: isLowest
-                        ? "0 0 28px rgba(252,202,101,0.55)"
-                        : "none",
-                    }}
-                  />
-                </div>
-                {/* Score number BELOW the bar, aligned across all columns */}
-                <span
-                  className={`mt-2 text-center text-[20px] font-extrabold tabular-nums leading-none sm:text-[22px] ${
-                    insufficient ? "text-white/35" : isLowest ? "text-[#FCCA65]" : "text-white"
-                  }`}
-                >
-                  {insufficient ? "–" : row.value}
-                </span>
-                {/* Category label below the number */}
-                <span
-                  className={`mt-1.5 text-balance text-center text-[12px] font-semibold leading-tight sm:text-[13px] ${
-                    isLowest ? "text-[#FCCA65]" : "text-white/75"
-                  }`}
-                >
-                  {isHe ? labelsHe[row.key] : labelsEn[row.key]}
-                  {/* a11y M8: mark the lowest category textually, not only by colour. */}
-                  {isLowest ? (
-                    <span className="sr-only">
-                      {isHe ? " - מומלץ להתחיל כאן" : " - recommended starting point"}
-                    </span>
-                  ) : null}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Recommendation caption, anchored to the lowest column.
-            2026-06-02 (Itzik): renamed from "your starting point" to
-            an explicit recommendation phrasing — clearer about who is
-            choosing, and the category name now closes the sentence
-            instead of preceding the label. */}
-        <div className="mt-4 flex flex-col items-center gap-1 text-center sm:mt-5">
-          <span className="text-[12px] font-semibold uppercase tracking-wider text-[#FCCA65]">
-            {recommendationLine}
-          </span>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// FeatureTile removed (Itzik 2026-06-02): the 3-tile row inside the
-// OfferCard was a third repetition of the value props already covered
-// by the AI hero, the "מה תקבלו בליווי" bullets, and the topics list.
