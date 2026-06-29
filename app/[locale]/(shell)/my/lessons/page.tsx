@@ -83,14 +83,39 @@ export default async function LessonsPage({
   if (!shell) redirect(`/${locale}/auth`);
 
   // Shared-content gate (spec step 3, shared helper): a partner deferred to the
-  // owner's queue who hasn't finished their own full assessment is redirected to
-  // /my/journey, which renders the warm <PartnerAssessmentGate/> (a component,
-  // NOT a redirect) so there's no loop and the partner always sees the warm
-  // screen + CTA. This is the post-login landing (and /my/today redirects here),
-  // so it also covers the today resolver. Kept OUTSIDE any try/catch so the
-  // redirect propagates. owner/solo/view-as → never blocked.
+  // owner's queue who hasn't finished their own full assessment lands here on
+  // the <NoJourneyUpsell/> takeover (a component, NOT a redirect) — the same
+  // "start your journey" surface a non-subscriber sees, with the free-assessment
+  // CTA. /my/lessons is the post-login landing (and /my/today + all the other
+  // owner-content surfaces funnel blocked partners here), so this single screen
+  // is where every blocked-partner path converges. It runs BEFORE the universal
+  // assessment gate below so the partner is never bounced to /journey/assessment.
+  // owner/solo/view-as → never blocked.
   if ((await partnerAssessmentGateState(shell.userId)).blocked) {
-    redirect(`/${locale}/my/journey`);
+    const tLoc = isHe ? "he" : "en";
+    const tHdr = await getCmsTranslations({ locale: tLoc, namespace: "appShell", page: "app-shell" });
+    const tLes = await getCmsTranslations({ locale: tLoc, namespace: "appShell.lessons", page: "app-shell" });
+    const tUp = await getCmsTranslations({ locale: tLoc, namespace: "appShell.today", page: "app-shell" });
+    return (
+      <>
+        <PageHeader
+          rootLabel={tHdr("rootCrumb")}
+          pageLabel={tLes("pageTitle")}
+          subLine={null}
+          bellCount={shell.notificationCount}
+        />
+        <div className="mx-auto flex w-full max-w-[880px] flex-col gap-5 px-5 py-6">
+          <NoJourneyUpsell
+            chip={tUp("upsellChip")}
+            title={tUp("upsellTitle")}
+            body={tUp("upsellBody")}
+            ctaLabel={tUp("upsellCta")}
+            ctaHref="/journey/assessment"
+            bullets={[]}
+          />
+        </div>
+      </>
+    );
   }
 
   // ── Universal assessment gate (Itzik 2026-06-01) ─────────────────────

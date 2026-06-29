@@ -329,7 +329,7 @@ export default async function MyHubPage({
           <MyInvitePopup mode="owner" pairCode={ctx.pair_code} />
         ) : null}
         {!hasCouple ? (
-          <MyInvitePopup mode="redeemer" redirectTo="/journey/assessment" />
+          <MyInvitePopup mode="redeemer" redirectTo="/my/lessons" />
         ) : null}
 
         {/* ─────── Page title ─────── */}
@@ -662,7 +662,7 @@ export default async function MyHubPage({
                       ? "הזן את קוד ההזמנה שקיבלת"
                       : "Enter the invite code you received"
                   }
-                  redirectTo="/journey/assessment"
+                  redirectTo="/my/lessons"
                 />
               </div>
             ) : null}

@@ -43,7 +43,6 @@ import { getCurrentCoupleContext } from "@/lib/between-us/couples";
 import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
 import { preferCoupleOwner, journeyOwnerForUser } from "@/lib/journey-content/owner";
 import { partnerAssessmentGateState } from "@/lib/journey-content/partner-gate";
-import { PartnerAssessmentGate } from "@/components/my/PartnerAssessmentGate";
 import { getTimelineForOwner } from "@/lib/journey-content/queries";
 import { countStatuses } from "@/lib/journey-content/status";
 import type { TimelineEntry } from "@/lib/journey-content/types";
@@ -128,8 +127,11 @@ export default async function JourneyTimelinePage({
   // Shared-content gate (spec step 3, shared helper): a deferred partner who
   // hasn't finished their own full assessment is blocked BEFORE the owner's
   // cadence timeline loads below. Standalone page → full-screen gate.
+  // Blocked partner → redirect to /my/lessons, which renders the
+  // <NoJourneyUpsell/> takeover (the single convergence point for every
+  // blocked-partner surface). owner/solo/view-as → never blocked.
   if ((await partnerAssessmentGateState(user.id)).blocked) {
-    return <PartnerAssessmentGate isHe={isHe} />;
+    redirect(`/${locale}/my/lessons`);
   }
 
   const couple = await getCurrentCoupleContext();

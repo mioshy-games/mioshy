@@ -127,11 +127,12 @@ export function ShareHero(props: Props) {
   );
 
   async function handleCopy() {
-    if (!pairCode || !shareUrl) return;
+    if (!pairCode) return;
     try {
-      // Copy the full message (URL embedded) so the partner gets both
-      // the code AND the deep link in one paste.
-      await navigator.clipboard.writeText(shareMessage);
+      // Copy the bare pair code only (not the link or the full message),
+      // so the primary action puts just the code on the clipboard — the
+      // partner types it into the code-entry screen.
+      await navigator.clipboard.writeText(pairCode);
       setCopied(true);
       if (copyTimer.current) clearTimeout(copyTimer.current);
       copyTimer.current = setTimeout(() => setCopied(false), 2200);
@@ -139,7 +140,7 @@ export function ShareHero(props: Props) {
       // Fallback for browsers without clipboard permission — open a
       // temporary text-area selection. Rare in modern Chrome/Safari.
       const ta = document.createElement("textarea");
-      ta.value = shareMessage;
+      ta.value = pairCode;
       ta.setAttribute("readonly", "true");
       document.body.appendChild(ta);
       ta.select();

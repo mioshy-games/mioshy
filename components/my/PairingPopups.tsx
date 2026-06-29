@@ -76,7 +76,7 @@ export async function PairingPopups() {
   // Entitled users always have a couple by this point (created above), so this
   // only ever targets a registered non-payer.
   if (!hasCouple) {
-    return <MyInvitePopup mode="redeemer" redirectTo="/journey/assessment" />;
+    return <MyInvitePopup mode="redeemer" redirectTo="/my/lessons" />;
   }
 
   return null;

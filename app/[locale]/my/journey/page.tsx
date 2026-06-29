@@ -70,7 +70,6 @@ import { getDriftBannerForCurrentUser } from "@/lib/journey/drift-user";
 import { DriftAwarenessBanner } from "@/components/my/DriftAwarenessBanner";
 import { getCurrentUserPauseState } from "@/lib/billing/pause-state";
 import { PausedStateScreen } from "@/components/my/PausedStateScreen";
-import { PartnerAssessmentGate } from "@/components/my/PartnerAssessmentGate";
 import { partnerAssessmentGateState } from "@/lib/journey-content/partner-gate";
 import { getLatestRecapForCurrentUser } from "@/lib/journey/recap-read";
 import { WeeklyRecapCard } from "@/components/my/WeeklyRecapCard";
@@ -284,8 +283,11 @@ export default async function PrivateJourneyPage({
   // warm explanation screen replaces that gate's dry redirect for partners.
   // owner/solo/view-as → never blocked.
   // ════════════════════════════════════════════════════════════════
+  // Blocked partner → redirect to /my/lessons, which renders the
+  // <NoJourneyUpsell/> takeover (the single convergence point for every
+  // blocked-partner surface). owner/solo/view-as → never blocked.
   if ((await partnerAssessmentGateState(effectiveUserId)).blocked) {
-    return <PartnerAssessmentGate isHe={isHe} />;
+    redirect(`/${locale}/my/lessons`);
   }
 
   // ════════════════════════════════════════════════════════════════

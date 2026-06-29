@@ -171,13 +171,12 @@ export default async function JourneyTimelineItemPage({
 
   // Shared-content gate (spec step 3, shared helper): an authorized partner who
   // hasn't finished their own full assessment can't open the owner's chapter.
-  // Deep shell page → redirect to /my/journey (a full-screen gate wouldn't fit
-  // the shell chrome). /my/journey returns the warm <PartnerAssessmentGate/>
-  // for a blocked partner (a component, NOT a redirect) — so no loop, and the
-  // partner always sees the warm screen + its CTA to the assessment.
-  // owner/solo/view-as → never blocked.
+  // Redirect to /my/lessons, which renders the <NoJourneyUpsell/> takeover (the
+  // single convergence point for every blocked-partner surface) — so no loop,
+  // and the partner always sees the warm "start your journey" screen + its
+  // free-assessment CTA. owner/solo/view-as → never blocked.
   if ((await partnerAssessmentGateState(effectiveUserId)).blocked) {
-    redirect(`/${locale}/my/journey`);
+    redirect(`/${locale}/my/lessons`);
   }
 
   // Audience gate — partner-targeted rows bounce back to /my/lessons.

@@ -112,7 +112,7 @@ export default async function SharePage({
               isHe={isHe}
               variant="primary"
               label={isHe ? "הזן את קוד ההזמנה שקיבלת" : "Enter the invite code you received"}
-              redirectTo="/journey/assessment"
+              redirectTo="/my/lessons"
             />
           </section>
         )}
