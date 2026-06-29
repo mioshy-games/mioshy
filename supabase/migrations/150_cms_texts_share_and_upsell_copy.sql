@@ -8,12 +8,19 @@
 --                                open to the partner, not "eventually".
 --   • appShell.share.copyLabel — the primary copy button now copies the bare
 --                                pair code, so the label reads "העתקת הקוד".
---   • appShell.today.upsellBody — NoJourneyUpsell body, enriched + warmer.
+--   • appShell.today.upsellBody    — NoJourneyUpsell body (final copy).
+--   • appShell.today.upsellBullet1 — NoJourneyUpsell bullet 1 (final copy).
+--   • appShell.today.upsellBullet2 — NoJourneyUpsell bullet 2 (final copy).
+--
+-- The NoJourneyUpsell body + these two bullets are now the single shared copy
+-- rendered on the /my/lessons blocked-partner takeover, the /my/lessons
+-- no-journey upsell, and the /my/expert gate (see getNoJourneyUpsellCopy).
+-- upsellBullet3 is no longer rendered (left in place, harmless).
 --
 -- Additive: UPDATEs the he_text/en_text of existing rows only (no new keys,
 -- no schema change). Keys were seeded in 098 (share.*) and 100 (today.*).
--- These overwrite any prior admin edit on exactly these three rows — that is
--- the intent here (we want the new product copy live).
+-- These overwrite any prior admin edit on exactly these rows — that is the
+-- intent here (we want the new product copy live).
 
 BEGIN;
 
@@ -28,8 +35,18 @@ SET he_text = 'העתקת הקוד',
 WHERE key = 'appShell.share.copyLabel';
 
 UPDATE public.cms_texts
-SET he_text = 'כל מה שצריך כדי לבנות זוגיות טובה יותר מחכה לכם במקום אחד. מתחילים באבחון קצר שמכיר אתכם, וממשיכים עם פרקים שמותאמים בדיוק לכם וצ''אט פתוח עם מומחה זוגיות שמלווה אתכם לאורך כל הדרך. מנוי שבועי גמיש, ואתם יכולים לעצור מתי שתרצו.',
-    en_text = 'Everything you need to build a stronger relationship is waiting in one place. You start with a short assessment that gets to know you, then keep going with chapters made just for you and an open chat with a relationship expert who stays with you the whole way. A flexible weekly subscription you can stop whenever you want.'
+SET he_text = 'כל שבוע פרק חדש עם משימות שהמומחים שלנו לזוגיות הכינו במיוחד עבורכם, והם פה ללוות אתכם בצ''אט לאורך כל המסע. מתחילים באבחון קצר של כ-3 דקות, וכל 8 שבועות נבדוק יחד כמה התקדמתם. אפשר לעצור בכל עת.',
+    en_text = 'Every week a new chapter with tasks our relationship experts prepared especially for you, and they''re here to guide you in chat throughout the journey. You start with a short 3-minute assessment, and every 8 weeks we check together how far you''ve come. You can stop anytime.'
 WHERE key = 'appShell.today.upsellBody';
+
+UPDATE public.cms_texts
+SET he_text = 'גישה חופשית לכל משחקי הסקס של מיאושי.',
+    en_text = 'Free access to all of Mioshy''s sex games.'
+WHERE key = 'appShell.today.upsellBullet1';
+
+UPDATE public.cms_texts
+SET he_text = 'גישה חופשית לכל משחקי הזוגות אונליין.',
+    en_text = 'Free access to all the online couples games.'
+WHERE key = 'appShell.today.upsellBullet2';
 
 COMMIT;

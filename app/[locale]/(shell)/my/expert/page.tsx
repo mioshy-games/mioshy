@@ -25,6 +25,7 @@ import { MarkSurfaceSeen } from "@/components/shell/MarkSurfaceSeen";
 import { ExpertChatHeader } from "@/components/shell/expert/ExpertChatHeader";
 import { ExpertConversation } from "@/components/shell/expert/ExpertConversation";
 import { NoJourneyUpsell } from "@/components/shell/today/NoJourneyUpsell";
+import { getNoJourneyUpsellCopy } from "@/lib/shell/today/noJourneyUpsellCopy";
 
 import { getShellData } from "@/lib/shell/getShellData";
 import {
@@ -74,9 +75,10 @@ export default async function ExpertPage({
     const title = status.hasCompletedAssessment
       ? tExpert("gateTitleHasAssessment")
       : tExpert("gateTitleNoAssessment");
-    const body = status.hasCompletedAssessment
-      ? tExpert("gateBodyHasAssessment")
-      : tExpert("gateBodyNoAssessment");
+    // Body + bullets come from the one shared source so this gate stays
+    // identical to the NoJourneyUpsell on /my/lessons (chip / title / CTA
+    // remain expert-gate specific and state-aware).
+    const upsell = await getNoJourneyUpsellCopy(tLoc);
 
     return (
       <>
@@ -89,14 +91,10 @@ export default async function ExpertPage({
           <NoJourneyUpsell
             chip={tExpert("gateChip")}
             title={title}
-            body={body}
+            body={upsell.body}
             ctaLabel={ctaLabel}
             ctaHref={ctaHref}
-            bullets={[
-              tExpert("gateBullet1"),
-              tExpert("gateBullet2"),
-              tExpert("gateBullet3"),
-            ]}
+            bullets={upsell.bullets}
           />
         </div>
       </>

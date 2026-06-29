@@ -44,6 +44,7 @@ import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
 import { resolvePrioritiesForUser } from "@/lib/journey-content/resolve-priorities";
 import { partnerAssessmentGateState } from "@/lib/journey-content/partner-gate";
+import { getNoJourneyUpsellCopy } from "@/lib/shell/today/noJourneyUpsellCopy";
 
 // `dynamic = "force-dynamic"` is inherited from the (shell) layout.
 
@@ -96,6 +97,7 @@ export default async function LessonsPage({
     const tHdr = await getCmsTranslations({ locale: tLoc, namespace: "appShell", page: "app-shell" });
     const tLes = await getCmsTranslations({ locale: tLoc, namespace: "appShell.lessons", page: "app-shell" });
     const tUp = await getCmsTranslations({ locale: tLoc, namespace: "appShell.today", page: "app-shell" });
+    const upsell = await getNoJourneyUpsellCopy(tLoc);
     return (
       <>
         <PageHeader
@@ -108,10 +110,10 @@ export default async function LessonsPage({
           <NoJourneyUpsell
             chip={tUp("upsellChip")}
             title={tUp("upsellTitle")}
-            body={tUp("upsellBody")}
+            body={upsell.body}
             ctaLabel={tUp("upsellCta")}
             ctaHref="/journey/assessment"
-            bullets={[]}
+            bullets={upsell.bullets}
           />
         </div>
       </>
@@ -143,6 +145,9 @@ export default async function LessonsPage({
   const t = await getCmsTranslations({ locale: tLoc, namespace: "appShell", page: "app-shell" });
   const tL = await getCmsTranslations({ locale: tLoc, namespace: "appShell.lessons", page: "app-shell" });
   const tToday = await getCmsTranslations({ locale: tLoc, namespace: "appShell.today", page: "app-shell" });
+  // Shared NoJourneyUpsell body + 2 bullets (same source the blocked-partner
+  // takeover above uses) so the no-journey upsell never drifts from it.
+  const upsell = await getNoJourneyUpsellCopy(tLoc);
 
   const data = await getLessonsData({
     userId: shell.userId,
@@ -196,14 +201,10 @@ export default async function LessonsPage({
           <NoJourneyUpsell
             chip={tToday("upsellChip")}
             title={tToday("upsellTitle")}
-            body={tToday("upsellBody")}
+            body={upsell.body}
             ctaLabel={tToday("upsellCta")}
             ctaHref="/journey"
-            bullets={[
-              tToday("upsellBullet1"),
-              tToday("upsellBullet2"),
-              tToday("upsellBullet3"),
-            ]}
+            bullets={upsell.bullets}
           />
         ) : null}
 
