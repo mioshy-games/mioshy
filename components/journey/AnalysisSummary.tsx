@@ -1,7 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import type { Analysis, Locale } from "@/lib/journey/types";
+import {
+  CATEGORY_FEEDBACK,
+  CATEGORY_WEAK_BELOW,
+  type CategoryKey,
+} from "@/lib/journey/category-feedback";
+import { useCmsText } from "@/hooks/useCmsText";
 import type { CadenceOption } from "@/lib/billing/pricing-validations";
 
 /**
@@ -16,20 +23,65 @@ import type { CadenceOption } from "@/lib/billing/pricing-validations";
  */
 export type JourneyPromoSummary = {
   name: string;
+  /** Optional customer-facing title (subscription_promos.display_text). When
+   *  set it replaces the default "מבצע {name}" heading on the promo line. */
   displayText: string | null;
   firstChargeByCadence: Record<string, { ils: number; usd: number }>;
   originalByCadence: Record<string, { ils: number; usd: number }>;
 };
 
+// "First period only" label per cadence — the promo discounts only the first
+// charge; renewals are full price, so we say so honestly (and per-cadence-
+// accurate, not a blanket "first month" that would be wrong for yearly).
+function firstPeriodLabel(cadence: string, isHe: boolean): string {
+  switch (cadence) {
+    case "yearly":
+      return isHe ? "שנה ראשונה" : "first year";
+    case "quarterly":
+      return isHe ? "רבעון ראשון" : "first quarter";
+    case "weekly":
+      return isHe ? "שבוע ראשון" : "first week";
+    default:
+      return isHe ? "חודש ראשון" : "first month";
+  }
+}
+
+// C2.4 cadence picker — precise weeks per cadence (internal math; display
+// rounds to whole units), and stable ordering.
+const WEEKS_PER_CADENCE: Record<string, number> = {
+  weekly: 1,
+  monthly: 4.345,
+  quarterly: 13.04,
+  yearly: 52.14,
+};
+
+// Display-only discount anchor for the struck "original" price (ILS only).
+// `original = ANCHOR_WEEKLY_BASE_ILS × ANCHOR_WEEKS_IN_PERIOD[cadence]`
+// → 508 / 1,524 / 6,096. WHOLE period-weeks {4,12,48} on purpose — NOT the
+// calendar WEEKS_PER_CADENCE above (which is only for the per-week math).
+const ANCHOR_WEEKLY_BASE_ILS = 127;
+const ANCHOR_WEEKS_IN_PERIOD: Record<string, number> = {
+  monthly: 4,
+  quarterly: 12,
+  yearly: 48,
+};
+const CADENCE_ORDER: Record<string, number> = {
+  weekly: 0,
+  monthly: 1,
+  quarterly: 2,
+  yearly: 3,
+};
+
 interface AnalysisSummaryProps {
   analysis: Analysis | null;
   locale: Locale;
-  /** F3.3 — true when the user holds a journey subscription/entitlement. Gates
-   *  the pre-purchase selling sections. Wired in Phase 3. */
+  /** F3.3 — true when the user holds a journey subscription/entitlement
+   *  (active|grace). Hides the pre-purchase selling sections (improvements /
+   *  price / value-anchor) and shows the active-subscriber card instead. */
   journeySubscribed?: boolean;
-  /** Enabled cadences + prices (server-injected). Wired in Phase 3. */
   journeyCadences?: CadenceOption[];
-  /** Active journey promo (server-computed). Wired in Phase 3. */
+  /** Active journey promo (server-computed) — drives the per-cadence discount
+   *  display. null/undefined → regular prices. */
   activePromo?: JourneyPromoSummary | null;
 }
 
@@ -37,95 +89,111 @@ interface AnalysisSummaryProps {
  * AnalysisSummary — short-assessment results / pre-purchase paywall
  * (route /journey/assessment, journeys.status='paywall').
  *
- * ── REDESIGN IN PROGRESS (mockup docs/assessment-results-mockup-v13.html) ──
- * Phase 1 (this commit): structure + skin, STATIC content, MOBILE only.
- *   • Faithful port of the approved mockup via scoped styled-jsx.
- *   • Content is hardcoded placeholder (the mockup's Hebrew example values).
- *   • Phase 2 adds the desktop @media (breakpoint 760).
- *   • Phase 3 wires the dynamic data (AI hero/narrative, the 5 category
- *     scores + feedback, prices/cadences/promo, JourneyCheckoutButton) using
- *     the props above — see the data map in the redesign brief.
- *   • Phase 4 validates displayed price == Cardcom charge.
- * The props are intentionally not yet consumed (Phase 3). The loading guard
- * on `analysis` is preserved so the flow still shows a wait state.
+ * Redesigned per docs/assessment-results-mockup-v13.html (scoped styled-jsx).
+ * Phase 3 restored the full dynamic wiring on the new skin:
+ *   • h1 ← analysis.summary.ai_hero (hero_he/en); generic fallback when the AI
+ *     call failed (no fabricated deterministic title).
+ *   • personal-feedback narrative ← analysis.summary.narrative_he/en.
+ *   • 5 bars + 5 cards ← category_scores + CATEGORY_FEEDBACK; lowest = focus
+ *     (filled bar + "נתחיל מכאן" badge); score + level-descriptor dynamic.
+ *   • money path: 3 packages ← journeyCadences (never hardcoded); promo via the
+ *     server-computed activePromo (= applyDiscount, same as checkout). Selecting
+ *     a package drives BOTH the displayed price and the checkout `plan`, so the
+ *     displayed price == the Cardcom charge. Struck anchor, "first period",
+ *     USD, and single-cadence fallback are all preserved.
+ *   • journeySubscribed hides the selling sections (same gate as before).
+ * The 6 "what will improve" lines and the included list are STATIC design copy
+ * (NOT the AI recommendations).
  */
 
-// Brand gradient (purple → magenta → orange) is defined once as the CSS
-// custom property --ar-grad on .ar-root (see styled-jsx below), so both the
-// class-driven rules and the inline bar styles reference var(--ar-grad).
-
-// Static placeholder data (Phase 1). Replaced by real props in Phase 3.
-const HERO_BARS = [
-  { v: 31, label: "אינטימיות", hot: true },
-  { v: 39, label: "חיבור רגשי", hot: false },
-  { v: 58, label: "תקשורת", hot: false },
-  { v: 43, label: "חברות", hot: false },
-  { v: 64, label: "משפחה", hot: false },
+// Fixed display order for the 5 categories (bars + cards) — matches the mockup
+// and is stable across users so the visual is comparable.
+const CAT_ORDER: CategoryKey[] = [
+  "intimacy",
+  "emotional_connection",
+  "communication",
+  "friendship",
+  "family",
 ];
 
-const CATEGORIES = [
-  {
-    score: 31,
-    exp: "הכי הרבה מקום לצמיחה",
-    name: "מיניות ואינטימיות",
-    text: "הקרבה הפיזית והתשוקה לא תמיד נוכחות. שגרה, מתח וקושי לדבר על מין מרחיקים, ואפשר להחזיר את הניצוץ.",
-    low: true,
-  },
-  {
-    score: 39,
-    exp: "מקום לחיזוק",
-    name: "אהבה וחיבור רגשי",
-    text: "החיבור הרגשי קצת דק, לפעמים חיים זה לצד זה ולא ביחד. רגעים קטנים, הערכה ופתיחות רגשית מקרבים מחדש.",
-    low: false,
-  },
-  {
-    score: 58,
-    exp: "בסיס טוב",
-    name: "תקשורת זוגית",
-    text: "התקשורת ביניכם נתקעת לפעמים, שיחות שמסלימות, או כאלה שלא נאמרות. פתיחה רכה, הקשבה לרגש שמתחת למילים ותיקון אחרי ריב משנים הכל.",
-    low: false,
-  },
-  {
-    score: 43,
-    exp: "מקום לחיזוק",
-    name: "חברות ושותפות יומיומית",
-    text: "החברות והכיף היומיומי נדחקים מעט. טקסים קטנים, צחוק משותף ורגעי 'אנחנו' מחזירים את השותפות.",
-    low: false,
-  },
-  {
-    score: 64,
-    exp: "תחום חזק יחסית",
-    name: "משפחה",
-    text: "ההתמודדות עם ההורות והמשפחה לוקחת מקום. תיאום ציפיות וגב הדדי זה לזה עושים את ההבדל.",
-    low: false,
-  },
+// Short bar labels (distinct from the longer CATEGORY_FEEDBACK card names).
+const BAR_LABEL: Record<CategoryKey, { he: string; en: string }> = {
+  intimacy: { he: "אינטימיות", en: "Intimacy" },
+  emotional_connection: { he: "חיבור רגשי", en: "Emotional" },
+  communication: { he: "תקשורת", en: "Communication" },
+  friendship: { he: "חברות", en: "Friendship" },
+  family: { he: "משפחה", en: "Family" },
+};
+
+// Dynamic level descriptor by score (and the lowest override). Display-only.
+function levelDesc(score: number, isLowest: boolean, isHe: boolean): string {
+  if (isLowest) return isHe ? "הכי הרבה מקום לצמיחה" : "the most room to grow";
+  if (score < 50) return isHe ? "מקום לחיזוק" : "room to strengthen";
+  if (score < 62) return isHe ? "בסיס טוב" : "a good base";
+  return isHe ? "תחום חזק יחסית" : "a relative strength";
+}
+
+// Static included-list + improvement copy (design copy, bilingual).
+const INCLUDED: Array<{ he: string; en: string }> = [
+  { he: "פרק חדש כל שבוע", en: "A new chapter every week" },
+  { he: "מומחה זוגיות פרטי בצ'אט", en: "A private relationship expert in chat" },
+  { he: "משחקי זוגות אונליין", en: "Online couples games" },
+  { he: "הסקס של מיאושי", en: "Mioshy's sex games" },
+  { he: "ייעוץ זוגי עם מיאושי", en: "Couples coaching with Mioshy" },
 ];
 
-const PACKAGES = [
-  { name: "חודשי", tag: "מבצע", note: "חודש ראשון, אחר כך ₪222", price: "₪57" },
-  { name: "רבעוני", tag: null, note: "חיסכון 12%", price: "₪650" },
-  { name: "שנתי", tag: null, note: "חיסכון 10%", price: "₪2,650" },
-];
-
-const INCLUDED = [
-  "פרק חדש כל שבוע",
-  "מומחה זוגיות פרטי בצ'אט",
-  "משחקי זוגות אונליין",
-  "הסקס של מיאושי",
-  "ייעוץ זוגי עם מיאושי",
-];
-
-export function AnalysisSummary({ analysis, locale }: AnalysisSummaryProps) {
+export function AnalysisSummary({
+  analysis,
+  locale,
+  journeySubscribed = false,
+  journeyCadences = [],
+  activePromo = null,
+}: AnalysisSummaryProps) {
   const isHe = locale === "he";
-  // Phase 1: which package is visually selected (skin only — no price/checkout
-  // wiring yet). Phase 3 connects this to the cadence + JourneyCheckoutButton.
-  const [selected, setSelected] = useState(0);
+  const Arrow = isHe ? ArrowLeft : ArrowRight;
+
+  // ── Cadence picker (hooks must run before the loading early-return) ──
+  const enabledCadences = journeyCadences
+    .filter((c) => c.enabled)
+    .sort((a, b) => CADENCE_ORDER[a.cadence] - CADENCE_ORDER[b.cadence]);
+  const defaultCadence =
+    (enabledCadences.find((c) => c.is_default) ?? enabledCadences[0])?.cadence ??
+    "monthly";
+  const [selectedCadence, setSelectedCadence] = useState<string>(defaultCadence);
+
+  const [checkoutBusy, setCheckoutBusy] = useState(false);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+
+  // CMS string consumers (resolve to raw strings; fall back to bilingual).
+  const checkoutErrGeneric = useCmsText("journeyAssessment.analysis.checkoutErrorGeneric").text;
+  const checkoutErrNetwork = useCmsText("journeyAssessment.analysis.checkoutErrorNetwork").text;
+  const ctaLoadingLabel = useCmsText("journeyAssessment.analysis.ctaLoading").text;
+  const ctaLabelCms = useCmsText("journeyAssessment.analysis.cta").text;
+  const priceNoteCms = useCmsText("journeyAssessment.analysis.priceNote").text;
+  const anchorPriceCms = useCmsText("journeyAssessment.analysis.anchorPrice").text;
+  const activeTitleCms = useCmsText("journeyAssessment.analysis.activeTitle").text;
+  const activeSubCms = useCmsText("journeyAssessment.analysis.activeSub").text;
+
+  // Rotating reassurance for the loading state (cycles while analysis is null).
+  const loadingLines = isHe
+    ? ["בונים את התמונה האישית שלכם", "מתאימים את ההמלצות עבורכם", "עוד רגע…"]
+    : ["Building your personal picture", "Tailoring your recommendations", "Almost there…"];
+  const [loadingLineIdx, setLoadingLineIdx] = useState(0);
+  useEffect(() => {
+    if (analysis) return;
+    const id = setInterval(
+      () => setLoadingLineIdx((i) => (i + 1) % loadingLines.length),
+      3000,
+    );
+    return () => clearInterval(id);
+  }, [analysis, loadingLines.length]);
 
   if (!analysis) {
     return (
       <div className="ar-loading" dir={isHe ? "rtl" : "ltr"}>
         <span className="ar-spinner" aria-hidden />
-        <p>מכינים את התמונה האישית שלכם…</p>
+        <p>{isHe ? "מכינים את התמונה האישית שלכם…" : "Preparing your personal picture…"}</p>
+        <p className="ar-loading-sub" aria-live="polite">{loadingLines[loadingLineIdx]}</p>
         <style jsx>{`
           .ar-loading {
             display: flex;
@@ -133,13 +201,17 @@ export function AnalysisSummary({ analysis, locale }: AnalysisSummaryProps) {
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 18px;
+            gap: 14px;
             padding: 40px 24px;
             background: #fcfaf7;
             color: #2e2622;
             font-family: var(--font-heebo), "Heebo", system-ui, sans-serif;
             font-size: 20px;
             text-align: center;
+          }
+          .ar-loading-sub {
+            font-size: 16px;
+            color: #7b6b5e;
           }
           .ar-spinner {
             width: 30px;
@@ -159,50 +231,150 @@ export function AnalysisSummary({ analysis, locale }: AnalysisSummaryProps) {
     );
   }
 
+  // ── Dynamic content (AI + categories) ──────────────────────────────────
+  const aiHero = analysis.summary.ai_hero ?? null;
+  const heroText = aiHero ? (isHe ? aiHero.hero_he : aiHero.hero_en) : null;
+  // AI failed → generic, NON-deterministic h1 (no fabricated insight).
+  const h1Text =
+    heroText ??
+    (isHe ? "הנה תמונת המצב מהאבחון שלכם." : "Here's the picture from your assessment.");
+  const narrative = isHe ? analysis.summary.narrative_he : analysis.summary.narrative_en;
+  const categoryScores = analysis.summary.category_scores ?? null;
+  const insufficientKeys = categoryScores?.insufficient_keys ?? [];
+
+  // ── Money path ──────────────────────────────────────────────────────────
+  // The cadence to charge: the selected one when enabled, else let the server
+  // resolve to the product default ("weekly"). This is the SAME value the
+  // displayed price keys off, so displayed price == Cardcom charge.
+  const checkoutPlan = enabledCadences.some((c) => c.cadence === selectedCadence)
+    ? selectedCadence
+    : "weekly";
+
+  const startCheckout = async () => {
+    setCheckoutBusy(true);
+    setCheckoutError(null);
+    try {
+      const res = await fetch("/api/billing/checkout/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          plan: checkoutPlan,
+          product: "journey",
+          source: "analysis_summary",
+          language: locale,
+          is_israeli: locale === "he",
+          // Land on the hub (/my) so the new subscriber sees PartnerShareCard.
+          return_path: `/${locale}/my`,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (res.status === 401 || data?.code === "UNAUTHORIZED") {
+        const rawPath =
+          typeof window !== "undefined"
+            ? window.location.pathname + window.location.search
+            : `/journey/assessment`;
+        const localeless =
+          rawPath.replace(/^\/(he|en)(?=\/|$)/, "") || "/journey/assessment";
+        const back = encodeURIComponent(localeless);
+        window.location.href = `/${locale}/auth/signup?next=${back}`;
+        return;
+      }
+      if (data?.redirect_url) {
+        window.location.href = data.redirect_url;
+        return;
+      }
+      setCheckoutError(data?.message || checkoutErrGeneric);
+      setCheckoutBusy(false);
+    } catch {
+      setCheckoutError(checkoutErrNetwork);
+      setCheckoutBusy(false);
+    }
+  };
+
+  const sym = isHe ? "₪" : "$";
+  const fmt = (n: number) => n.toLocaleString(isHe ? "he-IL" : "en-US");
+  const amtOf = (c: CadenceOption) => (isHe ? c.price_ils : c.price_usd);
+  const weeklyRow = journeyCadences.find((c) => c.cadence === "weekly");
+  const baselineWeekly = weeklyRow ? amtOf(weeklyRow) : null;
+  const periodLabel = (cadence: string) =>
+    cadence === "yearly"
+      ? isHe ? "/שנה" : "/yr"
+      : cadence === "quarterly"
+        ? isHe ? "/רבעון" : "/quarter"
+        : cadence === "weekly"
+          ? isHe ? "/שבוע" : "/wk"
+          : isHe ? "/חודש" : "/mo";
+  const savingsOf = (c: CadenceOption) =>
+    baselineWeekly && baselineWeekly > 0
+      ? Math.round(
+          ((baselineWeekly - amtOf(c) / (WEEKS_PER_CADENCE[c.cadence] ?? 1)) /
+            baselineWeekly) *
+            100,
+        )
+      : null;
+  const cadenceTitle = (cadence: string) =>
+    cadence === "monthly"
+      ? isHe ? "חודשי" : "Monthly"
+      : cadence === "quarterly"
+        ? isHe ? "רבעוני" : "Quarterly"
+        : cadence === "yearly"
+          ? isHe ? "שנתי" : "Yearly"
+          : isHe ? "שבועי" : "Weekly";
+  const selectedOption =
+    enabledCadences.find((c) => c.cadence === selectedCadence) ??
+    enabledCadences[0] ??
+    null;
+
   return (
     <div className="ar-root" dir={isHe ? "rtl" : "ltr"}>
       {/* ── HERO ───────────────────────────────────────────────────── */}
       <div className="ar-hero">
-        {/* Mioshy logo, top-left on the hero (Phase 2). Replaces the shared
-            logo strip that the page wrapper used to render above the funnel;
-            the question/auth screens keep their strip (moved into
-            JourneyClient). Links back to the locale home, same as before. */}
         <a className="ar-logo" href={`/${locale}`} aria-label="Mioshy home">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/mioshy-white.svg" alt="Mioshy" width={116} height={37} />
         </a>
         <div className="ar-hero-figure" aria-hidden />
         <div className="ar-hero-content">
-          <div className="ar-eyebrow">תוצאות האבחון שלכם</div>
-          <h1 className="ar-h1 font-heading">
-            <span style={{ color: "#fff" }}>דנה,</span> אפשר להחזיר את הקרבה.
-          </h1>
-          <p className="ar-sub">
-            השלמת את האבחון. ניתחנו את הנתונים שלך, ובנינו עבורך תמונת מצב אישית
-            שמראה איפה הזוגיות חזקה, ואיפה נמצא הפוטנציאל הגדול ביותר לשיפור.
-          </p>
-          <div className="ar-bars">
-            {HERO_BARS.map((b, i) => (
-              <div className={`ar-bar${b.hot ? " hot" : ""}`} key={i}>
-                <span className="ar-v">{b.v}</span>
-                <div
-                  className="ar-col"
-                  style={
-                    b.hot
-                      ? { height: `${b.v}%`, background: "var(--ar-grad)", border: 0 }
-                      : {
-                          height: `${b.v}%`,
-                          background:
-                            "linear-gradient(rgba(255,255,255,.07),rgba(255,255,255,.07)) padding-box, var(--ar-grad) border-box",
-                        }
-                  }
-                />
-                <span className="ar-lbl">{b.label}</span>
-              </div>
-            ))}
+          <div className="ar-eyebrow">
+            {isHe ? "תוצאות האבחון שלכם" : "Your assessment results"}
           </div>
+          <h1 className="ar-h1 font-heading">{h1Text}</h1>
+          <p className="ar-sub">
+            {isHe
+              ? "השלמת את האבחון. ניתחנו את הנתונים שלך, ובנינו עבורך תמונת מצב אישית שמראה איפה הזוגיות חזקה, ואיפה נמצא הפוטנציאל הגדול ביותר לשיפור."
+              : "You completed the assessment. We analysed your answers and built a personal picture showing where the relationship is strong, and where the biggest potential to improve is."}
+          </p>
+          {categoryScores ? (
+            <div className="ar-bars">
+              {CAT_ORDER.map((key) => {
+                const value = categoryScores[key];
+                const insufficient = insufficientKeys.includes(key);
+                const hot = !insufficient && key === categoryScores.lowest_key;
+                const heightPct = insufficient ? 8 : Math.max(14, Math.min(100, value));
+                return (
+                  <div className={`ar-bar${hot ? " hot" : ""}`} key={key}>
+                    <span className="ar-v">{insufficient ? "–" : value}</span>
+                    <div
+                      className="ar-col"
+                      style={
+                        hot
+                          ? { height: `${heightPct}%`, background: "var(--ar-grad)", border: 0 }
+                          : {
+                              height: `${heightPct}%`,
+                              background:
+                                "linear-gradient(rgba(255,255,255,.07),rgba(255,255,255,.07)) padding-box, var(--ar-grad) border-box",
+                            }
+                      }
+                    />
+                    <span className="ar-lbl">{isHe ? BAR_LABEL[key].he : BAR_LABEL[key].en}</span>
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
           <a className="ar-herolink" href="#ar-price">
-            להצטרף לייעוץ הזוגי עם מיאושי
+            {isHe ? "להצטרף לייעוץ הזוגי עם מיאושי" : "Join couples coaching with Mioshy"}
           </a>
         </div>
       </div>
@@ -210,147 +382,331 @@ export function AnalysisSummary({ analysis, locale }: AnalysisSummaryProps) {
       {/* ── SHEET ──────────────────────────────────────────────────── */}
       <div className="ar-sheet">
         {/* PERSONAL FEEDBACK */}
-        <section className="ar-section">
-          <div className="ar-fbcard">
-            <div className="ar-photo" aria-hidden />
-            <div className="ar-sublabel ar-center">המשוב האישי שלכם</div>
-            <p className="ar-fbtext">
-              האהבה ביניכם קיימת. כרגע נראה שהשגרה השפיעה בעיקר על הקרבה
-              והאינטימיות. החדשות הטובות: הבסיס הזוגי שלכם חזק, ולכן הפוטנציאל
-              לשינוי גבוה.
-            </p>
-          </div>
-        </section>
+        {narrative ? (
+          <section className="ar-section">
+            <div className="ar-fbcard">
+              <div className="ar-photo" aria-hidden />
+              <div className="ar-sublabel ar-center">
+                {isHe ? "המשוב האישי שלכם" : "Your personal feedback"}
+              </div>
+              <p className="ar-fbtext">{narrative}</p>
+            </div>
+          </section>
+        ) : null}
 
         {/* CATEGORIES */}
-        <section className="ar-section">
-          <div className="ar-sublabel">מה התשובות שלכם מספרות</div>
-          <div className="ar-cats">
-            {CATEGORIES.map((c, i) => (
-              <div className={`ar-catcard${c.low ? " low" : ""}`} key={i}>
-                <div className="ar-scorerow">
-                  <span className="ar-snum font-heading">{c.score}</span>
-                  <span className="ar-sof">/ 100</span>
-                  <span className="ar-sexp">{c.exp}</span>
-                  {c.low ? <span className="ar-badge">נתחיל מכאן</span> : null}
-                </div>
-                <div className="ar-cname">{c.name}</div>
-                <p className="ar-ctxt">{c.text}</p>
+        {categoryScores ? (
+          <section className="ar-section">
+            <div className="ar-sublabel">
+              {isHe ? "מה התשובות שלכם מספרות" : "What your answers tell"}
+            </div>
+            <div className="ar-cats">
+              {CAT_ORDER.map((key) => {
+                const score = categoryScores[key];
+                const fb = CATEGORY_FEEDBACK[key];
+                const insufficient = insufficientKeys.includes(key);
+                const isLowest = !insufficient && key === categoryScores.lowest_key;
+                const weak = score < CATEGORY_WEAK_BELOW;
+                const text = insufficient
+                  ? isHe
+                    ? "כדי לתת לכם משוב מדויק בתחום הזה צריך עוד כמה תשובות, וזה מה שהאבחון המלא עושה."
+                    : "We need a few more answers to give you accurate feedback here, that's what the full assessment does."
+                  : isHe
+                    ? weak ? fb.weak_he : fb.strong_he
+                    : weak ? fb.weak_en : fb.strong_en;
+                return (
+                  <div className={`ar-catcard${isLowest ? " low" : ""}`} key={key}>
+                    <div className="ar-scorerow">
+                      <span className="ar-snum font-heading">{insufficient ? "–" : score}</span>
+                      <span className="ar-sof">/ 100</span>
+                      <span className="ar-sexp">
+                        {insufficient
+                          ? isHe ? "דרוש אבחון מלא" : "full assessment needed"
+                          : levelDesc(score, isLowest, isHe)}
+                      </span>
+                      {isLowest ? (
+                        <span className="ar-badge">{isHe ? "נתחיל מכאן" : "start here"}</span>
+                      ) : null}
+                    </div>
+                    <div className="ar-cname">{isHe ? fb.he : fb.en}</div>
+                    <p className="ar-ctxt">{text}</p>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="ar-howcard">
+              <div className="ar-hl">{isHe ? "מכאן ממשיכים יחד" : "From here we continue together"}</div>
+              <p>
+                {isHe
+                  ? "על כל אחד מהתחומים האלה נעבוד יחד, פרק חדש בכל שבוע, ואתם קובעים את הסדר."
+                  : "We'll work on each of these areas together, a new chapter every week, and you set the order."}
+              </p>
+              <p>
+                {isHe
+                  ? "את האבחון המלא, לתמונה מדויקת ולתוצאות עמוקות יותר, נשלים יחד מיד אחרי ההצטרפות לתוכנית הייעוץ הזוגי של מיאושי."
+                  : "We'll complete the full assessment together, for a more accurate picture and deeper results, right after you join Mioshy's couples coaching."}
+              </p>
+            </div>
+          </section>
+        ) : null}
+
+        {/* IMPROVEMENTS — static design copy (NOT the AI recommendations).
+            Pre-purchase selling section: hidden for subscribers. */}
+        {!journeySubscribed ? (
+          <section className="ar-section">
+            <div className="ar-sublabel">{isHe ? "מה תקבלו בליווי" : "What you get in the program"}</div>
+            <div className="ar-imp">
+              <div className="ar-improw">
+                <span className="ar-ic">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M12 20s-7-4.5-7-9a4 4 0 017-2.6A4 4 0 0119 11c0 4.5-7 9-7 9z" />
+                    <path d="M12 11v-3M10.5 9.5h3" strokeWidth="1.4" />
+                  </svg>
+                </span>
+                <span>{isHe ? "האינטימיות תגדל" : "Intimacy will grow"}</span>
               </div>
-            ))}
-          </div>
-          <div className="ar-howcard">
-            <div className="ar-hl">מכאן ממשיכים יחד</div>
-            <p>
-              על כל אחד מהתחומים האלה נעבוד יחד, פרק חדש בכל שבוע, ואתם קובעים את
-              הסדר.
-            </p>
-            <p>
-              את האבחון המלא, לתמונה מדויקת ולתוצאות עמוקות יותר, נשלים יחד מיד
-              אחרי ההצטרפות לתוכנית הייעוץ הזוגי של מיאושי.
-            </p>
-          </div>
-        </section>
+              <div className="ar-improw">
+                <span className="ar-ic">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M12 7v11" />
+                    <path d="M12 9C9 3 3 4.5 4 9.5c.8 3.8 6 4.5 8 1.5" />
+                    <path d="M12 9c3-6 9-4.5 8 .5-.8 3.8-6 4.5-8 1.5" />
+                  </svg>
+                </span>
+                <span>{isHe ? "הפרפרים יחזרו לבטן" : "The butterflies will return"}</span>
+              </div>
+              <div className="ar-improw">
+                <span className="ar-ic">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M12 3c1 3-1 4-1 6a3 3 0 006 0c0-1 0-2-1-3 2 1 4 4 4 7a8 8 0 01-16 0c0-4 3-6 4-8 1 1 2 1 4-2z" />
+                  </svg>
+                </span>
+                <span>{isHe ? "הסקס יהיה עוצמתי מתמיד" : "Sex will be better than ever"}</span>
+              </div>
+              <div className="ar-improw">
+                <span className="ar-ic">
+                  <svg viewBox="0 0 24 24">
+                    <circle cx="8" cy="9" r="2.4" />
+                    <circle cx="16" cy="9" r="2.4" />
+                    <path d="M3.5 19a4.5 4.5 0 019 0M11.5 19a4.5 4.5 0 019 0" />
+                  </svg>
+                </span>
+                <span>{isHe ? "החברות ביניכם תתחזק" : "Your friendship will strengthen"}</span>
+              </div>
+              <div className="ar-improw">
+                <span className="ar-ic">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M5 7h11l3 3-3 3H5z" />
+                    <path d="M5 7v12" strokeWidth="1.4" />
+                  </svg>
+                </span>
+                <span>{isHe ? "הריבים יפחתו והשקט יחזור" : "Arguments will ease and calm returns"}</span>
+              </div>
+              <div className="ar-improw">
+                <span className="ar-ic">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M12 20s-7-4.5-7-9a4 4 0 017-2.6A4 4 0 0119 11c0 4.5-7 9-7 9z" />
+                  </svg>
+                </span>
+                <span>{isHe ? "האהבה תחזור" : "Love will return"}</span>
+              </div>
+            </div>
+          </section>
+        ) : null}
 
-        {/* IMPROVEMENTS */}
-        <section className="ar-section">
-          <div className="ar-sublabel">מה תקבלו בליווי</div>
-          <div className="ar-imp">
-            <div className="ar-improw">
-              <span className="ar-ic">
-                <svg viewBox="0 0 24 24">
-                  <path d="M12 20s-7-4.5-7-9a4 4 0 017-2.6A4 4 0 0119 11c0 4.5-7 9-7 9z" />
-                  <path d="M12 11v-3M10.5 9.5h3" strokeWidth="1.4" />
-                </svg>
-              </span>
-              <span>האינטימיות תגדל</span>
-            </div>
-            <div className="ar-improw">
-              <span className="ar-ic">
-                <svg viewBox="0 0 24 24">
-                  <path d="M12 7v11" />
-                  <path d="M12 9C9 3 3 4.5 4 9.5c.8 3.8 6 4.5 8 1.5" />
-                  <path d="M12 9c3-6 9-4.5 8 .5-.8 3.8-6 4.5-8 1.5" />
-                </svg>
-              </span>
-              <span>הפרפרים יחזרו לבטן</span>
-            </div>
-            <div className="ar-improw">
-              <span className="ar-ic">
-                <svg viewBox="0 0 24 24">
-                  <path d="M12 3c1 3-1 4-1 6a3 3 0 006 0c0-1 0-2-1-3 2 1 4 4 4 7a8 8 0 01-16 0c0-4 3-6 4-8 1 1 2 1 4-2z" />
-                </svg>
-              </span>
-              <span>הסקס יהיה עוצמתי מתמיד</span>
-            </div>
-            <div className="ar-improw">
-              <span className="ar-ic">
-                <svg viewBox="0 0 24 24">
-                  <circle cx="8" cy="9" r="2.4" />
-                  <circle cx="16" cy="9" r="2.4" />
-                  <path d="M3.5 19a4.5 4.5 0 019 0M11.5 19a4.5 4.5 0 019 0" />
-                </svg>
-              </span>
-              <span>החברות ביניכם תתחזק</span>
-            </div>
-            <div className="ar-improw">
-              <span className="ar-ic">
-                <svg viewBox="0 0 24 24">
-                  <path d="M5 7h11l3 3-3 3H5z" />
-                  <path d="M5 7v12" strokeWidth="1.4" />
-                </svg>
-              </span>
-              <span>הריבים יפחתו והשקט יחזור</span>
-            </div>
-            <div className="ar-improw">
-              <span className="ar-ic">
-                <svg viewBox="0 0 24 24">
-                  <path d="M12 20s-7-4.5-7-9a4 4 0 017-2.6A4 4 0 0119 11c0 4.5-7 9-7 9z" />
-                </svg>
-              </span>
-              <span>האהבה תחזור</span>
-            </div>
-          </div>
-        </section>
+        {/* PRICE (non-subscriber) / ACTIVE-SUBSCRIBER card */}
+        {!journeySubscribed ? (
+          <section className="ar-section" id="ar-price">
+            <h2 className="ar-sh font-heading">
+              {isHe ? "איזו חבילה מתאימה לכם?" : "Which plan fits you?"}
+            </h2>
+            <div className="ar-pricecard">
+              {/* Packages ← journeyCadences. Price shown = promo first-charge
+                  (server-computed) or the regular price for that cadence. */}
+              {enabledCadences.map((c) => {
+                const selected = c.cadence === selectedCadence;
+                const amt = amtOf(c);
+                const pf = activePromo?.firstChargeByCadence[c.cadence];
+                const po = activePromo?.originalByCadence[c.cadence];
+                const hasPromo = !!(activePromo && pf && po);
+                const firstAmt = hasPromo ? (isHe ? pf!.ils : pf!.usd) : amt;
+                const origAmt = hasPromo ? (isHe ? po!.ils : po!.usd) : amt;
+                const sv = savingsOf(c);
+                const note = hasPromo
+                  ? `${firstPeriodLabel(c.cadence, isHe)}${isHe ? ", אחר כך " : ", then "}${sym}${fmt(origAmt)}`
+                  : sv && sv > 0
+                    ? `${isHe ? "חיסכון" : "Save"} ${sv}%`
+                    : `${sym}${fmt(amt)}${periodLabel(c.cadence)}`;
+                return (
+                  <button
+                    type="button"
+                    className={`ar-opt${selected ? " sel" : ""}`}
+                    onClick={() => setSelectedCadence(c.cadence)}
+                    aria-pressed={selected}
+                    key={c.cadence}
+                  >
+                    <span className="ar-radio" />
+                    <span className="ar-opt-info">
+                      <span className="ar-opt-name">
+                        {cadenceTitle(c.cadence)}
+                        {hasPromo ? <span className="ar-opt-tag">{isHe ? "מבצע" : "Promo"}</span> : null}
+                      </span>
+                      <span className="ar-opt-note">{note}</span>
+                    </span>
+                    <span className="ar-opt-price font-heading">
+                      {sym}
+                      {fmt(firstAmt)}
+                    </span>
+                  </button>
+                );
+              })}
 
-        {/* PRICE */}
-        <section className="ar-section" id="ar-price">
-          <h2 className="ar-sh font-heading">איזו חבילה מתאימה לכם?</h2>
-          <div className="ar-pricecard">
-            {PACKAGES.map((p, i) => (
+              {/* Selected-cadence headline — the amount Cardcom will charge for
+                  the selected plan. Preserves the struck anchor (ILS derived /
+                  USD CMS), the promo "first period" nuance, and USD. */}
+              {selectedOption
+                ? (() => {
+                    const cad = selectedOption.cadence;
+                    const pf = activePromo?.firstChargeByCadence[cad];
+                    const po = activePromo?.originalByCadence[cad];
+                    if (activePromo && pf && po) {
+                      const firstAmt = isHe ? pf.ils : pf.usd;
+                      const origAmt = isHe ? po.ils : po.usd;
+                      return (
+                        <div className="ar-summary">
+                          <span className="ar-summary-badge">
+                            {activePromo.displayText ?? `${isHe ? "מבצע" : "Promo"} ${activePromo.name}`}
+                          </span>
+                          <p className="ar-summary-line">
+                            <span>{isHe ? "לתשלום" : "To pay"}</span>{" "}
+                            <span>{firstPeriodLabel(cad, isHe)}</span>{" "}
+                            <b>
+                              {sym}
+                              {fmt(firstAmt)}
+                            </b>{" "}
+                            <span>{isHe ? "במקום" : "instead of"}</span>{" "}
+                            <span className="ar-sr">{isHe ? "היה " : "was "}</span>
+                            <s>
+                              {sym}
+                              {fmt(origAmt)}
+                            </s>{" "}
+                            <span>{periodLabel(cad)}</span>
+                          </p>
+                          <p className="ar-summary-note">
+                            {isHe
+                              ? "מחיר לתשלום הראשון; החידושים מלאים."
+                              : "First-payment price; renewals at full price."}
+                          </p>
+                        </div>
+                      );
+                    }
+                    const anchorStruck =
+                      isHe && ANCHOR_WEEKS_IN_PERIOD[cad]
+                        ? `${sym}${fmt(ANCHOR_WEEKLY_BASE_ILS * ANCHOR_WEEKS_IN_PERIOD[cad])}`
+                        : anchorPriceCms && anchorPriceCms.trim().length > 0
+                          ? anchorPriceCms
+                          : null;
+                    return (
+                      <div className="ar-summary">
+                        <p className="ar-summary-line">
+                          <span>{isHe ? "לתשלום" : "To pay"}</span>{" "}
+                          {anchorStruck ? (
+                            <>
+                              <span className="ar-sr">{isHe ? "היה " : "was "}</span>
+                              <s>{anchorStruck}</s>{" "}
+                            </>
+                          ) : null}
+                          <b>
+                            {sym}
+                            {fmt(amtOf(selectedOption))}
+                          </b>{" "}
+                          <span>{periodLabel(cad)}</span>
+                        </p>
+                        {priceNoteCms && priceNoteCms.trim().length > 0 ? (
+                          <p className="ar-summary-note">{priceNoteCms}</p>
+                        ) : null}
+                      </div>
+                    );
+                  })()
+                : null}
+
+              <div className="ar-incl">
+                {INCLUDED.map((it, i) => (
+                  <div className="ar-it" key={i}>
+                    {isHe ? it.he : it.en}
+                  </div>
+                ))}
+              </div>
+
+              <p className="ar-fulltext">
+                {isHe
+                  ? "מיד עם ההצטרפות נשלים את האבחון המלא, לתמונה מדויקת יותר ולצעדים שמתאימים בדיוק אליכם."
+                  : "Right after you join, we'll complete the full assessment, for a more accurate picture and steps tailored exactly to you."}
+              </p>
+
               <button
                 type="button"
-                className={`ar-opt${selected === i ? " sel" : ""}`}
-                onClick={() => setSelected(i)}
-                key={i}
+                className="ar-cta"
+                onClick={startCheckout}
+                disabled={checkoutBusy}
               >
-                <span className="ar-radio" />
-                <span className="ar-opt-info">
-                  <span className="ar-opt-name">
-                    {p.name}
-                    {p.tag ? <span className="ar-opt-tag">{p.tag}</span> : null}
-                  </span>
-                  <span className="ar-opt-note">{p.note}</span>
-                </span>
-                <span className="ar-opt-price font-heading">{p.price}</span>
+                {checkoutBusy
+                  ? ctaLoadingLabel && ctaLoadingLabel.trim().length > 0
+                    ? ctaLoadingLabel
+                    : isHe ? "רגע…" : "One sec…"
+                  : ctaLabelCms && ctaLabelCms.trim().length > 0
+                    ? ctaLabelCms
+                    : isHe ? "להצטרפות עכשיו" : "Join now"}
+                {!checkoutBusy ? <Arrow className="ar-cta-arrow" aria-hidden /> : null}
               </button>
-            ))}
-            <div className="ar-incl">
-              {INCLUDED.map((it, i) => (
-                <div className="ar-it" key={i}>
-                  {it}
-                </div>
-              ))}
+              {checkoutError ? (
+                <p className="ar-checkout-error" role="alert">
+                  {checkoutError}
+                </p>
+              ) : null}
+              <div className="ar-stop">
+                {isHe ? "אפשר לעצור בכל עת בלחיצת כפתור." : "Cancel anytime with one tap."}
+              </div>
             </div>
-            <a className="ar-cta">להצטרפות עכשיו</a>
-            <div className="ar-stop">אפשר לעצור בכל עת בלחיצת כפתור.</div>
-          </div>
-        </section>
+          </section>
+        ) : (
+          <section className="ar-section">
+            <div className="ar-active">
+              <div className="ar-active-title font-heading">
+                {activeTitleCms && activeTitleCms.trim().length > 0
+                  ? activeTitleCms
+                  : isHe ? "אתם כבר בליווי" : "You're already in the program"}
+              </div>
+              <p className="ar-active-sub">
+                {activeSubCms && activeSubCms.trim().length > 0
+                  ? activeSubCms
+                  : isHe
+                    ? "הליווי שלכם פעיל. אפשר להמשיך מהמסך הראשי."
+                    : "Your program is active. Continue from your home screen."}
+              </p>
+              <a className="ar-active-link" href={`/${locale}/my`}>
+                {isHe ? "למסך שלי" : "Go to my screen"}
+              </a>
+            </div>
+          </section>
+        )}
 
-        <p className="ar-anchor">
-          פגישת ייעוץ מתחילה ב-₪500 מינימום ויכולה להגיע לאלפי שקלים.{" "}
-          <b>איתנו תקבלו ליווי צמוד, כל החודש.</b>
-        </p>
+        {/* Value anchor — pre-purchase only. */}
+        {!journeySubscribed ? (
+          <p className="ar-anchor">
+            {isHe ? (
+              <>
+                פגישת ייעוץ מתחילה ב-₪500 מינימום ויכולה להגיע לאלפי שקלים.{" "}
+                <b>איתנו תקבלו ליווי צמוד, כל החודש.</b>
+              </>
+            ) : (
+              <>
+                A counselling session starts at ₪500 minimum and can reach thousands.{" "}
+                <b>With us you get close guidance, all month long.</b>
+              </>
+            )}
+          </p>
+        ) : null}
       </div>
 
       <style jsx>{`
@@ -373,6 +729,14 @@ export function AnalysisSummary({ analysis, locale }: AnalysisSummaryProps) {
         }
         .font-heading {
           font-family: var(--font-frank-ruhl), "Frank Ruhl Libre", serif;
+        }
+        .ar-sr {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          overflow: hidden;
+          clip: rect(0 0 0 0);
+          white-space: nowrap;
         }
         .ar-eyebrow {
           font-size: 14px;
@@ -789,12 +1153,65 @@ export function AnalysisSummary({ analysis, locale }: AnalysisSummaryProps) {
           border-radius: 2px;
           background: var(--ar-grad);
         }
+
+        /* Selected-cadence headline summary (restored money-path detail) */
+        .ar-summary {
+          margin-top: 16px;
+          text-align: center;
+        }
+        .ar-summary-badge {
+          display: inline-block;
+          font-size: 12px;
+          font-weight: 800;
+          color: #fff;
+          background: var(--ar-grad);
+          padding: 3px 12px;
+          border-radius: 99px;
+          margin-bottom: 8px;
+        }
+        .ar-summary-line {
+          font-size: 18px;
+          color: #2e2622;
+          font-weight: 600;
+          line-height: 1.5;
+        }
+        .ar-summary-line b {
+          font-family: var(--font-frank-ruhl), "Frank Ruhl Libre", serif;
+          font-size: 26px;
+          font-weight: 900;
+          background: var(--ar-grad);
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent;
+        }
+        .ar-summary-line s {
+          color: #9a8a7c;
+          font-weight: 600;
+        }
+        .ar-summary-note {
+          font-size: 14px;
+          color: #7b6b5e;
+          margin-top: 4px;
+        }
+        .ar-fulltext {
+          font-family: var(--font-frank-ruhl), "Frank Ruhl Libre", serif;
+          font-size: 20px;
+          font-weight: 700;
+          line-height: 1.3;
+          color: #2e2622;
+          text-align: center;
+          margin-top: 16px;
+        }
         .ar-cta {
-          display: block;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
           width: 100%;
           text-align: center;
           border: 0;
           cursor: pointer;
+          font-family: inherit;
           font-weight: 800;
           font-size: 20px;
           color: #fff;
@@ -805,11 +1222,59 @@ export function AnalysisSummary({ analysis, locale }: AnalysisSummaryProps) {
           text-decoration: none;
           margin-top: 18px;
         }
+        .ar-cta:disabled {
+          opacity: 0.6;
+          cursor: default;
+        }
+        .ar-cta-arrow {
+          width: 18px;
+          height: 18px;
+        }
+        .ar-checkout-error {
+          margin-top: 10px;
+          text-align: center;
+          font-size: 14px;
+          color: #b3261e;
+          background: rgba(179, 38, 30, 0.08);
+          border: 1px solid rgba(179, 38, 30, 0.25);
+          border-radius: 10px;
+          padding: 8px 10px;
+        }
         .ar-stop {
           text-align: center;
           font-size: 16px;
           color: #7b6b5e;
           margin-top: 12px;
+        }
+
+        /* ACTIVE SUBSCRIBER */
+        .ar-active {
+          max-width: 520px;
+          margin: 0 auto;
+          text-align: center;
+          background: #ffffff;
+          border: 1px solid #ece2cf;
+          border-radius: 24px;
+          padding: 28px 20px;
+          box-shadow: 0 18px 44px -22px rgba(120, 70, 120, 0.28);
+        }
+        .ar-active-title {
+          font-size: 26px;
+          font-weight: 900;
+          color: #2e2622;
+          margin-bottom: 8px;
+        }
+        .ar-active-sub {
+          font-size: 18px;
+          color: #5a4f46;
+          margin-bottom: 16px;
+        }
+        .ar-active-link {
+          display: inline-block;
+          font-weight: 800;
+          color: #7a1f2b;
+          text-decoration: underline;
+          text-underline-offset: 4px;
         }
 
         .ar-anchor {
