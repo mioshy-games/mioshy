@@ -22,6 +22,34 @@ import { useDwellTracking } from "@/hooks/useDwellTracking";
 import { metaTrackCustom } from "@/lib/analytics/meta-pixel";
 import { CmsText } from "@/components/cms/CmsText";
 
+/**
+ * Mioshy logo strip shown above the funnel on the question / auth / error
+ * screens. Relocated here from the assessment page wrapper (2026-06-29,
+ * results redesign Phase 2) so the redesigned results screen can carry its
+ * own logo on the hero (AnalysisSummary), while every other funnel screen
+ * stays branded. 150px wide, centered, links back to the locale home.
+ */
+function FunnelLogo({ locale }: { locale: Locale }) {
+  return (
+    <div className="relative z-10 flex justify-center pt-6 pb-2">
+      <a
+        href={`/${locale}`}
+        aria-label="Mioshy home"
+        className="inline-flex transition-opacity hover:opacity-80"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/mioshy-white.svg"
+          alt="Mioshy"
+          width={150}
+          height={48}
+          className="h-auto w-[150px]"
+        />
+      </a>
+    </div>
+  );
+}
+
 interface JourneyClientProps {
   locale: Locale;
   initialProgress?: {
@@ -718,6 +746,7 @@ export function JourneyClient({
         className="relative mx-auto flex min-h-[80vh] w-full max-w-3xl flex-col gap-6 px-4 py-10"
       >
         <JourneyOutroBackdrop />
+        <FunnelLogo locale={locale} />
         <AnimatePresence mode="wait">
           <InlineAuthStep
             key="inline-auth"
@@ -752,6 +781,7 @@ export function JourneyClient({
           className="relative mx-auto max-w-2xl space-y-4 p-10 text-center"
         >
           <JourneyOutroBackdrop />
+          <FunnelLogo locale={locale} />
           <CmsText
             cmsKey="journeyAssessment.client.analysisError"
             as="p"
@@ -798,6 +828,7 @@ export function JourneyClient({
       dir={locale === "he" ? "rtl" : "ltr"}
       className="mx-auto flex min-h-[80vh] w-full max-w-3xl flex-col gap-6 px-4 py-6 sm:gap-8 sm:py-10"
     >
+      <FunnelLogo locale={locale} />
       {/* W2.3 — progress bar pinned at the top so the percentage is
           always above the fold on mobile (Itzik #4).
           F3 (#13) — dropped the opaque #070b18/85 backdrop because it

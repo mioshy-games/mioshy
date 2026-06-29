@@ -578,27 +578,11 @@ export default async function JourneyAssessmentPage({
         <div className="journey-ambient-orb journey-ambient-orb--b" />
       </div>
       <AssessmentDiagProbe />
-      {/* Itzik 2026-06-02: Mioshy logo above the funnel - present on
-          EVERY assessment screen (intro/questions/sections/auth/summary)
-          via the shared page wrapper. 150px wide, centered, modest top
-          padding so it doesn't crowd the first question. Wrapped in an
-          anchor so clicking the logo returns to the locale's home page. */}
-      <div className="relative z-10 flex justify-center pt-6 pb-2">
-        <a
-          href={`/${locale}`}
-          aria-label="Mioshy home"
-          className="inline-flex transition-opacity hover:opacity-80"
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/mioshy-white.svg"
-            alt="Mioshy"
-            width={150}
-            height={48}
-            className="h-auto w-[150px]"
-          />
-        </a>
-      </div>
+      {/* Mioshy logo relocated (2026-06-29, results redesign Phase 2): the
+          question / auth / error screens now render it inside JourneyClient
+          (<FunnelLogo/>), and the results screen carries its own logo on the
+          hero (top-left, in AnalysisSummary). This keeps every screen branded
+          while letting the redesigned results hero own its layout. */}
       {/* a11y (M3): page h1. The funnel UI uses per-question h2s, so the
           overall page title is provided sr-only. */}
       <h1 className="sr-only">{locale === "en" ? "Relationship assessment" : "אבחון הזוגיות שלכם"}</h1>

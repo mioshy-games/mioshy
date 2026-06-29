@@ -163,6 +163,14 @@ export function AnalysisSummary({ analysis, locale }: AnalysisSummaryProps) {
     <div className="ar-root" dir={isHe ? "rtl" : "ltr"}>
       {/* ── HERO ───────────────────────────────────────────────────── */}
       <div className="ar-hero">
+        {/* Mioshy logo, top-left on the hero (Phase 2). Replaces the shared
+            logo strip that the page wrapper used to render above the funnel;
+            the question/auth screens keep their strip (moved into
+            JourneyClient). Links back to the locale home, same as before. */}
+        <a className="ar-logo" href={`/${locale}`} aria-label="Mioshy home">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/mioshy-white.svg" alt="Mioshy" width={116} height={37} />
+        </a>
         <div className="ar-hero-figure" aria-hidden />
         <div className="ar-hero-content">
           <div className="ar-eyebrow">תוצאות האבחון שלכם</div>
@@ -378,7 +386,8 @@ export function AnalysisSummary({ analysis, locale }: AnalysisSummaryProps) {
           position: relative;
           overflow: hidden;
           color: #fff;
-          padding: 30px 24px 34px;
+          /* extra top padding (was 30) clears the absolute logo band */
+          padding: 58px 24px 34px;
           background-image: linear-gradient(
               180deg,
               rgba(36, 29, 26, 0.3) 0%,
@@ -389,6 +398,22 @@ export function AnalysisSummary({ analysis, locale }: AnalysisSummaryProps) {
           background-size: cover;
           background-position: left center;
           background-repeat: no-repeat;
+        }
+        .ar-logo {
+          position: absolute;
+          top: 18px;
+          left: 22px;
+          z-index: 2;
+          display: inline-flex;
+          transition: opacity 0.2s;
+        }
+        .ar-logo:hover {
+          opacity: 0.8;
+        }
+        .ar-logo :global(img) {
+          width: 116px;
+          height: auto;
+          display: block;
         }
         .ar-hero-figure {
           display: none;
@@ -802,6 +827,115 @@ export function AnalysisSummary({ analysis, locale }: AnalysisSummaryProps) {
         .ar-anchor :global(b) {
           color: #7a1f2b;
           font-weight: 800;
+        }
+
+        /* ============ DESKTOP (≥760) ============ */
+        @media (min-width: 760px) {
+          .ar-hero {
+            display: block;
+            padding: 0;
+            background: #241d1a;
+            background-image: none;
+            min-height: 420px;
+          }
+          .ar-logo {
+            top: 28px;
+            left: 36px;
+          }
+          .ar-hero-figure {
+            display: block;
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            right: 0;
+            width: 48%;
+            background: url("/images/hero-assess.webp") center right / cover
+              no-repeat;
+          }
+          .ar-hero-figure::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+              to left,
+              rgba(36, 29, 26, 0) 0%,
+              rgba(36, 29, 26, 0.25) 38%,
+              #241d1a 78%
+            );
+          }
+          .ar-hero-content {
+            position: relative;
+            z-index: 1;
+            max-width: 780px;
+            margin: 0 auto;
+            text-align: center;
+            padding: 54px 40px 60px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+          }
+          .ar-h1 {
+            font-size: 50px;
+            max-width: 720px;
+          }
+          .ar-sub {
+            font-size: 22px;
+            max-width: 680px;
+            margin-bottom: 22px;
+          }
+          .ar-bars {
+            max-width: 620px;
+            height: 170px;
+            width: 100%;
+          }
+          .ar-sheet {
+            max-width: 1060px;
+            margin: 0 auto;
+            padding: 60px 48px 80px;
+          }
+          .ar-section {
+            max-width: 920px;
+            margin-left: auto;
+            margin-right: auto;
+            margin-bottom: 56px;
+          }
+          .ar-fbcard {
+            max-width: 680px;
+          }
+          .ar-photo {
+            width: 190px;
+            height: 190px;
+          }
+          .ar-fbtext {
+            font-size: 28px;
+          }
+          .ar-imp {
+            display: flex;
+            flex-flow: row wrap;
+            justify-content: center;
+            gap: 16px 18px;
+            max-width: 820px;
+            margin-inline: auto;
+          }
+          .ar-improw {
+            width: auto;
+            padding: 20px 26px;
+          }
+          .ar-improw:nth-child(2),
+          .ar-improw:nth-child(4),
+          .ar-improw:nth-child(6) {
+            transform: translateY(16px);
+          }
+          .ar-pricecard {
+            max-width: 560px;
+          }
+          .ar-sh {
+            text-align: center;
+            font-size: 30px;
+          }
+          .ar-sublabel {
+            text-align: center;
+          }
         }
       `}</style>
     </div>
