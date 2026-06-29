@@ -60,6 +60,9 @@ export const CMS_PAGES = [
   // under components/shell/* and app/[locale]/(shell)/* read these
   // via getCmsTranslations({ page: "app-shell" }).
   "app-shell",
+  // 2026-06-29 — marketing assessment landing (/[locale]/couples-assessment).
+  // couplesAssessment.* copy; seeded by 154_cms_texts_couples_assessment.sql.
+  "couples-assessment",
 ] as const;
 
 export type CmsPage = (typeof CMS_PAGES)[number];

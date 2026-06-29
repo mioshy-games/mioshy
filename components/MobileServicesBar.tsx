@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/navigation";
-import { Gamepad2, Sparkles, Heart } from "@/components/icons/Icons";
+import { Gamepad2, Sparkles, Heart, Target } from "@/components/icons/Icons";
 
 /**
  * MobileServicesBar
@@ -51,6 +51,12 @@ const PILLARS = [
     tKey: "adults",
     Icon: Heart,
     accent: "linear-gradient(135deg, #F43F5E 0%, #B83C4D 100%)",
+  },
+  {
+    href: "/couples-assessment",
+    tKey: "couplesAssessment",
+    Icon: Target,
+    accent: "linear-gradient(135deg, #8B5CF6 0%, #D6409F 100%)",
   },
 ] as const;
 

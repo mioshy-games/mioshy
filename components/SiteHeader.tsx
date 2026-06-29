@@ -6,7 +6,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 // 2026-05-20 — swapped to local inline-SVG icons. SiteHeader renders
 // on every page (including /mioshy-sex with its long INP) so the
 // cumulative React-component-overhead win is broad.
-import { Gamepad2, Heart, Home, Library, LogOut, Menu, Sparkles, X } from "@/components/icons/Icons";
+import { Gamepad2, Heart, Home, Library, LogOut, Menu, Sparkles, Target, X } from "@/components/icons/Icons";
 import { JourneyNotificationsBell } from "@/components/notifications/JourneyNotificationsBell";
 import { CmsText } from "@/components/cms/CmsText";
 import { logoutAction } from "@/app/actions/auth-actions";
@@ -32,7 +32,7 @@ import { logoutAction } from "@/app/actions/auth-actions";
  *   3. למבוגרים בלבד / Adults   → /adults
  */
 
-type PillarKey = "games" | "journey" | "adults";
+type PillarKey = "games" | "journey" | "adults" | "couplesAssessment";
 
 type PillarLink = {
   /** Where anonymous visitors land - the marketing page. */
@@ -65,6 +65,13 @@ const PILLARS: PillarLink[] = [
     tKey: "adults",
     Icon: Heart,
     accent: "from-rose-400 via-red-400 to-amber-400",
+  },
+  {
+    marketingHref: "/couples-assessment",
+    authedHref: "/couples-assessment",
+    tKey: "couplesAssessment",
+    Icon: Target,
+    accent: "from-violet-400 via-fuchsia-400 to-amber-300",
   },
 ];
 
@@ -152,9 +159,23 @@ export function SiteHeader({
         },
       ];
     }
+    // Couples-assessment: a marketing-only entry (no entitlement), so it
+    // always points at the landing page for authed users too.
+    if (p.tKey === "couplesAssessment") {
+      return [
+        {
+          href: p.marketingHref,
+          tKey: p.tKey,
+          Icon: p.Icon,
+          accent: p.accent,
+        },
+      ];
+    }
     // Games + Journey: pillar always rendered. Route depends on
     // entitlement — owned → /my/X, otherwise → marketing /X.
-    const owns = entitlements ? entitlements[p.tKey] : false;
+    const owns = entitlements
+      ? entitlements[p.tKey as "games" | "journey"]
+      : false;
     return [
       {
         href: owns ? p.authedHref : p.marketingHref,

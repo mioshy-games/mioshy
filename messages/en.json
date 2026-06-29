@@ -141,6 +141,7 @@
     "games": "Online couples games",
     "journey": "Journey with Mioshy",
     "adults": "Mioshy's Sex",
+    "couplesAssessment": "Couples assessment",
     "menu": "Menu"
   },
   "header": {
@@ -1615,6 +1616,24 @@
       "item6Initial": "T",
       "item6Name": "Tal & Omri",
       "item6Source": "Together 6 years"
+    }
+  },
+  "couplesAssessment": {
+    "faq": {
+      "eyebrow": "FAQ",
+      "headline": "Everything worth knowing about the assessment",
+      "description": "Short questions, clear answers. And if anything's left, we're here.",
+      "contactCta": "Talk to us",
+      "item1Q": "What does the assessment check?",
+      "item1A": "Five areas that make up a relationship: intimacy, emotional connection, communication, friendship, and family.",
+      "item2Q": "How long is the assessment?",
+      "item2A": "About 3 minutes. Short, clear questions, no exhausting questionnaires.",
+      "item3Q": "Is it free?",
+      "item3A": "Yes, the assessment is completely free. No credit card and no commitment.",
+      "item4Q": "Is it discreet?",
+      "item4A": "Completely. Your answers are private and used only to build your personal picture.",
+      "item5Q": "Why does it matter to know where we stand?",
+      "item5A": "It's hard to change something you can't see. A clear picture is the first step to any improvement."
     }
   },
   "journeyAssessment": {
