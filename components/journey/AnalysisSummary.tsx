@@ -229,7 +229,9 @@ export function AnalysisSummary({
         <style jsx>{`
           .ar-loading {
             display: flex;
-            min-height: 60vh;
+            /* 100vh so the light background fills the screen — at 60vh the dark
+               page background showed through below it. */
+            min-height: 100vh;
             flex-direction: column;
             align-items: center;
             justify-content: center;
@@ -1245,7 +1247,8 @@ export function AnalysisSummary({
           margin-top: 4px;
         }
         .ar-fulltext {
-          font-family: var(--font-frank-ruhl), "Frank Ruhl Libre", serif;
+          /* body sans (Assistant/Heebo), not the serif heading font */
+          font-family: inherit;
           font-size: 20px;
           font-weight: 700;
           line-height: 1.3;
