@@ -40,6 +40,7 @@ import { notFound, redirect } from "next/navigation";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
 import { unstable_noStore as noStore } from "next/cache";
 import {
+  ArrowLeft,
   ArrowRight,
   Sparkles,
   Clock,
@@ -161,6 +162,14 @@ export default async function JourneyMarketingPage({
   let hasInProgressAssessment = false;
   let hasActiveAssignments = false;
   let hasJourneyEntitlement = false;
+  // Did the user finish the FREE short assessment? The short phase writes
+  // journeys.status='paywall' the moment it completes (see api/journey/answer),
+  // and the full/single phase writes 'complete'/'completed'. Anyone NOT yet at
+  // one of those statuses (no row, or still 'in_progress') hasn't finished the
+  // free assessment — so the locked screen must send them to finish it rather
+  // than to checkout. `assessmentInProgress` only picks "resume" vs "start".
+  let completedShortAssessment = false;
+  let assessmentInProgress = false;
   if (user) {
     const ctx = await getCurrentCoupleContext();
     const status = await getOwnerJourneyStatus({
@@ -172,6 +181,20 @@ export default async function JourneyMarketingPage({
       !hasActiveAssignments && status.hasInProgressAssessment;
     const entitlements = await getUserEntitlements(user.id).catch(() => null);
     hasJourneyEntitlement = !!entitlements?.journey;
+
+    const { data: jRow } = await supabase
+      .from("journeys")
+      .select("status")
+      .eq("user_id", user.id)
+      .order("last_activity_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const jStatus = (jRow as { status: string } | null)?.status ?? null;
+    completedShortAssessment =
+      jStatus === "paywall" ||
+      jStatus === "complete" ||
+      jStatus === "completed";
+    assessmentInProgress = !!jStatus && !completedShortAssessment;
   }
 
   // ─── Locked view for logged-in members without a Journey subscription ──
@@ -240,20 +263,39 @@ export default async function JourneyMarketingPage({
               Itzik 2026-05-06 — this is the only meaningful action on a
               locked screen, so it can't be the same size as the secondary. */}
           <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
-            {/* W1.1 — clicks the real Cardcom checkout instead of /pricing.
-                The previous Link bounced through a marketing page with no
-                clear path to payment; users hit a dead end. */}
-            <JourneyCheckoutButton
-              isHe={isHe}
-              label={t("locked.ctaJoin")}
-              variant="white"
-              source="journey_landing_locked"
-              // Per Itzik 2026-05-27 — post-purchase always lands on /my
-              // (the hub), not /my/journey, so the user sees the
-              // PartnerShareCard immediately and can invite their
-              // partner before opening the workspace.
-              returnPath={`/${isHe ? "he" : "en"}/my`}
-            />
+            {completedShortAssessment ? (
+              // Finished the free short assessment (status paywall/complete/
+              // completed) but has no Journey subscription → the join/checkout
+              // CTA, unchanged. W1.1 — clicks the real Cardcom checkout instead
+              // of /pricing, which previously dead-ended on a marketing page.
+              <JourneyCheckoutButton
+                isHe={isHe}
+                label={t("locked.ctaJoin")}
+                variant="white"
+                source="journey_landing_locked"
+                // Per Itzik 2026-05-27 — post-purchase always lands on /my
+                // (the hub), not /my/journey, so the user sees the
+                // PartnerShareCard immediately and can invite their
+                // partner before opening the workspace.
+                returnPath={`/${isHe ? "he" : "en"}/my`}
+              />
+            ) : (
+              // Hasn't finished the free short assessment yet → there's no
+              // result/paywall to convert on, and checkout is a dead end for
+              // them. Send them to finish the free assessment first; the
+              // assessment page resumes an in-progress run or starts fresh.
+              <Link
+                href="/journey/assessment"
+                className="group inline-flex min-h-[58px] items-center justify-center gap-3 rounded-full bg-[#FCCA65] px-9 text-[18px] font-semibold text-black shadow-2xl shadow-[#FCCA65]/30 transition hover:brightness-110"
+              >
+                {assessmentInProgress ? t("ctaResume") : t("ctaPrimary")}
+                {isHe ? (
+                  <ArrowLeft className="h-4 w-4" />
+                ) : (
+                  <ArrowRight className="h-4 w-4" />
+                )}
+              </Link>
+            )}
             <Link
               href="/my"
               className="inline-flex min-h-[56px] items-center justify-center rounded-full border border-white/20 bg-white/10 px-7 text-[16px] font-medium text-white backdrop-blur hover:bg-white/20 transition"
