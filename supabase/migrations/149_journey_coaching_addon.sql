@@ -46,8 +46,14 @@ alter table public.checkout_sessions
   add column if not exists coaching boolean not null default true;
 
 -- 5) save_subscription_prices RPC — persist the coaching cost too ------------
--- coalesce(...,0) keeps older admin payloads (without the coaching fields)
--- safe. The admin form is updated to always send both fields (incl. 0).
+-- IDENTICAL to migration 115 (UPSERT by (product,cadence) + two-pass
+-- clear-defaults; DEFERRABLE invariants trigger validates at COMMIT). The
+-- ONLY change here is adding coaching_cost_ils/usd to the INSERT column list
+-- and the ON CONFLICT … DO UPDATE SET. The shape is NOT being reverted to
+-- UPDATE-by-id — 115 deliberately moved to UPSERT so the editor can CREATE
+-- not-yet-seeded cadence rows. The admin form always submits the FULL
+-- per-product set incl. exactly one default row (zod-enforced), so Pass 1's
+-- clear-defaults is safe. coalesce(...,0) keeps older payloads safe.
 create or replace function public.save_subscription_prices(p_rows jsonb, p_actor uuid)
 returns void
 language plpgsql
@@ -100,5 +106,9 @@ begin
   end loop;
 end;
 $$;
+
+-- Grants unchanged from 112/115; re-asserted for idempotency (parity with 115).
+revoke all on function public.save_subscription_prices(jsonb, uuid) from public, anon;
+grant execute on function public.save_subscription_prices(jsonb, uuid) to authenticated;
 
 commit;
