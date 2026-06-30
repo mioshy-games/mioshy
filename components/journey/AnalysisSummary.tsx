@@ -604,23 +604,23 @@ export function AnalysisSummary({
                 <div
                   className="ar-coach"
                   role="group"
-                  aria-label={isHe ? "בחירת ליווי" : "Coaching choice"}
+                  aria-label={isHe ? "בחירת ייעוץ זוגי" : "Couples-coaching choice"}
                 >
-                  <button
-                    type="button"
-                    className={`ar-coach-opt${!coaching ? " sel" : ""}`}
-                    onClick={() => setCoaching(false)}
-                    aria-pressed={!coaching}
-                  >
-                    {isHe ? "בלי ליווי" : "Without coaching"}
-                  </button>
                   <button
                     type="button"
                     className={`ar-coach-opt${coaching ? " sel" : ""}`}
                     onClick={() => setCoaching(true)}
                     aria-pressed={coaching}
                   >
-                    {isHe ? "עם מומחה זוגי" : "With a couples expert"}
+                    {isHe ? "עם ייעוץ זוגי כלול" : "With couples coaching"}
+                  </button>
+                  <button
+                    type="button"
+                    className={`ar-coach-opt${!coaching ? " sel" : ""}`}
+                    onClick={() => setCoaching(false)}
+                    aria-pressed={!coaching}
+                  >
+                    {isHe ? "ללא ייעוץ זוגי" : "Without couples coaching"}
                   </button>
                 </div>
               ) : null}

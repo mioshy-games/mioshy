@@ -33,6 +33,30 @@ export interface SubscriptionPrice {
   is_default: boolean;
 }
 
+// Base columns that have existed since migration 112. The Stage-1 coaching
+// cost columns (migration 149) are appended SEPARATELY so a missing-column
+// window (code deployed before the SQL ran) degrades gracefully instead of
+// emptying the whole price matrix — which would hide every cadence and break
+// checkout. We try the full select first; on ANY error we retry with the base
+// columns and default the coaching cost to 0.
+const BASE_PRICE_COLS = "product, cadence, price_ils, price_usd, enabled, is_default";
+const COACHING_COLS = "coaching_cost_ils, coaching_cost_usd";
+
+type RawPriceRow = Record<string, unknown>;
+function toPrice(d: RawPriceRow): SubscriptionPrice {
+  return {
+    product: d.product as SubscriptionProduct,
+    cadence: d.cadence as Cadence,
+    price_ils: Number(d.price_ils),
+    price_usd: Number(d.price_usd),
+    // Absent in the fallback (pre-149) select → coalesce to 0.
+    coaching_cost_ils: Number(d.coaching_cost_ils ?? 0),
+    coaching_cost_usd: Number(d.coaching_cost_usd ?? 0),
+    enabled: Boolean(d.enabled),
+    is_default: Boolean(d.is_default),
+  };
+}
+
 /**
  * Fetch the price row for a (product, cadence). Returns null if the row
  * is missing or the query fails — callers (getPlanPrice) fall back to the
@@ -46,26 +70,18 @@ export const getSubscriptionPrice = cache(
     cadence: Cadence,
   ): Promise<SubscriptionPrice | null> {
     const supabase = await createServerSupabaseClient();
-    const { data, error } = await supabase
-      .from("subscription_prices")
-      .select(
-        "product, cadence, price_ils, price_usd, coaching_cost_ils, coaching_cost_usd, enabled, is_default",
-      )
-      .eq("product", product)
-      .eq("cadence", cadence)
-      .maybeSingle();
+    const run = (cols: string) =>
+      supabase
+        .from("subscription_prices")
+        .select(cols)
+        .eq("product", product)
+        .eq("cadence", cadence)
+        .maybeSingle();
 
+    let { data, error } = await run(`${BASE_PRICE_COLS}, ${COACHING_COLS}`);
+    if (error) ({ data, error } = await run(BASE_PRICE_COLS)); // pre-149 fallback
     if (error || !data) return null;
-    return {
-      product: data.product as SubscriptionProduct,
-      cadence: data.cadence as Cadence,
-      price_ils: Number(data.price_ils),
-      price_usd: Number(data.price_usd),
-      coaching_cost_ils: Number(data.coaching_cost_ils ?? 0),
-      coaching_cost_usd: Number(data.coaching_cost_usd ?? 0),
-      enabled: Boolean(data.enabled),
-      is_default: Boolean(data.is_default),
-    };
+    return toPrice(data as unknown as RawPriceRow);
   },
 );
 
@@ -84,24 +100,16 @@ export const CADENCE_ORDER: Record<Cadence, number> = {
 export const listAllPrices = cache(
   async function listAllPricesImpl(): Promise<SubscriptionPrice[]> {
     const supabase = await createServerSupabaseClient();
-    const { data, error } = await supabase
-      .from("subscription_prices")
-      .select(
-        "id, product, cadence, price_ils, price_usd, coaching_cost_ils, coaching_cost_usd, enabled, is_default",
-      );
+    const run = (cols: string) =>
+      supabase.from("subscription_prices").select(cols);
 
+    let { data, error } = await run(`id, ${BASE_PRICE_COLS}, ${COACHING_COLS}`);
+    if (error) ({ data, error } = await run(`id, ${BASE_PRICE_COLS}`)); // pre-149 fallback
     if (error || !data) return [];
-    return data
+    return (data as unknown as RawPriceRow[])
       .map((d) => ({
         id: d.id as string,
-        product: d.product as SubscriptionProduct,
-        cadence: d.cadence as Cadence,
-        price_ils: Number(d.price_ils),
-        price_usd: Number(d.price_usd),
-        coaching_cost_ils: Number(d.coaching_cost_ils ?? 0),
-        coaching_cost_usd: Number(d.coaching_cost_usd ?? 0),
-        enabled: Boolean(d.enabled),
-        is_default: Boolean(d.is_default),
+        ...toPrice(d),
       }))
       .sort(
         (a, b) =>
@@ -121,25 +129,17 @@ export const listEnabledPrices = cache(
     product: SubscriptionProduct,
   ): Promise<SubscriptionPrice[]> {
     const supabase = await createServerSupabaseClient();
-    const { data, error } = await supabase
-      .from("subscription_prices")
-      .select(
-        "product, cadence, price_ils, price_usd, coaching_cost_ils, coaching_cost_usd, enabled, is_default",
-      )
-      .eq("product", product)
-      .eq("enabled", true);
+    const run = (cols: string) =>
+      supabase
+        .from("subscription_prices")
+        .select(cols)
+        .eq("product", product)
+        .eq("enabled", true);
 
+    let { data, error } = await run(`${BASE_PRICE_COLS}, ${COACHING_COLS}`);
+    if (error) ({ data, error } = await run(BASE_PRICE_COLS)); // pre-149 fallback
     if (error || !data) return [];
-    return data.map((d) => ({
-      product: d.product as SubscriptionProduct,
-      cadence: d.cadence as Cadence,
-      price_ils: Number(d.price_ils),
-      price_usd: Number(d.price_usd),
-      coaching_cost_ils: Number(d.coaching_cost_ils ?? 0),
-      coaching_cost_usd: Number(d.coaching_cost_usd ?? 0),
-      enabled: Boolean(d.enabled),
-      is_default: Boolean(d.is_default),
-    }));
+    return (data as unknown as RawPriceRow[]).map(toPrice);
   },
 );
 

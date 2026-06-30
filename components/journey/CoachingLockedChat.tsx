@@ -23,11 +23,11 @@ export function CoachingLockedChat({ isHe }: { isHe: boolean }) {
   const [showSoon, setShowSoon] = useState(false);
 
   const headline = isHe
-    ? "הוסיפו מומחה זוגי למנוי"
-    : "Add a couples expert to your plan";
+    ? "הוסיפו ייעוץ זוגי למנוי"
+    : "Add couples coaching to your plan";
   const sub = isHe
-    ? "צ'אט אישי עם מומחה זוגיות שמלווה אתכם לאורך הפרקים — חלק מתוסף הליווי."
-    : "A private chat with a couples expert who guides you through the chapters — part of the coaching add-on.";
+    ? "צ'אט אישי עם יועץ זוגי שמלווה אתכם לאורך הפרקים — חלק מתוסף הייעוץ הזוגי."
+    : "A private chat with a couples counsellor through every chapter — part of the couples-coaching add-on.";
   const soon = isHe ? "בקרוב" : "Coming soon";
 
   return (
