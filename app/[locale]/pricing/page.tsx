@@ -1,4 +1,5 @@
 import { getTranslations } from "next-intl/server";
+import { unstable_noStore as noStore } from "next/cache";
 import type { Metadata } from "next";
 import "@/components/marketing/v2/styles.css";
 import { JourneyStages } from "@/components/marketing/v2/JourneyStages";
@@ -89,6 +90,10 @@ export default async function PricingPage({
 }: {
   params: Promise<{ locale: string }>;
 }) {
+  // Live promo pricing in JourneyStages must never be frozen at build time — a
+  // statically-rendered /pricing could show an expired promo (displayed ≠
+  // charged). Force per-request rendering, same as the homepage.
+  noStore();
   const { locale } = await params;
   const isHe = locale === "he";
 
