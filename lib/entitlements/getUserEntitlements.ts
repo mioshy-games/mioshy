@@ -53,6 +53,11 @@ export interface UserEntitlements {
    *  uses this to show "X days remaining". Null when not in grace
    *  AND not blocked. */
   journeyGraceUntil: string | null;
+  /** Stage-1 coaching add-on — the `coaching` boolean of the active/grace
+   *  journey subscription that drives `journey`. `false` when there is no
+   *  journey sub, or when the sub was bought without the coaching add-on.
+   *  `journey` stays true regardless; only the expert chat is gated on this. */
+  journeyCoaching: boolean;
   // Handy when components need to show "you have X pillars" messaging
   anyPillar: boolean;
   pillarCount: 0 | 1 | 2 | 3;
@@ -166,6 +171,7 @@ async function _getUserEntitlements(
       adults: true,
       journeyState: "active",
       journeyGraceUntil: null,
+      journeyCoaching: true,
       anyPillar: true,
       pillarCount: 3,
     };
@@ -224,7 +230,7 @@ async function _getUserEntitlements(
   const { data: subs } = await subsClient
     .from("subscriptions")
     .select(
-      "product, status, current_period_end, journey_grace_until, journey_blocked_at",
+      "product, status, current_period_end, journey_grace_until, journey_blocked_at, coaching",
     )
     .eq("user_id", entitlementSourceUid)
     .in("status", ["active", "grace"]);
@@ -280,6 +286,10 @@ async function _getUserEntitlements(
   // when there's no qualifying row.
   let journeyState: JourneyEntitlementState | null = null;
   let journeyGraceUntil: string | null = null;
+  // Stage-1: the coaching add-on flag of the sub that drives `journey`.
+  // Captured off the very row we pick for active/grace below so the chat
+  // gate matches the subscription the user is actually riding on.
+  let journeyCoaching = false;
   const journeySubs = (subs ?? []).filter((s) => s.product === "journey");
   for (const s of journeySubs) {
     if (s.status !== "active") continue;
@@ -288,11 +298,13 @@ async function _getUserEntitlements(
       if (end <= now) continue; // past period_end without grace flip yet - treat as inactive
     }
     journeyState = "active";
+    journeyCoaching = (s as { coaching?: boolean }).coaching === true;
     break;
   }
   if (journeyState === null) {
     for (const s of journeySubs) {
       if (s.status !== "grace") continue;
+      journeyCoaching = (s as { coaching?: boolean }).coaching === true;
       if (s.journey_blocked_at) {
         journeyState = "blocked";
         journeyGraceUntil = (s.journey_grace_until as string | null) ?? null;
@@ -327,6 +339,9 @@ async function _getUserEntitlements(
     adults,
     journeyState,
     journeyGraceUntil,
+    // Only meaningful while `journey` is true (active/grace); a blocked/absent
+    // journey locks the whole pillar, so the chat gate never consults this.
+    journeyCoaching: journey && journeyCoaching,
     anyPillar: pillarCount > 0,
     pillarCount,
   };

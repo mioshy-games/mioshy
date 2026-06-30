@@ -24,6 +24,8 @@ import { PageHeader } from "@/components/shell/PageHeader";
 import { MarkSurfaceSeen } from "@/components/shell/MarkSurfaceSeen";
 import { ExpertChatHeader } from "@/components/shell/expert/ExpertChatHeader";
 import { ExpertConversation } from "@/components/shell/expert/ExpertConversation";
+import { CoachingLockedChat } from "@/components/journey/CoachingLockedChat";
+import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
 import { NoJourneyUpsell } from "@/components/shell/today/NoJourneyUpsell";
 import { getNoJourneyUpsellCopy } from "@/lib/shell/today/noJourneyUpsellCopy";
 
@@ -101,6 +103,12 @@ export default async function ExpertPage({
     );
   }
 
+  // Stage-1 coaching add-on — the expert channel is gated on the add-on.
+  // A journey subscriber WITHOUT coaching still reaches this page (they have
+  // an assigned expert) but sees the locked overlay instead of the composer.
+  const chatEnt = await getUserEntitlements(shell.userId).catch(() => null);
+  const chatLocked = chatEnt ? !chatEnt.journeyCoaching : false;
+
   // Ensure the channel row exists (no-op when present). This is the
   // same step /my/journey performs before reading the thread.
   await ensureUserChannel(shell.userId);
@@ -127,15 +135,19 @@ export default async function ExpertPage({
           online={shell.expert.online ?? false}
         />
 
-        <ExpertConversation
-          initialMessages={messages}
-          viewerUserId={shell.userId}
-          isHe={isHe}
-          composerPlaceholder={tExpert("composerPlaceholder")}
-          emptyLabel={tExpert("emptyLabel")}
-          todayLabel={tExpert("todayLabel")}
-          sendLabel={tExpert("sendLabel")}
-        />
+        {chatLocked ? (
+          <CoachingLockedChat isHe={isHe} />
+        ) : (
+          <ExpertConversation
+            initialMessages={messages}
+            viewerUserId={shell.userId}
+            isHe={isHe}
+            composerPlaceholder={tExpert("composerPlaceholder")}
+            emptyLabel={tExpert("emptyLabel")}
+            todayLabel={tExpert("todayLabel")}
+            sendLabel={tExpert("sendLabel")}
+          />
+        )}
       </div>
     </>
   );

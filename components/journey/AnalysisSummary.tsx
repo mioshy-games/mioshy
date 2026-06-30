@@ -21,13 +21,22 @@ import type { CadenceOption } from "@/lib/billing/pricing-validations";
  *
  * Kept exported — app/[locale]/journey/assessment/page.tsx imports this type.
  */
+type PromoCadenceMap = Record<string, { ils: number; usd: number }>;
+type PromoSet = {
+  firstChargeByCadence: PromoCadenceMap;
+  originalByCadence: PromoCadenceMap;
+};
 export type JourneyPromoSummary = {
   name: string;
   /** Optional customer-facing title (subscription_promos.display_text). When
    *  set it replaces the default "מבצע {name}" heading on the promo line. */
   displayText: string | null;
-  firstChargeByCadence: Record<string, { ils: number; usd: number }>;
-  originalByCadence: Record<string, { ils: number; usd: number }>;
+  /** Stage-1: the promo is computed SERVER-SIDE on the bundle for each coaching
+   *  state, honouring the promo's coaching_scope. The without-coaching set is
+   *  empty when scope='with' (and vice-versa). The client picks the set that
+   *  matches the toggle, so displayed == charged for whichever option is chosen. */
+  withoutCoaching: PromoSet;
+  withCoaching: PromoSet;
 };
 
 // "First period only" label per cadence — the promo discounts only the first
@@ -151,6 +160,15 @@ export function AnalysisSummary({
     (enabledCadences.find((c) => c.is_default) ?? enabledCadences[0])?.cadence ??
     "monthly";
   const [selectedCadence, setSelectedCadence] = useState<string>(defaultCadence);
+
+  // ── Stage-1 coaching add-on ────────────────────────────────────────────
+  // The toggle only appears once Itzik sets a coaching cost (>0) on any
+  // enabled cadence. Until then coaching defaults to true and the bundle
+  // equals content (cost 0) — identical to today, no confusing 0₪ choice.
+  const hasCoachingCost = enabledCadences.some(
+    (c) => (isHe ? c.coaching_cost_ils : c.coaching_cost_usd) > 0,
+  );
+  const [coaching, setCoaching] = useState(true);
 
   const [checkoutBusy, setCheckoutBusy] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
@@ -294,6 +312,9 @@ export function AnalysisSummary({
         body: JSON.stringify({
           plan: checkoutPlan,
           product: "journey",
+          // Stage-1: the buyer's coaching choice. Drives BOTH the displayed
+          // price and the Cardcom charge (shared resolver), so they match.
+          coaching,
           source: "analysis_summary",
           language: locale,
           is_israeli: locale === "he",
@@ -328,7 +349,18 @@ export function AnalysisSummary({
 
   const sym = isHe ? "₪" : "$";
   const fmt = (n: number) => n.toLocaleString(isHe ? "he-IL" : "en-US");
-  const amtOf = (c: CadenceOption) => (isHe ? c.price_ils : c.price_usd);
+  // Bundle = content + (coaching ? coaching_cost : 0). This is the amount the
+  // checkout charges for the current toggle, so the display matches Cardcom.
+  const coachingCostOf = (c: CadenceOption) =>
+    isHe ? c.coaching_cost_ils : c.coaching_cost_usd;
+  const amtOf = (c: CadenceOption) =>
+    (isHe ? c.price_ils : c.price_usd) + (coaching ? coachingCostOf(c) : 0);
+  // Server-computed promo for the CURRENT coaching state (scope-aware).
+  const promoSet = activePromo
+    ? coaching
+      ? activePromo.withCoaching
+      : activePromo.withoutCoaching
+    : null;
   const weeklyRow = journeyCadences.find((c) => c.cadence === "weekly");
   const baselineWeekly = weeklyRow ? amtOf(weeklyRow) : null;
   const periodLabel = (cadence: string) =>
@@ -565,14 +597,42 @@ export function AnalysisSummary({
               {rc(cmsPriceTitle, "איזו חבילה מתאימה לכם?", "Which plan fits you?")}
             </h2>
             <div className="ar-pricecard">
+              {/* Stage-1 coaching add-on — with/without choice. Only rendered
+                  once a coaching cost is configured (else the bundle == content
+                  and a 0₪ choice would only confuse). */}
+              {hasCoachingCost ? (
+                <div
+                  className="ar-coach"
+                  role="group"
+                  aria-label={isHe ? "בחירת ליווי" : "Coaching choice"}
+                >
+                  <button
+                    type="button"
+                    className={`ar-coach-opt${!coaching ? " sel" : ""}`}
+                    onClick={() => setCoaching(false)}
+                    aria-pressed={!coaching}
+                  >
+                    {isHe ? "בלי ליווי" : "Without coaching"}
+                  </button>
+                  <button
+                    type="button"
+                    className={`ar-coach-opt${coaching ? " sel" : ""}`}
+                    onClick={() => setCoaching(true)}
+                    aria-pressed={coaching}
+                  >
+                    {isHe ? "עם מומחה זוגי" : "With a couples expert"}
+                  </button>
+                </div>
+              ) : null}
+
               {/* Packages ← journeyCadences. Price shown = promo first-charge
                   (server-computed) or the regular price for that cadence. */}
               {enabledCadences.map((c) => {
                 const selected = c.cadence === selectedCadence;
                 const amt = amtOf(c);
-                const pf = activePromo?.firstChargeByCadence[c.cadence];
-                const po = activePromo?.originalByCadence[c.cadence];
-                const hasPromo = !!(activePromo && pf && po);
+                const pf = promoSet?.firstChargeByCadence[c.cadence];
+                const po = promoSet?.originalByCadence[c.cadence];
+                const hasPromo = !!(promoSet && pf && po);
                 const firstAmt = hasPromo ? (isHe ? pf!.ils : pf!.usd) : amt;
                 const origAmt = hasPromo ? (isHe ? po!.ils : po!.usd) : amt;
                 const sv = savingsOf(c);
@@ -611,8 +671,8 @@ export function AnalysisSummary({
               {selectedOption
                 ? (() => {
                     const cad = selectedOption.cadence;
-                    const pf = activePromo?.firstChargeByCadence[cad];
-                    const po = activePromo?.originalByCadence[cad];
+                    const pf = promoSet?.firstChargeByCadence[cad];
+                    const po = promoSet?.originalByCadence[cad];
                     if (activePromo && pf && po) {
                       const firstAmt = isHe ? pf.ils : pf.usd;
                       const origAmt = isHe ? po.ils : po.usd;
@@ -1104,6 +1164,32 @@ export function AnalysisSummary({
           border-radius: 24px;
           padding: 16px;
           box-shadow: 0 18px 44px -22px rgba(120, 70, 120, 0.28);
+        }
+        .ar-coach {
+          display: flex;
+          gap: 8px;
+          padding: 6px;
+          margin-bottom: 14px;
+          background: #f4ece0;
+          border-radius: 14px;
+        }
+        .ar-coach-opt {
+          flex: 1;
+          border: 0;
+          cursor: pointer;
+          font-family: inherit;
+          font-weight: 800;
+          font-size: 16px;
+          color: #5a4f46;
+          padding: 12px 10px;
+          border-radius: 10px;
+          background: transparent;
+          transition: 0.15s;
+        }
+        .ar-coach-opt.sel {
+          color: #fff;
+          background: var(--ar-grad);
+          box-shadow: 0 8px 18px -10px rgba(150, 60, 150, 0.5);
         }
         .ar-opt {
           display: flex;

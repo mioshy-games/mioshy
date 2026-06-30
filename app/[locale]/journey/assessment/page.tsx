@@ -39,7 +39,12 @@ import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
 import type { Locale } from "@/lib/journey/types";
 import { listAllPrices } from "@/lib/billing/pricing-queries";
 import type { CadenceOption } from "@/lib/billing/pricing-validations";
-import { findActivePromo, applyDiscount, promoAppliesToCadence } from "@/lib/billing/promos";
+import {
+  findActivePromo,
+  applyDiscount,
+  promoAppliesToCadence,
+  promoAppliesToCoaching,
+} from "@/lib/billing/promos";
 import type { JourneyPromoSummary } from "@/components/journey/AnalysisSummary";
 
 // Force fresh render on EVERY request - never cache. Critical for an
@@ -463,13 +468,25 @@ export default async function JourneyAssessmentPage({
   // with effective-weekly + the actual billed line. [] on error → no picker.
   const journeyCadences: CadenceOption[] = (await listAllPrices())
     .filter((p) => p.product === "journey")
-    .map(({ cadence, price_ils, price_usd, enabled, is_default }) => ({
-      cadence,
-      price_ils,
-      price_usd,
-      enabled,
-      is_default,
-    }));
+    .map(
+      ({
+        cadence,
+        price_ils,
+        price_usd,
+        coaching_cost_ils,
+        coaching_cost_usd,
+        enabled,
+        is_default,
+      }) => ({
+        cadence,
+        price_ils,
+        price_usd,
+        coaching_cost_ils,
+        coaching_cost_usd,
+        enabled,
+        is_default,
+      }),
+    );
 
   // ── Active journey marketing promo (marketing-discounts-spec) ────────────
   // Compute the discounted FIRST charge per enabled cadence SERVER-SIDE, via
@@ -487,35 +504,56 @@ export default async function JourneyAssessmentPage({
       });
       if (warning) console.warn("[/journey/assessment] promo warning", warning);
       if (promo) {
-        const firstChargeByCadence: JourneyPromoSummary["firstChargeByCadence"] = {};
-        const originalByCadence: JourneyPromoSummary["originalByCadence"] = {};
-        for (const c of journeyCadences) {
-          if (!c.enabled) continue;
-          // Cadence-restricted promo (migration 148): only the matching
-          // cadence card(s) get the discount; null-cadence promos cover all.
-          if (!promoAppliesToCadence(promo, c.cadence)) continue;
-          const ils = applyDiscount({ amount: c.price_ils, currency: "ILS", promo });
-          const usd = applyDiscount({ amount: c.price_usd, currency: "USD", promo });
-          // Record the cadence only when the promo actually discounts at least
-          // one currency — mirrors checkout (applyDiscount returns the original
-          // amount + null promoId when the discount wouldn't apply).
-          if (ils.promoId || usd.promoId) {
-            firstChargeByCadence[c.cadence] = {
-              ils: ils.discountedAmount,
-              usd: usd.discountedAmount,
-            };
-            originalByCadence[c.cadence] = {
-              ils: ils.originalAmount,
-              usd: usd.originalAmount,
-            };
+        // Stage-1: compute the promo on the BUNDLE for each coaching state,
+        // honouring the promo's coaching_scope. The with-coaching bundle is
+        // content + coaching_cost; the without-coaching bundle is content. The
+        // client picks the set matching its toggle, so displayed == charged for
+        // whichever option the buyer chooses. Mirrors checkout/create exactly.
+        const buildSet = (withCoaching: boolean): JourneyPromoSummary["withCoaching"] => {
+          const firstChargeByCadence: Record<string, { ils: number; usd: number }> = {};
+          const originalByCadence: Record<string, { ils: number; usd: number }> = {};
+          // coaching_scope gate (migration 149): a 'with' promo skips the
+          // without-coaching set and vice-versa; 'all' applies to both.
+          if (!promoAppliesToCoaching(promo, withCoaching)) {
+            return { firstChargeByCadence, originalByCadence };
           }
-        }
-        if (Object.keys(firstChargeByCadence).length > 0) {
+          for (const c of journeyCadences) {
+            if (!c.enabled) continue;
+            // Cadence-restricted promo (migration 148): only the matching
+            // cadence card(s) get the discount; null-cadence promos cover all.
+            if (!promoAppliesToCadence(promo, c.cadence)) continue;
+            const baseIls = c.price_ils + (withCoaching ? c.coaching_cost_ils : 0);
+            const baseUsd = c.price_usd + (withCoaching ? c.coaching_cost_usd : 0);
+            const ils = applyDiscount({ amount: baseIls, currency: "ILS", promo });
+            const usd = applyDiscount({ amount: baseUsd, currency: "USD", promo });
+            // Record only when the promo actually discounts at least one
+            // currency — mirrors checkout (applyDiscount returns the original
+            // amount + null promoId when the discount wouldn't apply).
+            if (ils.promoId || usd.promoId) {
+              firstChargeByCadence[c.cadence] = {
+                ils: ils.discountedAmount,
+                usd: usd.discountedAmount,
+              };
+              originalByCadence[c.cadence] = {
+                ils: ils.originalAmount,
+                usd: usd.originalAmount,
+              };
+            }
+          }
+          return { firstChargeByCadence, originalByCadence };
+        };
+
+        const withCoaching = buildSet(true);
+        const withoutCoaching = buildSet(false);
+        if (
+          Object.keys(withCoaching.firstChargeByCadence).length > 0 ||
+          Object.keys(withoutCoaching.firstChargeByCadence).length > 0
+        ) {
           activePromo = {
             name: promo.name,
             displayText: promo.display_text,
-            firstChargeByCadence,
-            originalByCadence,
+            withCoaching,
+            withoutCoaching,
           };
         }
       }

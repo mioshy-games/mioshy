@@ -90,6 +90,7 @@ import {
   type PriorityItem,
 } from "@/components/my/JourneyPriorityRanking";
 import { GeneralChannelThread } from "@/components/my/GeneralChannelThread";
+import { CoachingLockedChat } from "@/components/journey/CoachingLockedChat";
 import {
   ensureUserChannel,
   getGeneralChannelThread,
@@ -1216,11 +1217,15 @@ export default async function PrivateJourneyPage({
               isHe={isHe}
               initialItems={seededPriorities}
             />
-            <GeneralChannelThread
-              initialMessages={channelMessages}
-              viewerUserId={effectiveUserId}
-              isHe={isHe}
-            />
+            {entitlements.journeyCoaching ? (
+              <GeneralChannelThread
+                initialMessages={channelMessages}
+                viewerUserId={effectiveUserId}
+                isHe={isHe}
+              />
+            ) : (
+              <CoachingLockedChat isHe={isHe} />
+            )}
           </div>
         </section>
 

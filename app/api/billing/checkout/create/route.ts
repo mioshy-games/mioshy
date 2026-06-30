@@ -25,6 +25,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server"
 import { createAdminClient }   from "@/lib/supabase-admin"
 import { openLowProfile }      from "@/lib/cardcom"
 import { getPlanPrice }        from "@/lib/billing"
+import { resolveJourneyAmount } from "@/lib/billing/journey-coaching-pricing"
 import { resolveCheckoutCadence } from "@/lib/billing/pricing-queries"
 import { findActivePromo, applyDiscount } from "@/lib/billing/promos"
 import { geoFromRequest, localeFromGeo, currencyFromGeo } from "@/lib/geo-from-request"
@@ -119,6 +120,13 @@ export async function POST(req: Request) {
     lead_id        = null,
     return_path   = null,                  // optional post-payment landing path
   } = body
+
+  // Stage-1 coaching add-on (journey only). Default true (decision Itzik
+  // 2026-06-30): with coaching_cost=0 at launch the bundle equals content,
+  // so callers that don't yet send `coaching` behave exactly as today.
+  // Only the explicit `false` from the paywall selector opts out.
+  const coaching: boolean =
+    product === "journey" ? body?.coaching !== false : false
 
   // ── Meta (Facebook) attribution capture ────────────────────────────────────
   // _fbp/_fbc are Meta's first-party cookies; UA + IP come off THIS live browser
@@ -258,10 +266,19 @@ export async function POST(req: Request) {
       )
     }
     effectivePlan = resolvedCadence
-    const planPrice = await getPlanPrice(resolvedCadence, trustedIsIsraeli, product as "games" | "journey")
-    amount = planPrice.amount
-    currency = planPrice.currency
-    coinId = planPrice.coinId
+    if (product === "journey") {
+      // Single source of truth (shared with the paywall display): the
+      // pre-promo bundle = content + (coaching ? coaching_cost : 0).
+      const j = await resolveJourneyAmount(resolvedCadence, trustedIsIsraeli, coaching)
+      amount = j.amount
+      currency = j.currency
+      coinId = j.coinId
+    } else {
+      const planPrice = await getPlanPrice(resolvedCadence, trustedIsIsraeli, product as "games")
+      amount = planPrice.amount
+      currency = planPrice.currency
+      coinId = planPrice.coinId
+    }
   } else {
     const adminClient = await createAdminClient()
     const { data: game } = await adminClient
@@ -321,6 +338,9 @@ export async function POST(req: Request) {
       const { promo, warning } = await findActivePromo(serviceClient, {
         product: product as "journey" | "games",
         cadence: effectivePlan,
+        // Stage-1: a coaching-scoped promo only applies to the matching option.
+        // games checkouts pass coaching=false (no add-on) so 'with' promos skip.
+        coaching,
       })
       if (warning) console.warn("[checkout:CREATE] promo warning", warning)
       if (promo) {
@@ -351,6 +371,9 @@ export async function POST(req: Request) {
       name:             name || null,
       plan:             effectivePlan,
       product,
+      // Stage-1 coaching add-on — carry the buyer's choice to the indicator
+      // webhook, which stamps subscriptions.coaching + the bundle plan_amount.
+      coaching,
       // One-time vs subscription is distinguished here; the indicator
       // webhook reads this back to know which entitlement code path to
       // run on success (couple_entitlement vs subscriptions row).

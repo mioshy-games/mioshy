@@ -47,13 +47,25 @@ export default async function AssessmentRunnerPage({
   // row stays the savings baseline. Falls back to [] on error → no picker.
   const journeyCadences: CadenceOption[] = (await listAllPrices())
     .filter((p) => p.product === "journey")
-    .map(({ cadence, price_ils, price_usd, enabled, is_default }) => ({
-      cadence,
-      price_ils,
-      price_usd,
-      enabled,
-      is_default,
-    }));
+    .map(
+      ({
+        cadence,
+        price_ils,
+        price_usd,
+        coaching_cost_ils,
+        coaching_cost_usd,
+        enabled,
+        is_default,
+      }) => ({
+        cadence,
+        price_ils,
+        price_usd,
+        coaching_cost_ils,
+        coaching_cost_usd,
+        enabled,
+        is_default,
+      }),
+    );
 
   // CMS rows for the post-assessment journey upsell value-points
   // (admin-editable via /admin/content, page='journey'). Falls back to

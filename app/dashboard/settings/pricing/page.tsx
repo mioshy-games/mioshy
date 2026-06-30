@@ -49,6 +49,10 @@ export default async function SubscriptionPricingPage() {
           cadence,
           price_ils: Math.round(row.price_ils),
           price_usd: Math.round(row.price_usd),
+          // Stage-1 coaching add-on cost (default 0). Always carried so the
+          // save RPC's upsert preserves it (never resets to 0 on save).
+          coaching_cost_ils: Math.round(row.coaching_cost_ils ?? 0),
+          coaching_cost_usd: Math.round(row.coaching_cost_usd ?? 0),
           enabled: row.enabled,
           is_default: row.is_default,
         });
@@ -59,6 +63,8 @@ export default async function SubscriptionPricingPage() {
           cadence,
           price_ils: Math.round(baseIls * w),
           price_usd: Math.round(baseUsd * w),
+          coaching_cost_ils: 0,
+          coaching_cost_usd: 0,
           enabled: false,
           is_default: false,
         });

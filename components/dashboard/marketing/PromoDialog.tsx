@@ -28,6 +28,8 @@ export type PromoRow = {
   amount_ils: number | null;
   amount_usd: number | null;
   product: "journey" | "games" | "all";
+  /** Stage-1 coaching targeting (migration 149). */
+  coaching_scope: "with" | "without" | "all" | null;
   discounted_charges: number;
   starts_at: string;
   ends_at: string;
@@ -96,6 +98,7 @@ export function PromoDialog({
     amount_ils: promo?.amount_ils != null ? String(promo.amount_ils) : "",
     amount_usd: promo?.amount_usd != null ? String(promo.amount_usd) : "",
     product: promo?.product ?? "journey",
+    coaching_scope: promo?.coaching_scope ?? "all",
     starts_at: utcIsoToIsraelWall(promo?.starts_at ?? null),
     ends_at: utcIsoToIsraelWall(promo?.ends_at ?? null),
     discounted_charges: promo?.discounted_charges != null ? String(promo.discounted_charges) : "4",
@@ -118,6 +121,7 @@ export function PromoDialog({
       amount_ils: form.amount_ils === "" ? null : Number(form.amount_ils),
       amount_usd: form.amount_usd === "" ? null : Number(form.amount_usd),
       product: form.product,
+      coaching_scope: form.coaching_scope,
       discounted_charges: form.discounted_charges === "" ? 4 : Number(form.discounted_charges),
       // Inputs hold Israel wall-clock; persist a UTC instant (DST-correct).
       starts_at: israelWallToUtcIso(form.starts_at),
@@ -185,6 +189,19 @@ export function PromoDialog({
               <option value="monthly">{tt("promos.cadence.monthly")}</option>
               <option value="quarterly">{tt("promos.cadence.quarterly")}</option>
               <option value="yearly">{tt("promos.cadence.yearly")}</option>
+            </select>
+          </Field>
+
+          {/* Coaching targeting (migration 149). 'all' = both options. */}
+          <Field label={locale === "he" ? "מיקוד ליווי" : "Coaching target"}>
+            <select
+              className={inputCls}
+              value={form.coaching_scope}
+              onChange={(e) => set("coaching_scope", e.target.value as typeof form.coaching_scope)}
+            >
+              <option value="all">{locale === "he" ? "עם וגם בלי ליווי" : "With & without coaching"}</option>
+              <option value="with">{locale === "he" ? "רק עם ליווי" : "With coaching only"}</option>
+              <option value="without">{locale === "he" ? "רק בלי ליווי" : "Without coaching only"}</option>
             </select>
           </Field>
 

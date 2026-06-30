@@ -32,6 +32,10 @@ export type CadenceOption = {
   cadence: (typeof PRICING_CADENCES)[number];
   price_ils: number;
   price_usd: number;
+  /** Stage-1 coaching add-on cost per cadence (default 0). The with-coaching
+   *  bundle = price + coaching_cost. */
+  coaching_cost_ils: number;
+  coaching_cost_usd: number;
   enabled: boolean;
   is_default: boolean;
 };
@@ -42,6 +46,16 @@ export const priceRowSchema = z.object({
   cadence: z.enum(PRICING_CADENCES),
   price_ils: z.number().int("מחיר ₪ חייב להיות מספר שלם").positive("מחיר ₪ חייב להיות גדול מ-0"),
   price_usd: z.number().int("מחיר $ חייב להיות מספר שלם").positive("מחיר $ חייב להיות גדול מ-0"),
+  // Stage-1 coaching add-on cost — nonnegative (0 = included / not charged).
+  // Always sent (incl. 0) so the save RPC's upsert never resets a value.
+  coaching_cost_ils: z
+    .number()
+    .int("עלות ליווי ₪ חייבת להיות מספר שלם")
+    .min(0, "עלות ליווי ₪ לא יכולה להיות שלילית"),
+  coaching_cost_usd: z
+    .number()
+    .int("עלות ליווי $ חייבת להיות מספר שלם")
+    .min(0, "עלות ליווי $ לא יכולה להיות שלילית"),
   enabled: z.boolean(),
   is_default: z.boolean(),
 });

@@ -15,6 +15,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 export type DiscountType = "percent" | "fixed_amount";
 export type PromoProduct = "journey" | "games" | "all";
 export type Currency = "ILS" | "USD";
+/** Stage-1 coaching add-on targeting (migration 149). 'all' = applies whether
+ *  or not the buyer chose coaching; 'with' = only the with-coaching option;
+ *  'without' = only the without-coaching option. */
+export type CoachingScope = "with" | "without" | "all";
 
 export interface SubscriptionPromo {
   id: string;
@@ -24,6 +28,9 @@ export interface SubscriptionPromo {
   /** Cadence restriction (migration 148). null/'all' → every cadence; otherwise
    *  the promo only applies to a checkout whose resolved cadence matches. */
   cadence: string | null;
+  /** Coaching targeting (migration 149). null/'all' → applies regardless of the
+   *  coaching choice; 'with'/'without' → only that option. */
+  coaching_scope: CoachingScope | null;
   code: string | null;
   discount_type: DiscountType;
   percent: number | null;
@@ -110,6 +117,22 @@ export function promoAppliesToCadence(
 }
 
 /**
+ * Coaching match (migration 149). A promo with no coaching restriction
+ * (null/'all') applies to both options; otherwise it applies only when the
+ * buyer's coaching choice matches ('with' ↔ coaching=true, 'without' ↔ false).
+ * Pass `coaching` undefined to ignore the restriction — e.g. the offer UI
+ * fetches the promo once and tests each option card itself.
+ */
+export function promoAppliesToCoaching(
+  promo: SubscriptionPromo,
+  coaching: boolean | null | undefined,
+): boolean {
+  if (promo.coaching_scope == null || promo.coaching_scope === "all") return true;
+  if (coaching === undefined || coaching === null) return true;
+  return promo.coaching_scope === (coaching ? "with" : "without");
+}
+
+/**
  * Pure selection. Of `promos`, keep those that are active, match the product
  * ('all' or exact), and contain `at` in [starts_at, ends_at]. When `cadence` is
  * provided, also require the promo to apply to that cadence (migration 148);
@@ -120,7 +143,17 @@ export function promoAppliesToCadence(
  */
 export function selectActivePromo(
   promos: SubscriptionPromo[],
-  { product, at, cadence }: { product: PromoProduct; at: Date | string; cadence?: string | null },
+  {
+    product,
+    at,
+    cadence,
+    coaching,
+  }: {
+    product: PromoProduct;
+    at: Date | string;
+    cadence?: string | null;
+    coaching?: boolean | null;
+  },
 ): { promo: SubscriptionPromo | null; warning?: string } {
   const t = ms(at);
   const matches = promos.filter(
@@ -129,7 +162,8 @@ export function selectActivePromo(
       (p.product === product || p.product === "all") &&
       ms(p.starts_at) <= t &&
       t <= ms(p.ends_at) &&
-      (cadence === undefined || promoAppliesToCadence(p, cadence)),
+      (cadence === undefined || promoAppliesToCadence(p, cadence)) &&
+      (coaching === undefined || promoAppliesToCoaching(p, coaching)),
   );
   if (matches.length === 0) return { promo: null };
   if (matches.length === 1) return { promo: matches[0] };
@@ -151,7 +185,17 @@ export function selectActivePromo(
  */
 export async function findActivePromo(
   admin: SupabaseClient,
-  { product, at, cadence }: { product: PromoProduct; at?: Date | string; cadence?: string | null },
+  {
+    product,
+    at,
+    cadence,
+    coaching,
+  }: {
+    product: PromoProduct;
+    at?: Date | string;
+    cadence?: string | null;
+    coaching?: boolean | null;
+  },
 ): Promise<{ promo: SubscriptionPromo | null; warning?: string }> {
   const when = at ?? new Date();
   const { data, error } = await admin
@@ -161,7 +205,7 @@ export async function findActivePromo(
     .in("product", [product, "all"])
     .returns<SubscriptionPromo[]>();
   if (error) throw new Error(`findActivePromo: ${error.message}`);
-  return selectActivePromo(data ?? [], { product, at: when, cadence });
+  return selectActivePromo(data ?? [], { product, at: when, cadence, coaching });
 }
 
 type PromoWindow = Pick<SubscriptionPromo, "product" | "starts_at" | "ends_at">;

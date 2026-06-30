@@ -25,6 +25,10 @@ export interface SubscriptionPrice {
   cadence: Cadence;
   price_ils: number;
   price_usd: number;
+  /** Stage-1 coaching add-on — the cost of the expert-chat add-on on top of
+   *  the content price, per cadence. Default 0 (journey-only meaningful). */
+  coaching_cost_ils: number;
+  coaching_cost_usd: number;
   enabled: boolean;
   is_default: boolean;
 }
@@ -44,7 +48,9 @@ export const getSubscriptionPrice = cache(
     const supabase = await createServerSupabaseClient();
     const { data, error } = await supabase
       .from("subscription_prices")
-      .select("product, cadence, price_ils, price_usd, enabled, is_default")
+      .select(
+        "product, cadence, price_ils, price_usd, coaching_cost_ils, coaching_cost_usd, enabled, is_default",
+      )
       .eq("product", product)
       .eq("cadence", cadence)
       .maybeSingle();
@@ -55,6 +61,8 @@ export const getSubscriptionPrice = cache(
       cadence: data.cadence as Cadence,
       price_ils: Number(data.price_ils),
       price_usd: Number(data.price_usd),
+      coaching_cost_ils: Number(data.coaching_cost_ils ?? 0),
+      coaching_cost_usd: Number(data.coaching_cost_usd ?? 0),
       enabled: Boolean(data.enabled),
       is_default: Boolean(data.is_default),
     };
@@ -78,7 +86,9 @@ export const listAllPrices = cache(
     const supabase = await createServerSupabaseClient();
     const { data, error } = await supabase
       .from("subscription_prices")
-      .select("id, product, cadence, price_ils, price_usd, enabled, is_default");
+      .select(
+        "id, product, cadence, price_ils, price_usd, coaching_cost_ils, coaching_cost_usd, enabled, is_default",
+      );
 
     if (error || !data) return [];
     return data
@@ -88,6 +98,8 @@ export const listAllPrices = cache(
         cadence: d.cadence as Cadence,
         price_ils: Number(d.price_ils),
         price_usd: Number(d.price_usd),
+        coaching_cost_ils: Number(d.coaching_cost_ils ?? 0),
+        coaching_cost_usd: Number(d.coaching_cost_usd ?? 0),
         enabled: Boolean(d.enabled),
         is_default: Boolean(d.is_default),
       }))
@@ -111,7 +123,9 @@ export const listEnabledPrices = cache(
     const supabase = await createServerSupabaseClient();
     const { data, error } = await supabase
       .from("subscription_prices")
-      .select("product, cadence, price_ils, price_usd, enabled, is_default")
+      .select(
+        "product, cadence, price_ils, price_usd, coaching_cost_ils, coaching_cost_usd, enabled, is_default",
+      )
       .eq("product", product)
       .eq("enabled", true);
 
@@ -121,6 +135,8 @@ export const listEnabledPrices = cache(
       cadence: d.cadence as Cadence,
       price_ils: Number(d.price_ils),
       price_usd: Number(d.price_usd),
+      coaching_cost_ils: Number(d.coaching_cost_ils ?? 0),
+      coaching_cost_usd: Number(d.coaching_cost_usd ?? 0),
       enabled: Boolean(d.enabled),
       is_default: Boolean(d.is_default),
     }));

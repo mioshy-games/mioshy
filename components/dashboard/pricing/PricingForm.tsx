@@ -161,6 +161,8 @@ export function PricingForm({
                     <th className="py-2 text-right font-medium">קדנציה</th>
                     <th className="py-2 text-right font-medium">₪ (ILS)</th>
                     <th className="py-2 text-right font-medium">$ (USD)</th>
+                    <th className="py-2 text-right font-medium">עלות ליווי ₪</th>
+                    <th className="py-2 text-right font-medium">עלות ליווי $</th>
                     <th className="py-2 text-center font-medium">אפקטיבי/שבוע</th>
                     <th className="py-2 text-center font-medium">חיסכון</th>
                     <th className="py-2 text-center font-medium">פעיל</th>
@@ -222,6 +224,40 @@ export function PricingForm({
                               valueAsNumber: true,
                             })}
                           />
+                        </td>
+                        {/* Stage-1 coaching add-on cost — journey only. Games
+                            rows keep 0 (from defaultValues) and show "—". */}
+                        <td className="py-3">
+                          {product === "journey" ? (
+                            <Input
+                              type="number"
+                              step="1"
+                              min="0"
+                              inputMode="numeric"
+                              className="w-24"
+                              {...register(`rows.${i}.coaching_cost_ils`, {
+                                valueAsNumber: true,
+                              })}
+                            />
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </td>
+                        <td className="py-3">
+                          {product === "journey" ? (
+                            <Input
+                              type="number"
+                              step="1"
+                              min="0"
+                              inputMode="numeric"
+                              className="w-24"
+                              {...register(`rows.${i}.coaching_cost_usd`, {
+                                valueAsNumber: true,
+                              })}
+                            />
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
                         </td>
                         <td className="py-3 text-center text-muted-foreground">
                           ₪{effWeekly}

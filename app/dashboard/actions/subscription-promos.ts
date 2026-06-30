@@ -33,6 +33,8 @@ export async function savePromo(id: string | null, raw: unknown): Promise<SaveRe
     name: v.name,
     display_text: v.display_text,
     cadence: v.cadence,
+    // Stage-1 coaching targeting (migration 149): 'all' | 'with' | 'without'.
+    coaching_scope: v.coaching_scope,
     code: v.code,
     discount_type: v.discount_type,
     percent: v.discount_type === "percent" ? v.percent : null,

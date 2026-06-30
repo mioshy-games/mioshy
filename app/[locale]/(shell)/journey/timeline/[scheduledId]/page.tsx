@@ -53,6 +53,8 @@ import { getCurrentUserPauseState } from "@/lib/billing/pause-state";
 import { getActiveViewAs } from "@/lib/journey/view-as";
 import { ViewAsBanner } from "@/components/my/ViewAsBanner";
 import { PerItemThread } from "@/components/journey/timeline/PerItemThread";
+import { CoachingLockedChat } from "@/components/journey/CoachingLockedChat";
+import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
 import { getPerItemThread } from "@/lib/journey-content/messages";
 import { AssessmentItemForm } from "@/components/my/AssessmentItemForm";
 
@@ -247,6 +249,18 @@ export default async function JourneyTimelineItemPage({
 
   const threadMessages = await getPerItemThread(scheduled.id, effectiveUserId);
 
+  // Stage-1 coaching add-on — the expert chat is gated on `journeyCoaching`.
+  // Staff in view-as always see the live thread (they review/reply); a real
+  // subscriber without the add-on reads the full chapter but the chat is
+  // locked behind an overlay (see CoachingLockedChat). Fail-open if the
+  // entitlement read errors — the server action (postPerItemMessage) is the
+  // authoritative net behind this.
+  let chatLocked = false;
+  if (!viewAsContext) {
+    const chatEnt = await getUserEntitlements(effectiveUserId).catch(() => null);
+    chatLocked = chatEnt ? !chatEnt.journeyCoaching : false;
+  }
+
   const myExistingResponse =
     item.kind === "assessment"
       ? responses
@@ -423,13 +437,17 @@ export default async function JourneyTimelineItemPage({
               className="mb-4 m-0 text-[16px] font-semibold"
               style={{ color: "var(--shell-text-1)" }}
             />
-            <PerItemThread
-              scheduledItemId={scheduled.id}
-              initialMessages={threadMessages}
-              viewerUserId={effectiveUserId}
-              isHe={isHe}
-              promptLabel={threadPromptLabel}
-            />
+            {chatLocked ? (
+              <CoachingLockedChat isHe={isHe} />
+            ) : (
+              <PerItemThread
+                scheduledItemId={scheduled.id}
+                initialMessages={threadMessages}
+                viewerUserId={effectiveUserId}
+                isHe={isHe}
+                promptLabel={threadPromptLabel}
+              />
+            )}
           </section>
         ) : null}
       </div>

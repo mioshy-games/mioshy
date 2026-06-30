@@ -70,6 +70,13 @@ alter table public.subscription_promos
 -- 'with'    = only the "with coaching" option
 -- 'without' = only the "without coaching" option
 
+-- 4) checkout_sessions.coaching — carries the buyer's choice from
+--    checkout/create to the Cardcom indicator webhook (which stamps
+--    subscriptions.coaching + the bundle plan_amount). Default true keeps
+--    in-flight sessions consistent; the webhook reads `coaching ?? true`.
+alter table public.checkout_sessions
+  add column if not exists coaching boolean not null default true;
+
 commit;
 ```
 
@@ -309,3 +316,26 @@ resolveJourneyAmount({ cadence, coaching, isIsraeli, promo }) =>
 | אדמין מבצעים | `app/dashboard/marketing/discounts/page.tsx`, `components/dashboard/marketing/PromoDialog.tsx`, `app/dashboard/actions/subscription-promos.ts` |
 
 > memory: לערוך רק קבצים בסקופ הנ"ל; אם נשארות הופעות בקבצים לא-מנויים — לדווח, לא לתקן לבד.
+
+---
+
+## 14. סטטוס מימוש שלב 1 (2026-06-30) — מוכן לריוויו, לא מוזג
+
+נבנה על `feat/journey-coaching-addon`. `tsc=0`, `eslint=0`.
+
+**מומש:**
+- DB: מיגרציה `149_journey_coaching_addon.sql` (4 ALTER + עדכון RPC). **להריץ ידנית לפני deploy** (preview==prod; אם הקוד נפרס לפני ה-SQL, קריאות מחיר ידרדרו זמנית: `listAllPrices`/`getSubscriptionPrice` בוחרות `coaching_cost_*` ויחזירו []/null עד שהעמודות קיימות — fallback ל-content, אבל עמוד האדמין יראה "אין שורות").
+- Entitlements: `journeyCoaching` (`getUserEntitlements`).
+- נעילת צ'אט: server guards ב-`postPerItemMessage`+`postGeneralChannelMessage` (error `coaching_required`); UI overlay `CoachingLockedChat` ב-3 משטחי מומחה: עמוד הפריט (`PerItemThread`), `/my/expert` (`ExpertConversation`), `/my/journey` (`GeneralChannelThread`). לחיצה="בקרוב", בלי Cardcom.
+- מקור-מחיר יחיד: `lib/billing/journey-coaching-pricing.ts` → `resolveJourneyAmount` (bundle = content + coaching?cost). משמש checkout; ה-paywall קורא את אותם ערכים מ-`subscription_prices`.
+- checkout/create: מקבל `coaching` (default true ל-journey), מחשב bundle, מעביר `coaching` ל-promo, שומר `checkout_sessions.coaching`.
+- webhook (indicator): `subscriptions.coaching = session.coaching ?? true`; `plan_amount = original_amount ?? amount` = ה-bundle (snapshot). **חידוש cron — ללא שינוי.**
+- promos: מימד `coaching_scope` (`promos.ts` + `promoAppliesToCoaching` + `findActivePromo`/`selectActivePromo`).
+- paywall (`AnalysisSummary`): בורר עם/בלי ליווי (מופיע רק כש-`coaching_cost>0` באיזושהי cadence פעילה); promo מחושב server-side ל-**שני** המצבים (scope-aware) ב-`assessment/page.tsx`.
+- אדמין: שדות "עלות ליווי ₪/$" (journey בלבד) ב-`PricingForm`; בורר "מיקוד ליווי" ב-`PromoDialog`. schemas+actions מעבירים את השדות.
+
+**החלטות מימוש שכדאי לאשר בריוויו:**
+1. **`CoupleChannelThread` (ערוץ הזוג, /together) — לא ננעל.** הוא בעיקרו צ'אט בין בני-הזוג (ליבה), עם תגובות coach כשכבה. נעילה מלאה הייתה חוסמת תקשורת זוגית בסיסית. ה-action שלו (`postPartnerCoupleMessage`) לא נגזר על coaching — בני-הזוג ממשיכים לדבר; ה-coach פשוט לא יענה בלי ליווי. לאשר/לשנות.
+2. **`coaching_cost` נשאר 0** עד שכל 6 המשטחים (§13) שולחים `coaching` מפורש — מעקה הברזל. כרגע רק `AnalysisSummary` יש לו בורר; #2–#6 שולחים default true.
+
+**טרם נעשה (לא חוסם ריוויו):** הרצת ה-SQL (ממתין לאישורך), verify ב-preview (§10), והוספת בורר ליווי ל-#2–#6 לפני העלאת `coaching_cost>0`.

@@ -41,6 +41,11 @@ export const promoFormSchema = z
           ? v
           : null,
       ),
+    // Coaching targeting (migration 149). "with" / "without" limit the promo to
+    // that option; anything else → "all" (applies regardless of the choice).
+    coaching_scope: z
+      .union([z.string(), z.null(), z.undefined()])
+      .transform((v) => (v === "with" || v === "without" ? v : "all")),
     discounted_charges: z.number().int().min(1, "At least 1 charge"),
     starts_at: z.string().min(1, "Start is required"),
     ends_at: z.string().min(1, "End is required"),

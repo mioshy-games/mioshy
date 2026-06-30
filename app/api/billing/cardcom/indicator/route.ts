@@ -456,6 +456,10 @@ export async function GET(req: Request) {
             status:               "active",
             plan:                 session.plan,
             plan_amount:          fullPlanAmount,
+            // Stage-1 coaching add-on — stamp the buyer's choice. Older
+            // sessions (pre-migration) carry no flag → default true, which
+            // matches the column default and the launch "chat-for-all" state.
+            coaching:             session.coaching ?? true,
             ...promoFields,
             currency:             session.currency,
             coin_id:              session.coin_id,
@@ -492,6 +496,8 @@ export async function GET(req: Request) {
             product,
             plan:                session.plan,
             plan_amount:         fullPlanAmount,
+            // Stage-1 coaching add-on — see update path above.
+            coaching:            session.coaching ?? true,
             ...promoFields,
             currency:            session.currency,
             coin_id:             session.coin_id,

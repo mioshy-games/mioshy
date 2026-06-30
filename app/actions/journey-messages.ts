@@ -34,6 +34,7 @@ import { revalidatePath } from "next/cache";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { requireExpert } from "@/lib/auth/expert";
+import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
 import { ensureUserChannel } from "@/lib/journey-content/messages";
 import { makeLogger } from "@/lib/observability/log";
 
@@ -136,6 +137,16 @@ function isUnlocked(scheduled: JourneyScheduledItem, now = new Date()): boolean 
   return unlock <= now.getTime();
 }
 
+// Stage-1 coaching add-on — the expert chat is a paid add-on on top of the
+// journey subscription. A subscriber WITHOUT coaching reads the full chapter
+// but cannot use the chat (the UI shows a locked overlay; this is the server
+// net behind it). Partner-aware: getUserEntitlements swaps to the couple
+// owner, so a partner inherits the owner's coaching flag.
+async function viewerHasCoaching(userId: string): Promise<boolean> {
+  const ent = await getUserEntitlements(userId).catch(() => null);
+  return ent?.journeyCoaching === true;
+}
+
 function revalidateMessageSurfaces() {
   revalidatePath("/[locale]/journey/timeline", "layout");
   revalidatePath("/[locale]/my/journey", "page");
@@ -192,6 +203,14 @@ export async function postPerItemMessage(args: {
       reason: viewer.error,
     });
     return viewer;
+  }
+
+  if (!(await viewerHasCoaching(viewer.userId))) {
+    log.warn("item.send.coaching_required", {
+      scheduled_id: args.scheduledItemId,
+      user_id: viewer.userId,
+    });
+    return { ok: false, error: "coaching_required" };
   }
 
   const scope = await loadScheduledForViewer({
@@ -476,6 +495,11 @@ export async function postGeneralChannelMessage(args: {
     user_id: viewer.userId,
     couple_count: viewer.coupleIds.length,
   });
+
+  if (!(await viewerHasCoaching(viewer.userId))) {
+    log.warn("channel.send.coaching_required", { user_id: viewer.userId });
+    return { ok: false, error: "coaching_required" };
+  }
 
   try {
     await ensureUserChannel(viewer.userId);
