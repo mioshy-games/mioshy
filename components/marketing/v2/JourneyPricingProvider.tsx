@@ -12,14 +12,16 @@ import { createContext, useContext, type ReactNode } from "react";
  * (above CmsTextProvider's subtree) reaches JourneyStages without that churn and
  * keeps its hook order untouched.
  *
- * All fields are nullable. A null field — or a missing provider entirely — makes
- * <CmsPrice> in JourneyStages fall back to the CMS literal, i.e. the pre-existing
+ * A missing provider entirely — or a null monthlyIls — makes the Stage-3 block
+ * in JourneyStages fall back to the CMS literal, i.e. the pre-existing
  * behaviour. So this is always safe to read.
+ *
+ * Shape mirrors lib/billing/journey-display-pricing.ts (monthly + promo).
  */
 export interface JourneyPricingValue {
-  weeklyHeadlineIls: number | null;
   monthlyIls: number | null;
-  anchorIls: number | null;
+  firstChargeIls: number | null;
+  hasPromo: boolean;
 }
 
 const JourneyPricingContext = createContext<JourneyPricingValue | null>(null);
@@ -40,7 +42,8 @@ export function JourneyPricingProvider({
 
 /**
  * Live Stage-3 pricing numbers, or null when no provider wraps the tree.
- * A null return is the signal for <CmsPrice> to render the CMS literal.
+ * A null return (or a null monthlyIls) is the signal for the Stage-3 block to
+ * render the CMS literal.
  */
 export function useJourneyPricing(): JourneyPricingValue | null {
   return useContext(JourneyPricingContext);

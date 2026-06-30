@@ -231,45 +231,102 @@ export function JourneyStages() {
 }
 
 /**
- * Format a live amount for injection into a price string. Strips any decimal
- * remainder so 249.00 → "249" (never "249.00") before the digit-swap.
+ * Format a shekel amount for display — strips any decimal remainder so
+ * 69.00 → "69 ₪" (never "69.00 ₪"). Hebrew placement (number then ₪) to match
+ * the rest of the Stage-3 block.
  */
 function formatAmount(n: number): string {
   return Number.isInteger(n) ? String(n) : String(Number(n.toFixed(2)));
 }
+function shekel(n: number): string {
+  return `${formatAmount(n)} ₪`;
+}
 
 /**
- * Renders a CMS price string, swapping its numeric run for a live `amount`.
+ * Stage-3 price block — monthly framing driven by the LIVE promo, from the same
+ * source as the /journey/assessment results page and the checkout (so what we
+ * show equals what Cardcom charges).
  *
- * `amount == null` (no pricing provider, or a missing/failed DB value) → the
- * CMS literal renders verbatim, exactly as a plain <CmsText> would — the legacy
- * behaviour, so a DB hiccup never breaks the block. When an amount is present,
- * the FIRST run of digits in the CMS string is replaced with the formatted
- * figure; the surrounding symbol, placement and wording ("₪", "/ שבוע",
- * "מחויב …/חודש") stay CMS-authored and translatable, and only the number tracks
- * the admin. The Stage-3 price strings each carry exactly one numeric run, so
- * anchoring the regex to the first digit group leaves symbol/words untouched.
- * Per-key CMS typography overrides (style) are forwarded so admin sizing still
- * applies; data-cms-key is preserved for the CSS attribute-selector tooling.
+ *   • active promo  → struck regular monthly + the first-charge price, labelled
+ *     "לחודש הראשון", with an "אחר כך … לחודש" line so 37 never reads as permanent.
+ *   • no promo      → the regular monthly price only, no strikethrough.
+ *   • no live price (DB hiccup / no provider) → falls back to the CMS literals,
+ *     i.e. the pre-existing behaviour, so the block never breaks.
+ *
+ * Hebrew-only copy by request (the homepage Stage-3 surface is he-first; en is
+ * out of scope for this change). The weekly headline + weekly line are gone.
+ *
+ * Hooks run unconditionally before any branch to keep order stable.
  */
-function CmsPrice({
-  cmsKey,
-  className,
-  amount,
-  as: Tag = "span",
-}: {
-  cmsKey: string;
-  className?: string;
-  amount: number | null;
-  as?: "span" | "p";
-}) {
-  const { text, style } = useCmsText(cmsKey);
-  const display =
-    amount == null ? text : text.replace(/\d[\d.,]*/, formatAmount(amount));
+function Stage3Price() {
+  const pricing = useJourneyPricing();
+  // CMS literals — used only as the DB-unavailable safety net (and for their
+  // typography/style overrides in that path).
+  const cmsOriginal = useCmsText("homeV2.journeyStages.stage3OriginalPrice");
+  const cmsAmount = useCmsText("homeV2.journeyStages.stage3Price");
+  const cmsPeriod = useCmsText("homeV2.journeyStages.stage3Period");
+  const cmsBilled = useCmsText("homeV2.journeyStages.stage3Billed");
+
+  const monthly = pricing?.monthlyIls ?? null;
+
+  // Safety net: no live monthly price → render the legacy CMS strings verbatim.
+  if (monthly == null) {
+    return (
+      <>
+        <div className="js-stop-price">
+          <span
+            className="js-stop-price-original"
+            style={cmsOriginal.style}
+            data-cms-key="homeV2.journeyStages.stage3OriginalPrice"
+          >
+            {cmsOriginal.text}
+          </span>
+          <span
+            className="js-stop-price-amount"
+            style={cmsAmount.style}
+            data-cms-key="homeV2.journeyStages.stage3Price"
+          >
+            {cmsAmount.text}
+          </span>
+          <span
+            className="js-stop-price-period"
+            style={cmsPeriod.style}
+            data-cms-key="homeV2.journeyStages.stage3Period"
+          >
+            {cmsPeriod.text}
+          </span>
+        </div>
+        <p
+          className="js-stop-price-billed"
+          style={cmsBilled.style}
+          data-cms-key="homeV2.journeyStages.stage3Billed"
+        >
+          {cmsBilled.text}
+        </p>
+      </>
+    );
+  }
+
+  const first = pricing?.firstChargeIls ?? monthly;
+  const hasPromo = pricing?.hasPromo ?? false;
+
   return (
-    <Tag className={className} style={style} data-cms-key={cmsKey}>
-      {display}
-    </Tag>
+    <>
+      <div className="js-stop-price">
+        {hasPromo ? (
+          <span className="js-stop-price-original">{shekel(monthly)}</span>
+        ) : null}
+        <span className="js-stop-price-amount">
+          {shekel(hasPromo ? first : monthly)}
+        </span>
+        <span className="js-stop-price-period">
+          {hasPromo ? "לחודש הראשון" : "לחודש"}
+        </span>
+      </div>
+      {hasPromo ? (
+        <p className="js-stop-price-billed">{`אחר כך ${shekel(monthly)} לחודש`}</p>
+      ) : null}
+    </>
   );
 }
 
@@ -293,10 +350,6 @@ function Stop({
 }) {
   const tone = STAGE_TONE[id];
   const isStage3 = id === "3";
-  // Live Stage-3 figures (null when no provider / DB miss → CMS literal wins).
-  // Called unconditionally for every stop to keep hook order stable; only the
-  // Stage-3 branch below reads it.
-  const pricing = useJourneyPricing();
 
   return (
     <article
@@ -400,66 +453,42 @@ function Stop({
                 as="div"
                 className="js-stop-product"
               />
-              {/* 2026-05-22 — Itzik consolidated pricing display.
-                  Stage 1 previously showed a free-trial pill via
-                  `stage1Trial`; that path was removed and all three
-                  stages now show a price block. Stage 1 price is the
-                  games weekly (9 ₪/שבוע), stage 3 is the journey
-                  weekly (57 ₪/שבוע), stage 2 keeps its one-time
-                  per-game framing with the strikethrough original. */}
-              <div className="js-stop-price">
-                {/* QA 2026-06-16 — struck anchor price beside the current one.
-                    Stage 2 (one-time) stays a CMS literal. Stage 3 (journey)
-                    reads LIVE figures: anchor from site_settings, the weekly
-                    headline + monthly billed from subscription_prices — the CMS
-                    string is the surrounding template + the fallback. */}
-                {id === "3" ? (
-                  <CmsPrice
-                    cmsKey="homeV2.journeyStages.stage3OriginalPrice"
-                    className="js-stop-price-original"
-                    amount={pricing?.anchorIls ?? null}
-                  />
-                ) : id === "2" ? (
-                  <CmsText
-                    cmsKey="homeV2.journeyStages.stage2OriginalPrice"
-                    className="js-stop-price-original"
-                  />
-                ) : null}
-                {id === "3" ? (
-                  <CmsPrice
-                    cmsKey="homeV2.journeyStages.stage3Price"
-                    className="js-stop-price-amount"
-                    amount={pricing?.weeklyHeadlineIls ?? null}
-                  />
-                ) : (
-                  <CmsText
-                    cmsKey={`homeV2.journeyStages.stage${id}Price`}
-                    className="js-stop-price-amount"
-                  />
-                )}
-                <CmsText
-                  cmsKey={`homeV2.journeyStages.stage${id}Period`}
-                  className="js-stop-price-period"
-                />
-              </div>
-              {/* C2.4: subtle transparency line — the displayed price stays
-                  weekly; this notes the actual monthly charge. Subscriptions
-                  only (stages 1 + 3); stage 2 is a one-time game purchase.
-                  Stage 3's number is the live monthly from subscription_prices. */}
-              {id === "3" ? (
-                <CmsPrice
-                  cmsKey="homeV2.journeyStages.stage3Billed"
-                  className="js-stop-price-billed"
-                  amount={pricing?.monthlyIls ?? null}
-                  as="p"
-                />
-              ) : id !== "2" ? (
-                <CmsText
-                  cmsKey={`homeV2.journeyStages.stage${id}Billed`}
-                  as="p"
-                  className="js-stop-price-billed"
-                />
-              ) : null}
+              {/* 2026-05-22 — all three stages show a price block. Stage 1 is
+                  the games weekly; Stage 2 keeps its one-time per-game framing
+                  with a strikethrough original. Stage 3 (journey) is now a
+                  self-contained monthly/promo block driven by the live source
+                  of truth (same as results + checkout) — see <Stage3Price />. */}
+              {isStage3 ? (
+                <Stage3Price />
+              ) : (
+                <>
+                  <div className="js-stop-price">
+                    {id === "2" ? (
+                      <CmsText
+                        cmsKey="homeV2.journeyStages.stage2OriginalPrice"
+                        className="js-stop-price-original"
+                      />
+                    ) : null}
+                    <CmsText
+                      cmsKey={`homeV2.journeyStages.stage${id}Price`}
+                      className="js-stop-price-amount"
+                    />
+                    <CmsText
+                      cmsKey={`homeV2.journeyStages.stage${id}Period`}
+                      className="js-stop-price-period"
+                    />
+                  </div>
+                  {/* C2.4: billed-monthly transparency line — Stage 1 only
+                      (Stage 2 is a one-time game purchase). */}
+                  {id !== "2" ? (
+                    <CmsText
+                      cmsKey={`homeV2.journeyStages.stage${id}Billed`}
+                      as="p"
+                      className="js-stop-price-billed"
+                    />
+                  ) : null}
+                </>
+              )}
             </div>
             <Link href={STAGE_HREFS[id]} className="js-stop-cta">
               <CmsText cmsKey={`homeV2.journeyStages.stage${id}Cta`} />{" "}

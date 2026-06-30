@@ -427,14 +427,6 @@ export function HomepageAdminClient({
     String(settings.rating_count ?? 0),
   );
 
-  // ── Stage-3 anchor price state ─────────────────────────────────────────────
-  // Empty string ⇒ unset (NULL) → homepage falls back to the CMS literal.
-  const [journeyAnchorIls, setJourneyAnchorIls] = useState(
-    settings.journey_anchor_price_ils != null
-      ? String(settings.journey_anchor_price_ils)
-      : "",
-  );
-
   // ── Hero template state (E6) ───────────────────────────────────────────────
   const [heroTemplate, setHeroTemplate] = useState<
     "classic-dark" | "light-gradient"
@@ -466,7 +458,6 @@ export function HomepageAdminClient({
       social_proof_couples_count: Number(couplesCount),
       rating_value: Number(ratingValue),
       rating_count: Number(ratingCount),
-      journey_anchor_price_ils: journeyAnchorIls,
 
       hero_template: heroTemplate,
       hero_side_image_url: heroSideImageUrl,
@@ -946,36 +937,6 @@ export function HomepageAdminClient({
                 />
                 <p className="text-muted-foreground text-xs">
                   Number of reviews (shown next to stars)
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Stage-3 marketing anchor price (homepage JourneyStages) */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Journey anchor price (Stage 3)</CardTitle>
-              <CardDescription>
-                The struck-through &ldquo;old&rdquo; price shown beside the live
-                weekly price in the homepage journey block (Stage 3). This is a
-                marketing figure only. The live weekly &amp; monthly prices come
-                from the Pricing editor (Settings → Pricing), not here.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-4 sm:grid-cols-3">
-              <div className="space-y-1.5">
-                <Label>Anchor price (₪)</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  step={1}
-                  value={journeyAnchorIls}
-                  onChange={(e) => setJourneyAnchorIls(e.target.value)}
-                  placeholder="e.g. 127"
-                />
-                <p className="text-muted-foreground text-xs">
-                  Shown with a line through it. Leave empty to fall back to the
-                  CMS text.
                 </p>
               </div>
             </CardContent>
