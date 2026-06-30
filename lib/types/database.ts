@@ -111,6 +111,10 @@ export type SiteSettingsRow = {
   rating_value: number;
   rating_count: number;
 
+  // ── Stage-3 marketing anchor price (homepage JourneyStages strikethrough) ─
+  // NULL ⇒ the homepage falls back to the CMS literal. Migration 155.
+  journey_anchor_price_ils?: number | null;
+
   // ── Hero content (DB overrides i18n when set) ─────────────
   hero_headline_he?: string | null;
   hero_headline_en?: string | null;

@@ -9,6 +9,15 @@ function nullIfEmpty(v: string | null | undefined): string | null {
   return v.trim();
 }
 
+// Stage-3 anchor price: blank ⇒ NULL (unset → CMS-literal fallback). A positive
+// number is stored as-is; anything else (non-numeric, ≤0) is treated as unset
+// rather than written as a bad price.
+function parseAnchorPrice(v: string | null | undefined): number | null {
+  if (!v || v.trim() === "") return null;
+  const n = Number(v.trim());
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
 export async function saveHomepageSettings(payload: HomepageSettingsPayload) {
   const { supabase } = await requireAdmin();
 
@@ -40,6 +49,9 @@ export async function saveHomepageSettings(payload: HomepageSettingsPayload) {
       social_proof_couples_count: Number(payload.social_proof_couples_count) || 0,
       rating_value: Number(payload.rating_value) || 4.9,
       rating_count: Number(payload.rating_count) || 0,
+
+      // Stage-3 anchor (strikethrough). Empty/invalid ⇒ NULL → CMS-literal fallback.
+      journey_anchor_price_ils: parseAnchorPrice(payload.journey_anchor_price_ils),
 
       hero_template:
         payload.hero_template === "light-gradient" ? "light-gradient" : "classic-dark",

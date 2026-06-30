@@ -24,6 +24,8 @@ import { Reveal } from "@/components/marketing/Reveal";
 import { HeroClassicDark } from "@/components/marketing/HeroClassicDark";
 import { HeroLightGradient } from "@/components/marketing/HeroLightGradient";
 import { HomepageV2 } from "@/components/marketing/v2/HomepageV2";
+import { JourneyPricingProvider } from "@/components/marketing/v2/JourneyPricingProvider";
+import { getJourneyDisplayPricing } from "@/lib/billing/journey-display-pricing";
 import { pickGameThumbnail } from "@/lib/games-thumbnail";
 import { CmsTextProvider } from "@/components/cms/CmsTextProvider";
 import { loadCmsTextsForPage } from "@/lib/cms/server";
@@ -149,9 +151,16 @@ export default async function HomePage({
     // tree; useCmsText(key) reads from this Map without its own round-trip. On
     // failure/empty, rows is [] and every useCmsText falls back to messages/*.json.
     const cmsRows = await loadCmsTextsForPage("homepage");
+    // Live Stage-3 price figures (JourneyStages, deep inside HomepageV2). The
+    // provider sits above the client tree so the numbers reach JourneyStages
+    // without threading props through HomepageV2; every field is null-safe and
+    // falls back to the CMS literal. See lib/billing/journey-display-pricing.ts.
+    const journeyPricing = await getJourneyDisplayPricing();
     return (
       <CmsTextProvider rows={cmsRows}>
-        <HomepageV2 />
+        <JourneyPricingProvider value={journeyPricing}>
+          <HomepageV2 />
+        </JourneyPricingProvider>
       </CmsTextProvider>
     );
   }

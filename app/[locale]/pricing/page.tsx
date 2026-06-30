@@ -2,6 +2,8 @@ import { getTranslations } from "next-intl/server";
 import type { Metadata } from "next";
 import "@/components/marketing/v2/styles.css";
 import { JourneyStages } from "@/components/marketing/v2/JourneyStages";
+import { JourneyPricingProvider } from "@/components/marketing/v2/JourneyPricingProvider";
+import { getJourneyDisplayPricing } from "@/lib/billing/journey-display-pricing";
 import { CmsTextProvider } from "@/components/cms/CmsTextProvider";
 import { loadCmsTextsForPage } from "@/lib/cms/server";
 
@@ -97,6 +99,8 @@ export default async function PricingPage({
   // even after admin edits in /admin/content. Single source of truth:
   // edit a key once in CMS, both / and /pricing update together.
   const cmsRows = await loadCmsTextsForPage("homepage");
+  // Same live Stage-3 figures as the homepage, so /pricing mirrors / exactly.
+  const journeyPricing = await getJourneyDisplayPricing();
 
   return (
     <main
@@ -109,7 +113,9 @@ export default async function PricingPage({
           provided sr-only. */}
       <h1 className="sr-only">{isHe ? "התמחור של מיאושי" : "Mioshy pricing"}</h1>
       <CmsTextProvider rows={cmsRows}>
-        <JourneyStages />
+        <JourneyPricingProvider value={journeyPricing}>
+          <JourneyStages />
+        </JourneyPricingProvider>
       </CmsTextProvider>
     </main>
   );

@@ -102,6 +102,12 @@ export type HomepageSettingsPayload = {
   rating_value: number;
   rating_count: number;
 
+  // ── Stage-3 marketing anchor price (homepage JourneyStages strikethrough) ─
+  // Raw string from the input; "" ⇒ unset (NULL) so the page falls back to the
+  // CMS literal. The live weekly/monthly figures come from subscription_prices,
+  // edited in /dashboard/settings/pricing — not here.
+  journey_anchor_price_ils: string;
+
   // ── Hero template (E6) ────────────────
   hero_template: "classic-dark" | "light-gradient";
   hero_side_image_url: string;
