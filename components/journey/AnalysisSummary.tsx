@@ -376,6 +376,15 @@ export function AnalysisSummary({
       : isHe
         ? "המבצע מוגבל בזמן"
         : "Limited-time offer";
+  // "Was …" anchor for quarterly/yearly: the FULL (regular, non-promo) monthly
+  // price × months-in-period, for the SAME coaching option (amtOf already folds
+  // the coaching add-on when the with-coaching toggle is on). Edited live from
+  // the admin → the anchor recomputes automatically. Only shown when it exceeds
+  // the real DB price (no negative/zero savings).
+  const monthlyRow = journeyCadences.find((c) => c.cadence === "monthly");
+  const monthlyFull = monthlyRow ? amtOf(monthlyRow) : null;
+  const monthsInPeriod = (cadence: string) =>
+    cadence === "yearly" ? 12 : cadence === "quarterly" ? 3 : 0;
   const periodLabel = (cadence: string) =>
     cadence === "yearly"
       ? isHe ? "/שנה" : "/yr"
@@ -645,6 +654,14 @@ export function AnalysisSummary({
                 const note = hasPromo
                   ? `${firstPeriodLabel(c.cadence, isHe)}${isHe ? ", אחר כך " : ", then "}${priceStr(origAmt)}`
                   : `${priceStr(amt)}${isHe ? " " : ""}${perWord(c.cadence)}`;
+                // "Was …" anchor (quarterly/yearly): full monthly × months.
+                // Hidden when it wouldn't exceed the real price (no savings).
+                const months = monthsInPeriod(c.cadence);
+                const beforeAmt =
+                  !hasPromo && months && monthlyFull != null
+                    ? monthlyFull * months
+                    : null;
+                const showBefore = beforeAmt != null && beforeAmt > amt;
                 return (
                   <button
                     type="button"
@@ -656,7 +673,16 @@ export function AnalysisSummary({
                     <span className="ar-radio" />
                     <span className="ar-opt-info">
                       <span className="ar-opt-name">{cadenceTitle(c.cadence)}</span>
-                      <span className="ar-opt-note">{note}</span>
+                      <span className="ar-opt-note">
+                        {note}
+                        {showBefore ? (
+                          <>
+                            {" · "}
+                            {isHe ? "במקום " : "was "}
+                            <s className="ar-opt-before">{priceStr(beforeAmt!)}</s>
+                          </>
+                        ) : null}
+                      </span>
                     </span>
                     {/* Promo-expiry timer in its own centered slot between the
                         name and the price (desktop); wraps to a centered line
@@ -1260,6 +1286,10 @@ export function AnalysisSummary({
           font-weight: 500;
           color: #4b4640;
           margin-top: 6px;
+        }
+        .ar-opt-before {
+          color: #9a8a7c;
+          text-decoration-thickness: 1px;
         }
         /* Timer slot — mobile: full-width centered line below (order 5). */
         .ar-opt-timer {
