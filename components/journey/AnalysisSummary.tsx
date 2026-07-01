@@ -669,22 +669,22 @@ export function AnalysisSummary({
                     <span className="ar-opt-info">
                       <span className="ar-opt-name">{cadenceTitle(c.cadence)}</span>
                       {hasPromo ? (
-                        <span className="ar-opt-note">
-                          {promoSavePct != null ? (
-                            <>
-                              <span className="ar-opt-save">
-                                {isHe ? "חיסכון" : "Save"} {promoSavePct}%
-                              </span>
-                              {" · "}
-                            </>
-                          ) : null}
-                          {`${firstPeriodLabel(c.cadence, isHe)}${isHe ? ", אח״כ " : ", then "}${priceStr(origAmt)}`}
-                        </span>
-                      ) : savePct != null ? (
-                        <span className="ar-opt-note">
-                          <span className="ar-opt-save">
-                            {isHe ? "חיסכון" : "Save"} {savePct}%
+                        <>
+                          {/* Sub line first; "חיסכון X%" moved to its OWN line
+                              below it (2026-07-01, Itzik) — matches the pricing
+                              page, no longer inline with the sub. */}
+                          <span className="ar-opt-note">
+                            {`${firstPeriodLabel(c.cadence, isHe)}${isHe ? ", אח״כ " : ", then "}${priceStr(origAmt)}`}
                           </span>
+                          {promoSavePct != null ? (
+                            <span className="ar-opt-save">
+                              {isHe ? "חיסכון" : "Save"} {promoSavePct}%
+                            </span>
+                          ) : null}
+                        </>
+                      ) : savePct != null ? (
+                        <span className="ar-opt-save">
+                          {isHe ? "חיסכון" : "Save"} {savePct}%
                         </span>
                       ) : null}
                     </span>
@@ -1302,9 +1302,22 @@ export function AnalysisSummary({
           /* Mobile: may wrap. Desktop (≥760) forces one line. */
           white-space: normal;
         }
+        /* "חיסכון X%" — own line below the sub, brand-gradient text (2026-07-01,
+           Itzik), consistent with the pricing page. width:fit-content keeps the
+           95deg gradient spanning the glyphs (not the full row) so the full
+           purple→magenta→orange shows. Falls back to solid #6C5CE7. */
         .ar-opt-save {
+          display: block;
+          width: fit-content;
+          margin-top: 6px;
+          font-size: 18px;
           font-weight: 800;
-          color: #7a1f2b;
+          line-height: 1.2;
+          color: #6c5ce7;
+          background: linear-gradient(95deg, #6c5ce7 0%, #d6409f 52%, #f79154 100%);
+          -webkit-background-clip: text;
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
         }
         /* Timer slot — mobile: full-width centered line below (order 5). */
         .ar-opt-timer {
