@@ -770,12 +770,23 @@ export function AnalysisSummary({
                 : null}
 
               <div className="ar-incl">
+                {/* Dynamic per the coaching selector (2026-07-02, Itzik): the two
+                    coaching-only items — "מומחה זוגיות פרטי בצ'אט" (included2) and
+                    "ייעוץ זוגי עם מיאושי" (included5) — are hidden when the buyer
+                    picks "ללא ייעוץ זוגי", so the list never promises a coaching
+                    perk the without-coaching bundle doesn't include. When no
+                    coaching cost is configured the toggle is absent and `coaching`
+                    stays true, so the full list shows exactly as before. */}
                 {[
                   rc(cmsIncluded1, "פרק חדש כל שבוע", "A new chapter every week"),
-                  rc(cmsIncluded2, "מומחה זוגיות פרטי בצ'אט", "A private relationship expert in chat"),
+                  ...(coaching
+                    ? [rc(cmsIncluded2, "מומחה זוגיות פרטי בצ'אט", "A private relationship expert in chat")]
+                    : []),
                   rc(cmsIncluded3, "משחקי זוגות אונליין", "Online couples games"),
                   rc(cmsIncluded4, "הסקס של מיאושי", "Mioshy's sex games"),
-                  rc(cmsIncluded5, "ייעוץ זוגי עם מיאושי", "Couples coaching with Mioshy"),
+                  ...(coaching
+                    ? [rc(cmsIncluded5, "ייעוץ זוגי עם מיאושי", "Couples coaching with Mioshy")]
+                    : []),
                 ].map((it, i) => (
                   <div className="ar-it" key={i}>
                     {it}
