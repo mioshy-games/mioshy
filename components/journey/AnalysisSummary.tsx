@@ -9,6 +9,7 @@ import {
   type CategoryKey,
 } from "@/lib/journey/category-feedback";
 import { useCmsText } from "@/hooks/useCmsText";
+import { PromoExpiryCountdown } from "@/components/journey/PromoExpiryCountdown";
 import type { CadenceOption } from "@/lib/billing/pricing-validations";
 
 /**
@@ -31,6 +32,9 @@ export type JourneyPromoSummary = {
   /** Optional customer-facing title (subscription_promos.display_text). When
    *  set it replaces the default "מבצע {name}" heading on the promo line. */
   displayText: string | null;
+  /** ISO promo end time (subscription_promos.ends_at) — drives the subtle
+   *  in-card expiry countdown. null → no timer shown. */
+  endsAt: string | null;
   /** Stage-1: the promo is computed SERVER-SIDE on the bundle for each coaching
    *  state, honouring the promo's coaching_scope. The without-coaching set is
    *  empty when scope='with' (and vice-versa). The client picks the set that
@@ -182,6 +186,7 @@ export function AnalysisSummary({
   const anchorPriceCms = useCmsText("journeyAssessment.analysis.anchorPrice").text;
   const activeTitleCms = useCmsText("journeyAssessment.analysis.activeTitle").text;
   const activeSubCms = useCmsText("journeyAssessment.analysis.activeSub").text;
+  const promoEndsPrefixCms = useCmsText("journeyAssessment.analysis.promoEndsPrefix").text;
 
   // ── CMS-editable static copy (seeded by migration 152, section "results").
   // useCmsText returns the key itself when a value is missing in BOTH cms_texts
@@ -657,9 +662,9 @@ export function AnalysisSummary({
                       </span>
                       <span className="ar-opt-note">{note}</span>
                     </span>
-                    <span className="ar-opt-price font-heading">
-                      {sym}
-                      {fmt(firstAmt)}
+                    <span className="ar-opt-price">
+                      <span className="ar-price-num">{fmt(firstAmt)}</span>
+                      <span className="ar-price-cur">{sym}</span>
                     </span>
                   </button>
                 );
@@ -701,6 +706,20 @@ export function AnalysisSummary({
                               ? "מחיר לתשלום הראשון; החידושים מלאים."
                               : "First-payment price; renewals at full price."}
                           </p>
+                          {activePromo.endsAt ? (
+                            <PromoExpiryCountdown
+                              endsAt={activePromo.endsAt}
+                              isHe={isHe}
+                              label={
+                                promoEndsPrefixCms &&
+                                !promoEndsPrefixCms.startsWith("journeyAssessment.")
+                                  ? promoEndsPrefixCms
+                                  : isHe
+                                    ? "המבצע נגמר בעוד"
+                                    : "Sale ends in"
+                              }
+                            />
+                          ) : null}
                         </div>
                       );
                     }
@@ -1261,11 +1280,29 @@ export function AnalysisSummary({
         }
         .ar-opt-price {
           flex: none;
-          font-weight: 900;
-          font-size: 26px;
+          /* Assistant (body sans), not the serif heading font. Number and
+             currency sit on a shared baseline with a small gap between them. */
+          font-family: var(--font-heebo), "Assistant", "Heebo", system-ui,
+            sans-serif;
+          display: inline-flex;
+          align-items: baseline;
+          gap: 5px;
           color: #2e2622;
         }
-        .ar-opt.sel .ar-opt-price {
+        /* Price number +20% (26 → 31); currency −20% (26 → 21) and NOT growing
+           with the number. */
+        .ar-price-num {
+          font-size: 31px;
+          font-weight: 900;
+          line-height: 1;
+        }
+        .ar-price-cur {
+          font-size: 21px;
+          font-weight: 800;
+          line-height: 1;
+        }
+        .ar-opt.sel .ar-price-num,
+        .ar-opt.sel .ar-price-cur {
           background: var(--ar-grad);
           -webkit-background-clip: text;
           background-clip: text;

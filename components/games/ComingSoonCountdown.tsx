@@ -18,18 +18,8 @@
  * opens_at column.
  */
 
-import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-
-function parts(msLeft: number) {
-  const s = Math.max(0, Math.floor(msLeft / 1000));
-  return {
-    days: Math.floor(s / 86400),
-    hours: Math.floor((s % 86400) / 3600),
-    minutes: Math.floor((s % 3600) / 60),
-    seconds: s % 60,
-  };
-}
+import { useCountdown } from "@/hooks/useCountdown";
 
 export function ComingSoonCountdown({
   opensAt,
@@ -42,30 +32,17 @@ export function ComingSoonCountdown({
   className?: string;
 }) {
   const router = useRouter();
-  const target = new Date(opensAt).getTime();
-  const refreshed = useRef(false);
-
-  // null until mounted → the server and first client paint render the same
-  // static chip, so there's no hydration mismatch on the ticking seconds.
-  const [now, setNow] = useState<number | null>(null);
-
-  useEffect(() => {
-    setNow(Date.now());
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, []);
-
-  useEffect(() => {
-    if (now !== null && now >= target && !refreshed.current) {
-      refreshed.current = true;
-      router.refresh();
-    }
-  }, [now, target, router]);
+  // Shared per-second countdown (hooks/useCountdown). Fires router.refresh()
+  // once at the open time so an already-open tab flips on time.
+  const { days, hours, minutes, seconds, mounted, expired } = useCountdown(
+    opensAt,
+    () => router.refresh(),
+  );
 
   const prefix = isHe ? "נפתח בעוד" : "Opens in";
 
   // Pre-mount / just-opened fallback — a calm static chip.
-  if (now === null || now >= target) {
+  if (!mounted || expired) {
     return (
       <div
         className={`inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/40 px-3 py-1.5 text-[13px] font-semibold text-white/85 backdrop-blur ${className}`}
@@ -77,7 +54,6 @@ export function ComingSoonCountdown({
     );
   }
 
-  const { days, hours, minutes, seconds } = parts(target - now);
   const segs: Array<{ value: number; label: string }> = [
     { value: days, label: isHe ? "ימים" : "days" },
     { value: hours, label: isHe ? "שעות" : "hrs" },

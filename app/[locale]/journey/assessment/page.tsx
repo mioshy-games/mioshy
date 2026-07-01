@@ -552,6 +552,9 @@ export default async function JourneyAssessmentPage({
           activePromo = {
             name: promo.name,
             displayText: promo.display_text,
+            // Drives the subtle in-card expiry countdown (client reverts the
+            // price at 0 via router.refresh()).
+            endsAt: promo.ends_at ?? null,
             withCoaching,
             withoutCoaching,
           };
