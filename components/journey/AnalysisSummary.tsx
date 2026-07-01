@@ -642,18 +642,18 @@ export function AnalysisSummary({
                 const hasPromo = !!(promoSet && pf && po);
                 const firstAmt = hasPromo ? (isHe ? pf!.ils : pf!.usd) : amt;
                 const origAmt = hasPromo ? (isHe ? po!.ils : po!.usd) : amt;
-                // Sub-row (per v9 mockup):
+                // Sub-row:
                 //  • Monthly (promo): "חודש ראשון, אח״כ {full} ₪" — one line, no %.
-                //  • Quarterly/yearly: "{X}% הנחה · במקום {monthly×N} ₪" (struck).
-                // Anchor is dynamic; guard: only when the discount is positive.
+                //  • Quarterly/yearly: prominent "חיסכון {X}%" (no struck price,
+                //    no {price}/period). X = the LEGITIMATE saving vs paying the
+                //    same span monthly (full monthly × N, DB-driven — not an old
+                //    fabricated anchor). Guard: only when positive.
                 const months = monthsInPeriod(c.cadence);
-                let discountPct: number | null = null;
-                let beforeAmt: number | null = null;
+                let savePct: number | null = null;
                 if (!hasPromo && months && monthlyFull != null) {
                   const before = monthlyFull * months;
                   if (before > amt) {
-                    beforeAmt = before;
-                    discountPct = Math.round(((before - amt) / before) * 100);
+                    savePct = Math.round(((before - amt) / before) * 100);
                   }
                 }
                 return (
@@ -671,11 +671,11 @@ export function AnalysisSummary({
                         <span className="ar-opt-note">
                           {`${firstPeriodLabel(c.cadence, isHe)}${isHe ? ", אח״כ " : ", then "}${priceStr(origAmt)}`}
                         </span>
-                      ) : beforeAmt != null ? (
+                      ) : savePct != null ? (
                         <span className="ar-opt-note">
-                          {discountPct}% {isHe ? "הנחה" : "off"} ·{" "}
-                          {isHe ? "במקום " : "was "}
-                          <s className="ar-opt-before">{priceStr(beforeAmt)}</s>
+                          <span className="ar-opt-save">
+                            {isHe ? "חיסכון" : "Save"} {savePct}%
+                          </span>
                         </span>
                       ) : null}
                     </span>
@@ -1294,9 +1294,9 @@ export function AnalysisSummary({
           /* Mobile: may wrap. Desktop (≥760) forces one line. */
           white-space: normal;
         }
-        .ar-opt-before {
-          text-decoration-color: rgba(122, 31, 43, 0.55);
-          text-decoration-thickness: 1px;
+        .ar-opt-save {
+          font-weight: 800;
+          color: #7a1f2b;
         }
         /* Timer slot — mobile: full-width centered line below (order 5). */
         .ar-opt-timer {
