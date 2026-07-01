@@ -372,8 +372,8 @@ export function AnalysisSummary({
     promoEndsPrefixCms && !promoEndsPrefixCms.startsWith("journeyAssessment.")
       ? promoEndsPrefixCms
       : isHe
-        ? "המבצע נגמר בעוד"
-        : "Sale ends in";
+        ? "המבצע מוגבל בזמן"
+        : "Limited-time offer";
   const weeklyRow = journeyCadences.find((c) => c.cadence === "weekly");
   const baselineWeekly = weeklyRow ? amtOf(weeklyRow) : null;
   const periodLabel = (cadence: string) =>
