@@ -330,10 +330,12 @@ function Stage3Price() {
         <span className="js-stop-price-period">
           {hasPromo ? "לחודש הראשון" : "לחודש"}
         </span>
-        {savePct != null ? (
-          <span className="js-stop-price-save">{`חיסכון ${savePct}%`}</span>
-        ) : null}
       </div>
+      {/* "חיסכון X%" — own line BELOW the price row (2026-07-01, Itzik),
+          not inline with the price. */}
+      {savePct != null ? (
+        <span className="js-stop-price-save">{`חיסכון ${savePct}%`}</span>
+      ) : null}
       {hasPromo ? (
         <p className="js-stop-price-billed js-stop3-billed">{`אחר כך ${shekel(monthly)} לחודש`}</p>
       ) : null}
@@ -820,12 +822,21 @@ const STYLES = `
     font-size:12px;color:#9C8B91;font-weight:500;
     line-height:1.3;
   }
-  /* Stage-3 "חיסכון X%" — prominent maroon, matching the results page
-     (.ar-opt-save: 800 / #7A1F2B). Sits at the end of the price row. */
+  /* Stage-3 "חיסכון X%" — own line BELOW the price row (2026-07-01, Itzik),
+     painted in the brand gradient as text (falls back to solid brand purple
+     #6C5CE7 where -webkit-text-fill-color is unsupported), matching the
+     purple used on the brand CTAs. */
   .mood-timeline .js-stop-price-save{
+    display:block;
+    margin-top:6px;
     font-family:'Frank Ruhl Libre',serif;
-    font-size:18px;font-weight:800;color:#7A1F2B;
-    line-height:1;
+    font-size:18px;font-weight:800;
+    line-height:1.2;
+    color:#6C5CE7;
+    background:linear-gradient(95deg,#6C5CE7 0%,#D6409F 52%,#F79154 100%);
+    -webkit-background-clip:text;
+    background-clip:text;
+    -webkit-text-fill-color:transparent;
   }
   /* Stage-3 billed line — larger + darker than the Stage-1 transparency line,
      consistent with the results-page sub-note (.ar-opt-note: 18px / #4B4640). */
