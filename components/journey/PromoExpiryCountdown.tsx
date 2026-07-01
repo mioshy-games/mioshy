@@ -49,7 +49,9 @@ export function PromoExpiryCountdown({
   const dayPart = days > 0 ? `${days} ${dayWord} ` : "";
 
   return (
-    <p
+    // <span> (not <p>) so it can sit inside the cadence-option <button> next to
+    // the price. display:block keeps it on its own subtle line.
+    <span
       className={className}
       dir={isHe ? "rtl" : "ltr"}
       role="timer"
@@ -58,19 +60,20 @@ export function PromoExpiryCountdown({
       aria-live="off"
       aria-label={`${label} ${days} ${dayWord}`}
       style={{
-        marginTop: 6,
+        display: "block",
+        marginTop: 4,
         fontFamily:
           'var(--font-heebo), "Assistant", "Heebo", system-ui, sans-serif',
-        fontSize: 13,
+        fontSize: 12.5,
         fontWeight: 600,
         color: "#9a8a7c",
       }}
     >
       {label}{" "}
-      <span dir="ltr" style={{ fontVariantNumeric: "tabular-nums", color: "#7b6b5e" }}>
+      <span dir="ltr" style={{ fontVariantNumeric: "tabular-nums", color: "#7b6b5e", fontWeight: 700 }}>
         {dayPart}
         {hms}
       </span>
-    </p>
+    </span>
   );
 }

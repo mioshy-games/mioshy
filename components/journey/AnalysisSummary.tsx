@@ -366,6 +366,14 @@ export function AnalysisSummary({
       ? activePromo.withCoaching
       : activePromo.withoutCoaching
     : null;
+  // CMS-editable prefix for the promo-expiry countdown (falls back to the
+  // bilingual literal when the key is unset — useCmsText returns the key).
+  const promoEndsLabel =
+    promoEndsPrefixCms && !promoEndsPrefixCms.startsWith("journeyAssessment.")
+      ? promoEndsPrefixCms
+      : isHe
+        ? "המבצע נגמר בעוד"
+        : "Sale ends in";
   const weeklyRow = journeyCadences.find((c) => c.cadence === "weekly");
   const baselineWeekly = weeklyRow ? amtOf(weeklyRow) : null;
   const periodLabel = (cadence: string) =>
@@ -661,6 +669,16 @@ export function AnalysisSummary({
                         {hasPromo ? <span className="ar-opt-tag">{rc(cmsPromoTag, "מבצע", "Promo")}</span> : null}
                       </span>
                       <span className="ar-opt-note">{note}</span>
+                      {/* Subtle ticking promo-expiry line, right under this
+                          package's note (so it sits next to its price). Only on
+                          the promo'd cadence(s); reverts the price at 0. */}
+                      {hasPromo && activePromo?.endsAt ? (
+                        <PromoExpiryCountdown
+                          endsAt={activePromo.endsAt}
+                          isHe={isHe}
+                          label={promoEndsLabel}
+                        />
+                      ) : null}
                     </span>
                     <span className="ar-opt-price">
                       <span className="ar-price-num">{fmt(firstAmt)}</span>
@@ -706,20 +724,6 @@ export function AnalysisSummary({
                               ? "מחיר לתשלום הראשון; החידושים מלאים."
                               : "First-payment price; renewals at full price."}
                           </p>
-                          {activePromo.endsAt ? (
-                            <PromoExpiryCountdown
-                              endsAt={activePromo.endsAt}
-                              isHe={isHe}
-                              label={
-                                promoEndsPrefixCms &&
-                                !promoEndsPrefixCms.startsWith("journeyAssessment.")
-                                  ? promoEndsPrefixCms
-                                  : isHe
-                                    ? "המבצע נגמר בעוד"
-                                    : "Sale ends in"
-                              }
-                            />
-                          ) : null}
                         </div>
                       );
                     }
