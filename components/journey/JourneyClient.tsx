@@ -758,18 +758,33 @@ export function JourneyClient({
     return (
       <div
         dir={locale === "he" ? "rtl" : "ltr"}
-        className="relative mx-auto flex min-h-[80vh] w-full max-w-3xl flex-col gap-6 px-4 py-10"
+        className="relative z-10 mx-auto flex min-h-screen w-full max-w-[720px] flex-col px-4 py-[34px]"
       >
-        <JourneyOutroBackdrop />
-        <FunnelLogo locale={locale} />
-        <AnimatePresence mode="wait">
-          <InlineAuthStep
-            key="inline-auth"
-            locale={locale}
-            deviceId={deviceId}
-            onAuthenticated={onAuthenticated}
-          />
-        </AnimatePresence>
+        {/* Light-theme signup (2026-07-01, docs/signup-light-mockup-approved.html):
+            full-bleed cream surface + a soft brand-gradient wash, painted over
+            the page's dark backdrop. Confetti (fired on isDone in JourneyClient)
+            is canvas-based and stays bg-agnostic. */}
+        <div
+          aria-hidden
+          className="fixed inset-0 z-[1]"
+          style={{
+            background:
+              "radial-gradient(70% 55% at 50% 0%, rgba(214,64,159,.10), transparent 60%)," +
+              "radial-gradient(60% 50% at 90% 20%, rgba(247,145,84,.10), transparent 55%)," +
+              "#fcfaf7",
+          }}
+        />
+        <div className="relative z-10 flex w-full flex-col items-center">
+          <FunnelLogo locale={locale} theme="light" />
+          <AnimatePresence mode="wait">
+            <InlineAuthStep
+              key="inline-auth"
+              locale={locale}
+              deviceId={deviceId}
+              onAuthenticated={onAuthenticated}
+            />
+          </AnimatePresence>
+        </div>
       </div>
     );
   }

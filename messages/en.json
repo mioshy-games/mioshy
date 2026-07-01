@@ -1705,6 +1705,9 @@
     },
     "inlineAuth": {
       "heading": "You finished the questionnaire! 🎉",
+      "headingLight": "You finished the questionnaire!",
+      "chipResults": "Straight to your results",
+      "chipSecure": "Fully secure",
       "sub": "Your personal analysis is ready - create a free account to unlock it.",
       "fullName": "Full name",
       "email": "Email",
