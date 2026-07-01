@@ -59,19 +59,9 @@ function firstPeriodLabel(cadence: string, isHe: boolean): string {
   }
 }
 
-// C2.4 cadence picker — precise weeks per cadence (internal math; display
-// rounds to whole units), and stable ordering.
-const WEEKS_PER_CADENCE: Record<string, number> = {
-  weekly: 1,
-  monthly: 4.345,
-  quarterly: 13.04,
-  yearly: 52.14,
-};
-
 // Display-only discount anchor for the struck "original" price (ILS only).
 // `original = ANCHOR_WEEKLY_BASE_ILS × ANCHOR_WEEKS_IN_PERIOD[cadence]`
-// → 508 / 1,524 / 6,096. WHOLE period-weeks {4,12,48} on purpose — NOT the
-// calendar WEEKS_PER_CADENCE above (which is only for the per-week math).
+// → 508 / 1,524 / 6,096. WHOLE period-weeks {4,12,48} on purpose.
 const ANCHOR_WEEKLY_BASE_ILS = 127;
 const ANCHOR_WEEKS_IN_PERIOD: Record<string, number> = {
   monthly: 4,
@@ -353,6 +343,19 @@ export function AnalysisSummary({
 
   const sym = isHe ? "₪" : "$";
   const fmt = (n: number) => n.toLocaleString(isHe ? "he-IL" : "en-US");
+  // Locale-correct price string. Hebrew puts ₪ AFTER the number with a space
+  // ("57 ₪"); English keeps "$" before ("$57"). Prices are dynamic, so compose
+  // here consistently instead of concatenating {price}{sym} inline.
+  const priceStr = (n: number) => (isHe ? `${fmt(n)} ${sym}` : `${sym}${fmt(n)}`);
+  // "per period" suffix for the sub-rows ("לרבעון" / "/quarter").
+  const perWord = (cadence: string) =>
+    cadence === "yearly"
+      ? isHe ? "לשנה" : "/yr"
+      : cadence === "quarterly"
+        ? isHe ? "לרבעון" : "/quarter"
+        : cadence === "weekly"
+          ? isHe ? "לשבוע" : "/wk"
+          : isHe ? "לחודש" : "/mo";
   // Bundle = content + (coaching ? coaching_cost : 0). This is the amount the
   // checkout charges for the current toggle, so the display matches Cardcom.
   const coachingCostOf = (c: CadenceOption) =>
@@ -373,8 +376,6 @@ export function AnalysisSummary({
       : isHe
         ? "המבצע מוגבל בזמן"
         : "Limited-time offer";
-  const weeklyRow = journeyCadences.find((c) => c.cadence === "weekly");
-  const baselineWeekly = weeklyRow ? amtOf(weeklyRow) : null;
   const periodLabel = (cadence: string) =>
     cadence === "yearly"
       ? isHe ? "/שנה" : "/yr"
@@ -383,14 +384,6 @@ export function AnalysisSummary({
         : cadence === "weekly"
           ? isHe ? "/שבוע" : "/wk"
           : isHe ? "/חודש" : "/mo";
-  const savingsOf = (c: CadenceOption) =>
-    baselineWeekly && baselineWeekly > 0
-      ? Math.round(
-          ((baselineWeekly - amtOf(c) / (WEEKS_PER_CADENCE[c.cadence] ?? 1)) /
-            baselineWeekly) *
-            100,
-        )
-      : null;
   const cadenceTitle = (cadence: string) =>
     cadence === "monthly"
       ? rc(cmsCadMonthly, "חודשי", "Monthly")
@@ -647,12 +640,11 @@ export function AnalysisSummary({
                 const hasPromo = !!(promoSet && pf && po);
                 const firstAmt = hasPromo ? (isHe ? pf!.ils : pf!.usd) : amt;
                 const origAmt = hasPromo ? (isHe ? po!.ils : po!.usd) : amt;
-                const sv = savingsOf(c);
+                // Sub-row: promo → "חודש ראשון, אחר כך 57 ₪"; otherwise the
+                // per-period price → "160 ₪ לרבעון". Space before ₪ (priceStr).
                 const note = hasPromo
-                  ? `${firstPeriodLabel(c.cadence, isHe)}${isHe ? ", אחר כך " : ", then "}${sym}${fmt(origAmt)}`
-                  : sv && sv > 0
-                    ? `${isHe ? "חיסכון" : "Save"} ${sv}%`
-                    : `${sym}${fmt(amt)}${periodLabel(c.cadence)}`;
+                  ? `${firstPeriodLabel(c.cadence, isHe)}${isHe ? ", אחר כך " : ", then "}${priceStr(origAmt)}`
+                  : `${priceStr(amt)}${isHe ? " " : ""}${perWord(c.cadence)}`;
                 return (
                   <button
                     type="button"
@@ -706,16 +698,10 @@ export function AnalysisSummary({
                           <p className="ar-summary-line">
                             <span>{isHe ? "לתשלום" : "To pay"}</span>{" "}
                             <span>{firstPeriodLabel(cad, isHe)}</span>{" "}
-                            <b>
-                              {sym}
-                              {fmt(firstAmt)}
-                            </b>{" "}
+                            <b>{priceStr(firstAmt)}</b>{" "}
                             <span>{isHe ? "במקום" : "instead of"}</span>{" "}
                             <span className="ar-sr">{isHe ? "היה " : "was "}</span>
-                            <s>
-                              {sym}
-                              {fmt(origAmt)}
-                            </s>{" "}
+                            <s>{priceStr(origAmt)}</s>{" "}
                             <span>{periodLabel(cad)}</span>
                           </p>
                           <p className="ar-summary-note">
@@ -728,7 +714,7 @@ export function AnalysisSummary({
                     }
                     const anchorStruck =
                       isHe && ANCHOR_WEEKS_IN_PERIOD[cad]
-                        ? `${sym}${fmt(ANCHOR_WEEKLY_BASE_ILS * ANCHOR_WEEKS_IN_PERIOD[cad])}`
+                        ? priceStr(ANCHOR_WEEKLY_BASE_ILS * ANCHOR_WEEKS_IN_PERIOD[cad])
                         : anchorPriceCms && anchorPriceCms.trim().length > 0
                           ? anchorPriceCms
                           : null;
@@ -742,10 +728,7 @@ export function AnalysisSummary({
                               <s>{anchorStruck}</s>{" "}
                             </>
                           ) : null}
-                          <b>
-                            {sym}
-                            {fmt(amtOf(selectedOption))}
-                          </b>{" "}
+                          <b>{priceStr(amtOf(selectedOption))}</b>{" "}
                           <span>{periodLabel(cad)}</span>
                         </p>
                         {priceNoteCms && priceNoteCms.trim().length > 0 ? (
