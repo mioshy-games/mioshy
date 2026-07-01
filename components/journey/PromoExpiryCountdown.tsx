@@ -3,25 +3,28 @@
 // ============================================================
 // components/journey/PromoExpiryCountdown.tsx
 //
-// Flat number-tile countdown shown inside the paywall price card next to
-// the monthly package price. Same TILE structure as the games
-// ComingSoonCountdown, but restyled flat/clean for the LIGHT results
-// theme (light lilac tiles, dark numerals — no dark chrome/shadow).
+// Approved design: docs/promo-timer-mockup-approved.html (version B).
+// A brand-gradient pill (same gradient as the CTA buttons) with white
+// Frank-Ruhl numerals separated by thin vertical dividers — NO tiles.
+// A centered CMS-editable title sits above the D/H/M/S row.
 //
-// Reuses the shared per-second engine (hooks/useCountdown) — counts down
-// to the promo's ends_at (the same promo that drives the struck price) and
+// Reuses the shared per-second engine (hooks/useCountdown): counts down to
+// the promo's ends_at (the same promo that drives the struck price) and
 // calls router.refresh() at 0 so the price reverts to regular automatically.
 //
-// Renders inline-safe <span>s (so it can sit inside the cadence-option
-// <button>). Nothing until mounted (avoids hydration mismatch) or expired.
-// The eyebrow label is CMS-editable (journeyAssessment.analysis.promoEndsPrefix).
+// Adaptive: leading zero units are dropped (< 1 day → no "יום"; < 1 hr → no
+// hours; …), always keeping seconds. Renders inline-safe <span>s so it can
+// sit inside the cadence-option <button>. Nothing until mounted (avoids
+// hydration mismatch) or once expired.
 // ============================================================
 
 import { useRouter } from "next/navigation";
 import { useCountdown } from "@/hooks/useCountdown";
 
 const pad = (n: number) => String(n).padStart(2, "0");
-const FONT = 'var(--font-heebo), "Assistant", "Heebo", system-ui, sans-serif';
+const SERIF = 'var(--font-frank-ruhl), "Frank Ruhl Libre", serif';
+const SANS = 'var(--font-heebo), "Assistant", "Heebo", system-ui, sans-serif';
+const GRAD = "linear-gradient(95deg,#6C5CE7 0%,#D6409F 52%,#F79154 100%)";
 
 export function PromoExpiryCountdown({
   endsAt,
@@ -32,7 +35,7 @@ export function PromoExpiryCountdown({
   /** ISO promo end time (subscription_promos.ends_at). */
   endsAt: string;
   isHe: boolean;
-  /** CMS-editable eyebrow (journeyAssessment.analysis.promoEndsPrefix). */
+  /** CMS-editable title (journeyAssessment.analysis.promoEndsPrefix). */
   label: string;
   className?: string;
 }) {
@@ -44,78 +47,82 @@ export function PromoExpiryCountdown({
 
   if (!mounted || expired) return null;
 
-  const segs = [
-    { v: days, u: isHe ? "ימים" : "days" },
+  const all = [
+    { v: days, u: isHe ? "יום" : "days" },
     { v: hours, u: isHe ? "שעות" : "hrs" },
     { v: minutes, u: isHe ? "דקות" : "min" },
     { v: seconds, u: isHe ? "שניות" : "sec" },
   ];
+  // Drop leading zero units, but always keep at least seconds (the last).
+  let start = 0;
+  while (start < all.length - 1 && all[start].v === 0) start++;
+  const segs = all.slice(start);
 
   return (
     <span
       className={className}
       role="timer"
-      // Day-granularity static a11y label; aria-live off so the ticking
-      // seconds don't spam screen readers (tiles are aria-hidden).
       aria-live="off"
       aria-label={`${label} ${days} ${isHe ? "ימים" : "days"}`}
       dir={isHe ? "rtl" : "ltr"}
-      style={{ display: "block", marginTop: 8 }}
+      style={{
+        display: "inline-flex",
+        flexDirection: "column",
+        gap: 7,
+        alignItems: "center",
+        background: GRAD,
+        borderRadius: 14,
+        padding: "9px 14px",
+        boxShadow: "0 8px 20px -10px rgba(214,64,159,.55)",
+      }}
     >
-      <span
-        style={{
-          display: "block",
-          fontFamily: FONT,
-          fontSize: 11,
-          fontWeight: 800,
-          letterSpacing: "0.04em",
-          color: "#7a1f2b",
-          marginBottom: 5,
-        }}
-      >
+      <span style={{ fontFamily: SANS, fontSize: 17, fontWeight: 800, color: "#fff", textAlign: "center" }}>
         {label}
       </span>
       {/* LTR so the D:H:M:S reading order is stable in both directions. */}
-      <span style={{ display: "inline-flex", gap: 6, direction: "ltr" }} aria-hidden="true">
-        {segs.map((s, i) => (
-          <span
-            key={i}
-            style={{
-              display: "inline-flex",
-              flexDirection: "column",
-              alignItems: "center",
-              minWidth: 44,
-              borderRadius: 10,
-              padding: "6px 7px",
-              // Flat light tile — subtle lilac tint, no border/shadow.
-              background: "rgba(108,92,231,0.10)",
-            }}
-          >
+      <span
+        style={{ display: "flex", alignItems: "stretch", gap: 9, direction: "ltr" }}
+        aria-hidden="true"
+      >
+        {segs.flatMap((s, i) => {
+          const tile = (
             <span
+              key={`t${i}`}
               style={{
-                fontFamily: FONT,
-                fontSize: 19,
-                fontWeight: 800,
-                lineHeight: 1,
-                color: "#2e2622",
-                fontVariantNumeric: "tabular-nums",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                minWidth: 42,
               }}
             >
-              {pad(s.v)}
+              <span
+                style={{
+                  fontFamily: SERIF,
+                  fontSize: 23,
+                  fontWeight: 900,
+                  lineHeight: 1,
+                  color: "#fff",
+                  fontVariantNumeric: "tabular-nums",
+                }}
+              >
+                {pad(s.v)}
+              </span>
+              <span style={{ marginTop: 3, fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,.82)" }}>
+                {s.u}
+              </span>
             </span>
-            <span
-              style={{
-                marginTop: 3,
-                fontSize: 9.5,
-                fontWeight: 600,
-                letterSpacing: "0.02em",
-                color: "#9a8a7c",
-              }}
-            >
-              {s.u}
-            </span>
-          </span>
-        ))}
+          );
+          return i === 0
+            ? [tile]
+            : [
+                <span
+                  key={`s${i}`}
+                  style={{ width: 1, alignSelf: "stretch", margin: "2px 0", background: "rgba(255,255,255,.45)" }}
+                />,
+                tile,
+              ];
+        })}
       </span>
     </span>
   );

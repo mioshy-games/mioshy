@@ -223,7 +223,6 @@ export function AnalysisSummary({
   const cmsCadQuarterly = useCmsText(`${RK}.cadenceQuarterly`).text;
   const cmsCadYearly = useCmsText(`${RK}.cadenceYearly`).text;
   const cmsCadWeekly = useCmsText(`${RK}.cadenceWeekly`).text;
-  const cmsPromoTag = useCmsText(`${RK}.promoTag`).text;
   const rc = (raw: string, he: string, en: string) =>
     raw && raw.trim().length > 0 && !raw.startsWith(`${RK}.`)
       ? raw
@@ -664,23 +663,23 @@ export function AnalysisSummary({
                   >
                     <span className="ar-radio" />
                     <span className="ar-opt-info">
-                      <span className="ar-opt-name">
-                        {cadenceTitle(c.cadence)}
-                        {hasPromo ? <span className="ar-opt-tag">{rc(cmsPromoTag, "מבצע", "Promo")}</span> : null}
-                      </span>
+                      <span className="ar-opt-name">{cadenceTitle(c.cadence)}</span>
                       <span className="ar-opt-note">{note}</span>
-                      {/* Subtle ticking promo-expiry line, right under this
-                          package's note (so it sits next to its price). Only on
-                          the promo'd cadence(s); reverts the price at 0. */}
-                      {hasPromo && activePromo?.endsAt ? (
+                    </span>
+                    {/* Promo-expiry timer in its own centered slot between the
+                        name and the price (desktop); wraps to a centered line
+                        below on mobile. Only on the promo'd package; reverts the
+                        price at 0. The title replaces the old "מבצע" pill. */}
+                    {hasPromo && activePromo?.endsAt ? (
+                      <span className="ar-opt-timer">
                         <PromoExpiryCountdown
                           endsAt={activePromo.endsAt}
                           isHe={isHe}
                           label={promoEndsLabel}
                         />
-                      ) : null}
-                    </span>
-                    <span className="ar-opt-price">
+                      </span>
+                    ) : null}
+                    <span className={`ar-opt-price${selected ? "" : " plain"}`}>
                       <span className="ar-price-num">{fmt(firstAmt)}</span>
                       <span className="ar-price-cur">{sym}</span>
                     </span>
@@ -1214,15 +1213,19 @@ export function AnalysisSummary({
           background: var(--ar-grad);
           box-shadow: 0 8px 18px -10px rgba(150, 60, 150, 0.5);
         }
+        /* Approved mockup: docs/promo-timer-mockup-approved.html (version B).
+           Base = mobile (timer wraps to a centered line below); desktop
+           override in the ≥760 media query keeps it inline (flex:1, centered). */
         .ar-opt {
           display: flex;
+          flex-wrap: wrap;
           align-items: center;
-          gap: 14px;
+          gap: 12px;
           width: 100%;
           background: #fcfaf7;
-          border: 1.5px solid #ece2cf;
+          border: 2px solid #ece2cf;
           border-radius: 16px;
-          padding: 18px;
+          padding: 16px 18px;
           cursor: pointer;
           text-align: right;
           margin-bottom: 12px;
@@ -1237,80 +1240,88 @@ export function AnalysisSummary({
           background: linear-gradient(#fff, #fff) padding-box, var(--ar-grad) border-box;
           box-shadow: 0 8px 20px -12px rgba(150, 60, 150, 0.35);
         }
+        /* Radio ALWAYS on the right (RTL): order 0 = first in flow = rightmost. */
         .ar-radio {
           flex: none;
-          width: 24px;
-          height: 24px;
+          order: 0;
+          width: 22px;
+          height: 22px;
           border-radius: 50%;
-          border: 2px solid #cbb89f;
-          position: relative;
+          border: 2px solid #d9cdbf;
         }
         .ar-opt.sel .ar-radio {
-          border: 0;
-          background: var(--ar-grad);
-        }
-        .ar-opt.sel .ar-radio::after {
-          content: "";
-          position: absolute;
-          inset: 6px;
-          background: #fff;
-          border-radius: 50%;
+          border: 6px solid #d6409f;
         }
         .ar-opt-info {
-          flex: 1;
+          order: 1;
           display: flex;
           flex-direction: column;
-          gap: 3px;
-          text-align: start;
+          text-align: right;
         }
         .ar-opt-name {
-          font-weight: 800;
-          font-size: 21px;
+          font-family: var(--font-frank-ruhl), "Frank Ruhl Libre", serif;
+          font-weight: 900;
+          font-size: 23px;
+          line-height: 1;
           color: #2e2622;
-        }
-        .ar-opt-tag {
-          font-size: 12px;
-          font-weight: 800;
-          color: #fff;
-          background: var(--ar-grad);
-          padding: 2px 9px;
-          border-radius: 99px;
-          margin-inline-start: 6px;
-          vertical-align: middle;
         }
         .ar-opt-note {
           font-size: 16px;
-          color: #2e2622;
+          font-weight: 500;
+          color: #4b4640;
+          margin-top: 6px;
+        }
+        /* Timer slot — mobile: full-width centered line below (order 5). */
+        .ar-opt-timer {
+          order: 5;
+          flex-basis: 100%;
+          display: flex;
+          justify-content: center;
+          margin-top: 10px;
         }
         .ar-opt-price {
+          order: 3;
           flex: none;
-          /* Assistant (body sans), not the serif heading font. Number and
-             currency sit on a shared baseline with a small gap between them. */
-          font-family: var(--font-heebo), "Assistant", "Heebo", system-ui,
-            sans-serif;
+          margin-inline-start: auto;
           display: inline-flex;
           align-items: baseline;
-          gap: 5px;
-          color: #2e2622;
+          gap: 6px;
+          font-family: var(--font-heebo), "Assistant", "Heebo", system-ui,
+            sans-serif;
         }
-        /* Price number +20% (26 → 31); currency −20% (26 → 21) and NOT growing
-           with the number. */
+        /* Selected package: big gradient price (sans). */
         .ar-price-num {
-          font-size: 31px;
-          font-weight: 900;
-          line-height: 1;
-        }
-        .ar-price-cur {
-          font-size: 21px;
+          font-size: 40px;
           font-weight: 800;
           line-height: 1;
-        }
-        .ar-opt.sel .ar-price-num,
-        .ar-opt.sel .ar-price-cur {
           background: var(--ar-grad);
           -webkit-background-clip: text;
           background-clip: text;
           color: transparent;
+        }
+        .ar-price-cur {
+          font-size: 24px;
+          font-weight: 800;
+          line-height: 1;
+          background: var(--ar-grad);
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent;
+        }
+        /* Non-selected packages: plain serif ink price. */
+        .ar-opt-price.plain .ar-price-num {
+          font-family: var(--font-frank-ruhl), "Frank Ruhl Libre", serif;
+          font-size: 30px;
+          background: none;
+          -webkit-text-fill-color: #2e2622;
+          color: #2e2622;
+        }
+        .ar-opt-price.plain .ar-price-cur {
+          font-family: var(--font-frank-ruhl), "Frank Ruhl Libre", serif;
+          font-size: 18px;
+          background: none;
+          -webkit-text-fill-color: #2e2622;
+          color: #2e2622;
         }
         .ar-incl {
           display: flex;
@@ -1570,6 +1581,16 @@ export function AnalysisSummary({
           }
           .ar-pricecard {
             max-width: 560px;
+          }
+          /* Desktop: timer stays inline between name and price (no wrap). */
+          .ar-opt {
+            flex-wrap: nowrap;
+          }
+          .ar-opt-timer {
+            order: 2;
+            flex: 1;
+            flex-basis: auto;
+            margin-top: 0;
           }
           .ar-sh {
             text-align: center;
