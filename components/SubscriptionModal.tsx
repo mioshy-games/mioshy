@@ -555,19 +555,19 @@ export function SubscriptionModal({
         method:  "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
+          // This modal is the GAMES paywall (TruthOrDare / Snakes), so it MUST
+          // send product:"games". Without it checkout defaulted product to
+          // "journey" (see route); since journey weekly is disabled, that
+          // resolved to journey monthly (67 ₪) instead of games weekly (9 ₪) —
+          // a real mischarge plus the wrong pillar entitlement. coaching is
+          // irrelevant for games (the server forces it false for non-journey).
+          product:          "games",
           plan,
           country_code:     countryCode || null,
           language:         locale,
           is_israeli:       countryCode === "IL",
           vat_rate_percent: vatRatePercent,
           lead_id:          lid,
-          // This modal sends no `product`, so checkout defaults it to journey
-          // (see route: product = "journey"). Journey coaching also defaults to
-          // TRUE, so without this the buyer would be charged content +
-          // coaching_cost. Force content-only. NOTE (flagged to Itzik): the
-          // no-product default routing this games modal to the journey pillar
-          // is a separate concern — not changed here.
-          coaching:         false,
         }),
       });
       const json = await res.json().catch(() => ({ success: false, code: "NETWORK_ERROR" }));
