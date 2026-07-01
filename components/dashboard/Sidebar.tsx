@@ -141,6 +141,7 @@ const NAV: NavItem[] = [
       { kind: "leaf", href: "/dashboard/journey/programs",       labelKey: "nav.programs",       icon: FolderKanban },
       { kind: "leaf", href: "/dashboard/journey/categories",     labelKey: "nav.categories",     icon: Tags },
       { kind: "leaf", href: "/dashboard/journey/items",          labelKey: "nav.items",          icon: FileText },
+      { kind: "leaf", href: "/dashboard/journey-questions",      labelKey: "nav.journey_questions", icon: MessageSquareText },
       { kind: "leaf", href: "/dashboard/journey/assignments",    labelKey: "nav.assignments",    icon: Link2, tooltipKey: "tip.assignments" },
       { kind: "leaf", href: "/dashboard/journey/clients",        labelKey: "nav.clients",        icon: Users },
       { kind: "leaf", href: "/dashboard/journey/groups",         labelKey: "nav.groups",         icon: UsersRound, tooltipKey: "tip.groups" },
