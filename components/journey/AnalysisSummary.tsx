@@ -606,27 +606,29 @@ export function AnalysisSummary({
                   once a coaching cost is configured (else the bundle == content
                   and a 0₪ choice would only confuse). */}
               {hasCoachingCost ? (
-                <div
-                  className="ar-coach"
-                  role="group"
-                  aria-label={isHe ? "בחירת ייעוץ זוגי" : "Couples-coaching choice"}
-                >
-                  <button
-                    type="button"
-                    className={`ar-coach-opt${coaching ? " sel" : ""}`}
-                    onClick={() => setCoaching(true)}
-                    aria-pressed={coaching}
+                <div className="ar-coach-wrap">
+                  <div
+                    className="ar-coach"
+                    role="group"
+                    aria-label={isHe ? "בחירת ייעוץ זוגי" : "Couples-coaching choice"}
                   >
-                    {isHe ? "עם ייעוץ זוגי כלול" : "With couples coaching"}
-                  </button>
-                  <button
-                    type="button"
-                    className={`ar-coach-opt${!coaching ? " sel" : ""}`}
-                    onClick={() => setCoaching(false)}
-                    aria-pressed={!coaching}
-                  >
-                    {isHe ? "ללא ייעוץ זוגי" : "Without couples coaching"}
-                  </button>
+                    <button
+                      type="button"
+                      className={`ar-coach-opt${coaching ? " sel" : ""}`}
+                      onClick={() => setCoaching(true)}
+                      aria-pressed={coaching}
+                    >
+                      {isHe ? "עם ייעוץ זוגי כלול" : "With couples coaching"}
+                    </button>
+                    <button
+                      type="button"
+                      className={`ar-coach-opt${!coaching ? " sel" : ""}`}
+                      onClick={() => setCoaching(false)}
+                      aria-pressed={!coaching}
+                    >
+                      {isHe ? "ללא ייעוץ זוגי" : "Without couples coaching"}
+                    </button>
+                  </div>
                 </div>
               ) : null}
 
@@ -640,19 +642,14 @@ export function AnalysisSummary({
                 const hasPromo = !!(promoSet && pf && po);
                 const firstAmt = hasPromo ? (isHe ? pf!.ils : pf!.usd) : amt;
                 const origAmt = hasPromo ? (isHe ? po!.ils : po!.usd) : amt;
-                // Sub-row = discount % + struck anchor, dynamic:
-                //  • Monthly (promo): X% off vs the regular ("אחר כך") price;
-                //    keeps "חודש ראשון, אחר כך {full} ₪".
-                //  • Quarterly/yearly: X% off + struck "במקום {monthly×N} ₪".
-                // Guard: only shown when the discount is positive.
+                // Sub-row (per v9 mockup):
+                //  • Monthly (promo): "חודש ראשון, אח״כ {full} ₪" — one line, no %.
+                //  • Quarterly/yearly: "{X}% הנחה · במקום {monthly×N} ₪" (struck).
+                // Anchor is dynamic; guard: only when the discount is positive.
                 const months = monthsInPeriod(c.cadence);
                 let discountPct: number | null = null;
                 let beforeAmt: number | null = null;
-                if (hasPromo) {
-                  if (origAmt > 0 && origAmt > firstAmt) {
-                    discountPct = Math.round(((origAmt - firstAmt) / origAmt) * 100);
-                  }
-                } else if (months && monthlyFull != null) {
+                if (!hasPromo && months && monthlyFull != null) {
                   const before = monthlyFull * months;
                   if (before > amt) {
                     beforeAmt = before;
@@ -670,24 +667,15 @@ export function AnalysisSummary({
                     <span className="ar-radio" />
                     <span className="ar-opt-info">
                       <span className="ar-opt-name">{cadenceTitle(c.cadence)}</span>
-                      {hasPromo || discountPct != null ? (
+                      {hasPromo ? (
                         <span className="ar-opt-note">
-                          {discountPct != null ? (
-                            <>
-                              <span className="ar-opt-pct">
-                                {discountPct}% {isHe ? "הנחה" : "off"}
-                              </span>
-                              {" · "}
-                            </>
-                          ) : null}
-                          {hasPromo
-                            ? `${firstPeriodLabel(c.cadence, isHe)}${isHe ? ", אחר כך " : ", then "}${priceStr(origAmt)}`
-                            : beforeAmt != null ? (
-                                <>
-                                  {isHe ? "במקום " : "was "}
-                                  <s className="ar-opt-before">{priceStr(beforeAmt)}</s>
-                                </>
-                              ) : null}
+                          {`${firstPeriodLabel(c.cadence, isHe)}${isHe ? ", אח״כ " : ", then "}${priceStr(origAmt)}`}
+                        </span>
+                      ) : beforeAmt != null ? (
+                        <span className="ar-opt-note">
+                          {discountPct}% {isHe ? "הנחה" : "off"} ·{" "}
+                          {isHe ? "במקום " : "was "}
+                          <s className="ar-opt-before">{priceStr(beforeAmt)}</s>
                         </span>
                       ) : null}
                     </span>
@@ -1203,31 +1191,41 @@ export function AnalysisSummary({
           padding: 16px;
           box-shadow: 0 18px 44px -22px rgba(120, 70, 120, 0.28);
         }
+        /* Tabs (v9): a narrow, centered segmented pill — light cream, ✓ on the
+           selected tab only. */
+        .ar-coach-wrap {
+          text-align: center;
+        }
         .ar-coach {
-          display: flex;
-          gap: 8px;
-          padding: 6px;
-          margin-bottom: 14px;
-          background: #f4ece0;
-          border-radius: 14px;
+          display: inline-flex;
+          gap: 4px;
+          padding: 4px;
+          margin-bottom: 18px;
+          background: #fbf8f3;
+          border: 1px solid #f0e8db;
+          border-radius: 999px;
         }
         .ar-coach-opt {
-          flex: 1;
           border: 0;
           cursor: pointer;
-          font-family: inherit;
-          font-weight: 800;
+          font-family: var(--font-heebo), "Assistant", "Heebo", sans-serif;
+          font-weight: 700;
           font-size: 16px;
-          color: #5a4f46;
-          padding: 12px 10px;
-          border-radius: 10px;
+          color: #4b4640;
+          padding: 9px 20px;
+          border-radius: 999px;
           background: transparent;
-          transition: 0.15s;
+          white-space: nowrap;
+          transition: all 0.15s;
         }
         .ar-coach-opt.sel {
           color: #fff;
           background: var(--ar-grad);
-          box-shadow: 0 8px 18px -10px rgba(150, 60, 150, 0.5);
+          box-shadow: 0 4px 12px -5px rgba(214, 64, 159, 0.5);
+        }
+        .ar-coach-opt.sel::before {
+          content: "✓ ";
+          font-weight: 900;
         }
         /* Approved mockup: docs/promo-timer-mockup-approved.html (version B).
            Base = mobile (timer wraps to a centered line below); desktop
@@ -1289,17 +1287,15 @@ export function AnalysisSummary({
           color: #2e2622;
         }
         .ar-opt-note {
-          font-size: 16px;
+          font-size: 18px;
           font-weight: 500;
           color: #4b4640;
           margin-top: 6px;
-        }
-        .ar-opt-pct {
-          font-weight: 800;
-          color: #7a1f2b;
+          /* Mobile: may wrap. Desktop (≥760) forces one line. */
+          white-space: normal;
         }
         .ar-opt-before {
-          color: #9a8a7c;
+          text-decoration-color: rgba(122, 31, 43, 0.55);
           text-decoration-thickness: 1px;
         }
         /* Timer slot — mobile: full-width centered line below (order 5). */
@@ -1611,18 +1607,22 @@ export function AnalysisSummary({
             transform: translateY(16px);
           }
           .ar-pricecard {
-            max-width: 560px;
+            /* wider (v9) so the one-line sub + centered timer + price fit */
+            max-width: 640px;
           }
           /* Desktop: timer stays inline between name and price (no wrap).
-             Restore center alignment + natural-width info so the timer's
-             flex:1 owns the centre (the mobile flex-start/info:flex-1 tweak
-             does not apply here). */
+             Restore center alignment; info keeps its natural width and does
+             NOT shrink, so the sub stays on one line (nowrap) and the timer's
+             flex:1 owns the remaining centre. */
           .ar-opt {
             flex-wrap: nowrap;
             align-items: center;
           }
           .ar-opt-info {
-            flex: 0 1 auto;
+            flex: 0 0 auto;
+          }
+          .ar-opt-note {
+            white-space: nowrap;
           }
           .ar-opt-timer {
             order: 2;

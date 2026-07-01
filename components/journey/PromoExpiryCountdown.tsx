@@ -68,20 +68,20 @@ export function PromoExpiryCountdown({
       style={{
         display: "inline-flex",
         flexDirection: "column",
-        gap: 7,
+        gap: 6,
         alignItems: "center",
         background: GRAD,
-        borderRadius: 14,
-        padding: "9px 14px",
-        boxShadow: "0 8px 20px -10px rgba(214,64,159,.55)",
+        borderRadius: 13,
+        padding: "8px 12px",
+        boxShadow: "0 8px 20px -10px rgba(214,64,159,.5)",
       }}
     >
-      <span style={{ fontFamily: SANS, fontSize: 17, fontWeight: 800, color: "#fff", textAlign: "center" }}>
+      <span style={{ fontFamily: SANS, fontSize: 16, fontWeight: 800, color: "#fff", textAlign: "center" }}>
         {label}
       </span>
       {/* LTR so the D:H:M:S reading order is stable in both directions. */}
       <span
-        style={{ display: "flex", alignItems: "stretch", gap: 9, direction: "ltr" }}
+        style={{ display: "flex", alignItems: "stretch", gap: 8, direction: "ltr" }}
         aria-hidden="true"
       >
         {segs.flatMap((s, i) => {
@@ -93,13 +93,13 @@ export function PromoExpiryCountdown({
                 flexDirection: "column",
                 alignItems: "center",
                 justifyContent: "center",
-                minWidth: 42,
+                minWidth: 38,
               }}
             >
               <span
                 style={{
                   fontFamily: SERIF,
-                  fontSize: 23,
+                  fontSize: 21,
                   fontWeight: 900,
                   lineHeight: 1,
                   color: "#fff",
@@ -108,7 +108,7 @@ export function PromoExpiryCountdown({
               >
                 {pad(s.v)}
               </span>
-              <span style={{ marginTop: 3, fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,.82)" }}>
+              <span style={{ marginTop: 2, fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,.82)" }}>
                 {s.u}
               </span>
             </span>
