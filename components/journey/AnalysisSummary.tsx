@@ -1219,7 +1219,10 @@ export function AnalysisSummary({
         .ar-opt {
           display: flex;
           flex-wrap: wrap;
-          align-items: center;
+          /* Mobile: top-align so the price sits on the "חודשי" line while the
+             taller info column (name + note) grows; timer wraps centered below.
+             Desktop restores center alignment in the ≥760 media query. */
+          align-items: flex-start;
           gap: 12px;
           width: 100%;
           background: #fcfaf7;
@@ -1254,6 +1257,10 @@ export function AnalysisSummary({
         }
         .ar-opt-info {
           order: 1;
+          /* Mobile: grow so the price is pushed to the far end of the same
+             line (not wrapped below). Reset on desktop so the timer's flex:1
+             owns the centre instead. */
+          flex: 1;
           display: flex;
           flex-direction: column;
           text-align: right;
@@ -1582,9 +1589,16 @@ export function AnalysisSummary({
           .ar-pricecard {
             max-width: 560px;
           }
-          /* Desktop: timer stays inline between name and price (no wrap). */
+          /* Desktop: timer stays inline between name and price (no wrap).
+             Restore center alignment + natural-width info so the timer's
+             flex:1 owns the centre (the mobile flex-start/info:flex-1 tweak
+             does not apply here). */
           .ar-opt {
             flex-wrap: nowrap;
+            align-items: center;
+          }
+          .ar-opt-info {
+            flex: 0 1 auto;
           }
           .ar-opt-timer {
             order: 2;
