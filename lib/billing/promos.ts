@@ -208,16 +208,25 @@ export async function findActivePromo(
   return selectActivePromo(data ?? [], { product, at: when, cadence, coaching });
 }
 
-type PromoWindow = Pick<SubscriptionPromo, "product" | "starts_at" | "ends_at">;
+type PromoWindow = Pick<
+  SubscriptionPromo,
+  "product" | "starts_at" | "ends_at" | "coaching_scope"
+>;
 
 /**
- * Pure conflict predicate: two promos clash when their date windows overlap AND
- * their products collide (same product, or either is 'all') — spec §3.5/§8.
+ * Pure conflict predicate: two promos clash when their windows overlap AND their
+ * products collide (same, or either 'all') AND their coaching scopes collide
+ * (same, or either 'all'). The coaching_scope dimension lets a with-coaching and
+ * a without-coaching journey promo coexist in the same window — each targets a
+ * different purchase option, so they don't actually conflict.
  */
 export function promoConflicts(a: PromoWindow, b: PromoWindow): boolean {
   const productClash = a.product === b.product || a.product === "all" || b.product === "all";
   const windowOverlap = ms(a.starts_at) <= ms(b.ends_at) && ms(b.starts_at) <= ms(a.ends_at);
-  return productClash && windowOverlap;
+  const scopeA = a.coaching_scope ?? "all";
+  const scopeB = b.coaching_scope ?? "all";
+  const coachingClash = scopeA === scopeB || scopeA === "all" || scopeB === "all";
+  return productClash && windowOverlap && coachingClash;
 }
 
 /**
@@ -231,7 +240,7 @@ export async function assertNoOverlap(
 ): Promise<void> {
   const { data, error } = await admin
     .from("subscription_promos")
-    .select("id, name, product, starts_at, ends_at")
+    .select("id, name, product, starts_at, ends_at, coaching_scope")
     .eq("is_active", true)
     .returns<(Pick<SubscriptionPromo, "id" | "name"> & PromoWindow)[]>();
   if (error) throw new Error(`assertNoOverlap: ${error.message}`);

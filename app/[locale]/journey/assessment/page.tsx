@@ -43,7 +43,7 @@ import {
   findActivePromo,
   applyDiscount,
   promoAppliesToCadence,
-  promoAppliesToCoaching,
+  type SubscriptionPromo,
 } from "@/lib/billing/promos";
 import type { JourneyPromoSummary } from "@/components/journey/AnalysisSummary";
 
@@ -499,66 +499,48 @@ export default async function JourneyAssessmentPage({
   try {
     const promoClient = createServiceRoleClient();
     if (promoClient) {
-      const { promo, warning } = await findActivePromo(promoClient, {
-        product: "journey",
-      });
-      if (warning) console.warn("[/journey/assessment] promo warning", warning);
-      if (promo) {
-        // Stage-1: compute the promo on the BUNDLE for each coaching state,
-        // honouring the promo's coaching_scope. The with-coaching bundle is
-        // content + coaching_cost; the without-coaching bundle is content. The
-        // client picks the set matching its toggle, so displayed == charged for
-        // whichever option the buyer chooses. Mirrors checkout/create exactly.
-        const buildSet = (withCoaching: boolean): JourneyPromoSummary["withCoaching"] => {
-          const firstChargeByCadence: Record<string, { ils: number; usd: number }> = {};
-          const originalByCadence: Record<string, { ils: number; usd: number }> = {};
-          // coaching_scope gate (migration 149): a 'with' promo skips the
-          // without-coaching set and vice-versa; 'all' applies to both.
-          if (!promoAppliesToCoaching(promo, withCoaching)) {
-            return { firstChargeByCadence, originalByCadence };
-          }
-          for (const c of journeyCadences) {
-            if (!c.enabled) continue;
-            // Cadence-restricted promo (migration 148): only the matching
-            // cadence card(s) get the discount; null-cadence promos cover all.
-            if (!promoAppliesToCadence(promo, c.cadence)) continue;
-            const baseIls = c.price_ils + (withCoaching ? c.coaching_cost_ils : 0);
-            const baseUsd = c.price_usd + (withCoaching ? c.coaching_cost_usd : 0);
-            const ils = applyDiscount({ amount: baseIls, currency: "ILS", promo });
-            const usd = applyDiscount({ amount: baseUsd, currency: "USD", promo });
-            // Record only when the promo actually discounts at least one
-            // currency — mirrors checkout (applyDiscount returns the original
-            // amount + null promoId when the discount wouldn't apply).
-            if (ils.promoId || usd.promoId) {
-              firstChargeByCadence[c.cadence] = {
-                ils: ils.discountedAmount,
-                usd: usd.discountedAmount,
-              };
-              originalByCadence[c.cadence] = {
-                ils: ils.originalAmount,
-                usd: usd.originalAmount,
-              };
-            }
-          }
-          return { firstChargeByCadence, originalByCadence };
-        };
+      // A with-coaching and a without-coaching journey promo can run together
+      // (each targets a different option). Select the matching-scope promo PER
+      // option — the SAME call the checkout makes with the buyer's coaching flag
+      // — so the DISPLAY equals the CHARGE for each option independently.
+      const [withRes, withoutRes] = await Promise.all([
+        findActivePromo(promoClient, { product: "journey", coaching: true }),
+        findActivePromo(promoClient, { product: "journey", coaching: false }),
+      ]);
+      if (withRes.warning) console.warn("[/journey/assessment] promo warning (with)", withRes.warning);
+      if (withoutRes.warning) console.warn("[/journey/assessment] promo warning (without)", withoutRes.warning);
 
-        const withCoaching = buildSet(true);
-        const withoutCoaching = buildSet(false);
-        if (
-          Object.keys(withCoaching.firstChargeByCadence).length > 0 ||
-          Object.keys(withoutCoaching.firstChargeByCadence).length > 0
-        ) {
-          activePromo = {
-            name: promo.name,
-            displayText: promo.display_text,
-            // Drives the subtle in-card expiry countdown (client reverts the
-            // price at 0 via router.refresh()).
-            endsAt: promo.ends_at ?? null,
-            withCoaching,
-            withoutCoaching,
-          };
+      // Build one option's promo set: the discounted first charge per enabled
+      // cadence on the matching bundle, via the SAME applyDiscount the checkout
+      // uses (no client-side discount math). null when nothing is discounted.
+      const buildScope = (
+        promo: SubscriptionPromo | null,
+        withCoaching: boolean,
+      ): JourneyPromoSummary["withCoaching"] => {
+        if (!promo) return null;
+        const firstChargeByCadence: Record<string, { ils: number; usd: number }> = {};
+        const originalByCadence: Record<string, { ils: number; usd: number }> = {};
+        for (const c of journeyCadences) {
+          if (!c.enabled) continue;
+          // Cadence-restricted promo (migration 148): only the matching cadence.
+          if (!promoAppliesToCadence(promo, c.cadence)) continue;
+          const baseIls = c.price_ils + (withCoaching ? c.coaching_cost_ils : 0);
+          const baseUsd = c.price_usd + (withCoaching ? c.coaching_cost_usd : 0);
+          const ils = applyDiscount({ amount: baseIls, currency: "ILS", promo });
+          const usd = applyDiscount({ amount: baseUsd, currency: "USD", promo });
+          if (ils.promoId || usd.promoId) {
+            firstChargeByCadence[c.cadence] = { ils: ils.discountedAmount, usd: usd.discountedAmount };
+            originalByCadence[c.cadence] = { ils: ils.originalAmount, usd: usd.originalAmount };
+          }
         }
+        if (Object.keys(firstChargeByCadence).length === 0) return null;
+        return { endsAt: promo.ends_at ?? null, firstChargeByCadence, originalByCadence };
+      };
+
+      const withCoaching = buildScope(withRes.promo, true);
+      const withoutCoaching = buildScope(withoutRes.promo, false);
+      if (withCoaching || withoutCoaching) {
+        activePromo = { withCoaching, withoutCoaching };
       }
     }
   } catch (err) {

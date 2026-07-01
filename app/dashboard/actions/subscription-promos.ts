@@ -58,6 +58,8 @@ export async function savePromo(id: string | null, raw: unknown): Promise<SaveRe
         product: v.product,
         starts_at: v.starts_at,
         ends_at: v.ends_at,
+        // coaching-scoped promos (with/without) can coexist in the same window.
+        coaching_scope: v.coaching_scope,
       });
     } catch (e) {
       return { ok: false, error: { _root: [e instanceof Error ? e.message : String(e)] } };
@@ -90,12 +92,12 @@ export async function togglePromoActive(
   if (value) {
     const { data: promo, error: fErr } = await admin
       .from("subscription_promos")
-      .select("id, name, product, starts_at, ends_at")
+      .select("id, name, product, starts_at, ends_at, coaching_scope")
       .eq("id", id)
       .maybeSingle();
     if (fErr || !promo) return { ok: false, error: fErr?.message ?? "Promo not found" };
     try {
-      await assertNoOverlap(admin, promo as { id: string; name: string; product: "journey" | "games" | "all"; starts_at: string; ends_at: string });
+      await assertNoOverlap(admin, promo as { id: string; name: string; product: "journey" | "games" | "all"; starts_at: string; ends_at: string; coaching_scope: "with" | "without" | "all" | null });
     } catch (e) {
       return { ok: false, error: e instanceof Error ? e.message : String(e) };
     }

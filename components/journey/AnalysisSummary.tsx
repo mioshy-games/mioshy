@@ -23,24 +23,20 @@ import type { CadenceOption } from "@/lib/billing/pricing-validations";
  * Kept exported — app/[locale]/journey/assessment/page.tsx imports this type.
  */
 type PromoCadenceMap = Record<string, { ils: number; usd: number }>;
+/** One coaching option's active promo, computed SERVER-SIDE on the matching
+ *  bundle. Carries its own ends_at so a with-coaching and a without-coaching
+ *  promo (each its own DB row) can run together and drive their own timer. */
 type PromoSet = {
+  /** ISO promo end time — drives the in-card expiry countdown for this option. */
+  endsAt: string | null;
   firstChargeByCadence: PromoCadenceMap;
   originalByCadence: PromoCadenceMap;
 };
 export type JourneyPromoSummary = {
-  name: string;
-  /** Optional customer-facing title (subscription_promos.display_text). When
-   *  set it replaces the default "מבצע {name}" heading on the promo line. */
-  displayText: string | null;
-  /** ISO promo end time (subscription_promos.ends_at) — drives the subtle
-   *  in-card expiry countdown. null → no timer shown. */
-  endsAt: string | null;
-  /** Stage-1: the promo is computed SERVER-SIDE on the bundle for each coaching
-   *  state, honouring the promo's coaching_scope. The without-coaching set is
-   *  empty when scope='with' (and vice-versa). The client picks the set that
-   *  matches the toggle, so displayed == charged for whichever option is chosen. */
-  withoutCoaching: PromoSet;
-  withCoaching: PromoSet;
+  /** Promo for the with-coaching option (scope 'with' or 'all'); null if none. */
+  withCoaching: PromoSet | null;
+  /** Promo for the without-coaching option (scope 'without' or 'all'); null if none. */
+  withoutCoaching: PromoSet | null;
 };
 
 // "First period only" label per cadence — the promo discounts only the first
@@ -353,12 +349,11 @@ export function AnalysisSummary({
     isHe ? c.coaching_cost_ils : c.coaching_cost_usd;
   const amtOf = (c: CadenceOption) =>
     (isHe ? c.price_ils : c.price_usd) + (coaching ? coachingCostOf(c) : 0);
-  // Server-computed promo for the CURRENT coaching state (scope-aware).
-  const promoSet = activePromo
-    ? coaching
-      ? activePromo.withCoaching
-      : activePromo.withoutCoaching
-    : null;
+  // Server-computed promo for the CURRENT coaching state (scope-aware). Each
+  // scope has its own promo (and ends_at), so with/without can differ.
+  const promoSet =
+    (activePromo ? (coaching ? activePromo.withCoaching : activePromo.withoutCoaching) : null) ??
+    null;
   // CMS-editable prefix for the promo-expiry countdown (falls back to the
   // bilingual literal when the key is unset — useCmsText returns the key).
   const promoEndsLabel =
@@ -683,10 +678,10 @@ export function AnalysisSummary({
                         name and the price (desktop); wraps to a centered line
                         below on mobile. Only on the promo'd package; reverts the
                         price at 0. The title replaces the old "מבצע" pill. */}
-                    {hasPromo && activePromo?.endsAt ? (
+                    {hasPromo && promoSet?.endsAt ? (
                       <span className="ar-opt-timer">
                         <PromoExpiryCountdown
-                          endsAt={activePromo.endsAt}
+                          endsAt={promoSet.endsAt}
                           isHe={isHe}
                           label={promoEndsLabel}
                         />
