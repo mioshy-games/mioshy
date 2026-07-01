@@ -1197,13 +1197,12 @@ export function AnalysisSummary({
           text-align: center;
         }
         .ar-coach {
+          /* No container pill — transparent; only the selected button carries
+             the gradient. Non-selected is text-only. */
           display: inline-flex;
           gap: 4px;
-          padding: 4px;
           margin-bottom: 18px;
-          background: #fbf8f3;
-          border: 1px solid #f0e8db;
-          border-radius: 999px;
+          background: transparent;
         }
         .ar-coach-opt {
           border: 0;
@@ -1212,7 +1211,7 @@ export function AnalysisSummary({
           font-weight: 700;
           font-size: 16px;
           color: #4b4640;
-          padding: 9px 20px;
+          padding: 9px 25px;
           border-radius: 999px;
           background: transparent;
           white-space: nowrap;
