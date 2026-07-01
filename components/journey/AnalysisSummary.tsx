@@ -701,9 +701,9 @@ export function AnalysisSummary({
                       const origAmt = isHe ? po.ils : po.usd;
                       return (
                         <div className="ar-summary">
-                          <span className="ar-summary-badge">
-                            {activePromo.displayText ?? `${rc(cmsPromoTag, "מבצע", "Promo")} ${activePromo.name}`}
-                          </span>
+                          {/* Static display_text badge removed (Itzik 2026-07-01)
+                              — the ticking promo-expiry clock next to the monthly
+                              price now carries the promo signal. */}
                           <p className="ar-summary-line">
                             <span>{isHe ? "לתשלום" : "To pay"}</span>{" "}
                             <span>{firstPeriodLabel(cad, isHe)}</span>{" "}
@@ -1344,16 +1344,6 @@ export function AnalysisSummary({
         .ar-summary {
           margin-top: 16px;
           text-align: center;
-        }
-        .ar-summary-badge {
-          display: inline-block;
-          font-size: 12px;
-          font-weight: 800;
-          color: #fff;
-          background: var(--ar-grad);
-          padding: 3px 12px;
-          border-radius: 99px;
-          margin-bottom: 8px;
         }
         .ar-summary-line {
           font-size: 18px;
