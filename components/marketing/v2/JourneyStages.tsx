@@ -317,7 +317,9 @@ function Stage3Price() {
           <span className="js-stop-price-original">{shekel(monthly)}</span>
         ) : null}
         <span className="js-stop-price-amount">
-          {shekel(hasPromo ? first : monthly)}
+          {/* "starting from" — Stage-3 shows the WITHOUT-coaching entry price;
+              the with-coaching option is a higher tier, so this is the floor. */}
+          {`החל מ-${shekel(hasPromo ? first : monthly)}`}
         </span>
         <span className="js-stop-price-period">
           {hasPromo ? "לחודש הראשון" : "לחודש"}

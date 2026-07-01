@@ -61,6 +61,15 @@ export const getJourneyDisplayPricing = cache(
         const { promo } = await findActivePromo(admin, {
           product: "journey",
           cadence: "monthly",
+          // Stage-3 is the logged-out ENTRY price = the WITHOUT-coaching option
+          // (base here is the content-only price_ils, no coaching_cost). Pass
+          // coaching:false so a coaching-scoped 'with' promo — meant for the
+          // higher content+coaching bundle — is never applied to this
+          // content-only base. Without this filter, selectActivePromo would pick
+          // whichever scoped promo was created latest; a 'with' ₪100-off on a ₪67
+          // base clamps to MIN_CHARGE (→ "1 ₪"). 'without'/'all' promos still
+          // apply, matching what a without-coaching checkout actually charges.
+          coaching: false,
         });
         if (promo) {
           const res = applyDiscount({
