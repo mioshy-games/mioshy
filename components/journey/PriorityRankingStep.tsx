@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { motion } from "framer-motion";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { motion, Reorder, useDragControls } from "framer-motion";
+import { ChevronDown, ChevronUp, GripVertical } from "lucide-react";
 
 import { isValidOrder, type PriorityKey } from "@/lib/journey/priorities";
 import type {
@@ -11,7 +11,6 @@ import type {
   QuestionRanking,
   QuestionRankingCategory,
 } from "@/lib/journey/types";
-import { Button } from "@/components/ui/button";
 import { useCmsText } from "@/hooks/useCmsText";
 import { CmsText } from "@/components/cms/CmsText";
 
@@ -21,34 +20,35 @@ interface Props {
   onSubmit: (answer: AnswerValue) => Promise<void> | void;
   initial?: AnswerValue | null;
   busy?: boolean;
+  /** Light variant only — when true the Continue button reads "סיום". */
+  isLast?: boolean;
 }
 
+// ── Light-theme tokens (shared with QuestionStep / v6 mockup) ────────────────
+const ASSISTANT = "var(--font-assistant), sans-serif";
+const BRAND_GRADIENT =
+  "linear-gradient(95deg,#6C5CE7 0%,#D6409F 52%,#F79154 100%)";
+const GAP = "clamp(38px,7.5vh,78px)";
+
 /**
- * Reorder the 5 relationship priority categories using ↑/↓ arrow buttons
- * on each row.
+ * Reorder the 5 relationship priority categories.
  *
- * Why arrows instead of drag (UX feedback 2026-05-05): the previous
- * framer-motion `Reorder.Group` implementation set `touch-action: none`
- * on every row so the page wouldn't try to scroll while the user was
- * dragging. The side effect was that the page couldn't scroll AT ALL
- * while a finger was on a card - and on phones the cards take up the
- * full visible area, so the user got stuck unable to scroll down to the
- * Continue button. Replacing drag with explicit arrow buttons fixes the
- * scroll lock and is also a more discoverable interaction for a
- * non-developer audience.
+ * Journey light-theme redesign (2026-07-01,
+ * docs/journey-assessment-redesign-workorder.md): per Itzik the primary
+ * interaction is DRAG (the subline copy says "ניתן לגרור"). Drag is wired via
+ * framer-motion `Reorder` with a dedicated GRIP HANDLE only
+ * (`dragListener={false}` + `useDragControls`), so the row body — and the page
+ * — keep scrolling normally on mobile. This is the fix for the old scroll-lock
+ * (UX feedback 2026-05-05): the previous `Reorder.Group` set `touch-action:none`
+ * on the whole row, so a finger anywhere on a card blocked page scroll. Now
+ * `touch-action:none` sits ONLY on the small handle. As a mitigation the list is
+ * also centered at 70% width on mobile (spec §5) so there is side room to scroll.
  *
- * Submission shape stays: `{ kind: 'ranking', order: PriorityKey[] }`.
- * Server validator on /api/journey/answer enforces it's a permutation of
- * PRIORITY_KEYS - unchanged.
+ * Accessibility (kept per Itzik): each row also exposes ↑/↓ buttons — real
+ * <button>s with aria-labels — so keyboard and assistive-tech users can reorder
+ * without dragging. Drag is primary; arrows are the equivalent alternative.
  *
- * Animation: framer-motion `<motion.li layout>` animates the position
- * swap so the user sees the cards trade places instead of teleporting.
- *
- * Accessibility:
- *  - Each ↑/↓ button has an aria-label with the category and direction.
- *  - The buttons are real <button> elements, so keyboard users get
- *    Enter/Space activation for free.
- *  - Disabled at the boundaries (↑ on idx 0, ↓ on idx N-1).
+ * Submission shape is unchanged: `{ kind: 'ranking', order: PriorityKey[] }`.
  */
 export function PriorityRankingStep({
   question,
@@ -56,6 +56,7 @@ export function PriorityRankingStep({
   onSubmit,
   initial,
   busy = false,
+  isLast = false,
 }: Props) {
   const isHe = locale === "he";
 
@@ -115,6 +116,7 @@ export function PriorityRankingStep({
   const moveUpTpl = useCmsText("journeyAssessment.priorityRanking.moveUp").text;
   const moveDownTpl = useCmsText("journeyAssessment.priorityRanking.moveDown").text;
   const positionTpl = useCmsText("journeyAssessment.priorityRanking.position").text;
+  const savingLabel = useCmsText("journeyAssessment.question.saving").text;
 
   const submit = async () => {
     if (!isValidOrder(order)) return;
@@ -126,141 +128,173 @@ export function PriorityRankingStep({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
-      className="flex flex-col gap-6"
+      className="flex w-full flex-col items-center text-center"
       dir={isHe ? "rtl" : "ltr"}
     >
-      <header className="flex flex-col gap-1.5">
-        <h2 className="text-xl font-bold leading-snug text-white sm:text-2xl">
-          {headline}
-        </h2>
-        {subline ? (
-          <p className="text-sm text-white/70">{subline}</p>
-        ) : null}
-      </header>
-
-      {/* Arrows hint — moved here ABOVE the list 2026-05-19 per Itzik.
-          The instruction "use the arrows to change order" wasn't being
-          read because it sat at the bottom of the list, AFTER the user
-          had already tried (and possibly failed) to figure out the
-          interaction. Reading it before the list lets the user
-          interpret the up/down chevrons correctly on first sight. */}
-      <CmsText
-        cmsKey="journeyAssessment.priorityRanking.arrowsHint"
-        as="p"
-        className="text-center text-[15px] font-medium text-white/85"
-      />
-
-      <ul
-        role="list"
-        aria-roledescription="reorderable list"
-        className="flex flex-col gap-2.5"
+      <h2
+        className="mx-auto max-w-[32ch] text-center font-semibold leading-[1.4] text-[#2E2622] md:max-w-[42ch]"
+        style={{ fontFamily: ASSISTANT, fontSize: "clamp(23px,5vw,30px)" }}
       >
-        {order.map((key, idx) => {
-          const isFirst = idx === 0;
-          const isLast = idx === order.length - 1;
-          const upDisabled = isFirst || busy;
-          const downDisabled = isLast || busy;
-          const upLabel = moveUpTpl.replace("{label}", labelFor(key));
-          const downLabel = moveDownTpl.replace("{label}", labelFor(key));
-          return (
-            <motion.li
-              key={key}
-              layout
-              transition={{ type: "spring", stiffness: 380, damping: 32 }}
-            >
-              <div
-                className={[
-                  "relative flex items-start gap-3 rounded-2xl border p-4",
-                  "border-white/10 bg-white/5 backdrop-blur-sm",
-                  isFirst
-                    ? "ring-1 ring-fuchsia-300/40 bg-gradient-to-r from-fuchsia-500/15 via-rose-500/10 to-transparent"
-                    : "",
-                  isLast ? "opacity-80" : "",
-                ].join(" ")}
-              >
-                {/* Position pill */}
-                <div
-                  className={[
-                    "shrink-0 inline-flex items-center justify-center rounded-full font-bold tabular-nums",
-                    isFirst
-                      ? "size-9 bg-fuchsia-400 text-fuchsia-950 text-base"
-                      : "size-8 bg-white/10 text-white text-sm",
-                  ].join(" ")}
-                  aria-label={positionTpl.replace("{n}", String(idx + 1))}
-                >
-                  {idx + 1}
-                </div>
+        {headline}
+      </h2>
+      {subline ? (
+        <p className="mx-auto mt-3 max-w-[34ch] text-center text-[15px] font-semibold text-[#a2917f]">
+          {subline}
+        </p>
+      ) : null}
 
-                {/* Title + description
-                    2026-05-29 — Itzik mobile-only typography bump:
-                    title 24px, description 20px. Desktop unchanged
-                    (sm: keeps the original isFirst-bigger pattern and
-                    text-xs description) because the desktop card row
-                    is denser. */}
-                <div className="min-w-0 flex-1">
-                  <div
-                    className={[
-                      "font-semibold text-white text-[24px]",
-                      isFirst ? "sm:text-lg" : "sm:text-base",
-                    ].join(" ")}
-                  >
-                    {labelFor(key)}
-                  </div>
-                  <p className="mt-0.5 text-[20px] leading-snug text-[#D8CFE6] sm:text-xs">
-                    {descFor(key)}
-                  </p>
-                </div>
+      <Reorder.Group
+        axis="y"
+        values={order}
+        onReorder={(next) => {
+          const arr = next as PriorityKey[];
+          if (isValidOrder(arr)) setOrder(arr);
+        }}
+        as="ul"
+        aria-roledescription={isHe ? "רשימה הניתנת לגרירה" : "reorderable list"}
+        className="mx-auto flex w-[70%] flex-col gap-[10px] md:w-full md:max-w-[780px]"
+        style={{ marginTop: GAP, listStyle: "none" }}
+      >
+        {order.map((key, idx) => (
+          <RankRow
+            key={key}
+            value={key}
+            index={idx}
+            total={order.length}
+            label={labelFor(key)}
+            desc={descFor(key)}
+            busy={busy}
+            positionLabel={positionTpl.replace("{n}", String(idx + 1))}
+            upLabel={moveUpTpl.replace("{label}", labelFor(key))}
+            downLabel={moveDownTpl.replace("{label}", labelFor(key))}
+            grabLabel={isHe ? `גרור את ${labelFor(key)}` : `Drag ${labelFor(key)}`}
+            onMoveUp={() => moveUp(idx)}
+            onMoveDown={() => moveDown(idx)}
+          />
+        ))}
+      </Reorder.Group>
 
-                {/* Up/down arrow controls. Stacked vertically - 44px tap
-                    target each, comfortably hittable on a phone, and they
-                    don't fight scroll because they're plain buttons (no
-                    touch-action overrides). */}
-                <div className="flex shrink-0 flex-col items-center gap-1 self-center">
-                  <button
-                    type="button"
-                    onClick={() => moveUp(idx)}
-                    disabled={upDisabled}
-                    aria-label={upLabel}
-                    className="inline-flex size-9 items-center justify-center rounded-lg border border-white/15 bg-white/5 text-white/85 transition active:scale-95 hover:border-white/30 hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
-                  >
-                    <ChevronUp className="size-5" aria-hidden />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => moveDown(idx)}
-                    disabled={downDisabled}
-                    aria-label={downLabel}
-                    className="inline-flex size-9 items-center justify-center rounded-lg border border-white/15 bg-white/5 text-white/85 transition active:scale-95 hover:border-white/30 hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
-                  >
-                    <ChevronDown className="size-5" aria-hidden />
-                  </button>
-                </div>
-              </div>
-            </motion.li>
-          );
-        })}
-      </ul>
-
-      {/* Hint was here previously (2026-05-07 bump to 15px / white/85).
-          Moved above the list 2026-05-19 — see the comment up there.
-          Continue button stays here as the user's next step.
-          2026-05-29 — restyled to match the rose/fuchsia/violet
-          gradient used on QuestionStep's Continue button. Itzik
-          flagged that the default shadcn button rendered as black/
-          dark and didn't read as a CTA against the wine backdrop.
-          Same style now reads consistently across the whole
-          assessment flow. Width stays bounded (min-w 220, max 360)
-          so it doesn't stretch full-width on tablets. */}
-      <div className="flex justify-center">
-        <Button
+      {/* Continue — elegant dark ink pill (spec §5). "סיום" on the last step. */}
+      <div className="flex w-full justify-center" style={{ marginTop: GAP }}>
+        <button
           type="button"
           onClick={submit}
           disabled={busy}
-          className="min-w-[220px] max-w-[360px] min-h-[56px] rounded-2xl border border-rose-400/70 bg-gradient-to-br from-rose-500/40 via-fuchsia-500/30 to-violet-500/30 text-[19px] font-semibold text-white ring-2 ring-rose-400/50 shadow-lg shadow-rose-500/20 transition active:scale-[0.98] hover:from-rose-500/55 hover:via-fuchsia-500/45 hover:to-violet-500/45 hover:border-rose-400/80 disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex items-center gap-[9px] rounded-full bg-[#2E2622] px-7 py-3 text-[16px] font-bold text-white shadow-[0_8px_20px_-10px_rgba(33,26,23,.5)] transition hover:-translate-y-px hover:shadow-[0_12px_24px_-10px_rgba(33,26,23,.55)] disabled:cursor-not-allowed disabled:opacity-60"
+          style={{ fontFamily: ASSISTANT }}
         >
-          <CmsText cmsKey="journeyAssessment.question.continue" />
-        </Button>
+          {busy ? (
+            <span>{savingLabel}</span>
+          ) : (
+            <>
+              <CmsText
+                cmsKey={isLast ? "journeyAssessment.question.finish" : "journeyAssessment.question.continue"}
+              />
+              <span aria-hidden className="text-[15px] opacity-70">
+                {isHe ? "←" : "→"}
+              </span>
+            </>
+          )}
+        </button>
       </div>
     </motion.section>
+  );
+}
+
+/**
+ * A single reorderable row. Owns its own `useDragControls` (hooks can't run in
+ * a map body) and starts a drag only when the grip handle is pressed
+ * (`dragListener={false}`), leaving the rest of the row / page scrollable.
+ */
+function RankRow({
+  value,
+  index,
+  total,
+  label,
+  desc,
+  busy,
+  positionLabel,
+  upLabel,
+  downLabel,
+  grabLabel,
+  onMoveUp,
+  onMoveDown,
+}: {
+  value: PriorityKey;
+  index: number;
+  total: number;
+  label: string;
+  desc: string;
+  busy: boolean;
+  positionLabel: string;
+  upLabel: string;
+  downLabel: string;
+  grabLabel: string;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+}) {
+  const controls = useDragControls();
+  const upDisabled = index === 0 || busy;
+  const downDisabled = index === total - 1 || busy;
+
+  return (
+    <Reorder.Item
+      value={value}
+      dragListener={false}
+      dragControls={controls}
+      transition={{ type: "spring", stiffness: 380, damping: 32 }}
+      className="flex items-center gap-[14px] rounded-2xl border-[1.5px] border-[#efe7da] bg-white px-4 py-[14px] text-start shadow-[0_4px_14px_-12px_rgba(80,50,35,.3)]"
+    >
+      {/* Position pill (gradient) */}
+      <span
+        aria-label={positionLabel}
+        className="grid size-7 flex-none place-items-center rounded-[9px] text-[14px] font-extrabold tabular-nums text-white"
+        style={{ background: BRAND_GRADIENT }}
+      >
+        {index + 1}
+      </span>
+
+      {/* Title + description */}
+      <div className="min-w-0 flex-1">
+        <div className="text-[17.5px] font-bold leading-snug text-[#2E2622]">{label}</div>
+        {desc ? (
+          <p className="mt-0.5 text-[13px] leading-snug text-[#a2917f]">{desc}</p>
+        ) : null}
+      </div>
+
+      {/* a11y keyboard alternative: ↑/↓ buttons */}
+      <div className="flex flex-none flex-col items-center gap-1 self-center">
+        <button
+          type="button"
+          onClick={onMoveUp}
+          disabled={upDisabled}
+          aria-label={upLabel}
+          className="inline-flex size-7 items-center justify-center rounded-lg border border-[#efe7da] text-[#a2917f] transition hover:border-[#e6d5c4] hover:text-[#4a4441] disabled:cursor-not-allowed disabled:opacity-30"
+        >
+          <ChevronUp className="size-4" aria-hidden />
+        </button>
+        <button
+          type="button"
+          onClick={onMoveDown}
+          disabled={downDisabled}
+          aria-label={downLabel}
+          className="inline-flex size-7 items-center justify-center rounded-lg border border-[#efe7da] text-[#a2917f] transition hover:border-[#e6d5c4] hover:text-[#4a4441] disabled:cursor-not-allowed disabled:opacity-30"
+        >
+          <ChevronDown className="size-4" aria-hidden />
+        </button>
+      </div>
+
+      {/* Drag handle — primary interaction. Only this element starts a drag
+          and carries touch-action:none, so the page keeps scrolling. */}
+      <button
+        type="button"
+        aria-label={grabLabel}
+        onPointerDown={(e) => controls.start(e)}
+        className="flex-none cursor-grab text-[#d8c8b3] transition hover:text-[#a2917f] active:cursor-grabbing"
+        style={{ touchAction: "none" }}
+      >
+        <GripVertical className="size-5" aria-hidden />
+      </button>
+    </Reorder.Item>
   );
 }

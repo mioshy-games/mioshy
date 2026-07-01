@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>שאלון המסע — שאלות</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700&family=Assistant:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#fffffc; --ink:#2E2622; --muted:#a2917f; --line:#efe7da;
+    --brown:#211a17; --burgundy:#7A1F2B; --dgray:#4a4441;
+    --grad:linear-gradient(95deg,#6C5CE7 0%,#D6409F 52%,#F79154 100%);
+    --sans:'Assistant',sans-serif;
+    --gap:clamp(38px,7.5vh,78px);
+    --qtextW:32ch; --choicesW:440px; --scaleW:340px; --reflectW:470px; --rankW:450px; --navW:470px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--paper);font-family:var(--sans);color:var(--ink);-webkit-font-smoothing:antialiased;
+    display:flex;flex-direction:column;min-height:100dvh}
+
+  /* ── logo on the light body (no dark bar) ── */
+  .topbar{background:transparent;flex:none;padding:clamp(22px,4vw,32px) 20px 0;margin-bottom:clamp(90px,11vh,104px);
+    display:flex;flex-direction:column;align-items:center;gap:9px}
+  .mark{position:relative;width:42px;height:42px;border-radius:13px;background:var(--grad);box-shadow:0 12px 26px -10px rgba(150,60,150,.5)}
+  .mark::after{content:'';position:absolute;inset:11px;border-radius:50%;background:#fff}
+  .wordmark{font-family:'Frank Ruhl Libre',serif;font-weight:700;color:var(--ink);font-size:21px;letter-spacing:.02em}
+
+  /* ── main ── */
+  .stage{flex:1;display:flex;flex-direction:column;align-items:center;width:100%;max-width:640px;margin:0 auto;
+    padding:0 clamp(22px,5vw,40px) clamp(22px,4vw,32px)}
+
+  /* progress — count centered ABOVE the bar */
+  .progress{width:100%;max-width:440px;display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:var(--gap)}
+  .count{font-size:14px;font-weight:700;color:var(--dgray);text-align:center}
+  .track{width:100%;height:5px;border-radius:99px;background:#f0e8db;overflow:hidden}
+  .fill{height:100%;border-radius:99px;background:var(--grad);width:20%;transition:width .5s cubic-bezier(.4,0,.2,1)}
+
+  .qwrap{width:100%;display:flex;flex-direction:column;align-items:center;text-align:center}
+  .q{width:100%;animation:rise .42s cubic-bezier(.2,.7,.3,1) both}
+  @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+  .qtext{font-family:var(--sans);font-weight:600;line-height:1.4;color:var(--ink);
+    font-size:clamp(23px,5vw,30px);max-width:var(--qtextW);margin:0 auto var(--gap)}
+  .qhint{font-size:15px;color:var(--muted);font-weight:600;margin:calc(var(--gap) * -.55) auto var(--gap);max-width:34ch}
+
+  /* likert 1–5 — number + centered label under each */
+  .scale{width:100%;max-width:var(--scaleW);margin:0 auto;display:flex;align-items:flex-start}
+  .col{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:9px}
+  .dot{width:clamp(46px,11vw,54px);aspect-ratio:1;border-radius:50%;cursor:pointer;transition:.18s;
+    font-weight:800;font-size:17px;color:#141414;display:grid;place-items:center;
+    background:linear-gradient(#fff,#fff) padding-box,var(--grad) border-box;border:0.4px solid transparent}
+  .dot:hover{transform:translateY(-2px)}
+  .dot.on{background:var(--grad);color:#fff;transform:scale(1.14);box-shadow:0 12px 22px -8px rgba(150,60,150,.5)}
+  .dlabel{font-size:12.5px;font-weight:700;color:var(--dgray);text-align:center;line-height:1.22;padding:0 2px}
+
+  /* choice */
+  .choices{width:100%;max-width:var(--choicesW);margin:0 auto;text-align:right;display:flex;flex-direction:column;gap:11px}
+  .choice{display:flex;align-items:center;gap:14px;padding:15px 17px;cursor:pointer;background:#fff;
+    border:1.5px solid var(--line);border-radius:16px;box-shadow:0 4px 16px -12px rgba(80,50,35,.35);transition:.16s}
+  .choice:hover{transform:translateY(-1px);border-color:#e6d5c4}
+  .choice .tick{flex:none;width:23px;height:23px;border-radius:50%;border:2px solid #d8c8b3;position:relative;transition:.16s}
+  .choice .lbl{font-size:18.5px;font-weight:600;color:var(--ink);line-height:1.3}
+  .choice.on{border:2px solid transparent;background:linear-gradient(#fff,#fff) padding-box,var(--grad) border-box;box-shadow:0 12px 26px -14px rgba(150,60,150,.4)}
+  .choice.on .tick{border:0;background:var(--grad)}
+  .choice.on .tick::after{content:'✓';position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-size:13px;font-weight:900}
+  .choice.on .lbl{font-weight:800}
+
+  /* reflection */
+  .reflect{width:100%;max-width:var(--reflectW);margin:0 auto;border:0;border-bottom:2px solid var(--line);background:transparent;
+    padding:14px 4px;font-family:var(--sans);font-size:clamp(19px,4.5vw,22px);font-weight:500;color:var(--ink);text-align:center;
+    resize:none;min-height:72px;line-height:1.5;outline:none;transition:.2s}
+  .reflect:focus{border-color:#d6409f}
+  .reflect::placeholder{color:#cbbaa5;font-weight:400}
+
+  /* ranking */
+  .rank{width:100%;max-width:var(--rankW);margin:0 auto;text-align:right;display:flex;flex-direction:column;gap:10px}
+  .rrow{display:flex;align-items:center;gap:14px;padding:14px 16px;background:#fff;border:1.5px solid var(--line);border-radius:14px;box-shadow:0 4px 14px -12px rgba(80,50,35,.3)}
+  .rrow .rn{flex:none;width:28px;height:28px;border-radius:9px;background:var(--grad);color:#fff;display:grid;place-items:center;font-weight:800;font-size:14px}
+  .rrow .rl{font-size:17.5px;font-weight:700;color:var(--ink)}
+  .rrow .rg{margin-inline-start:auto;color:#d8c8b3;font-size:19px;letter-spacing:-3px;cursor:grab}
+
+  /* ── footer nav — back pinned bottom-left ── */
+  .nav{width:100%;max-width:var(--navW);margin:var(--gap) auto 0;
+    display:flex;align-items:center;gap:14px;min-height:48px}
+  .next{border:0;cursor:pointer;font-family:var(--sans);font-weight:700;font-size:16px;color:#fff;letter-spacing:.02em;
+    padding:12px 28px;border-radius:99px;background:var(--ink);display:inline-flex;align-items:center;gap:9px;
+    box-shadow:0 8px 20px -10px rgba(33,26,23,.5);transition:.18s}
+  .next.hidden{display:none}
+  .next .arw{font-size:15px;opacity:.7;transition:.18s}
+  .next:hover{transform:translateY(-1px);box-shadow:0 12px 24px -10px rgba(33,26,23,.55)}
+  .next:hover .arw{transform:translateX(-3px);opacity:1}
+  .back{margin-inline-start:auto;background:none;border:0;color:var(--dgray);font-family:var(--sans);font-size:15.5px;font-weight:700;
+    cursor:pointer;padding:10px 6px;border-radius:10px;display:inline-flex;align-items:center;gap:6px;transition:.15s}
+  .back .chev{font-size:18px;line-height:1;opacity:.7}
+  .back:hover{color:var(--ink)}
+  .back:disabled{opacity:0;pointer-events:none}
+
+  /* ── DESKTOP — double the line width ── */
+  @media(min-width:860px){
+    :root{
+      --qtextW:42ch; --choicesW:780px; --scaleW:440px; --reflectW:760px; --rankW:780px; --navW:820px;
+    }
+    .stage{max-width:1160px}
+    .progress{max-width:560px}
+  }
+
+  /* ── MOBILE — ranking centered at 70% width ── */
+  @media(max-width:859px){
+    .rank{width:70%;max-width:none;margin-inline:auto}
+  }
+</style>
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="mark"></div>
+    <div class="wordmark">mioshy</div>
+  </header>
+
+  <main class="stage">
+    <div class="progress">
+      <div class="count" id="count">שאלה 1 מתוך 6</div>
+      <div class="track"><div class="fill" id="fill"></div></div>
+    </div>
+
+    <div class="qwrap"><div class="q" id="q"></div></div>
+
+    <div class="nav">
+      <button class="next hidden" id="next"><span>המשך</span><span class="arw">←</span></button>
+      <button class="back" id="back"><span>חזרה</span><span class="chev">›</span></button>
+    </div>
+  </main>
+
+<script>
+const LIKERT_LABELS = ['בכלל לא','לעיתים רחוקות','לפעמים','לעיתים קרובות','כמעט תמיד'];
+
+const QUESTIONS = [
+  { type:'likert', text:'בשבועיים האחרונים, עד כמה אני מודע/ת למה שעובר על בן/בת הזוג שלי — בדברים היומיומיים ובמה שמעסיק אותם?',
+    ends:['כמעט בכלל לא','כמעט תמיד'], value:null },
+  { type:'likert', text:'כשבן/בת הזוג פונה אליי עם רגע קטן — באיזו תדירות אני עוצר/ת ומתמקד/ת בו/בה?',
+    ends:['לעיתים רחוקות','כמעט תמיד'], value:null },
+  { type:'choice', text:'אם היה אפשר לשפר דבר אחד בלבד בזוגיות בחודש הקרוב — מה זה היה?',
+    options:['להרגיש שמכירים אחד את השני באמת','לקבל יותר הערכה והכרה','להרגיש יותר קרובים רגשית','לריב פחות ולהתאושש מהר יותר','להרגיש יותר תשוקה ומשיכה','להבין לאן אנחנו הולכים ביחד'], value:null },
+  { type:'reflect', text:'מה חסר לדעתכם שאם תפתרו בזוגיות יוכל לשנות אותה לחלוטין לטובה?',
+    placeholder:'במילים שלכם, אפילו במשפט אחד…' },
+  { type:'choice', text:'כדי להתאים את התכנים עבורך — מה המגדר שלך?',
+    options:['אישה','גבר','אחר / מעדיף/ה לא לציין'], value:null },
+  { type:'rank', text:'דרגו את תחומי הזוגיות לפי סדר החשיבות עבורכם',
+    hint:'ניתן לגרור ולשנות את הסדר החשוב לך.',
+    items:['אהבה וחיבור רגשי','תקשורת זוגית','מיניות ואינטימיות','חברות ושותפות יומיומית','משפחה והורות'] },
+];
+
+let i=0, busy=false;
+const qEl=document.getElementById('q'),fill=document.getElementById('fill'),count=document.getElementById('count'),
+      back=document.getElementById('back'),next=document.getElementById('next'),total=QUESTIONS.length;
+
+const AUTO = t => t==='likert' || t==='choice';
+function goNext(){ if(i<total-1){ i++; render(); } }
+function goBack(){ if(i>0){ i--; render(); } }
+function pick(q,val){ if(busy) return; q.value=val; busy=true; render(); setTimeout(()=>{ busy=false; goNext(); },300); }
+
+function render(){
+  const q=QUESTIONS[i];
+  fill.style.width=((i+1)/total*100)+'%';
+  count.textContent='שאלה '+(i+1)+' מתוך '+total;
+  back.disabled=i===0;
+  next.classList.toggle('hidden', AUTO(q.type));
+  next.querySelector('span').textContent=i===total-1?'סיום':'המשך';
+
+  let html='<p class="qtext">'+q.text+'</p>';
+  if(q.hint) html+='<p class="qhint">'+q.hint+'</p>';
+  if(q.type==='likert'){
+    html+='<div class="scale">';
+    for(let n=1;n<=5;n++) html+='<div class="col"><div class="dot'+(q.value===n?' on':'')+'" data-v="'+n+'">'+n+'</div><div class="dlabel">'+LIKERT_LABELS[n-1]+'</div></div>';
+    html+='</div>';
+  } else if(q.type==='choice'){
+    html+='<div class="choices">';
+    q.options.forEach((o,ix)=> html+='<div class="choice'+(q.value===ix?' on':'')+'" data-v="'+ix+'"><span class="tick"></span><span class="lbl">'+o+'</span></div>');
+    html+='</div>';
+  } else if(q.type==='reflect'){
+    html+='<textarea class="reflect" placeholder="'+q.placeholder+'"></textarea>';
+  } else if(q.type==='rank'){
+    html+='<div class="rank">';
+    q.items.forEach((it,ix)=> html+='<div class="rrow"><span class="rn">'+(ix+1)+'</span><span class="rl">'+it+'</span><span class="rg">⠿</span></div>');
+    html+='</div>';
+  }
+  qEl.innerHTML=html;
+  qEl.style.animation='none'; void qEl.offsetWidth; qEl.style.animation='';
+  qEl.querySelectorAll('.dot').forEach(d=> d.onclick=()=> pick(q,+d.dataset.v));
+  qEl.querySelectorAll('.choice').forEach(c=> c.onclick=()=> pick(q,+c.dataset.v));
+}
+next.onclick=goNext; back.onclick=goBack;
+render();
+</script>
+</body>
+</html>

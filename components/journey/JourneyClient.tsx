@@ -29,9 +29,20 @@ import { CmsText } from "@/components/cms/CmsText";
  * own logo on the hero (AnalysisSummary), while every other funnel screen
  * stays branded. 150px wide, centered, links back to the locale home.
  */
-function FunnelLogo({ locale }: { locale: Locale }) {
+function FunnelLogo({ locale, theme = "dark" }: { locale: Locale; theme?: "light" | "dark" }) {
+  // Journey light-theme redesign (2026-07-01): the question flow is light
+  // (#fffffc), so it uses the BLACK wordmark on the light body with a ~100px
+  // gap below it (spec §4). The dark auth/results screens keep the white logo.
+  const isLight = theme === "light";
   return (
-    <div className="relative z-10 flex justify-center pt-6 pb-2">
+    <div
+      className={
+        isLight
+          ? "relative z-10 flex justify-center pt-[clamp(22px,4vw,32px)]"
+          : "relative z-10 flex justify-center pt-6 pb-2"
+      }
+      style={isLight ? { marginBottom: "clamp(90px,11vh,104px)" } : undefined}
+    >
       <a
         href={`/${locale}`}
         aria-label="Mioshy home"
@@ -39,7 +50,7 @@ function FunnelLogo({ locale }: { locale: Locale }) {
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/mioshy-white.svg"
+          src={isLight ? "/images/mioshy-b.svg" : "/mioshy-white.svg"}
           alt="Mioshy"
           width={150}
           height={48}
@@ -49,6 +60,10 @@ function FunnelLogo({ locale }: { locale: Locale }) {
     </div>
   );
 }
+
+// Vertical-rhythm token shared with QuestionStep / PriorityRankingStep so the
+// gaps progress → question → answer → nav match the v6 mockup (spec §5).
+const GAP = "clamp(38px,7.5vh,78px)";
 
 interface JourneyClientProps {
   locale: Locale;
@@ -822,116 +837,126 @@ export function JourneyClient({
     );
   }
 
-  // ── Render: Regular question ────────────────────────────────────────────────
+  // ── Render: Regular question (light theme — journey redesign 2026-07-01) ────
+  const isHe = locale === "he";
+  const isLast = index >= total - 1;
   return (
     <div
-      dir={locale === "he" ? "rtl" : "ltr"}
-      className="mx-auto flex min-h-[80vh] w-full max-w-3xl flex-col gap-6 px-4 py-6 sm:gap-8 sm:py-10"
+      dir={isHe ? "rtl" : "ltr"}
+      className="relative z-10 mx-auto flex min-h-screen w-full max-w-[640px] flex-col px-[clamp(22px,5vw,40px)] pb-[clamp(22px,4vw,32px)] md:max-w-[1160px]"
     >
-      <FunnelLogo locale={locale} />
-      {/* W2.3 — progress bar pinned at the top so the percentage is
-          always above the fold on mobile (Itzik #4).
-          F3 (#13) — dropped the opaque #070b18/85 backdrop because it
-          painted a black strip over the page bg. The bar floats on
-          the page bg now; backdrop-blur with no fill keeps it readable
-          against the questions sliding underneath.
-          2026-05-21 — page title "מסע הזוגיות שלכם" removed per Itzik.
-          Bumped pb-1 → pb-6 sm:pb-8 to restore breathing room between
-          the progress bar and the first question now that the header
-          slot is gone. */}
-      <div className="sticky top-2 z-20 -mx-4 px-4 pb-6 sm:static sm:px-0 sm:pb-8">
-        <ProgressBar current={phaseAnsweredBefore + index} total={phaseTotal} />
-      </div>
+      {/* Full-bleed warm light surface for the question flow, painted OVER the
+          page's dark backdrop + ambient orbs. Those stay in place for the dark
+          auth-gate / analysis-summary screens (out of scope, unchanged); only
+          the question flow renders this light layer. */}
+      <div aria-hidden className="fixed inset-0 z-[1] bg-[#fffffc]" />
 
-      <AnimatePresence mode="wait">
-        {interstitialIndex !== null ? (
-          // Layer-1 mid-flow reflection. Pauses the questionnaire
-          // until the user clicks Continue.
-          (() => {
-            const def = INTERSTITIALS.find((i) => i.atIndex === interstitialIndex);
-            if (!def) return null;
-            return (
-              <AssessmentInterstitial
-                key={`interstitial-${def.atIndex}`}
-                isHe={locale === "he"}
-                def={def}
-                onContinue={() => {
-                  markInterstitialShown(def.atIndex);
-                  setInterstitialIndex(null);
-                }}
-              />
-            );
-          })()
-        ) : question ? (
-          // Dispatch on question type. Ranking has its own drag-drop UI;
-          // every other type goes through the legacy QuestionStep.
-          question.type === "ranking" ? (
-            <PriorityRankingStep
-              key={question.id}
-              question={question}
-              locale={locale}
-              onSubmit={submitAnswer}
-              busy={busy}
-              initial={answersById[question.id] ?? null}
-            />
-          ) : (
-            <QuestionStep
-              key={question.id}
-              question={question}
-              locale={locale}
-              likertLabels={likertLabels}
-              onSubmit={submitAnswer}
-              busy={busy}
-              initial={answersById[question.id] ?? null}
-            />
-          )
-        ) : null}
-      </AnimatePresence>
+      <div className="relative z-10 flex w-full flex-1 flex-col items-center">
+        <FunnelLogo locale={locale} theme="light" />
 
-      {/* Per-question social-proof reveal banner. Sits BELOW the question
-          so the percent surfaces directly under where the answer was
-          (matches the user's eyeline after click). Keyed AnimatePresence
-          slides cleanly between question transitions instead of cross-
-          fading on identical content. */}
-      <AnimatePresence mode="wait">
-        {reveal ? (
-          <motion.div
-            key={`reveal-${reveal.qid}`}
-            initial={{ opacity: 0, y: -8, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -8, scale: 0.98 }}
-            transition={{ duration: 0.28, ease: [0.22, 0.61, 0.36, 1] }}
-            className="rounded-2xl border border-emerald-300/40 bg-emerald-400/15 p-4 text-center backdrop-blur-md"
-          >
-            <p className="text-[20px] font-semibold leading-snug text-white">
-              {reveal.percent}%{" "}
-              <CmsText cmsKey="journeyAssessment.client.revealSuffix" />
-            </p>
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
-
-      {error ? <p className="text-sm text-rose-300">{error}</p> : null}
-
-      {/* Back button - pinned to the bottom of the content flow per UX
-          feedback 2026-05-05 ("כפתור חזרה צריך להיות בפינה למטה"). Hidden
-          on the first question. Just decrements the local index; saved
-          answers stay in the DB so going back-and-forth doesn't lose
-          anything. mt-auto pushes it to the bottom of the flex column,
-          even when the question above is short. justify-end keeps it on
-          the inline-end side (left in RTL = where back-arrows naturally
-          live in Hebrew UIs). */}
-      {index > 0 ? (
-        <div className="mt-auto flex justify-end pt-4">
-          <button
-            type="button"
-            onClick={() => setIndex(Math.max(0, index - 1))}
-            className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-sm text-white/75 transition hover:border-white/30 hover:bg-white/10 hover:text-white"
-          >
-            <CmsText cmsKey="journeyAssessment.client.back" />
-          </button>
+        {/* Progress: count centered ABOVE the bar (spec §5). */}
+        <div className="w-full" style={{ marginBottom: GAP }}>
+          <ProgressBar
+            variant="light"
+            locale={locale}
+            current={phaseAnsweredBefore + index}
+            total={phaseTotal}
+          />
         </div>
-      ) : null}
+
+        <div className="flex w-full flex-1 flex-col items-center">
+          <AnimatePresence mode="wait">
+            {interstitialIndex !== null ? (
+              // Layer-1 mid-flow reflection. Pauses the questionnaire
+              // until the user clicks Continue.
+              (() => {
+                const def = INTERSTITIALS.find((i) => i.atIndex === interstitialIndex);
+                if (!def) return null;
+                return (
+                  <AssessmentInterstitial
+                    key={`interstitial-${def.atIndex}`}
+                    isHe={isHe}
+                    def={def}
+                    onContinue={() => {
+                      markInterstitialShown(def.atIndex);
+                      setInterstitialIndex(null);
+                    }}
+                  />
+                );
+              })()
+            ) : question ? (
+              // Dispatch on question type. Ranking has its own drag UI;
+              // every other type goes through QuestionStep.
+              question.type === "ranking" ? (
+                <PriorityRankingStep
+                  key={question.id}
+                  question={question}
+                  locale={locale}
+                  onSubmit={submitAnswer}
+                  busy={busy}
+                  initial={answersById[question.id] ?? null}
+                  isLast={isLast}
+                />
+              ) : (
+                <QuestionStep
+                  key={question.id}
+                  question={question}
+                  locale={locale}
+                  likertLabels={likertLabels}
+                  onSubmit={submitAnswer}
+                  busy={busy}
+                  initial={answersById[question.id] ?? null}
+                  variant="light"
+                  isLast={isLast}
+                />
+              )
+            ) : null}
+          </AnimatePresence>
+
+          {/* Per-question social-proof reveal banner (light). Sits BELOW the
+              question so the percent surfaces under where the answer was. */}
+          <AnimatePresence mode="wait">
+            {reveal ? (
+              <motion.div
+                key={`reveal-${reveal.qid}`}
+                initial={{ opacity: 0, y: -8, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -8, scale: 0.98 }}
+                transition={{ duration: 0.28, ease: [0.22, 0.61, 0.36, 1] }}
+                className="mt-8 w-full max-w-[440px] rounded-2xl border-[1.5px] border-[#efe7da] bg-white p-4 text-center shadow-[0_4px_16px_-12px_rgba(80,50,35,.35)] md:max-w-[560px]"
+              >
+                <p className="text-[18px] font-bold leading-snug text-[#2E2622]">
+                  {reveal.percent}%{" "}
+                  <CmsText cmsKey="journeyAssessment.client.revealSuffix" />
+                </p>
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
+
+          {error ? <p className="mt-4 text-sm font-semibold text-rose-600">{error}</p> : null}
+        </div>
+
+        {/* Back — subtle "חזרה ›" text link pinned bottom-left (inline-end in
+            RTL), hidden on Q1. Stays in normal flow so it's visible on mobile
+            (spec §5). No "דלג". */}
+        {index > 0 ? (
+          <div className="mt-auto flex w-full" style={{ marginTop: GAP }}>
+            <button
+              type="button"
+              onClick={() => setIndex(Math.max(0, index - 1))}
+              className="ms-auto inline-flex items-center gap-1.5 rounded-lg px-1.5 py-2.5 text-[15.5px] font-bold text-[#4a4441] transition hover:text-[#2E2622]"
+              style={{ fontFamily: "var(--font-assistant), sans-serif" }}
+            >
+              {/* Word rendered directly (not CmsText): the seeded CMS row for
+                  journeyAssessment.client.back carries a leading "← " arrow
+                  that would clash with the "חזרה ›" chevron layout of the
+                  light theme (spec §5). */}
+              <span>{isHe ? "חזרה" : "Back"}</span>
+              <span aria-hidden className="text-[18px] leading-none opacity-70">›</span>
+            </button>
+          </div>
+        ) : null}
+      </div>
 
       <PaywallGateModal
         open={paywallOpen}

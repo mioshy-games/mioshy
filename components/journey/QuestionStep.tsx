@@ -20,7 +20,26 @@ interface QuestionStepProps {
   onSubmit: (answer: AnswerValue) => Promise<void> | void;
   initial?: AnswerValue | null;
   busy?: boolean;
+  /** Journey light-theme redesign (2026-07-01,
+   *  docs/journey-assessment-redesign-workorder.md). "dark" (default) keeps
+   *  the legacy styling used by components/assessments/AssessmentClient
+   *  (intimacy/friendship) UNCHANGED. "light" renders the clean light theme
+   *  from the approved v6 mockup. */
+  variant?: "light" | "dark";
+  /** Light variant only — when true the manual-submit Continue button reads
+   *  "סיום" (finish) instead of "המשך". */
+  isLast?: boolean;
 }
+
+// ── Light-theme tokens (v6 mockup / workorder §5) ────────────────────────────
+const ASSISTANT = "var(--font-assistant), sans-serif";
+const BRAND_GRADIENT =
+  "linear-gradient(95deg,#6C5CE7 0%,#D6409F 52%,#F79154 100%)";
+// Hairline gradient contour: white fill (padding-box) + gradient edge
+// (border-box). Paired with a hair-thin transparent border on the element.
+const GRAD_RING_BG = `linear-gradient(#fff,#fff) padding-box, ${BRAND_GRADIENT} border-box`;
+// Single vertical-rhythm token between question ↔ answer ↔ nav.
+const GAP = "clamp(38px,7.5vh,78px)";
 
 /**
  * Renders a single question and calls `onSubmit` with a validated answer.
@@ -30,11 +49,12 @@ interface QuestionStepProps {
  * - multi_choice → show "Continue" button after at least one selection
  * - reflection → always show "Continue" button
  */
-export function QuestionStep({ question, locale, likertLabels, onSubmit, initial, busy }: QuestionStepProps) {
+export function QuestionStep({ question, locale, likertLabels, onSubmit, initial, busy, variant = "dark", isLast = false }: QuestionStepProps) {
   const [answer, setAnswer] = useState<AnswerValue | null>(initial ?? null);
   const [error, setError] = useState<string | null>(null);
 
   const isHe = locale === "he";
+  const isLight = variant === "light";
 
   // CMS strings that need a raw string (validation message, busy label).
   const selectAnswerMsg = useCmsText("journeyAssessment.question.selectAnswer").text;
@@ -67,6 +87,75 @@ export function QuestionStep({ question, locale, likertLabels, onSubmit, initial
     await onSubmit(answer);
   };
 
+  const labels = likertLabels ?? QUESTIONNAIRE.likert_labels;
+
+  // ── Light variant (journey redesign) ─────────────────────────────────────
+  if (isLight) {
+    return (
+      <motion.div
+        key={question.id}
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -12 }}
+        transition={{ duration: 0.09 }}
+        className="flex w-full flex-col items-center text-center"
+        dir={isHe ? "rtl" : "ltr"}
+      >
+        <h2
+          id={labelledById}
+          className="mx-auto max-w-[32ch] text-center font-semibold leading-[1.4] text-[#2E2622] md:max-w-[42ch]"
+          style={{ fontFamily: ASSISTANT, fontSize: "clamp(23px,5vw,30px)", marginBottom: GAP }}
+        >
+          {promptFor(question, locale)}
+        </h2>
+
+        {question.type === "likert5" ? (
+          <LikertControlLight locale={locale} likertLabels={labels} value={answer} onChange={handleAutoSelect} busy={busy} labelledById={labelledById} />
+        ) : question.type === "forced_choice" || question.type === "single_choice" ? (
+          <SingleChoiceControlLight question={question as QuestionChoice} locale={locale} value={answer} onChange={handleAutoSelect} busy={busy} labelledById={labelledById} />
+        ) : question.type === "multi_choice" ? (
+          <MultiChoiceControlLight question={question as QuestionChoice} locale={locale} value={answer} onChange={setAnswer} labelledById={labelledById} describedById={describedById} />
+        ) : (
+          <ReflectionControlLight question={question as QuestionReflection} locale={locale} value={answer} onChange={setAnswer} labelledById={labelledById} describedById={describedById} />
+        )}
+
+        {error ? (
+          <p id={errorId} role="alert" className="mt-4 text-[14px] font-semibold text-rose-600">
+            {error}
+          </p>
+        ) : null}
+
+        {/* Continue button — only for non-auto-advance types (multi / reflection).
+            Elegant dark ink pill per spec §5 (not the heavy gradient). */}
+        {!isAutoAdvance ? (
+          <div className="flex w-full justify-center" style={{ marginTop: GAP }}>
+            <button
+              type="button"
+              onClick={submit}
+              disabled={busy}
+              className="inline-flex items-center gap-[9px] rounded-full bg-[#2E2622] px-7 py-3 text-[16px] font-bold text-white shadow-[0_8px_20px_-10px_rgba(33,26,23,.5)] transition hover:-translate-y-px hover:shadow-[0_12px_24px_-10px_rgba(33,26,23,.55)] disabled:cursor-not-allowed disabled:opacity-60"
+              style={{ fontFamily: ASSISTANT }}
+            >
+              {busy ? (
+                <span>{savingLabel}</span>
+              ) : (
+                <>
+                  <CmsText
+                    cmsKey={isLast ? "journeyAssessment.question.finish" : "journeyAssessment.question.continue"}
+                  />
+                  <span aria-hidden className="text-[15px] opacity-70">
+                    {isHe ? "←" : "→"}
+                  </span>
+                </>
+              )}
+            </button>
+          </div>
+        ) : null}
+      </motion.div>
+    );
+  }
+
+  // ── Dark variant (unchanged — assessments flow) ──────────────────────────
   return (
     <motion.div
       key={question.id}
@@ -82,7 +171,7 @@ export function QuestionStep({ question, locale, likertLabels, onSubmit, initial
       </h2>
 
       {question.type === "likert5" ? (
-        <LikertControl locale={locale} likertLabels={likertLabels ?? QUESTIONNAIRE.likert_labels} value={answer} onChange={handleAutoSelect} busy={busy} labelledById={labelledById} />
+        <LikertControl locale={locale} likertLabels={labels} value={answer} onChange={handleAutoSelect} busy={busy} labelledById={labelledById} />
       ) : question.type === "forced_choice" || question.type === "single_choice" ? (
         <SingleChoiceControl
           question={question as QuestionChoice}
@@ -135,7 +224,222 @@ export function QuestionStep({ question, locale, likertLabels, onSubmit, initial
   );
 }
 
-// ─── Subcontrols ─────────────────────────────────────────────────────────────
+// ─── Light subcontrols (journey redesign) ────────────────────────────────────
+
+function LikertControlLight({
+  locale,
+  likertLabels,
+  value,
+  onChange,
+  busy,
+  labelledById,
+}: {
+  locale: Locale;
+  likertLabels: Record<Locale, string[]>;
+  value: AnswerValue | null;
+  onChange: (v: AnswerValue) => void;
+  busy?: boolean;
+  labelledById?: string;
+}) {
+  const current = value?.kind === "likert" ? value.value : null;
+  return (
+    <div
+      role="radiogroup"
+      aria-labelledby={labelledById}
+      className="mx-auto flex w-full max-w-[340px] items-start md:max-w-[440px]"
+    >
+      {([1, 2, 3, 4, 5] as const).map((n) => {
+        const on = current === n;
+        const label = likertLabels[locale][n - 1] ?? String(n);
+        return (
+          <div key={n} className="flex min-w-0 flex-1 flex-col items-center gap-[9px]">
+            <button
+              type="button"
+              role="radio"
+              aria-checked={on}
+              aria-label={`${n} — ${label}`}
+              onClick={() => !busy && onChange({ kind: "likert", value: n })}
+              disabled={busy}
+              className={`grid aspect-square w-[clamp(46px,11vw,54px)] place-items-center rounded-full text-[17px] font-extrabold transition disabled:cursor-not-allowed ${
+                on
+                  ? "scale-[1.14] text-white shadow-[0_12px_22px_-8px_rgba(150,60,150,.5)]"
+                  : "text-[#141414] hover:-translate-y-0.5"
+              }`}
+              style={{
+                background: on ? BRAND_GRADIENT : GRAD_RING_BG,
+                border: "0.4px solid transparent",
+              }}
+            >
+              {n}
+            </button>
+            <div className="px-0.5 text-center text-[12.5px] font-bold leading-[1.22] text-[#4a4441]">
+              {label}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function SingleChoiceControlLight({
+  question,
+  locale,
+  value,
+  onChange,
+  busy,
+  labelledById,
+}: {
+  question: QuestionChoice;
+  locale: Locale;
+  value: AnswerValue | null;
+  onChange: (v: AnswerValue) => void;
+  busy?: boolean;
+  labelledById?: string;
+}) {
+  const current = value?.kind === "single" ? value.option : null;
+  return (
+    <div
+      role="radiogroup"
+      aria-labelledby={labelledById}
+      className="mx-auto flex w-full max-w-[440px] flex-col gap-[11px] text-start md:max-w-[780px]"
+    >
+      {question.options.map((opt) => {
+        const label = locale === "he" ? opt.he : opt.en;
+        const on = current === opt.id;
+        return (
+          <button
+            type="button"
+            role="radio"
+            aria-checked={on}
+            key={opt.id}
+            onClick={() => !busy && onChange({ kind: "single", option: opt.id })}
+            disabled={busy}
+            className={`flex items-center gap-[14px] rounded-2xl px-[17px] py-[15px] text-start transition disabled:cursor-not-allowed ${
+              on
+                ? "shadow-[0_12px_26px_-14px_rgba(150,60,150,.4)]"
+                : "border-[1.5px] border-[#efe7da] bg-white shadow-[0_4px_16px_-12px_rgba(80,50,35,.35)] hover:-translate-y-px hover:border-[#e6d5c4]"
+            }`}
+            style={on ? { background: GRAD_RING_BG, border: "2px solid transparent" } : undefined}
+          >
+            <ChoiceTick on={on} />
+            <span className={`text-[18.5px] leading-[1.3] text-[#2E2622] ${on ? "font-extrabold" : "font-semibold"}`}>
+              {label}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function MultiChoiceControlLight({
+  question,
+  locale,
+  value,
+  onChange,
+  labelledById,
+  describedById,
+}: {
+  question: QuestionChoice;
+  locale: Locale;
+  value: AnswerValue | null;
+  onChange: (v: AnswerValue) => void;
+  labelledById?: string;
+  describedById?: string;
+}) {
+  const current = value?.kind === "multi" ? value.options : [];
+  const toggle = (id: string) => {
+    const next = current.includes(id) ? current.filter((x) => x !== id) : [...current, id];
+    onChange({ kind: "multi", options: next });
+  };
+  return (
+    <div
+      role="group"
+      aria-labelledby={labelledById}
+      aria-describedby={describedById}
+      className="mx-auto flex w-full max-w-[440px] flex-col gap-[11px] text-start md:max-w-[780px]"
+    >
+      {question.options.map((opt) => {
+        const label = locale === "he" ? opt.he : opt.en;
+        const on = current.includes(opt.id);
+        return (
+          <button
+            type="button"
+            role="checkbox"
+            aria-checked={on}
+            key={opt.id}
+            onClick={() => toggle(opt.id)}
+            className={`flex items-center gap-[14px] rounded-2xl px-[17px] py-[15px] text-start transition ${
+              on
+                ? "shadow-[0_12px_26px_-14px_rgba(150,60,150,.4)]"
+                : "border-[1.5px] border-[#efe7da] bg-white shadow-[0_4px_16px_-12px_rgba(80,50,35,.35)] hover:-translate-y-px hover:border-[#e6d5c4]"
+            }`}
+            style={on ? { background: GRAD_RING_BG, border: "2px solid transparent" } : undefined}
+          >
+            <ChoiceTick on={on} square />
+            <span className={`text-[18.5px] leading-[1.3] text-[#2E2622] ${on ? "font-extrabold" : "font-semibold"}`}>
+              {label}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Shared light tick — round (single) or squared (multi). Gradient fill + white
+ *  ✓ when selected; hairline neutral ring when not. */
+function ChoiceTick({ on, square }: { on: boolean; square?: boolean }) {
+  return (
+    <span
+      className={`relative h-[23px] w-[23px] flex-none transition ${square ? "rounded-md" : "rounded-full"}`}
+      style={on ? { background: BRAND_GRADIENT } : { border: "2px solid #d8c8b3" }}
+    >
+      {on ? (
+        <span className="absolute inset-0 grid place-items-center text-[13px] font-black text-white">
+          ✓
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
+function ReflectionControlLight({
+  question,
+  locale,
+  value,
+  onChange,
+  labelledById,
+  describedById,
+}: {
+  question: QuestionReflection;
+  locale: Locale;
+  value: AnswerValue | null;
+  onChange: (v: AnswerValue) => void;
+  labelledById?: string;
+  describedById?: string;
+}) {
+  const text = value?.kind === "text" ? value.text : "";
+  const cmsPlaceholder = useCmsText("journeyAssessment.question.reflectionPlaceholder").text;
+  const perQuestion = locale === "he" ? question.placeholder_he : question.placeholder_en;
+  const placeholder = perQuestion && perQuestion.trim() !== "" ? perQuestion : cmsPlaceholder;
+  return (
+    <textarea
+      value={text}
+      onChange={(e) => onChange({ kind: "text", text: e.target.value })}
+      maxLength={question.max_length ?? 600}
+      rows={3}
+      placeholder={placeholder}
+      aria-labelledby={labelledById}
+      aria-describedby={describedById}
+      className="mx-auto block min-h-[72px] w-full max-w-[470px] resize-none border-0 border-b-2 border-[#efe7da] bg-transparent px-1 py-[14px] text-center font-medium leading-[1.5] text-[#2E2622] outline-none transition placeholder:font-normal placeholder:text-[#cbbaa5] focus:border-[#d6409f] md:max-w-[760px]"
+      style={{ fontFamily: ASSISTANT, fontSize: "clamp(19px,4.5vw,22px)" }}
+    />
+  );
+}
+
+// ─── Dark subcontrols (unchanged — assessments flow) ─────────────────────────
 
 function LikertControl({
   locale,
