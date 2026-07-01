@@ -347,15 +347,6 @@ export function AnalysisSummary({
   // ("57 ₪"); English keeps "$" before ("$57"). Prices are dynamic, so compose
   // here consistently instead of concatenating {price}{sym} inline.
   const priceStr = (n: number) => (isHe ? `${fmt(n)} ${sym}` : `${sym}${fmt(n)}`);
-  // "per period" suffix for the sub-rows ("לרבעון" / "/quarter").
-  const perWord = (cadence: string) =>
-    cadence === "yearly"
-      ? isHe ? "לשנה" : "/yr"
-      : cadence === "quarterly"
-        ? isHe ? "לרבעון" : "/quarter"
-        : cadence === "weekly"
-          ? isHe ? "לשבוע" : "/wk"
-          : isHe ? "לחודש" : "/mo";
   // Bundle = content + (coaching ? coaching_cost : 0). This is the amount the
   // checkout charges for the current toggle, so the display matches Cardcom.
   const coachingCostOf = (c: CadenceOption) =>
@@ -649,19 +640,25 @@ export function AnalysisSummary({
                 const hasPromo = !!(promoSet && pf && po);
                 const firstAmt = hasPromo ? (isHe ? pf!.ils : pf!.usd) : amt;
                 const origAmt = hasPromo ? (isHe ? po!.ils : po!.usd) : amt;
-                // Sub-row: promo → "חודש ראשון, אחר כך 57 ₪"; otherwise the
-                // per-period price → "160 ₪ לרבעון". Space before ₪ (priceStr).
-                const note = hasPromo
-                  ? `${firstPeriodLabel(c.cadence, isHe)}${isHe ? ", אחר כך " : ", then "}${priceStr(origAmt)}`
-                  : `${priceStr(amt)}${isHe ? " " : ""}${perWord(c.cadence)}`;
-                // "Was …" anchor (quarterly/yearly): full monthly × months.
-                // Hidden when it wouldn't exceed the real price (no savings).
+                // Sub-row = discount % + struck anchor, dynamic:
+                //  • Monthly (promo): X% off vs the regular ("אחר כך") price;
+                //    keeps "חודש ראשון, אחר כך {full} ₪".
+                //  • Quarterly/yearly: X% off + struck "במקום {monthly×N} ₪".
+                // Guard: only shown when the discount is positive.
                 const months = monthsInPeriod(c.cadence);
-                const beforeAmt =
-                  !hasPromo && months && monthlyFull != null
-                    ? monthlyFull * months
-                    : null;
-                const showBefore = beforeAmt != null && beforeAmt > amt;
+                let discountPct: number | null = null;
+                let beforeAmt: number | null = null;
+                if (hasPromo) {
+                  if (origAmt > 0 && origAmt > firstAmt) {
+                    discountPct = Math.round(((origAmt - firstAmt) / origAmt) * 100);
+                  }
+                } else if (months && monthlyFull != null) {
+                  const before = monthlyFull * months;
+                  if (before > amt) {
+                    beforeAmt = before;
+                    discountPct = Math.round(((before - amt) / before) * 100);
+                  }
+                }
                 return (
                   <button
                     type="button"
@@ -673,16 +670,26 @@ export function AnalysisSummary({
                     <span className="ar-radio" />
                     <span className="ar-opt-info">
                       <span className="ar-opt-name">{cadenceTitle(c.cadence)}</span>
-                      <span className="ar-opt-note">
-                        {note}
-                        {showBefore ? (
-                          <>
-                            {" · "}
-                            {isHe ? "במקום " : "was "}
-                            <s className="ar-opt-before">{priceStr(beforeAmt!)}</s>
-                          </>
-                        ) : null}
-                      </span>
+                      {hasPromo || discountPct != null ? (
+                        <span className="ar-opt-note">
+                          {discountPct != null ? (
+                            <>
+                              <span className="ar-opt-pct">
+                                {discountPct}% {isHe ? "הנחה" : "off"}
+                              </span>
+                              {" · "}
+                            </>
+                          ) : null}
+                          {hasPromo
+                            ? `${firstPeriodLabel(c.cadence, isHe)}${isHe ? ", אחר כך " : ", then "}${priceStr(origAmt)}`
+                            : beforeAmt != null ? (
+                                <>
+                                  {isHe ? "במקום " : "was "}
+                                  <s className="ar-opt-before">{priceStr(beforeAmt)}</s>
+                                </>
+                              ) : null}
+                        </span>
+                      ) : null}
                     </span>
                     {/* Promo-expiry timer in its own centered slot between the
                         name and the price (desktop); wraps to a centered line
@@ -1286,6 +1293,10 @@ export function AnalysisSummary({
           font-weight: 500;
           color: #4b4640;
           margin-top: 6px;
+        }
+        .ar-opt-pct {
+          font-weight: 800;
+          color: #7a1f2b;
         }
         .ar-opt-before {
           color: #9a8a7c;
