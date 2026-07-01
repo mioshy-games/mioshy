@@ -651,6 +651,12 @@ export function AnalysisSummary({
                     savePct = Math.round(((before - amt) / before) * 100);
                   }
                 }
+                // Promo (monthly) savings % off the regular price for that
+                // cadence — same calc as Stage-3 and the quarterly/yearly rows.
+                const promoSavePct =
+                  hasPromo && origAmt > 0 && firstAmt < origAmt
+                    ? Math.round(((origAmt - firstAmt) / origAmt) * 100)
+                    : null;
                 return (
                   <button
                     type="button"
@@ -664,6 +670,14 @@ export function AnalysisSummary({
                       <span className="ar-opt-name">{cadenceTitle(c.cadence)}</span>
                       {hasPromo ? (
                         <span className="ar-opt-note">
+                          {promoSavePct != null ? (
+                            <>
+                              <span className="ar-opt-save">
+                                {isHe ? "חיסכון" : "Save"} {promoSavePct}%
+                              </span>
+                              {" · "}
+                            </>
+                          ) : null}
                           {`${firstPeriodLabel(c.cadence, isHe)}${isHe ? ", אח״כ " : ", then "}${priceStr(origAmt)}`}
                         </span>
                       ) : savePct != null ? (

@@ -48,6 +48,11 @@ export function PaywallGateModal({
           source: "paywall_modal",
           language: locale,
           is_israeli: locale === "he",
+          // Entry surface → the WITHOUT-coaching (content-only) price. Explicit
+          // false because checkout defaults journey coaching to TRUE; without
+          // this the buyer would be charged content + coaching_cost. The with-
+          // coaching choice is only offered on the assessment results paywall.
+          coaching: false,
         }),
       });
       const data = await res.json();

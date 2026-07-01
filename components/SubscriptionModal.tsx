@@ -561,6 +561,13 @@ export function SubscriptionModal({
           is_israeli:       countryCode === "IL",
           vat_rate_percent: vatRatePercent,
           lead_id:          lid,
+          // This modal sends no `product`, so checkout defaults it to journey
+          // (see route: product = "journey"). Journey coaching also defaults to
+          // TRUE, so without this the buyer would be charged content +
+          // coaching_cost. Force content-only. NOTE (flagged to Itzik): the
+          // no-product default routing this games modal to the journey pillar
+          // is a separate concern — not changed here.
+          coaching:         false,
         }),
       });
       const json = await res.json().catch(() => ({ success: false, code: "NETWORK_ERROR" }));

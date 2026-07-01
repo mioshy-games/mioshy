@@ -123,6 +123,10 @@ export function PricingCheckout({
           country_code: countryCode || null,
           is_israeli: countryCode === "IL",
           language: isHe ? "he" : "en",
+          // Entry surface → content-only price. Explicit false because journey
+          // checkout defaults coaching to TRUE; the server ignores this for
+          // non-journey products. With-coaching is chosen on the results paywall.
+          coaching: false,
         }),
       });
 

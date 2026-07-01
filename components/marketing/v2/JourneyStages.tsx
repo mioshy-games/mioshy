@@ -309,6 +309,12 @@ function Stage3Price() {
 
   const first = pricing?.firstChargeIls ?? monthly;
   const hasPromo = pricing?.hasPromo ?? false;
+  // Savings % off the regular monthly — same calc as the results page:
+  // round((regular − firstCharge) / regular). Guarded to a real positive saving.
+  const savePct =
+    hasPromo && monthly > 0 && first < monthly
+      ? Math.round(((monthly - first) / monthly) * 100)
+      : null;
 
   return (
     <>
@@ -324,9 +330,12 @@ function Stage3Price() {
         <span className="js-stop-price-period">
           {hasPromo ? "לחודש הראשון" : "לחודש"}
         </span>
+        {savePct != null ? (
+          <span className="js-stop-price-save">{`חיסכון ${savePct}%`}</span>
+        ) : null}
       </div>
       {hasPromo ? (
-        <p className="js-stop-price-billed">{`אחר כך ${shekel(monthly)} לחודש`}</p>
+        <p className="js-stop-price-billed js-stop3-billed">{`אחר כך ${shekel(monthly)} לחודש`}</p>
       ) : null}
     </>
   );
@@ -810,6 +819,18 @@ const STYLES = `
     margin-top:3px;
     font-size:12px;color:#9C8B91;font-weight:500;
     line-height:1.3;
+  }
+  /* Stage-3 "חיסכון X%" — prominent maroon, matching the results page
+     (.ar-opt-save: 800 / #7A1F2B). Sits at the end of the price row. */
+  .mood-timeline .js-stop-price-save{
+    font-family:'Frank Ruhl Libre',serif;
+    font-size:18px;font-weight:800;color:#7A1F2B;
+    line-height:1;
+  }
+  /* Stage-3 billed line — larger + darker than the Stage-1 transparency line,
+     consistent with the results-page sub-note (.ar-opt-note: 18px / #4B4640). */
+  .mood-timeline .js-stop3-billed{
+    font-size:18px;color:#4B4640;font-weight:500;
   }
   /* Stage 1 free-trial framing — replaces the price block. Compact,
      friendly, reassuring (no credit card). */

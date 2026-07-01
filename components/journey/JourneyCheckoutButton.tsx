@@ -71,6 +71,10 @@ export function JourneyCheckoutButton({
           language:    isHe ? "he" : "en",
           is_israeli:  isHe,
           return_path: returnPath ?? null,
+          // Entry surface → the WITHOUT-coaching (content-only) price. Explicit
+          // false because journey checkout defaults coaching to TRUE. The with-
+          // coaching upsell lives only on the assessment results paywall.
+          coaching:    false,
         }),
       });
 
