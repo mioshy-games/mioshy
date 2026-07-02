@@ -148,11 +148,16 @@ export function selectActivePromo(
     at,
     cadence,
     coaching,
+    ignoreEndsAt,
   }: {
     product: PromoProduct;
     at: Date | string;
     cadence?: string | null;
     coaching?: boolean | null;
+    /** Task 20 (personal_window): the per-user 48h window is the real expiry,
+     *  so the promo's global ends_at must NOT cut it off. When true, keep the
+     *  starts_at floor but drop the ends_at ceiling. */
+    ignoreEndsAt?: boolean;
   },
 ): { promo: SubscriptionPromo | null; warning?: string } {
   const t = ms(at);
@@ -161,7 +166,7 @@ export function selectActivePromo(
       p.is_active &&
       (p.product === product || p.product === "all") &&
       ms(p.starts_at) <= t &&
-      t <= ms(p.ends_at) &&
+      (ignoreEndsAt || t <= ms(p.ends_at)) &&
       (cadence === undefined || promoAppliesToCadence(p, cadence)) &&
       (coaching === undefined || promoAppliesToCoaching(p, coaching)),
   );
@@ -190,11 +195,14 @@ export async function findActivePromo(
     at,
     cadence,
     coaching,
+    ignoreEndsAt,
   }: {
     product: PromoProduct;
     at?: Date | string;
     cadence?: string | null;
     coaching?: boolean | null;
+    /** See selectActivePromo — drop the ends_at ceiling (personal_window). */
+    ignoreEndsAt?: boolean;
   },
 ): Promise<{ promo: SubscriptionPromo | null; warning?: string }> {
   const when = at ?? new Date();
@@ -205,7 +213,7 @@ export async function findActivePromo(
     .in("product", [product, "all"])
     .returns<SubscriptionPromo[]>();
   if (error) throw new Error(`findActivePromo: ${error.message}`);
-  return selectActivePromo(data ?? [], { product, at: when, cadence, coaching });
+  return selectActivePromo(data ?? [], { product, at: when, cadence, coaching, ignoreEndsAt });
 }
 
 type PromoWindow = Pick<

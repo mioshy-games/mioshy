@@ -515,9 +515,12 @@ export default async function JourneyAssessmentPage({
       // (each targets a different option). Select the matching-scope promo PER
       // option — the SAME call the checkout makes with the buyer's coaching flag
       // — so the DISPLAY equals the CHARGE for each option independently.
+      // Task 20: in personal_window the per-user 48h window is the expiry, so
+      // the promo's global ends_at must not cut it off (display == charge).
+      const ignoreEndsAt = promoMode === "personal_window";
       const [withRes, withoutRes] = await Promise.all([
-        findActivePromo(promoClient, { product: "journey", coaching: true }),
-        findActivePromo(promoClient, { product: "journey", coaching: false }),
+        findActivePromo(promoClient, { product: "journey", coaching: true, ignoreEndsAt }),
+        findActivePromo(promoClient, { product: "journey", coaching: false, ignoreEndsAt }),
       ]);
       if (withRes.warning) console.warn("[/journey/assessment] promo warning (with)", withRes.warning);
       if (withoutRes.warning) console.warn("[/journey/assessment] promo warning (without)", withoutRes.warning);

@@ -352,6 +352,9 @@ export async function POST(req: Request) {
             // Stage-1: a coaching-scoped promo only applies to the matching option.
             // games checkouts pass coaching=false (no add-on) so 'with' promos skip.
             coaching,
+            // Task 20: in personal_window the 48h window is the expiry, not the
+            // promo's global ends_at.
+            ignoreEndsAt: promoMode === "personal_window",
           })
         : { promo: null, warning: undefined }
       if (warning) console.warn("[checkout:CREATE] promo warning", warning)

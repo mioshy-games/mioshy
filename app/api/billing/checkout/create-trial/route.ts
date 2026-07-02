@@ -220,6 +220,8 @@ export async function POST(req: Request) {
           product: product as "journey" | "games",
           cadence: resolvedCadence,
           coaching,
+          // Task 20: personal_window's 48h window is the expiry, not ends_at.
+          ignoreEndsAt: promoMode === "personal_window",
         })
       : { promo: null, warning: undefined }
     if (warning) console.warn("[trial:CREATE] promo warning", warning)
