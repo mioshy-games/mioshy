@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { SiteHeader } from "@/components/SiteHeader";
+import { CampaignPromoBar } from "@/components/promo/CampaignPromoBar";
 import { SiteFooter } from "@/components/SiteFooter";
 import { MobileServicesBar } from "@/components/MobileServicesBar";
 import { HomeBackground } from "@/components/my/HomeBackground";
@@ -127,6 +128,8 @@ export function Chrome({
         {locale === "en" ? "Skip to content" : "דלג לתוכן"}
       </a>
       {isAuthed ? <HomeBackground /> : null}
+      {/* Task 21 — holiday-campaign sticky bar (self-gates: only campaign_timer). */}
+      <CampaignPromoBar isHe={locale === "he"} />
       <SiteHeader
         isAuthed={isAuthed}
         entitlements={entitlements}
