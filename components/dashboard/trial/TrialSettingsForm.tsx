@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import {
   saveTrialSettings,
   type TrialSettingsFormValues,
@@ -64,17 +63,22 @@ export function TrialSettingsForm({ initial }: { initial: Row[] }) {
           const k = keyOf(p);
           const row = rows.find((r) => keyOf(r) === k)!;
           return (
-            <div key={k} className="flex items-center justify-between gap-4 p-4">
+            <label
+              key={k}
+              className="flex cursor-pointer items-center justify-between gap-4 p-4"
+            >
               <div>
                 <div className="font-medium">{p.label}</div>
                 <div className="text-sm text-muted-foreground">{p.hint}</div>
               </div>
-              <Switch
+              <input
+                type="checkbox"
                 checked={row.enabled}
-                onCheckedChange={(checked: boolean) => toggle(k, checked)}
+                onChange={(e) => toggle(k, e.target.checked)}
                 aria-label={`הפעל טריאל ל${p.label}`}
+                className="size-5 shrink-0 accent-fuchsia-600"
               />
-            </div>
+            </label>
           );
         })}
       </div>
