@@ -353,6 +353,8 @@ function Stage3Price() {
       {trial.enabled && trial.disclosure ? (
         <p className="js-stop-trial-note">{trial.disclosure}</p>
       ) : null}
+      {/* Task 23 — no double-charge reassurance (shown on /pricing + homepage). */}
+      <p className="js-stop-couple-note">מנוי אחד, שני בני זוג. בלי תוספת מחיר.</p>
     </>
   );
 }
@@ -868,6 +870,11 @@ const STYLES = `
   .mood-timeline .js-stop-trial-note{
     margin-top:6px;
     font-size:14px;color:#4B4640;font-weight:500;
+  }
+  /* Task 23 — "מנוי אחד, שני בני זוג" reassurance under the stage-3 price. */
+  .mood-timeline .js-stop-couple-note{
+    margin-top:8px;
+    font-size:14px;color:#5A4F46;font-weight:600;
   }
   /* Stage 1 free-trial framing — replaces the price block. Compact,
      friendly, reassuring (no credit card). */
