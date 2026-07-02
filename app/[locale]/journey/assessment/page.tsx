@@ -20,6 +20,7 @@ import { notFound, redirect } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
+import { getPromoMode, getUserOfferExpiresAt, promoDiscountEligible } from "@/lib/billing/promo-mode";
 import { JourneyClient } from "@/components/journey/JourneyClient";
 // `JourneyAmbience` (21 animated particles + fog blobs) removed
 // 2026-05-19 per Itzik — the per-frame animation cost on the question
@@ -495,10 +496,21 @@ export default async function JourneyAssessmentPage({
   // applyDiscount are server-only; we pass the plain result down as a prop and
   // never duplicate the discount math on the client. Any lookup/compute
   // failure must NEVER break the page → leave activePromo null (no banner).
+  // Task 20 — resolve the urgency mode + the user's personal 48h window so the
+  // results-page promo DISPLAY matches what checkout will actually CHARGE. In
+  // personal_window the promo shows only while the user is inside their window;
+  // in campaign_timer it's the global promo; off = regular price.
+  let offerExpiresAt: string | null = null;
   let activePromo: JourneyPromoSummary | null = null;
   try {
     const promoClient = createServiceRoleClient();
     if (promoClient) {
+      const promoMode = await getPromoMode(promoClient);
+      if (promoMode === "personal_window" && user?.id) {
+        offerExpiresAt = await getUserOfferExpiresAt(promoClient, user.id);
+      }
+      const discountEligible = promoDiscountEligible(promoMode, offerExpiresAt);
+      if (promoClient && discountEligible) {
       // A with-coaching and a without-coaching journey promo can run together
       // (each targets a different option). Select the matching-scope promo PER
       // option — the SAME call the checkout makes with the buyer's coaching flag
@@ -542,6 +554,7 @@ export default async function JourneyAssessmentPage({
       if (withCoaching || withoutCoaching) {
         activePromo = { withCoaching, withoutCoaching };
       }
+      } // end if (discountEligible)
     }
   } catch (err) {
     console.error(

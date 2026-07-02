@@ -397,6 +397,19 @@ export async function POST(req: Request) {
     })
     .eq("id", journeyId);
 
+  // Task 20 (personal_window) — stamp the 48h intro-offer deadline the FIRST
+  // time the SHORT assessment completes. `.is(offer_expires_at, null)` makes it
+  // set-once (re-submits / later full completion never extend or reset it).
+  if (isComplete && reportPhase === "short") {
+    await admin
+      .from("journeys")
+      .update({
+        offer_expires_at: new Date(Date.now() + 48 * 3600 * 1000).toISOString(),
+      })
+      .eq("id", journeyId)
+      .is("offer_expires_at", null);
+  }
+
   // ── Audit ───────────────────────────────────────────────────────────────────
   await admin.from("activity_logs").insert({
     user_id:  trusted_user_id,

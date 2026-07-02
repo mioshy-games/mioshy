@@ -27,6 +27,7 @@ import { cache } from "react";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
 import { getSubscriptionPrice } from "@/lib/billing/pricing-queries";
 import { findActivePromo, applyDiscount } from "@/lib/billing/promos";
+import { getPromoMode } from "@/lib/billing/promo-mode";
 
 export interface JourneyDisplayPricing {
   /** Regular monthly price (strikethrough when a promo is active). null ⇒ CMS fallback. */
@@ -58,19 +59,24 @@ export const getJourneyDisplayPricing = cache(
     try {
       const admin = createServiceRoleClient();
       if (admin) {
-        const { promo } = await findActivePromo(admin, {
-          product: "journey",
-          cadence: "monthly",
-          // Stage-3 is the logged-out ENTRY price = the WITHOUT-coaching option
-          // (base here is the content-only price_ils, no coaching_cost). Pass
-          // coaching:false so a coaching-scoped 'with' promo — meant for the
-          // higher content+coaching bundle — is never applied to this
-          // content-only base. Without this filter, selectActivePromo would pick
-          // whichever scoped promo was created latest; a 'with' ₪100-off on a ₪67
-          // base clamps to MIN_CHARGE (→ "1 ₪"). 'without'/'all' promos still
-          // apply, matching what a without-coaching checkout actually charges.
-          coaching: false,
-        });
+        // Task 20 — the homepage is pre-assessment / anonymous, so it has no
+        // personal 48h window. Show the promo price ONLY in campaign_timer mode
+        // (a global, everyone-sees-it deadline). In personal_window and off the
+        // homepage shows the regular monthly price (67 ₪), no teaser — matching
+        // what checkout charges an anon visitor. (Decision 2026-07-02.)
+        const promoMode = await getPromoMode(admin);
+        const { promo } = promoMode === "campaign_timer"
+          ? await findActivePromo(admin, {
+              product: "journey",
+              cadence: "monthly",
+              // Stage-3 is the logged-out ENTRY price = the WITHOUT-coaching
+              // option (base = content-only price_ils, no coaching_cost). Pass
+              // coaching:false so a coaching-scoped 'with' promo is never applied
+              // to this content-only base. 'without'/'all' promos still apply,
+              // matching what a without-coaching checkout charges.
+              coaching: false,
+            })
+          : { promo: null };
         if (promo) {
           const res = applyDiscount({
             amount: monthlyIls,

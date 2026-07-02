@@ -32,6 +32,7 @@ import { getPlanPrice }                    from "@/lib/billing"
 import { resolveJourneyAmount }            from "@/lib/billing/journey-coaching-pricing"
 import { resolveCheckoutCadence }          from "@/lib/billing/pricing-queries"
 import { findActivePromo, applyDiscount }  from "@/lib/billing/promos"
+import { getPromoMode, getUserOfferExpiresAt, promoDiscountEligible } from "@/lib/billing/promo-mode"
 import { geoFromRequest, localeFromGeo }   from "@/lib/geo-from-request"
 
 function baseUrl(req: Request) {
@@ -205,12 +206,26 @@ export async function POST(req: Request) {
   let promoId: string | null = null
   let originalAmount: number | null = null
   try {
-    const { promo, warning } = await findActivePromo(serviceClient, {
-      product: product as "journey" | "games",
-      cadence: resolvedCadence,
-      coaching,
-    })
+    // Task 20 — same urgency gate as checkout/create. In personal_window the
+    // intro discount snapshotted onto the trial (→ day-7 charge) is granted only
+    // if the user is within their 48h window; the lock then survives the trial.
+    const promoMode = await getPromoMode(serviceClient)
+    const offerExpiresAt =
+      promoMode === "personal_window"
+        ? await getUserOfferExpiresAt(serviceClient, auth.user.id)
+        : null
+    const discountEligible = promoDiscountEligible(promoMode, offerExpiresAt)
+    const { promo, warning } = discountEligible
+      ? await findActivePromo(serviceClient, {
+          product: product as "journey" | "games",
+          cadence: resolvedCadence,
+          coaching,
+        })
+      : { promo: null, warning: undefined }
     if (warning) console.warn("[trial:CREATE] promo warning", warning)
+    if (!discountEligible) {
+      console.log("[trial:CREATE] promo gated off", { promo_mode: promoMode, offer_expires_at: offerExpiresAt })
+    }
     if (promo) {
       const res = applyDiscount({ amount, currency: currency === "USD" ? "USD" : "ILS", promo })
       if (res.promoId) {

@@ -28,6 +28,7 @@ import { getPlanPrice }        from "@/lib/billing"
 import { resolveJourneyAmount } from "@/lib/billing/journey-coaching-pricing"
 import { resolveCheckoutCadence } from "@/lib/billing/pricing-queries"
 import { findActivePromo, applyDiscount } from "@/lib/billing/promos"
+import { getPromoMode, getUserOfferExpiresAt, promoDiscountEligible } from "@/lib/billing/promo-mode"
 import { geoFromRequest, localeFromGeo, currencyFromGeo } from "@/lib/geo-from-request"
 import { getClientIp } from "@/lib/rate-limit"
 import { sendMetaCapiEvent, metaEventId, sanitizeMetaUrl } from "@/lib/analytics/meta-capi"
@@ -332,17 +333,34 @@ export async function POST(req: Request) {
   // lookup/compute failure must NEVER break checkout → fall through at full price.
   if (purchase_type === "subscription") {
     try {
+      // Task 20 — urgency mode gate. In personal_window the intro discount is
+      // server-enforced to the user's 48h window; in campaign_timer the promo's
+      // own window governs; off = never. Fail-closed to full price.
+      const promoMode = await getPromoMode(serviceClient)
+      const offerExpiresAt =
+        promoMode === "personal_window"
+          ? await getUserOfferExpiresAt(serviceClient, auth.user.id)
+          : null
+      const discountEligible = promoDiscountEligible(promoMode, offerExpiresAt)
       const promoCurrency = currency === "USD" ? "USD" : "ILS"
       // Pass the resolved cadence so a cadence-restricted promo (migration 148)
       // only discounts the matching cadence; null-cadence promos apply to all.
-      const { promo, warning } = await findActivePromo(serviceClient, {
-        product: product as "journey" | "games",
-        cadence: effectivePlan,
-        // Stage-1: a coaching-scoped promo only applies to the matching option.
-        // games checkouts pass coaching=false (no add-on) so 'with' promos skip.
-        coaching,
-      })
+      const { promo, warning } = discountEligible
+        ? await findActivePromo(serviceClient, {
+            product: product as "journey" | "games",
+            cadence: effectivePlan,
+            // Stage-1: a coaching-scoped promo only applies to the matching option.
+            // games checkouts pass coaching=false (no add-on) so 'with' promos skip.
+            coaching,
+          })
+        : { promo: null, warning: undefined }
       if (warning) console.warn("[checkout:CREATE] promo warning", warning)
+      if (!discountEligible) {
+        console.log("[checkout:CREATE] promo gated off", {
+          promo_mode: promoMode,
+          offer_expires_at: offerExpiresAt,
+        })
+      }
       if (promo) {
         const res = applyDiscount({ amount, currency: promoCurrency, promo })
         if (res.promoId) {
