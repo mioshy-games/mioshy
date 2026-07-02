@@ -19,6 +19,7 @@ import { useState } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCmsText } from "@/hooks/useCmsText";
+import { useTrialOffer } from "@/hooks/useTrialOffer";
 import { metaTrack, metaEventId } from "@/lib/analytics/meta-pixel";
 
 interface Props {
@@ -47,6 +48,10 @@ export function JourneyCheckoutButton({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // A3: is a 7-day trial offered for this package (journey, no coaching)?
+  // Display-only; the real enforcement is in the create-trial route.
+  const trial = useTrialOffer({ product: "journey", coaching: false, isHe, plan: "weekly" });
+
   // String-prop consumers — label/busy/error live in button children or
   // state, so they resolve through useCmsText().text.
   const defaultLabel = useCmsText("journeyAssessment.checkoutButton.defaultLabel").text;
@@ -54,14 +59,20 @@ export function JourneyCheckoutButton({
   const errGeneric = useCmsText("journeyAssessment.checkoutButton.errGeneric").text;
   const errNetwork = useCmsText("journeyAssessment.checkoutButton.errNetwork").text;
 
-  const visibleLabel = label ?? defaultLabel;
+  // A3: when a trial is offered, the CTA becomes the trial offer (replaces the
+  // paid CTA per the per-package decision). The trial label (CMS-editable) wins
+  // over any parent `label` because it changes the offer's meaning.
+  const visibleLabel = trial.enabled ? trial.ctaLabel : (label ?? defaultLabel);
   const Arrow = isHe ? ArrowLeft : ArrowRight;
 
   const onClick = async () => {
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch("/api/billing/checkout/create", {
+      const endpoint = trial.enabled
+        ? "/api/billing/checkout/create-trial"
+        : "/api/billing/checkout/create";
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -108,7 +119,7 @@ export function JourneyCheckoutButton({
             "InitiateCheckout",
             {
               currency: isHe ? "ILS" : "USD",
-              content_name: "journey:weekly",
+              content_name: trial.enabled ? "journey:trial" : "journey:weekly",
               content_category: "journey",
             },
             metaEventId.checkout(data.checkout_session_id as string),
@@ -159,6 +170,11 @@ export function JourneyCheckoutButton({
         {busy ? busyLabel : visibleLabel}
         {!busy ? <Arrow className="h-4 w-4" /> : null}
       </button>
+      {trial.enabled && trial.disclosure ? (
+        <p className="text-[13px] text-white/70" dir={isHe ? "rtl" : "ltr"}>
+          {trial.disclosure}
+        </p>
+      ) : null}
       {error ? (
         <p
           className="text-[13px] text-rose-300"

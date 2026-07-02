@@ -33,7 +33,10 @@ export type NotificationKind =
   | "reminder_inactivity"
   | "reminder_unfollowed_reply"
   | "cron_failure"
-  | "stuck_users_digest";
+  | "stuck_users_digest"
+  // A3 - 7-day trial
+  | "trial_ending_soon"
+  | "trial_first_charge_failed";
 
 interface BasePayload {
   /** Stable URL to deep-link from email back into the app. */

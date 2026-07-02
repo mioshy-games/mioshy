@@ -104,6 +104,19 @@ const DESCRIPTORS: Record<NotificationKind, NotificationDescriptor> = {
     headlineHe: "משתמשים תקועים",
     headlineEn: "Stuck-user digest",
   },
+  // A3 - 7-day trial
+  trial_ending_soon: {
+    tone: "info",
+    icon: Clock,
+    headlineHe: "תקופת הניסיון מסתיימת בקרוב",
+    headlineEn: "Your free trial ends soon",
+  },
+  trial_first_charge_failed: {
+    tone: "danger",
+    icon: AlertTriangle,
+    headlineHe: "החיוב הראשון של הניסיון נכשל",
+    headlineEn: "Trial first charge failed",
+  },
 };
 
 const FALLBACK: NotificationDescriptor = {

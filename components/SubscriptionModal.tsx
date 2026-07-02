@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { getOrCreateDeviceId } from "@/lib/device-id";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { fetchCmsTextMap } from "@/lib/cms/client-text-map";
+import { useTrialOffer } from "@/hooks/useTrialOffer";
 import { metaTrack, metaEventId } from "@/lib/analytics/meta-pixel";
 
 // CRM-managed copy for the lead-capture modal (category "marketing",
@@ -326,6 +327,10 @@ export function SubscriptionModal({
   const [busy,  setBusy]  = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // A3: this is the GAMES paywall. When a trial is enabled for games, the CTA
+  // swaps to the 7-day trial (token+J2, no charge) via create-trial.
+  const trial = useTrialOffer({ product: "games", coaching: false, isHe, plan: "weekly" });
+
   // CRM copy for lead mode. `lt(key, fallback)` returns the CMS value when
   // present and non-blank, else the in-code default — so a blank/missing row
   // never renders an empty label/placeholder (trap 2).
@@ -551,7 +556,13 @@ export function SubscriptionModal({
         console.warn("[checkout:CLIENT_DEBUG] threw", e instanceof Error ? e.message : e);
       }
 
-      const res = await fetch("/api/billing/checkout/create", {
+      // A3: swap to the trial endpoint when a games trial is enabled. The
+      // create-trial route reads product/plan/coaching + server geo; the extra
+      // advisory fields below are harmless (ignored there).
+      const endpoint = trial.enabled
+        ? "/api/billing/checkout/create-trial"
+        : "/api/billing/checkout/create";
+      const res = await fetch(endpoint, {
         method:  "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -563,6 +574,7 @@ export function SubscriptionModal({
           // irrelevant for games (the server forces it false for non-journey).
           product:          "games",
           plan,
+          coaching:         false,
           country_code:     countryCode || null,
           language:         locale,
           is_israeli:       countryCode === "IL",
@@ -603,7 +615,7 @@ export function SubscriptionModal({
           "InitiateCheckout",
           {
             currency: countryCode === "IL" ? "ILS" : "USD",
-            content_name: `subscription:${plan}`,
+            content_name: trial.enabled ? "games:trial" : `subscription:${plan}`,
           },
           metaEventId.checkout(json.checkout_session_id as string),
         );
@@ -846,6 +858,9 @@ export function SubscriptionModal({
               locale={locale}
               userFullName={userFullName}
               onPay={() => void startPayment("weekly")}
+              trialEnabled={trial.enabled}
+              trialCtaLabel={trial.ctaLabel}
+              trialDisclosure={trial.disclosure}
             />
           )}
         </div>
@@ -873,6 +888,9 @@ function SinglePlanPaywall({
   locale,
   userFullName,
   onPay,
+  trialEnabled = false,
+  trialCtaLabel,
+  trialDisclosure,
 }: {
   error: string | null;
   busy: boolean;
@@ -895,6 +913,10 @@ function SinglePlanPaywall({
   locale: "he" | "en";
   userFullName: string | null;
   onPay: () => void;
+  // A3: trial offer (games). When enabled the CTA + disclosure swap.
+  trialEnabled?: boolean;
+  trialCtaLabel?: string;
+  trialDisclosure?: string | null;
 }) {
   const isHe = locale === "he";
   const greeting = userFullName
@@ -973,8 +995,17 @@ function SinglePlanPaywall({
           background: `linear-gradient(135deg, ${palette[0]}, ${palette[1]})`,
         }}
       >
-        {busy ? t.saving : t.paywallContinueCta}
+        {busy
+          ? t.saving
+          : trialEnabled && trialCtaLabel
+            ? trialCtaLabel
+            : t.paywallContinueCta}
       </Button>
+
+      {/* A3: trial disclosure — "after 7 days you'll be charged ₪X · cancel" */}
+      {trialEnabled && trialDisclosure ? (
+        <p className="-mt-1 text-center text-xs text-white/70">{trialDisclosure}</p>
+      ) : null}
 
       {/* Trust line - secure-payment / Cardcom / SSL hint. Kept as plain
           text (no icons/logos) to avoid leaking vendor names into the UI;

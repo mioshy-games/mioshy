@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { listCountries, findCountry, type Country } from "@/lib/countries";
+import { useTrialOffer } from "@/hooks/useTrialOffer";
 
 /**
  * PricingCheckout
@@ -58,6 +59,10 @@ export function PricingCheckout({
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // A3: content-only trial for this pillar (adults resolves to disabled). When
+  // enabled the CTA + checkout swap to the 7-day trial flow.
+  const trial = useTrialOffer({ product, coaching: false, isHe, plan });
 
   // Country state — IP-detected on dialog open, but the user can change it.
   const [countryCode, setCountryCode] = useState("");
@@ -111,7 +116,10 @@ export function PricingCheckout({
     setError(null);
     setLoading(true);
     try {
-      const res = await fetch("/api/billing/checkout/create", {
+      const endpoint = trial.enabled
+        ? "/api/billing/checkout/create-trial"
+        : "/api/billing/checkout/create";
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -187,7 +195,7 @@ export function PricingCheckout({
         onClick={() => setOpen(true)}
         className="group inline-flex w-full min-h-[60px] items-center justify-center gap-3 rounded-full bg-[#170E14] px-8 text-[18px] font-semibold text-white shadow-[0_18px_40px_-12px_rgba(184,60,77,0.45)] transition hover:bg-[#B83C4D] hover:shadow-[0_22px_50px_-12px_rgba(184,60,77,0.6)]"
       >
-        {ctaLabel}
+        {trial.enabled ? trial.ctaLabel : ctaLabel}
         <span
           aria-hidden
           className={`inline-block transition-transform group-hover:translate-x-[-3px] ${
@@ -199,7 +207,7 @@ export function PricingCheckout({
       </button>
 
       <p className="mt-4 text-center text-[14px] text-[#7A6A75]">
-        {isHe ? tax_note_he : tax_note_en}
+        {trial.enabled && trial.disclosure ? trial.disclosure : isHe ? tax_note_he : tax_note_en}
       </p>
 
       {/* Country confirmation dialog */}

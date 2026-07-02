@@ -41,6 +41,24 @@ export default async function DashboardSettingsPage() {
 
       <Card>
         <CardHeader>
+          <CardTitle>7-day free trial</CardTitle>
+          <CardDescription>
+            Choose which subscriptions offer a 7-day free trial (games / journey
+            with or without coaching). Live on save — no deploy.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Link
+            href="/dashboard/settings/trial"
+            className={cn(buttonVariants({ variant: "outline" }))}
+          >
+            Open Trial Settings
+          </Link>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Game wheel</CardTitle>
           <CardDescription>
             Set global default wheel size and label position for all games.

@@ -44,9 +44,11 @@ type SubscriptionRow = {
     | "expired"
     | "past_due"
     | "blocked"
-    | "frozen";
+    | "frozen"
+    | "trialing";
   current_period_end: string | null;
   grace_until: string | null;
+  trial_ends_at: string | null;
   payment_method_id: string | null;
 };
 
@@ -110,7 +112,7 @@ export default async function AccountPage({
   const { data: subRaw } = await supabase
     .from("subscriptions")
     .select(
-      "id, plan, status, current_period_end, grace_until, payment_method_id",
+      "id, plan, status, current_period_end, grace_until, trial_ends_at, payment_method_id",
     )
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
@@ -155,9 +157,19 @@ export default async function AccountPage({
       case "past_due":  return t("statusPastDue");
       case "blocked":   return t("statusBlocked");
       case "expired":   return t("statusExpired");
+      // A3: inline label (no new i18n key needed).
+      case "trialing":  return isHe ? "בתקופת ניסיון" : "Free trial";
       default:          return sub.status;
     }
   })();
+
+  // A3: trial disclosure — "you'll be charged on <date>". The first charge is
+  // the snapshot amount (promo-aware) taken at signup; we don't re-resolve it
+  // here, so we show the date and let the charge email carry the exact amount.
+  const trialEndsLabel =
+    sub?.status === "trialing" && sub.trial_ends_at
+      ? new Date(sub.trial_ends_at).toLocaleDateString(locale)
+      : null;
 
   const formatAmount = (amount: number, currency: string) => {
     try {
@@ -188,6 +200,7 @@ export default async function AccountPage({
   const subStatusTone = (() => {
     if (!sub) return "muted";
     if (sub.status === "active") return "emerald";
+    if (sub.status === "trialing") return "emerald";
     if (sub.status === "frozen") return "sky";
     if (sub.status === "past_due") return "amber";
     if (sub.status === "blocked") return "rose";
@@ -613,6 +626,34 @@ export default async function AccountPage({
                     </button>
                   </form>
                 )}
+              </div>
+            )}
+
+            {/* A3: trial — disclosure + one-click cancel (no charge) */}
+            {sub?.status === "trialing" && (
+              <div className="mt-6 border-t border-white/10 pt-5">
+                {trialEndsLabel && (
+                  <p className="mb-4 text-sm text-white/70">
+                    {isHe
+                      ? `תקופת הניסיון מסתיימת ב-${trialEndsLabel}. אז יתבצע החיוב הראשון. אפשר לבטל עד אז בלי חיוב.`
+                      : `Your free trial ends on ${trialEndsLabel}. Your first charge happens then. Cancel any time before that — no charge.`}
+                  </p>
+                )}
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  <form
+                    action={async () => {
+                      "use server";
+                      await cancelSubscription(sub.id);
+                    }}
+                  >
+                    <button
+                      type="submit"
+                      className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-rose-400/40 bg-rose-500/10 px-4 text-sm font-bold text-rose-200 transition hover:bg-rose-500/20"
+                    >
+                      {isHe ? "ביטול הניסיון (בלי חיוב)" : "Cancel trial (no charge)"}
+                    </button>
+                  </form>
+                </div>
               </div>
             )}
           </section>

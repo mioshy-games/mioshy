@@ -23,6 +23,7 @@ import {
   brandToPaymentMethod,
 } from "@/lib/uxellent-billing-helpers"
 import { createAdminClient }       from "@/lib/supabase-admin"
+import { notifyAdminPool }         from "@/lib/journey-content/notifications"
 
 export async function POST(req: Request) {
   // ── Auth ───────────────────────────────────────────────────────────────────
@@ -39,10 +40,14 @@ export async function POST(req: Request) {
   console.log("[renewals:START]", { invokedAt: now.toISOString(), method: req.method })
 
   // ── Find due subscriptions (max 20 per run) ─────────────────────────────────
+  // 'trialing' is included: a 7-day-trial sub carries next_billing_date =
+  // trial_ends_at, so the same next_billing_date <= now filter makes it "due"
+  // for its FIRST real charge on day 7. On success the shared branch below
+  // transitions it trialing → active.
   const { data: dueSubs } = await admin
     .from("subscriptions")
     .select("*, customer_payment_methods(id, token_enc, expiry_mmyy, status, card_brand)")
-    .in("status", ["active", "past_due"])
+    .in("status", ["active", "past_due", "trialing"])
     .lte("next_billing_date", now.toISOString())
     .order("next_billing_date", { ascending: true })
     .limit(20)
@@ -90,6 +95,9 @@ export async function POST(req: Request) {
   for (const sub of filteredSubs) {
     const subId  = sub.id
     const userId = sub.user_id
+    // A trialing sub reaching the cron = its FIRST real charge (day 7). We
+    // capture this before any status change so failure alerts the admin.
+    const wasTrialing = sub.status === "trialing"
 
     console.log("[renewals:SUB_START]", {
       sub_id: subId,
@@ -193,7 +201,27 @@ export async function POST(req: Request) {
           })
           .eq("id", subId)
 
-        results.push({ sub_id: subId, status: "charge_failed", error: chargeResult.responseCode })
+        // A3: the day-7 first charge of a trial failing is worth an admin
+        // alert (card passed J2 but has no funds / was cancelled by issuer).
+        // The existing grace/retry path still applies. Best-effort, throttled.
+        if (wasTrialing) {
+          await notifyAdminPool({
+            kind: "trial_first_charge_failed",
+            subject: "Mioshy: 7-day trial first charge FAILED",
+            payload: {
+              throttle_key: subId,
+              preview: `Trial first charge failed for sub ${subId} (${sub.product}). Cardcom code ${chargeResult.responseCode}. Now in ${GRACE_PERIOD_DAYS}-day grace.`,
+              sub_id: subId,
+              product: sub.product,
+              amount: billAmount,
+              currency: sub.currency,
+              cardcom_code: chargeResult.responseCode,
+            },
+            throttleKey: subId,
+          }).catch((e) => console.error("[renewals] admin alert failed", e))
+        }
+
+        results.push({ sub_id: subId, status: wasTrialing ? "trial_charge_failed" : "charge_failed", error: chargeResult.responseCode })
         continue
       }
 
@@ -317,6 +345,21 @@ export async function POST(req: Request) {
         .update({ status: "past_due", failed_attempts: (sub.failed_attempts ?? 0) + 1 })
         .eq("id", subId)
         .then(() => {})
+
+      if (wasTrialing) {
+        await notifyAdminPool({
+          kind: "trial_first_charge_failed",
+          subject: "Mioshy: 7-day trial first charge ERROR",
+          payload: {
+            throttle_key: subId,
+            preview: `Trial first charge threw for sub ${subId} (${sub.product}): ${String(err)}`,
+            sub_id: subId,
+            product: sub.product,
+            error: String(err),
+          },
+          throttleKey: subId,
+        }).catch((e) => console.error("[renewals] admin alert failed", e))
+      }
 
       results.push({ sub_id: subId, status: "error", error: String(err) })
     }

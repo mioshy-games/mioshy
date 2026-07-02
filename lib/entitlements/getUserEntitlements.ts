@@ -233,12 +233,17 @@ async function _getUserEntitlements(
       "product, status, current_period_end, journey_grace_until, journey_blocked_at, coaching",
     )
     .eq("user_id", entitlementSourceUid)
-    .in("status", ["active", "grace"]);
+    // A3: 'trialing' grants full access during the 7-day window. current_period_end
+    // for a trial is the trial deadline; access is NOT gated on it — the renewals
+    // cron flips trialing → active (keep access) or → past_due (drops out of this
+    // query, cutting access) when the trial ends.
+    .in("status", ["active", "grace", "trialing"]);
 
   const now = Date.now();
   const activeBy = (product: PillarKey) =>
     (subs ?? []).some((s) => {
       if (s.product !== product) return false;
+      if (s.status === "trialing") return true;
       if (s.status !== "active") return false;
       if (!s.current_period_end) return true;
       return new Date(s.current_period_end as string).getTime() > now;
@@ -264,6 +269,7 @@ async function _getUserEntitlements(
   // here from the same subs list to avoid order-of-eval dependencies.
   const journeyActive = (subs ?? []).some((s) => {
     if (s.product !== "journey") return false;
+    if (s.status === "trialing") return true;
     if (s.status !== "active") return false;
     if (!s.current_period_end) return true;
     return new Date(s.current_period_end as string).getTime() > now;
@@ -292,8 +298,11 @@ async function _getUserEntitlements(
   let journeyCoaching = false;
   const journeySubs = (subs ?? []).filter((s) => s.product === "journey");
   for (const s of journeySubs) {
-    if (s.status !== "active") continue;
-    if (s.current_period_end) {
+    // A3: a trialing journey sub is treated as fully active (cadence engine
+    // materializes, no grace banner) for the whole 7-day window.
+    const trialing = s.status === "trialing";
+    if (s.status !== "active" && !trialing) continue;
+    if (!trialing && s.current_period_end) {
       const end = new Date(s.current_period_end as string).getTime();
       if (end <= now) continue; // past period_end without grace flip yet - treat as inactive
     }

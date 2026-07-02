@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useCmsText } from "@/hooks/useCmsText";
+import { useTrialOffer } from "@/hooks/useTrialOffer";
 import { CmsText } from "@/components/cms/CmsText";
 import type { Locale } from "@/lib/journey/types";
 
@@ -37,10 +38,22 @@ export function PaywallGateModal({
   // other consumers render directly through <CmsText>.
   const loadingLabel = useCmsText("journeyAssessment.paywallGate.loading").text;
 
+  // A3: journey (content-only) trial. When enabled the CTA + checkout swap to
+  // the trial flow. plan 'monthly' matches this surface's paid cadence.
+  const trial = useTrialOffer({
+    product: "journey",
+    coaching: false,
+    isHe: locale === "he",
+    plan: "monthly",
+  });
+
   const startCheckout = async () => {
     setBusy(true);
     try {
-      const res = await fetch("/api/billing/checkout/create", {
+      const endpoint = trial.enabled
+        ? "/api/billing/checkout/create-trial"
+        : "/api/billing/checkout/create";
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -104,10 +117,16 @@ export function PaywallGateModal({
           >
             {busy ? (
               loadingLabel
+            ) : trial.enabled ? (
+              trial.ctaLabel
             ) : (
               <CmsText cmsKey="journeyAssessment.paywallGate.cta" />
             )}
           </Button>
+          {/* A3: trial disclosure — replaces the paid price implication */}
+          {trial.enabled && trial.disclosure ? (
+            <p className="text-center text-xs text-white/60">{trial.disclosure}</p>
+          ) : null}
           <button
             type="button"
             onClick={onClose}
