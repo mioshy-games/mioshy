@@ -77,6 +77,7 @@ export function Chrome({
   isAuthed = false,
   entitlements = null,
   unreadNotifications = 0,
+  trialEndsAt = null,
   locale,
 }: {
   children: ReactNode;
@@ -87,6 +88,8 @@ export function Chrome({
   entitlements?: Entitlements | null;
   /** v3 slice 10 - unread journey_notifications count for the bell. */
   unreadNotifications?: number;
+  /** A3/task 21 — trial deadline for the persistent header chip. */
+  trialEndsAt?: string | null;
   /** Required when isAuthed; drives RTL/LTR rendering of the bell
    *  dropdown. Anonymous visitors don't see the bell. */
   locale?: string;
@@ -128,6 +131,7 @@ export function Chrome({
         isAuthed={isAuthed}
         entitlements={entitlements}
         unreadNotifications={unreadNotifications}
+        trialEndsAt={trialEndsAt}
       />
       {/* Reserve space at the bottom on mobile (when the bar is shown)
           so the last section of every page isn't permanently hidden

@@ -75,6 +75,8 @@ export default async function LocaleLayout({
   // Display-only billing-failure state for the global banner. Separate
   // from entitlements — never affects access (see lib/billing/failure-banner).
   let billingBannerState: BillingBannerState | null = null;
+  // A3/task 21 — 7-day-trial deadline for the persistent header chip.
+  let trialEndsAt: string | null = null;
   // PostHog identity — pseudonymous user id only, no PII (see PostHogIdentify).
   let userId: string | null = null;
   try {
@@ -97,6 +99,7 @@ export default async function LocaleLayout({
           journey: ent.journey,
           adults: ent.adults,
         };
+        trialEndsAt = ent.trialEndsAt;
       }
       unreadNotifications = unread;
       billingBannerState = banner;
@@ -128,6 +131,7 @@ export default async function LocaleLayout({
           isAuthed={isAuthed}
           entitlements={entitlements}
           unreadNotifications={unreadNotifications}
+          trialEndsAt={trialEndsAt}
           locale={locale}
         >
           {children}

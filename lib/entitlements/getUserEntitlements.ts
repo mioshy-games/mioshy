@@ -58,6 +58,12 @@ export interface UserEntitlements {
    *  journey sub, or when the sub was bought without the coaching add-on.
    *  `journey` stays true regardless; only the expert chat is gated on this. */
   journeyCoaching: boolean;
+  /** A3/task 21 — true while any subscription is in the 7-day trial. Drives the
+   *  header trial chip + the /my days-6-7 escalation. */
+  isTrialing: boolean;
+  /** ISO trial deadline of the trialing subscription (earliest, if several).
+   *  Null when not trialing. day = 7 - ceil((trialEndsAt - now)/day). */
+  trialEndsAt: string | null;
   // Handy when components need to show "you have X pillars" messaging
   anyPillar: boolean;
   pillarCount: 0 | 1 | 2 | 3;
@@ -172,6 +178,8 @@ async function _getUserEntitlements(
       journeyState: "active",
       journeyGraceUntil: null,
       journeyCoaching: true,
+      isTrialing: false,
+      trialEndsAt: null,
       anyPillar: true,
       pillarCount: 3,
     };
@@ -230,7 +238,7 @@ async function _getUserEntitlements(
   const { data: subs } = await subsClient
     .from("subscriptions")
     .select(
-      "product, status, current_period_end, journey_grace_until, journey_blocked_at, coaching",
+      "product, status, current_period_end, journey_grace_until, journey_blocked_at, coaching, trial_ends_at",
     )
     .eq("user_id", entitlementSourceUid)
     // A3: 'trialing' grants full access during the 7-day window. current_period_end
@@ -339,6 +347,17 @@ async function _getUserEntitlements(
     | 2
     | 3;
 
+  // A3/task 21 — trial status for the header chip + /my escalation. Earliest
+  // trial_ends_at among trialing subs (a user rarely has more than one).
+  const trialing = (subs ?? []).filter(
+    (s) => s.status === "trialing" && s.trial_ends_at,
+  );
+  const trialEndsAt = trialing.length
+    ? trialing
+        .map((s) => s.trial_ends_at as string)
+        .sort()[0]
+    : null;
+
   return {
     userId: uid,
     email,
@@ -348,6 +367,8 @@ async function _getUserEntitlements(
     adults,
     journeyState,
     journeyGraceUntil,
+    isTrialing: trialEndsAt != null,
+    trialEndsAt,
     // Only meaningful while `journey` is true (active/grace); a blocked/absent
     // journey locks the whole pillar, so the chat gate never consults this.
     journeyCoaching: journey && journeyCoaching,

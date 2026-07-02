@@ -101,6 +101,7 @@ export function SiteHeader({
   isAuthed = false,
   entitlements = null,
   unreadNotifications = 0,
+  trialEndsAt = null,
 }: {
   isAuthed?: boolean;
   /** Authenticated users still see all three pillars; entitlements only
@@ -109,7 +110,17 @@ export function SiteHeader({
   entitlements?: SiteHeaderEntitlements | null;
   /** v3 slice 10 - drives the bell badge for signed-in users. */
   unreadNotifications?: number;
+  /** A3/task 21 — trial deadline; renders the persistent "יום X מתוך 7" chip. */
+  trialEndsAt?: string | null;
 }) {
+  // A3/task 21 — trial-day for the header chip (status, not closeable). Day 1 on
+  // signup (~7d left) → day 7 on the last day. Clamped [1,7].
+  const trialDay = (() => {
+    if (!trialEndsAt) return null;
+    const remainingMs = new Date(trialEndsAt).getTime() - Date.now();
+    const remainingDays = Math.ceil(remainingMs / 86_400_000);
+    return Math.min(7, Math.max(1, 8 - remainingDays));
+  })();
   // All three pillars are ALWAYS rendered - for both anonymous and
   // authenticated visitors, on desktop and mobile. Only the destination
   // changes based on entitlements:
@@ -398,6 +409,17 @@ export function SiteHeader({
         <div className="hidden items-center gap-2 md:flex">
           {isAuthed ? (
             <>
+              {/* A3/task 21 — trial status chip ("יום X מתוך 7"). Persistent
+                  status (not closeable); click opens the billing/timeline. */}
+              {trialDay != null ? (
+                <Link
+                  href="/account"
+                  className="inline-flex min-h-[40px] items-center justify-center rounded-full border border-fuchsia-300/40 bg-fuchsia-500/10 px-3 text-sm font-semibold text-fuchsia-100 transition hover:bg-fuchsia-500/20"
+                  title={isHe ? "פרטי הניסיון והחיוב" : "Trial & billing details"}
+                >
+                  {isHe ? `יום ${trialDay} מתוך 7` : `Day ${trialDay} of 7`}
+                </Link>
+              ) : null}
               {/* Home link removed from the authed header per Itzik
                   2026-05-27 — signed-in users already have "מיאושי
                   שלי" as their primary destination, plus the pillar
