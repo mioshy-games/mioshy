@@ -64,3 +64,33 @@ export async function saveTrialSettings(raw: unknown): Promise<SaveTrialResult> 
     return { ok: false, error: { _root: [message] } };
   }
 }
+
+const promoModeSchema = z.object({
+  promo_mode: z.enum(["off", "personal_window", "campaign_timer"]),
+});
+
+/**
+ * Save the urgency mode (task 20) to site_settings.promo_mode. One active mode
+ * at a time; drives the server-enforced price gate + the indicator system.
+ */
+export async function savePromoMode(raw: unknown): Promise<SaveTrialResult> {
+  const parsed = promoModeSchema.safeParse(raw);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.flatten().fieldErrors };
+  }
+  const { supabase } = await requireAdmin();
+  try {
+    const { error } = await supabase
+      .from("site_settings")
+      .update({ promo_mode: parsed.data.promo_mode })
+      .eq("id", 1);
+    if (error) return { ok: false, error: { _root: [error.message] } };
+    revalidatePath("/dashboard/settings/trial");
+    // Urgency mode affects pricing display on marketing + results.
+    revalidatePath("/", "layout");
+    return { ok: true };
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "שגיאה לא צפויה בשמירה";
+    return { ok: false, error: { _root: [message] } };
+  }
+}

@@ -4,12 +4,14 @@ import { ArrowLeft } from "lucide-react";
 import { requireAdmin } from "@/lib/auth/admin";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { TrialSettingsForm } from "@/components/dashboard/trial/TrialSettingsForm";
+import { PromoModeForm } from "@/components/dashboard/trial/PromoModeForm";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 type TrialRow = { product: "games" | "journey"; coaching: boolean; enabled: boolean };
+type PromoMode = "off" | "personal_window" | "campaign_timer";
 
 export default async function TrialSettingsPage() {
   await requireAdmin();
@@ -20,6 +22,13 @@ export default async function TrialSettingsPage() {
   const { data } = await admin
     .from("trial_settings")
     .select("product, coaching, enabled");
+  const { data: settings } = await admin
+    .from("site_settings")
+    .select("promo_mode")
+    .eq("id", 1)
+    .maybeSingle();
+  const promoMode = ((settings as { promo_mode?: PromoMode } | null)?.promo_mode ??
+    "personal_window") as PromoMode;
 
   const initial: TrialRow[] = ((data ?? []) as TrialRow[]).map((r) => ({
     product: r.product,
@@ -44,6 +53,14 @@ export default async function TrialSettingsPage() {
       </div>
 
       <TrialSettingsForm initial={initial} />
+
+      <div className="pt-4">
+        <h2 className="text-xl font-bold">מצב דחיפות (מבצע)</h2>
+        <p className="text-muted-foreground mb-3">
+          מנגנון דחיפות אחד פעיל בכל רגע. משפיע על אכיפת מחיר ההיכרות בצ׳קאאוט ועל החיווי.
+        </p>
+        <PromoModeForm initial={promoMode} />
+      </div>
     </div>
   );
 }
