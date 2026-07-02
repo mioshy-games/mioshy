@@ -197,7 +197,6 @@ export function AnalysisSummary({
   const RK = "journeyAssessment.results";
   const cmsEyebrow = useCmsText(`${RK}.eyebrow`).text;
   const cmsHeroSub = useCmsText(`${RK}.heroSub`).text;
-  const cmsHeroLink = useCmsText(`${RK}.heroLink`).text;
   const cmsFeedbackLabel = useCmsText(`${RK}.feedbackLabel`).text;
   const cmsCategoriesLabel = useCmsText(`${RK}.categoriesLabel`).text;
   const cmsContinueLabel = useCmsText(`${RK}.continueLabel`).text;
@@ -483,9 +482,8 @@ export function AnalysisSummary({
               })}
             </div>
           ) : null}
-          <a className="ar-herolink" href="#ar-price">
-            {rc(cmsHeroLink, "להצטרף לייעוץ הזוגי עם מיאושי", "Join couples coaching with Mioshy")}
-          </a>
+          {/* Hero link removed (2026-07-02) — duplicated the sticky CTA + the
+              offer section and distracted from reading the report. */}
         </div>
       </div>
 
