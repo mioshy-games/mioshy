@@ -323,11 +323,8 @@ function Stage3Price() {
 
   return (
     <>
-      {/* Task 17 — trial tag above the price (doc copy). Only when a journey
-          trial is enabled; otherwise the price block reads exactly as before. */}
-      {trial.enabled ? (
-        <span className="js-stop-trial-tag">{trial.cardTag}</span>
-      ) : null}
+      {/* Task 17 — trial tag moved OUT of the price block (Itzik 2026-07-02):
+          it now sits directly above the CTA button, see <Stop />. */}
       <div className="js-stop-price">
         {hasPromo ? (
           <span className="js-stop-price-original">{shekel(monthly)}</span>
@@ -379,6 +376,15 @@ function Stop({
 }) {
   const tone = STAGE_TONE[id];
   const isStage3 = id === "3";
+  // Task 17 — the journey trial tag renders above the CTA on stage 3 (Itzik
+  // 2026-07-02, moved from above the price). Hook is called unconditionally to
+  // keep a stable hook order; the tag only shows for stage 3 when trial is on.
+  const trial = useTrialOffer({
+    product: "journey",
+    coaching: false,
+    isHe: true,
+    plan: "monthly",
+  });
 
   return (
     <article
@@ -519,12 +525,22 @@ function Stop({
                 </>
               )}
             </div>
-            <Link href={STAGE_HREFS[id]} className="js-stop-cta">
-              <CmsText cmsKey={`homeV2.journeyStages.stage${id}Cta`} />{" "}
-              <span aria-hidden className="js-stop-cta-arrow">
-                ←
-              </span>
-            </Link>
+            {/* Task 17 — trial tag directly above the CTA (Itzik 2026-07-02),
+                stage 3 only, desktop + mobile. Wrapped in a column so the tag
+                stacks right on top of the button. */}
+            <div className="js-stop-cta-col">
+              {isStage3 && trial.enabled ? (
+                <span className="js-stop-trial-tag js-stop-trial-tag--cta">
+                  {trial.cardTag}
+                </span>
+              ) : null}
+              <Link href={STAGE_HREFS[id]} className="js-stop-cta">
+                <CmsText cmsKey={`homeV2.journeyStages.stage${id}Cta`} />{" "}
+                <span aria-hidden className="js-stop-cta-arrow">
+                  ←
+                </span>
+              </Link>
+            </div>
           </div>
         </div>
       </div>
@@ -871,6 +887,13 @@ const STYLES = `
     margin-top:6px;
     font-size:14px;color:#4B4640;font-weight:500;
   }
+  /* Task 17 — trial tag stacked above the CTA (Itzik 2026-07-02). The column
+     right-aligns on desktop (matches the CTA's spot in the space-between foot);
+     mobile left-aligns below. The gap replaces the tag's own margin. */
+  .mood-timeline .js-stop-cta-col{
+    display:flex;flex-direction:column;align-items:flex-end;gap:8px;
+  }
+  .mood-timeline .js-stop-trial-tag--cta{margin-bottom:0}
   /* Task 23 — "מנוי אחד, שני בני זוג" reassurance under the stage-3 price. */
   .mood-timeline .js-stop-couple-note{
     margin-top:8px;
@@ -948,6 +971,7 @@ const STYLES = `
       flex-direction:column;align-items:stretch;
       gap:14px;
     }
+    .mood-timeline .js-stop-cta-col{align-items:flex-start;width:100%}
     .mood-timeline .js-stop-cta{align-self:flex-start}
     .mood-timeline .js-stop-price-amount{font-size:38px}
 
