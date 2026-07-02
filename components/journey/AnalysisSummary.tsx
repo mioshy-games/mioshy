@@ -56,15 +56,8 @@ function firstPeriodLabel(cadence: string, isHe: boolean): string {
   }
 }
 
-// Display-only discount anchor for the struck "original" price (ILS only).
-// `original = ANCHOR_WEEKLY_BASE_ILS × ANCHOR_WEEKS_IN_PERIOD[cadence]`
-// → 508 / 1,524 / 6,096. WHOLE period-weeks {4,12,48} on purpose.
-const ANCHOR_WEEKLY_BASE_ILS = 127;
-const ANCHOR_WEEKS_IN_PERIOD: Record<string, number> = {
-  monthly: 4,
-  quarterly: 12,
-  yearly: 48,
-};
+// (Task 23, 2026-07-02) The fabricated ₪508 anchor (127×period-weeks) was
+// removed — strikethrough now shows only a real regular price (the promo path).
 const CADENCE_ORDER: Record<string, number> = {
   weekly: 0,
   monthly: 1,
@@ -184,7 +177,6 @@ export function AnalysisSummary({
   const ctaLoadingLabel = useCmsText("journeyAssessment.analysis.ctaLoading").text;
   const ctaLabelCms = useCmsText("journeyAssessment.analysis.cta").text;
   const priceNoteCms = useCmsText("journeyAssessment.analysis.priceNote").text;
-  const anchorPriceCms = useCmsText("journeyAssessment.analysis.anchorPrice").text;
   const activeTitleCms = useCmsText("journeyAssessment.analysis.activeTitle").text;
   const activeSubCms = useCmsText("journeyAssessment.analysis.activeSub").text;
   const promoEndsPrefixCms = useCmsText("journeyAssessment.analysis.promoEndsPrefix").text;
@@ -757,6 +749,11 @@ export function AnalysisSummary({
                       ) : savePct != null ? (
                         <span className="ar-opt-save">
                           {isHe ? "חיסכון" : "Save"} {savePct}%
+                          {/* Task 23 — annual framing beside the %. NOT the
+                              default plan (per the 2026-07-02 decision). */}
+                          {c.cadence === "yearly"
+                            ? isHe ? " · חודשיים חינם" : " · 2 months free"
+                            : ""}
                         </span>
                       ) : null}
                     </span>
@@ -817,22 +814,14 @@ export function AnalysisSummary({
                         </div>
                       );
                     }
-                    const anchorStruck =
-                      isHe && ANCHOR_WEEKS_IN_PERIOD[cad]
-                        ? priceStr(ANCHOR_WEEKLY_BASE_ILS * ANCHOR_WEEKS_IN_PERIOD[cad])
-                        : anchorPriceCms && anchorPriceCms.trim().length > 0
-                          ? anchorPriceCms
-                          : null;
+                    // Task 23 (2026-07-02): the fabricated ₪508 anchor
+                    // (127×weeks) was removed — a strikethrough shows ONLY on a
+                    // real regular price, which happens on the promo path above.
+                    // No promo → no strikethrough, just the real price.
                     return (
                       <div className="ar-summary">
                         <p className="ar-summary-line">
                           <span>{isHe ? "לתשלום" : "To pay"}</span>{" "}
-                          {anchorStruck ? (
-                            <>
-                              <span className="ar-sr">{isHe ? "היה " : "was "}</span>
-                              <s>{anchorStruck}</s>{" "}
-                            </>
-                          ) : null}
                           <b>{priceStr(amtOf(selectedOption))}</b>{" "}
                           <span>{periodLabel(cad)}</span>
                         </p>
@@ -843,6 +832,14 @@ export function AnalysisSummary({
                     );
                   })()
                 : null}
+
+              {/* Task 23 — category-standard reassurance (removes double-charge
+                  fear). Always shown, next to the price. */}
+              <p className="ar-couple-note">
+                {isHe
+                  ? "מנוי אחד, שני בני זוג. בלי תוספת מחיר."
+                  : "One subscription, both partners. No extra charge."}
+              </p>
 
               <div className="ar-incl">
                 {/* Dynamic per the coaching selector (2026-07-02, Itzik): the two
@@ -1610,6 +1607,14 @@ export function AnalysisSummary({
           font-size: 16px;
           color: #7b6b5e;
           margin-top: 12px;
+        }
+        /* Task 23 — "מנוי אחד, שני בני זוג" reassurance line near the price. */
+        .ar-couple-note {
+          text-align: center;
+          font-size: 15px;
+          font-weight: 600;
+          color: #5a4f46;
+          margin-top: 14px;
         }
 
         /* ACTIVE SUBSCRIBER */
