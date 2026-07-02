@@ -158,6 +158,29 @@ export function JourneyClient({
   phaseTotal,
   phaseAnsweredBefore,
 }: JourneyClientProps) {
+  // Task 3 (single price source): live monthly (without-coaching) price for the
+  // PaywallGateModal safety net, promo-aware, from journeyCadences + activePromo
+  // — replaces the stale static "₪98 / $33" so this surface can't drift.
+  const paywallPrice = (() => {
+    const isHe = locale === "he";
+    const monthly = journeyCadences.find((c) => c.cadence === "monthly");
+    if (!monthly) return { label: null as string | null, original: null as string | null };
+    const promo = activePromo?.withoutCoaching ?? null;
+    const pf = promo?.firstChargeByCadence?.monthly;
+    const po = promo?.originalByCadence?.monthly;
+    const firstIls = pf ? pf.ils : monthly.price_ils;
+    const firstUsd = pf ? pf.usd : monthly.price_usd;
+    const origIls = po ? po.ils : monthly.price_ils;
+    const origUsd = po ? po.usd : monthly.price_usd;
+    const money = (ils: number, usd: number) =>
+      isHe ? `${ils} ₪ לחודש` : `$${usd} per month`;
+    const hasPromo = !!(pf && po && (isHe ? firstIls < origIls : firstUsd < origUsd));
+    return {
+      label: money(firstIls, firstUsd),
+      original: hasPromo ? money(origIls, origUsd) : null,
+    };
+  })();
+
   // F3.2 — `questions` is the UNANSWERED remainder of the active phase, so we
   // always start at its index 0 (resume = first unanswered, computed server-
   // side). `current_step` is no longer trusted for positioning.
@@ -977,6 +1000,8 @@ export function JourneyClient({
         open={paywallOpen}
         locale={locale}
         onClose={() => setPaywallOpen(false)}
+        priceLabel={paywallPrice.label}
+        originalLabel={paywallPrice.original}
       />
     </div>
   );

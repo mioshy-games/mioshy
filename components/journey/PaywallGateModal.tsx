@@ -18,6 +18,12 @@ interface PaywallGateModalProps {
   open: boolean;
   locale: Locale;
   onClose?: () => void;
+  /** Live monthly (without-coaching) price label from the single price source
+   *  (journeyCadences + activePromo), promo-aware. When provided it replaces
+   *  the static CMS price string so this surface never drifts. */
+  priceLabel?: string | null;
+  /** Struck original price when a promo discounts the first charge. */
+  originalLabel?: string | null;
 }
 
 /**
@@ -30,6 +36,8 @@ export function PaywallGateModal({
   open,
   locale,
   onClose,
+  priceLabel = null,
+  originalLabel = null,
 }: PaywallGateModalProps) {
   const [busy, setBusy] = useState(false);
 
@@ -101,11 +109,24 @@ export function PaywallGateModal({
         </ul>
 
         <div className="rounded-2xl border border-white/15 bg-white/5 p-4 text-center text-white">
-          <CmsText
-            cmsKey="journeyAssessment.paywallGate.price"
-            as="div"
-            className="text-xl font-semibold"
-          />
+          {priceLabel ? (
+            // Single price source (journeyCadences/activePromo). Replaces the
+            // stale static CMS "₪98 / $33" so this surface can't drift.
+            <div className="text-xl font-semibold">
+              {originalLabel ? (
+                <>
+                  <s className="opacity-60">{originalLabel}</s>{" "}
+                </>
+              ) : null}
+              {priceLabel}
+            </div>
+          ) : (
+            <CmsText
+              cmsKey="journeyAssessment.paywallGate.price"
+              as="div"
+              className="text-xl font-semibold"
+            />
+          )}
         </div>
 
         <div className="mt-4 flex flex-col gap-2">

@@ -408,6 +408,32 @@ export function AnalysisSummary({
     enabledCadences[0] ??
     null;
 
+  // Task 16 — 7-day trial timeline (shown in the package selector when a trial
+  // is enabled for the selected option). Lines are the doc's verbatim copy; the
+  // "יום 7" price is injected live from the selected option (single source), so
+  // it never drifts. EN variants never render (trial is ILS/Israeli-only).
+  const trialDay7 = (() => {
+    const cad = checkoutPlan;
+    const pf = promoSet?.firstChargeByCadence[cad];
+    const po = promoSet?.originalByCadence[cad];
+    if (pf && po) {
+      const first = isHe ? pf.ils : pf.usd;
+      const full = isHe ? po.ils : po.usd;
+      if (cad === "monthly") {
+        return isHe
+          ? `מתחיל החיוב. ${first} ₪ לחודש הראשון, ואחריו ${full} ₪ לחודש.`
+          : `billing begins. $${first} first month, then $${full}/mo.`;
+      }
+      return isHe
+        ? `מתחיל החיוב. ${priceStr(first)} ${firstPeriodLabel(cad, true)}, ואחריו ${priceStr(full)} ${periodLabel(cad)}.`
+        : `billing begins. ${priceStr(first)} ${firstPeriodLabel(cad, false)}, then ${priceStr(full)} ${periodLabel(cad)}.`;
+    }
+    const amt = selectedOption ? amtOf(selectedOption) : 0;
+    return isHe
+      ? `מתחיל החיוב. ${priceStr(amt)} ${periodLabel(cad)}.`
+      : `billing begins. ${priceStr(amt)} ${periodLabel(cad)}.`;
+  })();
+
   return (
     <div className="ar-root" dir={isHe ? "rtl" : "ltr"}>
       {/* ── HERO ───────────────────────────────────────────────────── */}
@@ -613,6 +639,34 @@ export function AnalysisSummary({
               {rc(cmsPriceTitle, "איזו חבילה מתאימה לכם?", "Which plan fits you?")}
             </h2>
             <div className="ar-pricecard">
+              {/* Task 16 — 7-day trial timeline (Blinkist pattern), above the
+                  price. Only when a trial is enabled for the selected option.
+                  Doc-verbatim lines; day-7 price injected live. */}
+              {trial.enabled ? (
+                <div className="ar-trial-tl">
+                  <div className="ar-trial-row">
+                    <b>{isHe ? "היום:" : "Today:"}</b>{" "}
+                    {isHe
+                      ? "נכנסים ומקבלים גישה מלאה לכל מיאושי, בלי חיוב."
+                      : "you get full access to all of Mioshy, no charge."}
+                  </div>
+                  <div className="ar-trial-row">
+                    <b>{isHe ? "יום 5:" : "Day 5:"}</b>{" "}
+                    {isHe
+                      ? "נשלח לכם תזכורת שהניסיון עומד להסתיים."
+                      : "we'll send a reminder that the trial is ending."}
+                  </div>
+                  <div className="ar-trial-row">
+                    <b>{isHe ? "יום 7:" : "Day 7:"}</b> {trialDay7}
+                  </div>
+                  <div className="ar-trial-foot">
+                    {isHe
+                      ? "אפשר לבטל בכל שלב, בקליק אחד מהאזור האישי."
+                      : "cancel any time, one click from your account."}
+                  </div>
+                </div>
+              ) : null}
+
               {/* Stage-1 coaching add-on — with/without choice. Only rendered
                   once a coaching cost is configured (else the bundle == content
                   and a 0₪ choice would only confuse). */}
@@ -684,6 +738,10 @@ export function AnalysisSummary({
                     <span className="ar-radio" />
                     <span className="ar-opt-info">
                       <span className="ar-opt-name">{cadenceTitle(c.cadence)}</span>
+                      {/* Task 16 — trial tag on the selected plan card */}
+                      {trial.enabled && selected ? (
+                        <span className="ar-trial-tag">{trial.cardTag}</span>
+                      ) : null}
                       {hasPromo ? (
                         <>
                           {/* Sub line first; "חיסכון X%" moved to its OWN line
@@ -727,8 +785,11 @@ export function AnalysisSummary({
 
               {/* Selected-cadence headline — the amount Cardcom will charge for
                   the selected plan. Preserves the struck anchor (ILS derived /
-                  USD CMS), the promo "first period" nuance, and USD. */}
-              {selectedOption
+                  USD CMS), the promo "first period" nuance, and USD.
+                  Task 16: hidden during a trial — the trial timeline above
+                  already states the day-7 charge, so an "לתשלום עכשיו"-style
+                  line here would contradict "no charge for 7 days". */}
+              {!trial.enabled && selectedOption
                 ? (() => {
                     const cad = selectedOption.cadence;
                     const pf = promoSet?.firstChargeByCadence[cad];
@@ -1230,6 +1291,45 @@ export function AnalysisSummary({
           border-radius: 24px;
           padding: 16px;
           box-shadow: 0 18px 44px -22px rgba(120, 70, 120, 0.28);
+        }
+        /* Task 16 — 7-day trial timeline (Blinkist pattern) */
+        .ar-trial-tl {
+          border: 1px solid #ead9c8;
+          border-radius: 16px;
+          background: linear-gradient(155deg, #ffffff 0%, #fbf2e4 100%);
+          padding: 14px 16px;
+          margin-bottom: 16px;
+        }
+        .ar-trial-row {
+          font-size: 16px;
+          line-height: 1.5;
+          color: #2e2622;
+        }
+        .ar-trial-row + .ar-trial-row {
+          margin-top: 6px;
+        }
+        .ar-trial-row b {
+          color: #7a1f2b;
+          font-weight: 800;
+        }
+        .ar-trial-foot {
+          margin-top: 10px;
+          padding-top: 10px;
+          border-top: 1px solid #ead9c8;
+          font-size: 15px;
+          color: #5a4f46;
+          font-weight: 600;
+        }
+        .ar-trial-tag {
+          display: inline-block;
+          width: fit-content;
+          margin-top: 6px;
+          font-size: 13px;
+          font-weight: 800;
+          color: #fff;
+          background: var(--ar-grad);
+          padding: 3px 10px;
+          border-radius: 99px;
         }
         /* Tabs (v9): a narrow, centered segmented pill — light cream, ✓ on the
            selected tab only. */
