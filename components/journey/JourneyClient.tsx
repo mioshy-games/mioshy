@@ -87,6 +87,9 @@ interface JourneyClientProps {
   journeySubscribed?: boolean;
   authenticated?: boolean;
   journeyCadences?: CadenceOption[];
+  /** Task 21 — personal 48h offer deadline (personal_window mode), for the
+   *  "מחיר ההיכרות שלכם שמור עד …" line on the results page. Null = none. */
+  offerExpiresAt?: string | null;
   /** Active journey marketing promo (server-computed), forwarded to
    *  AnalysisSummary for the discount banner. null → no banner. */
   activePromo?: JourneyPromoSummary | null;
@@ -152,6 +155,7 @@ export function JourneyClient({
   authenticated = false,
   journeyCadences = [],
   activePromo = null,
+  offerExpiresAt = null,
   questions,
   likertLabels,
   gating,
@@ -870,6 +874,7 @@ export function JourneyClient({
           journeySubscribed={journeySubscribed}
           journeyCadences={journeyCadences}
           activePromo={activePromo}
+          offerExpiresAt={offerExpiresAt}
         />
       </div>
     );

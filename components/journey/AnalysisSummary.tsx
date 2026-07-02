@@ -76,6 +76,9 @@ interface AnalysisSummaryProps {
   /** Active journey promo (server-computed) — drives the per-cadence discount
    *  display. null/undefined → regular prices. */
   activePromo?: JourneyPromoSummary | null;
+  /** Task 21 — personal 48h offer deadline (personal_window). Drives the
+   *  "מחיר ההיכרות שלכם שמור עד …" line near the price. Null = no window. */
+  offerExpiresAt?: string | null;
 }
 
 /**
@@ -132,9 +135,27 @@ export function AnalysisSummary({
   journeySubscribed = false,
   journeyCadences = [],
   activePromo = null,
+  offerExpiresAt = null,
 }: AnalysisSummaryProps) {
   const isHe = locale === "he";
   const Arrow = isHe ? ArrowLeft : ArrowRight;
+
+  // Task 21 — personal-window line ("מחיר ההיכרות שלכם שמור עד <יום, שעה>").
+  // Named deadline, no ticking clock. Only when the user has an active window.
+  const offerWindowLabel = (() => {
+    if (!offerExpiresAt) return null;
+    const end = new Date(offerExpiresAt);
+    if (end.getTime() <= Date.now()) return null;
+    try {
+      const d = end.toLocaleDateString(locale, { weekday: "long" });
+      const t = end.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
+      return isHe
+        ? `מחיר ההיכרות שלכם שמור עד ${d} ${t}`
+        : `Your intro price is held until ${d} ${t}`;
+    } catch {
+      return null;
+    }
+  })();
 
   // ── Cadence picker (hooks must run before the loading early-return) ──
   const enabledCadences = journeyCadences
@@ -832,6 +853,12 @@ export function AnalysisSummary({
                     );
                   })()
                 : null}
+
+              {/* Task 21 — personal 48h window line (named deadline, no clock).
+                  Only shows when the user has an active offer window. */}
+              {offerWindowLabel ? (
+                <p className="ar-offer-window">{offerWindowLabel}</p>
+              ) : null}
 
               {/* Task 23 — category-standard reassurance (removes double-charge
                   fear). Always shown, next to the price. */}
@@ -1614,6 +1641,14 @@ export function AnalysisSummary({
           font-size: 15px;
           font-weight: 600;
           color: #5a4f46;
+          margin-top: 14px;
+        }
+        /* Task 21 — personal 48h offer-window line (brand wine, quiet). */
+        .ar-offer-window {
+          text-align: center;
+          font-size: 14px;
+          font-weight: 700;
+          color: #7a1f2b;
           margin-top: 14px;
         }
 

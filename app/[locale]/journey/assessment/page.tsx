@@ -634,6 +634,7 @@ export default async function JourneyAssessmentPage({
         authenticated={!!user}
         journeyCadences={journeyCadences}
         activePromo={activePromo}
+        offerExpiresAt={offerExpiresAt}
         questions={flow.remaining}
         likertLabels={QUESTIONNAIRE.likert_labels}
         gating={QUESTIONNAIRE.gating}
