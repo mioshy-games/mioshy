@@ -428,9 +428,11 @@ export function AnalysisSummary({
     null;
 
   // Task 16 — 7-day trial timeline (shown in the package selector when a trial
-  // is enabled for the selected option). Lines are the doc's verbatim copy; the
-  // "יום 7" price is injected live from the selected option (single source), so
-  // it never drifts. EN variants never render (trial is ILS/Israeli-only).
+  // is enabled for the selected option). Copy is the "בעוד X ימים" relative-time
+  // revision (Itzik 2026-07-02); this builds the "בעוד 7 ימים" line only. The
+  // price is injected live from the selected option (single source), so it never
+  // drifts. Amounts go through priceStr (NBSP -> no line break). Non-monthly uses
+  // the existing approved period labels. EN never renders (trial is ILS-only).
   const trialDay7 = (() => {
     const cad = checkoutPlan;
     const pf = promoSet?.firstChargeByCadence[cad];
@@ -440,17 +442,20 @@ export function AnalysisSummary({
       const full = isHe ? po.ils : po.usd;
       if (cad === "monthly") {
         return isHe
-          ? `מתחיל החיוב. ${first} ₪ לחודש הראשון, ואחריו ${full} ₪ לחודש.`
-          : `billing begins. $${first} first month, then $${full}/mo.`;
+          ? `מתחיל החיוב. חודש ראשון ${priceStr(first)}, ואחריו ${priceStr(full)} לחודש.`
+          : `billing begins. ${priceStr(first)} first month, then ${priceStr(full)}/mo.`;
       }
       return isHe
         ? `מתחיל החיוב. ${priceStr(first)} ${firstPeriodLabel(cad, true)}, ואחריו ${priceStr(full)} ${periodLabel(cad)}.`
         : `billing begins. ${priceStr(first)} ${firstPeriodLabel(cad, false)}, then ${priceStr(full)} ${periodLabel(cad)}.`;
     }
+    // No active promo: comma form, "לחודש" for monthly (approved period label
+    // otherwise). "מתחיל החיוב, {מחיר_רגיל} לחודש."
     const amt = selectedOption ? amtOf(selectedOption) : 0;
+    const recurringLabel = cad === "monthly" ? (isHe ? "לחודש" : "/mo") : periodLabel(cad);
     return isHe
-      ? `מתחיל החיוב. ${priceStr(amt)} ${periodLabel(cad)}.`
-      : `billing begins. ${priceStr(amt)} ${periodLabel(cad)}.`;
+      ? `מתחיל החיוב, ${priceStr(amt)} ${recurringLabel}.`
+      : `billing begins, ${priceStr(amt)} ${recurringLabel}.`;
   })();
 
   return (
@@ -659,27 +664,38 @@ export function AnalysisSummary({
             <div className="ar-pricecard">
               {/* Task 16 — 7-day trial timeline (Blinkist pattern), above the
                   price. Only when a trial is enabled for the selected option.
-                  Doc-verbatim lines; day-7 price injected live. */}
+                  Relative-time copy + ✓ markers (Itzik 2026-07-02); the first
+                  line bridges to the full assessment; day-7 price injected live.
+                  The foot is a summary line (no ✓, no colon). */}
               {trial.enabled ? (
                 <div className="ar-trial-tl">
                   <div className="ar-trial-row">
-                    <b>{isHe ? "היום:" : "Today:"}</b>{" "}
-                    {isHe
-                      ? "נכנסים ומקבלים גישה מלאה לכל מיאושי, בלי חיוב."
-                      : "you get full access to all of Mioshy, no charge."}
+                    <span aria-hidden className="ar-trial-check">✓</span>
+                    <span>
+                      <b>{isHe ? "היום:" : "Today:"}</b>{" "}
+                      {isHe
+                        ? "מצטרפים בלי חיוב, והאבחון המלא מחכה לכם עם תמונה מדויקת יותר."
+                        : "join with no charge, and the full assessment awaits with a sharper picture."}
+                    </span>
                   </div>
                   <div className="ar-trial-row">
-                    <b>{isHe ? "יום 5:" : "Day 5:"}</b>{" "}
-                    {isHe
-                      ? "נשלח לכם תזכורת שהניסיון עומד להסתיים."
-                      : "we'll send a reminder that the trial is ending."}
+                    <span aria-hidden className="ar-trial-check">✓</span>
+                    <span>
+                      <b>{isHe ? "בעוד 5 ימים:" : "In 5 days:"}</b>{" "}
+                      {isHe
+                        ? "נשלח לכם תזכורת שתקופת הניסיון עומדת להסתיים."
+                        : "we'll send a reminder that the trial is ending."}
+                    </span>
                   </div>
                   <div className="ar-trial-row">
-                    <b>{isHe ? "יום 7:" : "Day 7:"}</b> {trialDay7}
+                    <span aria-hidden className="ar-trial-check">✓</span>
+                    <span>
+                      <b>{isHe ? "בעוד 7 ימים:" : "In 7 days:"}</b> {trialDay7}
+                    </span>
                   </div>
                   <div className="ar-trial-foot">
                     {isHe
-                      ? "אפשר לבטל בכל שלב, בקליק אחד מהאזור האישי."
+                      ? "ביטול בכל רגע, בלחיצת כפתור מהאזור האישי."
                       : "cancel any time, one click from your account."}
                   </div>
                 </div>
@@ -1344,12 +1360,22 @@ export function AnalysisSummary({
           font-family: var(--font-heebo), "Assistant", "Heebo", system-ui, sans-serif;
         }
         .ar-trial-row {
+          display: flex;
+          gap: 8px;
+          align-items: baseline;
           font-size: 20px;
           line-height: 1.5;
           color: #2e2622;
         }
         .ar-trial-row + .ar-trial-row {
           margin-top: 8px;
+        }
+        /* ✓ marker (Itzik 2026-07-02) — flex:none keeps the wrapped text from
+           tucking under it; brand rose to match the bold labels. */
+        .ar-trial-check {
+          flex: none;
+          color: #7a1f2b;
+          font-weight: 800;
         }
         .ar-trial-row b {
           color: #7a1f2b;
