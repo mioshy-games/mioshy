@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>מיאושי — תבניות מייל + וואטסאפ לאישור (2026-07-02)</title>
+<style>
+  :root{
+    --cream:#FCFAF7; --ink:#2E2622; --muted:#7B6B5E; --wine:#7A1F2B;
+    --grad:linear-gradient(95deg,#6C5CE7 0%,#D6409F 52%,#F79154 100%);
+    --line:#ECE2CF;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#efeae3;color:var(--ink);
+    font-family:"Heebo","Assistant",system-ui,Arial,sans-serif;line-height:1.55}
+  .page{max-width:1100px;margin:0 auto;padding:28px 18px 80px}
+  h1{font-size:26px;margin:0 0 4px}
+  .sub{color:var(--muted);margin:0 0 8px}
+  .legend{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin:14px 0 26px;font-size:14px}
+  .legend b{color:var(--wine)}
+  .tpl{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:28px;
+    box-shadow:0 10px 30px -20px rgba(80,50,35,.4)}
+  .tpl-head{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:baseline;margin-bottom:6px}
+  .tpl-head h2{font-size:19px;margin:0}
+  .tag{font-size:12px;font-weight:800;color:#fff;background:var(--grad);border-radius:99px;padding:3px 10px}
+  .tag.final{background:#1f8f4e}
+  .tag.draft{background:#b8863a}
+  .meta{font-size:13px;color:var(--muted);margin:2px 0 14px}
+  .meta code{background:#f4efe7;border-radius:6px;padding:1px 6px}
+  .subject{font-weight:800;color:var(--ink)}
+  .count{color:var(--muted);font-weight:600}
+  .over{color:#b3261e}
+  .devices{display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start}
+  .device{flex:0 0 auto}
+  .device .label{font-size:12px;color:var(--muted);text-align:center;margin-bottom:6px}
+  .frame{background:#dfd8cf;border-radius:14px;padding:10px}
+  .desktop .frame{width:600px}
+  .mobile .frame{width:340px}
+  @media(max-width:760px){ .desktop{display:none} }
+
+  /* ── email shell (email-safe: inline-ish, simple) ── */
+  .email{background:var(--cream);border-radius:10px;overflow:hidden;border:1px solid var(--line)}
+  .e-top{height:6px;background:var(--grad)}
+  .e-pad{padding:26px 24px}
+  .logo{font-family:"Frank Ruhl Libre",Georgia,serif;font-weight:900;font-size:22px;color:var(--wine);text-align:center;margin-bottom:18px}
+  .e-h{font-family:"Frank Ruhl Libre",Georgia,serif;font-size:24px;font-weight:900;margin:0 0 12px;color:var(--ink)}
+  .e-p{font-size:16px;margin:0 0 14px;color:#3f382f}
+  .offer{background:#fff;border:1px dashed #d9c9af;border-radius:10px;padding:12px 14px;font-weight:700;color:var(--wine);margin:6px 0 18px}
+  .cta{display:inline-block;background:var(--grad);color:#fff;font-weight:800;font-size:17px;
+    text-decoration:none;padding:14px 30px;border-radius:12px}
+  .cta-wrap{text-align:center;margin:8px 0 14px}
+  .sec{display:block;text-align:center;font-size:14px;color:var(--wine);font-weight:700;text-decoration:underline;margin-top:6px}
+  .foot{font-size:12px;color:var(--muted);text-align:center;margin-top:22px;border-top:1px solid var(--line);padding-top:14px}
+  .ph{background:#f0e7fb;border-radius:5px;padding:0 4px;color:#6C5CE7;font-weight:700}
+
+  /* ── whatsapp bubble ── */
+  .wa-wrap{background:#0b141a;border-radius:14px;padding:22px;max-width:420px}
+  .wa{background:#005c4b;color:#e9edef;border-radius:12px 12px 12px 4px;padding:12px 14px;font-size:15px;line-height:1.5;
+    box-shadow:0 1px 1px rgba(0,0,0,.3)}
+  .wa .v{background:#0a5;background:rgba(255,255,255,.16);border-radius:4px;padding:0 4px;font-weight:700}
+  .wa-time{color:#8aa;font-size:11px;text-align:left;margin-top:4px}
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>מיאושי — תבניות מייל + וואטסאפ לאישור</h1>
+  <p class="sub">2026-07-02 · רצף הניסיון + חלון ההצעה האישי. אישור על הקובץ הזה = אישור לחיווט שליחה (ולהגשת תבנית הוואטסאפ למטא).</p>
+  <div class="legend">
+    <b>מקרא:</b> <span class="tag final">סופי</span> נוסח מאושר מילה-במילה במסמך · <span class="tag draft">טיוטה</span> ממתין לאישורך על הקובץ ·
+    <span class="ph">[משתנה]</span> נמשך דינמית מהמנוי/החלון (לא קשיח).
+    <b>מגבלות:</b> נושא מייל ≈40 תווים · preheader ≈85 · וואטסאפ גוף ≤1024, header ≤60.
+  </div>
+
+  <!-- ══════════ 1. DAY-5 REMINDER (task 18) ══════════ -->
+  <div class="tpl">
+    <div class="tpl-head"><h2>מייל 1 · תזכורת יום 5</h2><span class="tag draft">טיוטה</span></div>
+    <div class="meta">
+      טריגר: <code>cron יומי</code> — מנוי בניסיון ביום 5, פעם אחת (דגל נשלח).<br>
+      נושא: <span class="subject">הניסיון שלכם במיאושי מסתיים בעוד יומיים</span> <span class="count">(37 תווים ✓)</span>
+    </div>
+    <div class="devices">
+      <div class="device desktop"><div class="label">דסקטופ</div><div class="frame">
+        <div class="email"><div class="e-top"></div><div class="e-pad">
+          <div class="logo">מיאושי</div>
+          <p class="e-p">היי <span class="ph">[שם]</span>, רצינו להזכיר: 7 ימי הניסיון שלכם מסתיימים ב-<span class="ph">[תאריך]</span>.</p>
+          <p class="e-p">אם תבחרו להישאר, לא צריך לעשות כלום. החיוב הראשון, <span class="ph">[37 ₪]</span> לחודש הראשון, יתבצע ב-<span class="ph">[תאריך]</span>. ואם זה לא הזמן שלכם, אפשר לבטל בקליק אחד מהאזור האישי, בלי שאלות.</p>
+          <p class="e-p">בינתיים מחכה לכם המומחה שלכם בצ'אט, וכל התוכנית האישית שלכם.</p>
+          <div class="cta-wrap"><a class="cta" href="#">להמשיך למיאושי</a>
+            <a class="sec" href="#">לניהול המנוי או ביטול</a></div>
+          <div class="foot">מיאושי · ביטול בכל עת מהאזור האישי · הסרה מרשימת הדיוור</div>
+        </div></div>
+      </div></div>
+      <div class="device mobile"><div class="label">מובייל</div><div class="frame">
+        <div class="email"><div class="e-top"></div><div class="e-pad">
+          <div class="logo">מיאושי</div>
+          <p class="e-p">היי <span class="ph">[שם]</span>, רצינו להזכיר: 7 ימי הניסיון שלכם מסתיימים ב-<span class="ph">[תאריך]</span>.</p>
+          <p class="e-p">אם תבחרו להישאר, לא צריך לעשות כלום. החיוב הראשון, <span class="ph">[37 ₪]</span> לחודש הראשון, יתבצע ב-<span class="ph">[תאריך]</span>. ואם זה לא הזמן שלכם, אפשר לבטל בקליק אחד מהאזור האישי, בלי שאלות.</p>
+          <p class="e-p">בינתיים מחכה לכם המומחה שלכם בצ'אט, וכל התוכנית האישית שלכם.</p>
+          <div class="cta-wrap"><a class="cta" href="#">להמשיך למיאושי</a>
+            <a class="sec" href="#">לניהול המנוי או ביטול</a></div>
+          <div class="foot">מיאושי · ביטול בכל עת · הסרה מהדיוור</div>
+        </div></div>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- ══════════ 2. TOUCH 1 (at analysis ready) ══════════ -->
+  <div class="tpl">
+    <div class="tpl-head"><h2>מייל 2 · מגע 1 (מיד בסיום האבחון)</h2><span class="tag draft">טיוטה (שורת ההצעה סופית)</span></div>
+    <div class="meta">
+      טריגר: מיד עם סיום האבחון הקצר.<br>
+      נושא: <span class="subject">הניתוח הזוגי שלכם מוכן</span> <span class="count">(18 תווים ✓)</span>
+    </div>
+    <div class="devices">
+      <div class="device desktop"><div class="label">דסקטופ</div><div class="frame">
+        <div class="email"><div class="e-top"></div><div class="e-pad">
+          <div class="logo">מיאושי</div>
+          <h2 class="e-h">הניתוח הזוגי שלכם מוכן</h2>
+          <p class="e-p">סיימתם את האבחון, ובנינו לכם תמונת מצב אישית בחמשת תחומי הזוגיות. עלה ש<span class="ph">[תחום המיקוד]</span> הוא המקום שהכי שווה להתחיל בו.</p>
+          <div class="cta-wrap"><a class="cta" href="#">לצפייה בניתוח שלכם</a></div>
+          <div class="offer">מחיר ההיכרות, <span class="ph">[37 ₪]</span> לחודש הראשון, שמור לכם עד <span class="ph">[יום]</span> ב-<span class="ph">[שעה]</span>.</div>
+          <p class="e-p">שווה לפתוח את זה יחד עם בן/בת הזוג, זו נקודת פתיחה מצוינת לשיחה.</p>
+          <div class="foot">מיאושי · ביטול בכל עת · הסרה מהדיוור</div>
+        </div></div>
+      </div></div>
+      <div class="device mobile"><div class="label">מובייל</div><div class="frame">
+        <div class="email"><div class="e-top"></div><div class="e-pad">
+          <div class="logo">מיאושי</div>
+          <h2 class="e-h">הניתוח הזוגי שלכם מוכן</h2>
+          <p class="e-p">סיימתם את האבחון, ובנינו לכם תמונת מצב אישית בחמשת תחומי הזוגיות. עלה ש<span class="ph">[תחום המיקוד]</span> הוא המקום שהכי שווה להתחיל בו.</p>
+          <div class="cta-wrap"><a class="cta" href="#">לצפייה בניתוח שלכם</a></div>
+          <div class="offer">מחיר ההיכרות, <span class="ph">[37 ₪]</span> לחודש הראשון, שמור לכם עד <span class="ph">[יום]</span> ב-<span class="ph">[שעה]</span>.</div>
+          <p class="e-p">שווה לפתוח את זה יחד עם בן/בת הזוג.</p>
+          <div class="foot">מיאושי · הסרה מהדיוור</div>
+        </div></div>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- ══════════ 3. TOUCH 2 (24h, FINAL) ══════════ -->
+  <div class="tpl">
+    <div class="tpl-head"><h2>מייל 3 · מגע 2 (אחרי 24 שעות, אם לא נרכש)</h2><span class="tag final">סופי</span></div>
+    <div class="meta">
+      טריגר: 24 שעות אחרי מגע 1, רק אם לא נרכש מנוי.<br>
+      נושא: <span class="subject">שווה לדבר על זה יחד הערב</span> <span class="count">(23 תווים ✓)</span>
+    </div>
+    <div class="devices">
+      <div class="device desktop"><div class="label">דסקטופ</div><div class="frame">
+        <div class="email"><div class="e-top"></div><div class="e-pad">
+          <div class="logo">מיאושי</div>
+          <p class="e-p">היי <span class="ph">[שם]</span>, באבחון שלכם עלה ש<span class="ph">[תחום המיקוד]</span> הוא המקום שהכי שווה להתחיל בו.</p>
+          <p class="e-p">כך נראה השבוע הראשון במיאושי: נפתח לכם הפרק הראשון בדיוק בתחום הזה, והמומחה שלכם זמין לכם בצ'אט אישי. אפשר לעבור אותו יחד, ואפשר שכל אחד יתחיל לבד.</p>
+          <p class="e-p">מחיר ההיכרות ששמרנו לכם, <span class="ph">[37 ₪]</span> לחודש הראשון, בתוקף עד <span class="ph">[יום]</span> ב-<span class="ph">[שעה]</span>.</p>
+          <div class="cta-wrap"><a class="cta" href="#">מתחילים את השבוע הראשון</a></div>
+          <div class="foot">מיאושי · ביטול בכל עת · הסרה מהדיוור</div>
+        </div></div>
+      </div></div>
+      <div class="device mobile"><div class="label">מובייל</div><div class="frame">
+        <div class="email"><div class="e-top"></div><div class="e-pad">
+          <div class="logo">מיאושי</div>
+          <p class="e-p">היי <span class="ph">[שם]</span>, באבחון שלכם עלה ש<span class="ph">[תחום המיקוד]</span> הוא המקום שהכי שווה להתחיל בו.</p>
+          <p class="e-p">כך נראה השבוע הראשון במיאושי: נפתח לכם הפרק הראשון בדיוק בתחום הזה, והמומחה שלכם זמין לכם בצ'אט אישי. אפשר לעבור אותו יחד, ואפשר שכל אחד יתחיל לבד.</p>
+          <p class="e-p">מחיר ההיכרות ששמרנו לכם, <span class="ph">[37 ₪]</span> לחודש הראשון, בתוקף עד <span class="ph">[יום]</span> ב-<span class="ph">[שעה]</span>.</p>
+          <div class="cta-wrap"><a class="cta" href="#">מתחילים את השבוע הראשון</a></div>
+          <div class="foot">מיאושי · הסרה מהדיוור</div>
+        </div></div>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- ══════════ 4. TOUCH 3 (12h before expiry, email step) ══════════ -->
+  <div class="tpl">
+    <div class="tpl-head"><h2>מייל 4 · מגע 3 (12 שעות לפני פקיעה)</h2><span class="tag draft">טיוטה</span></div>
+    <div class="meta">
+      טריגר: 12 שעות לפני פקיעת החלון האישי. שלב 2 (וואטסאפ) מחליף אותו כשמאושר.<br>
+      נושא: <span class="subject">ההצעה שלכם בתוקף עד היום ב-<span class="ph">[שעה]</span></span> <span class="count">(~34 תווים ✓)</span>
+    </div>
+    <div class="devices">
+      <div class="device desktop"><div class="label">דסקטופ</div><div class="frame">
+        <div class="email"><div class="e-top"></div><div class="e-pad">
+          <div class="logo">מיאושי</div>
+          <p class="e-p">היי <span class="ph">[שם]</span>, תזכורת קצרה: מחיר ההיכרות ששמרנו לכם, <span class="ph">[37 ₪]</span> לחודש הראשון, בתוקף עד היום ב-<span class="ph">[שעה]</span>.</p>
+          <div class="cta-wrap"><a class="cta" href="#">להמשיך מכאן</a></div>
+          <div class="foot">מיאושי · ביטול בכל עת · הסרה מהדיוור</div>
+        </div></div>
+      </div></div>
+      <div class="device mobile"><div class="label">מובייל</div><div class="frame">
+        <div class="email"><div class="e-top"></div><div class="e-pad">
+          <div class="logo">מיאושי</div>
+          <p class="e-p">היי <span class="ph">[שם]</span>, תזכורת קצרה: מחיר ההיכרות ששמרנו לכם, <span class="ph">[37 ₪]</span> לחודש הראשון, בתוקף עד היום ב-<span class="ph">[שעה]</span>.</p>
+          <div class="cta-wrap"><a class="cta" href="#">להמשיך מכאן</a></div>
+          <div class="foot">מיאושי · הסרה מהדיוור</div>
+        </div></div>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- ══════════ WHATSAPP (touch 3 step 2, FINAL) ══════════ -->
+  <div class="tpl">
+    <div class="tpl-head"><h2>וואטסאפ · מגע 3 שלב 2</h2><span class="tag final">סופי (ננעל באישור מטא)</span></div>
+    <div class="meta">
+      קטגוריה: <code>MARKETING</code> · שפה: <code>he</code> · ללא header · גוף
+      <span class="count">(~150 תווים · מגבלה 1024 ✓)</span><br>
+      משתנים: <code>{{1}}</code>=שם · <code>{{2}}</code>=שעה · <code>{{3}}</code>=לינק. תנאי שליחה: תבנית מאושרת + מסלול אוטומטי + ≤1 הודעה/שבוע.
+    </div>
+    <div class="wa-wrap">
+      <div class="wa">
+        היי <span class="v">{{1}}</span>, תזכורת קטנה ממיאושי: מחיר ההיכרות ששמרנו לכם, 37 ₪ לחודש הראשון, בתוקף עד היום ב-<span class="v">{{2}}</span>. מכאן ממשיכים: <span class="v">{{3}}</span>
+        <div class="wa-time">21:00 ✓✓</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <b>לאחר אישורך על הקובץ:</b> מחווטים שליחה (מגע 2 + תזכורת יום 5 קודם), ומגישים את תבנית הוואטסאפ למטא. לאחר האישור הוויזואלי — שליחת בדיקה אמיתית של כל מייל לתיבה שלך (רינדור Gmail מובייל). הסכומים/תאריכים דינמיים מהמנוי בפועל (כולל רבעוני/שנתי).
+  </div>
+</div>
+</body>
+</html>
