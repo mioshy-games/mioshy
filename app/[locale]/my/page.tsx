@@ -18,6 +18,7 @@ import {
 } from "@/lib/between-us/couples";
 import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
 import { JourneyGraceBanner } from "@/components/my/JourneyGraceBanner";
+import { TrialEndingBanner } from "@/components/my/TrialEndingBanner";
 import { OnboardingReminderCard } from "@/components/my/OnboardingReminderCard";
 import { isFullAssessmentPending } from "@/lib/journey/full-assessment-pending";
 import { UpgradeToJourneyCard } from "@/components/my/UpgradeToJourneyCard";
@@ -406,6 +407,13 @@ export default async function MyHubPage({
             journey is active or null. Sits above the membership banner
             so users in grace immediately see the "your plan ended"
             message without scrolling. */}
+        {/* Task 21 — gentle days-6-7 trial escalation (self-gating client island). */}
+        {entitlements.isTrialing ? (
+          <section className="mt-8">
+            <TrialEndingBanner isHe={isHe} />
+          </section>
+        ) : null}
+
         {entitlements.journeyState && entitlements.journeyState !== "active" ? (
           <section className="mt-8">
             <JourneyGraceBanner
