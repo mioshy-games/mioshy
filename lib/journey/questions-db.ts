@@ -18,7 +18,9 @@
  * it to "free". (Render stays on JSON in F1, so nothing relies on this default.)
  */
 
+import { cache } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { createAdminClient } from "@/lib/supabase-admin";
 import { QUESTIONS as STATIC_QUESTIONS } from "./questions";
 import type {
   AxisWeight,
@@ -228,6 +230,31 @@ export async function loadJourneyQuestions(
   const { questions } = await loadJourneyQuestionsWithSource(client, opts);
   return questions;
 }
+
+/**
+ * Live count of the SHORT (public, pre-purchase) assessment — the "N שאלות"
+ * shown in the funnel entry copy (task 12). Sourced from the DB
+ * (journey_questions where phase='short' AND is_active) so admin edits never
+ * drift the promise; on the JSON fallback we count the short categories
+ * (free + registered), since the JSON carries no phase.
+ *
+ * Cached per request. Uses an admin (service-role) read so marketing pages
+ * don't depend on anon RLS for journey_questions.
+ */
+export const getShortQuestionCount = cache(async (): Promise<number> => {
+  try {
+    const admin = await createAdminClient();
+    const { questions, source } = await loadJourneyQuestionsWithSource(admin, {
+      phase: "short",
+    });
+    if (source === "db" && questions.length > 0) return questions.length;
+  } catch {
+    /* fall through to the JSON short-category count */
+  }
+  return STATIC_QUESTIONS.filter(
+    (q) => q.category === "free" || q.category === "registered",
+  ).length;
+});
 
 /**
  * Convenience: build a slug→Question resolver from a loaded set, suitable for

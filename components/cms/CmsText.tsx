@@ -47,13 +47,25 @@ export function CmsText({
   as: Tag = "span",
   className,
   style: extraStyle,
+  vars,
 }: {
   cmsKey: string;
   as?: keyof JSX.IntrinsicElements;
   className?: string;
   style?: React.CSSProperties;
+  /** Live values substituted into `{token}` placeholders in the CMS string
+   *  (e.g. vars={{ N: 12 }} turns "{N} שאלות" into "12 שאלות"). Lets a copy
+   *  string stay admin-editable while a number/price stays dynamic — see the
+   *  funnel entry copy (task 12) and hardcoded-price cleanup (task 20א). */
+  vars?: Record<string, string | number>;
 }) {
-  const { text, isRich, style } = useCmsText(cmsKey);
+  const { text: rawText, isRich, style } = useCmsText(cmsKey);
+  const text = vars
+    ? Object.keys(vars).reduce(
+        (s, k) => s.replace(new RegExp(`\\{${k}\\}`, "g"), String(vars[k])),
+        rawText,
+      )
+    : rawText;
 
   // Sprint 5 — when the row carries a colour override, forward the
   // resolved value to descendant <mark> elements via a CSS custom
