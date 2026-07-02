@@ -9,6 +9,7 @@ import {
   type CategoryKey,
 } from "@/lib/journey/category-feedback";
 import { useCmsText } from "@/hooks/useCmsText";
+import { useTrialOffer } from "@/hooks/useTrialOffer";
 import { PromoExpiryCountdown } from "@/components/journey/PromoExpiryCountdown";
 import type { CadenceOption } from "@/lib/billing/pricing-validations";
 
@@ -160,6 +161,20 @@ export function AnalysisSummary({
   );
   const [coaching, setCoaching] = useState(true);
 
+  // ── Money path cadence (hoisted above the loading early-return so the trial
+  // hook, which must run unconditionally, can key off it). The cadence to
+  // charge: the selected one when enabled, else the server default ("weekly").
+  const checkoutPlan = enabledCadences.some((c) => c.cadence === selectedCadence)
+    ? selectedCadence
+    : "weekly";
+
+  // A3: 7-day trial for the CURRENTLY selected option (coaching + cadence). This
+  // is the sole surface for journey-WITH-coaching. useTrialOffer re-probes when
+  // coaching/plan change, so the CTA + disclosed post-trial price track the
+  // toggle. When enabled the CTA swaps to "נסה 7 ימים חינם" and checkout → the
+  // create-trial route with the same {plan, coaching}.
+  const trial = useTrialOffer({ product: "journey", coaching, isHe, plan: checkoutPlan });
+
   const [checkoutBusy, setCheckoutBusy] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
@@ -285,18 +300,19 @@ export function AnalysisSummary({
   const insufficientKeys = categoryScores?.insufficient_keys ?? [];
 
   // ── Money path ──────────────────────────────────────────────────────────
-  // The cadence to charge: the selected one when enabled, else let the server
-  // resolve to the product default ("weekly"). This is the SAME value the
-  // displayed price keys off, so displayed price == Cardcom charge.
-  const checkoutPlan = enabledCadences.some((c) => c.cadence === selectedCadence)
-    ? selectedCadence
-    : "weekly";
-
+  // checkoutPlan is computed above (hoisted for the trial hook). It's the SAME
+  // value the displayed price keys off, so displayed price == Cardcom charge.
   const startCheckout = async () => {
     setCheckoutBusy(true);
     setCheckoutError(null);
     try {
-      const res = await fetch("/api/billing/checkout/create", {
+      // A3: swap to the trial endpoint when a trial is enabled for the selected
+      // {coaching, cadence}. Same {plan, coaching} → the day-7 charge matches
+      // the displayed price.
+      const endpoint = trial.enabled
+        ? "/api/billing/checkout/create-trial"
+        : "/api/billing/checkout/create";
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -812,9 +828,11 @@ export function AnalysisSummary({
                   ? ctaLoadingLabel && ctaLoadingLabel.trim().length > 0
                     ? ctaLoadingLabel
                     : isHe ? "רגע…" : "One sec…"
-                  : ctaLabelCms && ctaLabelCms.trim().length > 0
-                    ? ctaLabelCms
-                    : isHe ? "להצטרפות עכשיו" : "Join now"}
+                  : trial.enabled
+                    ? trial.ctaLabel
+                    : ctaLabelCms && ctaLabelCms.trim().length > 0
+                      ? ctaLabelCms
+                      : isHe ? "להצטרפות עכשיו" : "Join now"}
                 {!checkoutBusy ? <Arrow className="ar-cta-arrow" aria-hidden /> : null}
               </button>
               {checkoutError ? (
@@ -823,7 +841,9 @@ export function AnalysisSummary({
                 </p>
               ) : null}
               <div className="ar-stop">
-                {rc(cmsStopNote, "אפשר לעצור בכל עת בלחיצת כפתור.", "Cancel anytime with one tap.")}
+                {trial.enabled && trial.disclosure
+                  ? trial.disclosure
+                  : rc(cmsStopNote, "אפשר לעצור בכל עת בלחיצת כפתור.", "Cancel anytime with one tap.")}
               </div>
             </div>
           </section>
