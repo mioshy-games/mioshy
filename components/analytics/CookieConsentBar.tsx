@@ -129,8 +129,8 @@ export function CookieConsentBar({
       ? "אנחנו משתמשים בעוגיות כדי לשפר את החוויה שלכם ולמדוד שימוש."
       : "We use cookies to improve your experience and measure usage.",
     privacy: isHe ? "מדיניות הפרטיות" : "Privacy Policy",
-    accept: isHe ? "מסכים/ה" : "Accept",
-    close: isHe ? "סגירה" : "Close",
+    accept: isHe ? "מאשרים" : "Accept",
+    refuse: isHe ? "מסרבים" : "Decline",
   };
 
   const onAccept = () => {
@@ -166,26 +166,23 @@ export function CookieConsentBar({
             {t.privacy}
           </a>
         </p>
+        {/* Task 22 — SYMMETRIC choices (Israeli Privacy Authority, Feb 2026:
+            symmetry = valid consent). Accept + Decline are the same size + the
+            same color weight (two solid pills), no faded "X". Both remember the
+            choice for ~12 months (accept→granted, decline→dismissed). */}
         <button
           type="button"
           onClick={onAccept}
-          className="shrink-0 rounded-full bg-amber-400 px-4 py-1.5 text-[13px] font-bold text-stone-900 transition hover:brightness-105"
+          className="min-h-[40px] shrink-0 rounded-full bg-amber-400 px-5 text-[13px] font-bold text-stone-900 transition hover:brightness-105"
         >
           {t.accept}
         </button>
         <button
           type="button"
           onClick={onDismiss}
-          aria-label={t.close}
-          // Visual size stays 28px (h-7 w-7) so the design is unchanged, but on
-          // mobile a transparent ::before extends the *touch* target to 44×44px
-          // (WCAG 2.5.5) without affecting layout — clicks on that area still
-          // hit the button. Disabled on desktop (lg) where the mouse is precise.
-          className="relative grid h-7 w-7 shrink-0 place-items-center rounded-full text-white/60 transition before:absolute before:left-1/2 before:top-1/2 before:h-11 before:w-11 before:-translate-x-1/2 before:-translate-y-1/2 before:content-[''] hover:bg-white/10 hover:text-white lg:before:hidden"
+          className="min-h-[40px] shrink-0 rounded-full bg-white px-5 text-[13px] font-bold text-stone-900 transition hover:brightness-105"
         >
-          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
-            <path strokeLinecap="round" d="M6 6l12 12M18 6L6 18" />
-          </svg>
+          {t.refuse}
         </button>
       </div>
     </div>
