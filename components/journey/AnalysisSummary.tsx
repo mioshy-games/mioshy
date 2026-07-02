@@ -768,13 +768,17 @@ export function AnalysisSummary({
                           <span className="ar-opt-note">
                             {`${firstPeriodLabel(c.cadence, isHe)}${isHe ? ", אח״כ " : ", then "}${priceStr(origAmt)}`}
                           </span>
-                          {promoSavePct != null ? (
+                          {/* Task 21/#4 (Itzik 2026-07-02, option A): when the
+                              "7 ימי ניסיון חינם" tag is on this selected card, the
+                              tag is the SINGLE badge — drop "חיסכון %" here (the
+                              day-7 timeline already tells the price story). */}
+                          {promoSavePct != null && !(trial.enabled && selected) ? (
                             <span className="ar-opt-save">
                               {isHe ? "חיסכון" : "Save"} {promoSavePct}%
                             </span>
                           ) : null}
                         </>
-                      ) : savePct != null ? (
+                      ) : savePct != null && !(trial.enabled && selected) ? (
                         <span className="ar-opt-save">
                           {isHe ? "חיסכון" : "Save"} {savePct}%
                           {/* Task 23 — annual framing beside the %. NOT the
