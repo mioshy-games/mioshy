@@ -5,6 +5,7 @@ import { Link } from "@/navigation";
 import { CmsText } from "@/components/cms/CmsText";
 import { useCmsText } from "@/hooks/useCmsText";
 import { useJourneyPricing } from "./JourneyPricingProvider";
+import { useTrialOffer } from "@/hooks/useTrialOffer";
 
 /**
  * JourneyStages — connected Q&A, scroll-revealed
@@ -260,6 +261,10 @@ function shekel(n: number): string {
  */
 function Stage3Price() {
   const pricing = useJourneyPricing();
+  // Task 17 — card 03 trial framing. When a journey (content-only) trial is
+  // enabled, surface the doc-approved trial tag + microcopy so the homepage
+  // journey card mentions the 7-day trial (Hebrew-first; trial is ILS-only).
+  const trial = useTrialOffer({ product: "journey", coaching: false, isHe: true, plan: "monthly" });
   // CMS literals — used only as the DB-unavailable safety net (and for their
   // typography/style overrides in that path).
   const cmsOriginal = useCmsText("homeV2.journeyStages.stage3OriginalPrice");
@@ -318,6 +323,11 @@ function Stage3Price() {
 
   return (
     <>
+      {/* Task 17 — trial tag above the price (doc copy). Only when a journey
+          trial is enabled; otherwise the price block reads exactly as before. */}
+      {trial.enabled ? (
+        <span className="js-stop-trial-tag">{trial.cardTag}</span>
+      ) : null}
       <div className="js-stop-price">
         {hasPromo ? (
           <span className="js-stop-price-original">{shekel(monthly)}</span>
@@ -338,6 +348,10 @@ function Stage3Price() {
       ) : null}
       {hasPromo ? (
         <p className="js-stop-price-billed js-stop3-billed">{`אחר כך ${shekel(monthly)} לחודש`}</p>
+      ) : null}
+      {/* Task 17 — trial microcopy below the price (doc copy). */}
+      {trial.enabled && trial.disclosure ? (
+        <p className="js-stop-trial-note">{trial.disclosure}</p>
       ) : null}
     </>
   );
@@ -842,6 +856,18 @@ const STYLES = `
      consistent with the results-page sub-note (.ar-opt-note: 18px / #4B4640). */
   .mood-timeline .js-stop3-billed{
     font-size:18px;color:#4B4640;font-weight:500;
+  }
+  /* Task 17 — card 03 trial tag + microcopy (brand gradient tag, quiet note). */
+  .mood-timeline .js-stop-trial-tag{
+    display:inline-block;width:fit-content;
+    margin-bottom:8px;
+    font-size:13px;font-weight:800;color:#fff;
+    padding:3px 10px;border-radius:999px;
+    background:linear-gradient(95deg,#6C5CE7 0%,#D6409F 52%,#F79154 100%);
+  }
+  .mood-timeline .js-stop-trial-note{
+    margin-top:6px;
+    font-size:14px;color:#4B4640;font-weight:500;
   }
   /* Stage 1 free-trial framing — replaces the price block. Compact,
      friendly, reassuring (no credit card). */
