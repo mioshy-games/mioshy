@@ -15,6 +15,7 @@ import { CmsTextProvider } from "@/components/cms/CmsTextProvider";
 import { FAQ } from "@/components/marketing/v2/FAQ";
 import { MetaViewContent } from "@/components/analytics/MetaViewContent";
 import { CassessContent } from "@/components/marketing/couples-assessment/CassessContent";
+import { getShortQuestionCount } from "@/lib/journey/questions-db";
 import type { Locale } from "@/lib/journey/types";
 
 export async function generateMetadata({
@@ -43,6 +44,9 @@ export default async function CouplesAssessmentPage({
   setRequestLocale(locale);
 
   const cmsRows = await loadCmsTextsForPage("couples-assessment");
+  // Task 12 — live short-assessment question count injected into the entry copy
+  // ("{N} שאלות · כ-2 דקות") so the promise tracks the DB, never a hardcoded number.
+  const shortCount = await getShortQuestionCount();
 
   // Shared homepage FAQ — wrapped in .home-v2 so its design tokens resolve.
   const faqSlot = (
@@ -52,6 +56,7 @@ export default async function CouplesAssessmentPage({
         numbers={[1, 2, 3, 4, 5]}
         anchorId="faq"
         cmsPage="couples-assessment"
+        vars={{ N: shortCount }}
       />
     </div>
   );
@@ -63,7 +68,7 @@ export default async function CouplesAssessmentPage({
         contentName="couples-assessment"
         contentCategory="journey"
       />
-      <CassessContent locale={locale as Locale} faqSlot={faqSlot} />
+      <CassessContent locale={locale as Locale} faqSlot={faqSlot} shortCount={shortCount} />
     </CmsTextProvider>
   );
 }

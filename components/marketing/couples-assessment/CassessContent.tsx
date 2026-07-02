@@ -26,12 +26,18 @@ const ASSESS_HREF = "/journey/assessment";
 export function CassessContent({
   locale,
   faqSlot,
+  shortCount,
 }: {
   locale: Locale;
   faqSlot: React.ReactNode;
+  /** Task 12 — live short-assessment question count, substituted into "{N}". */
+  shortCount?: number;
 }) {
   const isHe = locale === "he";
   const rootRef = useRef<HTMLDivElement | null>(null);
+  // Substitute the live {N} into any CMS string that carries it (hero.trust).
+  const subN = (s: string) =>
+    shortCount != null ? s.replace(/\{N\}/g, String(shortCount)) : s;
 
   // ── CMS copy (inline bilingual fallback) ──────────────────────────────
   const c = {
@@ -39,7 +45,7 @@ export function CassessContent({
     heroH1: useCmsText(`${RK}.hero.h1`).text,
     heroSub: useCmsText(`${RK}.hero.sub`).text,
     heroCta: useCmsText(`${RK}.hero.cta`).text,
-    heroTrust: useCmsText(`${RK}.hero.trust`).text,
+    heroTrust: subN(useCmsText(`${RK}.hero.trust`).text),
     startLabel: useCmsText(`${RK}.hero.startLabel`).text,
     goalLabel: useCmsText(`${RK}.hero.goalLabel`).text,
     bar1: useCmsText(`${RK}.hero.bar1`).text,

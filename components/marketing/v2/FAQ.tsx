@@ -38,7 +38,20 @@ type FAQProps = {
    * /mioshy-sex="mioshy-sex". Defaults to "homepage".
    */
   cmsPage?: CmsPage;
+  /** Live values substituted into `{token}` placeholders in the Q/A copy
+   *  (both the rendered answer and the JSON-LD). E.g. vars={{N: 12}}. */
+  vars?: Record<string, string | number>;
 };
+
+/** Substitute {token} placeholders — mirrors CmsText's `vars` so the rendered
+ *  answer and the schema text stay in sync. */
+function applyVars(s: string, vars?: Record<string, string | number>): string {
+  if (!vars) return s;
+  return Object.keys(vars).reduce(
+    (acc, k) => acc.replace(new RegExp(`\\{${k}\\}`, "g"), String(vars[k])),
+    s,
+  );
+}
 
 const HOMEPAGE_DEFAULT_NUMBERS = [1, 2, 3, 4, 5, 6, 7, 9, 10] as const;
 
@@ -67,6 +80,7 @@ export async function FAQ({
   numbers = HOMEPAGE_DEFAULT_NUMBERS,
   anchorId = "faq",
   cmsPage = "homepage",
+  vars,
 }: FAQProps = {}) {
   const FAQS = numbers.map((n, i) => ({ n, defaultOpen: i === 0 }));
 
@@ -79,7 +93,10 @@ export async function FAQ({
   const faqItems = numbers
     .map((n) => ({ n, q: t(`item${n}Q`), a: t(`item${n}A`) }))
     .filter(({ n, q, a }) => q && a && q !== `item${n}Q` && a !== `item${n}A`)
-    .map(({ q, a }) => ({ question: stripHtml(q), answer: stripHtml(a) }))
+    .map(({ q, a }) => ({
+      question: stripHtml(applyVars(q, vars)),
+      answer: stripHtml(applyVars(a, vars)),
+    }))
     .filter((it) => it.question.length > 0 && it.answer.length > 0);
 
   return (
@@ -117,6 +134,7 @@ export async function FAQ({
                   cmsKey={`${cmsKeyPrefix}.item${item.n}A`}
                   as="div"
                   className="faq-answer"
+                  vars={vars}
                 />
               </details>
             ))}
