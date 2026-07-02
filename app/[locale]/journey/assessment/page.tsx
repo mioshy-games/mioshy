@@ -501,11 +501,12 @@ export default async function JourneyAssessmentPage({
   // personal_window the promo shows only while the user is inside their window;
   // in campaign_timer it's the global promo; off = regular price.
   let offerExpiresAt: string | null = null;
+  let promoMode: "off" | "personal_window" | "campaign_timer" = "personal_window";
   let activePromo: JourneyPromoSummary | null = null;
   try {
     const promoClient = createServiceRoleClient();
     if (promoClient) {
-      const promoMode = await getPromoMode(promoClient);
+      promoMode = await getPromoMode(promoClient);
       if (promoMode === "personal_window" && user?.id) {
         offerExpiresAt = await getUserOfferExpiresAt(promoClient, user.id);
       }
@@ -635,6 +636,7 @@ export default async function JourneyAssessmentPage({
         journeyCadences={journeyCadences}
         activePromo={activePromo}
         offerExpiresAt={offerExpiresAt}
+        promoMode={promoMode}
         questions={flow.remaining}
         likertLabels={QUESTIONNAIRE.likert_labels}
         gating={QUESTIONNAIRE.gating}

@@ -79,6 +79,10 @@ interface AnalysisSummaryProps {
   /** Task 21 — personal 48h offer deadline (personal_window). Drives the
    *  "מחיר ההיכרות שלכם שמור עד …" line near the price. Null = no window. */
   offerExpiresAt?: string | null;
+  /** Task 21 — urgency mode. The campaign countdown (PromoExpiryCountdown) shows
+   *  ONLY in campaign_timer; personal_window uses the offer-window line instead,
+   *  so only one urgency indicator appears. */
+  promoMode?: "off" | "personal_window" | "campaign_timer";
 }
 
 /**
@@ -136,6 +140,7 @@ export function AnalysisSummary({
   journeyCadences = [],
   activePromo = null,
   offerExpiresAt = null,
+  promoMode = "personal_window",
 }: AnalysisSummaryProps) {
   const isHe = locale === "he";
   const Arrow = isHe ? ArrowLeft : ArrowRight;
@@ -370,7 +375,9 @@ export function AnalysisSummary({
   // Locale-correct price string. Hebrew puts ₪ AFTER the number with a space
   // ("57 ₪"); English keeps "$" before ("$57"). Prices are dynamic, so compose
   // here consistently instead of concatenating {price}{sym} inline.
-  const priceStr = (n: number) => (isHe ? `${fmt(n)} ${sym}` : `${sym}${fmt(n)}`);
+  // Non-breaking space binds the amount to ₪ so "189 ₪" never wraps the currency
+  // onto its own line (Itzik, 2026-07-02).
+  const priceStr = (n: number) => (isHe ? `${fmt(n)} ${sym}` : `${sym}${fmt(n)}`);
   // Bundle = content + (coaching ? coaching_cost : 0). This is the amount the
   // checkout charges for the current toggle, so the display matches Cardcom.
   const coachingCostOf = (c: CadenceOption) =>
@@ -433,7 +440,7 @@ export function AnalysisSummary({
       const full = isHe ? po.ils : po.usd;
       if (cad === "monthly") {
         return isHe
-          ? `מתחיל החיוב. ${first} ₪ לחודש הראשון, ואחריו ${full} ₪ לחודש.`
+          ? `מתחיל החיוב. ${first} ₪ לחודש הראשון, ואחריו ${full} ₪ לחודש.`
           : `billing begins. $${first} first month, then $${full}/mo.`;
       }
       return isHe
@@ -782,7 +789,11 @@ export function AnalysisSummary({
                         name and the price (desktop); wraps to a centered line
                         below on mobile. Only on the promo'd package; reverts the
                         price at 0. The title replaces the old "מבצע" pill. */}
-                    {hasPromo && promoSet?.endsAt ? (
+                    {/* Task 21 — the ticking campaign countdown shows ONLY in
+                        campaign_timer. In personal_window the offer-window line
+                        ("מחיר ההיכרות שלכם שמור עד …") is the single urgency
+                        indicator, so the countdown must NOT render here too. */}
+                    {promoMode === "campaign_timer" && hasPromo && promoSet?.endsAt ? (
                       <span className="ar-opt-timer">
                         <PromoExpiryCountdown
                           endsAt={promoSet.endsAt}
@@ -1315,30 +1326,33 @@ export function AnalysisSummary({
           box-shadow: 0 18px 44px -22px rgba(120, 70, 120, 0.28);
         }
         /* Task 16 — 7-day trial timeline (Blinkist pattern) */
+        /* Task 21 (Itzik 2026-07-02) — the timeline is PART of the price card,
+           not a pasted inset: no separate box/border/gradient, same body font
+           as the card, ≥20px text. A hairline divider ties it to the price rows
+           below without looking like a foreign card. */
         .ar-trial-tl {
-          border: 1px solid #ead9c8;
-          border-radius: 16px;
-          background: linear-gradient(155deg, #ffffff 0%, #fbf2e4 100%);
-          padding: 14px 16px;
+          border: 0;
+          background: transparent;
+          padding: 2px 2px 16px;
           margin-bottom: 16px;
+          border-bottom: 1px solid #ece2cf;
+          font-family: var(--font-heebo), "Assistant", "Heebo", system-ui, sans-serif;
         }
         .ar-trial-row {
-          font-size: 16px;
+          font-size: 20px;
           line-height: 1.5;
           color: #2e2622;
         }
         .ar-trial-row + .ar-trial-row {
-          margin-top: 6px;
+          margin-top: 8px;
         }
         .ar-trial-row b {
           color: #7a1f2b;
           font-weight: 800;
         }
         .ar-trial-foot {
-          margin-top: 10px;
-          padding-top: 10px;
-          border-top: 1px solid #ead9c8;
-          font-size: 15px;
+          margin-top: 12px;
+          font-size: 20px;
           color: #5a4f46;
           font-weight: 600;
         }

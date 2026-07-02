@@ -90,6 +90,9 @@ interface JourneyClientProps {
   /** Task 21 — personal 48h offer deadline (personal_window mode), for the
    *  "מחיר ההיכרות שלכם שמור עד …" line on the results page. Null = none. */
   offerExpiresAt?: string | null;
+  /** Task 21 — urgency mode; gates the campaign countdown (only campaign_timer)
+   *  vs the personal-window line so only ONE urgency indicator shows. */
+  promoMode?: "off" | "personal_window" | "campaign_timer";
   /** Active journey marketing promo (server-computed), forwarded to
    *  AnalysisSummary for the discount banner. null → no banner. */
   activePromo?: JourneyPromoSummary | null;
@@ -156,6 +159,7 @@ export function JourneyClient({
   journeyCadences = [],
   activePromo = null,
   offerExpiresAt = null,
+  promoMode = "personal_window",
   questions,
   likertLabels,
   gating,
@@ -875,6 +879,7 @@ export function JourneyClient({
           journeyCadences={journeyCadences}
           activePromo={activePromo}
           offerExpiresAt={offerExpiresAt}
+          promoMode={promoMode}
         />
       </div>
     );
