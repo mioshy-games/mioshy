@@ -376,14 +376,18 @@ function Stop({
 }) {
   const tone = STAGE_TONE[id];
   const isStage3 = id === "3";
-  // Task 17 — the journey trial tag renders above the CTA on stage 3 (Itzik
-  // 2026-07-02, moved from above the price). Hook is called unconditionally to
-  // keep a stable hook order; the tag only shows for stage 3 when trial is on.
+  // Task 17 — the trial tag/microcopy are PER-PACKAGE, derived from each card's
+  // own product's trial_settings (Itzik 2026-07-03), not journey-only. Stage 1 =
+  // games subscription (weekly), Stage 3 = journey (monthly); Stage 2 is a
+  // one-time game purchase, so it maps to "adults" which the hook short-circuits
+  // to enabled:false with no network call. The hook is called unconditionally to
+  // keep a stable hook order; the tag only shows where its trial is on.
+  const trialProduct = id === "1" ? "games" : id === "3" ? "journey" : "adults";
   const trial = useTrialOffer({
-    product: "journey",
+    product: trialProduct,
     coaching: false,
     isHe: true,
-    plan: "monthly",
+    plan: id === "1" ? "weekly" : "monthly",
   });
 
   return (
@@ -522,14 +526,22 @@ function Stop({
                       className="js-stop-price-billed"
                     />
                   ) : null}
+                  {/* Task 17 — trial microcopy under the price for the games
+                      card (Itzik 2026-07-03), mirroring card 03. Only when the
+                      games trial is on; stage 2 (adults) never qualifies. Card
+                      03's own microcopy lives inside <Stage3Price />. */}
+                  {trial.enabled && trial.disclosure ? (
+                    <p className="js-stop-trial-note">{trial.disclosure}</p>
+                  ) : null}
                 </>
               )}
             </div>
-            {/* Task 17 — trial tag directly above the CTA (Itzik 2026-07-02),
-                stage 3 only, desktop + mobile. Wrapped in a column so the tag
-                stacks right on top of the button. */}
+            {/* Task 17 — trial tag directly above the CTA, per-package (Itzik
+                2026-07-03): any card whose product has the trial enabled shows
+                it (games card 01 + journey card 03); the one-time game card 02
+                never does. Wrapped in a column so the tag stacks on the button. */}
             <div className="js-stop-cta-col">
-              {isStage3 && trial.enabled ? (
+              {trial.enabled ? (
                 <span className="js-stop-trial-tag js-stop-trial-tag--cta">
                   {trial.cardTag}
                 </span>
@@ -879,7 +891,8 @@ const STYLES = `
   .mood-timeline .js-stop-trial-tag{
     display:inline-block;width:fit-content;
     margin-bottom:8px;
-    font-size:13px;font-weight:800;color:#fff;
+    /* 20px per Itzik 2026-07-03 (was 13px) — same tag size as the results page. */
+    font-size:20px;font-weight:800;color:#fff;
     padding:3px 10px;border-radius:999px;
     background:linear-gradient(95deg,#6C5CE7 0%,#D6409F 52%,#F79154 100%);
   }

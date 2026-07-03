@@ -662,45 +662,6 @@ export function AnalysisSummary({
               {rc(cmsPriceTitle, "איזו חבילה מתאימה לכם?", "Which plan fits you?")}
             </h2>
             <div className="ar-pricecard">
-              {/* Task 16 — 7-day trial timeline (Blinkist pattern), above the
-                  price. Only when a trial is enabled for the selected option.
-                  Relative-time copy + ✓ markers (Itzik 2026-07-02); the first
-                  line bridges to the full assessment; day-7 price injected live.
-                  The foot is a summary line (no ✓, no colon). */}
-              {trial.enabled ? (
-                <div className="ar-trial-tl">
-                  <div className="ar-trial-row">
-                    <span aria-hidden className="ar-trial-check">✓</span>
-                    <span>
-                      <b>{isHe ? "היום:" : "Today:"}</b>{" "}
-                      {isHe
-                        ? "מצטרפים בלי חיוב, והאבחון המלא מחכה לכם עם תמונה מדויקת יותר."
-                        : "join with no charge, and the full assessment awaits with a sharper picture."}
-                    </span>
-                  </div>
-                  <div className="ar-trial-row">
-                    <span aria-hidden className="ar-trial-check">✓</span>
-                    <span>
-                      <b>{isHe ? "בעוד 5 ימים:" : "In 5 days:"}</b>{" "}
-                      {isHe
-                        ? "נשלח לכם תזכורת שתקופת הניסיון עומדת להסתיים."
-                        : "we'll send a reminder that the trial is ending."}
-                    </span>
-                  </div>
-                  <div className="ar-trial-row">
-                    <span aria-hidden className="ar-trial-check">✓</span>
-                    <span>
-                      <b>{isHe ? "בעוד 7 ימים:" : "In 7 days:"}</b> {trialDay7}
-                    </span>
-                  </div>
-                  <div className="ar-trial-foot">
-                    {isHe
-                      ? "ביטול בכל רגע, בלחיצת כפתור מהאזור האישי."
-                      : "cancel any time, one click from your account."}
-                  </div>
-                </div>
-              ) : null}
-
               {/* Stage-1 coaching add-on — with/without choice. Only rendered
                   once a coaching cost is configured (else the bundle == content
                   and a 0₪ choice would only confuse). */}
@@ -932,6 +893,46 @@ export function AnalysisSummary({
                   "Right after you join, we'll complete the full assessment, for a more accurate picture and steps tailored exactly to you.",
                 )}
               </p>
+
+              {/* Task 16 — 7-day trial timeline (Blinkist pattern). Moved below
+                  the package options, right above the CTA (Itzik 2026-07-03):
+                  choose a plan first, then see what happens from today to day 7
+                  beside the action button. Relative-time copy + ✓ markers; the
+                  first line bridges to the full assessment; day-7 price injected
+                  live. The foot is a summary line (no ✓, no colon). */}
+              {trial.enabled ? (
+                <div className="ar-trial-tl">
+                  <div className="ar-trial-row">
+                    <span aria-hidden className="ar-trial-check">✓</span>
+                    <span>
+                      <b>{isHe ? "היום:" : "Today:"}</b>{" "}
+                      {isHe
+                        ? "מצטרפים בלי חיוב, והאבחון המלא מחכה לכם עם תמונה מדויקת יותר."
+                        : "join with no charge, and the full assessment awaits with a sharper picture."}
+                    </span>
+                  </div>
+                  <div className="ar-trial-row">
+                    <span aria-hidden className="ar-trial-check">✓</span>
+                    <span>
+                      <b>{isHe ? "בעוד 5 ימים:" : "In 5 days:"}</b>{" "}
+                      {isHe
+                        ? "נשלח לכם תזכורת שתקופת הניסיון עומדת להסתיים."
+                        : "we'll send a reminder that the trial is ending."}
+                    </span>
+                  </div>
+                  <div className="ar-trial-row">
+                    <span aria-hidden className="ar-trial-check">✓</span>
+                    <span>
+                      <b>{isHe ? "בעוד 7 ימים:" : "In 7 days:"}</b> {trialDay7}
+                    </span>
+                  </div>
+                  <div className="ar-trial-foot">
+                    {isHe
+                      ? "ביטול בכל רגע, בלחיצת כפתור מהאזור האישי."
+                      : "cancel any time, one click from your account."}
+                  </div>
+                </div>
+              ) : null}
 
               <button
                 type="button"
@@ -1391,7 +1392,8 @@ export function AnalysisSummary({
           display: inline-block;
           width: fit-content;
           margin-top: 6px;
-          font-size: 13px;
+          /* 20px per Itzik 2026-07-03 (was 13px). */
+          font-size: 20px;
           font-weight: 800;
           color: #fff;
           background: var(--ar-grad);
@@ -1508,7 +1510,8 @@ export function AnalysisSummary({
           display: block;
           width: fit-content;
           margin-top: 6px;
-          font-size: 18px;
+          /* 22px per Itzik 2026-07-03 (was 18px). */
+          font-size: 22px;
           font-weight: 800;
           line-height: 1.2;
           color: #6c5ce7;
@@ -1683,7 +1686,8 @@ export function AnalysisSummary({
         /* Task 23 — "מנוי אחד, שני בני זוג" reassurance line near the price. */
         .ar-couple-note {
           text-align: center;
-          font-size: 15px;
+          /* 22px per Itzik 2026-07-03 (was 15px). */
+          font-size: 22px;
           font-weight: 600;
           color: #5a4f46;
           margin-top: 14px;
@@ -1691,7 +1695,8 @@ export function AnalysisSummary({
         /* Task 21 — personal 48h offer-window line (brand wine, quiet). */
         .ar-offer-window {
           text-align: center;
-          font-size: 14px;
+          /* 22px per Itzik 2026-07-03 (was 14px). */
+          font-size: 22px;
           font-weight: 700;
           color: #7a1f2b;
           margin-top: 14px;
