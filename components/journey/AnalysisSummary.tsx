@@ -145,22 +145,8 @@ export function AnalysisSummary({
   const isHe = locale === "he";
   const Arrow = isHe ? ArrowLeft : ArrowRight;
 
-  // Task 21 — personal-window line ("מחיר ההיכרות שלכם שמור עד <יום, שעה>").
-  // Named deadline, no ticking clock. Only when the user has an active window.
-  const offerWindowLabel = (() => {
-    if (!offerExpiresAt) return null;
-    const end = new Date(offerExpiresAt);
-    if (end.getTime() <= Date.now()) return null;
-    try {
-      const d = end.toLocaleDateString(locale, { weekday: "long" });
-      const t = end.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
-      return isHe
-        ? `מחיר ההיכרות שלכם שמור עד ${d} ${t}`
-        : `Your intro price is held until ${d} ${t}`;
-    } catch {
-      return null;
-    }
-  })();
+  // offerWindowLabel (Task 21 + Task 26 #2) is defined further down, after the
+  // monthly promo/regular prices are resolved — the bonus copy needs them.
 
   // ── Cadence picker (hooks must run before the loading early-return) ──
   const enabledCadences = journeyCadences
@@ -404,6 +390,33 @@ export function AnalysisSummary({
   // the real DB price (no negative/zero savings).
   const monthlyRow = journeyCadences.find((c) => c.cadence === "monthly");
   const monthlyFull = monthlyRow ? amtOf(monthlyRow) : null;
+
+  // Task 21 + Task 26 #2 (Itzik 2026-07-03) — personal-window BONUS line. The
+  // trial is the PRIMARY message (timeline above the CTA); this is the secondary
+  // one-time bonus: first month at the promo price instead of regular, held
+  // until the named deadline (no ticking clock). Prices are the live monthly
+  // promo/regular via priceStr (NBSP → no line break). Shows only when the user
+  // is inside their window AND an intro discount actually applies to monthly.
+  const offerWindowLabel = (() => {
+    if (!offerExpiresAt) return null;
+    const end = new Date(offerExpiresAt);
+    if (end.getTime() <= Date.now()) return null;
+    const pf = promoSet?.firstChargeByCadence["monthly"];
+    const po = promoSet?.originalByCadence["monthly"];
+    if (!pf || !po) return null; // no monthly intro discount → no bonus line
+    const promoPrice = priceStr(isHe ? pf.ils : pf.usd);
+    const regularPrice = priceStr(isHe ? po.ils : po.usd);
+    try {
+      const d = end.toLocaleDateString(locale, { weekday: "long" });
+      const tm = end.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
+      return isHe
+        ? `הטבה חד-פעמית לבוגרי האבחון: החודש הראשון ב-${promoPrice} במקום ${regularPrice}, שמורה לכם עד ${d} ב-${tm}. אחרי זה היא לא חוזרת.`
+        : `One-time bonus for assessment grads: first month at ${promoPrice} instead of ${regularPrice}, held for you until ${d} at ${tm}. After that it's gone.`;
+    } catch {
+      return null;
+    }
+  })();
+
   const monthsInPeriod = (cadence: string) =>
     cadence === "yearly" ? 12 : cadence === "quarterly" ? 3 : 0;
   const periodLabel = (cadence: string) =>
@@ -990,14 +1003,14 @@ export function AnalysisSummary({
           <p className="ar-anchor">
             {rc(
               cmsAnchorLead,
-              "פגישת ייעוץ מתחילה ב-₪500 מינימום ויכולה להגיע לאלפי שקלים.",
-              "A counselling session starts at ₪500 minimum and can reach thousands.",
+              "פגישת ייעוץ אחת מתחילה ב-500 ₪ ויכולה להגיע לאלפי שקלים.",
+              "A single counselling session starts at ₪500 and can reach thousands.",
             )}{" "}
             <b>
               {rc(
                 cmsAnchorBold,
-                "איתנו תקבלו ליווי צמוד, כל החודש.",
-                "With us you get close guidance, all month long.",
+                "איתנו תקבלו ליווי צמוד ותוכנית מובנית, עם פרק אחד בשבוע שבו תבצעו משימות ותעצימו את הזוגיות שלכם מיום ליום.",
+                "With us you get close guidance and a structured plan, one chapter a week to strengthen your relationship day by day.",
               )}
             </b>
           </p>

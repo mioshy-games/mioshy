@@ -36,6 +36,23 @@ import { getPromoMode, getUserOfferExpiresAt, promoDiscountEligible } from "@/li
 import { geoFromRequest, localeFromGeo }   from "@/lib/geo-from-request"
 
 function baseUrl(req: Request) {
+  // Task 26 #3 (Itzik 2026-07-03): PUBLIC_BASE_URL / NEXT_PUBLIC_SITE_URL point
+  // at prod (mioshy.com) on EVERY env, so on Preview the Cardcom success/webhook
+  // URLs sent it back to prod and broke the E2E check. When NOT production,
+  // derive the base from the actual incoming deployment host (forwarded host →
+  // VERCEL_URL → req.url origin) so the whole round-trip stays on Preview.
+  const isProd = process.env.VERCEL_ENV === "production"
+  if (!isProd) {
+    const host = req.headers.get("x-forwarded-host") || req.headers.get("host")
+    const proto = req.headers.get("x-forwarded-proto") || "https"
+    if (host) return `${proto}://${host}`.replace(/\/+$/, "")
+    if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`.replace(/\/+$/, "")
+    try {
+      return new URL(req.url).origin.replace(/\/+$/, "")
+    } catch {
+      /* fall through to the prod env var */
+    }
+  }
   const envUrl = process.env.PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL
   if (envUrl) return envUrl.replace(/\/+$/, "")
   try {
