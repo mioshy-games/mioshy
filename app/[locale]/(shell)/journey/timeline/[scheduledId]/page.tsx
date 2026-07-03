@@ -46,6 +46,7 @@ import type {
 } from "@/lib/journey-content/types";
 import { ItemDetailClient } from "@/components/journey/timeline/ItemDetailClient";
 import { LessonView } from "@/components/journey/timeline/LessonView";
+import { stripEmDashDeep } from "@/lib/text/sanitize-dashes";
 import { WhyThisItem } from "@/components/journey/timeline/WhyThisItem";
 import { ItemFeedbackBar } from "@/components/journey/timeline/ItemFeedbackBar";
 import { markFirstSessionCompleted } from "@/app/actions/journey-first-session";
@@ -229,7 +230,13 @@ export default async function JourneyTimelineItemPage({
   ]);
 
   if (!itemRes.data) notFound();
-  const item = itemRes.data as JourneyItem;
+  // Task 28 (Itzik 2026-07-03): brand voice forbids the long dash "—", but it
+  // leaks into chapter content (CMS-authored + LLM). Normalise it at the display
+  // layer here (mirrors the CMS/AI wiring in ac970eb) so every chapter surface
+  // fed off this item — LessonView's 9 blocks + the legacy fields — renders
+  // clean. stripEmDashDeep only ever touches the dash char, so ids/slugs/dates
+  // pass through untouched. The DB scan (162b) cleans the stored history.
+  const item = stripEmDashDeep(itemRes.data as JourneyItem);
 
   const { data: categoryRow } = await admin
     .from("journey_categories")

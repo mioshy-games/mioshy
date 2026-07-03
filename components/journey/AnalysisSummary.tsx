@@ -409,9 +409,12 @@ export function AnalysisSummary({
     try {
       const d = end.toLocaleDateString(locale, { weekday: "long" });
       const tm = end.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
+      // Task 26 #2 v4 (Itzik 2026-07-03) — no technical hyphen structures:
+      // "עולה {price}" not "ב-{price}", "בשעה {time}" not "ב-{time}",
+      // "ניתנת פעם אחת" not "חד-פעמית".
       return isHe
-        ? `הטבה חד-פעמית לבוגרי האבחון: החודש הראשון ב-${promoPrice} במקום ${regularPrice}, שמורה לכם עד ${d} ב-${tm}. אחרי זה היא לא חוזרת.`
-        : `One-time bonus for assessment grads: first month at ${promoPrice} instead of ${regularPrice}, held for you until ${d} at ${tm}. After that it's gone.`;
+        ? `ההטבה על סיום האבחון ניתנת פעם אחת: החודש הראשון עולה ${promoPrice} במקום ${regularPrice}, והיא שמורה לכם עד ${d} בשעה ${tm}.`
+        : `The assessment-completion bonus is given once: the first month costs ${promoPrice} instead of ${regularPrice}, and it's held for you until ${d} at ${tm}.`;
     } catch {
       return null;
     }
@@ -1369,6 +1372,9 @@ export function AnalysisSummary({
           border: 0;
           background: transparent;
           padding: 2px 2px 16px;
+          /* Task 31 (Itzik 2026-07-03) — more air between the opening sentence
+             ("מיד עם ההצטרפות נשלים…") and the timeline rows. */
+          margin-top: 24px;
           margin-bottom: 16px;
           border-bottom: 1px solid #ece2cf;
           font-family: var(--font-heebo), "Assistant", "Heebo", system-ui, sans-serif;

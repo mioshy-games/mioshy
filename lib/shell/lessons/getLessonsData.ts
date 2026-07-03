@@ -280,6 +280,11 @@ export async function getLessonsData(args: Args): Promise<LessonsPageData> {
           next.setDate(next.getDate() + NEXT_ASSESSMENT_WEEKS * 7);
           nextAssessmentAt = next.toISOString();
         }
+        // Task 29 (Itzik 2026-07-03): the recurring-assessment notice ("בעוד 8
+        // שבועות נשלח אליכם אבחון נוסף") is HIDDEN until a separate approval —
+        // only the full assessment + weekly chapters exist today. Force null so
+        // the notice never renders; deleting this line re-enables it.
+        nextAssessmentAt = null;
       }
     }
   } catch (err) {
