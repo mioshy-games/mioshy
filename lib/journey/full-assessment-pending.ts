@@ -34,8 +34,10 @@ export async function isFullAssessmentPending(
         client
           .from("subscriptions")
           .select("status")
+          // A3 (task 26, bug ג): a trialing member is subscribed for the
+          // full-assessment-pending check, exactly like an active one.
+          .in("status", ["active", "trialing"])
           .eq("user_id", userId)
-          .eq("status", "active")
           .maybeSingle(),
         client
           .from("journey_analysis")

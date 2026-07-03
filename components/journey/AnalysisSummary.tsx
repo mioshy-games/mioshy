@@ -1414,7 +1414,9 @@ export function AnalysisSummary({
           background: transparent;
         }
         .ar-coach-opt {
-          border: 0;
+          /* Task 27 (Itzik 2026-07-03): subtle hairline contour so the
+             unselected option reads as a clickable tab, not floating text. */
+          border: 1px solid #e5dccb;
           cursor: pointer;
           font-family: var(--font-heebo), "Assistant", "Heebo", sans-serif;
           font-weight: 700;
@@ -1428,6 +1430,9 @@ export function AnalysisSummary({
         }
         .ar-coach-opt.sel {
           color: #fff;
+          /* The gradient fill carries the selected state; drop the hairline so
+             it doesn't clash with the gradient edge. */
+          border-color: transparent;
           background: var(--ar-grad);
           box-shadow: 0 4px 12px -5px rgba(214, 64, 159, 0.5);
         }

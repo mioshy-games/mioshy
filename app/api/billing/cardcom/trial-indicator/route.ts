@@ -304,15 +304,33 @@ async function handle(req: Request): Promise<Response> {
 
   let subscriptionId: string | null = null
   if (existingSub?.id) {
-    await admin.from("subscriptions").update(subFields).eq("id", existingSub.id)
+    const { error: updErr } = await admin
+      .from("subscriptions")
+      .update(subFields)
+      .eq("id", existingSub.id)
+    if (updErr) {
+      // Task 26, bug ג: a silently-failed trialing write leaves the buyer with a
+      // 'paid' session but NO access-granting row → zero access everywhere. Fail
+      // LOUD so a schema drift (e.g. 'trialing' missing from the status CHECK,
+      // migration 157 not applied to this env) is diagnosable, and let Cardcom
+      // retry rather than marking the session paid below.
+      console.error("[trial-indicator:SUB_UPDATE_FAILED]", { session_id: sessionId, user_id: userId, error: updErr.message })
+      await admin.from("billing_events").update({ error: `sub update: ${updErr.message}` }).eq("idempotency_key", idempotencyKey)
+      return new Response("ok", { status: 200 })
+    }
     subscriptionId = existingSub.id
   } else {
-    const { data: ins } = await admin
+    const { data: ins, error: insErr } = await admin
       .from("subscriptions")
       .insert({ user_id: userId, email: session.email, product, ...subFields })
       .select("id")
       .maybeSingle()
-    subscriptionId = ins?.id ?? null
+    if (insErr || !ins?.id) {
+      console.error("[trial-indicator:SUB_INSERT_FAILED]", { session_id: sessionId, user_id: userId, error: insErr?.message ?? "no row returned" })
+      await admin.from("billing_events").update({ error: `sub insert: ${insErr?.message ?? "no row"}` }).eq("idempotency_key", idempotencyKey)
+      return new Response("ok", { status: 200 })
+    }
+    subscriptionId = ins.id
   }
 
   // ── Record the trial redemption (abuse ledger) ──────────────────────────────

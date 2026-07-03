@@ -82,9 +82,13 @@ export async function getSettingsData(args: Args): Promise<SettingsData> {
       current_period_end: string | null;
       journey_grace_until: string | null;
     }>;
-    const journey = rows.find((r) => r.product === "journey" && r.status === "active");
+    // A3 (task 26, bug ג/ה): a trialing member is a live subscriber — surface
+    // their subscription here so they can manage/upgrade from settings. Shown
+    // as active with the day-7 first charge as the "next charge" date.
+    const isLive = (s: string) => s === "active" || s === "trialing";
+    const journey = rows.find((r) => r.product === "journey" && isLive(r.status));
     const grace = rows.find((r) => r.product === "journey" && r.status === "grace");
-    const games = rows.find((r) => r.product === "games" && r.status === "active");
+    const games = rows.find((r) => r.product === "games" && isLive(r.status));
     const pick = journey ?? grace ?? games ?? rows[0];
 
     if (pick) {
@@ -100,7 +104,7 @@ export async function getSettingsData(args: Args): Promise<SettingsData> {
         if (pick.product === "adults") return isHe ? "מבוגרים" : "Adults";
         return pick.product;
       })();
-      if (pick.status === "active") {
+      if (pick.status === "active" || pick.status === "trialing") {
         subscription = {
           statusLabel: isHe ? "פעיל" : "Active",
           statusTone: "active",

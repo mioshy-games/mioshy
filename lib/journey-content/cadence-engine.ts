@@ -589,7 +589,10 @@ export async function isCadenceEligible(
     // defensively.
     return { eligible: false, reason: "blocked" };
   }
-  if (sub.status !== "active") {
+  // A3 (task 26, bug ג): a trialing sub materializes chapters exactly like an
+  // active one — trial = full membership. current_period_end mirrors
+  // trial_ends_at, so the deadline check below still applies.
+  if (sub.status !== "active" && sub.status !== "trialing") {
     return { eligible: false, reason: "no_journey_subscription" };
   }
   if (

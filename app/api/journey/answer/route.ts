@@ -149,13 +149,15 @@ export async function POST(req: Request) {
     );
   }
 
-  // Paywall: check active subscription if the index requires it.
+  // Paywall: check for an access-granting subscription if the index requires it.
+  // A3 (task 26, bug ג): 'trialing' passes the paywall like 'active' — a trial
+  // member has full access and must not be re-gated mid-flow.
   if (requiresPaywallAt(index - 1) && trusted_user_id) {
     const { data: sub } = await admin
       .from("subscriptions")
       .select("status")
       .eq("user_id", trusted_user_id)
-      .eq("status", "active")
+      .in("status", ["active", "trialing"])
       .maybeSingle();
     if (!sub) {
       return NextResponse.json(
@@ -347,7 +349,8 @@ export async function POST(req: Request) {
       .from("subscriptions")
       .select("status")
       .eq("user_id", trusted_user_id)
-      .eq("status", "active")
+      // A3 (task 26, bug ג): 'trialing' counts as subscribed for phase mode.
+      .in("status", ["active", "trialing"])
       .maybeSingle();
     // Partner fix (funnel): journey access can come via the couple entitlement
     // (owner-swapped inside getUserEntitlements) with NO direct subscription

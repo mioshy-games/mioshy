@@ -125,14 +125,19 @@ export function BillingSuccessContent() {
   // F3.2 — journey-funnel buyers continue IMMEDIATELY into the assessment so
   // they finish the full set ("2 more minutes"); all other pillars land on /my.
   const target = postPaymentTarget(product, locale)
+  // Task 26 (bugs ד/ה, Itzik 2026-07-03): a journey buyer sees a WELCOME moment
+  // with a real choice — continue into the full assessment, or go to /my — not
+  // an auto-redirect and not the (blocked) marketing "returning" popup. Every
+  // other product keeps the 1.8s auto-redirect to /my.
+  const isJourney = product === "journey"
 
   useEffect(() => {
-    if (phase !== "active") return
+    if (phase !== "active" || isJourney) return
     const t = setTimeout(() => {
       window.location.assign(target)
     }, 1800)
     return () => clearTimeout(t)
-  }, [phase, target])
+  }, [phase, target, isJourney])
 
   const t = isHe
     ? {
@@ -145,6 +150,11 @@ export function BillingSuccessContent() {
         activeSub:       "מעבירים אתכם לחדר הפרטי שלכם",
         activeNote:      "תוכלו לבטל בכל רגע מהחשבון.",
         goAccount:       "מיאושי שלי",
+        // Task 26 bug ד — post-signup welcome (doc-approved copy).
+        welcomeTitle:    "ברוכים הבאים למסע",
+        welcomeBody:     "נשלים עכשיו את האבחון המלא, כדי שנדייק את התוכנית עבורכם ושהמומחה שלכם יכיר אתכם טוב יותר. כמה דקות, וזה הבסיס לכל מה שיבוא.",
+        welcomePrimary:  "לאבחון המלא",
+        welcomeSecondary:"אחר כך, מהאזור האישי",
         errTitle:        "התשלום לא עבר",
         errSub:          "ייתכן שהאשראי נדחה או שאירעה שגיאה זמנית. תוכלו לנסות שוב או לכתוב אלינו ונעזור.",
         errRetry:        "ניסיון נוסף",
@@ -161,6 +171,10 @@ export function BillingSuccessContent() {
         activeSub:       "Taking you to your private space",
         activeNote:      "You can cancel anytime from your account.",
         goAccount:       "Open My Mioshy",
+        welcomeTitle:    "Welcome to the journey",
+        welcomeBody:     "Let's complete the full assessment now, so we can tailor your plan and your expert gets to know you better. A few minutes, and it's the basis for everything that follows.",
+        welcomePrimary:  "To the full assessment",
+        welcomeSecondary:"Later, from my account",
         errTitle:        "Payment didn't go through",
         errSub:          "The card may have been declined or a temporary issue occurred. You can try again or contact us and we'll help.",
         errRetry:        "Try again",
@@ -194,14 +208,27 @@ export function BillingSuccessContent() {
             sub={t.activatingSub(attempts)}
           />
         ) : phase === "active" ? (
-          <ActiveView
-            isHe={isHe}
-            title={t.activeTitle}
-            sub={t.activeSub}
-            note={t.activeNote}
-            ctaLabel={t.goAccount}
-            href={target}
-          />
+          isJourney ? (
+            <ActiveView
+              isHe={isHe}
+              title={t.welcomeTitle}
+              sub={t.welcomeBody}
+              note={t.activeNote}
+              ctaLabel={t.welcomePrimary}
+              href={`/${locale}/journey/assessment`}
+              secondaryLabel={t.welcomeSecondary}
+              secondaryHref={`/${locale}/my`}
+            />
+          ) : (
+            <ActiveView
+              isHe={isHe}
+              title={t.activeTitle}
+              sub={t.activeSub}
+              note={t.activeNote}
+              ctaLabel={t.goAccount}
+              href={target}
+            />
+          )
         ) : (
           <ErrorView
             title={t.errTitle}
@@ -249,6 +276,8 @@ function ActiveView({
   note,
   ctaLabel,
   href,
+  secondaryLabel,
+  secondaryHref,
 }: {
   isHe: boolean
   title: string
@@ -256,6 +285,8 @@ function ActiveView({
   note: string
   ctaLabel: string
   href: string
+  secondaryLabel?: string
+  secondaryHref?: string
 }) {
   return (
     <div className="flex flex-col items-center gap-7">
@@ -308,6 +339,15 @@ function ActiveView({
           ←
         </span>
       </a>
+
+      {secondaryLabel && secondaryHref ? (
+        <a
+          href={secondaryHref}
+          className="text-[14px] font-semibold text-white/70 underline-offset-4 transition hover:text-white/90 hover:underline"
+        >
+          {secondaryLabel}
+        </a>
+      ) : null}
 
       <p className="text-[13px] text-white/50">{note}</p>
     </div>

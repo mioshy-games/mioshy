@@ -38,14 +38,15 @@ export async function GET(req: Request) {
     ? await query.eq("user_id", user.id).maybeSingle()
     : await query.eq("device_id", deviceId!).is("user_id", null).maybeSingle();
 
-  // Active subscription check for paywall resume
+  // Access-granting subscription check for paywall resume.
+  // A3 (task 26, bug ג): 'trialing' resumes into the full phase like 'active'.
   let subscriptionActive = false;
   if (user) {
     const { data: sub } = await supabase
       .from("subscriptions")
       .select("status")
       .eq("user_id", user.id)
-      .eq("status", "active")
+      .in("status", ["active", "trialing"])
       .maybeSingle();
     subscriptionActive = !!sub;
   }
