@@ -54,11 +54,31 @@ export function BillingSuccessContent() {
   // the (full) assessment instead of /my (locked decision A).
   const [product, setProduct]   = useState<string | null>(null)
 
+  // Task 26 (Itzik 2026-07-03): the success page must not depend on the Cardcom
+  // webhook. For a trial (trial=1), if the poll hasn't seen 'paid' quickly, we
+  // reconcile inline — the server pulls the J2 result and creates the trialing
+  // sub via the SAME routine the webhook uses (idempotent). Webhooks get lost
+  // in prod too, so this is the durable path, not just a Preview crutch.
+  const isTrial = searchParams.get("trial") === "1"
+
   useEffect(() => {
     if (!sessionId) { setPhase("error"); return }
 
     const MAX_ATTEMPTS = 18
     let cancelled = false
+    let localAttempt = 0
+
+    const tryReconcile = async () => {
+      try {
+        await fetch("/api/billing/trial/reconcile", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ session_id: sessionId }),
+        })
+      } catch {
+        /* the poll keeps going; a later reconcile attempt may still succeed */
+      }
+    }
 
     async function poll() {
       const supabase = createBrowserSupabaseClient()
@@ -98,6 +118,14 @@ export function BillingSuccessContent() {
         return
       }
 
+      // Webhook-independent activation: after ~6s (and again ~18s) without
+      // 'paid', reconcile the trial inline. Idempotent server-side, so firing
+      // twice (and racing a late webhook) is safe; the next poll sees 'paid'.
+      localAttempt += 1
+      if (isTrial && (localAttempt === 2 || localAttempt === 6)) {
+        void tryReconcile()
+      }
+
       setAttempts(a => {
         const next = a + 1
         if (next >= MAX_ATTEMPTS) {
@@ -113,7 +141,7 @@ export function BillingSuccessContent() {
     setPhase("activating")
     void poll()
     return () => { cancelled = true }
-  }, [sessionId])
+  }, [sessionId, isTrial])
 
   // Auto-redirect once the session flips to paid.
   // Itzik 2026-05-27: ALWAYS land on /my after payment regardless of

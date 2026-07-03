@@ -346,6 +346,17 @@ export async function POST(req: Request) {
       ? `${BASE_URL}/api/billing/cardcom/trial-indicator?x-vercel-protection-bypass=${bypassSecret}`
       : `${BASE_URL}/api/billing/cardcom/trial-indicator`
 
+  // Task 26 (Itzik 2026-07-03): log the EXACT URLs handed to Cardcom so a broken
+  // host / path / scheme is diagnosable from the logs. The webhook value is
+  // logged with the bypass secret redacted.
+  console.log("[trial:CREATE] cardcom urls", {
+    base_url: BASE_URL,
+    vercel_env: process.env.VERCEL_ENV ?? "(unset)",
+    webhook: webhookUrl.replace(/x-vercel-protection-bypass=[^&]+/, "x-vercel-protection-bypass=REDACTED"),
+    success: `${BASE_URL}/${urlLocale}/billing/success?${successQuery}`,
+    error: `${BASE_URL}/${urlLocale}/billing/error?session_id=${sessionId}`,
+  })
+
   let cardcomResult: Awaited<ReturnType<typeof createTrialTokenLowProfile>>
   try {
     cardcomResult = await createTrialTokenLowProfile({
