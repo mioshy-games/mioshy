@@ -7,6 +7,7 @@ import { Check, Loader2, AlertTriangle } from "lucide-react"
 import { createBrowserSupabaseClient } from "@/lib/supabase/client"
 import { postPaymentTarget } from "@/lib/billing/post-payment-target"
 import { metaTrack, metaEventId } from "@/lib/analytics/meta-pixel"
+import { retryCheckout } from "@/lib/billing/retry-checkout"
 
 type Phase = "loading" | "activating" | "active" | "error"
 
@@ -237,6 +238,7 @@ export function BillingSuccessContent() {
             supportLabel={t.errSupport}
             backLabel={t.backHome}
             locale={locale}
+            sessionId={sessionId}
           />
         )}
       </div>
@@ -363,6 +365,7 @@ function ErrorView({
   supportLabel,
   backLabel,
   locale,
+  sessionId,
 }: {
   title: string
   sub: string
@@ -370,7 +373,23 @@ function ErrorView({
   supportLabel: string
   backLabel: string
   locale: string
+  sessionId: string
 }) {
+  const [busy, setBusy] = useState(false)
+  const isHe = locale !== "en"
+  // Task 26 #3 — "ניסיון נוסף" mints a NEW session and returns to Cardcom's
+  // payment page, rather than sending the user to /pricing.
+  const onRetry = async () => {
+    if (!sessionId) return
+    setBusy(true)
+    const { redirectUrl } = await retryCheckout(sessionId, locale)
+    if (redirectUrl) {
+      window.location.href = redirectUrl
+      return
+    }
+    // Couldn't restart → fall back to the pricing page so the user isn't stuck.
+    window.location.href = `/${locale}/pricing`
+  }
   return (
     <div className="flex flex-col items-center gap-7">
       <div
@@ -393,15 +412,17 @@ function ErrorView({
       </div>
 
       <div className="flex w-full flex-col gap-2.5 sm:flex-row sm:justify-center">
-        <a
-          href={`/${locale}/pricing`}
-          className="inline-flex min-h-[52px] flex-1 items-center justify-center rounded-full px-6 text-[15px] font-bold text-white transition hover:brightness-110"
+        <button
+          type="button"
+          onClick={onRetry}
+          disabled={busy || !sessionId}
+          className="inline-flex min-h-[52px] flex-1 items-center justify-center rounded-full px-6 text-[15px] font-bold text-white transition hover:brightness-110 disabled:opacity-60"
           style={{
             background: "linear-gradient(135deg, #B83C4D 0%, #6C2E40 100%)",
           }}
         >
-          {retryLabel}
-        </a>
+          {busy ? (isHe ? "רגע…" : "One sec…") : retryLabel}
+        </button>
         <a
           href={`/${locale}/contact`}
           className="inline-flex min-h-[52px] flex-1 items-center justify-center rounded-full border border-white/20 bg-white/[0.03] px-6 text-[15px] font-semibold text-white/85 transition hover:bg-white/10"

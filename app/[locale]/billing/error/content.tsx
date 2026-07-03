@@ -1,11 +1,33 @@
 "use client"
 
-import { useSearchParams } from "next/navigation"
-import Link               from "next/link"
+import { useState }        from "react"
+import { useSearchParams, useParams } from "next/navigation"
+import Link                from "next/link"
+import { retryCheckout }   from "@/lib/billing/retry-checkout"
 
 export function BillingErrorContent() {
   const searchParams = useSearchParams()
+  const params       = useParams()
+  const locale       = (params?.locale as string) ?? "he"
   const sessionId    = searchParams.get("session_id")
+
+  const [busy, setBusy]   = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  // Task 26 #3 — mint a NEW session and go straight back to Cardcom's payment
+  // page, instead of dropping the user on the home paywall.
+  const onRetry = async () => {
+    if (!sessionId) return
+    setBusy(true)
+    setError(null)
+    const { redirectUrl } = await retryCheckout(sessionId, locale)
+    if (redirectUrl) {
+      window.location.href = redirectUrl
+      return
+    }
+    setBusy(false)
+    setError("לא הצלחנו לפתוח את עמוד התשלום מחדש. נסו שוב מעמוד התוצאות.")
+  }
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 p-8 text-center">
@@ -19,6 +41,7 @@ export function BillingErrorContent() {
           מזהה: {sessionId}
         </p>
       )}
+      {error && <p className="max-w-md text-sm text-rose-300">{error}</p>}
       <div className="flex gap-4">
         <Link
           href="/"
@@ -26,12 +49,14 @@ export function BillingErrorContent() {
         >
           חזור לדף הבית
         </Link>
-        <Link
-          href="/?paywall=1"
-          className="rounded-lg bg-fuchsia-600 px-4 py-2 text-sm font-semibold text-white hover:bg-fuchsia-500 transition-colors"
+        <button
+          type="button"
+          onClick={onRetry}
+          disabled={busy || !sessionId}
+          className="rounded-lg bg-fuchsia-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-fuchsia-500 disabled:opacity-60"
         >
-          נסה שוב
-        </Link>
+          {busy ? "רגע…" : "נסה שוב"}
+        </button>
       </div>
     </div>
   )

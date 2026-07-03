@@ -330,6 +330,22 @@ export async function POST(req: Request) {
     ? `session_id=${sessionId}&trial=1&return_path=${encodeURIComponent(safeReturnPath)}`
     : `session_id=${sessionId}&trial=1`
 
+  // Task 26 (Itzik 2026-07-03): on a protected Preview deployment, Cardcom's
+  // server-to-server webhook POST carries no Vercel auth cookie and is blocked
+  // (401) before it reaches our route, so the trialing sub is never created
+  // (exactly the symptom: "העסקה הושלמה" at Cardcom but no trialing row). When a
+  // Vercel automation-bypass secret is present (non-prod), append it to the
+  // WEBHOOK url so the POST is let through. Deliberately NOT added to the
+  // user-facing success/error urls (that would leak the secret into the URL bar;
+  // the browser already carries the Vercel cookie for those redirects).
+  const bypassSecret =
+    process.env.VERCEL_AUTOMATION_BYPASS_SECRET || process.env.CARDCOM_WEBHOOK_BYPASS_SECRET
+  const isProdEnv = process.env.VERCEL_ENV === "production"
+  const webhookUrl =
+    !isProdEnv && bypassSecret
+      ? `${BASE_URL}/api/billing/cardcom/trial-indicator?x-vercel-protection-bypass=${bypassSecret}`
+      : `${BASE_URL}/api/billing/cardcom/trial-indicator`
+
   let cardcomResult: Awaited<ReturnType<typeof createTrialTokenLowProfile>>
   try {
     cardcomResult = await createTrialTokenLowProfile({
@@ -337,7 +353,7 @@ export async function POST(req: Request) {
       coinId,
       successUrl:  `${BASE_URL}/${urlLocale}/billing/success?${successQuery}`,
       errorUrl:    `${BASE_URL}/${urlLocale}/billing/error?session_id=${sessionId}`,
-      webhookUrl:  `${BASE_URL}/api/billing/cardcom/trial-indicator`,
+      webhookUrl,
       returnValue: sessionId,
       pageLanguage: trustedLanguage,
     })
