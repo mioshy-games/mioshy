@@ -44,7 +44,14 @@ export async function GET(req: Request): Promise<NextResponse> {
         : q.eq("device_id", deviceId!).is("user_id", null);
       const { data } = await q.maybeSingle();
       const status = data?.status as string | undefined;
-      assessmentDone = status === "complete" || status === "completed";
+      // Task 26 (Itzik 2026-07-03): the SHORT assessment leaves
+      // journeys.status='paywall' (app/api/journey/answer/route.ts:385-387) —
+      // NOT 'complete'. A user sitting at the paywall HAS finished the (short)
+      // assessment, so the "take the assessment" offer must be suppressed for
+      // them too; otherwise it re-invites them to the assessment they just did
+      // (the P0 post-payment "11 questions" popup). Count paywall as done.
+      assessmentDone =
+        status === "complete" || status === "completed" || status === "paywall";
     }
 
     // ── Journey entitlement (logged-in only). ────────────────────────────────

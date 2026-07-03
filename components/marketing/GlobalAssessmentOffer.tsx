@@ -35,10 +35,19 @@ import {
   type OfferTrigger,
 } from "@/lib/marketing/assessment-offer";
 
-// Surfaces where the offer must never pop (noise): the assessment itself, auth,
-// and the admin dashboard. (Adults/sex are excluded for 2-min-browse ONLY, via
-// isAdultsPath — login/return may still show there.)
-const BLOCKED = ["/journey/assessment", "/auth", "/dashboard", "/admin"];
+// Surfaces where the offer must never pop (noise): the assessment itself, the
+// billing flow, auth, and the admin dashboard. (Adults/sex are excluded for
+// 2-min-browse ONLY, via isAdultsPath — login/return may still show there.)
+//
+// Task 26 (Itzik 2026-07-03): "/billing" was the P0 leak. Post-payment the
+// buyer lands on /billing/success, which polls for the webhook. In that window
+// the trial subscription doesn't exist yet (journeyEntitled=false) and the
+// short assessment left journeys.status='paywall' (assessmentDone=false too —
+// see offer-eligibility), so shouldSuppress was false and the quick-assessment
+// popup fired OVER the confirmation screen, then its client-side push to
+// /journey/assessment produced the re-auth. Blocking the whole billing flow
+// keeps the post-payment continuation on the session-preserving hard redirect.
+const BLOCKED = ["/journey/assessment", "/billing", "/auth", "/dashboard", "/admin"];
 const BROWSE_DELAY_MS = 2 * 60 * 1000; // 2 minutes
 
 export function GlobalAssessmentOffer({ locale }: { locale: "he" | "en" }) {
