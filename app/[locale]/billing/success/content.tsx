@@ -56,6 +56,8 @@ export function BillingSuccessContent() {
   // Task 33 — machine-readable failure reason, so the error view can tell the
   // "one-time trial already used" case apart from a real decline.
   const [failureReason, setFailureReason] = useState<string | null>(null)
+  // Task 34 — after ~8s of a slow confirmation, swap in a calmer interim line.
+  const [reassure, setReassure] = useState(false)
 
   // Task 26 (Itzik 2026-07-03): the success page must not depend on the Cardcom
   // webhook. For a trial (trial=1), if the poll hasn't seen 'paid' quickly, we
@@ -67,19 +69,50 @@ export function BillingSuccessContent() {
   useEffect(() => {
     if (!sessionId) { setPhase("error"); return }
 
-    const MAX_ATTEMPTS = 18
+    // Task 34 — target ~5s. For a trial we don't wait on the webhook at all:
+    // reconcile inline on the FIRST tick and act on its returned status. Poll
+    // interval shortened to 1.2s; a max cap only backstops a stuck webhook for
+    // the (rare) non-trial path. An 8s timer swaps in a calmer interim line.
+    const MAX_ATTEMPTS = 24
+    const INTERVAL_MS = 1200
     let cancelled = false
-    let localAttempt = 0
+    let reconcileFired = false
 
-    const tryReconcile = async () => {
+    const reassureTimer = setTimeout(() => { if (!cancelled) setReassure(true) }, 8000)
+
+    const markPaid = (data: { amount?: unknown; currency?: unknown; product?: unknown } | null) => {
+      if (!purchaseFiredRef.current) {
+        purchaseFiredRef.current = true
+        metaTrack(
+          "Purchase",
+          {
+            value: data?.amount,
+            currency: data?.currency,
+            content_name: data?.product,
+            content_type: "product",
+          },
+          metaEventId.purchase(sessionId),
+        )
+      }
+      setPhase("active")
+    }
+
+    // Returns "done" (sub exists), "error" (terminal failure, reason set), or
+    // "pending" (transient — keep polling / retry later).
+    const reconcileNow = async (): Promise<"done" | "error" | "pending"> => {
       try {
-        await fetch("/api/billing/trial/reconcile", {
+        const res = await fetch("/api/billing/trial/reconcile", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ session_id: sessionId }),
         })
+        const j = (await res.json().catch(() => ({}))) as { ok?: boolean; status?: string }
+        if (j?.ok) return "done"
+        if (j?.status === "abuse_blocked")     { setFailureReason("trial_already_used"); return "error" }
+        if (j?.status === "validation_failed") { setFailureReason("validation_failed");  return "error" }
+        return "pending"
       } catch {
-        /* the poll keeps going; a later reconcile attempt may still succeed */
+        return "pending"
       }
     }
 
@@ -96,55 +129,34 @@ export function BillingSuccessContent() {
       if (data?.product) setProduct(data.product as string)
       if (data?.failure_reason) setFailureReason(data.failure_reason as string)
 
-      if (data?.status === "paid") {
-        // Browser Purchase — dedupes with the CAPI Purchase (indicator route)
-        // via the shared deterministic event_id. Fire ONLY here, on the real
-        // "paid" status, never the MAX_ATTEMPTS timeout fallback below.
-        if (!purchaseFiredRef.current) {
-          purchaseFiredRef.current = true
-          metaTrack(
-            "Purchase",
-            {
-              value: data.amount,
-              currency: data.currency,
-              content_name: data.product,
-              content_type: "product",
-            },
-            metaEventId.purchase(sessionId),
-          )
-        }
-        setPhase("active")
-        return
-      }
+      if (data?.status === "paid")   { markPaid(data); return }
+      if (data?.status === "failed") { setPhase("error"); return }
 
-      if (data?.status === "failed") {
-        setPhase("error")
-        return
-      }
-
-      // Webhook-independent activation: after ~6s (and again ~18s) without
-      // 'paid', reconcile the trial inline. Idempotent server-side, so firing
-      // twice (and racing a late webhook) is safe; the next poll sees 'paid'.
-      localAttempt += 1
-      if (isTrial && (localAttempt === 2 || localAttempt === 6)) {
-        void tryReconcile()
+      // Trials: reconcile on the FIRST tick and act on the result immediately.
+      if (isTrial && !reconcileFired) {
+        reconcileFired = true
+        const r = await reconcileNow()
+        if (cancelled) return
+        if (r === "done")  { markPaid(data); return }
+        if (r === "error") { setPhase("error"); return }
+        // pending → fall through to the poll loop (webhook may still land, or a
+        // later poll re-reads a 'paid'/'failed' the server writes shortly after).
       }
 
       setAttempts(a => {
         const next = a + 1
         if (next >= MAX_ATTEMPTS) {
-          // Treat as success after timeout - the webhook may still be on its way.
           setPhase("active")
           return next
         }
-        setTimeout(poll, 3000)
+        setTimeout(poll, INTERVAL_MS)
         return next
       })
     }
 
     setPhase("activating")
     void poll()
-    return () => { cancelled = true }
+    return () => { cancelled = true; clearTimeout(reassureTimer) }
   }, [sessionId, isTrial])
 
   // Auto-redirect once the session flips to paid.
@@ -179,6 +191,8 @@ export function BillingSuccessContent() {
           n > 0
             ? `מקבלים אישור מקארדקום… (בדיקה ${n})`
             : "מקבלים אישור מקארדקום",
+        // Task 34 — calmer interim line after ~8s.
+        reassureSub:     "עוד רגע, מוודאים שהכל נרשם כמו שצריך",
         activeTitle:     "התשלום אושר",
         activeSub:       "מעבירים אתכם לחדר הפרטי שלכם",
         activeNote:      "תוכלו לבטל בכל רגע מהחשבון.",
@@ -200,6 +214,7 @@ export function BillingSuccessContent() {
           n > 0
             ? `Confirming with Cardcom… (check ${n})`
             : "Confirming with Cardcom",
+        reassureSub:     "One more moment, making sure everything's saved",
         activeTitle:     "Payment confirmed",
         activeSub:       "Taking you to your private space",
         activeNote:      "You can cancel anytime from your account.",
@@ -238,7 +253,7 @@ export function BillingSuccessContent() {
         {phase === "loading" || phase === "activating" ? (
           <ActivatingView
             title={t.activatingTitle}
-            sub={t.activatingSub(attempts)}
+            sub={reassure ? t.reassureSub : t.activatingSub(attempts)}
           />
         ) : phase === "active" ? (
           isJourney ? (
