@@ -710,7 +710,17 @@ export function AnalysisSummary({
 
               {/* Packages ← journeyCadences. Price shown = promo first-charge
                   (server-computed) or the regular price for that cadence. */}
-              {enabledCadences.map((c) => {
+              <div className="ar-opts-wrap">
+                {/* Trial tag as a fieldset-style legend on the container's top
+                    border (Itzik 2026-07-04): ONE tag for the whole selector
+                    (the trial applies to every package), dark solid bg + white
+                    text — NOT the brand gradient, which blends into the coaching
+                    tabs above. Shows only when the current coaching selection is
+                    trial-enabled (useTrialOffer already keys off `coaching`). */}
+                {trial.enabled ? (
+                  <span className="ar-trial-legend">{trial.cardTag}</span>
+                ) : null}
+                {enabledCadences.map((c) => {
                 const selected = c.cadence === selectedCadence;
                 const amt = amtOf(c);
                 const pf = promoSet?.firstChargeByCadence[c.cadence];
@@ -756,10 +766,8 @@ export function AnalysisSummary({
                         instead of the narrow info column that shared the row
                         with the big price. */}
                     <span className="ar-opt-details">
-                      {/* Task 16 — trial tag on the selected plan card */}
-                      {trial.enabled && selected ? (
-                        <span className="ar-trial-tag">{trial.cardTag}</span>
-                      ) : null}
+                      {/* Trial tag moved to the selector's top-border legend
+                          (Itzik 2026-07-04); no longer per-card. */}
                       {hasPromo ? (
                         <>
                           {/* Sub line first; "חיסכון X%" moved to its OWN line
@@ -814,6 +822,7 @@ export function AnalysisSummary({
                   </button>
                 );
               })}
+              </div>
 
               {/* Selected-cadence headline — the amount Cardcom will charge for
                   the selected plan. Preserves the struck anchor (ILS derived /
@@ -1466,6 +1475,36 @@ export function AnalysisSummary({
         }
         /* ✓ icon removed from the selected coaching toggle (Itzik 2026-07-04) —
            the gradient fill alone marks the selection. */
+        /* Packages container — the top border carries the trial legend
+           (Itzik 2026-07-04). The margin/padding-top opens room so the legend
+           sits ON the border without touching the coaching tabs above it. */
+        .ar-opts-wrap {
+          position: relative;
+          border-top: 2px solid #ece2cf;
+          margin-top: 30px;
+          padding-top: 30px;
+        }
+        /* Fieldset-legend trial tag, centered on the container's top border.
+           Solid brand dark ink + white text (deliberately NOT the gradient, so
+           it doesn't blend with the coaching tabs). One tag for the whole
+           selector. white-space:nowrap keeps it one line on mobile. */
+        .ar-trial-legend {
+          position: absolute;
+          top: 0;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          z-index: 1;
+          white-space: nowrap;
+          max-width: calc(100% - 24px);
+          background: #241d1a;
+          color: #fff;
+          font-family: var(--font-heebo), "Assistant", "Heebo", system-ui, sans-serif;
+          font-size: 20px;
+          font-weight: 800;
+          padding: 5px 16px;
+          border-radius: 999px;
+          box-shadow: 0 4px 14px -6px rgba(0, 0, 0, 0.4);
+        }
         /* Approved mockup: docs/promo-timer-mockup-approved.html (version B).
            Base = mobile (timer wraps to a centered line below); desktop
            override in the ≥760 media query keeps it inline (flex:1, centered). */
