@@ -11,7 +11,7 @@ fallback on that day — we skip it), per docs/mailing-schedule-2026-07-03.md §
 
 | Field | Value |
 |---|---|
-| **Name** | `trial_intro_reminder_v4` (lowercase + underscores; Meta requires this format) |
+| **Name** | `intro_price_expiry_reminder` (lowercase + underscores; Meta requires this format) |
 | **Category** | **Marketing** |
 | **Language** | **Hebrew (he)** |
 | **Header** | None |
