@@ -749,6 +749,13 @@ export function AnalysisSummary({
                     <span className="ar-radio" />
                     <span className="ar-opt-info">
                       <span className="ar-opt-name">{cadenceTitle(c.cadence)}</span>
+                    </span>
+                    {/* Mobile width fix (Itzik 2026-07-04): tag / sub-line /
+                        "חיסכון %" move to their OWN full-width row BELOW the
+                        radio+name+price line, so they use the whole card width
+                        instead of the narrow info column that shared the row
+                        with the big price. */}
+                    <span className="ar-opt-details">
                       {/* Task 16 — trial tag on the selected plan card */}
                       {trial.enabled && selected ? (
                         <span className="ar-trial-tag">{trial.cardTag}</span>
@@ -1411,6 +1418,8 @@ export function AnalysisSummary({
           display: inline-block;
           width: fit-content;
           margin-top: 6px;
+          /* One line — never let "חינם" drop alone (Itzik 2026-07-04). */
+          white-space: nowrap;
           /* 20px per Itzik 2026-07-03 (was 13px). */
           font-size: 20px;
           font-weight: 800;
@@ -1455,20 +1464,18 @@ export function AnalysisSummary({
           background: var(--ar-grad);
           box-shadow: 0 4px 12px -5px rgba(214, 64, 159, 0.5);
         }
-        .ar-coach-opt.sel::before {
-          content: "✓ ";
-          font-weight: 900;
-        }
+        /* ✓ icon removed from the selected coaching toggle (Itzik 2026-07-04) —
+           the gradient fill alone marks the selection. */
         /* Approved mockup: docs/promo-timer-mockup-approved.html (version B).
            Base = mobile (timer wraps to a centered line below); desktop
            override in the ≥760 media query keeps it inline (flex:1, centered). */
         .ar-opt {
           display: flex;
           flex-wrap: wrap;
-          /* Mobile: top-align so the price sits on the "חודשי" line while the
-             taller info column (name + note) grows; timer wraps centered below.
-             Desktop restores center alignment in the ≥760 media query. */
-          align-items: flex-start;
+          /* Mobile (Itzik 2026-07-04): line 1 is radio + name + price, centered
+             on one vertical line; the details row (tag / sub / חיסכון) wraps to
+             its own full-width line below. */
+          align-items: center;
           gap: 12px;
           width: 100%;
           background: #fcfaf7;
@@ -1517,6 +1524,17 @@ export function AnalysisSummary({
           font-size: 23px;
           line-height: 1;
           color: #2e2622;
+        }
+        /* Full-width row under the name+price line — holds the trial tag, the
+           sub line and "חיסכון %", so each uses the whole card width and only
+           wraps where it truly runs out of room (Itzik 2026-07-04). */
+        .ar-opt-details {
+          order: 4;
+          flex-basis: 100%;
+          width: 100%;
+          display: flex;
+          flex-direction: column;
+          text-align: right;
         }
         .ar-opt-note {
           font-size: 18px;
@@ -1874,12 +1892,11 @@ export function AnalysisSummary({
             /* wider (v9) so the one-line sub + centered timer + price fit */
             max-width: 640px;
           }
-          /* Desktop: timer stays inline between name and price (no wrap).
-             Restore center alignment; info keeps its natural width and does
-             NOT shrink, so the sub stays on one line (nowrap) and the timer's
-             flex:1 owns the remaining centre. */
+          /* Desktop: line 1 = radio + name + timer + price (timer's flex:1 owns
+             the centre); the details row (tag / sub / חיסכון) wraps to its own
+             full-width line below, same as mobile (Itzik 2026-07-04). */
           .ar-opt {
-            flex-wrap: nowrap;
+            flex-wrap: wrap;
             align-items: center;
           }
           .ar-opt-info {
