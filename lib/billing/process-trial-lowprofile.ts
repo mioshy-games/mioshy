@@ -149,7 +149,12 @@ export async function processTrialLowProfile(args: {
       ? tokenHashSha256(fpBasis)
       : tokenHashSha256(`tok:${result.token}`)
 
-  {
+  // Task 26 (Itzik 2026-07-03): the one-trial-per-card guard blocks repeat E2E
+  // testing on Preview (same QA card → "trial already used", no trialing row).
+  // Skip it when NOT production; prod keeps the guard. Mirrors the account-guard
+  // skip in create-trial.
+  const isProdEnv = process.env.VERCEL_ENV === "production"
+  if (isProdEnv) {
     const { data: dupe } = await admin
       .from("trial_redemptions")
       .select("id")

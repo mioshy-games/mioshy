@@ -157,9 +157,17 @@ export async function POST(req: Request) {
     }
   }
 
-  // ── Abuse guard #1 (account): one trial per account, ever ───────────────────
+  // Task 26 (Itzik 2026-07-03): the one-trial-per-account / per-card guards are
+  // correct in PROD but block repeat E2E testing on Preview (same QA card/account
+  // → "trial already used"). Root cause of the "no trialing row" Preview runs.
+  // Skip the trial abuse guards when NOT production so QA can re-run; production
+  // keeps every guard. The fingerprint guard has the same skip in
+  // process-trial-lowprofile.
+  const isProdEnv = process.env.VERCEL_ENV === "production"
+
+  // ── Abuse guard #1 (account): one trial per account, ever (prod only) ───────
   // The card-fingerprint guard (#2) runs in the webhook after tokenization.
-  {
+  if (isProdEnv) {
     const { data: prior } = await serviceClient
       .from("trial_redemptions")
       .select("id")
@@ -174,8 +182,8 @@ export async function POST(req: Request) {
     }
   }
 
-  // ── Guard: don't trial a product the user already subscribes to ─────────────
-  {
+  // ── Guard: don't trial a product the user already subscribes to (prod only) ──
+  if (isProdEnv) {
     const { data: activeSub } = await serviceClient
       .from("subscriptions")
       .select("id, status")
@@ -340,7 +348,6 @@ export async function POST(req: Request) {
   // the browser already carries the Vercel cookie for those redirects).
   const bypassSecret =
     process.env.VERCEL_AUTOMATION_BYPASS_SECRET || process.env.CARDCOM_WEBHOOK_BYPASS_SECRET
-  const isProdEnv = process.env.VERCEL_ENV === "production"
   const webhookUrl =
     !isProdEnv && bypassSecret
       ? `${BASE_URL}/api/billing/cardcom/trial-indicator?x-vercel-protection-bypass=${bypassSecret}`
