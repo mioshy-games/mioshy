@@ -48,6 +48,10 @@
     {
       "path": "/api/journey/trial-reminder",
       "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/journey/marketing-sequence",
+      "schedule": "0 * * * *"
     }
   ]
 }

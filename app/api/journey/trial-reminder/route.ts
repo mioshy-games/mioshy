@@ -22,7 +22,16 @@ export const maxDuration = 60;
 
 import { NextResponse } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
-import { notifyUser } from "@/lib/journey-content/notifications";
+import { sendBrevoEmail } from "@/lib/email/brevo";
+import { buildTrialDay5Email } from "@/lib/journey/mailing/sequence-emails";
+
+function baseUrl(): string {
+  return (
+    process.env.PUBLIC_BASE_URL ||
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    "https://mioshy.com"
+  ).replace(/\/+$/, "");
+}
 
 const HOURS = (n: number) => n * 60 * 60 * 1000;
 const EMAIL_CAP_PER_RUN = 200;
@@ -110,20 +119,39 @@ async function handle(req: Request): Promise<NextResponse<Summary>> {
     const billAmount = useIntro ? (sub.intro_amount as number) : (sub.plan_amount ?? 0);
     const amountLabel = formatAmount(billAmount, sub.currency || "ILS");
     const dateLabel = sub.trial_ends_at
-      ? new Date(sub.trial_ends_at).toLocaleDateString("he-IL")
+      ? new Date(sub.trial_ends_at).toLocaleDateString("he-IL", { day: "numeric", month: "long", year: "numeric" })
       : "";
 
+    // Resolve the first name for the greeting (best-effort).
+    const { data: prof } = await admin
+      .from("profiles")
+      .select("full_name")
+      .eq("id", sub.user_id)
+      .maybeSingle<{ full_name: string | null }>();
+    const firstName = (prof?.full_name ?? "").trim().split(/\s+/)[0] || null;
+
     try {
-      await notifyUser({
-        recipientUserId: sub.user_id,
+      // §ת-1 final copy, in the designed transactional template.
+      if (!sub.email) { errors.push(`${sub.id}:no_email`); continue; }
+      const email = buildTrialDay5Email({
+        firstName,
+        trialEndDateHe: dateLabel,
+        chargeAmountHe: amountLabel,
+        baseUrl: baseUrl(),
+      });
+      const r = await sendBrevoEmail({
+        to: [{ email: sub.email, name: firstName ?? undefined }],
+        subject: email.subject,
+        htmlContent: email.html,
+        textContent: email.text,
+        tags: ["trial_day5"],
+      });
+      if (!r.ok) { errors.push(`${sub.id}:${r.error ?? "send_failed"}`); continue; }
+      // Record for dedup (the query above skips users who already have this row).
+      await admin.from("journey_notifications").insert({
+        recipient_user_id: sub.user_id,
         kind: "trial_ending_soon",
-        subject: "מיאושי: תקופת הניסיון שלכם מסתיימת בקרוב",
-        payload: {
-          href: "/he/account",
-          preview: `תקופת הניסיון מסתיימת ב-${dateLabel}. אז יתבצע החיוב הראשון בסך ${amountLabel}. אפשר לבטל עד אז בלי חיוב מהחשבון שלכם.`,
-          // stored for audit / dedup traceability
-          sub_id: sub.id,
-        },
+        payload: { sub_id: sub.id, charge: amountLabel, ends: dateLabel },
       });
       sent++;
     } catch (e) {
