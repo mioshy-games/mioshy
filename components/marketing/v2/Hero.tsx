@@ -9,6 +9,13 @@ import { useCmsText } from "@/hooks/useCmsText";
 import { CmsText } from "@/components/cms/CmsText";
 
 /**
+ * Available experts shown in the hero stat. Currently 1 (יצחק ברלב) — Itzik
+ * 2026-07-04. When an admin field is added, replace this with the DB value; the
+ * `|| 1` at the call site keeps the display at 1 whenever it's unset or 0.
+ */
+const AVAILABLE_EXPERTS = 1;
+
+/**
  * Hero - first section of HomepageV2.
  *
  * CMS migration (Sprint 4 #1 closeout, 2026-05-13):
@@ -129,7 +136,11 @@ export function Hero() {
                 </div>
                 <div className="hero-meta-item">
                   <span className="num">
-                    <Counter to={3} />
+                    {/* Available experts (Itzik 2026-07-04): currently 1
+                        (יצחק ברלב). Was a fictional 3. An admin field will drive
+                        this later; the || 1 fallback guarantees it never shows 0
+                        (or a negative) when unset. */}
+                    <Counter to={Math.max(1, AVAILABLE_EXPERTS || 1)} />
                   </span>
                   <CmsText
                     cmsKey="homeV2.hero.statExpertsLabel"

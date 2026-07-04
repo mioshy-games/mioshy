@@ -1680,33 +1680,39 @@ export function AnalysisSummary({
         }
         .ar-incl-sub {
           margin-top: 4px;
-          font-size: 16px;
+          /* 20px per Itzik 2026-07-04 (was 16px). */
+          font-size: 20px;
           font-weight: 600;
           color: #5a4f46;
         }
+        /* One horizontal row of feature items — never two rows (Itzik
+           2026-07-04), mobile AND desktop. Each item is a compact centered
+           column (✓ above the text) so all of them share the row width; the
+           text wraps inside its own column when it must. */
         .ar-incl {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 12px 16px;
+          display: flex;
+          flex-wrap: nowrap;
+          gap: 8px;
+          justify-content: space-between;
         }
         .ar-it {
+          flex: 1 1 0;
+          min-width: 0;
           display: flex;
+          flex-direction: column;
           align-items: center;
-          gap: 8px;
-          font-size: 17px;
+          gap: 5px;
+          font-size: 15px;
           font-weight: 600;
           color: #2e2622;
-          text-align: right;
+          text-align: center;
+          line-height: 1.25;
         }
         .ar-it-check {
           flex: none;
           color: #d6409f;
           font-weight: 800;
-        }
-        @media (max-width: 360px) {
-          .ar-incl {
-            grid-template-columns: 1fr;
-          }
+          font-size: 17px;
         }
 
         /* Selected-cadence headline summary (restored money-path detail) */
