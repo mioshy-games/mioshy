@@ -218,8 +218,9 @@ export function AnalysisSummary({
   const cmsIncluded2 = useCmsText(`${RK}.included2`).text;
   const cmsIncluded3 = useCmsText(`${RK}.included3`).text;
   const cmsIncluded4 = useCmsText(`${RK}.included4`).text;
-  const cmsIncluded5 = useCmsText(`${RK}.included5`).text;
-  const cmsFullAssessment = useCmsText(`${RK}.fullAssessmentNote`).text;
+  // included5 ("ייעוץ זוגי עם מיאושי") + fullAssessmentNote removed from the
+  // pricing section (mockup v1, Itzik 2026-07-04): coaching is no longer listed
+  // twice, and the full-assessment note is covered by the timeline's first line.
   const cmsStopNote = useCmsText(`${RK}.stopNote`).text;
   const cmsAnchorLead = useCmsText(`${RK}.anchorLead`).text;
   const cmsAnchorBold = useCmsText(`${RK}.anchorBold`).text;
@@ -422,6 +423,9 @@ export function AnalysisSummary({
 
   const monthsInPeriod = (cadence: string) =>
     cadence === "yearly" ? 12 : cadence === "quarterly" ? 3 : 0;
+  // "N months free" in grammatical Hebrew (1 / dual / plural).
+  const freeMonthsHe = (n: number) =>
+    n === 1 ? "חודש חינם" : n === 2 ? "חודשיים חינם" : `${n} חודשים חינם`;
   const periodLabel = (cadence: string) =>
     cadence === "yearly"
       ? isHe ? "/שנה" : "/yr"
@@ -748,6 +752,13 @@ export function AnalysisSummary({
                   hasPromo && origAmt > 0 && firstAmt < origAmt
                     ? Math.round(((origAmt - firstAmt) / origAmt) * 100)
                     : null;
+                // Yearly "N months free" — computed LIVE (Itzik 2026-07-04):
+                // floor((full monthly × 12 − yearly price) / full monthly).
+                // Today: (67×12 − 1570)/67 = floor(3.4) = 3 → "3 חודשים חינם".
+                const freeMonths =
+                  c.cadence === "yearly" && monthlyFull != null && amt > 0
+                    ? Math.floor((monthlyFull * 12 - amt) / monthlyFull)
+                    : null;
                 return (
                   <button
                     type="button"
@@ -784,16 +795,23 @@ export function AnalysisSummary({
                           {promoSavePct != null ? (
                             <span className="ar-opt-save">
                               {isHe ? "חיסכון" : "Save"} {promoSavePct}%
+                              {/* Clarify the monthly promo is a FIRST-month
+                                  discount (Itzik 2026-07-04). */}
+                              {c.cadence === "monthly"
+                                ? isHe ? " על החודש הראשון" : " on the first month"
+                                : ""}
                             </span>
                           ) : null}
                         </>
                       ) : savePct != null ? (
                         <span className="ar-opt-save">
                           {isHe ? "חיסכון" : "Save"} {savePct}%
-                          {/* Task 23 — annual framing beside the %. NOT the
-                              default plan (per the 2026-07-02 decision). */}
-                          {c.cadence === "yearly"
-                            ? isHe ? " · חודשיים חינם" : " · 2 months free"
+                          {/* Yearly "N months free" — computed live (Itzik
+                              2026-07-04), grammatical Hebrew. */}
+                          {c.cadence === "yearly" && freeMonths && freeMonths > 0
+                            ? isHe
+                              ? ` · ${freeMonthsHe(freeMonths)}`
+                              : ` · ${freeMonths} months free`
                             : ""}
                         </span>
                       ) : null}
@@ -879,28 +897,31 @@ export function AnalysisSummary({
                   })()
                 : null}
 
-              {/* Task 21 — personal 48h window line (named deadline, no clock).
-                  Only shows when the user has an active offer window. */}
+              {/* Zone A end — the personal-window offer as a styled strip
+                  (mockup v1, Itzik 2026-07-04). Only with an active window. */}
               {offerWindowLabel ? (
-                <p className="ar-offer-window">{offerWindowLabel}</p>
+                <p className="ar-offer-strip">{offerWindowLabel}</p>
               ) : null}
 
-              {/* Task 23 — category-standard reassurance (removes double-charge
-                  fear). Always shown, next to the price. */}
-              <p className="ar-couple-note">
-                {isHe
-                  ? "מנוי אחד, שני בני זוג. בלי תוספת מחיר."
-                  : "One subscription, both partners. No extra charge."}
-              </p>
+              <hr className="ar-zone-sep" aria-hidden />
 
+              {/* ── Zone B — "מה כלול" 2-col grid. The coaching DUPLICATE
+                  (included5 "ייעוץ זוגי עם מיאושי") is dropped: the chat item
+                  (included2) already represents the coaching add-on, so we don't
+                  list coaching twice. included2 stays gated on the coaching
+                  toggle so the without-coaching bundle never promises the chat.
+                  The "מנוי אחד, שני בני זוג" line is the section subtitle. */}
+              <div className="ar-incl-head">
+                <h3 className="ar-incl-title font-heading">
+                  {isHe ? "מה כלול" : "What's included"}
+                </h3>
+                <p className="ar-incl-sub">
+                  {isHe
+                    ? "מנוי אחד, שני בני זוג. בלי תוספת מחיר."
+                    : "One subscription, both partners. No extra charge."}
+                </p>
+              </div>
               <div className="ar-incl">
-                {/* Dynamic per the coaching selector (2026-07-02, Itzik): the two
-                    coaching-only items — "מומחה זוגיות פרטי בצ'אט" (included2) and
-                    "ייעוץ זוגי עם מיאושי" (included5) — are hidden when the buyer
-                    picks "ללא ייעוץ זוגי", so the list never promises a coaching
-                    perk the without-coaching bundle doesn't include. When no
-                    coaching cost is configured the toggle is absent and `coaching`
-                    stays true, so the full list shows exactly as before. */}
                 {[
                   rc(cmsIncluded1, "פרק חדש כל שבוע", "A new chapter every week"),
                   ...(coaching
@@ -908,23 +929,15 @@ export function AnalysisSummary({
                     : []),
                   rc(cmsIncluded3, "משחקי זוגות אונליין", "Online couples games"),
                   rc(cmsIncluded4, "הסקס של מיאושי", "Mioshy's sex games"),
-                  ...(coaching
-                    ? [rc(cmsIncluded5, "ייעוץ זוגי עם מיאושי", "Couples coaching with Mioshy")]
-                    : []),
                 ].map((it, i) => (
                   <div className="ar-it" key={i}>
-                    {it}
+                    <span aria-hidden className="ar-it-check">✓</span>
+                    <span>{it}</span>
                   </div>
                 ))}
               </div>
 
-              <p className="ar-fulltext">
-                {rc(
-                  cmsFullAssessment,
-                  "מיד עם ההצטרפות נשלים את האבחון המלא, לתמונה מדויקת יותר ולצעדים שמתאימים בדיוק אליכם.",
-                  "Right after you join, we'll complete the full assessment, for a more accurate picture and steps tailored exactly to you.",
-                )}
-              </p>
+              <hr className="ar-zone-sep" aria-hidden />
 
               {/* Task 16 — 7-day trial timeline (Blinkist pattern). Moved below
                   the package options, right above the CTA (Itzik 2026-07-03):
@@ -1388,9 +1401,9 @@ export function AnalysisSummary({
           border: 0;
           background: transparent;
           padding: 2px 2px 16px;
-          /* Task 31 (Itzik 2026-07-03) — more air between the opening sentence
-             ("מיד עם ההצטרפות נשלים…") and the timeline rows. */
-          margin-top: 24px;
+          /* Zone C sits below a zone separator now (the old opening sentence was
+             deleted in mockup v1), so no extra top margin (Itzik 2026-07-04). */
+          margin-top: 0;
           margin-bottom: 16px;
           border-bottom: 1px solid #ece2cf;
           font-family: var(--font-heebo), "Assistant", "Heebo", system-ui, sans-serif;
@@ -1653,32 +1666,47 @@ export function AnalysisSummary({
           -webkit-text-fill-color: #2e2622;
           color: #2e2622;
         }
+        /* Zone B — "מה כלול" header + 2-col grid (mockup v1, Itzik 2026-07-04),
+           site tokens/fonts; magenta ✓ from the brand palette. */
+        .ar-incl-head {
+          text-align: center;
+          margin-bottom: 14px;
+        }
+        .ar-incl-title {
+          font-family: var(--font-frank-ruhl), "Frank Ruhl Libre", serif;
+          font-weight: 700;
+          font-size: 24px;
+          color: #2e2622;
+        }
+        .ar-incl-sub {
+          margin-top: 4px;
+          font-size: 16px;
+          font-weight: 600;
+          color: #5a4f46;
+        }
         .ar-incl {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 0;
-          margin-top: 16px;
-          padding-top: 8px;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 12px 16px;
         }
         .ar-it {
-          font-size: 18px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 17px;
           font-weight: 600;
           color: #2e2622;
-          padding: 11px 0;
-          position: relative;
-          text-align: center;
+          text-align: right;
         }
-        .ar-it:not(:last-child)::after {
-          content: "";
-          position: absolute;
-          bottom: 0;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 66px;
-          height: 1px;
-          border-radius: 2px;
-          background: var(--ar-grad);
+        .ar-it-check {
+          flex: none;
+          color: #d6409f;
+          font-weight: 800;
+        }
+        @media (max-width: 360px) {
+          .ar-incl {
+            grid-template-columns: 1fr;
+          }
         }
 
         /* Selected-cadence headline summary (restored money-path detail) */
@@ -1774,13 +1802,26 @@ export function AnalysisSummary({
           margin-top: 14px;
         }
         /* Task 21 — personal 48h offer-window line (brand wine, quiet). */
-        .ar-offer-window {
+        /* Zone A offer strip (mockup v1, Itzik 2026-07-04) — the personal-window
+           line as a soft cream card, brand wine text. Site tokens. */
+        .ar-offer-strip {
+          margin-top: 16px;
+          padding: 12px 16px;
+          border-radius: 14px;
+          background: #fbf1e6;
+          border: 1px solid #f0e0cc;
           text-align: center;
-          /* 22px per Itzik 2026-07-03 (was 14px). */
-          font-size: 22px;
-          font-weight: 700;
+          font-size: 18px;
+          font-weight: 600;
+          line-height: 1.5;
           color: #7a1f2b;
-          margin-top: 14px;
+        }
+        /* Zone divider between the three areas (choice / included / how it
+           works). Hairline in the card-border tone. */
+        .ar-zone-sep {
+          border: 0;
+          border-top: 1px solid #ece2cf;
+          margin: 26px 0;
         }
 
         /* ACTIVE SUBSCRIBER */
