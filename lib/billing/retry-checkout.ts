@@ -23,6 +23,10 @@ import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 export async function retryCheckout(
   sessionId: string,
   locale: string,
+  // "auto" reuses the failed session's flow (trial → trial); "regular" forces a
+  // normal paid subscription with NO trial (Task 33 — "you already used your
+  // one-time trial, join directly" path).
+  mode: "auto" | "regular" = "auto",
 ): Promise<{ redirectUrl: string | null; message?: string }> {
   try {
     const supabase = createBrowserSupabaseClient();
@@ -33,7 +37,8 @@ export async function retryCheckout(
       .maybeSingle();
     if (!data) return { redirectUrl: null, message: "session_not_found" };
 
-    const endpoint = data.is_trial
+    const useTrial = mode === "auto" && data.is_trial;
+    const endpoint = useTrial
       ? "/api/billing/checkout/create-trial"
       : "/api/billing/checkout/create";
     const res = await fetch(endpoint, {

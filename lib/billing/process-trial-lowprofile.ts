@@ -126,7 +126,7 @@ export async function processTrialLowProfile(args: {
     console.warn("[trial-process:VALIDATION_FAILED] no trial created", {
       session_id: sessionId, response_code: result.responseCode, has_token: !!result.token,
     })
-    await admin.from("checkout_sessions").update({ status: "failed", updated_at: new Date().toISOString() }).eq("id", sessionId)
+    await admin.from("checkout_sessions").update({ status: "failed", failure_reason: "validation_failed", updated_at: new Date().toISOString() }).eq("id", sessionId)
     await admin.from("billing_events").update({ processed: true }).eq("idempotency_key", idempotencyKey)
     return { status: "validation_failed", sessionId, ok: false }
   }
@@ -163,7 +163,7 @@ export async function processTrialLowProfile(args: {
       .maybeSingle()
     if (dupe?.id) {
       console.warn("[trial-process:ABUSE_BLOCK] account or card already used a trial", { session_id: sessionId })
-      await admin.from("checkout_sessions").update({ status: "failed", updated_at: new Date().toISOString() }).eq("id", sessionId)
+      await admin.from("checkout_sessions").update({ status: "failed", failure_reason: "trial_already_used", updated_at: new Date().toISOString() }).eq("id", sessionId)
       await admin.from("billing_events").update({ error: "trial already used (fingerprint/account)", processed: true }).eq("idempotency_key", idempotencyKey)
       return { status: "abuse_blocked", sessionId, ok: false }
     }

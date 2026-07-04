@@ -53,6 +53,9 @@ export function BillingSuccessContent() {
   // F3.2 — the purchased pillar, so a journey buyer continues straight into
   // the (full) assessment instead of /my (locked decision A).
   const [product, setProduct]   = useState<string | null>(null)
+  // Task 33 — machine-readable failure reason, so the error view can tell the
+  // "one-time trial already used" case apart from a real decline.
+  const [failureReason, setFailureReason] = useState<string | null>(null)
 
   // Task 26 (Itzik 2026-07-03): the success page must not depend on the Cardcom
   // webhook. For a trial (trial=1), if the poll hasn't seen 'paid' quickly, we
@@ -84,13 +87,14 @@ export function BillingSuccessContent() {
       const supabase = createBrowserSupabaseClient()
       const { data } = await supabase
         .from("checkout_sessions")
-        .select("status, product, amount, currency")
+        .select("status, product, amount, currency, failure_reason")
         .eq("id", sessionId)
         .maybeSingle()
 
       if (cancelled) return
 
       if (data?.product) setProduct(data.product as string)
+      if (data?.failure_reason) setFailureReason(data.failure_reason as string)
 
       if (data?.status === "paid") {
         // Browser Purchase — dedupes with the CAPI Purchase (indicator route)
@@ -267,6 +271,7 @@ export function BillingSuccessContent() {
             backLabel={t.backHome}
             locale={locale}
             sessionId={sessionId}
+            failureReason={failureReason}
           />
         )}
       </div>
@@ -394,6 +399,7 @@ function ErrorView({
   backLabel,
   locale,
   sessionId,
+  failureReason,
 }: {
   title: string
   sub: string
@@ -402,15 +408,17 @@ function ErrorView({
   backLabel: string
   locale: string
   sessionId: string
+  failureReason: string | null
 }) {
   const [busy, setBusy] = useState(false)
   const isHe = locale !== "en"
-  // Task 26 #3 — "ניסיון נוסף" mints a NEW session and returns to Cardcom's
-  // payment page, rather than sending the user to /pricing.
-  const onRetry = async () => {
+  // Task 26 #3 / 33 — retry mints a NEW session and returns to Cardcom. mode
+  // "regular" forces a paid subscription with no trial (the "you already used
+  // your one-time trial, join directly" path).
+  const onRetry = async (mode: "auto" | "regular") => {
     if (!sessionId) return
     setBusy(true)
-    const { redirectUrl } = await retryCheckout(sessionId, locale)
+    const { redirectUrl } = await retryCheckout(sessionId, locale, mode)
     if (redirectUrl) {
       window.location.href = redirectUrl
       return
@@ -418,6 +426,58 @@ function ErrorView({
     // Couldn't restart → fall back to the pricing page so the user isn't stuck.
     window.location.href = `/${locale}/pricing`
   }
+
+  // Task 33 — dedicated "one-time trial already used" screen. Instead of the
+  // misleading "card may have been declined" + a retry that loops back into the
+  // same block, explain it and offer to join the paid subscription directly.
+  if (failureReason === "trial_already_used") {
+    const tu = isHe
+      ? {
+          title: "כבר ניצלתם את תקופת הניסיון",
+          body: "תקופת הניסיון ניתנת פעם אחת, וכבר השתמשתם בה. אפשר להצטרף עכשיו למנוי, וכל התכנים ייפתחו לכם מיד.",
+          join: "הצטרפו למנוי",
+        }
+      : {
+          title: "You've already used your free trial",
+          body: "The free trial is given once, and you've already used it. You can join the subscription now, and everything opens for you right away.",
+          join: "Join the subscription",
+        }
+    return (
+      <div className="flex flex-col items-center gap-7">
+        <div
+          className="flex h-20 w-20 items-center justify-center rounded-full"
+          style={{
+            background: "linear-gradient(135deg, #B83C4D 0%, #6C2E40 100%)",
+            boxShadow: "0 16px 44px -18px rgba(184,60,77,0.6)",
+          }}
+        >
+          <Check className="h-9 w-9 text-[#FAF6F7]" strokeWidth={3} />
+        </div>
+        <div className="space-y-3">
+          <h1 className="font-heading text-[28px] font-extrabold leading-tight text-white sm:text-[32px]">
+            {tu.title}
+          </h1>
+          <p className="max-w-md text-[15px] leading-relaxed text-white/75">{tu.body}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => onRetry("regular")}
+          disabled={busy || !sessionId}
+          className="inline-flex min-h-[54px] w-full items-center justify-center rounded-full px-8 text-[16px] font-bold text-white transition hover:brightness-110 disabled:opacity-60"
+          style={{ background: "linear-gradient(135deg, #B83C4D 0%, #6C2E40 100%)" }}
+        >
+          {busy ? (isHe ? "רגע…" : "One sec…") : tu.join}
+        </button>
+        <a
+          href={`/${locale}`}
+          className="text-[13px] text-white/50 underline-offset-4 hover:text-white/70 hover:underline"
+        >
+          {backLabel}
+        </a>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col items-center gap-7">
       <div
@@ -442,7 +502,7 @@ function ErrorView({
       <div className="flex w-full flex-col gap-2.5 sm:flex-row sm:justify-center">
         <button
           type="button"
-          onClick={onRetry}
+          onClick={() => onRetry("auto")}
           disabled={busy || !sessionId}
           className="inline-flex min-h-[52px] flex-1 items-center justify-center rounded-full px-6 text-[15px] font-bold text-white transition hover:brightness-110 disabled:opacity-60"
           style={{
