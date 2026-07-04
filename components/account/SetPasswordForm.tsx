@@ -4,6 +4,11 @@ import { useState, useTransition } from "react";
 import { useRouter } from "@/navigation";
 import { Check } from "lucide-react";
 import { setAccountPassword } from "@/app/[locale]/account/profile/actions";
+import {
+  PasswordRequirements,
+  passwordTooShort,
+  passwordShortError,
+} from "@/components/ui/PasswordRequirements";
 
 export function SetPasswordForm({
   isHe,
@@ -16,17 +21,20 @@ export function SetPasswordForm({
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [pwError, setPwError] = useState(false);
   const [success, setSuccess] = useState(false);
   const [pending, start] = useTransition();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setPwError(false);
     setSuccess(false);
-    if (password.length < 6) {
-      setError(
-        isHe ? "הסיסמה חייבת להיות באורך 6 תווים לפחות" : "Password must be at least 6 characters",
-      );
+    // Aligned to the app-wide min 8 (was 6, inconsistent with the signup
+    // forms); length-only, matching the live indicator below.
+    if (passwordTooShort(password)) {
+      setError(passwordShortError(isHe));
+      setPwError(true);
       return;
     }
     if (password !== confirm) {
@@ -58,12 +66,13 @@ export function SetPasswordForm({
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           disabled={pending}
-          minLength={6}
+          minLength={8}
           required
           autoComplete="new-password"
           dir="ltr"
           className="mt-1.5 w-full rounded-2xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm text-white placeholder-white/40 focus:border-fuchsia-300 focus:outline-none disabled:opacity-60"
         />
+        <PasswordRequirements value={password} error={pwError} variant="dark" isHe={isHe} />
       </div>
       <div>
         <label className="text-sm font-medium text-white/85">
@@ -74,7 +83,7 @@ export function SetPasswordForm({
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
           disabled={pending}
-          minLength={6}
+          minLength={8}
           required
           autoComplete="new-password"
           dir="ltr"

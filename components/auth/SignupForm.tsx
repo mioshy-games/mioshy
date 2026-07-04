@@ -7,6 +7,11 @@ import { Link, useRouter } from "@/navigation";
 import { signupAction } from "@/app/actions/auth-actions";
 import { joinCoupleByPairCode } from "@/app/actions/between-us-couple";
 import { AuthField, AuthSubmitButton, AuthCard } from "@/components/ui/auth-field";
+import {
+  PasswordRequirements,
+  passwordTooShort,
+  passwordShortError,
+} from "@/components/ui/PasswordRequirements";
 import { ConsentCheckbox } from "@/components/auth/ConsentCheckbox";
 import { safeNext } from "@/lib/auth/safe-next";
 
@@ -29,6 +34,8 @@ export function SignupForm({ next, pairCode }: Props) {
   const isHe = locale === "he";
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  // Turns the password requirement red after a submit that was too short.
+  const [pwError, setPwError] = useState(false);
 
   // Normalise the pair code once on mount. Codes are always uppercase
   // 6-char alphanumerics; anything else is treated as "no prefill" so
@@ -48,6 +55,14 @@ export function SignupForm({ next, pairCode }: Props) {
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
+    setPwError(false);
+    // Specific, non-generic error when the only enforced rule (min length) is
+    // unmet — matches the live indicator below the field.
+    if (passwordTooShort(password)) {
+      setError(passwordShortError(isHe));
+      setPwError(true);
+      return;
+    }
     const fd = new FormData();
     fd.set("fullName", fullName);
     fd.set("email",    email);
@@ -156,7 +171,10 @@ export function SignupForm({ next, pairCode }: Props) {
           <AuthField id="signup_name"     label={t("nameLabel")}     value={fullName} onChange={setFullName} autoComplete="name"         required placeholder={t("namePlaceholder")} />
           <AuthField id="signup_email"    label={t("emailLabel")}    type="email" value={email} onChange={setEmail} autoComplete="email"  required placeholder={t("emailPlaceholder")} />
           <AuthField id="signup_phone"    label={t("phoneLabel")}    type="tel"   value={phone} onChange={setPhone} autoComplete="tel"   required   placeholder={t("phonePlaceholder")} />
-          <AuthField id="signup_password" label={t("passwordLabel")} type="password" value={password} onChange={setPassword} autoComplete="new-password" required minLength={8} placeholder={t("passwordPlaceholder")} />
+          <div>
+            <AuthField id="signup_password" label={t("passwordLabel")} type="password" value={password} onChange={setPassword} autoComplete="new-password" required minLength={8} placeholder={t("passwordPlaceholder")} />
+            <PasswordRequirements value={password} error={pwError} variant="dark" isHe={isHe} />
+          </div>
 
           <ConsentCheckbox
             id="signup_marketing_consent"

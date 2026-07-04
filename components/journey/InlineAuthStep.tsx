@@ -8,6 +8,11 @@ import { journeyInlineSignup } from "@/app/actions/journey-inline-signup";
 import { useCmsText } from "@/hooks/useCmsText";
 import { CmsText } from "@/components/cms/CmsText";
 import { Link } from "@/navigation";
+import {
+  PasswordRequirements,
+  passwordTooShort,
+  passwordShortError,
+} from "@/components/ui/PasswordRequirements";
 
 // 2026-05-29 — Itzik bug report: user clicked browser-back from the
 // inline-auth gate, then forward again, and the form was empty. They
@@ -100,6 +105,8 @@ export function InlineAuthStep({ locale, deviceId, onAuthenticated }: InlineAuth
   const [marketingConsent, setMarketingConsent] = useState(true);
   const [busy,     setBusy]     = useState(false);
   const [error,    setError]    = useState<string | null>(null);
+  // Turns the password requirement red after a submit that was too short.
+  const [pwError,  setPwError]  = useState(false);
   // Skip the auto-save effect on the very first render (right after
   // hydration) so we don't immediately overwrite a draft with the
   // empty initial state. After hydrate, this flag flips to true.
@@ -153,6 +160,15 @@ export function InlineAuthStep({ locale, deviceId, onAuthenticated }: InlineAuth
     e.preventDefault();
     setBusy(true);
     setError(null);
+    setPwError(false);
+    // Specific error for the only enforced rule (min length), matching the live
+    // indicator under the field. Register mode only (login uses an existing pw).
+    if (mode === "register" && passwordTooShort(password)) {
+      setError(passwordShortError(isHe));
+      setPwError(true);
+      setBusy(false);
+      return;
+    }
 
     try {
       console.log("[InlineAuthStep] submit", { mode, deviceId });
@@ -305,6 +321,10 @@ export function InlineAuthStep({ locale, deviceId, onAuthenticated }: InlineAuth
             minLength={8}
             isHe={isHe}
           />
+
+          {mode === "register" && (
+            <PasswordRequirements value={password} error={pwError} variant="light" isHe={isHe} />
+          )}
 
           {mode === "register" && (
             <div className="mt-1 space-y-3">
