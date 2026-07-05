@@ -110,7 +110,7 @@ export function User360Sections({ data }: { data: User360 }) {
         </CardContent>
       </Card>
 
-      {/* 4 — אבחון + תוצאות */}
+      {/* 4 — אבחון + תוצאות (דרופ-דאון פר אבחון) */}
       <Card>
         <CardHeader>
           <CardTitle>אבחון ותוצאות</CardTitle>
@@ -119,17 +119,10 @@ export function User360Sections({ data }: { data: User360 }) {
             <Badge variant={assessment.fullDone ? "default" : "outline"}>מלא {assessment.fullDone ? "✓" : "—"}</Badge>
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-3 text-sm">
-          {assessment.narrative ? <p dir="auto">{assessment.narrative}</p> : null}
-          <div className="flex flex-wrap gap-2 text-xs">
-            {assessment.friendship != null ? <Badge variant="secondary">חברות {assessment.friendship}/100</Badge> : null}
-            {assessment.conflict != null ? <Badge variant="secondary">בריאות הקונפליקט {assessment.conflict}/100</Badge> : null}
-            {assessment.passionRisk != null ? <Badge variant="secondary">סיכון תשוקה {assessment.passionRisk}/100</Badge> : null}
-            {assessment.topGap ? <Badge variant="secondary">פער עיקרי {assessment.topGap}</Badge> : null}
-          </div>
+        <CardContent className="flex flex-col gap-4 text-sm">
           {assessment.domains.length ? (
             <div>
-              <div className="mb-1 text-xs text-muted-foreground">סדר התחומים המותאם (מהאבחון), עם הציון:</div>
+              <div className="mb-1 text-xs text-muted-foreground">סדר התחומים המותאם (מהתעדוף בכניסה), עם הציון:</div>
               <ol className="flex flex-col gap-1">
                 {assessment.domains.map((d, i) => (
                   <li key={i} className="flex items-center justify-between rounded border px-3 py-1.5">
@@ -140,6 +133,32 @@ export function User360Sections({ data }: { data: User360 }) {
               </ol>
             </div>
           ) : null}
+
+          {assessment.assessments.length ? (
+            <div className="flex flex-col gap-2">
+              <div className="text-xs text-muted-foreground">
+                אבחונים לאורך זמן — דרופ-דאון פר אבחון. מוכן למעקב כל 8 שבועות: השוואת הציונים בין האבחונים מראה את קצב ההתקדמות.
+              </div>
+              {assessment.assessments.map((a, i) => (
+                <details key={i} open={i === assessment.assessments.length - 1} className="rounded border px-3 py-2">
+                  <summary className="cursor-pointer font-medium">
+                    {a.label} · {a.phaseHe} · {fmtDate(a.computedAt)}
+                  </summary>
+                  <div className="mt-2 flex flex-col gap-2">
+                    <div className="flex flex-wrap gap-2 text-xs">
+                      {a.friendship != null ? <Badge variant="secondary">חברות {a.friendship}/100</Badge> : null}
+                      {a.conflict != null ? <Badge variant="secondary">בריאות הקונפליקט {a.conflict}/100</Badge> : null}
+                      {a.passionRisk != null ? <Badge variant="secondary">סיכון תשוקה {a.passionRisk}/100</Badge> : null}
+                      {a.topGap ? <Badge variant="secondary">פער עיקרי {a.topGap}</Badge> : null}
+                    </div>
+                    {a.narrative ? <p dir="auto">{a.narrative}</p> : null}
+                  </div>
+                </details>
+              ))}
+            </div>
+          ) : (
+            <p className="text-muted-foreground">אין תוצאות אבחון עדיין.</p>
+          )}
         </CardContent>
       </Card>
 

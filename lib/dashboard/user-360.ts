@@ -38,12 +38,19 @@ export interface User360 {
   assessment: {
     shortDone: boolean;
     fullDone: boolean;
-    friendship: number | null;
-    conflict: number | null;
-    passionRisk: number | null;
-    topGap: string | null;
-    narrative: string | null;
-    domains: Array<{ label: string; score: number }>; // ranked order + weight
+    domains: Array<{ label: string; score: number }>; // current ranked order + weight
+    // One entry per assessment over time (deduped by day) — prep for the 8-week
+    // follow-ups so progress between assessments is visible on one screen.
+    assessments: Array<{
+      label: string; // "אבחון ראשון" ...
+      phaseHe: string; // "קצר" | "מלא"
+      computedAt: string;
+      friendship: number | null;
+      conflict: number | null;
+      passionRisk: number | null;
+      topGap: string | null;
+      narrative: string | null;
+    }>;
   };
   engagement: Array<{
     title: string | null;
@@ -168,15 +175,16 @@ async function loadPayment(admin: DB, userId: string, partner: User360["partner"
   };
 }
 
+const ORDINAL_HE = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שביעי", "שמיני", "תשיעי", "עשירי"];
+
 async function loadAssessment(admin: DB, userId: string): Promise<User360["assessment"]> {
-  const [{ data: analysis }, { data: prio }, { data: shortJourney }] = await Promise.all([
-    admin.from("journey_analysis").select("friendship_score, conflict_health, passion_risk, top_gap, summary, report_phase").eq("user_id", userId).order("computed_at", { ascending: false }).limit(1).maybeSingle(),
+  const [{ data: rows }, { data: prio }, { data: shortJourney }] = await Promise.all([
+    admin.from("journey_analysis").select("report_phase, computed_at, friendship_score, conflict_health, passion_risk, top_gap, summary").eq("user_id", userId).order("computed_at", { ascending: true }),
     admin.from("journey_user_priorities").select("ranking, weights").eq("user_id", userId).maybeSingle<{ ranking: string[]; weights: number[] }>(),
     admin.from("journeys").select("status").eq("user_id", userId).in("status", ["paywall", "complete", "completed"]).limit(1).maybeSingle(),
   ]);
 
-  // Map ranked category ids → labels, paired with their weights (the assessment
-  // domain scores). journey_user_priorities.ranking is the personalized order.
+  // Current personalized domain order + weights (scores) from the assessment.
   const domains: Array<{ label: string; score: number }> = [];
   if (prio?.ranking?.length) {
     const cats = await getPriorityCategories().catch(() => []);
@@ -187,28 +195,45 @@ async function loadAssessment(admin: DB, userId: string): Promise<User360["asses
     });
   }
 
-  const a = analysis as { friendship_score: number | null; conflict_health: number | null; passion_risk: number | null; top_gap: string | null; summary: { narrative_he?: string; narrative_en?: string } | null; report_phase: string | null } | null;
+  // One assessment per calendar day (rapid recomputes collapse). Chronological.
+  type Row = { report_phase: string | null; computed_at: string; friendship_score: number | null; conflict_health: number | null; passion_risk: number | null; top_gap: string | null; summary: { narrative_he?: string; narrative_en?: string } | null };
+  const latestByDay = new Map<string, Row>();
+  for (const r of (rows ?? []) as Row[]) {
+    latestByDay.set(r.computed_at.slice(0, 10), r); // asc order → last per day wins
+  }
+  const ordered = [...latestByDay.values()].sort((a, b) => a.computed_at.localeCompare(b.computed_at));
+  const assessments = ordered.map((r, i) => ({
+    label: `אבחון ${ORDINAL_HE[i] ?? i + 1}`,
+    phaseHe: r.report_phase === "full" ? "מלא" : "קצר",
+    computedAt: r.computed_at,
+    friendship: r.friendship_score,
+    conflict: r.conflict_health,
+    passionRisk: r.passion_risk,
+    topGap: r.top_gap,
+    narrative: r.summary?.narrative_he ?? r.summary?.narrative_en ?? null,
+  }));
+
   return {
     shortDone: !!shortJourney,
-    fullDone: a?.report_phase === "full",
-    friendship: a?.friendship_score ?? null,
-    conflict: a?.conflict_health ?? null,
-    passionRisk: a?.passion_risk ?? null,
-    topGap: a?.top_gap ?? null,
-    narrative: a?.summary?.narrative_he ?? a?.summary?.narrative_en ?? null,
+    fullDone: (rows ?? []).some((r) => (r as Row).report_phase === "full"),
     domains,
+    assessments,
   };
 }
 
-async function loadEngagement(admin: DB, userId: string): Promise<User360["engagement"]> {
+async function loadEngagement(admin: DB, userId: string, coupleId: string | null): Promise<User360["engagement"]> {
   // Per-chapter: delivered + opened (seen_at) + responded (responded_at).
-  // Scheduled items link to the user via journey_assignments.user_id (there is
-  // no owner_user_id on the item itself) — same nesting the reminders cron uses.
+  // journey_assignments has a polymorphic owner (user_id XOR couple_id): a paired
+  // user's assignment is PROMOTED to couple ownership (migrate-solo-to-couple),
+  // while a not-yet-promoted one stays user-owned. Query BOTH owners so chapters
+  // show regardless (fix for "אין פרקים" on paired users — Itzik 2026-07-05).
   type Sched = { unlock_at: string | null; seen_at: string | null; responded_at: string | null; journey_items: { title_he: string | null } | { title_he: string | null }[] | null };
-  const { data } = await admin
+  const base = admin
     .from("journey_assignments")
-    .select("journey_scheduled_items(unlock_at, seen_at, responded_at, journey_items(title_he))")
-    .eq("user_id", userId);
+    .select("journey_scheduled_items(unlock_at, seen_at, responded_at, journey_items(title_he))");
+  const { data } = await (coupleId
+    ? base.or(`user_id.eq.${userId},couple_id.eq.${coupleId}`)
+    : base.eq("user_id", userId));
 
   const rows: Sched[] = [];
   for (const asg of (data ?? []) as Array<{ journey_scheduled_items: Sched | Sched[] | null }>) {
@@ -321,7 +346,7 @@ export async function loadUser360(admin: DB, userId: string): Promise<User360> {
   const [payment, assessment, engagement, communication] = await Promise.all([
     loadPayment(admin, userId, partner),
     loadAssessment(admin, userId),
-    loadEngagement(admin, userId),
+    loadEngagement(admin, userId, partner.coupleId),
     loadCommunication(admin, userId),
   ]);
   return { identity, partner, payment, assessment, engagement, communication };
