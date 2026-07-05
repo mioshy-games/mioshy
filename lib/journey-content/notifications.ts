@@ -163,6 +163,8 @@ async function sendEmailBestEffort(args: EmailArgs): Promise<void> {
   const fromEmail =
     process.env.BREVO_FROM_EMAIL?.trim() || "no-reply@mioshy.co.il";
   const fromName = process.env.BREVO_FROM_NAME?.trim() || "Mioshy";
+  const replyToEmail =
+    process.env.BREVO_REPLY_TO_EMAIL?.trim() || "support@mioshy.com";
 
   try {
     const res = await fetch("https://api.brevo.com/v3/smtp/email", {
@@ -174,6 +176,7 @@ async function sendEmailBestEffort(args: EmailArgs): Promise<void> {
       },
       body: JSON.stringify({
         sender: { email: fromEmail, name: fromName },
+        replyTo: { email: replyToEmail, name: fromName },
         to: [{ email: args.to }],
         subject: args.subject,
         htmlContent: args.html,

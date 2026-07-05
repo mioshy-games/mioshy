@@ -4,8 +4,11 @@
 // Server-only. Expects env vars:
 //   BREVO_API_KEY     - secret API key (required in prod; if missing
 //                       in dev the sender becomes a noop + console log)
-//   BREVO_SENDER_EMAIL - "from" address (e.g. hi@mioshy.co.il)
-//   BREVO_SENDER_NAME  - "from" display name (e.g. "Mioshy")
+//   BREVO_SENDER_EMAIL - "from" address (e.g. no-reply@mioshy.com)
+//   BREVO_SENDER_NAME  - "from" display name (e.g. "יצחק ממיאושי")
+//   BREVO_REPLY_TO_EMAIL - default "reply-to" address for replies to a
+//                       no-reply "from" (defaults to support@mioshy.com).
+//                       A per-call payload.replyTo always wins.
 // ============================================================
 import "server-only";
 
@@ -55,6 +58,10 @@ export async function sendBrevoEmail(
   const apiKey = getBrevoApiKeyOrNull();
   const senderEmail = envOrNull("BREVO_SENDER_EMAIL");
   const senderName = envOrNull("BREVO_SENDER_NAME") ?? "Mioshy";
+  // The "from" is a no-reply address, so a bare reply bounces. Default a
+  // reply-to (support@mioshy.com) unless the caller set one explicitly
+  // (e.g. couple invitations route replies to the inviter).
+  const replyToEmail = envOrNull("BREVO_REPLY_TO_EMAIL") ?? "support@mioshy.com";
 
   if (!apiKey || !senderEmail) {
     // Don't throw in dev - just log so devs can see the message we
@@ -85,7 +92,7 @@ export async function sendBrevoEmail(
         textContent: payload.textContent,
         tags: payload.tags,
         params: payload.params,
-        replyTo: payload.replyTo,
+        replyTo: payload.replyTo ?? { email: replyToEmail, name: senderName },
       }),
     });
 
