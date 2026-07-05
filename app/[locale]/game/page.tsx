@@ -23,7 +23,7 @@ export async function generateMetadata({
       languages: {
         en: `${base}/en/game`,
         he: `${base}/he/game`,
-        "x-default": `${base}/en/game`,
+        "x-default": `${base}/he/game`,
       },
     },
   };

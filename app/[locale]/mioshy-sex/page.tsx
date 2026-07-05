@@ -119,7 +119,7 @@ export async function generateMetadata({
       languages: {
         en: `${base}/en/mioshy-sex`,
         he: `${base}/he/mioshy-sex`,
-        "x-default": `${base}/en/mioshy-sex`,
+        "x-default": `${base}/he/mioshy-sex`,
       },
     },
     openGraph: {

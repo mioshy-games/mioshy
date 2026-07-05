@@ -16,6 +16,7 @@ import { FAQ } from "@/components/marketing/v2/FAQ";
 import { MetaViewContent } from "@/components/analytics/MetaViewContent";
 import { CassessContent } from "@/components/marketing/couples-assessment/CassessContent";
 import { getShortQuestionCount } from "@/lib/journey/questions-db";
+import { buildAlternates, buildOgLocale } from "@/lib/seo/alternates";
 import type { Locale } from "@/lib/journey/types";
 
 export async function generateMetadata({
@@ -24,11 +25,26 @@ export async function generateMetadata({
   params: { locale: string };
 }): Promise<Metadata> {
   const isHe = params.locale !== "en";
+  const title = isHe
+    ? "אבחון זוגיות אונליין · חינם, כ-3 דקות | מיאושי"
+    : "Online couples assessment · free | Mioshy";
+  const description = isHe
+    ? "אבחון זוגיות אונליין קצר, כ-3 דקות, ותקבלו תמונת מצב אישית על הזוגיות שלכם. בלי כרטיס אשראי."
+    : "A short online couples assessment, about 3 minutes, for a personal picture of your relationship. No credit card.";
   return {
-    title: isHe ? "אבחון זוגי חינם | מיאושי" : "Free couples assessment | Mioshy",
-    description: isHe
-      ? "אבחון קצר של 3 דקות ותקבלו תמונת מצב אישית על הזוגיות שלכם, בלי כרטיס אשראי."
-      : "A short 3-minute assessment for a personal picture of your relationship, no credit card.",
+    title,
+    description,
+    // Previously emitted no canonical and no hreflang at all, so the page
+    // was not indexed. Add both via the shared helper (x-default -> /he).
+    alternates: buildAlternates(
+      (isHe ? "he" : "en") as "he" | "en",
+      "/couples-assessment",
+    ),
+    openGraph: {
+      ...buildOgLocale((isHe ? "he" : "en") as "he" | "en"),
+      title,
+      description,
+    },
   };
 }
 

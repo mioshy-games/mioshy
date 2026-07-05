@@ -64,7 +64,7 @@ export async function generateMetadata({
       languages: {
         en: `${base}/en`,
         he: `${base}/he`,
-        "x-default": `${base}/en`,
+        "x-default": `${base}/he`,
       },
     },
     // Homepage overrides the root layout's openGraph entirely so we can

@@ -85,7 +85,7 @@ export async function generateMetadata({
       languages: {
         en: `${base}/en/games/${slug}`,
         he: `${base}/he/games/${slug}`,
-        "x-default": `${base}/en/games/${slug}`,
+        "x-default": `${base}/he/games/${slug}`,
       },
     },
     openGraph: {

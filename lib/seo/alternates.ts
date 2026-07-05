@@ -29,8 +29,8 @@ function normalize(pathname: string): string {
 
 /**
  * Build the `alternates` block for a Next.js `Metadata` object.
- * Always emits canonical + he + en + x-default (x-default → /en, the
- * documented default for non-IL non-Hebrew traffic). Pass
+ * Always emits canonical + he + en + x-default (x-default → /he, the
+ * Hebrew-first default for untargeted traffic). Pass
  * `overrideCanonical` to honour a row-specific canonical from the DB
  * (used by articles whose `canonical_url` column points elsewhere).
  *
@@ -58,7 +58,8 @@ export function buildAlternates(
     languages: {
       he: `${base}/he${path}`,
       en: `${base}/en${path}`,
-      "x-default": `${base}/en${path}`,
+      // Hebrew-first site: untargeted traffic defaults to /he.
+      "x-default": `${base}/he${path}`,
     },
   };
 }

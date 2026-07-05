@@ -96,7 +96,7 @@ export async function generateMetadata({
       languages: {
         en: `${base}/en/journey`,
         he: `${base}/he/journey`,
-        "x-default": `${base}/en/journey`,
+        "x-default": `${base}/he/journey`,
       },
     },
     openGraph: {

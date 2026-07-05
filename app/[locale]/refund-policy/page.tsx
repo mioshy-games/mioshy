@@ -36,7 +36,7 @@ export async function generateMetadata({
       languages: {
         he: `${base}/he/refund-policy`,
         en: `${base}/en/refund-policy`,
-        "x-default": `${base}/en/refund-policy`,
+        "x-default": `${base}/he/refund-policy`,
       },
     },
     openGraph: {

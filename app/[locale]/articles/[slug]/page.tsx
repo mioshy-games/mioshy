@@ -144,7 +144,7 @@ export async function generateMetadata({
       languages: {
         en: `${base}/en/articles/${a.slug}`,
         he: `${base}/he/articles/${a.slug}`,
-        "x-default": `${base}/en/articles/${a.slug}`,
+        "x-default": `${base}/he/articles/${a.slug}`,
       },
     },
     openGraph: {

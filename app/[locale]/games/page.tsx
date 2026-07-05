@@ -99,7 +99,7 @@ export async function generateMetadata({
       languages: {
         en: `${base}/en/games`,
         he: `${base}/he/games`,
-        "x-default": `${base}/en/games`,
+        "x-default": `${base}/he/games`,
       },
     },
     openGraph: {
