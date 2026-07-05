@@ -12,6 +12,7 @@ import { setRequestLocale } from "next-intl/server";
 import { loadCmsTextsForPage } from "@/lib/cms/server";
 import { CmsTextProvider } from "@/components/cms/CmsTextProvider";
 import { MarathonForm } from "@/components/marathon/MarathonForm";
+import { buildAlternates } from "@/lib/seo/alternates";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +27,10 @@ export function generateMetadata({
     description: isHe
       ? "7 ערבים, כלי אימון זוגי קטן בכל פעם, בוואטסאפ. חינם לגמרי, בלי התחייבות."
       : "7 evenings, one small couples exercise each time, on WhatsApp. Completely free, no commitment.",
+    // Was the only page emitting neither canonical nor hreflang. Add both so
+    // its metadata is clean whether or not it's opened up to organic discovery
+    // (that call — add to sitemap + link, or noindex — is left to Itzik).
+    alternates: buildAlternates(isHe ? "he" : "en", "/marathon"),
   };
 }
 

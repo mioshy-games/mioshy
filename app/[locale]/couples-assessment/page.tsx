@@ -42,8 +42,18 @@ export async function generateMetadata({
     ),
     openGraph: {
       ...buildOgLocale((isHe ? "he" : "en") as "he" | "en"),
+      type: "website",
+      url: `${(process.env.NEXT_PUBLIC_SITE_URL || "https://mioshy.com").replace(/\/+$/, "")}/${isHe ? "he" : "en"}/couples-assessment`,
+      siteName: "Mioshy",
       title,
       description,
+      images: [{ url: "/opengraph-image.jpg", width: 1200, height: 630, alt: title }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: ["/twitter-image.jpg"],
     },
   };
 }

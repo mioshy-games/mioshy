@@ -137,7 +137,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .filter((g) => Boolean(g.slug))
       .flatMap((g) => {
         const lm = new Date(g.created_at);
-        const path = `/adults/${g.slug}`;
+        // The experience-games catalogue lives under /mioshy-sex/<slug>. The
+        // legacy /adults/<slug> route was renamed, so emitting /adults here
+        // fed Google 404s for the entire flagship catalogue.
+        const path = `/mioshy-sex/${g.slug}`;
         return (["en", "he"] as const).map((locale) => ({
           url: `${site}/${locale}${path}`,
           lastModified: lm,

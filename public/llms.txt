@@ -17,12 +17,12 @@
 - [English home](https://mioshy.com/en): /en — homepage
 - [Games — he](https://mioshy.com/he/games): wheel-based couples games (Truth or Dare, Would You Rather, Date Night)
 - [Games — en](https://mioshy.com/en/games)
-- [Adults — he](https://mioshy.com/he/adults): adults-only experience games
-- [Adults — en](https://mioshy.com/en/adults)
-- [Journey — he](https://mioshy.com/he/journey): 26-week guided journey for couples
+- [Adults — he](https://mioshy.com/he/mioshy-sex): adults-only experience games
+- [Adults — en](https://mioshy.com/en/mioshy-sex)
+- [Couples assessment — he](https://mioshy.com/he/couples-assessment): free 3-minute relationship assessment
+- [Couples assessment — en](https://mioshy.com/en/couples-assessment)
+- [Journey — he](https://mioshy.com/he/journey): guided journey for couples
 - [Journey — en](https://mioshy.com/en/journey)
-- [How it works — he](https://mioshy.com/he/how-it-works)
-- [How it works — en](https://mioshy.com/en/how-it-works)
 - [Pricing — he](https://mioshy.com/he/pricing)
 - [Pricing — en](https://mioshy.com/en/pricing)
 
