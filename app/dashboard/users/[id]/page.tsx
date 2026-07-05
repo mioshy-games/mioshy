@@ -33,6 +33,10 @@ import { createServiceRoleClient } from "@/lib/supabase-admin";
 import { getAdminLocale, isRtl } from "@/lib/admin/locale";
 import { loadUserBehavior } from "@/lib/dashboard/user-behavior";
 import { UserBehaviorTabs } from "@/components/dashboard/UserBehaviorTabs";
+// 360 sections (admin-user-360-spec): identity/gender · partner · payment+trial
+// · assessment results+order · content engagement · expert communication.
+import { loadUser360 } from "@/lib/dashboard/user-360";
+import { User360Sections } from "@/components/dashboard/User360Sections";
 
 // B.5 — short/full grouping labels for the admin. Hebrew first (the expert
 // reads the user's Hebrew answers) with the en tag alongside.
@@ -102,6 +106,9 @@ export default async function UserDetailPage({ params }: { params: { id: string 
   // the service-role env is missing — then the section is simply omitted.
   const adminDb = createServiceRoleClient();
   const behavior = adminDb ? await loadUserBehavior(adminDb, userId) : null;
+  // 360 sections — display-only, read from existing data. Service-role so the
+  // partner/couple/communication cross-user reads bypass RLS.
+  const user360 = adminDb ? await loadUser360(adminDb, userId) : null;
   const adminLocale = getAdminLocale();
 
   // Deep-link target for "open chat in console": couples open the couple
@@ -139,6 +146,8 @@ export default async function UserDetailPage({ params }: { params: { id: string 
           </div>
         </CardHeader>
       </Card>
+
+      {user360 ? <User360Sections data={user360} /> : null}
 
       {behavior ? (
         <UserBehaviorTabs

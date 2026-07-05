@@ -10,7 +10,9 @@
  * Click → /dashboard/console (?couple=<id> | ?user=<id>) — the coach chat
  * console is the single place the expert reads and replies.
  *
- * Renders newest-first. No filters yet — the volume here is bounded by
+ * Sorted OLDEST-first — the longest-waiting user floats to the top (Itzik
+ * 2026-07-05). The wait is shown as a numeric duration with an SLA color:
+ * amber over 12h, red over 24h. No filters yet — the volume here is bounded by
  * "users with at least one pending reply" which stays small in practice.
  */
 
@@ -22,20 +24,19 @@ import type { PendingMessageRow } from "@/lib/journey/pending-messages";
 
 export const dynamic = "force-dynamic";
 
-function relativeStamp(iso: string): string {
-  if (!iso) return "—";
-  const t = new Date(iso).getTime();
-  const now = Date.now();
-  const minutes = Math.max(1, Math.round((now - t) / 60_000));
-  if (minutes < 60) return `לפני ${minutes} ד׳`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return `לפני ${hours} שעות`;
-  const days = Math.round(hours / 24);
-  if (days < 7) return `לפני ${days} ימים`;
-  return new Date(iso).toLocaleDateString("he-IL", {
-    day: "numeric",
-    month: "short",
-  });
+/** Numeric wait duration + SLA color (amber > 12h, red > 24h). */
+function waitBadge(iso: string): { label: string; cls: string } {
+  if (!iso) return { label: "—", cls: "bg-white/[0.04] text-white/65 border-white/15" };
+  const hours = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 3_600_000));
+  const label =
+    hours >= 24 ? `${Math.floor(hours / 24)} ימים` : hours >= 1 ? `${hours} שעות` : "פחות משעה";
+  const cls =
+    hours >= 24
+      ? "bg-red-500/15 text-red-200 border-red-400/40"
+      : hours >= 12
+        ? "bg-amber-400/15 text-amber-100 border-amber-300/40"
+        : "bg-white/[0.04] text-white/65 border-white/15";
+  return { label, cls };
 }
 
 function clip(body: string, n = 180): string {
@@ -55,7 +56,11 @@ function deepLinkFor(row: PendingMessageRow): string {
 
 export default async function RepliesPage() {
   await requireAdmin();
-  const { rows, count, ok } = await getPendingExpertMessages({ limit: 50 });
+  const { rows: rawRows, count, ok } = await getPendingExpertMessages({ limit: 50 });
+  // Oldest-first: the longest-waiting user floats to the top.
+  const rows = [...rawRows].sort((a, b) =>
+    (a.lastUserMessageAt || "").localeCompare(b.lastUserMessageAt || ""),
+  );
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
@@ -115,7 +120,7 @@ function RepliesTable({ rows }: { rows: PendingMessageRow[] }) {
             <th className="px-4 py-3 text-start">הודעה אחרונה</th>
             <th className="px-4 py-3 text-start">מקור</th>
             <th className="px-4 py-3 text-start">סטטיסטיקות</th>
-            <th className="px-4 py-3 text-start">לפני</th>
+            <th className="px-4 py-3 text-start">ממתין</th>
             <th className="px-4 py-3 text-start" aria-label="פתיחה" />
           </tr>
         </thead>
@@ -198,9 +203,16 @@ function RepliesTable({ rows }: { rows: PendingMessageRow[] }) {
                 </div>
               </td>
 
-              {/* Time */}
-              <td className="whitespace-nowrap px-4 py-4 align-top text-[12px] text-white/65">
-                {relativeStamp(row.lastUserMessageAt)}
+              {/* Wait duration + SLA color */}
+              <td className="whitespace-nowrap px-4 py-4 align-top">
+                {(() => {
+                  const w = waitBadge(row.lastUserMessageAt);
+                  return (
+                    <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[12px] font-bold ${w.cls}`}>
+                      {w.label}
+                    </span>
+                  );
+                })()}
               </td>
 
               {/* Chevron */}
