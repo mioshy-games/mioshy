@@ -42,7 +42,11 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase-admin";
-import { ensureCadenceAssignment } from "./cadence-engine";
+import {
+  ensureCadenceAssignment,
+  isCadenceEligible,
+  materializeNextItemForUser,
+} from "./cadence-engine";
 import { resolveAnchorDate } from "./schedule";
 import type { JourneyProductSlug } from "./types";
 
@@ -145,6 +149,38 @@ export async function assignJourneyOnPurchase(
         ok: false,
         reason: "ensureCadenceAssignment returned null (no admin client?)",
       };
+    }
+
+    // 3b. Immediate day-1 materialize (Itzik 2026-07-05). The priority ranking
+    //     now lives in the SHORT assessment, so it is submitted BEFORE purchase:
+    //     onPriorityRankingSubmitted fired then but was SKIPPED (the user wasn't
+    //     entitled yet). Now that they've paid, materialize the first chapter
+    //     right here so a new subscriber sees it the moment they enter, not after
+    //     the ~15-min cadence cron. Mirrors onPriorityRankingSubmitted's day-1
+    //     path (unlock_at = now). Idempotent — materializeNextItemForUser dedups
+    //     against journey_user_delivered_items, so webhook retries never
+    //     double-create. Best-effort: never fails the assignment. It self-skips
+    //     for non-journey subs (isCadenceEligible = false) and for users with no
+    //     priorities yet (nothing to pick).
+    try {
+      const elig = await isCadenceEligible(args.userId);
+      if (elig.eligible) {
+        await materializeNextItemForUser(args.userId, {
+          unlockAt: new Date(),
+          source: "cadence",
+          skipSweep: true,
+        });
+      } else {
+        console.log("[assignJourneyOnPurchase] day-1 materialize skipped", {
+          user_id: args.userId,
+          reason: elig.reason ?? "not_eligible",
+        });
+      }
+    } catch (err) {
+      console.warn(
+        "[assignJourneyOnPurchase] immediate day-1 materialize failed (non-fatal)",
+        err,
+      );
     }
 
     // 4. Layer-5 — stamp the couple's started_journey_at on first

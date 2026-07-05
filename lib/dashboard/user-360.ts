@@ -91,16 +91,27 @@ export interface User360 {
 type DB = SupabaseClient;
 
 async function loadIdentity(admin: DB, userId: string): Promise<User360["identity"]> {
-  const { data } = await admin
-    .from("profiles")
-    .select("full_name, email, mobile, gender")
-    .eq("id", userId)
-    .maybeSingle<{ full_name: string | null; email: string | null; mobile: string | null; gender: string | null }>();
+  // profiles has NO email column (email lives on auth.users → admin_users_overview),
+  // and the phone lives in `phone` (with a legacy `mobile` fallback). The old
+  // select of a non-existent `email` column errored the whole query → every
+  // identity field rendered as a dash (Itzik 2026-07-05).
+  const [{ data: prof }, { data: ov }] = await Promise.all([
+    admin
+      .from("profiles")
+      .select("full_name, phone, mobile, gender")
+      .eq("id", userId)
+      .maybeSingle<{ full_name: string | null; phone: string | null; mobile: string | null; gender: string | null }>(),
+    admin
+      .from("admin_users_overview")
+      .select("email")
+      .eq("user_id", userId)
+      .maybeSingle<{ email: string | null }>(),
+  ]);
   return {
-    fullName: data?.full_name ?? null,
-    email: data?.email ?? null,
-    phone: data?.mobile ?? null,
-    genderHe: data?.gender ? (GENDER_HE[data.gender] ?? data.gender) : null,
+    fullName: prof?.full_name ?? null,
+    email: ov?.email ?? null,
+    phone: prof?.phone ?? prof?.mobile ?? null,
+    genderHe: prof?.gender ? (GENDER_HE[prof.gender] ?? prof.gender) : null,
   };
 }
 
@@ -198,11 +209,17 @@ async function loadPayment(admin: DB, userId: string, partner: User360["partner"
 const ORDINAL_HE = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שביעי", "שמיני", "תשיעי", "עשירי"];
 
 async function loadAssessment(admin: DB, userId: string): Promise<User360["assessment"]> {
-  const [{ data: rows }, { data: prio }, { data: shortJourney }] = await Promise.all([
+  const [{ data: rows }, { data: prio }, { data: jStatuses }] = await Promise.all([
     admin.from("journey_analysis").select("report_phase, computed_at, friendship_score, conflict_health, passion_risk, top_gap, summary").eq("user_id", userId).order("computed_at", { ascending: true }),
     admin.from("journey_user_priorities").select("ranking, weights").eq("user_id", userId).maybeSingle<{ ranking: string[]; weights: number[] }>(),
-    admin.from("journeys").select("status").eq("user_id", userId).in("status", ["paywall", "complete", "completed"]).limit(1).maybeSingle(),
+    admin.from("journeys").select("status").eq("user_id", userId),
   ]);
+  // short = at/past the paywall; full = the journey is actually complete.
+  // journey_analysis.report_phase is unreliable (it's stamped 'full' even for a
+  // short-only completion — Itzik 2026-07-05), so we key off the journey status.
+  const statuses = new Set((jStatuses ?? []).map((r) => r.status as string));
+  const shortDone = statuses.has("paywall") || statuses.has("complete") || statuses.has("completed");
+  const fullDone = statuses.has("complete") || statuses.has("completed");
 
   // Current personalized domain order + weights (scores) from the assessment.
   const domains: Array<{ label: string; score: number }> = [];
@@ -234,8 +251,8 @@ async function loadAssessment(admin: DB, userId: string): Promise<User360["asses
   }));
 
   return {
-    shortDone: !!shortJourney,
-    fullDone: (rows ?? []).some((r) => (r as Row).report_phase === "full"),
+    shortDone,
+    fullDone,
     domains,
     assessments,
   };
