@@ -45,7 +45,7 @@ export default async function CouplesAssessmentPage({
 
   const cmsRows = await loadCmsTextsForPage("couples-assessment");
   // Task 12 — live short-assessment question count injected into the entry copy
-  // ("{N} שאלות · כ-2 דקות") so the promise tracks the DB, never a hardcoded number.
+  // ("{N} שאלות · כ-3 דקות") so the promise tracks the DB, never a hardcoded number.
   const shortCount = await getShortQuestionCount();
 
   // Shared homepage FAQ — wrapped in .home-v2 so its design tokens resolve.

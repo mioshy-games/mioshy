@@ -130,8 +130,8 @@ export function OnboardingReminderCard({
               {cmsOr(
                 item2Desc,
                 isHe
-                  ? "עוד כ-2 דקות — לתמונה מדויקת יותר ולצעדים שמותאמים בדיוק אליכם."
-                  : "About 2 more minutes — for a sharper picture and steps tailored to you.",
+                  ? "עוד כ-3 דקות, לתמונה מדויקת יותר ולצעדים שמותאמים בדיוק אליכם."
+                  : "About 3 more minutes, for a sharper picture and steps tailored to you.",
               )}
             </p>
             <Link
