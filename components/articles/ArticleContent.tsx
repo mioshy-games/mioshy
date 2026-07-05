@@ -10,10 +10,13 @@ import type { Components } from "react-markdown";
 
 const components: Components = {
   // ── Headings ──────────────────────────────────────────────────────────────
+  // The page template already renders the single <h1> (the article title).
+  // A markdown-level-1 heading in the body would emit a SECOND <h1> and dilute
+  // the on-page signal, so render it as an <h2> (kept visually large).
   h1: ({ children }) => (
-    <h1 className="mt-10 mb-4 text-3xl font-bold tracking-tight text-gray-900 leading-tight first:mt-0">
+    <h2 className="mt-10 mb-4 text-3xl font-bold tracking-tight text-gray-900 leading-tight first:mt-0">
       {children}
-    </h1>
+    </h2>
   ),
   h2: ({ children }) => (
     <h2 className="mt-10 mb-4 text-2xl font-bold text-gray-900 leading-snug border-s-4 border-rose-400 ps-4 first:mt-0">

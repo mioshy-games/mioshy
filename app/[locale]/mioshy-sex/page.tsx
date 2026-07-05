@@ -85,28 +85,24 @@ export async function generateMetadata({
   params: { locale: string };
 }): Promise<Metadata> {
   const { locale } = params;
-  const settings = await getBetweenUsSettings().catch(() => null);
   const isHe = locale === "he";
   const t = await getCmsTranslations({
     locale: isHe ? "he" : "en",
     namespace: "mioshySexPage",
     page: "mioshy-sex",
   });
-  const sectionName = isHe
-    ? settings?.section_name_he
-    : settings?.section_name_en;
-  const tagline = isHe
-    ? settings?.section_tagline_he
-    : settings?.section_tagline_en;
-  // 2026-05-22 — defaultSectionName now contains the full social-share
-  // headline (already includes "Mioshy"). When the admin sets a custom
-  // section_name via experience_settings we still prefix with "Mioshy - "
-  // to keep brand identity on overrides; when falling back to the i18n
-  // default we use it verbatim because it already says "Mioshy".
-  const title = sectionName
-    ? `Mioshy - ${sectionName}`
-    : t("defaultSectionName");
-  const description = tagline ?? t("defaultHeroTagline");
+  // SEO title/description: fixed, keyword-first copy (Itzik 2026-07-05).
+  // Decoupled from the admin section_name/tagline (which still drive the
+  // on-page heading below) so the <title> stays keyword-stable and the
+  // description is never blanked. The previous `tagline ?? default` let an
+  // empty-string tagline override win, so the page shipped with NO meta
+  // description at all.
+  const title = isHe
+    ? "משחקים לזוגות למבוגרים · הסקס של מיאושי"
+    : "Adult couples games · Mioshy's intimate line";
+  const description = isHe
+    ? "משחקים אינטימיים לזוגות שרוצים להעז יותר: ערכות דיגיטליות לחדר השינה, ברכישה חד פעמית, לשני בני הזוג. גישה מיידית ודיסקרטית."
+    : "Intimate games for couples who want to dare more: digital bedroom kits, a one-time purchase, for both partners. Instant, discreet access.";
   // og:image:alt — localized; safe fallback to title if missing.
   let ogImageAlt = title;
   try { ogImageAlt = t("ogImageAlt"); } catch { /* fallback to title */ }

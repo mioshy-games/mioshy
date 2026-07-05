@@ -100,6 +100,7 @@ export function SiteFooter() {
                 {t("servicesTitle")}
               </p>
               <ul className="space-y-3 text-[13px] md:space-y-2.5 md:text-xs">
+                <li><Link href="/couples-assessment" className="text-[#D8CFE6] transition-colors hover:text-white">{t("servicesAssessment")}</Link></li>
                 <li><Link href="/games"   className="text-[#D8CFE6] transition-colors hover:text-white">{tNav("games")}</Link></li>
                 <li><Link href="/journey" className="text-[#D8CFE6] transition-colors hover:text-white">{tNav("journey")}</Link></li>
                 <li><Link href="/mioshy-sex"  className="text-[#D8CFE6] transition-colors hover:text-white">{tNav("adults")}</Link></li>
