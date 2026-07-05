@@ -78,6 +78,27 @@ export function Intimacy() {
               <CmsText cmsKey="homeV2.intimacy.ctaPrimary" />
             </TrackedLink>
           </div>
+          {/* Secondary, lower-commitment path to the marketing assessment page
+              (SEO: internal link to /couples-assessment from the homepage). The
+              primary CTA above still goes straight into /journey/assessment. */}
+          <p
+            style={{ marginTop: 14, textAlign: "center", fontSize: 15 }}
+            className="intimacy-bridge-secondary"
+          >
+            <TrackedLink
+              href="/couples-assessment"
+              ctaId="intimacy_couples_assessment"
+              section="intimacy"
+              style={{
+                color: "inherit",
+                textDecoration: "underline",
+                textUnderlineOffset: 3,
+                opacity: 0.8,
+              }}
+            >
+              <CmsText cmsKey="homeV2.intimacy.assessmentLink" />
+            </TrackedLink>
+          </p>
         </div>
 
         {/* ─── 3 pillars ─── */}
