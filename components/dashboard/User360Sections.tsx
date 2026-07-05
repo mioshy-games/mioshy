@@ -24,6 +24,16 @@ function fmtDate(iso: string | null): string {
   }
 }
 
+/** "יום שני, 10 ביולי" — day-of-week + date, for the first-charge line. */
+function fmtDayDate(iso: string | null): string {
+  if (!iso) return "-";
+  try {
+    return new Date(iso).toLocaleDateString("he-IL", { weekday: "long", day: "numeric", month: "long" });
+  } catch {
+    return iso;
+  }
+}
+
 /** SLA tone for a wait duration (hours). */
 function waitTone(hours: number): { label: string; cls: string } {
   const label = hours >= 24 ? `${Math.floor(hours / 24)} ימים` : `${hours} שעות`;
@@ -90,22 +100,27 @@ export function User360Sections({ data }: { data: User360 }) {
           <CardTitle>תשלום ומנוי</CardTitle>
           {payment.viaOwner ? <CardDescription>גישה דרך המנוי של בעל/ת המסגרת</CardDescription> : null}
         </CardHeader>
-        <CardContent className="flex flex-wrap items-center gap-3 text-sm">
+        <CardContent className="flex flex-col gap-2 text-sm">
           {!payment.hasSub ? (
-            <p className="text-muted-foreground">אין מנוי פעיל.</p>
+            <p className="text-muted-foreground">אין שורת מנוי למשתמש (ייתכן שהניסיון נחסם בבדיקה).</p>
           ) : (
-            <>
+            <div className="flex flex-wrap items-center gap-3">
               <Badge variant="default">{payment.plan ?? ""} · {payment.status ?? ""}</Badge>
               <Badge variant={payment.coaching ? "default" : "outline"}>
                 {payment.coaching ? "עם ליווי" : "בלי ליווי"}
               </Badge>
               {payment.trialing ? (
-                <Badge variant="secondary">
-                  בתקופת ניסיון · נגמר {fmtDate(payment.trialEndsAt)}
-                  {payment.introAmount != null ? ` · חיוב ראשון ${payment.introAmount} ${payment.currency ?? "₪"}` : ""}
-                </Badge>
+                <span className="text-[13px] text-foreground/80">
+                  תקופת ניסיון · התחילה ב{fmtDate(payment.startedAt)} · חיוב ראשון ב{fmtDayDate(payment.trialEndsAt)}
+                  {payment.introAmount != null ? ` (${payment.introAmount} ${payment.currency ?? "₪"})` : ""}
+                </span>
               ) : null}
-            </>
+              {payment.cancelled ? (
+                <span className="text-[13px] text-red-600">
+                  בוטל · הגישה נגמרת ב{fmtDate(payment.accessEndsAt)} (מועד הביטול אינו נשמר במערכת)
+                </span>
+              ) : null}
+            </div>
           )}
         </CardContent>
       </Card>
@@ -170,7 +185,13 @@ export function User360Sections({ data }: { data: User360 }) {
         </CardHeader>
         <CardContent className="text-sm">
           {!engagement.length ? (
-            <p className="text-muted-foreground">אין פרקים שסופקו עדיין.</p>
+            <p className="text-muted-foreground">
+              {!payment.hasSub
+                ? "אין מנוי, לכן אין פרקים."
+                : !assessment.domains.length
+                  ? "ממתין להשלמת האבחון (שלב התעדוף עוד לא נשמר, ולכן אין ממה לגזור פרק)."
+                  : "הפרק הראשון בהכנה. הוא מתמטריאליזציה בריצת ה-cadence הקרובה (עד כ-15 דקות מהרכישה), או מיידית דרך כפתור force-day-1 באדמין."}
+            </p>
           ) : (
             <ul className="flex flex-col gap-1.5">
               {engagement.map((c, i) => (

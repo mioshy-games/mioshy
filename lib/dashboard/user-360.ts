@@ -1,6 +1,19 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getPriorityCategories } from "@/lib/journey-content/priority-categories";
+import { axisLabel } from "@/lib/journey/analysis";
+import type { Axis } from "@/lib/journey/types";
+
+/** top_gap is an axis key (e.g. "passion_context") — render its Hebrew label. */
+function topGapLabel(raw: string | null): string | null {
+  if (!raw) return null;
+  try {
+    const he = axisLabel(raw as Axis, "he");
+    return he && he.trim() ? he : raw;
+  } catch {
+    return raw;
+  }
+}
 
 /**
  * lib/dashboard/user-360.ts — the extra "360" data for the admin user card
@@ -33,6 +46,9 @@ export interface User360 {
     introAmount: number | null;
     planAmount: number | null;
     currency: string | null;
+    startedAt: string | null; // subscription created_at
+    accessEndsAt: string | null; // current_period_end (or trial_ends_at)
+    cancelled: boolean; // status is a cancelled/expired/blocked terminal
     viaOwner: boolean; // partner with no direct sub → access via the owner
   };
   assessment: {
@@ -138,29 +154,30 @@ async function loadPartner(admin: DB, userId: string): Promise<User360["partner"
 }
 
 async function loadPayment(admin: DB, userId: string, partner: User360["partner"]): Promise<User360["payment"]> {
+  // The MOST RECENT subscription of ANY status (was active-only, which hid
+  // trialing and cancelled trials — Itzik 2026-07-05). The display reads the
+  // status to render trialing / active / cancelled.
   const pick = async (uid: string) =>
     (
       await admin
         .from("subscriptions")
-        .select("plan, status, coaching, trial_ends_at, intro_amount, plan_amount, currency")
+        .select("plan, status, coaching, trial_ends_at, intro_amount, plan_amount, currency, created_at, current_period_end")
         .eq("user_id", uid)
-        .in("status", ["active", "trialing", "grace", "past_due"])
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle()
     ).data as
-      | { plan: string | null; status: string | null; coaching: boolean | null; trial_ends_at: string | null; intro_amount: number | null; plan_amount: number | null; currency: string | null }
+      | { plan: string | null; status: string | null; coaching: boolean | null; trial_ends_at: string | null; intro_amount: number | null; plan_amount: number | null; currency: string | null; created_at: string | null; current_period_end: string | null }
       | null;
 
   let sub = await pick(userId);
   let viaOwner = false;
   // A partner with no direct sub inherits the owner's — surface it.
   if (!sub && partner.role === "partner" && partner.partner) {
-    // partner.partner is the OTHER member; the owner is that other member when
-    // this user is the partner. Try the owner's subscription.
     sub = await pick(partner.partner.userId);
     viaOwner = !!sub;
   }
+  const terminal = ["cancelled", "canceled", "expired", "blocked", "frozen"];
   return {
     hasSub: !!sub,
     plan: sub?.plan ?? null,
@@ -171,6 +188,9 @@ async function loadPayment(admin: DB, userId: string, partner: User360["partner"
     introAmount: sub?.intro_amount ?? null,
     planAmount: sub?.plan_amount ?? null,
     currency: sub?.currency ?? null,
+    startedAt: sub?.created_at ?? null,
+    accessEndsAt: sub?.current_period_end ?? sub?.trial_ends_at ?? null,
+    cancelled: sub ? terminal.includes(String(sub.status)) : false,
     viaOwner,
   };
 }
@@ -209,7 +229,7 @@ async function loadAssessment(admin: DB, userId: string): Promise<User360["asses
     friendship: r.friendship_score,
     conflict: r.conflict_health,
     passionRisk: r.passion_risk,
-    topGap: r.top_gap,
+    topGap: topGapLabel(r.top_gap),
     narrative: r.summary?.narrative_he ?? r.summary?.narrative_en ?? null,
   }));
 
