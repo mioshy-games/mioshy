@@ -7,6 +7,7 @@ import { loadCmsTextsForPage } from "@/lib/cms/server";
 import { CmsTextProvider } from "@/components/cms/CmsTextProvider";
 import { CmsText } from "@/components/cms/CmsText";
 import { buildAlternates, buildOgLocale } from "@/lib/seo/alternates";
+import { safeJsonLd, siteUrl } from "@/lib/seo/jsonLd";
 
 // 2026-05-23 — Itzik flagged a build-time warning:
 //   "[cms] loadCmsTextsForPage threw: Dynamic server usage: Route
@@ -121,8 +122,24 @@ export default async function FounderStoryPage({
         : "Itzik Berlev";
   const Arrow = isHe ? ArrowLeft : ArrowRight;
 
+  // Person entity for the founder — builds brand/E-E-A-T (the page is
+  // og:type=article but shipped no Person/Article schema).
+  const base = siteUrl();
+  const personJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    name: isHe ? "איציק ברלב" : "Itzik Berlev",
+    url: `${base}/${params.locale}/about/founder`,
+    jobTitle: isHe ? "מייסד מיאושי" : "Founder of Mioshy",
+    worksFor: { "@type": "Organization", name: "Mioshy", url: base },
+  };
+
   return (
     <CmsTextProvider rows={cmsRows}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(personJsonLd) }}
+      />
       <article
         dir={isHe ? "rtl" : "ltr"}
         className="relative min-h-[100dvh] overflow-hidden bg-[#fdf8f4] text-stone-900"

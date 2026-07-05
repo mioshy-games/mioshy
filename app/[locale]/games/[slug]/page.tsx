@@ -235,9 +235,55 @@ export default async function GameBySlugPage({
     ],
   };
 
+  // SSR "how to play" prose so Googlebot sees real body copy on the game
+  // pages (otherwise an interactive JS shell with almost no indexable text).
+  // Assembled ONLY from existing catalogue text — the game description plus
+  // the per-game instructions (migration 108). Games without enough copy
+  // render nothing here (flagged for copywriting, never padded with invented
+  // text). Rendered as a sibling BELOW the immersive game surface.
+  const isHe = locale === "he";
+  const gameDesc =
+    (isHe ? g.description_he : g.description_en || g.description_he)?.trim() ?? "";
+  const gameInst = g.instructions?.[isHe ? "he" : "en"];
+  const instSteps = gameInst?.steps?.filter((s) => s && s.trim().length > 0) ?? [];
+  const hasProse = gameDesc.length >= 120 || instSteps.length >= 3;
+  const proseSection = hasProse ? (
+    <section
+      dir={isHe ? "rtl" : "ltr"}
+      className="relative z-10 bg-[#0b0712] px-6 py-14 text-white/85"
+    >
+      <div className="mx-auto max-w-2xl">
+        <h2 className="font-heading text-2xl font-bold text-white sm:text-3xl">
+          {isHe ? `${g.name_he} — איך משחקים` : `How to play ${g.name_en}`}
+        </h2>
+        {gameDesc ? (
+          <p className="mt-5 text-[1.0625rem] leading-[1.8]">{gameDesc}</p>
+        ) : null}
+        {gameInst?.intro && gameInst.intro.trim() ? (
+          <p className="mt-4 text-[1.0625rem] leading-[1.8]">{gameInst.intro}</p>
+        ) : null}
+        {instSteps.length ? (
+          <ol className="mt-5 list-decimal space-y-2 ps-5 marker:text-white/50">
+            {instSteps.map((s, i) => (
+              <li key={i} className="text-[1.0625rem] leading-[1.7]">
+                {s}
+              </li>
+            ))}
+          </ol>
+        ) : null}
+        {gameInst?.footer && gameInst.footer.trim() ? (
+          <p className="mt-4 text-[1.0625rem] leading-[1.8] text-white/70">
+            {gameInst.footer}
+          </p>
+        ) : null}
+      </div>
+    </section>
+  ) : null;
+
   if (useImageBg) {
     // Legacy image-background games - keep the original behaviour
     return (
+      <>
       <div
         style={{
           backgroundImage: `url(${bgValue})`,
@@ -261,10 +307,13 @@ export default async function GameBySlugPage({
         />
         <TruthOrDareClient game={g} wheel={w} questions={qs} gameSettings={gameSettings} />
       </div>
+      {proseSection}
+      </>
     );
   }
 
   return (
+    <>
     <GameSurfaceShell gameSlug={g.slug} primaryColor={bgValue} bgSettings={gameSettings?.background} particlesSettings={gameSettings?.particles}>
       <script
         type="application/ld+json"
@@ -279,6 +328,8 @@ export default async function GameBySlugPage({
       />
       <TruthOrDareClient game={g} wheel={w} questions={qs} transparent gameSettings={gameSettings} />
     </GameSurfaceShell>
+    {proseSection}
+    </>
   );
 }
 

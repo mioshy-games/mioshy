@@ -6,6 +6,7 @@ import { pickLocalized } from "@/lib/articles";
 import { Link } from "@/navigation";
 import { Reveal } from "@/components/marketing/Reveal";
 import { ArticleCover } from "@/components/articles/ArticleCover";
+import { safeJsonLd } from "@/lib/seo/jsonLd";
 import type { Metadata } from "next";
 
 function siteUrl() {
@@ -108,8 +109,42 @@ export default async function ArticlesListPage({
     | "created_at"
   >[];
 
+  const base = siteUrl();
+  const isHe = locale === "he";
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: isHe ? "בית" : "Home", item: `${base}/${locale}` },
+          { "@type": "ListItem", position: 2, name: t("title"), item: `${base}/${locale}/articles` },
+        ],
+      },
+      {
+        "@type": "CollectionPage",
+        name: t("title"),
+        description: t("subtitle"),
+        url: `${base}/${locale}/articles`,
+      },
+      {
+        "@type": "ItemList",
+        itemListElement: articles.map((a, i) => ({
+          "@type": "ListItem",
+          position: i + 1,
+          url: `${base}/${locale}/articles/${a.slug}`,
+          name: isHe ? a.title_he ?? a.title_en : a.title_en ?? a.title_he,
+        })),
+      },
+    ],
+  };
+
   return (
     <div className="min-h-[100dvh] bg-[var(--mio-bg)] text-white">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
+      />
       <section className="bg-[var(--mio-surface-a)] py-16 sm:py-24">
         <div className="mx-auto max-w-6xl px-4">
           <Reveal>

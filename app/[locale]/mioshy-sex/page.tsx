@@ -8,6 +8,7 @@ import {
 } from "@/lib/between-us/queries";
 import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
 import { loadCmsTextsForPage } from "@/lib/cms/server";
+import { safeJsonLd } from "@/lib/seo/jsonLd";
 // CmsText drives the rich-text + color-override rendering path. The
 // component reads `cms_texts.is_rich` + `cms_texts.color_override` per
 // row — but only when wrapped in <CmsTextProvider rows={...}>. Without
@@ -263,11 +264,51 @@ export default async function MioshySexLandingPage({
   // 2026-05-20 — `spineLabel` removed along with the vertical
   // editorial spine in the hero margin (Itzik trimmed it).
 
+  // Catalogue structured data — brings the flagship listing to parity with
+  // /games (Breadcrumb + CollectionPage + ItemList). The FAQPage is emitted
+  // separately by the <FAQ> component further down the page.
+  const base = siteUrl();
+  const catalogueJsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: isHe ? "בית" : "Home", item: `${base}/${locale}` },
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: isHe ? "משחקים לזוגות למבוגרים" : "Adult couples games",
+            item: `${base}/${locale}/mioshy-sex`,
+          },
+        ],
+      },
+      {
+        "@type": "CollectionPage",
+        name: isHe ? "משחקים לזוגות למבוגרים" : "Adult couples games",
+        url: `${base}/${locale}/mioshy-sex`,
+      },
+      {
+        "@type": "ItemList",
+        itemListElement: cards.map((c, i) => ({
+          "@type": "ListItem",
+          position: i + 1,
+          url: `${base}/${locale}/mioshy-sex/${c.game.slug}`,
+          name: isHe ? c.game.title_he : c.game.title_en || c.game.title_he,
+        })),
+      },
+    ],
+  };
+
   return (
     <div
       dir={isHe ? "rtl" : "ltr"}
       className="relative isolate min-h-[100dvh] overflow-hidden bg-[#070111] text-white"
     >
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(catalogueJsonLd) }}
+      />
       {/* ── Static dark base wash behind the hero blobs. */}
       <div
         aria-hidden
