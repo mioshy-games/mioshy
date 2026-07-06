@@ -181,12 +181,29 @@ export type ArticleGraphBar = {
   /** Optional display label (e.g. "55%"); falls back to the numeric value. */
   display?: string;
 };
-export type ArticleGraph = {
-  type: "bars";
-  title?: string;
-  source?: string;
-  bars: ArticleGraphBar[];
+/** One category cluster in a grouped bar chart: one value per series. */
+export type ArticleGraphGroup = {
+  label: string;
+  values: number[];
+  /** Optional per-series display labels (e.g. ["84%","69%"]). */
+  displays?: string[];
 };
+export type ArticleGraph =
+  | {
+      type: "bars";
+      title?: string;
+      source?: string;
+      bars: ArticleGraphBar[];
+    }
+  | {
+      /** Grouped/clustered bars: N categories × M series (e.g. with vs without). */
+      type: "grouped-bars";
+      title?: string;
+      source?: string;
+      /** Legend labels, one per series (length = each group's values length). */
+      seriesLabels: string[];
+      groups: ArticleGraphGroup[];
+    };
 
 export type GameRoomRow = {
   id: string;

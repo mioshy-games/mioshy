@@ -47,7 +47,17 @@ export default async function EditArticlePage({
           tags_csv: Array.isArray(a.tags) ? a.tags.join(", ") : "",
           scheduled_publish_at: utcIsoToIsraelWall(a.scheduled_publish_at),
           faq: Array.isArray(a.faq) ? a.faq : [],
-          graph: a.graph ?? { title: "", source: "", bars: [] },
+          // The editor is single-series. A grouped-bars graph (set outside the
+          // admin) is shown with empty bars here; saveArticle omits graph when
+          // bars are empty, so it is preserved rather than wiped.
+          graph:
+            a.graph && a.graph.type === "bars"
+              ? {
+                  title: a.graph.title ?? "",
+                  source: a.graph.source ?? "",
+                  bars: a.graph.bars ?? [],
+                }
+              : { title: a.graph?.title ?? "", source: a.graph?.source ?? "", bars: [] },
         }}
       />
     </div>

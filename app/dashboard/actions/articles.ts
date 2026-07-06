@@ -84,25 +84,31 @@ export async function saveArticle(articleId: string | null, raw: unknown) {
   const graphBars = (v.graph?.bars ?? []).filter(
     (b) => (b.label ?? "").trim() !== "" && Number.isFinite(b.value),
   );
-  const graph =
+  // The admin editor only handles single-series bars. When it has bars, save
+  // them; when it's EMPTY we OMIT graph from the update entirely rather than
+  // null it, so a grouped-bars graph seeded outside the admin (e.g. article 2)
+  // is never silently wiped by editing that article's text.
+  const graphPatch =
     graphBars.length > 0
       ? {
-          type: "bars" as const,
-          title: v.graph?.title?.trim() || undefined,
-          source: v.graph?.source?.trim() || undefined,
-          bars: graphBars.map((b) => ({
-            label: b.label.trim(),
-            value: b.value,
-            display: b.display?.trim() || undefined,
-          })),
+          graph: {
+            type: "bars" as const,
+            title: v.graph?.title?.trim() || undefined,
+            source: v.graph?.source?.trim() || undefined,
+            bars: graphBars.map((b) => ({
+              label: b.label.trim(),
+              value: b.value,
+              display: b.display?.trim() || undefined,
+            })),
+          },
         }
-      : null;
+      : {};
 
   const payload = {
     slug: v.slug,
     scheduled_publish_at: scheduledIso,
     faq: faqClean.length > 0 ? faqClean : null,
-    graph,
+    ...graphPatch,
     title_he: (v.title_he ?? "").trim() || null,
     title_en: (v.title_en ?? "").trim() || null,
     excerpt_he: (v.excerpt_he ?? "").trim() || null,
