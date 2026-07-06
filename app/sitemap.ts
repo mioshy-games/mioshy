@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
+import { publicArticleOrClause } from "@/lib/articles";
 
 // Regenerate at most hourly. Crucially this makes the route cacheable and
 // removes the per-request cookie read that previously forced dynamic
@@ -93,7 +94,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         supabase
           .from("articles")
           .select("slug, published_at, created_at, cover_image_url")
-          .eq("is_published", true),
+          .eq("is_published", true)
+          // Scheduled-but-not-yet-due articles stay out of the sitemap; the
+          // route revalidates hourly so they appear within ~1h of going live.
+          .or(publicArticleOrClause()),
         supabase
           .from("games")
           .select("slug, created_at")

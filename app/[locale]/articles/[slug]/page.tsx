@@ -1,16 +1,22 @@
 import { unstable_noStore as noStore } from "next/cache";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import { safeJsonLd } from "@/lib/seo/jsonLd";
+import { safeJsonLd, faqPageJsonLd } from "@/lib/seo/jsonLd";
 import type { Metadata } from "next";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import type { ArticleRow } from "@/lib/types/database";
-import { pickLocalized } from "@/lib/articles";
+import type { ArticleRow, ArticleFaqItem, ArticleGraph } from "@/lib/types/database";
+import { pickLocalized, publicArticleOrClause } from "@/lib/articles";
+import { getAdminSession } from "@/lib/auth/admin";
 import { Link } from "@/navigation";
 import { Reveal } from "@/components/marketing/Reveal";
 import { ArticleCover } from "@/components/articles/ArticleCover";
 import { ArticleContent } from "@/components/articles/ArticleContent";
+import { ArticleBarChart } from "@/components/articles/ArticleBarChart";
+import { ArticleShare } from "@/components/articles/ArticleShare";
 import Image from "next/image";
+
+/** Splits article body copy at the single {{graph}} token. */
+const GRAPH_TOKEN = "{{graph}}";
 
 function siteUrl() {
   return (process.env.NEXT_PUBLIC_SITE_URL || "https://mioshy.com").replace(
@@ -93,14 +99,19 @@ export async function generateMetadata({
   const base = siteUrl();
   const supabase = await createServerSupabaseClient();
 
-  const { data } = await supabase
+  // Admins previewing a scheduled article see it before it's public; everyone
+  // else is gated on is_published + the schedule.
+  const isAdmin = Boolean(await getAdminSession().catch(() => null));
+  let q = supabase
     .from("articles")
     .select(
       "slug, title_he, title_en, excerpt_he, excerpt_en, meta_title_he, meta_title_en, meta_description_he, meta_description_en, canonical_url, og_image_url, cover_image_url, is_published",
     )
-    .eq("slug", slug)
-    .eq("is_published", true)
-    .maybeSingle();
+    .eq("slug", slug);
+  if (!isAdmin) {
+    q = q.eq("is_published", true).or(publicArticleOrClause());
+  }
+  const { data } = await q.maybeSingle();
 
   if (!data) return {};
 
@@ -186,14 +197,19 @@ export default async function ArticleDetailPage({
   const isRtl = locale === "he";
 
   const supabase = await createServerSupabaseClient();
-  const { data } = await supabase
+  // Admin preview bypass: a logged-in admin can open a scheduled article
+  // before its publish time; the public is gated on is_published + schedule.
+  const isAdmin = Boolean(await getAdminSession().catch(() => null));
+  let q = supabase
     .from("articles")
     .select(
-      "id, slug, title_he, title_en, excerpt_he, excerpt_en, content_he, content_en, cover_image_url, emoji, author, published_at, created_at, tags, reading_time_minutes",
+      "id, slug, title_he, title_en, excerpt_he, excerpt_en, content_he, content_en, cover_image_url, emoji, author, published_at, created_at, tags, reading_time_minutes, scheduled_publish_at, faq, graph",
     )
-    .eq("slug", slug)
-    .eq("is_published", true)
-    .maybeSingle();
+    .eq("slug", slug);
+  if (!isAdmin) {
+    q = q.eq("is_published", true).or(publicArticleOrClause());
+  }
+  const { data } = await q.maybeSingle();
 
   if (!data) notFound();
 
@@ -214,7 +230,12 @@ export default async function ArticleDetailPage({
     | "created_at"
     | "tags"
     | "reading_time_minutes"
+    | "scheduled_publish_at"
+    | "faq"
+    | "graph"
   >;
+  const isPreview = isAdmin && a.scheduled_publish_at != null &&
+    new Date(a.scheduled_publish_at).getTime() > Date.now();
 
   const titlePick = pickLocalized({ locale, he: a.title_he, en: a.title_en });
   const excerptPick = pickLocalized({ locale, he: a.excerpt_he, en: a.excerpt_en });
@@ -282,6 +303,19 @@ export default async function ArticleDetailPage({
           },
         ],
       },
+      ...(Array.isArray(a.faq) && a.faq.length > 0
+        ? [
+            {
+              "@id": `${articleUrl}#faq`,
+              ...faqPageJsonLd(
+                (a.faq as ArticleFaqItem[]).map((f) => ({
+                  question: f.q,
+                  answer: f.a,
+                })),
+              ),
+            },
+          ]
+        : []),
     ],
   };
 
@@ -292,6 +326,7 @@ export default async function ArticleDetailPage({
       "id, slug, title_he, title_en, cover_image_url, emoji, published_at, created_at",
     )
     .eq("is_published", true)
+    .or(publicArticleOrClause())
     .neq("id", a.id)
     .order("published_at", { ascending: false })
     .limit(3);
@@ -310,6 +345,19 @@ export default async function ArticleDetailPage({
     >
   >;
 
+  // Split the body at the single {{graph}} token so the chart renders inline.
+  const contentStr = contentPick.value ?? "";
+  const graphSplit = contentStr.split(GRAPH_TOKEN);
+  const hasGraph = graphSplit.length > 1 && a.graph != null;
+
+  const shareLabels = {
+    share: isRtl ? "שיתוף:" : "Share:",
+    whatsapp: isRtl ? "וואטסאפ" : "WhatsApp",
+    facebook: isRtl ? "פייסבוק" : "Facebook",
+    copy: isRtl ? "העתקת לינק" : "Copy link",
+    copied: isRtl ? "הועתק" : "Copied",
+  };
+
   return (
     <div
       className="min-h-[100dvh]"
@@ -319,6 +367,14 @@ export default async function ArticleDetailPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
       />
+
+      {isPreview && (
+        <div className="bg-amber-500 px-4 py-2 text-center text-sm font-semibold text-black">
+          {isRtl
+            ? `תצוגה מקדימה — מאמר מתוזמן, יעלה אוטומטית ב-${formatDate(a.scheduled_publish_at ?? null, locale)}`
+            : `Preview — scheduled article, goes live automatically on ${formatDate(a.scheduled_publish_at ?? null, locale)}`}
+        </div>
+      )}
 
       {/* ── HERO (dark, branded) ──────────────────────────────────────────── */}
       <div className="relative bg-[var(--mio-surface-a)]">
@@ -407,6 +463,17 @@ export default async function ArticleDetailPage({
               )}
             </div>
           </Reveal>
+
+          {/* Share row — WhatsApp first (primary IL channel), then FB, copy. */}
+          <Reveal delay={0.08}>
+            <div className="mt-5">
+              <ArticleShare
+                url={articleUrl}
+                title={titlePick.value || ""}
+                labels={shareLabels}
+              />
+            </div>
+          </Reveal>
         </div>
 
         {/* Fallback language notice */}
@@ -428,7 +495,18 @@ export default async function ArticleDetailPage({
         {/* ── PROSE CONTENT ── */}
         <Reveal delay={0.1}>
           <div className="mx-auto max-w-3xl px-4 py-8 pb-16">
-            <ArticleContent content={contentPick.value ?? ""} isRtl={isRtl} />
+            {hasGraph ? (
+              <>
+                <ArticleContent content={graphSplit[0]} isRtl={isRtl} />
+                <ArticleBarChart graph={a.graph as ArticleGraph} />
+                <ArticleContent
+                  content={graphSplit.slice(1).join(GRAPH_TOKEN)}
+                  isRtl={isRtl}
+                />
+              </>
+            ) : (
+              <ArticleContent content={contentStr} isRtl={isRtl} />
+            )}
           </div>
         </Reveal>
       </div>

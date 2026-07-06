@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { ArticleForm } from "@/components/dashboard/ArticleForm";
 import { requireAdmin } from "@/lib/auth/admin";
+import { utcIsoToIsraelWall } from "@/lib/articles";
 
 export default async function EditArticlePage({
   params,
@@ -44,6 +45,7 @@ export default async function EditArticlePage({
           canonical_url: a.canonical_url ?? "",
           og_image_url: a.og_image_url ?? "",
           tags_csv: Array.isArray(a.tags) ? a.tags.join(", ") : "",
+          scheduled_publish_at: utcIsoToIsraelWall(a.scheduled_publish_at),
         }}
       />
     </div>

@@ -35,8 +35,9 @@ const components: Components = {
   ),
 
   // ── Paragraph ─────────────────────────────────────────────────────────────
+  // Body is 20px per the article template spec (Itzik 2026-07-06).
   p: ({ children }) => (
-    <p className="my-5 text-[1.0625rem] leading-[1.75] text-gray-700">
+    <p className="my-5 text-[1.25rem] leading-[1.75] text-gray-800">
       {children}
     </p>
   ),
@@ -53,7 +54,7 @@ const components: Components = {
     </ol>
   ),
   li: ({ children }) => (
-    <li className="flex gap-2 text-[1.0625rem] leading-[1.75] text-gray-700 before:content-['•'] before:text-rose-400 before:font-bold before:shrink-0 before:mt-0.5">
+    <li className="flex gap-2 text-[1.25rem] leading-[1.75] text-gray-800 before:content-['•'] before:text-rose-400 before:font-bold before:shrink-0 before:mt-0.5">
       <span>{children}</span>
     </li>
   ),
@@ -68,14 +69,25 @@ const components: Components = {
   ),
 
   // ── Inline elements ────────────────────────────────────────────────────────
-  a: ({ href, children }) => (
-    <a
-      href={href}
-      className="font-medium text-rose-600 underline underline-offset-2 decoration-rose-300 hover:text-rose-700 hover:decoration-rose-500 transition-colors"
-    >
-      {children}
-    </a>
-  ),
+  // A markdown link with the title "cta" (i.e. `[text](url "cta")`) renders as
+  // a full brand button — the article's primary conversion CTA. Everything else
+  // is a normal inline text link.
+  a: ({ href, children, title }) =>
+    title === "cta" || title === "button" ? (
+      <a
+        href={href}
+        className="my-4 inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#7c3aed] to-[#db2777] px-8 py-4 text-lg font-bold text-white no-underline shadow-lg transition hover:opacity-90"
+      >
+        {children}
+      </a>
+    ) : (
+      <a
+        href={href}
+        className="font-medium text-rose-600 underline underline-offset-2 decoration-rose-300 hover:text-rose-700 hover:decoration-rose-500 transition-colors"
+      >
+        {children}
+      </a>
+    ),
   strong: ({ children }) => (
     <strong className="font-bold text-gray-900">{children}</strong>
   ),

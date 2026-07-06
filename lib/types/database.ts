@@ -164,6 +164,28 @@ export type ArticleRow = {
   og_image_url: string | null;
   tags: string[];
   reading_time_minutes: number | null;
+  /** Timed publishing (migration 167). NULL → publish immediately. When set to
+   *  a future instant the article is fully hidden from the public until then. */
+  scheduled_publish_at?: string | null;
+  /** FAQPage source (migration 167). */
+  faq?: ArticleFaqItem[] | null;
+  /** Single in-body chart (migration 167), rendered at the {{graph}} token. */
+  graph?: ArticleGraph | null;
+};
+
+export type ArticleFaqItem = { q: string; a: string };
+
+export type ArticleGraphBar = {
+  label: string;
+  value: number;
+  /** Optional display label (e.g. "55%"); falls back to the numeric value. */
+  display?: string;
+};
+export type ArticleGraph = {
+  type: "bars";
+  title?: string;
+  source?: string;
+  bars: ArticleGraphBar[];
 };
 
 export type GameRoomRow = {

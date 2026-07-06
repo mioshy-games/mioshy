@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth/admin";
 import { articleFormSchema } from "@/lib/validations";
-import { estimateReadingTimeMinutes } from "@/lib/articles";
+import { estimateReadingTimeMinutes, israelWallToUtcIso } from "@/lib/articles";
 
 export async function toggleArticlePublished(articleId: string, publish: boolean) {
   const { supabase } = await requireAdmin();
@@ -65,11 +65,21 @@ export async function saveArticle(articleId: string | null, raw: unknown) {
     "";
   const reading_time_minutes = estimateReadingTimeMinutes(contentForReading);
 
+  // Timed publishing. A `datetime-local` value is browser-local; normalise to
+  // UTC ISO. published_at tracks the intended publish moment (= the schedule
+  // when set) so the displayed date is correct the instant it goes live.
+  const scheduledIso =
+    v.scheduled_publish_at && v.scheduled_publish_at.trim()
+      ? israelWallToUtcIso(v.scheduled_publish_at.trim())
+      : null;
   const willPublish = Boolean(v.is_published);
-  const published_at = willPublish ? new Date().toISOString() : null;
+  const published_at = willPublish
+    ? scheduledIso ?? new Date().toISOString()
+    : null;
 
   const payload = {
     slug: v.slug,
+    scheduled_publish_at: scheduledIso,
     title_he: (v.title_he ?? "").trim() || null,
     title_en: (v.title_en ?? "").trim() || null,
     excerpt_he: (v.excerpt_he ?? "").trim() || null,

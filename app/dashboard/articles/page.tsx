@@ -27,9 +27,19 @@ export default async function ArticlesAdminPage() {
   const { data: articles } = await supabase
     .from("articles")
     .select(
-      "id, slug, title_en, title_he, cover_image_url, is_published, published_at, created_at",
+      "id, slug, title_en, title_he, cover_image_url, is_published, published_at, created_at, scheduled_publish_at",
     )
     .order("created_at", { ascending: false });
+
+  const now = Date.now();
+  const israelDate = (iso: string) =>
+    new Intl.DateTimeFormat("he-IL", {
+      timeZone: "Asia/Jerusalem",
+      day: "numeric",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(new Date(iso));
 
   return (
     <div className="mx-auto max-w-6xl space-y-8">
@@ -90,9 +100,20 @@ export default async function ArticlesAdminPage() {
                       {a.slug}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={a.is_published ? "default" : "secondary"}>
-                        {a.is_published ? "Published" : "Draft"}
-                      </Badge>
+                      {a.is_published &&
+                      a.scheduled_publish_at &&
+                      new Date(a.scheduled_publish_at).getTime() > now ? (
+                        <Badge
+                          variant="outline"
+                          className="border-amber-400 text-amber-600"
+                        >
+                          מתוזמן · {israelDate(a.scheduled_publish_at)}
+                        </Badge>
+                      ) : (
+                        <Badge variant={a.is_published ? "default" : "secondary"}>
+                          {a.is_published ? "Published" : "Draft"}
+                        </Badge>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <ArticleActions

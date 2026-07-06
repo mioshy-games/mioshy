@@ -31,6 +31,7 @@ export default async function NewArticlePage() {
           canonical_url: "",
           og_image_url: "",
           tags_csv: "",
+          scheduled_publish_at: "",
         }}
       />
     </div>

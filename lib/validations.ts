@@ -141,6 +141,11 @@ export const articleFormSchema = z
     og_image_url: z.union([z.string().url(), z.literal(""), z.null()]).optional(),
 
     tags_csv: z.string().optional().nullable(),
+
+    // Timed publishing (migration 167). A `datetime-local` value ("YYYY-MM-
+    // DDTHH:mm", browser-local) or empty. Empty → publish immediately when
+    // is_published is on. Interpreted/normalised to UTC in saveArticle.
+    scheduled_publish_at: z.string().optional().nullable(),
   })
   .superRefine((v, ctx) => {
     const hasTitle = Boolean((v.title_he ?? "").trim() || (v.title_en ?? "").trim());

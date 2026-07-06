@@ -152,6 +152,20 @@ export function ArticleForm({
               />
             </div>
 
+            <div className="space-y-2 rounded-lg border p-3 sm:col-span-2">
+              <Label>Scheduled publish (empty = immediate)</Label>
+              <Input
+                type="datetime-local"
+                {...methods.register("scheduled_publish_at")}
+              />
+              <p className="text-muted-foreground text-xs">
+                Until this time the article is fully hidden from the public — 404,
+                and absent from /articles, the sitemap and “more articles”. It
+                goes live automatically at the set moment (needs “Published” on).
+                Change the time any moment before it publishes.
+              </p>
+            </div>
+
             <div className="space-y-2 sm:col-span-2">
               <Label>Cover image URL</Label>
               <div className="flex flex-col gap-2 sm:flex-row">

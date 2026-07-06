@@ -2,7 +2,7 @@ import { unstable_noStore as noStore } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { ArticleRow } from "@/lib/types/database";
-import { pickLocalized } from "@/lib/articles";
+import { pickLocalized, publicArticleOrClause } from "@/lib/articles";
 import { Link } from "@/navigation";
 import { Reveal } from "@/components/marketing/Reveal";
 import { ArticleCover } from "@/components/articles/ArticleCover";
@@ -92,6 +92,7 @@ export default async function ArticlesListPage({
       "id, slug, title_he, title_en, excerpt_he, excerpt_en, cover_image_url, emoji, author, published_at, created_at",
     )
     .eq("is_published", true)
+    .or(publicArticleOrClause())
     .order("published_at", { ascending: false });
 
   const articles = (data ?? []) as Pick<
