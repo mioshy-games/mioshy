@@ -1,5 +1,5 @@
 -- ───────────────────────────────────────────────────────────────────────────
--- 142_whatsapp_campaign_statuses.sql
+-- 175_whatsapp_campaign_statuses.sql
 --
 -- Safe-test mode (Itzik 2026-07-06): the automated WhatsApp campaigns
 -- (coach_welcome, intro_price_expiry_reminder) run their full logic in prod,
