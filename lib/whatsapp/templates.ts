@@ -72,4 +72,42 @@ export function partnerInviteTemplate(args: {
   };
 }
 
+/**
+ * coach_welcome (UTILITY)
+ * Sent ONCE to a new journey trial/subscription joiner right after the
+ * subscription is created.
+ *   {{1}} first name, {{2}} assigned expert name (default "יצחק ברלב")
+ */
+export function coachWelcomeTemplate(args: {
+  name: string;
+  expertName?: string;
+  languageCode?: "he" | "en";
+}): TemplateSend {
+  return {
+    templateName: "coach_welcome",
+    languageCode: args.languageCode ?? "he",
+    category: "utility",
+    components: [bodyText(args.name, args.expertName || "יצחק ברלב")],
+  };
+}
+
+/**
+ * intro_price_expiry_reminder (MARKETING)
+ * Sent 24h after assessment completion, ONLY to users who have not purchased
+ * (checked at send time).
+ *   {{1}} first name, {{2}} expiry day + time (e.g. "מחר בשעה 21:00")
+ */
+export function introPriceExpiryReminderTemplate(args: {
+  name: string;
+  expiryLabel: string;
+  languageCode?: "he" | "en";
+}): TemplateSend {
+  return {
+    templateName: "intro_price_expiry_reminder",
+    languageCode: args.languageCode ?? "he",
+    category: "marketing",
+    components: [bodyText(args.name, args.expiryLabel)],
+  };
+}
+
 export { urlButton };
