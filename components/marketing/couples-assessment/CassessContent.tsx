@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { Link } from "@/navigation";
 import { useCmsText } from "@/hooks/useCmsText";
+import { AssessmentHeroChart } from "./AssessmentHeroChart";
 import type { Locale } from "@/lib/journey/types";
 import "./styles.css";
 
@@ -46,13 +47,6 @@ export function CassessContent({
     heroSub: useCmsText(`${RK}.hero.sub`).text,
     heroCta: useCmsText(`${RK}.hero.cta`).text,
     heroTrust: subN(useCmsText(`${RK}.hero.trust`).text),
-    startLabel: useCmsText(`${RK}.hero.startLabel`).text,
-    goalLabel: useCmsText(`${RK}.hero.goalLabel`).text,
-    bar1: useCmsText(`${RK}.hero.bar1`).text,
-    bar2: useCmsText(`${RK}.hero.bar2`).text,
-    bar3: useCmsText(`${RK}.hero.bar3`).text,
-    bar4: useCmsText(`${RK}.hero.bar4`).text,
-    bar5: useCmsText(`${RK}.hero.bar5`).text,
     whatLead: useCmsText(`${RK}.what.lead`).text,
     whatH2: useCmsText(`${RK}.what.h2`).text,
     whatBody: useCmsText(`${RK}.what.body`).text,
@@ -96,33 +90,8 @@ export function CassessContent({
       window.matchMedia &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    let raf = 0;
-    // Living hero graph: each bar oscillates on its own sine wave.
-    if (!reduce) {
-      const cols = Array.from(
-        root.querySelectorAll<HTMLElement>(".bars .bcol"),
-      );
-      const cfg = [
-        { lo: 24, hi: 72, sp: 0.55, ph: 0.0 },
-        { lo: 28, hi: 80, sp: 0.44, ph: 1.3 },
-        { lo: 42, hi: 86, sp: 0.5, ph: 0.6 },
-        { lo: 34, hi: 82, sp: 0.47, ph: 2.1 },
-        { lo: 46, hi: 90, sp: 0.49, ph: 1.0 },
-      ];
-      const frame = (t: number) => {
-        const s = t / 1000;
-        for (let i = 0; i < cols.length; i++) {
-          const cf = cfg[i];
-          if (!cf) continue;
-          const v = cf.lo + (cf.hi - cf.lo) * (0.5 + 0.5 * Math.sin(s * cf.sp + cf.ph));
-          cols[i].style.height = v.toFixed(1) + "%";
-          const num = cols[i].querySelector<HTMLElement>(".v");
-          if (num) num.textContent = String(Math.round(v));
-        }
-        raf = requestAnimationFrame(frame);
-      };
-      raf = requestAnimationFrame(frame);
-    }
+    // The living hero bar oscillation now lives in <AssessmentHeroChart>, which
+    // owns its own rAF loop. This effect keeps only the domains reveal.
 
     // Domains: staggered reveal once the block scrolls into view.
     let io: IntersectionObserver | null = null;
@@ -147,7 +116,6 @@ export function CassessContent({
     }
 
     return () => {
-      if (raf) cancelAnimationFrame(raf);
       io?.disconnect();
     };
   }, []);
@@ -160,26 +128,7 @@ export function CassessContent({
         <h1>{rc(c.heroH1, "איפה אתם היום, ולאן אפשר להגיע?", "Where are you today, and how far can you go?")}</h1>
         <p className="sub">{rc(c.heroSub, "אבחון קצר ותקבלו תמונה רחבה על הזוגיות שלכם!", "A short assessment, and you get a broad picture of your relationship.")}</p>
 
-        <div className="herobars">
-          <div className="chart">
-            <div className="bars">
-              <div className="bcol" style={{ height: "30%" }}><span className="v">30</span></div>
-              <div className="bcol" style={{ height: "44%" }}><span className="v">44</span></div>
-              <div className="bcol" style={{ height: "60%" }}><span className="v">60</span></div>
-              <div className="bcol" style={{ height: "40%" }}><span className="v">40</span></div>
-              <div className="bcol" style={{ height: "64%" }}><span className="v">64</span></div>
-            </div>
-            <span className="startline"><i>{rc(c.startLabel, "נקודת ההתחלה שלכם", "Your starting point")}</i></span>
-            <span className="goalline"><i>{rc(c.goalLabel, "היעד", "The goal")}</i></span>
-          </div>
-          <div className="blabels">
-            <span>{rc(c.bar1, "אינטימיות", "Intimacy")}</span>
-            <span>{rc(c.bar2, "חיבור רגשי", "Emotional")}</span>
-            <span>{rc(c.bar3, "תקשורת", "Communication")}</span>
-            <span>{rc(c.bar4, "חברות", "Friendship")}</span>
-            <span>{rc(c.bar5, "משפחה", "Family")}</span>
-          </div>
-        </div>
+        <AssessmentHeroChart locale={locale} />
 
         <Link href={ASSESS_HREF} className="cta" style={{ marginTop: 24 }}>
           {rc(c.heroCta, "להתחיל את האבחון", "Start the assessment")}

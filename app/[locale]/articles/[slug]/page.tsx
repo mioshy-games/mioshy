@@ -13,10 +13,13 @@ import { ArticleCover } from "@/components/articles/ArticleCover";
 import { ArticleContent } from "@/components/articles/ArticleContent";
 import { ArticleBarChart } from "@/components/articles/ArticleBarChart";
 import { ArticleShare } from "@/components/articles/ArticleShare";
+import { ArticleImageSlot } from "@/components/articles/ArticleImageSlot";
+import { AssessmentHeroChart } from "@/components/marketing/couples-assessment/AssessmentHeroChart";
 import Image from "next/image";
 
-/** Splits article body copy at the single {{graph}} token. */
-const GRAPH_TOKEN = "{{graph}}";
+// In-body render tokens: split the markdown on any of these and drop the
+// matching live component where each appears.
+const BODY_TOKENS = /(\{\{graph\}\}|\{\{assessment-chart\}\}|\{\{image\}\})/g;
 
 function siteUrl() {
   return (process.env.NEXT_PUBLIC_SITE_URL || "https://mioshy.com").replace(
@@ -345,10 +348,9 @@ export default async function ArticleDetailPage({
     >
   >;
 
-  // Split the body at the single {{graph}} token so the chart renders inline.
+  // Split the body on the in-body tokens; a live component renders at each.
   const contentStr = contentPick.value ?? "";
-  const graphSplit = contentStr.split(GRAPH_TOKEN);
-  const hasGraph = graphSplit.length > 1 && a.graph != null;
+  const bodyParts = contentStr.split(BODY_TOKENS);
 
   const shareLabels = {
     share: isRtl ? "שיתוף:" : "Share:",
@@ -495,18 +497,24 @@ export default async function ArticleDetailPage({
         {/* ── PROSE CONTENT ── */}
         <Reveal delay={0.1}>
           <div className="mx-auto max-w-3xl px-4 py-8 pb-16">
-            {hasGraph ? (
-              <>
-                <ArticleContent content={graphSplit[0]} isRtl={isRtl} />
-                <ArticleBarChart graph={a.graph as ArticleGraph} />
-                <ArticleContent
-                  content={graphSplit.slice(1).join(GRAPH_TOKEN)}
-                  isRtl={isRtl}
-                />
-              </>
-            ) : (
-              <ArticleContent content={contentStr} isRtl={isRtl} />
-            )}
+            {bodyParts.map((part, i) => {
+              if (part === "{{graph}}")
+                return a.graph ? (
+                  <ArticleBarChart key={i} graph={a.graph as ArticleGraph} />
+                ) : null;
+              if (part === "{{assessment-chart}}")
+                return (
+                  <AssessmentHeroChart
+                    key={i}
+                    locale={locale === "he" ? "he" : "en"}
+                    standalone
+                  />
+                );
+              if (part === "{{image}}") return <ArticleImageSlot key={i} />;
+              return part.trim() ? (
+                <ArticleContent key={i} content={part} isRtl={isRtl} />
+              ) : null;
+            })}
           </div>
         </Reveal>
       </div>
