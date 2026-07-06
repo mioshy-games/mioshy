@@ -11,7 +11,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { FormProvider, useForm } from "react-hook-form";
+import { FormProvider, useForm, useFieldArray } from "react-hook-form";
 import { toast } from "sonner";
 import { Loader2, Upload } from "lucide-react";
 import { ArticleFormInput, articleFormSchema } from "@/lib/validations";
@@ -48,6 +48,13 @@ export function ArticleForm({
   const contentEn = methods.watch("content_en") ?? "";
   const contentHe = methods.watch("content_he") ?? "";
   const isPublished = methods.watch("is_published") ?? false;
+  const coverUrl = methods.watch("cover_image_url") ?? "";
+
+  const faqArray = useFieldArray({ control: methods.control, name: "faq" });
+  const barsArray = useFieldArray({
+    control: methods.control,
+    name: "graph.bars",
+  });
 
   const readingTime = useMemo(() => {
     const base = (contentEn.trim() || contentHe.trim() || "").trim();
@@ -97,6 +104,34 @@ export function ArticleForm({
       const { data } = client.storage.from("article-covers").getPublicUrl(path);
       methods.setValue("cover_image_url", data.publicUrl, { shouldDirty: true });
       toast.success("Cover uploaded");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  // Upload an image and append it into the HE body as markdown at the end.
+  async function uploadBodyImage(file: File) {
+    const client = createBrowserSupabaseClient();
+    if (!client) {
+      toast.error("Supabase is not configured");
+      return;
+    }
+    setUploading(true);
+    try {
+      const path = `body/${Date.now()}-${file.name}`.replace(/\s+/g, "-");
+      const { error: upErr } = await client.storage
+        .from("article-covers")
+        .upload(path, file, { upsert: true });
+      if (upErr) {
+        toast.error(upErr.message);
+        return;
+      }
+      const { data } = client.storage.from("article-covers").getPublicUrl(path);
+      const cur = methods.getValues("content_he") ?? "";
+      methods.setValue("content_he", `${cur}\n\n![](${data.publicUrl})\n`, {
+        shouldDirty: true,
+      });
+      toast.success("תמונה נוספה לגוף (עברית) — הזז אותה למקום הרצוי");
     } finally {
       setUploading(false);
     }
@@ -167,7 +202,7 @@ export function ArticleForm({
             </div>
 
             <div className="space-y-2 sm:col-span-2">
-              <Label>Cover image URL</Label>
+              <Label>תמונת שער (מוצגת בהירו במקום הגרדיאנט)</Label>
               <div className="flex flex-col gap-2 sm:flex-row">
                 <Input
                   {...methods.register("cover_image_url")}
@@ -175,7 +210,7 @@ export function ArticleForm({
                 />
                 <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium">
                   <Upload className="size-4" />
-                  {uploading ? "Uploading..." : "Upload"}
+                  {uploading ? "מעלה..." : coverUrl ? "החלף" : "העלה"}
                   <input
                     type="file"
                     accept="image/*"
@@ -188,7 +223,30 @@ export function ArticleForm({
                     disabled={uploading}
                   />
                 </label>
+                {coverUrl ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() =>
+                      methods.setValue("cover_image_url", "", { shouldDirty: true })
+                    }
+                  >
+                    הסר
+                  </Button>
+                ) : null}
               </div>
+              {coverUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={coverUrl}
+                  alt=""
+                  className="mt-2 h-40 w-full rounded-lg object-cover"
+                />
+              ) : (
+                <p className="text-muted-foreground text-xs">
+                  אין תמונת שער — ההירו יוצג כגרדיאנט עם אימוג׳י.
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -211,7 +269,7 @@ export function ArticleForm({
               <Label>Content (EN)</Label>
               <div data-color-mode="dark">
                 <MDEditor
-                  value={methods.getValues("content_en") ?? ""}
+                  value={contentEn}
                   onChange={(v) =>
                     methods.setValue("content_en", v ?? "", { shouldDirty: true })
                   }
@@ -222,10 +280,27 @@ export function ArticleForm({
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Content (HE)</Label>
+              <div className="flex items-center justify-between">
+                <Label>Content (HE)</Label>
+                <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border px-3 py-1.5 text-xs font-medium">
+                  <Upload className="size-3.5" />
+                  {uploading ? "מעלה..." : "העלה תמונה לגוף"}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) void uploadBodyImage(f);
+                      e.currentTarget.value = "";
+                    }}
+                    disabled={uploading}
+                  />
+                </label>
+              </div>
               <div dir="rtl" data-color-mode="dark">
                 <MDEditor
-                  value={methods.getValues("content_he") ?? ""}
+                  value={contentHe}
                   onChange={(v) =>
                     methods.setValue("content_he", v ?? "", { shouldDirty: true })
                   }
@@ -234,6 +309,10 @@ export function ArticleForm({
                   visibleDragbar={false}
                 />
               </div>
+              <p className="text-muted-foreground text-xs">
+                טוקן <code>{"{{graph}}"}</code> בגוף = מיקום הגרף. קישור עם כותרת
+                <code> &quot;cta&quot;</code> = כפתור מותג. תמונות: <code>![](url)</code>.
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -283,6 +362,121 @@ export function ArticleForm({
               <Label>Tags (comma-separated)</Label>
               <Input {...methods.register("tags_csv")} placeholder="intimacy, communication, date night" />
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>שאלות ותשובות (FAQ)</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-muted-foreground text-xs">
+              מופיע במאמר וכסכמת FAQPage לגוגל (״שאלות שאנשים שואלים״).
+            </p>
+            {faqArray.fields.map((f, i) => (
+              <div key={f.id} className="space-y-2 rounded-lg border p-3">
+                <div className="flex items-center justify-between">
+                  <Label>שאלה {i + 1}</Label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => faqArray.remove(i)}
+                  >
+                    הסר
+                  </Button>
+                </div>
+                <Input
+                  {...methods.register(`faq.${i}.q`)}
+                  dir="rtl"
+                  placeholder="השאלה"
+                />
+                <Textarea
+                  {...methods.register(`faq.${i}.a`)}
+                  dir="rtl"
+                  rows={3}
+                  placeholder="התשובה"
+                />
+              </div>
+            ))}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => faqArray.append({ q: "", a: "" })}
+            >
+              + הוסף שאלה
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>גרף (אופציונלי)</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-muted-foreground text-xs">
+              מוצג במקום הטוקן <code>{"{{graph}}"}</code> בגוף המאמר. בלי עמודות —
+              לא מוצג גרף.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>כותרת הגרף</Label>
+                <Input {...methods.register("graph.title")} dir="rtl" />
+              </div>
+              <div className="space-y-2">
+                <Label>מקור</Label>
+                <Input {...methods.register("graph.source")} dir="rtl" />
+              </div>
+            </div>
+            {barsArray.fields.map((b, i) => (
+              <div
+                key={b.id}
+                className="flex flex-wrap items-end gap-2 rounded-lg border p-3"
+              >
+                <div className="flex-1 space-y-1">
+                  <Label className="text-xs">תווית</Label>
+                  <Input
+                    {...methods.register(`graph.bars.${i}.label`)}
+                    dir="rtl"
+                    placeholder="2024"
+                  />
+                </div>
+                <div className="w-24 space-y-1">
+                  <Label className="text-xs">ערך</Label>
+                  <Input
+                    type="number"
+                    step="any"
+                    {...methods.register(`graph.bars.${i}.value`)}
+                  />
+                </div>
+                <div className="w-28 space-y-1">
+                  <Label className="text-xs">תצוגה</Label>
+                  <Input
+                    {...methods.register(`graph.bars.${i}.display`)}
+                    placeholder="37%"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => barsArray.remove(i)}
+                >
+                  הסר
+                </Button>
+              </div>
+            ))}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                barsArray.append({ label: "", value: 0, display: "" })
+              }
+            >
+              + הוסף עמודה
+            </Button>
           </CardContent>
         </Card>
 

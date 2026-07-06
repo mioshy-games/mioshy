@@ -32,6 +32,8 @@ export default async function NewArticlePage() {
           og_image_url: "",
           tags_csv: "",
           scheduled_publish_at: "",
+          faq: [],
+          graph: { title: "", source: "", bars: [] },
         }}
       />
     </div>

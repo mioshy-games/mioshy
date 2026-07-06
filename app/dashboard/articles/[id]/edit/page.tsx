@@ -46,6 +46,8 @@ export default async function EditArticlePage({
           og_image_url: a.og_image_url ?? "",
           tags_csv: Array.isArray(a.tags) ? a.tags.join(", ") : "",
           scheduled_publish_at: utcIsoToIsraelWall(a.scheduled_publish_at),
+          faq: Array.isArray(a.faq) ? a.faq : [],
+          graph: a.graph ?? { title: "", source: "", bars: [] },
         }}
       />
     </div>

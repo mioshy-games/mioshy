@@ -146,6 +146,31 @@ export const articleFormSchema = z
     // DDTHH:mm", browser-local) or empty. Empty → publish immediately when
     // is_published is on. Interpreted/normalised to UTC in saveArticle.
     scheduled_publish_at: z.string().optional().nullable(),
+
+    // FAQ (migration 167) — powers the FAQPage schema + the on-page questions.
+    faq: z
+      .array(z.object({ q: z.string(), a: z.string() }))
+      .optional()
+      .default([]),
+
+    // In-body chart (migration 167). Rendered at the {{graph}} token.
+    graph: z
+      .object({
+        title: z.string().optional().nullable(),
+        source: z.string().optional().nullable(),
+        bars: z
+          .array(
+            z.object({
+              label: z.string(),
+              value: z.coerce.number(),
+              display: z.string().optional().nullable(),
+            }),
+          )
+          .optional()
+          .default([]),
+      })
+      .optional()
+      .nullable(),
   })
   .superRefine((v, ctx) => {
     const hasTitle = Boolean((v.title_he ?? "").trim() || (v.title_en ?? "").trim());

@@ -94,7 +94,12 @@ export default async function ArticlesAdminPage() {
                       )}
                     </TableCell>
                     <TableCell className="font-medium">
-                      {a.title_en || a.title_he || "-"}
+                      <Link
+                        href={`/dashboard/articles/${a.id}/edit`}
+                        className="text-primary hover:underline"
+                      >
+                        {a.title_he || a.title_en || "-"}
+                      </Link>
                     </TableCell>
                     <TableCell className="text-muted-foreground font-mono text-sm">
                       {a.slug}

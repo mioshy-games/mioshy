@@ -74,12 +74,12 @@ export function ArticleActions({
       <Link
         href={`/dashboard/articles/${articleId}/edit`}
         className={cn(
-          buttonVariants({ variant: "outline", size: "sm" }),
+          buttonVariants({ variant: "default", size: "sm" }),
           "inline-flex gap-1.5",
         )}
       >
         <Pencil className="size-3.5" />
-        Edit
+        עריכה
       </Link>
       <DropdownMenu>
         <DropdownMenuTrigger

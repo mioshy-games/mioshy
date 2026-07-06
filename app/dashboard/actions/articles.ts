@@ -77,9 +77,32 @@ export async function saveArticle(articleId: string | null, raw: unknown) {
     ? scheduledIso ?? new Date().toISOString()
     : null;
 
+  // FAQ + graph: drop empty rows; a graph with no bars stores as null.
+  const faqClean = (v.faq ?? []).filter(
+    (f) => (f.q ?? "").trim() && (f.a ?? "").trim(),
+  );
+  const graphBars = (v.graph?.bars ?? []).filter(
+    (b) => (b.label ?? "").trim() !== "" && Number.isFinite(b.value),
+  );
+  const graph =
+    graphBars.length > 0
+      ? {
+          type: "bars" as const,
+          title: v.graph?.title?.trim() || undefined,
+          source: v.graph?.source?.trim() || undefined,
+          bars: graphBars.map((b) => ({
+            label: b.label.trim(),
+            value: b.value,
+            display: b.display?.trim() || undefined,
+          })),
+        }
+      : null;
+
   const payload = {
     slug: v.slug,
     scheduled_publish_at: scheduledIso,
+    faq: faqClean.length > 0 ? faqClean : null,
+    graph,
     title_he: (v.title_he ?? "").trim() || null,
     title_en: (v.title_en ?? "").trim() || null,
     excerpt_he: (v.excerpt_he ?? "").trim() || null,
@@ -107,6 +130,8 @@ export async function saveArticle(articleId: string | null, raw: unknown) {
     revalidatePath(`/dashboard/articles/${articleId}/edit`);
     revalidatePath("/en/articles");
     revalidatePath("/he/articles");
+    revalidatePath(`/he/articles/${v.slug}`);
+    revalidatePath(`/en/articles/${v.slug}`);
     return { ok: true as const, id: articleId };
   }
 
