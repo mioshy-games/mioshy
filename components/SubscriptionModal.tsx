@@ -50,7 +50,7 @@ const T = {
     paywallGreetingFallback: "שלום",
     paywallSinglePlanSubtitle: "משחקי זוגות אונליין - ללילה בלתי נשכח, ליום הולדת, ליום נישואין, או סתם כשהילדים סוף סוף ישנים!",
     paywallPriceSuffix:  "/שבוע",
-    paywallBilledNote:   "מחויב ₪39/חודש",
+    paywallBilledNote:   "בחיוב חודשי של 36 ₪",
     paywallCancelNote:   "ניתן לעצור בכל עת. ללא התחייבות, ללא דמי ביטול.",
     paywallContinueCta:  "מעבר לתשלום",
     countrySearchPlaceholder: "חיפוש מדינה…",
@@ -112,7 +112,7 @@ const T = {
     paywallGreetingFallback: "Welcome",
     paywallSinglePlanSubtitle: "Online couples games - for an unforgettable night, a birthday, an anniversary, or simply when the kids are finally asleep!",
     paywallPriceSuffix:  "/week",
-    paywallBilledNote:   "Billed $13/month",
+    paywallBilledNote:   "Billed $14/month",
     paywallCancelNote:   "Stop any time. No commitment, no cancellation fees.",
     paywallContinueCta:  "Continue to payment",
     countrySearchPlaceholder: "Search country…",
@@ -329,7 +329,7 @@ export function SubscriptionModal({
 
   // A3: this is the GAMES paywall. When a trial is enabled for games, the CTA
   // swaps to the 7-day trial (token+J2, no charge) via create-trial.
-  const trial = useTrialOffer({ product: "games", coaching: false, isHe, plan: "weekly" });
+  const trial = useTrialOffer({ product: "games", coaching: false, isHe, plan: "monthly" });
 
   // CRM copy for lead mode. `lt(key, fallback)` returns the CMS value when
   // present and non-blank, else the in-code default — so a blank/missing row
@@ -573,7 +573,11 @@ export function SubscriptionModal({
           // a real mischarge plus the wrong pillar entitlement. coaching is
           // irrelevant for games (the server forces it false for non-journey).
           product:          "games",
-          plan,
+          // Games bills MONTHLY (36 ₪). The "9 ₪ / week" shown on the card and
+          // in this modal is a display framing only; the real charge cadence is
+          // resolved server-side from the plan we send here. (Itzik 2026-07-06,
+          // aligning charge to the "billed monthly ₪36" promise.)
+          plan:             "monthly",
           coaching:         false,
           country_code:     countryCode || null,
           language:         locale,
