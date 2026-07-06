@@ -13,6 +13,7 @@
 import "server-only";
 
 import { getBrevoApiKeyOrNull } from "./brevo-client";
+import { createServiceRoleClient } from "@/lib/supabase-admin";
 
 const BREVO_API = "https://api.brevo.com/v3/smtp/email";
 
@@ -76,6 +77,34 @@ export async function sendBrevoEmail(
     return { ok: true, skipped: true };
   }
 
+  // Hard-bounce guard: never send to a suppressed address (a fake/broken
+  // address that hard-bounced). Best-effort — a DB hiccup must NOT block real
+  // mail, so on any error we fall back to the original recipient list.
+  let recipients = payload.to;
+  try {
+    const admin = createServiceRoleClient();
+    if (admin && recipients.length > 0) {
+      const emails = recipients.map((r) => r.email.toLowerCase());
+      const { data: bounced } = await admin
+        .from("email_hard_bounces")
+        .select("email")
+        .in("email", emails);
+      if (bounced && bounced.length > 0) {
+        const suppressed = new Set(
+          bounced.map((b) => String(b.email).toLowerCase()),
+        );
+        recipients = recipients.filter(
+          (r) => !suppressed.has(r.email.toLowerCase()),
+        );
+      }
+    }
+  } catch {
+    /* proceed with the original recipients */
+  }
+  if (recipients.length === 0) {
+    return { ok: true, skipped: true };
+  }
+
   try {
     const res = await fetch(BREVO_API, {
       method: "POST",
@@ -86,7 +115,7 @@ export async function sendBrevoEmail(
       },
       body: JSON.stringify({
         sender: { email: senderEmail, name: senderName },
-        to: payload.to,
+        to: recipients,
         subject: payload.subject,
         htmlContent: payload.htmlContent,
         textContent: payload.textContent,

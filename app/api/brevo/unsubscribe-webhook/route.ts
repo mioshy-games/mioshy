@@ -104,6 +104,13 @@ function isUnsubscribeEvent(body: BrevoUnsubscribeEvent): boolean {
   return ev === "" || ev === "unsubscribed" || ev === "unsubscribe";
 }
 
+/** Brevo hard-bounce event ("hard_bounce"). Requires the webhook to be
+ *  subscribed to hardBounce events in the Brevo dashboard. */
+function isHardBounceEvent(body: BrevoUnsubscribeEvent): boolean {
+  const ev = typeof body.event === "string" ? body.event.toLowerCase() : "";
+  return ev === "hard_bounce" || ev === "hardbounce" || ev === "hard bounce";
+}
+
 // ----------------------------------------------------------------
 // Handler
 // ----------------------------------------------------------------
@@ -128,12 +135,30 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "missing_email" }, { status: 400 });
   }
 
+  // Hard bounce → suppress the address so every future send skips it (guard
+  // against a fake/broken address re-contaminating the funnel).
+  if (isHardBounceEvent(body)) {
+    const admin = createAdminSupabaseClient();
+    await admin
+      .from("email_hard_bounces")
+      .upsert(
+        {
+          email: email.toLowerCase(),
+          reason: typeof body.event === "string" ? body.event : "hard_bounce",
+        },
+        { onConflict: "email" },
+      )
+      .then(
+        () => undefined,
+        () => undefined,
+      );
+    return NextResponse.json({ ok: true, hardBounce: true });
+  }
+
   if (!isUnsubscribeEvent(body)) {
-    // Not an unsubscribe event — ack 200 so Brevo doesn't retry, but
-    // don't touch the profile. The endpoint is registered only for
-    // unsubscribe events in the dashboard; this branch just defends
-    // against misconfiguration.
-    return NextResponse.json({ ok: true, ignored: "non_unsubscribe_event" });
+    // Not an unsubscribe or hard-bounce event — ack 200 so Brevo doesn't
+    // retry, but don't touch anything.
+    return NextResponse.json({ ok: true, ignored: "non_actionable_event" });
   }
 
   // 3. Find profile by email (via auth.users since profiles doesn't
