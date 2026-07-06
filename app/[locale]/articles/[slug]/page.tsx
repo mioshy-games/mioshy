@@ -14,12 +14,15 @@ import { ArticleContent } from "@/components/articles/ArticleContent";
 import { ArticleBarChart } from "@/components/articles/ArticleBarChart";
 import { ArticleShare } from "@/components/articles/ArticleShare";
 import { ArticleImageSlot } from "@/components/articles/ArticleImageSlot";
+import { ArticleLikertTeaser } from "@/components/articles/ArticleLikertTeaser";
 import { AssessmentHeroChart } from "@/components/marketing/couples-assessment/AssessmentHeroChart";
 import Image from "next/image";
 
 // In-body render tokens: split the markdown on any of these and drop the
-// matching live component where each appears.
-const BODY_TOKENS = /(\{\{graph\}\}|\{\{assessment-chart\}\}|\{\{image\}\})/g;
+// matching live component where each appears. `{{likert:QUESTION}}` carries a
+// per-article question.
+const BODY_TOKENS =
+  /(\{\{graph\}\}|\{\{assessment-chart\}\}|\{\{image\}\}|\{\{likert:[^}]*\}\})/g;
 
 function siteUrl() {
   return (process.env.NEXT_PUBLIC_SITE_URL || "https://mioshy.com").replace(
@@ -511,6 +514,14 @@ export default async function ArticleDetailPage({
                   />
                 );
               if (part === "{{image}}") return <ArticleImageSlot key={i} />;
+              if (part.startsWith("{{likert:"))
+                return (
+                  <ArticleLikertTeaser
+                    key={i}
+                    question={part.slice("{{likert:".length, -2)}
+                    locale={locale === "he" ? "he" : "en"}
+                  />
+                );
               return part.trim() ? (
                 <ArticleContent key={i} content={part} isRtl={isRtl} />
               ) : null;
