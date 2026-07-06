@@ -87,7 +87,7 @@ export async function POST(req: Request) {
   for (const e of emails) {
     const r = await sendBrevoEmail({
       to: [{ email: to, name: "Itzik" }],
-      subject: `[בדיקה] ${e.subject}`,
+      subject: e.subject,
       htmlContent: e.html,
       textContent: e.text,
       tags: [e.tag],

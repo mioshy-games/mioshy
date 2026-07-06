@@ -58,7 +58,7 @@ export async function sendBrevoEmail(
   // BREVO_API_KEY is already in xkeysib- form (e.g., on Vercel).
   const apiKey = getBrevoApiKeyOrNull();
   const senderEmail = envOrNull("BREVO_SENDER_EMAIL");
-  const senderName = envOrNull("BREVO_SENDER_NAME") ?? "Mioshy";
+  const senderName = envOrNull("BREVO_SENDER_NAME") ?? "יצחק ממיאושי";
   // The "from" is a no-reply address, so a bare reply bounces. Default a
   // reply-to (support@mioshy.com) unless the caller set one explicitly
   // (e.g. couple invitations route replies to the inviter).

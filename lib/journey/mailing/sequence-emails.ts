@@ -116,7 +116,7 @@ export function buildSequenceEmail(
     preheader: "הטיפ הראשון שלכם, לפי האבחון",
     greeting: g,
     paragraphs: [
-      `באבחון שלכם ${focus} קיבל את הציון הנמוך ביותר, וזה דווקא טוב לדעת: זה המקום שבו צעד קטן מרגיש הכי מהר.`,
+      `באבחון שלכם ${focus} קיבל את הציון הנמוך ביותר, וזה דווקא טוב לדעת: זה בדיוק המקום שבו צעד קטן מורגש מיד.`,
       `הנה תרגיל אחד להערב: ${exercise} עשר דקות, בלי הכנות.`,
     ],
     primaryCta: { label: "לתרגיל המלא", url: `${p.baseUrl}/he/journey/assessment?summary=1` },
