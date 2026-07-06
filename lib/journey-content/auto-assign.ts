@@ -44,6 +44,9 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { ensureCadenceAssignment } from "./cadence-engine";
 import { resolveAnchorDate } from "./schedule";
+import { sendCampaignMessage } from "@/lib/whatsapp/campaign";
+import { coachWelcomeTemplate } from "@/lib/whatsapp/templates";
+import { coachWelcomeApplies } from "@/lib/whatsapp/rules";
 import type { JourneyProductSlug } from "./types";
 
 // ------------------------------------------------------------
@@ -163,6 +166,35 @@ export async function assignJourneyOnPurchase(
       } catch (err) {
         console.warn(
           "[assignJourneyOnPurchase] started_journey_at stamp failed (non-fatal)",
+          err,
+        );
+      }
+    }
+
+    // coach_welcome (WhatsApp) — one-time welcome for a new JOURNEY joiner,
+    // right after the subscription exists (a joiner here is BY DEFINITION a
+    // purchaser, satisfying the "non-purchaser never gets coach" rule). Fully
+    // gated by the campaign layer (WHATSAPP_MODE, opt-in, idempotency, 1/week
+    // throttle). Best-effort: never blocks or fails the assignment.
+    if (coachWelcomeApplies(args.product)) {
+      try {
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("id", args.userId)
+          .maybeSingle();
+        const firstName = ((prof?.full_name as string | null) ?? "")
+          .trim()
+          .split(/\s+/)[0];
+        if (firstName) {
+          await sendCampaignMessage({
+            userId: args.userId,
+            template: coachWelcomeTemplate({ name: firstName }),
+          });
+        }
+      } catch (err) {
+        console.warn(
+          "[assignJourneyOnPurchase] coach_welcome send failed (non-fatal)",
           err,
         );
       }

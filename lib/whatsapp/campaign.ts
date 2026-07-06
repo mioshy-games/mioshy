@@ -19,6 +19,7 @@
 import { createServiceRoleClient } from "@/lib/supabase-admin";
 import { normalizePhoneForWhatsApp } from "./phone";
 import { sendTemplate } from "./client";
+import { throttlePassed } from "./rules";
 import type { TemplateSend } from "./templates";
 
 export type WhatsAppMode = "off" | "allowlist" | "live";
@@ -140,7 +141,7 @@ export async function sendCampaignMessage(args: {
       .eq("direction", "outbound")
       .in("status", ["sent", "delivered", "read", "would_send"])
       .gte("created_at", since);
-    if ((recent ?? 0) > 0) {
+    if (!throttlePassed(recent ?? 0)) {
       await journal(admin, args, phone, "skipped", "throttled-1-per-week");
       return { status: "skipped", reason: "throttled-1-per-week" };
     }

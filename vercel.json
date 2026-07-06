@@ -52,6 +52,10 @@
     {
       "path": "/api/journey/marketing-sequence",
       "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/whatsapp/intro-reminder",
+      "schedule": "0 * * * *"
     }
   ]
 }
