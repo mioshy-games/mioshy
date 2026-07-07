@@ -100,9 +100,11 @@ export function InlineAuthStep({ locale, deviceId, onAuthenticated }: InlineAuth
   const [phone,    setPhone]    = useState("");
   const [password, setPassword] = useState("");
   // Consent checkboxes (register only). Terms is REQUIRED (gates submit);
-  // marketing defaults ON and never blocks submit.
+  // email + WhatsApp are optional and default OFF (explicit opt-in, per the
+  // Israeli Communications Act §30A — marketing needs prior explicit consent).
   const [termsAccepted, setTermsAccepted] = useState(false);
-  const [marketingConsent, setMarketingConsent] = useState(true);
+  const [marketingConsent, setMarketingConsent] = useState(false);
+  const [whatsappOptIn, setWhatsappOptIn] = useState(false);
   const [busy,     setBusy]     = useState(false);
   const [error,    setError]    = useState<string | null>(null);
   // Turns the password requirement red after a submit that was too short.
@@ -183,6 +185,7 @@ export function InlineAuthStep({ locale, deviceId, onAuthenticated }: InlineAuth
         mode,
         termsAccepted,
         marketingConsent,
+        whatsappOptIn,
       });
 
       console.log("[InlineAuthStep] journeyInlineSignup returned", {
@@ -358,7 +361,7 @@ export function InlineAuthStep({ locale, deviceId, onAuthenticated }: InlineAuth
                 </span>
               </label>
 
-              {/* Marketing — default ON, optional (never blocks submit). */}
+              {/* Email marketing — default OFF, optional (never blocks submit). */}
               <label className="flex items-start gap-2.5 text-[14px] leading-normal text-[#5a5049]">
                 <input
                   type="checkbox"
@@ -368,6 +371,18 @@ export function InlineAuthStep({ locale, deviceId, onAuthenticated }: InlineAuth
                   style={{ accentColor: "#D6409F" }}
                 />
                 <CmsText cmsKey="journeyAssessment.inlineAuth.marketingConsent" as="span" />
+              </label>
+
+              {/* WhatsApp — default OFF, optional (never blocks submit). */}
+              <label className="flex items-start gap-2.5 text-[14px] leading-normal text-[#5a5049]">
+                <input
+                  type="checkbox"
+                  checked={whatsappOptIn}
+                  onChange={(e) => setWhatsappOptIn(e.target.checked)}
+                  className="mt-0.5 h-5 w-5 shrink-0 accent-[#D6409F]"
+                  style={{ accentColor: "#D6409F" }}
+                />
+                <CmsText cmsKey="journeyAssessment.inlineAuth.whatsappConsent" as="span" />
               </label>
             </div>
           )}

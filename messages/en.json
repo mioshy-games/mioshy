@@ -1732,7 +1732,8 @@
       "termsAnd": " and ",
       "privacyLink": "privacy policy",
       "termsSuffix": " of Mioshy.",
-      "marketingConsent": "I agree to receive updates and messages from Mioshy and its experts (you can opt out anytime)."
+      "marketingConsent": "I'd be happy to receive relationship tips and content from Mioshy by email. Unsubscribe anytime, in one click.",
+      "whatsappConsent": "I'd be happy to also get short reminders on WhatsApp, no more than once a week."
     },
     "interstitial": {
       "step1": {

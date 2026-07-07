@@ -104,6 +104,8 @@ export async function journeyInlineSignup(args: {
   termsAccepted?: boolean;
   /** Marketing/dיוור opt-in — optional, recorded on profiles. */
   marketingConsent?: boolean;
+  /** WhatsApp opt-in — optional, recorded on profiles (columns from migration 120). */
+  whatsappOptIn?: boolean;
 }): Promise<JourneyInlineSignupResult> {
   const email = args.email.trim();
   const fullName = args.fullName.trim();
@@ -111,6 +113,7 @@ export async function journeyInlineSignup(args: {
   const password = args.password;
   const termsAccepted = args.termsAccepted === true;
   const marketingConsent = args.marketingConsent === true;
+  const whatsappOptIn = args.whatsappOptIn === true;
 
   if (!email || !password) {
     return { success: false, error: "Email and password are required." };
@@ -222,6 +225,11 @@ export async function journeyInlineSignup(args: {
           marketing_consent: marketingConsent,
           marketing_consent_at: marketingConsent ? nowIso : null,
           marketing_consent_source: "journey_inline",
+          // WhatsApp opt-in columns exist since migration 120. Stamp _at only
+          // when opted in; source mirrors the marketing_consent_source value.
+          whatsapp_opt_in: whatsappOptIn,
+          whatsapp_opt_in_at: whatsappOptIn ? nowIso : null,
+          whatsapp_opt_in_source: "journey_inline",
         },
         { onConflict: "id" },
       );
