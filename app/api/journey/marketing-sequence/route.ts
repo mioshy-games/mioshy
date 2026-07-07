@@ -28,7 +28,8 @@
  * Test mode (query params): onlyUserId=<uuid> scopes the whole run to one user
  * and bypasses MAILING_SEQUENCE_ENABLED (so we verify a demo while the global
  * sequence stays off); dryRun=1 computes the per-kind decision without sending
- * or logging and returns it in `plan`.
+ * or logging and returns it in `plan`; testTo=<email> (onlyUserId only) routes
+ * the live send to a controlled test inbox instead of the account's real email.
  *
  * Live 5-domain score lines in §1 + the dynamic graph image are a follow-up
  * (the send-test shows the intended layout with sample scores).
@@ -135,6 +136,11 @@ async function handle(req: Request): Promise<NextResponse<Summary>> {
   const onlyUserId = url.searchParams.get("onlyUserId")?.trim() || null;
   const dryRun =
     url.searchParams.get("dryRun") === "1" || url.searchParams.get("dryRun") === "true";
+  // Test-only recipient override (honored ONLY on a scoped onlyUserId run): route
+  // the demo's real send to a controlled test inbox instead of the account's
+  // auth.users email, so idempotency can be proven with a live send without
+  // mutating auth.users or ever mailing a real address. Ignored in the global run.
+  const testTo = onlyUserId ? url.searchParams.get("testTo")?.trim() || null : null;
 
   // Safe-merge gate: the cron ships to prod inert. Itzik flips this on AFTER
   // approving the test send, so nothing goes out before then. Scoped test runs
@@ -311,7 +317,7 @@ async function handle(req: Request): Promise<NextResponse<Summary>> {
 
       const email = buildSequenceEmail(kind, p);
       const r = await sendBrevoEmail({
-        to: [{ email: emailAddr, name: firstName ?? undefined }],
+        to: [{ email: testTo ?? emailAddr, name: firstName ?? undefined }],
         subject: email.subject,
         htmlContent: email.html,
         textContent: email.text,
