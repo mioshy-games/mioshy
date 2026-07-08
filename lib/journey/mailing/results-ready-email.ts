@@ -82,6 +82,7 @@ function genderForms(gender: ResultsReadyPersonalization["gender"]) {
   return {
     // Filler-adapted:
     curious: fillerFemale ? "סקרנית" : "סקרן", // subject parenthetical
+    wantWord: fillerFemale ? "תרצי" : "תרצה", // "ואם תרצה/תרצי תמונה מדויקת יותר"
     sendVerb: fillerFemale ? "שלחי" : "שלח", // imperative to the filler
     // Partner-adapted (opposite gender):
     partnerNoun: partnerFemale ? "בת הזוג" : "בן הזוג", // "של בת הזוג"
@@ -130,7 +131,7 @@ export function renderResultsReadyEmail(p: ResultsReadyPersonalization): {
   const subject = `${name ? `${name}, ` : ""}הניתוח שלך מוכן! (${g.curious} לדעת מה הציון של ${g.partnerNoun}? 👀)`;
 
   // ── Body copy (approved wording, dynamic slots filled) ─────────────────────
-  const intro = `הניתוח שלך מוכן והוא אצלנו! דירגת את "${focus}" כתחום שהכי חשוב לך, וממנו נתחיל.`;
+  const intro = `תוצאות האבחון הקצר שלך מוכנות! דירגת את "${focus}" כתחום שהכי חשוב לך, וממנו נתחיל. ואם ${g.wantWord} תמונה מדויקת יותר, האבחון המלא נפתח מיד עם ההצטרפות.`;
 
   const partnerHead = `👥 רגע, ומה הציון של ${g.partnerNoun}?`;
   const partnerBody = `האבחון שלך הוא רק חצי מהתמונה. כדי שתוכלו לראות איפה אתם לגמרי מסונכרנים ואיפה יש פערים, ${g.sendVerb} את האבחון עכשיו גם ${g.partnerTo} הזוג. ברגע ש${g.partnerFinish}, תוכלו להשוות בין הדירוגים שלכם ולראות:`;
