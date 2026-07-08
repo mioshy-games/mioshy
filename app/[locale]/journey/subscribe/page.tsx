@@ -44,8 +44,12 @@ export default async function JourneySubscribePage({
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
+    // `next` must be LOCALE-LESS: LoginForm returns via next-intl's locale-aware
+    // router.push(next), which prepends the locale itself. Passing "/he/journey/
+    // subscribe" here would land on "/he/he/journey/subscribe". The /auth path
+    // keeps its /${locale} (it's a real URL, not routed through next-intl here).
     redirect(
-      `/${locale}/auth?next=${encodeURIComponent(`/${locale}/journey/subscribe`)}`,
+      `/${locale}/auth?next=${encodeURIComponent(`/journey/subscribe`)}`,
     );
   }
 
