@@ -85,7 +85,7 @@ interface InlineAuthStepProps {
  * dark AuthField/AuthCard/AuthSubmitButton primitives (those stay dark for
  * /auth, RegistrationModal and the intimacy/friendship signup, so they must
  * not be restyled). All logic is unchanged: state, draft persistence, the
- * journeyInlineSignup action, both consent checkboxes, mode toggle, tracking,
+ * journeyInlineSignup action, the consent checkboxes, mode toggle, tracking,
  * and the CMS-managed copy.
  *
  * Heading + the two trust chips use message-only keys (headingLight /
@@ -100,11 +100,14 @@ export function InlineAuthStep({ locale, deviceId, onAuthenticated }: InlineAuth
   const [phone,    setPhone]    = useState("");
   const [password, setPassword] = useState("");
   // Consent checkboxes (register only). Terms is REQUIRED (gates submit);
-  // email + WhatsApp are optional and default OFF (explicit opt-in, per the
-  // Israeli Communications Act §30A — marketing needs prior explicit consent).
+  // marketing is optional and defaults OFF (explicit opt-in, per the Israeli
+  // Communications Act §30A — marketing needs prior explicit consent).
   const [termsAccepted, setTermsAccepted] = useState(false);
-  const [marketingConsent, setMarketingConsent] = useState(false);
-  const [whatsappOptIn, setWhatsappOptIn] = useState(false);
+  // 2026-07-07 (Itzik): the separate email + WhatsApp opt-ins were merged into
+  // ONE checkbox. Checking it consents to BOTH channels — the action still
+  // receives marketingConsent + whatsappOptIn as distinct fields (the merge is
+  // UI-only), so both DB columns keep being written together.
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
   const [busy,     setBusy]     = useState(false);
   const [error,    setError]    = useState<string | null>(null);
   // Turns the password requirement red after a submit that was too short.
@@ -184,8 +187,8 @@ export function InlineAuthStep({ locale, deviceId, onAuthenticated }: InlineAuth
         deviceId,
         mode,
         termsAccepted,
-        marketingConsent,
-        whatsappOptIn,
+        marketingConsent: marketingOptIn,
+        whatsappOptIn: marketingOptIn,
       });
 
       console.log("[InlineAuthStep] journeyInlineSignup returned", {
@@ -361,28 +364,18 @@ export function InlineAuthStep({ locale, deviceId, onAuthenticated }: InlineAuth
                 </span>
               </label>
 
-              {/* Email marketing — default OFF, optional (never blocks submit). */}
+              {/* Marketing (email + WhatsApp) — one merged opt-in, default OFF,
+                  optional (never blocks submit). Checking it consents to both
+                  channels; the submit handler writes both DB columns. */}
               <label className="flex items-start gap-2.5 text-[14px] leading-normal text-[#5a5049]">
                 <input
                   type="checkbox"
-                  checked={marketingConsent}
-                  onChange={(e) => setMarketingConsent(e.target.checked)}
+                  checked={marketingOptIn}
+                  onChange={(e) => setMarketingOptIn(e.target.checked)}
                   className="mt-0.5 h-5 w-5 shrink-0 accent-[#D6409F]"
                   style={{ accentColor: "#D6409F" }}
                 />
                 <CmsText cmsKey="journeyAssessment.inlineAuth.marketingConsent" as="span" />
-              </label>
-
-              {/* WhatsApp — default OFF, optional (never blocks submit). */}
-              <label className="flex items-start gap-2.5 text-[14px] leading-normal text-[#5a5049]">
-                <input
-                  type="checkbox"
-                  checked={whatsappOptIn}
-                  onChange={(e) => setWhatsappOptIn(e.target.checked)}
-                  className="mt-0.5 h-5 w-5 shrink-0 accent-[#D6409F]"
-                  style={{ accentColor: "#D6409F" }}
-                />
-                <CmsText cmsKey="journeyAssessment.inlineAuth.whatsappConsent" as="span" />
               </label>
             </div>
           )}
