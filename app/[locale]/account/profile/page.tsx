@@ -59,7 +59,7 @@ export default async function ProfileDetailsPage({
   const gate = await getProfileGate();
   if (!gate) {
     redirect(
-      `/${locale}/auth?next=${encodeURIComponent(`/${locale}/account/profile`)}`,
+      `/${locale}/auth?next=${encodeURIComponent(`/account/profile`)}`,
     );
   }
 
