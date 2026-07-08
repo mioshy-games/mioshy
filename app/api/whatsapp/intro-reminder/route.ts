@@ -28,7 +28,10 @@ import { NextResponse } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
 import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
 import { sendCampaignMessage } from "@/lib/whatsapp/campaign";
-import { introPriceExpiryReminderTemplate } from "@/lib/whatsapp/templates";
+import {
+  introPriceExpiryReminderTemplate,
+  expiryLabelFromCloseTime,
+} from "@/lib/whatsapp/templates";
 import { isReminderEligible } from "@/lib/whatsapp/rules";
 
 function authOk(req: Request): boolean {
@@ -38,22 +41,6 @@ function authOk(req: Request): boolean {
     process.env.MAILING_TEST_SECRET;
   if (!expected) return process.env.VERCEL_ENV !== "production";
   return (req.headers.get("authorization") ?? "") === `Bearer ${expected}`;
-}
-
-/** "היום/מחר בשעה HH:MM" (Asia/Jerusalem) for the expiry timestamp. */
-function expiryLabelHe(iso: string): string {
-  const tz = "Asia/Jerusalem";
-  const dayOf = (d: Date) =>
-    new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" }).format(d);
-  const expiry = new Date(iso);
-  const now = new Date();
-  const tomorrow = new Date(now.getTime() + 24 * 3600 * 1000);
-  const time = new Intl.DateTimeFormat("he-IL", { timeZone: tz, hour: "2-digit", minute: "2-digit", hour12: false }).format(expiry);
-  let when: string;
-  if (dayOf(expiry) === dayOf(now)) when = "היום";
-  else if (dayOf(expiry) === dayOf(tomorrow)) when = "מחר";
-  else when = "ביום " + new Intl.DateTimeFormat("he-IL", { timeZone: tz, weekday: "long" }).format(expiry);
-  return `${when} בשעה ${time}`;
 }
 
 async function run(req: Request) {
@@ -136,7 +123,11 @@ async function run(req: Request) {
       userId,
       template: introPriceExpiryReminderTemplate({
         name: firstName,
-        expiryLabel: expiryLabelHe(expiresAt),
+        // {{2}} — computed from the REAL promo close time (offer_expires_at),
+        // DST-aware (Asia/Jerusalem). Both the day word and the hour are
+        // derived from the instant, never hand-written. `now` defaults to the
+        // send instant inside the helper.
+        expiryLabel: expiryLabelFromCloseTime(new Date(expiresAt)),
       }),
     });
     results.push({ user_id: userId, outcome: outcome.status, reason: outcome.reason });

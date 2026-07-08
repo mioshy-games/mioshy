@@ -187,9 +187,17 @@ export async function assignJourneyOnPurchase(
           .trim()
           .split(/\s+/)[0];
         if (firstName) {
+          // {{3}} — the selected category. The fine-grained per-user pick lives
+          // in journey_user_priorities, which is only populated when the user
+          // submits their priority ranking in /journey/assessment (AFTER this
+          // purchase trigger fires), so it isn't known here yet. We send the
+          // umbrella category "זוגיות" until Itzik confirms the sourcing (which
+          // category + Hebrew label) and whether coach_welcome should move to
+          // fire post-ranking. Moot until WHATSAPP_MODE goes live (default off).
+          // TODO(itzik-approval): resolve real selected category for {{3}}.
           await sendCampaignMessage({
             userId: args.userId,
-            template: coachWelcomeTemplate({ name: firstName }),
+            template: coachWelcomeTemplate({ name: firstName, category: "זוגיות" }),
           });
         }
       } catch (err) {
