@@ -498,11 +498,15 @@ export function AnalysisSummary({
   return (
     <div className="ar-root" dir={isHe ? "rtl" : "ltr"}>
       {/* ── HERO ───────────────────────────────────────────────────── */}
-      <div className="ar-hero">
-        <a className="ar-logo" href={`/${locale}`} aria-label="Mioshy home">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/mioshy-white.svg" alt="Mioshy" width={116} height={37} />
-        </a>
+      {/* subscribe page: shorter hero, no in-hero logo (the site header/nav
+          carries the logo there) and no score graph. Background image stays. */}
+      <div className={`ar-hero${isSubscribe ? " ar-hero--sub" : ""}`}>
+        {!isSubscribe ? (
+          <a className="ar-logo" href={`/${locale}`} aria-label="Mioshy home">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/mioshy-white.svg" alt="Mioshy" width={116} height={37} />
+          </a>
+        ) : null}
         <div className="ar-hero-figure" aria-hidden />
         <div className="ar-hero-content">
           <div className="ar-eyebrow">
@@ -528,7 +532,7 @@ export function AnalysisSummary({
                   "You completed the assessment. We analysed your answers and built a personal picture showing where the relationship is strong, and where the biggest potential to improve is.",
                 )}
           </p>
-          {categoryScores ? (
+          {!isSubscribe && categoryScores ? (
             <div className="ar-bars">
               {CAT_ORDER.map((key) => {
                 const value = categoryScores[key];
@@ -1132,6 +1136,10 @@ export function AnalysisSummary({
           background-size: cover;
           background-position: left center;
           background-repeat: no-repeat;
+        }
+        /* subscribe page: shorter hero (no logo band above, no graph below). */
+        .ar-hero.ar-hero--sub {
+          padding: 28px 24px 26px;
         }
         .ar-logo {
           position: absolute;

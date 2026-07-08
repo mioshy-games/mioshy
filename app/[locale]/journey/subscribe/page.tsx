@@ -3,7 +3,6 @@ import { notFound, redirect } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getJourneySubscribePricing } from "@/lib/billing/journey-subscribe-pricing";
-import { getLatestAnalysisForUser } from "@/lib/journey/analysis-read";
 import { AnalysisSummary } from "@/components/journey/AnalysisSummary";
 import type { Locale } from "@/lib/journey/types";
 
@@ -51,14 +50,14 @@ export default async function JourneySubscribePage({
   }
 
   const pricing = await getJourneySubscribePricing(user.id);
-  // No-assessment fallback (per spec): show the user's latest scores if any,
-  // else the header renders without graphs (subscribe mode tolerates null).
-  const analysis = await getLatestAnalysisForUser(user.id).catch(() => null);
+  // The subscribe hero no longer shows the score graph (Itzik 2026-07-08), and
+  // subscribe mode hides every other score surface — so no assessment data is
+  // needed here. Pass analysis=null (no scores fetch).
 
   return (
     <AnalysisSummary
       mode="subscribe"
-      analysis={analysis}
+      analysis={null}
       locale={locale as Locale}
       journeySubscribed={pricing.journeySubscribed}
       journeyCadences={pricing.journeyCadences}
