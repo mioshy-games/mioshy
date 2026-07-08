@@ -103,11 +103,9 @@ function windowClause(p: ResultsReadyPersonalization): string {
 function links(p: ResultsReadyPersonalization, g: ReturnType<typeof genderForms>) {
   const base = p.baseUrl;
   const assessmentUrl = `${base}/he/journey/assessment?utm_source=email&utm_medium=results_ready&utm_campaign=partner_invite`;
-  // Trial CTA → the analysis-summary view (?summary=1), anchored to the pricing
-  // /plan-selection section (#ar-price in AnalysisSummary). The user already
-  // completed the assessment, so this lands them straight on subscription
-  // selection + trial checkout, not back on the questionnaire.
-  const checkoutUrl = `${base}/he/journey/assessment?summary=1&utm_source=email&utm_medium=results_ready&utm_campaign=trial#ar-price`;
+  // Trial CTA → the dedicated post-login subscribe page (plan selection + trial
+  // checkout). Not logged in → it redirects to login and back.
+  const checkoutUrl = `${base}/he/journey/subscribe?utm_source=email&utm_medium=results_ready&utm_campaign=trial`;
   const resultsUrl = `${base}/he/journey/assessment?summary=1&utm_source=email&utm_medium=results_ready&utm_campaign=view_analysis`;
 
   // mailto that opens a NEW email in the filler's client, pre-filled with a
