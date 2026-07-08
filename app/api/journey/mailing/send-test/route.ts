@@ -49,16 +49,20 @@ export async function POST(req: Request) {
   const to = typeof body?.to === "string" && body.to.includes("@") ? body.to : DEFAULT_TO;
   const base = baseUrl();
 
-  // Representative sample data (mirrors a real post-assessment user).
+  // Representative sample data (mirrors a real post-assessment user). gender +
+  // structured `scores` drive the new results_ready renderer (gender-adapted
+  // copy + score table with the "(נבחרה להתחלה)" tag on the priority row).
   const sample: SeqPersonalization = {
     firstName: "איציק",
     focusDomainHe: "תקשורת",
-    scoreLines: [
-      "תקשורת: 50 מתוך 100",
-      "אינטימיות: 62 מתוך 100",
-      "חיבור רגשי: 58 מתוך 100",
-      "חברות: 71 מתוך 100",
-      "משפחה: 64 מתוך 100",
+    scoreLines: [], // legacy field, unused by results_ready's dedicated renderer
+    gender: "male",
+    scores: [
+      { labelHe: "תקשורת", score: 50, isPriority: true },
+      { labelHe: "אינטימיות", score: 62, isPriority: false },
+      { labelHe: "חיבור רגשי", score: 58, isPriority: false },
+      { labelHe: "חברות", score: 71, isPriority: false },
+      { labelHe: "משפחה", score: 64, isPriority: false },
     ],
     windowDayHe: "יום שני",
     windowTime: "21:00",
@@ -91,6 +95,8 @@ export async function POST(req: Request) {
       htmlContent: e.html,
       textContent: e.text,
       tags: [e.tag],
+      // results_ready carries a From override ("יצחק ברלב"); others are undefined.
+      senderName: (e as { senderName?: string }).senderName,
     });
     results.push({ tag: e.tag, ok: r.ok, skipped: r.skipped, error: r.error });
   }
