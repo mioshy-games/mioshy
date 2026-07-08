@@ -145,6 +145,7 @@ async function handle(req: Request): Promise<NextResponse<Summary>> {
         htmlContent: email.html,
         textContent: email.text,
         tags: ["trial_day5"],
+        senderName: email.senderName, // From override → "מיאושי"
       });
       if (!r.ok) { errors.push(`${sub.id}:${r.error ?? "send_failed"}`); continue; }
       // Record for dedup (the query above skips users who already have this row).

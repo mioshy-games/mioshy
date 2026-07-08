@@ -183,7 +183,9 @@ export function renderResultsReadyEmail(p: ResultsReadyPersonalization): {
 
   // The one styled element: the score table.
   const tag = ' <span style="color:' + TAG + ';font-weight:bold">(נבחרה להתחלה)</span>';
-  const scoreTable = `<table role="presentation" dir="rtl" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;width:100%;max-width:420px;margin:0 0 20px;border:1px solid ${BORDER}">
+  // No scores → render nothing here (avoids an empty bordered box). The heading
+  // is gated the same way in the HTML/text below.
+  const scoreTable = p.scores.length === 0 ? "" : `<table role="presentation" dir="rtl" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;width:100%;max-width:420px;margin:0 0 20px;border:1px solid ${BORDER}">
 ${p.scores
   .map(
     (row, i) => `  <tr style="background:${i % 2 ? "#ffffff" : HEADER_BG}">
@@ -216,7 +218,7 @@ ${p.scores
             ${HEAD(partnerHead)}
             ${P(partnerBody)}
             ${bullets(partnerBullets)}
-            ${HEAD(scoresHead)}
+            ${p.scores.length ? HEAD(scoresHead) : ""}
             ${scoreTable}
             ${HEAD(miosheyHead)}
             ${miosheyBody.map((s) => P(s)).join("")}
@@ -249,11 +251,15 @@ ${p.scores
     partnerBody,
     ...partnerBullets.map((b) => `• ${b}`),
     "",
-    scoresHead,
-    ...p.scores.map(
-      (r) => `${r.labelHe}${r.isPriority ? " (נבחרה להתחלה)" : ""}: ${Math.round(r.score)} / 100`,
-    ),
-    "",
+    ...(p.scores.length
+      ? [
+          scoresHead,
+          ...p.scores.map(
+            (r) => `${r.labelHe}${r.isPriority ? " (נבחרה להתחלה)" : ""}: ${Math.round(r.score)} / 100`,
+          ),
+          "",
+        ]
+      : []),
     miosheyHead,
     ...miosheyBody,
     "",
