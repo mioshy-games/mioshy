@@ -127,7 +127,8 @@ export function renderResultsReadyEmail(p: ResultsReadyPersonalization): {
 } {
   const g = genderForms(p.gender);
   const name = (p.firstName ?? "").trim();
-  const greeting = name ? `היי ${name},` : "היי,";
+  // Name lives in the subject only; the opening greeting is name-less.
+  const greeting = "היי,";
   const focus = p.focusDomainHe ?? "התחום שהכי חשוב לך";
   const win = windowClause(p);
   const { mailto, checkoutUrl, resultsUrl } = links(p, g);
@@ -135,10 +136,15 @@ export function renderResultsReadyEmail(p: ResultsReadyPersonalization): {
   const subject = `${name ? `${name}, ` : ""}הניתוח שלך מוכן! (${g.curious} לדעת מה הציון של ${g.partnerNoun}? 👀)`;
 
   // ── Body copy (approved wording, dynamic slots filled) ─────────────────────
-  const intro = `תוצאות האבחון הקצר שלך מוכנות! דירגת את "${focus}" כתחום שהכי חשוב לך, וממנו נתחיל. ואם ${g.wantWord} תמונה מדויקת יותר, האבחון המלא נפתח מיד עם ההצטרפות.`;
+  // Opening. Only the category NAME is bold (<b>) in HTML; the plain-text
+  // fallback keeps it unstyled. Split so we can wrap just the category.
+  const introLead = `תוצאות האבחון הקצר שלך מוכנות! דירגת את "`;
+  const introTail = `" כתחום שהכי חשוב לך, וממנו נתחיל. ואם ${g.wantWord} תמונה מדויקת יותר, האבחון המלא נפתח מיד עם ההצטרפות.`;
+  const introHtml = `<p style="margin:0 0 16px;font-size:18px;line-height:1.6;color:${INK}">${esc(introLead)}<b>${esc(focus)}</b>${esc(introTail)}</p>`;
+  const introText = `${introLead}${focus}${introTail}`;
 
   const partnerHead = `👥 רגע, ומה הציון של ${g.partnerNoun}?`;
-  const partnerBody = `האבחון שלך הוא רק חצי מהתמונה. כדי שתוכלו לראות איפה אתם לגמרי מסונכרנים ואיפה יש פערים, ${g.sendVerb} את האבחון עכשיו גם ${g.partnerTo} הזוג. ברגע ש${g.partnerFinish}, תוכלו להשוות בין הדירוגים שלכם ולראות:`;
+  const partnerBody = `האבחון שלך הוא רק חצי מהתמונה. כדי שתוכלו לראות איפה אתם לגמרי מסונכרנים ואיפה יש פערים, ${g.sendVerb} את האבחון גם ${g.partnerTo} הזוג. ברגע ש${g.partnerFinish}, תוכלו להשוות בין הדירוגים שלכם ולראות:`;
   const partnerBullets = [
     "האם שניכם מרגישים אותו דבר לגבי התקשורת שלכם?",
     "איפה הציונים שלכם דומים ואיפה הם שונים?",
@@ -216,7 +222,7 @@ ${p.scores
         <tr>
           <td dir="rtl" align="right" style="text-align:right;font-family:Arial,sans-serif;color:${INK}">
             ${P(greeting)}
-            ${P(intro)}
+            ${introHtml}
             ${HEAD(partnerHead)}
             ${P(partnerBody)}
             ${bullets(partnerBullets)}
@@ -251,7 +257,7 @@ ${p.scores
   const textParts: string[] = [
     greeting,
     "",
-    intro,
+    introText,
     "",
     partnerHead,
     partnerBody,
