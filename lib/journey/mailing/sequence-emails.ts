@@ -143,7 +143,7 @@ export function buildTrialDay5Email(p: {
   trialEndDateHe: string; // "10 ביולי 2026"
   chargeAmountHe: string; // "37 ₪" — retained for caller compat; unused in copy
   baseUrl: string;
-}): { subject: string; html: string; text: string } {
+}): { subject: string; html: string; text: string; senderName: string } {
   const INK = "#000000";
   const LINK = "#1155cc";
   const esc = (s: string) =>
@@ -160,7 +160,7 @@ export function buildTrialDay5Email(p: {
 
   const paras = [
     `רצינו להזכיר שתקופת הניסיון שלכם במיאושי תסתיים בעוד יומיים (בתאריך ${date}).`,
-    "נכנסתם לתהליך הזה כי האמנתם שמגיע לזוגיות שלכם יותר. בשביל להחזיר את הניצוץ, להעמיק את האינטימיות, להצית מחדש את התשוקה ולבנות זוגיות חזקה וקרובה יותר, לא צריך מהפכות. כל מה שצריך זה להקדיש לעצמכם כמה דקות בודדות בשבוע.",
+    "נכנסתם לתהליך הזה כי האמנתם שמגיע לזוגיות שלכם יותר. בשביל להחזיר את הניצוץ ולבנות זוגיות חזקה וקרובה יותר, לא צריך מהפכות. כל מה שצריך זה להקדיש לעצמכם כמה דקות בודדות בשבוע.",
     "בעלות של פחות ממחיר של קפה ומאפה זוגי, התוכנית האישית שלכם והמומחה שלכם בצ'אט ממשיכים ללוות אתכם צעד אחר צעד.",
   ];
   const bullets = [
@@ -224,5 +224,7 @@ export function buildTrialDay5Email(p: {
     `לניהול / ביטול המנוי: ${manageUrl}`,
   ].join("\n");
 
-  return { subject, html, text };
+  // From override: trial_day5 sends as "מיאושי" (Itzik 2026-07-08). Body still
+  // signs "צוות מיאושי".
+  return { subject, html, text, senderName: "מיאושי" };
 }
