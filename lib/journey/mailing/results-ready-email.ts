@@ -148,11 +148,13 @@ export function renderResultsReadyEmail(p: ResultsReadyPersonalization): {
   const scoresHead = "📊 הצצה לציונים שלך:";
 
   const miosheyHead = "🚀 מחכים לכם במיאושי";
-  const miosheyBody = [
-    "אנחנו פה בשבילכם עם מומחי זוגיות שמלווים אתכם בצ'אט אישי, ותוכנית זוגית עם פרק חדש שמחכה לכם מדי שבוע.",
-    'וגם כל המשחקים פתוחים להנאתכם: משחקי הזוגות אונליין וגם "הסקס של מיאושי", לשניכם וללא תוספת תשלום.',
-    "אתם יכולים להתחיל עם 7 ימי ניסיון ללא חיוב (צריך להזין אשראי, אבל החיוב יתחיל רק אחרי שבוע, ותקבלו תזכורת אחרי 5 ימים, ואפשר לבטל מתי שרוצים).",
-  ];
+  const miosheyIntro =
+    "אנחנו פה בשבילכם עם מומחי זוגיות שמלווים אתכם בצ'אט אישי, ותוכנית זוגית עם פרק חדש שמחכה לכם מדי שבוע.";
+  const gamesOpen = "וגם כל המשחקים פתוחים להנאתכם, לשניכם וללא תוספת תשלום:";
+  const gamesBullets = ["הסקס של מיאושי", "משחקי זוגות אונליין"];
+  const gamesNewEachMonth = "כל חודש מתווסף משחק חדש.";
+  const miosheyTrial =
+    "אתם יכולים להתחיל עם 7 ימי ניסיון ללא חיוב (צריך להזין אשראי, אבל החיוב יתחיל רק אחרי שבוע, ותקבלו תזכורת אחרי 5 ימים, ואפשר לבטל מתי שרוצים).";
 
   const offerHead = `💰 הטבה לחברים חדשים (בתוקף עד ${win}):`;
   const offerBullets = [
@@ -221,7 +223,11 @@ ${p.scores
             ${p.scores.length ? HEAD(scoresHead) : ""}
             ${scoreTable}
             ${HEAD(miosheyHead)}
-            ${miosheyBody.map((s) => P(s)).join("")}
+            ${P(miosheyIntro)}
+            ${P(gamesOpen)}
+            ${bullets(gamesBullets)}
+            ${P(gamesNewEachMonth)}
+            ${P(miosheyTrial)}
             ${HEAD(offerHead)}
             ${bullets(offerBullets)}
             ${linkLine("לחצו כאן", mailto, ` כדי לשלוח את האבחון ${g.partnerTo} הזוג ולהשוות תוצאות`)}
@@ -261,7 +267,11 @@ ${p.scores
         ]
       : []),
     miosheyHead,
-    ...miosheyBody,
+    miosheyIntro,
+    gamesOpen,
+    ...gamesBullets.map((b) => `• ${b}`),
+    gamesNewEachMonth,
+    miosheyTrial,
     "",
     offerHead,
     ...offerBullets.map((b) => `• ${b}`),
