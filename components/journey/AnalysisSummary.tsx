@@ -83,6 +83,14 @@ interface AnalysisSummaryProps {
    *  ONLY in campaign_timer; personal_window uses the offer-window line instead,
    *  so only one urgency indicator appears. */
   promoMode?: "off" | "personal_window" | "campaign_timer";
+  /** Render mode. "full" (default) = the assessment results paywall. "subscribe"
+   *  = a lean subscribe page (reused by /journey/subscribe): keeps the hero +
+   *  score bars + the pricing/checkout block, and hides the assessment-only
+   *  sections (personal feedback, category cards, improvements, value-anchor).
+   *  In "subscribe" mode `analysis` may be null (no assessment) — the pricing
+   *  block still renders. The pricing/checkout code is identical in both modes,
+   *  so displayed==charged is unchanged. */
+  mode?: "full" | "subscribe";
 }
 
 /**
@@ -141,8 +149,10 @@ export function AnalysisSummary({
   activePromo = null,
   offerExpiresAt = null,
   promoMode = "personal_window",
+  mode = "full",
 }: AnalysisSummaryProps) {
   const isHe = locale === "he";
+  const isSubscribe = mode === "subscribe";
   const Arrow = isHe ? ArrowLeft : ArrowRight;
 
   // offerWindowLabel (Task 21 + Task 26 #2) is defined further down, after the
@@ -228,6 +238,11 @@ export function AnalysisSummary({
   const cmsCadQuarterly = useCmsText(`${RK}.cadenceQuarterly`).text;
   const cmsCadYearly = useCmsText(`${RK}.cadenceYearly`).text;
   const cmsCadWeekly = useCmsText(`${RK}.cadenceWeekly`).text;
+  // Subscribe-page hero copy (mode="subscribe"). CMS-editable via these keys;
+  // literal fallback via rc() until/unless seeded (no migration required).
+  const cmsSubEyebrow = useCmsText(`${RK}.subEyebrow`).text;
+  const cmsSubH1 = useCmsText(`${RK}.subH1`).text;
+  const cmsSubFraming = useCmsText(`${RK}.subFraming`).text;
   const rc = (raw: string, he: string, en: string) =>
     raw && raw.trim().length > 0 && !raw.startsWith(`${RK}.`)
       ? raw
@@ -247,7 +262,7 @@ export function AnalysisSummary({
     return () => clearInterval(id);
   }, [analysis, loadingLines.length]);
 
-  if (!analysis) {
+  if (!analysis && !isSubscribe) {
     return (
       <div className="ar-loading" dir={isHe ? "rtl" : "ltr"}>
         <span className="ar-spinner" aria-hidden />
@@ -293,14 +308,16 @@ export function AnalysisSummary({
   }
 
   // ── Dynamic content (AI + categories) ──────────────────────────────────
-  const aiHero = analysis.summary.ai_hero ?? null;
+  const aiHero = analysis?.summary.ai_hero ?? null;
   const heroText = aiHero ? (isHe ? aiHero.hero_he : aiHero.hero_en) : null;
   // AI failed → generic, NON-deterministic h1 (no fabricated insight).
   const h1Text =
     heroText ??
     (isHe ? "הנה תמונת המצב מהאבחון שלכם." : "Here's the picture from your assessment.");
-  const narrative = isHe ? analysis.summary.narrative_he : analysis.summary.narrative_en;
-  const categoryScores = analysis.summary.category_scores ?? null;
+  const narrative = analysis
+    ? isHe ? analysis.summary.narrative_he : analysis.summary.narrative_en
+    : null;
+  const categoryScores = analysis?.summary.category_scores ?? null;
   const insufficientKeys = categoryScores?.insufficient_keys ?? [];
 
   // ── Money path ──────────────────────────────────────────────────────────
@@ -489,15 +506,27 @@ export function AnalysisSummary({
         <div className="ar-hero-figure" aria-hidden />
         <div className="ar-hero-content">
           <div className="ar-eyebrow">
-            {rc(cmsEyebrow, "תוצאות האבחון שלכם", "Your assessment results")}
+            {isSubscribe
+              ? rc(cmsSubEyebrow, "מנוי מיאושי", "Mioshy membership")
+              : rc(cmsEyebrow, "תוצאות האבחון שלכם", "Your assessment results")}
           </div>
-          <h1 className="ar-h1 font-heading">{h1Text}</h1>
+          <h1 className="ar-h1 font-heading">
+            {isSubscribe
+              ? rc(cmsSubH1, "בחרו את המנוי שמתאים לכם", "Choose your plan")
+              : h1Text}
+          </h1>
           <p className="ar-sub">
-            {rc(
-              cmsHeroSub,
-              "השלמת את האבחון. ניתחנו את הנתונים שלך, ובנינו עבורך תמונת מצב אישית שמראה איפה הזוגיות חזקה, ואיפה נמצא הפוטנציאל הגדול ביותר לשיפור.",
-              "You completed the assessment. We analysed your answers and built a personal picture showing where the relationship is strong, and where the biggest potential to improve is.",
-            )}
+            {isSubscribe
+              ? rc(
+                  cmsSubFraming,
+                  "להצטרפות לשירות, בחרו את המנוי הנוח ביותר לכם, מנוי זוגי כלול לשניכם ללא תוספת.",
+                  "To join, choose the plan that suits you best; a couple subscription is included for both at no extra charge.",
+                )
+              : rc(
+                  cmsHeroSub,
+                  "השלמת את האבחון. ניתחנו את הנתונים שלך, ובנינו עבורך תמונת מצב אישית שמראה איפה הזוגיות חזקה, ואיפה נמצא הפוטנציאל הגדול ביותר לשיפור.",
+                  "You completed the assessment. We analysed your answers and built a personal picture showing where the relationship is strong, and where the biggest potential to improve is.",
+                )}
           </p>
           {categoryScores ? (
             <div className="ar-bars">
@@ -534,8 +563,8 @@ export function AnalysisSummary({
 
       {/* ── SHEET ──────────────────────────────────────────────────── */}
       <div className="ar-sheet">
-        {/* PERSONAL FEEDBACK */}
-        {narrative ? (
+        {/* PERSONAL FEEDBACK — assessment-only; hidden on the subscribe page. */}
+        {!isSubscribe && narrative ? (
           <section className="ar-section">
             <div className="ar-fbcard">
               <div className="ar-photo" aria-hidden />
@@ -547,8 +576,9 @@ export function AnalysisSummary({
           </section>
         ) : null}
 
-        {/* CATEGORIES */}
-        {categoryScores ? (
+        {/* CATEGORIES — assessment-only cards; hidden on the subscribe page
+            (the 5-domain graph bars in the hero above are kept). */}
+        {!isSubscribe && categoryScores ? (
           <section className="ar-section">
             <div className="ar-sublabel">
               {rc(cmsCategoriesLabel, "מה התשובות שלכם מספרות", "What your answers tell")}
@@ -610,8 +640,8 @@ export function AnalysisSummary({
         ) : null}
 
         {/* IMPROVEMENTS — static design copy (NOT the AI recommendations).
-            Pre-purchase selling section: hidden for subscribers. */}
-        {!journeySubscribed ? (
+            Pre-purchase selling section: hidden for subscribers + on subscribe page. */}
+        {!journeySubscribed && !isSubscribe ? (
           <section className="ar-section">
             <div className="ar-sublabel">
               {rc(cmsImprovementsLabel, "מה תקבלו בליווי", "What you get in the program")}
@@ -1030,8 +1060,8 @@ export function AnalysisSummary({
           </section>
         )}
 
-        {/* Value anchor — pre-purchase only. */}
-        {!journeySubscribed ? (
+        {/* Value anchor — pre-purchase only; hidden on the subscribe page. */}
+        {!journeySubscribed && !isSubscribe ? (
           <p className="ar-anchor">
             {rc(
               cmsAnchorLead,
