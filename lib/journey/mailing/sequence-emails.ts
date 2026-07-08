@@ -125,26 +125,104 @@ export function buildSequenceEmail(
 
 /**
  * §ת-1 · day-5 trial reminder (transactional — sent regardless of marketing
- * consent, it's a legal/anti-chargeback notice). Approved final copy.
+ * consent, it's a legal/anti-chargeback notice). Approved final copy (2026-07-08).
+ *
+ * Rendered with its own plain layout (same simple aesthetic as results_ready)
+ * rather than the shared renderMioshyEmail, because the approved copy needs a
+ * bulleted "מה קורה עכשיו?" block, a "צוות מיאושי" sign-off (not the shared
+ * "יצחק ממיאושי"), and the manage/cancel link placed AFTER the sign-off — none
+ * of which renderMioshyEmail supports. renderMioshyEmail and the other emails
+ * are untouched.
+ *
+ * `chargeAmountHe` and `firstName` are retained on the signature for caller
+ * (trial-reminder cron) compatibility but are intentionally unused: the approved
+ * copy omits the amount and opens with a name-less "היי," per spec.
  */
 export function buildTrialDay5Email(p: {
   firstName: string | null;
   trialEndDateHe: string; // "10 ביולי 2026"
-  chargeAmountHe: string; // "37 ₪"
+  chargeAmountHe: string; // "37 ₪" — retained for caller compat; unused in copy
   baseUrl: string;
 }): { subject: string; html: string; text: string } {
-  const g = greeting(p.firstName);
-  const { html, text } = renderMioshyEmail({
-    preheader: "הניסיון שלכם במיאושי מסתיים בעוד יומיים",
-    greeting: g,
-    paragraphs: [
-      `רצינו להזכיר: 7 ימי הניסיון שלכם מסתיימים ב-${p.trialEndDateHe}.`,
-      `אם תבחרו להישאר, לא צריך לעשות כלום. החיוב הראשון, ${p.chargeAmountHe}, יתבצע ב-${p.trialEndDateHe}. ואם זה לא הזמן שלכם, אפשר לבטל בקליק אחד מהאזור האישי, בלי שאלות.`,
-      "בינתיים מחכה לכם המומחה שלכם בצ'אט, וכל התוכנית האישית שלכם.",
-    ],
-    primaryCta: { label: "להמשיך למיאושי", url: `${p.baseUrl}/he/my` },
-    secondaryCta: { label: "לניהול המנוי או ביטול", url: `${p.baseUrl}/he/account` },
-    // Transactional — no unsubscribe link.
-  });
-  return { subject: "הניסיון שלכם במיאושי מסתיים בעוד יומיים", html, text };
+  const INK = "#000000";
+  const LINK = "#1155cc";
+  const esc = (s: string) =>
+    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const date = p.trialEndDateHe;
+
+  // Encoded (label-as-link) CTAs. Return-to-plan → /my; manage/cancel → /account
+  // (where cancellation actually lives; the spec's "/my" note would not reach the
+  // cancel action — flagged for Itzik).
+  const returnUrl = `${p.baseUrl}/he/my`;
+  const manageUrl = `${p.baseUrl}/he/account`;
+
+  const subject = "תזכורת ממיאושי - משהו קטן לגבי ההמשך שלנו יחד (ושלכם...) 🤍";
+
+  const paras = [
+    `רצינו להזכיר שתקופת הניסיון שלכם במיאושי תסתיים בעוד יומיים (בתאריך ${date}).`,
+    "נכנסתם לתהליך הזה כי האמנתם שמגיע לזוגיות שלכם יותר. בשביל להחזיר את הניצוץ, להעמיק את האינטימיות, להצית מחדש את התשוקה ולבנות זוגיות חזקה וקרובה יותר, לא צריך מהפכות. כל מה שצריך זה להקדיש לעצמכם כמה דקות בודדות בשבוע.",
+    "בעלות של פחות ממחיר של קפה ומאפה זוגי, התוכנית האישית שלכם והמומחה שלכם בצ'אט ממשיכים ללוות אתכם צעד אחר צעד.",
+  ];
+  const bullets = [
+    `אם אתם בוחרים להישאר ולהשקיע בביחד שלכם: אין צורך לעשות דבר. החיוב החודשי יתבצע אוטומטית בתאריך ${date}.`,
+    "אם זה פחות מתאים כרגע: הכל בסדר, אנחנו הכי הוגנים שיש. אפשר לבטל בקליק אחד פשוט מהאזור האישי, בלי שאלות ובלי אותיות קטנות.",
+  ];
+  const closer = "התוכנית שלכם מחכה לכם, וההשקעה הכי טובה שלכם היא אחד בשנייה.";
+
+  const P = (s: string) =>
+    `<p style="margin:0 0 16px;font-size:16px;line-height:1.6;color:${INK}">${esc(s)}</p>`;
+  const linkLine = (label: string, url: string) =>
+    `<p style="margin:0 0 12px;font-size:16px;line-height:1.7;color:${INK}"><a href="${url}" style="color:${LINK};text-decoration:underline">${esc(label)}</a></p>`;
+
+  const html = `<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body dir="rtl" style="margin:0;padding:0;background:#ffffff;font-family:Arial,sans-serif">
+<span style="display:none;max-height:0;overflow:hidden;opacity:0">${esc(`הניסיון שלכם במיאושי מסתיים בעוד יומיים (בתאריך ${date})`)}</span>
+<table dir="rtl" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#ffffff">
+  <tr>
+    <td dir="rtl" align="right" style="padding:20px 18px">
+      <table dir="rtl" role="presentation" cellpadding="0" cellspacing="0" border="0" align="right" style="width:100%;max-width:480px">
+        <tr>
+          <td dir="rtl" align="right" style="text-align:right;font-family:Arial,sans-serif;color:${INK}">
+            ${P("היי,")}
+            ${paras.map(P).join("")}
+            <p style="margin:22px 0 8px;font-size:16px;font-weight:bold;line-height:1.5;color:${INK}">מה קורה עכשיו?</p>
+            <ul style="margin:0 0 16px;padding:0 20px 0 0;list-style:disc">${bullets
+              .map(
+                (b) =>
+                  `<li style="margin:0 0 8px;font-size:16px;line-height:1.6;color:${INK}">${esc(b)}</li>`,
+              )
+              .join("")}</ul>
+            ${P(closer)}
+            ${linkLine("לחזרה לתוכנית שלכם במיאושי", returnUrl)}
+            <p style="margin:24px 0 0;font-size:16px;line-height:1.6;color:${INK}">שלכם,</p>
+            <p style="margin:0 0 16px;font-size:16px;line-height:1.6;color:${INK}">צוות מיאושי</p>
+            ${linkLine("לניהול / ביטול המנוי", manageUrl)}
+            <img src="https://mioshy.com/images/mioshy-email-logo.png" width="97" height="46" alt="מיאושי" style="display:block;border:0;outline:none;margin:8px 0 0;width:97px;height:46px">
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</body></html>`;
+
+  const text = [
+    "היי,",
+    "",
+    ...paras,
+    "",
+    "מה קורה עכשיו?",
+    ...bullets.map((b) => `• ${b}`),
+    "",
+    closer,
+    "",
+    `לחזרה לתוכנית שלכם במיאושי: ${returnUrl}`,
+    "",
+    "שלכם,",
+    "צוות מיאושי",
+    "",
+    `לניהול / ביטול המנוי: ${manageUrl}`,
+  ].join("\n");
+
+  return { subject, html, text };
 }
