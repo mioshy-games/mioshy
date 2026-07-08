@@ -158,14 +158,20 @@ export function buildTrialDay5Email(p: {
 
   const subject = "תזכורת ממיאושי - משהו קטן לגבי ההמשך שלנו יחד (ושלכם...) 🤍";
 
+  const BRAND = "#B83C4D";
   const paras = [
     `רצינו להזכיר שתקופת הניסיון שלכם במיאושי תסתיים בעוד יומיים (בתאריך ${date}).`,
-    "נכנסתם לתהליך הזה כי האמנתם שמגיע לזוגיות שלכם יותר. בשביל להחזיר את הניצוץ ולבנות זוגיות חזקה וקרובה יותר, לא צריך מהפכות. כל מה שצריך זה להקדיש לעצמכם כמה דקות בודדות בשבוע.",
-    "בעלות של פחות ממחיר של קפה ומאפה זוגי, התוכנית האישית שלכם והמומחה שלכם בצ'אט ממשיכים ללוות אתכם צעד אחר צעד.",
+    "נכנסתם לתהליך הזה כי האמנתם שמגיע לזוגיות שלכם יותר. בשביל להחזיר את הניצוץ ולבנות זוגיות חזקה יותר, לא צריך מהפכות. כל מה שצריך זה להקדיש לעצמכם כמה דקות בודדות בשבוע.",
   ];
+  // "בעלות של פחות ממחיר של קפה ומאפה זוגי, …" — the price phrase is brand-
+  // coloured (#B83C4D) in HTML; the plain-text fallback keeps it unstyled.
+  const cafeLead = "בעלות של ";
+  const cafePhrase = "פחות ממחיר של קפה ומאפה זוגי";
+  const cafeRest = ", התוכנית האישית שלכם והמומחה שלכם בצ'אט ממשיכים ללוות אתכם צעד אחר צעד.";
+  const cafeText = `${cafeLead}${cafePhrase}${cafeRest}`;
   const bullets = [
-    `אם אתם בוחרים להישאר ולהשקיע בביחד שלכם: אין צורך לעשות דבר. החיוב החודשי יתבצע אוטומטית בתאריך ${date}.`,
-    "אם זה פחות מתאים כרגע: הכל בסדר, אנחנו הכי הוגנים שיש. אפשר לבטל בקליק אחד פשוט מהאזור האישי, בלי שאלות ובלי אותיות קטנות.",
+    `אם אתם בוחרים להישאר ולהשקיע בזוגיות שלכם: אין צורך לעשות דבר. החיוב החודשי יתבצע אוטומטית בתאריך ${date}.`,
+    "אם זה פחות מתאים כרגע: הכל בסדר, אפשר לבטל בקליק אחד פשוט מהאזור האישי, בלי שאלות ובלי אותיות קטנות.",
   ];
   const closer = "התוכנית שלכם מחכה לכם, וההשקעה הכי טובה שלכם היא אחד בשנייה.";
 
@@ -185,6 +191,7 @@ export function buildTrialDay5Email(p: {
           <td dir="rtl" align="right" style="text-align:right;font-family:Arial,sans-serif;color:${INK}">
             ${P("היי,")}
             ${paras.map(P).join("")}
+            <p style="margin:0 0 16px;font-size:16px;line-height:1.6;color:${INK}">${esc(cafeLead)}<span style="color:${BRAND}">${esc(cafePhrase)}</span>${esc(cafeRest)}</p>
             <p style="margin:22px 0 8px;font-size:16px;font-weight:bold;line-height:1.5;color:${INK}">מה קורה עכשיו?</p>
             <ul style="margin:0 0 16px;padding:0 20px 0 0;list-style:disc">${bullets
               .map(
@@ -210,6 +217,7 @@ export function buildTrialDay5Email(p: {
     "היי,",
     "",
     ...paras,
+    cafeText,
     "",
     "מה קורה עכשיו?",
     ...bullets.map((b) => `• ${b}`),
