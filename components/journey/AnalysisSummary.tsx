@@ -511,20 +511,20 @@ export function AnalysisSummary({
         <div className="ar-hero-content">
           <div className="ar-eyebrow">
             {isSubscribe
-              ? rc(cmsSubEyebrow, "מנוי מיאושי", "Mioshy membership")
+              ? rc(cmsSubEyebrow, "הייעוץ הזוגי של מיאושי", "Mioshy couples coaching")
               : rc(cmsEyebrow, "תוצאות האבחון שלכם", "Your assessment results")}
           </div>
           <h1 className="ar-h1 font-heading">
             {isSubscribe
-              ? rc(cmsSubH1, "בחרו את המנוי שמתאים לכם", "Choose your plan")
+              ? rc(cmsSubH1, "מתחילים היום לפלפל את הזוגיות!", "Start spicing up your relationship today!")
               : h1Text}
           </h1>
           <p className="ar-sub">
             {isSubscribe
               ? rc(
                   cmsSubFraming,
-                  "להצטרפות לשירות, בחרו את המנוי הנוח ביותר לכם, מנוי זוגי כלול לשניכם ללא תוספת.",
-                  "To join, choose the plan that suits you best; a couple subscription is included for both at no extra charge.",
+                  "הצטרפו ותיהנו ממנוי זוגי מלא הכולל גישה חופשית גם לבני הזוג (ללא תוספת תשלום).",
+                  "Join and enjoy a full couple subscription with free access for your partner too (at no extra charge).",
                 )
               : rc(
                   cmsHeroSub,
