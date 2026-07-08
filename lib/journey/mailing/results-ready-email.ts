@@ -31,7 +31,7 @@ const HEADER_BG = "#f5f2ec";
 const TAG = "#7A1F2B";
 
 /** Display name used on the From line for this email specifically. */
-export const RESULTS_READY_SENDER_NAME = "יצחק ברלב";
+export const RESULTS_READY_SENDER_NAME = "מיאושי";
 
 export interface ResultsReadyScoreRow {
   labelHe: string;
@@ -103,7 +103,11 @@ function windowClause(p: ResultsReadyPersonalization): string {
 function links(p: ResultsReadyPersonalization, g: ReturnType<typeof genderForms>) {
   const base = p.baseUrl;
   const assessmentUrl = `${base}/he/journey/assessment?utm_source=email&utm_medium=results_ready&utm_campaign=partner_invite`;
-  const checkoutUrl = `${base}/he/journey/assessment?utm_source=email&utm_medium=results_ready&utm_campaign=trial`;
+  // Trial CTA → the analysis-summary view (?summary=1), anchored to the pricing
+  // /plan-selection section (#ar-price in AnalysisSummary). The user already
+  // completed the assessment, so this lands them straight on subscription
+  // selection + trial checkout, not back on the questionnaire.
+  const checkoutUrl = `${base}/he/journey/assessment?summary=1&utm_source=email&utm_medium=results_ready&utm_campaign=trial#ar-price`;
   const resultsUrl = `${base}/he/journey/assessment?summary=1&utm_source=email&utm_medium=results_ready&utm_campaign=view_analysis`;
 
   // mailto that opens a NEW email in the filler's client, pre-filled with a
@@ -155,6 +159,9 @@ export function renderResultsReadyEmail(p: ResultsReadyPersonalization): {
     `מסלול זוגי ללא ליווי: רק ${PROMO_NO_COACHING} ₪ לחודש הראשון לשניכם (במקום ${REG_NO_COACHING} ₪)`,
     `מסלול זוגי עם מומחה צמוד: רק ${PROMO_COACHING} ₪ לחודש הראשון לשניכם (במקום ${REG_COACHING} ₪)`,
   ];
+  // Framing for the trial CTA → the subscription-selection view.
+  const subscribeFraming =
+    "להצטרפות לשירות, בחרו את המנוי הנוח ביותר לכם, מנוי זוגי כלול לשניכם ללא תוספת.";
 
   // ── HTML helpers ───────────────────────────────────────────────────────────
   const P = (s: string, extra = "") =>
@@ -216,6 +223,7 @@ ${p.scores
             ${HEAD(offerHead)}
             ${bullets(offerBullets)}
             ${linkLine("לחצו כאן", mailto, ` כדי לשלוח את האבחון ${g.partnerTo} הזוג ולהשוות תוצאות`)}
+            ${P(subscribeFraming)}
             ${linkLine("לחצו כאן", checkoutUrl, " כדי להתחיל את 7 ימי הניסיון שלכם")}
             ${linkLine("לצפייה בניתוח המלא שלך", resultsUrl, "")}
             <p style="margin:24px 0 0;font-size:16px;line-height:1.6;color:${INK}">שלך,</p>
@@ -253,6 +261,8 @@ ${p.scores
     ...offerBullets.map((b) => `• ${b}`),
     "",
     `לשליחת האבחון ${g.partnerTo} הזוג ולהשוואת תוצאות: ${mailto}`,
+    "",
+    subscribeFraming,
     `להתחלת 7 ימי הניסיון: ${checkoutUrl}`,
     `לצפייה בניתוח המלא שלך: ${resultsUrl}`,
     "",
