@@ -167,19 +167,19 @@ export function renderResultsReadyEmail(p: ResultsReadyPersonalization): {
 
   // ── HTML helpers ───────────────────────────────────────────────────────────
   const P = (s: string, extra = "") =>
-    `<p style="margin:0 0 16px;font-size:16px;line-height:1.6;color:${INK};${extra}">${esc(s)}</p>`;
+    `<p style="margin:0 0 16px;font-size:18px;line-height:1.6;color:${INK};${extra}">${esc(s)}</p>`;
   const HEAD = (s: string) =>
-    `<p style="margin:22px 0 8px;font-size:16px;font-weight:bold;line-height:1.5;color:${INK}">${esc(s)}</p>`;
+    `<p style="margin:22px 0 8px;font-size:18px;font-weight:bold;line-height:1.5;color:${INK}">${esc(s)}</p>`;
   const bullets = (items: string[]) =>
     `<ul style="margin:0 0 16px;padding:0 20px 0 0;list-style:disc">${items
       .map(
         (b) =>
-          `<li style="margin:0 0 6px;font-size:16px;line-height:1.6;color:${INK}">${esc(b)}</li>`,
+          `<li style="margin:0 0 6px;font-size:18px;line-height:1.6;color:${INK}">${esc(b)}</li>`,
       )
       .join("")}</ul>`;
   /** A "לחצו כאן"-style line: the anchor text is the link, plain text follows. */
   const linkLine = (linkText: string, url: string, trailing: string) =>
-    `<p style="margin:0 0 12px;font-size:16px;line-height:1.7;color:${INK}"><a href="${url}" style="color:${LINK};text-decoration:underline">${esc(
+    `<p style="margin:0 0 12px;font-size:18px;line-height:1.7;color:${INK}"><a href="${url}" style="color:${LINK};text-decoration:underline">${esc(
       linkText,
     )}</a>${trailing ? esc(trailing) : ""}</p>`;
 
@@ -191,10 +191,10 @@ export function renderResultsReadyEmail(p: ResultsReadyPersonalization): {
 ${p.scores
   .map(
     (row, i) => `  <tr style="background:${i % 2 ? "#ffffff" : HEADER_BG}">
-    <td dir="rtl" align="right" style="padding:10px 14px;font-size:16px;color:${INK};border-bottom:1px solid ${BORDER}">${esc(
+    <td dir="rtl" align="right" style="padding:10px 14px;font-size:17px;color:${INK};border-bottom:1px solid ${BORDER}">${esc(
       row.labelHe,
     )}${row.isPriority ? tag : ""}</td>
-    <td dir="ltr" align="left" style="padding:10px 14px;font-size:16px;font-weight:bold;color:${INK};border-bottom:1px solid ${BORDER};white-space:nowrap">${Math.round(
+    <td dir="ltr" align="left" style="padding:10px 14px;font-size:17px;font-weight:bold;color:${INK};border-bottom:1px solid ${BORDER};white-space:nowrap">${Math.round(
       row.score,
     )} / 100</td>
   </tr>`,
@@ -234,9 +234,9 @@ ${p.scores
             ${P(subscribeFraming)}
             ${linkLine("לחצו כאן", checkoutUrl, " כדי להתחיל את 7 ימי הניסיון שלכם")}
             ${linkLine("לצפייה בניתוח המלא שלך", resultsUrl, "")}
-            <p style="margin:24px 0 0;font-size:16px;line-height:1.6;color:${INK}">שלך,</p>
-            <p style="margin:0;font-size:16px;line-height:1.6;color:${INK}">יצחק ברלב</p>
-            <p style="margin:0;font-size:16px;line-height:1.6;color:${INK}">מיאושי בשבילך!</p>
+            <p style="margin:24px 0 0;font-size:18px;line-height:1.6;color:${INK}">שלך,</p>
+            <p style="margin:0;font-size:18px;line-height:1.6;color:${INK}">יצחק ברלב</p>
+            <p style="margin:0;font-size:18px;line-height:1.6;color:${INK}">מיאושי בשבילך!</p>
             <img src="https://mioshy.com/images/mioshy-email-logo.png" width="97" height="46" alt="מיאושי" style="display:block;border:0;outline:none;margin:12px 0 0;width:97px;height:46px">
             ${unsub}
           </td>
