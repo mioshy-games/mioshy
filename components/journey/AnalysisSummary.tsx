@@ -1137,9 +1137,15 @@ export function AnalysisSummary({
           background-position: left center;
           background-repeat: no-repeat;
         }
-        /* subscribe page: shorter hero (no logo band above, no graph below). */
+        /* subscribe page: shorter hero (no logo band above, no graph below).
+           min-height keeps enough of the background image visible; content is
+           vertically centered within it. */
         .ar-hero.ar-hero--sub {
+          min-height: 300px;
           padding: 28px 24px 26px;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
         }
         .ar-logo {
           position: absolute;
