@@ -132,7 +132,7 @@ export default async function PlayExperienceGamePage({
   if (!ctx) {
     redirect(
       `/${locale}/auth?next=${encodeURIComponent(
-        `/${locale}/mioshy-sex/${slug}/play`,
+        `/mioshy-sex/${slug}/play`,
       )}`,
     );
   }
