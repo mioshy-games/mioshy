@@ -47,11 +47,15 @@ import { sendBrevoEmail } from "@/lib/email/brevo";
 import { hasActiveSubscription } from "@/lib/subscriptions";
 import { getViewerPriorityOrder } from "@/lib/dashboard/priority-routing";
 import { getPriorityLabels } from "@/lib/journey-content/priority-categories";
+import { getLatestAnalysisForUser } from "@/lib/journey/analysis-read";
+import type { CategoryScores } from "@/lib/journey/types";
+import type { PriorityKey } from "@/lib/journey/priorities";
 import {
   buildSequenceEmail,
   type SequenceEmailKind,
   type SeqPersonalization,
 } from "@/lib/journey/mailing/sequence-emails";
+import type { ResultsReadyScoreRow } from "@/lib/journey/mailing/results-ready-email";
 
 const DAY = 24 * 60 * 60 * 1000;
 const HOUR = 60 * 60 * 1000;
@@ -141,6 +145,17 @@ async function handle(req: Request): Promise<NextResponse<Summary>> {
   // auth.users email, so idempotency can be proven with a live send without
   // mutating auth.users or ever mailing a real address. Ignored in the global run.
   const testTo = onlyUserId ? url.searchParams.get("testTo")?.trim() || null : null;
+  // Immediate + repeatable test trigger (scoped runs ONLY). `force=1` bypasses
+  // the due-time/expiry wait AND the marketing_email_log idempotency claim, so
+  // Itzik can fire results_ready on demand without waiting 30 min and can re-run
+  // it. It does NOT touch Gate-1 (consent) or Gate-2 (purchase) — those still
+  // block. `kind=results_ready` limits the run to a single email.
+  const force =
+    onlyUserId &&
+    (url.searchParams.get("force") === "1" || url.searchParams.get("force") === "true");
+  const onlyKind = onlyUserId
+    ? ((url.searchParams.get("kind")?.trim() as SequenceEmailKind | null) || null)
+    : null;
 
   // Safe-merge gate: the cron ships to prod inert. Itzik flips this on AFTER
   // approving the test send, so nothing goes out before then. Scoped test runs
@@ -217,9 +232,14 @@ async function handle(req: Request): Promise<NextResponse<Summary>> {
     // email; email lives on auth.users, see Gate 1b).
     const { data: profile } = await admin
       .from("profiles")
-      .select("full_name, marketing_consent")
+      .select("full_name, marketing_consent, gender")
       .eq("id", userId)
-      .maybeSingle<{ full_name: string | null; marketing_consent: boolean | null }>();
+      .maybeSingle<{
+        full_name: string | null;
+        marketing_consent: boolean | null;
+        gender: "male" | "female" | "other" | null;
+      }>();
+    // Gate 1 — consent (§30A). NEVER bypass: no marketing send without it.
     if (!profile || profile.marketing_consent !== true) {
       if (onlyUserId) plan.push({ user_id: userId, decision: "skip_no_consent" });
       continue;
@@ -247,8 +267,11 @@ async function handle(req: Request): Promise<NextResponse<Summary>> {
     }
 
     // Due-time per email.
+    // results_ready fires 30 min after short-assessment completion (t0), not at
+    // t0 itself (spec docs/results-ready-email-spec.md §טריגר). The other three
+    // keep their existing schedule.
     const due: Record<SequenceEmailKind, Date> = {
-      results_ready: t0,
+      results_ready: new Date(t0.getTime() + 30 * 60 * 1000),
       evening_proof: nextClock(t0, 20),
       deadline: new Date(offerExpiresAt.getTime() - 12 * HOUR),
       day7_value_tip: toSunThu(nextClock(new Date(t0.getTime() + 7 * DAY), 10)),
@@ -263,19 +286,39 @@ async function handle(req: Request): Promise<NextResponse<Summary>> {
     };
 
     const firstName = (profile.full_name ?? "").trim().split(/\s+/)[0] || null;
+
+    // Priority (#1-ranked) domain + the five domain scores. The scores live in
+    // journey_analysis.summary.category_scores (0..100), keyed by the same five
+    // PriorityKeys — NOT assessment_results (that's the standalone-assessment
+    // product; journey completers don't write it). See spec note.
+    let topKey: PriorityKey | null = null;
     let focusDomainHe: string | null = null;
     try {
       const order = await getViewerPriorityOrder(userId);
-      const top = order?.[0] ?? null;
-      if (top && labels) focusDomainHe = labels.labelsHe[top] ?? null;
+      topKey = order?.[0] ?? null;
+      if (topKey && labels) focusDomainHe = labels.labelsHe[topKey] ?? null;
     } catch { /* focus stays null → generic copy */ }
+
+    let scores: ResultsReadyScoreRow[] = [];
+    try {
+      const analysis = await getLatestAnalysisForUser(userId);
+      const cs = analysis?.summary?.category_scores as CategoryScores | undefined;
+      if (cs && labels) {
+        // Canonical order, priority row flagged for the "(נבחרה להתחלה)" tag.
+        scores = labels.canonicalOrder.map((key) => ({
+          labelHe: labels.labelsHe[key] ?? key,
+          score: Number(cs[key as keyof CategoryScores] ?? 0),
+          isPriority: key === topKey,
+        }));
+      }
+    } catch { /* scores stay [] → results_ready renders without the table */ }
 
     const p: SeqPersonalization = {
       firstName,
       focusDomainHe,
-      // Live 5-domain score lines are a follow-up (see docblock); the email
-      // renders correctly without the score box.
-      scoreLines: [],
+      scoreLines: [], // legacy field, unused by results_ready's dedicated renderer
+      gender: profile.gender ?? null,
+      scores,
       windowDayHe: heDay(offerExpiresAt),
       windowTime: hhmm(offerExpiresAt),
       exercise: null,
@@ -284,16 +327,19 @@ async function handle(req: Request): Promise<NextResponse<Summary>> {
     };
 
     for (const kind of Object.keys(due) as SequenceEmailKind[]) {
+      if (onlyKind && kind !== onlyKind) continue; // scoped single-kind test
       if (!dryRun && sent >= EMAIL_CAP_PER_RUN) break;
-      const isExpired = !!expired[kind];
-      const notDue = now.getTime() < due[kind].getTime();
+      // force (scoped test) fires immediately regardless of schedule/expiry.
+      const isExpired = force ? false : !!expired[kind];
+      const notDue = force ? false : now.getTime() < due[kind].getTime();
 
       if (dryRun) {
         // Report the decision without touching Brevo or the log. Reflect the
-        // idempotency check too (already-sent rows).
+        // idempotency check too (already-sent rows) — force ignores it.
         let decision: string;
         if (isExpired) decision = "skip_expired";
         else if (notDue) decision = "skip_not_due";
+        else if (force) decision = "would_send";
         else {
           const { data: existing } = await admin
             .from("marketing_email_log")
@@ -309,11 +355,14 @@ async function handle(req: Request): Promise<NextResponse<Summary>> {
 
       if (isExpired || notDue) continue;
 
-      // Idempotency: claim the (user, kind) slot BEFORE sending.
-      const { error: logErr } = await admin
-        .from("marketing_email_log")
-        .insert({ user_id: userId, email_kind: kind });
-      if (logErr) continue; // unique-violation = already sent, or a real error → skip
+      // Idempotency: claim the (user, kind) slot BEFORE sending. Skipped under
+      // force so the scoped test is repeatable and never pollutes the real log.
+      if (!force) {
+        const { error: logErr } = await admin
+          .from("marketing_email_log")
+          .insert({ user_id: userId, email_kind: kind });
+        if (logErr) continue; // unique-violation = already sent, or a real error → skip
+      }
 
       const email = buildSequenceEmail(kind, p);
       const r = await sendBrevoEmail({
@@ -322,10 +371,13 @@ async function handle(req: Request): Promise<NextResponse<Summary>> {
         htmlContent: email.html,
         textContent: email.text,
         tags: [`seq_${kind}`],
+        // results_ready overrides the From display name ("יצחק ברלב"); the other
+        // kinds return undefined here and keep the BREVO_SENDER_NAME default.
+        senderName: email.senderName,
       });
       if (r.ok) {
         sent++;
-        if (r.messageId) {
+        if (!force && r.messageId) {
           await admin
             .from("marketing_email_log")
             .update({ brevo_message_id: r.messageId })

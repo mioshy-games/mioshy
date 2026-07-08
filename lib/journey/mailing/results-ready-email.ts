@@ -1,0 +1,267 @@
+import "server-only";
+
+/**
+ * results_ready — the FIRST post-assessment marketing email (Track A).
+ * Dedicated renderer, separate from the shared renderMioshyEmail() used by the
+ * other four sequence emails, because this one has a distinct spec
+ * (docs/results-ready-email-spec.md, approved 2026-07-06):
+ *
+ *   • Plain personal letter: white background, no gradient header, NO buttons.
+ *     The ONLY styled element is the five-domain score table.
+ *   • Links are the text "לחצו כאן" (never a raw URL), inline in their line.
+ *   • Three links: (1) a mailto that opens the filler's mail client with a
+ *     ready, partner-gender-adapted body inviting the partner to take the
+ *     assessment; (2) the 7-day-trial checkout; (3) the full analysis page.
+ *   • Gender-adapted throughout (filler + partner, hetero assumption).
+ *   • Signs off "יצחק ברלב / מיאושי בשבילך!"; From = "יצחק ברלב".
+ *
+ * The COPY is the approved wording, verbatim; dynamic slots (name, priority
+ * domain + "(נבחרה להתחלה)" tag, five scores, gender forms, offer window,
+ * three links) are filled here. Any copy change goes back to Itzik.
+ *
+ * Gate-1 (marketing consent) and Gate-2 (no active subscription) live in the
+ * caller (the marketing-sequence cron); this file only renders.
+ */
+
+const INK = "#000000";
+const LINK = "#1155cc";
+const MUTED = "#888888";
+const BORDER = "#dddddd";
+const HEADER_BG = "#f5f2ec";
+const TAG = "#7A1F2B";
+
+/** Display name used on the From line for this email specifically. */
+export const RESULTS_READY_SENDER_NAME = "יצחק ברלב";
+
+export interface ResultsReadyScoreRow {
+  labelHe: string;
+  /** 0..100. */
+  score: number;
+  /** True for the domain the user ranked #1 (gets the "(נבחרה להתחלה)" tag). */
+  isPriority: boolean;
+}
+
+export interface ResultsReadyPersonalization {
+  /** First name, or null → a name-less greeting. */
+  firstName: string | null;
+  /** Filler's gender. null/"other" → default to the male (unmarked) forms. */
+  gender: "male" | "female" | "other" | null;
+  /** The #1-ranked priority domain in Hebrew (e.g. "תקשורת"), or null. */
+  focusDomainHe: string | null;
+  /** The five domain scores, canonical order, priority row flagged. */
+  scores: ResultsReadyScoreRow[];
+  /** Offer-window expiry, split for the copy. */
+  windowDayHe: string | null; // "יום שני"
+  windowTime: string | null; // "21:00"
+  /** Absolute site origin, e.g. "https://mioshy.com". */
+  baseUrl: string;
+  /** Marketing unsubscribe URL. */
+  unsubscribeUrl?: string;
+}
+
+// Intro prices (match the live personal-window promo; wire to live per-user
+// pricing when the sequence resolves amounts — same TODO the other emails carry).
+const PROMO_NO_COACHING = 37;
+const REG_NO_COACHING = 67;
+const PROMO_COACHING = 89;
+const REG_COACHING = 189;
+
+function esc(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+/**
+ * Gender forms. Hetero assumption: the partner is the opposite gender of the
+ * filler. Unknown/"other" filler → the male (grammatically unmarked) forms;
+ * safe because the live audience is consent-gated (blocked today) and the test
+ * flow sets gender explicitly.
+ */
+function genderForms(gender: ResultsReadyPersonalization["gender"]) {
+  const fillerFemale = gender === "female";
+  const partnerFemale = !fillerFemale; // opposite of the filler
+  return {
+    // Filler-adapted:
+    curious: fillerFemale ? "סקרנית" : "סקרן", // subject parenthetical
+    sendVerb: fillerFemale ? "שלחי" : "שלח", // imperative to the filler
+    // Partner-adapted (opposite gender):
+    partnerNoun: partnerFemale ? "בת הזוג" : "בן הזוג", // "של בת הזוג"
+    partnerTo: partnerFemale ? "לבת" : "לבן", // "לבת הזוג"
+    partnerFinish: partnerFemale ? "היא תסיים" : "הוא יסיים",
+    comeVerb: partnerFemale ? "בואי" : "בוא", // mailto (partner reads it)
+    youWord: partnerFemale ? "את" : "אתה", // mailto
+  };
+}
+
+function windowClause(p: ResultsReadyPersonalization): string {
+  if (p.windowDayHe && p.windowTime) return `${p.windowDayHe} בשעה ${p.windowTime}`;
+  if (p.windowTime) return `היום בשעה ${p.windowTime}`;
+  return "בקרוב";
+}
+
+/** The three links, as absolute/mailto URLs (tracked where it's a page). */
+function links(p: ResultsReadyPersonalization, g: ReturnType<typeof genderForms>) {
+  const base = p.baseUrl;
+  const assessmentUrl = `${base}/he/journey/assessment?utm_source=email&utm_medium=results_ready&utm_campaign=partner_invite`;
+  const checkoutUrl = `${base}/he/journey/assessment?utm_source=email&utm_medium=results_ready&utm_campaign=trial`;
+  const resultsUrl = `${base}/he/journey/assessment?summary=1&utm_source=email&utm_medium=results_ready&utm_campaign=view_analysis`;
+
+  // mailto that opens a NEW email in the filler's client, pre-filled with a
+  // partner-gender-adapted body that ends with the assessment link.
+  const mailSubject = `אבחון זוגי קצר, ${g.comeVerb} נשווה`;
+  const mailBody = `היי, עשיתי אבחון זוגי קצר במיאושי וזה יצא מעניין. ${g.comeVerb} נעשה אותו גם ${g.youWord} ונשווה תוצאות: ${assessmentUrl}`;
+  const mailto = `mailto:?subject=${encodeURIComponent(mailSubject)}&body=${encodeURIComponent(mailBody)}`;
+
+  return { mailto, checkoutUrl, resultsUrl };
+}
+
+export function renderResultsReadyEmail(p: ResultsReadyPersonalization): {
+  subject: string;
+  html: string;
+  text: string;
+  senderName: string;
+} {
+  const g = genderForms(p.gender);
+  const name = (p.firstName ?? "").trim();
+  const greeting = name ? `היי ${name},` : "היי,";
+  const focus = p.focusDomainHe ?? "התחום שהכי חשוב לך";
+  const win = windowClause(p);
+  const { mailto, checkoutUrl, resultsUrl } = links(p, g);
+
+  const subject = `${name ? `${name}, ` : ""}הניתוח שלך מוכן! (${g.curious} לדעת מה הציון של ${g.partnerNoun}? 👀)`;
+
+  // ── Body copy (approved wording, dynamic slots filled) ─────────────────────
+  const intro = `הניתוח שלך מוכן והוא אצלנו! דירגת את "${focus}" כתחום שהכי חשוב לך, וממנו נתחיל.`;
+
+  const partnerHead = `👥 רגע, ומה הציון של ${g.partnerNoun}?`;
+  const partnerBody = `האבחון שלך הוא רק חצי מהתמונה. כדי שתוכלו לראות איפה אתם לגמרי מסונכרנים ואיפה יש פערים, ${g.sendVerb} את האבחון עכשיו גם ${g.partnerTo} הזוג. ברגע ש${g.partnerFinish}, תוכלו להשוות בין הדירוגים שלכם ולראות:`;
+  const partnerBullets = [
+    "האם שניכם מרגישים אותו דבר לגבי התקשורת שלכם?",
+    "איפה הציונים שלכם דומים ואיפה הם שונים?",
+    "מהן נקודות החוזק האמיתיות שלכם כזוג?",
+  ];
+
+  const scoresHead = "📊 הצצה לציונים שלך:";
+
+  const miosheyHead = "🚀 מחכים לכם במיאושי";
+  const miosheyBody = [
+    "אנחנו פה בשבילכם עם מומחי זוגיות שמלווים אתכם בצ'אט אישי, ותוכנית זוגית עם פרק חדש שמחכה לכם מדי שבוע.",
+    'וגם כל המשחקים פתוחים להנאתכם: משחקי הזוגות אונליין וגם "הסקס של מיאושי", לשניכם וללא תוספת תשלום.',
+    "אתם יכולים להתחיל עם 7 ימי ניסיון ללא חיוב (צריך להזין אשראי, אבל החיוב יתחיל רק אחרי שבוע, ותקבלו תזכורת אחרי 5 ימים, ואפשר לבטל מתי שרוצים).",
+  ];
+
+  const offerHead = `💰 הטבה לחברים חדשים (בתוקף עד ${win}):`;
+  const offerBullets = [
+    `מסלול זוגי ללא ליווי: רק ${PROMO_NO_COACHING} ₪ לחודש הראשון לשניכם (במקום ${REG_NO_COACHING} ₪)`,
+    `מסלול זוגי עם מומחה צמוד: רק ${PROMO_COACHING} ₪ לחודש הראשון לשניכם (במקום ${REG_COACHING} ₪)`,
+  ];
+
+  // ── HTML helpers ───────────────────────────────────────────────────────────
+  const P = (s: string, extra = "") =>
+    `<p style="margin:0 0 16px;font-size:16px;line-height:1.6;color:${INK};${extra}">${esc(s)}</p>`;
+  const HEAD = (s: string) =>
+    `<p style="margin:22px 0 8px;font-size:16px;font-weight:bold;line-height:1.5;color:${INK}">${esc(s)}</p>`;
+  const bullets = (items: string[]) =>
+    `<ul style="margin:0 0 16px;padding:0 20px 0 0;list-style:disc">${items
+      .map(
+        (b) =>
+          `<li style="margin:0 0 6px;font-size:16px;line-height:1.6;color:${INK}">${esc(b)}</li>`,
+      )
+      .join("")}</ul>`;
+  /** A "לחצו כאן"-style line: the anchor text is the link, plain text follows. */
+  const linkLine = (linkText: string, url: string, trailing: string) =>
+    `<p style="margin:0 0 12px;font-size:16px;line-height:1.7;color:${INK}"><a href="${url}" style="color:${LINK};text-decoration:underline">${esc(
+      linkText,
+    )}</a>${trailing ? esc(trailing) : ""}</p>`;
+
+  // The one styled element: the score table.
+  const tag = ' <span style="color:' + TAG + ';font-weight:bold">(נבחרה להתחלה)</span>';
+  const scoreTable = `<table role="presentation" dir="rtl" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;width:100%;max-width:420px;margin:0 0 20px;border:1px solid ${BORDER}">
+${p.scores
+  .map(
+    (row, i) => `  <tr style="background:${i % 2 ? "#ffffff" : HEADER_BG}">
+    <td dir="rtl" align="right" style="padding:10px 14px;font-size:16px;color:${INK};border-bottom:1px solid ${BORDER}">${esc(
+      row.labelHe,
+    )}${row.isPriority ? tag : ""}</td>
+    <td dir="ltr" align="left" style="padding:10px 14px;font-size:16px;font-weight:bold;color:${INK};border-bottom:1px solid ${BORDER};white-space:nowrap">${Math.round(
+      row.score,
+    )} / 100</td>
+  </tr>`,
+  )
+  .join("\n")}
+</table>`;
+
+  const unsub = p.unsubscribeUrl
+    ? `<p style="margin:20px 0 0;font-size:12px;line-height:1.5;color:${MUTED}">לא רוצה לקבל מאיתנו מיילים יותר? אפשר להסיר מכאן: <a href="${p.unsubscribeUrl}" style="color:${MUTED};text-decoration:underline">להסרה מרשימת הדיוור</a></p>`
+    : "";
+
+  const html = `<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body dir="rtl" style="margin:0;padding:0;background:#ffffff;font-family:Arial,sans-serif">
+<span style="display:none;max-height:0;overflow:hidden;opacity:0">${esc(`${name || "היי"}, הניתוח הזוגי שלך מוכן`)}</span>
+<table dir="rtl" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#ffffff">
+  <tr>
+    <td dir="rtl" align="right" style="padding:20px 18px">
+      <table dir="rtl" role="presentation" cellpadding="0" cellspacing="0" border="0" align="right" style="width:100%;max-width:480px">
+        <tr>
+          <td dir="rtl" align="right" style="text-align:right;font-family:Arial,sans-serif;color:${INK}">
+            ${P(greeting)}
+            ${P(intro)}
+            ${HEAD(partnerHead)}
+            ${P(partnerBody)}
+            ${bullets(partnerBullets)}
+            ${HEAD(scoresHead)}
+            ${scoreTable}
+            ${HEAD(miosheyHead)}
+            ${miosheyBody.map((s) => P(s)).join("")}
+            ${HEAD(offerHead)}
+            ${bullets(offerBullets)}
+            ${linkLine("לחצו כאן", mailto, ` כדי לשלוח את האבחון ${g.partnerTo} הזוג ולהשוות תוצאות`)}
+            ${linkLine("לחצו כאן", checkoutUrl, " כדי להתחיל את 7 ימי הניסיון שלכם")}
+            ${linkLine("לצפייה בניתוח המלא שלך", resultsUrl, "")}
+            <p style="margin:24px 0 0;font-size:16px;line-height:1.6;color:${INK}">שלך,</p>
+            <p style="margin:0;font-size:16px;line-height:1.6;color:${INK}">יצחק ברלב</p>
+            <p style="margin:0;font-size:16px;line-height:1.6;color:${INK}">מיאושי בשבילך!</p>
+            <img src="https://mioshy.com/images/mioshy-email-logo.png" width="97" height="46" alt="מיאושי" style="display:block;border:0;outline:none;margin:12px 0 0;width:97px;height:46px">
+            ${unsub}
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</body></html>`;
+
+  // ── Plain-text fallback ────────────────────────────────────────────────────
+  const textParts: string[] = [
+    greeting,
+    "",
+    intro,
+    "",
+    partnerHead,
+    partnerBody,
+    ...partnerBullets.map((b) => `• ${b}`),
+    "",
+    scoresHead,
+    ...p.scores.map(
+      (r) => `${r.labelHe}${r.isPriority ? " (נבחרה להתחלה)" : ""}: ${Math.round(r.score)} / 100`,
+    ),
+    "",
+    miosheyHead,
+    ...miosheyBody,
+    "",
+    offerHead,
+    ...offerBullets.map((b) => `• ${b}`),
+    "",
+    `לשליחת האבחון ${g.partnerTo} הזוג ולהשוואת תוצאות: ${mailto}`,
+    `להתחלת 7 ימי הניסיון: ${checkoutUrl}`,
+    `לצפייה בניתוח המלא שלך: ${resultsUrl}`,
+    "",
+    "שלך,",
+    "יצחק ברלב",
+    "מיאושי בשבילך!",
+  ];
+  if (p.unsubscribeUrl) {
+    textParts.push("", `לא רוצה לקבל מאיתנו מיילים יותר? אפשר להסיר מכאן: ${p.unsubscribeUrl}`);
+  }
+
+  return { subject, html, text: textParts.join("\n"), senderName: RESULTS_READY_SENDER_NAME };
+}

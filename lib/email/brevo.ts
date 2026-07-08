@@ -30,6 +30,11 @@ export interface BrevoPayload {
   tags?: string[];
   params?: Record<string, unknown>;
   replyTo?: BrevoRecipient;
+  /** Per-send "from" display-name override. Defaults to BREVO_SENDER_NAME
+   *  ("יצחק ממיאושי"). Only results_ready uses this today ("יצחק ברלב"); every
+   *  other caller omits it and keeps the default. The from ADDRESS is never
+   *  overridden (deliverability/SPF stays on the verified sender). */
+  senderName?: string;
 }
 
 export interface BrevoSendResult {
@@ -58,7 +63,11 @@ export async function sendBrevoEmail(
   // BREVO_API_KEY is already in xkeysib- form (e.g., on Vercel).
   const apiKey = getBrevoApiKeyOrNull();
   const senderEmail = envOrNull("BREVO_SENDER_EMAIL");
-  const senderName = envOrNull("BREVO_SENDER_NAME") ?? "יצחק ממיאושי";
+  // Per-send override wins over the env default; the from ADDRESS never changes.
+  const senderName =
+    (payload.senderName && payload.senderName.trim()) ||
+    envOrNull("BREVO_SENDER_NAME") ||
+    "יצחק ממיאושי";
   // The "from" is a no-reply address, so a bare reply bounces. Default a
   // reply-to (support@mioshy.com) unless the caller set one explicitly
   // (e.g. couple invitations route replies to the inviter).

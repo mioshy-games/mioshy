@@ -1,5 +1,9 @@
 import "server-only";
 import { renderMioshyEmail } from "@/lib/email/mioshy-template";
+import {
+  renderResultsReadyEmail,
+  type ResultsReadyScoreRow,
+} from "@/lib/journey/mailing/results-ready-email";
 
 /**
  * Post-assessment marketing sequence — the four window/nurture emails
@@ -25,6 +29,12 @@ export interface SeqPersonalization {
   focusDomainHe: string | null;
   /** Five-domain score lines, pre-formatted (e.g. "תקשורת: 50 מתוך 100"). */
   scoreLines: string[];
+  /** results_ready ONLY — filler gender for the gender-adapted copy. */
+  gender?: "male" | "female" | "other" | null;
+  /** results_ready ONLY — the five domain scores for the styled table, in
+   *  canonical order with the #1-ranked domain flagged. The other four emails
+   *  ignore this. */
+  scores?: ResultsReadyScoreRow[];
   /** Offer-window expiry, split for the copy. */
   windowDayHe: string | null; // "יום שני"
   windowTime: string | null; // "21:00"
@@ -35,13 +45,6 @@ export interface SeqPersonalization {
   /** Marketing unsubscribe URL. */
   unsubscribeUrl?: string;
 }
-
-// Intro prices for §1 (matches the live personal-window promo; wire to live
-// pricing when the sequence resolves per-user amounts).
-const PROMO_NO_COACHING = 37;
-const REG_NO_COACHING = 67;
-const PROMO_COACHING = 89;
-const REG_COACHING = 189;
 
 function greeting(firstName: string | null): string {
   return firstName && firstName.trim() ? `היי ${firstName.trim()},` : "היי,";
@@ -56,31 +59,26 @@ function windowClause(p: SeqPersonalization): string {
 export function buildSequenceEmail(
   kind: SequenceEmailKind,
   p: SeqPersonalization,
-): { subject: string; html: string; text: string } {
+): { subject: string; html: string; text: string; senderName?: string } {
   const g = greeting(p.firstName);
   const join = { label: "להצטרפות עם 7 ימים חינם", url: `${p.baseUrl}/he/journey/assessment` };
-  const viewAnalysis = { label: "לצפייה בניתוח המלא", url: `${p.baseUrl}/he/journey/assessment?summary=1` };
   const focus = p.focusDomainHe ?? "התחום המרכזי שלכם";
   const win = windowClause(p);
 
   if (kind === "results_ready") {
-    // One letter: analysis summary + the five domain scores + the join offer.
-    // Primary CTA = join (the money action); secondary = view the full analysis.
-    const { html, text } = renderMioshyEmail({
-      preheader: "הניתוח הזוגי שלכם מוכן",
-      greeting: g,
-      paragraphs: [
-        `הניתוח שלכם מוכן. באבחון עלה ש${focus} הוא המקום עם הפוטנציאל הגדול ביותר לשינוי אצלכם.`,
-        "במיאושי מחכים לכם מומחי זוגיות זמינים בצ'אט אישי, ותוכנית זוגית עם פרק חדש כל שבוע, שהופכת את הזוגיות שלכם לאינטימית ואוהבת יותר.",
-        "מתחילים עם 7 ימי ניסיון בלי חיוב. נדרש כרטיס אשראי, והחיוב הראשון רק אחרי 7 הימים.",
-        `מחיר ההיכרות לחודש הראשון שמור לכם: ${PROMO_NO_COACHING} ₪ במקום ${REG_NO_COACHING} ₪ בלי ליווי, או ${PROMO_COACHING} ₪ במקום ${REG_COACHING} ₪ עם מומחה צמוד. ההטבה בתוקף עד ${win}.`,
-      ],
-      scoreLines: p.scoreLines.length ? p.scoreLines : undefined,
-      primaryCta: join,
-      secondaryCta: viewAnalysis,
+    // Dedicated renderer (docs/results-ready-email-spec.md): plain personal
+    // letter, styled score table, three "לחצו כאן" links, gender-adapted copy,
+    // From "יצחק ברלב". Distinct from the shared renderMioshyEmail used below.
+    return renderResultsReadyEmail({
+      firstName: p.firstName,
+      gender: p.gender ?? null,
+      focusDomainHe: p.focusDomainHe,
+      scores: p.scores ?? [],
+      windowDayHe: p.windowDayHe,
+      windowTime: p.windowTime,
+      baseUrl: p.baseUrl,
       unsubscribeUrl: p.unsubscribeUrl,
     });
-    return { subject: "הניתוח הזוגי שלכם מוכן", html, text };
   }
 
   if (kind === "evening_proof") {
