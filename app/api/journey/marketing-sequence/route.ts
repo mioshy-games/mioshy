@@ -61,6 +61,7 @@ import {
 } from "@/lib/journey/mailing/sequence-emails";
 import type { ResultsReadyScoreRow } from "@/lib/journey/mailing/results-ready-email";
 import { emailSeriesTags } from "@/lib/journey/mailing/email-series";
+import { ACTIVE_SEQUENCE_EMAIL_KEYS } from "@/lib/journey/mailing/sequence-flows";
 
 const DAY = 24 * 60 * 60 * 1000;
 const HOUR = 60 * 60 * 1000;
@@ -68,13 +69,12 @@ const EMAIL_CAP_PER_RUN = 150;
 
 // LIVE kill-switch: only these sequence kinds are sent by the GLOBAL (cron) run.
 // The other three (founder_story / coaching_explainer / day7_value_tip) MUST
-// NOT go out when MAILING_SEQUENCE_ENABLED is flipped on — so they are omitted
-// here. founder_story + coaching_explainer have approved copy but stay inert
-// until the full sequence is signed off. Scoped admin tests (?onlyUserId=…)
-// bypass this to preview any kind. Add a kind here once approved to take it live.
-const ACTIVE_SEQUENCE_KINDS: ReadonlySet<SequenceEmailKind> = new Set([
-  "results_ready",
-]);
+// NOT go out when MAILING_SEQUENCE_ENABLED is flipped on — so they are omitted.
+// founder_story + coaching_explainer have approved copy but stay inert until the
+// full sequence is signed off. Scoped admin tests (?onlyUserId=…) bypass this to
+// preview any kind. The set lives in sequence-flows.ts (single source shared with
+// the admin dashboard); add a kind there once approved to take it live.
+const ACTIVE_SEQUENCE_KINDS = ACTIVE_SEQUENCE_EMAIL_KEYS;
 
 function authOk(req: Request): boolean {
   const expected =
