@@ -24,6 +24,7 @@ import { NextResponse } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
 import { sendBrevoEmail } from "@/lib/email/brevo";
 import { buildTrialDay5Email } from "@/lib/journey/mailing/sequence-emails";
+import { emailSeriesTags } from "@/lib/journey/mailing/email-series";
 
 function baseUrl(): string {
   return (
@@ -144,7 +145,7 @@ async function handle(req: Request): Promise<NextResponse<Summary>> {
         subject: email.subject,
         htmlContent: email.html,
         textContent: email.text,
-        tags: ["trial_day5"],
+        tags: ["trial_day5", ...emailSeriesTags("trial_day5")],
         senderName: email.senderName, // From override → "מיאושי"
       });
       if (!r.ok) { errors.push(`${sub.id}:${r.error ?? "send_failed"}`); continue; }

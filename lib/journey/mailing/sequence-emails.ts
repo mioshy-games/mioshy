@@ -3,6 +3,7 @@ import { renderMioshyEmail } from "@/lib/email/mioshy-template";
 import {
   renderResultsReadyEmail,
   type ResultsReadyScoreRow,
+  type JourneyEmailPricing,
 } from "@/lib/journey/mailing/results-ready-email";
 
 /**
@@ -35,6 +36,10 @@ export interface SeqPersonalization {
    *  canonical order with the #1-ranked domain flagged. The other four emails
    *  ignore this. */
   scores?: ResultsReadyScoreRow[];
+  /** Live couple pricing for the results_ready offer bullets (dynamic, = the
+   *  Cardcom charge). The other four kinds ignore it, but it's required so a
+   *  results_ready build can never fall back to stale hardcoded prices. */
+  pricing: JourneyEmailPricing;
   /** Offer-window expiry, split for the copy. */
   windowDayHe: string | null; // "יום שני"
   windowTime: string | null; // "21:00"
@@ -74,6 +79,7 @@ export function buildSequenceEmail(
       gender: p.gender ?? null,
       focusDomainHe: p.focusDomainHe,
       scores: p.scores ?? [],
+      pricing: p.pricing,
       windowDayHe: p.windowDayHe,
       windowTime: p.windowTime,
       baseUrl: p.baseUrl,
