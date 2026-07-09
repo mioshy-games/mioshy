@@ -56,6 +56,14 @@
     {
       "path": "/api/whatsapp/intro-reminder",
       "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/whatsapp/coach-welcome",
+      "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/whatsapp/coach-welcome",
+      "schedule": "0 8 * * *"
     }
   ]
 }
