@@ -84,7 +84,7 @@ export async function POST(req: Request) {
   const allEmails = [
     { tag: "test-results_ready", key: "results_ready", ...buildSequenceEmail("results_ready", sample) },
     { tag: "test-founder_story", key: "founder_story", ...buildSequenceEmail("founder_story", sample) },
-    { tag: "test-deadline", key: "deadline", ...buildSequenceEmail("deadline", sample) },
+    { tag: "test-coaching_explainer", key: "coaching_explainer", ...buildSequenceEmail("coaching_explainer", sample) },
     { tag: "test-day7_value_tip", key: "day7_value_tip", ...buildSequenceEmail("day7_value_tip", sample) },
     {
       tag: "test-trial_day5",
