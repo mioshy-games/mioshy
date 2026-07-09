@@ -60,18 +60,16 @@ export function renderFounderStoryEmail(p: FounderStoryPersonalization): {
     "אני יצחק, בן 48, נשוי 19 שנה ואבא. כמו אצל הרבה זוגות, אצלנו זה התחיל בלי דרמה: הילדים קטנים, החיים זזו מהר, ויום אחד הבטנו זה בזה וכבר לא זיהינו את עצמנו. ניסינו ייעוץ זוגי, דיברנו ובכינו, וזה לא עזר.",
     "אז החלטתי משהו אחר: אם אף אחד לא הולך להציל את הזוגיות שלנו, אני אעשה את זה בעצמי. קראתי מאות ספרים בשלוש שפות, למדתי ייעוץ זוגי בארץ, והוספתי השתלמויות בארצות הברית: NLP, תרפיה זוגית וטנטרה. וגיליתי שהסיפור שלנו לא יוצא דופן. זוגות נופלים שוב ושוב לאותן מלכודות, אבל יש דרכים אחרות לצאת מהן, קלות וחמות יותר, ולעשות את זה ביחד.",
     "החזרנו את התשוקה ואת המבטים החמים. ומשם הבנתי שאני לא יכול לשמור את זה לעצמי. ככה נולדה מיאושי, בית שייתן לכם בדיוק מה שעזר לנו, בלי הדרך הארוכה שאני עברתי.",
-    'אל תחיו "ליד". תכתבו מחדש את הסיפור שלכם. אתם יכולים להתחיל עכשיו עם 7 ימי התנסות ללא חיוב.',
+    'אל תחיו "ליד". תכתבו מחדש את הסיפור שלכם.',
   ];
-  const ctaTrailing = " כדי להתחיל את 7 ימי ההתנסות שלכם";
+  // Single trial mention, on the CTA line: leading text + "לחצו כאן" + trailing.
+  const ctaLead = "אתם יכולים להתחיל עם 7 ימי התנסות ללא חיוב. ";
+  const ctaTrail = " כדי להתחיל.";
   const signoff = ["באהבה,", "יצחק ברלב", "מייסד מיאושי ומוביל צוות המומחים"];
 
   // ── HTML helpers (mirror results_ready: 18px plain letter) ─────────────────
   const P = (s: string) =>
     `<p style="margin:0 0 16px;font-size:18px;line-height:1.6;color:${INK}">${esc(s)}</p>`;
-  const linkLine = (linkText: string, url: string, trailing: string) =>
-    `<p style="margin:0 0 12px;font-size:18px;line-height:1.7;color:${INK}"><a href="${url}" style="color:${LINK};text-decoration:underline">${esc(
-      linkText,
-    )}</a>${trailing ? esc(trailing) : ""}</p>`;
   const signLine = (s: string) =>
     `<p style="margin:0;font-size:18px;line-height:1.6;color:${INK}">${esc(s)}</p>`;
 
@@ -81,7 +79,6 @@ export function renderFounderStoryEmail(p: FounderStoryPersonalization): {
 
   const html = `<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body dir="rtl" style="margin:0;padding:0;background:#ffffff;font-family:Arial,sans-serif">
-<span style="display:none;max-height:0;overflow:hidden;opacity:0">${esc("הסיפור שמאחורי מיאושי, וזה התחיל אצלי בבית")}</span>
 <table dir="rtl" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#ffffff">
   <tr>
     <td dir="rtl" align="right" style="padding:20px 18px">
@@ -90,7 +87,7 @@ export function renderFounderStoryEmail(p: FounderStoryPersonalization): {
           <td dir="rtl" align="right" style="text-align:right;font-family:Arial,sans-serif;color:${INK}">
             ${P(greeting)}
             ${paras.map(P).join("\n            ")}
-            ${linkLine("לחצו כאן", checkoutUrl, ctaTrailing)}
+            <p style="margin:0 0 12px;font-size:18px;line-height:1.7;color:${INK}">${esc(ctaLead)}<a href="${checkoutUrl}" style="color:${LINK};text-decoration:underline">לחצו כאן</a>${esc(ctaTrail)}</p>
             <p style="margin:24px 0 0;font-size:18px;line-height:1.6;color:${INK}">${esc(signoff[0])}</p>
             ${signLine(signoff[1])}
             ${signLine(signoff[2])}
@@ -110,7 +107,7 @@ export function renderFounderStoryEmail(p: FounderStoryPersonalization): {
     "",
     ...paras,
     "",
-    `להתחלת 7 ימי ההתנסות שלכם: ${checkoutUrl}`,
+    `אתם יכולים להתחיל עם 7 ימי התנסות ללא חיוב. לחצו כאן כדי להתחיל: ${checkoutUrl}`,
     "",
     ...signoff,
   ];
