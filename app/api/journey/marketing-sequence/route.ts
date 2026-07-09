@@ -61,6 +61,15 @@ const DAY = 24 * 60 * 60 * 1000;
 const HOUR = 60 * 60 * 1000;
 const EMAIL_CAP_PER_RUN = 150;
 
+// LIVE kill-switch: only these sequence kinds are sent by the GLOBAL (cron) run.
+// The other three (evening_proof / deadline / day7_value_tip) are copy-unapproved
+// and MUST NOT go out when MAILING_SEQUENCE_ENABLED is flipped on — so they are
+// omitted here. Scoped admin tests (?onlyUserId=…) bypass this to preview any
+// kind. Add a kind here once its wording is approved to take it live.
+const ACTIVE_SEQUENCE_KINDS: ReadonlySet<SequenceEmailKind> = new Set([
+  "results_ready",
+]);
+
 function authOk(req: Request): boolean {
   const expected =
     process.env.JOURNEY_REMINDERS_CRON_SECRET ||
@@ -328,6 +337,10 @@ async function handle(req: Request): Promise<NextResponse<Summary>> {
 
     for (const kind of Object.keys(due) as SequenceEmailKind[]) {
       if (onlyKind && kind !== onlyKind) continue; // scoped single-kind test
+      // LIVE gate: the global (cron) run only sends approved kinds; the other
+      // three stay off even when the sequence is enabled. Scoped admin tests
+      // (onlyUserId) bypass so any kind can still be previewed on demand.
+      if (!onlyUserId && !ACTIVE_SEQUENCE_KINDS.has(kind)) continue;
       if (!dryRun && sent >= EMAIL_CAP_PER_RUN) break;
       // force (scoped test) fires immediately regardless of schedule/expiry.
       const isExpired = force ? false : !!expired[kind];
