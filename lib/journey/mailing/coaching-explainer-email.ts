@@ -56,11 +56,15 @@ export function renderCoachingExplainerEmail(p: CoachingExplainerPersonalization
   const subject = "מומחה לייעוץ זוגי צמוד ומעקב אמיתי אחרי הזוגיות שלכם";
 
   // ── Body copy (approved wording, verbatim) ─────────────────────────────────
-  const intro = [
-    "אולי אתם שואלים את עצמכם איך נראה הליווי שלנו בפועל. אז בואו נספר לכם.",
-    '"ייעוץ זוגי עם מיאושי" הוא לא עוד סדרת עצות, זה ליווי אישי לאורך מסלול מובנה שנבנה בשיטה של יצחק ברלב, מייסד מיאושי.',
-    "המסלול נוגע בחמישה תחומי ליבה בזוגיות:",
-  ];
+  // Paragraph 2 carries a link on "יצחק ברלב" → the founder page. Split so only
+  // the name is the anchor; the rest stays plain.
+  const founderUrl = `${p.baseUrl}/he/about/founder`;
+  const introOpening = "אולי אתם שואלים את עצמכם איך נראה הליווי שלנו בפועל. אז בואו נספר לכם.";
+  const methodBefore =
+    '"ייעוץ זוגי עם מיאושי" הוא לא עוד סדרת עצות, זה ליווי אישי לאורך מסלול מובנה שנבנה בשיטה של ';
+  const founderAnchor = "יצחק ברלב";
+  const methodAfter = ", מייסד מיאושי.";
+  const introDomains = "המסלול נוגע בחמישה תחומי ליבה בזוגיות:";
   // Five core domains — emoji-led lines, label in bold, in the approved order.
   const domainBullets = [
     { emoji: "🔥", label: "אינטימיות", text: "להחזיר את התשוקה והמגע." },
@@ -106,7 +110,9 @@ export function renderCoachingExplainerEmail(p: CoachingExplainerPersonalization
         <tr>
           <td dir="rtl" align="right" style="text-align:right;font-family:Arial,sans-serif;color:${INK}">
             ${P(greeting)}
-            ${intro.map(P).join("\n            ")}
+            ${P(introOpening)}
+            <p style="margin:0 0 16px;font-size:18px;line-height:1.6;color:${INK}">${esc(methodBefore)}<a href="${founderUrl}" style="color:${LINK};text-decoration:underline">${esc(founderAnchor)}</a>${esc(methodAfter)}</p>
+            ${P(introDomains)}
             ${emojiList(domainBullets)}
             ${body.map(P).join("\n            ")}
             <p style="margin:0 0 12px;font-size:18px;line-height:1.7;color:${INK}">${esc(ctaLead)}<a href="${checkoutUrl}" style="color:${LINK};text-decoration:underline">${esc(ctaLink)}</a></p>
@@ -127,7 +133,9 @@ export function renderCoachingExplainerEmail(p: CoachingExplainerPersonalization
   const textParts: string[] = [
     greeting,
     "",
-    ...intro,
+    introOpening,
+    `${methodBefore}${founderAnchor}${methodAfter}`,
+    introDomains,
     ...domainBullets.map((b) => `${b.emoji} ${b.label}: ${b.text}`),
     "",
     ...body,
