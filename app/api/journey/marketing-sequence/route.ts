@@ -8,10 +8,10 @@
  *
  * Timing is anchored on t0 = journeys.offer_expires_at − 48h (offer_expires_at
  * is stamped exactly at short completion, so it is a reliable t0):
- *   • results_ready  — at t0 (immediate; the hourly run catches it).
- *   • evening_proof  — the first 20:00 at/after t0.
- *   • deadline       — offer_expires_at − 12h (only while the window is open).
- *   • day7_value_tip — t0 + 7d at 10:00 (Sun–Thu only; Fri/Sat → next Sunday).
+ *   • results_ready     — at t0 (immediate; the hourly run catches it).
+ *   • founder_story     — 48h after results_ready (email #2, replaced evening_proof).
+ *   • coaching_explainer — 3d after founder_story (email #3, replaced deadline).
+ *   • day7_value_tip    — t0 + 7d at 10:00 (Sun–Thu only; Fri/Sat → next Sunday).
  *
  * Gates:
  *   • profiles.marketing_consent = true (email is read from auth.users — profiles
@@ -20,8 +20,10 @@
  *   • Launch cutoff MAILING_SEQUENCE_ACTIVATION_TS: only assessments completed
  *     at/after it (t0 ≥ activation) — so enabling never fans out to the backlog.
  *     Unset → block everyone.
- *   • results_ready/evening_proof/deadline all expire once the offer window has
- *     closed (now > offer_expires_at) — no obsolete email to a lapsed window.
+ *   • results_ready expires once the offer window has closed
+ *     (now > offer_expires_at) — no obsolete email to a lapsed window.
+ *     founder_story/coaching_explainer are NOT window-gated (their CTA is the
+ *     always-valid trial).
  *   • An active/trialing JOURNEY subscription stops the sequence (product-scoped:
  *     a games/adults-only buyer without journey keeps getting this series).
  *   • Idempotent via marketing_email_log (insert-first, unique (user, kind)).
@@ -65,10 +67,11 @@ const HOUR = 60 * 60 * 1000;
 const EMAIL_CAP_PER_RUN = 150;
 
 // LIVE kill-switch: only these sequence kinds are sent by the GLOBAL (cron) run.
-// The other three (evening_proof / deadline / day7_value_tip) are copy-unapproved
-// and MUST NOT go out when MAILING_SEQUENCE_ENABLED is flipped on — so they are
-// omitted here. Scoped admin tests (?onlyUserId=…) bypass this to preview any
-// kind. Add a kind here once its wording is approved to take it live.
+// The other three (founder_story / coaching_explainer / day7_value_tip) MUST
+// NOT go out when MAILING_SEQUENCE_ENABLED is flipped on — so they are omitted
+// here. founder_story + coaching_explainer have approved copy but stay inert
+// until the full sequence is signed off. Scoped admin tests (?onlyUserId=…)
+// bypass this to preview any kind. Add a kind here once approved to take it live.
 const ACTIVE_SEQUENCE_KINDS: ReadonlySet<SequenceEmailKind> = new Set([
   "results_ready",
 ]);
@@ -286,17 +289,19 @@ async function handle(req: Request): Promise<NextResponse<Summary>> {
     // keep their existing schedule.
     const due: Record<SequenceEmailKind, Date> = {
       results_ready: new Date(t0.getTime() + 30 * 60 * 1000),
-      evening_proof: nextClock(t0, 20),
-      deadline: new Date(offerExpiresAt.getTime() - 12 * HOUR),
+      // founder_story (email #2, replaces evening_proof): 48h after results_ready.
+      founder_story: new Date(t0.getTime() + 30 * 60 * 1000 + 48 * HOUR),
+      // coaching_explainer (email #3, replaces deadline): 3 days after founder_story.
+      coaching_explainer: new Date(t0.getTime() + 30 * 60 * 1000 + 48 * HOUR + 72 * HOUR),
       day7_value_tip: toSunThu(nextClock(new Date(t0.getTime() + 7 * DAY), 10)),
     };
     // Upper bounds so a stale row never fires an obsolete email once the offer
-    // window has closed (results_ready included — see edge rule).
+    // window has closed (results_ready included — see edge rule). founder_story
+    // and coaching_explainer are intentionally NOT window-gated: they fire after
+    // the window closes and their CTA is the always-valid trial, not the promo.
     const windowClosed = now.getTime() > offerExpiresAt.getTime();
     const expired: Partial<Record<SequenceEmailKind, boolean>> = {
       results_ready: windowClosed,
-      evening_proof: windowClosed,
-      deadline: windowClosed,
     };
 
     const firstName = (profile.full_name ?? "").trim().split(/\s+/)[0] || null;

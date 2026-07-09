@@ -48,6 +48,8 @@ export async function POST(req: Request) {
   }
   const body = await req.json().catch(() => ({}));
   const to = typeof body?.to === "string" && body.to.includes("@") ? body.to : DEFAULT_TO;
+  // Optional: scope the preview to one email_key (e.g. "founder_story").
+  const only = typeof body?.only === "string" && body.only.trim() ? body.only.trim() : null;
   const base = baseUrl();
 
   // Representative sample data (mirrors a real post-assessment user). gender +
@@ -79,10 +81,10 @@ export async function POST(req: Request) {
     unsubscribeUrl: `${base}/he/account`,
   };
 
-  const emails = [
+  const allEmails = [
     { tag: "test-results_ready", key: "results_ready", ...buildSequenceEmail("results_ready", sample) },
-    { tag: "test-evening_proof", key: "evening_proof", ...buildSequenceEmail("evening_proof", sample) },
-    { tag: "test-deadline", key: "deadline", ...buildSequenceEmail("deadline", sample) },
+    { tag: "test-founder_story", key: "founder_story", ...buildSequenceEmail("founder_story", sample) },
+    { tag: "test-coaching_explainer", key: "coaching_explainer", ...buildSequenceEmail("coaching_explainer", sample) },
     { tag: "test-day7_value_tip", key: "day7_value_tip", ...buildSequenceEmail("day7_value_tip", sample) },
     {
       tag: "test-trial_day5",
@@ -95,6 +97,7 @@ export async function POST(req: Request) {
       }),
     },
   ];
+  const emails = only ? allEmails.filter((e) => e.key === only) : allEmails;
 
   const results: Array<{ tag: string; ok: boolean; skipped?: boolean; error?: string }> = [];
   for (const e of emails) {

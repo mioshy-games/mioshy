@@ -5,6 +5,8 @@ import {
   type ResultsReadyScoreRow,
   type JourneyEmailPricing,
 } from "@/lib/journey/mailing/results-ready-email";
+import { renderFounderStoryEmail } from "@/lib/journey/mailing/founder-story-email";
+import { renderCoachingExplainerEmail } from "@/lib/journey/mailing/coaching-explainer-email";
 
 /**
  * Post-assessment marketing sequence — the four window/nurture emails
@@ -19,8 +21,8 @@ import {
 
 export type SequenceEmailKind =
   | "results_ready"
-  | "evening_proof"
-  | "deadline"
+  | "founder_story" // email #2 — replaces the old evening_proof slot (2026-07-09)
+  | "coaching_explainer" // email #3 — replaces the old deadline slot (2026-07-09)
   | "day7_value_tip";
 
 export interface SeqPersonalization {
@@ -55,20 +57,12 @@ function greeting(firstName: string | null): string {
   return firstName && firstName.trim() ? `היי ${firstName.trim()},` : "היי,";
 }
 
-function windowClause(p: SeqPersonalization): string {
-  if (p.windowDayHe && p.windowTime) return `${p.windowDayHe} בשעה ${p.windowTime}`;
-  if (p.windowTime) return `היום בשעה ${p.windowTime}`;
-  return "בקרוב";
-}
-
 export function buildSequenceEmail(
   kind: SequenceEmailKind,
   p: SeqPersonalization,
 ): { subject: string; html: string; text: string; senderName?: string } {
   const g = greeting(p.firstName);
-  const join = { label: "להצטרפות עם 7 ימים חינם", url: `${p.baseUrl}/he/journey/assessment` };
   const focus = p.focusDomainHe ?? "התחום המרכזי שלכם";
-  const win = windowClause(p);
 
   if (kind === "results_ready") {
     // Dedicated renderer (docs/results-ready-email-spec.md): plain personal
@@ -87,31 +81,25 @@ export function buildSequenceEmail(
     });
   }
 
-  if (kind === "evening_proof") {
-    const { html, text } = renderMioshyEmail({
-      preheader: "איך תדעו שזה באמת עובד?",
-      greeting: g,
-      paragraphs: [
-        "דבר אחד מבדיל ליווי אמיתי מעוד עצות טובות: מדידה. במיאושי נערך מעקב כל 8 שבועות יחד עם המומחה שלכם: רואים כמה התקדמתם בכל תחום, ומדייקים את הצעדים הבאים.",
-        `כך התשוקה והאינטימיות לא נשארות משאלה, הן נבנות שבוע אחרי שבוע, עם ליווי צמוד. מתחילים עם 7 ימי ניסיון בלי חיוב, ומחיר ההיכרות עדיין שמור לכם, עד ${win}.`,
-      ],
-      primaryCta: join,
+  if (kind === "founder_story") {
+    // Dedicated plain-letter renderer (like results_ready). Verbatim founder
+    // story, From "מיאושי". Ignores scores/pricing/window — a personal letter.
+    return renderFounderStoryEmail({
+      firstName: p.firstName,
+      baseUrl: p.baseUrl,
       unsubscribeUrl: p.unsubscribeUrl,
     });
-    return { subject: "איך תדעו שזה באמת עובד?", html, text };
   }
 
-  if (kind === "deadline") {
-    const { html, text } = renderMioshyEmail({
-      preheader: `ההצעה שלכם בתוקף עד ${win}`,
-      greeting: g,
-      paragraphs: [
-        `תזכורת אחרונה וקצרה: מחיר ההיכרות ששמרנו לכם לחודש הראשון עדיין בתוקף, עד ${win}. אחרי זה המחיר חוזר לרגיל.`,
-      ],
-      primaryCta: { label: "ממשיכים למיאושי", url: `${p.baseUrl}/he/journey/assessment` },
+  if (kind === "coaching_explainer") {
+    // Dedicated plain-letter renderer (like results_ready / founder_story).
+    // Verbatim coaching explainer, From "מיאושי". A personal letter — ignores
+    // scores/pricing/window.
+    return renderCoachingExplainerEmail({
+      firstName: p.firstName,
+      baseUrl: p.baseUrl,
       unsubscribeUrl: p.unsubscribeUrl,
     });
-    return { subject: `ההצעה שלכם בתוקף עד ${win}`, html, text };
   }
 
   // day7_value_tip
