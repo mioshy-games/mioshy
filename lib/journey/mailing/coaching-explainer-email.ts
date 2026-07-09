@@ -56,21 +56,26 @@ export function renderCoachingExplainerEmail(p: CoachingExplainerPersonalization
   const subject = "מומחה לייעוץ זוגי צמוד ומעקב אמיתי אחרי הזוגיות שלכם";
 
   // ── Body copy (approved wording, verbatim) ─────────────────────────────────
-  const intro = [
-    '"ייעוץ זוגי עם מיאושי" הוא לא עוד סדרת עצות, זה ליווי אישי לאורך מסלול מובנה שנבנה בשיטה של יצחק ברלב, מייסד מיאושי.',
-    "המסלול נוגע בחמישה תחומי ליבה בזוגיות:",
-  ];
-  // Five core domains — emoji-led lines, in the approved order.
+  // Paragraph 2 carries a link on "יצחק ברלב" → the founder page. Split so only
+  // the name is the anchor; the rest stays plain.
+  const founderUrl = `${p.baseUrl}/he/about/founder`;
+  const introOpening = "אולי אתם שואלים את עצמכם איך נראה הליווי שלנו בפועל. אז בואו נספר לכם.";
+  const methodBefore =
+    '"ייעוץ זוגי עם מיאושי" הוא לא עוד סדרת עצות, זה ליווי אישי לאורך מסלול מובנה שנבנה בשיטה של ';
+  const founderAnchor = "יצחק ברלב";
+  const methodAfter = ", מייסד מיאושי.";
+  const introDomains = "המסלול נוגע בחמישה תחומי ליבה בזוגיות:";
+  // Five core domains — emoji-led lines, label in bold, in the approved order.
   const domainBullets = [
-    "🔥 אינטימיות: להחזיר את התשוקה והמגע.",
-    "❤️ חיבור רגשי: להרגיש שוב קרובים ומובנים.",
-    "💬 תקשורת: לדבר ולהקשיב באמת, גם ברגעים הקשים.",
-    "🤝 חברות: להיות הזוג שגם הכי חברים.",
-    "👨‍👩‍👧 משפחה: לנהל את הבית כצוות אחד.",
+    { emoji: "🔥", label: "אינטימיות", text: "להחזיר את התשוקה והמגע." },
+    { emoji: "❤️", label: "חיבור רגשי", text: "להרגיש שוב קרובים." },
+    { emoji: "💬", label: "תקשורת", text: "לדעת איך לנהל שיחה גם ברגעים קשים." },
+    { emoji: "🤝", label: "חברות", text: "לגלות את החבר הכי טוב שלכם בבן/בת הזוג." },
+    { emoji: "👨‍👩‍👧", label: "משפחה", text: "לחזק את התא המשפחתי שלכם ואת המקום שלכם בתוכו." },
   ];
   const body = [
-    "בכל תחום מחכות לכם משימות אישיות ובקשות מהמומחה שמלווה אתכם. לא תיאוריה, אלא צעדים קטנים שעושים באמת.",
-    "והכי חשוב, המומחה איתכם לאורך הדרך: יש לכם גישה אליו בצ׳אט, הוא לומד אתכם ומדייק את התוכן שתקבלו שיהיה מכוון בדיוק עבורכם. אחת לשמונה שבועות עושים בדיקה מחדש, כדי לראות שחור על גבי לבן כמה הזוגיות שלכם השתפרה ואיפה חשוב לכם לשים את הדגש.",
+    "בכל תחום מחכות לכם משימות אישיות ובקשות שאתם משתפים. אתם חוזרים אל המומחה עם החוויות וההתלבטויות שעולות מהתוכן שנפתח בפניכם, והוא שם בשבילכם.",
+    "והכי חשוב, המומחה לומד אתכם ומדייק את התוכן שתקבלו שיהיה מכוון בדיוק עבורכם. אחת לשמונה שבועות עושים בדיקה מחודשת, כדי לראות כמה הזוגיות שלכם השתפרה ואיפה חשוב לכם לשים את הדגש.",
     "יש לכם 7 ימי התנסות חינם.",
   ];
   const ctaLead = "רוצים לפתוח דף חדש בזוגיות שלכם? ";
@@ -80,11 +85,12 @@ export function renderCoachingExplainerEmail(p: CoachingExplainerPersonalization
   const P = (s: string) =>
     `<p style="margin:0 0 16px;font-size:18px;line-height:1.6;color:${INK}">${esc(s)}</p>`;
   // Emoji IS the bullet marker → list-style:none so there's no double marker.
-  const emojiList = (items: string[]) =>
+  // Category label is bold; the description follows in normal weight.
+  const emojiList = (items: { emoji: string; label: string; text: string }[]) =>
     `<ul style="margin:0 0 16px;padding:0;list-style:none">${items
       .map(
         (b) =>
-          `<li style="margin:0 0 8px;font-size:18px;line-height:1.6;color:${INK}">${esc(b)}</li>`,
+          `<li style="margin:0 0 8px;font-size:18px;line-height:1.6;color:${INK}">${esc(b.emoji)} <b>${esc(b.label)}:</b> ${esc(b.text)}</li>`,
       )
       .join("")}</ul>`;
   const signLine = (s: string) =>
@@ -104,7 +110,9 @@ export function renderCoachingExplainerEmail(p: CoachingExplainerPersonalization
         <tr>
           <td dir="rtl" align="right" style="text-align:right;font-family:Arial,sans-serif;color:${INK}">
             ${P(greeting)}
-            ${intro.map(P).join("\n            ")}
+            ${P(introOpening)}
+            <p style="margin:0 0 16px;font-size:18px;line-height:1.6;color:${INK}">${esc(methodBefore)}<a href="${founderUrl}" style="color:${LINK};text-decoration:underline">${esc(founderAnchor)}</a>${esc(methodAfter)}</p>
+            ${P(introDomains)}
             ${emojiList(domainBullets)}
             ${body.map(P).join("\n            ")}
             <p style="margin:0 0 12px;font-size:18px;line-height:1.7;color:${INK}">${esc(ctaLead)}<a href="${checkoutUrl}" style="color:${LINK};text-decoration:underline">${esc(ctaLink)}</a></p>
@@ -125,8 +133,10 @@ export function renderCoachingExplainerEmail(p: CoachingExplainerPersonalization
   const textParts: string[] = [
     greeting,
     "",
-    ...intro,
-    ...domainBullets,
+    introOpening,
+    `${methodBefore}${founderAnchor}${methodAfter}`,
+    introDomains,
+    ...domainBullets.map((b) => `${b.emoji} ${b.label}: ${b.text}`),
     "",
     ...body,
     "",
