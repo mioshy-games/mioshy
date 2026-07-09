@@ -1,5 +1,4 @@
 import "server-only";
-import { renderMioshyEmail } from "@/lib/email/mioshy-template";
 import {
   renderResultsReadyEmail,
   type ResultsReadyScoreRow,
@@ -7,6 +6,8 @@ import {
 } from "@/lib/journey/mailing/results-ready-email";
 import { renderFounderStoryEmail } from "@/lib/journey/mailing/founder-story-email";
 import { renderCoachingExplainerEmail } from "@/lib/journey/mailing/coaching-explainer-email";
+import { renderSocialProofEmail } from "@/lib/journey/mailing/social-proof-email";
+import { renderExpertCallEmail } from "@/lib/journey/mailing/expert-call-email";
 
 /**
  * Post-assessment marketing sequence — the four window/nurture emails
@@ -23,7 +24,8 @@ export type SequenceEmailKind =
   | "results_ready"
   | "founder_story" // email #2 — replaces the old evening_proof slot (2026-07-09)
   | "coaching_explainer" // email #3 — replaces the old deadline slot (2026-07-09)
-  | "day7_value_tip";
+  | "social_proof" // email #4 — replaces the old day7_value_tip slot (2026-07-10)
+  | "expert_call"; // email #5 (2026-07-10)
 
 export interface SeqPersonalization {
   /** First name, or null → a name-less greeting ("היי,"). */
@@ -53,17 +55,10 @@ export interface SeqPersonalization {
   unsubscribeUrl?: string;
 }
 
-function greeting(firstName: string | null): string {
-  return firstName && firstName.trim() ? `היי ${firstName.trim()},` : "היי,";
-}
-
 export function buildSequenceEmail(
   kind: SequenceEmailKind,
   p: SeqPersonalization,
 ): { subject: string; html: string; text: string; senderName?: string } {
-  const g = greeting(p.firstName);
-  const focus = p.focusDomainHe ?? "התחום המרכזי שלכם";
-
   if (kind === "results_ready") {
     // Dedicated renderer (docs/results-ready-email-spec.md): plain personal
     // letter, styled score table, three "לחצו כאן" links, gender-adapted copy,
@@ -102,19 +97,21 @@ export function buildSequenceEmail(
     });
   }
 
-  // day7_value_tip
-  const exercise = p.exercise ?? "בחרו רגע אחד מהיום ותשתפו זה את זה במה שהוא עורר בכם, בלי לתקן ובלי לפתור, רק להקשיב.";
-  const { html, text } = renderMioshyEmail({
-    preheader: "הטיפ הראשון שלכם, לפי האבחון",
-    greeting: g,
-    paragraphs: [
-      `באבחון שלכם ${focus} קיבל את הציון הנמוך ביותר, וזה דווקא טוב לדעת: זה בדיוק המקום שבו צעד קטן מורגש מיד.`,
-      `הנה תרגיל אחד להערב: ${exercise} עשר דקות, בלי הכנות.`,
-    ],
-    primaryCta: { label: "לתרגיל המלא", url: `${p.baseUrl}/he/journey/assessment?summary=1` },
+  if (kind === "social_proof") {
+    // Dedicated plain-letter renderer. Verbatim social-proof copy, From "מיאושי".
+    return renderSocialProofEmail({
+      firstName: p.firstName,
+      baseUrl: p.baseUrl,
+      unsubscribeUrl: p.unsubscribeUrl,
+    });
+  }
+
+  // expert_call
+  return renderExpertCallEmail({
+    firstName: p.firstName,
+    baseUrl: p.baseUrl,
     unsubscribeUrl: p.unsubscribeUrl,
   });
-  return { subject: "הטיפ הראשון שלכם, לפי האבחון", html, text };
 }
 
 /**

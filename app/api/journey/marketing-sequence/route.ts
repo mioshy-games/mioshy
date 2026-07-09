@@ -7,11 +7,15 @@
  * emails once, at its scheduled time.
  *
  * Timing is anchored on t0 = journeys.offer_expires_at − 48h (offer_expires_at
- * is stamped exactly at short completion, so it is a reliable t0):
- *   • results_ready     — at t0 (immediate; the hourly run catches it).
- *   • founder_story     — 48h after results_ready (email #2, replaced evening_proof).
- *   • coaching_explainer — 3d after founder_story (email #3, replaced deadline).
- *   • day7_value_tip    — t0 + 7d at 10:00 (Sun–Thu only; Fri/Sat → next Sunday).
+ * is stamped exactly at short completion, so it is a reliable t0). results_ready
+ * fires immediately; every follow-up goes out at 10:00 Asia/Jerusalem (real
+ * wall-clock, DST-aware) on its day-offset, and never on Shabbat — a Saturday
+ * slot shifts to Sunday 10:00 (lib/journey/mailing/schedule.ts):
+ *   • results_ready     — t0 + 30 min (the hourly run catches it).
+ *   • founder_story     — day 1  · 10:00 IL (email #2).
+ *   • coaching_explainer — day 4  · 10:00 IL (email #3, +3d after #2).
+ *   • social_proof      — day 9  · 10:00 IL (email #4, +5d after #3).
+ *   • expert_call       — day 14 · 10:00 IL (email #5, +5d after #4).
  *
  * Gates:
  *   • profiles.marketing_consent = true (email is read from auth.users — profiles
@@ -62,18 +66,18 @@ import {
 import type { ResultsReadyScoreRow } from "@/lib/journey/mailing/results-ready-email";
 import { emailSeriesTags } from "@/lib/journey/mailing/email-series";
 import { ACTIVE_SEQUENCE_EMAIL_KEYS } from "@/lib/journey/mailing/sequence-flows";
+import { tenAmIlDaysAfter } from "@/lib/journey/mailing/schedule";
 
 const DAY = 24 * 60 * 60 * 1000;
-const HOUR = 60 * 60 * 1000;
 const EMAIL_CAP_PER_RUN = 150;
 
 // LIVE kill-switch: only these sequence kinds are sent by the GLOBAL (cron) run.
-// The other three (founder_story / coaching_explainer / day7_value_tip) MUST
-// NOT go out when MAILING_SEQUENCE_ENABLED is flipped on — so they are omitted.
-// founder_story + coaching_explainer have approved copy but stay inert until the
-// full sequence is signed off. Scoped admin tests (?onlyUserId=…) bypass this to
-// preview any kind. The set lives in sequence-flows.ts (single source shared with
-// the admin dashboard); add a kind there once approved to take it live.
+// The follow-ups (founder_story / coaching_explainer / social_proof / expert_call)
+// MUST NOT go out when MAILING_SEQUENCE_ENABLED is flipped on — they have approved
+// copy but stay inert until the full sequence is signed off (expert_call also
+// needs a real booking link first). Scoped admin tests (?onlyUserId=…) bypass this
+// to preview any kind. The set lives in sequence-flows.ts (single source shared
+// with the admin dashboard); add a kind there once approved to take it live.
 const ACTIVE_SEQUENCE_KINDS = ACTIVE_SEQUENCE_EMAIL_KEYS;
 
 function authOk(req: Request): boolean {
@@ -111,19 +115,6 @@ function heDay(d: Date): string {
 }
 function hhmm(d: Date): string {
   return d.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
-}
-/** The first HH:00 at/after `from`. */
-function nextClock(from: Date, hour: number): Date {
-  const d = new Date(from);
-  d.setHours(hour, 0, 0, 0);
-  if (d.getTime() < from.getTime()) d.setDate(d.getDate() + 1);
-  return d;
-}
-/** Push Fri(5)/Sat(6) to the following Sunday, same time. */
-function toSunThu(d: Date): Date {
-  const out = new Date(d);
-  while (out.getDay() === 5 || out.getDay() === 6) out.setDate(out.getDate() + 1);
-  return out;
 }
 
 interface PlanEntry {
@@ -296,21 +287,21 @@ async function handle(req: Request): Promise<NextResponse<Summary>> {
     }
 
     // Due-time per email.
-    // results_ready fires 30 min after short-assessment completion (t0), not at
-    // t0 itself (spec docs/results-ready-email-spec.md §טריגר). The other three
-    // keep their existing schedule.
+    // results_ready fires 30 min after short-assessment completion (t0). Every
+    // follow-up goes out at 10:00 Asia/Jerusalem (real wall-clock, DST-aware),
+    // on the day-offset from completion, and never on Shabbat (a Saturday slot
+    // shifts to Sunday 10:00) — see lib/journey/mailing/schedule.ts. Day offsets
+    // (from completion): founder=1, coaching=4, social=9, expert=14.
     const due: Record<SequenceEmailKind, Date> = {
       results_ready: new Date(t0.getTime() + 30 * 60 * 1000),
-      // founder_story (email #2, replaces evening_proof): 48h after results_ready.
-      founder_story: new Date(t0.getTime() + 30 * 60 * 1000 + 48 * HOUR),
-      // coaching_explainer (email #3, replaces deadline): 3 days after founder_story.
-      coaching_explainer: new Date(t0.getTime() + 30 * 60 * 1000 + 48 * HOUR + 72 * HOUR),
-      day7_value_tip: toSunThu(nextClock(new Date(t0.getTime() + 7 * DAY), 10)),
+      founder_story: tenAmIlDaysAfter(t0, 1),
+      coaching_explainer: tenAmIlDaysAfter(t0, 4),
+      social_proof: tenAmIlDaysAfter(t0, 9),
+      expert_call: tenAmIlDaysAfter(t0, 14),
     };
     // Upper bounds so a stale row never fires an obsolete email once the offer
-    // window has closed (results_ready included — see edge rule). founder_story
-    // and coaching_explainer are intentionally NOT window-gated: they fire after
-    // the window closes and their CTA is the always-valid trial, not the promo.
+    // window has closed. Only results_ready is window-gated; the follow-ups fire
+    // after the window closes and their CTA is the always-valid trial/call.
     const windowClosed = now.getTime() > offerExpiresAt.getTime();
     const expired: Partial<Record<SequenceEmailKind, boolean>> = {
       results_ready: windowClosed,

@@ -18,7 +18,8 @@ import type { SequenceEmailKind } from "@/lib/journey/mailing/sequence-emails";
 /**
  * The ONLY kinds the GLOBAL (cron) run sends. Was an inline const in the
  * marketing-sequence route; moved here so the route and the dashboard share one
- * source. founder_story / coaching_explainer / day7_value_tip stay OUT = inert.
+ * source. founder_story / coaching_explainer / social_proof / expert_call stay
+ * OUT = inert. Follow-ups send at 10:00 Asia/Jerusalem (Shabbat → Sunday).
  */
 export const ACTIVE_SEQUENCE_EMAIL_KEYS: ReadonlySet<SequenceEmailKind> = new Set([
   "results_ready",
@@ -81,19 +82,25 @@ export const EMAIL_FLOWS: EmailFlowDef[] = [
       {
         key: "founder_story",
         order: 2,
-        timingLabel: "48 שעות אחרי מייל 1",
+        timingLabel: "יום 1 · 10:00 (למחרת results_ready)",
         gatesHe: [CONSENT, NO_JOURNEY],
       },
       {
         key: "coaching_explainer",
         order: 3,
-        timingLabel: "3 ימים אחרי מייל 2",
+        timingLabel: "יום 4 · 10:00 (3 ימים אחרי מייל 2)",
         gatesHe: [CONSENT, NO_JOURNEY],
       },
       {
-        key: "day7_value_tip",
+        key: "social_proof",
         order: 4,
-        timingLabel: "7 ימים אחרי השלמת האבחון (10:00, א׳–ה׳)",
+        timingLabel: "יום 9 · 10:00 (5 ימים אחרי מייל 3)",
+        gatesHe: [CONSENT, NO_JOURNEY],
+      },
+      {
+        key: "expert_call",
+        order: 5,
+        timingLabel: "יום 14 · 10:00 (5 ימים אחרי מייל 4)",
         gatesHe: [CONSENT, NO_JOURNEY],
       },
     ],
