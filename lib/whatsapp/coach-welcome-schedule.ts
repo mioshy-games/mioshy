@@ -7,11 +7,6 @@
  *   • joined BEFORE 20:00 on day D  → sent D+1 at 10:00
  *   • joined at/after 20:00 on day D → sent D+2 at 10:00
  *
- * Shabbat rule (no WhatsApp on Saturday): the Saturday 10:00 run sends nothing,
- * and the Sunday run widens its window one extra day back so a slot that would
- * have landed on Saturday is delivered Sunday 10:00 instead. All other days are
- * unchanged. See coachWelcomeWindow() for the exact bounds.
- *
  * Everything here is DST-aware (Asia/Jerusalem), following the Intl pattern in
  * lib/whatsapp/templates.ts (israelDayOrdinal). Pure + deterministic (takes an
  * explicit `now`) so the cutoff/DST rules are unit-testable.
@@ -33,17 +28,6 @@ export function israelHour(now: Date): number {
   }).formatToParts(now);
   const h = Number(parts.find((p) => p.type === "hour")!.value);
   return h === 24 ? 0 : h; // some engines emit "24" for midnight
-}
-
-/** Israel-local day of week at instant `now`: 0=Sun … 5=Fri, 6=Sat (Shabbat). */
-export function israelWeekday(now: Date): number {
-  const wd = new Intl.DateTimeFormat("en-US", {
-    timeZone: ISRAEL_TZ,
-    weekday: "short",
-  }).format(now);
-  return (
-    { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 }[wd] ?? 0
-  );
 }
 
 /** Israel-local calendar Y/M/D of an instant. */
@@ -89,34 +73,17 @@ export function israelWallToUtcMs(y: number, m: number, d: number, hour: number)
 }
 
 /**
- * The join-moment window for the 10:00 run on the Israel-day of `now`, as UTC ms.
+ * The join-moment window for the 10:00 run on the Israel-day of `now`:
+ * [ (Israel today − 2 days) 20:00 , (Israel today − 1 day) 20:00 ) as UTC ms.
  * A journey subscription whose created_at is in [lowerMs, upperMs) is due now.
- *
- * Base rule: [ (today − 2) 20:00 , (today − 1) 20:00 ) IL — sends D+1 (join
- * before 20:00) and D+2 (join at/after 20:00) joiners.
- *
- * Shabbat rule (no WhatsApp on Saturday):
- *   • Saturday run → EMPTY window (lower == upper): sends nothing.
- *   • Sunday run   → lower bound WIDENED back to (today − 3) 20:00 = Thursday
- *     20:00, so Sunday also covers the [Thu 20:00, Fri 20:00) group that the
- *     skipped Saturday run would have sent. Upper stays (today − 1) 20:00.
- *   • All other days: unchanged.
- * The windows stay contiguous and non-overlapping across the week (Fri, Sun,
- * Mon), so every join is delivered exactly once and never on Shabbat.
  */
 export function coachWelcomeWindow(now: Date): { lowerMs: number; upperMs: number } {
   const { y, m, d } = israelYmd(now);
-  const weekday = israelWeekday(now); // 0=Sun … 6=Sat
   const dayNum = Math.floor(Date.UTC(y, m - 1, d) / 86_400_000);
-  const wall20 = (backDays: number) => {
-    const dt = new Date((dayNum - backDays) * 86_400_000);
-    return israelWallToUtcMs(dt.getUTCFullYear(), dt.getUTCMonth() + 1, dt.getUTCDate(), 20);
-  };
-  const upperMs = wall20(1); // Israel today − 1 day, 20:00
-  // Saturday (Shabbat): nothing goes out. Empty window matches no rows.
-  if (weekday === 6) return { lowerMs: upperMs, upperMs };
-  // Sunday absorbs the skipped-Saturday group by reaching back one extra day.
-  const lowerMs = wall20(weekday === 0 ? 3 : 2);
+  const prev1 = new Date((dayNum - 1) * 86_400_000); // Israel today − 1 day
+  const prev2 = new Date((dayNum - 2) * 86_400_000); // Israel today − 2 days
+  const upperMs = israelWallToUtcMs(prev1.getUTCFullYear(), prev1.getUTCMonth() + 1, prev1.getUTCDate(), 20);
+  const lowerMs = israelWallToUtcMs(prev2.getUTCFullYear(), prev2.getUTCMonth() + 1, prev2.getUTCDate(), 20);
   return { lowerMs, upperMs };
 }
 

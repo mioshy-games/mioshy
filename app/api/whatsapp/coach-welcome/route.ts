@@ -9,10 +9,6 @@
  * implemented as: each 10:00 run sends everyone whose join is in the window
  * [ Israel today−2 20:00 , Israel today−1 20:00 ). See coach-welcome-schedule.ts.
  *
- * Shabbat: no WhatsApp on Saturday. The Saturday 10:00 run sends nothing (empty
- * window); the Sunday run widens back to Thursday 20:00 so a Saturday slot is
- * delivered Sunday 10:00 instead. Handled inside coachWelcomeWindow().
- *
  * The delay lets us send the REAL topic the user picked in /journey/assessment
  * (journey_user_priorities.ranking[0] → its Hebrew category label) in {{3}},
  * falling back to "זוגיות".
