@@ -16,13 +16,21 @@ import type { SequenceEmailKind } from "@/lib/journey/mailing/sequence-emails";
  */
 
 /**
- * The ONLY kinds the GLOBAL (cron) run sends. Was an inline const in the
+ * The kinds the GLOBAL (cron) run sends. Was an inline const in the
  * marketing-sequence route; moved here so the route and the dashboard share one
- * source. founder_story / coaching_explainer / social_proof / expert_call stay
- * OUT = inert. Follow-ups send at 10:00 Asia/Jerusalem (Shabbat → Sunday).
+ * source. Follow-ups send at 10:00 Asia/Jerusalem (Shabbat → Sunday), and only
+ * to completers past MAILING_SEQUENCE_ACTIVATION_TS (no retroactive backlog).
+ *
+ * LIVE as of 2026-07-10 (Itzik): results_ready + founder_story +
+ * coaching_explainer + social_proof. expert_call stays OUT (inert) until its
+ * booking system exists — its CTA link is still a placeholder.
  */
 export const ACTIVE_SEQUENCE_EMAIL_KEYS: ReadonlySet<SequenceEmailKind> = new Set([
   "results_ready",
+  "founder_story",
+  "coaching_explainer",
+  "social_proof",
+  // expert_call — intentionally NOT active (blocked on the booking system).
 ]);
 
 /** Segments/flows. Only the first is built today; the rest are placeholders so
