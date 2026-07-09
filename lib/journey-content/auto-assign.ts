@@ -168,6 +168,12 @@ export async function assignJourneyOnPurchase(
       }
     }
 
+    // coach_welcome (WhatsApp) is NOT sent here anymore. Journey join only
+    // stamps the join moment (the subscription's created_at + couples.
+    // started_journey_at above); the WhatsApp welcome is sent the next morning
+    // at 10:00 Israel time by the daily cron /api/whatsapp/coach-welcome, which
+    // reads the join moment and the user's chosen topic ({{3}}) by then.
+
     return {
       ok: true,
       outcome: "cadence_assignment_ready",
