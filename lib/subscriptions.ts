@@ -31,18 +31,27 @@ export type SubscriptionRow = {
  * when the trial ends. Without this, games (the only product gated on this
  * helper rather than getUserEntitlements) stayed locked for trial members.
  *
+ * `product` (optional): when given, scopes the check to that pillar
+ * (games/journey/adults) — subscriptions carry a `product` column (migration
+ * 032). Omitted → any active subscription counts (the original behavior; the
+ * games UIs rely on it). The journey marketing sequence passes "journey" so a
+ * games/adults-only buyer is NOT treated as a journey subscriber.
+ *
  * past_due within grace window is handled by a separate flag on the account
  * page; the renewal cron will transition to "blocked" once grace expires.
  */
 export async function hasActiveSubscription(
   supabase: SupabaseClient,
   userId: string,
+  product?: "games" | "journey" | "adults",
 ): Promise<boolean> {
-  const { data, error } = await supabase
+  let query = supabase
     .from("subscriptions")
     .select("status, current_period_end, grace_until, trial_ends_at")
     .eq("user_id", userId)
-    .in("status", ["active", "trialing"])
+    .in("status", ["active", "trialing"]);
+  if (product) query = query.eq("product", product);
+  const { data, error } = await query
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();

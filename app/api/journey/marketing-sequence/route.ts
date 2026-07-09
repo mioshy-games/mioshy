@@ -24,7 +24,8 @@
  *     (now > offer_expires_at) — no obsolete email to a lapsed window.
  *     founder_story/coaching_explainer are NOT window-gated (their CTA is the
  *     always-valid trial).
- *   • ANY subscription (active/trialing) stops the whole sequence.
+ *   • An active/trialing JOURNEY subscription stops the sequence (product-scoped:
+ *     a games/adults-only buyer without journey keeps getting this series).
  *   • Idempotent via marketing_email_log (insert-first, unique (user, kind)).
  *
  * Test mode (query params): onlyUserId=<uuid> scopes the whole run to one user
@@ -274,8 +275,10 @@ async function handle(req: Request): Promise<NextResponse<Summary>> {
       continue;
     }
 
-    // Gate 2 — any purchase (active/trialing) stops the whole sequence.
-    if (await hasActiveSubscription(admin, userId).catch(() => false)) {
+    // Gate 2 — an active/trialing JOURNEY subscription stops the sequence. Scoped
+    // to the journey pillar on purpose: a buyer of another product (games/adults)
+    // who has NOT bought journey keeps receiving this journey nurture series.
+    if (await hasActiveSubscription(admin, userId, "journey").catch(() => false)) {
       if (onlyUserId) plan.push({ user_id: userId, email: emailAddr, decision: "skip_purchased" });
       continue;
     }
