@@ -14,7 +14,8 @@ export const EMAIL_SERIES: Record<string, EmailSeries> = {
   results_ready: "post-assessment",
   founder_story: "post-assessment", // email #2 — replaced evening_proof (2026-07-09)
   coaching_explainer: "post-assessment", // email #3 — replaced deadline (2026-07-09)
-  day7_value_tip: "post-assessment",
+  social_proof: "post-assessment", // email #4 — replaced day7_value_tip (2026-07-10)
+  expert_call: "post-assessment", // email #5 (2026-07-10)
   // trial lifecycle (trial-reminder cron)
   trial_day5: "trial",
   // re-engagement: (none yet)

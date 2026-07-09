@@ -85,7 +85,8 @@ export async function POST(req: Request) {
     { tag: "test-results_ready", key: "results_ready", ...buildSequenceEmail("results_ready", sample) },
     { tag: "test-founder_story", key: "founder_story", ...buildSequenceEmail("founder_story", sample) },
     { tag: "test-coaching_explainer", key: "coaching_explainer", ...buildSequenceEmail("coaching_explainer", sample) },
-    { tag: "test-day7_value_tip", key: "day7_value_tip", ...buildSequenceEmail("day7_value_tip", sample) },
+    { tag: "test-social_proof", key: "social_proof", ...buildSequenceEmail("social_proof", sample) },
+    { tag: "test-expert_call", key: "expert_call", ...buildSequenceEmail("expert_call", sample) },
     {
       tag: "test-trial_day5",
       key: "trial_day5",
