@@ -12,7 +12,7 @@ export type EmailSeries = "post-assessment" | "trial" | "re-engagement";
 export const EMAIL_SERIES: Record<string, EmailSeries> = {
   // post-assessment nurture sequence (marketing-sequence cron)
   results_ready: "post-assessment",
-  evening_proof: "post-assessment",
+  founder_story: "post-assessment", // email #2 — replaced evening_proof (2026-07-09)
   deadline: "post-assessment",
   day7_value_tip: "post-assessment",
   // trial lifecycle (trial-reminder cron)
