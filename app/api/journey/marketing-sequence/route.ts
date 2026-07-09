@@ -9,7 +9,7 @@
  * Timing is anchored on t0 = journeys.offer_expires_at − 48h (offer_expires_at
  * is stamped exactly at short completion, so it is a reliable t0):
  *   • results_ready  — at t0 (immediate; the hourly run catches it).
- *   • evening_proof  — the first 20:00 at/after t0.
+ *   • founder_story  — 48h after results_ready (email #2, replaced evening_proof).
  *   • deadline       — offer_expires_at − 12h (only while the window is open).
  *   • day7_value_tip — t0 + 7d at 10:00 (Sun–Thu only; Fri/Sat → next Sunday).
  *
@@ -20,8 +20,9 @@
  *   • Launch cutoff MAILING_SEQUENCE_ACTIVATION_TS: only assessments completed
  *     at/after it (t0 ≥ activation) — so enabling never fans out to the backlog.
  *     Unset → block everyone.
- *   • results_ready/evening_proof/deadline all expire once the offer window has
- *     closed (now > offer_expires_at) — no obsolete email to a lapsed window.
+ *   • results_ready/deadline expire once the offer window has closed
+ *     (now > offer_expires_at) — no obsolete email to a lapsed window.
+ *     founder_story is NOT window-gated (its CTA is the always-valid trial).
  *   • ANY subscription (active/trialing) stops the whole sequence.
  *   • Idempotent via marketing_email_log (insert-first, unique (user, kind)).
  *
@@ -64,10 +65,11 @@ const HOUR = 60 * 60 * 1000;
 const EMAIL_CAP_PER_RUN = 150;
 
 // LIVE kill-switch: only these sequence kinds are sent by the GLOBAL (cron) run.
-// The other three (evening_proof / deadline / day7_value_tip) are copy-unapproved
-// and MUST NOT go out when MAILING_SEQUENCE_ENABLED is flipped on — so they are
-// omitted here. Scoped admin tests (?onlyUserId=…) bypass this to preview any
-// kind. Add a kind here once its wording is approved to take it live.
+// The other three (founder_story / deadline / day7_value_tip) MUST NOT go out
+// when MAILING_SEQUENCE_ENABLED is flipped on — so they are omitted here.
+// founder_story has approved copy but stays inert until the full sequence is
+// signed off. Scoped admin tests (?onlyUserId=…) bypass this to preview any
+// kind. Add a kind here once approved to take it live.
 const ACTIVE_SEQUENCE_KINDS: ReadonlySet<SequenceEmailKind> = new Set([
   "results_ready",
 ]);
@@ -283,16 +285,18 @@ async function handle(req: Request): Promise<NextResponse<Summary>> {
     // keep their existing schedule.
     const due: Record<SequenceEmailKind, Date> = {
       results_ready: new Date(t0.getTime() + 30 * 60 * 1000),
-      evening_proof: nextClock(t0, 20),
+      // founder_story (email #2, replaces evening_proof): 48h after results_ready.
+      founder_story: new Date(t0.getTime() + 30 * 60 * 1000 + 48 * HOUR),
       deadline: new Date(offerExpiresAt.getTime() - 12 * HOUR),
       day7_value_tip: toSunThu(nextClock(new Date(t0.getTime() + 7 * DAY), 10)),
     };
     // Upper bounds so a stale row never fires an obsolete email once the offer
-    // window has closed (results_ready included — see edge rule).
+    // window has closed (results_ready included — see edge rule). founder_story
+    // is intentionally NOT window-gated: it fires just after the window closes
+    // and its CTA is the always-valid free trial, not the promo price.
     const windowClosed = now.getTime() > offerExpiresAt.getTime();
     const expired: Partial<Record<SequenceEmailKind, boolean>> = {
       results_ready: windowClosed,
-      evening_proof: windowClosed,
       deadline: windowClosed,
     };
 
