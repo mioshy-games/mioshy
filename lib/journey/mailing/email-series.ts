@@ -13,7 +13,7 @@ export const EMAIL_SERIES: Record<string, EmailSeries> = {
   // post-assessment nurture sequence (marketing-sequence cron)
   results_ready: "post-assessment",
   founder_story: "post-assessment", // email #2 — replaced evening_proof (2026-07-09)
-  deadline: "post-assessment",
+  coaching_explainer: "post-assessment", // email #3 — replaced deadline (2026-07-09)
   day7_value_tip: "post-assessment",
   // trial lifecycle (trial-reminder cron)
   trial_day5: "trial",
