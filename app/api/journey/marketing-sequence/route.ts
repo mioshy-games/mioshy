@@ -77,12 +77,22 @@ const ACTIVE_SEQUENCE_KINDS: ReadonlySet<SequenceEmailKind> = new Set([
 ]);
 
 function authOk(req: Request): boolean {
-  const expected =
-    process.env.JOURNEY_REMINDERS_CRON_SECRET ||
-    process.env.MAILING_TEST_SECRET ||
-    process.env.CARDCOM_BILLING_CRON_SECRET;
-  if (!expected) return process.env.VERCEL_ENV !== "production";
-  return (req.headers.get("authorization") ?? "") === `Bearer ${expected}`;
+  // Accept a Bearer matching ANY configured cron secret — critically including
+  // CRON_SECRET, which is the token Vercel automatically attaches to cron
+  // invocations. The previous version compared only against the FIRST non-empty
+  // of the journey/billing secrets, so if CRON_SECRET differed from
+  // JOURNEY_REMINDERS_CRON_SECRET the hourly cron 401'd and results_ready never
+  // sent. Matching against the set fixes that and stays valid for manual runs
+  // with any of the known secrets.
+  const provided = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
+  const secrets = [
+    process.env.CRON_SECRET,
+    process.env.JOURNEY_REMINDERS_CRON_SECRET,
+    process.env.MAILING_TEST_SECRET,
+    process.env.CARDCOM_BILLING_CRON_SECRET,
+  ].filter((s): s is string => !!s);
+  if (secrets.length === 0) return process.env.VERCEL_ENV !== "production";
+  return provided !== "" && secrets.includes(provided);
 }
 
 function baseUrl(): string {
