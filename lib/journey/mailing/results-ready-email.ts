@@ -41,9 +41,23 @@ export interface ResultsReadyScoreRow {
   isPriority: boolean;
 }
 
+/**
+ * Live couple pricing for the offer bullets — resolved from the same source as
+ * the checkout (never hardcoded), so the email shows exactly what Cardcom bills.
+ * `*First` is the promo first-charge (null when no active promo for that option).
+ */
+export interface JourneyEmailPricing {
+  noCoachingRegular: number;
+  noCoachingFirst: number | null;
+  withCoachingRegular: number;
+  withCoachingFirst: number | null;
+}
+
 export interface ResultsReadyPersonalization {
   /** First name, or null → a name-less greeting. */
   firstName: string | null;
+  /** Live couple pricing (dynamic — replaces the old hardcoded 37/67/89/189). */
+  pricing: JourneyEmailPricing;
   /** Filler's gender. null/"other" → default to the male (unmarked) forms. */
   gender: "male" | "female" | "other" | null;
   /** The #1-ranked priority domain in Hebrew (e.g. "תקשורת"), or null. */
@@ -59,12 +73,6 @@ export interface ResultsReadyPersonalization {
   unsubscribeUrl?: string;
 }
 
-// Intro prices (match the live personal-window promo; wire to live per-user
-// pricing when the sequence resolves amounts — same TODO the other emails carry).
-const PROMO_NO_COACHING = 37;
-const REG_NO_COACHING = 67;
-const PROMO_COACHING = 89;
-const REG_COACHING = 189;
 
 function esc(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -160,10 +168,21 @@ export function renderResultsReadyEmail(p: ResultsReadyPersonalization): {
   const miosheyTrial =
     "אתם יכולים להתחיל עם 7 ימי ניסיון ללא חיוב (צריך להזין אשראי, אבל החיוב יתחיל רק אחרי שבוע, ותקבלו תזכורת אחרי 5 ימים, ואפשר לבטל מתי שרוצים).";
 
-  const offerHead = `💰 הטבה לחברים חדשים (בתוקף עד ${win}):`;
+  // Dynamic pricing (from p.pricing, resolved live = the Cardcom charge). Promo
+  // line when there's an active first-month discount, plain regular otherwise.
+  const priceBullet = (label: string, regular: number, first: number | null) =>
+    first != null && first < regular
+      ? `${label}: רק ${first} ₪ לחודש הראשון לשניכם (במקום ${regular} ₪)`
+      : `${label}: ${regular} ₪ לחודש לשניכם`;
+  const hasPromo =
+    (p.pricing.noCoachingFirst != null && p.pricing.noCoachingFirst < p.pricing.noCoachingRegular) ||
+    (p.pricing.withCoachingFirst != null && p.pricing.withCoachingFirst < p.pricing.withCoachingRegular);
+  const offerHead = hasPromo
+    ? `💰 הטבה לחברים חדשים (בתוקף עד ${win}):`
+    : "💰 המסלולים שלנו:";
   const offerBullets = [
-    `מסלול זוגי ללא ליווי: רק ${PROMO_NO_COACHING} ₪ לחודש הראשון לשניכם (במקום ${REG_NO_COACHING} ₪)`,
-    `מסלול זוגי עם מומחה צמוד: רק ${PROMO_COACHING} ₪ לחודש הראשון לשניכם (במקום ${REG_COACHING} ₪)`,
+    priceBullet("מסלול זוגי ללא ליווי", p.pricing.noCoachingRegular, p.pricing.noCoachingFirst),
+    priceBullet("מסלול זוגי עם מומחה צמוד", p.pricing.withCoachingRegular, p.pricing.withCoachingFirst),
   ];
   // Framing for the trial CTA → the subscription-selection view.
   const subscribeFraming =

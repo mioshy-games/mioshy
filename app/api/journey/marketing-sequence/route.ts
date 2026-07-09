@@ -48,6 +48,7 @@ import { hasActiveSubscription } from "@/lib/subscriptions";
 import { getViewerPriorityOrder } from "@/lib/dashboard/priority-routing";
 import { getPriorityLabels } from "@/lib/journey-content/priority-categories";
 import { getLatestAnalysisForUser } from "@/lib/journey/analysis-read";
+import { getJourneySubscribePricing } from "@/lib/billing/journey-subscribe-pricing";
 import type { CategoryScores } from "@/lib/journey/types";
 import type { PriorityKey } from "@/lib/journey/priorities";
 import {
@@ -56,6 +57,7 @@ import {
   type SeqPersonalization,
 } from "@/lib/journey/mailing/sequence-emails";
 import type { ResultsReadyScoreRow } from "@/lib/journey/mailing/results-ready-email";
+import { emailSeriesTags } from "@/lib/journey/mailing/email-series";
 
 const DAY = 24 * 60 * 60 * 1000;
 const HOUR = 60 * 60 * 1000;
@@ -313,12 +315,35 @@ async function handle(req: Request): Promise<NextResponse<Summary>> {
       }
     } catch { /* scores stay [] → results_ready renders without the table */ }
 
+    // Live couple pricing for the results_ready offer bullets — resolved from
+    // the SAME source as the checkout (getJourneySubscribePricing), so the email
+    // shows exactly what Cardcom bills. The recipient is inside their offer
+    // window (results_ready fires before offer_expires_at), so the personal-
+    // window promo applies → first-charge prices match the on-page promo.
+    let pricing = {
+      noCoachingRegular: 0,
+      noCoachingFirst: null as number | null,
+      withCoachingRegular: 0,
+      withCoachingFirst: null as number | null,
+    };
+    try {
+      const pr = await getJourneySubscribePricing(userId);
+      const monthly = pr.journeyCadences.find((c) => c.cadence === "monthly") ?? null;
+      pricing = {
+        noCoachingRegular: monthly?.price_ils ?? 0,
+        noCoachingFirst: pr.activePromo?.withoutCoaching?.firstChargeByCadence?.["monthly"]?.ils ?? null,
+        withCoachingRegular: monthly ? monthly.price_ils + monthly.coaching_cost_ils : 0,
+        withCoachingFirst: pr.activePromo?.withCoaching?.firstChargeByCadence?.["monthly"]?.ils ?? null,
+      };
+    } catch { /* pricing stays zeroed → offer bullets simply show 0; caught in QA */ }
+
     const p: SeqPersonalization = {
       firstName,
       focusDomainHe,
       scoreLines: [], // legacy field, unused by results_ready's dedicated renderer
       gender: profile.gender ?? null,
       scores,
+      pricing,
       windowDayHe: heDay(offerExpiresAt),
       windowTime: hhmm(offerExpiresAt),
       exercise: null,
@@ -370,7 +395,7 @@ async function handle(req: Request): Promise<NextResponse<Summary>> {
         subject: email.subject,
         htmlContent: email.html,
         textContent: email.text,
-        tags: [`seq_${kind}`],
+        tags: [`seq_${kind}`, ...emailSeriesTags(kind)],
         // results_ready overrides the From display name ("יצחק ברלב"); the other
         // kinds return undefined here and keep the BREVO_SENDER_NAME default.
         senderName: email.senderName,

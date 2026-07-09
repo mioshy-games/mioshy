@@ -16,6 +16,7 @@ export const maxDuration = 60;
 
 import { NextResponse } from "next/server";
 import { sendBrevoEmail } from "@/lib/email/brevo";
+import { emailSeriesTags } from "@/lib/journey/mailing/email-series";
 import {
   buildSequenceEmail,
   buildTrialDay5Email,
@@ -64,6 +65,13 @@ export async function POST(req: Request) {
       { labelHe: "חברות", score: 71, isPriority: false },
       { labelHe: "משפחה", score: 64, isPriority: false },
     ],
+    // Sample pricing (mirrors the current live promo) for the preview.
+    pricing: {
+      noCoachingRegular: 67,
+      noCoachingFirst: 37,
+      withCoachingRegular: 189,
+      withCoachingFirst: 89,
+    },
     windowDayHe: "יום שני",
     windowTime: "21:00",
     exercise: null,
@@ -72,12 +80,13 @@ export async function POST(req: Request) {
   };
 
   const emails = [
-    { tag: "test-results_ready", ...buildSequenceEmail("results_ready", sample) },
-    { tag: "test-evening_proof", ...buildSequenceEmail("evening_proof", sample) },
-    { tag: "test-deadline", ...buildSequenceEmail("deadline", sample) },
-    { tag: "test-day7_value_tip", ...buildSequenceEmail("day7_value_tip", sample) },
+    { tag: "test-results_ready", key: "results_ready", ...buildSequenceEmail("results_ready", sample) },
+    { tag: "test-evening_proof", key: "evening_proof", ...buildSequenceEmail("evening_proof", sample) },
+    { tag: "test-deadline", key: "deadline", ...buildSequenceEmail("deadline", sample) },
+    { tag: "test-day7_value_tip", key: "day7_value_tip", ...buildSequenceEmail("day7_value_tip", sample) },
     {
       tag: "test-trial_day5",
+      key: "trial_day5",
       ...buildTrialDay5Email({
         firstName: "איציק",
         trialEndDateHe: "10 ביולי 2026",
@@ -94,7 +103,7 @@ export async function POST(req: Request) {
       subject: e.subject,
       htmlContent: e.html,
       textContent: e.text,
-      tags: [e.tag],
+      tags: [e.tag, ...emailSeriesTags(e.key)],
       // results_ready carries a From override ("יצחק ברלב"); others are undefined.
       senderName: (e as { senderName?: string }).senderName,
     });
