@@ -77,13 +77,15 @@ const ACTIVE_SEQUENCE_KINDS: ReadonlySet<SequenceEmailKind> = new Set([
 ]);
 
 function authOk(req: Request): boolean {
-  // Accept a Bearer matching ANY configured cron secret — critically including
-  // CRON_SECRET, which is the token Vercel automatically attaches to cron
-  // invocations. The previous version compared only against the FIRST non-empty
-  // of the journey/billing secrets, so if CRON_SECRET differed from
-  // JOURNEY_REMINDERS_CRON_SECRET the hourly cron 401'd and results_ready never
-  // sent. Matching against the set fixes that and stays valid for manual runs
-  // with any of the known secrets.
+  // Accept a Bearer matching ANY configured cron secret — including CRON_SECRET,
+  // the token Vercel attaches to cron invocations (the Vercel-standard). This is
+  // a robustness/defensive improvement, NOT the fix for the go-live miss: the
+  // cron auth was already working (CRON_SECRET matched the journey secret — the
+  // 18:00Z run authenticated and sent results_ready using the pre-change code).
+  // The reason results_ready didn't send on the 15:00–17:00 runs was that
+  // MAILING_SEQUENCE_ENABLED / _ACTIVATION_TS weren't effective on those deploys;
+  // that was fixed by re-binding the env vars + redeploying. Accepting the full
+  // set future-proofs the auth and lets admin runs use any known secret.
   const provided = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
   const secrets = [
     process.env.CRON_SECRET,
