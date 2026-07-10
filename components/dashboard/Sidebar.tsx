@@ -195,8 +195,6 @@ const NAV: NavItem[] = [
       { kind: "leaf", href: "/dashboard/homepage",  labelKey: "nav.homepage",  icon: Home },
       { kind: "leaf", href: "/dashboard/articles",  labelKey: "nav.articles",  icon: BookOpenText },
       { kind: "leaf", href: "/dashboard/templates", labelKey: "nav.templates", icon: Mail },
-      // WhatsApp campaign observability (read-only) — sits by the email templates.
-      { kind: "leaf", href: "/dashboard/whatsapp", labelKey: "nav.whatsapp", icon: MessageCircle, adminOnly: true },
       // marketing-discounts-spec §7 — subscription discount promos.
       { kind: "leaf", href: "/dashboard/marketing/discounts", labelKey: "nav.discounts", icon: BadgePercent, adminOnly: true },
       // /admin/content lives OUTSIDE the dashboard route tree
@@ -219,6 +217,11 @@ const NAV: NavItem[] = [
       { kind: "leaf", href: "/dashboard/assessments/analytics", labelKey: "nav.assessment_funnel", icon: TrendingDown, adminOnly: true },
       // journey-assessment-funnel-brief §C — the journey assessment funnel.
       { kind: "leaf", href: "/dashboard/journey/assessment-funnel", labelKey: "nav.journey_assessment_funnel", icon: BarChart3, adminOnly: true },
+      // Messaging analytics entry points — reach both channels from the reports
+      // section. Email sequences lives outside /dashboard (own /admin layout,
+      // like /admin/content); WhatsApp is the read-only campaign dashboard.
+      { kind: "leaf", href: "/admin/email-sequences", labelKey: "nav.email_analytics", icon: Mail, adminOnly: true },
+      { kind: "leaf", href: "/dashboard/whatsapp", labelKey: "nav.whatsapp_analytics", icon: MessageCircle, adminOnly: true },
     ],
   },
 
