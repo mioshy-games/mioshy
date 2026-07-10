@@ -33,6 +33,10 @@ import { createServiceRoleClient } from "@/lib/supabase-admin";
 import { getAdminLocale, isRtl } from "@/lib/admin/locale";
 import { loadUserBehavior } from "@/lib/dashboard/user-behavior";
 import { UserBehaviorTabs } from "@/components/dashboard/UserBehaviorTabs";
+// Per-user WhatsApp history (whatsapp campaign dashboard, View 2). Read-only,
+// service-role only (whatsapp_messages is RLS-locked). Sits by the email log.
+import { getUserWhatsAppMessages } from "@/lib/dashboard/whatsapp-overview";
+import { UserWhatsAppLog } from "@/components/dashboard/UserWhatsAppLog";
 
 // B.5 — short/full grouping labels for the admin. Hebrew first (the expert
 // reads the user's Hebrew answers) with the en tag alongside.
@@ -102,6 +106,7 @@ export default async function UserDetailPage({ params }: { params: { id: string 
   // the service-role env is missing — then the section is simply omitted.
   const adminDb = createServiceRoleClient();
   const behavior = adminDb ? await loadUserBehavior(adminDb, userId) : null;
+  const whatsappMessages = adminDb ? await getUserWhatsAppMessages(adminDb, userId) : [];
   const adminLocale = getAdminLocale();
 
   // Deep-link target for "open chat in console": couples open the couple
@@ -247,6 +252,14 @@ export default async function UserDetailPage({ params }: { params: { id: string 
           ) : null}
         </CardContent>
       </Card>
+
+      {adminDb ? (
+        <UserWhatsAppLog
+          rows={whatsappMessages}
+          locale={adminLocale}
+          rtl={isRtl(adminLocale)}
+        />
+      ) : null}
 
       <UserDetailClient
         userId={userId}
