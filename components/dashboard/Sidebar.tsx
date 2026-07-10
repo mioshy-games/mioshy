@@ -32,6 +32,7 @@ import {
   Stethoscope,
   Inbox,
   MessagesSquare,
+  MessageCircle,
   TrendingDown,
   UsersRound,
   Send,
@@ -216,6 +217,11 @@ const NAV: NavItem[] = [
       { kind: "leaf", href: "/dashboard/assessments/analytics", labelKey: "nav.assessment_funnel", icon: TrendingDown, adminOnly: true },
       // journey-assessment-funnel-brief §C — the journey assessment funnel.
       { kind: "leaf", href: "/dashboard/journey/assessment-funnel", labelKey: "nav.journey_assessment_funnel", icon: BarChart3, adminOnly: true },
+      // Messaging analytics entry points — reach both channels from the reports
+      // section. Email sequences lives outside /dashboard (own /admin layout,
+      // like /admin/content); WhatsApp is the read-only campaign dashboard.
+      { kind: "leaf", href: "/admin/email-sequences", labelKey: "nav.email_analytics", icon: Mail, adminOnly: true },
+      { kind: "leaf", href: "/dashboard/whatsapp", labelKey: "nav.whatsapp_analytics", icon: MessageCircle, adminOnly: true },
     ],
   },
 
