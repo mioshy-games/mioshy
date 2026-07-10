@@ -8,15 +8,16 @@ import "server-only";
  * Same plain-letter aesthetic (white, 18px). From = "מיאושי"; signs off
  * "מיאושי / mioshy.com".
  *
- * ⚠️ DEPENDENCY: the CTA ("לתיאום שיחה בזמן שנוח לכם") needs a real scheduling /
- * booking system, which does NOT exist yet. `schedulingUrl` defaults to a
- * PLACEHOLDER (the site home) — must be replaced with the real booking link
- * before expert_call is ever activated. Tracked as a go-live blocker.
+ * The CTA ("לתיאום שיחה בזמן שנוח לכם") links to the real booking system
+ * (Calendly, EXPERT_CALL_SCHEDULING_URL below). Callers may override via
+ * `schedulingUrl`; when omitted the Calendly link is used (the earlier
+ * site-home placeholder is gone now that booking exists).
  *
  * Timing/gates live in the caller: fires day 14 (10:00 IL, Shabbat→Sunday),
  * gated on marketing consent + no active journey subscription. Renders only.
  *
- * INERT: not in ACTIVE_SEQUENCE_KINDS — only admin previews render it.
+ * INERT: not in ACTIVE_SEQUENCE_KINDS — only admin previews / send-test render
+ * it until it is added to ACTIVE_SEQUENCE_EMAIL_KEYS.
  */
 
 const INK = "#000000";
@@ -25,10 +26,16 @@ const MUTED = "#888888";
 
 export const EXPERT_CALL_SENDER_NAME = "מיאושי";
 
+/**
+ * Real scheduling/booking link for the expert_call CTA (Itzik 2026-07-10).
+ * Central config point — the caller and the renderer default both use this.
+ */
+export const EXPERT_CALL_SCHEDULING_URL = "https://calendly.com/mioshy-support/30min";
+
 export interface ExpertCallPersonalization {
   firstName: string | null;
   baseUrl: string;
-  /** Real booking link once it exists. Omit → PLACEHOLDER (site home). */
+  /** Override for the booking link. Omit → EXPERT_CALL_SCHEDULING_URL (Calendly). */
   schedulingUrl?: string;
   unsubscribeUrl?: string;
 }
@@ -45,9 +52,8 @@ export function renderExpertCallEmail(p: ExpertCallPersonalization): {
 } {
   const name = (p.firstName ?? "").trim();
   const greeting = name ? `היי ${name},` : "היי,";
-  // PLACEHOLDER until the booking system ships (see file header). Home page is a
-  // safe non-404 target; this email is inert so it never actually links out yet.
-  const schedulingUrl = p.schedulingUrl ?? `${p.baseUrl}/he`;
+  // Real Calendly booking link (caller may override via schedulingUrl).
+  const schedulingUrl = p.schedulingUrl ?? EXPERT_CALL_SCHEDULING_URL;
 
   const subject = "מגיע לכם שיחה קצרה עם מומחה לייעוץ זוגי";
 

@@ -7,7 +7,10 @@ import {
 import { renderFounderStoryEmail } from "@/lib/journey/mailing/founder-story-email";
 import { renderCoachingExplainerEmail } from "@/lib/journey/mailing/coaching-explainer-email";
 import { renderSocialProofEmail } from "@/lib/journey/mailing/social-proof-email";
-import { renderExpertCallEmail } from "@/lib/journey/mailing/expert-call-email";
+import {
+  renderExpertCallEmail,
+  EXPERT_CALL_SCHEDULING_URL,
+} from "@/lib/journey/mailing/expert-call-email";
 
 /**
  * Post-assessment marketing sequence — the four window/nurture emails
@@ -106,10 +109,11 @@ export function buildSequenceEmail(
     });
   }
 
-  // expert_call
+  // expert_call — CTA points at the real Calendly booking link.
   return renderExpertCallEmail({
     firstName: p.firstName,
     baseUrl: p.baseUrl,
+    schedulingUrl: EXPERT_CALL_SCHEDULING_URL,
     unsubscribeUrl: p.unsubscribeUrl,
   });
 }
