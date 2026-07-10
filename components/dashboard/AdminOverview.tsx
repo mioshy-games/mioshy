@@ -14,6 +14,8 @@ import {
   Gamepad2,
   Flame,
   MessageCircle,
+  HeartHandshake,
+  Route,
   TrendingUp,
   TrendingDown,
 } from "lucide-react";
@@ -116,7 +118,7 @@ export async function AdminOverview({
         />
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <MetricTile
           href="/dashboard/users"
           icon={<UserPlus className="size-3.5" />}
@@ -128,6 +130,18 @@ export async function AdminOverview({
           icon={<Gamepad2 className="size-3.5" />}
           label={t(locale, "overview.metric.subs_games")}
           m={data.gamesSubs}
+        />
+        <MetricTile
+          href="/dashboard/users?pillar=journey&coaching=with"
+          icon={<HeartHandshake className="size-3.5" />}
+          label={t(locale, "overview.metric.journey_coach")}
+          m={data.journeyCoachSubs}
+        />
+        <MetricTile
+          href="/dashboard/users?pillar=journey&coaching=without"
+          icon={<Route className="size-3.5" />}
+          label={t(locale, "overview.metric.journey_nocoach")}
+          m={data.journeyNoCoachSubs}
         />
         <MetricTile
           href="/dashboard/subscriptions"

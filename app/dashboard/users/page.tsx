@@ -36,6 +36,9 @@ import { cn } from "@/lib/utils";
 const PAGE_SIZE = 25;
 const PILLARS = ["journey", "games", "adults"] as const;
 const LEVELS = ["active", "cooling", "churned"] as const;
+// Coaching add-on filter (journey subs only). "with"/"without" map to
+// subscriptions.coaching = true/false on an active journey subscription.
+const COACHINGS = ["with", "without"] as const;
 const SORTS = ["last_login_at", "activity_level"] as const;
 
 type SearchParams = {
@@ -43,6 +46,7 @@ type SearchParams = {
   from?: string;
   pillar?: string;
   level?: string;
+  coaching?: string;
   sort?: string;
   dir?: string;
   page?: string;
@@ -78,6 +82,7 @@ export default async function AdminUsersPage({
   const from = (searchParams.from ?? "").trim();
   const pillar = PILLARS.includes(searchParams.pillar as never) ? searchParams.pillar! : "";
   const level = LEVELS.includes(searchParams.level as never) ? searchParams.level! : "";
+  const coaching = COACHINGS.includes(searchParams.coaching as never) ? searchParams.coaching! : "";
   const sort = SORTS.includes(searchParams.sort as never) ? (searchParams.sort as string) : "last_login_at";
   const ascending = searchParams.dir === "asc";
   const page = Math.max(1, parseInt(searchParams.page ?? "1", 10) || 1);
@@ -86,6 +91,27 @@ export default async function AdminUsersPage({
   let rows: Record<string, unknown>[] = [];
   let count = 0;
   if (admin) {
+    // Coaching filter: v_user_directory has no coaching column, so resolve the
+    // set of users with an active journey subscription of the requested coaching
+    // flag directly from subscriptions, then constrain the view query by user_id.
+    // Keeps filtering + pagination + count in the DB (no per-user loop).
+    let coachingUserIds: string[] | null = null;
+    if (coaching) {
+      const { data: subRows } = await admin
+        .from("subscriptions")
+        .select("user_id")
+        .eq("product", "journey")
+        .eq("status", "active")
+        .eq("coaching", coaching === "with");
+      coachingUserIds = [
+        ...new Set(
+          ((subRows ?? []) as Array<{ user_id: string | null }>)
+            .map((s) => s.user_id)
+            .filter((id): id is string => !!id),
+        ),
+      ];
+    }
+
     let query = admin.from("v_user_directory").select("*", { count: "exact" });
     if (qSafe) {
       query = query.or(
@@ -98,6 +124,15 @@ export default async function AdminUsersPage({
     else if (pillar === "games") query = query.eq("owns_games", true);
     else if (pillar === "adults") query = query.eq("owns_adults", true);
     if (level) query = query.eq("activity_level", level);
+    // Empty set → match nothing (sentinel), else constrain to the resolved users.
+    if (coachingUserIds) {
+      query = query.in(
+        "user_id",
+        coachingUserIds.length
+          ? coachingUserIds
+          : ["00000000-0000-0000-0000-000000000000"],
+      );
+    }
     query = query
       .order(sort, { ascending, nullsFirst: false })
       .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
@@ -112,7 +147,7 @@ export default async function AdminUsersPage({
   const hrefWith = (overrides: Partial<SearchParams>) => {
     const sp = new URLSearchParams();
     const merged: SearchParams = {
-      q, from, pillar, level, sort,
+      q, from, pillar, level, coaching, sort,
       dir: ascending ? "asc" : "desc",
       ...overrides,
     };
@@ -205,6 +240,14 @@ export default async function AdminUsersPage({
                 {LEVELS.map((l) => (
                   <option key={l} value={l}>{tt(`customers.level_${l}`)}</option>
                 ))}
+              </select>
+            </label>
+            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+              {tt("customers.filter_coaching")}
+              <select name="coaching" defaultValue={coaching} className={inputCls}>
+                <option value="">{tt("customers.all")}</option>
+                <option value="with">{tt("customers.coaching_with")}</option>
+                <option value="without">{tt("customers.coaching_without")}</option>
               </select>
             </label>
             <button type="submit" className={cn(buttonVariants({ variant: "default", size: "sm" }))}>

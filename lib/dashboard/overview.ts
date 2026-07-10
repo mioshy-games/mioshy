@@ -87,6 +87,10 @@ export type InquiryRow = RecentConversationRow & { assessmentDone: boolean };
 export interface OverviewData {
   signups: MetricDelta;
   gamesSubs: MetricDelta;
+  /** journey subs created in-window WITH the coaching add-on (coaching=true). */
+  journeyCoachSubs: MetricDelta;
+  /** journey subs created in-window WITHOUT coaching (coaching=false). */
+  journeyNoCoachSubs: MetricDelta;
   sexPurchases: MetricDelta;
   chatInquiries: MetricDelta;
   awaitingReply: number;
@@ -105,6 +109,8 @@ export async function getOverviewData(
     return {
       signups: EMPTY,
       gamesSubs: EMPTY,
+      journeyCoachSubs: EMPTY,
+      journeyNoCoachSubs: EMPTY,
       sexPurchases: EMPTY,
       chatInquiries: EMPTY,
       awaitingReply: 0,
@@ -135,6 +141,18 @@ export async function getOverviewData(
       .lt("created_at", to);
     return count ?? 0;
   };
+  // Journey subs split by the coaching add-on. Same shape as gamesSubCount
+  // (count on created_at, no status filter), just product='journey' + coaching.
+  const journeySubCount = async (from: string, to: string, coaching: boolean) => {
+    const { count } = await admin
+      .from("subscriptions")
+      .select("id", { count: "exact", head: true })
+      .eq("product", "journey")
+      .eq("coaching", coaching)
+      .gte("created_at", from)
+      .lt("created_at", to);
+    return count ?? 0;
+  };
   const sexBuyCount = async (from: string, to: string) => {
     const { count } = await admin
       .from("checkout_sessions")
@@ -158,12 +176,16 @@ export async function getOverviewData(
   const [
     suCur, suPrev,
     gsCur, gsPrev,
+    jcCur, jcPrev,
+    jnCur, jnPrev,
     sxCur, sxPrev,
     chCur, chPrev,
     recent,
   ] = await Promise.all([
     signupCount(sIso, eIso), signupCount(pIso, sIso),
     gamesSubCount(sIso, eIso), gamesSubCount(pIso, sIso),
+    journeySubCount(sIso, eIso, true), journeySubCount(pIso, sIso, true),
+    journeySubCount(sIso, eIso, false), journeySubCount(pIso, sIso, false),
     sexBuyCount(sIso, eIso), sexBuyCount(pIso, sIso),
     chatCount(sIso, eIso), chatCount(pIso, sIso),
     // Latest N conversations, INCLUDING answered ones, so the list never drops
@@ -195,6 +217,8 @@ export async function getOverviewData(
   return {
     signups: delta(suCur, suPrev),
     gamesSubs: delta(gsCur, gsPrev),
+    journeyCoachSubs: delta(jcCur, jcPrev),
+    journeyNoCoachSubs: delta(jnCur, jnPrev),
     sexPurchases: delta(sxCur, sxPrev),
     chatInquiries: delta(chCur, chPrev),
     awaitingReply: recent.pendingCount,
