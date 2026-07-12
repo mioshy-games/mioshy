@@ -592,10 +592,10 @@ export function AnalysisSummary({
             (the 5-domain graph bars in the hero above are kept). */}
         {!isSubscribe && categoryScores ? (
           <section className="ar-section">
-            {/* Score graph — moved here from the hero (2026-07-12), on a light
-                card so numbers/labels are dark and columns keep the gradient. */}
-            <div className="ar-bars-card">
-              <div className="ar-bars on-light">
+            {/* Score graph — moved here from the hero (2026-07-12). Sits directly
+                on the cream sheet (no card/border); dark numbers/labels + gradient
+                columns, centred. */}
+            <div className="ar-bars on-light">
                 {CAT_ORDER.map((key) => {
                   const value = categoryScores[key];
                   const insufficient = insufficientKeys.includes(key);
@@ -620,7 +620,6 @@ export function AnalysisSummary({
                     </div>
                   );
                 })}
-              </div>
             </div>
             <div className="ar-sublabel">
               {rc(cmsCategoriesLabel, "מה התשובות שלכם מספרות", "What your answers tell")}
@@ -1216,7 +1215,9 @@ export function AnalysisSummary({
           font-weight: 500;
           color: rgba(255, 255, 255, 0.85);
           line-height: 1.45;
-          margin-bottom: 20px;
+          /* Subline is the last hero element now the graph moved out — no
+             trailing gap (2026-07-12). */
+          margin-bottom: 0;
         }
         .ar-bars {
           display: flex;
@@ -1251,16 +1252,13 @@ export function AnalysisSummary({
           font-weight: 500;
           line-height: 1.3;
         }
-        /* Score graph on the light sheet (2026-07-12): light card + dark
+        /* Score graph on the light sheet (2026-07-12): NO card/border — the
+           bars sit directly on the cream sheet, centred, with dark
            numbers/labels; columns keep the brand gradient (outline for the
            non-focus bars, filled for the focus bar). */
-        .ar-bars-card {
-          background: #fff;
-          border: 1px solid #ece2d4;
-          border-radius: 18px;
-          padding: 20px 16px 16px;
-          margin-bottom: 22px;
-          box-shadow: 0 10px 30px -22px rgba(60, 40, 30, 0.5);
+        .ar-bars.on-light {
+          max-width: 420px;
+          margin: 4px auto 24px;
         }
         .ar-bars.on-light .ar-v {
           color: #2e2622;
@@ -1289,9 +1287,10 @@ export function AnalysisSummary({
         }
         .ar-strip-stat {
           display: block;
-          font-size: 17px;
+          /* Mobile base; desktop bumps to 28px in the ≥760 media query. */
+          font-size: 20px;
           font-weight: 700;
-          line-height: 1.5;
+          line-height: 1.45;
         }
         .ar-herolink {
           display: inline-block;
@@ -1783,58 +1782,57 @@ export function AnalysisSummary({
            A gradient-outlined panel that reads as an extension of the chosen
            option, pulled up to sit flush beneath it, then the next option
            follows below. */
+        /* "What's included" panel, rendered under the SELECTED package card
+           (2026-07-12). Normal flow (no absolute / no negative margin), subtle
+           cream panel so it reads as a soft extension of the choice — smaller
+           and quieter than the option card itself. */
         .ar-incl-panel {
-          margin: -6px 0 16px;
-          background: linear-gradient(#fff, #fff) padding-box, var(--ar-grad) border-box;
-          border: 2px solid transparent;
-          border-radius: 16px;
-          padding: 16px 18px;
+          margin: 10px 0 4px;
+          background: #fbf6ef;
+          border: 1px solid #efe4d5;
+          border-radius: 14px;
+          padding: 14px 16px;
         }
         .ar-incl-head {
           text-align: center;
-          margin-bottom: 14px;
+          margin-bottom: 12px;
         }
         .ar-incl-title {
           font-family: var(--font-frank-ruhl), "Frank Ruhl Libre", serif;
           font-weight: 700;
-          font-size: 24px;
+          font-size: 18px;
           color: #2e2622;
         }
         .ar-incl-sub {
-          margin-top: 4px;
-          /* 20px per Itzik 2026-07-04 (was 16px). */
-          font-size: 20px;
+          margin-top: 2px;
+          font-size: 14px;
           font-weight: 600;
-          color: #5a4f46;
+          color: #7a6b5e;
         }
-        /* One horizontal row of feature items — never two rows (Itzik
-           2026-07-04), mobile AND desktop. Each item is a compact centered
-           column (✓ above the text) so all of them share the row width; the
-           text wraps inside its own column when it must. */
+        /* Mobile: a clean 2-column checklist (✓ inline, start-aligned) — not a
+           cramped 4-across row. Desktop switches to a single row of four in the
+           ≥760 media query. */
         .ar-incl {
-          display: flex;
-          flex-wrap: nowrap;
-          gap: 8px;
-          justify-content: space-between;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 8px 14px;
         }
         .ar-it {
-          flex: 1 1 0;
-          min-width: 0;
           display: flex;
-          flex-direction: column;
+          flex-direction: row;
           align-items: center;
-          gap: 5px;
-          font-size: 15px;
+          gap: 8px;
+          font-size: 16px;
           font-weight: 600;
           color: #2e2622;
-          text-align: center;
-          line-height: 1.25;
+          text-align: start;
+          line-height: 1.3;
         }
         .ar-it-check {
           flex: none;
           color: #d6409f;
           font-weight: 800;
-          font-size: 17px;
+          font-size: 16px;
         }
 
         /* Selected-cadence headline summary (restored money-path detail) */
@@ -2039,7 +2037,9 @@ export function AnalysisSummary({
             max-width: 780px;
             margin: 0 auto;
             text-align: center;
-            padding: 54px 40px 60px;
+            /* Bottom padding trimmed (was 60) now the graph left the hero, so it
+               ends clean under the subline (2026-07-12). */
+            padding: 54px 40px 46px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -2051,12 +2051,22 @@ export function AnalysisSummary({
           .ar-sub {
             font-size: 22px;
             max-width: 680px;
-            margin-bottom: 22px;
+            margin-bottom: 0;
           }
-          .ar-bars {
-            max-width: 620px;
+          .ar-bars.on-light {
+            max-width: 480px;
             height: 170px;
             width: 100%;
+          }
+          .ar-strip-stat {
+            font-size: 28px;
+          }
+          /* Included checklist becomes one clean row of four on desktop, 18px. */
+          .ar-incl {
+            grid-template-columns: repeat(4, 1fr);
+          }
+          .ar-it {
+            font-size: 18px;
           }
           .ar-sheet {
             max-width: 1060px;
