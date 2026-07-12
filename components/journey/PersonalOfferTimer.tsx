@@ -33,9 +33,9 @@ export function PersonalOfferTimer({
 
   if (!mounted || expired) return null;
 
-  // Hours on the left; include days only when there is at least one.
+  // Full days / hours / minutes / seconds, hours-left order (direction:ltr).
   const units: Array<{ v: number; u: string }> = [
-    ...(days > 0 ? [{ v: days, u: isHe ? "ימים" : "days" }] : []),
+    { v: days, u: isHe ? "ימים" : "days" },
     { v: hours, u: isHe ? "שעות" : "hrs" },
     { v: minutes, u: isHe ? "דקות" : "min" },
     { v: seconds, u: isHe ? "שניות" : "sec" },

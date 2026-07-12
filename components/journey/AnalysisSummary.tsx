@@ -11,6 +11,7 @@ import {
 import { useCmsText } from "@/hooks/useCmsText";
 import { useTrialOffer } from "@/hooks/useTrialOffer";
 import { PromoExpiryCountdown } from "@/components/journey/PromoExpiryCountdown";
+import { PersonalOfferTimer } from "@/components/journey/PersonalOfferTimer";
 import type { CadenceOption } from "@/lib/billing/pricing-validations";
 
 /**
@@ -689,18 +690,27 @@ export function AnalysisSummary({
                 );
               })()}
             </div>
-            {/* Short assessment is a first glimpse — the full picture comes with
-                the long assessment after joining. Link scrolls to the plans. */}
+            {/* Link to the plans (Stage 1). Teaser paragraph + arrow removed. */}
             <div className="ar-cats-more">
-              <p className="ar-cats-more-msg">
-                {isHe
-                  ? "האבחון הקצר נותן הצצה ראשונית. התמונה המלאה והמדויקת, על כל תחומי הזוגיות, מגיעה עם האבחון הארוך שנשלים יחד אחרי ההצטרפות."
-                  : "The short assessment is a first glimpse. The full, accurate picture across every area comes with the long assessment we'll complete together after you join."}
-              </p>
               <a href="#ar-price" className="ar-cats-more-link" onClick={scrollToPrice}>
-                {isHe ? "לתוצאות מדוייקות ולאבחון הארוך ←" : "For accurate results and the full assessment ←"}
+                {isHe ? "לתוצאות מדוייקות ולאבחון הארוך" : "For accurate results and the full assessment"}
               </a>
             </div>
+
+            {/* Social-proof strip — under the "long assessment" link (Stage 1).
+                ⚠️ PLACEHOLDER stats until Itzik approves. */}
+            {!journeySubscribed ? (
+              <div className="ar-strip">
+                <span className="ar-strip-since">{rc(cmsStrip1, "מאז 2021", "Since 2021")}</span>
+                <span className="ar-strip-stat">
+                  {rc(
+                    cmsStrip2,
+                    "שיפרנו ל-90% מהזוגות שלנו את הזוגיות, בעשרות אחוזים בכל חודש.",
+                    "We improved the relationship for 90% of our couples, by tens of percent every month.",
+                  )}
+                </span>
+              </div>
+            ) : null}
             <div className="ar-howcard">
               {/* Partner-invite share (Stage 1) — invite the partner to take the
                   assessment via WhatsApp or a copied link. */}
@@ -769,20 +779,6 @@ export function AnalysisSummary({
               </button>
             </div>
 
-            {/* Social-proof strip — sits tight under "מכאן ממשיכים יחד" as one
-                unit (Stage 1). ⚠️ PLACEHOLDER stats until Itzik approves. */}
-            {!journeySubscribed ? (
-              <div className="ar-strip">
-                <span className="ar-strip-since">{rc(cmsStrip1, "מאז 2021", "Since 2021")}</span>
-                <span className="ar-strip-stat">
-                  {rc(
-                    cmsStrip2,
-                    "שיפרנו ל-90% מהזוגות שלנו את הזוגיות, בעשרות אחוזים בכל חודש.",
-                    "We improved the relationship for 90% of our couples, by tens of percent every month.",
-                  )}
-                </span>
-              </div>
-            ) : null}
           </section>
         ) : null}
 
@@ -794,8 +790,14 @@ export function AnalysisSummary({
             <h2 className="ar-sh font-heading">
               {rc(cmsPriceTitle, "איזו חבילה מתאימה לכם?", "Which plan fits you?")}
             </h2>
-            {/* Tile countdown deferred to Stage 3 — the existing text urgency
-                (offer-window line) stays; 48h window untouched. */}
+            {/* Personal-window countdown (display='clock') — tiles wired to the
+                user's existing offer_expires_at (48h window unchanged). */}
+            {promoMode === "personal_window" &&
+            personalWindowDisplay === "clock" &&
+            offerExpiresAt &&
+            new Date(offerExpiresAt).getTime() > Date.now() ? (
+              <PersonalOfferTimer endsAt={offerExpiresAt} isHe={isHe} />
+            ) : null}
             <div className="ar-pricecard">
               {/* Stage-1 coaching add-on — with/without choice. Only rendered
                   once a coaching cost is configured (else the bundle == content
@@ -2152,7 +2154,7 @@ export function AnalysisSummary({
         .ar-callcta {
           display: inline-block;
           margin-top: 16px;
-          background: #7a1f2b;
+          background: var(--ar-grad);
           border: 0;
           color: #fff;
           font-family: inherit;
@@ -2162,10 +2164,10 @@ export function AnalysisSummary({
           border-radius: 999px;
           cursor: pointer;
           transition: 0.15s;
-          box-shadow: 0 10px 24px -12px rgba(122, 31, 43, 0.55);
+          box-shadow: 0 12px 26px -12px rgba(150, 60, 150, 0.5);
         }
         .ar-callcta:hover {
-          filter: brightness(1.08);
+          filter: brightness(1.06);
         }
 
         /* Schedule-a-call modal skeleton (Calendly wired later). */
