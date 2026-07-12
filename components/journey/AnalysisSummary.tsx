@@ -1656,28 +1656,30 @@ export function AnalysisSummary({
            button; the selected button is solid black. */
         .ar-coach {
           display: flex;
-          gap: 8px;
+          border: 1px solid #ece2d4;
+          border-radius: 13px;
+          padding: 5px;
+          gap: 5px;
           margin-bottom: 22px;
           background: transparent;
         }
         .ar-coach-opt {
           flex: 1;
-          border: 1px solid #e5dccb;
+          border: 0;
           cursor: pointer;
           font-family: var(--font-heebo), "Assistant", "Heebo", sans-serif;
           font-weight: 800;
           font-size: 14.5px;
-          color: #4b4640;
+          color: #8a7a6b;
           padding: 11px 8px;
-          border-radius: 11px;
+          border-radius: 9px;
           background: transparent;
           white-space: nowrap;
           transition: 0.18s;
         }
         .ar-coach-opt.sel {
+          background: #141210;
           color: #fff;
-          background: #241d1a;
-          border-color: transparent;
         }
         /* ✓ icon removed from the selected coaching toggle (Itzik 2026-07-04) —
            the gradient fill alone marks the selection. */
@@ -1717,47 +1719,70 @@ export function AnalysisSummary({
         /* Plan cards (pricing-redesign-approved.html): name+save on the start,
            price on the end (no period label). One .ar-opt-group per plan so the
            selected card + its included list read as one unit. */
+        /* The selection row is a transparent flex row; the card chrome (bg +
+           border) lives on .ar-opt-group. Radio/name at the start, price at the
+           end (justify-content:space-between; .ar-opt-info flex:1). */
         .ar-opt {
           display: flex;
-          /* Radio + price align to the plan NAME (top), not the taller info
-             column (which carries the savings line below). */
-          align-items: flex-start;
+          align-items: center;
+          justify-content: space-between;
           gap: 11px;
           width: 100%;
-          background: #fff;
-          border: 1.5px solid #ece2d4;
-          border-radius: 16px;
-          padding: 16px 17px;
+          background: none;
+          border: 0;
+          padding: 16px 17px 0;
+          position: relative;
+          z-index: 1;
           cursor: pointer;
           text-align: right;
           margin-bottom: 0;
           transition: 0.18s;
           font-family: inherit;
         }
+        /* Plan card — white bg + subtle border, clipped so the trial strip and
+           gradient ring follow the rounded corners. */
         .ar-opt-group {
+          position: relative;
+          background: #fff;
+          border: 1.5px solid #ece2d4;
+          border-radius: 16px;
+          overflow: hidden;
           margin-bottom: 12px;
         }
         .ar-opt-group:last-of-type {
           margin-bottom: 0;
         }
-        /* Selected group = the unified card: gradient border + soft bg; the
-           inner button/panel are flush content. */
+        /* Selected card = gradient border ring drawn by ::before (mask). */
         .ar-opt-group.sel {
-          border: 2px solid transparent;
-          background: linear-gradient(#fff, #fff) padding-box, var(--ar-grad) border-box;
-          border-radius: 16px;
+          border-color: transparent;
           box-shadow: 0 8px 20px -12px rgba(150, 60, 150, 0.35);
-          overflow: hidden;
+        }
+        .ar-opt-group.sel::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          border-radius: 16px;
+          padding: 2px;
+          background: linear-gradient(95deg, #6c5ce7, #d6409f 52%, #f79154);
+          -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+          -webkit-mask-composite: xor;
+          mask-composite: exclude;
+          pointer-events: none;
+          z-index: 2;
         }
         /* Trial "7 ימי ניסיון חינם" strip at the top of the SELECTED card. */
         .ar-trial-strip {
-          background: var(--ar-grad);
+          position: relative;
+          z-index: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 52px;
+          background: linear-gradient(95deg, #6c5ce7, #d6409f 52%, #f79154);
           color: #fff;
           font-family: var(--font-heebo), "Assistant", "Heebo", system-ui, sans-serif;
           font-weight: 800;
           font-size: 20px;
-          text-align: center;
-          padding: 8px 14px;
         }
         .ar-opt-group.sel .ar-opt {
           border: 0;
@@ -1774,7 +1799,9 @@ export function AnalysisSummary({
           border: 2px solid #d8c8b3;
           display: grid;
           place-items: center;
-          /* Centre the 22px ring on the 24px name line. */
+          /* Pin to the name line (top) so radio + name + price sit on one row
+             even when the promo note wraps a second line below the name. */
+          align-self: flex-start;
           margin-top: 3px;
         }
         .ar-opt.sel .ar-radio {
@@ -1839,10 +1866,13 @@ export function AnalysisSummary({
           /* A real space before the ₪ (Stage 1). */
           gap: 5px;
           white-space: nowrap;
+          font-size: 24px;
+          font-weight: 900;
+          color: #2e2622;
           font-family: var(--font-heebo), "Assistant", "Heebo", system-ui, sans-serif;
         }
         .ar-price-num {
-          font-size: 23px;
+          font-size: 24px;
           font-weight: 900;
           line-height: 1;
           color: #2e2622;
@@ -1850,7 +1880,7 @@ export function AnalysisSummary({
           -webkit-text-fill-color: #2e2622;
         }
         .ar-price-cur {
-          font-size: 14px;
+          font-size: 15px;
           font-weight: 800;
           line-height: 1;
           color: #8a7a6b;
