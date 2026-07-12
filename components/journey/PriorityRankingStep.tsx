@@ -133,7 +133,7 @@ export function PriorityRankingStep({
     >
       <h2
         className="mx-auto max-w-[32ch] text-center font-semibold leading-[1.4] text-[#2E2622] md:max-w-[42ch]"
-        style={{ fontFamily: ASSISTANT, fontSize: "22px" }}
+        style={{ fontFamily: ASSISTANT, fontSize: "25px" }}
       >
         {headline}
       </h2>
@@ -254,11 +254,12 @@ function RankRow({
         {index + 1}
       </span>
 
-      {/* Title + description */}
+      {/* Title (domain name) + description. Sizes apply on mobile (no md: gate)
+          — bumped for readability (Stage 1 mobile). */}
       <div className="min-w-0 flex-1">
-        <div className="text-[17.5px] font-bold leading-snug text-[#2E2622]">{label}</div>
+        <div className="text-[24px] font-bold leading-snug text-[#2E2622]">{label}</div>
         {desc ? (
-          <p className="mt-0.5 text-[13px] leading-snug text-[#a2917f]">{desc}</p>
+          <p className="mt-1 text-[20px] leading-snug text-[#a2917f]">{desc}</p>
         ) : null}
       </div>
 

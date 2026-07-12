@@ -198,6 +198,36 @@ export function AnalysisSummary({
 
   const [checkoutBusy, setCheckoutBusy] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  // Partner-invite share + "schedule a call" modal (Stage 1).
+  const [inviteCopied, setInviteCopied] = useState(false);
+  const [expertCallOpen, setExpertCallOpen] = useState(false);
+
+  const inviteUrl = () =>
+    typeof window !== "undefined"
+      ? `${window.location.origin}/${locale}/journey/assessment`
+      : "";
+  const shareInviteWhatsApp = () => {
+    const msg = isHe
+      ? "בואו נעשה יחד את האבחון הזוגי של מיאושי 💛"
+      : "Let's take Mioshy's couples assessment together 💛";
+    const url = inviteUrl();
+    if (typeof window !== "undefined") {
+      window.open(
+        `https://wa.me/?text=${encodeURIComponent(`${msg} ${url}`)}`,
+        "_blank",
+        "noopener",
+      );
+    }
+  };
+  const copyInviteLink = async () => {
+    try {
+      await navigator.clipboard.writeText(inviteUrl());
+      setInviteCopied(true);
+      window.setTimeout(() => setInviteCopied(false), 2000);
+    } catch {
+      /* clipboard blocked — no-op */
+    }
+  };
 
   // CMS string consumers (resolve to raw strings; fall back to bilingual).
   const checkoutErrGeneric = useCmsText("journeyAssessment.analysis.checkoutErrorGeneric").text;
@@ -655,6 +685,43 @@ export function AnalysisSummary({
               })}
             </div>
             <div className="ar-howcard">
+              {/* Partner-invite share (Stage 1) — invite the partner to take the
+                  assessment via WhatsApp or a copied link. */}
+              <div className="ar-share">
+                <div className="ar-share-title">
+                  {isHe ? "הזמינו את בן/בת הזוג לאבחון" : "Invite your partner to the assessment"}
+                </div>
+                <div className="ar-share-btns">
+                  <button
+                    type="button"
+                    className="ar-share-btn wa"
+                    onClick={shareInviteWhatsApp}
+                    aria-label={isHe ? "שיתוף בוואטסאפ" : "Share on WhatsApp"}
+                  >
+                    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+                      <path
+                        fill="currentColor"
+                        d="M12 2a10 10 0 0 0-8.6 15l-1.3 4.8 4.9-1.3A10 10 0 1 0 12 2zm5.8 14.2c-.2.7-1.4 1.3-2 1.4-.5.1-1.2.1-1.9-.1-.4-.1-1-.3-1.7-.6-3-1.3-4.9-4.3-5-4.5-.2-.2-1.3-1.7-1.3-3.2s.8-2.3 1.1-2.6c.3-.3.6-.4.8-.4h.6c.2 0 .4 0 .6.5l.9 2.1c.1.2.1.4 0 .6l-.4.6c-.2.2-.3.4-.1.7.5.8 1.1 1.4 1.8 1.9.3.2.6.4 1 .1l.7-.7c.2-.2.4-.2.6-.1l2 1c.3.1.5.2.5.4.1.2.1.9-.1 1.2z"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    className="ar-share-btn copy"
+                    onClick={copyInviteLink}
+                    aria-label={isHe ? "העתקת קישור" : "Copy link"}
+                  >
+                    <svg viewBox="0 0 24 24" width="21" height="21" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1" />
+                      <path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1" />
+                    </svg>
+                  </button>
+                </div>
+                <div className={`ar-share-copied${inviteCopied ? " show" : ""}`} aria-live="polite">
+                  {isHe ? "הקישור הועתק!" : "Link copied!"}
+                </div>
+              </div>
+
               <div className="ar-hl">
                 {rc(cmsContinueLabel, "מכאן ממשיכים יחד", "From here we continue together")}
               </div>
@@ -672,6 +739,15 @@ export function AnalysisSummary({
                   "We'll complete the full assessment together, for a more accurate picture and deeper results, right after you join Mioshy's couples coaching.",
                 )}
               </p>
+              {/* Schedule-a-call CTA (Stage 1) — opens a skeleton modal; the
+                  Calendly embed is wired in when the booking link arrives. */}
+              <button
+                type="button"
+                className="ar-callcta"
+                onClick={() => setExpertCallOpen(true)}
+              >
+                {isHe ? "לקביעת שיחה עם נציג" : "Schedule a call with a rep"}
+              </button>
             </div>
 
             {/* Social-proof strip — sits tight under "מכאן ממשיכים יחד" as one
@@ -1050,6 +1126,44 @@ export function AnalysisSummary({
           </p>
         ) : null}
       </div>
+
+      {/* Schedule-a-call modal skeleton (Stage 1). The Calendly embed replaces
+          the placeholder box once the booking link is provided. */}
+      {expertCallOpen ? (
+        <div
+          className="ar-callmodal-root"
+          role="dialog"
+          aria-modal="true"
+          aria-label={isHe ? "קביעת שיחה עם נציג" : "Schedule a call with a rep"}
+        >
+          <div className="ar-callmodal-scrim" onClick={() => setExpertCallOpen(false)} />
+          <div className="ar-callmodal">
+            <button
+              type="button"
+              className="ar-callmodal-x"
+              onClick={() => setExpertCallOpen(false)}
+              aria-label={isHe ? "סגירה" : "Close"}
+            >
+              ×
+            </button>
+            <h3 className="ar-callmodal-title">
+              {isHe ? "קביעת שיחה עם נציג" : "Schedule a call with a rep"}
+            </h3>
+            <p className="ar-callmodal-sub">
+              {isHe
+                ? "בחרו זמן שנוח לכם ונשמח לדבר."
+                : "Pick a time that suits you and we'll be glad to talk."}
+            </p>
+            <div className="ar-callmodal-embed">
+              <span>
+                {isHe
+                  ? "יומן הזימונים ייטען כאן בקרוב"
+                  : "The scheduling calendar will load here soon"}
+              </span>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <style jsx>{`
         .ar-root {
@@ -1989,6 +2103,135 @@ export function AnalysisSummary({
         .ar-anchor :global(b) {
           color: #7a1f2b;
           font-weight: 800;
+        }
+
+        /* Partner-invite share (Stage 1) — WhatsApp + copy-link, centred. */
+        .ar-share {
+          text-align: center;
+          margin-bottom: 20px;
+        }
+        .ar-share-title {
+          font-size: 17px;
+          font-weight: 700;
+          color: #5a4f46;
+          margin-bottom: 10px;
+        }
+        .ar-share-btns {
+          display: inline-flex;
+          gap: 12px;
+        }
+        .ar-share-btn {
+          width: 52px;
+          height: 52px;
+          border-radius: 50%;
+          border: 0;
+          cursor: pointer;
+          display: grid;
+          place-items: center;
+          color: #fff;
+          transition: transform 0.15s;
+        }
+        .ar-share-btn:hover {
+          transform: translateY(-2px);
+        }
+        .ar-share-btn.wa {
+          background: #25d366;
+        }
+        .ar-share-btn.copy {
+          background: var(--ar-grad);
+        }
+        .ar-share-copied {
+          font-size: 13px;
+          font-weight: 700;
+          color: #2e8b57;
+          margin-top: 8px;
+          height: 16px;
+          opacity: 0;
+          transition: opacity 0.2s;
+        }
+        .ar-share-copied.show {
+          opacity: 1;
+        }
+
+        /* Schedule-a-call CTA (Stage 1). */
+        .ar-callcta {
+          display: inline-block;
+          margin-top: 16px;
+          background: transparent;
+          border: 1.5px solid #7a1f2b;
+          color: #7a1f2b;
+          font-family: inherit;
+          font-weight: 800;
+          font-size: 17px;
+          padding: 11px 22px;
+          border-radius: 999px;
+          cursor: pointer;
+          transition: 0.15s;
+        }
+        .ar-callcta:hover {
+          background: #7a1f2b;
+          color: #fff;
+        }
+
+        /* Schedule-a-call modal skeleton (Calendly wired later). */
+        .ar-callmodal-root {
+          position: fixed;
+          inset: 0;
+          z-index: 130;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 16px;
+        }
+        .ar-callmodal-scrim {
+          position: absolute;
+          inset: 0;
+          background: rgba(30, 20, 16, 0.55);
+          backdrop-filter: blur(2px);
+          -webkit-backdrop-filter: blur(2px);
+        }
+        .ar-callmodal {
+          position: relative;
+          width: 100%;
+          max-width: 460px;
+          background: #fff;
+          border-radius: 20px;
+          padding: 26px 22px;
+          text-align: center;
+          box-shadow: 0 30px 70px -30px rgba(40, 25, 18, 0.6);
+        }
+        .ar-callmodal-x {
+          position: absolute;
+          top: 10px;
+          inset-inline-end: 14px;
+          background: none;
+          border: 0;
+          font-size: 26px;
+          line-height: 1;
+          color: #9a8a7c;
+          cursor: pointer;
+        }
+        .ar-callmodal-title {
+          font-family: var(--font-frank-ruhl), "Frank Ruhl Libre", serif;
+          font-size: 24px;
+          font-weight: 800;
+          color: #2e2622;
+          margin-bottom: 8px;
+        }
+        .ar-callmodal-sub {
+          font-size: 16px;
+          color: #5a4f46;
+          margin-bottom: 18px;
+        }
+        .ar-callmodal-embed {
+          min-height: 260px;
+          border: 1.5px dashed #e0d3c2;
+          border-radius: 14px;
+          display: grid;
+          place-items: center;
+          color: #a2917f;
+          font-size: 15px;
+          padding: 20px;
         }
 
         /* ============ DESKTOP (≥760) ============ */
