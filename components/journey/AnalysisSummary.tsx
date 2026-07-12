@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import type { Analysis, Locale } from "@/lib/journey/types";
 import {
@@ -209,8 +209,13 @@ export function AnalysisSummary({
   // "unset" and renders the bilingual literal fallback. Prices/cadence DATA is
   // never CMS — only labels.
   const RK = "journeyAssessment.results";
-  const cmsEyebrow = useCmsText(`${RK}.eyebrow`).text;
   const cmsHeroSub = useCmsText(`${RK}.heroSub`).text;
+  // Results-page improvements (2026-07-12) — new keys so the preview renders the
+  // new copy via inline fallback without touching the shared prod cms_texts.
+  const cmsEyebrowShort = useCmsText(`${RK}.eyebrowShort`).text;
+  const cmsH1Ready = useCmsText(`${RK}.h1Ready`).text;
+  const cmsStrip1 = useCmsText(`${RK}.strip1`).text;
+  const cmsStrip2 = useCmsText(`${RK}.strip2`).text;
   const cmsFeedbackLabel = useCmsText(`${RK}.feedbackLabel`).text;
   const cmsCategoriesLabel = useCmsText(`${RK}.categoriesLabel`).text;
   const cmsContinueLabel = useCmsText(`${RK}.continueLabel`).text;
@@ -308,12 +313,8 @@ export function AnalysisSummary({
   }
 
   // ── Dynamic content (AI + categories) ──────────────────────────────────
-  const aiHero = analysis?.summary.ai_hero ?? null;
-  const heroText = aiHero ? (isHe ? aiHero.hero_he : aiHero.hero_en) : null;
-  // AI failed → generic, NON-deterministic h1 (no fabricated insight).
-  const h1Text =
-    heroText ??
-    (isHe ? "הנה תמונת המצב מהאבחון שלכם." : "Here's the picture from your assessment.");
+  // The h1 is now a fixed CMS string (2026-07-12) — the AI ai_hero is no longer
+  // used for the title; its narrative still drives the personal-feedback card.
   const narrative = analysis
     ? isHe ? analysis.summary.narrative_he : analysis.summary.narrative_en
     : null;
@@ -495,6 +496,39 @@ export function AnalysisSummary({
       : `billing begins, ${priceStr(amt)} ${recurringLabel}.`;
   })();
 
+  // "What's included" panel — now rendered INSIDE the selected package card
+  // (2026-07-12) so it moves with the selection. The expert item (included2) is
+  // gated on the coaching toggle, unchanged. Content is identical to before.
+  const includedPanel = (
+    <div className="ar-incl-panel">
+      <div className="ar-incl-head">
+        <h3 className="ar-incl-title font-heading">
+          {isHe ? "מה כלול" : "What's included"}
+        </h3>
+        <p className="ar-incl-sub">
+          {isHe
+            ? "מנוי אחד, שני בני זוג. בלי תוספת מחיר."
+            : "One subscription, both partners. No extra charge."}
+        </p>
+      </div>
+      <div className="ar-incl">
+        {[
+          rc(cmsIncluded1, "פרק חדש כל שבוע", "A new chapter every week"),
+          ...(coaching
+            ? [rc(cmsIncluded2, "מומחה זוגיות פרטי בצ'אט", "A private relationship expert in chat")]
+            : []),
+          rc(cmsIncluded3, "משחקי זוגות אונליין", "Online couples games"),
+          rc(cmsIncluded4, "הסקס של מיאושי", "Mioshy's sex games"),
+        ].map((it, i) => (
+          <div className="ar-it" key={i}>
+            <span aria-hidden className="ar-it-check">✓</span>
+            <span>{it}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
   return (
     <div className="ar-root" dir={isHe ? "rtl" : "ltr"}>
       {/* ── HERO ───────────────────────────────────────────────────── */}
@@ -512,12 +546,12 @@ export function AnalysisSummary({
           <div className="ar-eyebrow">
             {isSubscribe
               ? rc(cmsSubEyebrow, "הייעוץ הזוגי של מיאושי", "Mioshy couples coaching")
-              : rc(cmsEyebrow, "תוצאות האבחון שלכם", "Your assessment results")}
+              : rc(cmsEyebrowShort, "תוצאות האבחון הקצר שלכם", "Your short assessment results")}
           </div>
           <h1 className="ar-h1 font-heading">
             {isSubscribe
               ? rc(cmsSubH1, "מתחילים היום לפלפל את הזוגיות!", "Start spicing up your relationship today!")
-              : h1Text}
+              : rc(cmsH1Ready, "תוצאות האבחון שלך מוכנות", "Your assessment results are ready")}
           </h1>
           <p className="ar-sub">
             {isSubscribe
@@ -532,34 +566,8 @@ export function AnalysisSummary({
                   "You completed the assessment. We analysed your answers and built a personal picture showing where the relationship is strong, and where the biggest potential to improve is.",
                 )}
           </p>
-          {!isSubscribe && categoryScores ? (
-            <div className="ar-bars">
-              {CAT_ORDER.map((key) => {
-                const value = categoryScores[key];
-                const insufficient = insufficientKeys.includes(key);
-                const hot = !insufficient && key === categoryScores.lowest_key;
-                const heightPct = insufficient ? 8 : Math.max(14, Math.min(100, value));
-                return (
-                  <div className={`ar-bar${hot ? " hot" : ""}`} key={key}>
-                    <span className="ar-v">{insufficient ? "–" : value}</span>
-                    <div
-                      className="ar-col"
-                      style={
-                        hot
-                          ? { height: `${heightPct}%`, background: "var(--ar-grad)", border: 0 }
-                          : {
-                              height: `${heightPct}%`,
-                              background:
-                                "linear-gradient(rgba(255,255,255,.07),rgba(255,255,255,.07)) padding-box, var(--ar-grad) border-box",
-                            }
-                      }
-                    />
-                    <span className="ar-lbl">{isHe ? BAR_LABEL[key].he : BAR_LABEL[key].en}</span>
-                  </div>
-                );
-              })}
-            </div>
-          ) : null}
+          {/* Score graph moved out of the hero into the light sheet, above the
+              "what your answers tell" section (2026-07-12). */}
           {/* Hero link removed (2026-07-02) — duplicated the sticky CTA + the
               offer section and distracted from reading the report. */}
         </div>
@@ -584,6 +592,35 @@ export function AnalysisSummary({
             (the 5-domain graph bars in the hero above are kept). */}
         {!isSubscribe && categoryScores ? (
           <section className="ar-section">
+            {/* Score graph — moved here from the hero (2026-07-12). Sits directly
+                on the cream sheet (no card/border); dark numbers/labels + gradient
+                columns, centred. */}
+            <div className="ar-bars on-light">
+                {CAT_ORDER.map((key) => {
+                  const value = categoryScores[key];
+                  const insufficient = insufficientKeys.includes(key);
+                  const hot = !insufficient && key === categoryScores.lowest_key;
+                  const heightPct = insufficient ? 8 : Math.max(14, Math.min(100, value));
+                  return (
+                    <div className={`ar-bar${hot ? " hot" : ""}`} key={key}>
+                      <span className="ar-v">{insufficient ? "–" : value}</span>
+                      <div
+                        className="ar-col"
+                        style={
+                          hot
+                            ? { height: `${heightPct}%`, background: "var(--ar-grad)", border: 0 }
+                            : {
+                                height: `${heightPct}%`,
+                                background:
+                                  "linear-gradient(rgba(122,31,43,.05),rgba(122,31,43,.05)) padding-box, var(--ar-grad) border-box",
+                              }
+                        }
+                      />
+                      <span className="ar-lbl">{isHe ? BAR_LABEL[key].he : BAR_LABEL[key].en}</span>
+                    </div>
+                  );
+                })}
+            </div>
             <div className="ar-sublabel">
               {rc(cmsCategoriesLabel, "מה התשובות שלכם מספרות", "What your answers tell")}
             </div>
@@ -641,6 +678,21 @@ export function AnalysisSummary({
               </p>
             </div>
           </section>
+        ) : null}
+
+        {/* Social-proof strip (2026-07-12) — gradient band above "what you get".
+            ⚠️ PLACEHOLDER stats until Itzik approves real numbers. */}
+        {!journeySubscribed && !isSubscribe ? (
+          <div className="ar-strip">
+            <span className="ar-strip-since">{rc(cmsStrip1, "מאז 2021", "Since 2021")}</span>
+            <span className="ar-strip-stat">
+              {rc(
+                cmsStrip2,
+                "שיפרנו ל-90% מהזוגות שלנו את הזוגיות, בעשרות אחוזים בכל חודש.",
+                "We improved the relationship for 90% of our couples, by tens of percent every month.",
+              )}
+            </span>
+          </div>
         ) : null}
 
         {/* IMPROVEMENTS — static design copy (NOT the AI recommendations).
@@ -794,12 +846,12 @@ export function AnalysisSummary({
                     ? Math.floor((monthlyFull * 12 - amt) / monthlyFull)
                     : null;
                 return (
+                  <Fragment key={c.cadence}>
                   <button
                     type="button"
                     className={`ar-opt${selected ? " sel" : ""}`}
                     onClick={() => setSelectedCadence(c.cadence)}
                     aria-pressed={selected}
-                    key={c.cadence}
                   >
                     <span className="ar-radio" />
                     <span className="ar-opt-info">
@@ -872,6 +924,8 @@ export function AnalysisSummary({
                       <span className="ar-price-cur">{sym}</span>
                     </span>
                   </button>
+                  {selected ? includedPanel : null}
+                  </Fragment>
                 );
               })}
               </div>
@@ -937,39 +991,9 @@ export function AnalysisSummary({
                 <p className="ar-offer-strip">{offerWindowLabel}</p>
               ) : null}
 
-              <hr className="ar-zone-sep" aria-hidden />
-
-              {/* ── Zone B — "מה כלול" 2-col grid. The coaching DUPLICATE
-                  (included5 "ייעוץ זוגי עם מיאושי") is dropped: the chat item
-                  (included2) already represents the coaching add-on, so we don't
-                  list coaching twice. included2 stays gated on the coaching
-                  toggle so the without-coaching bundle never promises the chat.
-                  The "מנוי אחד, שני בני זוג" line is the section subtitle. */}
-              <div className="ar-incl-head">
-                <h3 className="ar-incl-title font-heading">
-                  {isHe ? "מה כלול" : "What's included"}
-                </h3>
-                <p className="ar-incl-sub">
-                  {isHe
-                    ? "מנוי אחד, שני בני זוג. בלי תוספת מחיר."
-                    : "One subscription, both partners. No extra charge."}
-                </p>
-              </div>
-              <div className="ar-incl">
-                {[
-                  rc(cmsIncluded1, "פרק חדש כל שבוע", "A new chapter every week"),
-                  ...(coaching
-                    ? [rc(cmsIncluded2, "מומחה זוגיות פרטי בצ'אט", "A private relationship expert in chat")]
-                    : []),
-                  rc(cmsIncluded3, "משחקי זוגות אונליין", "Online couples games"),
-                  rc(cmsIncluded4, "הסקס של מיאושי", "Mioshy's sex games"),
-                ].map((it, i) => (
-                  <div className="ar-it" key={i}>
-                    <span aria-hidden className="ar-it-check">✓</span>
-                    <span>{it}</span>
-                  </div>
-                ))}
-              </div>
+              {/* "מה כלול" moved INTO the selected package card above (2026-07-12,
+                  includedPanel) so it follows the selection. The coaching item
+                  (included2) is still gated on the coaching toggle there. */}
 
               <hr className="ar-zone-sep" aria-hidden />
 
@@ -1191,7 +1215,9 @@ export function AnalysisSummary({
           font-weight: 500;
           color: rgba(255, 255, 255, 0.85);
           line-height: 1.45;
-          margin-bottom: 20px;
+          /* Subline is the last hero element now the graph moved out — no
+             trailing gap (2026-07-12). */
+          margin-bottom: 0;
         }
         .ar-bars {
           display: flex;
@@ -1225,6 +1251,46 @@ export function AnalysisSummary({
           text-align: center;
           font-weight: 500;
           line-height: 1.3;
+        }
+        /* Score graph on the light sheet (2026-07-12): NO card/border — the
+           bars sit directly on the cream sheet, centred, with dark
+           numbers/labels; columns keep the brand gradient (outline for the
+           non-focus bars, filled for the focus bar). */
+        .ar-bars.on-light {
+          max-width: 420px;
+          margin: 4px auto 24px;
+        }
+        .ar-bars.on-light .ar-v {
+          color: #2e2622;
+        }
+        .ar-bars.on-light .ar-lbl {
+          color: #6b5b4e;
+        }
+        /* Social-proof gradient strip (2026-07-12) — white text on brand grad. */
+        .ar-strip {
+          margin: 8px 0 26px;
+          background: var(--ar-grad);
+          border-radius: 16px;
+          padding: 16px 20px;
+          text-align: center;
+          color: #fff;
+          box-shadow: 0 12px 28px -16px rgba(150, 60, 150, 0.5);
+        }
+        .ar-strip-since {
+          display: block;
+          font-size: 13px;
+          font-weight: 800;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          opacity: 0.92;
+          margin-bottom: 4px;
+        }
+        .ar-strip-stat {
+          display: block;
+          /* Mobile base; desktop bumps to 28px in the ≥760 media query. */
+          font-size: 20px;
+          font-weight: 700;
+          line-height: 1.45;
         }
         .ar-herolink {
           display: inline-block;
@@ -1712,51 +1778,61 @@ export function AnalysisSummary({
         }
         /* Zone B — "מה כלול" header + 2-col grid (mockup v1, Itzik 2026-07-04),
            site tokens/fonts; magenta ✓ from the brand palette. */
+        /* Included panel now lives under the SELECTED package card (2026-07-12).
+           A gradient-outlined panel that reads as an extension of the chosen
+           option, pulled up to sit flush beneath it, then the next option
+           follows below. */
+        /* "What's included" panel, rendered under the SELECTED package card
+           (2026-07-12). Normal flow (no absolute / no negative margin), subtle
+           cream panel so it reads as a soft extension of the choice — smaller
+           and quieter than the option card itself. */
+        .ar-incl-panel {
+          margin: 10px 0 4px;
+          background: #fbf6ef;
+          border: 1px solid #efe4d5;
+          border-radius: 14px;
+          padding: 14px 16px;
+        }
         .ar-incl-head {
           text-align: center;
-          margin-bottom: 14px;
+          margin-bottom: 12px;
         }
         .ar-incl-title {
           font-family: var(--font-frank-ruhl), "Frank Ruhl Libre", serif;
           font-weight: 700;
-          font-size: 24px;
+          font-size: 18px;
           color: #2e2622;
         }
         .ar-incl-sub {
-          margin-top: 4px;
-          /* 20px per Itzik 2026-07-04 (was 16px). */
-          font-size: 20px;
+          margin-top: 2px;
+          font-size: 14px;
           font-weight: 600;
-          color: #5a4f46;
+          color: #7a6b5e;
         }
-        /* One horizontal row of feature items — never two rows (Itzik
-           2026-07-04), mobile AND desktop. Each item is a compact centered
-           column (✓ above the text) so all of them share the row width; the
-           text wraps inside its own column when it must. */
+        /* Mobile: a clean 2-column checklist (✓ inline, start-aligned) — not a
+           cramped 4-across row. Desktop switches to a single row of four in the
+           ≥760 media query. */
         .ar-incl {
-          display: flex;
-          flex-wrap: nowrap;
-          gap: 8px;
-          justify-content: space-between;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 8px 14px;
         }
         .ar-it {
-          flex: 1 1 0;
-          min-width: 0;
           display: flex;
-          flex-direction: column;
+          flex-direction: row;
           align-items: center;
-          gap: 5px;
-          font-size: 15px;
+          gap: 8px;
+          font-size: 16px;
           font-weight: 600;
           color: #2e2622;
-          text-align: center;
-          line-height: 1.25;
+          text-align: start;
+          line-height: 1.3;
         }
         .ar-it-check {
           flex: none;
           color: #d6409f;
           font-weight: 800;
-          font-size: 17px;
+          font-size: 16px;
         }
 
         /* Selected-cadence headline summary (restored money-path detail) */
@@ -1961,7 +2037,9 @@ export function AnalysisSummary({
             max-width: 780px;
             margin: 0 auto;
             text-align: center;
-            padding: 54px 40px 60px;
+            /* Bottom padding trimmed (was 60) now the graph left the hero, so it
+               ends clean under the subline (2026-07-12). */
+            padding: 54px 40px 46px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -1973,12 +2051,22 @@ export function AnalysisSummary({
           .ar-sub {
             font-size: 22px;
             max-width: 680px;
-            margin-bottom: 22px;
+            margin-bottom: 0;
           }
-          .ar-bars {
-            max-width: 620px;
+          .ar-bars.on-light {
+            max-width: 480px;
             height: 170px;
             width: 100%;
+          }
+          .ar-strip-stat {
+            font-size: 28px;
+          }
+          /* Included checklist becomes one clean row of four on desktop, 18px. */
+          .ar-incl {
+            grid-template-columns: repeat(4, 1fr);
+          }
+          .ar-it {
+            font-size: 18px;
           }
           .ar-sheet {
             max-width: 1060px;
