@@ -13,6 +13,7 @@ import { useTrialOffer } from "@/hooks/useTrialOffer";
 import { PromoExpiryCountdown } from "@/components/journey/PromoExpiryCountdown";
 import { PersonalOfferTimer } from "@/components/journey/PersonalOfferTimer";
 import { ConsultationCallButton } from "@/components/journey/ConsultationCallButton";
+import { WeeklyProgramSection } from "@/components/journey/WeeklyProgramSection";
 import type { CadenceOption } from "@/lib/billing/pricing-validations";
 
 /**
@@ -751,6 +752,15 @@ export function AnalysisSummary({
                 </div>
               </div>
 
+              {/* Expert paragraph (Stage 2) — below the share block. */}
+              {!isSubscribe ? (
+                <p className="ar-expert">
+                  {isHe
+                    ? "מרגע שתצטרפו, מומחה זוגי מהצוות שלנו הופך להיות שלכם. הוא קורא את האבחון שלכם ובונה לכם תוכנית סדורה, עם פרקים שבועיים שמתקדמים יחד אתכם צעד אחר צעד. וכשעולה שאלה או רגע קשה באמצע הערב, הוא שם בשבילכם בצ׳אט."
+                    : "From the moment you join, a relationship expert from our team becomes yours. They read your assessment and build you a structured plan, with weekly chapters that progress with you step by step. And when a question or a hard moment comes up mid-evening, they're there for you in chat."}
+                </p>
+              ) : null}
+
               <div className="ar-hl">
                 {rc(cmsContinueLabel, "מכאן ממשיכים יחד", "From here we continue together")}
               </div>
@@ -780,6 +790,14 @@ export function AnalysisSummary({
         ) : null}
 
         {/* "מה תקבלו בליווי" section removed (Stage 1 design). */}
+
+        {/* Weekly-program section — reused from the journey hub; CTA scrolls to
+            the plans below (Stage 2). */}
+        {!isSubscribe ? (
+          <div className="ar-weekly">
+            <WeeklyProgramSection ctaHref="#ar-price" />
+          </div>
+        ) : null}
 
         {/* PRICE (non-subscriber) / ACTIVE-SUBSCRIBER card */}
         {!journeySubscribed ? (
@@ -1391,9 +1409,9 @@ export function AnalysisSummary({
           border: 4px solid #fff;
         }
         .ar-fbtext {
-          font-size: 24px;
+          font-size: 20px;
           font-weight: 500;
-          line-height: 1.5;
+          line-height: 1.4;
           color: #2e2622;
         }
 
@@ -1482,13 +1500,28 @@ export function AnalysisSummary({
         .ar-cats-more-link {
           display: inline-block;
           font-size: 18px;
-          font-weight: 800;
-          background: var(--ar-grad);
-          -webkit-background-clip: text;
-          background-clip: text;
-          -webkit-text-fill-color: transparent;
-          color: transparent;
+          font-weight: 400;
+          color: #000000;
+          text-decoration: underline;
+          text-underline-offset: 3px;
           cursor: pointer;
+        }
+
+        /* Expert paragraph below the share block (Stage 2). */
+        .ar-expert {
+          max-width: 620px;
+          margin: 20px auto 0;
+          text-align: center;
+          font-size: 19px;
+          line-height: 1.55;
+          font-weight: 500;
+          color: #2e2622;
+        }
+        /* Weekly-program section wrapper — the shared component brings its own
+           (start-aligned) styling; just reset the sheet's centering. */
+        .ar-weekly {
+          text-align: start;
+          margin-top: 12px;
         }
 
         /* HOW IT CONTINUES */
@@ -2280,7 +2313,7 @@ export function AnalysisSummary({
             height: 190px;
           }
           .ar-fbtext {
-            font-size: 28px;
+            font-size: 20px;
           }
           .ar-imp {
             display: flex;
