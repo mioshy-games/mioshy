@@ -10,6 +10,7 @@ import { PriorityRankingStep } from "./PriorityRankingStep";
 import { InlineAuthStep } from "./InlineAuthStep";
 import { PaywallGateModal } from "./PaywallGateModal";
 import { AnalysisSummary, type JourneyPromoSummary } from "./AnalysisSummary";
+import { ReconsentPrompt } from "./ReconsentPrompt";
 import type { CadenceOption } from "@/lib/billing/pricing-validations";
 import {
   AssessmentInterstitial,
@@ -881,6 +882,9 @@ export function JourneyClient({
           offerExpiresAt={offerExpiresAt}
           promoMode={promoMode}
         />
+        {/* Re-consent popup — self-gating (only shows for signed-in users who
+            didn't opt in and haven't answered it yet). Results page only. */}
+        <ReconsentPrompt />
       </div>
     );
   }
