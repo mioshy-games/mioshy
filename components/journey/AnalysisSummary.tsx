@@ -1386,15 +1386,6 @@ export function AnalysisSummary({
           max-width: 640px;
           margin: 0 auto;
         }
-        .ar-photo {
-          width: 150px;
-          height: 150px;
-          border-radius: 50%;
-          margin: 0 auto 20px;
-          background: url("/images/assess.webp") center 25% / cover no-repeat;
-          box-shadow: 0 14px 34px -14px rgba(80, 50, 35, 0.45);
-          border: 4px solid #fff;
-        }
         .ar-fbtext {
           font-size: 20px;
           font-weight: 500;
@@ -1534,50 +1525,6 @@ export function AnalysisSummary({
         }
         .ar-howcard p + p {
           margin-top: 12px;
-        }
-
-        /* IMPROVEMENTS */
-        .ar-imp {
-          display: flex;
-          flex-direction: column;
-          gap: 13px;
-          margin-top: 18px;
-        }
-        .ar-improw {
-          display: flex;
-          gap: 15px;
-          align-items: center;
-          background: #fffdf9;
-          border-radius: 18px;
-          padding: 18px;
-          box-shadow: 0 6px 18px -14px rgba(80, 50, 35, 0.3);
-        }
-        .ar-ic {
-          flex: none;
-          width: 48px;
-          height: 48px;
-          border-radius: 14px;
-          background: linear-gradient(
-            150deg,
-            rgba(108, 92, 231, 0.16),
-            rgba(214, 64, 159, 0.12)
-          );
-          display: grid;
-          place-items: center;
-          color: #b3318c;
-        }
-        .ar-ic :global(svg) {
-          width: 25px;
-          height: 25px;
-          fill: none;
-          stroke: currentColor;
-          stroke-width: 1.7;
-          stroke-linecap: round;
-          stroke-linejoin: round;
-        }
-        .ar-improw > span:last-child {
-          font-size: 20px;
-          font-weight: 700;
         }
 
         /* PRICE */
@@ -2317,7 +2264,6 @@ export function AnalysisSummary({
           .ar-strip-stat {
             font-size: 28px;
           }
-          /* Included checklist becomes one clean row of four on desktop, 18px. */
           .ar-sheet {
             max-width: 1060px;
             margin: 0 auto;
@@ -2332,29 +2278,8 @@ export function AnalysisSummary({
           .ar-fbcard {
             max-width: 680px;
           }
-          .ar-photo {
-            width: 190px;
-            height: 190px;
-          }
           .ar-fbtext {
             font-size: 20px;
-          }
-          .ar-imp {
-            display: flex;
-            flex-flow: row wrap;
-            justify-content: center;
-            gap: 16px 18px;
-            max-width: 820px;
-            margin-inline: auto;
-          }
-          .ar-improw {
-            width: auto;
-            padding: 20px 26px;
-          }
-          .ar-improw:nth-child(2),
-          .ar-improw:nth-child(4),
-          .ar-improw:nth-child(6) {
-            transform: translateY(16px);
           }
           .ar-pricecard {
             /* wider (v9) so the one-line sub + centered timer + price fit */
