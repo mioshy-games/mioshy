@@ -133,12 +133,12 @@ export function PriorityRankingStep({
     >
       <h2
         className="mx-auto max-w-[32ch] text-center font-semibold leading-[1.4] text-[#2E2622] md:max-w-[42ch]"
-        style={{ fontFamily: ASSISTANT, fontSize: "clamp(23px,5vw,30px)" }}
+        style={{ fontFamily: ASSISTANT, fontSize: "22px" }}
       >
         {headline}
       </h2>
       {subline ? (
-        <p className="mx-auto mt-3 max-w-[34ch] text-center text-[15px] font-semibold text-[#a2917f]">
+        <p className="mx-auto mt-3 max-w-[34ch] text-center text-[20px] font-semibold text-[#a2917f]">
           {subline}
         </p>
       ) : null}
@@ -152,7 +152,7 @@ export function PriorityRankingStep({
         }}
         as="ul"
         aria-roledescription={isHe ? "רשימה הניתנת לגרירה" : "reorderable list"}
-        className="mx-auto flex w-[70%] flex-col gap-[10px] md:w-full md:max-w-[780px]"
+        className="mx-auto flex w-[90%] flex-col gap-[10px] md:w-full md:max-w-[780px]"
         style={{ marginTop: GAP, listStyle: "none" }}
       >
         {order.map((key, idx) => (

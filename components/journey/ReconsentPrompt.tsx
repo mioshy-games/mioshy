@@ -183,7 +183,7 @@ export function ReconsentPrompt() {
           font-size: 14px;
           line-height: 1.45;
           color: #8a7a6b;
-          max-width: 330px;
+          /* Shortened copy fits on a single line (Stage 1) — no narrow cap. */
           margin: 16px auto 12px;
         }
         .reconsent-cta {

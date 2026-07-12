@@ -215,7 +215,6 @@ export function AnalysisSummary({
   // "unset" and renders the bilingual literal fallback. Prices/cadence DATA is
   // never CMS — only labels.
   const RK = "journeyAssessment.results";
-  const cmsHeroSub = useCmsText(`${RK}.heroSub`).text;
   // Results-page improvements (2026-07-12) — new keys so the preview renders the
   // new copy via inline fallback without touching the shared prod cms_texts.
   const cmsEyebrowShort = useCmsText(`${RK}.eyebrowShort`).text;
@@ -227,13 +226,7 @@ export function AnalysisSummary({
   const cmsContinueLabel = useCmsText(`${RK}.continueLabel`).text;
   const cmsContinueP1 = useCmsText(`${RK}.continueP1`).text;
   const cmsContinueP2 = useCmsText(`${RK}.continueP2`).text;
-  const cmsImprovementsLabel = useCmsText(`${RK}.improvementsLabel`).text;
-  const cmsImprove1 = useCmsText(`${RK}.improve1`).text;
-  const cmsImprove2 = useCmsText(`${RK}.improve2`).text;
-  const cmsImprove3 = useCmsText(`${RK}.improve3`).text;
-  const cmsImprove4 = useCmsText(`${RK}.improve4`).text;
-  const cmsImprove5 = useCmsText(`${RK}.improve5`).text;
-  const cmsImprove6 = useCmsText(`${RK}.improve6`).text;
+  // (heroSub + improvements* keys dropped — those sections were removed.)
   const cmsPriceTitle = useCmsText(`${RK}.priceTitle`).text;
   const cmsIncluded1 = useCmsText(`${RK}.included1`).text;
   const cmsIncluded2 = useCmsText(`${RK}.included2`).text;
@@ -552,26 +545,24 @@ export function AnalysisSummary({
           <div className="ar-eyebrow">
             {isSubscribe
               ? rc(cmsSubEyebrow, "הייעוץ הזוגי של מיאושי", "Mioshy couples coaching")
-              : rc(cmsEyebrowShort, "תוצאות האבחון הקצר שלכם", "Your short assessment results")}
+              : rc(cmsEyebrowShort, "תוצאות האבחון הקצר", "Short assessment results")}
           </div>
           <h1 className="ar-h1 font-heading">
             {isSubscribe
               ? rc(cmsSubH1, "מתחילים היום לפלפל את הזוגיות!", "Start spicing up your relationship today!")
               : rc(cmsH1Ready, "תוצאות האבחון שלך מוכנות", "Your assessment results are ready")}
           </h1>
-          <p className="ar-sub">
-            {isSubscribe
-              ? rc(
-                  cmsSubFraming,
-                  "הצטרפו ותיהנו ממנוי זוגי מלא הכולל גישה חופשית גם לבני הזוג (ללא תוספת תשלום).",
-                  "Join and enjoy a full couple subscription with free access for your partner too (at no extra charge).",
-                )
-              : rc(
-                  cmsHeroSub,
-                  "השלמת את האבחון. ניתחנו את הנתונים שלך, ובנינו עבורך תמונת מצב אישית שמראה איפה הזוגיות חזקה, ואיפה נמצא הפוטנציאל הגדול ביותר לשיפור.",
-                  "You completed the assessment. We analysed your answers and built a personal picture showing where the relationship is strong, and where the biggest potential to improve is.",
-                )}
-          </p>
+          {/* Results page: the "you completed the assessment…" subline was removed
+              (Stage 1 design). The subscribe page keeps its own framing line. */}
+          {isSubscribe ? (
+            <p className="ar-sub">
+              {rc(
+                cmsSubFraming,
+                "הצטרפו ותיהנו ממנוי זוגי מלא הכולל גישה חופשית גם לבני הזוג (ללא תוספת תשלום).",
+                "Join and enjoy a full couple subscription with free access for your partner too (at no extra charge).",
+              )}
+            </p>
+          ) : null}
           {/* Score graph moved out of the hero into the light sheet, above the
               "what your answers tell" section (2026-07-12). */}
           {/* Hero link removed (2026-07-02) — duplicated the sticky CTA + the
@@ -581,27 +572,17 @@ export function AnalysisSummary({
 
       {/* ── SHEET ──────────────────────────────────────────────────── */}
       <div className="ar-sheet">
-        {/* PERSONAL FEEDBACK — assessment-only; hidden on the subscribe page. */}
-        {!isSubscribe && narrative ? (
+        {/* PERSONAL FEEDBACK + SCORE GRAPH — assessment-only; hidden on subscribe.
+            Stage 1 design: the round photo is gone; the 5-domain graph sits at the
+            top of the sheet, right under the "your personal feedback" label, then
+            the narrative continues below. Order: label → graph → narrative. */}
+        {!isSubscribe && categoryScores ? (
           <section className="ar-section">
             <div className="ar-fbcard">
-              <div className="ar-photo" aria-hidden />
               <div className="ar-sublabel ar-center">
                 {rc(cmsFeedbackLabel, "המשוב האישי שלכם", "Your personal feedback")}
               </div>
-              <p className="ar-fbtext">{narrative}</p>
-            </div>
-          </section>
-        ) : null}
-
-        {/* CATEGORIES — assessment-only cards; hidden on the subscribe page
-            (the 5-domain graph bars in the hero above are kept). */}
-        {!isSubscribe && categoryScores ? (
-          <section className="ar-section">
-            {/* Score graph — moved here from the hero (2026-07-12). Sits directly
-                on the cream sheet (no card/border); dark numbers/labels + gradient
-                columns, centred. */}
-            <div className="ar-bars on-light">
+              <div className="ar-bars on-light">
                 {CAT_ORDER.map((key) => {
                   const value = categoryScores[key];
                   const insufficient = insufficientKeys.includes(key);
@@ -626,7 +607,16 @@ export function AnalysisSummary({
                     </div>
                   );
                 })}
+              </div>
+              {narrative ? <p className="ar-fbtext">{narrative}</p> : null}
             </div>
+          </section>
+        ) : null}
+
+        {/* CATEGORIES — assessment-only cards; hidden on the subscribe page.
+            The score graph moved UP into the personal-feedback block (Stage 1). */}
+        {!isSubscribe && categoryScores ? (
+          <section className="ar-section">
             <div className="ar-sublabel">
               {rc(cmsCategoriesLabel, "מה התשובות שלכם מספרות", "What your answers tell")}
             </div>
@@ -701,75 +691,17 @@ export function AnalysisSummary({
           </div>
         ) : null}
 
-        {/* IMPROVEMENTS — static design copy (NOT the AI recommendations).
-            Pre-purchase selling section: hidden for subscribers + on subscribe page. */}
-        {!journeySubscribed && !isSubscribe ? (
-          <section className="ar-section">
-            <div className="ar-sublabel">
-              {rc(cmsImprovementsLabel, "מה תקבלו בליווי", "What you get in the program")}
-            </div>
-            <div className="ar-imp">
-              <div className="ar-improw">
-                <span className="ar-ic">
-                  <svg viewBox="0 0 24 24">
-                    <path d="M12 20s-7-4.5-7-9a4 4 0 017-2.6A4 4 0 0119 11c0 4.5-7 9-7 9z" />
-                    <path d="M12 11v-3M10.5 9.5h3" strokeWidth="1.4" />
-                  </svg>
-                </span>
-                <span>{rc(cmsImprove1, "האינטימיות תגדל", "Intimacy will grow")}</span>
-              </div>
-              <div className="ar-improw">
-                <span className="ar-ic">
-                  <svg viewBox="0 0 24 24">
-                    <path d="M12 7v11" />
-                    <path d="M12 9C9 3 3 4.5 4 9.5c.8 3.8 6 4.5 8 1.5" />
-                    <path d="M12 9c3-6 9-4.5 8 .5-.8 3.8-6 4.5-8 1.5" />
-                  </svg>
-                </span>
-                <span>{rc(cmsImprove2, "הפרפרים יחזרו לבטן", "The butterflies will return")}</span>
-              </div>
-              <div className="ar-improw">
-                <span className="ar-ic">
-                  <svg viewBox="0 0 24 24">
-                    <path d="M12 3c1 3-1 4-1 6a3 3 0 006 0c0-1 0-2-1-3 2 1 4 4 4 7a8 8 0 01-16 0c0-4 3-6 4-8 1 1 2 1 4-2z" />
-                  </svg>
-                </span>
-                <span>{rc(cmsImprove3, "הסקס יהיה עוצמתי מתמיד", "Sex will be better than ever")}</span>
-              </div>
-              <div className="ar-improw">
-                <span className="ar-ic">
-                  <svg viewBox="0 0 24 24">
-                    <circle cx="8" cy="9" r="2.4" />
-                    <circle cx="16" cy="9" r="2.4" />
-                    <path d="M3.5 19a4.5 4.5 0 019 0M11.5 19a4.5 4.5 0 019 0" />
-                  </svg>
-                </span>
-                <span>{rc(cmsImprove4, "החברות ביניכם תתחזק", "Your friendship will strengthen")}</span>
-              </div>
-              <div className="ar-improw">
-                <span className="ar-ic">
-                  <svg viewBox="0 0 24 24">
-                    <path d="M5 7h11l3 3-3 3H5z" />
-                    <path d="M5 7v12" strokeWidth="1.4" />
-                  </svg>
-                </span>
-                <span>{rc(cmsImprove5, "הריבים יפחתו והשקט יחזור", "Arguments will ease and calm returns")}</span>
-              </div>
-              <div className="ar-improw">
-                <span className="ar-ic">
-                  <svg viewBox="0 0 24 24">
-                    <path d="M12 20s-7-4.5-7-9a4 4 0 017-2.6A4 4 0 0119 11c0 4.5-7 9-7 9z" />
-                  </svg>
-                </span>
-                <span>{rc(cmsImprove6, "האהבה תחזור", "Love will return")}</span>
-              </div>
-            </div>
-          </section>
-        ) : null}
+        {/* "מה תקבלו בליווי" section removed (Stage 1 design). */}
 
         {/* PRICE (non-subscriber) / ACTIVE-SUBSCRIBER card */}
         {!journeySubscribed ? (
           <section className="ar-section" id="ar-price">
+            {/* Trial badge above the title (Stage 1) — one tag for the whole
+                selector; shows only when the current coaching choice is trial-
+                enabled (useTrialOffer keys off `coaching`). */}
+            {trial.enabled ? (
+              <div className="ar-trial-above">{trial.cardTag}</div>
+            ) : null}
             <h2 className="ar-sh font-heading">
               {rc(cmsPriceTitle, "איזו חבילה מתאימה לכם?", "Which plan fits you?")}
             </h2>
@@ -807,15 +739,7 @@ export function AnalysisSummary({
               {/* Packages ← journeyCadences. Price shown = promo first-charge
                   (server-computed) or the regular price for that cadence. */}
               <div className="ar-opts-wrap">
-                {/* Trial tag as a fieldset-style legend on the container's top
-                    border (Itzik 2026-07-04): ONE tag for the whole selector
-                    (the trial applies to every package), dark solid bg + white
-                    text — NOT the brand gradient, which blends into the coaching
-                    tabs above. Shows only when the current coaching selection is
-                    trial-enabled (useTrialOffer already keys off `coaching`). */}
-                {trial.enabled ? (
-                  <span className="ar-trial-legend">{trial.cardTag}</span>
-                ) : null}
+                {/* Trial tag moved ABOVE the "which plan" title (Stage 1). */}
                 {enabledCadences.map((c) => {
                 const selected = c.cadence === selectedCadence;
                 const amt = amtOf(c);
@@ -1284,7 +1208,7 @@ export function AnalysisSummary({
           color: #2e2622;
         }
         .ar-bars.on-light .ar-lbl {
-          color: #6b5b4e;
+          color: #111111;
         }
         /* Social-proof gradient strip (2026-07-12) — white text on brand grad. */
         .ar-strip {
@@ -1338,6 +1262,21 @@ export function AnalysisSummary({
           font-size: 25px;
           margin-bottom: 4px;
           line-height: 1.2;
+        }
+        /* Trial badge above the "which plan" title (Stage 1) — one centred pill,
+           dark solid bg + white text (NOT the brand gradient). */
+        .ar-trial-above {
+          display: block;
+          width: fit-content;
+          margin: 0 auto 12px;
+          background: #241d1a;
+          color: #fff;
+          font-family: var(--font-heebo), "Assistant", "Heebo", system-ui, sans-serif;
+          font-size: 18px;
+          font-weight: 800;
+          padding: 6px 18px;
+          border-radius: 999px;
+          box-shadow: 0 4px 14px -6px rgba(0, 0, 0, 0.4);
         }
         .ar-sublabel {
           font-size: 14px;
@@ -2031,7 +1970,8 @@ export function AnalysisSummary({
             padding: 0;
             background: #241d1a;
             background-image: none;
-            min-height: 420px;
+            /* Stage 1: shorter hero now the subline + graph left it (was 420). */
+            min-height: 200px;
           }
           .ar-logo {
             top: 28px;

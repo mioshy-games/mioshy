@@ -251,19 +251,27 @@ function LikertControlLight({
       {([1, 2, 3, 4, 5] as const).map((n) => {
         const on = current === n;
         const label = likertLabels[locale][n - 1] ?? String(n);
+        // Whole column is ONE button (number + label) so clicking the LABEL
+        // selects and auto-advances too, not just the numbered circle.
         return (
-          <div key={n} className="flex min-w-0 flex-1 flex-col items-center gap-[9px]">
-            <button
-              type="button"
-              role="radio"
-              aria-checked={on}
-              aria-label={`${n} — ${label}`}
-              onClick={() => !busy && onChange({ kind: "likert", value: n })}
-              disabled={busy}
-              className={`grid aspect-square w-[clamp(46px,11vw,54px)] place-items-center rounded-full text-[17px] font-extrabold transition disabled:cursor-not-allowed ${
+          <button
+            key={n}
+            type="button"
+            role="radio"
+            aria-checked={on}
+            aria-label={`${n} — ${label}`}
+            onClick={() => !busy && onChange({ kind: "likert", value: n })}
+            disabled={busy}
+            className={`flex min-w-0 flex-1 flex-col items-center gap-[9px] bg-transparent transition disabled:cursor-not-allowed ${
+              on ? "" : "hover:-translate-y-0.5"
+            }`}
+          >
+            <span
+              aria-hidden
+              className={`grid aspect-square w-[clamp(46px,11vw,54px)] place-items-center rounded-full text-[17px] font-extrabold ${
                 on
                   ? "scale-[1.14] text-white shadow-[0_12px_22px_-8px_rgba(150,60,150,.5)]"
-                  : "text-[#141414] hover:-translate-y-0.5"
+                  : "text-[#141414]"
               }`}
               style={{
                 background: on ? BRAND_GRADIENT : GRAD_RING_BG,
@@ -271,11 +279,11 @@ function LikertControlLight({
               }}
             >
               {n}
-            </button>
-            <div className="px-0.5 text-center text-[12.5px] font-bold leading-[1.22] text-[#4a4441]">
+            </span>
+            <span className="px-0.5 text-center text-[12.5px] font-bold leading-[1.22] text-[#4a4441]">
               {label}
-            </div>
-          </div>
+            </span>
+          </button>
         );
       })}
     </div>
