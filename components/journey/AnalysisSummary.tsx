@@ -537,35 +537,6 @@ export function AnalysisSummary({
   // pricing card: a gradient "חיסכון X%" line under the name, then a divider,
   // muted lead, and a gradient-dot list. `saveText` is the plan's savings string
   // (null → no savings line). The expert item is gated on the coaching toggle.
-  const renderIncluded = (saveText: string | null) => (
-    <>
-      {saveText ? <div className="psave">{saveText}</div> : null}
-      <div className="incl">
-        <div className="incl-div" aria-hidden />
-        <div className="incl-lead">
-          {isHe
-            ? "המנוי כולל גישה מלאה לשני בני הזוג"
-            : "The subscription includes full access for both partners"}
-        </div>
-        <ul>
-          {[
-            rc(cmsIncluded1, "פרק חדש כל שבוע", "A new chapter every week"),
-            ...(coaching
-              ? [rc(cmsIncluded2, "מומחה זוגיות פרטי בצ'אט", "A private relationship expert in chat")]
-              : []),
-            rc(cmsIncluded3, "משחקי זוגות אונליין", "Online couples games"),
-            rc(cmsIncluded4, "הסקס של מיאושי", "Mioshy's sex games"),
-          ].map((it, i) => (
-            <li key={i}>
-              <span aria-hidden className="dot" />
-              {it}
-            </li>
-          ))}
-        </ul>
-      </div>
-    </>
-  );
-
   return (
     <div className="ar-root" dir={isHe ? "rtl" : "ltr"}>
       {/* ── HERO ───────────────────────────────────────────────────── */}
@@ -753,27 +724,8 @@ export function AnalysisSummary({
                 </div>
               </div>
 
-              {/* Section header — sits above the expert paragraph and heads
-                  the "continue together" part (expert paragraph → weekly). */}
-              <div className="ar-hl">
-                {rc(cmsContinueLabel, "מכאן ממשיכים יחד", "From here we continue together")}
-              </div>
-
-              {/* Expert paragraph (Stage 2) — below the header. */}
-              {!isSubscribe ? (
-                <p className="ar-expert">
-                  {isHe
-                    ? "מרגע שתצטרפו, מומחה זוגי מהצוות שלנו הופך להיות שלכם. הוא קורא את האבחון שלכם ובונה לכם תוכנית סדורה, עם פרקים שבועיים שמתקדמים יחד אתכם צעד אחר צעד. וכשעולה שאלה או רגע קשה באמצע הערב, הוא שם בשבילכם בצ׳אט."
-                    : "From the moment you join, a relationship expert from our team becomes yours. They read your assessment and build you a structured plan, with weekly chapters that progress with you step by step. And when a question or a hard moment comes up mid-evening, they're there for you in chat."}
-                </p>
-              ) : null}
-
-              {/* Schedule-a-call CTA (Stage 2) — opens the Calendly popup and
-                  tracks Schedule + records a lead on booking. */}
-              <ConsultationCallButton
-                label={isHe ? "לקביעת שיחה עם נציג" : "Schedule a call with a rep"}
-                source="assessment_results"
-              />
+              {/* "מכאן ממשיכים יחד" block moved BELOW the weekly section
+                  (2026-07-13) — rendered after <WeeklyProgramSection/>. */}
             </div>
 
           </section>
@@ -786,6 +738,26 @@ export function AnalysisSummary({
         {!isSubscribe ? (
           <div className="ar-weekly">
             <WeeklyProgramSection ctaHref="#ar-price" />
+          </div>
+        ) : null}
+
+        {/* "מכאן ממשיכים יחד" — header + expert paragraph + schedule-a-call CTA;
+            moved BELOW the weekly section (2026-07-13). Order on the page:
+            share → weekly program → this block → price. */}
+        {!isSubscribe ? (
+          <div className="ar-howcard">
+            <div className="ar-hl">
+              {rc(cmsContinueLabel, "מכאן ממשיכים יחד", "From here we continue together")}
+            </div>
+            <p className="ar-expert">
+              {isHe
+                ? "מרגע שתצטרפו, מומחה זוגי מהצוות שלנו הופך להיות שלכם. הוא קורא את האבחון שלכם ובונה לכם תוכנית סדורה, עם פרקים שבועיים שמתקדמים יחד אתכם צעד אחר צעד. וכשעולה שאלה או רגע קשה באמצע הערב, הוא שם בשבילכם בצ׳אט."
+                : "From the moment you join, a relationship expert from our team becomes yours. They read your assessment and build you a structured plan, with weekly chapters that progress with you step by step. And when a question or a hard moment comes up mid-evening, they're there for you in chat."}
+            </p>
+            <ConsultationCallButton
+              label={isHe ? "לקביעת שיחה עם נציג" : "Schedule a call with a rep"}
+              source="assessment_results"
+            />
           </div>
         ) : null}
 
@@ -939,7 +911,36 @@ export function AnalysisSummary({
                       <span className="ar-price-cur">{sym}</span>
                     </span>
                   </button>
-                  {selected ? renderIncluded(saveText) : null}
+                  {/* Included block — INLINE (not a helper) so styled-jsx adds
+                      its scope class and .psave/.incl/.dot actually apply. */}
+                  {selected ? (
+                    <>
+                      {saveText ? <div className="psave">{saveText}</div> : null}
+                      <div className="incl">
+                        <div className="incl-div" aria-hidden />
+                        <div className="incl-lead">
+                          {isHe
+                            ? "המנוי כולל גישה מלאה לשני בני הזוג"
+                            : "The subscription includes full access for both partners"}
+                        </div>
+                        <ul>
+                          {[
+                            rc(cmsIncluded1, "פרק חדש כל שבוע", "A new chapter every week"),
+                            ...(coaching
+                              ? [rc(cmsIncluded2, "מומחה זוגיות פרטי בצ'אט", "A private relationship expert in chat")]
+                              : []),
+                            rc(cmsIncluded3, "משחקי זוגות אונליין", "Online couples games"),
+                            rc(cmsIncluded4, "הסקס של מיאושי", "Mioshy's sex games"),
+                          ].map((it, i) => (
+                            <li key={i}>
+                              <span aria-hidden className="dot" />
+                              {it}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </>
+                  ) : null}
                   </div>
                 );
               })}
