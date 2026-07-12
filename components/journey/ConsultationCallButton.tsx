@@ -89,6 +89,7 @@ export function ConsultationCallButton({
         .consult-cta {
           display: inline-block;
           margin-top: 16px;
+          margin-bottom: 40px;
           background: linear-gradient(95deg, #6c5ce7 0%, #d6409f 52%, #f79154 100%);
           border: 0;
           color: #fff;

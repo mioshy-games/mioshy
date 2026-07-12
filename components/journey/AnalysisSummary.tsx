@@ -911,35 +911,36 @@ export function AnalysisSummary({
                       <span className="ar-price-cur">{sym}</span>
                     </span>
                   </button>
-                  {/* Included block — INLINE (not a helper) so styled-jsx adds
-                      its scope class and .psave/.incl/.dot actually apply. */}
+                  {/* Savings line under the name — shown for EVERY visible card
+                      (monthly, quarterly, yearly), not only the selected one, so
+                      the revealed plans carry "חיסכון X%" like the approved mock. */}
+                  {saveText ? <div className="psave">{saveText}</div> : null}
+                  {/* Included block — only the selected card. INLINE (not a helper)
+                      so styled-jsx adds its scope class and .incl/.dot apply. */}
                   {selected ? (
-                    <>
-                      {saveText ? <div className="psave">{saveText}</div> : null}
-                      <div className="incl">
-                        <div className="incl-div" aria-hidden />
-                        <div className="incl-lead">
-                          {isHe
-                            ? "המנוי כולל גישה מלאה לשני בני הזוג"
-                            : "The subscription includes full access for both partners"}
-                        </div>
-                        <ul>
-                          {[
-                            rc(cmsIncluded1, "פרק חדש כל שבוע", "A new chapter every week"),
-                            ...(coaching
-                              ? [rc(cmsIncluded2, "מומחה זוגיות פרטי בצ'אט", "A private relationship expert in chat")]
-                              : []),
-                            rc(cmsIncluded3, "משחקי זוגות אונליין", "Online couples games"),
-                            rc(cmsIncluded4, "הסקס של מיאושי", "Mioshy's sex games"),
-                          ].map((it, i) => (
-                            <li key={i}>
-                              <span aria-hidden className="dot" />
-                              {it}
-                            </li>
-                          ))}
-                        </ul>
+                    <div className="incl">
+                      <div className="incl-div" aria-hidden />
+                      <div className="incl-lead">
+                        {isHe
+                          ? "המנוי כולל גישה מלאה לשני בני הזוג"
+                          : "The subscription includes full access for both partners"}
                       </div>
-                    </>
+                      <ul>
+                        {[
+                          rc(cmsIncluded1, "פרק חדש כל שבוע", "A new chapter every week"),
+                          ...(coaching
+                            ? [rc(cmsIncluded2, "מומחה זוגיות פרטי בצ'אט", "A private relationship expert in chat")]
+                            : []),
+                          rc(cmsIncluded3, "משחקי זוגות אונליין", "Online couples games"),
+                          rc(cmsIncluded4, "הסקס של מיאושי", "Mioshy's sex games"),
+                        ].map((it, i) => (
+                          <li key={i}>
+                            <span aria-hidden className="dot" />
+                            {it}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   ) : null}
                   </div>
                 );
@@ -1695,7 +1696,7 @@ export function AnalysisSummary({
           border: 1.5px solid #ece2d4;
           border-radius: 16px;
           overflow: hidden;
-          margin-bottom: 12px;
+          margin-bottom: 16px;
         }
         .ar-opt-group:last-of-type {
           margin-bottom: 0;
@@ -1848,6 +1849,12 @@ export function AnalysisSummary({
           -webkit-background-clip: text;
           background-clip: text;
           color: transparent;
+        }
+        /* On a NON-selected card the savings line is the last element (no incl
+           block below it), so it needs its own bottom padding to breathe inside
+           the card. */
+        .ar-opt-group:not(.sel) .psave {
+          padding-bottom: 16px;
         }
         .incl {
           padding: 14px 50px 16px 17px;
@@ -2284,6 +2291,11 @@ export function AnalysisSummary({
           .ar-pricecard {
             /* wider (v9) so the one-line sub + centered timer + price fit */
             max-width: 640px;
+          }
+          /* Coaching toggle — fixed, centered width on desktop. */
+          .ar-coach {
+            width: 370px;
+            margin-inline: auto;
           }
           /* Desktop: radio + name/save on the start, price on the end (same
              single-row layout as mobile; the campaign timer, when present, owns
