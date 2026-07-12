@@ -49,8 +49,11 @@ export type SignupResult =
   | { success: false; error: string };
 
 // Known sources for marketing_consent_source. Free-form text in the DB
-// for forward compatibility (see migration 082); these are the values
-// signupAction will ever write.
+// for forward compatibility (see migration 082). The full known vocabulary
+// across the app: 'signup' | 'registration_modal' (signupAction, below),
+// 'journey_inline' (journey-inline-signup), 'reconsent_popup' (the
+// results-page re-consent popup, app/actions/reconsent.ts).
+// `SignupSource` is the subset signupAction itself writes.
 type SignupSource = "signup" | "registration_modal";
 
 function parseSignupSource(raw: string | null | undefined): SignupSource {
