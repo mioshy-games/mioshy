@@ -148,8 +148,10 @@ const nextConfig = {
       // be in script-src or the browser blocks the pixel entirely (no fbq, no
       // events). CAPI is server-side so it was unaffected; this is what was
       // missing (2026-06-21).
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://*.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://connect.facebook.net",
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      // Calendly popup widget loads widget.js from assets.calendly.com and the
+      // booking UI runs in a calendly.com iframe (frame-src below).
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://*.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://connect.facebook.net https://assets.calendly.com",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://assets.calendly.com",
       "font-src 'self' https://fonts.gstatic.com data:",
       "img-src 'self' data: blob: https:",
       // PostHog session replay (rrweb) spins up a blob: web worker to compress
@@ -163,8 +165,8 @@ const nextConfig = {
       // Meta Pixel event beacons go to www.facebook.com/tr (and fbevents.js may
       // fetch config from connect.facebook.net). img-src already allows https:
       // so the image-beacon path was fine, but the fetch/XHR path needs these.
-      `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://*.googletagmanager.com https://*.cardcom.solutions https://*.cardcom.co.il ${PH_INGEST_HOST} ${PH_ASSETS_HOST} https://www.facebook.com https://connect.facebook.net`,
-      "frame-src 'self' https://www.googletagmanager.com https://*.googletagmanager.com https://*.cardcom.solutions https://*.cardcom.co.il",
+      `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://*.googletagmanager.com https://*.cardcom.solutions https://*.cardcom.co.il ${PH_INGEST_HOST} ${PH_ASSETS_HOST} https://www.facebook.com https://connect.facebook.net https://calendly.com https://*.calendly.com`,
+      "frame-src 'self' https://www.googletagmanager.com https://*.googletagmanager.com https://*.cardcom.solutions https://*.cardcom.co.il https://calendly.com https://*.calendly.com",
       "frame-ancestors 'none'",
       "form-action 'self' https://*.cardcom.solutions https://*.cardcom.co.il",
       "base-uri 'self'",

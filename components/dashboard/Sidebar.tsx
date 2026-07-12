@@ -182,6 +182,7 @@ const NAV: NavItem[] = [
     children: [
       { kind: "leaf", href: "/dashboard/users",         labelKey: "nav.users_journey",       icon: UserCog },
       { kind: "leaf", href: "/dashboard/leads",         labelKey: "nav.users_leads",         icon: Users },
+      { kind: "leaf", href: "/dashboard/consultation-requests", labelKey: "nav.consultation_requests", icon: Inbox, adminOnly: true },
       { kind: "leaf", href: "/dashboard/subscriptions", labelKey: "nav.users_subscriptions", icon: CreditCard },
     ],
   },

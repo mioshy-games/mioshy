@@ -12,6 +12,7 @@ import { useCmsText } from "@/hooks/useCmsText";
 import { useTrialOffer } from "@/hooks/useTrialOffer";
 import { PromoExpiryCountdown } from "@/components/journey/PromoExpiryCountdown";
 import { PersonalOfferTimer } from "@/components/journey/PersonalOfferTimer";
+import { ConsultationCallButton } from "@/components/journey/ConsultationCallButton";
 import type { CadenceOption } from "@/lib/billing/pricing-validations";
 
 /**
@@ -201,7 +202,6 @@ export function AnalysisSummary({
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   // Partner-invite share + "schedule a call" modal (Stage 1).
   const [inviteCopied, setInviteCopied] = useState(false);
-  const [expertCallOpen, setExpertCallOpen] = useState(false);
   // Plans collapsed to monthly by default; the rest expand on demand (Stage 1).
   const [showMorePlans, setShowMorePlans] = useState(false);
 
@@ -768,15 +768,12 @@ export function AnalysisSummary({
                   "We'll complete the full assessment together, for a more accurate picture and deeper results, right after you join Mioshy's couples coaching.",
                 )}
               </p>
-              {/* Schedule-a-call CTA (Stage 1) — opens a skeleton modal; the
-                  Calendly embed is wired in when the booking link arrives. */}
-              <button
-                type="button"
-                className="ar-callcta"
-                onClick={() => setExpertCallOpen(true)}
-              >
-                {isHe ? "לקביעת שיחה עם נציג" : "Schedule a call with a rep"}
-              </button>
+              {/* Schedule-a-call CTA (Stage 2) — opens the Calendly popup and
+                  tracks Schedule + records a lead on booking. */}
+              <ConsultationCallButton
+                label={isHe ? "לקביעת שיחה עם נציג" : "Schedule a call with a rep"}
+                source="assessment_results"
+              />
             </div>
 
           </section>
@@ -1133,43 +1130,6 @@ export function AnalysisSummary({
         ) : null}
       </div>
 
-      {/* Schedule-a-call modal skeleton (Stage 1). The Calendly embed replaces
-          the placeholder box once the booking link is provided. */}
-      {expertCallOpen ? (
-        <div
-          className="ar-callmodal-root"
-          role="dialog"
-          aria-modal="true"
-          aria-label={isHe ? "קביעת שיחה עם נציג" : "Schedule a call with a rep"}
-        >
-          <div className="ar-callmodal-scrim" onClick={() => setExpertCallOpen(false)} />
-          <div className="ar-callmodal">
-            <button
-              type="button"
-              className="ar-callmodal-x"
-              onClick={() => setExpertCallOpen(false)}
-              aria-label={isHe ? "סגירה" : "Close"}
-            >
-              ×
-            </button>
-            <h3 className="ar-callmodal-title">
-              {isHe ? "קביעת שיחה עם נציג" : "Schedule a call with a rep"}
-            </h3>
-            <p className="ar-callmodal-sub">
-              {isHe
-                ? "בחרו זמן שנוח לכם ונשמח לדבר."
-                : "Pick a time that suits you and we'll be glad to talk."}
-            </p>
-            <div className="ar-callmodal-embed">
-              <span>
-                {isHe
-                  ? "יומן הזימונים ייטען כאן בקרוב"
-                  : "The scheduling calendar will load here soon"}
-              </span>
-            </div>
-          </div>
-        </div>
-      ) : null}
 
       <style jsx>{`
         .ar-root {
