@@ -535,34 +535,37 @@ export function AnalysisSummary({
       : `billing begins, ${priceStr(amt)} ${recurringLabel}.`;
   })();
 
-  // "What's included" panel — now rendered INSIDE the selected package card
-  // (2026-07-12) so it moves with the selection. The expert item (included2) is
-  // gated on the coaching toggle, unchanged. Content is identical to before.
-  const includedPanel = (
-    <div className="ar-incl-panel">
-      {/* pricing-redesign-approved.html: lead line + gradient-dot list aligned
-          under the plan name; no "מה כלול" heading, no top divider. */}
-      <div className="ar-incl-lead">
-        {isHe
-          ? "המנוי כולל גישה מלאה לשני בני הזוג"
-          : "The subscription includes full access for both partners"}
+  // Included panel for the SELECTED plan — exact structure per the approved
+  // pricing card: a gradient "חיסכון X%" line under the name, then a divider,
+  // muted lead, and a gradient-dot list. `saveText` is the plan's savings string
+  // (null → no savings line). The expert item is gated on the coaching toggle.
+  const renderIncluded = (saveText: string | null) => (
+    <>
+      {saveText ? <div className="psave">{saveText}</div> : null}
+      <div className="incl">
+        <div className="incl-div" aria-hidden />
+        <div className="incl-lead">
+          {isHe
+            ? "המנוי כולל גישה מלאה לשני בני הזוג"
+            : "The subscription includes full access for both partners"}
+        </div>
+        <ul>
+          {[
+            rc(cmsIncluded1, "פרק חדש כל שבוע", "A new chapter every week"),
+            ...(coaching
+              ? [rc(cmsIncluded2, "מומחה זוגיות פרטי בצ'אט", "A private relationship expert in chat")]
+              : []),
+            rc(cmsIncluded3, "משחקי זוגות אונליין", "Online couples games"),
+            rc(cmsIncluded4, "הסקס של מיאושי", "Mioshy's sex games"),
+          ].map((it, i) => (
+            <li key={i}>
+              <span aria-hidden className="dot" />
+              {it}
+            </li>
+          ))}
+        </ul>
       </div>
-      <ul className="ar-incl">
-        {[
-          rc(cmsIncluded1, "פרק חדש כל שבוע", "A new chapter every week"),
-          ...(coaching
-            ? [rc(cmsIncluded2, "מומחה זוגיות פרטי בצ'אט", "A private relationship expert in chat")]
-            : []),
-          rc(cmsIncluded3, "משחקי זוגות אונליין", "Online couples games"),
-          rc(cmsIncluded4, "הסקס של מיאושי", "Mioshy's sex games"),
-        ].map((it, i) => (
-          <li className="ar-it" key={i}>
-            <span aria-hidden className="ar-dot" />
-            <span>{it}</span>
-          </li>
-        ))}
-      </ul>
-    </div>
+    </>
   );
 
   return (
@@ -887,6 +890,22 @@ export function AnalysisSummary({
                   c.cadence === "yearly" && monthlyFull != null && amt > 0
                     ? Math.floor((monthlyFull * 12 - amt) / monthlyFull)
                     : null;
+                // "חיסכון X%" line — shown under the name inside the selected
+                // card's included block (psave). null → no savings line.
+                const saveText =
+                  promoSavePct != null
+                    ? `${isHe ? "חיסכון" : "Save"} ${promoSavePct}%${
+                        c.cadence === "monthly"
+                          ? isHe ? " על החודש הראשון" : " on the first month"
+                          : ""
+                      }`
+                    : savePct != null
+                      ? `${isHe ? "חיסכון" : "Save"} ${savePct}%${
+                          c.cadence === "yearly" && freeMonths && freeMonths > 0
+                            ? isHe ? ` · ${freeMonthsHe(freeMonths)}` : ` · ${freeMonths} months free`
+                            : ""
+                        }`
+                      : null;
                 return (
                   <div className={`ar-opt-group${selected ? " sel" : ""}`} key={c.cadence}>
                   {/* Trial strip at the TOP of the selected card — gradient bg,
@@ -901,33 +920,13 @@ export function AnalysisSummary({
                     aria-pressed={selected}
                   >
                     <span className="ar-radio" />
-                    {/* Name + savings stacked (pricing-redesign-approved.html):
-                        name on top, gradient "חיסכון %" beneath it; the price
-                        sits opposite with no period label. */}
+                    {/* Name (+ the promo recurring-price note). The "חיסכון %"
+                        line moved into the selected card's included block. */}
                     <span className="ar-opt-info">
                       <span className="ar-opt-name">{cadenceTitle(c.cadence)}</span>
                       {hasPromo ? (
-                        <>
-                          <span className="ar-opt-note">
-                            {`${firstPeriodLabel(c.cadence, isHe)}${isHe ? ", אח״כ " : ", then "}${priceStr(origAmt)}`}
-                          </span>
-                          {promoSavePct != null ? (
-                            <span className="ar-opt-save">
-                              {isHe ? "חיסכון" : "Save"} {promoSavePct}%
-                              {c.cadence === "monthly"
-                                ? isHe ? " על החודש הראשון" : " on the first month"
-                                : ""}
-                            </span>
-                          ) : null}
-                        </>
-                      ) : savePct != null ? (
-                        <span className="ar-opt-save">
-                          {isHe ? "חיסכון" : "Save"} {savePct}%
-                          {c.cadence === "yearly" && freeMonths && freeMonths > 0
-                            ? isHe
-                              ? ` · ${freeMonthsHe(freeMonths)}`
-                              : ` · ${freeMonths} months free`
-                            : ""}
+                        <span className="ar-opt-note">
+                          {`${firstPeriodLabel(c.cadence, isHe)}${isHe ? ", אח״כ " : ", then "}${priceStr(origAmt)}`}
                         </span>
                       ) : null}
                     </span>
@@ -953,7 +952,7 @@ export function AnalysisSummary({
                       <span className="ar-price-cur">{sym}</span>
                     </span>
                   </button>
-                  {selected ? includedPanel : null}
+                  {selected ? renderIncluded(saveText) : null}
                   </div>
                 );
               })}
@@ -1874,44 +1873,51 @@ export function AnalysisSummary({
         /* Included list under the SELECTED plan (pricing-redesign-approved.html):
            lead line + gradient-dot list aligned under the plan name (padding-
            start clears the radio). No "מה כלול" heading, no top divider. */
-        .ar-incl-panel {
-          margin: 0;
-          /* RTL: padding-inline-start clears the radio so the dots sit under the
-             plan name (reference uses 50px start / 17px end). */
-          padding: 0;
-          padding-inline-start: 50px;
-          padding-inline-end: 17px;
-          padding-bottom: 16px;
+        /* Selected-card included block — exact approved spec. */
+        .psave {
+          padding: 5px 50px 0 17px;
+          font-size: 20px;
+          font-weight: 700;
+          width: max-content;
+          background: linear-gradient(95deg, #6c5ce7, #d6409f 52%, #f79154);
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent;
         }
-        .ar-incl-lead {
+        .incl {
+          padding: 14px 50px 16px 17px;
+        }
+        .incl-div {
+          height: 1px;
+          background: #ece2d4;
+          margin: 0 -33px 13px 0;
+        }
+        .incl-lead {
           font-size: 15px;
-          font-weight: 600;
           color: #8a7a6b;
-          margin-bottom: 12px;
+          font-weight: 600;
+          margin-bottom: 14px;
         }
-        .ar-incl {
+        .incl ul {
           list-style: none;
           display: flex;
           flex-direction: column;
-          gap: 12px;
-          margin: 0;
-          padding: 0;
+          gap: 13px;
         }
-        .ar-it {
+        .incl li {
           display: flex;
           align-items: center;
           gap: 10px;
           font-size: 20px;
           font-weight: 600;
           color: #2e2622;
-          line-height: 1.3;
         }
-        .ar-dot {
-          flex: none;
+        .dot {
           width: 8px;
           height: 8px;
+          flex: none;
           border-radius: 50%;
-          background: var(--ar-grad);
+          background: linear-gradient(95deg, #6c5ce7, #d6409f 52%, #f79154);
         }
         /* "לצפייה בעוד חבילות" — 14px black underlined link (Stage 1). */
         .ar-more-plans {
