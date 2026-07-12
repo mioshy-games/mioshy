@@ -11,7 +11,6 @@ import {
 import { useCmsText } from "@/hooks/useCmsText";
 import { useTrialOffer } from "@/hooks/useTrialOffer";
 import { PromoExpiryCountdown } from "@/components/journey/PromoExpiryCountdown";
-import { PersonalOfferTimer } from "@/components/journey/PersonalOfferTimer";
 import type { CadenceOption } from "@/lib/billing/pricing-validations";
 
 /**
@@ -202,6 +201,8 @@ export function AnalysisSummary({
   // Partner-invite share + "schedule a call" modal (Stage 1).
   const [inviteCopied, setInviteCopied] = useState(false);
   const [expertCallOpen, setExpertCallOpen] = useState(false);
+  // Plans collapsed to monthly by default; the rest expand on demand (Stage 1).
+  const [showMorePlans, setShowMorePlans] = useState(false);
 
   const inviteUrl = () =>
     typeof window !== "undefined"
@@ -790,23 +791,11 @@ export function AnalysisSummary({
         {/* PRICE (non-subscriber) / ACTIVE-SUBSCRIBER card */}
         {!journeySubscribed ? (
           <section className="ar-section" id="ar-price">
-            {/* Trial badge above the title (Stage 1) — one tag for the whole
-                selector; shows only when the current coaching choice is trial-
-                enabled (useTrialOffer keys off `coaching`). */}
-            {trial.enabled ? (
-              <div className="ar-trial-above">{trial.cardTag}</div>
-            ) : null}
             <h2 className="ar-sh font-heading">
               {rc(cmsPriceTitle, "איזו חבילה מתאימה לכם?", "Which plan fits you?")}
             </h2>
-            {/* Personal-window countdown (display='clock') — tile timer at the top
-                of the plans, wired to the user's offer_expires_at (Stage 1). */}
-            {promoMode === "personal_window" &&
-            personalWindowDisplay === "clock" &&
-            offerExpiresAt &&
-            new Date(offerExpiresAt).getTime() > Date.now() ? (
-              <PersonalOfferTimer endsAt={offerExpiresAt} isHe={isHe} />
-            ) : null}
+            {/* Tile countdown deferred to Stage 3 — the existing text urgency
+                (offer-window line) stays; 48h window untouched. */}
             <div className="ar-pricecard">
               {/* Stage-1 coaching add-on — with/without choice. Only rendered
                   once a coaching cost is configured (else the bundle == content
@@ -841,9 +830,13 @@ export function AnalysisSummary({
               {/* Packages ← journeyCadences. Price shown = promo first-charge
                   (server-computed) or the regular price for that cadence. */}
               <div className="ar-opts-wrap">
-                {/* Trial tag moved ABOVE the "which plan" title (Stage 1). */}
+                {/* Stage 1: only the monthly plan shows by default; the rest sit
+                    behind "לצפייה בעוד חבילות" below. The selected plan always
+                    shows (so a non-monthly selection is never hidden). */}
                 {enabledCadences.map((c) => {
                 const selected = c.cadence === selectedCadence;
+                const visible = c.cadence === "monthly" || showMorePlans || selected;
+                if (!visible) return null;
                 const amt = amtOf(c);
                 const pf = promoSet?.firstChargeByCadence[c.cadence];
                 const po = promoSet?.originalByCadence[c.cadence];
@@ -879,6 +872,11 @@ export function AnalysisSummary({
                     : null;
                 return (
                   <div className={`ar-opt-group${selected ? " sel" : ""}`} key={c.cadence}>
+                  {/* Trial strip at the TOP of the selected card — gradient bg,
+                      white text; moves with the selection (Stage 1). */}
+                  {selected && trial.enabled ? (
+                    <div className="ar-trial-strip">{trial.cardTag}</div>
+                  ) : null}
                   <button
                     type="button"
                     className={`ar-opt${selected ? " sel" : ""}`}
@@ -943,6 +941,17 @@ export function AnalysisSummary({
                 );
               })}
               </div>
+
+              {/* Reveal quarterly/yearly (Stage 1). */}
+              {!showMorePlans && enabledCadences.length > 1 ? (
+                <button
+                  type="button"
+                  className="ar-more-plans"
+                  onClick={() => setShowMorePlans(true)}
+                >
+                  {isHe ? "לצפייה בעוד חבילות" : "See more plans"}
+                </button>
+              ) : null}
 
               {/* Selected-cadence headline — the amount Cardcom will charge for
                   the selected plan. Preserves the struck anchor (ILS derived /
@@ -1660,34 +1669,32 @@ export function AnalysisSummary({
         .ar-coach-wrap {
           text-align: center;
         }
-        /* Clean segmented toggle (pricing-redesign-approved.html .seg): a cream
-           track holding two equal buttons; the selected one carries the gradient. */
+        /* Segmented toggle (Stage 1): no track background, a subtle border on each
+           button; the selected button is solid black. */
         .ar-coach {
           display: flex;
-          gap: 5px;
+          gap: 8px;
           margin-bottom: 22px;
-          background: #f1e8dc;
-          border-radius: 13px;
-          padding: 5px;
+          background: transparent;
         }
         .ar-coach-opt {
           flex: 1;
-          border: 0;
+          border: 1px solid #e5dccb;
           cursor: pointer;
           font-family: var(--font-heebo), "Assistant", "Heebo", sans-serif;
           font-weight: 800;
           font-size: 14.5px;
-          color: #8a7a6b;
+          color: #4b4640;
           padding: 11px 8px;
-          border-radius: 9px;
+          border-radius: 11px;
           background: transparent;
           white-space: nowrap;
           transition: 0.18s;
         }
         .ar-coach-opt.sel {
           color: #fff;
-          background: var(--ar-grad);
-          box-shadow: 0 8px 18px -8px rgba(150, 60, 150, 0.45);
+          background: #241d1a;
+          border-color: transparent;
         }
         /* ✓ icon removed from the selected coaching toggle (Itzik 2026-07-04) —
            the gradient fill alone marks the selection. */
@@ -1729,7 +1736,9 @@ export function AnalysisSummary({
            selected card + its included list read as one unit. */
         .ar-opt {
           display: flex;
-          align-items: center;
+          /* Radio + price align to the plan NAME (top), not the taller info
+             column (which carries the savings line below). */
+          align-items: flex-start;
           gap: 11px;
           width: 100%;
           background: #fff;
@@ -1752,10 +1761,20 @@ export function AnalysisSummary({
            inner button/panel are flush content. */
         .ar-opt-group.sel {
           border: 2px solid transparent;
-          background: linear-gradient(#fffafd, #fffafd) padding-box, var(--ar-grad) border-box;
+          background: linear-gradient(#fff, #fff) padding-box, var(--ar-grad) border-box;
           border-radius: 16px;
           box-shadow: 0 8px 20px -12px rgba(150, 60, 150, 0.35);
           overflow: hidden;
+        }
+        /* Trial "7 ימי ניסיון חינם" strip at the top of the SELECTED card. */
+        .ar-trial-strip {
+          background: var(--ar-grad);
+          color: #fff;
+          font-family: var(--font-heebo), "Assistant", "Heebo", system-ui, sans-serif;
+          font-weight: 800;
+          font-size: 20px;
+          text-align: center;
+          padding: 8px 14px;
         }
         .ar-opt-group.sel .ar-opt {
           border: 0;
@@ -1772,6 +1791,8 @@ export function AnalysisSummary({
           border: 2px solid #d8c8b3;
           display: grid;
           place-items: center;
+          /* Centre the 22px ring on the 24px name line. */
+          margin-top: 3px;
         }
         .ar-opt.sel .ar-radio {
           border-color: transparent;
@@ -1794,7 +1815,7 @@ export function AnalysisSummary({
         .ar-opt-name {
           font-family: var(--font-heebo), "Assistant", "Heebo", system-ui, sans-serif;
           font-weight: 800;
-          font-size: 18px;
+          font-size: 24px;
           line-height: 1.1;
           color: #2e2622;
         }
@@ -1803,12 +1824,13 @@ export function AnalysisSummary({
           font-weight: 600;
           color: #8a7a6b;
         }
-        /* "חיסכון X%" — gradient text under the name. */
+        /* "חיסכון X%" — gradient text, own line under the name. */
         .ar-opt-save {
           width: fit-content;
-          font-size: 13px;
-          font-weight: 800;
+          font-size: 20px;
+          font-weight: 700;
           line-height: 1.2;
+          margin-top: 2px;
           background: var(--ar-grad);
           -webkit-background-clip: text;
           background-clip: text;
@@ -1826,9 +1848,13 @@ export function AnalysisSummary({
         .ar-opt-price {
           margin-inline-start: auto;
           flex: none;
+          /* Align the price with the plan name (top), not the taller info column. */
+          align-self: flex-start;
+          margin-top: 1px;
           display: inline-flex;
           align-items: baseline;
-          gap: 2px;
+          /* A real space before the ₪ (Stage 1). */
+          gap: 5px;
           white-space: nowrap;
           font-family: var(--font-heebo), "Assistant", "Heebo", system-ui, sans-serif;
         }
@@ -1861,7 +1887,7 @@ export function AnalysisSummary({
           padding-bottom: 16px;
         }
         .ar-incl-lead {
-          font-size: 12.5px;
+          font-size: 15px;
           font-weight: 600;
           color: #8a7a6b;
           margin-bottom: 12px;
@@ -1870,15 +1896,15 @@ export function AnalysisSummary({
           list-style: none;
           display: flex;
           flex-direction: column;
-          gap: 11px;
+          gap: 12px;
           margin: 0;
           padding: 0;
         }
         .ar-it {
           display: flex;
           align-items: center;
-          gap: 9px;
-          font-size: 15px;
+          gap: 10px;
+          font-size: 20px;
           font-weight: 600;
           color: #2e2622;
           line-height: 1.3;
@@ -1889,6 +1915,20 @@ export function AnalysisSummary({
           height: 8px;
           border-radius: 50%;
           background: var(--ar-grad);
+        }
+        /* "לצפייה בעוד חבילות" — 14px black underlined link (Stage 1). */
+        .ar-more-plans {
+          display: block;
+          margin: 4px auto 0;
+          background: none;
+          border: 0;
+          cursor: pointer;
+          font-family: inherit;
+          font-size: 14px;
+          font-weight: 700;
+          color: #241d1a;
+          text-decoration: underline;
+          text-underline-offset: 3px;
         }
 
         /* Selected-cadence headline summary (restored money-path detail) */
