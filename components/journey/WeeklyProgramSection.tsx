@@ -8,7 +8,14 @@ import { CmsText } from "@/components/cms/CmsText";
  * parameterised: the hub passes its primaryHref; the results page passes
  * "#ar-price" to scroll to the plans.
  */
-export function WeeklyProgramSection({ ctaHref }: { ctaHref: string }) {
+export function WeeklyProgramSection({
+  ctaHref,
+  hideCta = false,
+}: {
+  ctaHref: string;
+  /** Hide the bottom CTA (results-page instance); the marketing hub keeps it. */
+  hideCta?: boolean;
+}) {
   return (
     <section id="weekly" className="relative overflow-hidden bg-white px-4 pb-6 pt-[55px]">
       <div
@@ -69,15 +76,17 @@ export function WeeklyProgramSection({ ctaHref }: { ctaHref: string }) {
           ))}
         </div>
 
-        <div className="mt-10">
-          <Link
-            href={ctaHref}
-            className="inline-flex min-h-[56px] w-full items-center justify-center rounded-full px-8 text-[17px] font-semibold text-white shadow-xl shadow-fuchsia-500/25 transition hover:brightness-110 sm:w-auto"
-            style={{ background: "linear-gradient(110deg,#F43F5E 0%,#EC4899 45%,#A855F7 100%)" }}
-          >
-            <CmsText cmsKey="journeyHub.weekly.cta" />
-          </Link>
-        </div>
+        {!hideCta ? (
+          <div className="mt-10">
+            <Link
+              href={ctaHref}
+              className="inline-flex min-h-[56px] w-full items-center justify-center rounded-full px-8 text-[17px] font-semibold text-white shadow-xl shadow-fuchsia-500/25 transition hover:brightness-110 sm:w-auto"
+              style={{ background: "linear-gradient(110deg,#F43F5E 0%,#EC4899 45%,#A855F7 100%)" }}
+            >
+              <CmsText cmsKey="journeyHub.weekly.cta" />
+            </Link>
+          </div>
+        ) : null}
       </div>
     </section>
   );

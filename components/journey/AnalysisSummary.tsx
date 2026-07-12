@@ -737,7 +737,9 @@ export function AnalysisSummary({
             the plans below (Stage 2). */}
         {!isSubscribe ? (
           <div className="ar-weekly">
-            <WeeklyProgramSection ctaHref="#ar-price" />
+            {/* Results page: hide the section's own CTA — the plans + their CTA
+                sit right below. The marketing hub (/journey) keeps its CTA. */}
+            <WeeklyProgramSection ctaHref="#ar-price" hideCta />
           </div>
         ) : null}
 
