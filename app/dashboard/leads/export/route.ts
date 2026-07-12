@@ -1,13 +1,23 @@
 /**
- * GET /dashboard/leads/export (G4)
+ * GET /dashboard/leads/export
  *
- * Admin-only CSV export of leads for manual outreach (the marathon WhatsApp
- * follow-up). Columns: name, phone, email, source, marketing_consent,
- * terms_accepted, created_at. Optional ?source= filter (e.g. marathon-7day).
- * Mirrors the existing single-CSV export pattern (questions/export).
+ * Admin-only CSV export of the Leads view (signed-up, not-converted) for manual
+ * WhatsApp / email outreach. Sources the SAME profiles-based set as the Leads
+ * page (lib/dashboard/leads), not the near-empty `leads` table.
+ *
+ * Query params:
+ *   ?source=marathon-7day  → only signups from the last 7 days.
+ *   ?consented=1           → outreach mode: only marketing-consented users
+ *                            (compliance). Omit for the internal export, which
+ *                            includes everyone plus a marketing_consent column.
+ *
+ * Columns always include phone + marketing_consent (required for outreach).
+ * Test accounts are always excluded. A UTF-8 BOM is prepended so Excel opens
+ * Hebrew names correctly.
  */
 
 import { requireAdmin } from "@/lib/auth/admin";
+import { loadLeads } from "@/lib/dashboard/leads";
 
 function csvEscape(value: unknown) {
   const s = String(value ?? "");
@@ -16,60 +26,58 @@ function csvEscape(value: unknown) {
 }
 
 export async function GET(req: Request) {
-  const { supabase } = await requireAdmin();
+  await requireAdmin();
 
-  const source = new URL(req.url).searchParams.get("source");
+  const sp = new URL(req.url).searchParams;
+  const source = sp.get("source");
+  const consentedOnly = sp.get("consented") === "1" || sp.get("consented") === "true";
+  const sinceDays = source === "marathon-7day" ? 7 : null;
 
-  let query = supabase
-    .from("leads")
-    .select(
-      "full_name, name, phone, email, source, marketing_consent, terms_accepted, created_at",
-    )
-    .order("created_at", { ascending: false });
-  if (source) query = query.eq("source", source);
-
-  const { data, error } = await query;
-  if (error) {
-    return new Response(`Failed to export: ${error.message}`, { status: 500 });
+  const { rows, degraded } = await loadLeads({
+    status: "not", // leads = not converted
+    sinceDays,
+    consentedOnly,
+  });
+  if (degraded) {
+    return new Response("Failed to export: service role unavailable", { status: 500 });
   }
 
   const header = [
     "name",
     "phone",
     "email",
-    "source",
+    "language",
     "marketing_consent",
+    "marketing_consent_at",
     "terms_accepted",
+    "assessment_done",
     "created_at",
   ];
 
-  const rows = (data ?? []).map((l) => {
-    const r = l as {
-      full_name?: string | null;
-      name?: string | null;
-      phone?: string | null;
-      email?: string | null;
-      source?: string | null;
-      marketing_consent?: boolean | null;
-      terms_accepted?: boolean | null;
-      created_at?: string | null;
-    };
-    return [
-      r.full_name ?? r.name ?? "",
+  const body = rows.map((r) =>
+    [
+      r.fullName ?? "",
       r.phone ?? "",
       r.email ?? "",
-      r.source ?? "",
-      String(r.marketing_consent ?? false),
-      String(r.terms_accepted ?? false),
-      r.created_at ?? "",
-    ].map(csvEscape);
-  });
+      r.language ?? "",
+      String(r.marketingConsent),
+      r.marketingConsentAt ?? "",
+      String(r.termsAccepted),
+      String(r.assessmentDone),
+      r.createdAt,
+    ].map(csvEscape),
+  );
 
-  const csv = [header.map(csvEscape).join(","), ...rows.map((r) => r.join(","))].join("\n");
-  const suffix = source ? `_${source}` : "";
-  const filename = `leads${suffix}_export_${new Date().toISOString().slice(0, 10)}.csv`;
+  const csv = [header.map(csvEscape).join(","), ...body.map((r) => r.join(","))].join("\n");
+  // BOM so Excel detects UTF-8 and renders Hebrew names correctly.
+  const withBom = "﻿" + csv;
 
-  return new Response(csv, {
+  const parts = ["leads"];
+  if (source) parts.push(source);
+  if (consentedOnly) parts.push("consented");
+  const filename = `${parts.join("_")}_export_${new Date().toISOString().slice(0, 10)}.csv`;
+
+  return new Response(withBom, {
     status: 200,
     headers: {
       "content-type": "text/csv; charset=utf-8",
