@@ -264,8 +264,6 @@ export function AnalysisSummary({
   const cmsFeedbackLabel = useCmsText(`${RK}.feedbackLabel`).text;
   const cmsCategoriesLabel = useCmsText(`${RK}.categoriesLabel`).text;
   const cmsContinueLabel = useCmsText(`${RK}.continueLabel`).text;
-  const cmsContinueP1 = useCmsText(`${RK}.continueP1`).text;
-  const cmsContinueP2 = useCmsText(`${RK}.continueP2`).text;
   // (heroSub + improvements* keys dropped — those sections were removed.)
   const cmsPriceTitle = useCmsText(`${RK}.priceTitle`).text;
   const cmsIncluded1 = useCmsText(`${RK}.included1`).text;
@@ -697,7 +695,7 @@ export function AnalysisSummary({
             {/* Link to the plans (Stage 1). Teaser paragraph + arrow removed. */}
             <div className="ar-cats-more">
               <a href="#ar-price" className="ar-cats-more-link" onClick={scrollToPrice}>
-                {isHe ? "לתוצאות מדוייקות ולאבחון הארוך" : "For accurate results and the full assessment"}
+                {isHe ? "לתוצאות מדוייקות ולאבחון המלא" : "For accurate results and the full assessment"}
               </a>
             </div>
 
@@ -755,7 +753,13 @@ export function AnalysisSummary({
                 </div>
               </div>
 
-              {/* Expert paragraph (Stage 2) — below the share block. */}
+              {/* Section header — sits above the expert paragraph and heads
+                  the "continue together" part (expert paragraph → weekly). */}
+              <div className="ar-hl">
+                {rc(cmsContinueLabel, "מכאן ממשיכים יחד", "From here we continue together")}
+              </div>
+
+              {/* Expert paragraph (Stage 2) — below the header. */}
               {!isSubscribe ? (
                 <p className="ar-expert">
                   {isHe
@@ -764,23 +768,6 @@ export function AnalysisSummary({
                 </p>
               ) : null}
 
-              <div className="ar-hl">
-                {rc(cmsContinueLabel, "מכאן ממשיכים יחד", "From here we continue together")}
-              </div>
-              <p>
-                {rc(
-                  cmsContinueP1,
-                  "על כל אחד מהתחומים האלה נעבוד יחד, פרק חדש בכל שבוע, ואתם קובעים את הסדר.",
-                  "We'll work on each of these areas together, a new chapter every week, and you set the order.",
-                )}
-              </p>
-              <p>
-                {rc(
-                  cmsContinueP2,
-                  "את האבחון המלא, לתמונה מדויקת ולתוצאות עמוקות יותר, נשלים יחד מיד אחרי ההצטרפות לתוכנית הייעוץ הזוגי של מיאושי.",
-                  "We'll complete the full assessment together, for a more accurate picture and deeper results, right after you join Mioshy's couples coaching.",
-                )}
-              </p>
               {/* Schedule-a-call CTA (Stage 2) — opens the Calendly popup and
                   tracks Schedule + records a lead on booking. */}
               <ConsultationCallButton
