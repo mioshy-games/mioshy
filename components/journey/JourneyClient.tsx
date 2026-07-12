@@ -10,6 +10,7 @@ import { PriorityRankingStep } from "./PriorityRankingStep";
 import { InlineAuthStep } from "./InlineAuthStep";
 import { PaywallGateModal } from "./PaywallGateModal";
 import { AnalysisSummary, type JourneyPromoSummary } from "./AnalysisSummary";
+import { ReconsentPrompt } from "./ReconsentPrompt";
 import type { CadenceOption } from "@/lib/billing/pricing-validations";
 import {
   AssessmentInterstitial,
@@ -93,6 +94,9 @@ interface JourneyClientProps {
   /** Task 21 — urgency mode; gates the campaign countdown (only campaign_timer)
    *  vs the personal-window line so only ONE urgency indicator shows. */
   promoMode?: "off" | "personal_window" | "campaign_timer";
+  /** Admin-controlled personal-window display ('text' | 'clock', migration 184),
+   *  forwarded to AnalysisSummary. */
+  personalWindowDisplay?: "text" | "clock";
   /** Active journey marketing promo (server-computed), forwarded to
    *  AnalysisSummary for the discount banner. null → no banner. */
   activePromo?: JourneyPromoSummary | null;
@@ -160,6 +164,7 @@ export function JourneyClient({
   activePromo = null,
   offerExpiresAt = null,
   promoMode = "personal_window",
+  personalWindowDisplay = "text",
   questions,
   likertLabels,
   gating,
@@ -880,7 +885,11 @@ export function JourneyClient({
           activePromo={activePromo}
           offerExpiresAt={offerExpiresAt}
           promoMode={promoMode}
+          personalWindowDisplay={personalWindowDisplay}
         />
+        {/* Re-consent popup — self-gating (only shows for signed-in users who
+            didn't opt in and haven't answered it yet). Results page only. */}
+        <ReconsentPrompt />
       </div>
     );
   }

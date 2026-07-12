@@ -29,6 +29,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server"
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit"
 import { sendBrevoEmail }           from "@/lib/email/brevo"
 import { tagAsInterested, type InterestSource } from "@/lib/email/brevo-segments-sync"
+import { isTestUser }               from "@/lib/auth/is-test-user"
 
 /**
  * Map the free-text campaign `source` (e.g. "marathon-7day", null) onto the
@@ -208,7 +209,7 @@ export async function POST(req: Request) {
     // "interested" list when they ticked the box. Awaited for reliable
     // serverless delivery; wrapped in try/catch so a Brevo failure can NEVER
     // fail the lead capture.
-    if (marketing_consent === true) {
+    if (marketing_consent === true && !(await isTestUser(admin, trusted_user_id))) {
       try {
         const lang: "he" | "en" = language === "en" ? "en" : "he"
         const r = await tagAsInterested(

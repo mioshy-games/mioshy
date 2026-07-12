@@ -89,11 +89,6 @@ export function PriorityRankingStep({
     if (!c) return key;
     return isHe ? c.he : c.en;
   };
-  const descFor = (key: PriorityKey): string => {
-    const c = labelByKey.get(key);
-    if (!c) return "";
-    return isHe ? c.he_desc : c.en_desc;
-  };
 
   // Swap helpers - splice immutably so React re-renders cleanly.
   const moveUp = (idx: number) => {
@@ -133,12 +128,12 @@ export function PriorityRankingStep({
     >
       <h2
         className="mx-auto max-w-[32ch] text-center font-semibold leading-[1.4] text-[#2E2622] md:max-w-[42ch]"
-        style={{ fontFamily: ASSISTANT, fontSize: "clamp(23px,5vw,30px)" }}
+        style={{ fontFamily: ASSISTANT, fontSize: "22px" }}
       >
         {headline}
       </h2>
       {subline ? (
-        <p className="mx-auto mt-3 max-w-[34ch] text-center text-[15px] font-semibold text-[#a2917f]">
+        <p className="mx-auto mt-3 max-w-[34ch] text-center text-[20px] font-semibold text-[#a2917f]">
           {subline}
         </p>
       ) : null}
@@ -152,7 +147,7 @@ export function PriorityRankingStep({
         }}
         as="ul"
         aria-roledescription={isHe ? "רשימה הניתנת לגרירה" : "reorderable list"}
-        className="mx-auto flex w-[70%] flex-col gap-[10px] md:w-full md:max-w-[780px]"
+        className="mx-auto flex w-[96%] flex-col gap-[10px] md:w-full md:max-w-[780px]"
         style={{ marginTop: GAP, listStyle: "none" }}
       >
         {order.map((key, idx) => (
@@ -162,7 +157,6 @@ export function PriorityRankingStep({
             index={idx}
             total={order.length}
             label={labelFor(key)}
-            desc={descFor(key)}
             busy={busy}
             positionLabel={positionTpl.replace("{n}", String(idx + 1))}
             upLabel={moveUpTpl.replace("{label}", labelFor(key))}
@@ -211,7 +205,6 @@ function RankRow({
   index,
   total,
   label,
-  desc,
   busy,
   positionLabel,
   upLabel,
@@ -224,7 +217,6 @@ function RankRow({
   index: number;
   total: number;
   label: string;
-  desc: string;
   busy: boolean;
   positionLabel: string;
   upLabel: string;
@@ -254,12 +246,9 @@ function RankRow({
         {index + 1}
       </span>
 
-      {/* Title + description */}
+      {/* Domain name only — the card subtitle (desc) is removed (Stage 1). */}
       <div className="min-w-0 flex-1">
-        <div className="text-[17.5px] font-bold leading-snug text-[#2E2622]">{label}</div>
-        {desc ? (
-          <p className="mt-0.5 text-[13px] leading-snug text-[#a2917f]">{desc}</p>
-        ) : null}
+        <div className="text-[22px] font-bold leading-snug text-[#2E2622]">{label}</div>
       </div>
 
       {/* a11y keyboard alternative: ↑/↓ buttons */}

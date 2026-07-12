@@ -67,11 +67,17 @@ export async function saveTrialSettings(raw: unknown): Promise<SaveTrialResult> 
 
 const promoModeSchema = z.object({
   promo_mode: z.enum(["off", "personal_window", "campaign_timer"]),
+  // Personal-window config (migration 184) — optional so 'off' / 'campaign_timer'
+  // saves keep working without these columns present.
+  personal_window_hours: z.coerce.number().int().min(1).max(720).optional(),
+  personal_window_display: z.enum(["text", "clock"]).optional(),
 });
 
 /**
  * Save the urgency mode (task 20) to site_settings.promo_mode. One active mode
  * at a time; drives the server-enforced price gate + the indicator system.
+ * In personal_window mode it also persists the admin-chosen window length +
+ * display (migration 184).
  */
 export async function savePromoMode(raw: unknown): Promise<SaveTrialResult> {
   const parsed = promoModeSchema.safeParse(raw);
@@ -80,9 +86,16 @@ export async function savePromoMode(raw: unknown): Promise<SaveTrialResult> {
   }
   const { supabase } = await requireAdmin();
   try {
+    const update: Record<string, unknown> = { promo_mode: parsed.data.promo_mode };
+    if (parsed.data.personal_window_hours !== undefined) {
+      update.personal_window_hours = parsed.data.personal_window_hours;
+    }
+    if (parsed.data.personal_window_display !== undefined) {
+      update.personal_window_display = parsed.data.personal_window_display;
+    }
     const { error } = await supabase
       .from("site_settings")
-      .update({ promo_mode: parsed.data.promo_mode })
+      .update(update)
       .eq("id", 1);
     if (error) return { ok: false, error: { _root: [error.message] } };
     revalidatePath("/dashboard/settings/trial");

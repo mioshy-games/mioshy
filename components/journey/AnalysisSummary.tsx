@@ -11,6 +11,9 @@ import {
 import { useCmsText } from "@/hooks/useCmsText";
 import { useTrialOffer } from "@/hooks/useTrialOffer";
 import { PromoExpiryCountdown } from "@/components/journey/PromoExpiryCountdown";
+import { PersonalOfferTimer } from "@/components/journey/PersonalOfferTimer";
+import { ConsultationCallButton } from "@/components/journey/ConsultationCallButton";
+import { WeeklyProgramSection } from "@/components/journey/WeeklyProgramSection";
 import type { CadenceOption } from "@/lib/billing/pricing-validations";
 
 /**
@@ -83,6 +86,11 @@ interface AnalysisSummaryProps {
    *  ONLY in campaign_timer; personal_window uses the offer-window line instead,
    *  so only one urgency indicator appears. */
   promoMode?: "off" | "personal_window" | "campaign_timer";
+  /** Admin-controlled personal-window display (site_settings, migration 184).
+   *  'text' → the existing offer-window line; 'clock' → a PromoExpiryCountdown
+   *  wired to the user's personal offerExpiresAt. Only meaningful in
+   *  personal_window mode. */
+  personalWindowDisplay?: "text" | "clock";
   /** Render mode. "full" (default) = the assessment results paywall. "subscribe"
    *  = a lean subscribe page (reused by /journey/subscribe): keeps the hero +
    *  score bars + the pricing/checkout block, and hides the assessment-only
@@ -149,6 +157,7 @@ export function AnalysisSummary({
   activePromo = null,
   offerExpiresAt = null,
   promoMode = "personal_window",
+  personalWindowDisplay = "text",
   mode = "full",
 }: AnalysisSummaryProps) {
   const isHe = locale === "he";
@@ -192,6 +201,43 @@ export function AnalysisSummary({
 
   const [checkoutBusy, setCheckoutBusy] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  // Partner-invite share + "schedule a call" modal (Stage 1).
+  const [inviteCopied, setInviteCopied] = useState(false);
+  // Plans collapsed to monthly by default; the rest expand on demand (Stage 1).
+  const [showMorePlans, setShowMorePlans] = useState(false);
+
+  const inviteUrl = () =>
+    typeof window !== "undefined"
+      ? `${window.location.origin}/${locale}/journey/assessment`
+      : "";
+  const shareInviteWhatsApp = () => {
+    const msg = isHe
+      ? "בואו נעשה יחד את האבחון הזוגי של מיאושי 💛"
+      : "Let's take Mioshy's couples assessment together 💛";
+    const url = inviteUrl();
+    if (typeof window !== "undefined") {
+      window.open(
+        `https://wa.me/?text=${encodeURIComponent(`${msg} ${url}`)}`,
+        "_blank",
+        "noopener",
+      );
+    }
+  };
+  const copyInviteLink = async () => {
+    try {
+      await navigator.clipboard.writeText(inviteUrl());
+      setInviteCopied(true);
+      window.setTimeout(() => setInviteCopied(false), 2000);
+    } catch {
+      /* clipboard blocked — no-op */
+    }
+  };
+  const scrollToPrice = (e: { preventDefault: () => void }) => {
+    e.preventDefault();
+    if (typeof document !== "undefined") {
+      document.getElementById("ar-price")?.scrollIntoView({ behavior: "smooth" });
+    }
+  };
 
   // CMS string consumers (resolve to raw strings; fall back to bilingual).
   const checkoutErrGeneric = useCmsText("journeyAssessment.analysis.checkoutErrorGeneric").text;
@@ -209,20 +255,16 @@ export function AnalysisSummary({
   // "unset" and renders the bilingual literal fallback. Prices/cadence DATA is
   // never CMS — only labels.
   const RK = "journeyAssessment.results";
-  const cmsEyebrow = useCmsText(`${RK}.eyebrow`).text;
-  const cmsHeroSub = useCmsText(`${RK}.heroSub`).text;
+  // Results-page improvements (2026-07-12) — new keys so the preview renders the
+  // new copy via inline fallback without touching the shared prod cms_texts.
+  const cmsEyebrowShort = useCmsText(`${RK}.eyebrowShort`).text;
+  const cmsH1Ready = useCmsText(`${RK}.h1Ready`).text;
+  const cmsStrip1 = useCmsText(`${RK}.strip1`).text;
+  const cmsStrip2 = useCmsText(`${RK}.strip2`).text;
   const cmsFeedbackLabel = useCmsText(`${RK}.feedbackLabel`).text;
   const cmsCategoriesLabel = useCmsText(`${RK}.categoriesLabel`).text;
   const cmsContinueLabel = useCmsText(`${RK}.continueLabel`).text;
-  const cmsContinueP1 = useCmsText(`${RK}.continueP1`).text;
-  const cmsContinueP2 = useCmsText(`${RK}.continueP2`).text;
-  const cmsImprovementsLabel = useCmsText(`${RK}.improvementsLabel`).text;
-  const cmsImprove1 = useCmsText(`${RK}.improve1`).text;
-  const cmsImprove2 = useCmsText(`${RK}.improve2`).text;
-  const cmsImprove3 = useCmsText(`${RK}.improve3`).text;
-  const cmsImprove4 = useCmsText(`${RK}.improve4`).text;
-  const cmsImprove5 = useCmsText(`${RK}.improve5`).text;
-  const cmsImprove6 = useCmsText(`${RK}.improve6`).text;
+  // (heroSub + improvements* keys dropped — those sections were removed.)
   const cmsPriceTitle = useCmsText(`${RK}.priceTitle`).text;
   const cmsIncluded1 = useCmsText(`${RK}.included1`).text;
   const cmsIncluded2 = useCmsText(`${RK}.included2`).text;
@@ -308,12 +350,8 @@ export function AnalysisSummary({
   }
 
   // ── Dynamic content (AI + categories) ──────────────────────────────────
-  const aiHero = analysis?.summary.ai_hero ?? null;
-  const heroText = aiHero ? (isHe ? aiHero.hero_he : aiHero.hero_en) : null;
-  // AI failed → generic, NON-deterministic h1 (no fabricated insight).
-  const h1Text =
-    heroText ??
-    (isHe ? "הנה תמונת המצב מהאבחון שלכם." : "Here's the picture from your assessment.");
+  // The h1 is now a fixed CMS string (2026-07-12) — the AI ai_hero is no longer
+  // used for the title; its narrative still drives the personal-feedback card.
   const narrative = analysis
     ? isHe ? analysis.summary.narrative_he : analysis.summary.narrative_en
     : null;
@@ -495,6 +533,10 @@ export function AnalysisSummary({
       : `billing begins, ${priceStr(amt)} ${recurringLabel}.`;
   })();
 
+  // Included panel for the SELECTED plan — exact structure per the approved
+  // pricing card: a gradient "חיסכון X%" line under the name, then a divider,
+  // muted lead, and a gradient-dot list. `saveText` is the plan's savings string
+  // (null → no savings line). The expert item is gated on the coaching toggle.
   return (
     <div className="ar-root" dir={isHe ? "rtl" : "ltr"}>
       {/* ── HERO ───────────────────────────────────────────────────── */}
@@ -512,54 +554,26 @@ export function AnalysisSummary({
           <div className="ar-eyebrow">
             {isSubscribe
               ? rc(cmsSubEyebrow, "הייעוץ הזוגי של מיאושי", "Mioshy couples coaching")
-              : rc(cmsEyebrow, "תוצאות האבחון שלכם", "Your assessment results")}
+              : rc(cmsEyebrowShort, "תוצאות האבחון הקצר", "Short assessment results")}
           </div>
           <h1 className="ar-h1 font-heading">
             {isSubscribe
               ? rc(cmsSubH1, "מתחילים היום לפלפל את הזוגיות!", "Start spicing up your relationship today!")
-              : h1Text}
+              : rc(cmsH1Ready, "תוצאות האבחון שלך מוכנות", "Your assessment results are ready")}
           </h1>
-          <p className="ar-sub">
-            {isSubscribe
-              ? rc(
-                  cmsSubFraming,
-                  "הצטרפו ותיהנו ממנוי זוגי מלא הכולל גישה חופשית גם לבני הזוג (ללא תוספת תשלום).",
-                  "Join and enjoy a full couple subscription with free access for your partner too (at no extra charge).",
-                )
-              : rc(
-                  cmsHeroSub,
-                  "השלמת את האבחון. ניתחנו את הנתונים שלך, ובנינו עבורך תמונת מצב אישית שמראה איפה הזוגיות חזקה, ואיפה נמצא הפוטנציאל הגדול ביותר לשיפור.",
-                  "You completed the assessment. We analysed your answers and built a personal picture showing where the relationship is strong, and where the biggest potential to improve is.",
-                )}
-          </p>
-          {!isSubscribe && categoryScores ? (
-            <div className="ar-bars">
-              {CAT_ORDER.map((key) => {
-                const value = categoryScores[key];
-                const insufficient = insufficientKeys.includes(key);
-                const hot = !insufficient && key === categoryScores.lowest_key;
-                const heightPct = insufficient ? 8 : Math.max(14, Math.min(100, value));
-                return (
-                  <div className={`ar-bar${hot ? " hot" : ""}`} key={key}>
-                    <span className="ar-v">{insufficient ? "–" : value}</span>
-                    <div
-                      className="ar-col"
-                      style={
-                        hot
-                          ? { height: `${heightPct}%`, background: "var(--ar-grad)", border: 0 }
-                          : {
-                              height: `${heightPct}%`,
-                              background:
-                                "linear-gradient(rgba(255,255,255,.07),rgba(255,255,255,.07)) padding-box, var(--ar-grad) border-box",
-                            }
-                      }
-                    />
-                    <span className="ar-lbl">{isHe ? BAR_LABEL[key].he : BAR_LABEL[key].en}</span>
-                  </div>
-                );
-              })}
-            </div>
+          {/* Results page: the "you completed the assessment…" subline was removed
+              (Stage 1 design). The subscribe page keeps its own framing line. */}
+          {isSubscribe ? (
+            <p className="ar-sub">
+              {rc(
+                cmsSubFraming,
+                "הצטרפו ותיהנו ממנוי זוגי מלא הכולל גישה חופשית גם לבני הזוג (ללא תוספת תשלום).",
+                "Join and enjoy a full couple subscription with free access for your partner too (at no extra charge).",
+              )}
+            </p>
           ) : null}
+          {/* Score graph moved out of the hero into the light sheet, above the
+              "what your answers tell" section (2026-07-12). */}
           {/* Hero link removed (2026-07-02) — duplicated the sticky CTA + the
               offer section and distracted from reading the report. */}
         </div>
@@ -567,32 +581,63 @@ export function AnalysisSummary({
 
       {/* ── SHEET ──────────────────────────────────────────────────── */}
       <div className="ar-sheet">
-        {/* PERSONAL FEEDBACK — assessment-only; hidden on the subscribe page. */}
-        {!isSubscribe && narrative ? (
+        {/* PERSONAL FEEDBACK + SCORE GRAPH — assessment-only; hidden on subscribe.
+            Stage 1 design: the round photo is gone; the 5-domain graph sits at the
+            top of the sheet, right under the "your personal feedback" label, then
+            the narrative continues below. Order: label → graph → narrative. */}
+        {!isSubscribe && categoryScores ? (
           <section className="ar-section">
             <div className="ar-fbcard">
-              <div className="ar-photo" aria-hidden />
               <div className="ar-sublabel ar-center">
                 {rc(cmsFeedbackLabel, "המשוב האישי שלכם", "Your personal feedback")}
               </div>
-              <p className="ar-fbtext">{narrative}</p>
+              <div className="ar-bars on-light">
+                {CAT_ORDER.map((key) => {
+                  const value = categoryScores[key];
+                  const insufficient = insufficientKeys.includes(key);
+                  const hot = !insufficient && key === categoryScores.lowest_key;
+                  const heightPct = insufficient ? 8 : Math.max(14, Math.min(100, value));
+                  return (
+                    <div className={`ar-bar${hot ? " hot" : ""}`} key={key}>
+                      <span className="ar-v">{insufficient ? "–" : value}</span>
+                      <div
+                        className="ar-col"
+                        style={
+                          hot
+                            ? { height: `${heightPct}%`, background: "var(--ar-grad)", border: 0 }
+                            : {
+                                height: `${heightPct}%`,
+                                background:
+                                  "linear-gradient(rgba(122,31,43,.05),rgba(122,31,43,.05)) padding-box, var(--ar-grad) border-box",
+                              }
+                        }
+                      />
+                      <span className="ar-lbl">{isHe ? BAR_LABEL[key].he : BAR_LABEL[key].en}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              {narrative ? <p className="ar-fbtext">{narrative}</p> : null}
             </div>
           </section>
         ) : null}
 
-        {/* CATEGORIES — assessment-only cards; hidden on the subscribe page
-            (the 5-domain graph bars in the hero above are kept). */}
+        {/* CATEGORIES — assessment-only cards; hidden on the subscribe page.
+            The score graph moved UP into the personal-feedback block (Stage 1). */}
         {!isSubscribe && categoryScores ? (
           <section className="ar-section">
             <div className="ar-sublabel">
               {rc(cmsCategoriesLabel, "מה התשובות שלכם מספרות", "What your answers tell")}
             </div>
+            {/* Stage 1: show ONLY the intimacy card (CAT_ORDER[0]) — the short
+                assessment surfaces one domain; the rest come with the full one.
+                No "most important" badge (single card). */}
             <div className="ar-cats">
-              {CAT_ORDER.map((key) => {
+              {(() => {
+                const key = CAT_ORDER[0];
                 const score = categoryScores[key];
                 const fb = CATEGORY_FEEDBACK[key];
                 const insufficient = insufficientKeys.includes(key);
-                const isLowest = !insufficient && key === categoryScores.lowest_key;
                 const weak = score < CATEGORY_WEAK_BELOW;
                 const text = insufficient
                   ? isHe
@@ -602,111 +647,120 @@ export function AnalysisSummary({
                     ? weak ? fb.weak_he : fb.strong_he
                     : weak ? fb.weak_en : fb.strong_en;
                 return (
-                  <div className={`ar-catcard${isLowest ? " low" : ""}`} key={key}>
+                  <div className="ar-catcard" key={key}>
                     <div className="ar-scorerow">
                       <span className="ar-snum font-heading">{insufficient ? "–" : score}</span>
                       <span className="ar-sof">/ 100</span>
                       <span className="ar-sexp">
                         {insufficient
                           ? isHe ? "דרוש אבחון מלא" : "full assessment needed"
-                          : levelDesc(score, isLowest, isHe)}
+                          : levelDesc(score, false, isHe)}
                       </span>
-                      {isLowest ? (
-                        <span className="ar-badge">{isHe ? "נתחיל מכאן" : "start here"}</span>
-                      ) : null}
                     </div>
                     <div className="ar-cname">{isHe ? fb.he : fb.en}</div>
                     <p className="ar-ctxt">{text}</p>
                   </div>
                 );
-              })}
+              })()}
             </div>
-            <div className="ar-howcard">
-              <div className="ar-hl">
-                {rc(cmsContinueLabel, "מכאן ממשיכים יחד", "From here we continue together")}
+            {/* Link to the plans (Stage 1). Teaser paragraph + arrow removed. */}
+            <div className="ar-cats-more">
+              <a href="#ar-price" className="ar-cats-more-link" onClick={scrollToPrice}>
+                {isHe ? "לתוצאות מדוייקות ולאבחון המלא" : "For accurate results and the full assessment"}
+              </a>
+            </div>
+
+            {/* Social-proof strip — under the "long assessment" link (Stage 1).
+                Copy approved by Itzik 2026-07-13 (no numbers). */}
+            {!journeySubscribed ? (
+              <div className="ar-strip">
+                <span className="ar-strip-since">{rc(cmsStrip1, "מאז 2021", "Since 2021")}</span>
+                <span className="ar-strip-stat">
+                  {rc(
+                    cmsStrip2,
+                    "אנחנו מלווים זוגות בדרך לזוגיות חזקה ומלאת תשוקה.",
+                    "We've been guiding couples toward a strong, passionate relationship.",
+                  )}
+                </span>
               </div>
-              <p>
-                {rc(
-                  cmsContinueP1,
-                  "על כל אחד מהתחומים האלה נעבוד יחד, פרק חדש בכל שבוע, ואתם קובעים את הסדר.",
-                  "We'll work on each of these areas together, a new chapter every week, and you set the order.",
-                )}
-              </p>
-              <p>
-                {rc(
-                  cmsContinueP2,
-                  "את האבחון המלא, לתמונה מדויקת ולתוצאות עמוקות יותר, נשלים יחד מיד אחרי ההצטרפות לתוכנית הייעוץ הזוגי של מיאושי.",
-                  "We'll complete the full assessment together, for a more accurate picture and deeper results, right after you join Mioshy's couples coaching.",
-                )}
-              </p>
+            ) : null}
+            <div className="ar-howcard">
+              {/* Partner-invite share (Stage 1) — invite the partner to take the
+                  assessment via WhatsApp or a copied link. */}
+              <div className="ar-share">
+                <div className="ar-share-title">
+                  {isHe ? "הזמינו את בן/בת הזוג לאבחון" : "Invite your partner to the assessment"}
+                </div>
+                <div className="ar-share-btns">
+                  <button
+                    type="button"
+                    className="ar-share-btn wa"
+                    onClick={shareInviteWhatsApp}
+                    aria-label={isHe ? "שתפו בוואטסאפ" : "Share on WhatsApp"}
+                    title={isHe ? "שתפו בוואטסאפ" : "Share on WhatsApp"}
+                  >
+                    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+                      <path
+                        fill="currentColor"
+                        d="M12 2a10 10 0 0 0-8.6 15l-1.3 4.8 4.9-1.3A10 10 0 1 0 12 2zm5.8 14.2c-.2.7-1.4 1.3-2 1.4-.5.1-1.2.1-1.9-.1-.4-.1-1-.3-1.7-.6-3-1.3-4.9-4.3-5-4.5-.2-.2-1.3-1.7-1.3-3.2s.8-2.3 1.1-2.6c.3-.3.6-.4.8-.4h.6c.2 0 .4 0 .6.5l.9 2.1c.1.2.1.4 0 .6l-.4.6c-.2.2-.3.4-.1.7.5.8 1.1 1.4 1.8 1.9.3.2.6.4 1 .1l.7-.7c.2-.2.4-.2.6-.1l2 1c.3.1.5.2.5.4.1.2.1.9-.1 1.2z"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    className="ar-share-btn copy"
+                    onClick={copyInviteLink}
+                    aria-label={isHe ? "העתיקו לינק" : "Copy link"}
+                    title={isHe ? "העתיקו לינק" : "Copy link"}
+                  >
+                    <svg viewBox="0 0 24 24" width="21" height="21" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1" />
+                      <path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1" />
+                    </svg>
+                  </button>
+                </div>
+                <div className={`ar-share-copied${inviteCopied ? " show" : ""}`} aria-live="polite">
+                  {isHe ? "הקישור הועתק!" : "Link copied!"}
+                </div>
+              </div>
+
+              {/* "מכאן ממשיכים יחד" block moved BELOW the weekly section
+                  (2026-07-13) — rendered after <WeeklyProgramSection/>. */}
             </div>
+
           </section>
         ) : null}
 
-        {/* IMPROVEMENTS — static design copy (NOT the AI recommendations).
-            Pre-purchase selling section: hidden for subscribers + on subscribe page. */}
-        {!journeySubscribed && !isSubscribe ? (
-          <section className="ar-section">
-            <div className="ar-sublabel">
-              {rc(cmsImprovementsLabel, "מה תקבלו בליווי", "What you get in the program")}
+        {/* "מה תקבלו בליווי" section removed (Stage 1 design). */}
+
+        {/* Weekly-program section — reused from the journey hub; CTA scrolls to
+            the plans below (Stage 2). */}
+        {!isSubscribe ? (
+          <div className="ar-weekly">
+            {/* Results page: hide the section's own CTA — the plans + their CTA
+                sit right below. The marketing hub (/journey) keeps its CTA. */}
+            <WeeklyProgramSection ctaHref="#ar-price" hideCta />
+          </div>
+        ) : null}
+
+        {/* "מכאן ממשיכים יחד" — header + expert paragraph + schedule-a-call CTA;
+            moved BELOW the weekly section (2026-07-13). Order on the page:
+            share → weekly program → this block → price. */}
+        {!isSubscribe ? (
+          <div className="ar-howcard">
+            <div className="ar-hl">
+              {rc(cmsContinueLabel, "מכאן ממשיכים יחד", "From here we continue together")}
             </div>
-            <div className="ar-imp">
-              <div className="ar-improw">
-                <span className="ar-ic">
-                  <svg viewBox="0 0 24 24">
-                    <path d="M12 20s-7-4.5-7-9a4 4 0 017-2.6A4 4 0 0119 11c0 4.5-7 9-7 9z" />
-                    <path d="M12 11v-3M10.5 9.5h3" strokeWidth="1.4" />
-                  </svg>
-                </span>
-                <span>{rc(cmsImprove1, "האינטימיות תגדל", "Intimacy will grow")}</span>
-              </div>
-              <div className="ar-improw">
-                <span className="ar-ic">
-                  <svg viewBox="0 0 24 24">
-                    <path d="M12 7v11" />
-                    <path d="M12 9C9 3 3 4.5 4 9.5c.8 3.8 6 4.5 8 1.5" />
-                    <path d="M12 9c3-6 9-4.5 8 .5-.8 3.8-6 4.5-8 1.5" />
-                  </svg>
-                </span>
-                <span>{rc(cmsImprove2, "הפרפרים יחזרו לבטן", "The butterflies will return")}</span>
-              </div>
-              <div className="ar-improw">
-                <span className="ar-ic">
-                  <svg viewBox="0 0 24 24">
-                    <path d="M12 3c1 3-1 4-1 6a3 3 0 006 0c0-1 0-2-1-3 2 1 4 4 4 7a8 8 0 01-16 0c0-4 3-6 4-8 1 1 2 1 4-2z" />
-                  </svg>
-                </span>
-                <span>{rc(cmsImprove3, "הסקס יהיה עוצמתי מתמיד", "Sex will be better than ever")}</span>
-              </div>
-              <div className="ar-improw">
-                <span className="ar-ic">
-                  <svg viewBox="0 0 24 24">
-                    <circle cx="8" cy="9" r="2.4" />
-                    <circle cx="16" cy="9" r="2.4" />
-                    <path d="M3.5 19a4.5 4.5 0 019 0M11.5 19a4.5 4.5 0 019 0" />
-                  </svg>
-                </span>
-                <span>{rc(cmsImprove4, "החברות ביניכם תתחזק", "Your friendship will strengthen")}</span>
-              </div>
-              <div className="ar-improw">
-                <span className="ar-ic">
-                  <svg viewBox="0 0 24 24">
-                    <path d="M5 7h11l3 3-3 3H5z" />
-                    <path d="M5 7v12" strokeWidth="1.4" />
-                  </svg>
-                </span>
-                <span>{rc(cmsImprove5, "הריבים יפחתו והשקט יחזור", "Arguments will ease and calm returns")}</span>
-              </div>
-              <div className="ar-improw">
-                <span className="ar-ic">
-                  <svg viewBox="0 0 24 24">
-                    <path d="M12 20s-7-4.5-7-9a4 4 0 017-2.6A4 4 0 0119 11c0 4.5-7 9-7 9z" />
-                  </svg>
-                </span>
-                <span>{rc(cmsImprove6, "האהבה תחזור", "Love will return")}</span>
-              </div>
-            </div>
-          </section>
+            <p className="ar-expert">
+              {isHe
+                ? "מרגע שתצטרפו, מומחה זוגי מהצוות שלנו הופך להיות שלכם. הוא קורא את האבחון שלכם ובונה לכם תוכנית סדורה, עם פרקים שבועיים שמתקדמים יחד אתכם צעד אחר צעד. וכשעולה שאלה או רגע קשה באמצע הערב, הוא שם בשבילכם בצ׳אט."
+                : "From the moment you join, a relationship expert from our team becomes yours. They read your assessment and build you a structured plan, with weekly chapters that progress with you step by step. And when a question or a hard moment comes up mid-evening, they're there for you in chat."}
+            </p>
+            <ConsultationCallButton
+              label={isHe ? "לקביעת שיחה עם נציג" : "Schedule a call with a rep"}
+              source="assessment_results"
+            />
+          </div>
         ) : null}
 
         {/* PRICE (non-subscriber) / ACTIVE-SUBSCRIBER card */}
@@ -715,6 +769,14 @@ export function AnalysisSummary({
             <h2 className="ar-sh font-heading">
               {rc(cmsPriceTitle, "איזו חבילה מתאימה לכם?", "Which plan fits you?")}
             </h2>
+            {/* Personal-window countdown (display='clock') — tiles wired to the
+                user's existing offer_expires_at (48h window unchanged). */}
+            {promoMode === "personal_window" &&
+            personalWindowDisplay === "clock" &&
+            offerExpiresAt &&
+            new Date(offerExpiresAt).getTime() > Date.now() ? (
+              <PersonalOfferTimer endsAt={offerExpiresAt} isHe={isHe} />
+            ) : null}
             <div className="ar-pricecard">
               {/* Stage-1 coaching add-on — with/without choice. Only rendered
                   once a coaching cost is configured (else the bundle == content
@@ -749,17 +811,13 @@ export function AnalysisSummary({
               {/* Packages ← journeyCadences. Price shown = promo first-charge
                   (server-computed) or the regular price for that cadence. */}
               <div className="ar-opts-wrap">
-                {/* Trial tag as a fieldset-style legend on the container's top
-                    border (Itzik 2026-07-04): ONE tag for the whole selector
-                    (the trial applies to every package), dark solid bg + white
-                    text — NOT the brand gradient, which blends into the coaching
-                    tabs above. Shows only when the current coaching selection is
-                    trial-enabled (useTrialOffer already keys off `coaching`). */}
-                {trial.enabled ? (
-                  <span className="ar-trial-legend">{trial.cardTag}</span>
-                ) : null}
+                {/* Stage 1: only the monthly plan shows by default; the rest sit
+                    behind "לצפייה בעוד חבילות" below. The selected plan always
+                    shows (so a non-monthly selection is never hidden). */}
                 {enabledCadences.map((c) => {
                 const selected = c.cadence === selectedCadence;
+                const visible = c.cadence === "monthly" || showMorePlans || selected;
+                if (!visible) return null;
                 const amt = amtOf(c);
                 const pf = promoSet?.firstChargeByCadence[c.cadence];
                 const po = promoSet?.originalByCadence[c.cadence];
@@ -793,60 +851,43 @@ export function AnalysisSummary({
                   c.cadence === "yearly" && monthlyFull != null && amt > 0
                     ? Math.floor((monthlyFull * 12 - amt) / monthlyFull)
                     : null;
+                // "חיסכון X%" line — shown under the name inside the selected
+                // card's included block (psave). null → no savings line.
+                const saveText =
+                  promoSavePct != null
+                    ? `${isHe ? "חיסכון" : "Save"} ${promoSavePct}%${
+                        c.cadence === "monthly"
+                          ? isHe ? " על החודש הראשון" : " on the first month"
+                          : ""
+                      }`
+                    : savePct != null
+                      ? `${isHe ? "חיסכון" : "Save"} ${savePct}%${
+                          c.cadence === "yearly" && freeMonths && freeMonths > 0
+                            ? isHe ? ` · ${freeMonthsHe(freeMonths)}` : ` · ${freeMonths} months free`
+                            : ""
+                        }`
+                      : null;
                 return (
+                  <div className={`ar-opt-group${selected ? " sel" : ""}`} key={c.cadence}>
+                  {/* Trial strip at the TOP of the selected card — gradient bg,
+                      white text; moves with the selection (Stage 1). */}
+                  {selected && trial.enabled ? (
+                    <div className="ar-trial-strip">{trial.cardTag}</div>
+                  ) : null}
                   <button
                     type="button"
                     className={`ar-opt${selected ? " sel" : ""}`}
                     onClick={() => setSelectedCadence(c.cadence)}
                     aria-pressed={selected}
-                    key={c.cadence}
                   >
                     <span className="ar-radio" />
+                    {/* Name (+ the promo recurring-price note). The "חיסכון %"
+                        line moved into the selected card's included block. */}
                     <span className="ar-opt-info">
                       <span className="ar-opt-name">{cadenceTitle(c.cadence)}</span>
-                    </span>
-                    {/* Mobile width fix (Itzik 2026-07-04): tag / sub-line /
-                        "חיסכון %" move to their OWN full-width row BELOW the
-                        radio+name+price line, so they use the whole card width
-                        instead of the narrow info column that shared the row
-                        with the big price. */}
-                    <span className="ar-opt-details">
-                      {/* Trial tag moved to the selector's top-border legend
-                          (Itzik 2026-07-04); no longer per-card. */}
                       {hasPromo ? (
-                        <>
-                          {/* Sub line first; "חיסכון X%" moved to its OWN line
-                              below it (2026-07-01, Itzik) — matches the pricing
-                              page, no longer inline with the sub. */}
-                          <span className="ar-opt-note">
-                            {`${firstPeriodLabel(c.cadence, isHe)}${isHe ? ", אח״כ " : ", then "}${priceStr(origAmt)}`}
-                          </span>
-                          {/* Task 21/#4 (Itzik 2026-07-02, option A REVERTED):
-                              "חיסכון %" stays on the card even when the trial tag
-                              is present. X is always computed live from the real
-                              prices ((regular − promo) / regular, rounded) — never
-                              hardcoded. */}
-                          {promoSavePct != null ? (
-                            <span className="ar-opt-save">
-                              {isHe ? "חיסכון" : "Save"} {promoSavePct}%
-                              {/* Clarify the monthly promo is a FIRST-month
-                                  discount (Itzik 2026-07-04). */}
-                              {c.cadence === "monthly"
-                                ? isHe ? " על החודש הראשון" : " on the first month"
-                                : ""}
-                            </span>
-                          ) : null}
-                        </>
-                      ) : savePct != null ? (
-                        <span className="ar-opt-save">
-                          {isHe ? "חיסכון" : "Save"} {savePct}%
-                          {/* Yearly "N months free" — computed live (Itzik
-                              2026-07-04), grammatical Hebrew. */}
-                          {c.cadence === "yearly" && freeMonths && freeMonths > 0
-                            ? isHe
-                              ? ` · ${freeMonthsHe(freeMonths)}`
-                              : ` · ${freeMonths} months free`
-                            : ""}
+                        <span className="ar-opt-note">
+                          {`${firstPeriodLabel(c.cadence, isHe)}${isHe ? ", אח״כ " : ", then "}${priceStr(origAmt)}`}
                         </span>
                       ) : null}
                     </span>
@@ -872,9 +913,52 @@ export function AnalysisSummary({
                       <span className="ar-price-cur">{sym}</span>
                     </span>
                   </button>
+                  {/* Savings line under the name — shown for EVERY visible card
+                      (monthly, quarterly, yearly), not only the selected one, so
+                      the revealed plans carry "חיסכון X%" like the approved mock. */}
+                  {saveText ? <div className="psave">{saveText}</div> : null}
+                  {/* Included block — only the selected card. INLINE (not a helper)
+                      so styled-jsx adds its scope class and .incl/.dot apply. */}
+                  {selected ? (
+                    <div className="incl">
+                      <div className="incl-div" aria-hidden />
+                      <div className="incl-lead">
+                        {isHe
+                          ? "המנוי כולל גישה מלאה לשני בני הזוג"
+                          : "The subscription includes full access for both partners"}
+                      </div>
+                      <ul>
+                        {[
+                          rc(cmsIncluded1, "פרק חדש כל שבוע", "A new chapter every week"),
+                          ...(coaching
+                            ? [rc(cmsIncluded2, "מומחה זוגיות פרטי בצ'אט", "A private relationship expert in chat")]
+                            : []),
+                          rc(cmsIncluded3, "משחקי זוגות אונליין", "Online couples games"),
+                          rc(cmsIncluded4, "הסקס של מיאושי", "Mioshy's sex games"),
+                        ].map((it, i) => (
+                          <li key={i}>
+                            <span aria-hidden className="dot" />
+                            {it}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+                  </div>
                 );
               })}
               </div>
+
+              {/* Reveal quarterly/yearly (Stage 1). */}
+              {!showMorePlans && enabledCadences.length > 1 ? (
+                <button
+                  type="button"
+                  className="ar-more-plans"
+                  onClick={() => setShowMorePlans(true)}
+                >
+                  {isHe ? "לצפייה בעוד חבילות" : "See more plans"}
+                </button>
+              ) : null}
 
               {/* Selected-cadence headline — the amount Cardcom will charge for
                   the selected plan. Preserves the struck anchor (ILS derived /
@@ -931,45 +1015,16 @@ export function AnalysisSummary({
                   })()
                 : null}
 
-              {/* Zone A end — the personal-window offer as a styled strip
-                  (mockup v1, Itzik 2026-07-04). Only with an active window. */}
-              {offerWindowLabel ? (
+              {/* Zone A end — the personal-window offer. 'clock' is shown by the
+                  tile timer at the TOP of the plans (Stage 1), so here we only
+                  render the 'text' offer-window line. */}
+              {personalWindowDisplay !== "clock" && offerWindowLabel ? (
                 <p className="ar-offer-strip">{offerWindowLabel}</p>
               ) : null}
 
-              <hr className="ar-zone-sep" aria-hidden />
-
-              {/* ── Zone B — "מה כלול" 2-col grid. The coaching DUPLICATE
-                  (included5 "ייעוץ זוגי עם מיאושי") is dropped: the chat item
-                  (included2) already represents the coaching add-on, so we don't
-                  list coaching twice. included2 stays gated on the coaching
-                  toggle so the without-coaching bundle never promises the chat.
-                  The "מנוי אחד, שני בני זוג" line is the section subtitle. */}
-              <div className="ar-incl-head">
-                <h3 className="ar-incl-title font-heading">
-                  {isHe ? "מה כלול" : "What's included"}
-                </h3>
-                <p className="ar-incl-sub">
-                  {isHe
-                    ? "מנוי אחד, שני בני זוג. בלי תוספת מחיר."
-                    : "One subscription, both partners. No extra charge."}
-                </p>
-              </div>
-              <div className="ar-incl">
-                {[
-                  rc(cmsIncluded1, "פרק חדש כל שבוע", "A new chapter every week"),
-                  ...(coaching
-                    ? [rc(cmsIncluded2, "מומחה זוגיות פרטי בצ'אט", "A private relationship expert in chat")]
-                    : []),
-                  rc(cmsIncluded3, "משחקי זוגות אונליין", "Online couples games"),
-                  rc(cmsIncluded4, "הסקס של מיאושי", "Mioshy's sex games"),
-                ].map((it, i) => (
-                  <div className="ar-it" key={i}>
-                    <span aria-hidden className="ar-it-check">✓</span>
-                    <span>{it}</span>
-                  </div>
-                ))}
-              </div>
+              {/* "מה כלול" moved INTO the selected package card above (2026-07-12,
+                  includedPanel) so it follows the selection. The coaching item
+                  (included2) is still gated on the coaching toggle there. */}
 
               <hr className="ar-zone-sep" aria-hidden />
 
@@ -1036,9 +1091,11 @@ export function AnalysisSummary({
                 </p>
               ) : null}
               <div className="ar-stop">
-                {trial.enabled && trial.disclosure
-                  ? trial.disclosure
-                  : rc(cmsStopNote, "אפשר לעצור בכל עת בלחיצת כפתור.", "Cancel anytime with one tap.")}
+                {rc(
+                  cmsStopNote,
+                  "תזינו פרטי אשראי, ובעוד 5 ימים נזכיר לכם לפני החיוב.",
+                  "Enter your card details; in 5 days we'll remind you before the charge.",
+                )}
               </div>
             </div>
           </section>
@@ -1075,13 +1132,14 @@ export function AnalysisSummary({
             <b>
               {rc(
                 cmsAnchorBold,
-                "איתנו תקבלו ליווי צמוד ותוכנית מובנית, עם פרק אחד בשבוע שבו תבצעו משימות ותעצימו את הזוגיות שלכם מיום ליום.",
-                "With us you get close guidance and a structured plan, one chapter a week to strengthen your relationship day by day.",
+                "איתנו תקבלו ליווי צמוד ותוכנית מובנית, עם פרק אחד בשבוע שבו תבצעו משימות ופעילויות שהמומחים שלנו בנו במיוחד עבורכם, ותעצימו את הזוגיות מיום ליום.",
+                "With us you get close guidance and a structured plan, one chapter a week of tasks and activities our experts built especially for you, strengthening your relationship day by day.",
               )}
             </b>
           </p>
         ) : null}
       </div>
+
 
       <style jsx>{`
         .ar-root {
@@ -1191,7 +1249,9 @@ export function AnalysisSummary({
           font-weight: 500;
           color: rgba(255, 255, 255, 0.85);
           line-height: 1.45;
-          margin-bottom: 20px;
+          /* Subline is the last hero element now the graph moved out — no
+             trailing gap (2026-07-12). */
+          margin-bottom: 0;
         }
         .ar-bars {
           display: flex;
@@ -1226,6 +1286,49 @@ export function AnalysisSummary({
           font-weight: 500;
           line-height: 1.3;
         }
+        /* Score graph on the light sheet (2026-07-12): NO card/border — the
+           bars sit directly on the cream sheet, centred, with dark
+           numbers/labels; columns keep the brand gradient (outline for the
+           non-focus bars, filled for the focus bar). */
+        .ar-bars.on-light {
+          max-width: 420px;
+          margin: 4px auto 24px;
+        }
+        .ar-bars.on-light .ar-v {
+          color: #2e2622;
+        }
+        .ar-bars.on-light .ar-lbl {
+          color: #111111;
+        }
+        /* Social-proof gradient strip (2026-07-12) — white text on brand grad. */
+        .ar-strip {
+          /* Aligned to the "מכאן ממשיכים יחד" card above (same width, centred)
+             and pulled snug beneath it so the two read as one unit (Stage 1). */
+          max-width: 620px;
+          margin: 18px auto 0;
+          background: var(--ar-grad);
+          border-radius: 16px;
+          padding: 16px 20px;
+          text-align: center;
+          color: #fff;
+          box-shadow: 0 12px 28px -16px rgba(150, 60, 150, 0.5);
+        }
+        .ar-strip-since {
+          display: block;
+          font-size: 13px;
+          font-weight: 800;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          opacity: 0.92;
+          margin-bottom: 4px;
+        }
+        .ar-strip-stat {
+          display: block;
+          /* Mobile base; desktop bumps to 28px in the ≥760 media query. */
+          font-size: 20px;
+          font-weight: 700;
+          line-height: 1.45;
+        }
         .ar-herolink {
           display: inline-block;
           margin-top: 24px;
@@ -1252,6 +1355,22 @@ export function AnalysisSummary({
           font-size: 25px;
           margin-bottom: 4px;
           line-height: 1.2;
+          text-align: center;
+        }
+        /* Trial badge above the "which plan" title — gradient text, centred
+           (pricing-redesign-approved.html .badge). */
+        .ar-trial-above {
+          display: block;
+          text-align: center;
+          margin: 0 auto 10px;
+          font-family: var(--font-heebo), "Assistant", "Heebo", system-ui, sans-serif;
+          font-size: 18px;
+          font-weight: 900;
+          background: var(--ar-grad);
+          -webkit-background-clip: text;
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
+          color: transparent;
         }
         .ar-sublabel {
           font-size: 14px;
@@ -1271,19 +1390,10 @@ export function AnalysisSummary({
           max-width: 640px;
           margin: 0 auto;
         }
-        .ar-photo {
-          width: 150px;
-          height: 150px;
-          border-radius: 50%;
-          margin: 0 auto 20px;
-          background: url("/images/assess.webp") center 25% / cover no-repeat;
-          box-shadow: 0 14px 34px -14px rgba(80, 50, 35, 0.45);
-          border: 4px solid #fff;
-        }
         .ar-fbtext {
-          font-size: 24px;
+          font-size: 20px;
           font-weight: 500;
-          line-height: 1.5;
+          line-height: 1.4;
           color: #2e2622;
         }
 
@@ -1356,6 +1466,45 @@ export function AnalysisSummary({
           line-height: 1.4;
           color: #5a4f46;
         }
+        /* Under the single category card: message + link to the plans (Stage 1). */
+        .ar-cats-more {
+          max-width: 620px;
+          margin: 16px auto 0;
+          text-align: center;
+        }
+        .ar-cats-more-msg {
+          font-size: 17px;
+          line-height: 1.5;
+          color: #5a4f46;
+          font-weight: 500;
+          margin-bottom: 10px;
+        }
+        .ar-cats-more-link {
+          display: inline-block;
+          font-size: 18px;
+          font-weight: 400;
+          color: #000000;
+          text-decoration: underline;
+          text-underline-offset: 3px;
+          cursor: pointer;
+        }
+
+        /* Expert paragraph below the share block (Stage 2). */
+        .ar-expert {
+          max-width: 620px;
+          margin: 20px auto 0;
+          text-align: center;
+          font-size: 19px;
+          line-height: 1.55;
+          font-weight: 500;
+          color: #2e2622;
+        }
+        /* Weekly-program section wrapper — the shared component brings its own
+           (start-aligned) styling; just reset the sheet's centering. */
+        .ar-weekly {
+          text-align: start;
+          margin-top: 12px;
+        }
 
         /* HOW IT CONTINUES */
         .ar-howcard {
@@ -1380,50 +1529,6 @@ export function AnalysisSummary({
         }
         .ar-howcard p + p {
           margin-top: 12px;
-        }
-
-        /* IMPROVEMENTS */
-        .ar-imp {
-          display: flex;
-          flex-direction: column;
-          gap: 13px;
-          margin-top: 18px;
-        }
-        .ar-improw {
-          display: flex;
-          gap: 15px;
-          align-items: center;
-          background: #fffdf9;
-          border-radius: 18px;
-          padding: 18px;
-          box-shadow: 0 6px 18px -14px rgba(80, 50, 35, 0.3);
-        }
-        .ar-ic {
-          flex: none;
-          width: 48px;
-          height: 48px;
-          border-radius: 14px;
-          background: linear-gradient(
-            150deg,
-            rgba(108, 92, 231, 0.16),
-            rgba(214, 64, 159, 0.12)
-          );
-          display: grid;
-          place-items: center;
-          color: #b3318c;
-        }
-        .ar-ic :global(svg) {
-          width: 25px;
-          height: 25px;
-          fill: none;
-          stroke: currentColor;
-          stroke-width: 1.7;
-          stroke-linecap: round;
-          stroke-linejoin: round;
-        }
-        .ar-improw > span:last-child {
-          font-size: 20px;
-          font-weight: 700;
         }
 
         /* PRICE */
@@ -1499,36 +1604,34 @@ export function AnalysisSummary({
         .ar-coach-wrap {
           text-align: center;
         }
+        /* Segmented toggle (Stage 1): no track background, a subtle border on each
+           button; the selected button is solid black. */
         .ar-coach {
-          /* No container pill — transparent; only the selected button carries
-             the gradient. Non-selected is text-only. */
-          display: inline-flex;
-          gap: 4px;
-          margin-bottom: 18px;
+          display: flex;
+          border: 1px solid #ece2d4;
+          border-radius: 13px;
+          padding: 5px;
+          gap: 5px;
+          margin-bottom: 22px;
           background: transparent;
         }
         .ar-coach-opt {
-          /* Task 27 (Itzik 2026-07-03): subtle hairline contour so the
-             unselected option reads as a clickable tab, not floating text. */
-          border: 1px solid #e5dccb;
+          flex: 1;
+          border: 0;
           cursor: pointer;
           font-family: var(--font-heebo), "Assistant", "Heebo", sans-serif;
-          font-weight: 700;
-          font-size: 16px;
-          color: #4b4640;
-          padding: 9px 25px;
-          border-radius: 999px;
+          font-weight: 800;
+          font-size: 14.5px;
+          color: #8a7a6b;
+          padding: 11px 8px;
+          border-radius: 9px;
           background: transparent;
           white-space: nowrap;
-          transition: all 0.15s;
+          transition: 0.18s;
         }
         .ar-coach-opt.sel {
+          background: #141210;
           color: #fff;
-          /* The gradient fill carries the selected state; drop the hairline so
-             it doesn't clash with the gradient edge. */
-          border-color: transparent;
-          background: var(--ar-grad);
-          box-shadow: 0 4px 12px -5px rgba(214, 64, 159, 0.5);
         }
         /* ✓ icon removed from the selected coaching toggle (Itzik 2026-07-04) —
            the gradient fill alone marks the selection. */
@@ -1565,198 +1668,245 @@ export function AnalysisSummary({
         /* Approved mockup: docs/promo-timer-mockup-approved.html (version B).
            Base = mobile (timer wraps to a centered line below); desktop
            override in the ≥760 media query keeps it inline (flex:1, centered). */
+        /* Plan cards (pricing-redesign-approved.html): name+save on the start,
+           price on the end (no period label). One .ar-opt-group per plan so the
+           selected card + its included list read as one unit. */
+        /* The selection row is a transparent flex row; the card chrome (bg +
+           border) lives on .ar-opt-group. Radio/name at the start, price at the
+           end (justify-content:space-between; .ar-opt-info flex:1). */
         .ar-opt {
           display: flex;
-          flex-wrap: wrap;
-          /* Mobile (Itzik 2026-07-04): line 1 is radio + name + price, centered
-             on one vertical line; the details row (tag / sub / חיסכון) wraps to
-             its own full-width line below. */
           align-items: center;
-          gap: 12px;
+          justify-content: space-between;
+          gap: 11px;
           width: 100%;
-          background: #fcfaf7;
-          border: 2px solid #ece2cf;
-          border-radius: 16px;
-          padding: 16px 18px;
+          background: none;
+          border: 0;
+          padding: 16px 17px 0;
+          position: relative;
+          z-index: 1;
           cursor: pointer;
           text-align: right;
-          margin-bottom: 12px;
-          transition: 0.15s;
+          margin-bottom: 0;
+          transition: 0.18s;
           font-family: inherit;
         }
-        .ar-opt:last-of-type {
+        /* Plan card — white bg + subtle border, clipped so the trial strip and
+           gradient ring follow the rounded corners. */
+        .ar-opt-group {
+          position: relative;
+          background: #fff;
+          border: 1.5px solid #ece2d4;
+          border-radius: 16px;
+          overflow: hidden;
+          margin-bottom: 16px;
+        }
+        .ar-opt-group:last-of-type {
           margin-bottom: 0;
         }
-        .ar-opt.sel {
-          border: 2px solid transparent;
-          background: linear-gradient(#fff, #fff) padding-box, var(--ar-grad) border-box;
+        /* Selected card = gradient border ring drawn by ::before (mask). */
+        .ar-opt-group.sel {
+          border-color: transparent;
           box-shadow: 0 8px 20px -12px rgba(150, 60, 150, 0.35);
         }
-        /* Radio ALWAYS on the right (RTL): order 0 = first in flow = rightmost. */
+        .ar-opt-group.sel::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          border-radius: 16px;
+          padding: 2px;
+          background: linear-gradient(95deg, #6c5ce7, #d6409f 52%, #f79154);
+          -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+          -webkit-mask-composite: xor;
+          mask-composite: exclude;
+          pointer-events: none;
+          z-index: 2;
+        }
+        /* Trial "7 ימי ניסיון חינם" strip at the top of the SELECTED card. */
+        .ar-trial-strip {
+          position: relative;
+          z-index: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 52px;
+          background: linear-gradient(95deg, #6c5ce7, #d6409f 52%, #f79154);
+          color: #fff;
+          font-family: var(--font-heebo), "Assistant", "Heebo", system-ui, sans-serif;
+          font-weight: 800;
+          font-size: 20px;
+        }
+        .ar-opt-group.sel .ar-opt {
+          border: 0;
+          background: transparent;
+          border-radius: 0;
+          box-shadow: none;
+        }
+        /* Radio: hollow ring; selected = gradient fill + white centre dot. */
         .ar-radio {
           flex: none;
-          order: 0;
           width: 22px;
           height: 22px;
           border-radius: 50%;
-          border: 2px solid #d9cdbf;
+          border: 2px solid #d8c8b3;
+          display: grid;
+          place-items: center;
+          /* Pin to the name line (top) so radio + name + price sit on one row
+             even when the promo note wraps a second line below the name. */
+          align-self: flex-start;
+          margin-top: 3px;
         }
         .ar-opt.sel .ar-radio {
-          border: 6px solid #d6409f;
+          border-color: transparent;
+          background: var(--ar-grad);
+        }
+        .ar-opt.sel .ar-radio::after {
+          content: "";
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: #fff;
         }
         .ar-opt-info {
-          order: 1;
-          /* Mobile: grow so the price is pushed to the far end of the same
-             line (not wrapped below). Reset on desktop so the timer's flex:1
-             owns the centre instead. */
           flex: 1;
           display: flex;
           flex-direction: column;
+          gap: 3px;
           text-align: right;
         }
         .ar-opt-name {
-          font-family: var(--font-frank-ruhl), "Frank Ruhl Libre", serif;
-          font-weight: 900;
-          font-size: 23px;
-          line-height: 1;
+          font-family: var(--font-heebo), "Assistant", "Heebo", system-ui, sans-serif;
+          font-weight: 800;
+          font-size: 24px;
+          line-height: 1.1;
           color: #2e2622;
         }
-        /* Full-width row under the name+price line — holds the trial tag, the
-           sub line and "חיסכון %", so each uses the whole card width and only
-           wraps where it truly runs out of room (Itzik 2026-07-04). */
-        .ar-opt-details {
-          order: 4;
-          flex-basis: 100%;
-          width: 100%;
-          display: flex;
-          flex-direction: column;
-          text-align: right;
-        }
         .ar-opt-note {
-          font-size: 18px;
-          font-weight: 500;
-          color: #4b4640;
-          margin-top: 6px;
-          /* Mobile: may wrap. Desktop (≥760) forces one line. */
-          white-space: normal;
+          font-size: 13px;
+          font-weight: 600;
+          color: #8a7a6b;
         }
-        /* "חיסכון X%" — own line below the sub, brand-gradient text (2026-07-01,
-           Itzik), consistent with the pricing page. width:fit-content keeps the
-           95deg gradient spanning the glyphs (not the full row) so the full
-           purple→magenta→orange shows. Falls back to solid #6C5CE7. */
+        /* "חיסכון X%" — gradient text, own line under the name. */
         .ar-opt-save {
-          display: block;
           width: fit-content;
-          margin-top: 6px;
-          /* 22px per Itzik 2026-07-03 (was 18px). */
-          font-size: 22px;
-          font-weight: 800;
+          font-size: 20px;
+          font-weight: 700;
           line-height: 1.2;
-          color: #6c5ce7;
-          background: linear-gradient(95deg, #6c5ce7 0%, #d6409f 52%, #f79154 100%);
+          margin-top: 2px;
+          background: var(--ar-grad);
           -webkit-background-clip: text;
           background-clip: text;
           -webkit-text-fill-color: transparent;
+          color: transparent;
         }
-        /* Timer slot — mobile: full-width centered line below (order 5). */
+        /* Campaign-timer slot (only in promo_mode=campaign_timer). */
         .ar-opt-timer {
-          order: 5;
           flex-basis: 100%;
           display: flex;
           justify-content: center;
           margin-top: 10px;
         }
+        /* Price — ink number + muted currency, no gradient, no period label. */
         .ar-opt-price {
-          order: 3;
-          flex: none;
           margin-inline-start: auto;
+          flex: none;
+          /* Align the price with the plan name (top), not the taller info column. */
+          align-self: flex-start;
+          margin-top: 1px;
           display: inline-flex;
           align-items: baseline;
-          gap: 6px;
-          font-family: var(--font-heebo), "Assistant", "Heebo", system-ui,
-            sans-serif;
+          /* A real space before the ₪ (Stage 1). */
+          gap: 5px;
+          white-space: nowrap;
+          font-size: 24px;
+          font-weight: 900;
+          color: #2e2622;
+          font-family: var(--font-heebo), "Assistant", "Heebo", system-ui, sans-serif;
         }
-        /* Selected package: big gradient price (sans). */
         .ar-price-num {
-          font-size: 40px;
-          font-weight: 800;
+          font-size: 24px;
+          font-weight: 900;
           line-height: 1;
-          background: var(--ar-grad);
-          -webkit-background-clip: text;
-          background-clip: text;
-          color: transparent;
+          color: #2e2622;
+          background: none;
+          -webkit-text-fill-color: #2e2622;
         }
         .ar-price-cur {
-          font-size: 24px;
+          font-size: 15px;
           font-weight: 800;
           line-height: 1;
-          background: var(--ar-grad);
+          color: #8a7a6b;
+          background: none;
+          -webkit-text-fill-color: #8a7a6b;
+        }
+        /* Included list under the SELECTED plan (pricing-redesign-approved.html):
+           lead line + gradient-dot list aligned under the plan name (padding-
+           start clears the radio). No "מה כלול" heading, no top divider. */
+        /* Selected-card included block — exact approved spec. */
+        .psave {
+          padding: 5px 50px 0 17px;
+          font-size: 20px;
+          font-weight: 700;
+          width: max-content;
+          background: linear-gradient(95deg, #6c5ce7, #d6409f 52%, #f79154);
           -webkit-background-clip: text;
           background-clip: text;
           color: transparent;
         }
-        /* Non-selected packages: plain serif ink price. */
-        .ar-opt-price.plain .ar-price-num {
-          font-family: var(--font-frank-ruhl), "Frank Ruhl Libre", serif;
-          font-size: 30px;
-          background: none;
-          -webkit-text-fill-color: #2e2622;
-          color: #2e2622;
+        /* On a NON-selected card the savings line is the last element (no incl
+           block below it), so it needs its own bottom padding to breathe inside
+           the card. */
+        .ar-opt-group:not(.sel) .psave {
+          padding-bottom: 16px;
         }
-        .ar-opt-price.plain .ar-price-cur {
-          font-family: var(--font-frank-ruhl), "Frank Ruhl Libre", serif;
-          font-size: 18px;
-          background: none;
-          -webkit-text-fill-color: #2e2622;
-          color: #2e2622;
+        .incl {
+          padding: 14px 50px 16px 17px;
         }
-        /* Zone B — "מה כלול" header + 2-col grid (mockup v1, Itzik 2026-07-04),
-           site tokens/fonts; magenta ✓ from the brand palette. */
-        .ar-incl-head {
-          text-align: center;
+        .incl-div {
+          height: 1px;
+          background: #ece2d4;
+          margin: 0 -33px 13px 0;
+        }
+        .incl-lead {
+          font-size: 15px;
+          color: #8a7a6b;
+          font-weight: 600;
           margin-bottom: 14px;
         }
-        .ar-incl-title {
-          font-family: var(--font-frank-ruhl), "Frank Ruhl Libre", serif;
-          font-weight: 700;
-          font-size: 24px;
-          color: #2e2622;
-        }
-        .ar-incl-sub {
-          margin-top: 4px;
-          /* 20px per Itzik 2026-07-04 (was 16px). */
-          font-size: 20px;
-          font-weight: 600;
-          color: #5a4f46;
-        }
-        /* One horizontal row of feature items — never two rows (Itzik
-           2026-07-04), mobile AND desktop. Each item is a compact centered
-           column (✓ above the text) so all of them share the row width; the
-           text wraps inside its own column when it must. */
-        .ar-incl {
-          display: flex;
-          flex-wrap: nowrap;
-          gap: 8px;
-          justify-content: space-between;
-        }
-        .ar-it {
-          flex: 1 1 0;
-          min-width: 0;
+        .incl ul {
+          list-style: none;
           display: flex;
           flex-direction: column;
+          gap: 13px;
+        }
+        .incl li {
+          display: flex;
           align-items: center;
-          gap: 5px;
-          font-size: 15px;
+          gap: 10px;
+          font-size: 20px;
           font-weight: 600;
           color: #2e2622;
-          text-align: center;
-          line-height: 1.25;
         }
-        .ar-it-check {
+        .dot {
+          width: 8px;
+          height: 8px;
           flex: none;
-          color: #d6409f;
-          font-weight: 800;
-          font-size: 17px;
+          border-radius: 50%;
+          background: linear-gradient(95deg, #6c5ce7, #d6409f 52%, #f79154);
+        }
+        /* "לצפייה בעוד חבילות" — 14px black underlined link (Stage 1). */
+        .ar-more-plans {
+          display: block;
+          margin: 4px auto 0;
+          background: none;
+          border: 0;
+          cursor: pointer;
+          font-family: inherit;
+          font-size: 14px;
+          font-weight: 700;
+          color: #241d1a;
+          text-decoration: underline;
+          text-underline-offset: 3px;
         }
 
         /* Selected-cadence headline summary (restored money-path detail) */
@@ -1838,8 +1988,8 @@ export function AnalysisSummary({
         }
         .ar-stop {
           text-align: center;
-          font-size: 16px;
-          color: #7b6b5e;
+          font-size: 20px;
+          color: #000000;
           margin-top: 12px;
         }
         /* Task 23 — "מנוי אחד, שני בני זוג" reassurance line near the price. */
@@ -1865,6 +2015,13 @@ export function AnalysisSummary({
           font-weight: 600;
           line-height: 1.5;
           color: #7a1f2b;
+        }
+        /* Personal-window countdown (display='clock', migration 184) — centre
+           the reused PromoExpiryCountdown pill. */
+        .ar-offer-clock {
+          margin-top: 16px;
+          display: flex;
+          justify-content: center;
         }
         /* Zone divider between the three areas (choice / included / how it
            works). Hairline in the card-border tone. */
@@ -1921,6 +2078,135 @@ export function AnalysisSummary({
           font-weight: 800;
         }
 
+        /* Partner-invite share (Stage 1) — WhatsApp + copy-link, centred. */
+        .ar-share {
+          text-align: center;
+          margin-bottom: 20px;
+        }
+        .ar-share-title {
+          font-size: 17px;
+          font-weight: 700;
+          color: #5a4f46;
+          margin-bottom: 10px;
+        }
+        .ar-share-btns {
+          display: inline-flex;
+          gap: 12px;
+        }
+        .ar-share-btn {
+          width: 52px;
+          height: 52px;
+          border-radius: 50%;
+          border: 0;
+          cursor: pointer;
+          display: grid;
+          place-items: center;
+          color: #fff;
+          transition: transform 0.15s;
+        }
+        .ar-share-btn:hover {
+          transform: translateY(-2px);
+        }
+        .ar-share-btn.wa {
+          background: #25d366;
+        }
+        .ar-share-btn.copy {
+          background: var(--ar-grad);
+        }
+        .ar-share-copied {
+          font-size: 13px;
+          font-weight: 700;
+          color: #2e8b57;
+          margin-top: 8px;
+          height: 16px;
+          opacity: 0;
+          transition: opacity 0.2s;
+        }
+        .ar-share-copied.show {
+          opacity: 1;
+        }
+
+        /* Schedule-a-call CTA (Stage 1). */
+        .ar-callcta {
+          display: inline-block;
+          margin-top: 16px;
+          background: var(--ar-grad);
+          border: 0;
+          color: #fff;
+          font-family: inherit;
+          font-weight: 800;
+          font-size: 17px;
+          padding: 12px 24px;
+          border-radius: 999px;
+          cursor: pointer;
+          transition: 0.15s;
+          box-shadow: 0 12px 26px -12px rgba(150, 60, 150, 0.5);
+        }
+        .ar-callcta:hover {
+          filter: brightness(1.06);
+        }
+
+        /* Schedule-a-call modal skeleton (Calendly wired later). */
+        .ar-callmodal-root {
+          position: fixed;
+          inset: 0;
+          z-index: 130;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 16px;
+        }
+        .ar-callmodal-scrim {
+          position: absolute;
+          inset: 0;
+          background: rgba(30, 20, 16, 0.55);
+          backdrop-filter: blur(2px);
+          -webkit-backdrop-filter: blur(2px);
+        }
+        .ar-callmodal {
+          position: relative;
+          width: 100%;
+          max-width: 460px;
+          background: #fff;
+          border-radius: 20px;
+          padding: 26px 22px;
+          text-align: center;
+          box-shadow: 0 30px 70px -30px rgba(40, 25, 18, 0.6);
+        }
+        .ar-callmodal-x {
+          position: absolute;
+          top: 10px;
+          inset-inline-end: 14px;
+          background: none;
+          border: 0;
+          font-size: 26px;
+          line-height: 1;
+          color: #9a8a7c;
+          cursor: pointer;
+        }
+        .ar-callmodal-title {
+          font-family: var(--font-frank-ruhl), "Frank Ruhl Libre", serif;
+          font-size: 24px;
+          font-weight: 800;
+          color: #2e2622;
+          margin-bottom: 8px;
+        }
+        .ar-callmodal-sub {
+          font-size: 16px;
+          color: #5a4f46;
+          margin-bottom: 18px;
+        }
+        .ar-callmodal-embed {
+          min-height: 260px;
+          border: 1.5px dashed #e0d3c2;
+          border-radius: 14px;
+          display: grid;
+          place-items: center;
+          color: #a2917f;
+          font-size: 15px;
+          padding: 20px;
+        }
+
         /* ============ DESKTOP (≥760) ============ */
         @media (min-width: 760px) {
           .ar-hero {
@@ -1928,7 +2214,8 @@ export function AnalysisSummary({
             padding: 0;
             background: #241d1a;
             background-image: none;
-            min-height: 420px;
+            /* Stage 1: shorter hero now the subline + graph left it (was 420). */
+            min-height: 200px;
           }
           .ar-logo {
             top: 28px;
@@ -1941,8 +2228,10 @@ export function AnalysisSummary({
             bottom: 0;
             right: 0;
             width: 48%;
-            background: url("/images/hero-assess.webp") center right / cover
-              no-repeat;
+            /* Fill the box fully (cover), keep the couple centred, and fall back
+               to the hero ink so no blank strip ever shows (Stage 1 fix). */
+            background: #241d1a url("/images/hero-assess.webp") center center /
+              cover no-repeat;
           }
           .ar-hero-figure::after {
             content: "";
@@ -1961,7 +2250,9 @@ export function AnalysisSummary({
             max-width: 780px;
             margin: 0 auto;
             text-align: center;
-            padding: 54px 40px 60px;
+            /* Bottom padding trimmed (was 60) now the graph left the hero, so it
+               ends clean under the subline (2026-07-12). */
+            padding: 54px 40px 46px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -1973,12 +2264,15 @@ export function AnalysisSummary({
           .ar-sub {
             font-size: 22px;
             max-width: 680px;
-            margin-bottom: 22px;
+            margin-bottom: 0;
           }
-          .ar-bars {
-            max-width: 620px;
+          .ar-bars.on-light {
+            max-width: 480px;
             height: 170px;
             width: 100%;
+          }
+          .ar-strip-stat {
+            font-size: 28px;
           }
           .ar-sheet {
             max-width: 1060px;
@@ -1994,44 +2288,21 @@ export function AnalysisSummary({
           .ar-fbcard {
             max-width: 680px;
           }
-          .ar-photo {
-            width: 190px;
-            height: 190px;
-          }
           .ar-fbtext {
-            font-size: 28px;
-          }
-          .ar-imp {
-            display: flex;
-            flex-flow: row wrap;
-            justify-content: center;
-            gap: 16px 18px;
-            max-width: 820px;
-            margin-inline: auto;
-          }
-          .ar-improw {
-            width: auto;
-            padding: 20px 26px;
-          }
-          .ar-improw:nth-child(2),
-          .ar-improw:nth-child(4),
-          .ar-improw:nth-child(6) {
-            transform: translateY(16px);
+            font-size: 20px;
           }
           .ar-pricecard {
             /* wider (v9) so the one-line sub + centered timer + price fit */
             max-width: 640px;
           }
-          /* Desktop: line 1 = radio + name + timer + price (timer's flex:1 owns
-             the centre); the details row (tag / sub / חיסכון) wraps to its own
-             full-width line below, same as mobile (Itzik 2026-07-04). */
-          .ar-opt {
-            flex-wrap: wrap;
-            align-items: center;
+          /* Coaching toggle — fixed, centered width on desktop. */
+          .ar-coach {
+            width: 370px;
+            margin-inline: auto;
           }
-          .ar-opt-info {
-            flex: 0 0 auto;
-          }
+          /* Desktop: radio + name/save on the start, price on the end (same
+             single-row layout as mobile; the campaign timer, when present, owns
+             the centre). */
           .ar-opt-note {
             white-space: nowrap;
           }

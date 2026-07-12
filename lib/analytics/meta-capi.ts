@@ -105,7 +105,8 @@ export type MetaCapiEvent = {
     | "InitiateCheckout"
     | "CompleteRegistration"
     | "ViewContent"
-    | "PageView";
+    | "PageView"
+    | "Schedule";
   /** Shared with the browser Pixel event for deduplication. */
   eventId: string;
   /** Unix seconds. Defaults to now. */
