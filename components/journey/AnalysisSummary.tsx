@@ -1083,9 +1083,11 @@ export function AnalysisSummary({
                 </p>
               ) : null}
               <div className="ar-stop">
-                {trial.enabled && trial.disclosure
-                  ? trial.disclosure
-                  : rc(cmsStopNote, "אפשר לעצור בכל עת בלחיצת כפתור.", "Cancel anytime with one tap.")}
+                {rc(
+                  cmsStopNote,
+                  "תזינו פרטי אשראי, ובעוד 5 ימים נזכיר לכם לפני החיוב.",
+                  "Enter your card details; in 5 days we'll remind you before the charge.",
+                )}
               </div>
             </div>
           </section>
@@ -1122,8 +1124,8 @@ export function AnalysisSummary({
             <b>
               {rc(
                 cmsAnchorBold,
-                "איתנו תקבלו ליווי צמוד ותוכנית מובנית, עם פרק אחד בשבוע שבו תבצעו משימות ותעצימו את הזוגיות שלכם מיום ליום.",
-                "With us you get close guidance and a structured plan, one chapter a week to strengthen your relationship day by day.",
+                "איתנו תקבלו ליווי צמוד ותוכנית מובנית, עם פרק אחד בשבוע שבו תבצעו משימות ופעילויות שהמומחים שלנו בנו במיוחד עבורכם, ותעצימו את הזוגיות מיום ליום.",
+                "With us you get close guidance and a structured plan, one chapter a week of tasks and activities our experts built especially for you, strengthening your relationship day by day.",
               )}
             </b>
           </p>
@@ -1972,8 +1974,8 @@ export function AnalysisSummary({
         }
         .ar-stop {
           text-align: center;
-          font-size: 16px;
-          color: #7b6b5e;
+          font-size: 20px;
+          color: #000000;
           margin-top: 12px;
         }
         /* Task 23 — "מנוי אחד, שני בני זוג" reassurance line near the price. */
