@@ -122,7 +122,7 @@ interface PlanEntry {
   email?: string;
   kind?: SequenceEmailKind;
   due_at?: string;
-  decision: string; // would_send | skip_no_consent | skip_no_email | skip_before_activation | skip_purchased | skip_expired | skip_not_due | skip_already_sent
+  decision: string; // would_send | skip_test_user | skip_no_consent | skip_no_email | skip_before_activation | skip_purchased | skip_expired | skip_not_due | skip_already_sent
 }
 interface Summary {
   ok: boolean;
@@ -250,13 +250,20 @@ async function handle(req: Request): Promise<NextResponse<Summary>> {
     // email; email lives on auth.users, see Gate 1b).
     const { data: profile } = await admin
       .from("profiles")
-      .select("full_name, marketing_consent, gender")
+      .select("full_name, marketing_consent, gender, is_test_user")
       .eq("id", userId)
       .maybeSingle<{
         full_name: string | null;
         marketing_consent: boolean | null;
         gender: "male" | "female" | "other" | null;
+        is_test_user: boolean | null;
       }>();
+    // Gate 0 — test accounts NEVER receive sequence sends (re-engagement §A).
+    // Checked before consent so a flagged account is skipped regardless.
+    if (profile?.is_test_user === true) {
+      if (onlyUserId) plan.push({ user_id: userId, decision: "skip_test_user" });
+      continue;
+    }
     // Gate 1 — consent (§30A). NEVER bypass: no marketing send without it.
     if (!profile || profile.marketing_consent !== true) {
       if (onlyUserId) plan.push({ user_id: userId, decision: "skip_no_consent" });
