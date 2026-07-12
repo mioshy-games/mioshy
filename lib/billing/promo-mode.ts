@@ -35,6 +35,33 @@ export async function getPromoMode(client: SupabaseClient): Promise<PromoMode> {
   return "personal_window";
 }
 
+export type PersonalWindowDisplay = "text" | "clock";
+
+/** Admin-configured personal-window length (hours) + display (site_settings,
+ *  migration 184). Defensive: defaults to 48h / 'text' on any miss, so callers
+ *  keep working even before the migration is applied. */
+export async function getPersonalWindowConfig(
+  client: SupabaseClient,
+): Promise<{ hours: number; display: PersonalWindowDisplay }> {
+  try {
+    const { data } = await client
+      .from("site_settings")
+      .select("personal_window_hours, personal_window_display")
+      .eq("id", 1)
+      .maybeSingle();
+    const row = data as
+      | { personal_window_hours?: number | null; personal_window_display?: string | null }
+      | null;
+    const rawHours = Number(row?.personal_window_hours);
+    const hours = Number.isFinite(rawHours) && rawHours >= 1 && rawHours <= 720 ? Math.round(rawHours) : 48;
+    const display: PersonalWindowDisplay =
+      row?.personal_window_display === "clock" ? "clock" : "text";
+    return { hours, display };
+  } catch {
+    return { hours: 48, display: "text" };
+  }
+}
+
 /**
  * The user's current personal-offer deadline (latest journey by user_id).
  * Null when the user has no journey / no stamped window.

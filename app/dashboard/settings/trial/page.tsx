@@ -24,11 +24,19 @@ export default async function TrialSettingsPage() {
     .select("product, coaching, enabled");
   const { data: settings } = await admin
     .from("site_settings")
-    .select("promo_mode")
+    .select("promo_mode, personal_window_hours, personal_window_display")
     .eq("id", 1)
     .maybeSingle();
-  const promoMode = ((settings as { promo_mode?: PromoMode } | null)?.promo_mode ??
-    "personal_window") as PromoMode;
+  const s = settings as {
+    promo_mode?: PromoMode;
+    personal_window_hours?: number | null;
+    personal_window_display?: string | null;
+  } | null;
+  const promoMode = (s?.promo_mode ?? "personal_window") as PromoMode;
+  const personalWindowHours =
+    typeof s?.personal_window_hours === "number" ? s.personal_window_hours : 48;
+  const personalWindowDisplay: "text" | "clock" =
+    s?.personal_window_display === "clock" ? "clock" : "text";
 
   const initial: TrialRow[] = ((data ?? []) as TrialRow[]).map((r) => ({
     product: r.product,
@@ -59,7 +67,11 @@ export default async function TrialSettingsPage() {
         <p className="text-muted-foreground mb-3">
           מנגנון דחיפות אחד פעיל בכל רגע. משפיע על אכיפת מחיר ההיכרות בצ׳קאאוט ועל החיווי.
         </p>
-        <PromoModeForm initial={promoMode} />
+        <PromoModeForm
+          initial={promoMode}
+          initialHours={personalWindowHours}
+          initialDisplay={personalWindowDisplay}
+        />
       </div>
     </div>
   );
