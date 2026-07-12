@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import type { Analysis, Locale } from "@/lib/journey/types";
 import {
@@ -645,7 +645,7 @@ export function AnalysisSummary({
                           : levelDesc(score, isLowest, isHe)}
                       </span>
                       {isLowest ? (
-                        <span className="ar-badge">{isHe ? "נתחיל מכאן" : "start here"}</span>
+                        <span className="ar-badge">{isHe ? "הכי חשוב לכם" : "most important to you"}</span>
                       ) : null}
                     </div>
                     <div className="ar-cname">{isHe ? fb.he : fb.en}</div>
@@ -673,22 +673,22 @@ export function AnalysisSummary({
                 )}
               </p>
             </div>
-          </section>
-        ) : null}
 
-        {/* Social-proof strip (2026-07-12) — gradient band above "what you get".
-            ⚠️ PLACEHOLDER stats until Itzik approves real numbers. */}
-        {!journeySubscribed && !isSubscribe ? (
-          <div className="ar-strip">
-            <span className="ar-strip-since">{rc(cmsStrip1, "מאז 2021", "Since 2021")}</span>
-            <span className="ar-strip-stat">
-              {rc(
-                cmsStrip2,
-                "שיפרנו ל-90% מהזוגות שלנו את הזוגיות, בעשרות אחוזים בכל חודש.",
-                "We improved the relationship for 90% of our couples, by tens of percent every month.",
-              )}
-            </span>
-          </div>
+            {/* Social-proof strip — sits tight under "מכאן ממשיכים יחד" as one
+                unit (Stage 1). ⚠️ PLACEHOLDER stats until Itzik approves. */}
+            {!journeySubscribed ? (
+              <div className="ar-strip">
+                <span className="ar-strip-since">{rc(cmsStrip1, "מאז 2021", "Since 2021")}</span>
+                <span className="ar-strip-stat">
+                  {rc(
+                    cmsStrip2,
+                    "שיפרנו ל-90% מהזוגות שלנו את הזוגיות, בעשרות אחוזים בכל חודש.",
+                    "We improved the relationship for 90% of our couples, by tens of percent every month.",
+                  )}
+                </span>
+              </div>
+            ) : null}
+          </section>
         ) : null}
 
         {/* "מה תקבלו בליווי" section removed (Stage 1 design). */}
@@ -776,7 +776,7 @@ export function AnalysisSummary({
                     ? Math.floor((monthlyFull * 12 - amt) / monthlyFull)
                     : null;
                 return (
-                  <Fragment key={c.cadence}>
+                  <div className={`ar-opt-group${selected ? " sel" : ""}`} key={c.cadence}>
                   <button
                     type="button"
                     className={`ar-opt${selected ? " sel" : ""}`}
@@ -855,7 +855,7 @@ export function AnalysisSummary({
                     </span>
                   </button>
                   {selected ? includedPanel : null}
-                  </Fragment>
+                  </div>
                 );
               })}
               </div>
@@ -1212,7 +1212,10 @@ export function AnalysisSummary({
         }
         /* Social-proof gradient strip (2026-07-12) — white text on brand grad. */
         .ar-strip {
-          margin: 8px 0 26px;
+          /* Aligned to the "מכאן ממשיכים יחד" card above (same width, centred)
+             and pulled snug beneath it so the two read as one unit (Stage 1). */
+          max-width: 620px;
+          margin: 18px auto 0;
           background: var(--ar-grad);
           border-radius: 16px;
           padding: 16px 20px;
@@ -1605,17 +1608,38 @@ export function AnalysisSummary({
           padding: 16px 18px;
           cursor: pointer;
           text-align: right;
-          margin-bottom: 12px;
+          margin-bottom: 0;
           transition: 0.15s;
           font-family: inherit;
         }
-        .ar-opt:last-of-type {
+        /* Each option (and, when selected, its "מה כלול" panel) lives in ONE
+           group so the panel reads as a continuation of the selected card — no
+           separating gap, shared border/background, one unit (Stage 1). */
+        .ar-opt-group {
+          margin-bottom: 12px;
+        }
+        .ar-opt-group:last-of-type {
           margin-bottom: 0;
         }
         .ar-opt.sel {
           border: 2px solid transparent;
           background: linear-gradient(#fff, #fff) padding-box, var(--ar-grad) border-box;
           box-shadow: 0 8px 20px -12px rgba(150, 60, 150, 0.35);
+        }
+        /* Selected group = the unified card: the gradient border + shadow move
+           to the group, and the inner button/panel become flush content. */
+        .ar-opt-group.sel {
+          border: 2px solid transparent;
+          background: linear-gradient(#fff, #fff) padding-box, var(--ar-grad) border-box;
+          border-radius: 16px;
+          box-shadow: 0 8px 20px -12px rgba(150, 60, 150, 0.35);
+          overflow: hidden;
+        }
+        .ar-opt-group.sel .ar-opt {
+          border: 0;
+          background: transparent;
+          border-radius: 0;
+          box-shadow: none;
         }
         /* Radio ALWAYS on the right (RTL): order 0 = first in flow = rightmost. */
         .ar-radio {
@@ -1745,12 +1769,16 @@ export function AnalysisSummary({
            (2026-07-12). Normal flow (no absolute / no negative margin), subtle
            cream panel so it reads as a soft extension of the choice — smaller
            and quieter than the option card itself. */
+        /* Panel is flush content INSIDE the selected group: no own box, just a
+           hairline divider from the button row above, same horizontal alignment
+           as the card padding — so it continues the card as one unit. */
         .ar-incl-panel {
-          margin: 10px 0 4px;
-          background: #fbf6ef;
-          border: 1px solid #efe4d5;
-          border-radius: 14px;
-          padding: 14px 16px;
+          margin: 0;
+          background: transparent;
+          border: 0;
+          border-top: 1px solid #efe0d0;
+          border-radius: 0;
+          padding: 14px 18px 16px;
         }
         .ar-incl-head {
           text-align: center;
@@ -1984,8 +2012,10 @@ export function AnalysisSummary({
             bottom: 0;
             right: 0;
             width: 48%;
-            background: url("/images/hero-assess.webp") center right / cover
-              no-repeat;
+            /* Fill the box fully (cover), keep the couple centred, and fall back
+               to the hero ink so no blank strip ever shows (Stage 1 fix). */
+            background: #241d1a url("/images/hero-assess.webp") center center /
+              cover no-repeat;
           }
           .ar-hero-figure::after {
             content: "";
