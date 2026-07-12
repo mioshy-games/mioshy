@@ -23,6 +23,7 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { tagAsRegistered } from "@/lib/email/brevo-segments-sync";
+import { isTestUser } from "@/lib/auth/is-test-user";
 
 const CONSENT_SOURCE = "reconsent_popup";
 
@@ -93,10 +94,12 @@ export async function submitReconsent(
 
     // Same Brevo sync signup runs when consent is given (Communications Act
     // §30A). Fire-and-forget — a Brevo outage must never fail the action.
+    // Test accounts (profiles.is_test_user) are excluded from Brevo tagging,
+    // matching the other tagAsRegistered sites (re-engagement guard A).
     try {
       const email = user.email ?? "";
       const lang: "he" | "en" = profile.preferred_language === "en" ? "en" : "he";
-      if (email) {
+      if (email && !(await isTestUser(admin, user.id))) {
         const r = await tagAsRegistered(email, user.id, lang);
         if (!r.success) {
           console.warn("[reconsent] tagAsRegistered non-success:", r.error);

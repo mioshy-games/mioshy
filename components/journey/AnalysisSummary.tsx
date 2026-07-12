@@ -671,15 +671,15 @@ export function AnalysisSummary({
             </div>
 
             {/* Social-proof strip — under the "long assessment" link (Stage 1).
-                ⚠️ PLACEHOLDER stats until Itzik approves. */}
+                Copy approved by Itzik 2026-07-13 (no numbers). */}
             {!journeySubscribed ? (
               <div className="ar-strip">
                 <span className="ar-strip-since">{rc(cmsStrip1, "מאז 2021", "Since 2021")}</span>
                 <span className="ar-strip-stat">
                   {rc(
                     cmsStrip2,
-                    "שיפרנו ל-90% מהזוגות שלנו את הזוגיות, בעשרות אחוזים בכל חודש.",
-                    "We improved the relationship for 90% of our couples, by tens of percent every month.",
+                    "אנחנו מלווים זוגות בדרך לזוגיות חזקה ומלאת תשוקה.",
+                    "We've been guiding couples toward a strong, passionate relationship.",
                   )}
                 </span>
               </div>
@@ -1353,6 +1353,7 @@ export function AnalysisSummary({
           font-size: 25px;
           margin-bottom: 4px;
           line-height: 1.2;
+          text-align: center;
         }
         /* Trial badge above the "which plan" title — gradient text, centred
            (pricing-redesign-approved.html .badge). */
