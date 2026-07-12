@@ -38,6 +38,7 @@ import {
 } from "@/lib/auth/session-enforcement";
 import { fireCompleteRegistrationCapi } from "@/lib/analytics/meta-capi";
 import { tagAsRegistered } from "@/lib/email/brevo-segments-sync";
+import { isTestUser } from "@/lib/auth/is-test-user";
 
 /**
  * The `debug` field is included on every result so the browser console
@@ -263,7 +264,7 @@ export async function journeyInlineSignup(args: {
       // marketing emails require prior explicit consent, so we only call
       // Brevo when the user ticked the box. Auth + profile creation are
       // the source of truth — Brevo failure must NEVER fail the signup.
-      if (marketingConsent) {
+      if (marketingConsent && !(await isTestUser(admin, userId))) {
         try {
           const syncResult = await tagAsRegistered(
             email,

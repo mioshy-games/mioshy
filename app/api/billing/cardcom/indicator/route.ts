@@ -21,6 +21,7 @@ import {
   extractCardcomCustomerInfo,
 } from "@/lib/uxellent-billing-helpers"
 import { createAdminClient }         from "@/lib/supabase-admin"
+import { isTestUser }                from "@/lib/auth/is-test-user"
 import { assignJourneyOnPurchase }   from "@/lib/journey-content/auto-assign"
 import type { JourneyProductSlug }   from "@/lib/journey-content/types"
 import {
@@ -648,7 +649,10 @@ export async function GET(req: Request) {
   // path). A purchase is a transactional relationship, so this is NOT gated on
   // marketing consent. Brevo failures are swallowed — they must NEVER block or
   // fail the payment webhook.
-  if (userId && session.email) {
+  // Re-engagement spec §A — test accounts are never synced to Brevo, even on a
+  // real purchase. Read-only skip of the Brevo tagging only; the charge,
+  // subscription and entitlement above are completely untouched.
+  if (userId && session.email && !(await isTestUser(admin, userId))) {
     const brevoLang: "he" | "en" = session.language === "he" ? "he" : "en"
     const brevoAmount =
       typeof session.amount === "number"

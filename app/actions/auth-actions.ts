@@ -2,6 +2,7 @@
 
 import { cookies, headers } from "next/headers";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
+import { isTestUser } from "@/lib/auth/is-test-user";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import {
   SESSION_COOKIE,
@@ -187,7 +188,7 @@ export async function signupAction(formData: FormData): Promise<SignupResult> {
     // marketing emails require prior explicit consent, so we only call
     // Brevo when the user ticked the box. Auth + profile creation are
     // the source of truth — Brevo failure must NEVER fail the signup.
-    if (marketingConsent) {
+    if (marketingConsent && !(await isTestUser(admin, userId))) {
       try {
         const syncResult = await tagAsRegistered(
           email,
