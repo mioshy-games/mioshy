@@ -20,7 +20,7 @@ import { notFound, redirect } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
-import { getPromoMode, getUserOfferExpiresAt, promoDiscountEligible } from "@/lib/billing/promo-mode";
+import { getPromoMode, getUserOfferExpiresAt, getPersonalWindowConfig, promoDiscountEligible } from "@/lib/billing/promo-mode";
 import { JourneyClient } from "@/components/journey/JourneyClient";
 // `JourneyAmbience` (21 animated particles + fog blobs) removed
 // 2026-05-19 per Itzik — the per-frame animation cost on the question
@@ -502,6 +502,7 @@ export default async function JourneyAssessmentPage({
   // in campaign_timer it's the global promo; off = regular price.
   let offerExpiresAt: string | null = null;
   let promoMode: "off" | "personal_window" | "campaign_timer" = "personal_window";
+  let personalWindowDisplay: "text" | "clock" = "text";
   let activePromo: JourneyPromoSummary | null = null;
   try {
     const promoClient = createServiceRoleClient();
@@ -509,6 +510,7 @@ export default async function JourneyAssessmentPage({
       promoMode = await getPromoMode(promoClient);
       if (promoMode === "personal_window" && user?.id) {
         offerExpiresAt = await getUserOfferExpiresAt(promoClient, user.id);
+        personalWindowDisplay = (await getPersonalWindowConfig(promoClient)).display;
       }
       const discountEligible = promoDiscountEligible(promoMode, offerExpiresAt);
       if (promoClient && discountEligible) {
@@ -637,6 +639,7 @@ export default async function JourneyAssessmentPage({
         activePromo={activePromo}
         offerExpiresAt={offerExpiresAt}
         promoMode={promoMode}
+        personalWindowDisplay={personalWindowDisplay}
         questions={flow.remaining}
         likertLabels={QUESTIONNAIRE.likert_labels}
         gating={QUESTIONNAIRE.gating}

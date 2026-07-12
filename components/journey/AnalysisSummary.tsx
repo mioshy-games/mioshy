@@ -83,6 +83,11 @@ interface AnalysisSummaryProps {
    *  ONLY in campaign_timer; personal_window uses the offer-window line instead,
    *  so only one urgency indicator appears. */
   promoMode?: "off" | "personal_window" | "campaign_timer";
+  /** Admin-controlled personal-window display (site_settings, migration 184).
+   *  'text' → the existing offer-window line; 'clock' → a PromoExpiryCountdown
+   *  wired to the user's personal offerExpiresAt. Only meaningful in
+   *  personal_window mode. */
+  personalWindowDisplay?: "text" | "clock";
   /** Render mode. "full" (default) = the assessment results paywall. "subscribe"
    *  = a lean subscribe page (reused by /journey/subscribe): keeps the hero +
    *  score bars + the pricing/checkout block, and hides the assessment-only
@@ -149,6 +154,7 @@ export function AnalysisSummary({
   activePromo = null,
   offerExpiresAt = null,
   promoMode = "personal_window",
+  personalWindowDisplay = "text",
   mode = "full",
 }: AnalysisSummaryProps) {
   const isHe = locale === "he";
@@ -985,9 +991,23 @@ export function AnalysisSummary({
                   })()
                 : null}
 
-              {/* Zone A end — the personal-window offer as a styled strip
-                  (mockup v1, Itzik 2026-07-04). Only with an active window. */}
-              {offerWindowLabel ? (
+              {/* Zone A end — the personal-window offer. Admin-controlled display
+                  (migration 184): 'clock' renders the countdown wired to the
+                  user's personal offerExpiresAt (reusing PromoExpiryCountdown);
+                  'text' keeps the styled offer-window line. Only one urgency
+                  indicator, only while the window is open. */}
+              {promoMode === "personal_window" &&
+              personalWindowDisplay === "clock" &&
+              offerExpiresAt &&
+              new Date(offerExpiresAt).getTime() > Date.now() ? (
+                <div className="ar-offer-clock">
+                  <PromoExpiryCountdown
+                    endsAt={offerExpiresAt}
+                    isHe={isHe}
+                    label={promoEndsLabel}
+                  />
+                </div>
+              ) : offerWindowLabel ? (
                 <p className="ar-offer-strip">{offerWindowLabel}</p>
               ) : null}
 
@@ -1941,6 +1961,13 @@ export function AnalysisSummary({
           font-weight: 600;
           line-height: 1.5;
           color: #7a1f2b;
+        }
+        /* Personal-window countdown (display='clock', migration 184) — centre
+           the reused PromoExpiryCountdown pill. */
+        .ar-offer-clock {
+          margin-top: 16px;
+          display: flex;
+          justify-content: center;
         }
         /* Zone divider between the three areas (choice / included / how it
            works). Hairline in the card-border tone. */

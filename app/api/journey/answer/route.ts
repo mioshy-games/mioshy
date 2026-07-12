@@ -40,6 +40,7 @@ import {
   buildQuestionResolver,
   loadJourneyQuestions,
 } from "@/lib/journey/questions-db";
+import { getPersonalWindowConfig } from "@/lib/billing/promo-mode";
 import { resolveJourneyFlow } from "@/lib/journey/phase";
 import { computeGate, reportPhaseForMode } from "@/lib/journey/gating";
 import { isValidOrder } from "@/lib/journey/priorities";
@@ -400,14 +401,19 @@ export async function POST(req: Request) {
     })
     .eq("id", journeyId);
 
-  // Task 20 (personal_window) — stamp the 48h intro-offer deadline the FIRST
-  // time the SHORT assessment completes. `.is(offer_expires_at, null)` makes it
-  // set-once (re-submits / later full completion never extend or reset it).
+  // Task 20 (personal_window) — stamp the intro-offer deadline the FIRST time
+  // the SHORT assessment completes. The window length is admin-controlled
+  // (site_settings.personal_window_hours, migration 184; default 48). Signed at
+  // completion, so a change applies to NEW completions only — users already
+  // inside their window keep theirs (`.is(offer_expires_at, null)` = set-once).
   if (isComplete && reportPhase === "short") {
+    const { hours: personalWindowHours } = await getPersonalWindowConfig(admin);
     await admin
       .from("journeys")
       .update({
-        offer_expires_at: new Date(Date.now() + 48 * 3600 * 1000).toISOString(),
+        offer_expires_at: new Date(
+          Date.now() + personalWindowHours * 3600 * 1000,
+        ).toISOString(),
       })
       .eq("id", journeyId)
       .is("offer_expires_at", null);
