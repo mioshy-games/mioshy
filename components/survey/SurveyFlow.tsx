@@ -15,54 +15,53 @@ interface Tally {
   pctB: number;
   totalVotes: number;
 }
+interface HistoryRow {
+  questionId: string;
+  text: string;
+  chosen: string;
+  answeredAt: string;
+}
 
 /**
- * Screens 1–2 of the Israel Relationship Survey: question → live reveal.
- * Anonymous (no registration, §6). The live counter shows the REAL vote total
- * (§13 — never invented); it refreshes by re-polling the server, not by
- * counting up locally. Register / share CTAs land in Stages 6–7.
+ * Israel Relationship Survey — public flow (no registration, §6):
+ * serial question (§7) → anonymous vote → live Bayesian reveal (§8, numbers
+ * only) → next question / WhatsApp share (§7). Register/dashboard land in Stage 6.
  */
 export function SurveyFlow() {
-  const [status, setStatus] = useState<"loading" | "question" | "reveal" | "empty">("loading");
+  const [status, setStatus] = useState<"loading" | "question" | "reveal" | "done">("loading");
   const [question, setQuestion] = useState<Question | null>(null);
   const [yourOption, setYourOption] = useState<"a" | "b" | null>(null);
   const [tally, setTally] = useState<Tally | null>(null);
   const [busy, setBusy] = useState(false);
+  const [history, setHistory] = useState<HistoryRow[] | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Initial load: current question + (if already voted) the reveal.
-  useEffect(() => {
-    let alive = true;
-    fetch("/api/poll/current")
+  const loadCurrent = useCallback(() => {
+    setTally(null);
+    setYourOption(null);
+    return fetch("/api/poll/current")
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
-        if (!alive || !d) return;
-        if (!d.question) { setStatus("empty"); return; }
+        if (!d || d.done || !d.question) { setStatus("done"); return; }
         setQuestion(d.question);
-        if (d.yourOption && d.tally) {
-          setYourOption(d.yourOption);
-          setTally(d.tally);
-          setStatus("reveal");
-        } else {
-          setStatus("question");
-        }
+        setStatus("question");
       })
-      .catch(() => alive && setStatus("empty"));
-    return () => { alive = false; };
+      .catch(() => setStatus("done"));
   }, []);
 
+  useEffect(() => { void loadCurrent(); }, [loadCurrent]);
+
   // Live refresh of the real tally while on the reveal (§8 polling).
-  const refreshTally = useCallback(() => {
-    fetch("/api/poll/current")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => { if (d?.tally) setTally(d.tally); })
-      .catch(() => {});
-  }, []);
   useEffect(() => {
-    if (status !== "reveal") return;
-    pollRef.current = setInterval(refreshTally, 6000);
+    if (status !== "reveal" || !question) return;
+    pollRef.current = setInterval(() => {
+      fetch(`/api/poll/tally?questionId=${question.id}`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => { if (d?.totalVotes != null) setTally({ pctA: d.pctA, pctB: d.pctB, totalVotes: d.totalVotes }); })
+        .catch(() => {});
+    }, 6000);
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
-  }, [status, refreshTally]);
+  }, [status, question]);
 
   const vote = async (option: "a" | "b") => {
     if (!question || busy) return;
@@ -79,9 +78,23 @@ export function SurveyFlow() {
       setTally({ pctA: d.pctA, pctB: d.pctB, totalVotes: d.totalVotes });
       setStatus("reveal");
       window.scrollTo({ top: 0, behavior: "smooth" });
-    } catch {
-      setBusy(false);
-    }
+    } catch { /* stay on question */ } finally { setBusy(false); }
+  };
+
+  const next = async () => { setBusy(true); await loadCurrent(); window.scrollTo({ top: 0, behavior: "smooth" }); setBusy(false); };
+
+  const share = () => {
+    if (typeof window === "undefined") return;
+    const url = `${window.location.origin}/he/survey`;
+    const q = question?.text ? `\n${question.text}` : "";
+    const msg = `עניתי על "סקר הזוגיות של ישראל" של מיאושי 💜${q}\nתענו גם ותראו מה זוגות בישראל ענו: ${url}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank", "noopener");
+  };
+
+  const toggleHistory = async () => {
+    if (history) { setHistory(null); return; }
+    const d = await fetch("/api/poll/history").then((r) => (r.ok ? r.json() : { history: [] })).catch(() => ({ history: [] }));
+    setHistory(d.history ?? []);
   };
 
   return (
@@ -92,8 +105,13 @@ export function SurveyFlow() {
       <div className={styles.card}>
         {status === "loading" && <p className={styles.center}>טוען…</p>}
 
-        {status === "empty" && (
-          <p className={styles.center}>אין כרגע שאלה פעילה. חזרו בקרוב 🙂</p>
+        {status === "done" && (
+          <section className={styles.fade}>
+            <p className={styles.center}>ענית על כל השאלות שיש כרגע 💜 חזרו מחר לשאלה חדשה.</p>
+            <button type="button" className={styles.linkbtn} onClick={toggleHistory}>
+              {history ? "סגירת ההיסטוריה" : "ההיסטוריה שלי"}
+            </button>
+          </section>
         )}
 
         {status === "question" && question && (
@@ -137,12 +155,29 @@ export function SurveyFlow() {
 
             {question.insightLine && <p className={styles.insight}>{question.insightLine}</p>}
 
-            {/* Register / share CTAs — visual per mockup; wired in Stages 6–7. */}
+            {/* Register CTA — visual per mockup; wired in Stage 6. */}
             <button type="button" className={`${styles.cta} ${styles.amber}`}>
               רוצים שאלה כזו כל יום? הצטרפו
             </button>
-            <button type="button" className={styles.linkbtn}>שתפו את השאלה בוואטסאפ</button>
+            <button type="button" className={styles.linkbtn} onClick={share}>שתפו את השאלה בוואטסאפ</button>
+            <button type="button" className={styles.linkbtn} onClick={next} disabled={busy}>לשאלה הבאה ←</button>
           </section>
+        )}
+
+        {history && (
+          <div className={styles.history}>
+            <div className={styles.qmeta}>ההיסטוריה שלי</div>
+            {history.length === 0 ? (
+              <p className={styles.center}>עוד לא ענית על שאלות.</p>
+            ) : (
+              history.map((h) => (
+                <div key={h.questionId} className={styles.histRow}>
+                  <div className={styles.histQ}>{h.text}</div>
+                  <div className={styles.histA}>בחרת: {h.chosen}</div>
+                </div>
+              ))
+            )}
+          </div>
         )}
       </div>
     </div>

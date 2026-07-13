@@ -43,20 +43,68 @@ function toQuestion(r: PollQuestionRow): PollQuestion {
 }
 
 /**
- * The current active question. Stage 1 = first active by order_index; the
- * per-user serial pointer (no skip / no repeat) arrives in Stage 5.
+ * The next active question for this anon: the first active question (by
+ * order_index) they have NOT yet answered (§7 — serial, no skip, no repeat).
+ * Returns null when they have answered every active question ("all done").
+ * Absence never advances the pointer — it is derived from what was answered,
+ * so a returning visitor always gets the next one in line.
  */
-export async function getCurrentQuestion(): Promise<{ question: PollQuestion; priorA: number; priorB: number } | null> {
+export async function getCurrentQuestion(
+  anonId: string | null,
+): Promise<{ question: PollQuestion; priorA: number; priorB: number } | null> {
   const admin = await createAdminClient();
-  const { data } = await admin
+
+  let answeredIds: string[] = [];
+  if (anonId) {
+    const { data: answered } = await admin
+      .from("poll_votes")
+      .select("question_id")
+      .eq("anon_id", anonId);
+    answeredIds = (answered ?? []).map((r) => r.question_id as string);
+  }
+
+  let q = admin
     .from("poll_questions")
     .select("id, text, option_a, option_b, order_index, insight_line, prior_a, prior_b")
     .eq("is_active", true)
     .order("order_index", { ascending: true })
-    .limit(1)
-    .maybeSingle<PollQuestionRow>();
+    .limit(1);
+  if (answeredIds.length) q = q.not("id", "in", `(${answeredIds.join(",")})`);
+
+  const { data } = await q.maybeSingle<PollQuestionRow>();
   if (!data) return null;
   return { question: toQuestion(data), priorA: data.prior_a, priorB: data.prior_b };
+}
+
+/** The anon's answered history (§7): each answered question + their choice. */
+export async function getHistory(anonId: string): Promise<
+  Array<{ questionId: string; text: string; chosen: string; option: "a" | "b"; answeredAt: string }>
+> {
+  const admin = await createAdminClient();
+  const { data } = await admin
+    .from("poll_votes")
+    .select("question_id, option, created_at, poll_questions(text, option_a, option_b)")
+    .eq("anon_id", anonId)
+    .order("created_at", { ascending: false });
+  type Joined = {
+    question_id: string;
+    option: "a" | "b";
+    created_at: string;
+    poll_questions:
+      | { text: string; option_a: string; option_b: string }
+      | { text: string; option_a: string; option_b: string }[]
+      | null;
+  };
+  return ((data ?? []) as unknown as Joined[]).map((r) => {
+    const q = Array.isArray(r.poll_questions) ? r.poll_questions[0] : r.poll_questions;
+    return {
+      questionId: r.question_id,
+      text: q?.text ?? "",
+      chosen: q ? (r.option === "a" ? q.option_a : q.option_b) : "",
+      option: r.option,
+      answeredAt: r.created_at,
+    };
+  });
 }
 
 /** Recompute the live tally for a question from real votes + its priors (§8). */
