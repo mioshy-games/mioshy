@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/navigation";
 import { Gamepad2, Sparkles, Heart, Target } from "@/components/icons/Icons";
+import { ClipboardList } from "lucide-react";
 
 /**
  * MobileServicesBar
@@ -57,6 +58,12 @@ const PILLARS = [
     tKey: "couplesAssessment",
     Icon: Target,
     accent: "linear-gradient(135deg, #8B5CF6 0%, #D6409F 100%)",
+  },
+  {
+    href: "/survey",
+    tKey: "survey",
+    Icon: ClipboardList,
+    accent: "linear-gradient(135deg, #B83C4D 0%, #EC4899 55%, #F59E0B 100%)",
   },
 ] as const;
 
@@ -348,10 +355,11 @@ export function MobileServicesBar() {
                 <Link
                   href={href}
                   aria-current={isActive ? "page" : undefined}
-                  className={`group flex h-full flex-col items-center justify-center gap-1.5 rounded-2xl px-2 py-2.5 text-center transition active:scale-[0.97] ${
-                    isActive
-                      ? "bg-white text-[#170E14] shadow-[0_8px_22px_-8px_rgba(0,0,0,0.45)]"
-                      : "bg-white/15 text-white hover:bg-white/25"
+                  // No card frame (Itzik 2026-07-13) — icon plate + label sit
+                  // directly on the strip. Spacing + tap area (px/py + full
+                  // height) preserved; active state cued by full opacity.
+                  className={`group flex h-full flex-col items-center justify-center gap-1.5 rounded-2xl px-2 py-2.5 text-center text-white transition active:scale-[0.97] ${
+                    isActive ? "opacity-100" : "opacity-90 hover:opacity-100"
                   }`}
                 >
                   {/* Coloured icon plate per pillar. Stays the pillar's
