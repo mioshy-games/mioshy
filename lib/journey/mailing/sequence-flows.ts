@@ -22,16 +22,16 @@ import type { SequenceEmailKind } from "@/lib/journey/mailing/sequence-emails";
  * to completers past MAILING_SEQUENCE_ACTIVATION_TS (no retroactive backlog).
  *
  * LIVE as of 2026-07-10 (Itzik): results_ready + founder_story +
- * coaching_explainer + social_proof. expert_call stays OUT (inert): its CTA now
- * points at the real Calendly booking link, but activation waits on Itzik's
- * send-test sign-off.
+ * coaching_explainer + social_proof. expert_call activated 2026-07-13 (Itzik)
+ * after send-test sign-off — its CTA points at the real Calendly booking link
+ * (EXPERT_CALL_SCHEDULING_URL).
  */
 export const ACTIVE_SEQUENCE_EMAIL_KEYS: ReadonlySet<SequenceEmailKind> = new Set([
   "results_ready",
   "founder_story",
   "coaching_explainer",
   "social_proof",
-  // expert_call — intentionally NOT active yet (pending send-test approval).
+  "expert_call",
 ]);
 
 /** Segments/flows. Only the first is built today; the rest are placeholders so
