@@ -117,6 +117,12 @@ const DESCRIPTORS: Record<NotificationKind, NotificationDescriptor> = {
     headlineHe: "החיוב הראשון של הניסיון נכשל",
     headlineEn: "Trial first charge failed",
   },
+  trial_validation_refund_failed: {
+    tone: "danger",
+    icon: AlertTriangle,
+    headlineHe: "זיכוי ₪1 של אימות הכרטיס נכשל",
+    headlineEn: "Trial ₪1 validation refund failed",
+  },
 };
 
 const FALLBACK: NotificationDescriptor = {

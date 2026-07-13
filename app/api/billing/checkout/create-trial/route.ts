@@ -2,10 +2,13 @@
  * POST /api/billing/checkout/create-trial
  *
  * 7-day free-trial signup. SEPARATE from /api/billing/checkout/create (which
- * charges immediately on the old Cardcom interface and is untouched). Here we
- * open a Cardcom v11 LowProfile that tokenizes + validates the card via J2 —
- * NO charge, NO hold — and returns the redirect URL. The trial subscription is
- * created later by /api/billing/cardcom/trial-indicator once J2 passes.
+ * charges the full price on the old Cardcom interface and is untouched). Here we
+ * open a Cardcom v11 LowProfile that charges a ₪1 validation amount and mints a
+ * reusable Operation=2 token (ChargeAndCreateToken), and returns the redirect
+ * URL. The ₪1 is refunded immediately by /api/billing/cardcom/trial-indicator
+ * (→ processTrialLowProfile → refundTransaction), which also creates the
+ * trialing subscription. (Model change 2026-07-13: replaced J2, which yielded
+ * tokens some issuers declined on day 7 — see lib/cardcom.ts.)
  *
  * Scope (spec A3): subscriptions only (games / journey), Israeli/ILS only for
  * v1, and only for packages the admin enabled in trial_settings. One trial per
@@ -364,11 +367,17 @@ export async function POST(req: Request) {
     error: `${BASE_URL}/${urlLocale}/billing/error?session_id=${sessionId}`,
   })
 
+  // Trial validation charge: a real ₪1 (ILS) charge that mints an Operation=2
+  // token, refunded immediately by processTrialLowProfile. This is NOT the
+  // post-trial price — that stays snapshotted on the session (`amount`) and is
+  // charged on day 7. The ₪1 is always ILS regardless of the plan currency.
+  const TRIAL_VALIDATION_AMOUNT = 1
+  const TRIAL_VALIDATION_COIN_ID = 1 // ILS
   let cardcomResult: Awaited<ReturnType<typeof createTrialTokenLowProfile>>
   try {
     cardcomResult = await createTrialTokenLowProfile({
-      amount,                              // recorded on the deal; NOT charged (J2)
-      coinId,
+      amount:      TRIAL_VALIDATION_AMOUNT,  // ₪1 — actually charged, then refunded
+      coinId:      TRIAL_VALIDATION_COIN_ID,
       successUrl:  `${BASE_URL}/${urlLocale}/billing/success?${successQuery}`,
       errorUrl:    `${BASE_URL}/${urlLocale}/billing/error?session_id=${sessionId}`,
       webhookUrl,

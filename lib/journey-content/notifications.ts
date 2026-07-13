@@ -36,7 +36,9 @@ export type NotificationKind =
   | "stuck_users_digest"
   // A3 - 7-day trial
   | "trial_ending_soon"
-  | "trial_first_charge_failed";
+  | "trial_first_charge_failed"
+  // ₪1 trial validation charge whose immediate refund failed (needs retry)
+  | "trial_validation_refund_failed";
 
 interface BasePayload {
   /** Stable URL to deep-link from email back into the app. */

@@ -46,7 +46,7 @@ export async function POST(req: Request) {
   // transitions it trialing → active.
   const { data: dueSubs } = await admin
     .from("subscriptions")
-    .select("*, customer_payment_methods(id, token_enc, expiry_mmyy, status, card_brand)")
+    .select("*, customer_payment_methods(id, token_enc, expiry_mmyy, status, card_brand, card_owner_name, card_owner_id_enc)")
     .in("status", ["active", "past_due", "trialing"])
     .lte("next_billing_date", now.toISOString())
     .order("next_billing_date", { ascending: true })
@@ -113,13 +113,25 @@ export async function POST(req: Request) {
 
     try {
       // ── Validate payment method ─────────────────────────────────────────────
-      const pm = (sub as unknown as { customer_payment_methods: { id: string; token_enc: string; expiry_mmyy: string | null; status: string; card_brand: string | null } | null }).customer_payment_methods
+      const pm = (sub as unknown as { customer_payment_methods: { id: string; token_enc: string; expiry_mmyy: string | null; status: string; card_brand: string | null; card_owner_name: string | null; card_owner_id_enc: string | null } | null }).customer_payment_methods
       if (!pm || pm.status !== "active") {
         throw new Error("No active payment method")
       }
 
-      // ── Decrypt token ───────────────────────────────────────────────────────
+      // ── Decrypt token + cardholder identity ─────────────────────────────────
+      // The identity number (ת.ז.) is stored encrypted like the token; the v11
+      // charge requires it in CardOwnerInformation or the acquirer declines
+      // with 60000004. Decrypt is best-effort — a legacy PM without the field
+      // still charges (older cards may lack it), but will likely be declined.
       const rawToken = decryptToken(pm.token_enc)
+      let ownerIdentityNumber: string | null = null
+      if (pm.card_owner_id_enc) {
+        try {
+          ownerIdentityNumber = decryptToken(pm.card_owner_id_enc)
+        } catch (e) {
+          console.warn("[renewals] card_owner_id decrypt failed", { sub_id: subId, error: String(e) })
+        }
+      }
 
       // ── Compute next period ─────────────────────────────────────────────────
       const periodStart = new Date(sub.current_period_end ?? now)
@@ -173,11 +185,16 @@ export async function POST(req: Request) {
       // ── Call Cardcom ChargeToken ────────────────────────────────────────────
       console.log("[renewals:CARDCOM_CALL]", { sub_id: subId, asmachta, amount: billAmount, use_intro: useIntro, intro_remaining: sub.intro_charges_remaining ?? 0, currency: sub.currency })
       const chargeResult = await chargeToken({
-        token:        rawToken,
-        tokenExDate:  pm.expiry_mmyy ?? undefined,
-        sumToBill:    billAmount,
-        coinId:       sub.coin_id,
-        uniqAsmachta: asmachta,
+        token:          rawToken,
+        cardExpiryMMYY: pm.expiry_mmyy ?? undefined,
+        sumToBill:      billAmount,
+        coinId:         sub.coin_id,
+        uniqAsmachta:   asmachta,
+        cardOwner: {
+          fullName:       pm.card_owner_name ?? undefined,
+          identityNumber: ownerIdentityNumber ?? undefined,
+          email:          sub.email ?? undefined,
+        },
       })
       console.log("[renewals:CARDCOM_RESPONSE]", { sub_id: subId, ok: chargeResult.ok, response_code: chargeResult.responseCode })
 
@@ -298,7 +315,9 @@ export async function POST(req: Request) {
             {
               user_id:        userId,
               email:          sub.email ?? "",
-              name:           profileName,
+              // Prefer the cardholder name captured by Cardcom (card_owner_name)
+              // — profiles.full_name is usually NULL. Fall back to the profile.
+              name:           pm.card_owner_name?.trim() || profileName,
               phone:          profilePhone,
               country:        sub.is_israeli ? "IL" : "US",
               amount:         billAmount,

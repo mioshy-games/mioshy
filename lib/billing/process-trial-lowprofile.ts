@@ -18,10 +18,11 @@
  * getTrialLpResult(lowProfileId).
  */
 
-import { getTrialLpResult, normalizeExpiry } from "@/lib/cardcom"
+import { getTrialLpResult, normalizeExpiry, refundTransaction } from "@/lib/cardcom"
 import { encryptToken, tokenHashSha256 }     from "@/lib/tokenCrypto"
 import { createAdminClient }                 from "@/lib/supabase-admin"
 import { assignJourneyOnPurchase }           from "@/lib/journey-content/auto-assign"
+import { notifyAdminPool }                   from "@/lib/journey-content/notifications"
 import type { JourneyProductSlug }           from "@/lib/journey-content/types"
 
 const TRIAL_DAYS = 7
@@ -184,6 +185,15 @@ export async function processTrialLowProfile(args: {
           card_brand:  result.brand  ?? null,
           last4:       result.last4  ?? null,
           first6:      result.first6 ?? null,
+          // Cardholder details captured on the Cardcom page. The Israeli
+          // acquirer requires them echoed on the day-7 token charge (v11
+          // CardOwnerInformation) or it declines with 60000004. Name is stored
+          // in the clear; the identity number (ת.ז.) is sensitive PII, so it is
+          // encrypted exactly like the token.
+          card_owner_name:   result.cardOwnerName ?? null,
+          card_owner_id_enc: result.cardOwnerIdentityNumber
+            ? encryptToken(result.cardOwnerIdentityNumber)
+            : null,
           status:      "active",
         },
         { onConflict: "user_id,provider,token_hash" },
@@ -280,6 +290,69 @@ export async function processTrialLowProfile(args: {
   await admin.from("trial_redemptions").insert({
     user_id: userId, card_fingerprint: cardFingerprint, product, coaching, subscription_id: subscriptionId,
   })
+
+  // ── Refund the ₪1 validation charge (immediately) ─────────────────────────
+  // The token was minted by a real ₪1 charge (ChargeAndCreateToken); reverse it
+  // now via CancelOnly (void before settlement). The trial is ALREADY created
+  // above — a refund failure must NEVER revoke access. On failure we leave the
+  // ledger row 'pending' + alert admin; the refund-repair cron retries. Never
+  // leave a dangling charge. (Best-effort: wrapped so it can't fail the trial.)
+  if (result.dealNumber) {
+    const { data: vc } = await admin
+      .from("trial_validation_charges")
+      .insert({
+        user_id:             userId,
+        checkout_session_id: sessionId,
+        subscription_id:     subscriptionId,
+        deal_id:             result.dealNumber,
+        amount:              1,
+        currency:            session.currency,
+        refund_status:       "pending",
+      })
+      .select("id")
+      .maybeSingle()
+    const vcId = vc?.id ?? null
+
+    const alertRefundFailure = (detail: string) =>
+      notifyAdminPool({
+        kind: "trial_validation_refund_failed",
+        subject: "Mioshy: trial ₪1 validation refund FAILED",
+        payload: {
+          throttle_key: sessionId,
+          preview: `₪1 validation refund failed for session ${sessionId} (deal ${result.dealNumber}): ${detail}. User keeps the trial; refund-repair cron will retry.`,
+          session_id: sessionId,
+          deal_id: result.dealNumber,
+          detail,
+        },
+        throttleKey: sessionId,
+      }).catch((e) => console.error("[trial-process] refund admin alert failed", e))
+
+    try {
+      const refund = await refundTransaction({ transactionId: result.dealNumber, cancelOnly: true })
+      if (refund.ok) {
+        if (vcId) await admin.from("trial_validation_charges").update({
+          refund_status: "refunded",
+          refund_deal_id: refund.newTransactionId,
+          refunded_at: new Date().toISOString(),
+        }).eq("id", vcId)
+        console.log("[trial-process:REFUND_OK]", { session_id: sessionId, deal_id: result.dealNumber })
+      } else {
+        if (vcId) await admin.from("trial_validation_charges").update({
+          refund_status: "pending", attempts: 1, last_error: `RC=${refund.responseCode}`,
+        }).eq("id", vcId)
+        console.error("[trial-process:REFUND_FAILED]", { session_id: sessionId, deal_id: result.dealNumber, rc: refund.responseCode })
+        await alertRefundFailure(`Cardcom RC=${refund.responseCode}`)
+      }
+    } catch (err) {
+      if (vcId) await admin.from("trial_validation_charges").update({
+        refund_status: "pending", attempts: 1, last_error: String(err),
+      }).eq("id", vcId)
+      console.error("[trial-process:REFUND_THREW]", { session_id: sessionId, error: String(err) })
+      await alertRefundFailure(String(err))
+    }
+  } else {
+    console.error("[trial-process:NO_DEAL_NUMBER] ₪1 charge produced no TranzactionId — cannot refund", { session_id: sessionId })
+  }
 
   // ── Mark session paid + ensure couple + assign journey content ────────────
   await admin.from("checkout_sessions").update({ status: "paid", updated_at: new Date().toISOString() }).eq("id", sessionId)

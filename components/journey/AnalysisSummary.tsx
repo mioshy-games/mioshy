@@ -1090,6 +1090,11 @@ export function AnalysisSummary({
                   {checkoutError}
                 </p>
               ) : null}
+              {/* ₪1 charge-and-refund disclosure (trial only). Copy + {price}
+                  come from useTrialOffer (CMS `trial_charge_disclosure`). */}
+              {trial.enabled && trial.disclosure ? (
+                <p className="ar-trial-disclosure">{trial.disclosure}</p>
+              ) : null}
               <div className="ar-stop">
                 {rc(
                   cmsStopNote,

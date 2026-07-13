@@ -10,6 +10,10 @@
       "schedule": "30 6 * * *"
     },
     {
+      "path": "/api/billing/trial/refund-repair",
+      "schedule": "0 */2 * * *"
+    },
+    {
       "path": "/api/journey/notify-unlocks",
       "schedule": "15 * * * *"
     },

@@ -162,16 +162,101 @@ export function normalizeExpiry(raw: string | null | undefined): string | null {
   return null
 }
 
+export interface ChargeTokenArgs {
+  token:           string
+  cardExpiryMMYY?: string | null    // DB stores MMYY, e.g. "1230"
+  sumToBill:       number
+  coinId:          number
+  uniqAsmachta:    string
+  cardOwner?: {
+    fullName?:       string | null
+    identityNumber?: string | null   // ת.ז. — decrypted just before the call
+    phone?:          string | null
+    email?:          string | null
+  }
+}
+
+/** True when we have cardholder details to send (FullName and/or ת.ז.). */
+function hasCardOwnerInfo(o: ChargeTokenArgs["cardOwner"]): boolean {
+  return !!(o && (o.fullName || o.identityNumber))
+}
+
 /**
  * Charge a stored token (for subscription renewals).
+ *
+ * ROUTING (2026-07-13, ResponseCode 60000004 fix — TRIAL-ONLY, protect regular):
+ *   • Payment methods that carry the cardholder's FullName + IdentityNumber
+ *     (ת.ז.) — i.e. 7-day-trial tokens created on the v11 CreateTokenOnly page
+ *     and stored via processTrialLowProfile — charge through the v11 JSON API,
+ *     which echoes those details in CardOwnerInformation. The Israeli acquirer
+ *     requires them or it declines with 60000004 ("סירוב מחברת האשראי").
+ *   • Everything else (regular / legacy subs with no stored owner info) keeps
+ *     the PROVEN old .aspx ChargeToken path, byte-for-byte unchanged. This
+ *     deliberately does NOT touch regular renewals — no owner info, no new
+ *     behaviour, no regression risk. (Itzik's call: fix the trial, guard regular.)
  */
-export async function chargeToken(args: {
-  token:         string
-  tokenExDate?:  string | null
-  sumToBill:     number
-  coinId:        number
-  uniqAsmachta:  string
-}) {
+export async function chargeToken(args: ChargeTokenArgs) {
+  return hasCardOwnerInfo(args.cardOwner)
+    ? chargeTokenV11(args)
+    : chargeTokenAspx(args)
+}
+
+/**
+ * v11 charge with CardOwnerInformation — used ONLY when owner details exist.
+ * A plain Transaction with a Token and NO JValidateType is a regular immediate
+ * debit (JValidateType is only for J2/J5 validation flows — never set here).
+ * Idempotency is via ExternalUniqTranId (a duplicate returns Cardcom error 608).
+ */
+async function chargeTokenV11(args: ChargeTokenArgs) {
+  const c = cfg()
+
+  const payload: Record<string, unknown> = {
+    TerminalNumber:     Number(c.terminalNumber),
+    ApiName:            c.apiUsername,
+    Amount:             Number(args.sumToBill.toFixed(2)),
+    Token:              args.token,
+    ISOCoinId:          args.coinId,
+    ExternalUniqTranId: args.uniqAsmachta,   // dedup → Cardcom returns 608 on repeat
+    // ApiPassword lives under Advanced for v11; mirrors the auth the old .aspx
+    // charge sent, and a real debit is more sensitive than tokenization.
+    Advanced:           { ApiPassword: c.apiPassword },
+  }
+  if (args.cardExpiryMMYY) payload.CardExpirationMMYY = args.cardExpiryMMYY
+
+  const owner = args.cardOwner
+  if (owner && (owner.fullName || owner.identityNumber || owner.phone || owner.email)) {
+    payload.CardOwnerInformation = {
+      ...(owner.fullName       ? { FullName:        owner.fullName }       : {}),
+      ...(owner.identityNumber ? { IdentityNumber:  owner.identityNumber } : {}),
+      ...(owner.phone          ? { Phone:           owner.phone }          : {}),
+      ...(owner.email          ? { CardOwnerEmail:  owner.email }          : {}),
+    }
+  }
+
+  // NOTE (2026-07-13): sending a Document (Cardcom-issued TaxInvoiceAndReceipt)
+  // was tested and REJECTED with ResponseCode 601 ("אין מודול מסמכים") — terminal
+  // 183655 has no Cardcom documents module (invoices are issued via the external
+  // uxellent issuer instead). Do NOT add a Document here or every charge fails
+  // before it reaches the card.
+
+  const res    = await fetch(`${CARDCOM_V11_BASE}/Transactions/Transaction`, {
+    method:  "POST",
+    headers: { "content-type": "application/json; charset=utf-8", accept: "application/json" },
+    body:    JSON.stringify(payload),
+  })
+  const raw    = await res.text()
+  const parsed = parseCardcomResponse(raw)
+
+  const responseCode = String(parsed.ResponseCode ?? "")
+  const ok           = responseCode === "0"
+  return { ok, responseCode, parsed, raw }
+}
+
+/**
+ * Legacy .aspx ChargeToken — the proven path for regular/legacy renewals
+ * (unchanged from before the 60000004 trial fix). Do NOT alter its behaviour.
+ */
+async function chargeTokenAspx(args: ChargeTokenArgs) {
   const c    = cfg()
   const form = new URLSearchParams({
     TerminalNumber:                  c.terminalNumber,
@@ -184,7 +269,7 @@ export async function chargeToken(args: {
     "TokenToCharge.UniqAsmachta":    args.uniqAsmachta,
     "TokenToCharge.UserPassword":    c.apiPassword,
   })
-  if (args.tokenExDate) {
+  if (args.cardExpiryMMYY) {
     // Bug fix 2026-05-27 (round 2): Cardcom's ChargeToken API expects
     // expiry as TWO SEPARATE fields, not a single TokenExDate. Per the
     // official Cardcom example URL on their domain:
@@ -195,7 +280,7 @@ export async function chargeToken(args: {
     // Our DB stores MMYY (per normalizeExpiry above), e.g. "1230" for
     // December 2030. We split into month+full-year and send both.
     // See docs/weekly-billing-audit-2026-05-27.md.
-    const mmyy = args.tokenExDate
+    const mmyy = args.cardExpiryMMYY
     if (mmyy.length === 4) {
       const month = mmyy.slice(0, 2)        // "12"
       const yy    = mmyy.slice(2, 4)         // "30"
@@ -227,33 +312,32 @@ export async function chargeToken(args: {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// Cardcom v11 JSON API — 7-day trial ONLY (token + J2 card validation)
+// Cardcom v11 JSON API — 7-day trial signup (₪1 charge-and-tokenize)
 //
 // ⚠️ ISOLATION: these functions are SEPARATE from openLowProfile/chargeToken
-// above, which run on the OLD .aspx interface and serve ALL regular purchases.
-// The trial needs J2 card-validation, which only exists on v11. Do NOT route
-// regular purchases through here, and do NOT touch the old functions.
+// above (old .aspx interface, all regular purchases). Do NOT touch those.
 //
-// Verified against Cardcom's live OpenAPI (https://secure.cardcom.solutions/
-// swagger/v11/swagger.json, 2026-07):
-//   • Operation="CreateTokenOnly" → create a reusable token WITHOUT charging.
-//   • AdvancedDefinition.JValidateType=2 → J2 (simple card validation, no
-//     charge, no hold). The v11 DEFAULT is 5 (J5 = authorization hold), which
-//     WOULD place a visible hold — so we MUST send 2 explicitly. ❌ never 5.
-//   • Auth is ApiName only (no password needed for this operation).
+// MODEL CHANGE (2026-07-13): the trial used to tokenize with J2
+// (Operation="CreateTokenOnly" + JValidateType=2) — validation only, NO charge.
+// J2 proved a card *valid* but NOT *chargeable*: cards …5229/…5336 passed J2 yet
+// declined the real day-7 debit with 60000004. We now mint the token exactly
+// like a regular purchase — a real ₪1 charge that creates an Operation=2 token
+// (Operation="ChargeAndCreateToken") — and REFUND the ₪1 immediately
+// (refundTransaction, CancelOnly). A card that can't be charged fails at signup
+// instead of on day 7. Verified against the live OpenAPI (swagger/v11).
 // ════════════════════════════════════════════════════════════════════════════
 
 const CARDCOM_V11_BASE = "https://secure.cardcom.solutions/api/v11"
 
 /**
- * Open a v11 LowProfile page that tokenizes + validates (J2) a card WITHOUT
- * charging it or placing a hold. Used exclusively by the 7-day trial signup.
- *
- * `amount` is the post-trial charge amount — it is NOT charged here (J2 only);
- * we pass it so the amount is recorded on the Cardcom deal for the audit trail.
+ * Open a v11 LowProfile page that CHARGES `amount` (the ₪1 validation charge)
+ * and creates a reusable Operation=2 token. Used exclusively by the 7-day trial
+ * signup. The ₪1 is refunded immediately after by the webhook/reconcile path
+ * (processTrialLowProfile → refundTransaction). `amount` here is the validation
+ * charge (₪1), NOT the post-trial price (that is snapshotted on the session).
  */
 export async function createTrialTokenLowProfile(args: {
-  amount: number
+  amount: number           // validation charge (₪1) — actually charged, then refunded
   coinId: number           // 1 = ILS, 2 = USD
   successUrl: string
   errorUrl: string
@@ -265,15 +349,15 @@ export async function createTrialTokenLowProfile(args: {
   const payload: Record<string, unknown> = {
     TerminalNumber:     Number(c.terminalNumber),
     ApiName:            c.apiUsername,
-    Operation:          "CreateTokenOnly",
+    // Charge + create a reusable token (same as a regular purchase). NOTE: no
+    // AdvancedDefinition/JValidateType — that is only for J2/J5 validation flows.
+    Operation:          "ChargeAndCreateToken",
     Amount:             Number(args.amount.toFixed(2)),
     ISOCoinId:          args.coinId,
     ReturnValue:        args.returnValue,
     SuccessRedirectUrl: args.successUrl,
     FailedRedirectUrl:  args.errorUrl,
     WebHookUrl:         args.webhookUrl,
-    // J2 = simple card validation, no charge, no hold. MUST be explicit.
-    AdvancedDefinition: { JValidateType: 2 },
   }
   if (args.pageLanguage) payload.Language = args.pageLanguage
 
@@ -334,6 +418,7 @@ export async function getTrialLpResult(lowProfileId: string) {
 
   const tokenInfo = (obj.TokenInfo ?? {}) as Record<string, unknown>
   const tranInfo  = (obj.TranzactionInfo ?? {}) as Record<string, unknown>
+  const uiVals    = (obj.UIValues ?? {}) as Record<string, unknown>
 
   const token = firstNonEmpty(tokenInfo.Token as string) || null
 
@@ -353,7 +438,54 @@ export async function getTrialLpResult(lowProfileId: string) {
     last4:        str(tranInfo.Last4CardDigitsString) ?? str(tranInfo.Last4CardDigits),
     first6:       str(tranInfo.FirstCardDigits),
     brand:        str(tranInfo.Brand) ?? str(tranInfo.CardName),
+    // Cardholder identity captured on the Cardcom payment page. REQUIRED by the
+    // v11 charge API (CardOwnerInformation) — without it the acquirer declines
+    // token charges with ResponseCode 60000004 ("סירוב מחברת האשראי"). Prefer
+    // TranzactionInfo (clean values) over UIValues/TokenInfo (which may carry a
+    // trailing space on the id). str() trims either way.
+    cardOwnerName:           str(tranInfo.CardOwnerName) ?? str(uiVals.CardOwnerName),
+    cardOwnerIdentityNumber: str(tranInfo.CardOwnerIdentityNumber)
+                             ?? str(uiVals.CardOwnerIdentityNumber)
+                             ?? str(tokenInfo.CardOwnerIdentityNumber),
+    cardOwnerPhone:          str(tranInfo.CardOwnerPhone) ?? str(uiVals.CardOwnerPhone),
+    cardOwnerEmail:          str(tranInfo.CardOwnerEmail) ?? str(uiVals.CardOwnerEmail),
+    // TranzactionId of the ₪1 ChargeAndCreateToken deal — the id refundTransaction
+    // voids/refunds immediately after the trial is created. Prefer TranzactionInfo,
+    // fall back to the top-level TranzactionId.
+    dealNumber:   str(tranInfo.TranzactionId) ?? str(obj.TranzactionId),
     parsed:       obj,
     raw,
   }
+}
+
+/**
+ * Refund (or void) a Cardcom transaction by its TranzactionId.
+ * Used to reverse the ₪1 trial validation charge immediately after signup.
+ *
+ * `cancelOnly` (default true) → CancelOnly: void the deal BEFORE it settles —
+ * cleaner than a post-settlement refund and produces no separate refund movement.
+ * If the deal has already settled, retry with cancelOnly:false for a real refund.
+ */
+export async function refundTransaction(args: {
+  transactionId: number | string
+  cancelOnly?:   boolean
+}) {
+  const c = cfg()
+  const res = await fetch(`${CARDCOM_V11_BASE}/Transactions/RefundByTransactionId`, {
+    method:  "POST",
+    headers: { "content-type": "application/json; charset=utf-8", accept: "application/json" },
+    body:    JSON.stringify({
+      ApiName:       c.apiUsername,
+      ApiPassword:   c.apiPassword,
+      TransactionId: Number(args.transactionId),
+      CancelOnly:    args.cancelOnly ?? true,
+    }),
+  })
+  const raw    = await res.text()
+  const parsed = parseCardcomResponse(raw)
+
+  const responseCode   = String(parsed.ResponseCode ?? "")
+  const ok             = responseCode === "0"
+  const newTransactionId = parsed.NewTranzactionId != null ? String(parsed.NewTranzactionId) : null
+  return { ok, responseCode, newTransactionId, parsed, raw }
 }
