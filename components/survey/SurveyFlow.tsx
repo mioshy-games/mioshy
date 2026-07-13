@@ -28,7 +28,7 @@ interface HistoryRow {
  * serial question (§7) → anonymous vote → live Bayesian reveal (§8, numbers
  * only) → next question / WhatsApp share (§7). Register/dashboard land in Stage 6.
  */
-export function SurveyFlow() {
+export function SurveyFlow({ embedded = false }: { embedded?: boolean } = {}) {
   const [status, setStatus] = useState<"loading" | "question" | "reveal" | "done">("loading");
   const [question, setQuestion] = useState<Question | null>(null);
   const [yourOption, setYourOption] = useState<"a" | "b" | null>(null);
@@ -100,9 +100,9 @@ export function SurveyFlow() {
   };
 
   return (
-    <div className={styles.page} dir="rtl">
-      <div className={styles.logo}>Mioshy</div>
-      <div className={styles.pageSub}>סקר הזוגיות של ישראל</div>
+    <div className={embedded ? styles.embed : styles.page} dir="rtl">
+      {!embedded && <div className={styles.logo}>Mioshy</div>}
+      {!embedded && <div className={styles.pageSub}>סקר הזוגיות של ישראל</div>}
 
       <div className={styles.card}>
         {showRegister && <PollRegister onBack={() => setShowRegister(false)} />}

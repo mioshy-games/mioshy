@@ -25,6 +25,28 @@
   font-family: var(--font-assistant), "Assistant", system-ui, sans-serif;
 }
 
+/* Embedded variant (homepage teaser) — same design tokens as .page but no
+   full-height page background / logo chrome, so it drops into a host section
+   (see components/marketing/v2/SurveyHomeSection.tsx). */
+.embed {
+  --bg: #fffdfc;
+  --ink: #2a2130;
+  --ink2: #4a3f4a;
+  --mut: #a99ba6;
+  --line2: #e6d9e0;
+  --pink: #ec4899;
+  --maroon: #b83c4d;
+  --wa: #25d366;
+  --grad2: linear-gradient(120deg, #b83c4d, #ec4899 55%, #f59e0b);
+
+  width: 100%;
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: var(--font-assistant), "Assistant", system-ui, sans-serif;
+}
+
 .logo { font-size: 34px; font-weight: 800; letter-spacing: -0.02em; color: #2c2430; }
 .pageSub { color: var(--mut); font-size: 13px; margin-top: 6px; letter-spacing: 0.02em; }
 
