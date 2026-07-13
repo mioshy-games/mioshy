@@ -42,7 +42,6 @@ export function PollRegister({ onBack }: { onBack: () => void }) {
 
   return (
     <section className={styles.fade}>
-      <div className={styles.qmeta}>ההצטרפות</div>
       <div className={styles.hLead}>
         הצטרפו ל<span className={styles.em}>סקר הזוגיות של ישראל</span>
       </div>

@@ -4,6 +4,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import styles from "./survey.module.css";
 import { PollRegister } from "./PollRegister";
 
+/**
+ * sessionStorage handoff key. When a vote is cast on the homepage teaser
+ * (embedded mode), we stash the reveal payload here and navigate to the
+ * dedicated /he/survey page, which reads + clears it and shows the reveal.
+ */
+const POLL_REVEAL_KEY = "mioshy_poll_reveal";
+
 interface Question {
   id: string;
   text: string;
@@ -26,7 +33,11 @@ interface HistoryRow {
 /**
  * Israel Relationship Survey — public flow (no registration, §6):
  * serial question (§7) → anonymous vote → live Bayesian reveal (§8, numbers
- * only) → next question / WhatsApp share (§7). Register/dashboard land in Stage 6.
+ * only) → WhatsApp share (§7). Register/dashboard land in Stage 6.
+ *
+ * `embedded` (homepage teaser): no page chrome, and a vote does NOT reveal
+ * inline — it POSTs, hands the result off via sessionStorage, and navigates
+ * to /he/survey (shared anon cookie) where the reveal is shown.
  */
 export function SurveyFlow({ embedded = false }: { embedded?: boolean } = {}) {
   const [status, setStatus] = useState<"loading" | "question" | "reveal" | "done">("loading");
@@ -51,7 +62,35 @@ export function SurveyFlow({ embedded = false }: { embedded?: boolean } = {}) {
       .catch(() => setStatus("done"));
   }, []);
 
-  useEffect(() => { void loadCurrent(); }, [loadCurrent]);
+  useEffect(() => {
+    // /he/survey (non-embedded): if we arrived straight after voting on the
+    // homepage teaser, the vote result was handed off via sessionStorage —
+    // show that reveal directly instead of loading the next question. The
+    // vote is already recorded server-side (anon cookie).
+    if (!embedded && typeof window !== "undefined") {
+      try {
+        const raw = window.sessionStorage.getItem(POLL_REVEAL_KEY);
+        if (raw) {
+          window.sessionStorage.removeItem(POLL_REVEAL_KEY);
+          const r = JSON.parse(raw) as {
+            question: Question;
+            yourOption: "a" | "b";
+            pctA: number;
+            pctB: number;
+            totalVotes: number;
+          };
+          if (r?.question && (r.yourOption === "a" || r.yourOption === "b")) {
+            setQuestion(r.question);
+            setYourOption(r.yourOption);
+            setTally({ pctA: r.pctA, pctB: r.pctB, totalVotes: r.totalVotes });
+            setStatus("reveal");
+            return;
+          }
+        }
+      } catch { /* malformed handoff → fall through to a normal load */ }
+    }
+    void loadCurrent();
+  }, [loadCurrent, embedded]);
 
   // Live refresh of the real tally while on the reveal (§8 polling).
   useEffect(() => {
@@ -76,14 +115,24 @@ export function SurveyFlow({ embedded = false }: { embedded?: boolean } = {}) {
       });
       const d = await res.json();
       if (!res.ok) throw new Error(d?.error ?? "vote_failed");
+      // Homepage teaser (embedded): don't reveal inline — hand the result to
+      // the dedicated /he/survey page (shared anon cookie) and navigate there.
+      if (embedded) {
+        try {
+          window.sessionStorage.setItem(
+            POLL_REVEAL_KEY,
+            JSON.stringify({ question, yourOption: d.yourOption, pctA: d.pctA, pctB: d.pctB, totalVotes: d.totalVotes }),
+          );
+        } catch { /* no sessionStorage → /he/survey just shows the next question */ }
+        window.location.href = "/he/survey";
+        return;
+      }
       setYourOption(d.yourOption);
       setTally({ pctA: d.pctA, pctB: d.pctB, totalVotes: d.totalVotes });
       setStatus("reveal");
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch { /* stay on question */ } finally { setBusy(false); }
   };
-
-  const next = async () => { setBusy(true); await loadCurrent(); window.scrollTo({ top: 0, behavior: "smooth" }); setBusy(false); };
 
   const share = () => {
     if (typeof window === "undefined") return;
@@ -101,9 +150,6 @@ export function SurveyFlow({ embedded = false }: { embedded?: boolean } = {}) {
 
   return (
     <div className={embedded ? styles.embed : styles.page} dir="rtl">
-      {!embedded && <div className={styles.logo}>Mioshy</div>}
-      {!embedded && <div className={styles.pageSub}>סקר הזוגיות של ישראל</div>}
-
       <div className={styles.card}>
         {showRegister && <PollRegister onBack={() => setShowRegister(false)} />}
 
@@ -164,7 +210,6 @@ export function SurveyFlow({ embedded = false }: { embedded?: boolean } = {}) {
               רוצים שאלה כזו כל יום? הצטרפו
             </button>
             <button type="button" className={styles.linkbtn} onClick={share}>שתפו את השאלה בוואטסאפ</button>
-            <button type="button" className={styles.linkbtn} onClick={next} disabled={busy}>לשאלה הבאה ←</button>
           </section>
         )}
 

@@ -47,9 +47,6 @@
   font-family: var(--font-assistant), "Assistant", system-ui, sans-serif;
 }
 
-.logo { font-size: 34px; font-weight: 800; letter-spacing: -0.02em; color: #2c2430; }
-.pageSub { color: var(--mut); font-size: 13px; margin-top: 6px; letter-spacing: 0.02em; }
-
 .card { width: 100%; max-width: 640px; padding: 30px 8px 0; margin-top: 16px; }
 
 .q {
@@ -87,7 +84,7 @@
 }
 .revLive {
   display: flex; align-items: center; justify-content: center; gap: 8px;
-  color: var(--mut); font-size: 20px; margin: 0 0 28px; flex-wrap: wrap;
+  color: var(--mut); font-size: 16px; margin: 0 0 28px; flex-wrap: wrap;
 }
 .pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--wa); animation: pulse 1.6s infinite; }
 @keyframes pulse {

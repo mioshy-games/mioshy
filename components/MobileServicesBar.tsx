@@ -348,7 +348,7 @@ export function MobileServicesBar() {
         }}
       >
         <ul className="mx-auto flex max-w-md items-stretch gap-2 px-2 py-2">
-          {PILLARS.map(({ href, tKey, Icon, accent }) => {
+          {PILLARS.map(({ href, tKey, Icon }) => {
             const isActive = pathname === href || pathname.startsWith(href + "/");
             return (
               <li key={href} className="flex-1">
@@ -362,24 +362,18 @@ export function MobileServicesBar() {
                     isActive ? "opacity-100" : "opacity-90 hover:opacity-100"
                   }`}
                 >
-                  {/* Coloured icon plate per pillar. Stays the pillar's
-                      accent on both active and idle so users see the
-                      colour cue without us having to invert. */}
-                  <span
-                    className="relative grid h-10 w-10 place-items-center rounded-full ring-1 ring-white/40 transition-all"
-                    style={{
-                      background: accent,
-                      boxShadow: "0 4px 12px -4px rgba(0,0,0,0.35)",
-                    }}
-                  >
+                  {/* Icon only — no coloured disc (Itzik 2026-07-14). The
+                      transparent h-10/w-10 box preserves the row height and
+                      tap area; the white glyph reads directly on the strip. */}
+                  <span className="grid h-10 w-10 place-items-center">
                     <Icon
-                      className="h-[20px] w-[20px] text-white"
+                      className="h-7 w-7 text-white"
                       strokeWidth={2}
                       aria-hidden
                     />
                   </span>
                   <span
-                    className="line-clamp-2 max-w-[96px] text-[15px] font-semibold leading-[1.15]"
+                    className="line-clamp-2 max-w-[110px] text-[13px] font-bold leading-[1.15]"
                     style={{ letterSpacing: "0.005em" }}
                   >
                     {t(tKey)}

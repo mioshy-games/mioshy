@@ -4,14 +4,16 @@ import { SurveyFlow } from "@/components/survey/SurveyFlow";
  * SurveyHomeSection — anonymous homepage teaser for "סקר הזוגיות של ישראל".
  *
  * Renders the SAME interactive flow as /he/survey via <SurveyFlow embedded />:
- * answer a live question inline → Bayesian reveal (§8) → join CTA. The anon
- * vote uses the shared `poll_anon_id` cookie set by /api/poll/vote, so a vote
- * cast here counts and links on signup exactly like on the standalone page.
+ * a live question with answer buttons. In embedded mode a vote does NOT reveal
+ * inline — it POSTs (shared `poll_anon_id` cookie) and navigates to /he/survey,
+ * which shows the reveal with the percentages. So the vote counts and links on
+ * signup exactly like on the standalone page.
  *
- * HE-only (gated in app/[locale]/page.tsx; SurveyFlow's copy is Hebrew).
- * SurveyFlow is a client component that fetches the current question on mount,
- * so this section never blocks first paint — the heading paints server-side
- * immediately and the card streams in the question.
+ * Placed as the last content section before the FAQ, HE-only (gated in
+ * HomepageV2; SurveyFlow's copy is Hebrew). SurveyFlow is a client component
+ * that fetches the current question on mount, so this section never blocks
+ * first paint — the heading paints server-side and the card streams the
+ * question in.
  */
 export function SurveyHomeSection() {
   return (

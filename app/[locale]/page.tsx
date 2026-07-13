@@ -24,7 +24,6 @@ import { Reveal } from "@/components/marketing/Reveal";
 import { HeroClassicDark } from "@/components/marketing/HeroClassicDark";
 import { HeroLightGradient } from "@/components/marketing/HeroLightGradient";
 import { HomepageV2 } from "@/components/marketing/v2/HomepageV2";
-import { SurveyHomeSection } from "@/components/marketing/v2/SurveyHomeSection";
 import { JourneyPricingProvider } from "@/components/marketing/v2/JourneyPricingProvider";
 import { getJourneyDisplayPricing } from "@/lib/billing/journey-display-pricing";
 import { pickGameThumbnail } from "@/lib/games-thumbnail";
@@ -160,11 +159,6 @@ export default async function HomePage({
     return (
       <CmsTextProvider rows={cmsRows}>
         <JourneyPricingProvider value={journeyPricing}>
-          {/* Live daily-poll teaser above the hero — reuses the /he/survey
-              interactive flow (answer → reveal → join). HE-only; anon vote
-              flows through the shared poll_anon_id cookie. Additive: the
-              existing hero + all sections below are untouched. */}
-          {params.locale === "he" ? <SurveyHomeSection /> : null}
           <HomepageV2 />
         </JourneyPricingProvider>
       </CmsTextProvider>
