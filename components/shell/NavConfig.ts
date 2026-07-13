@@ -41,6 +41,7 @@ export const NAV_HREF: Record<NavKey, string> = {
   games:    "/my/games",
   adults:   "/my/adults",
   share:    "/my/share",
+  survey:   "/my/survey",
   settings: "/my/settings",
 };
 
@@ -64,6 +65,7 @@ export function buildNavItems(args: {
     // ── משחקים ─────────────────────────────────
     { key: "games",    group: "games",   label: labels.games,    href: NAV_HREF.games,    badge: badges.games    ?? null, dot: dots.games    ?? false },
     { key: "adults",   group: "games",   label: labels.adults,   href: NAV_HREF.adults,   badge: badges.adults   ?? null, dot: dots.adults   ?? false },
+    { key: "survey",   group: "games",   label: labels.survey,   href: NAV_HREF.survey,   badge: badges.survey   ?? null, dot: dots.survey    ?? true  },
 
     // ── החשבון ─────────────────────────────────
     { key: "share",    group: "account", label: labels.share,    href: NAV_HREF.share,    badge: badges.share    ?? null, dot: dots.share    ?? false },
@@ -88,6 +90,7 @@ export const MOBILE_PRIMARY_KEYS: NavKey[] = [
   "expert",
   "games",
   "adults",
+  "survey",
 ];
 
 export const MOBILE_OVERFLOW_KEYS: NavKey[] = [
