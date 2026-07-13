@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import styles from "./survey.module.css";
+import { PollRegister } from "./PollRegister";
 
 interface Question {
   id: string;
@@ -34,6 +35,7 @@ export function SurveyFlow() {
   const [tally, setTally] = useState<Tally | null>(null);
   const [busy, setBusy] = useState(false);
   const [history, setHistory] = useState<HistoryRow[] | null>(null);
+  const [showRegister, setShowRegister] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const loadCurrent = useCallback(() => {
@@ -103,9 +105,11 @@ export function SurveyFlow() {
       <div className={styles.pageSub}>סקר הזוגיות של ישראל</div>
 
       <div className={styles.card}>
-        {status === "loading" && <p className={styles.center}>טוען…</p>}
+        {showRegister && <PollRegister onBack={() => setShowRegister(false)} />}
 
-        {status === "done" && (
+        {!showRegister && status === "loading" && <p className={styles.center}>טוען…</p>}
+
+        {!showRegister && status === "done" && (
           <section className={styles.fade}>
             <p className={styles.center}>ענית על כל השאלות שיש כרגע 💜 חזרו מחר לשאלה חדשה.</p>
             <button type="button" className={styles.linkbtn} onClick={toggleHistory}>
@@ -114,7 +118,7 @@ export function SurveyFlow() {
           </section>
         )}
 
-        {status === "question" && question && (
+        {!showRegister && status === "question" && question && (
           <section className={styles.fade}>
             <div className={styles.q}>{question.text}</div>
             <div className={styles.opts}>
@@ -128,7 +132,7 @@ export function SurveyFlow() {
           </section>
         )}
 
-        {status === "reveal" && question && tally && yourOption && (
+        {!showRegister && status === "reveal" && question && tally && yourOption && (
           <section className={styles.fade}>
             <div className={styles.qmeta}>התוצאה שלכם</div>
             <div className={`${styles.q} ${styles.revQ}`}>{question.text}</div>
@@ -155,8 +159,8 @@ export function SurveyFlow() {
 
             {question.insightLine && <p className={styles.insight}>{question.insightLine}</p>}
 
-            {/* Register CTA — visual per mockup; wired in Stage 6. */}
-            <button type="button" className={`${styles.cta} ${styles.amber}`}>
+            {/* Register CTA (§6) — opens the join form. */}
+            <button type="button" className={`${styles.cta} ${styles.amber}`} onClick={() => setShowRegister(true)}>
               רוצים שאלה כזו כל יום? הצטרפו
             </button>
             <button type="button" className={styles.linkbtn} onClick={share}>שתפו את השאלה בוואטסאפ</button>
@@ -164,7 +168,7 @@ export function SurveyFlow() {
           </section>
         )}
 
-        {history && (
+        {!showRegister && history && (
           <div className={styles.history}>
             <div className={styles.qmeta}>ההיסטוריה שלי</div>
             {history.length === 0 ? (

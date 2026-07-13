@@ -1,0 +1,52 @@
+/* Standalone survey marketing page (Stage 8). Light mioshy palette, RTL. */
+.page {
+  --bg: #fffdfc; --ink: #2a2130; --ink2: #4a3f4a; --mut: #a99ba6;
+  --line2: #e6d9e0; --pink: #ec4899; --maroon: #b83c4d;
+  --grad2: linear-gradient(120deg, #b83c4d, #ec4899 55%, #f59e0b);
+  min-height: 100vh;
+  background: radial-gradient(900px 520px at 50% -8%, rgba(236, 72, 153, 0.07), transparent 60%), var(--bg);
+  color: var(--ink);
+  font-family: var(--font-assistant), "Assistant", system-ui, sans-serif;
+  padding-bottom: 90px;
+}
+
+.header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 22px; max-width: 1000px; margin: 0 auto;
+}
+.logo { font-size: 28px; font-weight: 800; color: #2c2430; }
+.headerCta {
+  border-radius: 12px; padding: 9px 16px; font-weight: 800; font-size: 14px; color: #fff;
+  background: var(--grad2); text-decoration: none;
+}
+
+.main { max-width: 640px; margin: 0 auto; padding: 30px 22px 40px; text-align: center; }
+.eyebrow { color: var(--maroon); font-weight: 800; font-size: 13px; letter-spacing: 0.04em; margin-bottom: 14px; }
+.h1 { font-size: 40px; font-weight: 800; line-height: 1.15; margin: 0 auto 18px; max-width: 520px; }
+@media (max-width: 560px) { .h1 { font-size: 31px; } }
+.em { background: var(--grad2); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.lead { font-size: 20px; line-height: 1.6; color: var(--ink2); max-width: 500px; margin: 0 auto 26px; }
+.cta {
+  display: inline-block; border-radius: 16px; padding: 16px 30px; font-weight: 800; font-size: 17px; color: #fff;
+  background: #d97706; text-decoration: none; box-shadow: 0 14px 28px -14px rgba(217, 119, 6, 0.7);
+}
+.sub { color: var(--mut); font-size: 14px; margin-top: 14px; }
+
+.cards { display: flex; gap: 14px; justify-content: center; margin-top: 40px; flex-wrap: wrap; }
+.card {
+  flex: 1; min-width: 150px; max-width: 190px; border: 1.5px solid var(--line2); border-radius: 18px;
+  padding: 20px 16px; background: #fff;
+}
+.cardBig { font-size: 19px; font-weight: 800; }
+.cardSub { font-size: 14px; color: var(--ink2); margin-top: 6px; line-height: 1.5; }
+
+.sticky {
+  position: fixed; bottom: 0; left: 0; right: 0; padding: 12px 16px;
+  background: rgba(255, 253, 252, 0.92); backdrop-filter: blur(8px);
+  border-top: 1px solid var(--line2); display: none;
+}
+.stickyCta {
+  display: block; text-align: center; border-radius: 14px; padding: 15px; font-weight: 800; font-size: 16px;
+  color: #fff; background: var(--grad2); text-decoration: none;
+}
+@media (max-width: 640px) { .sticky { display: block; } }
