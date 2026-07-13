@@ -178,29 +178,32 @@ export function SurveyFlow({ embedded = false }: { embedded?: boolean } = {}) {
           </section>
         )}
 
-        {!showRegister && status === "reveal" && question && tally && yourOption && (
+        {!showRegister && status === "reveal" && question && tally && yourOption && (() => {
+          const chosenLabel = yourOption === "a" ? question.optionA : question.optionB;
+          const otherLabel = yourOption === "a" ? question.optionB : question.optionA;
+          const chosenPct = yourOption === "a" ? tally.pctA : tally.pctB;
+          const otherPct = yourOption === "a" ? tally.pctB : tally.pctA;
+          return (
           <section className={styles.fade}>
             <div className={styles.qmeta}>התוצאה שלכם</div>
             <div className={`${styles.q} ${styles.revQ}`}>{question.text}</div>
             <div className={styles.revYour}>
-              בחרת: <span>{yourOption === "a" ? question.optionA : question.optionB}</span>
+              בחרת: <span>{chosenLabel}</span>
             </div>
             <div className={styles.revLive}>
               <span className={styles.pulse} />
               <span>{tally.totalVotes.toLocaleString("he-IL")}</span> זוגות ענו על זה · מתעדכן עכשיו
             </div>
 
-            <div className={styles.revRow}>
-              <div className={styles.revSide}>
-                {yourOption === "a" && <div className={styles.youtag}>כמוך</div>}
-                <div className={styles.revLab}>{question.optionA}</div>
-                <div className={`${styles.revPct} ${yourOption === "a" ? styles.you : styles.dim}`}>{tally.pctA}%</div>
-              </div>
-              <div className={`${styles.revSide} ${styles.left}`}>
-                {yourOption === "b" && <div className={styles.youtag}>כמוך</div>}
-                <div className={styles.revLab}>{question.optionB}</div>
-                <div className={`${styles.revPct} ${yourOption === "b" ? styles.you : styles.dim}`}>{tally.pctB}%</div>
-              </div>
+            {/* Centered big result (§8, mockup screen 2) — the chosen answer's
+                percentage as one large gradient number, "כמוך" tag above it,
+                "ענו כמוך" below, a divider, then the small "לעומת" comparison.
+                Numbers only — no graph/bar. */}
+            <div className={styles.revHero}>
+              <span className={styles.youtag}>כמוך</span>
+              <div className={styles.revBig}>{chosenPct}%</div>
+              <div className={styles.revBiglabel}>ענו כמוך: <b>{chosenLabel}</b></div>
+              <div className={styles.revVs}>לעומת <b>{otherPct}%</b> שבחרו <b>{otherLabel}</b></div>
             </div>
 
             {question.insightLine && <p className={styles.insight}>{question.insightLine}</p>}
@@ -211,7 +214,8 @@ export function SurveyFlow({ embedded = false }: { embedded?: boolean } = {}) {
             </button>
             <button type="button" className={styles.linkbtn} onClick={share}>שתפו את השאלה בוואטסאפ</button>
           </section>
-        )}
+          );
+        })()}
 
         {!showRegister && history && (
           <div className={styles.history}>

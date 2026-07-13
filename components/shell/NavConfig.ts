@@ -41,7 +41,10 @@ export const NAV_HREF: Record<NavKey, string> = {
   games:    "/my/games",
   adults:   "/my/adults",
   share:    "/my/share",
-  survey:   "/my/survey",
+  // Survey nav points at the public daily-question flow (/he/survey), not the
+  // /my/survey dashboard landing — the nav should open today's question
+  // directly (Itzik 2026-07-14). /my/survey still exists (post-signup landing).
+  survey:   "/survey",
   settings: "/my/settings",
 };
 

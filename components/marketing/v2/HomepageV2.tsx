@@ -68,7 +68,6 @@ const ReviewsGrid = dynamic(
 // import is fine: no client chunk, no hydration overhead. next/dynamic
 // was removed here because dynamic() is designed for client components.
 import { FAQ } from "./FAQ";
-import { SurveyHomeSection } from "./SurveyHomeSection";
 
 /**
  * HomepageV2 - new marketing homepage.
@@ -142,10 +141,6 @@ export function HomepageV2() {
           social-proof block instead of opening it. */}
       <ReviewsGrid />
       <MediaSlider />
-      {/* Live daily-poll teaser — last content section before the FAQ.
-          Reuses the /he/survey interactive flow (SurveyFlow embedded); a
-          vote navigates to /he/survey for the reveal. HE-only. */}
-      {locale === "he" ? <SurveyHomeSection /> : null}
       <FAQ />
     </div>
   );
