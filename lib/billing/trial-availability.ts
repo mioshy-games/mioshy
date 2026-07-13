@@ -15,6 +15,7 @@ import { getPlanPrice } from "@/lib/billing";
 import { resolveJourneyAmount } from "@/lib/billing/journey-coaching-pricing";
 import { resolveCheckoutCadence } from "@/lib/billing/pricing-queries";
 import { findActivePromo, applyDiscount } from "@/lib/billing/promos";
+import { getPromoMode } from "@/lib/billing/promo-mode";
 
 export interface TrialAvailability {
   enabled: boolean;
@@ -73,11 +74,28 @@ export async function getTrialAvailability(
     amount = p.amount; currency = p.currency;
   }
 
+  // Resolve the promo the SAME way create-trial does, so the disclosed price
+  // equals the first post-trial charge (subscription.intro_amount) — NOT the
+  // list price. create-trial gates on getPromoMode() and, for personal_window,
+  // passes ignoreEndsAt (the promo lives inside each user's window, so its
+  // global ends_at must not cut it off). Without this, a promo whose ends_at
+  // has passed but is kept alive by personal_window shows the full price here
+  // while the day-7 charge is the discounted intro. This is display-only + anon,
+  // so we can't check the per-user window; showing the in-window (post-promo)
+  // price matches what a user who just finished the assessment gets charged.
   try {
-    const { promo } = await findActivePromo(admin, { product, cadence, coaching });
-    if (promo) {
-      const res = applyDiscount({ amount, currency: currency === "USD" ? "USD" : "ILS", promo });
-      if (res.promoId) amount = res.discountedAmount;
+    const promoMode = await getPromoMode(admin);
+    if (promoMode !== "off") {
+      const { promo } = await findActivePromo(admin, {
+        product,
+        cadence,
+        coaching,
+        ignoreEndsAt: promoMode === "personal_window",
+      });
+      if (promo) {
+        const res = applyDiscount({ amount, currency: currency === "USD" ? "USD" : "ILS", promo });
+        if (res.promoId) amount = res.discountedAmount;
+      }
     }
   } catch {
     // Display-only — fall back to full price on any promo error.
