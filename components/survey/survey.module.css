@@ -1,0 +1,107 @@
+/* Israel Relationship Survey — screens 1 (question) + 2 (reveal).
+   Ported from the design source of truth docs/mioshy-poll-flow.html.
+   No graph/bar in the reveal (§8) — numbers only. RTL. */
+
+.page {
+  --bg: #fffdfc;
+  --ink: #2a2130;
+  --ink2: #4a3f4a;
+  --mut: #a99ba6;
+  --line2: #e6d9e0;
+  --pink: #ec4899;
+  --maroon: #b83c4d;
+  --wa: #25d366;
+  --grad2: linear-gradient(120deg, #b83c4d, #ec4899 55%, #f59e0b);
+
+  min-height: 100vh;
+  background:
+    radial-gradient(900px 500px at 50% -8%, rgba(236, 72, 153, 0.06), transparent 60%),
+    var(--bg);
+  color: var(--ink);
+  padding: 34px 18px 80px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: var(--font-assistant), "Assistant", system-ui, sans-serif;
+}
+
+.logo { font-size: 34px; font-weight: 800; letter-spacing: -0.02em; color: #2c2430; }
+.pageSub { color: var(--mut); font-size: 13px; margin-top: 6px; letter-spacing: 0.02em; }
+
+.card { width: 100%; max-width: 640px; padding: 30px 8px 0; margin-top: 16px; }
+
+.q {
+  text-align: center; font-size: 25px; line-height: 1.5; font-weight: 600;
+  color: var(--ink); max-width: 520px; margin: 0 auto;
+}
+@media (max-width: 560px) { .q { font-size: 21px; } }
+
+/* two options: rectangles with a delicate gradient ring */
+.opts { display: flex; gap: 22px; justify-content: center; margin-top: 48px; flex-wrap: wrap; }
+.opt {
+  width: 230px; min-height: 106px; border-radius: 20px; padding: 22px 20px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; text-align: center;
+  transition: 0.18s; border: 1.6px solid transparent;
+  background-image: linear-gradient(var(--bg), var(--bg)), var(--grad2);
+  background-origin: border-box; background-clip: padding-box, border-box;
+}
+.optTxt { font-size: 17px; font-weight: 600; color: var(--ink); line-height: 1.35; transition: color 0.18s; }
+.opt:hover, .opt.sel {
+  transform: translateY(-3px);
+  background-image: var(--grad2), var(--grad2);
+  box-shadow: 0 16px 32px -16px rgba(236, 72, 153, 0.5);
+}
+.opt:hover .optTxt, .opt.sel .optTxt { color: #fff; }
+.opt:disabled { cursor: default; }
+@media (max-width: 560px) { .opts { gap: 14px; } .opt { width: 46%; min-height: 96px; padding: 18px 12px; } }
+
+/* reveal */
+.qmeta { text-align: center; color: var(--mut); font-size: 13.5px; font-weight: 600; margin-bottom: 12px; }
+.revQ { font-size: 22px; }
+.revYour { text-align: center; font-size: 15px; color: var(--ink2); margin: 12px 0 24px; }
+.revYour span {
+  font-weight: 800; background: var(--grad2);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.revLive {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  color: var(--mut); font-size: 20px; margin: 0 0 28px; flex-wrap: wrap;
+}
+.pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--wa); animation: pulse 1.6s infinite; }
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.5); }
+  70% { box-shadow: 0 0 0 8px rgba(37, 211, 102, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); }
+}
+.revRow { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 12px; }
+.revSide { width: 48%; }
+.revSide.left { text-align: left; }
+.youtag {
+  display: inline-block; font-size: 10.5px; font-weight: 800; color: #fff;
+  background: var(--pink); border-radius: 20px; padding: 2px 9px; margin-bottom: 6px;
+}
+.revLab { font-size: 14.5px; font-weight: 600; color: var(--ink2); margin-bottom: 3px; }
+.revPct { font-size: 34px; font-weight: 800; line-height: 1; }
+.revPct.you { background: var(--grad2); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.revPct.dim { color: #c4b6c0; }
+
+.insight {
+  text-align: center; font-size: 15px; line-height: 1.65; color: var(--ink2);
+  margin: 20px auto 0; max-width: 460px;
+}
+
+.cta {
+  display: block; width: 100%; max-width: 360px; margin: 44px auto 0; text-align: center;
+  border: 0; border-radius: 16px; padding: 16px; font: inherit; font-weight: 800; font-size: 16px;
+  cursor: pointer; transition: 0.18s; text-decoration: none;
+}
+.cta.amber { background: #d97706; color: #fff; box-shadow: 0 14px 28px -14px rgba(217, 119, 6, 0.7); }
+.cta.amber:hover { filter: brightness(1.05); transform: translateY(-1px); }
+.linkbtn {
+  display: block; margin: 16px auto 0; background: none; border: 0; color: #111;
+  font: inherit; font-weight: 600; font-size: 18px; cursor: pointer; text-decoration: underline;
+}
+
+.fade { animation: fade 0.45s ease both; }
+@keyframes fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.center { text-align: center; color: var(--mut); font-size: 15px; margin-top: 40px; }
