@@ -2,6 +2,7 @@ import "server-only";
 
 import { cookies, headers } from "next/headers";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { SESSION_COOKIE, SESSION_MAX_AGE, createSession } from "@/lib/auth/session-enforcement";
 
 /**
@@ -81,6 +82,21 @@ export async function sendEmailOtp(args: {
     return { ok: false, error: "לא הצלחנו לשלוח קוד. נסו שוב." };
   }
   return { ok: true };
+}
+
+/**
+ * Deterministic "is this the account's FIRST completed registration?" — true
+ * when the profile has no full_name yet. Robust where the `isNewUser` timing
+ * heuristic isn't: a genuinely new user who takes >2 min to enter the code still
+ * counts as first-time, and an existing account (name already set) never does.
+ * Use this to gate identity writes (never overwrite an existing full_name),
+ * Brevo, and CompleteRegistration.
+ */
+export async function isFirstRegistration(userId: string): Promise<boolean> {
+  const admin = createAdminSupabaseClient();
+  const { data } = await admin.from("profiles").select("full_name").eq("id", userId).maybeSingle();
+  const name = (data as { full_name?: string | null } | null)?.full_name;
+  return !(name && name.trim().length > 0);
 }
 
 export type VerifyOtpResult =

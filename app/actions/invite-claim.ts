@@ -30,7 +30,7 @@ import {
   normaliseEmail,
 } from "@/lib/between-us/invitations";
 import { migrateSoloJourneyToCouple } from "@/lib/journey-content/migrate-solo-to-couple";
-import { sendEmailOtp, verifyEmailOtp } from "@/lib/auth/otp-core";
+import { sendEmailOtp, verifyEmailOtp, isFirstRegistration } from "@/lib/auth/otp-core";
 
 type Ok = { ok: true; couple_id: string };
 type Err = { ok: false; error: string };
@@ -244,11 +244,17 @@ export async function verifyInviteClaimOtp(params: {
   const userId = v.userId;
 
   const admin = createAdminSupabaseClient();
-  const { error: profileErr } = await admin.from("profiles").upsert(
-    { id: userId, full_name: fullName, mobile, phone: mobile },
-    { onConflict: "id" },
-  );
-  if (profileErr) console.error("[invite-claim/otp] profile upsert failed", profileErr);
+  // Identity (name + mobile) only for a genuinely NEW account. An existing user
+  // who used the "new account" tab is logged into their account — don't overwrite
+  // their full_name/mobile; the invitation is still accepted below. Uses the
+  // deterministic profile-has-no-name check (not the fragile created_at heuristic).
+  if (await isFirstRegistration(userId)) {
+    const { error: profileErr } = await admin.from("profiles").upsert(
+      { id: userId, full_name: fullName, mobile, phone: mobile },
+      { onConflict: "id" },
+    );
+    if (profileErr) console.error("[invite-claim/otp] profile upsert failed", profileErr);
+  }
 
   // verifyEmailOtp already established the Supabase session (server client), so
   // the SECURITY DEFINER accept RPC runs as this user.

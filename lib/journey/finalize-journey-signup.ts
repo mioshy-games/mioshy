@@ -4,6 +4,7 @@ import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { isTestUser } from "@/lib/auth/is-test-user";
 import { tagAsRegistered } from "@/lib/email/brevo-segments-sync";
 import { fireCompleteRegistrationCapi } from "@/lib/analytics/meta-capi";
+import { isFirstRegistration } from "@/lib/auth/otp-core";
 
 type JourneyRow = { id: string; current_step: number | null; status: string; last_activity_at: string | null };
 
@@ -36,8 +37,15 @@ export async function finalizeJourneySignup(args: {
   const { userId, email, deviceId } = args;
   const nowIso = new Date().toISOString();
 
-  // ── Profile + consent (signup only) ──────────────────────────────────────
-  if (args.isSignup) {
+  // Deterministic "first registration" — the profile has no full_name yet.
+  // Robust where the `args.isNewUser` created_at heuristic isn't (a slow verifier
+  // would otherwise lose their name). Only matters on the signup path.
+  const isFirst = args.isSignup ? await isFirstRegistration(userId) : false;
+
+  // ── Profile + consent (NEW signup only) ──────────────────────────────────
+  // Never overwrite an existing profile's full_name/consent when an existing
+  // user runs the signup flow — only write identity for a genuinely new account.
+  if (args.isSignup && isFirst) {
     const { error: profileErr } = await admin.from("profiles").upsert({
       id: userId,
       full_name: args.fullName.trim(),
@@ -100,14 +108,14 @@ export async function finalizeJourneySignup(args: {
     return tsOf(b) - tsOf(a);
   })[0] ?? null;
 
-  // ── Registered marker + CompleteRegistration (signup + new user) ──────────
-  if (args.isSignup) {
+  // ── Registered marker + CompleteRegistration (NEW signup only) ────────────
+  if (args.isSignup && isFirst) {
     const { error: markerErr } = await admin.from("analytics_events").insert({
       event: "journey_assessment_registered", session_id: null, device_id: deviceId,
       user_id: userId, locale: args.language ?? null, properties: { assessment_id: "journey" },
     });
     if (markerErr) console.warn("[finalizeJourneySignup] registered marker insert failed (non-fatal)", markerErr.message);
-    if (args.isNewUser) await fireCompleteRegistrationCapi({ userId, email, contentName: "journey" });
+    await fireCompleteRegistrationCapi({ userId, email, contentName: "journey" });
   }
 
   return { journey: (journey ?? null) as JourneyRow | null };

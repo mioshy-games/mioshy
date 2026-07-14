@@ -11,7 +11,7 @@
 
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { fireCompleteRegistrationCapi } from "@/lib/analytics/meta-capi";
-import { sendEmailOtp, verifyEmailOtp, finalizeOtpSession, type SendOtpResult } from "@/lib/auth/otp-core";
+import { sendEmailOtp, verifyEmailOtp, finalizeOtpSession, isFirstRegistration, type SendOtpResult } from "@/lib/auth/otp-core";
 
 type Result = { success: true } | { success: false; error: string };
 
@@ -42,24 +42,29 @@ export async function verifyAssessmentSignupOtp(args: {
   if (!v.ok) return { success: false, error: v.error };
   try {
     const admin = createAdminSupabaseClient();
-    const nowIso = new Date().toISOString();
-    await admin.from("profiles").upsert({
-      id: v.userId,
-      full_name: args.fullName.trim(),
-      marketing_consent: args.marketingConsent,
-      marketing_consent_at: args.marketingConsent ? nowIso : null,
-      marketing_consent_source: args.marketingConsent ? "assessment_otp" : null,
-      terms_accepted: true,
-      terms_accepted_at: nowIso,
-      preferred_language: args.language === "en" ? "en" : "he",
-    }, { onConflict: "id" });
+    // Session-claim applies to new AND existing users.
     await claimSessions(admin, v.userId, args.deviceId, args.assessmentId);
-    await admin.from("analytics_events").insert({
-      event: "assessment_registered", session_id: null, device_id: args.deviceId,
-      user_id: v.userId, locale: args.language ?? null, properties: { assessment_id: args.assessmentId },
-    });
     await finalizeOtpSession(v.userId);
-    if (v.isNewUser) await fireCompleteRegistrationCapi({ userId: v.userId, email: v.email, contentName: "assessment" });
+    // Identity (name/consent) + registered marker + CompleteRegistration — NEW
+    // account only; never overwrite an existing profile's full_name/consent.
+    if (await isFirstRegistration(v.userId)) {
+      const nowIso = new Date().toISOString();
+      await admin.from("profiles").upsert({
+        id: v.userId,
+        full_name: args.fullName.trim(),
+        marketing_consent: args.marketingConsent,
+        marketing_consent_at: args.marketingConsent ? nowIso : null,
+        marketing_consent_source: args.marketingConsent ? "assessment_otp" : null,
+        terms_accepted: true,
+        terms_accepted_at: nowIso,
+        preferred_language: args.language === "en" ? "en" : "he",
+      }, { onConflict: "id" });
+      await admin.from("analytics_events").insert({
+        event: "assessment_registered", session_id: null, device_id: args.deviceId,
+        user_id: v.userId, locale: args.language ?? null, properties: { assessment_id: args.assessmentId },
+      });
+      await fireCompleteRegistrationCapi({ userId: v.userId, email: v.email, contentName: "assessment" });
+    }
     return { success: true };
   } catch (err) {
     console.error("[otp assessment] finalize failed", err);

@@ -11,7 +11,7 @@
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { readPollAnonId } from "@/lib/poll/anon";
 import { fireCompleteRegistrationCapi, firePollLeadCapi, metaEventId } from "@/lib/analytics/meta-capi";
-import { sendEmailOtp, verifyEmailOtp, finalizeOtpSession, type SendOtpResult } from "@/lib/auth/otp-core";
+import { sendEmailOtp, verifyEmailOtp, finalizeOtpSession, isFirstRegistration, type SendOtpResult } from "@/lib/auth/otp-core";
 
 type Result = { success: true } | { success: false; error: string };
 
@@ -52,22 +52,25 @@ export async function verifySurveySignupOtp(args: {
   try {
     const admin = createAdminSupabaseClient();
     const nowIso = new Date().toISOString();
-    await admin.from("profiles").upsert(
-      {
-        id: v.userId,
-        full_name: args.fullName.trim(),
-        marketing_consent: args.marketingConsent,
-        marketing_consent_at: args.marketingConsent ? nowIso : null,
-        marketing_consent_source: args.marketingConsent ? "poll_signup" : null,
-        terms_accepted: true,
-        terms_accepted_at: nowIso,
-      },
-      { onConflict: "id" },
-    );
+    // Anon vote-linking + subscribe apply to new AND existing users.
     await linkAnonVotes(admin, v.userId);
     await admin.from("poll_subscriptions").upsert({ user_id: v.userId, subscribed: true, updated_at: nowIso }, { onConflict: "user_id" });
     await finalizeOtpSession(v.userId);
-    if (v.isNewUser) {
+    // Identity (name/consent) + CompleteRegistration — NEW account only; never
+    // overwrite an existing profile's full_name/consent.
+    if (await isFirstRegistration(v.userId)) {
+      await admin.from("profiles").upsert(
+        {
+          id: v.userId,
+          full_name: args.fullName.trim(),
+          marketing_consent: args.marketingConsent,
+          marketing_consent_at: args.marketingConsent ? nowIso : null,
+          marketing_consent_source: args.marketingConsent ? "poll_signup" : null,
+          terms_accepted: true,
+          terms_accepted_at: nowIso,
+        },
+        { onConflict: "id" },
+      );
       await fireCompleteRegistrationCapi({ userId: v.userId, email: v.email, contentName: "relationship_survey" });
     }
     return { success: true };

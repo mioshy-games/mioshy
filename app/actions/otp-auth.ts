@@ -17,7 +17,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { isTestUser } from "@/lib/auth/is-test-user";
 import { tagAsRegistered } from "@/lib/email/brevo-segments-sync";
 import { fireCompleteRegistrationCapi } from "@/lib/analytics/meta-capi";
-import { sendEmailOtp, verifyEmailOtp, finalizeOtpSession, type SendOtpResult } from "@/lib/auth/otp-core";
+import { sendEmailOtp, verifyEmailOtp, finalizeOtpSession, isFirstRegistration, type SendOtpResult } from "@/lib/auth/otp-core";
 
 type ActionResult<T = unknown> = ({ success: true } & T) | { success: false; error: string };
 
@@ -47,62 +47,65 @@ export async function verifyAuthSignupOtp(args: {
 
   const verified = await verifyEmailOtp({ email: args.email, token: args.token });
   if (!verified.ok) return { success: false, error: verified.error };
-  const { userId, email, isNewUser } = verified;
+  const { userId, email } = verified;
 
   try {
-    const admin = createAdminSupabaseClient();
-    const fullName = args.fullName.trim();
-    const nowIso = new Date().toISOString();
-    const lang = args.preferredLanguage === "en" ? "en" : "he";
-
-    // Profile: name + consent + language. Phone is added later (screen 3).
-    await admin.from("profiles").upsert(
-      {
-        id: userId,
-        full_name: fullName,
-        marketing_consent: args.marketingConsent,
-        marketing_consent_at: args.marketingConsent ? nowIso : null,
-        marketing_consent_source: args.marketingConsent ? "signup_otp" : null,
-        terms_accepted: true,
-        terms_accepted_at: nowIso,
-        preferred_language: lang,
-      },
-      { onConflict: "id" },
-    );
-
-    // Test-user invitation auto-claim (mirrors signupAction; non-fatal).
-    try {
-      const { data: invite } = await admin
-        .from("test_user_invitations")
-        .select("email, note, invited_by")
-        .eq("email", email.toLowerCase())
-        .is("claimed_at", null)
-        .maybeSingle();
-      if (invite) {
-        const inv = invite as { email: string; note: string | null; invited_by: string | null };
-        await admin.from("profiles").update({
-          is_test_user: true,
-          test_user_note: inv.note,
-          test_user_marked_at: nowIso,
-          test_user_marked_by: inv.invited_by,
-        }).eq("id", userId);
-        await admin.from("test_user_invitations").update({ claimed_at: nowIso, claimed_user_id: userId }).eq("email", inv.email);
-      }
-    } catch (claimErr) {
-      console.warn("[otp signup] test-user claim failed (non-fatal)", claimErr);
-    }
-
-    // Brevo — consent-gated, non-fatal (Israeli Communications Act §30A).
-    if (args.marketingConsent && !(await isTestUser(admin, userId))) {
-      try { await tagAsRegistered(email, userId, lang); } catch (e) { console.error("[otp signup] Brevo sync failed", e); }
-    }
-
     // Custom single-device session (Supabase session already set by verifyOtp).
     await finalizeOtpSession(userId);
 
-    // CompleteRegistration — only for a genuinely new account (not an existing
-    // user who used the signup screen). Phone not yet known → omitted.
-    if (isNewUser) {
+    // Everything below writes IDENTITY (name/consent) or fires new-signup
+    // analytics — do it ONLY for a genuinely NEW account. An existing user who
+    // typed their email in the signup form is just logged in; we must NOT
+    // overwrite their profiles.full_name/consent or re-fire CompleteRegistration.
+    if (await isFirstRegistration(userId)) {
+      const admin = createAdminSupabaseClient();
+      const fullName = args.fullName.trim();
+      const nowIso = new Date().toISOString();
+      const lang = args.preferredLanguage === "en" ? "en" : "he";
+
+      // Profile: name + consent + language. Phone is added later (screen 3).
+      await admin.from("profiles").upsert(
+        {
+          id: userId,
+          full_name: fullName,
+          marketing_consent: args.marketingConsent,
+          marketing_consent_at: args.marketingConsent ? nowIso : null,
+          marketing_consent_source: args.marketingConsent ? "signup_otp" : null,
+          terms_accepted: true,
+          terms_accepted_at: nowIso,
+          preferred_language: lang,
+        },
+        { onConflict: "id" },
+      );
+
+      // Test-user invitation auto-claim (mirrors signupAction; non-fatal).
+      try {
+        const { data: invite } = await admin
+          .from("test_user_invitations")
+          .select("email, note, invited_by")
+          .eq("email", email.toLowerCase())
+          .is("claimed_at", null)
+          .maybeSingle();
+        if (invite) {
+          const inv = invite as { email: string; note: string | null; invited_by: string | null };
+          await admin.from("profiles").update({
+            is_test_user: true,
+            test_user_note: inv.note,
+            test_user_marked_at: nowIso,
+            test_user_marked_by: inv.invited_by,
+          }).eq("id", userId);
+          await admin.from("test_user_invitations").update({ claimed_at: nowIso, claimed_user_id: userId }).eq("email", inv.email);
+        }
+      } catch (claimErr) {
+        console.warn("[otp signup] test-user claim failed (non-fatal)", claimErr);
+      }
+
+      // Brevo — consent-gated, non-fatal (Israeli Communications Act §30A).
+      if (args.marketingConsent && !(await isTestUser(admin, userId))) {
+        try { await tagAsRegistered(email, userId, lang); } catch (e) { console.error("[otp signup] Brevo sync failed", e); }
+      }
+
+      // CompleteRegistration — new account only. Phone not yet known → omitted.
       await fireCompleteRegistrationCapi({ userId, email });
     }
 
