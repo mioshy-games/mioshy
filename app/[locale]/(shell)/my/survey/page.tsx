@@ -43,7 +43,18 @@ export default async function MySurveyPage({ params }: { params: { locale: strin
         pageLabel="סקר הזוגיות של ישראל"
         bellCount={shell?.notificationCount ?? 0}
       />
-      <PollDashboardLanding initialSubscribed={subscribed} userName={userName} />
+      {/* Light survey canvas — same cream + soft-pink radial as the public
+          /he/survey page (survey.module.css .page), so the survey area reads
+          light inside the dark dashboard shell (per Itzik). Only this page. */}
+      <div
+        style={{
+          minHeight: "100dvh",
+          background:
+            "radial-gradient(900px 500px at 50% -8%, rgba(236, 72, 153, 0.06), transparent 60%), #fffdfc",
+        }}
+      >
+        <PollDashboardLanding initialSubscribed={subscribed} userName={userName} />
+      </div>
     </>
   );
 }

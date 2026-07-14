@@ -46,7 +46,9 @@
     radial-gradient(700px 380px at 50% -8%, rgba(236, 72, 153, 0.06), transparent 60%),
     var(--bg);
   border-radius: 24px;
-  box-shadow: 0 24px 60px -30px rgba(0, 0, 0, 0.55);
+  /* Soft, light-friendly lift — the embed now sits on the light survey canvas
+     (dashboard), so the heavy dark-bg shadow is toned down to a gentle one. */
+  box-shadow: 0 18px 44px -32px rgba(80, 40, 70, 0.22);
   color: var(--ink);
   display: flex;
   flex-direction: column;
@@ -60,11 +62,10 @@
    (always-present) header. RTL: "back" points right. */
 .backBtn {
   position: fixed;
-  /* Bottom-centre (§3) — clears the header, the (hidden) services strip and the
-     WhatsApp float; RTL-safe via left:50% + translateX. */
+  /* Bottom-LEFT corner of the screen (per Itzik). On the public page this shares
+     the corner with the WhatsApp float; on the dashboard the corner is clear. */
   bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 20px;
   z-index: 40;
   width: 44px;
   height: 44px;
@@ -82,7 +83,7 @@
   box-shadow: 0 8px 20px -10px rgba(0, 0, 0, 0.28);
   transition: 0.15s;
 }
-.backBtn:hover { transform: translateX(-50%) translateY(-2px); box-shadow: 0 10px 24px -10px rgba(0, 0, 0, 0.34); }
+.backBtn:hover { transform: translateY(-2px); box-shadow: 0 10px 24px -10px rgba(0, 0, 0, 0.34); }
 
 /* §11 — small confidentiality trust line at the top of the survey. 14px, black. */
 .trust { text-align: center; font-size: 14px; color: #111; font-weight: 600; margin: 0 auto 4px; }

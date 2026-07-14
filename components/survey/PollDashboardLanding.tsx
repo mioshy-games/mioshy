@@ -65,31 +65,31 @@ export function PollDashboardLanding({ initialSubscribed, userName }: { initialS
   // ── History view (§6): read-only look back with the live percentages.
   if (view === "history") {
     return (
-      <div dir="rtl" className="mx-auto max-w-lg px-5 py-10 text-white" style={{ fontFamily: "var(--font-assistant), sans-serif" }}>
+      <div dir="rtl" className="mx-auto max-w-lg px-5 py-10 text-[#2a2130]" style={{ fontFamily: "var(--font-assistant), sans-serif" }}>
         <button
           type="button"
           onClick={() => setView("landing")}
-          className="mb-6 inline-flex items-center gap-1.5 text-[15px] font-semibold text-white/70 hover:text-white"
+          className="mb-6 inline-flex items-center gap-1.5 text-[15px] font-semibold text-[#4a3f4a] hover:text-[#2a2130]"
         >
           <span aria-hidden>→</span> חזרה
         </button>
-        <h1 className="text-[22px] font-extrabold text-center">ההיסטוריה שלי</h1>
-        <p className="text-white/60 text-sm text-center mb-6">השאלות שכבר עניתם עליהן</p>
+        <h1 className="text-[22px] font-extrabold text-center text-[#2a2130]">ההיסטוריה שלי</h1>
+        <p className="text-[#6b5f6a] text-sm text-center mb-6">השאלות שכבר עניתם עליהן</p>
 
         {histLoading ? (
-          <p className="text-center text-white/60">טוען…</p>
+          <p className="text-center text-[#6b5f6a]">טוען…</p>
         ) : !history || history.length === 0 ? (
-          <p className="text-center text-white/60 mt-6">עוד לא ענית על שאלות. חזרו ללשאלה של היום.</p>
+          <p className="text-center text-[#6b5f6a] mt-6">עוד לא ענית על שאלות. חזרו ללשאלה של היום.</p>
         ) : (
           <div className="space-y-3">
             {history.map((h) => (
-              <div key={h.questionId} className="rounded-2xl bg-white/5 ring-1 ring-white/10 p-4">
-                <div className="font-semibold text-white leading-snug">{h.text}</div>
-                <div className="mt-2 text-[14px] text-white/75">
-                  בחרת: <b className="text-white">{h.chosenLabel}</b>
+              <div key={h.questionId} className="rounded-2xl bg-black/[0.03] ring-1 ring-black/10 p-4">
+                <div className="font-semibold text-[#2a2130] leading-snug">{h.text}</div>
+                <div className="mt-2 text-[14px] text-[#4a3f4a]">
+                  בחרת: <b className="text-[#2a2130]">{h.chosenLabel}</b>
                 </div>
-                <div className="mt-1 text-[14px] text-white/60">
-                  <b className="text-pink-300">{h.chosenPct}%</b> ענו כמוך · {h.otherPct}% בחרו {h.otherLabel}
+                <div className="mt-1 text-[14px] text-[#6b5f6a]">
+                  <b className="text-pink-600">{h.chosenPct}%</b> ענו כמוך · {h.otherPct}% בחרו {h.otherLabel}
                 </div>
               </div>
             ))}
@@ -99,17 +99,17 @@ export function PollDashboardLanding({ initialSubscribed, userName }: { initialS
     );
   }
 
-  // ── Landing (default).
+  // ── Landing (default). Dark ink on the light survey canvas (page.tsx).
   return (
-    <div dir="rtl" className="mx-auto max-w-lg px-5 py-10 text-center text-white" style={{ fontFamily: "var(--font-assistant), sans-serif" }}>
+    <div dir="rtl" className="mx-auto max-w-lg px-5 py-10 text-center text-[#2a2130]" style={{ fontFamily: "var(--font-assistant), sans-serif" }}>
       <div
         className="mx-auto mb-6 grid h-[76px] w-[76px] place-items-center rounded-full text-4xl font-extrabold text-white"
         style={{ background: "linear-gradient(120deg,#b83c4d,#ec4899 55%,#f59e0b)", boxShadow: "0 16px 30px -14px rgba(236,72,153,.6)" }}
       >
         ✓
       </div>
-      <h1 className="text-[22px] font-extrabold mb-3 text-white">הצטרפתם! אתם בפנים.</h1>
-      <p className="text-[18px] leading-relaxed text-white/75 max-w-md mx-auto">
+      <h1 className="text-[22px] font-extrabold mb-3 text-[#2a2130]">הצטרפתם! אתם בפנים.</h1>
+      <p className="text-[18px] leading-relaxed text-[#4a3f4a] max-w-md mx-auto">
         מעכשיו כל יום תקבלו שאלה אחת על הזוגיות. עונים בכמה שניות, ומיד רואים מה זוגות אחרים בישראל ענו.
       </p>
 
@@ -125,24 +125,24 @@ export function PollDashboardLanding({ initialSubscribed, userName }: { initialS
         <button
           type="button"
           onClick={openHistory}
-          className="text-[15px] font-semibold text-white/70 underline hover:text-white"
+          className="text-[15px] font-semibold text-[#4a3f4a] underline hover:text-[#2a2130]"
         >
           ההיסטוריה שלי
         </button>
       </div>
 
       <div className="mt-8 flex items-center justify-center gap-3 text-[15px]">
-        <span className="text-white/60">קבלת שאלה יומית</span>
+        <span className="text-[#6b5f6a]">קבלת שאלה יומית</span>
         <button
           type="button"
           onClick={toggle}
           disabled={busy}
-          className={`relative h-7 w-12 rounded-full transition ${subscribed ? "bg-pink-500" : "bg-white/20"}`}
+          className={`relative h-7 w-12 rounded-full transition ${subscribed ? "bg-pink-500" : "bg-black/15"}`}
           aria-pressed={subscribed}
         >
-          <span className={`absolute top-1 h-5 w-5 rounded-full bg-white transition-all ${subscribed ? "right-1" : "right-6"}`} />
+          <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-all ${subscribed ? "right-1" : "right-6"}`} />
         </button>
-        <span className="font-bold text-white">{subscribed ? "פעיל" : "כבוי"}</span>
+        <span className="font-bold text-[#2a2130]">{subscribed ? "פעיל" : "כבוי"}</span>
       </div>
     </div>
   );
