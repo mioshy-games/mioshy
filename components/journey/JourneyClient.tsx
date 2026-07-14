@@ -68,6 +68,8 @@ const GAP = "clamp(38px,7.5vh,78px)";
 
 interface JourneyClientProps {
   locale: Locale;
+  /** Unified OTP consent copy for the post-assessment register (server-resolved). */
+  consent: import("@/lib/auth/otp-consent").OtpConsentCopy;
   initialProgress?: {
     current_step: number;
     status: string;
@@ -155,6 +157,7 @@ function computeMatchPercent(
  */
 export function JourneyClient({
   locale,
+  consent,
   initialProgress,
   initialAnswers,
   subscriptionActive = false,
@@ -817,6 +820,7 @@ export function JourneyClient({
               key="inline-auth"
               locale={locale}
               deviceId={deviceId}
+              consent={consent}
               onAuthenticated={onAuthenticated}
             />
           </AnimatePresence>

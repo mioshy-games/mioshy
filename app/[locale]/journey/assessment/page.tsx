@@ -22,6 +22,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
 import { getPromoMode, getUserOfferExpiresAt, getPersonalWindowConfig, promoDiscountEligible } from "@/lib/billing/promo-mode";
 import { JourneyClient } from "@/components/journey/JourneyClient";
+import { getOtpConsentCopy } from "@/lib/auth/otp-consent";
 // `JourneyAmbience` (21 animated particles + fog blobs) removed
 // 2026-05-19 per Itzik — the per-frame animation cost on the question
 // stages was the main suspect for the "Chrome slows the whole machine"
@@ -630,6 +631,7 @@ export default async function JourneyAssessmentPage({
       <h1 className="sr-only">{locale === "en" ? "Relationship assessment" : "אבחון הזוגיות שלכם"}</h1>
       <JourneyClient
         locale={locale as Locale}
+        consent={await getOtpConsentCopy(locale === "en" ? "en" : "he")}
         initialProgress={initialProgress}
         initialAnswers={initialAnswers}
         subscriptionActive={subscriptionActive}
