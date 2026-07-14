@@ -1,29 +1,49 @@
+import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase-admin";
+import { getShellData } from "@/lib/shell/getShellData";
+import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
+import { PageHeader } from "@/components/shell/PageHeader";
 import { PollDashboardLanding } from "@/components/survey/PollDashboardLanding";
 
 export const dynamic = "force-dynamic";
 
 /**
- * Dashboard landing for "סקר הזוגיות של ישראל" (screen 5). Lives INSIDE the
- * existing (shell) — inherits the current header / hamburger / sidebar. Shows
- * the join confirmation + a daily-question subscribe toggle (§6) + a link to
- * answer today's question.
+ * Dashboard home for "סקר הזוגיות של ישראל". A signed-in user experiences the
+ * WHOLE survey — landing, question, reveal, history — INSIDE the dashboard body
+ * (the shell), crowned by the dashboard PageHeader + the sticky right sidebar.
+ * NOT the public marketing header (/he/survey redirects signed-in users here).
  */
-export default async function MySurveyPage() {
+export default async function MySurveyPage({ params }: { params: { locale: string } }) {
+  const { locale } = params;
+  const isHe = locale === "he";
+
   const supabase = await createServerSupabaseClient();
   const { data: auth } = await supabase.auth.getUser();
-  let subscribed = false;
-  let userName: string | null = null;
-  if (auth.user) {
-    const admin = await createAdminClient();
-    const [{ data: sub }, { data: profile }] = await Promise.all([
-      admin.from("poll_subscriptions").select("subscribed").eq("user_id", auth.user.id).maybeSingle(),
-      admin.from("profiles").select("full_name").eq("id", auth.user.id).maybeSingle(),
-    ]);
-    subscribed = sub?.subscribed ?? false;
-    // First name only for a friendlier invite ("דנה מזמינה אותך…").
-    userName = (profile?.full_name ?? "").trim().split(/\s+/)[0] || null;
-  }
-  return <PollDashboardLanding initialSubscribed={subscribed} userName={userName} />;
+  if (!auth.user) redirect(`/${locale}/auth`);
+
+  // Shell identity for the PageHeader (crumb + bell) — React.cache'd, free on
+  // the hit the (shell) layout already warmed.
+  const shellPage = await getCmsTranslations({ locale: isHe ? "he" : "en", namespace: "appShell", page: "app-shell" });
+  const shell = await getShellData({ locale: isHe ? "he" : "en" });
+
+  const admin = await createAdminClient();
+  const [{ data: sub }, { data: profile }] = await Promise.all([
+    admin.from("poll_subscriptions").select("subscribed").eq("user_id", auth.user.id).maybeSingle(),
+    admin.from("profiles").select("full_name").eq("id", auth.user.id).maybeSingle(),
+  ]);
+  const subscribed = sub?.subscribed ?? false;
+  // First name only for a friendlier invite ("דנה מזמינה אותך…").
+  const userName = (profile?.full_name ?? "").trim().split(/\s+/)[0] || null;
+
+  return (
+    <>
+      <PageHeader
+        rootLabel={shellPage("rootCrumb")}
+        pageLabel="סקר הזוגיות של ישראל"
+        bellCount={shell?.notificationCount ?? 0}
+      />
+      <PollDashboardLanding initialSubscribed={subscribed} userName={userName} />
+    </>
+  );
 }
