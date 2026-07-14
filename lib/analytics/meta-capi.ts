@@ -104,6 +104,7 @@ export type MetaCapiEvent = {
     | "Purchase"
     | "InitiateCheckout"
     | "CompleteRegistration"
+    | "Lead"
     | "ViewContent"
     | "PageView"
     | "Schedule";
@@ -241,6 +242,12 @@ export async function fireCompleteRegistrationCapi(args: {
   userId: string;
   email: string;
   phone?: string | null;
+  /** Optional source tag → custom_data.content_name, so campaigns can split
+   *  registrations by origin (survey / assessment / journey) WITHOUT a custom
+   *  event. Additive: the event name stays "CompleteRegistration"; omitting it
+   *  reproduces today's payload exactly. Mirror the same string in the browser
+   *  Pixel call (if any) so the deduped event carries a consistent content_name. */
+  contentName?: string;
 }): Promise<void> {
   await sendMetaCapiEvent({
     eventName: "CompleteRegistration",
@@ -251,7 +258,32 @@ export async function fireCompleteRegistrationCapi(args: {
       externalId: args.userId,
       ...readMetaRequestContext(),
     },
-    customData: { status: true },
+    customData: {
+      status: true,
+      ...(args.contentName ? { content_name: args.contentName } : {}),
+    },
+  });
+}
+
+/**
+ * "Submit form" Lead — fired when the survey join form is submitted (before the
+ * account exists), deduped with the browser Pixel Lead via the shared eventId.
+ * Separate from CompleteRegistration (which fires on a SUCCESSFUL register).
+ */
+export async function firePollLeadCapi(args: {
+  email: string;
+  phone?: string | null;
+  eventId: string;
+}): Promise<void> {
+  await sendMetaCapiEvent({
+    eventName: "Lead",
+    eventId: args.eventId,
+    userData: {
+      email: args.email,
+      phone: args.phone ?? null,
+      ...readMetaRequestContext(),
+    },
+    customData: { content_name: "survey_join_form" },
   });
 }
 
