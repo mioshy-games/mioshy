@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { SurveyFlow } from "@/components/survey/SurveyFlow";
 import { getPollUserId } from "@/lib/poll/anon";
@@ -16,7 +17,12 @@ export default async function SurveyPage({ params }: { params: { locale: string 
   // public marketing page. Redirect every entry point (public header, services
   // strip, direct link) to /my/survey. Anonymous visitors get the public flow.
   const userId = await getPollUserId();
-  if (userId) redirect(`/${params.locale}/my/survey`);
+  // Don't bounce a user who just authenticated INLINE and is still on the OTP
+  // phone step (screen 3). The verify action's cookie set triggers a soft refresh
+  // that would otherwise redirect them to /my/survey and skip the phone step.
+  // OtpFlow clears this cookie once the phone step is done → the redirect resumes.
+  const phonePending = cookies().get("otp_phone_pending")?.value === "1";
+  if (userId && !phonePending) redirect(`/${params.locale}/my/survey`);
 
   const locale = params.locale === "en" ? "en" : "he";
   const consent = await getOtpConsentCopy(locale);

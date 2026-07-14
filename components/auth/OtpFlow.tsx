@@ -43,6 +43,24 @@ const SERIF = 'var(--font-frank-ruhl), "Frank Ruhl Libre", serif';
 type Step = "form" | "code" | "phone";
 const RESEND_SECONDS = 45;
 
+/**
+ * The embedded survey/journey PAGES server-redirect authenticated users to
+ * /my/*. During OTP signup the session cookie is set by the verify action, which
+ * triggers a Next soft route-refresh; that re-render then sees the user as
+ * authenticated and redirect()s — navigating the whole route away and skipping
+ * the inline phone step (screen 3). This cookie tells those pages "a registration
+ * is mid-flow, don't redirect yet". It is set BEFORE verify (on send) so it's
+ * reliably present when the refresh fires (no client/refresh timing race), and
+ * cleared once the phone step is done/skipped (see `done`).
+ */
+const PHONE_PENDING_COOKIE = "otp_phone_pending";
+function markPhonePending() {
+  if (typeof document !== "undefined") document.cookie = `${PHONE_PENDING_COOKIE}=1; Path=/; Max-Age=600; SameSite=Lax`;
+}
+function clearPhonePending() {
+  if (typeof document !== "undefined") document.cookie = `${PHONE_PENDING_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`;
+}
+
 /** Only allow a same-origin relative path as the post-auth destination. */
 function safePath(next: string | undefined, fallback: string): string {
   if (next && next.startsWith("/") && !next.startsWith("//")) return next;
@@ -106,6 +124,9 @@ export function OtpFlow({
   }, [resendIn]);
 
   const done = async (ctx: { isNewUser: boolean; isAdmin?: boolean }) => {
+    // Phone step is over (saved or skipped) → let the embedded pages resume their
+    // normal authenticated redirect on the next navigation/refresh.
+    clearPhonePending();
     if (onAuthenticated) { onAuthenticated({ isNewUser: ctx.isNewUser }); return; }
     // Partner pair-code: redeem now, then route. If the profile still lacks a
     // mobile (phone step skipped), send them to the collector to finish pairing.
@@ -135,6 +156,9 @@ export function OtpFlow({
       if (r.code === "no_account") setMode("signup"); // nudge login→signup
       return;
     }
+    // Signup leads to the phone step after verify — arm the "mid-flow" guard now,
+    // before the verify action's cookie set can trigger a page-level redirect.
+    if (mode === "signup") markPhonePending();
     setCode(""); setStep("code"); setResendIn(RESEND_SECONDS);
   };
 

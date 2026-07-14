@@ -53,17 +53,33 @@ export async function verifyAuthSignupOtp(args: {
     // Custom single-device session (Supabase session already set by verifyOtp).
     await finalizeOtpSession(userId);
 
-    // Everything below writes IDENTITY (name/consent) or fires new-signup
+    const admin = createAdminSupabaseClient();
+    const nowIso = new Date().toISOString();
+    const isFirst = await isFirstRegistration(userId);
+
+    // ── Marketing consent: STICKY-POSITIVE (mirrors the full_name rule). A
+    // checked box always records consent=true (new OR returning account —
+    // consenting once is enough and persists). An unchecked box NEVER writes
+    // false: we must not overwrite an existing true, and consent only becomes
+    // false via an explicit unsubscribe elsewhere. For a brand-new account the
+    // identity upsert below seeds the default (unchecked → false), which is the
+    // initial state, not an overwrite — so the sticky write here only needs to
+    // cover a RETURNING account flipping false→true.
+    if (args.marketingConsent && !isFirst) {
+      await admin.from("profiles").update(
+        { marketing_consent: true, marketing_consent_at: nowIso, marketing_consent_source: "signup_otp" },
+      ).eq("id", userId);
+    }
+
+    // Everything below writes IDENTITY (name/terms/language) or fires new-signup
     // analytics — do it ONLY for a genuinely NEW account. An existing user who
     // typed their email in the signup form is just logged in; we must NOT
-    // overwrite their profiles.full_name/consent or re-fire CompleteRegistration.
-    if (await isFirstRegistration(userId)) {
-      const admin = createAdminSupabaseClient();
+    // overwrite their profiles.full_name or re-fire CompleteRegistration.
+    if (isFirst) {
       const fullName = args.fullName.trim();
-      const nowIso = new Date().toISOString();
       const lang = args.preferredLanguage === "en" ? "en" : "he";
 
-      // Profile: name + consent + language. Phone is added later (screen 3).
+      // Profile: name + consent seed + language. Phone is added later (screen 3).
       await admin.from("profiles").upsert(
         {
           id: userId,

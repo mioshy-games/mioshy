@@ -42,9 +42,30 @@ export async function finalizeJourneySignup(args: {
   // would otherwise lose their name). Only matters on the signup path.
   const isFirst = args.isSignup ? await isFirstRegistration(userId) : false;
 
-  // ── Profile + consent (NEW signup only) ──────────────────────────────────
-  // Never overwrite an existing profile's full_name/consent when an existing
-  // user runs the signup flow — only write identity for a genuinely new account.
+  // ── Marketing/WhatsApp consent: STICKY-POSITIVE (mirrors full_name) ───────
+  // The journey checkbox drives both flags. Checked → record consent=true for a
+  // RETURNING account too (consenting once persists; never overwrite true→false —
+  // consent only goes false via explicit unsubscribe). A new account is seeded by
+  // the identity upsert below, so this only covers existing accounts re-consenting.
+  if (args.isSignup && !isFirst && (args.marketingConsent || args.whatsappOptIn)) {
+    const patch: Record<string, unknown> = {};
+    if (args.marketingConsent) {
+      patch.marketing_consent = true;
+      patch.marketing_consent_at = nowIso;
+      patch.marketing_consent_source = "journey_inline";
+    }
+    if (args.whatsappOptIn) {
+      patch.whatsapp_opt_in = true;
+      patch.whatsapp_opt_in_at = nowIso;
+      patch.whatsapp_opt_in_source = "journey_inline";
+    }
+    const { error: consentErr } = await admin.from("profiles").update(patch).eq("id", userId);
+    if (consentErr) console.warn("[finalizeJourneySignup] sticky consent update failed (non-fatal)", consentErr.message);
+  }
+
+  // ── Profile + consent seed (NEW signup only) ──────────────────────────────
+  // Never overwrite an existing profile's full_name when an existing user runs
+  // the signup flow — only write identity for a genuinely new account.
   if (args.isSignup && isFirst) {
     const { error: profileErr } = await admin.from("profiles").upsert({
       id: userId,

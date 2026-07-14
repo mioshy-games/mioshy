@@ -396,7 +396,12 @@ export default async function JourneyAssessmentPage({
         .select("user_id")
         .eq("user_id", user.id)
         .maybeSingle();
-      if (priorityCheck && !explicitSummaryIntent) {
+      // Don't bounce a user who just registered INLINE and is still on the OTP
+      // phone step — the verify action's cookie set triggers a soft refresh that
+      // would otherwise redirect and skip the phone step. Cleared by OtpFlow once
+      // the phone step is done (see components/auth/OtpFlow.tsx).
+      const phonePending = cookies().get("otp_phone_pending")?.value === "1";
+      if (priorityCheck && !explicitSummaryIntent && !phonePending) {
         console.log(
           "[/journey/assessment] ✅ Phase A guard fired - redirecting to /my/journey",
           { user_id: user.id },

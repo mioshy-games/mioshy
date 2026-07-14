@@ -42,13 +42,22 @@ export async function verifyAssessmentSignupOtp(args: {
   if (!v.ok) return { success: false, error: v.error };
   try {
     const admin = createAdminSupabaseClient();
+    const nowIso = new Date().toISOString();
+    const isFirst = await isFirstRegistration(v.userId);
     // Session-claim applies to new AND existing users.
     await claimSessions(admin, v.userId, args.deviceId, args.assessmentId);
     await finalizeOtpSession(v.userId);
-    // Identity (name/consent) + registered marker + CompleteRegistration — NEW
-    // account only; never overwrite an existing profile's full_name/consent.
-    if (await isFirstRegistration(v.userId)) {
-      const nowIso = new Date().toISOString();
+    // Marketing consent: STICKY-POSITIVE (mirrors full_name). Checked → record
+    // true for a RETURNING account too (never overwrite true→false; consent only
+    // goes false via explicit unsubscribe). A new account is seeded below.
+    if (args.marketingConsent && !isFirst) {
+      await admin.from("profiles").update(
+        { marketing_consent: true, marketing_consent_at: nowIso, marketing_consent_source: "assessment_otp" },
+      ).eq("id", v.userId);
+    }
+    // Identity (name) + consent seed + registered marker + CompleteRegistration —
+    // NEW account only; never overwrite an existing profile's full_name.
+    if (isFirst) {
       await admin.from("profiles").upsert({
         id: v.userId,
         full_name: args.fullName.trim(),

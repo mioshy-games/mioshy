@@ -52,13 +52,23 @@ export async function verifySurveySignupOtp(args: {
   try {
     const admin = createAdminSupabaseClient();
     const nowIso = new Date().toISOString();
+    const isFirst = await isFirstRegistration(v.userId);
     // Anon vote-linking + subscribe apply to new AND existing users.
     await linkAnonVotes(admin, v.userId);
     await admin.from("poll_subscriptions").upsert({ user_id: v.userId, subscribed: true, updated_at: nowIso }, { onConflict: "user_id" });
     await finalizeOtpSession(v.userId);
-    // Identity (name/consent) + CompleteRegistration — NEW account only; never
-    // overwrite an existing profile's full_name/consent.
-    if (await isFirstRegistration(v.userId)) {
+    // Marketing consent: STICKY-POSITIVE (mirrors full_name). Checked → record
+    // true for a RETURNING account too (never overwrite true→false; consent only
+    // goes false via explicit unsubscribe). A new account is seeded by the
+    // identity upsert below.
+    if (args.marketingConsent && !isFirst) {
+      await admin.from("profiles").update(
+        { marketing_consent: true, marketing_consent_at: nowIso, marketing_consent_source: "poll_signup" },
+      ).eq("id", v.userId);
+    }
+    // Identity (name) + consent seed + CompleteRegistration — NEW account only;
+    // never overwrite an existing profile's full_name.
+    if (isFirst) {
       await admin.from("profiles").upsert(
         {
           id: v.userId,
