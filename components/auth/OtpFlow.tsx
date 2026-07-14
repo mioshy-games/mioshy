@@ -181,7 +181,7 @@ export function OtpFlow({
     brand: { fontFamily: SERIF, fontWeight: 900, fontSize: 20, textAlign: "center", color: ink, marginBottom: 14 } as const,
     h2: { fontFamily: SERIF, fontWeight: 900, fontSize: 23, textAlign: "center", color: ink, marginBottom: 8 } as const,
     lead: { fontSize: 13.5, color: mut, textAlign: "center", lineHeight: 1.5, marginBottom: 22 } as const,
-    lb: { fontSize: 12.5, fontWeight: 700, color: ink, marginBottom: 6, display: "block" } as const,
+    lb: { fontSize: 12.5, fontWeight: 700, color: ink, marginBottom: 3, display: "block" } as const,
     inp: { width: "100%", border: `1.5px solid ${inpBorder}`, background: inpBg, borderRadius: 13, padding: "13px 15px", fontSize: 15, color: ink, outline: "none" } as const,
     cta: (on: boolean) => ({ display: "block", width: "100%", height: 52, border: 0, cursor: on ? "pointer" : "not-allowed", borderRadius: 13, background: GRAD, color: "#fff", fontWeight: 800, fontSize: 16, opacity: on ? 1 : 0.45, marginTop: 6 } as const),
     ghost: { display: "block", width: "100%", textAlign: "center", background: "none", border: 0, cursor: "pointer", fontSize: 13.5, fontWeight: 700, color: mut, marginTop: 16 } as const,
@@ -193,7 +193,11 @@ export function OtpFlow({
 
   return (
     <div dir="rtl" style={S.card}>
-      <div style={S.brand}>מיא<span style={{ background: GRAD, WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>ושי</span></div>
+      {/* Brand logo — kept only on the dark standalone /auth pages; redundant on
+          the light embedded surfaces (survey/journey already have their header). */}
+      {dark && (
+        <div style={S.brand}>מיא<span style={{ background: GRAD, WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>ושי</span></div>
+      )}
 
       {pairCode && (
         <div style={{ marginBottom: 16, borderRadius: 12, padding: "10px 14px", textAlign: "center", fontSize: 13, fontWeight: 700, color: dark ? "#f5d0e6" : "#7A1F2B", background: dark ? "rgba(214,64,159,0.14)" : "#fdf0f6", border: `1px solid ${dark ? "rgba(214,64,159,0.3)" : "#f3d4e6"}` }}>
@@ -205,7 +209,7 @@ export function OtpFlow({
       {step === "form" && (
         <>
           <h2 style={S.h2}>{mode === "signup" ? "נעים להכיר" : "התחברות"}</h2>
-          <p style={S.lead}>{mode === "signup" ? "נתחיל בשני פרטים בלבד. נשלח לכם קוד למייל ותהיו בפנים." : "הזינו את כתובת המייל ונשלח לכם קוד כניסה. בלי סיסמה."}</p>
+          <p style={S.lead}>{mode === "signup" ? "כמה פרטים קטנים ואנחנו יוצאים לדרך יחד." : "הזינו את כתובת המייל ונשלח לכם קוד כניסה. בלי סיסמה."}</p>
 
           {mode === "signup" && (
             <label style={{ display: "block", marginBottom: 14 }}>
@@ -254,12 +258,12 @@ export function OtpFlow({
       {/* ── screen 2: code ── */}
       {step === "code" && (
         <>
-          <h2 style={S.h2}>הזינו את הקוד</h2>
+          <h2 style={{ ...S.h2, fontSize: 32 }}>הזינו את הקוד</h2>
           <p style={S.lead}>שלחנו קוד בן 6 ספרות אל<br /><b style={{ color: ink, direction: "ltr", display: "inline-block" }}>{email}</b></p>
           <div style={{ margin: "6px 0 18px" }}>
             <OtpCodeInput value={code} onChange={setCode} onComplete={(c) => verify(c)} disabled={busy} theme={theme} />
           </div>
-          <div style={{ textAlign: "center", fontSize: 12.5, color: mut, marginBottom: 12, lineHeight: 1.6 }}>
+          <div style={{ textAlign: "center", fontSize: 16, color: dark ? mut : "#5a5049", marginBottom: 12, lineHeight: 1.6 }}>
             לא קיבלתם? כדאי להציץ גם בתיקיית הספאם — לפעמים הקוד אוהב להתחבא שם.<br />
             {resendIn > 0
               ? <span>שליחה חוזרת תוך 0:{String(resendIn).padStart(2, "0")}</span>
