@@ -84,6 +84,13 @@ export function InvitePartnerByEmail({
         gameTitle: gameTitle ?? null,
       });
       if (!res.ok) {
+        // Under OTP a user may reach here without a mobile number. Instead of a
+        // dead-end error, send them to the profile collector to add it, then back.
+        if (res.error === "profile_incomplete" && typeof window !== "undefined") {
+          const back = window.location.pathname + window.location.search;
+          window.location.assign(`/${locale}/account/profile?reason=profile_incomplete&next=${encodeURIComponent(back)}`);
+          return;
+        }
         setError(translateError(res.error, isHe));
         return;
       }
@@ -121,6 +128,13 @@ export function InvitePartnerByEmail({
         gameTitle: gameTitle ?? null,
       });
       if (!res.ok) {
+        // Under OTP a user may reach here without a mobile number. Instead of a
+        // dead-end error, send them to the profile collector to add it, then back.
+        if (res.error === "profile_incomplete" && typeof window !== "undefined") {
+          const back = window.location.pathname + window.location.search;
+          window.location.assign(`/${locale}/account/profile?reason=profile_incomplete&next=${encodeURIComponent(back)}`);
+          return;
+        }
         setError(translateError(res.error, isHe));
         return;
       }
@@ -142,6 +156,13 @@ export function InvitePartnerByEmail({
     start(async () => {
       const res = await revokePendingInvitation(active.id);
       if (!res.ok) {
+        // Under OTP a user may reach here without a mobile number. Instead of a
+        // dead-end error, send them to the profile collector to add it, then back.
+        if (res.error === "profile_incomplete" && typeof window !== "undefined") {
+          const back = window.location.pathname + window.location.search;
+          window.location.assign(`/${locale}/account/profile?reason=profile_incomplete&next=${encodeURIComponent(back)}`);
+          return;
+        }
         setError(translateError(res.error, isHe));
         return;
       }
