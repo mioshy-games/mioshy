@@ -183,6 +183,11 @@
 .hLead .em { background: var(--grad2); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .sLead { text-align: center; color: var(--ink2); font-size: 15px; line-height: 1.65; margin: 12px auto 26px; max-width: 440px; }
 .joinform { max-width: 360px; margin: 12px auto 0; display: flex; flex-direction: column; gap: 12px; }
+/* Field group = visible label above the input, mirroring the post-assessment
+   signup (AuthField): 15px→14px, semibold, tracking-wide, 8px gap. */
+.fldGroup { display: flex; flex-direction: column; gap: 8px; text-align: right; }
+.fldLabel { font-size: 15px; font-weight: 600; letter-spacing: 0.02em; color: var(--ink); }
+@media (min-width: 640px) { .fldLabel { font-size: 14px; } }
 .fld {
   width: 100%; border: 1.5px solid var(--line2); border-radius: 14px; padding: 14px 16px;
   font: inherit; font-size: 15.5px; color: var(--ink); background: #fff; text-align: right;

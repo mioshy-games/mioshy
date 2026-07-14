@@ -61,12 +61,26 @@ export function PollRegister() {
       <form className={styles.joinform} onSubmit={submit}>
         {mode === "register" && (
           <>
-            <input className={styles.fld} type="text" placeholder="השם שלכם" value={fullName} onChange={(e) => setFullName(e.target.value)} autoComplete="name" required />
-            <input className={styles.fld} type="tel" placeholder="טלפון נייד" value={phone} onChange={(e) => setPhone(e.target.value)} autoComplete="tel" required />
+            {/* Visible labels above each field, matching the post-assessment
+                signup (AuthField) look — adapted to this light card's ink. */}
+            <div className={styles.fldGroup}>
+              <label className={styles.fldLabel} htmlFor="poll_name">שם</label>
+              <input id="poll_name" className={styles.fld} type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} autoComplete="name" required />
+            </div>
+            <div className={styles.fldGroup}>
+              <label className={styles.fldLabel} htmlFor="poll_phone">טלפון נייד</label>
+              <input id="poll_phone" className={styles.fld} type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} autoComplete="tel" required />
+            </div>
           </>
         )}
-        <input className={styles.fld} type="email" placeholder="כתובת אימייל" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required />
-        <input className={styles.fld} type="password" placeholder="סיסמה" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete={mode === "register" ? "new-password" : "current-password"} required minLength={8} />
+        <div className={styles.fldGroup}>
+          <label className={styles.fldLabel} htmlFor="poll_email">אימייל</label>
+          <input id="poll_email" className={styles.fld} type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required />
+        </div>
+        <div className={styles.fldGroup}>
+          <label className={styles.fldLabel} htmlFor="poll_password">סיסמה</label>
+          <input id="poll_password" className={styles.fld} type="password" placeholder="לפחות 8 תווים" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete={mode === "register" ? "new-password" : "current-password"} required minLength={8} />
+        </div>
 
         {mode === "register" && (
           <>
@@ -78,7 +92,7 @@ export function PollRegister() {
             </label>
             <label className={styles.consent}>
               <input type="checkbox" checked={marketing} onChange={(e) => setMarketing(e.target.checked)} />
-              אני מאשר/ת קבלת דיוור יומי במייל
+              מאשר לקבל טיפים ותוכן שיווקי מהמומחים של מיאושי במייל ובוואטסאפ.
             </label>
           </>
         )}
