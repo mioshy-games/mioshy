@@ -159,18 +159,24 @@ export async function getHistoryWithTally(anonId: string): Promise<
   });
 }
 
+/** Calendar day (YYYY-MM-DD) in Israel time — the "one question per day" boundary. */
+function israelDay(d: Date): string {
+  return d.toLocaleDateString("en-CA", { timeZone: "Asia/Jerusalem" });
+}
+
 /**
- * The anon's most recently answered question + their choice + the live tally
- * (§10) — so a returning user who has answered everything sees their last
- * answer's reveal (choice marked) instead of a bare "done".
+ * "One question per day" (§10): if the anon answered a question TODAY (Israel
+ * calendar day), return that question's reveal (choice marked + live tally) so a
+ * return visit shows their answer — a new question only opens the next day.
+ * Returns null if they have not answered today.
  */
-export async function getLastAnsweredReveal(
+export async function getTodaysAnswerReveal(
   anonId: string,
 ): Promise<({ question: PollQuestion; option: "a" | "b" } & PollPercent) | null> {
   const admin = await createAdminClient();
   const { data } = await admin
     .from("poll_votes")
-    .select("question_id, option, poll_questions(id, text, option_a, option_b, order_index, insight_line)")
+    .select("question_id, option, created_at, poll_questions(id, text, option_a, option_b, order_index, insight_line)")
     .eq("anon_id", anonId)
     .order("created_at", { ascending: false })
     .limit(1)
@@ -178,6 +184,7 @@ export async function getLastAnsweredReveal(
   type Joined = {
     question_id: string;
     option: "a" | "b";
+    created_at: string;
     poll_questions:
       | { id: string; text: string; option_a: string; option_b: string; order_index: number; insight_line: string | null }
       | { id: string; text: string; option_a: string; option_b: string; order_index: number; insight_line: string | null }[]
@@ -185,6 +192,8 @@ export async function getLastAnsweredReveal(
   };
   const row = (data as unknown as Joined | null) ?? null;
   if (!row) return null;
+  // Only when the most recent answer is from TODAY — otherwise a new question opens.
+  if (israelDay(new Date(row.created_at)) !== israelDay(new Date())) return null;
   const q = Array.isArray(row.poll_questions) ? row.poll_questions[0] : row.poll_questions;
   if (!q) return null;
   const tally = await getQuestionTally(row.question_id);

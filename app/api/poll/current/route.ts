@@ -12,27 +12,30 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import { getOrCreatePollAnonId } from "@/lib/poll/anon";
-import { getCurrentQuestion, getLastAnsweredReveal } from "@/lib/poll/queries";
+import { getCurrentQuestion, getTodaysAnswerReveal } from "@/lib/poll/queries";
 
 export async function GET() {
   const anonId = await getOrCreatePollAnonId();
+
+  // §10 "one question per day": answered today → show that reveal (choice marked);
+  // a new question only opens the next calendar day. Applies to anon + logged-in.
+  const today = await getTodaysAnswerReveal(anonId);
+  if (today) {
+    return NextResponse.json({
+      question: today.question,
+      done: false,
+      answered: true,
+      yourOption: today.option,
+      pctA: today.pctA,
+      pctB: today.pctB,
+      totalVotes: today.totalVotes,
+    });
+  }
+
+  // Not answered today → serve the next question in line.
   const current = await getCurrentQuestion(anonId);
   if (current) {
     return NextResponse.json({ question: current.question, done: false, answered: false });
-  }
-  // §10 — nothing new to answer: a returning user sees their most recent answer's
-  // reveal (choice marked + live %) instead of a bare "done".
-  const last = await getLastAnsweredReveal(anonId);
-  if (last) {
-    return NextResponse.json({
-      question: last.question,
-      done: false,
-      answered: true,
-      yourOption: last.option,
-      pctA: last.pctA,
-      pctB: last.pctB,
-      totalVotes: last.totalVotes,
-    });
   }
   return NextResponse.json({ question: null, done: true });
 }
