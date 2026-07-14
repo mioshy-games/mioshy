@@ -11,7 +11,7 @@
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { readPollAnonId } from "@/lib/poll/anon";
 import { fireCompleteRegistrationCapi, firePollLeadCapi, metaEventId } from "@/lib/analytics/meta-capi";
-import { sendEmailOtp, verifyEmailOtp, finalizeOtpSession, isFirstRegistration, type SendOtpResult } from "@/lib/auth/otp-core";
+import { sendEmailOtp, verifyEmailOtp, finalizeOtpSession, isFirstRegistration, syncConsentedContactToBrevo, type SendOtpResult } from "@/lib/auth/otp-core";
 
 type Result = { success: true } | { success: false; error: string };
 
@@ -83,6 +83,8 @@ export async function verifySurveySignupOtp(args: {
       );
       await fireCompleteRegistrationCapi({ userId: v.userId, email: v.email, contentName: "relationship_survey" });
     }
+    // Consent → Brevo (sending platform), whenever it's true — new or re-consent.
+    if (args.marketingConsent) await syncConsentedContactToBrevo(admin, v.userId, v.email, "he");
     return { success: true };
   } catch (err) {
     console.error("[otp survey] finalize failed", err);

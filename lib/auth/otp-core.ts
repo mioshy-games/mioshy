@@ -1,9 +1,12 @@
 import "server-only";
 
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { cookies, headers } from "next/headers";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { SESSION_COOKIE, SESSION_MAX_AGE, createSession } from "@/lib/auth/session-enforcement";
+import { isTestUser } from "@/lib/auth/is-test-user";
+import { tagAsRegistered } from "@/lib/email/brevo-segments-sync";
 
 /**
  * Shared Email-OTP core for the passwordless auth flow.
@@ -97,6 +100,30 @@ export async function isFirstRegistration(userId: string): Promise<boolean> {
   const { data } = await admin.from("profiles").select("full_name").eq("id", userId).maybeSingle();
   const name = (data as { full_name?: string | null } | null)?.full_name;
   return !(name && name.trim().length > 0);
+}
+
+/**
+ * Sync a newly-consented contact to Brevo (the sending platform). Call this
+ * EVERY time `marketing_consent` becomes true — first registration OR an
+ * existing user re-consenting — because consent is meaningless if the contact
+ * isn't reachable in Brevo. Idempotent (Brevo upsert), test-users excluded, and
+ * non-fatal: a Brevo failure never blocks the auth flow.
+ *
+ * (Unsubscribe must do the inverse — remove the contact from the marketing list
+ * — as part of the unsubscribe fix.)
+ */
+export async function syncConsentedContactToBrevo(
+  admin: SupabaseClient,
+  userId: string,
+  email: string,
+  lang: "he" | "en",
+): Promise<void> {
+  if (await isTestUser(admin, userId)) return;
+  try {
+    await tagAsRegistered(email, userId, lang);
+  } catch (e) {
+    console.error("[otp] Brevo consent sync failed (non-fatal)", e);
+  }
 }
 
 export type VerifyOtpResult =

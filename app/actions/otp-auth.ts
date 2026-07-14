@@ -14,10 +14,8 @@
 
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { isTestUser } from "@/lib/auth/is-test-user";
-import { tagAsRegistered } from "@/lib/email/brevo-segments-sync";
 import { fireCompleteRegistrationCapi } from "@/lib/analytics/meta-capi";
-import { sendEmailOtp, verifyEmailOtp, finalizeOtpSession, isFirstRegistration, type SendOtpResult } from "@/lib/auth/otp-core";
+import { sendEmailOtp, verifyEmailOtp, finalizeOtpSession, isFirstRegistration, syncConsentedContactToBrevo, type SendOtpResult } from "@/lib/auth/otp-core";
 
 type ActionResult<T = unknown> = ({ success: true } & T) | { success: false; error: string };
 
@@ -55,6 +53,7 @@ export async function verifyAuthSignupOtp(args: {
 
     const admin = createAdminSupabaseClient();
     const nowIso = new Date().toISOString();
+    const lang = args.preferredLanguage === "en" ? "en" : "he";
     const isFirst = await isFirstRegistration(userId);
 
     // ── Marketing consent: STICKY-POSITIVE (mirrors the full_name rule). A
@@ -69,6 +68,8 @@ export async function verifyAuthSignupOtp(args: {
       await admin.from("profiles").update(
         { marketing_consent: true, marketing_consent_at: nowIso, marketing_consent_source: "signup_otp" },
       ).eq("id", userId);
+      // Consent must reach Brevo (the sending platform) or it's meaningless.
+      await syncConsentedContactToBrevo(admin, userId, email, lang);
     }
 
     // Everything below writes IDENTITY (name/terms/language) or fires new-signup
@@ -77,7 +78,6 @@ export async function verifyAuthSignupOtp(args: {
     // overwrite their profiles.full_name or re-fire CompleteRegistration.
     if (isFirst) {
       const fullName = args.fullName.trim();
-      const lang = args.preferredLanguage === "en" ? "en" : "he";
 
       // Profile: name + consent seed + language. Phone is added later (screen 3).
       await admin.from("profiles").upsert(
@@ -117,9 +117,7 @@ export async function verifyAuthSignupOtp(args: {
       }
 
       // Brevo — consent-gated, non-fatal (Israeli Communications Act §30A).
-      if (args.marketingConsent && !(await isTestUser(admin, userId))) {
-        try { await tagAsRegistered(email, userId, lang); } catch (e) { console.error("[otp signup] Brevo sync failed", e); }
-      }
+      if (args.marketingConsent) await syncConsentedContactToBrevo(admin, userId, email, lang);
 
       // CompleteRegistration — new account only. Phone not yet known → omitted.
       await fireCompleteRegistrationCapi({ userId, email });

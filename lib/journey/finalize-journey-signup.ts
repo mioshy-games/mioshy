@@ -1,10 +1,8 @@
 import "server-only";
 
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
-import { isTestUser } from "@/lib/auth/is-test-user";
-import { tagAsRegistered } from "@/lib/email/brevo-segments-sync";
 import { fireCompleteRegistrationCapi } from "@/lib/analytics/meta-capi";
-import { isFirstRegistration } from "@/lib/auth/otp-core";
+import { isFirstRegistration, syncConsentedContactToBrevo } from "@/lib/auth/otp-core";
 
 type JourneyRow = { id: string; current_step: number | null; status: string; last_activity_at: string | null };
 
@@ -61,6 +59,8 @@ export async function finalizeJourneySignup(args: {
     }
     const { error: consentErr } = await admin.from("profiles").update(patch).eq("id", userId);
     if (consentErr) console.warn("[finalizeJourneySignup] sticky consent update failed (non-fatal)", consentErr.message);
+    // Consent must reach Brevo (the sending platform) or it's meaningless.
+    if (args.marketingConsent) await syncConsentedContactToBrevo(admin, userId, email, args.language ?? "he");
   }
 
   // ── Profile + consent seed (NEW signup only) ──────────────────────────────
@@ -84,9 +84,7 @@ export async function finalizeJourneySignup(args: {
       .update({ terms_accepted: args.termsAccepted, terms_accepted_at: args.termsAccepted ? nowIso : null }).eq("id", userId);
     if (termsErr) console.warn("[finalizeJourneySignup] terms columns write failed (non-fatal)", termsErr.message);
 
-    if (args.marketingConsent && !(await isTestUser(admin, userId))) {
-      try { await tagAsRegistered(email, userId, args.language ?? "he"); } catch (e) { console.error("[finalizeJourneySignup] Brevo sync failed", e); }
-    }
+    if (args.marketingConsent) await syncConsentedContactToBrevo(admin, userId, email, args.language ?? "he");
   }
 
   // ── Claim anon journeys deterministically (both signup & login) ───────────

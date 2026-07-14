@@ -11,7 +11,7 @@
 
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { fireCompleteRegistrationCapi } from "@/lib/analytics/meta-capi";
-import { sendEmailOtp, verifyEmailOtp, finalizeOtpSession, isFirstRegistration, type SendOtpResult } from "@/lib/auth/otp-core";
+import { sendEmailOtp, verifyEmailOtp, finalizeOtpSession, isFirstRegistration, syncConsentedContactToBrevo, type SendOtpResult } from "@/lib/auth/otp-core";
 
 type Result = { success: true } | { success: false; error: string };
 
@@ -74,6 +74,8 @@ export async function verifyAssessmentSignupOtp(args: {
       });
       await fireCompleteRegistrationCapi({ userId: v.userId, email: v.email, contentName: "assessment" });
     }
+    // Consent → Brevo (sending platform), whenever it's true — new or re-consent.
+    if (args.marketingConsent) await syncConsentedContactToBrevo(admin, v.userId, v.email, args.language === "en" ? "en" : "he");
     return { success: true };
   } catch (err) {
     console.error("[otp assessment] finalize failed", err);
