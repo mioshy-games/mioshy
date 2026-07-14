@@ -28,6 +28,14 @@ export type PollSignupResult =
   | { success: true; userId: string; capiEventId: string | null }
   | { success: false; error: string };
 
+/** Pull the useful fields off a Supabase/Auth error separately — a raw
+ *  `JSON.stringify(err)` on these often yields "{}" because the fields are
+ *  non-enumerable, which is exactly what hid the real prod error. */
+function errFields(e: unknown): Record<string, unknown> {
+  const x = (e ?? {}) as { message?: unknown; code?: unknown; status?: unknown; details?: unknown; hint?: unknown; name?: unknown };
+  return { message: x.message, code: x.code, status: x.status, details: x.details, hint: x.hint, name: x.name };
+}
+
 export async function pollSignup(args: {
   email: string;
   password: string;
@@ -72,15 +80,18 @@ export async function pollSignup(args: {
         user_metadata: { full_name: fullName, phone, language: "he" },
       });
       if (createErr) {
-        const msg = createErr.message.toLowerCase();
+        console.error("[pollSignup] createUser failed", errFields(createErr));
+        const msg = (createErr.message ?? "").toLowerCase();
         if (msg.includes("already") || msg.includes("registered")) {
           return { success: false, error: "כבר קיים חשבון עם המייל הזה. אפשר להתחבר." };
         }
-        return { success: false, error: createErr.message };
+        const st = (createErr as { status?: number }).status;
+        const cd = (createErr as { code?: string }).code;
+        return { success: false, error: `הרשמה נכשלה (${st ?? "?"}/${cd ?? "?"}): ${createErr.message || "no message"}` };
       }
       const userId = created.user.id;
 
-      await admin.from("profiles").upsert(
+      const { error: profErr } = await admin.from("profiles").upsert(
         {
           id: userId,
           full_name: fullName,
@@ -91,14 +102,17 @@ export async function pollSignup(args: {
         },
         { onConflict: "id" },
       );
+      if (profErr) console.error("[pollSignup] profiles upsert error", errFields(profErr));
       // terms columns in a separate best-effort write (mirrors journeyInlineSignup).
-      await admin.from("profiles").update({ terms_accepted: termsAccepted, terms_accepted_at: termsAccepted ? nowIso : null }).eq("id", userId);
+      const { error: termsErr } = await admin.from("profiles").update({ terms_accepted: termsAccepted, terms_accepted_at: termsAccepted ? nowIso : null }).eq("id", userId);
+      if (termsErr) console.error("[pollSignup] profiles terms update error", errFields(termsErr));
     }
 
     // ── Sign in (both modes) → session cookie ────────────────────────────────
     const supabase = await createServerSupabaseClient();
     const { data: signIn, error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
     if (signInErr || !signIn.session) {
+      console.error("[pollSignup] signIn failed", errFields(signInErr));
       return { success: false, error: signInErr?.message ?? "ההתחברות נכשלה." };
     }
     const userId = signIn.session.user.id;
@@ -142,7 +156,7 @@ export async function pollSignup(args: {
 
     return { success: true, userId, capiEventId };
   } catch (err) {
-    console.error("[pollSignup] unhandled", err);
-    return { success: false, error: err instanceof Error ? err.message : "שגיאה בהרשמה." };
+    console.error("[pollSignup] unhandled", errFields(err), (err as { stack?: string })?.stack);
+    return { success: false, error: err instanceof Error ? `שגיאה: ${err.message}` : "שגיאה בהרשמה." };
   }
 }
