@@ -167,8 +167,9 @@ export function Chrome({
       {!isAuthed && !hideFooterOnly && <SiteFooter />}
       {/* Persistent bottom tab-bar — mobile only, anonymous only. Same
           gate as the footer: when the user is signed in, the dashboard
-          chrome takes over and this surface gets out of the way. */}
-      {!isAuthed && <MobileServicesBar />}
+          chrome takes over and this surface gets out of the way. Also hidden
+          on the survey question screen (§2 — focused, no bottom strip). */}
+      {!isAuthed && !hideFooterOnly && <MobileServicesBar />}
       {/* Floating WhatsApp CTA — Hebrew-only, hides itself on
           /journey/assessment + /my + /dashboard. Component decides
           visibility internally; we always mount it on the chrome

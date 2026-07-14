@@ -60,11 +60,12 @@
    (always-present) header. RTL: "back" points right. */
 .backBtn {
   position: fixed;
-  top: 76px;
-  /* end side (LEFT in RTL) — clears the header logo and the dashboard's
-     right-hand sidebar, which a start-side button would overlap. */
-  inset-inline-end: 14px;
-  z-index: 30;
+  /* Bottom-centre (§3) — clears the header, the (hidden) services strip and the
+     WhatsApp float; RTL-safe via left:50% + translateX. */
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
   width: 44px;
   height: 44px;
   display: grid;
@@ -81,7 +82,10 @@
   box-shadow: 0 8px 20px -10px rgba(0, 0, 0, 0.28);
   transition: 0.15s;
 }
-.backBtn:hover { transform: translateX(2px); box-shadow: 0 10px 24px -10px rgba(0, 0, 0, 0.34); }
+.backBtn:hover { transform: translateX(-50%) translateY(-2px); box-shadow: 0 10px 24px -10px rgba(0, 0, 0, 0.34); }
+
+/* §11 — small confidentiality trust line at the top of the survey. 14px, black. */
+.trust { text-align: center; font-size: 14px; color: #111; font-weight: 600; margin: 0 auto 4px; }
 
 .q {
   text-align: center; font-size: 25px; line-height: 1.5; font-weight: 600;

@@ -81,7 +81,7 @@ export default async function ShellLayout({
     games:    tNav("games"),
     adults:   tNav("adults"),
     share:    tNav("share"),
-    survey:   "סקר הזוגיות של ישראל",
+    survey:   "סקר הזוגיות",
     settings: tNav("settings"),
   };
 

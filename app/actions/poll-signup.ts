@@ -19,7 +19,7 @@ import { cookies, headers } from "next/headers";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { SESSION_COOKIE, SESSION_MAX_AGE, createSession } from "@/lib/auth/session-enforcement";
-import { fireCompleteRegistrationCapi, metaEventId } from "@/lib/analytics/meta-capi";
+import { fireCompleteRegistrationCapi, firePollLeadCapi, metaEventId } from "@/lib/analytics/meta-capi";
 import { tagAsRegistered } from "@/lib/email/brevo-segments-sync";
 import { isTestUser } from "@/lib/auth/is-test-user";
 import { readPollAnonId } from "@/lib/poll/anon";
@@ -36,6 +36,8 @@ export async function pollSignup(args: {
   mode: "register" | "login";
   marketingConsent?: boolean;
   termsAccepted?: boolean;
+  /** §6 — shared with the browser Pixel "Lead" for dedup. */
+  leadEventId?: string;
 }): Promise<PollSignupResult> {
   const email = args.email.trim();
   const fullName = (args.fullName ?? "").trim();
@@ -54,6 +56,12 @@ export async function pollSignup(args: {
 
   const admin = createAdminSupabaseClient();
   const nowIso = new Date().toISOString();
+
+  // §6 — "submit form" Lead, fired on submit (before the account exists), deduped
+  // with the browser Pixel Lead via the shared event_id. Never blocks signup.
+  if (args.mode === "register" && args.leadEventId) {
+    try { await firePollLeadCapi({ email, phone, eventId: args.leadEventId }); } catch { /* never blocks */ }
+  }
 
   try {
     if (args.mode === "register") {

@@ -61,7 +61,7 @@ const PILLARS = [
   },
   {
     href: "/survey",
-    tKey: "survey",
+    tKey: "surveyShort",
     Icon: ClipboardList,
     accent: "linear-gradient(135deg, #B83C4D 0%, #EC4899 55%, #F59E0B 100%)",
   },

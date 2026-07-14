@@ -12,13 +12,27 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import { getOrCreatePollAnonId } from "@/lib/poll/anon";
-import { getCurrentQuestion } from "@/lib/poll/queries";
+import { getCurrentQuestion, getLastAnsweredReveal } from "@/lib/poll/queries";
 
 export async function GET() {
   const anonId = await getOrCreatePollAnonId();
   const current = await getCurrentQuestion(anonId);
-  if (!current) {
-    return NextResponse.json({ question: null, done: true });
+  if (current) {
+    return NextResponse.json({ question: current.question, done: false, answered: false });
   }
-  return NextResponse.json({ question: current.question, done: false });
+  // §10 — nothing new to answer: a returning user sees their most recent answer's
+  // reveal (choice marked + live %) instead of a bare "done".
+  const last = await getLastAnsweredReveal(anonId);
+  if (last) {
+    return NextResponse.json({
+      question: last.question,
+      done: false,
+      answered: true,
+      yourOption: last.option,
+      pctA: last.pctA,
+      pctB: last.pctB,
+      totalVotes: last.totalVotes,
+    });
+  }
+  return NextResponse.json({ question: null, done: true });
 }

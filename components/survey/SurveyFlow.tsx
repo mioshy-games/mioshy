@@ -67,7 +67,16 @@ export function SurveyFlow({ embedded = false, authed = false, back, userName }:
     return fetch("/api/poll/current")
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
-        if (!d || d.done || !d.question) { setStatus("done"); return; }
+        if (!d) { setStatus("done"); return; }
+        // §10 — already answered: jump straight to the reveal (choice marked).
+        if (d.answered && d.question && (d.yourOption === "a" || d.yourOption === "b")) {
+          setQuestion(d.question);
+          setYourOption(d.yourOption);
+          setTally({ pctA: d.pctA, pctB: d.pctB, totalVotes: d.totalVotes });
+          setStatus("reveal");
+          return;
+        }
+        if (d.done || !d.question) { setStatus("done"); return; }
         setQuestion(d.question);
         setStatus("question");
       })
@@ -133,25 +142,28 @@ export function SurveyFlow({ embedded = false, authed = false, back, userName }:
     setHistory(d.history ?? []);
   };
 
-  // Floating "back" control — shown whenever a question/reveal is on screen.
-  const backBtn =
-    back && !showRegister && (status === "question" || status === "reveal") ? (
-      back.onClick ? (
-        <button type="button" className={styles.backBtn} onClick={back.onClick} aria-label="חזרה">
-          <span aria-hidden>→</span>
-        </button>
-      ) : (
-        <a href={back.href} className={styles.backBtn} aria-label="חזרה">
-          <span aria-hidden>→</span>
-        </a>
-      )
-    ) : null;
+  // Single floating "back" control (§7), pinned to the bottom (§3). On the
+  // register screen it returns to the reveal; otherwise it follows `back`
+  // (dashboard → onClick, anon → href to the marketing page).
+  const goBack = () => {
+    if (showRegister) { setShowRegister(false); return; }
+    if (back?.onClick) { back.onClick(); return; }
+    if (back?.href && typeof window !== "undefined") { window.location.href = back.href; }
+  };
+  const showBack = showRegister || ((status === "question" || status === "reveal") && !!back);
+  const backBtn = showBack ? (
+    <button type="button" className={styles.backBtn} onClick={goBack} aria-label="חזרה">
+      <span aria-hidden>→</span>
+    </button>
+  ) : null;
 
   return (
     <div className={embedded ? styles.embed : styles.page} dir="rtl">
       {backBtn}
       <div className={styles.card}>
-        {!authed && showRegister && <PollRegister onBack={() => setShowRegister(false)} />}
+        {/* §11 — small confidentiality trust line at the top of the survey. */}
+        <div className={styles.trust}>🔒 סודיות מובטחת · התשובות שלך אנונימיות ופרטיות</div>
+        {!authed && showRegister && <PollRegister />}
 
         {!showRegister && status === "loading" && <p className={styles.center}>טוען…</p>}
 
@@ -204,7 +216,6 @@ export function SurveyFlow({ embedded = false, authed = false, back, userName }:
             <div className={styles.revHero}>
               <span className={styles.youtag}>כמוך</span>
               <div className={styles.revBig}>{chosenPct}%</div>
-              <div className={styles.revBiglabel}>ענו כמוך: <b>{chosenLabel}</b></div>
               <div className={styles.revVs}>לעומת <b>{otherPct}%</b> שבחרו <b>{otherLabel}</b></div>
             </div>
 

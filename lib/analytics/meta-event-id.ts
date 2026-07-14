@@ -8,4 +8,7 @@ export const metaEventId = {
   purchase: (sessionId: string) => `purchase.${sessionId}`,
   checkout: (sessionId: string) => `checkout.${sessionId}`,
   registration: (userId: string) => `register.${userId}`,
+  /** "Submit form" Lead — keyed by the submitted email so the browser Pixel
+   *  and the server CAPI produce the same id and Meta deduplicates them. */
+  lead: (key: string) => `lead.${key}`,
 };

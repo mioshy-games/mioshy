@@ -104,6 +104,7 @@ export type MetaCapiEvent = {
     | "Purchase"
     | "InitiateCheckout"
     | "CompleteRegistration"
+    | "Lead"
     | "ViewContent"
     | "PageView"
     | "Schedule";
@@ -252,6 +253,28 @@ export async function fireCompleteRegistrationCapi(args: {
       ...readMetaRequestContext(),
     },
     customData: { status: true },
+  });
+}
+
+/**
+ * "Submit form" Lead — fired when the survey join form is submitted (before the
+ * account exists), deduped with the browser Pixel Lead via the shared eventId.
+ * Separate from CompleteRegistration (which fires on a SUCCESSFUL register).
+ */
+export async function firePollLeadCapi(args: {
+  email: string;
+  phone?: string | null;
+  eventId: string;
+}): Promise<void> {
+  await sendMetaCapiEvent({
+    eventName: "Lead",
+    eventId: args.eventId,
+    userData: {
+      email: args.email,
+      phone: args.phone ?? null,
+      ...readMetaRequestContext(),
+    },
+    customData: { content_name: "survey_join_form" },
   });
 }
 

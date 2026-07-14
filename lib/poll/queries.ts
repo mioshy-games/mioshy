@@ -159,6 +159,45 @@ export async function getHistoryWithTally(anonId: string): Promise<
   });
 }
 
+/**
+ * The anon's most recently answered question + their choice + the live tally
+ * (§10) — so a returning user who has answered everything sees their last
+ * answer's reveal (choice marked) instead of a bare "done".
+ */
+export async function getLastAnsweredReveal(
+  anonId: string,
+): Promise<({ question: PollQuestion; option: "a" | "b" } & PollPercent) | null> {
+  const admin = await createAdminClient();
+  const { data } = await admin
+    .from("poll_votes")
+    .select("question_id, option, poll_questions(id, text, option_a, option_b, order_index, insight_line)")
+    .eq("anon_id", anonId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  type Joined = {
+    question_id: string;
+    option: "a" | "b";
+    poll_questions:
+      | { id: string; text: string; option_a: string; option_b: string; order_index: number; insight_line: string | null }
+      | { id: string; text: string; option_a: string; option_b: string; order_index: number; insight_line: string | null }[]
+      | null;
+  };
+  const row = (data as unknown as Joined | null) ?? null;
+  if (!row) return null;
+  const q = Array.isArray(row.poll_questions) ? row.poll_questions[0] : row.poll_questions;
+  if (!q) return null;
+  const tally = await getQuestionTally(row.question_id);
+  return {
+    question: {
+      id: q.id, text: q.text, optionA: q.option_a, optionB: q.option_b,
+      orderIndex: q.order_index, insightLine: q.insight_line,
+    },
+    option: row.option,
+    ...tally,
+  };
+}
+
 /** Recompute the live tally for a question from real votes + its priors (§8). */
 export async function getQuestionTally(questionId: string): Promise<PollPercent> {
   const admin = await createAdminClient();

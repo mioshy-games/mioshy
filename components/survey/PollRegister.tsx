@@ -3,6 +3,7 @@
 import { useState } from "react";
 import styles from "./survey.module.css";
 import { pollSignup } from "@/app/actions/poll-signup";
+import { metaEventId } from "@/lib/analytics/meta-event-id";
 
 /**
  * Screen 3 — join the daily poll (§6). Full form: name, email, phone, password,
@@ -10,13 +11,14 @@ import { pollSignup } from "@/app/actions/poll-signup";
  * server-side; we fire the browser-side Meta CompleteRegistration with the CAPI
  * event_id for dedup (§9א), then land on the dashboard survey page.
  */
-export function PollRegister({ onBack }: { onBack: () => void }) {
+export function PollRegister() {
   const [mode, setMode] = useState<"register" | "login">("register");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
-  const [marketing, setMarketing] = useState(true);
+  // Marketing consent is OFF by default — no pre-checked consent (§5).
+  const [marketing, setMarketing] = useState(false);
   const [terms, setTerms] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,8 +27,15 @@ export function PollRegister({ onBack }: { onBack: () => void }) {
     e.preventDefault();
     setBusy(true);
     setError(null);
+    // §6 — "submit form" Lead on the browser Pixel, deduped with the server CAPI
+    // Lead via the shared event_id (keyed by email).
+    const leadEventId = metaEventId.lead(email.trim().toLowerCase());
+    if (mode === "register" && typeof window !== "undefined") {
+      const fbq = (window as unknown as { fbq?: (...a: unknown[]) => void }).fbq;
+      if (fbq) fbq("track", "Lead", { content_name: "survey_join_form" }, { eventID: leadEventId });
+    }
     try {
-      const r = await pollSignup({ email, password, fullName, phone, mode, marketingConsent: marketing, termsAccepted: terms });
+      const r = await pollSignup({ email, password, fullName, phone, mode, marketingConsent: marketing, termsAccepted: terms, leadEventId });
       if (!r.success) { setError(r.error); setBusy(false); return; }
       // §9א — browser Pixel CompleteRegistration, deduped by the CAPI event_id.
       if (mode === "register" && r.capiEventId && typeof window !== "undefined") {
@@ -61,13 +70,15 @@ export function PollRegister({ onBack }: { onBack: () => void }) {
 
         {mode === "register" && (
           <>
-            <label className={styles.consent}>
-              <input type="checkbox" checked={marketing} onChange={(e) => setMarketing(e.target.checked)} />
-              אני מאשר/ת קבלת דיוור יומי במייל
-            </label>
+            {/* §5 — legal terms first (required), marketing consent below and
+                NOT pre-checked. */}
             <label className={styles.consent}>
               <input type="checkbox" checked={terms} onChange={(e) => setTerms(e.target.checked)} />
               קראתי ואני מאשר/ת את תנאי השימוש של האתר
+            </label>
+            <label className={styles.consent}>
+              <input type="checkbox" checked={marketing} onChange={(e) => setMarketing(e.target.checked)} />
+              אני מאשר/ת קבלת דיוור יומי במייל
             </label>
           </>
         )}
@@ -82,7 +93,6 @@ export function PollRegister({ onBack }: { onBack: () => void }) {
       <button type="button" className={styles.linkbtn} onClick={() => { setMode((m) => (m === "register" ? "login" : "register")); setError(null); }}>
         {mode === "register" ? "כבר יש לכם חשבון? התחברות" : "אין לכם חשבון? הצטרפות"}
       </button>
-      <button type="button" className={styles.linkbtn} onClick={onBack}>← חזרה</button>
     </section>
   );
 }
