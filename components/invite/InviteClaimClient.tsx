@@ -3,9 +3,8 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "@/navigation";
 import { Check, KeyRound, Loader2, UserPlus } from "lucide-react";
-import { claimInviteAsNewUser, claimInviteAsExistingUser } from "@/app/actions/invite-claim";
-
-type Mode = "signup" | "signin";
+import { sendInviteClaimOtp, verifyInviteClaimOtp, claimInviteAsExistingUser } from "@/app/actions/invite-claim";
+import { OtpCodeInput } from "@/components/auth/OtpCodeInput";
 
 export function InviteClaimClient({
   isHe,
@@ -132,190 +131,102 @@ function SignupOrSigninForm({
   locale: string;
 }) {
   const router = useRouter();
-  const [mode, setMode] = useState<Mode>("signup");
   const [fullName, setFullName] = useState("");
   const [mobile, setMobile] = useState("");
-  const [password, setPassword] = useState("");
+  const [codeSent, setCodeSent] = useState(false);
+  const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [pending, start] = useTransition();
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  const sendCode = () => {
+    setError(null);
+    if (fullName.trim().length < 2) { setError(isHe ? "נא למלא שם מלא" : "Full name is required"); return; }
+    if (mobile.trim().length < 7) { setError(isHe ? "נא למלא מספר נייד" : "Mobile is required"); return; }
+    start(async () => {
+      const res = await sendInviteClaimOtp({ token, email: invitedEmail });
+      if (!res.ok) { setError(translateError(res.error, isHe)); return; }
+      setCode(""); setCodeSent(true);
+    });
+  };
+
+  const verify = (submitted?: string) => {
+    const c = (submitted ?? code).replace(/\D/g, "");
+    if (c.length !== 6) { setError(isHe ? "יש להזין קוד בן 6 ספרות" : "Enter the 6-digit code"); return; }
     setError(null);
     start(async () => {
-      if (mode === "signup") {
-        if (fullName.trim().length < 2) {
-          setError(isHe ? "נא למלא שם מלא" : "Full name is required");
-          return;
-        }
-        if (mobile.trim().length < 7) {
-          setError(isHe ? "נא למלא מספר נייד" : "Mobile is required");
-          return;
-        }
-        if (password.length < 6) {
-          setError(
-            isHe ? "סיסמה של 6 תווים לפחות" : "Password must be 6+ characters",
-          );
-          return;
-        }
-        const res = await claimInviteAsNewUser({
-          token,
-          email: invitedEmail,
-          fullName,
-          mobile,
-          password,
-        });
-        if (!res.ok) {
-          setError(translateError(res.error, isHe));
-          return;
-        }
-      } else {
-        if (password.length < 6) {
-          setError(isHe ? "נא להזין סיסמה" : "Please enter your password");
-          return;
-        }
-        const res = await claimInviteAsExistingUser({
-          token,
-          email: invitedEmail,
-          password,
-        });
-        if (!res.ok) {
-          setError(translateError(res.error, isHe));
-          return;
-        }
-      }
+      const res = await verifyInviteClaimOtp({ token, email: invitedEmail, code: c, fullName, mobile });
+      if (!res.ok) { setError(translateError(res.error, isHe)); return; }
       setSuccess(true);
       setTimeout(() => router.push(`/${locale}/my`), 700);
     });
-  }
+  };
+
+  // Existing-account holder → OTP login on /auth; they return here logged in and
+  // the matching-email branch auto-claims the invitation.
+  const goSignIn = () => {
+    if (typeof window === "undefined") return;
+    const back = window.location.pathname + window.location.search;
+    window.location.assign(`/${locale}/auth?next=${encodeURIComponent(back)}`);
+  };
+
+  const errP = error ? (
+    <p className="rounded-2xl border border-rose-400/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-100">{error}</p>
+  ) : null;
 
   return (
     <div>
       <div className="mb-4 inline-flex rounded-full bg-white/10 p-1 text-xs">
-        <button
-          type="button"
-          onClick={() => setMode("signup")}
-          className={`rounded-full px-3 py-1.5 font-semibold transition ${
-            mode === "signup"
-              ? "bg-white text-fuchsia-700 shadow"
-              : "text-white/75 hover:text-white"
-          }`}
-        >
+        <button type="button" className="rounded-full bg-white px-3 py-1.5 font-semibold text-fuchsia-700 shadow">
           {isHe ? "חשבון חדש" : "New account"}
         </button>
-        <button
-          type="button"
-          onClick={() => setMode("signin")}
-          className={`rounded-full px-3 py-1.5 font-semibold transition ${
-            mode === "signin"
-              ? "bg-white text-fuchsia-700 shadow"
-              : "text-white/75 hover:text-white"
-          }`}
-        >
+        <button type="button" onClick={goSignIn} className="rounded-full px-3 py-1.5 font-semibold text-white/75 transition hover:text-white">
           {isHe ? "כבר יש לי חשבון" : "I have an account"}
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-3">
+      <div className="space-y-3">
         <div>
-          <label className="text-xs font-medium text-white/70">
-            {isHe ? "אימייל" : "Email"}
-          </label>
-          <input
-            type="email"
-            value={invitedEmail}
-            readOnly
-            dir="ltr"
-            className="mt-1 w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white/75"
-          />
+          <label className="text-xs font-medium text-white/70">{isHe ? "אימייל" : "Email"}</label>
+          <input type="email" value={invitedEmail} readOnly dir="ltr" className="mt-1 w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white/75" />
         </div>
 
-        {mode === "signup" ? (
+        {!codeSent ? (
           <>
             <div>
-              <label className="text-xs font-medium text-white/70">
-                {isHe ? "שם מלא" : "Full name"}
-              </label>
-              <input
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                disabled={pending}
-                autoComplete="name"
-                className="mt-1 w-full rounded-2xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm text-white placeholder-white/40 focus:border-fuchsia-300 focus:outline-none"
-                placeholder={isHe ? "השם שלך" : "Your full name"}
-              />
+              <label className="text-xs font-medium text-white/70">{isHe ? "שם מלא" : "Full name"}</label>
+              <input value={fullName} onChange={(e) => setFullName(e.target.value)} disabled={pending} autoComplete="name" className="mt-1 w-full rounded-2xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm text-white placeholder-white/40 focus:border-fuchsia-300 focus:outline-none" placeholder={isHe ? "השם שלך" : "Your full name"} />
             </div>
             <div>
-              <label className="text-xs font-medium text-white/70">
-                {isHe ? "טלפון נייד" : "Mobile"}
-              </label>
-              <input
-                value={mobile}
-                onChange={(e) => setMobile(e.target.value)}
-                disabled={pending}
-                dir="ltr"
-                inputMode="tel"
-                autoComplete="tel"
-                className="mt-1 w-full rounded-2xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm text-white placeholder-white/40 focus:border-fuchsia-300 focus:outline-none"
-                placeholder="+972 50 000 0000"
-              />
+              <label className="text-xs font-medium text-white/70">{isHe ? "טלפון נייד" : "Mobile"}</label>
+              <input value={mobile} onChange={(e) => setMobile(e.target.value)} disabled={pending} dir="ltr" inputMode="tel" autoComplete="tel" className="mt-1 w-full rounded-2xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm text-white placeholder-white/40 focus:border-fuchsia-300 focus:outline-none" placeholder="+972 50 000 0000" />
             </div>
+            {errP}
+            <button type="button" onClick={sendCode} disabled={pending} className="w-full rounded-full bg-white px-5 py-3 text-sm font-semibold text-fuchsia-700 shadow hover:bg-fuchsia-100 disabled:cursor-not-allowed disabled:opacity-60">
+              {pending
+                ? <span className="inline-flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" />{isHe ? "רגע…" : "One moment…"}</span>
+                : <span className="inline-flex items-center gap-2"><UserPlus className="h-4 w-4" />{isHe ? "שלחו לי קוד" : "Send me a code"}</span>}
+            </button>
           </>
-        ) : null}
-
-        <div>
-          <label className="text-xs font-medium text-white/70">
-            {isHe ? "סיסמה" : "Password"}
-          </label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            disabled={pending}
-            minLength={6}
-            autoComplete={mode === "signup" ? "new-password" : "current-password"}
-            dir="ltr"
-            className="mt-1 w-full rounded-2xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm text-white placeholder-white/40 focus:border-fuchsia-300 focus:outline-none"
-            placeholder={isHe ? "לפחות 6 תווים" : "At least 6 characters"}
-          />
-        </div>
-
-        {error ? (
-          <p className="rounded-2xl border border-rose-400/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-100">
-            {error}
-          </p>
-        ) : null}
-        {success ? (
-          <p className="inline-flex items-center gap-1.5 rounded-2xl border border-emerald-300/40 bg-emerald-400/10 px-3 py-2 text-xs text-emerald-100">
-            <Check className="h-3.5 w-3.5" />
-            {isHe ? "מעולה! מעבירים אותך למיאושי שלי…" : "You're in - opening My Mioshy…"}
-          </p>
-        ) : null}
-
-        <button
-          type="submit"
-          disabled={pending}
-          className="w-full rounded-full bg-white px-5 py-3 text-sm font-semibold text-fuchsia-700 shadow hover:bg-fuchsia-100 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {pending ? (
-            <span className="inline-flex items-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              {isHe ? "רגע…" : "One moment…"}
-            </span>
-          ) : mode === "signup" ? (
-            <span className="inline-flex items-center gap-2">
-              <UserPlus className="h-4 w-4" />
-              {isHe ? "יצירת חשבון והצטרפות" : "Create account & join"}
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-2">
-              <KeyRound className="h-4 w-4" />
-              {isHe ? "כניסה והצטרפות" : "Sign in & join"}
-            </span>
-          )}
-        </button>
-      </form>
+        ) : (
+          <>
+            <p className="text-xs text-white/60">{isHe ? "שלחנו קוד בן 6 ספרות לכתובת המייל שלך." : "We emailed a 6-digit code to your address."}</p>
+            <div className="py-1"><OtpCodeInput value={code} onChange={setCode} onComplete={(c) => verify(c)} disabled={pending} theme="dark" /></div>
+            {errP}
+            {success ? (
+              <p className="inline-flex items-center gap-1.5 rounded-2xl border border-emerald-300/40 bg-emerald-400/10 px-3 py-2 text-xs text-emerald-100">
+                <Check className="h-3.5 w-3.5" />{isHe ? "מעולה! מעבירים אותך למיאושי שלי…" : "You're in - opening My Mioshy…"}
+              </p>
+            ) : null}
+            <button type="button" onClick={() => verify()} disabled={pending || code.replace(/\D/g, "").length !== 6} className="w-full rounded-full bg-white px-5 py-3 text-sm font-semibold text-fuchsia-700 shadow hover:bg-fuchsia-100 disabled:cursor-not-allowed disabled:opacity-60">
+              {pending
+                ? <span className="inline-flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" />{isHe ? "רגע…" : "One moment…"}</span>
+                : <span className="inline-flex items-center gap-2"><KeyRound className="h-4 w-4" />{isHe ? "אימות והצטרפות" : "Verify & join"}</span>}
+            </button>
+            <button type="button" onClick={() => { setCodeSent(false); setError(null); }} className="w-full text-center text-xs text-white/50 transition hover:text-white/80">{isHe ? "חזרה" : "Back"}</button>
+          </>
+        )}
+      </div>
     </div>
   );
 }
