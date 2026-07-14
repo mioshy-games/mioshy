@@ -13,7 +13,7 @@
  * Pure presentational. Receives the page name + optional bell count.
  */
 
-import { Bell, Search, Settings, Users } from "lucide-react";
+import { Bell, Search, Settings } from "lucide-react";
 import { Link } from "@/navigation";
 
 interface Props {
@@ -102,17 +102,6 @@ export function PageHeader({
               {bellCount > 99 ? "99+" : bellCount}
             </span>
           ) : null}
-        </Link>
-
-        {/* Share / invite shortcut — the mobile access point for /my/share
-            once the bottom-bar "עוד" tab is replaced by the survey tab. */}
-        <Link
-          href="/my/share"
-          aria-label="שיתוף"
-          className="flex h-8 w-8 items-center justify-center rounded-[9px] text-white transition hover:bg-white/10"
-          style={{ background: "rgba(255,255,255,0.06)" }}
-        >
-          <Users className="h-4 w-4" />
         </Link>
 
         {/* Settings shortcut */}

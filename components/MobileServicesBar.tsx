@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/navigation";
 import { Gamepad2, Sparkles, Heart, Target } from "@/components/icons/Icons";
-import { ClipboardList } from "lucide-react";
 
 /**
  * MobileServicesBar
@@ -58,12 +57,6 @@ const PILLARS = [
     tKey: "couplesAssessment",
     Icon: Target,
     accent: "linear-gradient(135deg, #8B5CF6 0%, #D6409F 100%)",
-  },
-  {
-    href: "/survey",
-    tKey: "surveyShort",
-    Icon: ClipboardList,
-    accent: "linear-gradient(135deg, #B83C4D 0%, #EC4899 55%, #F59E0B 100%)",
   },
 ] as const;
 
@@ -348,32 +341,37 @@ export function MobileServicesBar() {
         }}
       >
         <ul className="mx-auto flex max-w-md items-stretch gap-2 px-2 py-2">
-          {PILLARS.map(({ href, tKey, Icon }) => {
+          {PILLARS.map(({ href, tKey, Icon, accent }) => {
             const isActive = pathname === href || pathname.startsWith(href + "/");
             return (
               <li key={href} className="flex-1">
                 <Link
                   href={href}
                   aria-current={isActive ? "page" : undefined}
-                  // No card frame (Itzik 2026-07-13) — icon plate + label sit
-                  // directly on the strip. Spacing + tap area (px/py + full
-                  // height) preserved; active state cued by full opacity.
-                  className={`group flex h-full flex-col items-center justify-center gap-1.5 rounded-2xl px-2 py-2.5 text-center text-white transition active:scale-[0.97] ${
-                    isActive ? "opacity-100" : "opacity-90 hover:opacity-100"
+                  className={`group flex h-full flex-col items-center justify-center gap-1.5 rounded-2xl px-2 py-2.5 text-center transition active:scale-[0.97] ${
+                    isActive
+                      ? "bg-white text-[#170E14] shadow-[0_8px_22px_-8px_rgba(0,0,0,0.45)]"
+                      : "bg-white/15 text-white hover:bg-white/25"
                   }`}
                 >
-                  {/* Icon only — no coloured disc (Itzik 2026-07-14). The
-                      transparent h-10/w-10 box preserves the row height and
-                      tap area; the white glyph reads directly on the strip. */}
-                  <span className="grid h-10 w-10 place-items-center">
+                  {/* Coloured icon plate per pillar. Stays the pillar's
+                      accent on both active and idle so users see the
+                      colour cue without us having to invert. */}
+                  <span
+                    className="relative grid h-10 w-10 place-items-center rounded-full ring-1 ring-white/40 transition-all"
+                    style={{
+                      background: accent,
+                      boxShadow: "0 4px 12px -4px rgba(0,0,0,0.35)",
+                    }}
+                  >
                     <Icon
-                      className="h-7 w-7 text-white"
+                      className="h-[20px] w-[20px] text-white"
                       strokeWidth={2}
                       aria-hidden
                     />
                   </span>
                   <span
-                    className="max-w-[110px] text-[13px] font-bold leading-[1.15]"
+                    className="line-clamp-2 max-w-[96px] text-[15px] font-semibold leading-[1.15]"
                     style={{ letterSpacing: "0.005em" }}
                   >
                     {t(tKey)}

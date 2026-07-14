@@ -27,15 +27,20 @@ import { Link, usePathname } from "@/navigation";
 import type { ComponentType, SVGProps } from "react";
 import {
   BookOpen,
-  ClipboardList,
   Heart,
   LayoutGrid,
+  Menu,
   MessageCircle,
   Settings,
   Users,
 } from "lucide-react";
 
-import { MOBILE_PRIMARY_KEYS, isNavActive } from "./NavConfig";
+import {
+  MOBILE_PRIMARY_KEYS,
+  MOBILE_OVERFLOW_PATHS,
+  isNavActive,
+  NAV_HREF,
+} from "./NavConfig";
 import type { NavItem, NavKey } from "./types";
 
 /**
@@ -49,7 +54,6 @@ const NAV_ICONS: Record<NavKey, ComponentType<SVGProps<SVGSVGElement>>> = {
   games:    LayoutGrid,
   adults:   Heart,
   share:    Users,
-  survey:   ClipboardList,
   settings: Settings,
 };
 
@@ -61,19 +65,27 @@ interface Props {
   moreHref?: string;
 }
 
-export function MobileTabs({ items }: Props) {
+export function MobileTabs({ items, moreLabel, moreHref = "/my/more" }: Props) {
   const pathname = usePathname();
 
-  // Lookup table so we can pull the 5 primary items in display order.
+  // Lookup table so we can pull the 4 primary items in display order.
   const itemByKey: Partial<Record<NavKey, NavItem>> = {};
   for (const item of items) itemByKey[item.key] = item;
 
-  // 2026-07-13 — bottom bar is now the 5 services [lessons, expert, games,
-  // adults, survey]. The old "עוד" tab was retired: share/notifications/settings
-  // are reached from the PageHeader shortcuts (share + bell + gear).
   const primaryItems = MOBILE_PRIMARY_KEYS
     .map((k) => itemByKey[k])
     .filter((x): x is NavItem => !!x);
+
+  // "עוד" is active when the user is on a route belonging to the
+  // overflow set, an extra overflow path (e.g. /my/notifications), or
+  // a child of /my/more.
+  const path = pathname.replace(/^\/(he|en)(?=\/|$)/, "") || "/";
+  const moreActive =
+    path.startsWith("/my/more") ||
+    path.startsWith(NAV_HREF.adults) ||
+    path.startsWith(NAV_HREF.share) ||
+    path.startsWith(NAV_HREF.settings) ||
+    MOBILE_OVERFLOW_PATHS.some((p) => path.startsWith(p));
 
   return (
     <nav
@@ -113,6 +125,14 @@ export function MobileTabs({ items }: Props) {
           </Tab>
         );
       })}
+
+      <Tab
+        label={moreLabel}
+        href={moreHref}
+        active={moreActive}
+      >
+        <Menu className="h-[19px] w-[19px]" />
+      </Tab>
     </nav>
   );
 }

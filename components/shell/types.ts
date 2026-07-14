@@ -20,7 +20,6 @@ export type NavKey =
   | "games"
   | "adults"
   | "share"
-  | "survey"
   | "settings";
 
 export type NavGroup = "journey" | "games" | "account";

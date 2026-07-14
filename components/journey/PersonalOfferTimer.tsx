@@ -20,13 +20,10 @@ const pad = (n: number) => String(n).padStart(2, "0");
 export function PersonalOfferTimer({
   endsAt,
   isHe,
-  label,
 }: {
   /** ISO — the user's personal offer_expires_at. */
   endsAt: string;
   isHe: boolean;
-  /** Optional lead line above the tiles. Defaults to the offer marketing copy. */
-  label?: string;
 }) {
   const router = useRouter();
   const { days, hours, minutes, seconds, mounted, expired } = useCountdown(
@@ -47,7 +44,7 @@ export function PersonalOfferTimer({
   return (
     <div className="pot" role="timer" aria-live="off">
       <div className="pot-lead">
-        {label ?? (isHe ? "מבצע חד פעמי לזמן מוגבל" : "A one-time, limited-time offer")}
+        {isHe ? "מבצע חד פעמי לזמן מוגבל" : "A one-time, limited-time offer"}
       </div>
       <div className="pot-tiles">
         {units.map((s, i) => (

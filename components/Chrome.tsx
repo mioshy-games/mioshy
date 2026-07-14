@@ -49,9 +49,7 @@ function shouldHideChrome(pathname: string) {
     /^\/[^/]+\/auth(\/|$)/.test(pathname) ||
     /^\/auth(\/|$)/.test(pathname) ||
     // AppShell routes — post-login surface ships its own header
-    // 2026-07-14 — `survey` added: /my/survey lives in the (shell) group and
-    // ships the dashboard header, so the marketing SiteHeader must not stack.
-    /^\/(en|he)\/my\/(today|lessons|expert|share|settings|notifications|more|games|adults|survey)(\/|$)/.test(pathname) ||
+    /^\/(en|he)\/my\/(today|lessons|expert|share|settings|notifications|more|games|adults)(\/|$)/.test(pathname) ||
     // 2026-05-31 — /journey/timeline/[scheduledId] (single-lesson view)
     // now lives INSIDE the shell layout group too, so the marketing
     // SiteHeader stops painting above its PageHeader.
@@ -66,19 +64,6 @@ function shouldHideChrome(pathname: string) {
     // header so only the Mioshy logo (rendered by the page) shows. The hub
     // index (/assessments) keeps chrome — it's a catalogue.
     /^\/(en|he)\/assessments\/[^/]+/.test(pathname)
-  );
-}
-
-/**
- * The anon survey question screen keeps the FULL header but drops the footer
- * (focused, not full-chromeless — a floating "back" replaces footer nav).
- * Only the marketing /he/survey needs this; /my/survey (authed) has no footer
- * anyway.
- */
-function shouldHideFooterOnly(pathname: string) {
-  return (
-    /^\/(en|he)\/survey(\/|$)/.test(pathname) ||
-    /^\/survey(\/|$)/.test(pathname)
   );
 }
 
@@ -112,7 +97,6 @@ export function Chrome({
 }) {
   const pathname = usePathname();
   const hide = shouldHideChrome(pathname);
-  const hideFooterOnly = shouldHideFooterOnly(pathname);
 
   if (hide) {
     return (
@@ -161,15 +145,12 @@ export function Chrome({
         {children}
       </div>
       {/* Footer is marketing surface only - hide it for signed-in users
-          so the post-login experience reads as "your space, not a brochure".
-          Also hidden on the anon survey question screen (focused; the header
-          stays, a floating "back" replaces footer nav). */}
-      {!isAuthed && !hideFooterOnly && <SiteFooter />}
+          so the post-login experience reads as "your space, not a brochure". */}
+      {!isAuthed && <SiteFooter />}
       {/* Persistent bottom tab-bar — mobile only, anonymous only. Same
           gate as the footer: when the user is signed in, the dashboard
-          chrome takes over and this surface gets out of the way. Also hidden
-          on the survey question screen (§2 — focused, no bottom strip). */}
-      {!isAuthed && !hideFooterOnly && <MobileServicesBar />}
+          chrome takes over and this surface gets out of the way. */}
+      {!isAuthed && <MobileServicesBar />}
       {/* Floating WhatsApp CTA — Hebrew-only, hides itself on
           /journey/assessment + /my + /dashboard. Component decides
           visibility internally; we always mount it on the chrome

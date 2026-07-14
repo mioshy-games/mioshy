@@ -160,7 +160,7 @@ export async function assessmentInlineSignup(args: {
         );
       }
 
-      await fireCompleteRegistrationCapi({ userId, email, phone, contentName: "assessment" });
+      await fireCompleteRegistrationCapi({ userId, email, phone });
     }
 
     return { success: true, userId };
