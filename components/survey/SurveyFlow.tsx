@@ -1,8 +1,29 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styles from "./survey.module.css";
 import { PollRegister } from "./PollRegister";
+import { PersonalOfferTimer } from "@/components/journey/PersonalOfferTimer";
+
+/**
+ * The ISO instant of the NEXT Israel calendar-day start (00:00 Asia/Jerusalem) —
+ * the moment the "one question per day" model serves a new question. Measures
+ * the live Asia/Jerusalem UTC offset so it's DST-correct year-round.
+ */
+function nextIsraelMidnightIso(): string {
+  const now = new Date();
+  const dtf = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Jerusalem",
+    hourCycle: "h23",
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit",
+  });
+  const p = dtf.formatToParts(now).reduce<Record<string, string>>((a, x) => { a[x.type] = x.value; return a; }, {});
+  const asUTC = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute, +p.second);
+  const offsetMin = (asUTC - now.getTime()) / 60000; // Israel offset (+120 / +180)
+  const tomorrowWallUTC = Date.UTC(+p.year, +p.month - 1, +p.day + 1, 0, 0, 0);
+  return new Date(tomorrowWallUTC - offsetMin * 60000).toISOString();
+}
 
 interface Question {
   id: string;
@@ -150,6 +171,10 @@ export function SurveyFlow({ embedded = false, authed = false, back, userName }:
     if (back?.onClick) { back.onClick(); return; }
     if (back?.href && typeof window !== "undefined") { window.location.href = back.href; }
   };
+  // Countdown target — next Israel calendar-day start. Computed once (stable for
+  // the reveal's lifetime); the timer itself renders nothing until it mounts.
+  const nextQuestionAt = useMemo(() => nextIsraelMidnightIso(), []);
+
   const showBack = showRegister || ((status === "question" || status === "reveal") && !!back);
   const backBtn = showBack ? (
     <button type="button" className={styles.backBtn} onClick={goBack} aria-label="חזרה">
@@ -163,6 +188,13 @@ export function SurveyFlow({ embedded = false, authed = false, back, userName }:
       <div className={styles.card}>
         {/* §11 — small confidentiality trust line at the top of the survey. */}
         <div className={styles.trust}>🔒 סודיות מובטחת · התשובות שלך אנונימיות ופרטיות</div>
+
+        {/* Countdown to the next daily question — shown once answered (reveal),
+            reusing the results-page clock (PersonalOfferTimer tiles). */}
+        {!showRegister && status === "reveal" && (
+          <PersonalOfferTimer endsAt={nextQuestionAt} isHe label="הסקר הבא בעוד" />
+        )}
+
         {!authed && showRegister && <PollRegister />}
 
         {!showRegister && status === "loading" && <p className={styles.center}>טוען…</p>}
@@ -223,7 +255,7 @@ export function SurveyFlow({ embedded = false, authed = false, back, userName }:
 
             {/* Join CTA (§6) — anon only; a signed-in user is already in. */}
             {!authed && (
-              <button type="button" className={`${styles.cta} ${styles.amber}`} onClick={() => setShowRegister(true)}>
+              <button type="button" className={`${styles.cta} ${styles.amber}`} style={{ fontSize: 20 }} onClick={() => setShowRegister(true)}>
                 רוצים שאלה כזו כל יום? הצטרפו
               </button>
             )}
