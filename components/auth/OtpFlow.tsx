@@ -193,12 +193,9 @@ export function OtpFlow({
 
   return (
     <div dir="rtl" style={S.card}>
-      {/* Brand logo — kept only on the dark standalone /auth pages; redundant on
-          the light embedded surfaces (survey/journey already have their header). */}
-      {dark && (
-        <div style={S.brand}>מיא<span style={{ background: GRAD, WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>ושי</span></div>
-      )}
-
+      {/* Brand logo removed — every OTP surface already sits under its own
+          header/branding (auth background, assessment/survey/journey pages), so
+          the inline "מיאושי" wordmark was redundant. */}
       {pairCode && (
         <div style={{ marginBottom: 16, borderRadius: 12, padding: "10px 14px", textAlign: "center", fontSize: 13, fontWeight: 700, color: dark ? "#f5d0e6" : "#7A1F2B", background: dark ? "rgba(214,64,159,0.14)" : "#fdf0f6", border: `1px solid ${dark ? "rgba(214,64,159,0.3)" : "#f3d4e6"}` }}>
           💜 מצטרפים לחשבון של בן/בת הזוג שלכם

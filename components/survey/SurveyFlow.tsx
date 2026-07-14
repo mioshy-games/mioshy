@@ -72,7 +72,13 @@ export interface SurveyFlowProps {
  * anonymous vote → live Bayesian reveal (§8, numbers only) → WhatsApp share.
  * Answering always reveals inline (no navigation). The join CTA is anon-only.
  */
-export function SurveyFlow({ embedded = false, authed = false, back, userName, consent, locale = "he" }: SurveyFlowProps = {}) {
+export function SurveyFlow({ embedded = false, authed: authedProp = false, back, userName, consent, locale = "he" }: SurveyFlowProps = {}) {
+  // Snapshot auth at mount. The OTP verify action sets the session cookie, which
+  // triggers a Next soft route-refresh that flips this server prop true MID-FLOW
+  // — that would unmount PollRegister (killing OtpFlow's phone step) before the
+  // user finishes. We only leave the register view on a real reload/redirect
+  // (PollRegister.onAuthenticated), so a mid-flow refresh is intentionally ignored.
+  const [authed] = useState(authedProp);
   const [status, setStatus] = useState<"loading" | "question" | "reveal" | "done">("loading");
   const [question, setQuestion] = useState<Question | null>(null);
   const [yourOption, setYourOption] = useState<"a" | "b" | null>(null);

@@ -162,7 +162,7 @@ export function JourneyClient({
   initialAnswers,
   subscriptionActive = false,
   journeySubscribed = false,
-  authenticated = false,
+  authenticated: authenticatedProp = false,
   journeyCadences = [],
   activePromo = null,
   offerExpiresAt = null,
@@ -174,6 +174,13 @@ export function JourneyClient({
   phaseTotal,
   phaseAnsweredBefore,
 }: JourneyClientProps) {
+  // Snapshot auth at mount. The OTP verify action sets the session cookie, which
+  // triggers a Next soft route-refresh that flips this server prop true MID-FLOW
+  // — that would unmount the inline registration (killing OtpFlow's phone step)
+  // before the user finishes. We only leave the gate on a real reload
+  // (InlineAuthStep.onAuthenticated → window.location.reload()), so a mid-flow
+  // refresh is intentionally ignored.
+  const [authenticated] = useState(authenticatedProp);
   // Task 3 (single price source): live monthly (without-coaching) price for the
   // PaywallGateModal safety net, promo-aware, from journeyCadences + activePromo
   // — replaces the stale static "₪98 / $33" so this surface can't drift.
