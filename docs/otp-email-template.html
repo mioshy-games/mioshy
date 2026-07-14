@@ -1,0 +1,50 @@
+<!--
+  Mioshy OTP email — paste the <body> content below into Supabase:
+  Auth → Email Templates → BOTH "Magic Link" AND "Confirm signup"
+  (both must contain {{ .Token }} so the 6-digit code is sent for
+   existing-user login AND new-user signup).
+
+  Suggested Subject (set in each template's Subject field):
+     הקוד שלך להתחברות למיאושי: {{ .Token }}
+
+  Supabase template variable {{ .Token }} = the 6-digit code.
+  Keep it simple/personal per brief — no heavy HTML.
+-->
+<div dir="rtl" style="margin:0;padding:0;background:#efeae3;font-family:'Assistant','Heebo',Arial,sans-serif;">
+  <div style="max-width:440px;margin:0 auto;padding:32px 20px;">
+    <div style="background:#ffffff;border:1px solid #ece2d4;border-radius:18px;padding:32px 26px;text-align:center;">
+
+      <div style="font-family:'Frank Ruhl Libre',Georgia,serif;font-weight:900;font-size:22px;color:#2E2622;margin-bottom:20px;">
+        מיא<span style="color:#D6409F;">ושי</span>
+      </div>
+
+      <div style="font-size:16px;font-weight:700;color:#2E2622;margin-bottom:6px;">
+        הנה הקוד שלכם
+      </div>
+      <div style="font-size:14px;color:#8a7a6b;line-height:1.6;margin-bottom:22px;">
+        הזינו את הקוד הזה במסך שנפתח כדי להיכנס. הוא תקף לזמן קצר.
+      </div>
+
+      <div style="display:inline-block;font-family:'Frank Ruhl Libre',Georgia,serif;font-weight:900;
+                  font-size:38px;letter-spacing:10px;color:#2E2622;background:#faf6f0;
+                  border:1.5px solid #ece2d4;border-radius:14px;padding:16px 22px 16px 32px;direction:ltr;">
+        {{ .Token }}
+      </div>
+
+      <div style="font-size:13px;color:#8a7a6b;line-height:1.7;margin-top:24px;">
+        לא קיבלתם? כדאי להציץ גם בתיקיית הספאם —<br>
+        לפעמים הקוד אוהב להתחבא שם.
+      </div>
+
+      <div style="border-top:1px solid #ece2d4;margin-top:24px;padding-top:18px;
+                  font-size:12px;color:#a89a89;line-height:1.6;">
+        לא ביקשתם את הקוד? אפשר פשוט להתעלם מהמייל הזה —<br>לא נעשה שום דבר בלי הקוד.
+      </div>
+
+    </div>
+
+    <div style="text-align:center;font-size:11.5px;color:#a89a89;margin-top:16px;line-height:1.6;">
+      נשלח על ידי מיאושי · no-reply@mioshy.com
+    </div>
+  </div>
+</div>
