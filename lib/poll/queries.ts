@@ -107,6 +107,58 @@ export async function getHistory(anonId: string): Promise<
   });
 }
 
+/**
+ * Read-only answered history WITH the live §8 percentages for each question —
+ * the "look back" screen (never a queue to answer). Percentages are recomputed
+ * from real votes (never cached), consistent with the reveal.
+ */
+export async function getHistoryWithTally(anonId: string): Promise<
+  Array<{
+    questionId: string;
+    text: string;
+    chosenLabel: string;
+    otherLabel: string;
+    option: "a" | "b";
+    chosenPct: number;
+    otherPct: number;
+    totalVotes: number;
+    answeredAt: string;
+  }>
+> {
+  const admin = await createAdminClient();
+  const { data } = await admin
+    .from("poll_votes")
+    .select("question_id, option, created_at, poll_questions(text, option_a, option_b)")
+    .eq("anon_id", anonId)
+    .order("created_at", { ascending: false });
+  type Joined = {
+    question_id: string;
+    option: "a" | "b";
+    created_at: string;
+    poll_questions:
+      | { text: string; option_a: string; option_b: string }
+      | { text: string; option_a: string; option_b: string }[]
+      | null;
+  };
+  const rows = (data ?? []) as unknown as Joined[];
+  const tallies = await Promise.all(rows.map((r) => getQuestionTally(r.question_id)));
+  return rows.map((r, i) => {
+    const q = Array.isArray(r.poll_questions) ? r.poll_questions[0] : r.poll_questions;
+    const t = tallies[i];
+    return {
+      questionId: r.question_id,
+      text: q?.text ?? "",
+      chosenLabel: q ? (r.option === "a" ? q.option_a : q.option_b) : "",
+      otherLabel: q ? (r.option === "a" ? q.option_b : q.option_a) : "",
+      option: r.option,
+      chosenPct: r.option === "a" ? t.pctA : t.pctB,
+      otherPct: r.option === "a" ? t.pctB : t.pctA,
+      totalVotes: t.totalVotes,
+      answeredAt: r.created_at,
+    };
+  });
+}
+
 /** Recompute the live tally for a question from real votes + its priors (§8). */
 export async function getQuestionTally(questionId: string): Promise<PollPercent> {
   const admin = await createAdminClient();

@@ -1,15 +1,37 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
+import { SurveyFlow } from "./SurveyFlow";
+
+type View = "landing" | "question" | "history";
+
+interface HistItem {
+  questionId: string;
+  text: string;
+  chosenLabel: string;
+  otherLabel: string;
+  option: "a" | "b";
+  chosenPct: number;
+  otherPct: number;
+  totalVotes: number;
+  answeredAt: string;
+}
 
 /**
- * Screen 5 (dashboard landing) main content + daily-question subscribe toggle
- * (§6). Rendered inside the existing shell, so it uses the current chrome.
- * Dark theme to match the dashboard.
+ * Dashboard home for "סקר הזוגיות של ישראל" (§5/§6). Signed-in space, so all
+ * text is light on the dark shell. Three views, no navigation to the marketing
+ * flow:
+ *   • landing  — join confirmation (§ copy) + daily-question toggle + entry points
+ *   • question — the daily question answered IN the dashboard (stays here, §5),
+ *                no join CTA (§ already in), floating back → landing
+ *   • history  — read-only look back: answered questions + choice + § percentages
  */
 export function PollDashboardLanding({ initialSubscribed }: { initialSubscribed: boolean }) {
+  const [view, setView] = useState<View>("landing");
   const [subscribed, setSubscribed] = useState(initialSubscribed);
   const [busy, setBusy] = useState(false);
+  const [history, setHistory] = useState<HistItem[] | null>(null);
+  const [histLoading, setHistLoading] = useState(false);
 
   const toggle = async () => {
     setBusy(true);
@@ -23,30 +45,104 @@ export function PollDashboardLanding({ initialSubscribed }: { initialSubscribed:
     setBusy(false);
   };
 
+  const openHistory = useCallback(async () => {
+    setView("history");
+    if (history) return;
+    setHistLoading(true);
+    const d = await fetch("/api/poll/history?tally=1")
+      .then((r) => (r.ok ? r.json() : { history: [] }))
+      .catch(() => ({ history: [] }));
+    setHistory(d.history ?? []);
+    setHistLoading(false);
+  }, [history]);
+
+  // ── Question view: the daily question, in the dashboard. Answering reveals
+  //    inline and stays here (§5); back returns to the landing (§4).
+  if (view === "question") {
+    return <SurveyFlow embedded authed back={{ onClick: () => setView("landing") }} />;
+  }
+
+  // ── History view (§6): read-only look back with the live percentages.
+  if (view === "history") {
+    return (
+      <div dir="rtl" className="mx-auto max-w-lg px-5 py-10 text-white" style={{ fontFamily: "var(--font-assistant), sans-serif" }}>
+        <button
+          type="button"
+          onClick={() => setView("landing")}
+          className="mb-6 inline-flex items-center gap-1.5 text-[15px] font-semibold text-white/70 hover:text-white"
+        >
+          <span aria-hidden>→</span> חזרה
+        </button>
+        <h1 className="text-[22px] font-extrabold text-center">ההיסטוריה שלי</h1>
+        <p className="text-white/60 text-sm text-center mb-6">השאלות שכבר עניתם עליהן</p>
+
+        {histLoading ? (
+          <p className="text-center text-white/60">טוען…</p>
+        ) : !history || history.length === 0 ? (
+          <p className="text-center text-white/60 mt-6">עוד לא ענית על שאלות. חזרו ללשאלה של היום.</p>
+        ) : (
+          <div className="space-y-3">
+            {history.map((h) => (
+              <div key={h.questionId} className="rounded-2xl bg-white/5 ring-1 ring-white/10 p-4">
+                <div className="font-semibold text-white leading-snug">{h.text}</div>
+                <div className="mt-2 text-[14px] text-white/75">
+                  בחרת: <b className="text-white">{h.chosenLabel}</b>
+                </div>
+                <div className="mt-1 text-[14px] text-white/60">
+                  <b className="text-pink-300">{h.chosenPct}%</b> ענו כמוך · {h.otherPct}% בחרו {h.otherLabel}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ── Landing (default).
   return (
-    <div dir="rtl" className="mx-auto max-w-lg px-5 py-10 text-center" style={{ fontFamily: "var(--font-assistant), sans-serif" }}>
-      <div className="mx-auto mb-6 grid h-[76px] w-[76px] place-items-center rounded-full text-4xl font-extrabold text-white"
-        style={{ background: "linear-gradient(120deg,#b83c4d,#ec4899 55%,#f59e0b)", boxShadow: "0 16px 30px -14px rgba(236,72,153,.6)" }}>
+    <div dir="rtl" className="mx-auto max-w-lg px-5 py-10 text-center text-white" style={{ fontFamily: "var(--font-assistant), sans-serif" }}>
+      <div
+        className="mx-auto mb-6 grid h-[76px] w-[76px] place-items-center rounded-full text-4xl font-extrabold text-white"
+        style={{ background: "linear-gradient(120deg,#b83c4d,#ec4899 55%,#f59e0b)", boxShadow: "0 16px 30px -14px rgba(236,72,153,.6)" }}
+      >
         ✓
       </div>
-      <h1 className="text-[22px] font-extrabold mb-3">נחתתם על סקר הזוגיות של ישראל</h1>
-      <p className="text-[20px] leading-relaxed text-black/70 dark:text-white/75 max-w-md mx-auto">
-        מעכשיו כל יום תקבלו שאלה אחת על הזוגיות, ורואים מיד מה זוגות אחרים בישראל ענו. מסביב מחכים לכם עוד השירותים שלנו.
+      <h1 className="text-[22px] font-extrabold mb-3 text-white">הצטרפתם! אתם בפנים.</h1>
+      <p className="text-[18px] leading-relaxed text-white/75 max-w-md mx-auto">
+        מעכשיו כל יום תקבלו שאלה אחת על הזוגיות. עונים בכמה שניות, ומיד רואים מה זוגות אחרים בישראל ענו.
       </p>
 
-      <a href="/he/survey" className="mt-7 inline-block rounded-2xl px-6 py-3.5 font-extrabold text-white text-[16px]"
-        style={{ background: "#D97706", boxShadow: "0 14px 28px -14px rgba(217,119,6,.7)" }}>
-        לשאלה של היום ←
-      </a>
+      <div className="mt-7 flex flex-col items-center gap-3">
+        <button
+          type="button"
+          onClick={() => setView("question")}
+          className="inline-block rounded-2xl px-6 py-3.5 font-extrabold text-white text-[16px]"
+          style={{ background: "#D97706", boxShadow: "0 14px 28px -14px rgba(217,119,6,.7)" }}
+        >
+          לשאלה של היום ←
+        </button>
+        <button
+          type="button"
+          onClick={openHistory}
+          className="text-[15px] font-semibold text-white/70 underline hover:text-white"
+        >
+          ההיסטוריה שלי
+        </button>
+      </div>
 
       <div className="mt-8 flex items-center justify-center gap-3 text-[15px]">
-        <span className="text-black/60 dark:text-white/60">קבלת שאלה יומית</span>
-        <button type="button" onClick={toggle} disabled={busy}
-          className={`relative h-7 w-12 rounded-full transition ${subscribed ? "bg-pink-500" : "bg-black/20 dark:bg-white/20"}`}
-          aria-pressed={subscribed}>
+        <span className="text-white/60">קבלת שאלה יומית</span>
+        <button
+          type="button"
+          onClick={toggle}
+          disabled={busy}
+          className={`relative h-7 w-12 rounded-full transition ${subscribed ? "bg-pink-500" : "bg-white/20"}`}
+          aria-pressed={subscribed}
+        >
           <span className={`absolute top-1 h-5 w-5 rounded-full bg-white transition-all ${subscribed ? "right-1" : "right-6"}`} />
         </button>
-        <span className="font-bold">{subscribed ? "פעיל" : "כבוי"}</span>
+        <span className="font-bold text-white">{subscribed ? "פעיל" : "כבוי"}</span>
       </div>
     </div>
   );

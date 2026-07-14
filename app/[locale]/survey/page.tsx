@@ -9,5 +9,7 @@ export const metadata: Metadata = {
 };
 
 export default function SurveyPage() {
-  return <SurveyFlow />;
+  // Anon marketing flow: header stays, footer hidden (see Chrome), floating
+  // back → the marketing homepage.
+  return <SurveyFlow back={{ href: "/he" }} />;
 }

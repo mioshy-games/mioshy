@@ -4,13 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import styles from "./survey.module.css";
 import { PollRegister } from "./PollRegister";
 
-/**
- * sessionStorage handoff key. When a vote is cast on the homepage teaser
- * (embedded mode), we stash the reveal payload here and navigate to the
- * dedicated /he/survey page, which reads + clears it and shows the reveal.
- */
-const POLL_REVEAL_KEY = "mioshy_poll_reveal";
-
 interface Question {
   id: string;
   text: string;
@@ -30,16 +23,25 @@ interface HistoryRow {
   answeredAt: string;
 }
 
+export interface SurveyFlowProps {
+  /** Styling only — drop the full-height page chrome so the card sits inside a
+   *  host (e.g. the dashboard). Default false = standalone /he/survey page. */
+  embedded?: boolean;
+  /** Logged-in context: the survey is open to every account (no paywall), so a
+   *  signed-in user is already "in" — hide the join CTA + the internal history
+   *  toggle (the dashboard owns history). */
+  authed?: boolean;
+  /** Floating "back" control shown while a question/reveal is on screen.
+   *  onClick keeps you in-app (dashboard); href navigates (anon → marketing). */
+  back?: { href?: string; onClick?: () => void };
+}
+
 /**
- * Israel Relationship Survey — public flow (no registration, §6):
- * serial question (§7) → anonymous vote → live Bayesian reveal (§8, numbers
- * only) → WhatsApp share (§7). Register/dashboard land in Stage 6.
- *
- * `embedded` (homepage teaser): no page chrome, and a vote does NOT reveal
- * inline — it POSTs, hands the result off via sessionStorage, and navigates
- * to /he/survey (shared anon cookie) where the reveal is shown.
+ * Israel Relationship Survey — the question flow (§6): serial question (§7) →
+ * anonymous vote → live Bayesian reveal (§8, numbers only) → WhatsApp share.
+ * Answering always reveals inline (no navigation). The join CTA is anon-only.
  */
-export function SurveyFlow({ embedded = false }: { embedded?: boolean } = {}) {
+export function SurveyFlow({ embedded = false, authed = false, back }: SurveyFlowProps = {}) {
   const [status, setStatus] = useState<"loading" | "question" | "reveal" | "done">("loading");
   const [question, setQuestion] = useState<Question | null>(null);
   const [yourOption, setYourOption] = useState<"a" | "b" | null>(null);
@@ -62,35 +64,7 @@ export function SurveyFlow({ embedded = false }: { embedded?: boolean } = {}) {
       .catch(() => setStatus("done"));
   }, []);
 
-  useEffect(() => {
-    // /he/survey (non-embedded): if we arrived straight after voting on the
-    // homepage teaser, the vote result was handed off via sessionStorage —
-    // show that reveal directly instead of loading the next question. The
-    // vote is already recorded server-side (anon cookie).
-    if (!embedded && typeof window !== "undefined") {
-      try {
-        const raw = window.sessionStorage.getItem(POLL_REVEAL_KEY);
-        if (raw) {
-          window.sessionStorage.removeItem(POLL_REVEAL_KEY);
-          const r = JSON.parse(raw) as {
-            question: Question;
-            yourOption: "a" | "b";
-            pctA: number;
-            pctB: number;
-            totalVotes: number;
-          };
-          if (r?.question && (r.yourOption === "a" || r.yourOption === "b")) {
-            setQuestion(r.question);
-            setYourOption(r.yourOption);
-            setTally({ pctA: r.pctA, pctB: r.pctB, totalVotes: r.totalVotes });
-            setStatus("reveal");
-            return;
-          }
-        }
-      } catch { /* malformed handoff → fall through to a normal load */ }
-    }
-    void loadCurrent();
-  }, [loadCurrent, embedded]);
+  useEffect(() => { void loadCurrent(); }, [loadCurrent]);
 
   // Live refresh of the real tally while on the reveal (§8 polling).
   useEffect(() => {
@@ -115,18 +89,8 @@ export function SurveyFlow({ embedded = false }: { embedded?: boolean } = {}) {
       });
       const d = await res.json();
       if (!res.ok) throw new Error(d?.error ?? "vote_failed");
-      // Homepage teaser (embedded): don't reveal inline — hand the result to
-      // the dedicated /he/survey page (shared anon cookie) and navigate there.
-      if (embedded) {
-        try {
-          window.sessionStorage.setItem(
-            POLL_REVEAL_KEY,
-            JSON.stringify({ question, yourOption: d.yourOption, pctA: d.pctA, pctB: d.pctB, totalVotes: d.totalVotes }),
-          );
-        } catch { /* no sessionStorage → /he/survey just shows the next question */ }
-        window.location.href = "/he/survey";
-        return;
-      }
+      // Always reveal inline — never navigate away (§ stay put; the dashboard
+      // keeps signed-in users on the dashboard).
       setYourOption(d.yourOption);
       setTally({ pctA: d.pctA, pctB: d.pctB, totalVotes: d.totalVotes });
       setStatus("reveal");
@@ -148,19 +112,36 @@ export function SurveyFlow({ embedded = false }: { embedded?: boolean } = {}) {
     setHistory(d.history ?? []);
   };
 
+  // Floating "back" control — shown whenever a question/reveal is on screen.
+  const backBtn =
+    back && !showRegister && (status === "question" || status === "reveal") ? (
+      back.onClick ? (
+        <button type="button" className={styles.backBtn} onClick={back.onClick} aria-label="חזרה">
+          <span aria-hidden>→</span>
+        </button>
+      ) : (
+        <a href={back.href} className={styles.backBtn} aria-label="חזרה">
+          <span aria-hidden>→</span>
+        </a>
+      )
+    ) : null;
+
   return (
     <div className={embedded ? styles.embed : styles.page} dir="rtl">
+      {backBtn}
       <div className={styles.card}>
-        {showRegister && <PollRegister onBack={() => setShowRegister(false)} />}
+        {!authed && showRegister && <PollRegister onBack={() => setShowRegister(false)} />}
 
         {!showRegister && status === "loading" && <p className={styles.center}>טוען…</p>}
 
         {!showRegister && status === "done" && (
           <section className={styles.fade}>
             <p className={styles.center}>ענית על כל השאלות שיש כרגע 💜 חזרו מחר לשאלה חדשה.</p>
-            <button type="button" className={styles.linkbtn} onClick={toggleHistory}>
-              {history ? "סגירת ההיסטוריה" : "ההיסטוריה שלי"}
-            </button>
+            {!authed && (
+              <button type="button" className={styles.linkbtn} onClick={toggleHistory}>
+                {history ? "סגירת ההיסטוריה" : "ההיסטוריה שלי"}
+              </button>
+            )}
           </section>
         )}
 
@@ -208,16 +189,18 @@ export function SurveyFlow({ embedded = false }: { embedded?: boolean } = {}) {
 
             {question.insightLine && <p className={styles.insight}>{question.insightLine}</p>}
 
-            {/* Register CTA (§6) — opens the join form. */}
-            <button type="button" className={`${styles.cta} ${styles.amber}`} onClick={() => setShowRegister(true)}>
-              רוצים שאלה כזו כל יום? הצטרפו
-            </button>
+            {/* Join CTA (§6) — anon only; a signed-in user is already in. */}
+            {!authed && (
+              <button type="button" className={`${styles.cta} ${styles.amber}`} onClick={() => setShowRegister(true)}>
+                רוצים שאלה כזו כל יום? הצטרפו
+              </button>
+            )}
             <button type="button" className={styles.linkbtn} onClick={share}>שתפו את השאלה בוואטסאפ</button>
           </section>
           );
         })()}
 
-        {!showRegister && history && (
+        {!authed && !showRegister && history && (
           <div className={styles.history}>
             <div className={styles.qmeta}>ההיסטוריה שלי</div>
             {history.length === 0 ? (

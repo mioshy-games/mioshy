@@ -25,10 +25,8 @@
   font-family: var(--font-assistant), "Assistant", system-ui, sans-serif;
 }
 
-/* Embedded variant — same design tokens as .page but no full-height page
-   background / logo chrome, so SurveyFlow can drop into a host section.
-   Currently unused (the homepage teaser was removed 2026-07-14) but kept so
-   SurveyFlow's `embedded` prop still resolves. */
+/* Embedded variant — a self-contained LIGHT card (same design tokens as .page)
+   so the survey can drop into a dark host (the dashboard) and stay readable. */
 .embed {
   --bg: #fffdfc;
   --ink: #2a2130;
@@ -41,6 +39,14 @@
   --grad2: linear-gradient(120deg, #b83c4d, #ec4899 55%, #f59e0b);
 
   width: 100%;
+  max-width: 560px;
+  margin: 24px auto;
+  padding: 24px 10px 32px;
+  background:
+    radial-gradient(700px 380px at 50% -8%, rgba(236, 72, 153, 0.06), transparent 60%),
+    var(--bg);
+  border-radius: 24px;
+  box-shadow: 0 24px 60px -30px rgba(0, 0, 0, 0.55);
   color: var(--ink);
   display: flex;
   flex-direction: column;
@@ -49,6 +55,33 @@
 }
 
 .card { width: 100%; max-width: 640px; padding: 30px 8px 0; margin-top: 16px; }
+
+/* Floating "back" control on the question/reveal screen — sits just under the
+   (always-present) header. RTL: "back" points right. */
+.backBtn {
+  position: fixed;
+  top: 76px;
+  /* end side (LEFT in RTL) — clears the header logo and the dashboard's
+     right-hand sidebar, which a start-side button would overlap. */
+  inset-inline-end: 14px;
+  z-index: 30;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1.5px solid var(--line2);
+  background: #fff;
+  color: var(--ink);
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+  text-decoration: none;
+  box-shadow: 0 8px 20px -10px rgba(0, 0, 0, 0.28);
+  transition: 0.15s;
+}
+.backBtn:hover { transform: translateX(2px); box-shadow: 0 10px 24px -10px rgba(0, 0, 0, 0.34); }
 
 .q {
   text-align: center; font-size: 25px; line-height: 1.5; font-weight: 600;
