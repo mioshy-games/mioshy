@@ -40,6 +40,9 @@ type PillarLink = {
   /** Where authenticated visitors land - their private dashboard. */
   authedHref: string;
   tKey: PillarKey;
+  /** Optional display-label override (defaults to tKey). Lets a pillar keep its
+   *  logic key while showing a different nav label, e.g. survey → surveyShort. */
+  labelKey?: PillarKey | "surveyShort";
   Icon: typeof Gamepad2;
   accent: string;
 };
@@ -78,6 +81,8 @@ const PILLARS: PillarLink[] = [
     marketingHref: "/survey",
     authedHref: "/survey",
     tKey: "survey",
+    // Header shows the SHORT label ("סקר הזוגיות"); tKey stays "survey" for logic.
+    labelKey: "surveyShort",
     Icon: ClipboardList,
     accent: "from-rose-400 via-fuchsia-400 to-amber-300",
   },
@@ -160,6 +165,7 @@ export function SiteHeader({
         {
           href: p.marketingHref,
           tKey: p.tKey,
+          labelKey: p.labelKey,
           Icon: p.Icon,
           accent: p.accent,
         },
@@ -173,6 +179,7 @@ export function SiteHeader({
         {
           href: p.authedHref,
           tKey: p.tKey,
+          labelKey: p.labelKey,
           Icon: p.Icon,
           accent: p.accent,
         },
@@ -185,6 +192,7 @@ export function SiteHeader({
         {
           href: p.marketingHref,
           tKey: p.tKey,
+          labelKey: p.labelKey,
           Icon: p.Icon,
           accent: p.accent,
         },
@@ -199,6 +207,7 @@ export function SiteHeader({
       {
         href: owns ? p.authedHref : p.marketingHref,
         tKey: p.tKey,
+        labelKey: p.labelKey,
         Icon: p.Icon,
         accent: p.accent,
       },
@@ -398,7 +407,7 @@ export function SiteHeader({
               >
                 {/* Desktop pillar links are text-only (Itzik 2026-07-14) — the
                     icon is kept in the mobile drawer below. */}
-                <span>{t(p.tKey)}</span>
+                <span>{t(p.labelKey ?? p.tKey)}</span>
                 <span
                   aria-hidden
                   className={`pointer-events-none absolute inset-x-3 bottom-1 h-[2px] origin-center rounded-full bg-gradient-to-r ${p.accent} transition-transform duration-200 ${
@@ -631,7 +640,7 @@ export function SiteHeader({
                   >
                     <p.Icon className="h-4 w-4 text-white" />
                   </span>
-                  <span>{t(p.tKey)}</span>
+                  <span>{t(p.labelKey ?? p.tKey)}</span>
                   {isActive && (
                     <span
                       aria-hidden
