@@ -145,10 +145,35 @@ export function extractToken(indicator: Record<string, string>) {
  */
 export function normalizeExpiry(raw: string | null | undefined): string | null {
   const digits = (raw ?? "").replace(/\D/g, "")
-  if (digits.length === 8) {                    // 20280201
-    const yr = digits.slice(2, 4)
-    const mo = digits.slice(4, 6)
-    return +mo >= 1 && +mo <= 12 ? `${mo}${yr}` : null
+  if (digits.length === 8) {                    // yyyyMMdd — VALID-UNTIL (exclusive)
+    // 2026-07-14 off-by-one fix. Cardcom's 8-digit TokenExDate is the
+    // VALID-UNTIL date: the 1st of the month AFTER the card's printed expiry
+    // (a 04/32 card → "20320501"). The old code took the literal month, so we
+    // stored + charged the expiry ONE MONTH TOO HIGH — which the acquirer
+    // declined with 60000004. Proven live: token on card 5336 charged 05/32 →
+    // 60000004, same token charged 04/32 → RC 0. The real expiry is the month
+    // BEFORE the valid-until date.
+    const yyyy = +digits.slice(0, 4)
+    const mm   = +digits.slice(4, 6)
+    const dd   = +digits.slice(6, 8)
+    if (!(mm >= 1 && mm <= 12)) return null
+    if (dd !== 1) {
+      // Every TokenExDate observed from Cardcom is the 1st of a month. A
+      // non-01 day breaks the valid-until assumption; subtracting a day stays
+      // in-month, so the literal month is correct — but surface it loudly since
+      // it's unexpected and may signal a format change on Cardcom's side.
+      console.warn(
+        `[normalizeExpiry] unexpected TokenExDate day (not 01): "${raw}" — keeping literal month ${mm}`,
+      )
+      const yr = digits.slice(2, 4)
+      const mo = digits.slice(4, 6)
+      return `${mo}${yr}`
+    }
+    // dd === 01 → real expiry = the previous month (with year rollover).
+    let expMonth = mm - 1
+    let expYear  = yyyy
+    if (expMonth === 0) { expMonth = 12; expYear -= 1 }
+    return `${String(expMonth).padStart(2, "0")}${String(expYear % 100).padStart(2, "0")}`
   }
   if (digits.length === 6) {                    // 202802
     const yr = digits.slice(2, 4)
