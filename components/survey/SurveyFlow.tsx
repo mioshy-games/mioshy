@@ -232,7 +232,7 @@ export function SurveyFlow({ embedded = false, authed = false, back, userName }:
           return (
           <section className={styles.fade}>
             <div className={styles.qmeta}>התוצאה שלכם</div>
-            <div className={`${styles.q} ${styles.revQ}`}>{question.text}</div>
+            <div className={styles.q}>{question.text}</div>
             <div className={styles.revYour}>
               בחרת: <span>{chosenLabel}</span>
             </div>
@@ -253,11 +253,15 @@ export function SurveyFlow({ embedded = false, authed = false, back, userName }:
 
             {question.insightLine && <p className={styles.insight}>{question.insightLine}</p>}
 
-            {/* Join CTA (§6) — anon only; a signed-in user is already in. */}
+            {/* Join CTA (§6) — anon only; a signed-in user is already in. A lead
+                line above clarifies the sign-up is to be notified of the next survey. */}
             {!authed && (
-              <button type="button" className={`${styles.cta} ${styles.amber}`} style={{ fontSize: 20 }} onClick={() => setShowRegister(true)}>
-                רוצים שאלה כזו כל יום? הצטרפו
-              </button>
+              <>
+                <div className={styles.ctaLead}>קבלו הודעה על הסקר הבא</div>
+                <button type="button" className={`${styles.cta} ${styles.amber}`} style={{ fontSize: 20, marginTop: 10 }} onClick={() => setShowRegister(true)}>
+                  רוצים שאלה כזו כל יום?
+                </button>
+              </>
             )}
             {/* Share (§ invite) — WhatsApp + copy-link with "הועתק" feedback. */}
             <div className={styles.shareRow}>

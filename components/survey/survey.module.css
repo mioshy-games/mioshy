@@ -88,7 +88,7 @@
 .trust { text-align: center; font-size: 14px; color: #111; font-weight: 600; margin: 0 auto 4px; }
 
 .q {
-  text-align: center; font-size: 25px; line-height: 1.5; font-weight: 600;
+  text-align: center; font-size: 25px; line-height: 1.5; font-weight: 700;
   color: var(--ink); max-width: 520px; margin: 0 auto;
 }
 @media (max-width: 560px) { .q { font-size: 21px; } }
@@ -114,7 +114,8 @@
 
 /* reveal */
 .qmeta { text-align: center; color: var(--mut); font-size: 13.5px; font-weight: 600; margin-bottom: 12px; }
-.revQ { font-size: 22px; }
+/* Reveal question keeps the full question size (.q) — no shrink. */
+.ctaLead { text-align: center; font-size: 16px; font-weight: 700; color: var(--ink); margin-top: 44px; }
 .revYour { text-align: center; font-size: 15px; color: var(--ink2); margin: 12px 0 24px; }
 .revYour span {
   font-weight: 800; background: var(--grad2);
