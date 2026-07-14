@@ -20,7 +20,7 @@ export default async function SignupPage({
   const consent = await getOtpConsentCopy(locale);
   return (
     <AuthBackground>
-      <OtpFlow initialMode="signup" locale={locale} next={searchParams.next} consent={consent} theme="dark" />
+      <OtpFlow initialMode="signup" locale={locale} next={searchParams.next} pairCode={searchParams.code} consent={consent} theme="dark" />
     </AuthBackground>
   );
 }

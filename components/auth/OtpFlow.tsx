@@ -11,6 +11,7 @@ import {
   sendAuthLoginOtp,
   verifyAuthLoginOtp,
 } from "@/app/actions/otp-auth";
+import { joinCoupleByPairCode } from "@/app/actions/between-us-couple";
 
 type VerifyResult = { success: true; [k: string]: unknown } | { success: false; error: string };
 
@@ -58,6 +59,7 @@ export function OtpFlow({
   initialMode,
   locale,
   next,
+  pairCode,
   consent,
   api = AUTH_API,
   theme = "light",
@@ -67,6 +69,9 @@ export function OtpFlow({
   initialMode: "signup" | "login";
   locale: string;
   next?: string;
+  /** Partner pair-code (?code=) — shows a "joining your partner" banner and
+   *  auto-redeems after auth (then routes to /my or the profile collector). */
+  pairCode?: string;
   consent: OtpConsentCopy;
   /** Surface-specific action set (claim-aware). Defaults to the /auth actions. */
   api?: OtpApi;
@@ -100,8 +105,19 @@ export function OtpFlow({
     return () => clearInterval(id);
   }, [resendIn]);
 
-  const done = (ctx: { isNewUser: boolean; isAdmin?: boolean }) => {
+  const done = async (ctx: { isNewUser: boolean; isAdmin?: boolean }) => {
     if (onAuthenticated) { onAuthenticated({ isNewUser: ctx.isNewUser }); return; }
+    // Partner pair-code: redeem now, then route. If the profile still lacks a
+    // mobile (phone step skipped), send them to the collector to finish pairing.
+    if (pairCode) {
+      const r = await joinCoupleByPairCode(pairCode.trim().toUpperCase()).catch(() => null);
+      if (r && !r.ok && r.error === "profile_incomplete") {
+        window.location.assign(`/${locale}/account/profile?reason=profile_incomplete&next=${encodeURIComponent(`/${locale}/my`)}`);
+        return;
+      }
+      window.location.assign(`/${locale}/my`);
+      return;
+    }
     if (ctx.isAdmin) { window.location.assign("/dashboard"); return; }
     window.location.assign(safePath(next, `/${locale}/my/start`));
   };
@@ -141,7 +157,7 @@ export function OtpFlow({
       const r = await api.verifyLogin({ email, token });
       setBusy(false);
       if (!r.success) { setError(r.error); return; }
-      done({ isNewUser: false, isAdmin: r.isAdmin });
+      void done({ isNewUser: false, isAdmin: r.isAdmin });
     }
   };
 
@@ -151,7 +167,7 @@ export function OtpFlow({
     const r = await api.savePhone({ phone });
     setBusy(false);
     if (!r.success) { setError(r.error); return; }
-    done({ isNewUser: true });
+    void done({ isNewUser: true });
   };
 
   const dark = theme === "dark";
@@ -178,6 +194,12 @@ export function OtpFlow({
   return (
     <div dir="rtl" style={S.card}>
       <div style={S.brand}>מיא<span style={{ background: GRAD, WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>ושי</span></div>
+
+      {pairCode && (
+        <div style={{ marginBottom: 16, borderRadius: 12, padding: "10px 14px", textAlign: "center", fontSize: 13, fontWeight: 700, color: dark ? "#f5d0e6" : "#7A1F2B", background: dark ? "rgba(214,64,159,0.14)" : "#fdf0f6", border: `1px solid ${dark ? "rgba(214,64,159,0.3)" : "#f3d4e6"}` }}>
+          💜 מצטרפים לחשבון של בן/בת הזוג שלכם
+        </div>
+      )}
 
       {/* ── screen 1: form ── */}
       {step === "form" && (
@@ -259,7 +281,7 @@ export function OtpFlow({
             <input style={{ ...S.inp, direction: "ltr", textAlign: "right" }} type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="050-000-0000" autoComplete="tel" />
           </label>
           <button style={S.cta(true)} disabled={busy || !phone.trim()} onClick={savePhone}>{busy ? "רגע…" : "סיום הרשמה"}</button>
-          <button style={S.ghost} onClick={() => done({ isNewUser: true })} disabled={busy}>דלג/י לעכשיו</button>
+          <button style={S.ghost} onClick={() => { void done({ isNewUser: true }); }} disabled={busy}>דלג/י לעכשיו</button>
           <div style={{ fontSize: 11.5, color: mut, textAlign: "center", marginTop: 10, lineHeight: 1.4 }}>אפשר לדלג — נבקש את הנייד שוב כשתחברו בן/בת זוג או תרכשו.</div>
           {error && <div style={S.err}>{error}</div>}
         </>

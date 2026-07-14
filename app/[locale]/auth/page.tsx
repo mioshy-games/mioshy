@@ -21,7 +21,7 @@ export default async function AuthPage({
   const consent = await getOtpConsentCopy(locale);
   return (
     <AuthBackground>
-      <OtpFlow initialMode="login" locale={locale} next={searchParams.next} consent={consent} theme="dark" />
+      <OtpFlow initialMode="login" locale={locale} next={searchParams.next} pairCode={searchParams.code} consent={consent} theme="dark" />
     </AuthBackground>
   );
 }
