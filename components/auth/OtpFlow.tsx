@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { OtpCodeInput } from "./OtpCodeInput";
 import type { OtpConsentCopy } from "@/lib/auth/otp-consent";
+import type { SendOtpResult } from "@/lib/auth/otp-core";
 import {
   sendAuthSignupOtp,
   verifyAuthSignupOtp,
@@ -10,6 +11,26 @@ import {
   sendAuthLoginOtp,
   verifyAuthLoginOtp,
 } from "@/app/actions/otp-auth";
+
+type VerifyResult = { success: true; [k: string]: unknown } | { success: false; error: string };
+
+/** The action set OtpFlow drives. Defaults to the /auth actions; each inline
+ *  surface (survey/assessment/journey) passes its own claim-aware verify. */
+export type OtpApi = {
+  sendSignup: (a: { email: string; fullName: string; termsAccepted: boolean }) => Promise<SendOtpResult>;
+  verifySignup: (a: { email: string; token: string; fullName: string; marketingConsent: boolean; termsAccepted: boolean; preferredLanguage?: string }) => Promise<VerifyResult>;
+  sendLogin: (a: { email: string }) => Promise<SendOtpResult>;
+  verifyLogin: (a: { email: string; token: string }) => Promise<VerifyResult & { isAdmin?: boolean }>;
+  savePhone: (a: { phone: string }) => Promise<VerifyResult>;
+};
+
+const AUTH_API: OtpApi = {
+  sendSignup: sendAuthSignupOtp,
+  verifySignup: verifyAuthSignupOtp,
+  sendLogin: sendAuthLoginOtp,
+  verifyLogin: verifyAuthLoginOtp,
+  savePhone: saveSignupPhone,
+};
 
 // Mockup tokens (docs/otp-signup-mockup-v1.html)
 const INK = "#2E2622";
@@ -38,13 +59,21 @@ export function OtpFlow({
   locale,
   next,
   consent,
+  api = AUTH_API,
+  onBeforeSendSignup,
   onAuthenticated,
 }: {
   initialMode: "signup" | "login";
   locale: string;
   next?: string;
   consent: OtpConsentCopy;
-  /** When set, called after successful auth instead of routing (embedded use). */
+  /** Surface-specific action set (claim-aware). Defaults to the /auth actions. */
+  api?: OtpApi;
+  /** Fired once, client-side, just before the signup "send code" call — used by
+   *  the survey to mirror its browser-Pixel Lead (deduped with the CAPI Lead). */
+  onBeforeSendSignup?: (email: string) => void;
+  /** When set, called after successful auth (incl. after the phone step/skip)
+   *  instead of routing — for embedded survey/assessment/journey use. */
   onAuthenticated?: (ctx: { isNewUser: boolean }) => void;
 }) {
   const [mode, setMode] = useState<"signup" | "login">(initialMode);
@@ -67,17 +96,19 @@ export function OtpFlow({
     return () => clearInterval(id);
   }, [resendIn]);
 
-  const redirectAfterAuth = (isAdmin?: boolean) => {
-    if (isAdmin) { window.location.assign("/dashboard"); return; }
+  const done = (ctx: { isNewUser: boolean; isAdmin?: boolean }) => {
+    if (onAuthenticated) { onAuthenticated({ isNewUser: ctx.isNewUser }); return; }
+    if (ctx.isAdmin) { window.location.assign("/dashboard"); return; }
     window.location.assign(safePath(next, `/${locale}/my/start`));
   };
 
   // ── send code ────────────────────────────────────────────────────────────
   const sendCode = async () => {
     setError(null); setBusy(true);
+    if (mode === "signup") onBeforeSendSignup?.(email.trim().toLowerCase());
     const r = mode === "signup"
-      ? await sendAuthSignupOtp({ email, fullName, termsAccepted: terms })
-      : await sendAuthLoginOtp({ email });
+      ? await api.sendSignup({ email, fullName, termsAccepted: terms })
+      : await api.sendLogin({ email });
     setBusy(false);
     if (!r.ok) {
       setError(r.error);
@@ -98,27 +129,25 @@ export function OtpFlow({
     if (token.length !== 6) { setError("יש להזין קוד בן 6 ספרות."); return; }
     setError(null); setBusy(true);
     if (mode === "signup") {
-      const r = await verifyAuthSignupOtp({ email, token, fullName, marketingConsent: marketing, termsAccepted: terms, preferredLanguage: locale });
+      const r = await api.verifySignup({ email, token, fullName, marketingConsent: marketing, termsAccepted: terms, preferredLanguage: locale });
       setBusy(false);
       if (!r.success) { setError(r.error); return; }
-      if (onAuthenticated) { onAuthenticated({ isNewUser: true }); return; }
-      setStep("phone"); // screen 3
+      setStep("phone"); // screen 3 — always part of signup (skippable)
     } else {
-      const r = await verifyAuthLoginOtp({ email, token });
+      const r = await api.verifyLogin({ email, token });
       setBusy(false);
       if (!r.success) { setError(r.error); return; }
-      if (onAuthenticated) { onAuthenticated({ isNewUser: false }); return; }
-      redirectAfterAuth(r.isAdmin);
+      done({ isNewUser: false, isAdmin: r.isAdmin });
     }
   };
 
   // ── phone step ───────────────────────────────────────────────────────────
   const savePhone = async () => {
     setError(null); setBusy(true);
-    const r = await saveSignupPhone({ phone });
+    const r = await api.savePhone({ phone });
     setBusy(false);
     if (!r.success) { setError(r.error); return; }
-    redirectAfterAuth(false);
+    done({ isNewUser: true });
   };
 
   const S = {
@@ -220,7 +249,7 @@ export function OtpFlow({
             <input style={{ ...S.inp, direction: "ltr", textAlign: "right" }} type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="050-000-0000" autoComplete="tel" />
           </label>
           <button style={S.cta(true)} disabled={busy || !phone.trim()} onClick={savePhone}>{busy ? "רגע…" : "סיום הרשמה"}</button>
-          <button style={S.ghost} onClick={() => redirectAfterAuth(false)} disabled={busy}>דלג/י לעכשיו</button>
+          <button style={S.ghost} onClick={() => done({ isNewUser: true })} disabled={busy}>דלג/י לעכשיו</button>
           <div style={{ fontSize: 11.5, color: MUT, textAlign: "center", marginTop: 10, lineHeight: 1.4 }}>אפשר לדלג — נבקש את הנייד שוב כשתחברו בן/בת זוג או תרכשו.</div>
           {error && <div style={S.err}>{error}</div>}
         </>

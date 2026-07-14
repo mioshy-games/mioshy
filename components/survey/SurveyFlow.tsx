@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styles from "./survey.module.css";
 import { PollRegister } from "./PollRegister";
 import { PersonalOfferTimer } from "@/components/journey/PersonalOfferTimer";
+import type { OtpConsentCopy } from "@/lib/auth/otp-consent";
 
 /**
  * The ISO instant of the NEXT Israel calendar-day start (00:00 Asia/Jerusalem) —
@@ -58,6 +59,12 @@ export interface SurveyFlowProps {
   /** Logged-in user's display name — personalises the invite text
    *  ("{name} מזמין/ה אותך…"). Omitted for anon → generic invite. */
   userName?: string | null;
+  /** Unified OTP consent copy (server-resolved) — required for the anon join
+   *  form (the passwordless register). Omitted for the authed dashboard where
+   *  the register form never shows. */
+  consent?: OtpConsentCopy;
+  /** Locale for the register flow's links/redirects. */
+  locale?: string;
 }
 
 /**
@@ -65,7 +72,7 @@ export interface SurveyFlowProps {
  * anonymous vote → live Bayesian reveal (§8, numbers only) → WhatsApp share.
  * Answering always reveals inline (no navigation). The join CTA is anon-only.
  */
-export function SurveyFlow({ embedded = false, authed = false, back, userName }: SurveyFlowProps = {}) {
+export function SurveyFlow({ embedded = false, authed = false, back, userName, consent, locale = "he" }: SurveyFlowProps = {}) {
   const [status, setStatus] = useState<"loading" | "question" | "reveal" | "done">("loading");
   const [question, setQuestion] = useState<Question | null>(null);
   const [yourOption, setYourOption] = useState<"a" | "b" | null>(null);
@@ -195,7 +202,7 @@ export function SurveyFlow({ embedded = false, authed = false, back, userName }:
           <PersonalOfferTimer endsAt={nextQuestionAt} isHe label="הסקר הבא בעוד" />
         )}
 
-        {!authed && showRegister && <PollRegister />}
+        {!authed && showRegister && consent && <PollRegister consent={consent} locale={locale} />}
 
         {!showRegister && status === "loading" && <p className={styles.center}>טוען…</p>}
 

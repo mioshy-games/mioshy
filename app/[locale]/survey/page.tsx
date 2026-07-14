@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { SurveyFlow } from "@/components/survey/SurveyFlow";
 import { getPollUserId } from "@/lib/poll/anon";
+import { getOtpConsentCopy } from "@/lib/auth/otp-consent";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +18,10 @@ export default async function SurveyPage({ params }: { params: { locale: string 
   const userId = await getPollUserId();
   if (userId) redirect(`/${params.locale}/my/survey`);
 
+  const locale = params.locale === "en" ? "en" : "he";
+  const consent = await getOtpConsentCopy(locale);
+
   // Anon marketing flow: header stays, footer hidden (see Chrome), floating
-  // back → the marketing homepage.
-  return <SurveyFlow back={{ href: "/he" }} />;
+  // back → the marketing homepage. Join form = passwordless OTP.
+  return <SurveyFlow back={{ href: `/${locale}` }} consent={consent} locale={locale} />;
 }
