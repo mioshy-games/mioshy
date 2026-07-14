@@ -160,6 +160,9 @@
 }
 .cta.amber { background: #d97706; color: #fff; box-shadow: 0 14px 28px -14px rgba(217, 119, 6, 0.7); }
 .cta.amber:hover { filter: brightness(1.05); transform: translateY(-1px); }
+/* Brand gradient (maroon→pink→amber) CTA — white text for contrast. */
+.cta.grad { background: var(--grad2); color: #fff; box-shadow: 0 14px 28px -14px rgba(184, 60, 77, 0.6); }
+.cta.grad:hover { filter: brightness(1.05); transform: translateY(-1px); }
 .linkbtn {
   display: block; margin: 16px auto 0; background: none; border: 0; color: #111;
   font: inherit; font-weight: 600; font-size: 18px; cursor: pointer; text-decoration: underline;
@@ -186,7 +189,7 @@
 .joinform { max-width: 360px; margin: 12px auto 0; display: flex; flex-direction: column; gap: 12px; }
 /* Field group = visible label above the input, mirroring the post-assessment
    signup (AuthField): 15px→14px, semibold, tracking-wide, 8px gap. */
-.fldGroup { display: flex; flex-direction: column; gap: 8px; text-align: right; }
+.fldGroup { display: flex; flex-direction: column; gap: 4px; text-align: right; }
 .fldLabel { font-size: 15px; font-weight: 600; letter-spacing: 0.02em; color: var(--ink); }
 @media (min-width: 640px) { .fldLabel { font-size: 14px; } }
 .fld {

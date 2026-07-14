@@ -101,7 +101,7 @@ export function PollRegister() {
 
         {error && <div className={styles.err}>{error}</div>}
 
-        <button type="submit" className={`${styles.cta} ${styles.amber}`} style={{ marginTop: 4 }} disabled={busy || (mode === "register" && !terms)}>
+        <button type="submit" className={`${styles.cta} ${styles.grad}`} style={{ marginTop: 4, fontSize: 20 }} disabled={busy || (mode === "register" && !terms)}>
           {busy ? "רגע…" : mode === "register" ? "הצטרפות חינם" : "התחברות"}
         </button>
       </form>
