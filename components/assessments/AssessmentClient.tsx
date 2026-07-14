@@ -25,6 +25,8 @@ interface Props {
   initialStep?: number;
   initialAnswers?: Record<string, AnswerValue>;
   journeyCadences?: CadenceOption[];
+  /** Unified OTP consent copy for the post-assessment register (server-resolved). */
+  consent: import("@/lib/auth/otp-consent").OtpConsentCopy;
 }
 
 /**
@@ -44,6 +46,7 @@ export function AssessmentClient({
   initialStep = 0,
   initialAnswers = {},
   journeyCadences = [],
+  consent,
 }: Props) {
   const isHe = locale === "he";
   const [index, setIndex] = useState(initialStep);
@@ -214,6 +217,7 @@ export function AssessmentClient({
             locale={locale}
             deviceId={deviceId}
             assessmentId={assessmentId}
+            consent={consent}
             onAuthenticated={onAuthenticated}
           />
         </AnimatePresence>
