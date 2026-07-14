@@ -9,6 +9,7 @@
 
 import { cookies } from "next/headers";
 import crypto from "node:crypto";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export const POLL_ANON_COOKIE = "poll_anon_id";
 const ONE_YEAR_SEC = 60 * 60 * 24 * 365;
@@ -34,4 +35,19 @@ export async function getOrCreatePollAnonId(): Promise<string> {
 export async function readPollAnonId(): Promise<string | null> {
   const jar = await cookies();
   return jar.get(POLL_ANON_COOKIE)?.value?.trim() || null;
+}
+
+/**
+ * The signed-in user's id, or null for anonymous. Used to key the poll by
+ * user_id (consistent across cookie clears / devices) when logged in, falling
+ * back to the anon cookie otherwise. Never throws.
+ */
+export async function getPollUserId(): Promise<string | null> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data } = await supabase.auth.getUser();
+    return data.user?.id ?? null;
+  } catch {
+    return null;
+  }
 }

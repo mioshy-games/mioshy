@@ -51,15 +51,20 @@ function toQuestion(r: PollQuestionRow): PollQuestion {
  */
 export async function getCurrentQuestion(
   anonId: string | null,
+  userId?: string | null,
 ): Promise<{ question: PollQuestion; priorA: number; priorB: number } | null> {
   const admin = await createAdminClient();
 
+  // Signed-in → identity by user_id (survives cookie clear / another device);
+  // anonymous → the anon cookie.
+  const idCol = userId ? "user_id" : "anon_id";
+  const idVal = userId ?? anonId;
   let answeredIds: string[] = [];
-  if (anonId) {
+  if (idVal) {
     const { data: answered } = await admin
       .from("poll_votes")
       .select("question_id")
-      .eq("anon_id", anonId);
+      .eq(idCol, idVal);
     answeredIds = (answered ?? []).map((r) => r.question_id as string);
   }
 
@@ -77,14 +82,17 @@ export async function getCurrentQuestion(
 }
 
 /** The anon's answered history (§7): each answered question + their choice. */
-export async function getHistory(anonId: string): Promise<
+export async function getHistory(anonId: string | null, userId?: string | null): Promise<
   Array<{ questionId: string; text: string; chosen: string; option: "a" | "b"; answeredAt: string }>
 > {
   const admin = await createAdminClient();
+  const idCol = userId ? "user_id" : "anon_id";
+  const idVal = userId ?? anonId;
+  if (!idVal) return [];
   const { data } = await admin
     .from("poll_votes")
     .select("question_id, option, created_at, poll_questions(text, option_a, option_b)")
-    .eq("anon_id", anonId)
+    .eq(idCol, idVal)
     .order("created_at", { ascending: false });
   type Joined = {
     question_id: string;
@@ -112,7 +120,7 @@ export async function getHistory(anonId: string): Promise<
  * the "look back" screen (never a queue to answer). Percentages are recomputed
  * from real votes (never cached), consistent with the reveal.
  */
-export async function getHistoryWithTally(anonId: string): Promise<
+export async function getHistoryWithTally(anonId: string | null, userId?: string | null): Promise<
   Array<{
     questionId: string;
     text: string;
@@ -126,10 +134,13 @@ export async function getHistoryWithTally(anonId: string): Promise<
   }>
 > {
   const admin = await createAdminClient();
+  const idCol = userId ? "user_id" : "anon_id";
+  const idVal = userId ?? anonId;
+  if (!idVal) return [];
   const { data } = await admin
     .from("poll_votes")
     .select("question_id, option, created_at, poll_questions(text, option_a, option_b)")
-    .eq("anon_id", anonId)
+    .eq(idCol, idVal)
     .order("created_at", { ascending: false });
   type Joined = {
     question_id: string;
@@ -171,13 +182,17 @@ function israelDay(d: Date): string {
  * Returns null if they have not answered today.
  */
 export async function getTodaysAnswerReveal(
-  anonId: string,
+  anonId: string | null,
+  userId?: string | null,
 ): Promise<({ question: PollQuestion; option: "a" | "b" } & PollPercent) | null> {
   const admin = await createAdminClient();
+  const idCol = userId ? "user_id" : "anon_id";
+  const idVal = userId ?? anonId;
+  if (!idVal) return null;
   const { data } = await admin
     .from("poll_votes")
     .select("question_id, option, created_at, poll_questions(id, text, option_a, option_b, order_index, insight_line)")
-    .eq("anon_id", anonId)
+    .eq(idCol, idVal)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();

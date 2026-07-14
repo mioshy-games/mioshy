@@ -10,7 +10,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import { getOrCreatePollAnonId } from "@/lib/poll/anon";
+import { getOrCreatePollAnonId, getPollUserId } from "@/lib/poll/anon";
 import { recordVote, getQuestionTally } from "@/lib/poll/queries";
 
 export async function POST(req: Request) {
@@ -23,10 +23,11 @@ export async function POST(req: Request) {
   }
 
   const anonId = await getOrCreatePollAnonId();
+  const userId = await getPollUserId(); // signed-in → attribute the vote to the user too
 
   let yourOption: "a" | "b";
   try {
-    yourOption = await recordVote({ questionId, option, anonId });
+    yourOption = await recordVote({ questionId, option, anonId, userId });
   } catch (err) {
     console.error("[poll/vote] failed", err);
     return NextResponse.json({ error: "vote_failed" }, { status: 500 });
