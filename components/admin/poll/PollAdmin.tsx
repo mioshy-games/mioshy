@@ -77,6 +77,23 @@ export function PollAdmin({ questions }: { questions: AdminQuestion[] }) {
     if (ok) { setList((l) => l.map((x) => (x.id === q.id ? { ...x, isActive: !x.isActive } : x))); router.refresh(); }
   };
 
+  // Download an example CSV in the exact import format (round-trips through
+  // "ייצוא CSV" → edit → re-import). Built client-side, no server needed.
+  const downloadTemplate = () => {
+    const tpl =
+      "text,option_a,option_b,order_index,domain,prior_a,prior_b,prior_weight,insight_line\r\n" +
+      '"מי בדרך כלל אומר ""לילה טוב"" אחרון אצלכם?","אני, כמעט תמיד","בן או בת הזוג",1,"תקשורת",61,39,100,""\r\n';
+    const blob = new Blob(["﻿" + tpl], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "poll-questions-template.csv";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div dir="rtl" className="min-h-screen bg-[#140d16] text-white p-6" style={{ fontFamily: "var(--font-assistant), sans-serif" }}>
       <div className="mx-auto max-w-4xl">
@@ -89,6 +106,24 @@ export function PollAdmin({ questions }: { questions: AdminQuestion[] }) {
           <p className="text-white/50 text-xs mb-3">
             עמודות: text, option_a, option_b, order_index, domain, prior_a, prior_b, prior_weight, insight_line · דילוג אוטומטי על שאלה שכבר קיימת (לפי הטקסט).
           </p>
+          {/* Download → edit → re-import round-trip. "ייצוא CSV" pulls all
+              existing questions in the exact import format; the template is a
+              one-row example. */}
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            <a
+              href="/api/admin/poll/export"
+              className="rounded-xl border border-white/15 bg-white/10 px-4 py-2 text-sm font-bold hover:bg-white/15"
+            >
+              ⬇ ייצוא CSV (כל השאלות)
+            </a>
+            <button
+              type="button"
+              onClick={downloadTemplate}
+              className="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white/80 hover:bg-white/10"
+            >
+              הורדת תבנית לדוגמה
+            </button>
+          </div>
           <input type="file" accept=".csv,text/csv" onChange={(e) => onFile(e.target.files?.[0] ?? null)} className="mb-3 text-sm" />
           <textarea
             value={csv}

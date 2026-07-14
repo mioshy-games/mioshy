@@ -373,7 +373,7 @@ export function MobileServicesBar() {
                     />
                   </span>
                   <span
-                    className="line-clamp-2 max-w-[110px] text-[13px] font-bold leading-[1.15]"
+                    className="max-w-[110px] text-[13px] font-bold leading-[1.15]"
                     style={{ letterSpacing: "0.005em" }}
                   >
                     {t(tKey)}
