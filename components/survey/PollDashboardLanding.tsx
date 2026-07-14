@@ -26,7 +26,7 @@ interface HistItem {
  *                no join CTA (§ already in), floating back → landing
  *   • history  — read-only look back: answered questions + choice + § percentages
  */
-export function PollDashboardLanding({ initialSubscribed }: { initialSubscribed: boolean }) {
+export function PollDashboardLanding({ initialSubscribed, userName }: { initialSubscribed: boolean; userName?: string | null }) {
   const [view, setView] = useState<View>("landing");
   const [subscribed, setSubscribed] = useState(initialSubscribed);
   const [busy, setBusy] = useState(false);
@@ -59,7 +59,7 @@ export function PollDashboardLanding({ initialSubscribed }: { initialSubscribed:
   // ── Question view: the daily question, in the dashboard. Answering reveals
   //    inline and stays here (§5); back returns to the landing (§4).
   if (view === "question") {
-    return <SurveyFlow embedded authed back={{ onClick: () => setView("landing") }} />;
+    return <SurveyFlow embedded authed userName={userName} back={{ onClick: () => setView("landing") }} />;
   }
 
   // ── History view (§6): read-only look back with the live percentages.

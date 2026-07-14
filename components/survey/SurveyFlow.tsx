@@ -34,6 +34,9 @@ export interface SurveyFlowProps {
   /** Floating "back" control shown while a question/reveal is on screen.
    *  onClick keeps you in-app (dashboard); href navigates (anon → marketing). */
   back?: { href?: string; onClick?: () => void };
+  /** Logged-in user's display name — personalises the invite text
+   *  ("{name} מזמין/ה אותך…"). Omitted for anon → generic invite. */
+  userName?: string | null;
 }
 
 /**
@@ -41,7 +44,7 @@ export interface SurveyFlowProps {
  * anonymous vote → live Bayesian reveal (§8, numbers only) → WhatsApp share.
  * Answering always reveals inline (no navigation). The join CTA is anon-only.
  */
-export function SurveyFlow({ embedded = false, authed = false, back }: SurveyFlowProps = {}) {
+export function SurveyFlow({ embedded = false, authed = false, back, userName }: SurveyFlowProps = {}) {
   const [status, setStatus] = useState<"loading" | "question" | "reveal" | "done">("loading");
   const [question, setQuestion] = useState<Question | null>(null);
   const [yourOption, setYourOption] = useState<"a" | "b" | null>(null);
@@ -49,7 +52,14 @@ export function SurveyFlow({ embedded = false, authed = false, back }: SurveyFlo
   const [busy, setBusy] = useState(false);
   const [history, setHistory] = useState<HistoryRow[] | null>(null);
   const [showRegister, setShowRegister] = useState(false);
+  const [copied, setCopied] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Personalised invite (§ share): "{name} מזמין/ה אותך…" for a signed-in user,
+  // generic otherwise.
+  const inviteText = userName
+    ? `${userName} מזמין/ה אותך להצטרף לסקר הזוגיות של ישראל`
+    : "הוזמנת להצטרף לסקר הזוגיות של ישראל";
 
   const loadCurrent = useCallback(() => {
     setTally(null);
@@ -98,12 +108,23 @@ export function SurveyFlow({ embedded = false, authed = false, back }: SurveyFlo
     } catch { /* stay on question */ } finally { setBusy(false); }
   };
 
+  const surveyUrl = () =>
+    typeof window !== "undefined" ? `${window.location.origin}/he/survey` : "https://mioshy.com/he/survey";
+
   const share = () => {
     if (typeof window === "undefined") return;
-    const url = `${window.location.origin}/he/survey`;
     const q = question?.text ? `\n${question.text}` : "";
-    const msg = `עניתי על "סקר הזוגיות של ישראל" של מיאושי 💜${q}\nתענו גם ותראו מה זוגות בישראל ענו: ${url}`;
+    const msg = `${inviteText} 💜${q}\nתענו ותראו מה זוגות בישראל ענו: ${surveyUrl()}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank", "noopener");
+  };
+
+  const copyLink = async () => {
+    if (typeof window === "undefined") return;
+    try {
+      await navigator.clipboard.writeText(`${inviteText}\n${surveyUrl()}`);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { /* clipboard blocked — no-op */ }
   };
 
   const toggleHistory = async () => {
@@ -195,7 +216,15 @@ export function SurveyFlow({ embedded = false, authed = false, back }: SurveyFlo
                 רוצים שאלה כזו כל יום? הצטרפו
               </button>
             )}
-            <button type="button" className={styles.linkbtn} onClick={share}>שתפו את השאלה בוואטסאפ</button>
+            {/* Share (§ invite) — WhatsApp + copy-link with "הועתק" feedback. */}
+            <div className={styles.shareRow}>
+              <button type="button" className={styles.shareBtn} onClick={share}>
+                <span aria-hidden>💬</span> שתפו בוואטסאפ
+              </button>
+              <button type="button" className={styles.shareBtn} onClick={copyLink}>
+                <span aria-hidden>{copied ? "✓" : "🔗"}</span> {copied ? "הועתק" : "העתק לינק הזמנה"}
+              </button>
+            </div>
           </section>
           );
         })()}
