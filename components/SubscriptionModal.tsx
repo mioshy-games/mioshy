@@ -279,7 +279,6 @@ export function SubscriptionModal({
   userId,
   onRequireAuth,
   mode,
-  onLeadSaved,
   gameSlug,
 }: {
   open: boolean;
@@ -309,8 +308,6 @@ export function SubscriptionModal({
   const [fullName,         setFullName]         = useState("");
   const [mobile,           setMobile]           = useState("");
   const [email,            setEmail]            = useState("");
-  const [password,         setPassword]         = useState("");
-  const [showPassword,     setShowPassword]     = useState(false);
   const [marketingConsent, setMarketingConsent] = useState(false);
   const [termsAccepted,    setTermsAccepted]    = useState(false);
 
@@ -395,7 +392,6 @@ export function SubscriptionModal({
     fullName.trim().length >= 2 &&
     mobile.trim().length > 0 &&
     email.trim().includes("@") &&
-    password.length >= 8 &&
     termsAccepted;
 
   // ── Upsert lead row ────────────────────────────────────────────────────────
@@ -452,71 +448,26 @@ export function SubscriptionModal({
     return lid;
   }
 
-  // ── Lead mode: create account + save lead ─────────────────────────────────
+  // ── Lead mode: capture lead + hand off to /auth OTP ───────────────────────
+  // Passwordless: we no longer create the account inline. We capture the lead
+  // NOW (anon — /api/leads/upsert stores it with user_id=null when signed-out,
+  // so a signup that abandons before payment is never lost), then redirect to
+  // the /auth OTP signup with ?continuePurchase=1 so the exact checkout resumes
+  // once the user is authenticated (which then re-associates the lead at
+  // payment). Cardcom logic is untouched.
   async function saveLead() {
     if (!termsAccepted) { setError(t.termsRequired); return; }
     if (!mobile.trim()) { setError(t.phoneRequired); return; }
-    if (password.length < 8) { setError(t.weakPassword); return; }
     setError(null);
     setBusy(true);
     try {
-      const supabase = createBrowserSupabaseClient();
-
-      // Create Supabase account
-      // The "mobile" UI field maps to `phone` everywhere downstream (same as
-      // RegistrationModal → profiles.phone / leads.phone). This modal never
-      // wrote to `profiles`, so we stash phone in auth metadata alongside
-      // full_name and also send it to /api/leads/upsert (leads.phone, below).
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email:   email.trim().toLowerCase(),
-        password,
-        options: { data: { full_name: fullName.trim(), phone: mobile.trim() } },
-      });
-
-      // Resolve the real user id - Supabase has a privacy quirk: when the
-      // email is already registered, it returns a synthetic `user` object
-      // whose `id` is NOT a real row in auth.users (and `identities` is an
-      // empty array). Passing that fake id to our leads table triggers the
-      // leads_user_id_fkey violation. So:
-      //   - on explicit error → fall back to sign-in with the given password
-      //   - on synthetic user (identities: []) → also treat as "already exists"
-      //   - on real new user → use it as-is
-      let uid: string | null = null;
-
-      const looksSynthetic =
-        !!signUpData?.user &&
-        Array.isArray(signUpData.user.identities) &&
-        signUpData.user.identities.length === 0;
-
-      if (signUpError || looksSynthetic) {
-        const msg = (signUpError?.message ?? "").toLowerCase();
-        const isAlreadyExists =
-          looksSynthetic ||
-          msg.includes("already") ||
-          msg.includes("exists") ||
-          msg.includes("registered");
-
-        if (isAlreadyExists) {
-          const { data: siData, error: siErr } = await supabase.auth.signInWithPassword({
-            email:    email.trim().toLowerCase(),
-            password,
-          });
-          if (siErr || !siData?.user?.id) { setError(t.emailExists); return; }
-          uid = siData.user.id;
-        } else {
-          setError(signUpError?.message ?? (isHe ? "שגיאה בהרשמה" : "Sign-up error"));
-          return;
-        }
-      } else {
-        uid = signUpData?.user?.id ?? null;
+      await upsertLead(null); // anon lead capture (email + phone → leads.phone)
+      if (typeof window !== "undefined") {
+        const back = window.location.pathname + "?continuePurchase=1";
+        window.location.assign(`/${locale}/auth/signup?next=${encodeURIComponent(back)}`);
       }
-
-      const lid = await upsertLead(uid);
-      if (!lid) return;
-      onLeadSaved?.(lid, uid);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : (isHe ? "שגיאה" : "Error"));
-    } finally {
       setBusy(false);
     }
   }
@@ -740,27 +691,9 @@ export function SubscriptionModal({
                 />
               </div>
 
-              <div className="grid gap-1.5">
-                <Label className="text-[18px] font-semibold text-white/90 sm:text-sm">{lt("lead_modal_label_password", t.passwordLabel)}</Label>
-                <div className="relative">
-                  <Input
-                    type={showPassword ? "text" : "password"}
-                    autoComplete="new-password"
-                    dir="ltr"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder={lt("lead_modal_ph_password", t.passwordPlaceholder)}
-                    className={`min-h-[52px] border-white/15 bg-white/10 text-[17px] text-white placeholder:text-white/40 focus-visible:ring-white/40 sm:min-h-[50px] sm:text-base ${isHe ? "pl-14" : "pr-14"}`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((v) => !v)}
-                    className={`absolute inset-y-0 flex items-center px-3 text-xs font-semibold text-white/70 hover:text-white ${isHe ? "left-0" : "right-0"}`}
-                  >
-                    {showPassword ? t.hidePwd : lt("lead_modal_password_show", t.showPwd)}
-                  </button>
-                </div>
-              </div>
+              {/* Password removed — passwordless OTP. On submit we capture the
+                  anon lead (email+phone) then hand off to /auth OTP signup and
+                  resume checkout via ?continuePurchase=1 (see saveLead). */}
 
               {/* Marketing consent - bare row, no background chrome */}
               <label className="flex cursor-pointer items-start gap-2.5 py-0.5">
