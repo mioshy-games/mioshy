@@ -242,6 +242,12 @@ export async function fireCompleteRegistrationCapi(args: {
   userId: string;
   email: string;
   phone?: string | null;
+  /** Optional source tag → custom_data.content_name, so campaigns can split
+   *  registrations by origin (survey / assessment / journey) WITHOUT a custom
+   *  event. Additive: the event name stays "CompleteRegistration"; omitting it
+   *  reproduces today's payload exactly. Mirror the same string in the browser
+   *  Pixel call (if any) so the deduped event carries a consistent content_name. */
+  contentName?: string;
 }): Promise<void> {
   await sendMetaCapiEvent({
     eventName: "CompleteRegistration",
@@ -252,7 +258,10 @@ export async function fireCompleteRegistrationCapi(args: {
       externalId: args.userId,
       ...readMetaRequestContext(),
     },
-    customData: { status: true },
+    customData: {
+      status: true,
+      ...(args.contentName ? { content_name: args.contentName } : {}),
+    },
   });
 }
 

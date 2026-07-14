@@ -137,7 +137,7 @@ export async function pollSignup(args: {
       }
       // §9א — the primary conversion. Deterministic event id → browser Pixel dedup.
       capiEventId = metaEventId.registration(userId);
-      await fireCompleteRegistrationCapi({ userId, email, phone });
+      await fireCompleteRegistrationCapi({ userId, email, phone, contentName: "relationship_survey" });
     }
 
     return { success: true, userId, capiEventId };

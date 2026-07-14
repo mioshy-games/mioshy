@@ -40,7 +40,9 @@ export function PollRegister() {
       // §9א — browser Pixel CompleteRegistration, deduped by the CAPI event_id.
       if (mode === "register" && r.capiEventId && typeof window !== "undefined") {
         const fbq = (window as unknown as { fbq?: (...a: unknown[]) => void }).fbq;
-        if (fbq) fbq("track", "CompleteRegistration", {}, { eventID: r.capiEventId });
+        // Same content_name as the CAPI event (server sends "relationship_survey")
+        // so the deduped browser+server pair carries a consistent source tag.
+        if (fbq) fbq("track", "CompleteRegistration", { content_name: "relationship_survey" }, { eventID: r.capiEventId });
       }
       window.location.href = "/he/my/survey"; // land on the dashboard survey page
     } catch {
