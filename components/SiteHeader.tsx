@@ -6,7 +6,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 // 2026-05-20 — swapped to local inline-SVG icons. SiteHeader renders
 // on every page (including /mioshy-sex with its long INP) so the
 // cumulative React-component-overhead win is broad.
-import { Gamepad2, Heart, Home, Library, LogOut, Menu, Sparkles, Target, X } from "@/components/icons/Icons";
+import { ClipboardList, Gamepad2, Heart, Home, Library, LogOut, Menu, Sparkles, Target, X } from "@/components/icons/Icons";
 import { JourneyNotificationsBell } from "@/components/notifications/JourneyNotificationsBell";
 import { CmsText } from "@/components/cms/CmsText";
 import { logoutAction } from "@/app/actions/auth-actions";
@@ -32,7 +32,7 @@ import { logoutAction } from "@/app/actions/auth-actions";
  *   3. למבוגרים בלבד / Adults   → /adults
  */
 
-type PillarKey = "games" | "journey" | "adults" | "couplesAssessment";
+type PillarKey = "games" | "journey" | "adults" | "couplesAssessment" | "survey";
 
 type PillarLink = {
   /** Where anonymous visitors land - the marketing page. */
@@ -40,6 +40,9 @@ type PillarLink = {
   /** Where authenticated visitors land - their private dashboard. */
   authedHref: string;
   tKey: PillarKey;
+  /** Optional display-label override (defaults to tKey). Lets a pillar keep its
+   *  logic key while showing a different nav label, e.g. survey → surveyShort. */
+  labelKey?: PillarKey | "surveyShort";
   Icon: typeof Gamepad2;
   accent: string;
 };
@@ -72,6 +75,16 @@ const PILLARS: PillarLink[] = [
     tKey: "couplesAssessment",
     Icon: Target,
     accent: "from-violet-400 via-fuchsia-400 to-amber-300",
+  },
+  {
+    // Public daily-poll flow — same target for anon + authed (/he/survey).
+    marketingHref: "/survey",
+    authedHref: "/survey",
+    tKey: "survey",
+    // Header shows the SHORT label ("סקר הזוגיות"); tKey stays "survey" for logic.
+    labelKey: "surveyShort",
+    Icon: ClipboardList,
+    accent: "from-rose-400 via-fuchsia-400 to-amber-300",
   },
 ];
 
@@ -152,6 +165,7 @@ export function SiteHeader({
         {
           href: p.marketingHref,
           tKey: p.tKey,
+          labelKey: p.labelKey,
           Icon: p.Icon,
           accent: p.accent,
         },
@@ -165,18 +179,20 @@ export function SiteHeader({
         {
           href: p.authedHref,
           tKey: p.tKey,
+          labelKey: p.labelKey,
           Icon: p.Icon,
           accent: p.accent,
         },
       ];
     }
-    // Couples-assessment: a marketing-only entry (no entitlement), so it
-    // always points at the landing page for authed users too.
-    if (p.tKey === "couplesAssessment") {
+    // Couples-assessment + survey: marketing-only entries (no entitlement),
+    // so they always point at the public page for authed users too.
+    if (p.tKey === "couplesAssessment" || p.tKey === "survey") {
       return [
         {
           href: p.marketingHref,
           tKey: p.tKey,
+          labelKey: p.labelKey,
           Icon: p.Icon,
           accent: p.accent,
         },
@@ -191,6 +207,7 @@ export function SiteHeader({
       {
         href: owns ? p.authedHref : p.marketingHref,
         tKey: p.tKey,
+        labelKey: p.labelKey,
         Icon: p.Icon,
         accent: p.accent,
       },
@@ -380,7 +397,7 @@ export function SiteHeader({
               <Link
                 key={p.href}
                 href={p.href}
-                className={`group relative inline-flex items-center gap-2 rounded-full px-4 py-2 text-base font-medium transition ${linkBase} ${
+                className={`group relative inline-flex items-center rounded-full px-4 py-2 text-base font-medium transition ${linkBase} ${
                   isActive
                     ? mode === "light"
                       ? "bg-slate-100"
@@ -388,12 +405,9 @@ export function SiteHeader({
                     : ""
                 }`}
               >
-                <p.Icon
-                  className={`h-4 w-4 transition ${
-                    isActive ? "opacity-100" : "opacity-75 group-hover:opacity-100"
-                  }`}
-                />
-                <span>{t(p.tKey)}</span>
+                {/* Desktop pillar links are text-only (Itzik 2026-07-14) — the
+                    icon is kept in the mobile drawer below. */}
+                <span>{t(p.labelKey ?? p.tKey)}</span>
                 <span
                   aria-hidden
                   className={`pointer-events-none absolute inset-x-3 bottom-1 h-[2px] origin-center rounded-full bg-gradient-to-r ${p.accent} transition-transform duration-200 ${
@@ -626,7 +640,7 @@ export function SiteHeader({
                   >
                     <p.Icon className="h-4 w-4 text-white" />
                   </span>
-                  <span>{t(p.tKey)}</span>
+                  <span>{t(p.labelKey ?? p.tKey)}</span>
                   {isActive && (
                     <span
                       aria-hidden

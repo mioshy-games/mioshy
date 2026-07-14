@@ -544,7 +544,7 @@ export async function journeyInlineSignup(args: {
         );
       }
 
-      await fireCompleteRegistrationCapi({ userId, email, phone });
+      await fireCompleteRegistrationCapi({ userId, email, phone, contentName: "journey" });
     }
 
     return { success: true, userId, journey: journey ?? null, debug };

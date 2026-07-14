@@ -27,6 +27,7 @@ import { Link, usePathname } from "@/navigation";
 import type { ComponentType, SVGProps } from "react";
 import {
   BookOpen,
+  ClipboardList,
   Heart,
   LayoutGrid,
   MessageCircle,
@@ -58,6 +59,7 @@ const NAV_ICONS: Record<NavKey, ComponentType<SVGProps<SVGSVGElement>>> = {
   games:    LayoutGrid,
   adults:   Heart,
   share:    Users,
+  survey:   ClipboardList,
   settings: Settings,
 };
 

@@ -104,6 +104,7 @@ export function SiteFooter() {
                 <li><Link href="/games"   className="text-[#D8CFE6] transition-colors hover:text-white">{tNav("games")}</Link></li>
                 <li><Link href="/journey" className="text-[#D8CFE6] transition-colors hover:text-white">{tNav("journey")}</Link></li>
                 <li><Link href="/mioshy-sex"  className="text-[#D8CFE6] transition-colors hover:text-white">{tNav("adults")}</Link></li>
+                <li><Link href="/survey"  className="text-[#D8CFE6] transition-colors hover:text-white">{tNav("surveyShort")}</Link></li>
               </ul>
             </div>
 

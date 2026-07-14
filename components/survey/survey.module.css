@@ -1,0 +1,210 @@
+/* Israel Relationship Survey — screens 1 (question) + 2 (reveal).
+   Ported from the design source of truth docs/mioshy-poll-flow.html.
+   No graph/bar in the reveal (§8) — numbers only. RTL. */
+
+.page {
+  --bg: #fffdfc;
+  --ink: #2a2130;
+  --ink2: #4a3f4a;
+  --mut: #a99ba6;
+  --line2: #e6d9e0;
+  --pink: #ec4899;
+  --maroon: #b83c4d;
+  --wa: #25d366;
+  --grad2: linear-gradient(120deg, #b83c4d, #ec4899 55%, #f59e0b);
+
+  min-height: 100vh;
+  background:
+    radial-gradient(900px 500px at 50% -8%, rgba(236, 72, 153, 0.06), transparent 60%),
+    var(--bg);
+  color: var(--ink);
+  padding: 34px 18px 80px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: var(--font-assistant), "Assistant", system-ui, sans-serif;
+}
+
+/* Embedded variant — a self-contained LIGHT card (same design tokens as .page)
+   so the survey can drop into a dark host (the dashboard) and stay readable. */
+.embed {
+  --bg: #fffdfc;
+  --ink: #2a2130;
+  --ink2: #4a3f4a;
+  --mut: #a99ba6;
+  --line2: #e6d9e0;
+  --pink: #ec4899;
+  --maroon: #b83c4d;
+  --wa: #25d366;
+  --grad2: linear-gradient(120deg, #b83c4d, #ec4899 55%, #f59e0b);
+
+  width: 100%;
+  max-width: 560px;
+  margin: 24px auto;
+  padding: 24px 10px 32px;
+  background:
+    radial-gradient(700px 380px at 50% -8%, rgba(236, 72, 153, 0.06), transparent 60%),
+    var(--bg);
+  border-radius: 24px;
+  /* Soft, light-friendly lift — the embed now sits on the light survey canvas
+     (dashboard), so the heavy dark-bg shadow is toned down to a gentle one. */
+  box-shadow: 0 18px 44px -32px rgba(80, 40, 70, 0.22);
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: var(--font-assistant), "Assistant", system-ui, sans-serif;
+}
+
+.card { width: 100%; max-width: 640px; padding: 30px 8px 0; margin-top: 16px; }
+
+/* Floating "back" control on the question/reveal screen — sits just under the
+   (always-present) header. RTL: "back" points right. */
+.backBtn {
+  position: fixed;
+  /* Bottom-LEFT corner of the screen (per Itzik). On the public page this shares
+     the corner with the WhatsApp float; on the dashboard the corner is clear. */
+  bottom: 20px;
+  left: 20px;
+  z-index: 40;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1.5px solid var(--line2);
+  background: #fff;
+  color: var(--ink);
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+  text-decoration: none;
+  box-shadow: 0 8px 20px -10px rgba(0, 0, 0, 0.28);
+  transition: 0.15s;
+}
+.backBtn:hover { transform: translateY(-2px); box-shadow: 0 10px 24px -10px rgba(0, 0, 0, 0.34); }
+
+/* §11 — small confidentiality trust line at the top of the survey. 14px, black. */
+.trust { text-align: center; font-size: 14px; color: #111; font-weight: 600; margin: 0 auto 4px; }
+
+.q {
+  text-align: center; font-size: 25px; line-height: 1.5; font-weight: 700;
+  color: var(--ink); max-width: 520px; margin: 0 auto;
+}
+@media (max-width: 560px) { .q { font-size: 21px; } }
+
+/* two options: rectangles with a delicate gradient ring */
+.opts { display: flex; gap: 22px; justify-content: center; margin-top: 48px; flex-wrap: wrap; }
+.opt {
+  width: 230px; min-height: 106px; border-radius: 20px; padding: 22px 20px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; text-align: center;
+  transition: 0.18s; border: 1.6px solid transparent;
+  background-image: linear-gradient(var(--bg), var(--bg)), var(--grad2);
+  background-origin: border-box; background-clip: padding-box, border-box;
+}
+.optTxt { font-size: 17px; font-weight: 600; color: var(--ink); line-height: 1.35; transition: color 0.18s; }
+.opt:hover, .opt.sel {
+  transform: translateY(-3px);
+  background-image: var(--grad2), var(--grad2);
+  box-shadow: 0 16px 32px -16px rgba(236, 72, 153, 0.5);
+}
+.opt:hover .optTxt, .opt.sel .optTxt { color: #fff; }
+.opt:disabled { cursor: default; }
+@media (max-width: 560px) { .opts { gap: 14px; } .opt { width: 46%; min-height: 96px; padding: 18px 12px; } }
+
+/* reveal */
+.qmeta { text-align: center; color: var(--mut); font-size: 13.5px; font-weight: 600; margin-bottom: 12px; }
+/* Reveal question keeps the full question size (.q) — no shrink. */
+.ctaLead { text-align: center; font-size: 16px; font-weight: 700; color: var(--ink); margin-top: 44px; }
+.revYour { text-align: center; font-size: 15px; color: var(--ink2); margin: 12px 0 24px; }
+.revYour span {
+  font-weight: 800; background: var(--grad2);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.revLive {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  color: var(--mut); font-size: 16px; margin: 0 0 28px; flex-wrap: wrap;
+}
+.pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--wa); animation: pulse 1.6s infinite; }
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.5); }
+  70% { box-shadow: 0 0 0 8px rgba(37, 211, 102, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); }
+}
+/* Centered, big, impressive result (mockup screen 2). Numbers only. */
+.revHero { text-align: center; margin: 4px 0 6px; }
+.revHero .youtag { margin: 0 auto 14px; }
+.youtag {
+  display: inline-block; font-size: 11px; font-weight: 800; color: #fff;
+  background: var(--pink); border-radius: 20px; padding: 3px 12px;
+}
+.revBig {
+  font-size: 88px; font-weight: 800; line-height: 0.92; letter-spacing: -2px;
+  background: var(--grad2); -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+@media (max-width: 560px) { .revBig { font-size: 72px; } }
+.revBiglabel { font-size: 18px; font-weight: 600; color: var(--ink); margin-top: 8px; }
+.revBiglabel b { font-weight: 800; }
+.revVs { font-size: 15px; color: var(--mut); margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line2); }
+.revVs b { font-weight: 700; color: var(--ink2); }
+
+.insight {
+  text-align: center; font-size: 15px; line-height: 1.65; color: var(--ink2);
+  margin: 20px auto 0; max-width: 460px;
+}
+
+.cta {
+  display: block; width: 100%; max-width: 360px; margin: 44px auto 0; text-align: center;
+  border: 0; border-radius: 16px; padding: 16px; font: inherit; font-weight: 800; font-size: 16px;
+  cursor: pointer; transition: 0.18s; text-decoration: none;
+}
+.cta.amber { background: #d97706; color: #fff; box-shadow: 0 14px 28px -14px rgba(217, 119, 6, 0.7); }
+.cta.amber:hover { filter: brightness(1.05); transform: translateY(-1px); }
+/* Brand gradient (maroon→pink→amber) CTA — white text for contrast. */
+.cta.grad { background: var(--grad2); color: #fff; box-shadow: 0 14px 28px -14px rgba(184, 60, 77, 0.6); }
+.cta.grad:hover { filter: brightness(1.05); transform: translateY(-1px); }
+.linkbtn {
+  display: block; margin: 16px auto 0; background: none; border: 0; color: #111;
+  font: inherit; font-weight: 600; font-size: 18px; cursor: pointer; text-decoration: underline;
+}
+
+/* Share row — WhatsApp + copy-link (with "הועתק" feedback). */
+.shareRow { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 22px; }
+.shareBtn {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: none; border: 1.5px solid var(--line2); border-radius: 14px;
+  padding: 10px 16px; font: inherit; font-weight: 700; font-size: 15px;
+  color: var(--ink); cursor: pointer; transition: 0.15s;
+}
+.shareBtn:hover { border-color: var(--pink); color: var(--maroon); }
+
+.fade { animation: fade 0.45s ease both; }
+@keyframes fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.center { text-align: center; color: var(--mut); font-size: 15px; margin-top: 40px; line-height: 1.6; }
+
+/* registration (screen 3) */
+.hLead { text-align: center; font-size: 24px; font-weight: 700; line-height: 1.45; color: var(--ink); max-width: 480px; margin: 0 auto; }
+.hLead .em { background: var(--grad2); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.sLead { text-align: center; color: var(--ink2); font-size: 15px; line-height: 1.65; margin: 12px auto 26px; max-width: 440px; }
+.joinform { max-width: 360px; margin: 12px auto 0; display: flex; flex-direction: column; gap: 12px; }
+/* Field group = visible label above the input, mirroring the post-assessment
+   signup (AuthField): 15px→14px, semibold, tracking-wide, 8px gap. */
+.fldGroup { display: flex; flex-direction: column; gap: 4px; text-align: right; }
+.fldLabel { font-size: 15px; font-weight: 600; letter-spacing: 0.02em; color: var(--ink); }
+@media (min-width: 640px) { .fldLabel { font-size: 14px; } }
+.fld {
+  width: 100%; border: 1.5px solid var(--line2); border-radius: 14px; padding: 14px 16px;
+  font: inherit; font-size: 15.5px; color: var(--ink); background: #fff; text-align: right;
+}
+.fld:focus { outline: none; border-color: var(--pink); }
+.fld::placeholder { color: var(--mut); }
+.consent { display: flex; align-items: center; gap: 9px; font-size: 13px; color: var(--ink2); cursor: pointer; padding: 2px; }
+.consent input { width: 17px; height: 17px; accent-color: var(--pink); }
+.err { margin-top: 10px; border: 1px solid #fecdd3; background: #fff1f2; color: #be123c; border-radius: 12px; padding: 10px 14px; font-size: 14px; text-align: center; }
+
+/* history */
+.history { margin-top: 30px; border-top: 1px solid var(--line2); padding-top: 18px; }
+.histRow { padding: 12px 4px; border-bottom: 1px solid #f3ebef; text-align: right; }
+.histQ { font-size: 15px; font-weight: 600; color: var(--ink); line-height: 1.4; }
+.histA { font-size: 13.5px; color: var(--maroon); font-weight: 700; margin-top: 4px; }
