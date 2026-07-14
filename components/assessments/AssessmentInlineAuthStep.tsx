@@ -57,6 +57,7 @@ export function AssessmentInlineAuthStep({ locale, deviceId, assessmentId, conse
         initialMode="signup"
         locale={locale}
         consent={consent}
+        theme="dark"
         api={{
           sendSignup: sendAssessmentSignupOtp,
           verifySignup: (a) => verifyAssessmentSignupOtp({ ...a, deviceId, assessmentId, language: locale }),

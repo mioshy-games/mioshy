@@ -60,6 +60,7 @@ export function OtpFlow({
   next,
   consent,
   api = AUTH_API,
+  theme = "light",
   onBeforeSendSignup,
   onAuthenticated,
 }: {
@@ -69,6 +70,9 @@ export function OtpFlow({
   consent: OtpConsentCopy;
   /** Surface-specific action set (claim-aware). Defaults to the /auth actions. */
   api?: OtpApi;
+  /** Visual theme — "dark" for the standalone /auth pages + the dark assessment
+   *  context; "light" (cream card) for the survey/journey light surfaces. */
+  theme?: "light" | "dark";
   /** Fired once, client-side, just before the signup "send code" call — used by
    *  the survey to mirror its browser-Pixel Lead (deduped with the CAPI Lead). */
   onBeforeSendSignup?: (email: string) => void;
@@ -150,18 +154,24 @@ export function OtpFlow({
     done({ isNewUser: true });
   };
 
+  const dark = theme === "dark";
+  const ink = dark ? "#fff" : INK;
+  const mut = dark ? "rgba(255,255,255,0.55)" : MUT;
+  const inpBg = dark ? "rgba(255,255,255,0.06)" : "#fff";
+  const inpBorder = dark ? "rgba(255,255,255,0.16)" : LINE;
+
   const S = {
-    card: { maxWidth: 360, margin: "0 auto", padding: "30px 22px", background: "#fcfaf7", border: `1px solid ${LINE}`, borderRadius: 20 } as const,
-    brand: { fontFamily: SERIF, fontWeight: 900, fontSize: 20, textAlign: "center", color: INK, marginBottom: 14 } as const,
-    h2: { fontFamily: SERIF, fontWeight: 900, fontSize: 23, textAlign: "center", color: INK, marginBottom: 8 } as const,
-    lead: { fontSize: 13.5, color: MUT, textAlign: "center", lineHeight: 1.5, marginBottom: 22 } as const,
-    lb: { fontSize: 12.5, fontWeight: 700, color: INK, marginBottom: 6, display: "block" } as const,
-    inp: { width: "100%", border: `1.5px solid ${LINE}`, background: "#fff", borderRadius: 13, padding: "13px 15px", fontSize: 15, color: INK, outline: "none" } as const,
+    card: { maxWidth: 360, margin: "0 auto", padding: "30px 22px", background: dark ? "rgba(255,255,255,0.04)" : "#fcfaf7", border: `1px solid ${dark ? "rgba(255,255,255,0.12)" : LINE}`, borderRadius: 20 } as const,
+    brand: { fontFamily: SERIF, fontWeight: 900, fontSize: 20, textAlign: "center", color: ink, marginBottom: 14 } as const,
+    h2: { fontFamily: SERIF, fontWeight: 900, fontSize: 23, textAlign: "center", color: ink, marginBottom: 8 } as const,
+    lead: { fontSize: 13.5, color: mut, textAlign: "center", lineHeight: 1.5, marginBottom: 22 } as const,
+    lb: { fontSize: 12.5, fontWeight: 700, color: ink, marginBottom: 6, display: "block" } as const,
+    inp: { width: "100%", border: `1.5px solid ${inpBorder}`, background: inpBg, borderRadius: 13, padding: "13px 15px", fontSize: 15, color: ink, outline: "none" } as const,
     cta: (on: boolean) => ({ display: "block", width: "100%", height: 52, border: 0, cursor: on ? "pointer" : "not-allowed", borderRadius: 13, background: GRAD, color: "#fff", fontWeight: 800, fontSize: 16, opacity: on ? 1 : 0.45, marginTop: 6 } as const),
-    ghost: { display: "block", width: "100%", textAlign: "center", background: "none", border: 0, cursor: "pointer", fontSize: 13.5, fontWeight: 700, color: MUT, marginTop: 16 } as const,
-    chk: { display: "flex", alignItems: "flex-start", gap: 10, fontSize: 12.5, color: INK, lineHeight: 1.45, cursor: "pointer", marginBottom: 12 } as const,
-    err: { marginTop: 12, background: "#fff1f2", border: "1px solid #fecdd3", color: "#be123c", borderRadius: 12, padding: "10px 14px", fontSize: 13.5, textAlign: "center" } as const,
-    foot: { marginTop: 20, textAlign: "center", fontSize: 12.5, color: MUT } as const,
+    ghost: { display: "block", width: "100%", textAlign: "center", background: "none", border: 0, cursor: "pointer", fontSize: 13.5, fontWeight: 700, color: mut, marginTop: 16 } as const,
+    chk: { display: "flex", alignItems: "flex-start", gap: 10, fontSize: 12.5, color: ink, lineHeight: 1.45, cursor: "pointer", marginBottom: 12 } as const,
+    err: { marginTop: 12, background: dark ? "rgba(190,18,60,0.15)" : "#fff1f2", border: `1px solid ${dark ? "rgba(253,164,175,0.4)" : "#fecdd3"}`, color: dark ? "#fda4af" : "#be123c", borderRadius: 12, padding: "10px 14px", fontSize: 13.5, textAlign: "center" } as const,
+    foot: { marginTop: 20, textAlign: "center", fontSize: 12.5, color: mut } as const,
     link: { color: "#D6409F", fontWeight: 700, textDecoration: "underline", background: "none", border: 0, cursor: "pointer", font: "inherit" } as const,
   };
 
@@ -200,7 +210,7 @@ export function OtpFlow({
               </label>
               <label style={S.chk}>
                 <input type="checkbox" checked={marketing} onChange={(e) => setMarketing(e.target.checked)} style={{ marginTop: 2, width: 18, height: 18, accentColor: "#D6409F" }} />
-                <span style={{ color: MUT }}>{consent.marketingConsent}</span>
+                <span style={{ color: mut }}>{consent.marketingConsent}</span>
               </label>
             </div>
           )}
@@ -208,7 +218,7 @@ export function OtpFlow({
           <button style={S.cta(mode === "login" || terms)} disabled={busy || (mode === "signup" && !terms) || !email} onClick={sendCode}>
             {busy ? "רגע…" : "שלחו לי קוד"}
           </button>
-          {mode === "signup" && !terms && <div style={{ fontSize: 11.5, color: MUT, textAlign: "center", marginTop: 10 }}>לא ניתן להמשיך עד אישור התנאים ומדיניות הפרטיות.</div>}
+          {mode === "signup" && !terms && <div style={{ fontSize: 11.5, color: mut, textAlign: "center", marginTop: 10 }}>לא ניתן להמשיך עד אישור התנאים ומדיניות הפרטיות.</div>}
           {error && <div style={S.err}>{error}</div>}
           <div style={S.foot}>
             {mode === "signup" ? "כבר יש לכם חשבון? " : "אין לכם חשבון עדיין? "}
@@ -223,11 +233,11 @@ export function OtpFlow({
       {step === "code" && (
         <>
           <h2 style={S.h2}>הזינו את הקוד</h2>
-          <p style={S.lead}>שלחנו קוד בן 6 ספרות אל<br /><b style={{ color: INK, direction: "ltr", display: "inline-block" }}>{email}</b></p>
+          <p style={S.lead}>שלחנו קוד בן 6 ספרות אל<br /><b style={{ color: ink, direction: "ltr", display: "inline-block" }}>{email}</b></p>
           <div style={{ margin: "6px 0 18px" }}>
-            <OtpCodeInput value={code} onChange={setCode} onComplete={(c) => verify(c)} disabled={busy} />
+            <OtpCodeInput value={code} onChange={setCode} onComplete={(c) => verify(c)} disabled={busy} theme={theme} />
           </div>
-          <div style={{ textAlign: "center", fontSize: 12.5, color: MUT, marginBottom: 12, lineHeight: 1.6 }}>
+          <div style={{ textAlign: "center", fontSize: 12.5, color: mut, marginBottom: 12, lineHeight: 1.6 }}>
             לא קיבלתם? כדאי להציץ גם בתיקיית הספאם — לפעמים הקוד אוהב להתחבא שם.<br />
             {resendIn > 0
               ? <span>שליחה חוזרת תוך 0:{String(resendIn).padStart(2, "0")}</span>
@@ -250,7 +260,7 @@ export function OtpFlow({
           </label>
           <button style={S.cta(true)} disabled={busy || !phone.trim()} onClick={savePhone}>{busy ? "רגע…" : "סיום הרשמה"}</button>
           <button style={S.ghost} onClick={() => done({ isNewUser: true })} disabled={busy}>דלג/י לעכשיו</button>
-          <div style={{ fontSize: 11.5, color: MUT, textAlign: "center", marginTop: 10, lineHeight: 1.4 }}>אפשר לדלג — נבקש את הנייד שוב כשתחברו בן/בת זוג או תרכשו.</div>
+          <div style={{ fontSize: 11.5, color: mut, textAlign: "center", marginTop: 10, lineHeight: 1.4 }}>אפשר לדלג — נבקש את הנייד שוב כשתחברו בן/בת זוג או תרכשו.</div>
           {error && <div style={S.err}>{error}</div>}
         </>
       )}

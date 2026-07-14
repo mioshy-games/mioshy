@@ -20,13 +20,16 @@ export function OtpCodeInput({
   onComplete,
   disabled = false,
   autoFocus = true,
+  theme = "light",
 }: {
   value: string;
   onChange: (code: string) => void;
   onComplete?: (code: string) => void;
   disabled?: boolean;
   autoFocus?: boolean;
+  theme?: "light" | "dark";
 }) {
+  const dark = theme === "dark";
   const refs = useRef<Array<HTMLInputElement | null>>([]);
   const digits = value.padEnd(6, " ").slice(0, 6).split("");
 
@@ -99,15 +102,15 @@ export function OtpCodeInput({
           style={{
             width: 44,
             height: 54,
-            border: `1.5px solid ${d.trim() ? "#D6409F" : "#ece2d4"}`,
+            border: `1.5px solid ${d.trim() ? "#D6409F" : dark ? "rgba(255,255,255,0.15)" : "#ece2d4"}`,
             boxShadow: d.trim() ? "0 0 0 3px rgba(214,64,159,.12)" : "none",
-            background: "#fff",
+            background: dark ? "rgba(255,255,255,0.05)" : "#fff",
             borderRadius: 12,
             textAlign: "center",
             fontFamily: 'var(--font-frank-ruhl), "Frank Ruhl Libre", serif',
             fontWeight: 900,
             fontSize: 24,
-            color: "#2E2622",
+            color: dark ? "#fff" : "#2E2622",
             outline: "none",
           }}
         />
