@@ -61,6 +61,28 @@ type Ok<T extends Record<string, unknown> = Record<string, never>> = {
 } & T;
 type Err = { ok: false; error: string };
 
+// Resolve a notification recipient's UI locale from their profile so the
+// deep-link href lands on the right localized route (default "he"). Best-effort
+// — a lookup miss/error just falls back to Hebrew. Fixes English users landing
+// on /he/... routes (Itzik 2026-07-15).
+async function resolveRecipientLocale(
+  admin: Awaited<ReturnType<typeof createAdminClient>>,
+  userId: string,
+): Promise<"he" | "en"> {
+  try {
+    const { data } = await admin
+      .from("profiles")
+      .select("preferred_language")
+      .eq("id", userId)
+      .maybeSingle();
+    const lang = (data as { preferred_language?: string | null } | null)
+      ?.preferred_language;
+    return lang === "en" ? "en" : "he";
+  } catch {
+    return "he";
+  }
+}
+
 // ------------------------------------------------------------
 // Shared helpers (mirrored from journey-content-user.ts so this
 // file stays standalone and the dual-write paths can be deleted in
@@ -444,13 +466,14 @@ export async function postExpertReplyToItem(args: {
     }
   }
   for (const uid of recipients) {
+    const loc = await resolveRecipientLocale(admin, uid);
     await notifyUser({
       recipientUserId: uid,
       kind: "item_message_expert_replied",
       subject: "Mioshy: an expert replied on your item",
       payload: {
         preview: previewBody(trimmed),
-        href: `/he/journey/timeline/${args.scheduledItemId}`,
+        href: `/${loc}/journey/timeline/${args.scheduledItemId}`,
       },
     });
   }
@@ -638,13 +661,17 @@ export async function postExpertReplyToChannel(args: {
     return { ok: false, error: msgErr?.message ?? "messages_insert_failed" };
   }
 
+  const chanLoc = await resolveRecipientLocale(admin, args.channelUserId);
   await notifyUser({
     recipientUserId: args.channelUserId,
     kind: "channel_message_expert_replied",
     subject: "Mioshy: an expert replied in your channel",
     payload: {
       preview: previewBody(trimmed),
-      href: `/he/my/journey`,
+      // The live expert coaching chat is /my/expert (ExpertConversation); the
+      // old /my/journey is a gated hub with only a legacy inline thread. Point
+      // the notification at the real chat so the click opens the conversation.
+      href: `/${chanLoc}/my/expert`,
     },
   });
 
