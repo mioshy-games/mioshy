@@ -1005,7 +1005,6 @@ export function AnalysisSummary({
                       (dynamic). */}
                   {selected && hasCoachingCost ? (
                     <div className="ar-addon">
-                      <div className="ar-addon-div" aria-hidden />
                       <div className="ar-addon-head">
                         <button
                           type="button"
@@ -1023,26 +1022,26 @@ export function AnalysisSummary({
                           <span className="ar-mo">{periodLabel(c.cadence)}</span>
                         </div>
                       </div>
-                      {coaching ? (
-                        <div className="ar-cexpert">
-                          {/* Gradient-dot bullets, same as the "מה כלול" list (Itzik
-                              2026-07-15) — no SVG icons. */}
-                          <ul className="ar-points">
-                            <li>
-                              <span aria-hidden className="dot" />
-                              <span>{isHe ? "זמין לכם בצ'אט לכל שאלה" : "Available in chat for any question"}</span>
-                            </li>
-                            <li>
-                              <span aria-hidden className="dot" />
-                              <span>{isHe ? "מתאים לכם את התוכן השבועי אישית" : "Personalises your weekly content"}</span>
-                            </li>
-                            <li>
-                              <span aria-hidden className="dot" />
-                              <span>{isHe ? "מבצע מעקב שבועי וחודשי" : "Weekly and monthly tracking"}</span>
-                            </li>
-                          </ul>
-                        </div>
-                      ) : null}
+                      {/* Expert content is ALWAYS visible (Itzik 2026-07-15) — the
+                          checkbox above still decides whether coaching is added to
+                          the order and price, but people always see what they'd get.
+                          Gradient-dot bullets, same as the "מה כלול" list. */}
+                      <div className="ar-cexpert">
+                        <ul className="ar-points">
+                          <li>
+                            <span aria-hidden className="dot" />
+                            <span>{isHe ? "זמין לכם בצ'אט לכל שאלה" : "Available in chat for any question"}</span>
+                          </li>
+                          <li>
+                            <span aria-hidden className="dot" />
+                            <span>{isHe ? "מתאים לכם את התוכן השבועי אישית" : "Personalises your weekly content"}</span>
+                          </li>
+                          <li>
+                            <span aria-hidden className="dot" />
+                            <span>{isHe ? "מבצע מעקב שבועי וחודשי" : "Weekly and monthly tracking"}</span>
+                          </li>
+                        </ul>
+                      </div>
                     </div>
                   ) : null}
                   </div>
@@ -1814,13 +1813,13 @@ export function AnalysisSummary({
            toggle. Money plumbing unchanged (drives the shared coaching state). */
         /* Inside the selected card, aligned under the plan name (padding-start
            clears the radio, matching .incl); the divider spans the card width. */
+        /* Coaching = its OWN framed box, separate from the base "מה כלול" box
+           (Itzik 2026-07-15). Both are always open/visible. */
         .ar-addon {
-          padding: 0 17px 16px 17px;
-        }
-        .ar-addon-div {
-          height: 1px;
-          background: #ece2d4;
-          margin: 0 0 16px 0;
+          margin: 14px 6px 2px;
+          border: 1.5px solid #ece2d4;
+          border-radius: 14px;
+          padding: 16px 17px;
         }
         /* Checkbox row on top, "+X" on its own line below, right-aligned (mockup);
            the "+X" lines up with the monthly price's right edge (33px indent). */
@@ -2224,8 +2223,13 @@ export function AnalysisSummary({
         .ar-inline-timer :global(.pot-tiles) {
           justify-content: flex-end;
         }
+        /* Base plan = its OWN framed box (Itzik 2026-07-15), separate from the
+           coaching box below; both bordered and always visible. */
         .incl {
-          padding: 14px 17px 16px 17px;
+          margin: 16px 6px 0;
+          border: 1.5px solid #ece2d4;
+          border-radius: 14px;
+          padding: 16px 17px;
         }
         .incl-div {
           height: 1px;
