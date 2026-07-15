@@ -22,6 +22,7 @@ import { getTrialLpResult, normalizeExpiry } from "@/lib/cardcom"
 import { encryptToken, tokenHashSha256 }     from "@/lib/tokenCrypto"
 import { createAdminClient }                 from "@/lib/supabase-admin"
 import { assignJourneyOnPurchase }           from "@/lib/journey-content/auto-assign"
+import { notifyAdminNewSubscription }         from "@/lib/journey-content/notifications"
 import type { JourneyProductSlug }           from "@/lib/journey-content/types"
 
 const TRIAL_DAYS = 7
@@ -298,6 +299,21 @@ export async function processTrialLowProfile(args: {
   }
 
   await admin.from("billing_events").update({ processed: true }).eq("idempotency_key", idempotencyKey)
+
+  // Day-1 admin alert on the new trial (best-effort, non-fatal — never blocks
+  // the trial creation). Fires HERE, at signup, not at the day-7 charge.
+  await notifyAdminNewSubscription({
+    userId,
+    email: session.email,
+    plan: session.plan,
+    coaching,
+    currency: session.currency,
+    firstAmount: session.amount,
+    regularAmount: fullPlanAmount,
+    isTrial: true,
+    product,
+    createdAt: now,
+  })
 
   console.log("[trial-process:DONE]", {
     session_id: sessionId, subscription_id: subscriptionId, product, coaching,

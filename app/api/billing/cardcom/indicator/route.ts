@@ -23,6 +23,7 @@ import {
 import { createAdminClient }         from "@/lib/supabase-admin"
 import { isTestUser }                from "@/lib/auth/is-test-user"
 import { assignJourneyOnPurchase }   from "@/lib/journey-content/auto-assign"
+import { notifyAdminNewSubscription } from "@/lib/journey-content/notifications"
 import type { JourneyProductSlug }   from "@/lib/journey-content/types"
 import {
   tagAsJourneyMember,
@@ -530,6 +531,22 @@ export async function GET(req: Request) {
               }
             : null,
         })
+        // Day-1 admin alert on a genuinely NEW subscription (insert branch only,
+        // not reactivation/renewal updates). Best-effort, non-fatal.
+        if (subscriptionId) {
+          await notifyAdminNewSubscription({
+            userId,
+            email: session.email,
+            plan: session.plan,
+            coaching: session.coaching ?? true,
+            currency: session.currency,
+            firstAmount: session.amount,
+            regularAmount: fullPlanAmount,
+            isTrial: false,
+            product,
+            createdAt: now,
+          })
+        }
       }
     }
 
