@@ -267,7 +267,9 @@ export function AnalysisSummary({
   // (heroSub + improvements* keys dropped — those sections were removed.)
   const cmsPriceTitle = useCmsText(`${RK}.priceTitle`).text;
   const cmsIncluded1 = useCmsText(`${RK}.included1`).text;
-  const cmsIncluded2 = useCmsText(`${RK}.included2`).text;
+  // included2 (coaching) is no longer a bullet — it moved to the add-on section
+  // below the includes. The hook still runs so the CMS row stays registered.
+  void useCmsText(`${RK}.included2`).text;
   const cmsIncluded3 = useCmsText(`${RK}.included3`).text;
   const cmsIncluded4 = useCmsText(`${RK}.included4`).text;
   // included5 ("ייעוץ זוגי עם מיאושי") + fullAssessmentNote removed from the
@@ -774,68 +776,9 @@ export function AnalysisSummary({
                 belongs next to the number it applies to, not at the card top.
                 Now rendered inside the selected cadence card, below price+savings. */}
             <div className="ar-pricecard">
-              {/* Stage-1 coaching add-on — with/without choice. Only rendered
-                  once a coaching cost is configured (else the bundle == content
-                  and a 0₪ choice would only confuse). */}
-              {hasCoachingCost ? (
-                <div className="ar-addon">
-                  {/* Coaching add-on as a single checkbox (solid #D6409F), not
-                      tabs. Toggles the shared `coaching` state → the cadence
-                      cards below fold the add-on into their totals (amtOf), the
-                      trial/checkout re-probe with {plan, coaching}. The "+X" is
-                      the SELECTED cadence's coaching_cost (per-cadence, dynamic
-                      from the admin — no hardcode). */}
-                  <div className="ar-addon-head">
-                    <button
-                      type="button"
-                      className="ar-addbtn"
-                      onClick={() => setCoaching(!coaching)}
-                      aria-pressed={coaching}
-                    >
-                      <span className={`ar-box${coaching ? " on" : ""}`} aria-hidden />
-                      <span className="ar-addtitle">
-                        {isHe ? "הוספת ייעוץ זוגי עם מומחה" : "Add couples coaching with an expert"}
-                      </span>
-                    </button>
-                    {selectedOption ? (
-                      <div className="ar-addbig">
-                        +{fmt(coachingCostOf(selectedOption))} <span className="ar-cur">{sym}</span>{" "}
-                        <span className="ar-mo">{periodLabel(selectedCadence)}</span>
-                      </div>
-                    ) : null}
-                  </div>
-                  {coaching ? (
-                    <div className="ar-cexpert">
-                      <svg width="0" height="0" style={{ position: "absolute" }} aria-hidden>
-                        <defs>
-                          <linearGradient id="arCoachGrad" x1="0" y1="0" x2="1" y2="1">
-                            <stop offset="0" stopColor="#6C5CE7" />
-                            <stop offset=".55" stopColor="#D6409F" />
-                            <stop offset="1" stopColor="#F79154" />
-                          </linearGradient>
-                        </defs>
-                      </svg>
-                      <div className="ar-cexpert-lead">
-                        {isHe ? "המומחה זמין לשני בני הזוג" : "The expert is available to both partners"}
-                      </div>
-                      <ul className="ar-points">
-                        <li>
-                          <svg viewBox="0 0 24 24" fill="none" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" /></svg>
-                          <span>{isHe ? "זמין לכם בצ'אט לכל שאלה" : "Available in chat for any question"}</span>
-                        </li>
-                        <li>
-                          <svg viewBox="0 0 24 24" fill="none" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v4" /><path d="M12 18v4" /><path d="M4.9 4.9l2.8 2.8" /><path d="M16.3 16.3l2.8 2.8" /><circle cx="12" cy="12" r="4" /></svg>
-                          <span>{isHe ? "עוקב אחריכם ומנהל לכם את התוכן השבועי" : "Follows you and curates your weekly content"}</span>
-                        </li>
-                        <li>
-                          <svg viewBox="0 0 24 24" fill="none" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18" /><path d="m19 9-5 5-4-4-3 3" /></svg>
-                          <span>{isHe ? "מבצע מעקב שבועי וחודשי" : "Weekly and monthly tracking"}</span>
-                        </li>
-                      </ul>
-                    </div>
-                  ) : null}
-                </div>
-              ) : null}
+              {/* Coaching add-on moved INTO the selected cadence card (below the
+                  includes, after a divider) to match the approved mockup — see
+                  the .ar-addon block inside the cadence map below. */}
 
               {/* Packages ← journeyCadences. Price shown = promo first-charge
                   (server-computed) or the regular price for that cadence. */}
@@ -969,10 +912,10 @@ export function AnalysisSummary({
                       </div>
                       <ul>
                         {[
+                          // Coaching is no longer listed here — it has its own
+                          // add-on section below (checkbox + expert points), per
+                          // the approved mockup. cmsIncluded2 intentionally unused.
                           rc(cmsIncluded1, "פרק חדש כל שבוע", "A new chapter every week"),
-                          ...(coaching
-                            ? [rc(cmsIncluded2, "מומחה זוגיות פרטי בצ'אט", "A private relationship expert in chat")]
-                            : []),
                           rc(cmsIncluded3, "משחקי זוגות אונליין", "Online couples games"),
                           rc(cmsIncluded4, "הסקס של מיאושי", "Mioshy's sex games"),
                         ].map((it, i) => (
@@ -982,6 +925,62 @@ export function AnalysisSummary({
                           </li>
                         ))}
                       </ul>
+                    </div>
+                  ) : null}
+                  {/* Coaching add-on — INSIDE the selected card, below the
+                      includes, after a divider (approved mockup). Toggles the
+                      shared `coaching` state; "+X" is this cadence's coaching_cost
+                      (dynamic). */}
+                  {selected && hasCoachingCost ? (
+                    <div className="ar-addon">
+                      <div className="ar-addon-div" aria-hidden />
+                      <div className="ar-addon-head">
+                        <button
+                          type="button"
+                          className="ar-addbtn"
+                          onClick={() => setCoaching(!coaching)}
+                          aria-pressed={coaching}
+                        >
+                          <span className={`ar-box${coaching ? " on" : ""}`} aria-hidden />
+                          <span className="ar-addtitle">
+                            {isHe ? "הוספת ייעוץ זוגי עם מומחה" : "Add couples coaching with an expert"}
+                          </span>
+                        </button>
+                        <div className="ar-addbig">
+                          +{fmt(coachingCostOf(c))} <span className="ar-cur">{sym}</span>{" "}
+                          <span className="ar-mo">{periodLabel(c.cadence)}</span>
+                        </div>
+                      </div>
+                      {coaching ? (
+                        <div className="ar-cexpert">
+                          <svg width="0" height="0" style={{ position: "absolute" }} aria-hidden>
+                            <defs>
+                              <linearGradient id="arCoachGrad" x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0" stopColor="#6C5CE7" />
+                                <stop offset=".55" stopColor="#D6409F" />
+                                <stop offset="1" stopColor="#F79154" />
+                              </linearGradient>
+                            </defs>
+                          </svg>
+                          <div className="ar-cexpert-lead">
+                            {isHe ? "המומחה זמין לשני בני הזוג" : "The expert is available to both partners"}
+                          </div>
+                          <ul className="ar-points">
+                            <li>
+                              <svg viewBox="0 0 24 24" fill="none" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" /></svg>
+                              <span>{isHe ? "זמין לכם בצ'אט לכל שאלה" : "Available in chat for any question"}</span>
+                            </li>
+                            <li>
+                              <svg viewBox="0 0 24 24" fill="none" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v4" /><path d="M12 18v4" /><path d="M4.9 4.9l2.8 2.8" /><path d="M16.3 16.3l2.8 2.8" /><circle cx="12" cy="12" r="4" /></svg>
+                              <span>{isHe ? "עוקב אחריכם ומנהל לכם את התוכן השבועי" : "Follows you and curates your weekly content"}</span>
+                            </li>
+                            <li>
+                              <svg viewBox="0 0 24 24" fill="none" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18" /><path d="m19 9-5 5-4-4-3 3" /></svg>
+                              <span>{isHe ? "מבצע מעקב שבועי וחודשי" : "Weekly and monthly tracking"}</span>
+                            </li>
+                          </ul>
+                        </div>
+                      ) : null}
                     </div>
                   ) : null}
                   </div>
@@ -1643,8 +1642,15 @@ export function AnalysisSummary({
            (D6409F, NOT the gradient) plus a per-cadence add-on price and, when
            checked, the expert value points. Replaces the with/without segmented
            toggle. Money plumbing unchanged (drives the shared coaching state). */
+        /* Inside the selected card, aligned under the plan name (padding-start
+           clears the radio, matching .incl); the divider spans the card width. */
         .ar-addon {
-          margin-bottom: 22px;
+          padding: 0 50px 16px 17px;
+        }
+        .ar-addon-div {
+          height: 1px;
+          background: #ece2d4;
+          margin: 0 -33px 16px 0;
         }
         .ar-addon-head {
           display: flex;
