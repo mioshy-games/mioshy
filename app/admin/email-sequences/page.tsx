@@ -54,7 +54,9 @@ const SAMPLE: SeqPersonalization = {
   windowTime: "21:00",
   exercise: null,
   baseUrl: "https://mioshy.com",
-  unsubscribeUrl: "https://mioshy.com/he/account",
+  // Admin preview default (no real recipient) → the unsubscribe page; real sends
+  // tokenize this per recipient.
+  unsubscribeUrl: "https://mioshy.com/he/unsubscribe",
 };
 
 export default async function AdminEmailSequencesPage() {
