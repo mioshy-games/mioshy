@@ -948,10 +948,10 @@ export function AnalysisSummary({
                           onClick={() => setCoaching(!coaching)}
                           aria-pressed={coaching}
                         >
-                          <span className={`ar-box${coaching ? " on" : ""}`} aria-hidden />
                           <span className="ar-addtitle">
                             {isHe ? "הוספת ייעוץ זוגי עם מומחה" : "Add couples coaching with an expert"}
                           </span>
+                          <span className={`ar-box${coaching ? " on" : ""}`} aria-hidden />
                         </button>
                         <div className="ar-addbig">
                           +{fmt(coachingCostOf(c))} <span className="ar-cur">{sym}</span>{" "}
@@ -1397,9 +1397,11 @@ export function AnalysisSummary({
         .ar-section {
           margin-bottom: 40px;
         }
+        /* Header sits in its own area with uniform breathing room above and
+           below (Itzik 2026-07-15) — not tight against the card. */
         .ar-sh {
           font-size: 25px;
-          margin-bottom: 4px;
+          margin: 26px auto;
           line-height: 1.2;
           text-align: center;
         }
@@ -1652,21 +1654,26 @@ export function AnalysisSummary({
         /* Inside the selected card, aligned under the plan name (padding-start
            clears the radio, matching .incl); the divider spans the card width. */
         .ar-addon {
-          padding: 0 33px 16px 17px;
+          padding: 0 17px 16px 17px;
         }
         .ar-addon-div {
           height: 1px;
           background: #ece2d4;
-          margin: 0 -16px 16px 0;
+          margin: 0 0 16px 0;
         }
         /* Checkbox row on top, "+X" on its own line below, right-aligned (mockup);
            the "+X" lines up with the monthly price's right edge (33px indent). */
         .ar-addon-head {
           display: block;
         }
+        /* Checkbox box pinned to the LEFT (blue line, with the radios); the label
+           runs to the right edge. JSX order is [title, box] so in RTL the box
+           lands on the left. */
         .ar-addbtn {
           display: flex;
           align-items: center;
+          justify-content: space-between;
+          width: 100%;
           gap: 11px;
           background: none;
           border: 0;
@@ -1735,7 +1742,7 @@ export function AnalysisSummary({
           align-items: center;
           justify-content: center;
           text-align: center;
-          margin: 0 -16px 14px;
+          margin: 0 -17px 14px;
           padding: 12px 16px;
           border-radius: 16px 16px 0 0;
           background: linear-gradient(95deg, #6c5ce7, #d6409f 52%, #f79154);
@@ -1817,7 +1824,9 @@ export function AnalysisSummary({
           width: 100%;
           background: none;
           border: 0;
-          padding: 16px 17px 0;
+          /* Left padding (46px) reserves the absolute radio's lane; content stays
+             right-aligned to 17px. */
+          padding: 16px 17px 0 46px;
           position: relative;
           z-index: 1;
           cursor: pointer;
@@ -1883,9 +1892,9 @@ export function AnalysisSummary({
           line-height: 1.1;
         }
         .ar-trial-t2 {
-          font-weight: 700;
-          font-size: 20px;
-          line-height: 1.15;
+          font-weight: 600;
+          font-size: 18px;
+          line-height: 1.5;
         }
         .ar-opt-group.sel .ar-opt {
           border: 0;
@@ -1894,7 +1903,13 @@ export function AnalysisSummary({
           box-shadow: none;
         }
         /* Radio: hollow ring; selected = gradient fill + white centre dot. */
+        /* Radio pinned to the LEFT edge (blue line, Itzik 2026-07-15) so the
+           coaching checkbox and every cadence radio start from one point, while
+           all text content aligns to the right edge. */
         .ar-radio {
+          position: absolute;
+          left: 17px;
+          top: 20px;
           flex: none;
           width: 22px;
           height: 22px;
@@ -1902,10 +1917,6 @@ export function AnalysisSummary({
           border: 2px solid #d8c8b3;
           display: grid;
           place-items: center;
-          /* Pin to the name line (top) so radio + name + price sit on one row
-             even when the promo note wraps a second line below the name. */
-          align-self: flex-start;
-          margin-top: 3px;
         }
         .ar-opt.sel .ar-radio {
           border-color: transparent;
@@ -1964,7 +1975,7 @@ export function AnalysisSummary({
           flex-basis: 100%;
           margin-inline-start: 0;
           margin-top: 3px;
-          padding-inline-start: 33px;
+          padding-inline-start: 0;
           display: flex;
           align-items: baseline;
           justify-content: flex-start;
@@ -2019,7 +2030,7 @@ export function AnalysisSummary({
            start clears the radio). No "מה כלול" heading, no top divider. */
         /* Selected-card included block — exact approved spec. */
         .psave {
-          padding: 5px 33px 0 17px;
+          padding: 5px 17px 0 17px;
           font-size: 20px;
           font-weight: 700;
           width: max-content;
@@ -2039,7 +2050,7 @@ export function AnalysisSummary({
            not centered mid-card. Overrides PersonalOfferTimer's own centering. */
         .ar-inline-timer {
           padding-block: 8px 2px;
-          padding-inline: 33px 17px;
+          padding-inline: 17px 17px;
         }
         .ar-inline-timer :global(.pot) {
           margin-bottom: 0;
@@ -2054,7 +2065,7 @@ export function AnalysisSummary({
           justify-content: flex-start;
         }
         .incl {
-          padding: 14px 50px 16px 17px;
+          padding: 14px 17px 16px 17px;
         }
         .incl-div {
           height: 1px;
@@ -2486,8 +2497,9 @@ export function AnalysisSummary({
             font-size: 20px;
           }
           .ar-pricecard {
-            /* wider (v9) so the one-line sub + centered timer + price fit */
-            max-width: 640px;
+            /* Narrower on desktop (Itzik 2026-07-15) — ~400px like mobile, was
+               640px which read too wide. */
+            max-width: 400px;
           }
           /* Desktop: radio + name/save on the start, price on the end (same
              single-row layout as mobile; the campaign timer, when present, owns
