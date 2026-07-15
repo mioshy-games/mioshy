@@ -1728,15 +1728,12 @@ export function AnalysisSummary({
           margin-top: 12px;
         }
 
-        /* PRICE */
+        /* PRICE — no outer card (Itzik 2026-07-15): just the pricing content on
+           the page background, no border/shadow/fill wrapping the whole area. */
         .ar-pricecard {
           max-width: 520px;
           margin: 0 auto;
-          background: #ffffff;
-          border: 1px solid #ece2cf;
-          border-radius: 24px;
           padding: 16px;
-          box-shadow: 0 18px 44px -22px rgba(120, 70, 120, 0.28);
         }
         /* Two-column desktop shell — on mobile the wrappers are display:contents
            so they contribute NOTHING to layout (mobile is byte-for-byte the
@@ -1882,7 +1879,7 @@ export function AnalysisSummary({
           color: #2e2622;
         }
         .ar-addbig {
-          font-family: var(--font-frank-ruhl), "Frank Ruhl Libre", serif;
+          font-family: var(--font-assistant), "Assistant", "Heebo", system-ui, sans-serif;
           font-weight: 900;
           font-size: 26px;
           line-height: 1.1;
@@ -2178,14 +2175,14 @@ export function AnalysisSummary({
           line-height: 1;
           color: #2e2622;
         }
-        /* SELECTED (focal) package: 46px serif price, ₪ 19px; the period stays
-           muted 13px like the mockup's "/ חודש". */
+        /* SELECTED (focal) package: 46px price (Assistant sans — all pricing
+           numbers share one font, Itzik 2026-07-15), ₪ 19px; period muted 13px. */
         .ar-opt-group.sel .ar-opt-price {
-          font-family: var(--font-frank-ruhl), "Frank Ruhl Libre", serif;
+          font-family: var(--font-assistant), "Assistant", "Heebo", system-ui, sans-serif;
           font-size: 46px;
         }
         .ar-opt-group.sel .ar-price-num {
-          font-family: var(--font-frank-ruhl), "Frank Ruhl Libre", serif;
+          font-family: var(--font-assistant), "Assistant", "Heebo", system-ui, sans-serif;
           font-size: 46px;
         }
         .ar-opt-group.sel .ar-price-cur {
@@ -2307,7 +2304,7 @@ export function AnalysisSummary({
           color: #2e2622;
         }
         .ar-total-amt {
-          font-family: var(--font-frank-ruhl), "Frank Ruhl Libre", serif;
+          font-family: var(--font-assistant), "Assistant", "Heebo", system-ui, sans-serif;
           font-size: 30px;
           font-weight: 900;
           background: var(--ar-grad);
@@ -2354,7 +2351,7 @@ export function AnalysisSummary({
           line-height: 1.5;
         }
         .ar-summary-line b {
-          font-family: var(--font-frank-ruhl), "Frank Ruhl Libre", serif;
+          font-family: var(--font-assistant), "Assistant", "Heebo", system-ui, sans-serif;
           font-size: 26px;
           font-weight: 900;
           background: var(--ar-grad);

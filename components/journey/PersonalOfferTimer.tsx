@@ -86,7 +86,7 @@ export function PersonalOfferTimer({
         }
         .pot-n {
           display: block;
-          font-family: var(--font-frank-ruhl), "Frank Ruhl Libre", serif;
+          font-family: var(--font-assistant), "Assistant", "Heebo", system-ui, sans-serif;
           font-weight: 900;
           font-size: 26px;
           line-height: 1;
