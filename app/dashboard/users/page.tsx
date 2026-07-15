@@ -37,7 +37,8 @@ const PAGE_SIZE = 25;
 const PILLARS = ["journey", "games", "adults"] as const;
 const LEVELS = ["active", "cooling", "churned"] as const;
 // Coaching add-on filter (journey subs only). "with"/"without" map to
-// subscriptions.coaching = true/false on an active journey subscription.
+// subscriptions.coaching = true/false on a live (active|trialing|past_due)
+// journey subscription.
 const COACHINGS = ["with", "without"] as const;
 const SORTS = ["last_login_at", "activity_level"] as const;
 
@@ -92,16 +93,22 @@ export default async function AdminUsersPage({
   let count = 0;
   if (admin) {
     // Coaching filter: v_user_directory has no coaching column, so resolve the
-    // set of users with an active journey subscription of the requested coaching
+    // set of users with a LIVE journey subscription of the requested coaching
     // flag directly from subscriptions, then constrain the view query by user_id.
     // Keeps filtering + pagination + count in the DB (no per-user loop).
+    //
+    // "Live" = active | trialing | past_due (Itzik 2026-07-15) — aligns the table
+    // with the overview KPI, which counts journey subs regardless of status. A
+    // trialing customer is your freshest customer, and past_due is a customer in
+    // the grace window; both must show, otherwise brand-new signups vanish from
+    // the table for the whole 7-day trial.
     let coachingUserIds: string[] | null = null;
     if (coaching) {
       const { data: subRows } = await admin
         .from("subscriptions")
         .select("user_id")
         .eq("product", "journey")
-        .eq("status", "active")
+        .in("status", ["active", "trialing", "past_due"])
         .eq("coaching", coaching === "with");
       coachingUserIds = [
         ...new Set(
