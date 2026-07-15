@@ -30,6 +30,7 @@ import {
   normaliseEmail,
 } from "@/lib/between-us/invitations";
 import { migrateSoloJourneyToCouple } from "@/lib/journey-content/migrate-solo-to-couple";
+import { sendEmailOtp, verifyEmailOtp, isFirstRegistration } from "@/lib/auth/otp-core";
 
 type Ok = { ok: true; couple_id: string };
 type Err = { ok: false; error: string };
@@ -200,6 +201,74 @@ export async function claimInviteAsNewUser(params: {
   const sessionToken = await createSession(userId, await getDeviceInfo());
   await writeSessionCookie(sessionToken);
 
+  revalidatePath("/[locale]/my", "page");
+  revalidatePath("/[locale]/account", "page");
+  return { ok: true, couple_id: accept.couple_id };
+}
+
+// ─────────────────────────────────────────────────────────────────
+// NEW USER path — passwordless Email OTP (invitee email is fixed by the
+// invitation). sendInviteClaimOtp mails the 6-digit code; verifyInviteClaimOtp
+// creates the session, writes the profile (name + mobile), and claims the
+// invite. Replaces claimInviteAsNewUser's password path.
+// ─────────────────────────────────────────────────────────────────
+export async function sendInviteClaimOtp(params: { token: string; email: string }): Promise<{ ok: true } | { ok: false; error: string }> {
+  const token = (params.token ?? "").trim();
+  const email = normaliseEmail(params.email ?? "");
+  const pre = await verifyInvitationPreflight(token, email);
+  if (!pre.ok) return pre;
+  const r = await sendEmailOtp({ email, mode: "signup" });
+  if (!r.ok) return { ok: false, error: r.code === "rate_limit" ? "rate_limited" : "send_failed" };
+  return { ok: true };
+}
+
+export async function verifyInviteClaimOtp(params: {
+  token: string;
+  email: string;
+  code: string;
+  fullName: string;
+  mobile: string;
+}): Promise<Result> {
+  const token = (params.token ?? "").trim();
+  const email = normaliseEmail(params.email ?? "");
+  const fullName = (params.fullName ?? "").trim();
+  const mobile = normaliseMobile(params.mobile ?? "");
+  if (fullName.length < 2) return { ok: false, error: "invalid_full_name" };
+  if (!mobile) return { ok: false, error: "invalid_mobile" };
+
+  const pre = await verifyInvitationPreflight(token, email);
+  if (!pre.ok) return pre;
+
+  const v = await verifyEmailOtp({ email, token: params.code });
+  if (!v.ok) return { ok: false, error: "invalid_code" };
+  const userId = v.userId;
+
+  const admin = createAdminSupabaseClient();
+  // Identity (name + mobile) only for a genuinely NEW account. An existing user
+  // who used the "new account" tab is logged into their account — don't overwrite
+  // their full_name/mobile; the invitation is still accepted below. Uses the
+  // deterministic profile-has-no-name check (not the fragile created_at heuristic).
+  if (await isFirstRegistration(userId)) {
+    const { error: profileErr } = await admin.from("profiles").upsert(
+      { id: userId, full_name: fullName, mobile, phone: mobile },
+      { onConflict: "id" },
+    );
+    if (profileErr) console.error("[invite-claim/otp] profile upsert failed", profileErr);
+  }
+
+  // verifyEmailOtp already established the Supabase session (server client), so
+  // the SECURITY DEFINER accept RPC runs as this user.
+  const accept = await acceptInvitationForCurrentUser(token);
+  if (!accept.ok) return { ok: false, error: accept.error };
+
+  try {
+    await migrateSoloJourneyToCouple({ userId, coupleId: accept.couple_id });
+  } catch (err) {
+    console.error("[invite-claim/otp] journey migration failed", err);
+  }
+
+  const sessionToken = await createSession(userId, await getDeviceInfo());
+  await writeSessionCookie(sessionToken);
   revalidatePath("/[locale]/my", "page");
   revalidatePath("/[locale]/account", "page");
   return { ok: true, couple_id: accept.couple_id };

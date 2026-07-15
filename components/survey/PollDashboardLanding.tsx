@@ -104,7 +104,7 @@ export function PollDashboardLanding({ initialSubscribed, userName }: { initialS
     <div dir="rtl" className="mx-auto max-w-lg px-5 py-10 text-center text-[#2a2130]" style={{ fontFamily: "var(--font-assistant), sans-serif" }}>
       <div
         className="mx-auto mb-6 grid h-[76px] w-[76px] place-items-center rounded-full text-4xl font-extrabold text-white"
-        style={{ background: "linear-gradient(120deg,#b83c4d,#ec4899 55%,#f59e0b)", boxShadow: "0 16px 30px -14px rgba(236,72,153,.6)" }}
+        style={{ background: "linear-gradient(95deg, #6C5CE7 0%, #D6409F 52%, #F79154 100%)", boxShadow: "0 16px 30px -14px rgba(214,64,159,.6)" }}
       >
         ✓
       </div>
@@ -118,7 +118,7 @@ export function PollDashboardLanding({ initialSubscribed, userName }: { initialS
           type="button"
           onClick={() => setView("question")}
           className="inline-block rounded-2xl px-6 py-3.5 font-extrabold text-white text-[16px]"
-          style={{ background: "#D97706", boxShadow: "0 14px 28px -14px rgba(217,119,6,.7)" }}
+          style={{ background: "linear-gradient(95deg, #6C5CE7 0%, #D6409F 52%, #F79154 100%)", boxShadow: "0 14px 28px -14px rgba(214,64,159,.5)" }}
         >
           לשאלה של היום ←
         </button>

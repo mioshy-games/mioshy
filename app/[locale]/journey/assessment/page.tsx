@@ -22,6 +22,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
 import { getPromoMode, getUserOfferExpiresAt, getPersonalWindowConfig, promoDiscountEligible } from "@/lib/billing/promo-mode";
 import { JourneyClient } from "@/components/journey/JourneyClient";
+import { getOtpConsentCopy } from "@/lib/auth/otp-consent";
 // `JourneyAmbience` (21 animated particles + fog blobs) removed
 // 2026-05-19 per Itzik — the per-frame animation cost on the question
 // stages was the main suspect for the "Chrome slows the whole machine"
@@ -97,6 +98,13 @@ export default async function JourneyAssessmentPage({
   });
 
   let initialProgress: { current_step: number; status: string; language: Locale } | null = null;
+  // Robust "finished the short assessment" flag (status complete OR full step
+  // count), hoisted so the render can pass it to JourneyClient. Item 12: an
+  // existing (unpaid) user who completed the short assessment must land on the
+  // results page (AnalysisSummary), not be dumped back into the questionnaire —
+  // JourneyClient.isDone only checked status==="complete", which misses a
+  // completed journey whose status/answers didn't resolve exactly.
+  let assessmentCompleted = false;
   let subscriptionActive = false;
   // F3.3 — journey-specific entitlement signal for the report. Distinct from
   // `subscriptionActive` (which is any active sub, product-agnostic): the
@@ -372,6 +380,7 @@ export default async function JourneyAssessmentPage({
       (journey.status === "complete" ||
         journey.status === "completed" ||
         journey.current_step >= totalQuestions());
+    assessmentCompleted = completed;
     console.log("[/journey/assessment] guard check", {
       subscriptionActive,
       hasJourneyRow: !!journey,
@@ -395,7 +404,12 @@ export default async function JourneyAssessmentPage({
         .select("user_id")
         .eq("user_id", user.id)
         .maybeSingle();
-      if (priorityCheck && !explicitSummaryIntent) {
+      // Don't bounce a user who just registered INLINE and is still on the OTP
+      // phone step — the verify action's cookie set triggers a soft refresh that
+      // would otherwise redirect and skip the phone step. Cleared by OtpFlow once
+      // the phone step is done (see components/auth/OtpFlow.tsx).
+      const phonePending = cookies().get("otp_phone_pending")?.value === "1";
+      if (priorityCheck && !explicitSummaryIntent && !phonePending) {
         console.log(
           "[/journey/assessment] ✅ Phase A guard fired - redirecting to /my/journey",
           { user_id: user.id },
@@ -630,11 +644,13 @@ export default async function JourneyAssessmentPage({
       <h1 className="sr-only">{locale === "en" ? "Relationship assessment" : "אבחון הזוגיות שלכם"}</h1>
       <JourneyClient
         locale={locale as Locale}
+        consent={await getOtpConsentCopy(locale === "en" ? "en" : "he")}
         initialProgress={initialProgress}
         initialAnswers={initialAnswers}
         subscriptionActive={subscriptionActive}
         journeySubscribed={journeySubscribed}
         authenticated={!!user}
+        initialCompleted={assessmentCompleted && !subscriptionActive}
         journeyCadences={journeyCadences}
         activePromo={activePromo}
         offerExpiresAt={offerExpiresAt}

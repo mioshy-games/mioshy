@@ -1,0 +1,331 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { OtpCodeInput } from "./OtpCodeInput";
+import type { OtpConsentCopy } from "@/lib/auth/otp-consent";
+import type { SendOtpResult } from "@/lib/auth/otp-core";
+import {
+  sendAuthSignupOtp,
+  verifyAuthSignupOtp,
+  saveSignupPhone,
+  sendAuthLoginOtp,
+  verifyAuthLoginOtp,
+} from "@/app/actions/otp-auth";
+import { joinCoupleByPairCode } from "@/app/actions/between-us-couple";
+
+type VerifyResult = { success: true; [k: string]: unknown } | { success: false; error: string };
+
+/** The action set OtpFlow drives. Defaults to the /auth actions; each inline
+ *  surface (survey/assessment/journey) passes its own claim-aware verify. */
+export type OtpApi = {
+  sendSignup: (a: { email: string; fullName: string; termsAccepted: boolean }) => Promise<SendOtpResult>;
+  verifySignup: (a: { email: string; token: string; fullName: string; marketingConsent: boolean; termsAccepted: boolean; preferredLanguage?: string }) => Promise<VerifyResult>;
+  sendLogin: (a: { email: string }) => Promise<SendOtpResult>;
+  verifyLogin: (a: { email: string; token: string }) => Promise<VerifyResult & { isAdmin?: boolean }>;
+  savePhone: (a: { phone: string }) => Promise<VerifyResult>;
+};
+
+const AUTH_API: OtpApi = {
+  sendSignup: sendAuthSignupOtp,
+  verifySignup: verifyAuthSignupOtp,
+  sendLogin: sendAuthLoginOtp,
+  verifyLogin: verifyAuthLoginOtp,
+  savePhone: saveSignupPhone,
+};
+
+// Mockup tokens (docs/otp-signup-mockup-v1.html)
+const INK = "#2E2622";
+const MUT = "#8a7a6b";
+const LINE = "#ece2d4";
+const GRAD = "linear-gradient(95deg,#6C5CE7 0%,#D6409F 52%,#F79154 100%)";
+const SERIF = 'var(--font-frank-ruhl), "Frank Ruhl Libre", serif';
+
+type Step = "form" | "code" | "phone";
+const RESEND_SECONDS = 45;
+
+/**
+ * The embedded survey/journey PAGES server-redirect authenticated users to
+ * /my/*. During OTP signup the session cookie is set by the verify action, which
+ * triggers a Next soft route-refresh; that re-render then sees the user as
+ * authenticated and redirect()s — navigating the whole route away and skipping
+ * the inline phone step (screen 3). This cookie tells those pages "a registration
+ * is mid-flow, don't redirect yet". It is set BEFORE verify (on send) so it's
+ * reliably present when the refresh fires (no client/refresh timing race), and
+ * cleared once the phone step is done/skipped (see `done`).
+ */
+const PHONE_PENDING_COOKIE = "otp_phone_pending";
+function markPhonePending() {
+  if (typeof document !== "undefined") document.cookie = `${PHONE_PENDING_COOKIE}=1; Path=/; Max-Age=600; SameSite=Lax`;
+}
+function clearPhonePending() {
+  if (typeof document !== "undefined") document.cookie = `${PHONE_PENDING_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`;
+}
+
+/** Only allow a same-origin relative path as the post-auth destination. */
+function safePath(next: string | undefined, fallback: string): string {
+  if (next && next.startsWith("/") && !next.startsWith("//")) return next;
+  return fallback;
+}
+
+/**
+ * OtpFlow — the shared passwordless auth UI (mockup screens 1–4). Used on /auth
+ * (signup + login) and reused by the survey/assessment/journey surfaces. Consent
+ * copy comes in as props (server-resolved, CMS-editable) so no CmsTextProvider
+ * is needed here.
+ */
+export function OtpFlow({
+  initialMode,
+  locale,
+  next,
+  pairCode,
+  consent,
+  api = AUTH_API,
+  theme = "light",
+  onBeforeSendSignup,
+  onAuthenticated,
+}: {
+  initialMode: "signup" | "login";
+  locale: string;
+  next?: string;
+  /** Partner pair-code (?code=) — shows a "joining your partner" banner and
+   *  auto-redeems after auth (then routes to /my or the profile collector). */
+  pairCode?: string;
+  consent: OtpConsentCopy;
+  /** Surface-specific action set (claim-aware). Defaults to the /auth actions. */
+  api?: OtpApi;
+  /** Visual theme — "dark" for the standalone /auth pages + the dark assessment
+   *  context; "light" (cream card) for the survey/journey light surfaces. */
+  theme?: "light" | "dark";
+  /** Fired once, client-side, just before the signup "send code" call — used by
+   *  the survey to mirror its browser-Pixel Lead (deduped with the CAPI Lead). */
+  onBeforeSendSignup?: (email: string) => void;
+  /** When set, called after successful auth (incl. after the phone step/skip)
+   *  instead of routing — for embedded survey/assessment/journey use. */
+  onAuthenticated?: (ctx: { isNewUser: boolean }) => void;
+}) {
+  const [mode, setMode] = useState<"signup" | "login">(initialMode);
+  const [step, setStep] = useState<Step>("form");
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [terms, setTerms] = useState(false);
+  const [marketing, setMarketing] = useState(false);
+  const [code, setCode] = useState("");
+  const [phone, setPhone] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [resendIn, setResendIn] = useState(0);
+
+  const isHe = locale === "he";
+
+  useEffect(() => {
+    if (resendIn <= 0) return;
+    const id = setInterval(() => setResendIn((s) => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(id);
+  }, [resendIn]);
+
+  const done = async (ctx: { isNewUser: boolean; isAdmin?: boolean }) => {
+    // Phone step is over (saved or skipped) → let the embedded pages resume their
+    // normal authenticated redirect on the next navigation/refresh.
+    clearPhonePending();
+    if (onAuthenticated) { onAuthenticated({ isNewUser: ctx.isNewUser }); return; }
+    // Partner pair-code: redeem now, then route. If the profile still lacks a
+    // mobile (phone step skipped), send them to the collector to finish pairing.
+    if (pairCode) {
+      const r = await joinCoupleByPairCode(pairCode.trim().toUpperCase()).catch(() => null);
+      if (r && !r.ok && r.error === "profile_incomplete") {
+        window.location.assign(`/${locale}/account/profile?reason=profile_incomplete&next=${encodeURIComponent(`/${locale}/my`)}`);
+        return;
+      }
+      window.location.assign(`/${locale}/my`);
+      return;
+    }
+    if (ctx.isAdmin) { window.location.assign("/dashboard"); return; }
+    window.location.assign(safePath(next, `/${locale}/my/start`));
+  };
+
+  // ── send code ────────────────────────────────────────────────────────────
+  const sendCode = async () => {
+    setError(null); setBusy(true);
+    if (mode === "signup") onBeforeSendSignup?.(email.trim().toLowerCase());
+    const r = mode === "signup"
+      ? await api.sendSignup({ email, fullName, termsAccepted: terms })
+      : await api.sendLogin({ email });
+    setBusy(false);
+    if (!r.ok) {
+      setError(r.error);
+      if (r.code === "no_account") setMode("signup"); // nudge login→signup
+      return;
+    }
+    // Signup leads to the phone step after verify — arm the "mid-flow" guard now,
+    // before the verify action's cookie set can trigger a page-level redirect.
+    if (mode === "signup") markPhonePending();
+    setCode(""); setStep("code"); setResendIn(RESEND_SECONDS);
+  };
+
+  const resend = async () => {
+    if (resendIn > 0 || busy) return;
+    await sendCode();
+  };
+
+  // ── verify code ──────────────────────────────────────────────────────────
+  const verify = async (submitted?: string) => {
+    const token = (submitted ?? code).replace(/\D/g, "");
+    if (token.length !== 6) { setError("יש להזין קוד בן 6 ספרות."); return; }
+    setError(null); setBusy(true);
+    if (mode === "signup") {
+      const r = await api.verifySignup({ email, token, fullName, marketingConsent: marketing, termsAccepted: terms, preferredLanguage: locale });
+      setBusy(false);
+      if (!r.success) { setError(r.error); return; }
+      // Skip the phone step (screen 3) entirely when the account already has a
+      // mobile on file — never re-ask for a number we already have. Only a NEW
+      // account (or one still missing a number) sees the phone step.
+      const phoneOnFile = (r as { phoneOnFile?: boolean }).phoneOnFile === true;
+      if (phoneOnFile) { void done({ isNewUser: false }); return; }
+      setStep("phone"); // screen 3 — signup with no number yet (skippable)
+    } else {
+      const r = await api.verifyLogin({ email, token });
+      setBusy(false);
+      if (!r.success) { setError(r.error); return; }
+      void done({ isNewUser: false, isAdmin: r.isAdmin });
+    }
+  };
+
+  // ── phone step ───────────────────────────────────────────────────────────
+  const savePhone = async () => {
+    setError(null); setBusy(true);
+    const r = await api.savePhone({ phone });
+    setBusy(false);
+    if (!r.success) { setError(r.error); return; }
+    void done({ isNewUser: true });
+  };
+
+  const dark = theme === "dark";
+  const ink = dark ? "#fff" : INK;
+  const mut = dark ? "rgba(255,255,255,0.55)" : MUT;
+  const inpBg = dark ? "rgba(255,255,255,0.06)" : "#fff";
+  const inpBorder = dark ? "rgba(255,255,255,0.16)" : LINE;
+
+  const S = {
+    // Card chrome removed (QA C): no background / border / radius in any context
+    // (dark /auth + light survey/assessment/journey) — the form sits directly on
+    // the surface. Layout box only.
+    card: { maxWidth: 360, margin: "0 auto", padding: "30px 22px", background: "transparent", border: "none", borderRadius: 0 } as const,
+    brand: { fontFamily: SERIF, fontWeight: 900, fontSize: 20, textAlign: "center", color: ink, marginBottom: 14 } as const,
+    h2: { fontFamily: SERIF, fontWeight: 900, fontSize: 32, textAlign: "center", color: ink, marginBottom: 8 } as const, // QA 3: OTP h2 → 32px
+    lead: { fontSize: 13.5, color: mut, textAlign: "center", lineHeight: 1.5, marginBottom: 22 } as const,
+    lb: { fontSize: 12.5, fontWeight: 700, color: ink, marginBottom: 3, display: "block" } as const,
+    inp: { width: "100%", border: `1.5px solid ${inpBorder}`, background: inpBg, borderRadius: 13, padding: "13px 15px", fontSize: 15, color: ink, outline: "none" } as const,
+    cta: (on: boolean) => ({ display: "block", width: "100%", height: 52, border: 0, cursor: on ? "pointer" : "not-allowed", borderRadius: 13, background: GRAD, color: "#fff", fontWeight: 800, fontSize: 20, opacity: on ? 1 : 0.45, marginTop: 6 } as const), // QA 9: button text → 20px
+    ghost: { display: "block", width: "100%", textAlign: "center", background: "none", border: 0, cursor: "pointer", fontSize: 13.5, fontWeight: 700, color: mut, marginTop: 16 } as const,
+    // QA 5 + 4: checkbox text (terms + marketing) same colour (ink) in both themes, ≥14px.
+    chk: { display: "flex", alignItems: "flex-start", gap: 10, fontSize: 14, color: ink, lineHeight: 1.45, cursor: "pointer", marginBottom: 12 } as const,
+    err: { marginTop: 12, background: dark ? "rgba(190,18,60,0.15)" : "#fff1f2", border: `1px solid ${dark ? "rgba(253,164,175,0.4)" : "#fecdd3"}`, color: dark ? "#fda4af" : "#be123c", borderRadius: 12, padding: "10px 14px", fontSize: 13.5, textAlign: "center" } as const,
+    foot: { marginTop: 30, textAlign: "center", fontSize: 14, color: mut } as const, // QA 7: text → 14px; QA 6: more gap above the footer
+    // QA 7/8: links readable on dark — white on the dark /auth pages, brand pink on light surfaces.
+    link: { color: dark ? "#fff" : "#D6409F", fontWeight: 700, textDecoration: "underline", background: "none", border: 0, cursor: "pointer", font: "inherit" } as const,
+  };
+
+  return (
+    <div dir="rtl" className="otp-flow-card" style={S.card}>
+      {/* Placeholder text sized up (QA E) — applies in every context. */}
+      <style>{`.otp-flow-card input::placeholder{font-size:20px;opacity:.6}`}</style>
+      {/* Brand logo removed — every OTP surface already sits under its own
+          header/branding (auth background, assessment/survey/journey pages), so
+          the inline "מיאושי" wordmark was redundant. */}
+      {pairCode && (
+        <div style={{ marginBottom: 16, borderRadius: 12, padding: "10px 14px", textAlign: "center", fontSize: 13, fontWeight: 700, color: dark ? "#f5d0e6" : "#7A1F2B", background: dark ? "rgba(214,64,159,0.14)" : "#fdf0f6", border: `1px solid ${dark ? "rgba(214,64,159,0.3)" : "#f3d4e6"}` }}>
+          💜 מצטרפים לחשבון של בן/בת הזוג שלכם
+        </div>
+      )}
+
+      {/* ── screen 1: form ── */}
+      {step === "form" && (
+        <>
+          <h2 style={S.h2}>{mode === "signup" ? "נעים להכיר" : "התחברות"}</h2>
+          <p style={S.lead}>{mode === "signup" ? "כמה פרטים קטנים ואנחנו יוצאים לדרך יחד." : "הזינו את כתובת המייל ונשלח לכם קוד כניסה. בלי סיסמה."}</p>
+
+          {mode === "signup" && (
+            <label style={{ display: "block", marginBottom: 14 }}>
+              <span style={S.lb}>שם מלא</span>
+              <input style={S.inp} value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="ישראל ישראלי" autoComplete="name" />
+            </label>
+          )}
+          <label style={{ display: "block", marginBottom: 14 }}>
+            <span style={S.lb}>כתובת דוא&quot;ל</span>
+            <input style={{ ...S.inp, direction: "ltr", textAlign: "right" }} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@email.com" autoComplete="email" />
+          </label>
+
+          {mode === "signup" && (
+            <div style={{ margin: "6px 0 4px" }}>
+              <label style={S.chk}>
+                <input type="checkbox" checked={terms} onChange={(e) => setTerms(e.target.checked)} style={{ marginTop: 2, width: 18, height: 18, accentColor: "#D6409F" }} />
+                <span>
+                  {consent.termsPrefix}
+                  {/* QA 8: terms/privacy links white on dark (pink is unreadable on black), brand pink on light. */}
+                  <a href={`/${locale}/terms`} style={{ color: dark ? ink : "#D6409F", textDecoration: "underline" }}>{consent.termsLink}</a>
+                  {consent.termsAnd}
+                  <a href={`/${locale}/privacy`} style={{ color: dark ? ink : "#D6409F", textDecoration: "underline" }}>{consent.privacyLink}</a>
+                  {consent.termsSuffix}
+                </span>
+              </label>
+              <label style={S.chk}>
+                <input type="checkbox" checked={marketing} onChange={(e) => setMarketing(e.target.checked)} style={{ marginTop: 2, width: 18, height: 18, accentColor: "#D6409F" }} />
+                {/* QA 4 + 5: marketing text same colour as terms text (inherits S.chk ink), not muted. */}
+                <span>{consent.marketingConsent}</span>
+              </label>
+            </div>
+          )}
+
+          <button style={S.cta(mode === "login" || terms)} disabled={busy || (mode === "signup" && !terms) || !email} onClick={sendCode}>
+            {busy ? "רגע…" : "שלחו לי קוד"}
+          </button>
+          {mode === "signup" && !terms && <div style={{ fontSize: 11.5, color: mut, textAlign: "center", marginTop: 10 }}>לא ניתן להמשיך עד אישור התנאים ומדיניות הפרטיות.</div>}
+          {error && <div style={S.err}>{error}</div>}
+          <div style={S.foot}>
+            {mode === "signup" ? "כבר יש לכם חשבון? " : "אין לכם חשבון עדיין? "}
+            <button style={S.link} onClick={() => { setMode(mode === "signup" ? "login" : "signup"); setError(null); }}>
+              {mode === "signup" ? "התחברות" : "הרשמה"}
+            </button>
+          </div>
+        </>
+      )}
+
+      {/* ── screen 2: code ── */}
+      {step === "code" && (
+        <>
+          <h2 style={S.h2}>הזינו את הקוד</h2>
+          <p style={S.lead}>שלחנו קוד בן 6 ספרות אל<br /><b style={{ color: ink, direction: "ltr", display: "inline-block" }}>{email}</b></p>
+          <div style={{ margin: "6px 0 18px" }}>
+            <OtpCodeInput value={code} onChange={setCode} onComplete={(c) => verify(c)} disabled={busy} theme={theme} />
+          </div>
+          <div style={{ textAlign: "center", fontSize: 16, color: dark ? mut : "#5a5049", marginBottom: 12, lineHeight: 1.6 }}>
+            לא קיבלתם? כדאי להציץ גם בתיקיית הספאם - לפעמים הקוד אוהב להתחבא שם.<br />
+            {resendIn > 0
+              ? <span>שליחה חוזרת תוך 0:{String(resendIn).padStart(2, "0")}</span>
+              : <button style={S.link} onClick={resend} disabled={busy}>שליחה חוזרת</button>}
+          </div>
+          <button style={S.cta(true)} disabled={busy || code.replace(/\D/g, "").length !== 6} onClick={() => verify()}>{busy ? "רגע…" : "אימות והמשך"}</button>
+          {error && <div style={S.err}>{error}</div>}
+          <div style={S.foot}>שינוי כתובת המייל? <button style={S.link} onClick={() => { setStep("form"); setError(null); }}>חזרה</button></div>
+        </>
+      )}
+
+      {/* ── screen 3: phone (signup only) ── */}
+      {step === "phone" && (
+        <>
+          <h2 style={S.h2}>כמעט שם</h2>
+          <p style={S.lead}>מוסיפים מספר נייד לסיום ההרשמה. נשתמש בו לחיבור בין בני הזוג ולעדכונים חשובים.</p>
+          <label style={{ display: "block", marginBottom: 14 }}>
+            <span style={S.lb}>מספר נייד</span>
+            <input style={{ ...S.inp, direction: "ltr", textAlign: "right" }} type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="050-000-0000" autoComplete="tel" />
+          </label>
+          <button style={S.cta(true)} disabled={busy || !phone.trim()} onClick={savePhone}>{busy ? "רגע…" : "סיום הרשמה"}</button>
+          <button style={S.ghost} onClick={() => { void done({ isNewUser: true }); }} disabled={busy}>דלג/י לעכשיו</button>
+          {error && <div style={S.err}>{error}</div>}
+        </>
+      )}
+
+      {!isHe && null}
+    </div>
+  );
+}

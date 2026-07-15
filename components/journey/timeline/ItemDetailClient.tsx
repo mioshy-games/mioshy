@@ -136,6 +136,11 @@ export function ItemDetailClient({
         const res = await unmarkScheduledItemComplete(scheduled.id);
         if (!res.ok) {
           setCompletion(snapshot);
+          if (res.error === "profile_incomplete" && typeof window !== "undefined") {
+            const back = window.location.pathname + window.location.search;
+            window.location.assign(`/${locale}/account/profile?reason=profile_incomplete&next=${encodeURIComponent(back)}`);
+            return;
+          }
           toast.error(errorCopy(res.error, errBundle));
           return;
         }
@@ -143,6 +148,11 @@ export function ItemDetailClient({
       } else {
         const res = await markScheduledItemComplete(scheduled.id);
         if (!res.ok) {
+          if (res.error === "profile_incomplete" && typeof window !== "undefined") {
+            const back = window.location.pathname + window.location.search;
+            window.location.assign(`/${locale}/account/profile?reason=profile_incomplete&next=${encodeURIComponent(back)}`);
+            return;
+          }
           toast.error(errorCopy(res.error, errBundle));
           return;
         }

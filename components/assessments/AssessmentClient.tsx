@@ -25,6 +25,8 @@ interface Props {
   initialStep?: number;
   initialAnswers?: Record<string, AnswerValue>;
   journeyCadences?: CadenceOption[];
+  /** Unified OTP consent copy for the post-assessment register (server-resolved). */
+  consent: import("@/lib/auth/otp-consent").OtpConsentCopy;
 }
 
 /**
@@ -39,13 +41,21 @@ export function AssessmentClient({
   assessmentTitleEn,
   questions,
   total,
-  authenticated,
+  authenticated: authenticatedProp,
   subscriptionActive = false,
   initialStep = 0,
   initialAnswers = {},
   journeyCadences = [],
+  consent,
 }: Props) {
   const isHe = locale === "he";
+  // Snapshot auth at mount. Setting the session cookie inside the OTP verify
+  // action triggers a Next soft route-refresh that flips this server prop to
+  // true MID-FLOW — which would unmount the inline OTP flow (killing the
+  // phone step) before the user finishes. We only leave the registration UI on
+  // a real reload (OtpFlow.onAuthenticated → window.location.reload()), so a
+  // mid-flow refresh is intentionally ignored.
+  const [authenticated] = useState(authenticatedProp);
   const [index, setIndex] = useState(initialStep);
   const [answersById, setAnswersById] = useState<Record<string, AnswerValue>>(initialAnswers);
   const [busy, setBusy] = useState(false);
@@ -214,6 +224,7 @@ export function AssessmentClient({
             locale={locale}
             deviceId={deviceId}
             assessmentId={assessmentId}
+            consent={consent}
             onAuthenticated={onAuthenticated}
           />
         </AnimatePresence>

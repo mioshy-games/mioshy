@@ -1,29 +1,27 @@
 import { AuthBackground } from "@/components/auth/AuthBackground";
-import { LoginForm } from "@/components/auth/LoginForm";
+import { OtpFlow } from "@/components/auth/OtpFlow";
+import { getOtpConsentCopy } from "@/lib/auth/otp-consent";
 
-// Reads `next` from the URL so that callers can route the user back to
-// where they came from after sign-in. Most common case: the
-// /adults/[slug] purchase flow sends logged-out clickers here with
-// ?next=/adults/[slug]?continuePurchase=1 - without this read-through,
-// the user signs in and lands on the default post-auth route, never
-// returning to complete the purchase.
-//
-// `code` is the partner pair-code prefill — same contract as the
-// signup page (see app/[locale]/auth/signup/page.tsx). When set, the
-// LoginForm shows a "joining your partner" banner and auto-redeems
-// the code immediately after a successful login.
-export default function AuthPage({
+export const dynamic = "force-dynamic";
+
+/**
+ * Login — passwordless Email OTP (email → 6-digit code → in). `next` is the
+ * post-auth destination pass-through (e.g. the /adults purchase flow). `code`
+ * (partner pair-code) and the `kicked` banner are preserved for a follow-up;
+ * the core OTP login is here.
+ */
+export default async function AuthPage({
+  params,
   searchParams,
 }: {
+  params: { locale: string };
   searchParams: { kicked?: string; next?: string; code?: string };
 }) {
+  const locale = params.locale === "en" ? "en" : "he";
+  const consent = await getOtpConsentCopy(locale);
   return (
     <AuthBackground>
-      <LoginForm
-        kicked={searchParams.kicked === "1"}
-        next={searchParams.next}
-        pairCode={searchParams.code}
-      />
+      <OtpFlow initialMode="login" locale={locale} next={searchParams.next} pairCode={searchParams.code} consent={consent} theme="dark" />
     </AuthBackground>
   );
 }

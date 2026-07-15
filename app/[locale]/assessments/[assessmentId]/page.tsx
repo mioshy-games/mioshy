@@ -16,6 +16,7 @@ import { createServiceRoleClient } from "@/lib/supabase-admin";
 import { getAssessment } from "@/lib/assessments/catalog";
 import { loadAssessmentQuestions } from "@/lib/assessments/questions-db";
 import { AssessmentClient } from "@/components/assessments/AssessmentClient";
+import { getOtpConsentCopy } from "@/lib/auth/otp-consent";
 import { CmsTextProvider } from "@/components/cms/CmsTextProvider";
 import { loadCmsTextsForPage } from "@/lib/cms/server";
 import { listAllPrices } from "@/lib/billing/pricing-queries";
@@ -161,6 +162,7 @@ export default async function AssessmentRunnerPage({
           initialStep={initialStep}
           initialAnswers={initialAnswers}
           journeyCadences={journeyCadences}
+          consent={await getOtpConsentCopy(locale === "en" ? "en" : "he")}
         />
       </CmsTextProvider>
     </div>
