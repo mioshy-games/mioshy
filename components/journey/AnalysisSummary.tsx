@@ -718,11 +718,48 @@ export function AnalysisSummary({
                 );
               })()}
             </div>
-            {/* Link to the plans (Stage 1). Teaser paragraph + arrow removed. */}
-            <div className="ar-cats-more">
-              <a href="#ar-price" className="ar-cats-more-link" onClick={scrollToPrice}>
-                {isHe ? "לתוצאות מדוייקות ולאבחון המלא" : "For accurate results and the full assessment"}
-              </a>
+            {/* Locked-results teaser (docs/results-teaser-mockup-v3.html) — one
+                more category card, masked/faded downward with a hint of another
+                card behind it, to show the short assessment is limited and the
+                full one unlocks the rest. Decorative (aria-hidden); the CTA link
+                scrolls to the plans (#ar-price). */}
+            <div className="ar-teaser">
+              <div className="ar-teaser-behind" aria-hidden />
+              <div className="ar-catcard ar-locked" aria-hidden>
+                <div className="ar-scorerow">
+                  <span className="ar-snum font-heading">?</span>
+                  <span className="ar-sof">/ 100</span>
+                  <span className="ar-lockpill">🔒 {isHe ? "נעול" : "Locked"}</span>
+                </div>
+                <div className="ar-cname">
+                  {isHe ? "תקשורת רגשית" : "Emotional communication"}
+                </div>
+                <p className="ar-ctxt">
+                  {isHe
+                    ? "איך אתם מדברים כשקשה, ומה קורה כשאחד מכם צריך להישמע"
+                    : "How you talk when it's hard, and what happens when one of you needs to be heard"}
+                </p>
+              </div>
+              <div className="ar-teaser-cta">
+                <p className="ar-teaser-msg">
+                  {isHe ? (
+                    <>
+                      באבחון המלא תקבלו <b>תמונה עשירה ומדוייקת הרבה יותר</b>.
+                    </>
+                  ) : (
+                    <>
+                      The full assessment gives you a{" "}
+                      <b>far richer, more accurate picture</b>.
+                    </>
+                  )}
+                </p>
+                <a href="#ar-price" className="ar-cats-more-link" onClick={scrollToPrice}>
+                  {isHe
+                    ? "לתוצאות מדוייקות ולאבחון המלא"
+                    : "For accurate results and the full assessment"}{" "}
+                  <span aria-hidden>{isHe ? "←" : "→"}</span>
+                </a>
+              </div>
             </div>
 
             {/* Social-proof strip — under the "long assessment" link (Stage 1).
@@ -1690,6 +1727,85 @@ export function AnalysisSummary({
           text-decoration: underline;
           text-underline-offset: 3px;
           cursor: pointer;
+        }
+
+        /* Locked-results teaser (docs/results-teaser-mockup-v3.html). */
+        .ar-teaser {
+          position: relative;
+          max-width: 700px;
+          margin: 14px auto 0;
+        }
+        /* Faint card peeking below the fading locked card — "one more behind". */
+        .ar-teaser-behind {
+          position: absolute;
+          left: 14px;
+          right: 14px;
+          bottom: -6px;
+          height: 46px;
+          background: linear-gradient(155deg, #ffffff 0%, #fbf2e4 100%);
+          border-radius: 16px;
+          box-shadow: 0 8px 24px -16px rgba(80, 50, 35, 0.3);
+          opacity: 0.55;
+          z-index: -1;
+        }
+        /* The locked twin of the visible category card: same card styling, faded
+           out downward with a gradient mask (intensity per the mockup) so the
+           score + name + start of the text show, then dissolve. */
+        .ar-locked {
+          padding-bottom: 6px;
+          box-shadow: 0 8px 24px -20px rgba(80, 50, 35, 0.25);
+          -webkit-mask-image: linear-gradient(
+            to bottom,
+            #000 0,
+            #000 26%,
+            transparent 72%
+          );
+          mask-image: linear-gradient(
+            to bottom,
+            #000 0,
+            #000 26%,
+            transparent 72%
+          );
+        }
+        /* Locked score is muted (not the live gradient). */
+        .ar-locked .ar-snum {
+          background: none;
+          -webkit-text-fill-color: #c9bdad;
+          color: #c9bdad;
+        }
+        .ar-locked .ar-ctxt {
+          white-space: nowrap;
+          overflow: hidden;
+        }
+        .ar-lockpill {
+          margin-inline-start: auto;
+          font-size: 13px;
+          font-weight: 800;
+          color: #8a7a6b;
+          background: #f0eae1;
+          border-radius: 99px;
+          padding: 4px 11px;
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          white-space: nowrap;
+        }
+        /* CTA pulled up into the faded area (mockup pattern). */
+        .ar-teaser-cta {
+          position: relative;
+          margin-top: -8px;
+          text-align: center;
+          padding-top: 8px;
+        }
+        .ar-teaser-msg {
+          font-size: 17px;
+          line-height: 1.5;
+          color: #2e2622;
+          font-weight: 600;
+          margin-bottom: 12px;
+        }
+        .ar-teaser-msg b {
+          color: #7a1f2b;
         }
 
         /* Expert paragraph below the share block (Stage 2). */
