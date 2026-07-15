@@ -795,6 +795,14 @@ export function AnalysisSummary({
                   includes, after a divider) to match the approved mockup — see
                   the .ar-addon block inside the cadence map below. */}
 
+              {/* Desktop two-column shell (Itzik 2026-07-15). BOTH wrappers are
+                  `display:contents` on mobile — they add NOTHING to the mobile box
+                  tree, so the approved mobile layout is byte-for-byte unchanged.
+                  Only the min-width:760 media query turns them into the SaaS
+                  two-column grid: plans on the right, sticky summary+CTA on the
+                  left. No base/mobile rule is touched. */}
+              <div className="ar-cols">
+              <div className="ar-col-plans">
               {/* Packages ← journeyCadences. Price shown = promo first-charge
                   (server-computed) or the regular price for that cadence. */}
               <div className="ar-opts-wrap">
@@ -1013,6 +1021,56 @@ export function AnalysisSummary({
                   {isHe ? "לצפייה בעוד חבילות" : "See more plans"}
                 </button>
               ) : null}
+              </div>{/* /.ar-col-plans */}
+
+              <div className="ar-col-sum">
+              {/* Desktop-only itemised order summary (Itzik 2026-07-15) — hidden on
+                  mobile (base `display:none`), shown only ≥760px. Money-honest:
+                  the base line is the FULL recurring base, coaching its own line,
+                  then a single "signup discount" line = subtotal − first charge, so
+                  the rows always reconcile to the .ar-total below (which stays the
+                  single source of the charged total). All values are the same live
+                  ones used on mobile (promoSet / coaching / amtOf). */}
+              {selectedOption ? (() => {
+                const c = selectedOption;
+                const cad = c.cadence;
+                const baseFull = isHe ? c.price_ils : c.price_usd;
+                const coachCost = coachingCostOf(c);
+                const subtotal = baseFull + (coaching ? coachCost : 0);
+                const pf = promoSet?.firstChargeByCadence[cad];
+                const firstTotal =
+                  activePromo && pf ? (isHe ? pf.ils : pf.usd) : subtotal;
+                const discount = subtotal - firstTotal;
+                return (
+                  <div className="ar-order-sum">
+                    <h3 className="ar-os-title font-heading">
+                      {isHe ? "סיכום ההזמנה" : "Order summary"}
+                    </h3>
+                    <div className="ar-os-line">
+                      <span>
+                        {isHe
+                          ? `מנוי ${cadenceTitle(cad)}`
+                          : `${cadenceTitle(cad)} plan`}
+                      </span>
+                      <span className="ar-os-v">{priceStr(baseFull)}</span>
+                    </div>
+                    <div className={`ar-os-line${coaching ? "" : " muted"}`}>
+                      <span>{isHe ? "ייעוץ עם מומחה" : "Expert coaching"}</span>
+                      <span className="ar-os-v">
+                        {coaching
+                          ? priceStr(coachCost)
+                          : isHe ? "לא נבחר" : "Not added"}
+                      </span>
+                    </div>
+                    {discount > 0 ? (
+                      <div className="ar-os-line ar-os-disc">
+                        <span>{isHe ? "הטבת הרשמה" : "Signup discount"}</span>
+                        <span className="ar-os-v">−{priceStr(discount)}</span>
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })() : null}
 
               {/* Selected-cadence headline — the amount Cardcom will charge for
                   the selected plan. Preserves the struck anchor (ILS derived /
@@ -1218,6 +1276,8 @@ export function AnalysisSummary({
                   "Enter your card details; in 5 days we'll remind you before the charge.",
                 )}
               </div>
+              </div>{/* /.ar-col-sum */}
+              </div>{/* /.ar-cols */}
             </div>
           </section>
         ) : (
@@ -1663,6 +1723,18 @@ export function AnalysisSummary({
           border-radius: 24px;
           padding: 16px;
           box-shadow: 0 18px 44px -22px rgba(120, 70, 120, 0.28);
+        }
+        /* Two-column desktop shell — on mobile the wrappers are display:contents
+           so they contribute NOTHING to layout (mobile is byte-for-byte the
+           approved design); the itemised order summary is desktop-only. Everything
+           below is turned on solely inside the min-width:760 block. */
+        .ar-cols,
+        .ar-col-plans,
+        .ar-col-sum {
+          display: contents;
+        }
+        .ar-order-sum {
+          display: none;
         }
         /* Task 16 — 7-day trial timeline (Blinkist pattern) */
         /* Task 21 (Itzik 2026-07-02) — the timeline is PART of the price card,
@@ -2623,9 +2695,88 @@ export function AnalysisSummary({
             font-size: 20px;
           }
           .ar-pricecard {
-            /* Narrower on desktop (Itzik 2026-07-15) — ~400px like mobile, was
-               640px which read too wide. */
-            max-width: 400px;
+            /* Two-column SaaS layout on desktop (Itzik 2026-07-15): wide enough
+               for the plans column + the 340px sticky summary. Mobile keeps its
+               own (untouched) width. */
+            max-width: 900px;
+            padding: 26px 28px 30px;
+          }
+          /* Turn the mobile display:contents wrappers into the real grid. */
+          .ar-cols {
+            display: flex;
+            gap: 28px;
+            align-items: flex-start;
+          }
+          .ar-col-plans {
+            display: block;
+            flex: 1.5;
+            min-width: 0;
+          }
+          .ar-col-sum {
+            display: block;
+            width: 340px;
+            flex: none;
+            position: sticky;
+            top: 24px;
+            background: #fdfbf9;
+            border: 1px solid #ece2d4;
+            border-radius: 16px;
+            padding: 20px 20px 22px;
+            box-shadow: 0 20px 40px -28px rgba(80, 50, 35, 0.35);
+          }
+          /* Itemised order summary (desktop only). */
+          .ar-order-sum {
+            display: block;
+            margin-bottom: 6px;
+          }
+          .ar-os-title {
+            font-size: 19px;
+            font-weight: 900;
+            margin-bottom: 14px;
+            text-align: start;
+          }
+          .ar-os-line {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            font-size: 15px;
+            margin-bottom: 9px;
+            color: #5a5049;
+          }
+          .ar-os-line.muted {
+            opacity: 0.5;
+          }
+          .ar-os-v {
+            font-weight: 700;
+            color: #2e2622;
+            white-space: nowrap;
+          }
+          .ar-os-disc .ar-os-v {
+            color: #7a1f2b;
+          }
+          /* On desktop the total blends INTO the summary panel — drop its own
+             pink box so the panel reads as one card (the panel carries the frame).
+             Mobile keeps the standalone boxed total. */
+          .ar-total {
+            border: 0;
+            background: transparent;
+            border-top: 1px solid #ece2d4;
+            border-radius: 0;
+            padding: 12px 0 0;
+            margin: 12px 0 0;
+            max-width: none;
+          }
+          .ar-total-timer {
+            border-top: 0;
+            padding-top: 8px;
+          }
+          /* The plans→trial zone divider is redundant inside the narrow summary
+             panel (the total's own top border already separates it). */
+          .ar-zone-sep {
+            display: none;
+          }
+          .ar-cta {
+            margin-top: 14px;
           }
           /* Desktop: radio + name/save on the start, price on the end (same
              single-row layout as mobile; the campaign timer, when present, owns
