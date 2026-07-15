@@ -769,14 +769,10 @@ export function AnalysisSummary({
             <h2 className="ar-sh font-heading">
               {rc(cmsPriceTitle, "איזו חבילה מתאימה לכם?", "Which plan fits you?")}
             </h2>
-            {/* Personal-window countdown (display='clock') — tiles wired to the
-                user's existing offer_expires_at (48h window unchanged). */}
-            {promoMode === "personal_window" &&
-            personalWindowDisplay === "clock" &&
-            offerExpiresAt &&
-            new Date(offerExpiresAt).getTime() > Date.now() ? (
-              <PersonalOfferTimer endsAt={offerExpiresAt} isHe={isHe} />
-            ) : null}
+            {/* Personal-window countdown (display='clock') moved DOWN to sit
+                beside the selected price/promo (Itzik 2026-07-15) — the urgency
+                belongs next to the number it applies to, not at the card top.
+                Now rendered inside the selected cadence card, below price+savings. */}
             <div className="ar-pricecard">
               {/* Stage-1 coaching add-on — with/without choice. Only rendered
                   once a coaching cost is configured (else the bundle == content
@@ -950,6 +946,17 @@ export function AnalysisSummary({
                       (monthly, quarterly, yearly), not only the selected one, so
                       the revealed plans carry "חיסכון X%" like the approved mock. */}
                   {saveText ? <div className="psave">{saveText}</div> : null}
+                  {/* Personal-window countdown — right beside the price/savings it
+                      applies to (selected card only). */}
+                  {selected &&
+                  promoMode === "personal_window" &&
+                  personalWindowDisplay === "clock" &&
+                  offerExpiresAt &&
+                  new Date(offerExpiresAt).getTime() > Date.now() ? (
+                    <div className="ar-inline-timer">
+                      <PersonalOfferTimer endsAt={offerExpiresAt} isHe={isHe} />
+                    </div>
+                  ) : null}
                   {/* Included block — only the selected card. INLINE (not a helper)
                       so styled-jsx adds its scope class and .incl/.dot apply. */}
                   {selected ? (
@@ -1824,18 +1831,22 @@ export function AnalysisSummary({
           z-index: 2;
         }
         /* Trial "7 ימי ניסיון חינם" strip at the top of the SELECTED card. */
+        /* Mockup v2 — "7 ימי ניסיון חינם" as a big (26px) gradient headline, not a
+           filled bar, so it reads as the card's opening line. */
         .ar-trial-strip {
           position: relative;
           z-index: 1;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          min-height: 52px;
+          text-align: center;
+          padding: 2px 0 14px;
+          font-family: var(--font-frank-ruhl), "Frank Ruhl Libre", serif;
+          font-weight: 900;
+          font-size: 26px;
+          line-height: 1.15;
           background: linear-gradient(95deg, #6c5ce7, #d6409f 52%, #f79154);
-          color: #fff;
-          font-family: var(--font-heebo), "Assistant", "Heebo", system-ui, sans-serif;
-          font-weight: 800;
-          font-size: 20px;
+          -webkit-background-clip: text;
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
+          color: transparent;
         }
         .ar-opt-group.sel .ar-opt {
           border: 0;
@@ -1940,6 +1951,19 @@ export function AnalysisSummary({
           background: none;
           -webkit-text-fill-color: #8a7a6b;
         }
+        /* Mockup v2 — the SELECTED card is the focal package: 46px price + serif,
+           so it matches the reference. Other (revealed) cadences stay compact. */
+        .ar-opt-group.sel .ar-opt-price {
+          font-family: var(--font-frank-ruhl), "Frank Ruhl Libre", serif;
+          font-size: 46px;
+        }
+        .ar-opt-group.sel .ar-price-num {
+          font-family: var(--font-frank-ruhl), "Frank Ruhl Libre", serif;
+          font-size: 46px;
+        }
+        .ar-opt-group.sel .ar-price-cur {
+          font-size: 19px;
+        }
         /* Included list under the SELECTED plan (pricing-redesign-approved.html):
            lead line + gradient-dot list aligned under the plan name (padding-
            start clears the radio). No "מה כלול" heading, no top divider. */
@@ -1960,6 +1984,10 @@ export function AnalysisSummary({
         .ar-opt-group:not(.sel) .psave {
           padding-bottom: 16px;
         }
+        /* Countdown sits right below the price/savings inside the selected card. */
+        .ar-inline-timer {
+          padding: 12px 17px 2px;
+        }
         .incl {
           padding: 14px 50px 16px 17px;
         }
@@ -1969,7 +1997,7 @@ export function AnalysisSummary({
           margin: 0 -33px 13px 0;
         }
         .incl-lead {
-          font-size: 15px;
+          font-size: 20px;
           color: #8a7a6b;
           font-weight: 600;
           margin-bottom: 14px;
