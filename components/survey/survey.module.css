@@ -11,7 +11,8 @@
   --pink: #ec4899;
   --maroon: #b83c4d;
   --wa: #25d366;
-  --grad2: linear-gradient(120deg, #b83c4d, #ec4899 55%, #f59e0b);
+  /* Unified on the single brand gradient (violet→fuchsia→orange); was maroon→pink→amber. */
+  --grad2: linear-gradient(95deg, #6C5CE7 0%, #D6409F 52%, #F79154 100%);
 
   min-height: 100vh;
   background:
@@ -36,7 +37,8 @@
   --pink: #ec4899;
   --maroon: #b83c4d;
   --wa: #25d366;
-  --grad2: linear-gradient(120deg, #b83c4d, #ec4899 55%, #f59e0b);
+  /* Unified on the single brand gradient (violet→fuchsia→orange); was maroon→pink→amber. */
+  --grad2: linear-gradient(95deg, #6C5CE7 0%, #D6409F 52%, #F79154 100%);
 
   width: 100%;
   max-width: 560px;
@@ -159,10 +161,10 @@
   border: 0; border-radius: 16px; padding: 16px; font: inherit; font-weight: 800; font-size: 16px;
   cursor: pointer; transition: 0.18s; text-decoration: none;
 }
-.cta.amber { background: linear-gradient(95deg, #6C5CE7 0%, #D6409F 52%, #F79154 100%); color: #fff; box-shadow: 0 14px 28px -14px rgba(214, 64, 159, 0.5); }
+.cta.amber { background: var(--grad2); color: #fff; box-shadow: 0 14px 28px -14px rgba(214, 64, 159, 0.5); }
 .cta.amber:hover { filter: brightness(1.05); transform: translateY(-1px); }
-/* Brand gradient (maroon→pink→amber) CTA — white text for contrast. */
-.cta.grad { background: var(--grad2); color: #fff; box-shadow: 0 14px 28px -14px rgba(184, 60, 77, 0.6); }
+/* Brand gradient CTA — white text for contrast. */
+.cta.grad { background: var(--grad2); color: #fff; box-shadow: 0 14px 28px -14px rgba(214, 64, 159, 0.5); }
 .cta.grad:hover { filter: brightness(1.05); transform: translateY(-1px); }
 .linkbtn {
   display: block; margin: 16px auto 0; background: none; border: 0; color: #111;
