@@ -1060,12 +1060,6 @@ export function AnalysisSummary({
                   {isHe ? "לצפייה בעוד חבילות" : "See more plans"}
                 </button>
               ) : null}
-              {/* DESKTOP slot for the trial timeline — hidden on mobile, shown
-                  ≥760 at the bottom of the plans column, below "more plans"
-                  (Itzik 2026-07-15). Same element as the mobile slot. */}
-              {trialTimeline ? (
-                <div className="ar-tl-slot ar-tl-slot--plans">{trialTimeline}</div>
-              ) : null}
               </div>{/* /.ar-col-plans */}
 
               <div className="ar-col-sum">
@@ -1750,14 +1744,11 @@ export function AnalysisSummary({
         .ar-order-sum {
           display: none;
         }
-        /* Trial-timeline slots — mobile keeps the summary slot in flow
-           (display:contents = no box, approved position unchanged); the plans-
-           column slot is off. Desktop swaps them (media query below). */
+        /* Trial-timeline slot — mobile keeps it in flow (display:contents = no
+           box, approved position unchanged). On desktop it is hidden entirely
+           (media query below) per Itzik 2026-07-15. */
         .ar-tl-slot--sum {
           display: contents;
-        }
-        .ar-tl-slot--plans {
-          display: none;
         }
         /* Task 16 — 7-day trial timeline (Blinkist pattern) */
         /* Task 21 (Itzik 2026-07-02) — the timeline is PART of the price card,
@@ -2752,16 +2743,11 @@ export function AnalysisSummary({
             padding: 24px 24px 26px;
             box-shadow: 0 22px 46px -28px rgba(80, 50, 35, 0.35);
           }
-          /* Trial-timeline slot swap: hide the summary-column copy, show the one
-             at the bottom of the plans column (below "more plans"). */
+          /* The trial timeline is removed on desktop entirely (Itzik 2026-07-15) —
+             the summary panel's day-7 line already states the charge. Mobile keeps
+             it (base display:contents). */
           .ar-tl-slot--sum {
             display: none;
-          }
-          .ar-tl-slot--plans {
-            display: block;
-            margin-top: 18px;
-            padding-top: 16px;
-            border-top: 1px dashed #ece2d4;
           }
           /* Dedupe the total: the standalone "לתשלום" money line is redundant on
              desktop — the order-summary breakdown + the single .ar-total below
