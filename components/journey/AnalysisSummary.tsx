@@ -772,14 +772,15 @@ export function AnalysisSummary({
         {/* PRICE (non-subscriber) / ACTIVE-SUBSCRIBER card */}
         {!journeySubscribed ? (
           <section className="ar-section" id="ar-price">
-            <h2 className="ar-sh font-heading">
-              {rc(cmsPriceTitle, "איזו חבילה מתאימה לכם?", "Which plan fits you?")}
-            </h2>
             {/* Personal-window countdown (display='clock') moved DOWN to sit
                 beside the selected price/promo (Itzik 2026-07-15) — the urgency
                 belongs next to the number it applies to, not at the card top.
                 Now rendered inside the selected cadence card, below price+savings. */}
             <div className="ar-pricecard">
+              {/* Header lives INSIDE the card, at the top (Itzik 2026-07-15). */}
+              <h2 className="ar-sh font-heading">
+                {rc(cmsPriceTitle, "איזו חבילה מתאימה לכם?", "Which plan fits you?")}
+              </h2>
               {/* Coaching add-on moved INTO the selected cadence card (below the
                   includes, after a divider) to match the approved mockup — see
                   the .ar-addon block inside the cadence map below. */}
@@ -969,9 +970,9 @@ export function AnalysisSummary({
                               </linearGradient>
                             </defs>
                           </svg>
-                          <div className="ar-cexpert-lead">
-                            {isHe ? "המומחה זמין לשני בני הזוג" : "The expert is available to both partners"}
-                          </div>
+                          {/* "המומחה זמין לשני בני הזוג" removed (Itzik 2026-07-15)
+                              — when coaching is ticked we show only the 3 points,
+                              no lead banner. */}
                           <ul className="ar-points">
                             <li>
                               <svg viewBox="0 0 24 24" fill="none" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" /></svg>
@@ -1397,11 +1398,11 @@ export function AnalysisSummary({
         .ar-section {
           margin-bottom: 40px;
         }
-        /* Header sits in its own area with uniform breathing room above and
-           below (Itzik 2026-07-15) — not tight against the card. */
+        /* Header lives at the top INSIDE the card, with a comfortable white gap
+           above and below (Itzik 2026-07-15). */
         .ar-sh {
           font-size: 25px;
-          margin: 26px auto;
+          margin: 8px auto 24px;
           line-height: 1.2;
           text-align: center;
         }
@@ -1920,7 +1921,7 @@ export function AnalysisSummary({
         }
         .ar-opt.sel .ar-radio {
           border-color: transparent;
-          background: var(--ar-grad);
+          background: #d6409f;
         }
         .ar-opt.sel .ar-radio::after {
           content: "";
