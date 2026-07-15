@@ -848,7 +848,12 @@ export function AnalysisSummary({
                   {/* Trial strip at the TOP of the selected card — gradient bg,
                       white text; moves with the selection (Stage 1). */}
                   {selected && trial.enabled ? (
-                    <div className="ar-trial-strip">{trial.cardTag}</div>
+                    <div className="ar-trial-strip">
+                      <span className="ar-trial-t1">{trial.cardTag}</span>
+                      <span className="ar-trial-t2">
+                        {isHe ? "גישה מלאה לשני בני הזוג" : "Full access for both partners"}
+                      </span>
+                    </div>
                   ) : null}
                   <button
                     type="button"
@@ -887,6 +892,7 @@ export function AnalysisSummary({
                     <span className={`ar-opt-price${selected ? "" : " plain"}`}>
                       <span className="ar-price-num">{fmt(firstAmt)}</span>
                       <span className="ar-price-cur">{sym}</span>
+                      <span className="ar-price-per">{periodLabel(c.cadence)}</span>
                     </span>
                   </button>
                   {/* Savings line under the name — shown for EVERY visible card
@@ -908,13 +914,9 @@ export function AnalysisSummary({
                       so styled-jsx adds its scope class and .incl/.dot apply. */}
                   {selected ? (
                     <div className="incl">
-                      {/* Divider before "המנוי כולל" removed (Itzik 2026-07-15) —
-                          the countdown now sits right above the includes. */}
-                      <div className="incl-lead">
-                        {isHe
-                          ? "המנוי כולל גישה מלאה לשני בני הזוג"
-                          : "The subscription includes full access for both partners"}
-                      </div>
+                      {/* "המנוי כולל..." lead removed (Itzik 2026-07-15) — the
+                          "גישה מלאה לשני בני הזוג" line now lives in the trial
+                          strip. Divider above also removed. */}
                       <ul>
                         {[
                           // Coaching is no longer listed here — it has its own
@@ -977,7 +979,7 @@ export function AnalysisSummary({
                             </li>
                             <li>
                               <svg viewBox="0 0 24 24" fill="none" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v4" /><path d="M12 18v4" /><path d="M4.9 4.9l2.8 2.8" /><path d="M16.3 16.3l2.8 2.8" /><circle cx="12" cy="12" r="4" /></svg>
-                              <span>{isHe ? "עוקב אחריכם ומנהל לכם את התוכן השבועי" : "Follows you and curates your weekly content"}</span>
+                              <span>{isHe ? "מתאים לכם את התוכן השבועי אישית" : "Personalises your weekly content"}</span>
                             </li>
                             <li>
                               <svg viewBox="0 0 24 24" fill="none" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18" /><path d="m19 9-5 5-4-4-3 3" /></svg>
@@ -1650,18 +1652,17 @@ export function AnalysisSummary({
         /* Inside the selected card, aligned under the plan name (padding-start
            clears the radio, matching .incl); the divider spans the card width. */
         .ar-addon {
-          padding: 0 50px 16px 17px;
+          padding: 0 33px 16px 17px;
         }
         .ar-addon-div {
           height: 1px;
           background: #ece2d4;
-          margin: 0 -33px 16px 0;
+          margin: 0 -16px 16px 0;
         }
+        /* Checkbox row on top, "+X" on its own line below, right-aligned (mockup);
+           the "+X" lines up with the monthly price's right edge (33px indent). */
         .ar-addon-head {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 11px;
+          display: block;
         }
         .ar-addbtn {
           display: flex;
@@ -1710,6 +1711,8 @@ export function AnalysisSummary({
           line-height: 1.1;
           white-space: nowrap;
           color: #2e2622;
+          text-align: right;
+          margin-top: 9px;
         }
         .ar-addbig .ar-cur {
           font-size: 16px;
@@ -1724,11 +1727,23 @@ export function AnalysisSummary({
         .ar-cexpert {
           margin-top: 16px;
         }
+        /* "המומחה זמין לשני בני הזוג" — mirrors the trial strip: a gradient banner
+           (white text), 26px, rounded TOP corners only, flat bottom. Appears when
+           coaching is ticked (symmetry with "7 ימי ניסיון חינם"). */
         .ar-cexpert-lead {
-          font-size: 13px;
-          color: #8a7a6b;
-          font-weight: 600;
-          margin-bottom: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          margin: 0 -16px 14px;
+          padding: 12px 16px;
+          border-radius: 16px 16px 0 0;
+          background: linear-gradient(95deg, #6c5ce7, #d6409f 52%, #f79154);
+          color: #fff;
+          font-family: var(--font-heebo), "Assistant", "Heebo", system-ui, sans-serif;
+          font-weight: 900;
+          font-size: 26px;
+          line-height: 1.1;
         }
         .ar-points {
           list-style: none;
@@ -1742,7 +1757,7 @@ export function AnalysisSummary({
           display: flex;
           align-items: flex-start;
           gap: 10px;
-          font-size: 14.5px;
+          font-size: 20px;
           font-weight: 600;
           line-height: 1.4;
           color: #2e2622;
@@ -1757,11 +1772,11 @@ export function AnalysisSummary({
         /* Packages container — the top border carries the trial legend
            (Itzik 2026-07-04). The margin/padding-top opens room so the legend
            sits ON the border without touching the coaching tabs above it. */
+        /* Stray top border removed (Itzik 2026-07-15) — the h2 "איזו חבילה
+           מתאימה לכם?" above the card is the header; the cadence cards flow
+           directly with no disconnected hairline. */
         .ar-opts-wrap {
           position: relative;
-          border-top: 2px solid #ece2cf;
-          margin-top: 30px;
-          padding-top: 30px;
         }
         /* Fieldset-legend trial tag, centered on the container's top border.
            Solid brand dark ink + white text (deliberately NOT the gradient, so
@@ -1797,6 +1812,7 @@ export function AnalysisSummary({
           display: flex;
           align-items: center;
           justify-content: space-between;
+          flex-wrap: wrap;
           gap: 11px;
           width: 100%;
           background: none;
@@ -1842,23 +1858,34 @@ export function AnalysisSummary({
           z-index: 2;
         }
         /* Trial "7 ימי ניסיון חינם" strip at the top of the SELECTED card. */
-        /* "7 ימי ניסיון חינם" — a prominent gradient STRIP (white text on the
-           brand gradient), per Itzik's reference — not plain text on white. */
+        /* "7 ימי ניסיון חינם" + "גישה מלאה לשני בני הזוג" — a two-line gradient
+           banner (white text), rounded TOP corners only, flat bottom flush with
+           the card body. The coaching "expert" strip below mirrors this exactly. */
         .ar-trial-strip {
           position: relative;
           z-index: 1;
           display: flex;
+          flex-direction: column;
           align-items: center;
           justify-content: center;
           text-align: center;
-          margin: 0 0 14px;
-          padding: 12px 16px;
-          border-radius: 12px;
+          gap: 2px;
+          margin: 0 0 16px;
+          padding: 14px 16px;
+          border-radius: 16px 16px 0 0;
           background: linear-gradient(95deg, #6c5ce7, #d6409f 52%, #f79154);
           color: #fff;
           font-family: var(--font-heebo), "Assistant", "Heebo", system-ui, sans-serif;
+        }
+        .ar-trial-t1 {
           font-weight: 900;
-          font-size: 22px;
+          font-size: 26px;
+          line-height: 1.1;
+        }
+        .ar-trial-t2 {
+          font-weight: 700;
+          font-size: 20px;
+          line-height: 1.15;
         }
         .ar-opt-group.sel .ar-opt {
           border: 0;
@@ -1930,16 +1957,17 @@ export function AnalysisSummary({
           justify-content: center;
           margin-top: 10px;
         }
-        /* Price — ink number + muted currency, no gradient, no period label. */
+        /* Price — number + ₪ + period, on its OWN line, right-aligned UNDER the
+           plan name (ALL cadences, per Itzik). ₪ and period in ink, not grey. */
         .ar-opt-price {
-          margin-inline-start: auto;
-          flex: none;
-          /* Align the price with the plan name (top), not the taller info column. */
-          align-self: flex-start;
-          margin-top: 1px;
-          display: inline-flex;
+          order: 3;
+          flex-basis: 100%;
+          margin-inline-start: 0;
+          margin-top: 3px;
+          padding-inline-start: 33px;
+          display: flex;
           align-items: baseline;
-          /* A real space before the ₪ (Stage 1). */
+          justify-content: flex-start;
           gap: 5px;
           white-space: nowrap;
           font-size: 24px;
@@ -1956,45 +1984,42 @@ export function AnalysisSummary({
           -webkit-text-fill-color: #2e2622;
         }
         .ar-price-cur {
-          font-size: 15px;
+          font-size: 14px;
           font-weight: 800;
           line-height: 1;
-          color: #8a7a6b;
+          color: #2e2622;
           background: none;
-          -webkit-text-fill-color: #8a7a6b;
+          -webkit-text-fill-color: #2e2622;
         }
-        /* Mockup — the SELECTED card is the focal package: the 46px price sits
-           on its OWN line, right-aligned UNDER the plan name (name + price both on
-           the right). Revealed cadences keep the compact one-row layout. */
-        .ar-opt-group.sel .ar-opt {
-          flex-wrap: wrap;
+        .ar-price-per {
+          font-size: 14px;
+          font-weight: 700;
+          line-height: 1;
+          color: #2e2622;
         }
+        /* SELECTED (focal) package: 46px serif price, ₪ 19px; the period stays
+           muted 13px like the mockup's "/ חודש". */
         .ar-opt-group.sel .ar-opt-price {
           font-family: var(--font-frank-ruhl), "Frank Ruhl Libre", serif;
           font-size: 46px;
-          order: 3;
-          flex-basis: 100%;
-          margin-inline-start: 0;
-          justify-content: flex-start;
-          padding-inline-start: 33px;
-          margin-top: 2px;
         }
         .ar-opt-group.sel .ar-price-num {
           font-family: var(--font-frank-ruhl), "Frank Ruhl Libre", serif;
           font-size: 46px;
         }
-        /* ₪ in the same ink as the number (not muted grey). */
         .ar-opt-group.sel .ar-price-cur {
           font-size: 19px;
-          color: #2e2622;
-          -webkit-text-fill-color: #2e2622;
+        }
+        .ar-opt-group.sel .ar-price-per {
+          font-size: 13px;
+          color: #8a7a6b;
         }
         /* Included list under the SELECTED plan (pricing-redesign-approved.html):
            lead line + gradient-dot list aligned under the plan name (padding-
            start clears the radio). No "מה כלול" heading, no top divider. */
         /* Selected-card included block — exact approved spec. */
         .psave {
-          padding: 5px 50px 0 17px;
+          padding: 5px 33px 0 17px;
           font-size: 20px;
           font-weight: 700;
           width: max-content;
@@ -2013,12 +2038,18 @@ export function AnalysisSummary({
            aligned to the start (right, RTL) — beside the number it applies to,
            not centered mid-card. Overrides PersonalOfferTimer's own centering. */
         .ar-inline-timer {
-          padding: 8px 17px 2px;
+          padding-block: 8px 2px;
+          padding-inline: 33px 17px;
         }
         .ar-inline-timer :global(.pot) {
-          text-align: right;
           margin-bottom: 0;
         }
+        /* Label starts at the right edge, in line with the price/savings above. */
+        .ar-inline-timer :global(.pot-lead) {
+          text-align: right;
+        }
+        /* Tiles start at the right (aligned with the label), but each tile keeps
+           its digits + unit centered within the square (not right-aligned). */
         .ar-inline-timer :global(.pot-tiles) {
           justify-content: flex-start;
         }
@@ -2060,7 +2091,7 @@ export function AnalysisSummary({
         /* "לצפייה בעוד חבילות" — 14px black underlined link (Stage 1). */
         .ar-more-plans {
           display: block;
-          margin: 4px auto 0;
+          margin: 14px auto 0;
           background: none;
           border: 0;
           cursor: pointer;
