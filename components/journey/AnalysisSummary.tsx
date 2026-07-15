@@ -1161,6 +1161,30 @@ export function AnalysisSummary({
                           : `then ${priceStr(recurring)} ${totalPeriodWord(cad)}`}
                       </div>
                     ) : null}
+                    {/* Urgency at the decision point (Itzik 2026-07-15) — on mobile
+                        the top-of-card promo clock has scrolled away by the time the
+                        total row is in view, so mirror the SAME active countdown
+                        (campaign endsAt / personal offer window) right here. */}
+                    {promoMode === "campaign_timer" && discounted && promoSet?.endsAt ? (
+                      <div className="ar-total-timer">
+                        <PromoExpiryCountdown
+                          endsAt={promoSet.endsAt}
+                          isHe={isHe}
+                          label={promoEndsLabel}
+                        />
+                      </div>
+                    ) : promoMode === "personal_window" &&
+                      personalWindowDisplay === "clock" &&
+                      offerExpiresAt &&
+                      new Date(offerExpiresAt).getTime() > Date.now() ? (
+                      <div className="ar-total-timer">
+                        <PersonalOfferTimer
+                          endsAt={offerExpiresAt}
+                          isHe={isHe}
+                          label={isHe ? "ההטבה בתוקף עוד:" : "Offer ends in:"}
+                        />
+                      </div>
+                    ) : null}
                   </div>
                 );
               })() : null}
@@ -2200,6 +2224,20 @@ export function AnalysisSummary({
           font-weight: 600;
           color: #7b6b5e;
           text-align: right;
+        }
+        /* Offer countdown beside the total — urgency at the decision point. Sits
+           just under the total, tiles aligned to the start (right, RTL), the
+           timer's own lead/centering overridden (same as .ar-inline-timer). */
+        .ar-total-timer {
+          margin-top: 10px;
+          padding-top: 10px;
+          border-top: 1px solid rgba(214, 64, 159, 0.18);
+        }
+        .ar-total-timer :global(.pot) {
+          margin-bottom: 0;
+        }
+        .ar-total-timer :global(.pot-tiles) {
+          justify-content: flex-end;
         }
 
         /* Selected-cadence headline summary (restored money-path detail) */
