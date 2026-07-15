@@ -183,7 +183,11 @@ export function AnalysisSummary({
   const hasCoachingCost = enabledCadences.some(
     (c) => (isHe ? c.coaching_cost_ils : c.coaching_cost_usd) > 0,
   );
-  const [coaching, setCoaching] = useState(true);
+  // Coaching is an OPT-IN paid add-on — starts UNCHECKED. Never auto-attach paid
+  // coaching without an active choice (Itzik 2026-07-15). The user ticks the box
+  // themselves; the checkout then sends coaching:true. Default false → the card
+  // shows the base price + the "+{coaching_cost}" offer.
+  const [coaching, setCoaching] = useState(false);
 
   // ── Money path cadence (hoisted above the loading early-return so the trial
   // hook, which must run unconditionally, can key off it). The cadence to
@@ -904,7 +908,8 @@ export function AnalysisSummary({
                       so styled-jsx adds its scope class and .incl/.dot apply. */}
                   {selected ? (
                     <div className="incl">
-                      <div className="incl-div" aria-hidden />
+                      {/* Divider before "המנוי כולל" removed (Itzik 2026-07-15) —
+                          the countdown now sits right above the includes. */}
                       <div className="incl-lead">
                         {isHe
                           ? "המנוי כולל גישה מלאה לשני בני הזוג"
@@ -1837,22 +1842,23 @@ export function AnalysisSummary({
           z-index: 2;
         }
         /* Trial "7 ימי ניסיון חינם" strip at the top of the SELECTED card. */
-        /* Mockup v2 — "7 ימי ניסיון חינם" as a big (26px) gradient headline, not a
-           filled bar, so it reads as the card's opening line. */
+        /* "7 ימי ניסיון חינם" — a prominent gradient STRIP (white text on the
+           brand gradient), per Itzik's reference — not plain text on white. */
         .ar-trial-strip {
           position: relative;
           z-index: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
           text-align: center;
-          padding: 2px 0 14px;
-          font-family: var(--font-frank-ruhl), "Frank Ruhl Libre", serif;
-          font-weight: 900;
-          font-size: 26px;
-          line-height: 1.15;
+          margin: 0 0 14px;
+          padding: 12px 16px;
+          border-radius: 12px;
           background: linear-gradient(95deg, #6c5ce7, #d6409f 52%, #f79154);
-          -webkit-background-clip: text;
-          background-clip: text;
-          -webkit-text-fill-color: transparent;
-          color: transparent;
+          color: #fff;
+          font-family: var(--font-heebo), "Assistant", "Heebo", system-ui, sans-serif;
+          font-weight: 900;
+          font-size: 22px;
         }
         .ar-opt-group.sel .ar-opt {
           border: 0;
@@ -1957,18 +1963,31 @@ export function AnalysisSummary({
           background: none;
           -webkit-text-fill-color: #8a7a6b;
         }
-        /* Mockup v2 — the SELECTED card is the focal package: 46px price + serif,
-           so it matches the reference. Other (revealed) cadences stay compact. */
+        /* Mockup — the SELECTED card is the focal package: the 46px price sits
+           on its OWN line, right-aligned UNDER the plan name (name + price both on
+           the right). Revealed cadences keep the compact one-row layout. */
+        .ar-opt-group.sel .ar-opt {
+          flex-wrap: wrap;
+        }
         .ar-opt-group.sel .ar-opt-price {
           font-family: var(--font-frank-ruhl), "Frank Ruhl Libre", serif;
           font-size: 46px;
+          order: 3;
+          flex-basis: 100%;
+          margin-inline-start: 0;
+          justify-content: flex-start;
+          padding-inline-start: 33px;
+          margin-top: 2px;
         }
         .ar-opt-group.sel .ar-price-num {
           font-family: var(--font-frank-ruhl), "Frank Ruhl Libre", serif;
           font-size: 46px;
         }
+        /* ₪ in the same ink as the number (not muted grey). */
         .ar-opt-group.sel .ar-price-cur {
           font-size: 19px;
+          color: #2e2622;
+          -webkit-text-fill-color: #2e2622;
         }
         /* Included list under the SELECTED plan (pricing-redesign-approved.html):
            lead line + gradient-dot list aligned under the plan name (padding-
@@ -1990,9 +2009,18 @@ export function AnalysisSummary({
         .ar-opt-group:not(.sel) .psave {
           padding-bottom: 16px;
         }
-        /* Countdown sits right below the price/savings inside the selected card. */
+        /* Countdown sits right below the price/savings inside the selected card,
+           aligned to the start (right, RTL) — beside the number it applies to,
+           not centered mid-card. Overrides PersonalOfferTimer's own centering. */
         .ar-inline-timer {
-          padding: 12px 17px 2px;
+          padding: 8px 17px 2px;
+        }
+        .ar-inline-timer :global(.pot) {
+          text-align: right;
+          margin-bottom: 0;
+        }
+        .ar-inline-timer :global(.pot-tiles) {
+          justify-content: flex-start;
         }
         .incl {
           padding: 14px 50px 16px 17px;
