@@ -503,6 +503,16 @@ export function AnalysisSummary({
         : cadence === "yearly"
           ? rc(cmsCadYearly, "שנתי", "Yearly")
           : rc(cmsCadWeekly, "שבועי", "Weekly");
+  // "סה״כ ל..." word for the bottom total row — לחודש/לרבעון/לשנה (per-period,
+  // matching the selected cadence). Distinct from periodLabel's "/חודש" slash form.
+  const totalPeriodWord = (cadence: string) =>
+    cadence === "yearly"
+      ? isHe ? "לשנה" : "per year"
+      : cadence === "quarterly"
+        ? isHe ? "לרבעון" : "per quarter"
+        : cadence === "weekly"
+          ? isHe ? "לשבוע" : "per week"
+          : isHe ? "לחודש" : "per month";
   const selectedOption =
     enabledCadences.find((c) => c.cadence === selectedCadence) ??
     enabledCadences[0] ??
@@ -799,8 +809,21 @@ export function AnalysisSummary({
                 const pf = promoSet?.firstChargeByCadence[c.cadence];
                 const po = promoSet?.originalByCadence[c.cadence];
                 const hasPromo = !!(promoSet && pf && po);
-                const firstAmt = hasPromo ? (isHe ? pf!.ils : pf!.usd) : amt;
-                const origAmt = hasPromo ? (isHe ? po!.ils : po!.usd) : amt;
+                // Card ALWAYS shows the BASE (without-coaching) price — coaching
+                // is a separate add-on line + a separate total, never merged into
+                // the base (Itzik 2026-07-15). Base + its promo come from the
+                // without-coaching scope, independent of the checkbox.
+                const wSet = activePromo?.withoutCoaching ?? null;
+                const baseReg = isHe ? c.price_ils : c.price_usd;
+                const wpf = wSet?.firstChargeByCadence[c.cadence];
+                const wpo = wSet?.originalByCadence[c.cadence];
+                const baseHasPromo = !!(wSet && wpf && wpo);
+                const baseFirst = baseHasPromo ? (isHe ? wpf!.ils : wpf!.usd) : baseReg;
+                const baseOrig = baseHasPromo ? (isHe ? wpo!.ils : wpo!.usd) : baseReg;
+                const basePromoSavePct =
+                  baseHasPromo && baseOrig > 0 && baseFirst < baseOrig
+                    ? Math.round(((baseOrig - baseFirst) / baseOrig) * 100)
+                    : null;
                 // Sub-row:
                 //  • Monthly (promo): "חודש ראשון, אח״כ {full} ₪" — one line, no %.
                 //  • Quarterly/yearly: prominent "חיסכון {X}%" (no struck price,
@@ -815,12 +838,6 @@ export function AnalysisSummary({
                     savePct = Math.round(((before - amt) / before) * 100);
                   }
                 }
-                // Promo (monthly) savings % off the regular price for that
-                // cadence — same calc as Stage-3 and the quarterly/yearly rows.
-                const promoSavePct =
-                  hasPromo && origAmt > 0 && firstAmt < origAmt
-                    ? Math.round(((origAmt - firstAmt) / origAmt) * 100)
-                    : null;
                 // Yearly "N months free" — computed LIVE (Itzik 2026-07-04):
                 // floor((full monthly × 12 − yearly price) / full monthly).
                 // Today: (67×12 − 1570)/67 = floor(3.4) = 3 → "3 חודשים חינם".
@@ -831,8 +848,8 @@ export function AnalysisSummary({
                 // "חיסכון X%" line — shown under the name inside the selected
                 // card's included block (psave). null → no savings line.
                 const saveText =
-                  promoSavePct != null
-                    ? `${isHe ? "חיסכון" : "Save"} ${promoSavePct}%${
+                  basePromoSavePct != null
+                    ? `${isHe ? "חיסכון" : "Save"} ${basePromoSavePct}%${
                         c.cadence === "monthly"
                           ? isHe ? " על החודש הראשון" : " on the first month"
                           : ""
@@ -867,9 +884,9 @@ export function AnalysisSummary({
                         line moved into the selected card's included block. */}
                     <span className="ar-opt-info">
                       <span className="ar-opt-name">{cadenceTitle(c.cadence)}</span>
-                      {hasPromo ? (
+                      {baseHasPromo ? (
                         <span className="ar-opt-note">
-                          {`${firstPeriodLabel(c.cadence, isHe)}${isHe ? ", אח״כ " : ", then "}${priceStr(origAmt)}`}
+                          {`${firstPeriodLabel(c.cadence, isHe)}${isHe ? ", אח״כ " : ", then "}${priceStr(baseOrig)}`}
                         </span>
                       ) : null}
                     </span>
@@ -891,7 +908,7 @@ export function AnalysisSummary({
                       </span>
                     ) : null}
                     <span className={`ar-opt-price${selected ? "" : " plain"}`}>
-                      <span className="ar-price-num">{fmt(firstAmt)}</span>
+                      <span className="ar-price-num">{fmt(baseFirst)}</span>
                       <span className="ar-price-cur">{sym}</span>
                       <span className="ar-price-per">{periodLabel(c.cadence)}</span>
                     </span>
@@ -961,29 +978,19 @@ export function AnalysisSummary({
                       </div>
                       {coaching ? (
                         <div className="ar-cexpert">
-                          <svg width="0" height="0" style={{ position: "absolute" }} aria-hidden>
-                            <defs>
-                              <linearGradient id="arCoachGrad" x1="0" y1="0" x2="1" y2="1">
-                                <stop offset="0" stopColor="#6C5CE7" />
-                                <stop offset=".55" stopColor="#D6409F" />
-                                <stop offset="1" stopColor="#F79154" />
-                              </linearGradient>
-                            </defs>
-                          </svg>
-                          {/* "המומחה זמין לשני בני הזוג" removed (Itzik 2026-07-15)
-                              — when coaching is ticked we show only the 3 points,
-                              no lead banner. */}
+                          {/* Gradient-dot bullets, same as the "מה כלול" list (Itzik
+                              2026-07-15) — no SVG icons. */}
                           <ul className="ar-points">
                             <li>
-                              <svg viewBox="0 0 24 24" fill="none" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" /></svg>
+                              <span aria-hidden className="dot" />
                               <span>{isHe ? "זמין לכם בצ'אט לכל שאלה" : "Available in chat for any question"}</span>
                             </li>
                             <li>
-                              <svg viewBox="0 0 24 24" fill="none" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v4" /><path d="M12 18v4" /><path d="M4.9 4.9l2.8 2.8" /><path d="M16.3 16.3l2.8 2.8" /><circle cx="12" cy="12" r="4" /></svg>
+                              <span aria-hidden className="dot" />
                               <span>{isHe ? "מתאים לכם את התוכן השבועי אישית" : "Personalises your weekly content"}</span>
                             </li>
                             <li>
-                              <svg viewBox="0 0 24 24" fill="none" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18" /><path d="m19 9-5 5-4-4-3 3" /></svg>
+                              <span aria-hidden className="dot" />
                               <span>{isHe ? "מבצע מעקב שבועי וחודשי" : "Weekly and monthly tracking"}</span>
                             </li>
                           </ul>
@@ -1112,6 +1119,22 @@ export function AnalysisSummary({
                       ? "ביטול בכל רגע, בלחיצת כפתור מהאזור האישי."
                       : "cancel any time, one click from your account."}
                   </div>
+                </div>
+              ) : null}
+
+              {/* Bold TOTAL row (Itzik 2026-07-13) — a separate summary that ties
+                  the (unchanged) base price + coaching add-on together. Base and
+                  coaching stay shown separately above; this only sums them via the
+                  existing amtOf (= base + coaching when ticked). Updates live with
+                  the selected cadence and the coaching checkbox. */}
+              {selectedOption ? (
+                <div className="ar-total" aria-live="polite">
+                  <span className="ar-total-label">
+                    {isHe
+                      ? `סה״כ ${totalPeriodWord(selectedOption.cadence)}`
+                      : `Total ${totalPeriodWord(selectedOption.cadence)}`}
+                  </span>
+                  <span className="ar-total-amt">{priceStr(amtOf(selectedOption))}</span>
                 </div>
               ) : null}
 
@@ -1763,7 +1786,7 @@ export function AnalysisSummary({
         }
         .ar-points li {
           display: flex;
-          align-items: flex-start;
+          align-items: center;
           gap: 10px;
           font-size: 20px;
           font-weight: 600;
@@ -2056,14 +2079,13 @@ export function AnalysisSummary({
         .ar-inline-timer :global(.pot) {
           margin-bottom: 0;
         }
-        /* Label starts at the right edge, in line with the price/savings above. */
+        /* "מבצע חד פעמי לזמן מוגבל" label removed (Itzik 2026-07-15). */
         .ar-inline-timer :global(.pot-lead) {
-          text-align: right;
+          display: none;
         }
-        /* Tiles start at the right (aligned with the label), but each tile keeps
-           its digits + unit centered within the square (not right-aligned). */
+        /* Countdown tiles aligned to the other side (left, RTL). */
         .ar-inline-timer :global(.pot-tiles) {
-          justify-content: flex-start;
+          justify-content: flex-end;
         }
         .incl {
           padding: 14px 17px 16px 17px;
@@ -2113,6 +2135,34 @@ export function AnalysisSummary({
           color: #241d1a;
           text-decoration: underline;
           text-underline-offset: 3px;
+        }
+
+        /* Bold TOTAL row — base + coaching (amtOf), separate summary above CTA. */
+        .ar-total {
+          display: flex;
+          align-items: baseline;
+          justify-content: space-between;
+          gap: 12px;
+          max-width: 400px;
+          margin: 18px auto 6px;
+          padding: 14px 18px;
+          border-radius: 16px;
+          background: rgba(214, 64, 159, 0.06);
+          border: 1.5px solid rgba(214, 64, 159, 0.22);
+        }
+        .ar-total-label {
+          font-size: 17px;
+          font-weight: 800;
+          color: #2e2622;
+        }
+        .ar-total-amt {
+          font-family: var(--font-frank-ruhl), "Frank Ruhl Libre", serif;
+          font-size: 30px;
+          font-weight: 900;
+          background: var(--ar-grad);
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent;
         }
 
         /* Selected-cadence headline summary (restored money-path detail) */
