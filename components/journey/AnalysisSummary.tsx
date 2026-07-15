@@ -1770,15 +1770,15 @@ export function AnalysisSummary({
             transparent 72%
           );
         }
-        /* Locked score is muted (not the live gradient), and the "?" + lock icon
-           sit at 50% opacity (Itzik 2026-07-15). */
+        /* Locked score is muted (not the live gradient); the "?" score, its
+           "/ 100", and the whole 🔒 pill all sit at 50% opacity (Itzik 2026-07-15). */
         .ar-locked .ar-snum {
           background: none;
           -webkit-text-fill-color: #c9bdad;
           color: #c9bdad;
           opacity: 0.5;
         }
-        .ar-lockicon {
+        .ar-locked .ar-sof {
           opacity: 0.5;
         }
         .ar-locked .ar-ctxt {
@@ -1797,6 +1797,7 @@ export function AnalysisSummary({
           align-items: center;
           gap: 5px;
           white-space: nowrap;
+          opacity: 0.5;
         }
         /* CTA pulled up into the faded area (mockup pattern). */
         .ar-teaser-cta {
