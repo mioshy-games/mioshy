@@ -1122,21 +1122,48 @@ export function AnalysisSummary({
                 </div>
               ) : null}
 
-              {/* Bold TOTAL row (Itzik 2026-07-13) — a separate summary that ties
+              {/* Bold TOTAL row (Itzik 2026-07-15) — a separate summary that ties
                   the (unchanged) base price + coaching add-on together. Base and
-                  coaching stay shown separately above; this only sums them via the
-                  existing amtOf (= base + coaching when ticked). Updates live with
-                  the selected cadence and the coaching checkbox. */}
-              {selectedOption ? (
-                <div className="ar-total" aria-live="polite">
-                  <span className="ar-total-label">
-                    {isHe
-                      ? `סה״כ ${totalPeriodWord(selectedOption.cadence)}`
-                      : `Total ${totalPeriodWord(selectedOption.cadence)}`}
-                  </span>
-                  <span className="ar-total-amt">{priceStr(amtOf(selectedOption))}</span>
-                </div>
-              ) : null}
+                  coaching stay shown separately above; this only sums them.
+                  Big line = the DISCOUNTED first-period total (promoSet.firstCharge,
+                  coaching-aware); sub-line = the regular recurring (amtOf = full
+                  base + coaching). No promo → single line, no "after that". Updates
+                  live with the selected cadence and the coaching checkbox. */}
+              {selectedOption ? (() => {
+                const cad = selectedOption.cadence;
+                const recurring = amtOf(selectedOption);
+                const pf = promoSet?.firstChargeByCadence[cad];
+                const firstTotal =
+                  activePromo && pf ? (isHe ? pf.ils : pf.usd) : recurring;
+                const discounted = firstTotal < recurring;
+                return (
+                  <div className="ar-total" aria-live="polite">
+                    <div className="ar-total-main">
+                      <span className="ar-total-label">
+                        {isHe
+                          ? `סה״כ ${
+                              discounted
+                                ? firstPeriodLabel(cad, true)
+                                : totalPeriodWord(cad)
+                            }`
+                          : `Total ${
+                              discounted
+                                ? firstPeriodLabel(cad, false)
+                                : totalPeriodWord(cad)
+                            }`}
+                      </span>
+                      <span className="ar-total-amt">{priceStr(firstTotal)}</span>
+                    </div>
+                    {discounted ? (
+                      <div className="ar-total-after">
+                        {isHe
+                          ? `לאחר מכן ${priceStr(recurring)} ${totalPeriodWord(cad)}`
+                          : `then ${priceStr(recurring)} ${totalPeriodWord(cad)}`}
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })() : null}
 
               <button
                 type="button"
@@ -2137,18 +2164,21 @@ export function AnalysisSummary({
           text-underline-offset: 3px;
         }
 
-        /* Bold TOTAL row — base + coaching (amtOf), separate summary above CTA. */
+        /* Bold TOTAL row — discounted first-period total (big) + regular
+           recurring below. base + coaching, separate summary above CTA. */
         .ar-total {
-          display: flex;
-          align-items: baseline;
-          justify-content: space-between;
-          gap: 12px;
           max-width: 400px;
           margin: 18px auto 6px;
           padding: 14px 18px;
           border-radius: 16px;
           background: rgba(214, 64, 159, 0.06);
           border: 1.5px solid rgba(214, 64, 159, 0.22);
+        }
+        .ar-total-main {
+          display: flex;
+          align-items: baseline;
+          justify-content: space-between;
+          gap: 12px;
         }
         .ar-total-label {
           font-size: 17px;
@@ -2163,6 +2193,13 @@ export function AnalysisSummary({
           -webkit-background-clip: text;
           background-clip: text;
           color: transparent;
+        }
+        .ar-total-after {
+          margin-top: 6px;
+          font-size: 14px;
+          font-weight: 600;
+          color: #7b6b5e;
+          text-align: right;
         }
 
         /* Selected-cadence headline summary (restored money-path detail) */
