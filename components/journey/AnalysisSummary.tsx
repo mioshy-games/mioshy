@@ -729,7 +729,10 @@ export function AnalysisSummary({
                 <div className="ar-scorerow">
                   <span className="ar-snum font-heading">?</span>
                   <span className="ar-sof">/ 100</span>
-                  <span className="ar-lockpill">🔒 {isHe ? "נעול" : "Locked"}</span>
+                  <span className="ar-lockpill">
+                    <span className="ar-lockicon" aria-hidden>🔒</span>{" "}
+                    {isHe ? "נעול" : "Locked"}
+                  </span>
                 </div>
                 <div className="ar-cname">
                   {isHe ? "תקשורת רגשית" : "Emotional communication"}
@@ -756,8 +759,7 @@ export function AnalysisSummary({
                 <a href="#ar-price" className="ar-cats-more-link" onClick={scrollToPrice}>
                   {isHe
                     ? "לתוצאות מדוייקות ולאבחון המלא"
-                    : "For accurate results and the full assessment"}{" "}
-                  <span aria-hidden>{isHe ? "←" : "→"}</span>
+                    : "For accurate results and the full assessment"}
                 </a>
               </div>
             </div>
@@ -1733,7 +1735,8 @@ export function AnalysisSummary({
         .ar-teaser {
           position: relative;
           max-width: 700px;
-          margin: 14px auto 0;
+          /* extra ~10px gap below the CTA link (Itzik 2026-07-15) */
+          margin: 14px auto 10px;
         }
         /* Faint card peeking below the fading locked card — "one more behind". */
         .ar-teaser-behind {
@@ -1767,11 +1770,16 @@ export function AnalysisSummary({
             transparent 72%
           );
         }
-        /* Locked score is muted (not the live gradient). */
+        /* Locked score is muted (not the live gradient), and the "?" + lock icon
+           sit at 50% opacity (Itzik 2026-07-15). */
         .ar-locked .ar-snum {
           background: none;
           -webkit-text-fill-color: #c9bdad;
           color: #c9bdad;
+          opacity: 0.5;
+        }
+        .ar-lockicon {
+          opacity: 0.5;
         }
         .ar-locked .ar-ctxt {
           white-space: nowrap;
