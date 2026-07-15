@@ -28,6 +28,7 @@ import {
   getCurrentCoupleContextFresh,
 } from "@/lib/between-us/couples";
 import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
+import { hasActionablePendingInvitationForEmail } from "@/lib/between-us/invitations";
 import { MyInvitePopup } from "@/components/my/MyInvitePopup";
 
 export async function PairingPopups() {
@@ -72,11 +73,22 @@ export async function PairingPopups() {
     return <MyInvitePopup mode="owner" pairCode={ctx.pair_code} />;
   }
 
-  // Logged-in non-purchaser (no couple at all) → "enter your code" popup.
-  // Entitled users always have a couple by this point (created above), so this
-  // only ever targets a registered non-payer.
+  // Logged-in non-purchaser (no couple at all). Do NOT auto-open the "enter your
+  // code" popup for a plain free registrant (Itzik 2026-07-15) — nobody invited
+  // them, so it's confusing. Genuinely-invited partners are auto-redeemed at
+  // signup (OtpFlow consumes the ?code=), so they already have a couple by here.
+  // Auto-open only when a REAL actionable pending invitation exists for their
+  // email (best-effort; false where couple_invitations is absent, e.g. prod).
+  // The standing "enter code" card on /my stays available for a manual open.
+  // NOTE: this runs in the shell layout, which has no access to searchParams, so
+  // the ?code= signal is handled at signup / on the /my hub page, not here.
   if (!hasCouple) {
-    return <MyInvitePopup mode="redeemer" redirectTo="/my/lessons" />;
+    const invited = await hasActionablePendingInvitationForEmail(
+      entitlements.email,
+    );
+    return invited ? (
+      <MyInvitePopup mode="redeemer" redirectTo="/my/lessons" />
+    ) : null;
   }
 
   return null;

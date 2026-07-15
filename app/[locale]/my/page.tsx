@@ -28,6 +28,7 @@ import { getFreshClinicianReplies } from "@/lib/journey-content/fresh-replies";
 import { getProfileGate } from "@/lib/auth/profile-gate";
 import { RedeemCodeButton } from "@/components/between-us/RedeemCodeButton";
 import { MyInvitePopup } from "@/components/my/MyInvitePopup";
+import { hasActionablePendingInvitationForEmail } from "@/lib/between-us/invitations";
 import type { PillarKey } from "@/lib/entitlements/getUserEntitlements";
 import {
   derivePillarState,
@@ -62,7 +63,7 @@ export default async function MyHubPage({
   searchParams,
 }: {
   params: { locale: string };
-  searchParams?: { purchased?: string };
+  searchParams?: { purchased?: string; code?: string };
 }) {
   const { locale } = params;
   const isHe = locale === "he";
@@ -242,6 +243,22 @@ export default async function MyHubPage({
   // ⇒ pillarCount > 0 ⇒ a couple+pair_code already exist). Gates no content.
   const showOnboarding = hasCouple && (needsPartner || fullAssessmentPending);
 
+  // ─── Redeemer pairing popup — auto-open ONLY with real invite context ──
+  // (Itzik 2026-07-15) A free registrant with NO invitation should not get the
+  // "enter your pairing code" popup auto-popped — nobody invited them, so it's
+  // confusing. (Most genuinely-invited partners are already auto-redeemed during
+  // signup and thus have a couple.) Auto-open only when the user arrived via an
+  // invite link (?code=) or a real pending invitation exists for them. The
+  // standing "enter code" card on the page below stays available for anyone who
+  // genuinely has a code and wants to open it themselves. Owner popup unchanged.
+  const arrivedViaInviteLink = !!searchParams?.code?.trim();
+  const hasPendingInvite =
+    !hasCouple && !arrivedViaInviteLink
+      ? await hasActionablePendingInvitationForEmail(entitlements.email)
+      : false;
+  const showRedeemerPopup =
+    !hasCouple && (arrivedViaInviteLink || hasPendingInvite);
+
   // ─── Pillar state derivation ─────────────────────────────────────────
   // One pure helper computes badge + CTA per pillar. UI just renders.
   // See docs/my-page-redesign-spec.md §0 (MVP) and §3/§5.
@@ -329,7 +346,7 @@ export default async function MyHubPage({
         {hasCouple && needsPartner && ctx.pair_code ? (
           <MyInvitePopup mode="owner" pairCode={ctx.pair_code} />
         ) : null}
-        {!hasCouple ? (
+        {showRedeemerPopup ? (
           <MyInvitePopup mode="redeemer" redirectTo="/my/lessons" />
         ) : null}
 
