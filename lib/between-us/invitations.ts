@@ -311,6 +311,35 @@ export async function getPendingInvitationForCouple(
 }
 
 /**
+ * Best-effort: does a still-actionable (pending, unexpired) invitation exist
+ * for this email address? Returns false on ANY error — notably in environments
+ * where `couple_invitations` does not exist (prod today). Used only to decide
+ * whether to AUTO-open the pairing popup on /my; a false negative just means we
+ * don't auto-pop it (the standing "enter code" card stays available). Never
+ * throws.
+ */
+export async function hasActionablePendingInvitationForEmail(
+  email: string | null | undefined,
+): Promise<boolean> {
+  if (!email) return false;
+  try {
+    const admin = createAdminSupabaseClient();
+    const { data, error } = await admin
+      .from("couple_invitations")
+      .select("id, status, expires_at")
+      .eq("invitee_email", normaliseEmail(email))
+      .eq("status", "pending")
+      .limit(10);
+    if (error || !data) return false;
+    return (data as Array<{ expires_at: string }>).some(
+      (r) => new Date(r.expires_at).getTime() > Date.now(),
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Small summary shape used by UI components that show invitation state
  * (InvitePartnerByEmail, account page, my library card).
  */
