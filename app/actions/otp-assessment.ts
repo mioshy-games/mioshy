@@ -11,9 +11,9 @@
 
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { fireCompleteRegistrationCapi } from "@/lib/analytics/meta-capi";
-import { sendEmailOtp, verifyEmailOtp, finalizeOtpSession, isFirstRegistration, syncConsentedContactToBrevo, type SendOtpResult } from "@/lib/auth/otp-core";
+import { sendEmailOtp, verifyEmailOtp, finalizeOtpSession, isFirstRegistration, hasMobileOnFile, syncConsentedContactToBrevo, type SendOtpResult } from "@/lib/auth/otp-core";
 
-type Result = { success: true } | { success: false; error: string };
+type Result = { success: true; phoneOnFile?: boolean } | { success: false; error: string };
 
 async function claimSessions(admin: ReturnType<typeof createAdminSupabaseClient>, userId: string, deviceId: string, assessmentId: string) {
   const { error } = await admin.from("assessment_sessions").update({ user_id: userId, device_id: null, last_activity_at: new Date().toISOString() })
@@ -76,7 +76,7 @@ export async function verifyAssessmentSignupOtp(args: {
     }
     // Consent → Brevo (sending platform), whenever it's true — new or re-consent.
     if (args.marketingConsent) await syncConsentedContactToBrevo(admin, v.userId, v.email, args.language === "en" ? "en" : "he");
-    return { success: true };
+    return { success: true, phoneOnFile: await hasMobileOnFile(v.userId) };
   } catch (err) {
     console.error("[otp assessment] finalize failed", err);
     return { success: false, error: err instanceof Error ? `שגיאה: ${err.message}` : "שגיאה בהרשמה." };

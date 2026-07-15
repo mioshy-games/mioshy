@@ -42,7 +42,7 @@ function FunnelLogo({ locale, theme = "dark" }: { locale: Locale; theme?: "light
           ? "relative z-10 flex justify-center pt-[clamp(22px,4vw,32px)]"
           : "relative z-10 flex justify-center pt-6 pb-2"
       }
-      style={isLight ? { marginBottom: "clamp(90px,11vh,104px)" } : undefined}
+      style={isLight ? { marginBottom: "clamp(54px,6.6vh,62px)" } : undefined}
     >
       <a
         href={`/${locale}`}
@@ -514,63 +514,68 @@ export function JourneyClient({
           }
         }
 
-        // 2. Fallback: GET returned no row (or non-OK). Force a recompute
-        //    via POST, which reads the user's responses, runs analyze(),
-        //    inserts into journey_analysis, and returns the fresh result.
-        console.log("[JourneyClient] no analysis on GET → POST /api/journey/analyze (recompute)");
-        const postRes = await fetch("/api/journey/analyze", {
-          method: "POST",
-          credentials: "include",
-        });
-        // Inline-string log so the values are visible in DevTools without
-        // expanding `Object`. Same for the failure branch below.
-        console.log(
-          "[JourneyClient] POST response",
-          `status=${postRes.status}`,
-          `ok=${postRes.ok}`,
-        );
-
-        if (!postRes.ok) {
-          // Try to parse as JSON first so we can surface the structured
-          // diagnostic the server now returns (probe object with
-          // userKeyedViaAdmin count + recentAnonJourneys list). Fall back
-          // to text if it isn't JSON.
-          const cloned = postRes.clone();
-          let body: unknown = null;
-          try {
-            body = await postRes.json();
-          } catch {
-            body = await cloned.text().catch(() => "");
-          }
-          console.error(
-            "[JourneyClient] POST failed",
+        // 2. Fallback: GET returned no row (or non-OK). Force a recompute via
+        //    POST, which reads the user's responses, runs analyze(), inserts into
+        //    journey_analysis, and returns the fresh result.
+        //    RETRY with backoff: immediately after an OTP registration+reload the
+        //    journey→user link (finalizeJourneySignup + the page self-heal) can
+        //    lag this client POST, so the first attempt can hit a transient
+        //    `no_journey` (404). We must NOT surface that as a permanent
+        //    "couldn't load" screen — retry a few times and only error if the
+        //    recompute is genuinely unavailable, so the user reliably lands on
+        //    their results.
+        const MAX_POST_ATTEMPTS = 4;
+        let lastMsg = "analysis_unavailable";
+        for (let attempt = 1; attempt <= MAX_POST_ATTEMPTS; attempt++) {
+          const postRes = await fetch("/api/journey/analyze", {
+            method: "POST",
+            credentials: "include",
+          });
+          console.log(
+            "[JourneyClient] POST attempt",
+            `n=${attempt}/${MAX_POST_ATTEMPTS}`,
             `status=${postRes.status}`,
-            `body=${typeof body === "string" ? body : JSON.stringify(body)}`,
+            `ok=${postRes.ok}`,
           );
-          const msg =
-            typeof body === "object" && body && "error" in body
-              ? String((body as { error: unknown }).error)
-              : typeof body === "string" && body
-                ? body
-                : `POST failed: ${postRes.status}`;
-          setAnalysisError(msg);
-          return;
+
+          // Auth genuinely lost → no point retrying.
+          if (postRes.status === 401) {
+            setAnalysisError("unauthorized");
+            return;
+          }
+
+          if (postRes.ok) {
+            const postData = await postRes.json().catch(() => null);
+            if (postData?.analysis) {
+              setAnalysis(postData.analysis as Analysis);
+              console.log("[JourneyClient] analysis SET from POST ✓", `attempt=${attempt}`);
+              return;
+            }
+            lastMsg = "server returned no analysis";
+          } else {
+            const cloned = postRes.clone();
+            let body: unknown = null;
+            try { body = await postRes.json(); } catch { body = await cloned.text().catch(() => ""); }
+            lastMsg =
+              typeof body === "object" && body && "error" in body
+                ? String((body as { error: unknown }).error)
+                : typeof body === "string" && body
+                  ? body
+                  : `POST failed: ${postRes.status}`;
+            console.warn("[JourneyClient] POST attempt failed", `n=${attempt}`, `msg=${lastMsg}`);
+          }
+
+          // Backoff before the next attempt (skip the wait after the last one).
+          if (attempt < MAX_POST_ATTEMPTS) {
+            await new Promise((r) => setTimeout(r, 700 * attempt));
+          }
         }
 
-        const postData = await postRes.json();
-        console.log(
-          "[JourneyClient] POST payload",
-          `hasAnalysis=${!!postData?.analysis}`,
-          `keys=${postData?.analysis ? Object.keys(postData.analysis).join(",") : "(none)"}`,
-        );
-
-        if (postData?.analysis) {
-          setAnalysis(postData.analysis as Analysis);
-          console.log("[JourneyClient] analysis SET from POST ✓");
-        } else {
-          setAnalysisError("server returned no analysis");
-          console.error("[JourneyClient] POST returned 200 but no analysis in body", postData);
-        }
+        // All recompute attempts exhausted → surface the error, but let a later
+        // state change / manual retry try again (don't latch the attempt ref).
+        console.error("[JourneyClient] analysis recompute exhausted", `lastMsg=${lastMsg}`);
+        setAnalysisError(lastMsg);
+        analysisFetchAttemptedRef.current = false;
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         console.error("[JourneyClient] analysis fetch THREW", err);

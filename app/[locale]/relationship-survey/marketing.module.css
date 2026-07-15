@@ -28,7 +28,7 @@
 .lead { font-size: 20px; line-height: 1.6; color: var(--ink2); max-width: 500px; margin: 0 auto 26px; }
 .cta {
   display: inline-block; border-radius: 16px; padding: 16px 30px; font-weight: 800; font-size: 17px; color: #fff;
-  background: #d97706; text-decoration: none; box-shadow: 0 14px 28px -14px rgba(217, 119, 6, 0.7);
+  background: linear-gradient(95deg, #6C5CE7 0%, #D6409F 52%, #F79154 100%); text-decoration: none; box-shadow: 0 14px 28px -14px rgba(214, 64, 159, 0.5);
 }
 .sub { color: var(--mut); font-size: 14px; margin-top: 14px; }
 

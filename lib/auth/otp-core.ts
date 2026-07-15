@@ -126,6 +126,20 @@ export async function syncConsentedContactToBrevo(
   }
 }
 
+/**
+ * True when the account already has a mobile number on file. The signup phone
+ * step (OtpFlow screen 3) is skipped when this is true — we never re-ask for a
+ * number we already have, even on a repeat signup. Checks `mobile` (the gate's
+ * column) and falls back to legacy `phone`.
+ */
+export async function hasMobileOnFile(userId: string): Promise<boolean> {
+  const admin = createAdminSupabaseClient();
+  const { data } = await admin.from("profiles").select("mobile, phone").eq("id", userId).maybeSingle();
+  const row = data as { mobile?: string | null; phone?: string | null } | null;
+  const val = (row?.mobile ?? row?.phone ?? "").toString().trim();
+  return val.length > 0;
+}
+
 export type VerifyOtpResult =
   | { ok: true; userId: string; email: string; isNewUser: boolean }
   | { ok: false; error: string };

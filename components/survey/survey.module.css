@@ -159,7 +159,7 @@
   border: 0; border-radius: 16px; padding: 16px; font: inherit; font-weight: 800; font-size: 16px;
   cursor: pointer; transition: 0.18s; text-decoration: none;
 }
-.cta.amber { background: #d97706; color: #fff; box-shadow: 0 14px 28px -14px rgba(217, 119, 6, 0.7); }
+.cta.amber { background: linear-gradient(95deg, #6C5CE7 0%, #D6409F 52%, #F79154 100%); color: #fff; box-shadow: 0 14px 28px -14px rgba(214, 64, 159, 0.5); }
 .cta.amber:hover { filter: brightness(1.05); transform: translateY(-1px); }
 /* Brand gradient (maroon→pink→amber) CTA — white text for contrast. */
 .cta.grad { background: var(--grad2); color: #fff; box-shadow: 0 14px 28px -14px rgba(184, 60, 77, 0.6); }

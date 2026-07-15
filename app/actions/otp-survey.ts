@@ -11,9 +11,9 @@
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { readPollAnonId } from "@/lib/poll/anon";
 import { fireCompleteRegistrationCapi, firePollLeadCapi, metaEventId } from "@/lib/analytics/meta-capi";
-import { sendEmailOtp, verifyEmailOtp, finalizeOtpSession, isFirstRegistration, syncConsentedContactToBrevo, type SendOtpResult } from "@/lib/auth/otp-core";
+import { sendEmailOtp, verifyEmailOtp, finalizeOtpSession, isFirstRegistration, hasMobileOnFile, syncConsentedContactToBrevo, type SendOtpResult } from "@/lib/auth/otp-core";
 
-type Result = { success: true } | { success: false; error: string };
+type Result = { success: true; phoneOnFile?: boolean } | { success: false; error: string };
 
 /** Link any votes cast under the anon cookie to this user (idempotent). */
 async function linkAnonVotes(admin: ReturnType<typeof createAdminSupabaseClient>, userId: string) {
@@ -85,7 +85,7 @@ export async function verifySurveySignupOtp(args: {
     }
     // Consent → Brevo (sending platform), whenever it's true — new or re-consent.
     if (args.marketingConsent) await syncConsentedContactToBrevo(admin, v.userId, v.email, "he");
-    return { success: true };
+    return { success: true, phoneOnFile: await hasMobileOnFile(v.userId) };
   } catch (err) {
     console.error("[otp survey] finalize failed", err);
     return { success: false, error: err instanceof Error ? `שגיאה: ${err.message}` : "שגיאה בהרשמה." };

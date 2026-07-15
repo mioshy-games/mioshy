@@ -118,7 +118,7 @@ export function PollDashboardLanding({ initialSubscribed, userName }: { initialS
           type="button"
           onClick={() => setView("question")}
           className="inline-block rounded-2xl px-6 py-3.5 font-extrabold text-white text-[16px]"
-          style={{ background: "#D97706", boxShadow: "0 14px 28px -14px rgba(217,119,6,.7)" }}
+          style={{ background: "linear-gradient(95deg, #6C5CE7 0%, #D6409F 52%, #F79154 100%)", boxShadow: "0 14px 28px -14px rgba(214,64,159,.5)" }}
         >
           לשאלה של היום ←
         </button>

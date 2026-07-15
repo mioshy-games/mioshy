@@ -176,7 +176,12 @@ export function OtpFlow({
       const r = await api.verifySignup({ email, token, fullName, marketingConsent: marketing, termsAccepted: terms, preferredLanguage: locale });
       setBusy(false);
       if (!r.success) { setError(r.error); return; }
-      setStep("phone"); // screen 3 — always part of signup (skippable)
+      // Skip the phone step (screen 3) entirely when the account already has a
+      // mobile on file — never re-ask for a number we already have. Only a NEW
+      // account (or one still missing a number) sees the phone step.
+      const phoneOnFile = (r as { phoneOnFile?: boolean }).phoneOnFile === true;
+      if (phoneOnFile) { void done({ isNewUser: false }); return; }
+      setStep("phone"); // screen 3 — signup with no number yet (skippable)
     } else {
       const r = await api.verifyLogin({ email, token });
       setBusy(false);
@@ -201,7 +206,10 @@ export function OtpFlow({
   const inpBorder = dark ? "rgba(255,255,255,0.16)" : LINE;
 
   const S = {
-    card: { maxWidth: 360, margin: "0 auto", padding: "30px 22px", background: dark ? "rgba(255,255,255,0.04)" : "#fcfaf7", border: `1px solid ${dark ? "rgba(255,255,255,0.12)" : LINE}`, borderRadius: 20 } as const,
+    // Card chrome removed (QA C): no background / border / radius in any context
+    // (dark /auth + light survey/assessment/journey) — the form sits directly on
+    // the surface. Layout box only.
+    card: { maxWidth: 360, margin: "0 auto", padding: "30px 22px", background: "transparent", border: "none", borderRadius: 0 } as const,
     brand: { fontFamily: SERIF, fontWeight: 900, fontSize: 20, textAlign: "center", color: ink, marginBottom: 14 } as const,
     h2: { fontFamily: SERIF, fontWeight: 900, fontSize: 23, textAlign: "center", color: ink, marginBottom: 8 } as const,
     lead: { fontSize: 13.5, color: mut, textAlign: "center", lineHeight: 1.5, marginBottom: 22 } as const,
@@ -216,7 +224,9 @@ export function OtpFlow({
   };
 
   return (
-    <div dir="rtl" style={S.card}>
+    <div dir="rtl" className="otp-flow-card" style={S.card}>
+      {/* Placeholder text sized up (QA E) — applies in every context. */}
+      <style>{`.otp-flow-card input::placeholder{font-size:20px;opacity:.6}`}</style>
       {/* Brand logo removed — every OTP surface already sits under its own
           header/branding (auth background, assessment/survey/journey pages), so
           the inline "מיאושי" wordmark was redundant. */}
@@ -307,7 +317,6 @@ export function OtpFlow({
           </label>
           <button style={S.cta(true)} disabled={busy || !phone.trim()} onClick={savePhone}>{busy ? "רגע…" : "סיום הרשמה"}</button>
           <button style={S.ghost} onClick={() => { void done({ isNewUser: true }); }} disabled={busy}>דלג/י לעכשיו</button>
-          <div style={{ fontSize: 11.5, color: mut, textAlign: "center", marginTop: 10, lineHeight: 1.4 }}>אפשר לדלג — נבקש את הנייד שוב כשתחברו בן/בת זוג או תרכשו.</div>
           {error && <div style={S.err}>{error}</div>}
         </>
       )}

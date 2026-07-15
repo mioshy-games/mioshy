@@ -15,7 +15,7 @@
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { fireCompleteRegistrationCapi } from "@/lib/analytics/meta-capi";
-import { sendEmailOtp, verifyEmailOtp, finalizeOtpSession, isFirstRegistration, syncConsentedContactToBrevo, type SendOtpResult } from "@/lib/auth/otp-core";
+import { sendEmailOtp, verifyEmailOtp, finalizeOtpSession, isFirstRegistration, hasMobileOnFile, syncConsentedContactToBrevo, type SendOtpResult } from "@/lib/auth/otp-core";
 
 type ActionResult<T = unknown> = ({ success: true } & T) | { success: false; error: string };
 
@@ -40,7 +40,7 @@ export async function verifyAuthSignupOtp(args: {
   marketingConsent: boolean;
   termsAccepted: boolean;
   preferredLanguage?: string;
-}): Promise<ActionResult<{ userId: string }>> {
+}): Promise<ActionResult<{ userId: string; phoneOnFile: boolean }>> {
   if (!args.termsAccepted) return { success: false, error: "יש לאשר את תנאי השימוש ומדיניות הפרטיות." };
 
   const verified = await verifyEmailOtp({ email: args.email, token: args.token });
@@ -123,7 +123,10 @@ export async function verifyAuthSignupOtp(args: {
       await fireCompleteRegistrationCapi({ userId, email });
     }
 
-    return { success: true, userId };
+    // Skip the phone step entirely if we already have a number (repeat signup
+    // into an existing account that has a mobile) — never re-ask.
+    const phoneOnFile = await hasMobileOnFile(userId);
+    return { success: true, userId, phoneOnFile };
   } catch (err) {
     console.error("[otp signup] finalize failed", err);
     return { success: false, error: err instanceof Error ? `שגיאה: ${err.message}` : "שגיאה בהרשמה." };
