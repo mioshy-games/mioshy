@@ -782,29 +782,62 @@ export function AnalysisSummary({
                   once a coaching cost is configured (else the bundle == content
                   and a 0₪ choice would only confuse). */}
               {hasCoachingCost ? (
-                <div className="ar-coach-wrap">
-                  <div
-                    className="ar-coach"
-                    role="group"
-                    aria-label={isHe ? "בחירת ייעוץ זוגי" : "Couples-coaching choice"}
-                  >
+                <div className="ar-addon">
+                  {/* Coaching add-on as a single checkbox (solid #D6409F), not
+                      tabs. Toggles the shared `coaching` state → the cadence
+                      cards below fold the add-on into their totals (amtOf), the
+                      trial/checkout re-probe with {plan, coaching}. The "+X" is
+                      the SELECTED cadence's coaching_cost (per-cadence, dynamic
+                      from the admin — no hardcode). */}
+                  <div className="ar-addon-head">
                     <button
                       type="button"
-                      className={`ar-coach-opt${coaching ? " sel" : ""}`}
-                      onClick={() => setCoaching(true)}
+                      className="ar-addbtn"
+                      onClick={() => setCoaching(!coaching)}
                       aria-pressed={coaching}
                     >
-                      {isHe ? "עם ייעוץ זוגי כלול" : "With couples coaching"}
+                      <span className={`ar-box${coaching ? " on" : ""}`} aria-hidden />
+                      <span className="ar-addtitle">
+                        {isHe ? "הוספת ייעוץ זוגי עם מומחה" : "Add couples coaching with an expert"}
+                      </span>
                     </button>
-                    <button
-                      type="button"
-                      className={`ar-coach-opt${!coaching ? " sel" : ""}`}
-                      onClick={() => setCoaching(false)}
-                      aria-pressed={!coaching}
-                    >
-                      {isHe ? "ללא ייעוץ זוגי" : "Without couples coaching"}
-                    </button>
+                    {selectedOption ? (
+                      <div className="ar-addbig">
+                        +{fmt(coachingCostOf(selectedOption))} <span className="ar-cur">{sym}</span>{" "}
+                        <span className="ar-mo">{periodLabel(selectedCadence)}</span>
+                      </div>
+                    ) : null}
                   </div>
+                  {coaching ? (
+                    <div className="ar-cexpert">
+                      <svg width="0" height="0" style={{ position: "absolute" }} aria-hidden>
+                        <defs>
+                          <linearGradient id="arCoachGrad" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0" stopColor="#6C5CE7" />
+                            <stop offset=".55" stopColor="#D6409F" />
+                            <stop offset="1" stopColor="#F79154" />
+                          </linearGradient>
+                        </defs>
+                      </svg>
+                      <div className="ar-cexpert-lead">
+                        {isHe ? "המומחה זמין לשני בני הזוג" : "The expert is available to both partners"}
+                      </div>
+                      <ul className="ar-points">
+                        <li>
+                          <svg viewBox="0 0 24 24" fill="none" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" /></svg>
+                          <span>{isHe ? "זמין לכם בצ'אט לכל שאלה" : "Available in chat for any question"}</span>
+                        </li>
+                        <li>
+                          <svg viewBox="0 0 24 24" fill="none" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v4" /><path d="M12 18v4" /><path d="M4.9 4.9l2.8 2.8" /><path d="M16.3 16.3l2.8 2.8" /><circle cx="12" cy="12" r="4" /></svg>
+                          <span>{isHe ? "עוקב אחריכם ומנהל לכם את התוכן השבועי" : "Follows you and curates your weekly content"}</span>
+                        </li>
+                        <li>
+                          <svg viewBox="0 0 24 24" fill="none" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18" /><path d="m19 9-5 5-4-4-3 3" /></svg>
+                          <span>{isHe ? "מבצע מעקב שבועי וחודשי" : "Weekly and monthly tracking"}</span>
+                        </li>
+                      </ul>
+                    </div>
+                  ) : null}
                 </div>
               ) : null}
 
@@ -1599,42 +1632,110 @@ export function AnalysisSummary({
           padding: 3px 10px;
           border-radius: 99px;
         }
-        /* Tabs (v9): a narrow, centered segmented pill — light cream, ✓ on the
-           selected tab only. */
-        .ar-coach-wrap {
-          text-align: center;
-        }
-        /* Segmented toggle (Stage 1): no track background, a subtle border on each
-           button; the selected button is solid black. */
-        .ar-coach {
-          display: flex;
-          border: 1px solid #ece2d4;
-          border-radius: 13px;
-          padding: 5px;
-          gap: 5px;
+        /* Coaching add-on (v2, 2026-07): a single checkbox in solid brand pink
+           (D6409F, NOT the gradient) plus a per-cadence add-on price and, when
+           checked, the expert value points. Replaces the with/without segmented
+           toggle. Money plumbing unchanged (drives the shared coaching state). */
+        .ar-addon {
           margin-bottom: 22px;
-          background: transparent;
         }
-        .ar-coach-opt {
-          flex: 1;
+        .ar-addon-head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 11px;
+        }
+        .ar-addbtn {
+          display: flex;
+          align-items: center;
+          gap: 11px;
+          background: none;
           border: 0;
           cursor: pointer;
+          padding: 0;
+          text-align: start;
+        }
+        .ar-box {
+          width: 24px;
+          height: 24px;
+          border-radius: 7px;
+          border: 2px solid #d8c8b3;
+          flex: none;
+          position: relative;
+          transition: 0.15s;
+        }
+        .ar-box.on {
+          border-color: transparent;
+          background: #d6409f;
+        }
+        .ar-box.on::after {
+          content: "";
+          position: absolute;
+          top: 5px;
+          inset-inline-start: 6px;
+          width: 10px;
+          height: 5px;
+          border-left: 2.5px solid #fff;
+          border-bottom: 2.5px solid #fff;
+          transform: rotate(-45deg);
+        }
+        .ar-addtitle {
           font-family: var(--font-heebo), "Assistant", "Heebo", sans-serif;
-          font-weight: 800;
-          font-size: 14.5px;
-          color: #8a7a6b;
-          padding: 11px 8px;
-          border-radius: 9px;
-          background: transparent;
+          font-size: 18px;
+          font-weight: 600;
+          color: #2e2622;
+        }
+        .ar-addbig {
+          font-family: var(--font-frank-ruhl), "Frank Ruhl Libre", serif;
+          font-weight: 900;
+          font-size: 26px;
+          line-height: 1.1;
           white-space: nowrap;
-          transition: 0.18s;
+          color: #2e2622;
         }
-        .ar-coach-opt.sel {
-          background: #141210;
-          color: #fff;
+        .ar-addbig .ar-cur {
+          font-size: 16px;
+          font-weight: 800;
         }
-        /* ✓ icon removed from the selected coaching toggle (Itzik 2026-07-04) —
-           the gradient fill alone marks the selection. */
+        .ar-addbig .ar-mo {
+          font-family: var(--font-heebo), "Assistant", "Heebo", sans-serif;
+          font-size: 13px;
+          font-weight: 700;
+          color: #8a7a6b;
+        }
+        .ar-cexpert {
+          margin-top: 16px;
+        }
+        .ar-cexpert-lead {
+          font-size: 13px;
+          color: #8a7a6b;
+          font-weight: 600;
+          margin-bottom: 12px;
+        }
+        .ar-points {
+          list-style: none;
+          display: flex;
+          flex-direction: column;
+          gap: 13px;
+          padding: 0;
+          margin: 0;
+        }
+        .ar-points li {
+          display: flex;
+          align-items: flex-start;
+          gap: 10px;
+          font-size: 14.5px;
+          font-weight: 600;
+          line-height: 1.4;
+          color: #2e2622;
+        }
+        .ar-points svg {
+          width: 19px;
+          height: 19px;
+          flex: none;
+          margin-top: 1px;
+          stroke: url(#arCoachGrad);
+        }
         /* Packages container — the top border carries the trial legend
            (Itzik 2026-07-04). The margin/padding-top opens room so the legend
            sits ON the border without touching the coaching tabs above it. */
@@ -2294,11 +2395,6 @@ export function AnalysisSummary({
           .ar-pricecard {
             /* wider (v9) so the one-line sub + centered timer + price fit */
             max-width: 640px;
-          }
-          /* Coaching toggle — fixed, centered width on desktop. */
-          .ar-coach {
-            width: 370px;
-            margin-inline: auto;
           }
           /* Desktop: radio + name/save on the start, price on the end (same
              single-row layout as mobile; the campaign timer, when present, owns
