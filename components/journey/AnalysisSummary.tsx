@@ -1015,10 +1015,10 @@ export function AnalysisSummary({
                           onClick={() => setCoaching(!coaching)}
                           aria-pressed={coaching}
                         >
+                          <span className={`ar-box${coaching ? " on" : ""}`} aria-hidden />
                           <span className="ar-addtitle">
                             {isHe ? "הוספת ייעוץ זוגי עם מומחה" : "Add couples coaching with an expert"}
                           </span>
-                          <span className={`ar-box${coaching ? " on" : ""}`} aria-hidden />
                         </button>
                         <div className="ar-addbig">
                           +{fmt(coachingCostOf(c))} <span className="ar-cur">{sym}</span>{" "}
@@ -1106,7 +1106,11 @@ export function AnalysisSummary({
                     {discount > 0 ? (
                       <div className="ar-os-line ar-os-disc">
                         <span>{isHe ? "הטבת הרשמה" : "Signup discount"}</span>
-                        <span className="ar-os-v">−{priceStr(discount)}</span>
+                        {/* dir=ltr + bidi isolation so the minus sits immediately
+                            before the digits ("−30 ₪"), not flipped by RTL. */}
+                        <span className="ar-os-v">
+                          <bdi dir="ltr">{`−${priceStr(discount)}`}</bdi>
+                        </span>
                       </div>
                     ) : null}
                   </div>
@@ -1823,8 +1827,8 @@ export function AnalysisSummary({
         }
         /* Long gradient separator between base and coaching. */
         .ar-grad-div {
-          height: 3px;
-          border-radius: 3px;
+          height: 1px;
+          border-radius: 1px;
           background: linear-gradient(95deg, #6c5ce7, #d6409f 52%, #f79154);
           margin: 4px 4px 18px;
         }
@@ -1833,13 +1837,12 @@ export function AnalysisSummary({
         .ar-addon-head {
           display: block;
         }
-        /* Checkbox box pinned to the LEFT (blue line, with the radios); the label
-           runs to the right edge. JSX order is [title, box] so in RTL the box
-           lands on the left. */
+        /* Checkbox FIRST (RTL start = right), the label right after it (Itzik
+           2026-07-15). JSX order is [box, title] and the row groups at the start. */
         .ar-addbtn {
           display: flex;
           align-items: center;
-          justify-content: space-between;
+          justify-content: flex-start;
           width: 100%;
           gap: 11px;
           background: none;
