@@ -307,6 +307,114 @@ export async function notifyAdminPool(args: NotifyAdminPoolArgs): Promise<void> 
   });
 }
 
+// ============================================================
+// New-subscription admin alert (Itzik 2026-07-15)
+// Fires on day-1 subscription/trial CREATION (signup / plan open) — NOT
+// on the day-7 trial charge. Best-effort: this helper never throws and
+// never blocks the subscription flow (its own try/catch + the Brevo send
+// is best-effort). Recipient defaults to the shared admin inbox.
+// ============================================================
+
+const CADENCE_LABEL_HE: Record<string, string> = {
+  monthly: "חודשי",
+  quarterly: "רבעוני",
+  yearly: "שנתי",
+  weekly: "שבועי",
+};
+
+export interface NewSubscriptionAlertArgs {
+  userId: string;
+  email: string;
+  /** cadence: monthly | quarterly | yearly | weekly */
+  plan: string;
+  coaching: boolean;
+  /** "ILS" | "USD" */
+  currency: string;
+  /** First-period charge (promo/intro). For a trial this is the day-7 charge. */
+  firstAmount: number;
+  /** Regular recurring amount after any intro period. */
+  regularAmount: number;
+  isTrial: boolean;
+  product: string;
+  createdAt: Date;
+}
+
+export async function notifyAdminNewSubscription(
+  args: NewSubscriptionAlertArgs,
+): Promise<void> {
+  try {
+    const admin = createServiceRoleClient();
+    // Customer name — best-effort; falls back to email only.
+    let fullName: string | null = null;
+    if (admin) {
+      const { data } = await admin
+        .from("profiles")
+        .select("full_name")
+        .eq("id", args.userId)
+        .maybeSingle();
+      fullName =
+        (data as { full_name?: string | null } | null)?.full_name ?? null;
+    }
+
+    const sym = args.currency === "USD" ? "$" : "₪";
+    const money = (n: number) =>
+      args.currency === "USD" ? `${sym}${n}` : `${n} ${sym}`;
+    const cadence = CADENCE_LABEL_HE[args.plan] ?? args.plan;
+    const when = args.createdAt.toLocaleString("he-IL", {
+      timeZone: "Asia/Jerusalem",
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+
+    const rows: Array<[string, string]> = [
+      ["לקוח", fullName ? `${fullName} · ${args.email}` : args.email],
+      ["מוצר", args.product],
+      ["מסלול", cadence],
+      ["ליווי", args.coaching ? "כן" : "לא"],
+      [
+        args.isTrial ? "חיוב ראשון (בתום הטריאל)" : "חיוב ראשון",
+        money(args.firstAmount),
+      ],
+      ["חיוב רגיל (מתחדש)", money(args.regularAmount)],
+      ["תאריך ושעה", when],
+      ["סוג", args.isTrial ? "טריאל (7 ימים)" : "מנוי מיידי"],
+    ];
+
+    const trHtml = rows
+      .map(
+        ([k, v]) =>
+          `<tr><td style="padding:7px 14px;color:#666;font-size:13px;white-space:nowrap;border-bottom:1px solid #efe9e0">${escapeHtml(
+            k,
+          )}</td><td style="padding:7px 14px;color:#111;font-size:14px;font-weight:600;border-bottom:1px solid #efe9e0">${escapeHtml(
+            v,
+          )}</td></tr>`,
+      )
+      .join("");
+
+    const html = `
+      <div style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;max-width:560px;margin:0 auto;padding:24px" dir="rtl">
+        <div style="font-size:18px;font-weight:800;color:#111;margin-bottom:4px">מנוי חדש${
+          args.isTrial ? " (טריאל)" : ""
+        } 🎉</div>
+        <div style="font-size:13px;color:#888;margin-bottom:16px">התראה אוטומטית ביום פתיחת המנוי</div>
+        <table style="border-collapse:collapse;width:100%;background:#faf9f7;border-radius:10px;overflow:hidden">${trHtml}</table>
+      </div>`.trim();
+
+    const to =
+      process.env.ADMIN_NEW_SUB_ALERT_EMAIL?.trim() || "mioshyoffice@gmail.com";
+    const subject = `מנוי חדש${args.isTrial ? " (טריאל)" : ""}: ${cadence}${
+      args.coaching ? " + ליווי" : ""
+    } — ${args.email}`;
+
+    await sendEmailBestEffort({ to, subject, html });
+  } catch (err) {
+    console.warn(
+      "[notifications] new-subscription admin alert failed — non-fatal",
+      err,
+    );
+  }
+}
+
 /**
  * Slice 10 - fired from notify-unlocks after each successful email
  * dispatch. One in-app row per (recipient × scheduled item). Email is
