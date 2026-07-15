@@ -6,7 +6,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { SESSION_COOKIE, SESSION_MAX_AGE, createSession } from "@/lib/auth/session-enforcement";
 import { isTestUser } from "@/lib/auth/is-test-user";
-import { tagAsRegistered } from "@/lib/email/brevo-segments-sync";
+import { tagAsRegistered, unblacklistContact } from "@/lib/email/brevo-segments-sync";
 
 /**
  * Shared Email-OTP core for the passwordless auth flow.
@@ -121,6 +121,10 @@ export async function syncConsentedContactToBrevo(
   if (await isTestUser(admin, userId)) return;
   try {
     await tagAsRegistered(email, userId, lang);
+    // Re-consent must lift any prior unsubscribe — adding a blacklisted contact
+    // back to a list does NOT clear the Brevo blacklist, so clear it explicitly.
+    // This closes the consent loop: unsubscribe → blacklist, re-consent → restore.
+    await unblacklistContact(email);
   } catch (e) {
     console.error("[otp] Brevo consent sync failed (non-fatal)", e);
   }

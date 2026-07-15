@@ -78,7 +78,9 @@ export async function POST(req: Request) {
     windowTime: "21:00",
     exercise: null,
     baseUrl: base,
-    unsubscribeUrl: `${base}/he/account`,
+    // Preview only (sample data, no real recipient) → the unsubscribe page
+    // without a token; a real send tokenizes it per recipient.
+    unsubscribeUrl: `${base}/he/unsubscribe`,
   };
 
   const allEmails = [

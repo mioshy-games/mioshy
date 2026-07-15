@@ -35,6 +35,9 @@ export interface BrevoPayload {
    *  other caller omits it and keeps the default. The from ADDRESS is never
    *  overridden (deliverability/SPF stays on the verified sender). */
   senderName?: string;
+  /** Custom email headers, e.g. RFC 8058 List-Unsubscribe / -Post for the mail
+   *  client's native one-click unsubscribe button. Omitted when empty. */
+  headers?: Record<string, string>;
 }
 
 export interface BrevoSendResult {
@@ -131,6 +134,9 @@ export async function sendBrevoEmail(
         tags: payload.tags,
         params: payload.params,
         replyTo: payload.replyTo ?? { email: replyToEmail, name: senderName },
+        ...(payload.headers && Object.keys(payload.headers).length > 0
+          ? { headers: payload.headers }
+          : {}),
       }),
     });
 

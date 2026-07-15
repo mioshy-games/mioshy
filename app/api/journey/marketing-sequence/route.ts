@@ -51,6 +51,7 @@ export const maxDuration = 120;
 import { NextResponse } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
 import { sendBrevoEmail } from "@/lib/email/brevo";
+import { signUnsubscribeToken } from "@/lib/email/unsubscribe-token";
 import { hasActiveSubscription } from "@/lib/subscriptions";
 import { getViewerPriorityOrder } from "@/lib/dashboard/priority-routing";
 import { getPriorityLabels } from "@/lib/journey-content/priority-categories";
@@ -364,6 +365,10 @@ async function handle(req: Request): Promise<NextResponse<Summary>> {
       };
     } catch { /* pricing stays zeroed → offer bullets simply show 0; caught in QA */ }
 
+    // Per-recipient signed unsubscribe token (null if UNSUBSCRIBE_TOKEN_SECRET
+    // is unset — the visible link then falls back to the account page).
+    const unsubToken = signUnsubscribeToken(userId);
+
     const p: SeqPersonalization = {
       firstName,
       focusDomainHe,
@@ -375,7 +380,11 @@ async function handle(req: Request): Promise<NextResponse<Summary>> {
       windowTime: hhmm(offerExpiresAt),
       exercise: null,
       baseUrl: base,
-      unsubscribeUrl: `${base}/he/account`,
+      // Tokenized one-click-safe unsubscribe (click + confirm). Falls back to the
+      // account page only if UNSUBSCRIBE_TOKEN_SECRET is unset (token null).
+      unsubscribeUrl: unsubToken
+        ? `${base}/he/unsubscribe?u=${unsubToken}`
+        : `${base}/he/account`,
     };
 
     for (const kind of Object.keys(due) as SequenceEmailKind[]) {
@@ -430,6 +439,13 @@ async function handle(req: Request): Promise<NextResponse<Summary>> {
         // results_ready overrides the From display name ("יצחק ברלב"); the other
         // kinds return undefined here and keep the BREVO_SENDER_NAME default.
         senderName: email.senderName,
+        // RFC 8058 one-click unsubscribe for the mail client's native button.
+        headers: unsubToken
+          ? {
+              "List-Unsubscribe": `<${base}/api/unsubscribe?u=${unsubToken}>`,
+              "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+            }
+          : undefined,
       });
       if (r.ok) {
         sent++;

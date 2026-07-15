@@ -200,6 +200,74 @@ async function nextTotalSpent(email: string, delta: number): Promise<number> {
 }
 
 // ------------------------------------------------------------
+// Unsubscribe / re-subscribe (marketing consent) — Itzik 2026-07-16
+// ------------------------------------------------------------
+
+/**
+ * Mark a contact as UNSUBSCRIBED in Brevo — `emailBlacklisted:true` suppresses
+ * every marketing send regardless of list membership, and we also drop them from
+ * the marketing lists. Idempotent: a 404 (contact never existed in Brevo) counts
+ * as success — there's nothing to send them anyway. Never throws.
+ */
+export async function blacklistContact(email: string): Promise<SyncResult> {
+  const clean = normaliseEmail(email);
+  const id = encodeURIComponent(clean);
+  try {
+    const res = await brevoFetch(`/contacts/${id}`, {
+      method: "PUT",
+      body: JSON.stringify({ emailBlacklisted: true }),
+    });
+    if (!res.ok && res.status !== 204 && res.status !== 404) {
+      const t = await res.text().catch(() => "");
+      return {
+        success: false,
+        error: `PUT blacklist ${res.status}: ${t.slice(0, 200)}`,
+      };
+    }
+    // Belt-and-suspenders: also remove from the marketing lists.
+    for (const listId of [BREVO_LISTS.REGISTERED, BREVO_LISTS.INTERESTED]) {
+      try {
+        await brevoFetch(`/contacts/lists/${listId}/contacts/remove`, {
+          method: "POST",
+          body: JSON.stringify({ emails: [clean] }),
+        });
+      } catch {
+        /* non-fatal — the blacklist above already stops all sends */
+      }
+    }
+    return { success: true };
+  } catch (err) {
+    return logSyncError("blacklistContact", err);
+  }
+}
+
+/**
+ * Lift a prior unsubscribe (`emailBlacklisted:false`) so a re-consenting contact
+ * can receive mail again. Called from the OTP consent-sync path — adding a
+ * blacklisted contact back to a list does NOT clear the blacklist, so this must
+ * run explicitly. Idempotent; never throws.
+ */
+export async function unblacklistContact(email: string): Promise<SyncResult> {
+  const id = encodeURIComponent(normaliseEmail(email));
+  try {
+    const res = await brevoFetch(`/contacts/${id}`, {
+      method: "PUT",
+      body: JSON.stringify({ emailBlacklisted: false }),
+    });
+    if (!res.ok && res.status !== 204 && res.status !== 404) {
+      const t = await res.text().catch(() => "");
+      return {
+        success: false,
+        error: `PUT unblacklist ${res.status}: ${t.slice(0, 200)}`,
+      };
+    }
+    return { success: true };
+  } catch (err) {
+    return logSyncError("unblacklistContact", err);
+  }
+}
+
+// ------------------------------------------------------------
 // Public segment-tagging functions
 // ------------------------------------------------------------
 
