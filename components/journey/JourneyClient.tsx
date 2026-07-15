@@ -89,6 +89,11 @@ interface JourneyClientProps {
    *  still in report_phase 'short' is correctly treated as a subscriber. */
   journeySubscribed?: boolean;
   authenticated?: boolean;
+  /** Item 12 — server-resolved "finished the short assessment" flag (passed only
+   *  for non-subscribed users). When true the user lands on the results page
+   *  (AnalysisSummary), never the questionnaire — robust to a completed journey
+   *  whose status/answers didn't resolve exactly as "complete". */
+  initialCompleted?: boolean;
   journeyCadences?: CadenceOption[];
   /** Task 21 — personal 48h offer deadline (personal_window mode), for the
    *  "מחיר ההיכרות שלכם שמור עד …" line on the results page. Null = none. */
@@ -163,6 +168,7 @@ export function JourneyClient({
   subscriptionActive = false,
   journeySubscribed = false,
   authenticated: authenticatedProp = false,
+  initialCompleted = false,
   journeyCadences = [],
   activePromo = null,
   offerExpiresAt = null,
@@ -318,7 +324,10 @@ export function JourneyClient({
   const wasCompleted =
     initialProgress?.status === "complete" ||
     initialProgress?.status === "completed";
-  const isDone = wasCompleted || index >= total;
+  // Item 12 — `initialCompleted` (server-resolved, non-subscribed users only)
+  // forces the results page for anyone who finished the short assessment, so an
+  // existing unpaid user is never dumped back into the questionnaire.
+  const isDone = initialCompleted || wasCompleted || index >= total;
 
   // ── Journey-assessment funnel markers (brief §A.2). Constant
   // assessment_id:"journey" so the funnel lib's

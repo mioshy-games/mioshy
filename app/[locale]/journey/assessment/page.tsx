@@ -98,6 +98,13 @@ export default async function JourneyAssessmentPage({
   });
 
   let initialProgress: { current_step: number; status: string; language: Locale } | null = null;
+  // Robust "finished the short assessment" flag (status complete OR full step
+  // count), hoisted so the render can pass it to JourneyClient. Item 12: an
+  // existing (unpaid) user who completed the short assessment must land on the
+  // results page (AnalysisSummary), not be dumped back into the questionnaire —
+  // JourneyClient.isDone only checked status==="complete", which misses a
+  // completed journey whose status/answers didn't resolve exactly.
+  let assessmentCompleted = false;
   let subscriptionActive = false;
   // F3.3 — journey-specific entitlement signal for the report. Distinct from
   // `subscriptionActive` (which is any active sub, product-agnostic): the
@@ -373,6 +380,7 @@ export default async function JourneyAssessmentPage({
       (journey.status === "complete" ||
         journey.status === "completed" ||
         journey.current_step >= totalQuestions());
+    assessmentCompleted = completed;
     console.log("[/journey/assessment] guard check", {
       subscriptionActive,
       hasJourneyRow: !!journey,
@@ -642,6 +650,7 @@ export default async function JourneyAssessmentPage({
         subscriptionActive={subscriptionActive}
         journeySubscribed={journeySubscribed}
         authenticated={!!user}
+        initialCompleted={assessmentCompleted && !subscriptionActive}
         journeyCadences={journeyCadences}
         activePromo={activePromo}
         offerExpiresAt={offerExpiresAt}

@@ -211,16 +211,18 @@ export function OtpFlow({
     // the surface. Layout box only.
     card: { maxWidth: 360, margin: "0 auto", padding: "30px 22px", background: "transparent", border: "none", borderRadius: 0 } as const,
     brand: { fontFamily: SERIF, fontWeight: 900, fontSize: 20, textAlign: "center", color: ink, marginBottom: 14 } as const,
-    h2: { fontFamily: SERIF, fontWeight: 900, fontSize: 23, textAlign: "center", color: ink, marginBottom: 8 } as const,
+    h2: { fontFamily: SERIF, fontWeight: 900, fontSize: 32, textAlign: "center", color: ink, marginBottom: 8 } as const, // QA 3: OTP h2 → 32px
     lead: { fontSize: 13.5, color: mut, textAlign: "center", lineHeight: 1.5, marginBottom: 22 } as const,
     lb: { fontSize: 12.5, fontWeight: 700, color: ink, marginBottom: 3, display: "block" } as const,
     inp: { width: "100%", border: `1.5px solid ${inpBorder}`, background: inpBg, borderRadius: 13, padding: "13px 15px", fontSize: 15, color: ink, outline: "none" } as const,
-    cta: (on: boolean) => ({ display: "block", width: "100%", height: 52, border: 0, cursor: on ? "pointer" : "not-allowed", borderRadius: 13, background: GRAD, color: "#fff", fontWeight: 800, fontSize: 16, opacity: on ? 1 : 0.45, marginTop: 6 } as const),
+    cta: (on: boolean) => ({ display: "block", width: "100%", height: 52, border: 0, cursor: on ? "pointer" : "not-allowed", borderRadius: 13, background: GRAD, color: "#fff", fontWeight: 800, fontSize: 20, opacity: on ? 1 : 0.45, marginTop: 6 } as const), // QA 9: button text → 20px
     ghost: { display: "block", width: "100%", textAlign: "center", background: "none", border: 0, cursor: "pointer", fontSize: 13.5, fontWeight: 700, color: mut, marginTop: 16 } as const,
-    chk: { display: "flex", alignItems: "flex-start", gap: 10, fontSize: 12.5, color: ink, lineHeight: 1.45, cursor: "pointer", marginBottom: 12 } as const,
+    // QA 5 + 4: checkbox text (terms + marketing) same colour (ink) in both themes, ≥14px.
+    chk: { display: "flex", alignItems: "flex-start", gap: 10, fontSize: 14, color: ink, lineHeight: 1.45, cursor: "pointer", marginBottom: 12 } as const,
     err: { marginTop: 12, background: dark ? "rgba(190,18,60,0.15)" : "#fff1f2", border: `1px solid ${dark ? "rgba(253,164,175,0.4)" : "#fecdd3"}`, color: dark ? "#fda4af" : "#be123c", borderRadius: 12, padding: "10px 14px", fontSize: 13.5, textAlign: "center" } as const,
-    foot: { marginTop: 20, textAlign: "center", fontSize: 12.5, color: mut } as const,
-    link: { color: "#D6409F", fontWeight: 700, textDecoration: "underline", background: "none", border: 0, cursor: "pointer", font: "inherit" } as const,
+    foot: { marginTop: 30, textAlign: "center", fontSize: 14, color: mut } as const, // QA 7: text → 14px; QA 6: more gap above the footer
+    // QA 7/8: links readable on dark — white on the dark /auth pages, brand pink on light surfaces.
+    link: { color: dark ? "#fff" : "#D6409F", fontWeight: 700, textDecoration: "underline", background: "none", border: 0, cursor: "pointer", font: "inherit" } as const,
   };
 
   return (
@@ -259,15 +261,17 @@ export function OtpFlow({
                 <input type="checkbox" checked={terms} onChange={(e) => setTerms(e.target.checked)} style={{ marginTop: 2, width: 18, height: 18, accentColor: "#D6409F" }} />
                 <span>
                   {consent.termsPrefix}
-                  <a href={`/${locale}/terms`} style={{ color: "#D6409F", textDecoration: "underline" }}>{consent.termsLink}</a>
+                  {/* QA 8: terms/privacy links white on dark (pink is unreadable on black), brand pink on light. */}
+                  <a href={`/${locale}/terms`} style={{ color: dark ? ink : "#D6409F", textDecoration: "underline" }}>{consent.termsLink}</a>
                   {consent.termsAnd}
-                  <a href={`/${locale}/privacy`} style={{ color: "#D6409F", textDecoration: "underline" }}>{consent.privacyLink}</a>
+                  <a href={`/${locale}/privacy`} style={{ color: dark ? ink : "#D6409F", textDecoration: "underline" }}>{consent.privacyLink}</a>
                   {consent.termsSuffix}
                 </span>
               </label>
               <label style={S.chk}>
                 <input type="checkbox" checked={marketing} onChange={(e) => setMarketing(e.target.checked)} style={{ marginTop: 2, width: 18, height: 18, accentColor: "#D6409F" }} />
-                <span style={{ color: mut }}>{consent.marketingConsent}</span>
+                {/* QA 4 + 5: marketing text same colour as terms text (inherits S.chk ink), not muted. */}
+                <span>{consent.marketingConsent}</span>
               </label>
             </div>
           )}
@@ -289,13 +293,13 @@ export function OtpFlow({
       {/* ── screen 2: code ── */}
       {step === "code" && (
         <>
-          <h2 style={{ ...S.h2, fontSize: 32 }}>הזינו את הקוד</h2>
+          <h2 style={S.h2}>הזינו את הקוד</h2>
           <p style={S.lead}>שלחנו קוד בן 6 ספרות אל<br /><b style={{ color: ink, direction: "ltr", display: "inline-block" }}>{email}</b></p>
           <div style={{ margin: "6px 0 18px" }}>
             <OtpCodeInput value={code} onChange={setCode} onComplete={(c) => verify(c)} disabled={busy} theme={theme} />
           </div>
           <div style={{ textAlign: "center", fontSize: 16, color: dark ? mut : "#5a5049", marginBottom: 12, lineHeight: 1.6 }}>
-            לא קיבלתם? כדאי להציץ גם בתיקיית הספאם — לפעמים הקוד אוהב להתחבא שם.<br />
+            לא קיבלתם? כדאי להציץ גם בתיקיית הספאם - לפעמים הקוד אוהב להתחבא שם.<br />
             {resendIn > 0
               ? <span>שליחה חוזרת תוך 0:{String(resendIn).padStart(2, "0")}</span>
               : <button style={S.link} onClick={resend} disabled={busy}>שליחה חוזרת</button>}

@@ -88,7 +88,7 @@
 .backBtn:hover { transform: translateY(-2px); box-shadow: 0 10px 24px -10px rgba(0, 0, 0, 0.34); }
 
 /* §11 — small confidentiality trust line at the top of the survey. 14px, black. */
-.trust { text-align: center; font-size: 14px; color: #111; font-weight: 600; margin: 0 auto 4px; }
+.trust { text-align: center; font-size: 14px; color: #7c7171; font-weight: 600; margin: 0 auto 14px; } /* QA 1: softer colour + more gap below */
 
 .q {
   text-align: center; font-size: 25px; line-height: 1.5; font-weight: 700;
