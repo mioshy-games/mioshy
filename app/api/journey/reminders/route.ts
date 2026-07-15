@@ -30,6 +30,7 @@ export const maxDuration = 300;
 
 import { NextResponse } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
+import { resolveUserLocale } from "@/lib/notifications/recipient-locale";
 import { isCadenceEligible } from "@/lib/journey-content/cadence-engine";
 import {
   notifyAdminPool,
@@ -167,11 +168,12 @@ async function handle(req: Request): Promise<Response> {
       const title = titleRow?.title_he ?? null;
 
       try {
+        const loc = await resolveUserLocale(row.user_id);
         await notifyOnReminderInactivity({
           recipientUserId: row.user_id,
-          locale: "he",
+          locale: loc,
           lastItemTitle: title,
-          lastItemHref: `/he/journey/timeline/${latest.id}`,
+          lastItemHref: `/${loc}/journey/timeline/${latest.id}`,
         });
         summary.inactivity_sent++;
       } catch (e) {
@@ -279,7 +281,7 @@ async function handle(req: Request): Promise<Response> {
           await notifyOnReminderUnfollowedReply({
             recipientUserId: userId,
             scheduledItemId: r.id,
-            locale: "he",
+            locale: await resolveUserLocale(userId),
           });
           summary.unfollowed_sent++;
         } catch (e) {

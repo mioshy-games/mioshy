@@ -29,6 +29,7 @@ export const maxDuration = 60;
 
 import { NextResponse } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
+import { resolveUserLocale } from "@/lib/notifications/recipient-locale";
 import { notifyUser } from "@/lib/journey-content/notifications";
 
 interface Summary {
@@ -217,7 +218,7 @@ async function handle(req: Request): Promise<NextResponse<Summary>> {
     if (emailsSent < EMAIL_CAP_PER_RUN) {
       try {
         const title = cand.item_id ? titleByItem.get(cand.item_id) ?? null : null;
-        const href = `/he/journey/timeline/${cand.id}`;
+        const href = `/${await resolveUserLocale(userId)}/journey/timeline/${cand.id}`;
         // Human-first copy — sounds like the coach left a quick
         // note, not the system. No "we released", no "system reminder".
         const subject =
