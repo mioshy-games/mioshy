@@ -2737,11 +2737,9 @@ export function AnalysisSummary({
             flex: none;
             position: sticky;
             top: 24px;
-            background: #fdfbf9;
-            border: 1px solid #ece2d4;
-            border-radius: 18px;
-            padding: 24px 24px 26px;
-            box-shadow: 0 22px 46px -28px rgba(80, 50, 35, 0.35);
+            /* No card wrapper (Itzik 2026-07-15) — just the summary content on the
+               page background: no border, shadow, or fill. */
+            padding: 0;
           }
           /* The trial timeline is removed on desktop entirely (Itzik 2026-07-15) —
              the summary panel's day-7 line already states the charge. Mobile keeps
