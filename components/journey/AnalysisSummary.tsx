@@ -183,7 +183,11 @@ export function AnalysisSummary({
   const hasCoachingCost = enabledCadences.some(
     (c) => (isHe ? c.coaching_cost_ils : c.coaching_cost_usd) > 0,
   );
-  const [coaching, setCoaching] = useState(true);
+  // Coaching is an OPT-IN paid add-on — starts UNCHECKED. Never auto-attach paid
+  // coaching without an active choice (Itzik 2026-07-15). The user ticks the box
+  // themselves; the checkout then sends coaching:true. Default false → the card
+  // shows the base price + the "+{coaching_cost}" offer.
+  const [coaching, setCoaching] = useState(false);
 
   // ── Money path cadence (hoisted above the loading early-return so the trial
   // hook, which must run unconditionally, can key off it). The cadence to
@@ -267,7 +271,9 @@ export function AnalysisSummary({
   // (heroSub + improvements* keys dropped — those sections were removed.)
   const cmsPriceTitle = useCmsText(`${RK}.priceTitle`).text;
   const cmsIncluded1 = useCmsText(`${RK}.included1`).text;
-  const cmsIncluded2 = useCmsText(`${RK}.included2`).text;
+  // included2 (coaching) is no longer a bullet — it moved to the add-on section
+  // below the includes. The hook still runs so the CMS row stays registered.
+  void useCmsText(`${RK}.included2`).text;
   const cmsIncluded3 = useCmsText(`${RK}.included3`).text;
   const cmsIncluded4 = useCmsText(`${RK}.included4`).text;
   // included5 ("ייעוץ זוגי עם מיאושי") + fullAssessmentNote removed from the
@@ -497,6 +503,16 @@ export function AnalysisSummary({
         : cadence === "yearly"
           ? rc(cmsCadYearly, "שנתי", "Yearly")
           : rc(cmsCadWeekly, "שבועי", "Weekly");
+  // "סה״כ ל..." word for the bottom total row — לחודש/לרבעון/לשנה (per-period,
+  // matching the selected cadence). Distinct from periodLabel's "/חודש" slash form.
+  const totalPeriodWord = (cadence: string) =>
+    cadence === "yearly"
+      ? isHe ? "לשנה" : "per year"
+      : cadence === "quarterly"
+        ? isHe ? "לרבעון" : "per quarter"
+        : cadence === "weekly"
+          ? isHe ? "לשבוע" : "per week"
+          : isHe ? "לחודש" : "per month";
   const selectedOption =
     enabledCadences.find((c) => c.cadence === selectedCadence) ??
     enabledCadences[0] ??
@@ -532,6 +548,45 @@ export function AnalysisSummary({
       ? `מתחיל החיוב, ${priceStr(amt)} ${recurringLabel}.`
       : `billing begins, ${priceStr(amt)} ${recurringLabel}.`;
   })();
+
+  // 7-day trial timeline (Blinkist pattern). Extracted so it can render in TWO
+  // slots: on mobile it stays in the summary flow (approved, unchanged); on
+  // desktop it moves to the bottom of the PLANS column, below "more plans"
+  // (Itzik 2026-07-15). The same element is placed in both slots and CSS picks
+  // which slot is visible per breakpoint — no duplicated markup, no mobile change.
+  const trialTimeline = trial.enabled ? (
+    <div className="ar-trial-tl">
+      <div className="ar-trial-row">
+        <span aria-hidden className="ar-trial-check">✓</span>
+        <span>
+          <b>{isHe ? "היום:" : "Today:"}</b>{" "}
+          {isHe
+            ? "מצטרפים בלי חיוב, והאבחון המלא מחכה לכם עם תמונה מדויקת יותר."
+            : "join with no charge, and the full assessment awaits with a sharper picture."}
+        </span>
+      </div>
+      <div className="ar-trial-row">
+        <span aria-hidden className="ar-trial-check">✓</span>
+        <span>
+          <b>{isHe ? "בעוד 5 ימים:" : "In 5 days:"}</b>{" "}
+          {isHe
+            ? "נשלח לכם תזכורת שתקופת הניסיון עומדת להסתיים."
+            : "we'll send a reminder that the trial is ending."}
+        </span>
+      </div>
+      <div className="ar-trial-row">
+        <span aria-hidden className="ar-trial-check">✓</span>
+        <span>
+          <b>{isHe ? "בעוד 7 ימים:" : "In 7 days:"}</b> {trialDay7}
+        </span>
+      </div>
+      <div className="ar-trial-foot">
+        {isHe
+          ? "ביטול בכל רגע, בלחיצת כפתור מהאזור האישי."
+          : "cancel any time, one click from your account."}
+      </div>
+    </div>
+  ) : null;
 
   // Included panel for the SELECTED plan — exact structure per the approved
   // pricing card: a gradient "חיסכון X%" line under the name, then a divider,
@@ -766,48 +821,27 @@ export function AnalysisSummary({
         {/* PRICE (non-subscriber) / ACTIVE-SUBSCRIBER card */}
         {!journeySubscribed ? (
           <section className="ar-section" id="ar-price">
-            <h2 className="ar-sh font-heading">
-              {rc(cmsPriceTitle, "איזו חבילה מתאימה לכם?", "Which plan fits you?")}
-            </h2>
-            {/* Personal-window countdown (display='clock') — tiles wired to the
-                user's existing offer_expires_at (48h window unchanged). */}
-            {promoMode === "personal_window" &&
-            personalWindowDisplay === "clock" &&
-            offerExpiresAt &&
-            new Date(offerExpiresAt).getTime() > Date.now() ? (
-              <PersonalOfferTimer endsAt={offerExpiresAt} isHe={isHe} />
-            ) : null}
+            {/* Personal-window countdown (display='clock') moved DOWN to sit
+                beside the selected price/promo (Itzik 2026-07-15) — the urgency
+                belongs next to the number it applies to, not at the card top.
+                Now rendered inside the selected cadence card, below price+savings. */}
             <div className="ar-pricecard">
-              {/* Stage-1 coaching add-on — with/without choice. Only rendered
-                  once a coaching cost is configured (else the bundle == content
-                  and a 0₪ choice would only confuse). */}
-              {hasCoachingCost ? (
-                <div className="ar-coach-wrap">
-                  <div
-                    className="ar-coach"
-                    role="group"
-                    aria-label={isHe ? "בחירת ייעוץ זוגי" : "Couples-coaching choice"}
-                  >
-                    <button
-                      type="button"
-                      className={`ar-coach-opt${coaching ? " sel" : ""}`}
-                      onClick={() => setCoaching(true)}
-                      aria-pressed={coaching}
-                    >
-                      {isHe ? "עם ייעוץ זוגי כלול" : "With couples coaching"}
-                    </button>
-                    <button
-                      type="button"
-                      className={`ar-coach-opt${!coaching ? " sel" : ""}`}
-                      onClick={() => setCoaching(false)}
-                      aria-pressed={!coaching}
-                    >
-                      {isHe ? "ללא ייעוץ זוגי" : "Without couples coaching"}
-                    </button>
-                  </div>
-                </div>
-              ) : null}
+              {/* Header lives INSIDE the card, at the top (Itzik 2026-07-15). */}
+              <h2 className="ar-sh font-heading">
+                {rc(cmsPriceTitle, "איזו חבילה מתאימה לכם?", "Which plan fits you?")}
+              </h2>
+              {/* Coaching add-on moved INTO the selected cadence card (below the
+                  includes, after a divider) to match the approved mockup — see
+                  the .ar-addon block inside the cadence map below. */}
 
+              {/* Desktop two-column shell (Itzik 2026-07-15). BOTH wrappers are
+                  `display:contents` on mobile — they add NOTHING to the mobile box
+                  tree, so the approved mobile layout is byte-for-byte unchanged.
+                  Only the min-width:760 media query turns them into the SaaS
+                  two-column grid: plans on the right, sticky summary+CTA on the
+                  left. No base/mobile rule is touched. */}
+              <div className="ar-cols">
+              <div className="ar-col-plans">
               {/* Packages ← journeyCadences. Price shown = promo first-charge
                   (server-computed) or the regular price for that cadence. */}
               <div className="ar-opts-wrap">
@@ -822,8 +856,21 @@ export function AnalysisSummary({
                 const pf = promoSet?.firstChargeByCadence[c.cadence];
                 const po = promoSet?.originalByCadence[c.cadence];
                 const hasPromo = !!(promoSet && pf && po);
-                const firstAmt = hasPromo ? (isHe ? pf!.ils : pf!.usd) : amt;
-                const origAmt = hasPromo ? (isHe ? po!.ils : po!.usd) : amt;
+                // Card ALWAYS shows the BASE (without-coaching) price — coaching
+                // is a separate add-on line + a separate total, never merged into
+                // the base (Itzik 2026-07-15). Base + its promo come from the
+                // without-coaching scope, independent of the checkbox.
+                const wSet = activePromo?.withoutCoaching ?? null;
+                const baseReg = isHe ? c.price_ils : c.price_usd;
+                const wpf = wSet?.firstChargeByCadence[c.cadence];
+                const wpo = wSet?.originalByCadence[c.cadence];
+                const baseHasPromo = !!(wSet && wpf && wpo);
+                const baseFirst = baseHasPromo ? (isHe ? wpf!.ils : wpf!.usd) : baseReg;
+                const baseOrig = baseHasPromo ? (isHe ? wpo!.ils : wpo!.usd) : baseReg;
+                const basePromoSavePct =
+                  baseHasPromo && baseOrig > 0 && baseFirst < baseOrig
+                    ? Math.round(((baseOrig - baseFirst) / baseOrig) * 100)
+                    : null;
                 // Sub-row:
                 //  • Monthly (promo): "חודש ראשון, אח״כ {full} ₪" — one line, no %.
                 //  • Quarterly/yearly: prominent "חיסכון {X}%" (no struck price,
@@ -838,12 +885,6 @@ export function AnalysisSummary({
                     savePct = Math.round(((before - amt) / before) * 100);
                   }
                 }
-                // Promo (monthly) savings % off the regular price for that
-                // cadence — same calc as Stage-3 and the quarterly/yearly rows.
-                const promoSavePct =
-                  hasPromo && origAmt > 0 && firstAmt < origAmt
-                    ? Math.round(((origAmt - firstAmt) / origAmt) * 100)
-                    : null;
                 // Yearly "N months free" — computed LIVE (Itzik 2026-07-04):
                 // floor((full monthly × 12 − yearly price) / full monthly).
                 // Today: (67×12 − 1570)/67 = floor(3.4) = 3 → "3 חודשים חינם".
@@ -854,8 +895,8 @@ export function AnalysisSummary({
                 // "חיסכון X%" line — shown under the name inside the selected
                 // card's included block (psave). null → no savings line.
                 const saveText =
-                  promoSavePct != null
-                    ? `${isHe ? "חיסכון" : "Save"} ${promoSavePct}%${
+                  basePromoSavePct != null
+                    ? `${isHe ? "חיסכון" : "Save"} ${basePromoSavePct}%${
                         c.cadence === "monthly"
                           ? isHe ? " על החודש הראשון" : " on the first month"
                           : ""
@@ -872,7 +913,12 @@ export function AnalysisSummary({
                   {/* Trial strip at the TOP of the selected card — gradient bg,
                       white text; moves with the selection (Stage 1). */}
                   {selected && trial.enabled ? (
-                    <div className="ar-trial-strip">{trial.cardTag}</div>
+                    <div className="ar-trial-strip">
+                      <span className="ar-trial-t1">{trial.cardTag}</span>
+                      <span className="ar-trial-t2">
+                        {isHe ? "גישה מלאה לשני בני הזוג" : "Full access for both partners"}
+                      </span>
+                    </div>
                   ) : null}
                   <button
                     type="button"
@@ -885,9 +931,9 @@ export function AnalysisSummary({
                         line moved into the selected card's included block. */}
                     <span className="ar-opt-info">
                       <span className="ar-opt-name">{cadenceTitle(c.cadence)}</span>
-                      {hasPromo ? (
+                      {baseHasPromo ? (
                         <span className="ar-opt-note">
-                          {`${firstPeriodLabel(c.cadence, isHe)}${isHe ? ", אח״כ " : ", then "}${priceStr(origAmt)}`}
+                          {`${firstPeriodLabel(c.cadence, isHe)}${isHe ? ", אח״כ " : ", then "}${priceStr(baseOrig)}`}
                         </span>
                       ) : null}
                     </span>
@@ -909,30 +955,39 @@ export function AnalysisSummary({
                       </span>
                     ) : null}
                     <span className={`ar-opt-price${selected ? "" : " plain"}`}>
-                      <span className="ar-price-num">{fmt(firstAmt)}</span>
+                      <span className="ar-price-num">{fmt(baseFirst)}</span>
                       <span className="ar-price-cur">{sym}</span>
+                      <span className="ar-price-per">{periodLabel(c.cadence)}</span>
                     </span>
                   </button>
                   {/* Savings line under the name — shown for EVERY visible card
                       (monthly, quarterly, yearly), not only the selected one, so
                       the revealed plans carry "חיסכון X%" like the approved mock. */}
                   {saveText ? <div className="psave">{saveText}</div> : null}
+                  {/* Personal-window countdown — right beside the price/savings it
+                      applies to (selected card only). */}
+                  {selected &&
+                  promoMode === "personal_window" &&
+                  personalWindowDisplay === "clock" &&
+                  offerExpiresAt &&
+                  new Date(offerExpiresAt).getTime() > Date.now() ? (
+                    <div className="ar-inline-timer">
+                      <PersonalOfferTimer endsAt={offerExpiresAt} isHe={isHe} />
+                    </div>
+                  ) : null}
                   {/* Included block — only the selected card. INLINE (not a helper)
                       so styled-jsx adds its scope class and .incl/.dot apply. */}
                   {selected ? (
                     <div className="incl">
-                      <div className="incl-div" aria-hidden />
-                      <div className="incl-lead">
-                        {isHe
-                          ? "המנוי כולל גישה מלאה לשני בני הזוג"
-                          : "The subscription includes full access for both partners"}
-                      </div>
+                      {/* "המנוי כולל..." lead removed (Itzik 2026-07-15) — the
+                          "גישה מלאה לשני בני הזוג" line now lives in the trial
+                          strip. Divider above also removed. */}
                       <ul>
                         {[
+                          // Coaching is no longer listed here — it has its own
+                          // add-on section below (checkbox + expert points), per
+                          // the approved mockup. cmsIncluded2 intentionally unused.
                           rc(cmsIncluded1, "פרק חדש כל שבוע", "A new chapter every week"),
-                          ...(coaching
-                            ? [rc(cmsIncluded2, "מומחה זוגיות פרטי בצ'אט", "A private relationship expert in chat")]
-                            : []),
                           rc(cmsIncluded3, "משחקי זוגות אונליין", "Online couples games"),
                           rc(cmsIncluded4, "הסקס של מיאושי", "Mioshy's sex games"),
                         ].map((it, i) => (
@@ -942,6 +997,54 @@ export function AnalysisSummary({
                           </li>
                         ))}
                       </ul>
+                    </div>
+                  ) : null}
+                  {/* Coaching add-on — INSIDE the selected card, below the
+                      includes, after a divider (approved mockup). Toggles the
+                      shared `coaching` state; "+X" is this cadence's coaching_cost
+                      (dynamic). */}
+                  {selected && hasCoachingCost ? (
+                    <div className="ar-addon">
+                      {/* Gradient separator between the base plan and the coaching
+                          add-on (Itzik 2026-07-15) — replaces the framed boxes. */}
+                      <div className="ar-grad-div" aria-hidden />
+                      <div className="ar-addon-head">
+                        <button
+                          type="button"
+                          className="ar-addbtn"
+                          onClick={() => setCoaching(!coaching)}
+                          aria-pressed={coaching}
+                        >
+                          <span className={`ar-box${coaching ? " on" : ""}`} aria-hidden />
+                          <span className="ar-addtitle">
+                            {isHe ? "הוספת ייעוץ זוגי עם מומחה" : "Add couples coaching with an expert"}
+                          </span>
+                        </button>
+                        <div className="ar-addbig">
+                          +{fmt(coachingCostOf(c))} <span className="ar-cur">{sym}</span>{" "}
+                          <span className="ar-mo">{periodLabel(c.cadence)}</span>
+                        </div>
+                      </div>
+                      {/* Expert content is ALWAYS visible (Itzik 2026-07-15) — the
+                          checkbox above still decides whether coaching is added to
+                          the order and price, but people always see what they'd get.
+                          Gradient-dot bullets, same as the "מה כלול" list. */}
+                      <div className="ar-cexpert">
+                        <ul className="ar-points">
+                          <li>
+                            <span aria-hidden className="dot" />
+                            <span>{isHe ? "זמין לכם בצ'אט לכל שאלה" : "Available in chat for any question"}</span>
+                          </li>
+                          <li>
+                            <span aria-hidden className="dot" />
+                            <span>{isHe ? "מתאים לכם את התוכן השבועי אישית" : "Personalises your weekly content"}</span>
+                          </li>
+                          <li>
+                            <span aria-hidden className="dot" />
+                            <span>{isHe ? "מבצע מעקב שבועי וחודשי" : "Weekly and monthly tracking"}</span>
+                          </li>
+                        </ul>
+                      </div>
                     </div>
                   ) : null}
                   </div>
@@ -959,6 +1062,66 @@ export function AnalysisSummary({
                   {isHe ? "לצפייה בעוד חבילות" : "See more plans"}
                 </button>
               ) : null}
+              </div>{/* /.ar-col-plans */}
+
+              <div className="ar-col-sum">
+              {/* Desktop-only itemised order summary (Itzik 2026-07-15) — hidden on
+                  mobile (base `display:none`), shown only ≥760px. Money-honest:
+                  the base line is the FULL recurring base, coaching its own line,
+                  then a single "signup discount" line = subtotal − first charge, so
+                  the rows always reconcile to the .ar-total below (which stays the
+                  single source of the charged total). All values are the same live
+                  ones used on mobile (promoSet / coaching / amtOf). */}
+              {selectedOption ? (() => {
+                const c = selectedOption;
+                const cad = c.cadence;
+                const baseFull = isHe ? c.price_ils : c.price_usd;
+                const coachCost = coachingCostOf(c);
+                const subtotal = baseFull + (coaching ? coachCost : 0);
+                const pf = promoSet?.firstChargeByCadence[cad];
+                const firstTotal =
+                  activePromo && pf ? (isHe ? pf.ils : pf.usd) : subtotal;
+                const discount = subtotal - firstTotal;
+                return (
+                  <div className="ar-order-sum">
+                    <h3 className="ar-os-title font-heading">
+                      {isHe ? "סיכום ההזמנה" : "Order summary"}
+                    </h3>
+                    <div className="ar-os-line">
+                      <span>
+                        {isHe
+                          ? `מנוי ${cadenceTitle(cad)}`
+                          : `${cadenceTitle(cad)} plan`}
+                      </span>
+                      <span className="ar-os-v">
+                        <bdi dir="ltr">{priceStr(baseFull)}</bdi>
+                      </span>
+                    </div>
+                    <div className={`ar-os-line${coaching ? "" : " muted"}`}>
+                      <span>{isHe ? "ייעוץ עם מומחה" : "Expert coaching"}</span>
+                      <span className="ar-os-v">
+                        {coaching ? (
+                          <bdi dir="ltr">{priceStr(coachCost)}</bdi>
+                        ) : isHe ? (
+                          "לא נבחר"
+                        ) : (
+                          "Not added"
+                        )}
+                      </span>
+                    </div>
+                    {discount > 0 ? (
+                      <div className="ar-os-line ar-os-disc">
+                        <span>{isHe ? "הטבת הרשמה" : "Signup discount"}</span>
+                        {/* dir=ltr + bidi isolation so the minus sits immediately
+                            before the digits ("−30 ₪"), not flipped by RTL. */}
+                        <span className="ar-os-v">
+                          <bdi dir="ltr">{`−${priceStr(discount)}`}</bdi>
+                        </span>
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })() : null}
 
               {/* Selected-cadence headline — the amount Cardcom will charge for
                   the selected plan. Preserves the struck anchor (ILS derived /
@@ -1029,44 +1192,80 @@ export function AnalysisSummary({
               <hr className="ar-zone-sep" aria-hidden />
 
               {/* Task 16 — 7-day trial timeline (Blinkist pattern). Moved below
-                  the package options, right above the CTA (Itzik 2026-07-03):
-                  choose a plan first, then see what happens from today to day 7
-                  beside the action button. Relative-time copy + ✓ markers; the
-                  first line bridges to the full assessment; day-7 price injected
-                  live. The foot is a summary line (no ✓, no colon). */}
-              {trial.enabled ? (
-                <div className="ar-trial-tl">
-                  <div className="ar-trial-row">
-                    <span aria-hidden className="ar-trial-check">✓</span>
-                    <span>
-                      <b>{isHe ? "היום:" : "Today:"}</b>{" "}
-                      {isHe
-                        ? "מצטרפים בלי חיוב, והאבחון המלא מחכה לכם עם תמונה מדויקת יותר."
-                        : "join with no charge, and the full assessment awaits with a sharper picture."}
-                    </span>
-                  </div>
-                  <div className="ar-trial-row">
-                    <span aria-hidden className="ar-trial-check">✓</span>
-                    <span>
-                      <b>{isHe ? "בעוד 5 ימים:" : "In 5 days:"}</b>{" "}
-                      {isHe
-                        ? "נשלח לכם תזכורת שתקופת הניסיון עומדת להסתיים."
-                        : "we'll send a reminder that the trial is ending."}
-                    </span>
-                  </div>
-                  <div className="ar-trial-row">
-                    <span aria-hidden className="ar-trial-check">✓</span>
-                    <span>
-                      <b>{isHe ? "בעוד 7 ימים:" : "In 7 days:"}</b> {trialDay7}
-                    </span>
-                  </div>
-                  <div className="ar-trial-foot">
-                    {isHe
-                      ? "ביטול בכל רגע, בלחיצת כפתור מהאזור האישי."
-                      : "cancel any time, one click from your account."}
-                  </div>
-                </div>
+                  the package options, right above the CTA (Itzik 2026-07-03).
+                  MOBILE slot — display:contents on mobile (keeps the approved
+                  position, above the total); hidden ≥760 where the desktop slot
+                  in the plans column takes over. */}
+              {trialTimeline ? (
+                <div className="ar-tl-slot ar-tl-slot--sum">{trialTimeline}</div>
               ) : null}
+
+              {/* Bold TOTAL row (Itzik 2026-07-15) — a separate summary that ties
+                  the (unchanged) base price + coaching add-on together. Base and
+                  coaching stay shown separately above; this only sums them.
+                  Big line = the DISCOUNTED first-period total (promoSet.firstCharge,
+                  coaching-aware); sub-line = the regular recurring (amtOf = full
+                  base + coaching). No promo → single line, no "after that". Updates
+                  live with the selected cadence and the coaching checkbox. */}
+              {selectedOption ? (() => {
+                const cad = selectedOption.cadence;
+                const recurring = amtOf(selectedOption);
+                const pf = promoSet?.firstChargeByCadence[cad];
+                const firstTotal =
+                  activePromo && pf ? (isHe ? pf.ils : pf.usd) : recurring;
+                const discounted = firstTotal < recurring;
+                return (
+                  <div className="ar-total" aria-live="polite">
+                    <div className="ar-total-main">
+                      <span className="ar-total-label">
+                        {isHe
+                          ? `סה״כ ${
+                              discounted
+                                ? firstPeriodLabel(cad, true)
+                                : totalPeriodWord(cad)
+                            }`
+                          : `Total ${
+                              discounted
+                                ? firstPeriodLabel(cad, false)
+                                : totalPeriodWord(cad)
+                            }`}
+                      </span>
+                      <span className="ar-total-amt">{priceStr(firstTotal)}</span>
+                    </div>
+                    {discounted ? (
+                      <div className="ar-total-after">
+                        {isHe
+                          ? `לאחר מכן ${priceStr(recurring)} ${totalPeriodWord(cad)}`
+                          : `then ${priceStr(recurring)} ${totalPeriodWord(cad)}`}
+                      </div>
+                    ) : null}
+                    {/* Urgency at the decision point (Itzik 2026-07-15) — on mobile
+                        the top-of-card promo clock has scrolled away by the time the
+                        total row is in view, so mirror the SAME active countdown
+                        (campaign endsAt / personal offer window) right here. */}
+                    {promoMode === "campaign_timer" && discounted && promoSet?.endsAt ? (
+                      <div className="ar-total-timer">
+                        <PromoExpiryCountdown
+                          endsAt={promoSet.endsAt}
+                          isHe={isHe}
+                          label={promoEndsLabel}
+                        />
+                      </div>
+                    ) : promoMode === "personal_window" &&
+                      personalWindowDisplay === "clock" &&
+                      offerExpiresAt &&
+                      new Date(offerExpiresAt).getTime() > Date.now() ? (
+                      <div className="ar-total-timer">
+                        <PersonalOfferTimer
+                          endsAt={offerExpiresAt}
+                          isHe={isHe}
+                          label={isHe ? "ההטבה בתוקף עוד:" : "Offer ends in:"}
+                        />
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })() : null}
 
               <button
                 type="button"
@@ -1093,10 +1292,12 @@ export function AnalysisSummary({
               <div className="ar-stop">
                 {rc(
                   cmsStopNote,
-                  "תזינו פרטי אשראי, ובעוד 5 ימים נזכיר לכם לפני החיוב.",
-                  "Enter your card details; in 5 days we'll remind you before the charge.",
+                  "עוברים לעמוד התשלום להזנת פרטי אשראי. החיוב מתבצע רק בתום 7 הימים, ובעוד 5 ימים נזכיר לכם לפני החיוב.",
+                  "You'll go to the payment page to enter your card details. The charge only happens after the 7 days, and in 5 days we'll remind you before it.",
                 )}
               </div>
+              </div>{/* /.ar-col-sum */}
+              </div>{/* /.ar-cols */}
             </div>
           </section>
         ) : (
@@ -1351,9 +1552,11 @@ export function AnalysisSummary({
         .ar-section {
           margin-bottom: 40px;
         }
+        /* Header lives at the top INSIDE the card, with a comfortable white gap
+           above and below (Itzik 2026-07-15). */
         .ar-sh {
           font-size: 25px;
-          margin-bottom: 4px;
+          margin: 8px auto 24px;
           line-height: 1.2;
           text-align: center;
         }
@@ -1531,15 +1734,30 @@ export function AnalysisSummary({
           margin-top: 12px;
         }
 
-        /* PRICE */
+        /* PRICE — no outer card (Itzik 2026-07-15): just the pricing content on
+           the page background, no border/shadow/fill wrapping the whole area. */
         .ar-pricecard {
           max-width: 520px;
           margin: 0 auto;
-          background: #ffffff;
-          border: 1px solid #ece2cf;
-          border-radius: 24px;
           padding: 16px;
-          box-shadow: 0 18px 44px -22px rgba(120, 70, 120, 0.28);
+        }
+        /* Two-column desktop shell — on mobile the wrappers are display:contents
+           so they contribute NOTHING to layout (mobile is byte-for-byte the
+           approved design); the itemised order summary is desktop-only. Everything
+           below is turned on solely inside the min-width:760 block. */
+        .ar-cols,
+        .ar-col-plans,
+        .ar-col-sum {
+          display: contents;
+        }
+        .ar-order-sum {
+          display: none;
+        }
+        /* Trial-timeline slot — mobile keeps it in flow (display:contents = no
+           box, approved position unchanged). On desktop it is hidden entirely
+           (media query below) per Itzik 2026-07-15. */
+        .ar-tl-slot--sum {
+          display: contents;
         }
         /* Task 16 — 7-day trial timeline (Blinkist pattern) */
         /* Task 21 (Itzik 2026-07-02) — the timeline is PART of the price card,
@@ -1599,50 +1817,146 @@ export function AnalysisSummary({
           padding: 3px 10px;
           border-radius: 99px;
         }
-        /* Tabs (v9): a narrow, centered segmented pill — light cream, ✓ on the
-           selected tab only. */
-        .ar-coach-wrap {
-          text-align: center;
+        /* Coaching add-on (v2, 2026-07): a single checkbox in solid brand pink
+           (D6409F, NOT the gradient) plus a per-cadence add-on price and, when
+           checked, the expert value points. Replaces the with/without segmented
+           toggle. Money plumbing unchanged (drives the shared coaching state). */
+        /* Inside the selected card, aligned under the plan name (padding-start
+           clears the radio, matching .incl); the divider spans the card width. */
+        /* Coaching add-on — no frame; a gradient rule (.ar-grad-div) separates it
+           from the base list above (Itzik 2026-07-15). */
+        .ar-addon {
+          padding: 0 17px 16px 17px;
         }
-        /* Segmented toggle (Stage 1): no track background, a subtle border on each
-           button; the selected button is solid black. */
-        .ar-coach {
+        /* Long gradient separator between base and coaching. */
+        .ar-grad-div {
+          height: 1px;
+          border-radius: 1px;
+          background: linear-gradient(95deg, #6c5ce7, #d6409f 52%, #f79154);
+          margin: 4px 4px 18px;
+        }
+        /* Checkbox row on top, "+X" on its own line below, right-aligned (mockup);
+           the "+X" lines up with the monthly price's right edge (33px indent). */
+        .ar-addon-head {
+          display: block;
+        }
+        /* Checkbox FIRST (RTL start = right), the label right after it (Itzik
+           2026-07-15). JSX order is [box, title] and the row groups at the start. */
+        .ar-addbtn {
           display: flex;
-          border: 1px solid #ece2d4;
-          border-radius: 13px;
-          padding: 5px;
-          gap: 5px;
-          margin-bottom: 22px;
-          background: transparent;
-        }
-        .ar-coach-opt {
-          flex: 1;
+          align-items: center;
+          justify-content: flex-start;
+          width: 100%;
+          gap: 11px;
+          background: none;
           border: 0;
           cursor: pointer;
+          padding: 0;
+          text-align: start;
+        }
+        .ar-box {
+          width: 24px;
+          height: 24px;
+          border-radius: 7px;
+          border: 2px solid #d8c8b3;
+          flex: none;
+          position: relative;
+          transition: 0.15s;
+        }
+        .ar-box.on {
+          border-color: transparent;
+          background: #d6409f;
+        }
+        .ar-box.on::after {
+          content: "";
+          position: absolute;
+          top: 5px;
+          inset-inline-start: 6px;
+          width: 10px;
+          height: 5px;
+          border-left: 2.5px solid #fff;
+          border-bottom: 2.5px solid #fff;
+          transform: rotate(-45deg);
+        }
+        .ar-addtitle {
           font-family: var(--font-heebo), "Assistant", "Heebo", sans-serif;
-          font-weight: 800;
-          font-size: 14.5px;
-          color: #8a7a6b;
-          padding: 11px 8px;
-          border-radius: 9px;
-          background: transparent;
+          font-size: 18px;
+          font-weight: 600;
+          color: #2e2622;
+        }
+        .ar-addbig {
+          font-family: var(--font-assistant), "Assistant", "Heebo", system-ui, sans-serif;
+          font-weight: 900;
+          font-size: 26px;
+          line-height: 1.1;
           white-space: nowrap;
-          transition: 0.18s;
+          color: #2e2622;
+          text-align: right;
+          margin-top: 9px;
         }
-        .ar-coach-opt.sel {
-          background: #141210;
+        .ar-addbig .ar-cur {
+          font-size: 16px;
+          font-weight: 800;
+        }
+        .ar-addbig .ar-mo {
+          font-family: var(--font-heebo), "Assistant", "Heebo", sans-serif;
+          font-size: 13px;
+          font-weight: 700;
+          color: #8a7a6b;
+        }
+        .ar-cexpert {
+          margin-top: 16px;
+        }
+        /* "המומחה זמין לשני בני הזוג" — mirrors the trial strip: a gradient banner
+           (white text), 26px, rounded TOP corners only, flat bottom. Appears when
+           coaching is ticked (symmetry with "7 ימי ניסיון חינם"). */
+        .ar-cexpert-lead {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          margin: 0 -17px 14px;
+          padding: 12px 16px;
+          border-radius: 16px 16px 0 0;
+          background: linear-gradient(95deg, #6c5ce7, #d6409f 52%, #f79154);
           color: #fff;
+          font-family: var(--font-heebo), "Assistant", "Heebo", system-ui, sans-serif;
+          font-weight: 900;
+          font-size: 26px;
+          line-height: 1.1;
         }
-        /* ✓ icon removed from the selected coaching toggle (Itzik 2026-07-04) —
-           the gradient fill alone marks the selection. */
+        .ar-points {
+          list-style: none;
+          display: flex;
+          flex-direction: column;
+          gap: 13px;
+          padding: 0;
+          margin: 0;
+        }
+        .ar-points li {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          font-size: 20px;
+          font-weight: 600;
+          line-height: 1.4;
+          color: #2e2622;
+        }
+        .ar-points svg {
+          width: 19px;
+          height: 19px;
+          flex: none;
+          margin-top: 1px;
+          stroke: url(#arCoachGrad);
+        }
         /* Packages container — the top border carries the trial legend
            (Itzik 2026-07-04). The margin/padding-top opens room so the legend
            sits ON the border without touching the coaching tabs above it. */
+        /* Stray top border removed (Itzik 2026-07-15) — the h2 "איזו חבילה
+           מתאימה לכם?" above the card is the header; the cadence cards flow
+           directly with no disconnected hairline. */
         .ar-opts-wrap {
           position: relative;
-          border-top: 2px solid #ece2cf;
-          margin-top: 30px;
-          padding-top: 30px;
         }
         /* Fieldset-legend trial tag, centered on the container's top border.
            Solid brand dark ink + white text (deliberately NOT the gradient, so
@@ -1678,11 +1992,14 @@ export function AnalysisSummary({
           display: flex;
           align-items: center;
           justify-content: space-between;
+          flex-wrap: wrap;
           gap: 11px;
           width: 100%;
           background: none;
           border: 0;
-          padding: 16px 17px 0;
+          /* Left padding (46px) reserves the absolute radio's lane; content stays
+             right-aligned to 17px. */
+          padding: 16px 17px 0 46px;
           position: relative;
           z-index: 1;
           cursor: pointer;
@@ -1723,18 +2040,34 @@ export function AnalysisSummary({
           z-index: 2;
         }
         /* Trial "7 ימי ניסיון חינם" strip at the top of the SELECTED card. */
+        /* "7 ימי ניסיון חינם" + "גישה מלאה לשני בני הזוג" — a two-line gradient
+           banner (white text), rounded TOP corners only, flat bottom flush with
+           the card body. The coaching "expert" strip below mirrors this exactly. */
         .ar-trial-strip {
           position: relative;
           z-index: 1;
           display: flex;
+          flex-direction: column;
           align-items: center;
           justify-content: center;
-          min-height: 52px;
+          text-align: center;
+          gap: 2px;
+          margin: 0 0 16px;
+          padding: 14px 16px;
+          border-radius: 16px 16px 0 0;
           background: linear-gradient(95deg, #6c5ce7, #d6409f 52%, #f79154);
           color: #fff;
           font-family: var(--font-heebo), "Assistant", "Heebo", system-ui, sans-serif;
-          font-weight: 800;
-          font-size: 20px;
+        }
+        .ar-trial-t1 {
+          font-weight: 900;
+          font-size: 26px;
+          line-height: 1.1;
+        }
+        .ar-trial-t2 {
+          font-weight: 600;
+          font-size: 18px;
+          line-height: 1.5;
         }
         .ar-opt-group.sel .ar-opt {
           border: 0;
@@ -1743,7 +2076,13 @@ export function AnalysisSummary({
           box-shadow: none;
         }
         /* Radio: hollow ring; selected = gradient fill + white centre dot. */
+        /* Radio pinned to the LEFT edge (blue line, Itzik 2026-07-15) so the
+           coaching checkbox and every cadence radio start from one point, while
+           all text content aligns to the right edge. */
         .ar-radio {
+          position: absolute;
+          left: 17px;
+          top: 20px;
           flex: none;
           width: 22px;
           height: 22px;
@@ -1751,14 +2090,10 @@ export function AnalysisSummary({
           border: 2px solid #d8c8b3;
           display: grid;
           place-items: center;
-          /* Pin to the name line (top) so radio + name + price sit on one row
-             even when the promo note wraps a second line below the name. */
-          align-self: flex-start;
-          margin-top: 3px;
         }
         .ar-opt.sel .ar-radio {
           border-color: transparent;
-          background: var(--ar-grad);
+          background: #d6409f;
         }
         .ar-opt.sel .ar-radio::after {
           content: "";
@@ -1806,16 +2141,17 @@ export function AnalysisSummary({
           justify-content: center;
           margin-top: 10px;
         }
-        /* Price — ink number + muted currency, no gradient, no period label. */
+        /* Price — number + ₪ + period, on its OWN line, right-aligned UNDER the
+           plan name (ALL cadences, per Itzik). ₪ and period in ink, not grey. */
         .ar-opt-price {
-          margin-inline-start: auto;
-          flex: none;
-          /* Align the price with the plan name (top), not the taller info column. */
-          align-self: flex-start;
-          margin-top: 1px;
-          display: inline-flex;
+          order: 3;
+          flex-basis: 100%;
+          margin-inline-start: 0;
+          margin-top: 3px;
+          padding-inline-start: 0;
+          display: flex;
           align-items: baseline;
-          /* A real space before the ₪ (Stage 1). */
+          justify-content: flex-start;
           gap: 5px;
           white-space: nowrap;
           font-size: 24px;
@@ -1832,19 +2168,42 @@ export function AnalysisSummary({
           -webkit-text-fill-color: #2e2622;
         }
         .ar-price-cur {
-          font-size: 15px;
+          font-size: 14px;
           font-weight: 800;
           line-height: 1;
-          color: #8a7a6b;
+          color: #2e2622;
           background: none;
-          -webkit-text-fill-color: #8a7a6b;
+          -webkit-text-fill-color: #2e2622;
+        }
+        .ar-price-per {
+          font-size: 14px;
+          font-weight: 700;
+          line-height: 1;
+          color: #2e2622;
+        }
+        /* SELECTED (focal) package: 46px price (Assistant sans — all pricing
+           numbers share one font, Itzik 2026-07-15), ₪ 19px; period muted 13px. */
+        .ar-opt-group.sel .ar-opt-price {
+          font-family: var(--font-assistant), "Assistant", "Heebo", system-ui, sans-serif;
+          font-size: 46px;
+        }
+        .ar-opt-group.sel .ar-price-num {
+          font-family: var(--font-assistant), "Assistant", "Heebo", system-ui, sans-serif;
+          font-size: 46px;
+        }
+        .ar-opt-group.sel .ar-price-cur {
+          font-size: 19px;
+        }
+        .ar-opt-group.sel .ar-price-per {
+          font-size: 13px;
+          color: #8a7a6b;
         }
         /* Included list under the SELECTED plan (pricing-redesign-approved.html):
            lead line + gradient-dot list aligned under the plan name (padding-
            start clears the radio). No "מה כלול" heading, no top divider. */
         /* Selected-card included block — exact approved spec. */
         .psave {
-          padding: 5px 50px 0 17px;
+          padding: 5px 17px 0 17px;
           font-size: 20px;
           font-weight: 700;
           width: max-content;
@@ -1859,8 +2218,28 @@ export function AnalysisSummary({
         .ar-opt-group:not(.sel) .psave {
           padding-bottom: 16px;
         }
+        /* Countdown sits right below the price/savings inside the selected card,
+           aligned to the start (right, RTL) — beside the number it applies to,
+           not centered mid-card. Overrides PersonalOfferTimer's own centering. */
+        .ar-inline-timer {
+          padding-block: 8px 2px;
+          padding-inline: 17px 17px;
+        }
+        .ar-inline-timer :global(.pot) {
+          margin-bottom: 0;
+        }
+        /* "מבצע חד פעמי לזמן מוגבל" label removed (Itzik 2026-07-15). */
+        .ar-inline-timer :global(.pot-lead) {
+          display: none;
+        }
+        /* Countdown tiles aligned to the other side (left, RTL). */
+        .ar-inline-timer :global(.pot-tiles) {
+          justify-content: flex-end;
+        }
+        /* Base "מה כלול" list — no frame (Itzik 2026-07-15); the gradient rule in
+           the coaching block below provides the separation. */
         .incl {
-          padding: 14px 50px 16px 17px;
+          padding: 14px 17px 16px 17px;
         }
         .incl-div {
           height: 1px;
@@ -1868,7 +2247,7 @@ export function AnalysisSummary({
           margin: 0 -33px 13px 0;
         }
         .incl-lead {
-          font-size: 15px;
+          font-size: 20px;
           color: #8a7a6b;
           font-weight: 600;
           margin-bottom: 14px;
@@ -1897,7 +2276,7 @@ export function AnalysisSummary({
         /* "לצפייה בעוד חבילות" — 14px black underlined link (Stage 1). */
         .ar-more-plans {
           display: block;
-          margin: 4px auto 0;
+          margin: 14px auto 0;
           background: none;
           border: 0;
           cursor: pointer;
@@ -1907,6 +2286,63 @@ export function AnalysisSummary({
           color: #241d1a;
           text-decoration: underline;
           text-underline-offset: 3px;
+        }
+
+        /* Bold TOTAL row — discounted first-period total (big) + regular
+           recurring below. base + coaching, separate summary above CTA. */
+        .ar-total {
+          max-width: 400px;
+          margin: 18px auto 6px;
+          padding: 14px 18px;
+          border-radius: 16px;
+          background: rgba(214, 64, 159, 0.06);
+          border: 1.5px solid rgba(214, 64, 159, 0.22);
+        }
+        .ar-total-main {
+          display: flex;
+          align-items: baseline;
+          justify-content: space-between;
+          gap: 12px;
+        }
+        .ar-total-label {
+          font-size: 17px;
+          font-weight: 800;
+          color: #2e2622;
+        }
+        .ar-total-amt {
+          font-family: var(--font-assistant), "Assistant", "Heebo", system-ui, sans-serif;
+          font-size: 30px;
+          font-weight: 900;
+          background: var(--ar-grad);
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent;
+        }
+        .ar-total-after {
+          margin-top: 6px;
+          font-size: 14px;
+          font-weight: 600;
+          color: #7b6b5e;
+          text-align: right;
+        }
+        /* Offer countdown beside the total — urgency at the decision point. Sits
+           just under the total, tiles aligned to the start (right, RTL), the
+           timer's own lead/centering overridden (same as .ar-inline-timer). */
+        .ar-total-timer {
+          margin-top: 10px;
+          padding-top: 10px;
+          border-top: 1px solid rgba(214, 64, 159, 0.18);
+        }
+        .ar-total-timer :global(.pot) {
+          margin-bottom: 0;
+        }
+        .ar-total-timer :global(.pot-tiles) {
+          justify-content: flex-end;
+        }
+        /* Lead ("ההטבה בתוקף עוד:") aligned with the right-hugging tiles, not
+           centered (Itzik 2026-07-15). */
+        .ar-total-timer :global(.pot-lead) {
+          text-align: right;
         }
 
         /* Selected-cadence headline summary (restored money-path detail) */
@@ -1921,7 +2357,7 @@ export function AnalysisSummary({
           line-height: 1.5;
         }
         .ar-summary-line b {
-          font-family: var(--font-frank-ruhl), "Frank Ruhl Libre", serif;
+          font-family: var(--font-assistant), "Assistant", "Heebo", system-ui, sans-serif;
           font-size: 26px;
           font-weight: 900;
           background: var(--ar-grad);
@@ -2207,6 +2643,25 @@ export function AnalysisSummary({
           padding: 20px;
         }
 
+        /* ============ MOBILE width (≤759) ============
+           The pricing area fills ~95% of the screen. The base max-width:520 cap
+           left empty gutters on wider phones / portrait tablets, and the sheet's
+           24px side padding narrowed it further. Scoped to max-width:759 so the
+           desktop two-column layout (min-width:760) is completely untouched. */
+        @media (max-width: 759px) {
+          #ar-price {
+            /* cancel the sheet's 24px side padding so the section is full-bleed */
+            margin-inline: -24px;
+          }
+          .ar-pricecard {
+            width: 95%;
+            /* sensible cap so it doesn't get too wide on a large tablet in
+               portrait (still below the 760 desktop breakpoint) */
+            max-width: 760px;
+            padding: 16px 10px;
+          }
+        }
+
         /* ============ DESKTOP (≥760) ============ */
         @media (min-width: 760px) {
           .ar-hero {
@@ -2291,14 +2746,104 @@ export function AnalysisSummary({
           .ar-fbtext {
             font-size: 20px;
           }
-          .ar-pricecard {
-            /* wider (v9) so the one-line sub + centered timer + price fit */
-            max-width: 640px;
+          /* The pricing section gets extra room for the two columns (this one
+             section only — via #ar-price — so other sections keep their width). */
+          #ar-price {
+            max-width: 1040px;
           }
-          /* Coaching toggle — fixed, centered width on desktop. */
-          .ar-coach {
-            width: 370px;
-            margin-inline: auto;
+          .ar-pricecard {
+            /* Two-column SaaS layout on desktop (Itzik 2026-07-15): wide enough
+               for a comfortable plans column + the sticky summary, generously
+               spaced. Mobile keeps its own (untouched) width. */
+            max-width: 1000px;
+            padding: 36px 44px 40px;
+          }
+          /* Turn the mobile display:contents wrappers into the real grid. */
+          .ar-cols {
+            display: flex;
+            gap: 48px;
+            align-items: flex-start;
+          }
+          .ar-col-plans {
+            display: block;
+            flex: 1.4;
+            min-width: 0;
+          }
+          .ar-col-sum {
+            display: block;
+            width: 372px;
+            flex: none;
+            position: sticky;
+            top: 24px;
+            /* No card wrapper (Itzik 2026-07-15) — just the summary content on the
+               page background: no border, shadow, or fill. */
+            padding: 0;
+          }
+          /* The trial timeline is removed on desktop entirely (Itzik 2026-07-15) —
+             the summary panel's day-7 line already states the charge. Mobile keeps
+             it (base display:contents). */
+          .ar-tl-slot--sum {
+            display: none;
+          }
+          /* Dedupe the total: the standalone "לתשלום" money line is redundant on
+             desktop — the order-summary breakdown + the single .ar-total below
+             cover it. (Only ever rendered off-trial; hidden here either way.) */
+          .ar-summary {
+            display: none;
+          }
+          /* Itemised order summary (desktop only). */
+          .ar-order-sum {
+            display: block;
+            margin-bottom: 6px;
+          }
+          .ar-os-title {
+            font-size: 22px;
+            font-weight: 900;
+            margin-bottom: 14px;
+            text-align: start;
+          }
+          .ar-os-line {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            font-size: 20px;
+            margin-bottom: 11px;
+            color: #5a5049;
+          }
+          .ar-os-line.muted {
+            opacity: 0.5;
+          }
+          .ar-os-v {
+            font-weight: 700;
+            color: #2e2622;
+            white-space: nowrap;
+          }
+          .ar-os-disc .ar-os-v {
+            color: #7a1f2b;
+          }
+          /* On desktop the total blends INTO the summary panel — drop its own
+             pink box so the panel reads as one card (the panel carries the frame).
+             Mobile keeps the standalone boxed total. */
+          .ar-total {
+            border: 0;
+            background: transparent;
+            border-top: 1px solid #ece2d4;
+            border-radius: 0;
+            padding: 12px 0 0;
+            margin: 12px 0 0;
+            max-width: none;
+          }
+          .ar-total-timer {
+            border-top: 0;
+            padding-top: 8px;
+          }
+          /* The plans→trial zone divider is redundant inside the narrow summary
+             panel (the total's own top border already separates it). */
+          .ar-zone-sep {
+            display: none;
+          }
+          .ar-cta {
+            margin-top: 14px;
           }
           /* Desktop: radio + name/save on the start, price on the end (same
              single-row layout as mobile; the campaign timer, when present, owns

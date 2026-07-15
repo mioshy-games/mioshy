@@ -22,8 +22,8 @@ import { useRouter } from "next/navigation";
 import { useCountdown } from "@/hooks/useCountdown";
 
 const pad = (n: number) => String(n).padStart(2, "0");
-const SERIF = 'var(--font-frank-ruhl), "Frank Ruhl Libre", serif';
-const SANS = 'var(--font-heebo), "Assistant", "Heebo", system-ui, sans-serif';
+// All pricing numbers share one sans font (Assistant) — Itzik 2026-07-15.
+const SANS = 'var(--font-assistant), "Assistant", "Heebo", system-ui, sans-serif';
 const GRAD = "linear-gradient(95deg,#6C5CE7 0%,#D6409F 52%,#F79154 100%)";
 
 export function PromoExpiryCountdown({
@@ -98,7 +98,7 @@ export function PromoExpiryCountdown({
             >
               <span
                 style={{
-                  fontFamily: SERIF,
+                  fontFamily: SANS,
                   fontSize: 21,
                   fontWeight: 900,
                   lineHeight: 1,
