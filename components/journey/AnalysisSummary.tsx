@@ -1005,6 +1005,9 @@ export function AnalysisSummary({
                       (dynamic). */}
                   {selected && hasCoachingCost ? (
                     <div className="ar-addon">
+                      {/* Gradient separator between the base plan and the coaching
+                          add-on (Itzik 2026-07-15) — replaces the framed boxes. */}
+                      <div className="ar-grad-div" aria-hidden />
                       <div className="ar-addon-head">
                         <button
                           type="button"
@@ -1279,8 +1282,8 @@ export function AnalysisSummary({
               <div className="ar-stop">
                 {rc(
                   cmsStopNote,
-                  "תזינו פרטי אשראי, ובעוד 5 ימים נזכיר לכם לפני החיוב.",
-                  "Enter your card details; in 5 days we'll remind you before the charge.",
+                  "עוברים לעמוד התשלום להזנת פרטי אשראי. החיוב מתבצע רק בתום 7 הימים, ובעוד 5 ימים נזכיר לכם לפני החיוב.",
+                  "You'll go to the payment page to enter your card details. The charge only happens after the 7 days, and in 5 days we'll remind you before it.",
                 )}
               </div>
               </div>{/* /.ar-col-sum */}
@@ -1813,13 +1816,17 @@ export function AnalysisSummary({
            toggle. Money plumbing unchanged (drives the shared coaching state). */
         /* Inside the selected card, aligned under the plan name (padding-start
            clears the radio, matching .incl); the divider spans the card width. */
-        /* Coaching = its OWN framed box, separate from the base "מה כלול" box
-           (Itzik 2026-07-15). Both are always open/visible. */
+        /* Coaching add-on — no frame; a gradient rule (.ar-grad-div) separates it
+           from the base list above (Itzik 2026-07-15). */
         .ar-addon {
-          margin: 14px 6px 2px;
-          border: 1.5px solid #ece2d4;
-          border-radius: 14px;
-          padding: 16px 17px;
+          padding: 0 17px 16px 17px;
+        }
+        /* Long gradient separator between base and coaching. */
+        .ar-grad-div {
+          height: 3px;
+          border-radius: 3px;
+          background: linear-gradient(95deg, #6c5ce7, #d6409f 52%, #f79154);
+          margin: 4px 4px 18px;
         }
         /* Checkbox row on top, "+X" on its own line below, right-aligned (mockup);
            the "+X" lines up with the monthly price's right edge (33px indent). */
@@ -2223,13 +2230,10 @@ export function AnalysisSummary({
         .ar-inline-timer :global(.pot-tiles) {
           justify-content: flex-end;
         }
-        /* Base plan = its OWN framed box (Itzik 2026-07-15), separate from the
-           coaching box below; both bordered and always visible. */
+        /* Base "מה כלול" list — no frame (Itzik 2026-07-15); the gradient rule in
+           the coaching block below provides the separation. */
         .incl {
-          margin: 16px 6px 0;
-          border: 1.5px solid #ece2d4;
-          border-radius: 14px;
-          padding: 16px 17px;
+          padding: 14px 17px 16px 17px;
         }
         .incl-div {
           height: 1px;
@@ -2328,6 +2332,11 @@ export function AnalysisSummary({
         }
         .ar-total-timer :global(.pot-tiles) {
           justify-content: flex-end;
+        }
+        /* Lead ("ההטבה בתוקף עוד:") aligned with the right-hugging tiles, not
+           centered (Itzik 2026-07-15). */
+        .ar-total-timer :global(.pot-lead) {
+          text-align: right;
         }
 
         /* Selected-cadence headline summary (restored money-path detail) */
@@ -2763,7 +2772,7 @@ export function AnalysisSummary({
             margin-bottom: 6px;
           }
           .ar-os-title {
-            font-size: 19px;
+            font-size: 22px;
             font-weight: 900;
             margin-bottom: 14px;
             text-align: start;
@@ -2772,8 +2781,8 @@ export function AnalysisSummary({
             display: flex;
             justify-content: space-between;
             gap: 12px;
-            font-size: 15px;
-            margin-bottom: 9px;
+            font-size: 20px;
+            margin-bottom: 11px;
             color: #5a5049;
           }
           .ar-os-line.muted {
