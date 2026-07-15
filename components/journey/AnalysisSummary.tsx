@@ -549,6 +549,45 @@ export function AnalysisSummary({
       : `billing begins, ${priceStr(amt)} ${recurringLabel}.`;
   })();
 
+  // 7-day trial timeline (Blinkist pattern). Extracted so it can render in TWO
+  // slots: on mobile it stays in the summary flow (approved, unchanged); on
+  // desktop it moves to the bottom of the PLANS column, below "more plans"
+  // (Itzik 2026-07-15). The same element is placed in both slots and CSS picks
+  // which slot is visible per breakpoint — no duplicated markup, no mobile change.
+  const trialTimeline = trial.enabled ? (
+    <div className="ar-trial-tl">
+      <div className="ar-trial-row">
+        <span aria-hidden className="ar-trial-check">✓</span>
+        <span>
+          <b>{isHe ? "היום:" : "Today:"}</b>{" "}
+          {isHe
+            ? "מצטרפים בלי חיוב, והאבחון המלא מחכה לכם עם תמונה מדויקת יותר."
+            : "join with no charge, and the full assessment awaits with a sharper picture."}
+        </span>
+      </div>
+      <div className="ar-trial-row">
+        <span aria-hidden className="ar-trial-check">✓</span>
+        <span>
+          <b>{isHe ? "בעוד 5 ימים:" : "In 5 days:"}</b>{" "}
+          {isHe
+            ? "נשלח לכם תזכורת שתקופת הניסיון עומדת להסתיים."
+            : "we'll send a reminder that the trial is ending."}
+        </span>
+      </div>
+      <div className="ar-trial-row">
+        <span aria-hidden className="ar-trial-check">✓</span>
+        <span>
+          <b>{isHe ? "בעוד 7 ימים:" : "In 7 days:"}</b> {trialDay7}
+        </span>
+      </div>
+      <div className="ar-trial-foot">
+        {isHe
+          ? "ביטול בכל רגע, בלחיצת כפתור מהאזור האישי."
+          : "cancel any time, one click from your account."}
+      </div>
+    </div>
+  ) : null;
+
   // Included panel for the SELECTED plan — exact structure per the approved
   // pricing card: a gradient "חיסכון X%" line under the name, then a divider,
   // muted lead, and a gradient-dot list. `saveText` is the plan's savings string
@@ -1021,6 +1060,12 @@ export function AnalysisSummary({
                   {isHe ? "לצפייה בעוד חבילות" : "See more plans"}
                 </button>
               ) : null}
+              {/* DESKTOP slot for the trial timeline — hidden on mobile, shown
+                  ≥760 at the bottom of the plans column, below "more plans"
+                  (Itzik 2026-07-15). Same element as the mobile slot. */}
+              {trialTimeline ? (
+                <div className="ar-tl-slot ar-tl-slot--plans">{trialTimeline}</div>
+              ) : null}
               </div>{/* /.ar-col-plans */}
 
               <div className="ar-col-sum">
@@ -1141,43 +1186,12 @@ export function AnalysisSummary({
               <hr className="ar-zone-sep" aria-hidden />
 
               {/* Task 16 — 7-day trial timeline (Blinkist pattern). Moved below
-                  the package options, right above the CTA (Itzik 2026-07-03):
-                  choose a plan first, then see what happens from today to day 7
-                  beside the action button. Relative-time copy + ✓ markers; the
-                  first line bridges to the full assessment; day-7 price injected
-                  live. The foot is a summary line (no ✓, no colon). */}
-              {trial.enabled ? (
-                <div className="ar-trial-tl">
-                  <div className="ar-trial-row">
-                    <span aria-hidden className="ar-trial-check">✓</span>
-                    <span>
-                      <b>{isHe ? "היום:" : "Today:"}</b>{" "}
-                      {isHe
-                        ? "מצטרפים בלי חיוב, והאבחון המלא מחכה לכם עם תמונה מדויקת יותר."
-                        : "join with no charge, and the full assessment awaits with a sharper picture."}
-                    </span>
-                  </div>
-                  <div className="ar-trial-row">
-                    <span aria-hidden className="ar-trial-check">✓</span>
-                    <span>
-                      <b>{isHe ? "בעוד 5 ימים:" : "In 5 days:"}</b>{" "}
-                      {isHe
-                        ? "נשלח לכם תזכורת שתקופת הניסיון עומדת להסתיים."
-                        : "we'll send a reminder that the trial is ending."}
-                    </span>
-                  </div>
-                  <div className="ar-trial-row">
-                    <span aria-hidden className="ar-trial-check">✓</span>
-                    <span>
-                      <b>{isHe ? "בעוד 7 ימים:" : "In 7 days:"}</b> {trialDay7}
-                    </span>
-                  </div>
-                  <div className="ar-trial-foot">
-                    {isHe
-                      ? "ביטול בכל רגע, בלחיצת כפתור מהאזור האישי."
-                      : "cancel any time, one click from your account."}
-                  </div>
-                </div>
+                  the package options, right above the CTA (Itzik 2026-07-03).
+                  MOBILE slot — display:contents on mobile (keeps the approved
+                  position, above the total); hidden ≥760 where the desktop slot
+                  in the plans column takes over. */}
+              {trialTimeline ? (
+                <div className="ar-tl-slot ar-tl-slot--sum">{trialTimeline}</div>
               ) : null}
 
               {/* Bold TOTAL row (Itzik 2026-07-15) — a separate summary that ties
@@ -1734,6 +1748,15 @@ export function AnalysisSummary({
           display: contents;
         }
         .ar-order-sum {
+          display: none;
+        }
+        /* Trial-timeline slots — mobile keeps the summary slot in flow
+           (display:contents = no box, approved position unchanged); the plans-
+           column slot is off. Desktop swaps them (media query below). */
+        .ar-tl-slot--sum {
+          display: contents;
+        }
+        .ar-tl-slot--plans {
           display: none;
         }
         /* Task 16 — 7-day trial timeline (Blinkist pattern) */
@@ -2694,35 +2717,57 @@ export function AnalysisSummary({
           .ar-fbtext {
             font-size: 20px;
           }
+          /* The pricing section gets extra room for the two columns (this one
+             section only — via #ar-price — so other sections keep their width). */
+          #ar-price {
+            max-width: 1040px;
+          }
           .ar-pricecard {
             /* Two-column SaaS layout on desktop (Itzik 2026-07-15): wide enough
-               for the plans column + the 340px sticky summary. Mobile keeps its
-               own (untouched) width. */
-            max-width: 900px;
-            padding: 26px 28px 30px;
+               for a comfortable plans column + the sticky summary, generously
+               spaced. Mobile keeps its own (untouched) width. */
+            max-width: 1000px;
+            padding: 36px 44px 40px;
           }
           /* Turn the mobile display:contents wrappers into the real grid. */
           .ar-cols {
             display: flex;
-            gap: 28px;
+            gap: 48px;
             align-items: flex-start;
           }
           .ar-col-plans {
             display: block;
-            flex: 1.5;
+            flex: 1.4;
             min-width: 0;
           }
           .ar-col-sum {
             display: block;
-            width: 340px;
+            width: 372px;
             flex: none;
             position: sticky;
             top: 24px;
             background: #fdfbf9;
             border: 1px solid #ece2d4;
-            border-radius: 16px;
-            padding: 20px 20px 22px;
-            box-shadow: 0 20px 40px -28px rgba(80, 50, 35, 0.35);
+            border-radius: 18px;
+            padding: 24px 24px 26px;
+            box-shadow: 0 22px 46px -28px rgba(80, 50, 35, 0.35);
+          }
+          /* Trial-timeline slot swap: hide the summary-column copy, show the one
+             at the bottom of the plans column (below "more plans"). */
+          .ar-tl-slot--sum {
+            display: none;
+          }
+          .ar-tl-slot--plans {
+            display: block;
+            margin-top: 18px;
+            padding-top: 16px;
+            border-top: 1px dashed #ece2d4;
+          }
+          /* Dedupe the total: the standalone "לתשלום" money line is redundant on
+             desktop — the order-summary breakdown + the single .ar-total below
+             cover it. (Only ever rendered off-trial; hidden here either way.) */
+          .ar-summary {
+            display: none;
           }
           /* Itemised order summary (desktop only). */
           .ar-order-sum {
