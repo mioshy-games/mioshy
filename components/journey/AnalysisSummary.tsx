@@ -1093,14 +1093,20 @@ export function AnalysisSummary({
                           ? `מנוי ${cadenceTitle(cad)}`
                           : `${cadenceTitle(cad)} plan`}
                       </span>
-                      <span className="ar-os-v">{priceStr(baseFull)}</span>
+                      <span className="ar-os-v">
+                        <bdi dir="ltr">{priceStr(baseFull)}</bdi>
+                      </span>
                     </div>
                     <div className={`ar-os-line${coaching ? "" : " muted"}`}>
                       <span>{isHe ? "ייעוץ עם מומחה" : "Expert coaching"}</span>
                       <span className="ar-os-v">
-                        {coaching
-                          ? priceStr(coachCost)
-                          : isHe ? "לא נבחר" : "Not added"}
+                        {coaching ? (
+                          <bdi dir="ltr">{priceStr(coachCost)}</bdi>
+                        ) : isHe ? (
+                          "לא נבחר"
+                        ) : (
+                          "Not added"
+                        )}
                       </span>
                     </div>
                     {discount > 0 ? (
@@ -2635,6 +2641,25 @@ export function AnalysisSummary({
           color: #a2917f;
           font-size: 15px;
           padding: 20px;
+        }
+
+        /* ============ MOBILE width (≤759) ============
+           The pricing area fills ~95% of the screen. The base max-width:520 cap
+           left empty gutters on wider phones / portrait tablets, and the sheet's
+           24px side padding narrowed it further. Scoped to max-width:759 so the
+           desktop two-column layout (min-width:760) is completely untouched. */
+        @media (max-width: 759px) {
+          #ar-price {
+            /* cancel the sheet's 24px side padding so the section is full-bleed */
+            margin-inline: -24px;
+          }
+          .ar-pricecard {
+            width: 95%;
+            /* sensible cap so it doesn't get too wide on a large tablet in
+               portrait (still below the 760 desktop breakpoint) */
+            max-width: 760px;
+            padding: 16px 10px;
+          }
         }
 
         /* ============ DESKTOP (≥760) ============ */
