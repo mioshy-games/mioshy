@@ -585,7 +585,6 @@ export function AnalysisSummary({
               : CATEGORY_LABELS[categoryScores.lowest_key].en
           }
           offerExpiresAt={offerExpiresAt}
-          triggerId="ar-catarea"
           onClaim={() => scrollToPrice({ preventDefault: () => {} })}
         />
       ) : null}
@@ -686,7 +685,7 @@ export function AnalysisSummary({
                 (stable sort over the fixed category order — see analysis.ts), so
                 the card never flips between refreshes. The rest come with the
                 full assessment. No "most important" badge (single card). */}
-            <div className="ar-cats" id="ar-catarea">
+            <div className="ar-cats">
               {(() => {
                 const key = categoryScores.lowest_key;
                 const score = categoryScores[key];
