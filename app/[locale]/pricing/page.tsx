@@ -1,12 +1,10 @@
 import { getTranslations } from "next-intl/server";
 import { unstable_noStore as noStore } from "next/cache";
 import type { Metadata } from "next";
-import "@/components/marketing/v2/styles.css";
-import { JourneyStages } from "@/components/marketing/v2/JourneyStages";
-import { JourneyPricingProvider } from "@/components/marketing/v2/JourneyPricingProvider";
-import { getJourneyDisplayPricing } from "@/lib/billing/journey-display-pricing";
-import { CmsTextProvider } from "@/components/cms/CmsTextProvider";
-import { loadCmsTextsForPage } from "@/lib/cms/server";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getJourneySubscribePricing } from "@/lib/billing/journey-subscribe-pricing";
+import { AnalysisSummary } from "@/components/journey/AnalysisSummary";
+import type { Locale } from "@/lib/journey/types";
 
 function siteUrl() {
   return (process.env.NEXT_PUBLIC_SITE_URL || "https://mioshy.com").replace(
@@ -66,62 +64,59 @@ export async function generateMetadata({
 }
 
 /**
- * /pricing — three-plan mood-swiper surface (Itzik 2026-05-07).
+ * /pricing — the Journey package-selection surface (Itzik 2026-07-16).
  * ─────────────────────────────────────────────────────────────
- * Replaces the previous single-Journey-plan layout. The mood swiper
- * (JourneyStages component, also used on the homepage) presents all
- * three Mioshy products as mood-based choices:
- *
- *    💬  משחקי זוגות אונליין    9 ₪ / week
- *    🔥  הסקס של מיאושי         97 ₪ / game
- *    ✨  ליווי עם מיאושי        57 ₪ / week
- *
- * Each card links to its product page, where the actual purchase flow
- * lives. /pricing is now a navigation hub that surfaces the catalog
- * choice at a single glance — not a paywall in itself. This matches
- * Itzik's instruction: the homepage swiper IS the pricing presentation,
- * so /pricing should reuse it verbatim.
- *
- * The page uses the .home-v2 wrapper so the JourneyStages scoped
- * styles apply (it expects to live inside the v2 design tokens).
+ * Renders the SAME package selector used on /journey/subscribe — the
+ * AnalysisSummary component in mode="subscribe" (plan picker + coaching
+ * checkbox + order summary + checkout CTA) — but, unlike /journey/subscribe,
+ * this page is PUBLIC and INDEXABLE:
+ *   • No auth redirect: anonymous visitors see the selector too.
+ *   • Pricing comes from getJourneySubscribePricing(user?.id ?? null) — the
+ *     same primitives the checkout uses, so displayed price == Cardcom charge.
+ *     Anonymous → userless pricing (regular / campaign promo). A logged-in
+ *     visitor gets their personal-window pricing.
+ *   • The CTA handles auth at click time: AnalysisSummary's startCheckout
+ *     redirects an anonymous user to /auth/signup?next=/pricing and back
+ *     (built in), rather than gating the whole page.
+ *   • SEO metadata (canonical/OG/twitter) + the sr-only h1 are preserved.
  */
 export default async function PricingPage({
   params,
 }: {
   params: Promise<{ locale: string }>;
 }) {
-  // Live promo pricing in JourneyStages must never be frozen at build time — a
-  // statically-rendered /pricing could show an expired promo (displayed ≠
-  // charged). Force per-request rendering, same as the homepage.
+  // Live promo pricing must never be frozen at build time — a statically
+  // rendered /pricing could show an expired promo (displayed ≠ charged). Force
+  // per-request rendering.
   noStore();
   const { locale } = await params;
   const isHe = locale === "he";
 
-  // Itzik 2026-06-02: load the homepage CMS rows so JourneyStages
-  // (which uses `homeV2.journeyStages.*` keys) renders the SAME live
-  // CMS values as on /. Without this provider the component falls back
-  // to messages/he.json — which is why /pricing was showing stale copy
-  // even after admin edits in /admin/content. Single source of truth:
-  // edit a key once in CMS, both / and /pricing update together.
-  const cmsRows = await loadCmsTextsForPage("homepage");
-  // Same live Stage-3 figures as the homepage, so /pricing mirrors / exactly.
-  const journeyPricing = await getJourneyDisplayPricing();
+  // Public page: read the user if present, but NEVER redirect anonymous away.
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // Userless when anonymous; personal pricing when logged in. Same source as
+  // the checkout → display == charge.
+  const pricing = await getJourneySubscribePricing(user?.id ?? null);
 
   return (
-    <main
-      dir={isHe ? "rtl" : "ltr"}
-      lang={locale}
-      className="home-v2 relative min-h-[100dvh] bg-white text-[#170E14]"
-    >
-      {/* a11y (M3): every page needs an h1. The pricing UI is a visual
-          timeline (JourneyStages) with its own h2s, so the page title is
-          provided sr-only. */}
+    <>
+      {/* a11y + SEO: the page's h1 (sr-only — the selector renders its own
+          subscribe-mode heading, not an h1). */}
       <h1 className="sr-only">{isHe ? "התמחור של מיאושי" : "Mioshy pricing"}</h1>
-      <CmsTextProvider rows={cmsRows}>
-        <JourneyPricingProvider value={journeyPricing}>
-          <JourneyStages />
-        </JourneyPricingProvider>
-      </CmsTextProvider>
-    </main>
+      <AnalysisSummary
+        mode="subscribe"
+        analysis={null}
+        locale={locale as Locale}
+        journeySubscribed={pricing.journeySubscribed}
+        journeyCadences={pricing.journeyCadences}
+        activePromo={pricing.activePromo}
+        offerExpiresAt={pricing.offerExpiresAt}
+        promoMode={pricing.promoMode}
+      />
+    </>
   );
 }
