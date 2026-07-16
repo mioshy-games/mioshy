@@ -116,6 +116,7 @@ export default async function PricingPage({
         activePromo={pricing.activePromo}
         offerExpiresAt={pricing.offerExpiresAt}
         promoMode={pricing.promoMode}
+        personalWindowDisplay="clock"
       />
     </>
   );

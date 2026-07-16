@@ -1160,10 +1160,20 @@ export function AnalysisSummary({
                     {discount > 0 ? (
                       <div className="ar-os-line ar-os-disc">
                         <span>{isHe ? "הטבת הרשמה" : "Signup discount"}</span>
-                        {/* dir=ltr + bidi isolation so the minus sits immediately
-                            before the digits ("−30 ₪"), not flipped by RTL. */}
+                        {/* HE: isolate ONLY the sign+digits ("−30") as an LTR unit
+                            so the minus stays glued before the number, while the ₪
+                            sits outside and falls to the LEFT in RTL, consistent
+                            with the other summary rows. EN is LTR, so keep it whole. */}
                         <span className="ar-os-v">
-                          <bdi dir="ltr">{`−${priceStr(discount)}`}</bdi>
+                          {isHe ? (
+                            <>
+                              <bdi dir="ltr">{`−${fmt(discount)}`}</bdi>
+                              {" "}
+                              {sym}
+                            </>
+                          ) : (
+                            <bdi dir="ltr">{`−${priceStr(discount)}`}</bdi>
+                          )}
                         </span>
                       </div>
                     ) : null}

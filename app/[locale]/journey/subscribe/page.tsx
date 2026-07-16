@@ -68,6 +68,7 @@ export default async function JourneySubscribePage({
       activePromo={pricing.activePromo}
       offerExpiresAt={pricing.offerExpiresAt}
       promoMode={pricing.promoMode}
+      personalWindowDisplay="clock"
     />
   );
 }
