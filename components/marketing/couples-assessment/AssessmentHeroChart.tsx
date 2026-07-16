@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useCmsText } from "@/hooks/useCmsText";
+import { CATEGORY_LABELS } from "@/lib/journey/categories";
 import "./styles.css";
 
 /**
@@ -88,12 +89,14 @@ export function AssessmentHeroChart({
         <span className="startline"><i>{rc(startLabel, "נקודת ההתחלה שלכם", "Your starting point")}</i></span>
         <span className="goalline"><i>{rc(goalLabel, "היעד", "The goal")}</i></span>
       </div>
+      {/* Canonical order + short labels from the single source of truth
+          (lib/journey/categories.ts); CMS keys still override per bar. */}
       <div className="blabels">
-        <span>{rc(bar1, "אינטימיות", "Intimacy")}</span>
-        <span>{rc(bar2, "חיבור רגשי", "Emotional")}</span>
-        <span>{rc(bar3, "תקשורת", "Communication")}</span>
-        <span>{rc(bar4, "חברות", "Friendship")}</span>
-        <span>{rc(bar5, "משפחה", "Family")}</span>
+        <span>{rc(bar1, CATEGORY_LABELS.intimacy.shortHe, CATEGORY_LABELS.intimacy.shortEn)}</span>
+        <span>{rc(bar2, CATEGORY_LABELS.emotional_connection.shortHe, CATEGORY_LABELS.emotional_connection.shortEn)}</span>
+        <span>{rc(bar3, CATEGORY_LABELS.communication.shortHe, CATEGORY_LABELS.communication.shortEn)}</span>
+        <span>{rc(bar4, CATEGORY_LABELS.friendship.shortHe, CATEGORY_LABELS.friendship.shortEn)}</span>
+        <span>{rc(bar5, CATEGORY_LABELS.family.shortHe, CATEGORY_LABELS.family.shortEn)}</span>
       </div>
     </div>
   );
