@@ -56,7 +56,6 @@ import { hasActiveSubscription } from "@/lib/subscriptions";
 import { getViewerPriorityOrder } from "@/lib/dashboard/priority-routing";
 import { getPriorityLabels } from "@/lib/journey-content/priority-categories";
 import { getLatestAnalysisForUser } from "@/lib/journey/analysis-read";
-import { getJourneySubscribePricing } from "@/lib/billing/journey-subscribe-pricing";
 import type { CategoryScores } from "@/lib/journey/types";
 import type { PriorityKey } from "@/lib/journey/priorities";
 import {
@@ -108,14 +107,6 @@ function baseUrl(): string {
     process.env.NEXT_PUBLIC_SITE_URL ||
     "https://mioshy.com"
   ).replace(/\/+$/, "");
-}
-
-const HE_DAY = ["יום ראשון", "יום שני", "יום שלישי", "יום רביעי", "יום חמישי", "יום שישי", "שבת"];
-function heDay(d: Date): string {
-  return HE_DAY[d.getDay()] ?? "";
-}
-function hhmm(d: Date): string {
-  return d.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
 }
 
 interface PlanEntry {
@@ -279,7 +270,22 @@ async function handle(req: Request): Promise<NextResponse<Summary>> {
       continue;
     }
 
-    const t0 = new Date(offerExpiresAt.getTime() - 2 * DAY); // short completion
+    // t0 = short-completion time. The journey_analysis row is inserted at
+    // completion, so its earliest computed_at is the reliable completion time —
+    // window-INDEPENDENT (2026-07-16). Previously t0 = offer_expires_at − 48h,
+    // which assumed a 48h window; that breaks once the window is 60min (t0 would
+    // land ~47h before real completion → wrong launch-cutoff + due times). Fall
+    // back to the old derivation only if no analysis row exists.
+    const { data: firstAnalysis } = await admin
+      .from("journey_analysis")
+      .select("computed_at")
+      .eq("user_id", userId)
+      .order("computed_at", { ascending: true })
+      .limit(1)
+      .maybeSingle<{ computed_at: string }>();
+    const t0 = firstAnalysis?.computed_at
+      ? new Date(firstAnalysis.computed_at)
+      : new Date(offerExpiresAt.getTime() - 2 * DAY);
     // Edge rule — launch cutoff: only assessments completed at/after activation.
     if (activationTs === null || t0.getTime() < activationTs) {
       if (onlyUserId) plan.push({ user_id: userId, email: emailAddr, decision: "skip_before_activation" });
@@ -307,13 +313,14 @@ async function handle(req: Request): Promise<NextResponse<Summary>> {
       social_proof: tenAmIlDaysAfter(t0, 9),
       expert_call: tenAmIlDaysAfter(t0, 14),
     };
-    // Upper bounds so a stale row never fires an obsolete email once the offer
-    // window has closed. Only results_ready is window-gated; the follow-ups fire
-    // after the window closes and their CTA is the always-valid trial/call.
-    const windowClosed = now.getTime() > offerExpiresAt.getTime();
-    const expired: Partial<Record<SequenceEmailKind, boolean>> = {
-      results_ready: windowClosed,
-    };
+    // 2026-07-16: results_ready is no longer window-gated. It carries no
+    // offer/price/deadline anymore, so it must reach EVERY completer (with
+    // consent, no purchase) regardless of whether the offer window is still
+    // open — critical now that the window is only 60 minutes. No kind is
+    // expiry-gated. (With skip_expired gone, t0 = offer_expires_at − 48h lands
+    // in the past → results_ready is due immediately → sends on the next hourly
+    // run; the launch-cutoff gate below still applies.)
+    const expired: Partial<Record<SequenceEmailKind, boolean>> = {};
 
     const firstName = (profile.full_name ?? "").trim().split(/\s+/)[0] || null;
 
@@ -343,27 +350,8 @@ async function handle(req: Request): Promise<NextResponse<Summary>> {
       }
     } catch { /* scores stay [] → results_ready renders without the table */ }
 
-    // Live couple pricing for the results_ready offer bullets — resolved from
-    // the SAME source as the checkout (getJourneySubscribePricing), so the email
-    // shows exactly what Cardcom bills. The recipient is inside their offer
-    // window (results_ready fires before offer_expires_at), so the personal-
-    // window promo applies → first-charge prices match the on-page promo.
-    let pricing = {
-      noCoachingRegular: 0,
-      noCoachingFirst: null as number | null,
-      withCoachingRegular: 0,
-      withCoachingFirst: null as number | null,
-    };
-    try {
-      const pr = await getJourneySubscribePricing(userId);
-      const monthly = pr.journeyCadences.find((c) => c.cadence === "monthly") ?? null;
-      pricing = {
-        noCoachingRegular: monthly?.price_ils ?? 0,
-        noCoachingFirst: pr.activePromo?.withoutCoaching?.firstChargeByCadence?.["monthly"]?.ils ?? null,
-        withCoachingRegular: monthly ? monthly.price_ils + monthly.coaching_cost_ils : 0,
-        withCoachingFirst: pr.activePromo?.withCoaching?.firstChargeByCadence?.["monthly"]?.ils ?? null,
-      };
-    } catch { /* pricing stays zeroed → offer bullets simply show 0; caught in QA */ }
+    // 2026-07-16: the results_ready offer/price block was removed, so no live
+    // pricing lookup is needed here anymore.
 
     // Per-recipient signed unsubscribe token (null if UNSUBSCRIBE_TOKEN_SECRET
     // is unset — the visible link then falls back to the account page).
@@ -375,9 +363,6 @@ async function handle(req: Request): Promise<NextResponse<Summary>> {
       scoreLines: [], // legacy field, unused by results_ready's dedicated renderer
       gender: profile.gender ?? null,
       scores,
-      pricing,
-      windowDayHe: heDay(offerExpiresAt),
-      windowTime: hhmm(offerExpiresAt),
       exercise: null,
       baseUrl: base,
       // Tokenized one-click-safe unsubscribe (click + confirm). Falls back to the
