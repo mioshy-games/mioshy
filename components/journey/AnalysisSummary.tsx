@@ -317,6 +317,13 @@ export function AnalysisSummary({
   //     so a stuck 401 can't loop — after the cap we just leave the selection.
   const startCheckoutRef = useRef<(() => void) | null>(null);
   const autoPayFiredRef = useRef(false);
+  // While the auto-checkout is pending/firing we show a loading screen INSTEAD of
+  // the selector, so the transition reads signup → loading → Cardcom (no flash of
+  // the price page). Starts true only when we actually intend to auto-fire; flips
+  // to false if we give up (cap) or the checkout errors without navigating — then
+  // the selector is revealed (never a stuck empty screen). Checkout success/401
+  // navigate away, so the loader simply persists until then.
+  const [autoPayPending, setAutoPayPending] = useState(autoCheckout && authenticated);
   useEffect(() => {
     if (!autoCheckout || !authenticated || autoPayFiredRef.current) return;
     if (trial.loading) return;
@@ -329,7 +336,11 @@ export function AnalysisSummary({
       u.searchParams.delete("pay");
       window.history.replaceState({}, "", u.pathname + u.search + u.hash);
     }
-    if (attempts >= 2) return; // give up auto-firing; keep the restored selection
+    if (attempts >= 2) {
+      // Give up auto-firing; reveal the selector with the restored selection.
+      setAutoPayPending(false);
+      return;
+    }
     autoPayFiredRef.current = true;
     window.sessionStorage.setItem(ATTEMPT_KEY, String(attempts + 1));
     startCheckoutRef.current();
@@ -458,6 +469,49 @@ export function AnalysisSummary({
   // Expose the latest startCheckout to the post-signup auto-checkout effect
   // (declared above, before the loading early-return).
   startCheckoutRef.current = startCheckout;
+
+  // Post-signup auto-checkout: render a loader INSTEAD of the selector until the
+  // checkout redirects to Cardcom — no flash of the price page. Placed after the
+  // ref assignment above (so the effect can still fire) and after all hooks. If
+  // the checkout errored without navigating (checkoutError set) the condition
+  // drops and the selector is revealed with the error, never a stuck loader.
+  if (autoPayPending && !checkoutError) {
+    return (
+      <div className="ar-loading" dir={isHe ? "rtl" : "ltr"}>
+        <span className="ar-spinner" aria-hidden />
+        <p>{isHe ? "מעבירים אתכם לתשלום…" : "Taking you to checkout…"}</p>
+        <style jsx>{`
+          .ar-loading {
+            display: flex;
+            min-height: 100vh;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            padding: 40px 24px;
+            background: #fcfaf7;
+            color: #2e2622;
+            font-family: var(--font-heebo), "Heebo", system-ui, sans-serif;
+            font-size: 20px;
+            text-align: center;
+          }
+          .ar-spinner {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 3px solid rgba(122, 31, 43, 0.18);
+            border-top-color: #7a1f2b;
+            animation: ar-spin 0.8s linear infinite;
+          }
+          @keyframes ar-spin {
+            to {
+              transform: rotate(360deg);
+            }
+          }
+        `}</style>
+      </div>
+    );
+  }
 
   const sym = isHe ? "₪" : "$";
   const fmt = (n: number) => n.toLocaleString(isHe ? "he-IL" : "en-US");
