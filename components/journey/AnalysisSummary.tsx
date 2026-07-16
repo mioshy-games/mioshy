@@ -495,76 +495,6 @@ export function AnalysisSummary({
     enabledCadences[0] ??
     null;
 
-  // Task 16 — 7-day trial timeline (shown in the package selector when a trial
-  // is enabled for the selected option). Copy is the "בעוד X ימים" relative-time
-  // revision (Itzik 2026-07-02); this builds the "בעוד 7 ימים" line only. The
-  // price is injected live from the selected option (single source), so it never
-  // drifts. Amounts go through priceStr (NBSP -> no line break). Non-monthly uses
-  // the existing approved period labels. EN never renders (trial is ILS-only).
-  const trialDay7 = (() => {
-    const cad = checkoutPlan;
-    const pf = promoSet?.firstChargeByCadence[cad];
-    const po = promoSet?.originalByCadence[cad];
-    if (pf && po) {
-      const first = isHe ? pf.ils : pf.usd;
-      const full = isHe ? po.ils : po.usd;
-      if (cad === "monthly") {
-        return isHe
-          ? `מתחיל החיוב. חודש ראשון ${priceStr(first)}, ואחריו ${priceStr(full)} לחודש.`
-          : `billing begins. ${priceStr(first)} first month, then ${priceStr(full)}/mo.`;
-      }
-      return isHe
-        ? `מתחיל החיוב. ${priceStr(first)} ${firstPeriodLabel(cad, true)}, ואחריו ${priceStr(full)} ${periodLabel(cad)}.`
-        : `billing begins. ${priceStr(first)} ${firstPeriodLabel(cad, false)}, then ${priceStr(full)} ${periodLabel(cad)}.`;
-    }
-    // No active promo: comma form, "לחודש" for monthly (approved period label
-    // otherwise). "מתחיל החיוב, {מחיר_רגיל} לחודש."
-    const amt = selectedOption ? amtOf(selectedOption) : 0;
-    const recurringLabel = cad === "monthly" ? (isHe ? "לחודש" : "/mo") : periodLabel(cad);
-    return isHe
-      ? `מתחיל החיוב, ${priceStr(amt)} ${recurringLabel}.`
-      : `billing begins, ${priceStr(amt)} ${recurringLabel}.`;
-  })();
-
-  // 7-day trial timeline (Blinkist pattern). Extracted so it can render in TWO
-  // slots: on mobile it stays in the summary flow (approved, unchanged); on
-  // desktop it moves to the bottom of the PLANS column, below "more plans"
-  // (Itzik 2026-07-15). The same element is placed in both slots and CSS picks
-  // which slot is visible per breakpoint — no duplicated markup, no mobile change.
-  const trialTimeline = trial.enabled ? (
-    <div className="ar-trial-tl">
-      <div className="ar-trial-row">
-        <span aria-hidden className="ar-trial-check">✓</span>
-        <span>
-          <b>{isHe ? "היום:" : "Today:"}</b>{" "}
-          {isHe
-            ? "מצטרפים בלי חיוב, והאבחון המלא מחכה לכם עם תמונה מדויקת יותר."
-            : "join with no charge, and the full assessment awaits with a sharper picture."}
-        </span>
-      </div>
-      <div className="ar-trial-row">
-        <span aria-hidden className="ar-trial-check">✓</span>
-        <span>
-          <b>{isHe ? "בעוד 5 ימים:" : "In 5 days:"}</b>{" "}
-          {isHe
-            ? "נשלח לכם תזכורת שתקופת הניסיון עומדת להסתיים."
-            : "we'll send a reminder that the trial is ending."}
-        </span>
-      </div>
-      <div className="ar-trial-row">
-        <span aria-hidden className="ar-trial-check">✓</span>
-        <span>
-          <b>{isHe ? "בעוד 7 ימים:" : "In 7 days:"}</b> {trialDay7}
-        </span>
-      </div>
-      <div className="ar-trial-foot">
-        {isHe
-          ? "ביטול בכל רגע, בלחיצת כפתור מהאזור האישי."
-          : "cancel any time, one click from your account."}
-      </div>
-    </div>
-  ) : null;
-
   // Included panel for the SELECTED plan — exact structure per the approved
   // pricing card: a gradient "חיסכון X%" line under the name, then a divider,
   // muted lead, and a gradient-dot list. `saveText` is the plan's savings string
@@ -1255,16 +1185,9 @@ export function AnalysisSummary({
                   includedPanel) so it follows the selection. The coaching item
                   (included2) is still gated on the coaching toggle there. */}
 
-              <hr className="ar-zone-sep" aria-hidden />
-
-              {/* Task 16 — 7-day trial timeline (Blinkist pattern). Moved below
-                  the package options, right above the CTA (Itzik 2026-07-03).
-                  MOBILE slot — display:contents on mobile (keeps the approved
-                  position, above the total); hidden ≥760 where the desktop slot
-                  in the plans column takes over. */}
-              {trialTimeline ? (
-                <div className="ar-tl-slot ar-tl-slot--sum">{trialTimeline}</div>
-              ) : null}
+              {/* Trial-timeline block (היום / 5 ימים / 7 ימים / ביטול) removed
+                  2026-07-16 — the .ar-stop line + total below carry the billing
+                  detail. The zone separator above it went with it. */}
 
               {/* Bold TOTAL row (Itzik 2026-07-15) — a separate summary that ties
                   the (unchanged) base price + coaching add-on together. Base and
@@ -1904,56 +1827,8 @@ export function AnalysisSummary({
         .ar-order-sum {
           display: none;
         }
-        /* Trial-timeline slot — mobile keeps it in flow (display:contents = no
-           box, approved position unchanged). On desktop it is hidden entirely
-           (media query below) per Itzik 2026-07-15. */
-        .ar-tl-slot--sum {
-          display: contents;
-        }
-        /* Task 16 — 7-day trial timeline (Blinkist pattern) */
-        /* Task 21 (Itzik 2026-07-02) — the timeline is PART of the price card,
-           not a pasted inset: no separate box/border/gradient, same body font
-           as the card, ≥20px text. A hairline divider ties it to the price rows
-           below without looking like a foreign card. */
-        .ar-trial-tl {
-          border: 0;
-          background: transparent;
-          padding: 2px 2px 16px;
-          /* Zone C sits below a zone separator now (the old opening sentence was
-             deleted in mockup v1), so no extra top margin (Itzik 2026-07-04). */
-          margin-top: 0;
-          margin-bottom: 16px;
-          border-bottom: 1px solid #ece2cf;
-          font-family: var(--font-heebo), "Assistant", "Heebo", system-ui, sans-serif;
-        }
-        .ar-trial-row {
-          display: flex;
-          gap: 8px;
-          align-items: baseline;
-          font-size: 20px;
-          line-height: 1.5;
-          color: #2e2622;
-        }
-        .ar-trial-row + .ar-trial-row {
-          margin-top: 8px;
-        }
-        /* ✓ marker (Itzik 2026-07-02) — flex:none keeps the wrapped text from
-           tucking under it; brand rose to match the bold labels. */
-        .ar-trial-check {
-          flex: none;
-          color: #7a1f2b;
-          font-weight: 800;
-        }
-        .ar-trial-row b {
-          color: #7a1f2b;
-          font-weight: 800;
-        }
-        .ar-trial-foot {
-          margin-top: 12px;
-          font-size: 20px;
-          color: #5a4f46;
-          font-weight: 600;
-        }
+        /* Trial-timeline slot + .ar-trial-* rules removed 2026-07-16 (the
+           trial-timeline block no longer renders). */
         .ar-trial-tag {
           display: inline-block;
           width: fit-content;
@@ -2608,11 +2483,8 @@ export function AnalysisSummary({
         }
         /* Zone divider between the three areas (choice / included / how it
            works). Hairline in the card-border tone. */
-        .ar-zone-sep {
-          border: 0;
-          border-top: 1px solid #ece2cf;
-          margin: 26px 0;
-        }
+        /* .ar-zone-sep removed 2026-07-16 (its only use was above the removed
+           trial-timeline block). */
 
         /* ACTIVE SUBSCRIBER */
         .ar-active {
@@ -2926,12 +2798,6 @@ export function AnalysisSummary({
                page background: no border, shadow, or fill. */
             padding: 0;
           }
-          /* The trial timeline is removed on desktop entirely (Itzik 2026-07-15) —
-             the summary panel's day-7 line already states the charge. Mobile keeps
-             it (base display:contents). */
-          .ar-tl-slot--sum {
-            display: none;
-          }
           /* Dedupe the total: the standalone "לתשלום" money line is redundant on
              desktop — the order-summary breakdown + the single .ar-total below
              cover it. (Only ever rendered off-trial; hidden here either way.) */
@@ -2983,11 +2849,6 @@ export function AnalysisSummary({
           .ar-total-timer {
             border-top: 0;
             padding-top: 8px;
-          }
-          /* The plans→trial zone divider is redundant inside the narrow summary
-             panel (the total's own top border already separates it). */
-          .ar-zone-sep {
-            display: none;
           }
           .ar-cta {
             margin-top: 14px;
