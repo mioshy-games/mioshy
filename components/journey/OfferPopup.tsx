@@ -31,7 +31,6 @@ export function OfferPopup({
   isHe,
   lowestCategoryName,
   offerExpiresAt,
-  triggerId,
   onClaim,
 }: {
   isHe: boolean;
@@ -39,8 +38,6 @@ export function OfferPopup({
   lowestCategoryName: string | null;
   /** Real offer deadline (personal window). null / past → the popup never shows. */
   offerExpiresAt: string | null;
-  /** id of the element that triggers the popup when scrolled into view. */
-  triggerId: string;
   /** "View the offer" — scrolls to the plans (called after the popup closes). */
   onClaim: () => void;
 }) {
@@ -51,29 +48,27 @@ export function OfferPopup({
 
   const expiresMs = offerExpiresAt ? new Date(offerExpiresAt).getTime() : null;
 
-  // ── Trigger: show once, only for a live offer the user hasn't seen ──────────
+  // ── Trigger: once, after scrolling 20% of the page, for a live unseen offer ──
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!expiresMs || Date.now() >= expiresMs) return; // offer expired → never show
     if (window.localStorage.getItem(SEEN_KEY)) return; // once per user (device)
-    const el = document.getElementById(triggerId);
-    if (!el) return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) {
-          if (e.isIntersecting && !shownRef.current) {
-            shownRef.current = true;
-            window.localStorage.setItem(SEEN_KEY, "1");
-            window.setTimeout(() => setOpen(true), 350);
-            io.disconnect();
-          }
-        }
-      },
-      { threshold: 0.35 },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, [triggerId, expiresMs]);
+    const onScroll = () => {
+      if (shownRef.current) return;
+      const doc = document.documentElement;
+      const max = doc.scrollHeight - window.innerHeight;
+      const depth = max > 0 ? window.scrollY / max : 0;
+      if (depth >= 0.2) {
+        shownRef.current = true;
+        window.localStorage.setItem(SEEN_KEY, "1");
+        setOpen(true);
+        window.removeEventListener("scroll", onScroll);
+      }
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll(); // in case the page is already scrolled past 20%
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [expiresMs]);
 
   // ── Countdown to the REAL deadline (refresh-safe; not a resetting timer) ────
   useEffect(() => {
@@ -168,13 +163,14 @@ export function OfferPopup({
         dir={isHe ? "rtl" : "ltr"}
         onClick={(e) => { if (e.target === e.currentTarget) close(); }}
       >
-        <div className="op-modal" role="dialog" aria-modal="true" aria-label={isHe ? "הצעת מבצע" : "Special offer"}>
+        <div className="op-modal-wrap">
+          {/* X sits OUTSIDE the card (top-left). It's a child of the wrap, not the
+              modal, so the modal's overflow:hidden doesn't clip it. */}
           <button className="op-close" onClick={close} aria-label={isHe ? "סגירה" : "Close"}>✕</button>
+          <div className="op-modal" role="dialog" aria-modal="true" aria-label={isHe ? "הצעת מבצע" : "Special offer"}>
           <div className="op-hero">
-            <div className="op-glow" aria-hidden />
             <span className="op-badge">{isHe ? "מבצע 48 שעות" : "48-hour offer"}</span>
-            {/* Small decorative popup image; next/image is overkill inside a
-                fixed one-off modal. */}
+            {/* Full-bleed hero image (replaces the gradient background). */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/images/sale.webp" alt="" className="op-img" />
           </div>
@@ -198,7 +194,8 @@ export function OfferPopup({
             <button className="op-cta" onClick={claim}>{isHe ? "לצפייה בהטבה" : "View the offer"}</button>
             <button className="op-later" onClick={close}>{isHe ? "אולי מאוחר יותר" : "Maybe later"}</button>
           </div>
-        </div>
+          </div>{/* /.op-modal */}
+        </div>{/* /.op-modal-wrap */}
       </div>
 
       <style jsx>{`
@@ -211,26 +208,32 @@ export function OfferPopup({
           font-family: var(--font-heebo), "Heebo", system-ui, sans-serif;
         }
         .op-overlay.on { opacity: 1; }
+        .op-modal-wrap { position: relative; width: 100%; max-width: 400px; }
         .op-modal {
-          position: relative; width: 100%; max-width: 400px; background: #fff;
+          position: relative; width: 100%; background: #fff;
           border-radius: 26px; overflow: hidden; box-shadow: 0 30px 80px rgba(20, 8, 16, 0.4);
           transform: translateY(24px) scale(0.96);
           transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.25, 1);
         }
         .op-overlay.on .op-modal { transform: none; }
+        /* X OUTSIDE the card, top-left, ~15px gap. On the wrap (not the modal) so
+           overflow:hidden doesn't clip it. On narrow phones keep it inside so it
+           can't be clipped off-screen. */
         .op-close {
-          position: absolute; top: 12px; inset-inline-start: 12px; z-index: 3;
-          width: 34px; height: 34px; border: 0; border-radius: 50%;
-          background: rgba(255, 255, 255, 0.85); color: #333; font-size: 18px;
-          cursor: pointer; line-height: 1;
+          position: absolute; top: -15px; inset-inline-start: -15px; z-index: 5;
+          width: 36px; height: 36px; border: 0; border-radius: 50%;
+          background: #fff; color: #333; font-size: 18px;
+          cursor: pointer; line-height: 1; box-shadow: 0 4px 14px rgba(20, 8, 16, 0.35);
+        }
+        @media (max-width: 420px) {
+          .op-close { top: 8px; inset-inline-start: 8px; background: rgba(255, 255, 255, 0.9); box-shadow: none; }
         }
         .op-hero {
-          position: relative; height: 150px;
-          background: linear-gradient(110deg, #f43f5e 0%, #ec4899 45%, #a855f7 100%);
+          position: relative; height: 160px; background: #faf1f4;
           display: flex; align-items: center; justify-content: center; overflow: hidden;
         }
-        .op-glow { position: absolute; inset: 0; background: radial-gradient(60% 90% at 50% 120%, rgba(255, 255, 255, 0.35), transparent); }
-        .op-img { position: relative; z-index: 2; max-height: 110px; max-width: 78%; object-fit: contain; filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.2)); }
+        /* Full-bleed hero image — fills the whole hero, replaces the gradient. */
+        .op-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
         .op-badge {
           position: absolute; top: 14px; inset-inline-end: 14px; background: #fff; color: #7a1f3d;
           font-weight: 800; font-size: 12px; padding: 6px 12px; border-radius: 20px; z-index: 2;
@@ -241,7 +244,9 @@ export function OfferPopup({
         .op-body p { font-size: 16px; line-height: 1.55; color: #170e14; margin-bottom: 6px; }
         .op-once { color: #7a1f3d; font-weight: 700; font-size: 15px; margin: 10px 0 4px; }
         .op-clabel { color: #6b6168; font-size: 13px; margin-top: 16px; }
-        .op-clock { display: flex; justify-content: center; gap: 8px; margin-top: 8px; }
+        /* direction:ltr → normal clock order (hours left, seconds right) even in
+           an RTL page. Labels stay under each number. */
+        .op-clock { display: flex; direction: ltr; justify-content: center; gap: 8px; margin-top: 8px; }
         .op-seg { background: #faf1f4; border: 1px solid rgba(122, 31, 61, 0.12); border-radius: 12px; padding: 8px 6px; min-width: 58px; }
         .op-seg b { display: block; font-size: 26px; font-weight: 800; color: #7a1f3d; line-height: 1; }
         .op-seg span { font-size: 11px; color: #6b6168; }
