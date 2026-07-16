@@ -700,31 +700,56 @@ export function AnalysisSummary({
                 );
               })()}
             </div>
-            {/* Locked-results teaser (docs/results-teaser-mockup-v3.html) — one
-                more category card, masked/faded downward with a hint of another
-                card behind it, to show the short assessment is limited and the
-                full one unlocks the rest. Decorative (aria-hidden); the CTA link
-                scrolls to the plans (#ar-price). */}
+            {/* Teaser (Phase 2, Part C) — a REAL masked peek at the couple's
+                SECOND-weakest domain (the top card shows the weakest). Real
+                name/score/text from the SSOT + category-feedback, faded downward
+                by the .ar-locked mask so it reads as a teaser, not a full free
+                reveal. Decorative (aria-hidden); the CTA scrolls to #ar-price. */}
             <div className="ar-teaser">
               <div className="ar-teaser-behind" aria-hidden />
-              <div className="ar-catcard ar-locked" aria-hidden>
-                <div className="ar-scorerow">
-                  <span className="ar-snum font-heading">?</span>
-                  <span className="ar-sof">/ 100</span>
-                  <span className="ar-lockpill">
-                    <span className="ar-lockicon" aria-hidden>🔒</span>{" "}
-                    {isHe ? "נעול" : "Locked"}
-                  </span>
-                </div>
-                <div className="ar-cname">
-                  {isHe ? "תקשורת רגשית" : "Emotional communication"}
-                </div>
-                <p className="ar-ctxt">
-                  {isHe
-                    ? "איך אתם מדברים כשקשה, ומה קורה כשאחד מכם צריך להישמע"
-                    : "How you talk when it's hard, and what happens when one of you needs to be heard"}
-                </p>
-              </div>
+              {(() => {
+                const featuredKey = categoryScores.lowest_key;
+                const secondKey = CATEGORY_DISPLAY_ORDER
+                  .filter((k) => k !== featuredKey && !insufficientKeys.includes(k))
+                  .slice()
+                  .sort((a, b) => categoryScores[a] - categoryScores[b])[0] ?? null;
+                if (!secondKey) {
+                  // No second sufficiently-covered category — generic teaser.
+                  return (
+                    <div className="ar-catcard ar-locked" aria-hidden>
+                      <div className="ar-scorerow">
+                        <span className="ar-snum font-heading">?</span>
+                        <span className="ar-sof">/ 100</span>
+                      </div>
+                      <div className="ar-cname">
+                        {isHe ? "עוד תחומים באבחון המלא" : "More areas in the full assessment"}
+                      </div>
+                      <p className="ar-ctxt">
+                        {isHe
+                          ? "האבחון המלא פותח את שאר התחומים עם משוב מלא לכל אחד."
+                          : "The full assessment unlocks the rest of the areas with full feedback for each."}
+                      </p>
+                    </div>
+                  );
+                }
+                const s2 = categoryScores[secondKey];
+                const b2 = categoryBand(s2);
+                const fb2 = CATEGORY_FEEDBACK[secondKey];
+                const t2 = isHe
+                  ? b2 === "weak" ? fb2.weak_he : b2 === "medium" ? fb2.medium_he : fb2.strong_he
+                  : b2 === "weak" ? fb2.weak_en : b2 === "medium" ? fb2.medium_en : fb2.strong_en;
+                return (
+                  <div className="ar-catcard ar-locked" aria-hidden>
+                    <div className="ar-scorerow">
+                      <span className="ar-snum font-heading">{s2}</span>
+                      <span className="ar-sof">/ 100</span>
+                      <span className="ar-sexp">{isHe ? BAND_LABEL[b2].he : BAND_LABEL[b2].en}</span>
+                    </div>
+                    <div className="ar-cname">{isHe ? CATEGORY_LABELS[secondKey].he : CATEGORY_LABELS[secondKey].en}</div>
+                    <p className="ar-ctxt">{t2}</p>
+                  </div>
+                );
+              })()}
               <div className="ar-teaser-cta">
                 <p className="ar-teaser-msg">
                   {isHe ? (
