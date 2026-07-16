@@ -43,6 +43,7 @@ import {
 import { getPersonalWindowConfig } from "@/lib/billing/promo-mode";
 import { resolveJourneyFlow } from "@/lib/journey/phase";
 import { computeGate, reportPhaseForMode } from "@/lib/journey/gating";
+import { buildShortNarrative } from "@/lib/journey/short-narrative";
 import { isValidOrder } from "@/lib/journey/priorities";
 import { getPriorityLabels } from "@/lib/journey-content/priority-categories";
 import { onPriorityRankingSubmitted } from "@/lib/journey-content/cadence-trigger";
@@ -436,6 +437,16 @@ export async function POST(req: Request) {
     const phaseResponses = parsed.filter((r) => phaseSlugs.has(r.question_id));
     const priorityLabels = await getPriorityLabels();
     analysis = analyze(phaseResponses, priorityLabels, resolveQuestion);
+
+    // Phase 2 (Part A): the short flow shows a deterministic templated paragraph
+    // (weakest + strongest category), not the AI narrative — this pre-inserted
+    // row is what the results screen reads when it loads. The full flow keeps
+    // its deterministic narrative here (the AI overrides it in /analyze).
+    if (reportPhase === "short" && analysis.summary.category_scores) {
+      const cs = analysis.summary.category_scores;
+      analysis.summary.narrative_he = buildShortNarrative(cs, true);
+      analysis.summary.narrative_en = buildShortNarrative(cs, false);
+    }
 
     await admin.from("journey_analysis").insert({
       journey_id:              journeyId,

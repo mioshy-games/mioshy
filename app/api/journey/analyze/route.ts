@@ -15,7 +15,11 @@ import {
 } from "@/lib/journey/questions-db";
 import { analyzeAssessment } from "@/lib/ai/analyze-assessment";
 import { buildFallbackHero } from "@/lib/journey/hero-fallback";
+import { buildShortNarrative } from "@/lib/journey/short-narrative";
 import { getPriorityLabels } from "@/lib/journey-content/priority-categories";
+import { resolveJourneyFlow } from "@/lib/journey/phase";
+import { reportPhaseForMode } from "@/lib/journey/gating";
+import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
 import type { AnswerValue, Locale, Response } from "@/lib/journey/types";
 
 export const dynamic = "force-dynamic";
@@ -219,6 +223,55 @@ export async function POST() {
   const resolveQuestion = buildQuestionResolver(journeyQuestions);
   const analysis = analyze(responses, priorityLabels, resolveQuestion);
 
+  // ── Flow phase (short vs full) — decides the narrative source ──
+  // Phase 2 (spec pull/mioshy-narrative-spec-phase2.md): the SHORT (pre-purchase)
+  // flow never serves q20c/q22a, so the AI can't ground its narrative. For short
+  // we skip the AI call entirely and render the deterministic templated
+  // paragraph (Part A). FULL keeps the AI narrative (Part B). Resolved with the
+  // same helper the assessment/answer routes use, so the mode never drifts.
+  let subscriptionActive = false;
+  {
+    const { data: sub } = await admin
+      .from("subscriptions")
+      .select("status")
+      .eq("user_id", user.id)
+      .in("status", ["active", "trialing"])
+      .maybeSingle();
+    const entitlements = await getUserEntitlements(user.id);
+    subscriptionActive = !!sub || !!entitlements?.journey;
+  }
+  const answeredSlugs = new Set(responses.map((r) => r.question_id));
+  const flow = await resolveJourneyFlow({ client: admin, subscriptionActive, answeredSlugs });
+  const reportPhase = reportPhaseForMode(flow.mode); // 'short' | 'full'
+
+  if (reportPhase === "short") {
+    // Short flow: no AI. Templated paragraph from the weakest + strongest
+    // category (Part A). ai_hero is a deterministic fallback so anything reading
+    // it stays intact; the on-screen H1 is a fixed CMS string regardless.
+    const nowIso = new Date().toISOString();
+    const cs = analysis.summary.category_scores;
+    if (cs) {
+      analysis.summary.narrative_he = buildShortNarrative(cs, true);
+      analysis.summary.narrative_en = buildShortNarrative(cs, false);
+    }
+    analysis.summary.ai_hero = buildFallbackHero(
+      analysis.summary.category_scores?.lowest_key,
+      responses,
+      nowIso,
+    );
+    analysis.summary.ai_hero_status = {
+      ok: true,
+      reason: "short_template",
+      source: "short_template",
+      attempts: 0,
+      latency_ms: 0,
+      at: nowIso,
+    };
+    console.log("[api/journey/analyze POST] short flow — templated narrative (no AI)", {
+      userId: user.id,
+      lowest: analysis.summary.category_scores?.lowest_key,
+    });
+  } else {
   // ── AI hero generation (2026-06-02) ──
   // Best-effort enrichment. We fetch the user's profile name + gender +
   // demographic answers, hand them to Claude Sonnet 4.6 along with the
@@ -332,6 +385,7 @@ export async function POST() {
       at: nowIso,
     };
   }
+  }
 
   const { error: insertErr } = await admin.from("journey_analysis").insert({
     journey_id: journey.id,
@@ -345,6 +399,7 @@ export async function POST() {
     top_gap: analysis.top_gap,
     four_horsemen_flag: analysis.four_horsemen_flag,
     summary: analysis.summary,
+    report_phase: reportPhase,
   });
 
   if (insertErr) {

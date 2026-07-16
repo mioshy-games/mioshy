@@ -290,10 +290,12 @@ export type AiHeroFailReason =
 export interface AiHeroStatus {
   /** true when the real AI produced the hero. */
   ok: boolean;
-  /** "ok" on success, else the failure reason. */
-  reason: "ok" | AiHeroFailReason;
-  /** "ai" = real Claude output; "fallback_template" = deterministic. */
-  source: "ai" | "fallback_template";
+  /** "ok" on success, "short_template" when the short flow skipped the AI by
+   *  design, else the failure reason. */
+  reason: "ok" | "short_template" | AiHeroFailReason;
+  /** "ai" = real Claude output; "fallback_template" = deterministic fallback
+   *  after an AI failure; "short_template" = short flow, AI skipped by design. */
+  source: "ai" | "fallback_template" | "short_template";
   /** Attempts made against the AI (0 when the key was missing). */
   attempts: number;
   latency_ms: number;
