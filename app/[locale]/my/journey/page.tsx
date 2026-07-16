@@ -43,6 +43,7 @@ import { createServiceRoleClient } from "@/lib/supabase-admin";
 import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
 import { getCurrentCoupleContext } from "@/lib/between-us/couples";
 import { getOwnerJourneyStatus } from "@/lib/journey-content/owner-status";
+import { CATEGORY_DISPLAY_ORDER, CATEGORY_LABELS } from "@/lib/journey/categories";
 import {
   buildDynamicRail,
   buildDbBackedEmptyRail,
@@ -912,36 +913,26 @@ export default async function PrivateJourneyPage({
   // available, otherwise from the canonical six topics. Server passes
   // the seed; the client component owns the reorder/add UI.
   const seededPriorities: PriorityItem[] = topPriority
-    ? // Top priority first, then the rest of the canonical six
+    ? // Top priority first (label from the DB seed), then the rest of the
+      // canonical five in canonical order, labelled from the single source of
+      // truth (lib/journey/categories.ts). Using canonical keys here also fixes
+      // the dedup: `emotional_connection` now filters out correctly (the old
+      // `love` slug never matched topPriority, so it duplicated that category).
       [
         {
           id: `priority-${topPriority}`,
           label: focusLabel,
           note: focusDesc || null,
         },
-        ...["communication", "intimacy", "love", "friendship", "family"]
-          .filter((k) => k !== topPriority)
-          .map((k) => ({
-            id: `priority-${k}`,
-            label:
-              k === "communication"
-                ? t("priorityCommunication")
-                : k === "intimacy"
-                  ? t("priorityIntimacy")
-                  : k === "love"
-                    ? t("priorityLove")
-                    : k === "friendship"
-                      ? t("priorityFriendship")
-                      : t("priorityFamily"),
-          })),
+        ...CATEGORY_DISPLAY_ORDER.filter((k) => k !== topPriority).map((k) => ({
+          id: `priority-${k}`,
+          label: isHe ? CATEGORY_LABELS[k].he : CATEGORY_LABELS[k].en,
+        })),
       ]
-    : [
-        { id: "p-comm", label: t("priorityCommunication") },
-        { id: "p-intim", label: t("priorityIntimacy") },
-        { id: "p-love", label: t("priorityLove") },
-        { id: "p-friend", label: t("priorityFriendship") },
-        { id: "p-family", label: t("priorityFamily") },
-      ];
+    : CATEGORY_DISPLAY_ORDER.map((k) => ({
+        id: `priority-${k}`,
+        label: isHe ? CATEGORY_LABELS[k].he : CATEGORY_LABELS[k].en,
+      }));
 
   // Decide whether to show the "experts are reviewing" banner - only
   // for users who finished the assessment but don't yet have any

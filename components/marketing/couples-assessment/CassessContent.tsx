@@ -5,6 +5,7 @@ import { Link } from "@/navigation";
 import { useCmsText } from "@/hooks/useCmsText";
 import { AssessmentHeroChart } from "./AssessmentHeroChart";
 import type { Locale } from "@/lib/journey/types";
+import { CATEGORY_LABELS } from "@/lib/journey/categories";
 import "./styles.css";
 
 /**
@@ -152,11 +153,14 @@ export function CassessContent({
           <div className="lead">{rc(c.domLead, "מה בודקים?", "What we check")}</div>
           <h2 className="sh">{rc(c.domH2, "חמשת התחומים שאנחנו בוחנים", "The five areas we examine")}</h2>
           <div className="proc">
-            <div className="procitem"><div className="num">1</div><div className="pc"><div className="dn">{rc(c.d1n, "אינטימיות", "Intimacy")}</div><div className="dd">{rc(c.d1d, "הקרבה הפיזית, התשוקה והנוכחות שלכם זה עבור זה.", "Physical closeness, desire, and being present for each other.")}</div></div></div>
-            <div className="procitem"><div className="num">2</div><div className="pc"><div className="dn">{rc(c.d2n, "חיבור רגשי", "Emotional connection")}</div><div className="dd">{rc(c.d2d, "עד כמה אתם מרגישים מובנים, קרובים ושותפים אמיתיים.", "How understood, close, and truly partnered you feel.")}</div></div></div>
-            <div className="procitem"><div className="num">3</div><div className="pc"><div className="dn">{rc(c.d3n, "תקשורת", "Communication")}</div><div className="dd">{rc(c.d3d, "איך אתם מדברים, מקשיבים ומתקנים את הקשר אחרי ריב.", "How you talk, listen, and repair after a fight.")}</div></div></div>
-            <div className="procitem"><div className="num">4</div><div className="pc"><div className="dn">{rc(c.d4n, "חברות", "Friendship")}</div><div className="dd">{rc(c.d4d, "הכיף, הצחוק והרגעים הקטנים של היומיום יחד.", "The fun, laughter, and small everyday moments together.")}</div></div></div>
-            <div className="procitem"><div className="num">5</div><div className="pc"><div className="dn">{rc(c.d5n, "משפחה", "Family")}</div><div className="dd">{rc(c.d5d, "ההתמודדות עם ההורות והמשפחה, והתיאום ההדדי ביניכם.", "Handling parenting and family, and how you coordinate.")}</div></div></div>
+            {/* Category NAMES (short) come from the single source of truth
+                (lib/journey/categories.ts), canonical order; CMS keys still
+                override per card. Descriptions remain this page's own copy. */}
+            <div className="procitem"><div className="num">1</div><div className="pc"><div className="dn">{rc(c.d1n, CATEGORY_LABELS.intimacy.shortHe, CATEGORY_LABELS.intimacy.shortEn)}</div><div className="dd">{rc(c.d1d, "הקרבה הפיזית, התשוקה והנוכחות שלכם זה עבור זה.", "Physical closeness, desire, and being present for each other.")}</div></div></div>
+            <div className="procitem"><div className="num">2</div><div className="pc"><div className="dn">{rc(c.d2n, CATEGORY_LABELS.emotional_connection.shortHe, CATEGORY_LABELS.emotional_connection.shortEn)}</div><div className="dd">{rc(c.d2d, "עד כמה אתם מרגישים מובנים, קרובים ושותפים אמיתיים.", "How understood, close, and truly partnered you feel.")}</div></div></div>
+            <div className="procitem"><div className="num">3</div><div className="pc"><div className="dn">{rc(c.d3n, CATEGORY_LABELS.communication.shortHe, CATEGORY_LABELS.communication.shortEn)}</div><div className="dd">{rc(c.d3d, "איך אתם מדברים, מקשיבים ומתקנים את הקשר אחרי ריב.", "How you talk, listen, and repair after a fight.")}</div></div></div>
+            <div className="procitem"><div className="num">4</div><div className="pc"><div className="dn">{rc(c.d4n, CATEGORY_LABELS.friendship.shortHe, CATEGORY_LABELS.friendship.shortEn)}</div><div className="dd">{rc(c.d4d, "הכיף, הצחוק והרגעים הקטנים של היומיום יחד.", "The fun, laughter, and small everyday moments together.")}</div></div></div>
+            <div className="procitem"><div className="num">5</div><div className="pc"><div className="dn">{rc(c.d5n, CATEGORY_LABELS.family.shortHe, CATEGORY_LABELS.family.shortEn)}</div><div className="dd">{rc(c.d5d, "ההתמודדות עם ההורות והמשפחה, והתיאום ההדדי ביניכם.", "Handling parenting and family, and how you coordinate.")}</div></div></div>
           </div>
         </div>
       </section>

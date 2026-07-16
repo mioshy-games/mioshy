@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from "react";
 import type { Analysis, Locale } from "@/lib/journey/types";
+import { CATEGORY_FEEDBACK } from "@/lib/journey/category-feedback";
 import {
-  CATEGORY_FEEDBACK,
-  CATEGORY_WEAK_BELOW,
-  type CategoryKey,
-} from "@/lib/journey/category-feedback";
+  CATEGORY_DISPLAY_ORDER,
+  CATEGORY_LABELS,
+  categoryBand,
+  BAND_LABEL,
+} from "@/lib/journey/categories";
 import { useCmsText } from "@/hooks/useCmsText";
 import { useTrialOffer } from "@/hooks/useTrialOffer";
 import { PromoExpiryCountdown } from "@/components/journey/PromoExpiryCountdown";
@@ -121,32 +123,8 @@ interface AnalysisSummaryProps {
  * (NOT the AI recommendations).
  */
 
-// Fixed display order for the 5 categories (bars + cards) — matches the mockup
-// and is stable across users so the visual is comparable.
-const CAT_ORDER: CategoryKey[] = [
-  "intimacy",
-  "emotional_connection",
-  "communication",
-  "friendship",
-  "family",
-];
-
-// Short bar labels (distinct from the longer CATEGORY_FEEDBACK card names).
-const BAR_LABEL: Record<CategoryKey, { he: string; en: string }> = {
-  intimacy: { he: "אינטימיות", en: "Intimacy" },
-  emotional_connection: { he: "חיבור רגשי", en: "Emotional" },
-  communication: { he: "תקשורת", en: "Communication" },
-  friendship: { he: "חברות", en: "Friendship" },
-  family: { he: "משפחה", en: "Family" },
-};
-
-// Dynamic level descriptor by score (and the lowest override). Display-only.
-function levelDesc(score: number, isLowest: boolean, isHe: boolean): string {
-  if (isLowest) return isHe ? "הכי הרבה מקום לצמיחה" : "the most room to grow";
-  if (score < 50) return isHe ? "מקום לחיזוק" : "room to strengthen";
-  if (score < 62) return isHe ? "בסיס טוב" : "a good base";
-  return isHe ? "תחום חזק יחסית" : "a relative strength";
-}
+// Category keys, display names, order and the score→band mapping now live in
+// the single source of truth: lib/journey/categories.ts.
 
 export function AnalysisSummary({
   analysis,
@@ -645,7 +623,7 @@ export function AnalysisSummary({
                 {rc(cmsFeedbackLabel, "המשוב האישי שלכם", "Your personal feedback")}
               </div>
               <div className="ar-bars on-light">
-                {CAT_ORDER.map((key) => {
+                {CATEGORY_DISPLAY_ORDER.map((key) => {
                   const value = categoryScores[key];
                   const insufficient = insufficientKeys.includes(key);
                   const hot = !insufficient && key === categoryScores.lowest_key;
@@ -665,7 +643,7 @@ export function AnalysisSummary({
                               }
                         }
                       />
-                      <span className="ar-lbl">{isHe ? BAR_LABEL[key].he : BAR_LABEL[key].en}</span>
+                      <span className="ar-lbl">{isHe ? CATEGORY_LABELS[key].shortHe : CATEGORY_LABELS[key].shortEn}</span>
                     </div>
                   );
                 })}
@@ -695,14 +673,16 @@ export function AnalysisSummary({
                 const score = categoryScores[key];
                 const fb = CATEGORY_FEEDBACK[key];
                 const insufficient = insufficientKeys.includes(key);
-                const weak = score < CATEGORY_WEAK_BELOW;
+                const band = categoryBand(score);
+                const textHe = band === "weak" ? fb.weak_he : band === "medium" ? fb.medium_he : fb.strong_he;
+                const textEn = band === "weak" ? fb.weak_en : band === "medium" ? fb.medium_en : fb.strong_en;
                 const text = insufficient
                   ? isHe
                     ? "כדי לתת לכם משוב מדויק בתחום הזה צריך עוד כמה תשובות, וזה מה שהאבחון המלא עושה."
                     : "We need a few more answers to give you accurate feedback here, that's what the full assessment does."
                   : isHe
-                    ? weak ? fb.weak_he : fb.strong_he
-                    : weak ? fb.weak_en : fb.strong_en;
+                    ? textHe
+                    : textEn;
                 return (
                   <div className="ar-catcard" key={key}>
                     <div className="ar-scorerow">
@@ -711,10 +691,10 @@ export function AnalysisSummary({
                       <span className="ar-sexp">
                         {insufficient
                           ? isHe ? "דרוש אבחון מלא" : "full assessment needed"
-                          : levelDesc(score, false, isHe)}
+                          : isHe ? BAND_LABEL[band].he : BAND_LABEL[band].en}
                       </span>
                     </div>
-                    <div className="ar-cname">{isHe ? fb.he : fb.en}</div>
+                    <div className="ar-cname">{isHe ? CATEGORY_LABELS[key].he : CATEGORY_LABELS[key].en}</div>
                     <p className="ar-ctxt">{text}</p>
                   </div>
                 );
