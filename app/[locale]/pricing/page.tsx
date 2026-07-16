@@ -82,8 +82,10 @@ export async function generateMetadata({
  */
 export default async function PricingPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   // Live promo pricing must never be frozen at build time — a statically
   // rendered /pricing could show an expired promo (displayed ≠ charged). Force
@@ -102,6 +104,13 @@ export default async function PricingPage({
   // the checkout → display == charge.
   const pricing = await getJourneySubscribePricing(user?.id ?? null);
 
+  // Post-signup continuation: restore the plan the user picked before signup and
+  // auto-continue to checkout (see AnalysisSummary auto-checkout effect).
+  const sp = await searchParams;
+  const initialCadence = typeof sp.cadence === "string" ? sp.cadence : undefined;
+  const initialCoaching = sp.coaching === "1";
+  const autoCheckout = sp.pay === "1";
+
   return (
     <>
       {/* a11y + SEO: the page's h1 (sr-only — the selector renders its own
@@ -117,6 +126,10 @@ export default async function PricingPage({
         offerExpiresAt={pricing.offerExpiresAt}
         promoMode={pricing.promoMode}
         personalWindowDisplay="clock"
+        initialCadence={initialCadence}
+        initialCoaching={initialCoaching}
+        autoCheckout={autoCheckout}
+        authenticated={!!user}
       />
     </>
   );

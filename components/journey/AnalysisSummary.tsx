@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Analysis, Locale } from "@/lib/journey/types";
 import { CATEGORY_FEEDBACK } from "@/lib/journey/category-feedback";
 import {
@@ -100,6 +100,16 @@ interface AnalysisSummaryProps {
    *  block still renders. The pricing/checkout code is identical in both modes,
    *  so displayed==charged is unchanged. */
   mode?: "full" | "subscribe";
+  /** Post-signup continuation (money flow): seed the plan picker from the URL so
+   *  a selection made before signup is restored, and — when `autoCheckout` and
+   *  `authenticated` — continue straight to checkout without a re-select. The
+   *  cadence+coaching are re-sent to the same resolver, so charge==selection. */
+  initialCadence?: string;
+  initialCoaching?: boolean;
+  autoCheckout?: boolean;
+  /** True when the server rendered this page for a signed-in user. Gates the
+   *  auto-checkout so we never bounce an anonymous user into a checkout loop. */
+  authenticated?: boolean;
 }
 
 /**
@@ -136,6 +146,10 @@ export function AnalysisSummary({
   promoMode = "personal_window",
   personalWindowDisplay = "text",
   mode = "full",
+  initialCadence,
+  initialCoaching,
+  autoCheckout = false,
+  authenticated = false,
 }: AnalysisSummaryProps) {
   const isHe = locale === "he";
   const isSubscribe = mode === "subscribe";
@@ -150,7 +164,13 @@ export function AnalysisSummary({
   const defaultCadence =
     (enabledCadences.find((c) => c.is_default) ?? enabledCadences[0])?.cadence ??
     "monthly";
-  const [selectedCadence, setSelectedCadence] = useState<string>(defaultCadence);
+  // Seed from the URL when returning post-signup; validate against enabled
+  // cadences so a stale/garbage value falls back to the default.
+  const seededCadence =
+    initialCadence && enabledCadences.some((c) => c.cadence === initialCadence)
+      ? initialCadence
+      : defaultCadence;
+  const [selectedCadence, setSelectedCadence] = useState<string>(seededCadence);
 
   // ── Stage-1 coaching add-on ────────────────────────────────────────────
   // The toggle only appears once Itzik sets a coaching cost (>0) on any
@@ -163,7 +183,7 @@ export function AnalysisSummary({
   // coaching without an active choice (Itzik 2026-07-15). The user ticks the box
   // themselves; the checkout then sends coaching:true. Default false → the card
   // shows the base price + the "+{coaching_cost}" offer.
-  const [coaching, setCoaching] = useState(false);
+  const [coaching, setCoaching] = useState(initialCoaching ?? false);
 
   // ── Money path cadence (hoisted above the loading early-return so the trial
   // hook, which must run unconditionally, can key off it). The cadence to
@@ -286,6 +306,35 @@ export function AnalysisSummary({
     return () => clearInterval(id);
   }, [analysis, loadingLines.length]);
 
+  // ── Post-signup auto-checkout ──────────────────────────────────────────────
+  // When we return here after signup with ?pay=1 (the selection restored above),
+  // continue straight to checkout — no re-select. `startCheckout` is defined
+  // below, so we call it through a ref (assigned each render). Guards:
+  //   • only when authenticated (server saw the user) — never bounce anon into a
+  //     checkout loop;
+  //   • wait for the trial probe so the endpoint (trial vs paid) is correct;
+  //   • fire at most once per mount, and cap cross-reload retries (sessionStorage)
+  //     so a stuck 401 can't loop — after the cap we just leave the selection.
+  const startCheckoutRef = useRef<(() => void) | null>(null);
+  const autoPayFiredRef = useRef(false);
+  useEffect(() => {
+    if (!autoCheckout || !authenticated || autoPayFiredRef.current) return;
+    if (trial.loading) return;
+    if (typeof window === "undefined" || !startCheckoutRef.current) return;
+    const ATTEMPT_KEY = "ar_autopay_attempts";
+    const attempts = Number(window.sessionStorage.getItem(ATTEMPT_KEY) ?? "0");
+    // Consume the ?pay flag so a reload can't silently re-trigger checkout.
+    const u = new URL(window.location.href);
+    if (u.searchParams.has("pay")) {
+      u.searchParams.delete("pay");
+      window.history.replaceState({}, "", u.pathname + u.search + u.hash);
+    }
+    if (attempts >= 2) return; // give up auto-firing; keep the restored selection
+    autoPayFiredRef.current = true;
+    window.sessionStorage.setItem(ATTEMPT_KEY, String(attempts + 1));
+    startCheckoutRef.current();
+  }, [autoCheckout, authenticated, trial.loading]);
+
   if (!analysis && !isSubscribe) {
     return (
       <div className="ar-loading" dir={isHe ? "rtl" : "ltr"}>
@@ -372,17 +421,30 @@ export function AnalysisSummary({
       const data = await res.json().catch(() => ({}));
 
       if (res.status === 401 || data?.code === "UNAUTHORIZED") {
-        const rawPath =
+        const basePath =
           typeof window !== "undefined"
-            ? window.location.pathname + window.location.search
+            ? window.location.pathname
             : `/journey/assessment`;
         const localeless =
-          rawPath.replace(/^\/(he|en)(?=\/|$)/, "") || "/journey/assessment";
-        const back = encodeURIComponent(localeless);
+          basePath.replace(/^\/(he|en)(?=\/|$)/, "") || "/journey/assessment";
+        // Preserve the selection across signup: return here with the picked
+        // cadence + coaching and pay=1 so we auto-continue to checkout (the
+        // page reads these and re-sends them to the SAME resolver → charge ==
+        // selection). Money-neutral; just skips a second plan pick.
+        const qs = new URLSearchParams({
+          cadence: checkoutPlan,
+          coaching: coaching ? "1" : "0",
+          pay: "1",
+        });
+        const back = encodeURIComponent(`${localeless}?${qs.toString()}`);
         window.location.href = `/${locale}/auth/signup?next=${back}`;
         return;
       }
       if (data?.redirect_url) {
+        // Checkout is proceeding — clear the auto-pay retry counter.
+        if (typeof window !== "undefined") {
+          window.sessionStorage.removeItem("ar_autopay_attempts");
+        }
         window.location.href = data.redirect_url;
         return;
       }
@@ -393,6 +455,9 @@ export function AnalysisSummary({
       setCheckoutBusy(false);
     }
   };
+  // Expose the latest startCheckout to the post-signup auto-checkout effect
+  // (declared above, before the loading early-return).
+  startCheckoutRef.current = startCheckout;
 
   const sym = isHe ? "₪" : "$";
   const fmt = (n: number) => n.toLocaleString(isHe ? "he-IL" : "en-US");
