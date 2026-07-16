@@ -67,15 +67,6 @@ export async function POST(req: Request) {
       { labelHe: "חברות", score: 71, isPriority: false },
       { labelHe: "משפחה", score: 64, isPriority: false },
     ],
-    // Sample pricing (mirrors the current live promo) for the preview.
-    pricing: {
-      noCoachingRegular: 67,
-      noCoachingFirst: 37,
-      withCoachingRegular: 189,
-      withCoachingFirst: 89,
-    },
-    windowDayHe: "יום שני",
-    windowTime: "21:00",
     exercise: null,
     baseUrl: base,
     // Preview only (sample data, no real recipient) → the unsubscribe page

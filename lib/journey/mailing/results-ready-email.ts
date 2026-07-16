@@ -41,37 +41,23 @@ export interface ResultsReadyScoreRow {
   isPriority: boolean;
 }
 
-/**
- * Live couple pricing for the offer bullets — resolved from the same source as
- * the checkout (never hardcoded), so the email shows exactly what Cardcom bills.
- * `*First` is the promo first-charge (null when no active promo for that option).
- */
-export interface JourneyEmailPricing {
-  noCoachingRegular: number;
-  noCoachingFirst: number | null;
-  withCoachingRegular: number;
-  withCoachingFirst: number | null;
-}
-
 export interface ResultsReadyPersonalization {
   /** First name, or null → a name-less greeting. */
   firstName: string | null;
-  /** Live couple pricing (dynamic — replaces the old hardcoded 37/67/89/189). */
-  pricing: JourneyEmailPricing;
   /** Filler's gender. null/"other" → default to the male (unmarked) forms. */
   gender: "male" | "female" | "other" | null;
   /** The #1-ranked priority domain in Hebrew (e.g. "תקשורת"), or null. */
   focusDomainHe: string | null;
   /** The five domain scores, canonical order, priority row flagged. */
   scores: ResultsReadyScoreRow[];
-  /** Offer-window expiry, split for the copy. */
-  windowDayHe: string | null; // "יום שני"
-  windowTime: string | null; // "21:00"
   /** Absolute site origin, e.g. "https://mioshy.com". */
   baseUrl: string;
   /** Marketing unsubscribe URL. */
   unsubscribeUrl?: string;
 }
+// 2026-07-16: the price/discount/deadline "offer" block was removed from this
+// email (it no longer depends on the personal-window promo). The pricing +
+// window fields (and the JourneyEmailPricing type + windowClause) went with it.
 
 
 function esc(s: string): string {
@@ -99,12 +85,6 @@ function genderForms(gender: ResultsReadyPersonalization["gender"]) {
     comeVerb: partnerFemale ? "בואי" : "בוא", // mailto (partner reads it)
     youWord: partnerFemale ? "את" : "אתה", // mailto
   };
-}
-
-function windowClause(p: ResultsReadyPersonalization): string {
-  if (p.windowDayHe && p.windowTime) return `${p.windowDayHe} בשעה ${p.windowTime}`;
-  if (p.windowTime) return `היום בשעה ${p.windowTime}`;
-  return "בקרוב";
 }
 
 /** The three links, as absolute/mailto URLs (tracked where it's a page). */
@@ -136,7 +116,6 @@ export function renderResultsReadyEmail(p: ResultsReadyPersonalization): {
   // Name lives in the subject only; the opening greeting is name-less.
   const greeting = "היי,";
   const focus = p.focusDomainHe ?? "התחום שהכי חשוב לך";
-  const win = windowClause(p);
   const { mailto, checkoutUrl, resultsUrl } = links(p, g);
 
   const subject = `${name ? `${name}, ` : ""}הניתוח שלך מוכן! (${g.curious} לדעת מה הציון של ${g.partnerNoun}? 👀)`;
@@ -168,22 +147,10 @@ export function renderResultsReadyEmail(p: ResultsReadyPersonalization): {
   const miosheyTrial =
     "אתם יכולים להתחיל עם 7 ימי ניסיון ללא חיוב (צריך להזין אשראי, אבל החיוב יתחיל רק אחרי שבוע, ותקבלו תזכורת אחרי 5 ימים, ואפשר לבטל מתי שרוצים).";
 
-  // Dynamic pricing (from p.pricing, resolved live = the Cardcom charge). Promo
-  // line when there's an active first-month discount, plain regular otherwise.
-  const priceBullet = (label: string, regular: number, first: number | null) =>
-    first != null && first < regular
-      ? `${label}: רק ${first} ₪ לחודש הראשון לשניכם (במקום ${regular} ₪)`
-      : `${label}: ${regular} ₪ לחודש לשניכם`;
-  const hasPromo =
-    (p.pricing.noCoachingFirst != null && p.pricing.noCoachingFirst < p.pricing.noCoachingRegular) ||
-    (p.pricing.withCoachingFirst != null && p.pricing.withCoachingFirst < p.pricing.withCoachingRegular);
-  const offerHead = hasPromo
-    ? `💰 הטבה לחברים חדשים (בתוקף עד ${win}):`
-    : "💰 המסלולים שלנו:";
-  const offerBullets = [
-    priceBullet("מסלול זוגי ללא ליווי", p.pricing.noCoachingRegular, p.pricing.noCoachingFirst),
-    priceBullet("מסלול זוגי עם מומחה צמוד", p.pricing.withCoachingRegular, p.pricing.withCoachingFirst),
-  ];
+  // 2026-07-16: the price/discount/deadline "offer" block was removed — this
+  // email no longer carries the personal-window promo. It stays a clean
+  // "results ready + 7-day trial" letter; the trial CTA below points at the
+  // subscribe page where the live price + trial live.
   // Framing for the trial CTA → the subscription-selection view.
   const subscribeFraming =
     "להצטרפות לשירות, בחרו את המנוי הנוח ביותר לכם, מנוי זוגי כלול לשניכם ללא תוספת.";
@@ -251,8 +218,6 @@ ${p.scores
             ${bullets(gamesBullets)}
             ${P(gamesNewEachMonth)}
             ${P(miosheyTrial)}
-            ${HEAD(offerHead)}
-            ${bullets(offerBullets)}
             ${linkLine("לחצו כאן", mailto, ` כדי לשלוח את האבחון ${g.partnerTo} הזוג ולהשוות תוצאות`)}
             ${P(subscribeFraming)}
             ${linkLine("לחצו כאן", checkoutUrl, " כדי להתחיל את 7 ימי הניסיון שלכם")}
@@ -295,9 +260,6 @@ ${p.scores
     ...gamesBullets.map((b) => `• ${b}`),
     gamesNewEachMonth,
     miosheyTrial,
-    "",
-    offerHead,
-    ...offerBullets.map((b) => `• ${b}`),
     "",
     `לשליחת האבחון ${g.partnerTo} הזוג ולהשוואת תוצאות: ${mailto}`,
     "",

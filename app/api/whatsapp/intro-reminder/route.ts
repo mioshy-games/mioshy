@@ -43,9 +43,22 @@ function authOk(req: Request): boolean {
   return (req.headers.get("authorization") ?? "") === `Bearer ${expected}`;
 }
 
+/**
+ * KILL-SWITCH (2026-07-16): the intro-price-expiry WhatsApp reminder is turned
+ * OFF. It reminded users before their 48h offer window closed, but the window
+ * shrank to 60min and we stopped this reminder. The whole route + rules + Brevo
+ * template are KEPT for reuse in a future campaign — flip this back to `true`
+ * (or wire it to an env flag) to re-enable. While false, the endpoint runs inert
+ * (scans nothing, sends nothing) even if the cron still fires.
+ */
+const INTRO_REMINDER_ENABLED = false;
+
 async function run(req: Request) {
   if (!authOk(req)) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+  }
+  if (!INTRO_REMINDER_ENABLED) {
+    return NextResponse.json({ ok: true, disabled: true, scanned: 0, processed: 0, results: [] });
   }
   const admin = createServiceRoleClient();
   if (!admin) return NextResponse.json({ ok: false, error: "no-admin-client" }, { status: 500 });
