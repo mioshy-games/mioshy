@@ -1140,14 +1140,16 @@ export function AnalysisSummary({
                           : `${cadenceTitle(cad)} plan`}
                       </span>
                       <span className="ar-os-v">
-                        <bdi dir="ltr">{priceStr(baseFull)}</bdi>
+                        {/* No dir=ltr wrapper: in RTL the ₪ falls to the LEFT of
+                            the number, consistent with the big total. */}
+                        {priceStr(baseFull)}
                       </span>
                     </div>
                     <div className={`ar-os-line${coaching ? "" : " muted"}`}>
                       <span>{isHe ? "ייעוץ עם מומחה" : "Expert coaching"}</span>
                       <span className="ar-os-v">
                         {coaching ? (
-                          <bdi dir="ltr">{priceStr(coachCost)}</bdi>
+                          priceStr(coachCost)
                         ) : isHe ? (
                           "לא נבחר"
                         ) : (

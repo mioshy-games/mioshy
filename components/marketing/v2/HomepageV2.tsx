@@ -50,11 +50,9 @@ const Founder = dynamic(
 import { CouplesGames } from "./CouplesGames";
 import { AdultGames } from "./AdultGames";
 import { ForWhom } from "./ForWhom";
-// `Pricing` (./Pricing.tsx) was removed from the homepage per Itzik
-// 2026-05-06. JourneyStages — rewritten as a "mood swiper" — is now
-// the single pricing surface on the homepage. The file is no longer
-// imported anywhere and can be deleted.
-import { JourneyStages } from "./JourneyStages";
+// `Pricing` (./Pricing.tsx) and the JourneyStages "mood swiper" were both
+// removed from the homepage (Itzik 2026-07-16 — the mood-timeline section is
+// gone entirely). JourneyStages.tsx is kept on disk but no longer imported here.
 const ReviewsGrid = dynamic(
   () => import("./ReviewsGrid").then((m) => ({ default: m.ReviewsGrid })),
   { loading: () => null },
@@ -124,17 +122,16 @@ export function HomepageV2() {
             3. ForWhom         — "is this for me" sorter
             4. AdultGames      — bold offering
             5. CouplesGames    — light offering
-            6. JourneyStages   — the three "moods" / pricing pivot
-            7. Founder         — human face behind it
-            8. MediaSlider     — press / social-proof images
-            9. ReviewsGrid     — couples talking
-           10. FAQ             — close objections                         */}
+            6. Founder         — human face behind it
+            7. MediaSlider     — press / social-proof images
+            8. ReviewsGrid     — couples talking
+            9. FAQ             — close objections
+         (the JourneyStages "mood" / pricing section was removed 2026-07-16) */}
       <Hero />
       <Intimacy />
       <ForWhom />
       <AdultGames />
       <CouplesGames />
-      <JourneyStages />
       <Founder />
       {/* 2026-06-09 — MediaSlider ("כתבו עלינו") moved below
           ReviewsGrid per Itzik, so the press logos close the
