@@ -11,6 +11,7 @@ import {
 } from "@/lib/journey/categories";
 import { useCmsText } from "@/hooks/useCmsText";
 import { useTrialOffer } from "@/hooks/useTrialOffer";
+import { OfferPopup } from "@/components/journey/OfferPopup";
 import { PromoExpiryCountdown } from "@/components/journey/PromoExpiryCountdown";
 import { PersonalOfferTimer } from "@/components/journey/PersonalOfferTimer";
 import { ConsultationCallButton } from "@/components/journey/ConsultationCallButton";
@@ -689,6 +690,24 @@ export function AnalysisSummary({
   // (null → no savings line). The expert item is gated on the coaching toggle.
   return (
     <div className="ar-root" dir={isHe ? "rtl" : "ltr"}>
+      {/* Coaching-offer popup — a layer ABOVE the results screen (spec:
+          pull/mioshy-offer-popup-impl.md). Results only (not the subscribe page),
+          non-subscribers, and only while a real personal-window offer is live.
+          Triggered once when the category area scrolls into view; the countdown
+          is the actual offer deadline (offerExpiresAt). */}
+      {!isSubscribe && !journeySubscribed && categoryScores && offerExpiresAt ? (
+        <OfferPopup
+          isHe={isHe}
+          lowestCategoryName={
+            isHe
+              ? CATEGORY_LABELS[categoryScores.lowest_key].he
+              : CATEGORY_LABELS[categoryScores.lowest_key].en
+          }
+          offerExpiresAt={offerExpiresAt}
+          triggerId="ar-catarea"
+          onClaim={() => scrollToPrice({ preventDefault: () => {} })}
+        />
+      ) : null}
       {/* ── HERO ───────────────────────────────────────────────────── */}
       {/* subscribe page: shorter hero, no in-hero logo (the site header/nav
           carries the logo there) and no score graph. Background image stays. */}
@@ -786,7 +805,7 @@ export function AnalysisSummary({
                 (stable sort over the fixed category order — see analysis.ts), so
                 the card never flips between refreshes. The rest come with the
                 full assessment. No "most important" badge (single card). */}
-            <div className="ar-cats">
+            <div className="ar-cats" id="ar-catarea">
               {(() => {
                 const key = categoryScores.lowest_key;
                 const score = categoryScores[key];
