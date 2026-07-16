@@ -682,12 +682,16 @@ export function AnalysisSummary({
             <div className="ar-sublabel">
               {rc(cmsCategoriesLabel, "מה התשובות שלכם מספרות", "What your answers tell")}
             </div>
-            {/* Stage 1: show ONLY the intimacy card (CAT_ORDER[0]) — the short
-                assessment surfaces one domain; the rest come with the full one.
-                No "most important" badge (single card). */}
+            {/* Stage 1: show ONE card — the couple's lowest-scoring domain
+                (categoryScores.lowest_key), so the headline weakness matches the
+                highlighted ("hot") bar. lowest_key is the min among
+                sufficiently-covered categories, with a deterministic tie-break
+                (stable sort over the fixed category order — see analysis.ts), so
+                the card never flips between refreshes. The rest come with the
+                full assessment. No "most important" badge (single card). */}
             <div className="ar-cats">
               {(() => {
-                const key = CAT_ORDER[0];
+                const key = categoryScores.lowest_key;
                 const score = categoryScores[key];
                 const fb = CATEGORY_FEEDBACK[key];
                 const insufficient = insufficientKeys.includes(key);
