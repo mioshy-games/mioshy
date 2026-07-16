@@ -270,7 +270,22 @@ async function handle(req: Request): Promise<NextResponse<Summary>> {
       continue;
     }
 
-    const t0 = new Date(offerExpiresAt.getTime() - 2 * DAY); // short completion
+    // t0 = short-completion time. The journey_analysis row is inserted at
+    // completion, so its earliest computed_at is the reliable completion time —
+    // window-INDEPENDENT (2026-07-16). Previously t0 = offer_expires_at − 48h,
+    // which assumed a 48h window; that breaks once the window is 60min (t0 would
+    // land ~47h before real completion → wrong launch-cutoff + due times). Fall
+    // back to the old derivation only if no analysis row exists.
+    const { data: firstAnalysis } = await admin
+      .from("journey_analysis")
+      .select("computed_at")
+      .eq("user_id", userId)
+      .order("computed_at", { ascending: true })
+      .limit(1)
+      .maybeSingle<{ computed_at: string }>();
+    const t0 = firstAnalysis?.computed_at
+      ? new Date(firstAnalysis.computed_at)
+      : new Date(offerExpiresAt.getTime() - 2 * DAY);
     // Edge rule — launch cutoff: only assessments completed at/after activation.
     if (activationTs === null || t0.getTime() < activationTs) {
       if (onlyUserId) plan.push({ user_id: userId, email: emailAddr, decision: "skip_before_activation" });
