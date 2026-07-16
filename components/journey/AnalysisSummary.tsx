@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowLeft, ArrowRight } from "lucide-react";
 import type { Analysis, Locale } from "@/lib/journey/types";
 import {
   CATEGORY_FEEDBACK,
@@ -162,7 +161,6 @@ export function AnalysisSummary({
 }: AnalysisSummaryProps) {
   const isHe = locale === "he";
   const isSubscribe = mode === "subscribe";
-  const Arrow = isHe ? ArrowLeft : ArrowRight;
 
   // offerWindowLabel (Task 21 + Task 26 #2) is defined further down, after the
   // monthly promo/regular prices are resolved — the bonus copy needs them.
@@ -1317,11 +1315,10 @@ export function AnalysisSummary({
                     ? ctaLoadingLabel
                     : isHe ? "רגע…" : "One sec…"
                   : trial.enabled
-                    ? trial.ctaLabel
+                    ? (isHe ? "מחזירים את התשוקה עכשיו" : "Bring back the passion now")
                     : ctaLabelCms && ctaLabelCms.trim().length > 0
                       ? ctaLabelCms
                       : isHe ? "להצטרפות עכשיו" : "Join now"}
-                {!checkoutBusy ? <Arrow className="ar-cta-arrow" aria-hidden /> : null}
               </button>
               {checkoutError ? (
                 <p className="ar-checkout-error" role="alert">
@@ -1331,8 +1328,8 @@ export function AnalysisSummary({
               <div className="ar-stop">
                 {rc(
                   cmsStopNote,
-                  "עוברים לעמוד התשלום להזנת פרטי אשראי. החיוב מתבצע רק בתום 7 הימים, ובעוד 5 ימים נזכיר לכם לפני החיוב.",
-                  "You'll go to the payment page to enter your card details. The charge only happens after the 7 days, and in 5 days we'll remind you before it.",
+                  "מעבר לתשלום · חיוב בתום 7 ימים · תזכורת לפני החיוב",
+                  "Proceed to payment · charged at the end of 7 days · reminder before the charge",
                 )}
               </div>
               </div>{/* /.ar-col-sum */}
@@ -2513,7 +2510,6 @@ export function AnalysisSummary({
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 8px;
           width: 100%;
           text-align: center;
           border: 0;
@@ -2533,10 +2529,6 @@ export function AnalysisSummary({
           opacity: 0.6;
           cursor: default;
         }
-        .ar-cta-arrow {
-          width: 18px;
-          height: 18px;
-        }
         .ar-checkout-error {
           margin-top: 10px;
           text-align: center;
@@ -2549,7 +2541,8 @@ export function AnalysisSummary({
         }
         .ar-stop {
           text-align: center;
-          font-size: 20px;
+          font-size: 15px;
+          font-weight: 500;
           color: #000000;
           margin-top: 12px;
         }
