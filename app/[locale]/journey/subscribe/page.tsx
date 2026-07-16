@@ -30,8 +30,10 @@ export const metadata = {
  */
 export default async function JourneySubscribePage({
   params,
+  searchParams,
 }: {
   params: { locale: string };
+  searchParams: { [key: string]: string | string[] | undefined };
 }) {
   const { locale } = params;
   if (!routing.locales.includes(locale as (typeof routing.locales)[number])) {
@@ -58,6 +60,13 @@ export default async function JourneySubscribePage({
   // subscribe mode hides every other score surface — so no assessment data is
   // needed here. Pass analysis=null (no scores fetch).
 
+  // Post-signup continuation (e.g. a session that lapsed mid-select): restore the
+  // picked plan and auto-continue to checkout. user is always present here.
+  const initialCadence =
+    typeof searchParams.cadence === "string" ? searchParams.cadence : undefined;
+  const initialCoaching = searchParams.coaching === "1";
+  const autoCheckout = searchParams.pay === "1";
+
   return (
     <AnalysisSummary
       mode="subscribe"
@@ -68,6 +77,11 @@ export default async function JourneySubscribePage({
       activePromo={pricing.activePromo}
       offerExpiresAt={pricing.offerExpiresAt}
       promoMode={pricing.promoMode}
+      personalWindowDisplay="clock"
+      initialCadence={initialCadence}
+      initialCoaching={initialCoaching}
+      autoCheckout={autoCheckout}
+      authenticated={true}
     />
   );
 }
