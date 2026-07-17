@@ -10,6 +10,7 @@ import {
   BAND_LABEL,
 } from "@/lib/journey/categories";
 import { metaTrack } from "@/lib/analytics/meta-pixel";
+import { track } from "@/lib/analytics";
 import { useCmsText } from "@/hooks/useCmsText";
 import { useTrialOffer } from "@/hooks/useTrialOffer";
 import { OfferPopup } from "@/components/journey/OfferPopup";
@@ -1432,22 +1433,35 @@ export function AnalysisSummary({
                 );
               })() : null}
 
-              <button
-                type="button"
-                className="ar-cta"
-                onClick={startCheckout}
-                disabled={checkoutBusy}
-              >
-                {checkoutBusy
-                  ? ctaLoadingLabel && ctaLoadingLabel.trim().length > 0
-                    ? ctaLoadingLabel
-                    : isHe ? "רגע…" : "One sec…"
-                  : trial.enabled
-                    ? (isHe ? "מחזירים את התשוקה עכשיו" : "Bring back the passion now")
-                    : ctaLabelCms && ctaLabelCms.trim().length > 0
-                      ? ctaLabelCms
-                      : isHe ? "להצטרפות עכשיו" : "Join now"}
-              </button>
+              {(() => {
+                // The actual label shown on the CTA when idle — reused for both
+                // the button text and the analytics `label` so they always match.
+                const subscribeCtaLabel = trial.enabled
+                  ? (isHe ? "מחזירים את התשוקה עכשיו" : "Bring back the passion now")
+                  : ctaLabelCms && ctaLabelCms.trim().length > 0
+                    ? ctaLabelCms
+                    : isHe ? "להצטרפות עכשיו" : "Join now";
+                return (
+                  <button
+                    type="button"
+                    className="ar-cta"
+                    onClick={() => {
+                      // Generic click event (separate from the InitiateCheckout
+                      // that startCheckout fires on the real Cardcom redirect) —
+                      // feeds the CTA-clicks admin dashboard. Fire-and-forget.
+                      track("click", { target: "subscribe_cta", label: subscribeCtaLabel });
+                      void startCheckout();
+                    }}
+                    disabled={checkoutBusy}
+                  >
+                    {checkoutBusy
+                      ? ctaLoadingLabel && ctaLoadingLabel.trim().length > 0
+                        ? ctaLoadingLabel
+                        : isHe ? "רגע…" : "One sec…"
+                      : subscribeCtaLabel}
+                  </button>
+                );
+              })()}
               {checkoutError ? (
                 <p className="ar-checkout-error" role="alert">
                   {checkoutError}

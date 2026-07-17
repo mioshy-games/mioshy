@@ -33,6 +33,7 @@ import {
   Inbox,
   MessagesSquare,
   MessageCircle,
+  MousePointerClick,
   TrendingDown,
   UsersRound,
   Send,
@@ -223,6 +224,8 @@ const NAV: NavItem[] = [
       // like /admin/content); WhatsApp is the read-only campaign dashboard.
       { kind: "leaf", href: "/admin/email-sequences", labelKey: "nav.email_analytics", icon: Mail, adminOnly: true },
       { kind: "leaf", href: "/dashboard/whatsapp", labelKey: "nav.whatsapp_analytics", icon: MessageCircle, adminOnly: true },
+      // CTA-click tracking — clicks on tracked call-to-action buttons/links.
+      { kind: "leaf", href: "/dashboard/cta-clicks", labelKey: "nav.cta_clicks", icon: MousePointerClick, adminOnly: true },
     ],
   },
 
