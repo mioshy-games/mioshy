@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@/navigation";
+import { track } from "@/lib/analytics";
 import styles from "./survey.module.css";
 import { PollRegister } from "./PollRegister";
 import { PersonalOfferTimer } from "@/components/journey/PersonalOfferTimer";
@@ -272,12 +273,29 @@ export function SurveyFlow({ embedded = false, authed: authedProp = false, back,
             {!authed && (
               <>
                 <div className={styles.ctaLead}>קבלו הודעה על הסקר הבא</div>
-                <button type="button" className={`${styles.cta} ${styles.amber}`} style={{ fontSize: 20, marginTop: 10 }} onClick={() => setShowRegister(true)}>
+                <button
+                  type="button"
+                  className={`${styles.cta} ${styles.amber}`}
+                  style={{ fontSize: 20, marginTop: 10 }}
+                  onClick={() => {
+                    track("click", { target: "survey_daily_cta", label: "רוצים שאלה כזו כל יום?" });
+                    setShowRegister(true);
+                  }}
+                >
                   רוצים שאלה כזו כל יום?
                 </button>
                 {/* Text link (not a button) → the full paid assessment. Locale
                     auto-prefixed by next-intl <Link> (/he → /he/journey/...). */}
-                <Link href="/journey/assessment" className={styles.diagLink}>
+                <Link
+                  href="/journey/assessment"
+                  className={styles.diagLink}
+                  onClick={() =>
+                    track("click", {
+                      target: "survey_assessment_link",
+                      label: "גלו איפה הזוגיות שלכם עומדת, באבחון קצר ←",
+                    })
+                  }
+                >
                   גלו איפה הזוגיות שלכם עומדת, באבחון קצר ←
                 </Link>
               </>
