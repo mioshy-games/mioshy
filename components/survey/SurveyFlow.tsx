@@ -278,7 +278,7 @@ export function SurveyFlow({ embedded = false, authed: authedProp = false, back,
                 {/* Text link (not a button) → the full paid assessment. Locale
                     auto-prefixed by next-intl <Link> (/he → /he/journey/...). */}
                 <Link href="/journey/assessment" className={styles.diagLink}>
-                  לאבחון הזוגיות המלא וקבלת תוצאות מיד ←
+                  גלו איפה הזוגיות שלכם עומדת, באבחון קצר ←
                 </Link>
               </>
             )}
