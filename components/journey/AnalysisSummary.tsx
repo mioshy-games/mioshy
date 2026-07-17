@@ -288,6 +288,10 @@ export function AnalysisSummary({
   const cmsSubEyebrow = useCmsText(`${RK}.subEyebrow`).text;
   const cmsSubH1 = useCmsText(`${RK}.subH1`).text;
   const cmsSubFraming = useCmsText(`${RK}.subFraming`).text;
+  // Locked-teaser CTA copy (below the second-weakest category card) — CMS-editable
+  // like the keys above; literal fallback via rc() until/unless seeded.
+  const cmsTeaserMsg = useCmsText(`${RK}.teaserMsg`).text;
+  const cmsCatsMoreLink = useCmsText(`${RK}.catsMoreLink`).text;
   const rc = (raw: string, he: string, en: string) =>
     raw && raw.trim().length > 0 && !raw.startsWith(`${RK}.`)
       ? raw
@@ -819,21 +823,14 @@ export function AnalysisSummary({
               })()}
               <div className="ar-teaser-cta">
                 <p className="ar-teaser-msg">
-                  {isHe ? (
-                    <>
-                      באבחון המלא תקבלו <b>תמונה עשירה ומדוייקת הרבה יותר</b>.
-                    </>
-                  ) : (
-                    <>
-                      The full assessment gives you a{" "}
-                      <b>far richer, more accurate picture</b>.
-                    </>
+                  {rc(
+                    cmsTeaserMsg,
+                    "רוצים לגלות את הפרטים המלאים - איך לשפר את הזוגיות ולהחזיר לה את התשוקה והכיף?",
+                    "Want to discover the full details - how to improve your relationship and bring back the passion and fun?",
                   )}
                 </p>
                 <a href="#ar-price" className="ar-cats-more-link" onClick={scrollToPrice}>
-                  {isHe
-                    ? "לתוצאות מדוייקות ולאבחון המלא"
-                    : "For accurate results and the full assessment"}
+                  {rc(cmsCatsMoreLink, "להצטרפות לליווי", "Join the coaching")}
                 </a>
               </div>
             </div>
