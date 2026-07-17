@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { SurveyFlow } from "./SurveyFlow";
+import { AssessmentInvitePopup } from "./AssessmentInvitePopup";
 
 type View = "landing" | "question" | "history";
 
@@ -26,7 +27,19 @@ interface HistItem {
  *                no join CTA (§ already in), floating back → landing
  *   • history  — read-only look back: answered questions + choice + § percentages
  */
-export function PollDashboardLanding({ initialSubscribed, userName }: { initialSubscribed: boolean; userName?: string | null }) {
+export function PollDashboardLanding({
+  initialSubscribed,
+  userName,
+  locale = "he",
+  hasShortAssessment = false,
+}: {
+  initialSubscribed: boolean;
+  userName?: string | null;
+  locale?: string;
+  /** Server-resolved: user already completed the short assessment → suppress the
+   *  post-signup assessment-invite popup. */
+  hasShortAssessment?: boolean;
+}) {
   const [view, setView] = useState<View>("landing");
   const [subscribed, setSubscribed] = useState(initialSubscribed);
   const [busy, setBusy] = useState(false);
@@ -102,6 +115,9 @@ export function PollDashboardLanding({ initialSubscribed, userName }: { initialS
   // ── Landing (default). Dark ink on the light survey canvas (page.tsx).
   return (
     <div dir="rtl" className="mx-auto max-w-lg px-5 py-10 text-center text-[#2a2130]" style={{ fontFamily: "var(--font-assistant), sans-serif" }}>
+      {/* Post-signup invite to the short assessment — shows once, only for users
+          who haven't done it yet. A layer above the landing. */}
+      <AssessmentInvitePopup locale={locale} hasShortAssessment={hasShortAssessment} />
       <div
         className="mx-auto mb-6 grid h-[76px] w-[76px] place-items-center rounded-full text-4xl font-extrabold text-white"
         style={{ background: "linear-gradient(95deg, #6C5CE7 0%, #D6409F 52%, #F79154 100%)", boxShadow: "0 16px 30px -14px rgba(214,64,159,.6)" }}
