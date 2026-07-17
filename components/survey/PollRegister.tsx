@@ -10,6 +10,7 @@ import {
   verifySurveyLoginOtp,
 } from "@/app/actions/otp-survey";
 import { saveSignupPhone } from "@/app/actions/otp-auth";
+import { track } from "@/lib/analytics";
 
 /**
  * Join the daily poll (§6) — passwordless Email OTP via the shared OtpFlow with
@@ -20,6 +21,9 @@ import { saveSignupPhone } from "@/app/actions/otp-auth";
 export function PollRegister({ consent, locale = "he" }: { consent: OtpConsentCopy; locale?: string }) {
   const fireBrowserLead = (email: string) => {
     if (typeof window === "undefined") return;
+    // Generic click event for the "שלחו לי קוד" (send-code) button → CTA-clicks
+    // dashboard. Fires on the signup send-code action (onBeforeSendSignup).
+    track("click", { target: "survey_send_code", label: "שלחו לי קוד" });
     const fbq = (window as unknown as { fbq?: (...a: unknown[]) => void }).fbq;
     if (fbq) fbq("track", "Lead", { content_name: "survey_join_form" }, { eventID: metaEventId.lead(email) });
   };

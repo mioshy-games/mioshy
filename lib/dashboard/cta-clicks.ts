@@ -33,6 +33,8 @@ export interface CtaTarget {
 export const CTA_TARGETS: readonly CtaTarget[] = [
   { target: "survey_daily_cta", labelHe: "סקר — הרשמה לשאלה יומית", labelEn: "Survey — daily-question signup" },
   { target: "survey_assessment_link", labelHe: "סקר — קישור לאבחון המלא", labelEn: "Survey — full-assessment link" },
+  { target: "survey_send_code", labelHe: "סקר — כפתור 'שלחו לי קוד' (OTP)", labelEn: "Survey — 'send code' (OTP)" },
+  { target: "survey_assessment_popup_cta", labelHe: "פופאפ סקר — 'לאבחון עכשיו'", labelEn: "Survey popup — 'take the assessment'" },
   { target: "subscribe_cta", labelHe: "תוצאות — כפתור מנוי/תשלום", labelEn: "Results — subscribe/checkout button" },
 ] as const;
 

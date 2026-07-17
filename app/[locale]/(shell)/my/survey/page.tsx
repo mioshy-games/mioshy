@@ -28,13 +28,22 @@ export default async function MySurveyPage({ params }: { params: { locale: strin
   const shell = await getShellData({ locale: isHe ? "he" : "en" });
 
   const admin = await createAdminClient();
-  const [{ data: sub }, { data: profile }] = await Promise.all([
+  const [{ data: sub }, { data: profile }, { data: journeyRows }] = await Promise.all([
     admin.from("poll_subscriptions").select("subscribed").eq("user_id", auth.user.id).maybeSingle(),
     admin.from("profiles").select("full_name").eq("id", auth.user.id).maybeSingle(),
+    // Has the user already done the short assessment? Any journey past the
+    // assessment (paywall / complete / completed) suppresses the invite popup.
+    admin
+      .from("journeys")
+      .select("status")
+      .eq("user_id", auth.user.id)
+      .in("status", ["paywall", "complete", "completed"])
+      .limit(1),
   ]);
   const subscribed = sub?.subscribed ?? false;
   // First name only for a friendlier invite ("דנה מזמינה אותך…").
   const userName = (profile?.full_name ?? "").trim().split(/\s+/)[0] || null;
+  const hasShortAssessment = (journeyRows?.length ?? 0) > 0;
 
   return (
     <>
@@ -53,7 +62,12 @@ export default async function MySurveyPage({ params }: { params: { locale: strin
             "radial-gradient(900px 500px at 50% -8%, rgba(236, 72, 153, 0.06), transparent 60%), #fffdfc",
         }}
       >
-        <PollDashboardLanding initialSubscribed={subscribed} userName={userName} />
+        <PollDashboardLanding
+          initialSubscribed={subscribed}
+          userName={userName}
+          locale={locale}
+          hasShortAssessment={hasShortAssessment}
+        />
       </div>
     </>
   );
