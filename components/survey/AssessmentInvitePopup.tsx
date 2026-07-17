@@ -20,11 +20,17 @@
  * fallbacks so the /en locale never shows Hebrew.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { track } from "@/lib/analytics";
 import { CATEGORY_DISPLAY_ORDER, CATEGORY_LABELS } from "@/lib/journey/categories";
 
 const SEEN_KEY = "mioshy_survey_assessment_popup_seen_v1";
+
+// Confetti particle — same shape as OfferPopup's burst.
+interface Confetto {
+  x: number; y: number; vx: number; vy: number; g: number;
+  s: number; c: string; r: number; vr: number; life: number;
+}
 
 export function AssessmentInvitePopup({
   locale,
@@ -37,6 +43,7 @@ export function AssessmentInvitePopup({
 }) {
   const isHe = locale === "he";
   const [open, setOpen] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   // Show once, on arrival — unless already seen or the user already did the
   // short assessment.
@@ -49,6 +56,58 @@ export function AssessmentInvitePopup({
     const id = window.setTimeout(() => setOpen(true), 450);
     return () => window.clearTimeout(id);
   }, [hasShortAssessment]);
+
+  // ── Confetti burst on open ── same mechanism as OfferPopup (canvas + brand
+  //    colours, fires once when the popup opens).
+  useEffect(() => {
+    if (!open) return;
+    const cv = canvasRef.current;
+    const cx = cv?.getContext("2d");
+    if (!cv || !cx) return;
+    const size = () => {
+      cv.width = window.innerWidth;
+      cv.height = window.innerHeight;
+    };
+    size();
+    const cols = ["#F43F5E", "#EC4899", "#A855F7", "#FCCA65", "#ffffff"];
+    let parts: Confetto[] = [];
+    for (let i = 0; i < 140; i++) {
+      parts.push({
+        x: window.innerWidth / 2,
+        y: window.innerHeight * 0.32,
+        vx: (Math.random() - 0.5) * 11,
+        vy: Math.random() * -11 - 3,
+        g: 0.28,
+        s: 6 + Math.random() * 6,
+        c: cols[i % cols.length],
+        r: Math.random() * 6,
+        vr: (Math.random() - 0.5) * 0.4,
+        life: 120,
+      });
+    }
+    let raf = 0;
+    const loop = () => {
+      cx.clearRect(0, 0, cv.width, cv.height);
+      for (const p of parts) {
+        p.vy += p.g; p.x += p.vx; p.y += p.vy; p.r += p.vr; p.life -= 1;
+        cx.save();
+        cx.translate(p.x, p.y);
+        cx.rotate(p.r);
+        cx.fillStyle = p.c;
+        cx.fillRect(-p.s / 2, -p.s / 2, p.s, p.s * 0.6);
+        cx.restore();
+      }
+      parts = parts.filter((p) => p.life > 0 && p.y < cv.height + 20);
+      if (parts.length) raf = window.requestAnimationFrame(loop);
+    };
+    loop();
+    const onResize = () => size();
+    window.addEventListener("resize", onResize);
+    return () => {
+      window.cancelAnimationFrame(raf);
+      window.removeEventListener("resize", onResize);
+    };
+  }, [open]);
 
   // Escape to close.
   useEffect(() => {
@@ -74,6 +133,7 @@ export function AssessmentInvitePopup({
 
   return (
     <>
+      <canvas ref={canvasRef} className="aip-confetti" aria-hidden />
       {/* One shared gradient def for every checkmark stroke (no bg / no circle). */}
       <svg width="0" height="0" aria-hidden style={{ position: "absolute" }}>
         <defs>
@@ -139,6 +199,9 @@ export function AssessmentInvitePopup({
       </div>
 
       <style jsx>{`
+        /* Confetti canvas sits above the overlay (z 1000), pointer-events off —
+           same treatment as OfferPopup's .op-confetti. */
+        .aip-confetti { position: fixed; inset: 0; pointer-events: none; z-index: 1001; }
         .aip-overlay {
           position: fixed; inset: 0; background: rgba(20, 8, 16, 0.55);
           -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
