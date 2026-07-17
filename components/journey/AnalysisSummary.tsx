@@ -9,6 +9,7 @@ import {
   categoryBand,
   BAND_LABEL,
 } from "@/lib/journey/categories";
+import { metaTrack } from "@/lib/analytics/meta-pixel";
 import { useCmsText } from "@/hooks/useCmsText";
 import { useTrialOffer } from "@/hooks/useTrialOffer";
 import { OfferPopup } from "@/components/journey/OfferPopup";
@@ -461,6 +462,55 @@ export function AnalysisSummary({
         if (typeof window !== "undefined") {
           window.sessionStorage.removeItem("ar_autopay_attempts");
         }
+
+        // Meta InitiateCheckout — mid-funnel "buyer-intent" event, fired the
+        // moment checkout actually proceeds to Cardcom (the results path fired
+        // NOTHING here before). Dual-fire deduped by a fresh per-click uuid:
+        //   • Pixel  → metaTrack (DNT-gated by MetaPixelProvider, exactly like
+        //              every other InitiateCheckout in the app; fbq beacons
+        //              survive the navigation below).
+        //   • CAPI   → /api/analytics/initiate-checkout with keepalive:true so
+        //              the request outlives window.location.href; email/id are
+        //              hashed server-side (no raw PII leaves the browser).
+        // Fire-and-forget: guarded by `checkoutBusy` re-entry + the immediate
+        // navigation, so it fires once per click. Never blocks the redirect.
+        try {
+          const icEventId =
+            typeof crypto !== "undefined" && crypto.randomUUID
+              ? crypto.randomUUID()
+              : `ic-${checkoutPlan}-${data.redirect_url}`;
+          const icValue = selectedOption ? amtOf(selectedOption) : 0;
+          const icContentName = `${checkoutPlan}${coaching ? "+coaching" : ""}`;
+          metaTrack(
+            "InitiateCheckout",
+            {
+              value: icValue,
+              currency: "ILS",
+              content_name: icContentName,
+              content_category: "journey",
+              num_items: 1,
+            },
+            icEventId,
+          );
+          if (typeof fetch !== "undefined") {
+            void fetch("/api/analytics/initiate-checkout", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              keepalive: true,
+              body: JSON.stringify({
+                eventId: icEventId,
+                value: icValue,
+                currency: "ILS",
+                contentName: icContentName,
+                eventSourceUrl:
+                  typeof window !== "undefined" ? window.location.href : null,
+              }),
+            }).catch(() => {});
+          }
+        } catch {
+          // Analytics must never break checkout.
+        }
+
         window.location.href = data.redirect_url;
         return;
       }

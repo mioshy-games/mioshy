@@ -266,6 +266,45 @@ export async function fireCompleteRegistrationCapi(args: {
 }
 
 /**
+ * InitiateCheckout (CAPI) — fired when a user clicks the results-page checkout
+ * CTA. Deduped with the browser Pixel InitiateCheckout via the shared `eventId`
+ * (a per-click uuid). Mirrors fireCompleteRegistrationCapi: hashed match signals
+ * only (no raw PII leaves the server), 3s-bounded, never throws. `value` +
+ * `currency` + `content_name` mirror the Pixel params so the deduped event is
+ * consistent.
+ */
+export async function fireInitiateCheckoutCapi(args: {
+  /** Shared per-click uuid — same value as the browser Pixel call. */
+  eventId: string;
+  userId?: string | null;
+  email?: string | null;
+  value: number;
+  currency: string;
+  /** e.g. "monthly+coaching". */
+  contentName: string;
+  /** The page the user clicked from (sanitized before send). */
+  eventSourceUrl?: string | null;
+}): Promise<void> {
+  await sendMetaCapiEvent({
+    eventName: "InitiateCheckout",
+    eventId: args.eventId,
+    eventSourceUrl: sanitizeMetaUrl(args.eventSourceUrl ?? null),
+    userData: {
+      email: args.email ?? null,
+      externalId: args.userId ?? null,
+      ...readMetaRequestContext(),
+    },
+    customData: {
+      value: args.value,
+      currency: args.currency,
+      content_name: args.contentName,
+      content_category: "journey",
+      num_items: 1,
+    },
+  });
+}
+
+/**
  * "Submit form" Lead — fired when the survey join form is submitted (before the
  * account exists), deduped with the browser Pixel Lead via the shared eventId.
  * Separate from CompleteRegistration (which fires on a SUCCESSFUL register).
