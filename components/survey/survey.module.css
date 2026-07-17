@@ -163,6 +163,13 @@
 }
 .cta.amber { background: var(--grad2); color: #fff; box-shadow: 0 14px 28px -14px rgba(214, 64, 159, 0.5); }
 .cta.amber:hover { filter: brightness(1.05); transform: translateY(-1px); }
+/* Subtle text link under the amber CTA → full journey assessment (anon only). */
+.diagLink {
+  display: block; text-align: center; margin-top: 14px;
+  color: var(--maroon); font-size: 15px; font-weight: 600;
+  text-decoration: underline; text-underline-offset: 3px;
+}
+.diagLink:hover { filter: brightness(1.08); }
 /* Brand gradient CTA — white text for contrast. */
 .cta.grad { background: var(--grad2); color: #fff; box-shadow: 0 14px 28px -14px rgba(214, 64, 159, 0.5); }
 .cta.grad:hover { filter: brightness(1.05); transform: translateY(-1px); }

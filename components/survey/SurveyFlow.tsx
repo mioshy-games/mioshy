@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "@/navigation";
 import styles from "./survey.module.css";
 import { PollRegister } from "./PollRegister";
 import { PersonalOfferTimer } from "@/components/journey/PersonalOfferTimer";
@@ -274,6 +275,11 @@ export function SurveyFlow({ embedded = false, authed: authedProp = false, back,
                 <button type="button" className={`${styles.cta} ${styles.amber}`} style={{ fontSize: 20, marginTop: 10 }} onClick={() => setShowRegister(true)}>
                   רוצים שאלה כזו כל יום?
                 </button>
+                {/* Text link (not a button) → the full paid assessment. Locale
+                    auto-prefixed by next-intl <Link> (/he → /he/journey/...). */}
+                <Link href="/journey/assessment" className={styles.diagLink}>
+                  לאבחון הזוגיות המלא וקבלת תוצאות מיד ←
+                </Link>
               </>
             )}
             {/* Share (§ invite) — WhatsApp + copy-link with "הועתק" feedback. */}
