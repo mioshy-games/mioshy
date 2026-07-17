@@ -1,18 +1,21 @@
 "use client";
 
 /**
- * GlobalAssessmentOffer — hosts three of the five quick-assessment touch points
- * (Itzik 2026-06-18): "right after login" (first authenticated load of the
- * session), "return after 24h", and "2 minutes of browsing". The in-game
- * (round 6) and exit-intent touch points live in TruthOrDareClient. Mounted
- * once in the root layout.
+ * GlobalAssessmentOffer — hosts two of the quick-assessment touch points:
+ * "return after 24h" and "2 minutes of browsing". The in-game (round 6) and
+ * exit-intent touch points live in TruthOrDareClient. Mounted once in the root
+ * layout.
  *
- * Global ceiling: ONE offer per session across all five triggers (shared flag).
+ * The "right after login" trigger was REMOVED (2026-07-17): after a survey login
+ * it stacked on top of the /my/survey assessment-invite popup. return-24h and
+ * 2-min-browse don't stack and stay active.
+ *
+ * Global ceiling: ONE offer per session across all triggers (shared flag).
  * First-eligible-wins; when several are eligible at once the priority is
- * exit-intent > after-login > return-24h > spin-6 > 2-min-browse. Here the
- * immediate pass resolves login > return-24h; the 2-min-browse timer only fires
- * if nothing claimed the ceiling first. Never if assessment done / journey
- * owned; dismissal sticks for the session.
+ * exit-intent > return-24h > spin-6 > 2-min-browse. Here the immediate pass
+ * resolves return-24h; the 2-min-browse timer only fires if nothing claimed the
+ * ceiling first. Never if assessment done / journey owned; dismissal sticks for
+ * the session.
  */
 
 import { useEffect, useState } from "react";
@@ -37,7 +40,7 @@ import {
 
 // Surfaces where the offer must never pop (noise): the assessment itself, the
 // billing flow, auth, and the admin dashboard. (Adults/sex are excluded for
-// 2-min-browse ONLY, via isAdultsPath — login/return may still show there.)
+// 2-min-browse ONLY, via isAdultsPath — return-24h may still show there.)
 //
 // Task 26 (Itzik 2026-07-03): "/billing" was the P0 leak. Post-payment the
 // buyer lands on /billing/success, which polls for the webhook. In that window
@@ -81,9 +84,10 @@ export function GlobalAssessmentOffer({ locale }: { locale: "he" | "en" }) {
         const elig = await fetchEligibility();
         if (cancelled || shouldSuppress(elig)) return; // done / owns journey → never
 
-        // Immediate pass (priority login > return-24h). Skipped on blocked paths.
+        // Immediate pass (return-24h). Skipped on blocked paths. The "login"
+        // trigger was removed — it stacked on top of the /my/survey popup after
+        // a survey login; return-24h + browse2min don't stack and stay active.
         if (!onBlocked(window.location.pathname)) {
-          if (elig.loggedIn) return void (await show("login"));
           if (returning) return void (await show("return24h"));
         }
 
