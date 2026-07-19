@@ -6,10 +6,8 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { cn } from "@/lib/utils";
-import {
-  GoogleTagManager,
-  GoogleTagManagerNoscript,
-} from "@/components/analytics/GoogleTagManager";
+import { GoogleTagManager } from "@next/third-parties/google";
+import { GtmConsentDefault, GTM_ID } from "@/components/analytics/GoogleTagManager";
 import { PostHogProvider } from "@/components/analytics/PostHogProvider";
 import { FirstPartyPageView } from "@/components/analytics/FirstPartyPageView";
 import { GtmSpaPageView } from "@/components/analytics/GtmSpaPageView";
@@ -233,10 +231,18 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         ) : null}
         <meta name="theme-color" content="#1a0a2e" />
         <meta name="format-detection" content="telephone=no" />
-        <GoogleTagManager />
       </head>
       <body className="min-h-[100dvh] antialiased">
-        <GoogleTagManagerNoscript />
+        {/* Consent Mode v2 default (denied) — beforeInteractive, so it runs
+            BEFORE the GTM loader (Next hoists beforeInteractive regardless of
+            position). Then GTM loads immediately on every page, no interaction
+            /consent gate. @next/third-parties renders the loader script +
+            <noscript>, creating window.dataLayer + window.google_tag_manager
+            ['GTM-5WQQB3R'] on load. Prod-only, to keep the dev console clean. */}
+        <GtmConsentDefault />
+        {process.env.NODE_ENV === "production" && (
+          <GoogleTagManager gtmId={GTM_ID} />
+        )}
         {/* PostHog (product analytics + heatmaps + masked session replay).
             Prod-only, idle-deferred, EU region via the /ingest proxy. The
             provider also tracks App-Router pageviews. See PostHogProvider.tsx
