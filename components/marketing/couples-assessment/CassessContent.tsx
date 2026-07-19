@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { Link } from "@/navigation";
 import { useCmsText } from "@/hooks/useCmsText";
+import { MaybeRichText } from "@/components/cms/MaybeRichText";
 import { AssessmentHeroChart } from "./AssessmentHeroChart";
 import type { Locale } from "@/lib/journey/types";
 import { CATEGORY_LABELS } from "@/lib/journey/categories";
@@ -143,7 +144,12 @@ export function CassessContent({
           <div className="circ" aria-hidden />
           <div className="lead">{rc(c.whatLead, "איפה הזוגיות שלכם חזקה ואיפה כדאי לשפר?", "Where is your relationship strong, and where to improve?")}</div>
           <h2 className="sh">{rc(c.whatH2, "תמונת מצב אישית של הזוגיות שלכם", "A personal picture of your relationship")}</h2>
-          <p className="body-p">{rc(c.whatBody, "תוך 3 דקות תקבלו ניתוח אישי המראה היכן הקשר חזק, איפה נוצר פער, ואיפה נמצא הפוטנציאל הגדול ביותר לשינוי. בלי ניחושים - תמונת מצב אמיתית של הזוגיות שלכם.", "In 3 minutes you get a personal analysis showing where the bond is strong, where a gap formed, and where the biggest potential for change is. No guessing, a real picture of your relationship.")}</p>
+          {/* `.what.body` can carry admin-typed rich markup (e.g. <br /> for
+              paragraph breaks). Render via MaybeRichText so those tags become
+              real line breaks instead of literal text; it degrades to a plain
+              text node when the value has no markup (the EN copy / inline
+              fallback). Mirrors the useCmsText markup safety-net. */}
+          <MaybeRichText as="p" className="body-p" value={rc(c.whatBody, "תוך 3 דקות תקבלו ניתוח אישי המראה היכן הקשר חזק, איפה נוצר פער, ואיפה נמצא הפוטנציאל הגדול ביותר לשינוי. בלי ניחושים - תמונת מצב אמיתית של הזוגיות שלכם.", "In 3 minutes you get a personal analysis showing where the bond is strong, where a gap formed, and where the biggest potential for change is. No guessing, a real picture of your relationship.")} />
         </div>
       </section>
 

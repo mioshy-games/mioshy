@@ -83,6 +83,7 @@ export function GlobalAssessmentOffer({ locale }: { locale: "he" | "en" }) {
         if (wasOfferShownThisSession()) return;
         const elig = await fetchEligibility();
         if (cancelled || shouldSuppress(elig)) return; // done / owns journey → never
+        if (elig.loggedIn) return; // anonymous-only: never offer to signed-in users
 
         // Immediate pass (return-24h). Skipped on blocked paths. The "login"
         // trigger was removed — it stacked on top of the /my/survey popup after

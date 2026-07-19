@@ -12,6 +12,11 @@
 html {
   /* 16 px floor so all rem values start from a safe base */
   font-size: 16px;
+  /* Reserve the vertical scrollbar's gutter at all times so pages that
+     toggle between scrolling / not-scrolling (or overlays that lock the
+     body) don't shift horizontally. Fixes the Chrome horizontal
+     scrollbar-jump. */
+  scrollbar-gutter: stable;
 }
 
 body {
