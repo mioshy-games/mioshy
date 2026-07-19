@@ -1,15 +1,7 @@
 "use client";
 
-// Markdown editor styles are imported here (only with the editor component)
-// instead of in app/globals.css so they don't ship in every page bundle —
-// they were the dominant contributor to the unused-css-rules audit failure
-// (~37 KB of editor styles loaded on every public page).
-import "@uiw/react-md-editor/markdown-editor.css";
-import "@uiw/react-markdown-preview/markdown.css";
-
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import dynamic from "next/dynamic";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FormProvider, useForm, useFieldArray } from "react-hook-form";
 import { toast } from "sonner";
@@ -24,8 +16,21 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { ArticleContent } from "@/components/articles/ArticleContent";
 
-const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false });
+/** Small text toggle: switches a content field between editing and a live
+ *  markdown preview (rendered below the textarea). */
+function PreviewToggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className="text-muted-foreground hover:text-foreground text-xs font-medium underline underline-offset-2"
+    >
+      {on ? "עריכה" : "תצוגה מקדימה"}
+    </button>
+  );
+}
 
 export function ArticleForm({
   articleId,
@@ -37,6 +42,9 @@ export function ArticleForm({
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  // Optional live markdown preview (same renderer as the public article page).
+  const [previewEn, setPreviewEn] = useState(false);
+  const [previewHe, setPreviewHe] = useState(false);
 
   const methods = useForm<ArticleFormInput>({
     resolver: zodResolver(articleFormSchema),
@@ -265,61 +273,72 @@ export function ArticleForm({
             <CardTitle>Content</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-6">
-            {/* preview="edit" (NOT "live"): the dashboard renders dir="rtl"
-                (Hebrew admin locale), which scrambles react-md-editor's live
-                split-pane — the preview pane overlaps the editor pane and
-                swallows clicks, so the textarea can't be focused and the body
-                "looks read-only" (couldn't type at all). Edit mode is a single
-                full-width editor with no preview overlay — reliably typeable in
-                RTL; the toolbar still opens preview on demand. */}
-            <div className="space-y-2">
-              <Label>Content (EN)</Label>
-              <div data-color-mode="dark">
-                <MDEditor
-                  value={contentEn}
-                  onChange={(v) =>
-                    methods.setValue("content_en", v ?? "", { shouldDirty: true })
-                  }
-                  height={360}
-                  preview="edit"
-                  visibleDragbar={false}
-                />
-              </div>
-            </div>
+            {/* Plain <textarea> instead of @uiw/react-md-editor. That editor is
+                NOT RTL-safe: its syntax-highlight overlay doesn't line up with
+                the textarea under dir="rtl", so on the Hebrew admin the caret
+                jumped and selecting/replacing a word shifted the text. A plain
+                textarea (dir per language) is rock-solid for RTL editing;
+                markdown is just text. Same wiring (watch + setValue). An
+                optional preview renders the markdown below with the SAME
+                renderer as the public article page. */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
+                <Label>Content (EN)</Label>
+                <PreviewToggle on={previewEn} onToggle={() => setPreviewEn((v) => !v)} />
+              </div>
+              <Textarea
+                dir="ltr"
+                value={contentEn}
+                onChange={(e) =>
+                  methods.setValue("content_en", e.target.value, { shouldDirty: true })
+                }
+                className="min-h-[520px] resize-y text-[15px] leading-[1.6]"
+              />
+              {previewEn && (
+                <div className="rounded-lg border bg-white p-6">
+                  <ArticleContent content={contentEn} isRtl={false} />
+                </div>
+              )}
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
                 <Label>Content (HE)</Label>
-                <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border px-3 py-1.5 text-xs font-medium">
-                  <Upload className="size-3.5" />
-                  {uploading ? "מעלה..." : "העלה תמונה לגוף"}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) void uploadBodyImage(f);
-                      e.currentTarget.value = "";
-                    }}
-                    disabled={uploading}
-                  />
-                </label>
+                <div className="flex items-center gap-2">
+                  <PreviewToggle on={previewHe} onToggle={() => setPreviewHe((v) => !v)} />
+                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border px-3 py-1.5 text-xs font-medium">
+                    <Upload className="size-3.5" />
+                    {uploading ? "מעלה..." : "העלה תמונה לגוף"}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) void uploadBodyImage(f);
+                        e.currentTarget.value = "";
+                      }}
+                      disabled={uploading}
+                    />
+                  </label>
+                </div>
               </div>
-              <div dir="rtl" data-color-mode="dark">
-                <MDEditor
-                  value={contentHe}
-                  onChange={(v) =>
-                    methods.setValue("content_he", v ?? "", { shouldDirty: true })
-                  }
-                  height={360}
-                  preview="edit"
-                  visibleDragbar={false}
-                />
-              </div>
+              <Textarea
+                dir="rtl"
+                value={contentHe}
+                onChange={(e) =>
+                  methods.setValue("content_he", e.target.value, { shouldDirty: true })
+                }
+                className="min-h-[520px] resize-y text-[15px] leading-[1.6]"
+              />
               <p className="text-muted-foreground text-xs">
                 טוקן <code>{"{{graph}}"}</code> בגוף = מיקום הגרף. קישור עם כותרת
                 <code> &quot;cta&quot;</code> = כפתור מותג. תמונות: <code>![](url)</code>.
               </p>
+              {previewHe && (
+                <div dir="rtl" className="rounded-lg border bg-white p-6">
+                  <ArticleContent content={contentHe} isRtl />
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
