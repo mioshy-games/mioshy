@@ -265,6 +265,13 @@ export function ArticleForm({
             <CardTitle>Content</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-6">
+            {/* preview="edit" (NOT "live"): the dashboard renders dir="rtl"
+                (Hebrew admin locale), which scrambles react-md-editor's live
+                split-pane — the preview pane overlaps the editor pane and
+                swallows clicks, so the textarea can't be focused and the body
+                "looks read-only" (couldn't type at all). Edit mode is a single
+                full-width editor with no preview overlay — reliably typeable in
+                RTL; the toolbar still opens preview on demand. */}
             <div className="space-y-2">
               <Label>Content (EN)</Label>
               <div data-color-mode="dark">
@@ -274,7 +281,7 @@ export function ArticleForm({
                     methods.setValue("content_en", v ?? "", { shouldDirty: true })
                   }
                   height={360}
-                  preview="live"
+                  preview="edit"
                   visibleDragbar={false}
                 />
               </div>
@@ -305,7 +312,7 @@ export function ArticleForm({
                     methods.setValue("content_he", v ?? "", { shouldDirty: true })
                   }
                   height={360}
-                  preview="live"
+                  preview="edit"
                   visibleDragbar={false}
                 />
               </div>
