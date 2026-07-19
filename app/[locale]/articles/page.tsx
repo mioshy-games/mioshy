@@ -141,29 +141,29 @@ export default async function ArticlesListPage({
   };
 
   return (
-    <div className="min-h-[100dvh] bg-[var(--mio-bg)] text-white">
+    <div className="min-h-[100dvh] bg-[#fcfaf7] text-[#170E14]">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
       />
-      <section className="bg-[var(--mio-surface-a)] py-16 sm:py-24">
+      <section className="bg-[#fcfaf7] py-16 sm:py-24">
         <div className="mx-auto max-w-6xl px-4">
           <Reveal>
             <h1 className="font-heading text-balance text-4xl font-bold tracking-tight sm:text-6xl">
-              <span className="bg-gradient-to-r from-purple-300 to-pink-300 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-[#B83C4D] via-[#8B2638] to-[#3D1F3D] bg-clip-text text-transparent">
                 {t("title")}
               </span>
             </h1>
           </Reveal>
           <Reveal delay={0.05}>
-            <p className="mt-4 max-w-2xl text-pretty text-lg text-white/75 sm:text-xl">
+            <p className="mt-4 max-w-2xl text-pretty text-lg text-[#4A3A45] sm:text-xl">
               {t("subtitle")}
             </p>
           </Reveal>
         </div>
       </section>
 
-      <section className="bg-[var(--mio-surface-b)] py-16 sm:py-24">
+      <section className="bg-[#fcfaf7] py-16 sm:py-24">
         <div className="mx-auto max-w-6xl px-4">
           {articles.length ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -180,36 +180,52 @@ export default async function ArticlesListPage({
                 }).value;
                 const date = formatDate(a.published_at ?? a.created_at, locale);
                 const authorDisplay = localiseAuthor(a.author, locale);
+                const hasCover = Boolean(a.cover_image_url);
                 return (
                   <Reveal key={a.id} delay={idx * 0.04}>
-                    <article className="group overflow-hidden rounded-2xl border border-purple-500/20 bg-[var(--mio-card)] backdrop-blur-md transition hover:border-purple-400/30 hover:shadow-[0_0_0_1px_rgba(232,121,249,0.18)]">
-                      <div className="relative">
-                        <ArticleCover
-                          coverImageUrl={a.cover_image_url}
-                          emoji={a.emoji}
-                          title={title}
-                          className="aspect-[16/10] w-full"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                      </div>
+                    <article className="group overflow-hidden rounded-2xl border border-[#ece2d4] bg-white shadow-[0_2px_8px_rgba(20,10,20,0.04)] transition hover:border-[#d9c9b8] hover:shadow-[0_16px_40px_rgba(20,10,20,0.08)]">
+                      {/* Cover image is optional — render the image area only
+                          when the admin uploaded one; no emoji fallback. */}
+                      {hasCover && (
+                        <div className="relative">
+                          <ArticleCover
+                            coverImageUrl={a.cover_image_url}
+                            emoji={a.emoji}
+                            title={title}
+                            className="aspect-[16/10] w-full"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                        </div>
+                      )}
 
                       <div className="p-6">
-                        <h2 className="font-heading text-2xl font-bold text-white">
-                          {title || t("untitled")}
+                        {/* Title links to the article; grows ~33% when there's
+                            no cover image to carry the card. */}
+                        <h2
+                          className={`font-heading font-bold text-[#170E14] ${
+                            hasCover ? "text-2xl" : "text-[32px]"
+                          }`}
+                        >
+                          <Link
+                            href={`/articles/${a.slug}`}
+                            className="transition-colors hover:text-[#B83C4D]"
+                          >
+                            {title || t("untitled")}
+                          </Link>
                         </h2>
-                        <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-white/70">
+                        <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-[#4A3A45]">
                           {excerpt}
                         </p>
-                        <div className="mt-5 flex items-center justify-between gap-3 text-xs text-white/55">
+                        <div className="mt-5 flex items-center justify-between gap-3 text-xs text-[#7A6A75]">
                           <span className="truncate">{authorDisplay}</span>
                           <span className="shrink-0">{date}</span>
                         </div>
                         <div className="mt-5">
                           <Link
                             href={`/articles/${a.slug}`}
-                            className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--mio-rose)] underline-offset-4 hover:underline"
+                            className="inline-flex items-center gap-2 text-sm font-semibold text-[#B83C4D] underline-offset-4 hover:underline"
                           >
-                            {t("readMore")} <span aria-hidden>→</span>
+                            {t("readMore")}
                           </Link>
                         </div>
                       </div>
@@ -219,7 +235,7 @@ export default async function ArticlesListPage({
               })}
             </div>
           ) : (
-            <div className="rounded-2xl border border-purple-500/20 bg-[var(--mio-card)] p-10 text-center text-white/70">
+            <div className="rounded-2xl border border-[#ece2d4] bg-white p-10 text-center text-[#4A3A45] shadow-[0_2px_8px_rgba(20,10,20,0.04)]">
               {t("empty")}
             </div>
           )}

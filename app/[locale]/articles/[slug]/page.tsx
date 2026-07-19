@@ -174,23 +174,6 @@ export async function generateMetadata({
   };
 }
 
-// ─── Gradient seeds (same logic as ArticleCover) ────────────────────────────
-const GRADIENTS: [string, string][] = [
-  ["#7c3aed", "#db2777"],
-  ["#be185d", "#f97316"],
-  ["#1d4ed8", "#7c3aed"],
-  ["#065f46", "#0891b2"],
-  ["#92400e", "#dc2626"],
-  ["#1e3a5f", "#7c3aed"],
-];
-function getGradient(seed: string): [string, string] {
-  let hash = 0;
-  for (let i = 0; i < seed.length; i++) {
-    hash = seed.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return GRADIENTS[Math.abs(hash) % GRADIENTS.length];
-}
-
 // ─── Page ────────────────────────────────────────────────────────────────────
 export default async function ArticleDetailPage({
   params,
@@ -249,7 +232,7 @@ export default async function ArticleDetailPage({
   const date = formatDate(a.published_at ?? a.created_at, locale);
   const authorDisplay = localiseAuthor(a.author, locale);
 
-  const [from, to] = getGradient(a.emoji ?? a.slug ?? "article");
+  const hasCover = Boolean(a.cover_image_url);
 
   // ── Structured data (Article + BreadcrumbList) ─────────────────────────
   const base = siteUrl();
@@ -365,7 +348,7 @@ export default async function ArticleDetailPage({
 
   return (
     <div
-      className="min-h-[100dvh]"
+      className="min-h-[100dvh] bg-[#fcfaf7]"
       dir={isRtl ? "rtl" : "ltr"}
     >
       <script
@@ -381,11 +364,15 @@ export default async function ArticleDetailPage({
         </div>
       )}
 
-      {/* ── HERO (dark, branded) ──────────────────────────────────────────── */}
-      <div className="relative bg-[var(--mio-surface-a)]">
-        {a.cover_image_url ? (
+      {/* ── HERO ──────────────────────────────────────────────────────────────
+          Cover image is optional. Render the hero only when the admin uploaded
+          one; with no image there's no image area at all (the h1 below grows to
+          carry the page). No emoji-gradient fallback. The surface sits behind
+          the cover image, tinted cream to match the light page. */}
+      {hasCover && (
+        <div className="relative bg-[#fcfaf7]">
           <Image
-            src={a.cover_image_url}
+            src={a.cover_image_url!}
             alt=""
             width={1280}
             height={480}
@@ -393,19 +380,10 @@ export default async function ArticleDetailPage({
             sizes="100vw"
             priority
           />
-        ) : (
-          <div
-            className="h-[260px] w-full sm:h-[380px] lg:h-[440px] flex items-center justify-center"
-            style={{ background: `linear-gradient(135deg, ${from} 0%, ${to} 100%)` }}
-          >
-            <span style={{ fontSize: "clamp(5rem, 12vw, 9rem)", lineHeight: 1 }} aria-hidden>
-              {a.emoji ?? "💬"}
-            </span>
-          </div>
-        )}
-        {/* gradient overlay → fades into the white body below */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-transparent" />
-      </div>
+          {/* gradient overlay → fades into the white body below */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-transparent" />
+        </div>
+      )}
 
       {/* ── ARTICLE BODY (light) ─────────────────────────────────────────── */}
       <div className="bg-white">
@@ -426,7 +404,11 @@ export default async function ArticleDetailPage({
 
           {/* Title */}
           <Reveal delay={0.04}>
-            <h1 className="mt-5 font-heading text-balance text-3xl font-bold tracking-tight text-gray-900 sm:text-5xl leading-tight">
+            <h1
+              className={`mt-5 font-heading text-balance font-bold tracking-tight text-gray-900 leading-tight ${
+                hasCover ? "text-3xl sm:text-5xl" : "text-[40px] sm:text-[64px]"
+              }`}
+            >
               {titlePick.value || t("untitled")}
             </h1>
           </Reveal>
@@ -553,11 +535,11 @@ export default async function ArticleDetailPage({
 
       {/* ── RELATED ARTICLES ─────────────────────────────────────────────── */}
       {related.length > 0 && (
-        <section className="bg-[var(--mio-surface-b)] py-16 sm:py-20">
+        <section className="bg-[#fcfaf7] py-16 sm:py-20">
           <div className="mx-auto max-w-6xl px-4">
             <Reveal>
               <h2 className="font-heading text-2xl font-bold sm:text-3xl">
-                <span className="bg-gradient-to-r from-purple-300 to-pink-300 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-[#B83C4D] via-[#8B2638] to-[#3D1F3D] bg-clip-text text-transparent">
                   {t("related")}
                 </span>
               </h2>
@@ -566,21 +548,27 @@ export default async function ArticleDetailPage({
             <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {related.map((r, idx) => {
                 const rt = pickLocalized({ locale, he: r.title_he, en: r.title_en }).value;
+                const rHasCover = Boolean(r.cover_image_url);
                 return (
                   <Reveal key={r.id} delay={0.04 + idx * 0.04}>
                     <Link href={`/articles/${r.slug}`} className="group block">
-                      <article className="overflow-hidden rounded-2xl border border-purple-500/20 bg-[var(--mio-card)] backdrop-blur-md transition hover:border-purple-400/40 hover:shadow-[0_0_0_1px_rgba(232,121,249,0.2)]">
-                        <ArticleCover
-                          coverImageUrl={r.cover_image_url}
-                          emoji={r.emoji}
-                          title={rt}
-                          className="aspect-[16/10] w-full"
-                        />
+                      <article className="overflow-hidden rounded-2xl border border-[#ece2d4] bg-white shadow-[0_2px_8px_rgba(20,10,20,0.04)] transition hover:border-[#d9c9b8] hover:shadow-[0_16px_40px_rgba(20,10,20,0.08)]">
+                        {/* Cover image optional — same rule as the list cards:
+                            render the image area only when a cover exists, no
+                            emoji/gradient fallback. */}
+                        {rHasCover && (
+                          <ArticleCover
+                            coverImageUrl={r.cover_image_url}
+                            emoji={r.emoji}
+                            title={rt}
+                            className="aspect-[16/10] w-full"
+                          />
+                        )}
                         <div className="p-5">
-                          <p className="font-heading text-lg font-bold text-white group-hover:text-pink-300 transition-colors line-clamp-2">
+                          <p className="font-heading text-lg font-bold text-[#170E14] group-hover:text-[#B83C4D] transition-colors line-clamp-2">
                             {rt || t("untitled")}
                           </p>
-                          <p className="mt-3 text-sm font-semibold text-[var(--mio-rose)]">
+                          <p className="mt-3 text-sm font-semibold text-[#B83C4D]">
                             {t("read")} <span aria-hidden>→</span>
                           </p>
                         </div>
