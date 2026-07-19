@@ -12,6 +12,7 @@ import {
   verifyAuthLoginOtp,
 } from "@/app/actions/otp-auth";
 import { joinCoupleByPairCode } from "@/app/actions/between-us-couple";
+import { pushToDataLayer } from "@/lib/analytics/gtm";
 
 type VerifyResult = { success: true; [k: string]: unknown } | { success: false; error: string };
 
@@ -176,6 +177,13 @@ export function OtpFlow({
       const r = await api.verifySignup({ email, token, fullName, marketingConsent: marketing, termsAccepted: terms, preferredLanguage: locale });
       setBusy(false);
       if (!r.success) { setError(r.error); return; }
+      // GTM `sign_up` conversion — genuine NEW account only. The server sets
+      // `isFirst` (only the /auth AUTH_API returns it; inline surfaces omit it,
+      // so this stays scoped to standalone signup and doesn't double-count a
+      // journey lead). Fired once here, at account creation.
+      if ((r as { isFirst?: boolean }).isFirst === true) {
+        pushToDataLayer({ event: "sign_up", method: "email" });
+      }
       // Skip the phone step (screen 3) entirely when the account already has a
       // mobile on file — never re-ask for a number we already have. Only a NEW
       // account (or one still missing a number) sees the phone step.

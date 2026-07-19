@@ -40,7 +40,7 @@ export async function verifyAuthSignupOtp(args: {
   marketingConsent: boolean;
   termsAccepted: boolean;
   preferredLanguage?: string;
-}): Promise<ActionResult<{ userId: string; phoneOnFile: boolean }>> {
+}): Promise<ActionResult<{ userId: string; phoneOnFile: boolean; isFirst: boolean }>> {
   if (!args.termsAccepted) return { success: false, error: "יש לאשר את תנאי השימוש ומדיניות הפרטיות." };
 
   const verified = await verifyEmailOtp({ email: args.email, token: args.token });
@@ -126,7 +126,11 @@ export async function verifyAuthSignupOtp(args: {
     // Skip the phone step entirely if we already have a number (repeat signup
     // into an existing account that has a mobile) — never re-ask.
     const phoneOnFile = await hasMobileOnFile(userId);
-    return { success: true, userId, phoneOnFile };
+    // `isFirst` surfaces to the client so OtpFlow can fire the GTM `sign_up`
+    // conversion for a GENUINELY new account only — a returning user who typed
+    // their email in the signup form is just logged in (isFirst=false) and must
+    // not be counted as a sign-up.
+    return { success: true, userId, phoneOnFile, isFirst };
   } catch (err) {
     console.error("[otp signup] finalize failed", err);
     return { success: false, error: err instanceof Error ? `שגיאה: ${err.message}` : "שגיאה בהרשמה." };

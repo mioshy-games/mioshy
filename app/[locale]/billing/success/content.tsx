@@ -7,9 +7,32 @@ import { Check, Loader2, AlertTriangle } from "lucide-react"
 import { createBrowserSupabaseClient } from "@/lib/supabase/client"
 import { postPaymentTarget } from "@/lib/billing/post-payment-target"
 import { metaTrack, metaEventId } from "@/lib/analytics/meta-pixel"
+import { pushToDataLayer } from "@/lib/analytics/gtm"
 import { retryCheckout } from "@/lib/billing/retry-checkout"
 
 type Phase = "loading" | "activating" | "active" | "error"
+
+// Persistent once-only guard for the GTM `purchase` event, keyed by the unique
+// checkout session id. Survives a page refresh (the success page stays on the
+// paid state and never redirects, so an in-memory ref alone can't dedup).
+// localStorage can throw (Safari private mode / storage disabled) — treat any
+// failure as "not yet logged" so we never SILENTLY drop a real purchase.
+const PURCHASE_LOGGED_KEY = (sessionId: string) =>
+  `mioshy_purchase_logged:${sessionId}`
+function isPurchaseLogged(sessionId: string): boolean {
+  try {
+    return localStorage.getItem(PURCHASE_LOGGED_KEY(sessionId)) === "1"
+  } catch {
+    return false
+  }
+}
+function markPurchaseLogged(sessionId: string): void {
+  try {
+    localStorage.setItem(PURCHASE_LOGGED_KEY(sessionId), "1")
+  } catch {
+    /* storage unavailable — the in-memory ref still guards this page load */
+  }
+}
 
 /**
  * /billing/success — premium landing page after a successful Cardcom
@@ -93,6 +116,25 @@ export function BillingSuccessContent() {
           },
           metaEventId.purchase(sessionId),
         )
+        // GTM `purchase` conversion — Journey subscription only. Unlike Meta
+        // (which dedups server-side via the deterministic eventID), a raw
+        // dataLayer push has NO dedup, and the success page never navigates away
+        // and its status stays 'paid' — so a manual refresh would re-fire. Guard
+        // with a persistent localStorage key on the (unique, stable) sessionId
+        // so `purchase` fires exactly once per order across refreshes.
+        if (data?.product === "journey" && !isPurchaseLogged(sessionId)) {
+          markPurchaseLogged(sessionId)
+          const amount = typeof data?.amount === "number" ? data.amount : undefined
+          pushToDataLayer({
+            event: "purchase",
+            transaction_id: sessionId,
+            value: amount,
+            currency: data?.currency,
+            items: [
+              { item_id: "journey", item_name: "Journey", price: amount, quantity: 1 },
+            ],
+          })
+        }
       }
       setPhase("active")
     }

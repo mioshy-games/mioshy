@@ -74,6 +74,16 @@ export function GoogleTagManager() {
     // console noise and faster Fast Refresh in dev.
     if (process.env.NODE_ENV !== "production") return;
 
+    // Conversion landing pages have NO guaranteed user interaction before the
+    // conversion fires — /billing/success auto-polls Cardcom and pushes the
+    // `purchase` dataLayer event with no scroll/click. Load GTM immediately
+    // there so the event is never dropped. The interaction-gate below still
+    // applies to every other (content/marketing) page, preserving the perf win.
+    if (window.location.pathname.includes("/billing/success")) {
+      setShouldLoad(true);
+      return;
+    }
+
     let loaded = false;
     const triggerLoad = () => {
       if (loaded) return;

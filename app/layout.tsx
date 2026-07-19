@@ -12,6 +12,7 @@ import {
 } from "@/components/analytics/GoogleTagManager";
 import { PostHogProvider } from "@/components/analytics/PostHogProvider";
 import { FirstPartyPageView } from "@/components/analytics/FirstPartyPageView";
+import { GtmSpaPageView } from "@/components/analytics/GtmSpaPageView";
 import { CookieConsentBar } from "@/components/analytics/CookieConsentBar";
 import { getRequestUser } from "@/lib/auth/getRequestUser";
 import { GlobalAssessmentOffer } from "@/components/marketing/GlobalAssessmentOffer";
@@ -245,6 +246,10 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
             (PostHog is prod-only), reuses track()/buildPayload, masks
             path+referrer. See FirstPartyPageView.tsx. */}
         <FirstPartyPageView />
+        {/* GTM dataLayer `spa_page_view` on every client-side route change, so
+            GA4 / Ads triggers see each SPA navigation (gtm.js only reports the
+            initial load). */}
+        <GtmSpaPageView />
         {/* Google Consent Mode v2 grantor — the one-time bottom bar that flips
             ad/analytics consent from the denied default. Global overlay. */}
         <CookieConsentBar locale={locale} isAuthed={isAuthed} />

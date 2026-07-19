@@ -21,6 +21,7 @@ import {
 import { track } from "@/lib/analytics";
 import { useDwellTracking } from "@/hooks/useDwellTracking";
 import { metaTrackCustom } from "@/lib/analytics/meta-pixel";
+import { pushToDataLayer } from "@/lib/analytics/gtm";
 import { CmsText } from "@/components/cms/CmsText";
 
 /**
@@ -391,6 +392,10 @@ export function JourneyClient({
     if (!isDone && index >= 1 && !startAssessmentFiredRef.current) {
       startAssessmentFiredRef.current = true;
       metaTrackCustom("StartAssessment", { assessment_type: "journey_short" });
+      // GTM remarketing signal — user actually began the assessment (answered
+      // Q1). Shares the same one-fire ref as the Meta beacon, so it's emitted
+      // exactly once per session.
+      pushToDataLayer({ event: "begin_assessment", assessment: "couples_assessment" });
     }
   }, [isDone, index]);
 
@@ -795,6 +800,15 @@ export function JourneyClient({
 
   // Called after successful inline registration / login.
   const onAuthenticated = () => {
+    // GTM primary lead conversion — the couples/journey short-assessment inline
+    // signup completed (email/phone submitted successfully). Pushed BEFORE the
+    // reload so GTM (already loaded — the user has been clicking through the
+    // assessment) drains it first. Fires once per completed inline auth.
+    pushToDataLayer({
+      event: "generate_lead",
+      lead_source: "couples_assessment",
+      currency: "ILS",
+    });
     // Soft reload: server re-fetches auth state and subscription status.
     window.setTimeout(() => window.location.reload(), 200);
   };
