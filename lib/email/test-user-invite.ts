@@ -70,7 +70,7 @@ export async function sendTestUserInvite(args: SendArgs): Promise<void> {
   // invite) should follow the same shape.
   const subject = isHe
     ? "הוזמנת ל‑Mioshy — עולם הזוגיות"
-    : "You're invited to Mioshy — the couples world";
+    : "You're invited to Mioshy - the couples world";
 
   const greetingLine = isHe
     ? greetingName
@@ -82,7 +82,7 @@ export async function sendTestUserInvite(args: SendArgs): Promise<void> {
 
   const introHe =
     args.mode === "pending"
-      ? "הוזמנת להתנסות ב‑<strong>Mioshy</strong> — פלטפורמה חדשה לזוגות שרוצים לחזק את הקשר ולחיות אותו טוב יותר. הכנו לך גישה מלאה לכל המוצרים שלנו, ללא תשלום."
+      ? "הוזמנת להתנסות ב‑<strong>Mioshy</strong> - פלטפורמה חדשה לזוגות שרוצים לחזק את הקשר ולחיות אותו טוב יותר. הכנו לך גישה מלאה לכל המוצרים שלנו, ללא תשלום."
       : "הוספנו אותך לרשימת הבודקים שלנו ב‑<strong>Mioshy</strong>. מהרגע הזה כל המוצרים שלנו פתוחים בשבילך, ללא תשלום.";
 
   const introEn =
@@ -92,11 +92,11 @@ export async function sendTestUserInvite(args: SendArgs): Promise<void> {
 
   const stepHe =
     args.mode === "pending"
-      ? `הירשמו עם הכתובת <strong>${htmlEscape(args.to)}</strong> — ברגע שתסיימו, הגישה החינמית תתחיל אוטומטית.`
+      ? `הירשמו עם הכתובת <strong>${htmlEscape(args.to)}</strong> - ברגע שתסיימו, הגישה החינמית תתחיל אוטומטית.`
       : "התחברו ותוכלו להמשיך משם.";
   const stepEn =
     args.mode === "pending"
-      ? `Sign up with the email <strong>${htmlEscape(args.to)}</strong> — the moment you finish, free access kicks in automatically.`
+      ? `Sign up with the email <strong>${htmlEscape(args.to)}</strong> - the moment you finish, free access kicks in automatically.`
       : "Just log in and you'll find everything unlocked.";
 
   const askHe = `
@@ -104,7 +104,7 @@ export async function sendTestUserInvite(args: SendArgs): Promise<void> {
     <ul style="margin:0 0 16px 1.2em;padding:0;">
       <li>איך הייתה החוויה הראשונית</li>
       <li>מה היה ברור ומה היה פחות ברור</li>
-      <li>איזה מקום הוסיף לך ערך — ואיזה הרגיש חסר</li>
+      <li>איזה מקום הוסיף לך ערך - ואיזה הרגיש חסר</li>
     </ul>
     <p style="margin:0 0 12px 0;">הכי טוב פשוט להגיב למייל הזה. כל מילה עוזרת לנו.</p>`;
   const askEn = `
@@ -186,10 +186,10 @@ export async function sendTestUserInvite(args: SendArgs): Promise<void> {
           : "הוספנו אותך לרשימת הבודקים שלנו ב-Mioshy. התחבר ב:",
         ctaHref,
         "",
-        "נשמח לפידבק קצר אחרי שתתנסה — אפשר פשוט להגיב למייל הזה.",
+        "נשמח לפידבק קצר אחרי שתתנסה - אפשר פשוט להגיב למייל הזה.",
         noteText ? `\nהערה אישית: ${noteText}` : "",
         "",
-        "Mioshy — עולם הזוגיות",
+        "Mioshy - עולם הזוגיות",
       ].join("\n")
     : [
         greetingLine,
@@ -202,7 +202,7 @@ export async function sendTestUserInvite(args: SendArgs): Promise<void> {
         "After you try it, we'd love a short reply with your feedback.",
         noteText ? `\nA note for you: ${noteText}` : "",
         "",
-        "Mioshy — the couples world",
+        "Mioshy - the couples world",
       ].join("\n");
 
   try {

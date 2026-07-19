@@ -28,18 +28,18 @@ const DEFAULTS: Record<"he" | "en", Record<OfferTrigger, OfferTexts>> = {
   he: {
     ingame: {
       title: "סקרנים לדעת מה באמת קורה ביניכם?",
-      body: "11 שאלות קצרות, ואתם מקבלים תמונה אישית של הזוגיות שלכם — ולאן היא יכולה להמשיך.",
+      body: "11 שאלות קצרות, ואתם מקבלים תמונה אישית של הזוגיות שלכם - ולאן היא יכולה להמשיך.",
       cta: "קחו את האבחון",
       dismiss: "אחר כך",
     },
     login: {
       title: "טוב לראות אתכם שוב",
-      body: "פחות משלוש דקות, ואתם יודעים איפה הזוגיות שלכם עומדת היום — עם המלצות אישיות שלכם בלבד.",
+      body: "פחות משלוש דקות, ואתם יודעים איפה הזוגיות שלכם עומדת היום - עם המלצות אישיות שלכם בלבד.",
       cta: "מתחילים באבחון",
       dismiss: "בפעם אחרת",
     },
     return24h: {
-      title: "חזרתם — בואו נעמיק קצת",
+      title: "חזרתם - בואו נעמיק קצת",
       body: "האבחון המהיר מחכה לכם: 11 שאלות, והכיוון לזוגיות טובה יותר נפתח.",
       cta: "לאבחון",
       dismiss: "לא עכשיו",
@@ -52,7 +52,7 @@ const DEFAULTS: Record<"he" | "en", Record<OfferTrigger, OfferTexts>> = {
     },
     exitintent: {
       title: "רגע לפני שאתם הולכים",
-      body: "לפני שתצאו — 11 שאלות קצרות שיראו לכם לאן הזוגיות שלכם יכולה להמשיך.",
+      body: "לפני שתצאו - 11 שאלות קצרות שיראו לכם לאן הזוגיות שלכם יכולה להמשיך.",
       cta: "כן, קחו אותי לאבחון",
       dismiss: "המשיכו ליציאה",
     },
@@ -60,18 +60,18 @@ const DEFAULTS: Record<"he" | "en", Record<OfferTrigger, OfferTexts>> = {
   en: {
     ingame: {
       title: "Curious what's really going on between you?",
-      body: "11 short questions and you get a personal picture of your relationship — and where it can go next.",
+      body: "11 short questions and you get a personal picture of your relationship - and where it can go next.",
       cta: "Take the assessment",
       dismiss: "Later",
     },
     login: {
       title: "Good to see you again",
-      body: "Under three minutes and you'll know where your relationship stands today — with recommendations just for you.",
+      body: "Under three minutes and you'll know where your relationship stands today - with recommendations just for you.",
       cta: "Start the assessment",
       dismiss: "Another time",
     },
     return24h: {
-      title: "You're back — let's go a little deeper",
+      title: "You're back - let's go a little deeper",
       body: "The quick assessment is waiting: 11 questions, and the path to a better relationship opens up.",
       cta: "To the assessment",
       dismiss: "Not now",
@@ -84,7 +84,7 @@ const DEFAULTS: Record<"he" | "en", Record<OfferTrigger, OfferTexts>> = {
     },
     exitintent: {
       title: "One moment before you go",
-      body: "Before you leave — 11 short questions to show where your relationship can go next.",
+      body: "Before you leave - 11 short questions to show where your relationship can go next.",
       cta: "Yes, take me to the assessment",
       dismiss: "Continue to exit",
     },

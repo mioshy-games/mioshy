@@ -33,7 +33,7 @@
       "historyTitle": "Your history",
       "historyAllLink": "View all",
       "emptyTitle": "No lesson open right now",
-      "emptyBody": "Your expert is preparing the next one — we'll be back soon.",
+      "emptyBody": "Your expert is preparing the next one - we'll be back soon.",
       "upsellChip": "Relationship Journey",
       "upsellTitle": "Start your relationship journey",
       "upsellBody": "Everything you need to build a stronger relationship is in one place. You start with a short 3-minute assessment, and every 8 weeks we check together how far you've come. You can stop anytime.",
@@ -44,7 +44,7 @@
       "upsellBullet5": "Free access to all the online couples games",
       "upsellCta": "Start the free assessment",
       "expertSoonTitle": "Next step: complete your full assessment",
-      "expertSoonBody": "The full assessment is what unlocks your tailored content and guidance. Fill it in once — everything opens up from there.",
+      "expertSoonBody": "The full assessment is what unlocks your tailored content and guidance. Fill it in once - everything opens up from there.",
       "expertSoonCta": "Complete the assessment"
     },
     "lessons": {
@@ -53,7 +53,7 @@
       "assessmentsTitle": "Your assessments",
       "assessmentsCount": "{count} right now · more to come",
       "assessmentOpen": "Open",
-      "nextAssessmentNotice": "In 8 weeks, on {date}, we'll send you another assessment and our experts' responses — based on getting to know you, to see your progress and sharpen your goals.",
+      "nextAssessmentNotice": "In 8 weeks, on {date}, we'll send you another assessment and our experts' responses - based on getting to know you, to see your progress and sharpen your goals.",
       "activeTitle": "Active now",
       "activeCountOne": "1 open",
       "activeChip": "Continue",
@@ -63,24 +63,24 @@
       "upcomingTitle": "Coming up",
       "waitingSuffix": "waiting",
       "upcomingEmptyTitle": "You're caught up",
-      "upcomingEmptyBody": "The next lesson opens when your expert adds it. No need to wait on the screen — we'll notify you."
+      "upcomingEmptyBody": "The next lesson opens when your expert adds it. No need to wait on the screen - we'll notify you."
     },
     "setup": {
       "pageTitle": "Complete setup",
-      "lead": "Just before we set off — finish the assessment, and that's all it takes."
+      "lead": "Just before we set off - finish the assessment, and that's all it takes."
     },
     "expert": {
       "pageTitle": "Chat with expert",
       "statusLine": "Your expert · online · replies within 24h",
       "composerPlaceholder": "Write a message to the expert…",
-      "emptyLabel": "No messages yet. Send the first one here — we'll be back within 24 hours.",
+      "emptyLabel": "No messages yet. Send the first one here - we'll be back within 24 hours.",
       "todayLabel": "Today",
       "sendLabel": "Send",
       "gateChip": "Private relationship expert",
       "gateTitleNoAssessment": "Chat with an expert starts with the assessment",
-      "gateTitleHasAssessment": "Your assessment is ready — just join the program",
+      "gateTitleHasAssessment": "Your assessment is ready - just join the program",
       "gateBodyNoAssessment": "Private chat with a relationship expert is part of the Mioshy program. So your expert can guide you the right way, we start with a short 10-minute assessment that shows where the connection is strong and where there's room to grow.",
-      "gateBodyHasAssessment": "Assessment done — nice. The next step is to join the weekly program, then you can open the chat with your matched expert and start receiving personalized chapters.",
+      "gateBodyHasAssessment": "Assessment done - nice. The next step is to join the weekly program, then you can open the chat with your matched expert and start receiving personalized chapters.",
       "gateCtaAssessment": "Start the free assessment",
       "gateCtaSubscribe": "Join the program",
       "gateBullet1": "Private relationship expert in chat, 5 days a week",
@@ -390,7 +390,7 @@
     "signInLink": "Sign in",
     "forgotPassword": "Forgot password",
     "forgotTitle": "Reset your password",
-    "forgotSubtitle": "Type the email you signed up with — we'll send you a reset link.",
+    "forgotSubtitle": "Type the email you signed up with - we'll send you a reset link.",
     "forgotEmailPlaceholder": "you@example.com",
     "forgotSubmit": "Send reset link",
     "forgotSent": "We sent a reset link to your email. Check your inbox.",
@@ -439,7 +439,7 @@
     },
     "terms": {
       "metaTitle": "Terms of Service · Mioshy",
-      "metaDescription": "Mioshy's terms of service – a brand owned by Bugo Media LTD. Governed by the laws of the State of Israel.",
+      "metaDescription": "Mioshy's terms of service - a brand owned by Bugo Media LTD. Governed by the laws of the State of Israel.",
       "title": "Terms of Service",
       "lastUpdated": "May 6, 2026",
       "intro": [
@@ -611,11 +611,11 @@
           "heading": "Third Parties",
           "body": "Data is stored and processed with leading infrastructure providers, all subject to strict security and privacy standards:",
           "list": [
-            "Supabase – user data storage and database hosting.",
-            "Vercel – website and application server hosting.",
-            "Cloudflare – networking and security services.",
-            "Stripe and Cardcom – payment processing only; credit-card data is never sent to us.",
-            "Brevo – transactional email (account confirmations, password resets, account notifications)."
+            "Supabase - user data storage and database hosting.",
+            "Vercel - website and application server hosting.",
+            "Cloudflare - networking and security services.",
+            "Stripe and Cardcom - payment processing only; credit-card data is never sent to us.",
+            "Brevo - transactional email (account confirmations, password resets, account notifications)."
           ]
         },
         "rights": {
@@ -672,7 +672,7 @@
             "Compatibility with common screen readers (NVDA, JAWS, VoiceOver, TalkBack).",
             "Color contrast meeting the standard (minimum 4.5:1 for body text).",
             "Browser text scaling supported up to 200% with no loss of content or functionality.",
-            "Semantic heading structure (H1–H4) enabling structured navigation with screen readers.",
+            "Semantic heading structure (H1-H4) enabling structured navigation with screen readers.",
             "Accessible forms with clear labels and explanatory error messages.",
             "ARIA tagging on buttons, links and interactive elements.",
             "Full bidirectional support (RTL in Hebrew, LTR in English)."
@@ -723,7 +723,7 @@
   },
   "pricing": {
     "title": "Pricing · Full Access to Mioshy in One Plan",
-    "subtitle": "Monthly or yearly — all games, the coaching journey, and adults-only included. Unlimited spins, no ads, no surprise upgrades.",
+    "subtitle": "Monthly or yearly - all games, the coaching journey, and adults-only included. Unlimited spins, no ads, no surprise upgrades.",
     "recommended": "Recommended",
     "feature1": "Unlimited spins",
     "feature2": "New games added regularly",
@@ -843,14 +843,14 @@
   },
   "marathon": {
     "chip": "Couples marathon · runs on WhatsApp",
-    "title": "A 7-day couples marathon —",
+    "title": "A 7-day couples marathon -",
     "titleFree": "Free",
-    "body": "Missing the spark and want to bring intimacy back? 7 evenings, one small couples exercise each time — all it takes is 5 quiet minutes, just the two of you. Completely free, no commitment. The marathon runs on WhatsApp — one tool each evening at 20:00. Join now and we'll let you know when it starts.",
+    "body": "Missing the spark and want to bring intimacy back? 7 evenings, one small couples exercise each time - all it takes is 5 quiet minutes, just the two of you. Completely free, no commitment. The marathon runs on WhatsApp - one tool each evening at 20:00. Join now and we'll let you know when it starts.",
     "nameLabel": "Name",
     "nameOptional": "(optional)",
     "namePlaceholder": "What should we call you?",
     "phoneLabel": "Mobile phone",
-    "phoneHint": "— to send the marathon on WhatsApp",
+    "phoneHint": "- to send the marathon on WhatsApp",
     "phonePlaceholder": "05X-XXXXXXX",
     "emailLabel": "Email",
     "emailPlaceholder": "you@example.com",
@@ -868,7 +868,7 @@
   },
   "gamesHub": {
     "title": "Mioshy · Couples Games That Spark the Conversation",
-    "subtitle": "Truth-or-dare wheels, snakes & ladders with deep questions, challenges and more. One device or two — all in your browser, no downloads.",
+    "subtitle": "Truth-or-dare wheels, snakes & ladders with deep questions, challenges and more. One device or two - all in your browser, no downloads.",
     "h1": "Interactive couples games",
     "lede": "Pick a game, spin the wheel, or play snakes & ladders with personal questions. No installs, no code - just open and play.",
     "whyTitle": "Why Mioshy?",
@@ -978,7 +978,7 @@
     "faq": {
       "eyebrow": "FAQ",
       "headline": "What couples ask before they start.",
-      "description": "The recurring questions about Mioshy's couples games — how it works, who it's for, and what it costs. If we missed your question, get in touch.",
+      "description": "The recurring questions about Mioshy's couples games - how it works, who it's for, and what it costs. If we missed your question, get in touch.",
       "contactCta": "Talk to us",
       "item1Q": "How does it actually work?",
       "item1A": "<p>Pick a game on the site, open it on your phone, and start playing. Everything runs in the browser - no downloads, no installations, no complicated sign-ups. You're playing within 30 seconds.</p>",
@@ -1008,11 +1008,11 @@
     "h1": "Journey with Mioshy",
     "h1Sub": "personalised",
     "preheader": "A Mioshy expert paired with every couple",
-    "lede": "Some of our content is pre-tuned to your assessment. From the moment you sign up, our experts follow your answers, ask you new questions over time, and build a new relationship dynamic for you. Psychologists and couples counselors from our team — you get the full package, all of it tuned to you.",
+    "lede": "Some of our content is pre-tuned to your assessment. From the moment you sign up, our experts follow your answers, ask you new questions over time, and build a new relationship dynamic for you. Psychologists and couples counselors from our team - you get the full package, all of it tuned to you.",
     "ctaPrimary": "Start the assessment",
     "ctaSecondary": "How it works",
     "ctaResume": "Continue the assessment",
-    "resumeHint": "You've got an assessment in progress — the path is waiting.",
+    "resumeHint": "You've got an assessment in progress - the path is waiting.",
     "trust": {
       "0": "5-minute assessment",
       "1": "Personal expert",
@@ -1100,7 +1100,7 @@
         },
         "2": {
           "title": "An expert + weekly practice",
-          "body": "Your Mioshy expert learns your relationship, builds a custom plan, and follows you in private chat. Short practices that add up to about an hour a week — at your pace.",
+          "body": "Your Mioshy expert learns your relationship, builds a custom plan, and follows you in private chat. Short practices that add up to about an hour a week - at your pace.",
           "tag": "The path"
         }
       }
@@ -1130,18 +1130,18 @@
     "ctaBlock": {
       "badge": "No credit card",
       "title": "The assessment is free. The journey starts when you're in.",
-      "sub": "5 minutes, a professional diagnostic, and a personal plan waiting. No commitment, no credit card — just direction.",
+      "sub": "5 minutes, a professional diagnostic, and a personal plan waiting. No commitment, no credit card - just direction.",
       "primary": "Start the assessment"
     },
     "forWhom": {
       "badge": "Who it's for",
       "title": "Is this coaching for you?",
-      "lead": "It's not for everyone — by design. It's built for couples who feel something's off and know they want to do real work.",
+      "lead": "It's not for everyone - by design. It's built for couples who feel something's off and know they want to do real work.",
       "items": {
         "0": {
           "icon": "💞",
           "title": "Couples a year+ in",
-          "body": "Who want to maintain a good relationship over time and get couple-tools at a steady pace — not only in crisis."
+          "body": "Who want to maintain a good relationship over time and get couple-tools at a steady pace - not only in crisis."
         },
         "1": {
           "icon": "👶",
@@ -1156,12 +1156,12 @@
         "3": {
           "icon": "🌱",
           "title": "Anyone who wants better",
-          "body": "You don't have to be in a crisis to want it to be better. If something's been bothering you — this is the time to handle it."
+          "body": "You don't have to be in a crisis to want it to be better. If something's been bothering you - this is the time to handle it."
         },
         "4": {
           "icon": "✨",
           "title": "Those who believe it can be different",
-          "body": "If you feel your relationship can look different, feel different — and that it's up to you — this coaching is for you."
+          "body": "If you feel your relationship can look different, feel different - and that it's up to you - this coaching is for you."
         }
       }
     },
@@ -1171,19 +1171,19 @@
       "items": {
         "0": {
           "q": "What do we actually get with the coaching?",
-          "a": "A 10-minute personal assessment, a work plan refreshed monthly, full access to every game on Mioshy (including Mioshy's Sex), and direct chat with our experts. Everything's included in the weekly subscription — no add-ons, no surprises."
+          "a": "A 10-minute personal assessment, a work plan refreshed monthly, full access to every game on Mioshy (including Mioshy's Sex), and direct chat with our experts. Everything's included in the weekly subscription - no add-ons, no surprises."
         },
         "1": {
           "q": "Who are the experts following us?",
-          "a": "Couples psychologists, family counselors, and couples therapists with 10+ years of experience. Each couple is paired with a personal expert who learns you over time and builds your plan — not a chatbot, not a template."
+          "a": "Couples psychologists, family counselors, and couples therapists with 10+ years of experience. Each couple is paired with a personal expert who learns you over time and builds your plan - not a chatbot, not a template."
         },
         "2": {
           "q": "What problems does the coaching actually solve?",
-          "a": "Emotional distance, communication that escalates to fights, lack of intimacy, recurring friction, the feeling of \"we lost ourselves\". We don't promise a fix for everything — but 90% of couples see meaningful improvement within 6 weeks."
+          "a": "Emotional distance, communication that escalates to fights, lack of intimacy, recurring friction, the feeling of \"we lost ourselves\". We don't promise a fix for everything - but 90% of couples see meaningful improvement within 6 weeks."
         },
         "3": {
           "q": "How much time does it take per week?",
-          "a": "About an hour a week total — based on your bandwidth. A short practice every day or two, one longer conversation a week. Your pace, not ours."
+          "a": "About an hour a week total - based on your bandwidth. A short practice every day or two, one longer conversation a week. Your pace, not ours."
         },
         "4": {
           "q": "Are our answers private?",
@@ -1191,11 +1191,11 @@
         },
         "5": {
           "q": "Can we pause or cancel anytime?",
-          "a": "Anytime, one click. No contract, no penalties. After cancellation no further charges — and your content stays accessible until the end of the current billing period."
+          "a": "Anytime, one click. No contract, no penalties. After cancellation no further charges - and your content stays accessible until the end of the current billing period."
         },
         "6": {
           "q": "What if one of us isn't ready?",
-          "a": "Start alone. Most couples start that way — the other partner joins within two-three weeks once they see something's moving. The assessment can start with one person and build from there."
+          "a": "Start alone. Most couples start that way - the other partner joins within two-three weeks once they see something's moving. The assessment can start with one person and build from there."
         }
       }
     },
@@ -1206,8 +1206,8 @@
       "badge": "Journey with Mioshy",
       "h1Lead": "The journey is",
       "h1Highlight": "locked",
-      "h1Tail": "— for now.",
-      "lede": "You deserve coaching built around you — practices, assessment, conversations, and monthly tasks from our experts. All included in one weekly subscription.",
+      "h1Tail": "- for now.",
+      "lede": "You deserve coaching built around you - practices, assessment, conversations, and monthly tasks from our experts. All included in one weekly subscription.",
       "subLede": "We don't want you to miss this.",
       "ctaJoin": "Join now",
       "backLink": "Back to My Mioshy"
@@ -1237,7 +1237,7 @@
     "hero": {
       "tag": "Bringing passion back to relationships since 2021",
       "headline": "Relationships - just with a little more <em>spice</em>.",
-      "lead": "Couple or solo guidance with a dedicated expert who truly gets to know you, online couples games, and Mioshy Sex — three paths to love.",
+      "lead": "Couple or solo guidance with a dedicated expert who truly gets to know you, online couples games, and Mioshy Sex - three paths to love.",
       "ctaPrimary": "You deserve a new chapter",
       "ctaSecondary": "How does it work?",
       "priceFromLabel": "From <strong>₪9</strong>",
@@ -1251,39 +1251,39 @@
       "badge2Body": "The spark came back tonight"
     },
     "problem": {
-      "_TODO": "EN translation pending — HE was reframed 2026-05-08 from a problem-spotting tone (\"you're not broken...\") to an optimistic tone (\"your relationship is capable of much more\"). Translator: please mirror the new HE optimism, not the legacy EN copy.",
+      "_TODO": "EN translation pending - HE was reframed 2026-05-08 from a problem-spotting tone (\"you're not broken...\") to an optimistic tone (\"your relationship is capable of much more\"). Translator: please mirror the new HE optimism, not the legacy EN copy.",
       "imageAlt": "A woman in a living room - a moment of reflection on the relationship",
       "eyebrow": "The good truth about relationships",
       "headline": "Your relationship is <em>capable of much more.</em>",
-      "lead": "Three truths that bring a relationship back to life — here, today, without long therapy.",
+      "lead": "Three truths that bring a relationship back to life - here, today, without long therapy.",
       "item1Title": "One short conversation reconnects you",
       "item1Body": "15 minutes. No phones. No kids.<br></br>You'll be surprised by the distance you close in one evening.",
       "item2Title": "A small change ignites a big one",
       "item2Body": "Couples who break their routine once a week stay curious about each other for years. Curiosity is the glue.",
-      "item3Title": "Choose intentionally — don't just maintain",
+      "item3Title": "Choose intentionally - don't just maintain",
       "item3Body": "Every time you stop and choose to be a couple, you strengthen the bond. We're here to make that as easy as possible."
     },
     "intimacy": {
       "eyebrow": "The quietest pain in a relationship",
-      "headlinePart1": "You can be together — ",
+      "headlinePart1": "You can be together - ",
       "headlineEm": "and still feel alone.",
-      "lead": "Sleep in the same bed. Share the same calendar. Order from the same place. And still search for each other. Loneliness inside a relationship isn't the absence of love — it's the absence of intimacy. And it doesn't happen when something breaks. It happens when we stop feeding it.",
+      "lead": "Sleep in the same bed. Share the same calendar. Order from the same place. And still search for each other. Loneliness inside a relationship isn't the absence of love - it's the absence of intimacy. And it doesn't happen when something breaks. It happens when we stop feeding it.",
       "feels1Quote": "\"When did we last talk about something real?\"",
       "feels1Body": "Conversations turned logistical. Who picks up the kids. What's needed from the store. Just that.",
-      "feels2Quote": "\"They're right next to me — and my head is in my phone.\"",
+      "feels2Quote": "\"They're right next to me - and my head is in my phone.\"",
       "feels2Body": "In the same room. In two different worlds. Hours go by without one of us looking up.",
       "feels3Quote": "\"I'm not sure what they really think anymore.\"",
       "feels3Body": "We used to know everything about each other. Now there are things we just don't ask. And don't always understand why.",
-      "feels4Quote": "\"I miss them — and they're right here.\"",
+      "feels4Quote": "\"I miss them - and they're right here.\"",
       "feels4Body": "Physical closeness is here. Emotional closeness slipped away somewhere along the way. No clean moment to point to.",
       "bridgeEyebrow": "And how Mioshy solves it",
       "bridgeHeadlinePart1": "Not therapy. Tools that work ",
       "bridgeHeadlineEm": "without putting life on hold.",
-      "bridgeBody": "We bring years of couples coaching together with games, challenges, questions you've never asked, and a personal expert who knows you deeply. Built for real couples with real lives — no 50-minute couch sessions required.",
+      "bridgeBody": "We bring years of couples coaching together with games, challenges, questions you've never asked, and a personal expert who knows you deeply. Built for real couples with real lives - no 50-minute couch sessions required.",
       "pillar1Title": "Personal to you",
-      "pillar1Body": "Every couple gets their own path. No two couples are the same — and one answer can't fit them all.",
+      "pillar1Body": "Every couple gets their own path. No two couples are the same - and one answer can't fit them all.",
       "pillar2Title": "Fast and practical",
-      "pillar2Body": "10 minutes a day, not an hour a week. Fits into your life — it doesn't ask you to stop it.",
+      "pillar2Body": "10 minutes a day, not an hour a week. Fits into your life - it doesn't ask you to stop it.",
       "pillar3Title": "Playful, not heavy",
       "pillar3Body": "Games, questions, small moments that shift the tone. No couch, no notepad, no feeling examined.",
       "ctaPrimary": "I want to stop feeling alone",
@@ -1337,7 +1337,7 @@
     "journey": {
       "eyebrow": "Monthly coaching · No commitment",
       "headline": "Every month that passes<br></br>your relationship <em>gets stronger.</em>",
-      "description": "We're with you both as a couple and individually, working on the relationship together. No commitment, no long-term contract — you can stop anytime. Here's what it looks like:",
+      "description": "We're with you both as a couple and individually, working on the relationship together. No commitment, no long-term contract - you can stop anytime. Here's what it looks like:",
       "stage1Title": "Meet again",
       "stage1Description": "A short personal assessment, questions you never asked - and suddenly you're talking about what really matters.",
       "stage1Bullet1": "Tailored assessment",
@@ -1397,9 +1397,9 @@
       "pillar1Title": "Written by experts",
       "pillar1Body": "Senior sexologists, academic couples therapists, and intimacy researchers.",
       "pillar2Title": "Designed for the bedroom",
-      "pillar2Body": "Every move in the game builds with anticipation — paced for you, leading to a night and sex you'll remember long after the game ends.",
+      "pillar2Body": "Every move in the game builds with anticipation - paced for you, leading to a night and sex you'll remember long after the game ends.",
       "pillar3Title": "Just yours. Anytime.",
-      "pillar3Body": "Available whenever you want — pick an evening, open the game, and there's a couple-ready experience waiting. <strong>One purchase, full access — for life.</strong>",
+      "pillar3Body": "Available whenever you want - pick an evening, open the game, and there's a couple-ready experience waiting. <strong>One purchase, full access - for life.</strong>",
       "signature": "Sex games for the brave only.",
       "closer": "Maybe it's time<br></br><em>to talk differently.</em>",
       "cta": "Enter Mioshy's Sex",
@@ -1497,15 +1497,15 @@
       "trust4": "Full privacy"
     },
     "journeyStages": {
-      "_TODO": "EN translations pending — strings below are temporary; HE-side approved 2026-05-08, EN translation queued",
+      "_TODO": "EN translations pending - strings below are temporary; HE-side approved 2026-05-08, EN translation queued",
       "eyebrow": "Mioshy services",
       "headline": "What does your relationship need?",
-      "description": "Three ways to reconnect — a light game, an intimate experience, or personal guidance with a dedicated expert.",
+      "description": "Three ways to reconnect - a light game, an intimate experience, or personal guidance with a dedicated expert.",
       "stage1Label": "Light",
       "stage1Hook": "I want us to laugh together",
-      "stage1Desc": "A free evening on the couch — you open a game from your phone and start playing. No complicated signup, no commitment.",
+      "stage1Desc": "A free evening on the couch - you open a game from your phone and start playing. No complicated signup, no commitment.",
       "stage1GetTitle": "What you get",
-      "stage1Get": "A fun couples night where you reconnect and enjoy time together like you haven't in a long time — maybe years.",
+      "stage1Get": "A fun couples night where you reconnect and enjoy time together like you haven't in a long time - maybe years.",
       "stage1WhenTitle": "When this is the right thing",
       "stage1When": "When you're alone at home with the kids asleep, or on vacation.",
       "stage1Product": "Online couples games",
@@ -1517,7 +1517,7 @@
       "stage1Cta": "Start playing",
       "stage2Label": "Bold",
       "stage2Hook": "I'm in the mood to be bold",
-      "stage2Desc": "Close the door — this night belongs to just the two of you.",
+      "stage2Desc": "Close the door - this night belongs to just the two of you.",
       "stage2GetTitle": "What you get",
       "stage2Get": "An evening full of desire and passion, with intimate couples games that guide you step by step.",
       "stage2WhenTitle": "When this is the right thing",
@@ -1535,7 +1535,7 @@
       "stage3Get": "Personal expert · Weekly plan · Direct chat · Access to every game",
       "stage3GetIncludes": "Included: Online couples games + Mioshy's Sex",
       "stage3WhenTitle": "When this is the right thing",
-      "stage3When": "When years together — routine and kids — pushed your relationship aside, and you want to restore the intimacy and love.",
+      "stage3When": "When years together - routine and kids - pushed your relationship aside, and you want to restore the intimacy and love.",
       "stage3Product": "Journey with Mioshy",
       "stage3OriginalPrice": "₪127",
       "stage3Price": "₪57",
@@ -1570,7 +1570,7 @@
       "description": "We've gathered the questions couples ask us most. Still didn't find your answer?",
       "contactCta": "Talk to us",
       "item1Q": "What is Mioshy, exactly?",
-      "item1A": "<p>Mioshy is a platform for couples — games, a personal assessment, and weekly guidance from an expert. Our team works in couples therapy, intimacy, and counseling. <strong>One goal:</strong> to bring back the butterflies you thought you'd lost.</p>",
+      "item1A": "<p>Mioshy is a platform for couples - games, a personal assessment, and weekly guidance from an expert. Our team works in couples therapy, intimacy, and counseling. <strong>One goal:</strong> to bring back the butterflies you thought you'd lost.</p>",
       "item2Q": "Is this a substitute for couples therapy?",
       "item2A": "<p>Not exactly. We're a preventive solution - for couples who feel something has eroded but aren't ready to jump into therapy. If there are real crises, we'll also recommend a licensed therapist, and on some plans we'll even connect you with one of our experts.</p>",
       "item3Q": "How does it actually work?",
@@ -1580,11 +1580,11 @@
       "item5Q": "Is my privacy protected?",
       "item5A": "<p>Absolutely. All your data is encrypted and never shared with anyone - ever. We don't sell data and we don't show ads. Your privacy - and your partner's - is sacred to us.</p>",
       "item6Q": "What if my partner isn't on board?",
-      "item6A": "<p>More common than you think. Our suggestion: don't ask your partner to sign up for guidance — ask them to play one game. One evening, no labels. Most couples who start this way end up keeping going together.</p>",
+      "item6A": "<p>More common than you think. Our suggestion: don't ask your partner to sign up for guidance - ask them to play one game. One evening, no labels. Most couples who start this way end up keeping going together.</p>",
       "item7Q": "What's the difference between the three plans?",
       "item7A": "<p><strong>Online couples games:</strong> easy entry, access to all games on the platform, flexible monthly subscription. <strong>Close coaching with the experts:</strong> our most comprehensive plan - <em>everything included</em>: all games (including Mioshy's Sex), personal assessment, tailored plan, monthly tasks, and direct support from the team. <strong>Mioshy's Sex:</strong> exclusive bedroom games, purchased separately per game. You can mix - and many do.</p>",
       "item8Q": "\"Close coaching with the experts\" - is everything really included?",
-      "item8A": "<p>Yes, really. This plan bundles <strong>everything into one weekly subscription</strong>: access to every game on the platform (Mioshy's Sex included), a 10-minute assessment with a relationship expert, a personalised plan, monthly tasks, and direct chat with your expert. No add-ons, no surprises on your invoice. We want you focused on the relationship — not on figuring out what's covered.</p>",
+      "item8A": "<p>Yes, really. This plan bundles <strong>everything into one weekly subscription</strong>: access to every game on the platform (Mioshy's Sex included), a 10-minute assessment with a relationship expert, a personalised plan, monthly tasks, and direct chat with your expert. No add-ons, no surprises on your invoice. We want you focused on the relationship - not on figuring out what's covered.</p>",
       "item9Q": "Can I cancel at any stage?",
       "item9A": "<p>Absolutely. No commitment, no penalties. Cancellation is one click in your account, or a quick message to support. No questions, no hassle.</p>",
       "item10Q": "We're not married - does this still fit?",
@@ -1596,7 +1596,7 @@
       "eyebrow": "Couples talking",
       "title": "What our couples share",
       "loadMore": "Load more reviews",
-      "item1Text": "\"I bought '52 Ways to Drive You Wild' as a birthday gift for my husband, just to mix things up and surprise him. No high expectations, a couple of drinks, and we had an amazing night. Great game — recommend.\"",
+      "item1Text": "\"I bought '52 Ways to Drive You Wild' as a birthday gift for my husband, just to mix things up and surprise him. No high expectations, a couple of drinks, and we had an amazing night. Great game - recommend.\"",
       "item1Initial": "S",
       "item1Name": "Shira Levi",
       "item1Source": "11 years together",
@@ -1663,7 +1663,7 @@
     "paywallGate": {
       "title": "A personalized plan - week after week",
       "body": "Join the service and get an in-depth analysis, weekly personalized tasks, and expert consultations.",
-      "bullet1": "2–4 expert-picked weekly tasks - matched precisely to your needs",
+      "bullet1": "2-4 expert-picked weekly tasks - matched precisely to your needs",
       "bullet2": "Additional questionnaires in early weeks to sharpen your profile",
       "bullet3": "100% personalized - not a generic program",
       "bullet4": "Expert consultations are included in the price - no add-ons",
@@ -1677,15 +1677,15 @@
       "title": "A small agreement between you",
       "subtitle": "Your path is built from your answers. For that to work, you have to be in.",
       "durationTitle": "10 minutes a week, four weeks",
-      "durationBody": "The assessment takes about 7 minutes. After that — one short step a week, at your pace.",
-      "privacyTitle": "Your answers — yours",
-      "privacyBody": "Each of you answers alone. Your partner doesn't see your personal answers — only the coach does.",
+      "durationBody": "The assessment takes about 7 minutes. After that - one short step a week, at your pace.",
+      "privacyTitle": "Your answers - yours",
+      "privacyBody": "Each of you answers alone. Your partner doesn't see your personal answers - only the coach does.",
       "pactHeader": "Four weeks, together",
-      "pactBody": "10 minutes a week. No pressure, no judgment. If you feel like quitting — remember you said you'd be here for these four.",
+      "pactBody": "10 minutes a week. No pressure, no judgment. If you feel like quitting - remember you said you'd be here for these four.",
       "cta": "We're in",
       "ctaBusy": "Saving…",
       "backLink": "Maybe later",
-      "saveError": "Save failed — please retry"
+      "saveError": "Save failed - please retry"
     },
     "client": {
       "title": "Your relationship journey",
@@ -1740,7 +1740,7 @@
     "reconsent": {
       "title": "Looks like you forgot to opt in",
       "bodyA": "Without it we can't send you couples content that helps you.",
-      "bodyB": "Every now and then we'll send something you shouldn't miss about your relationship — the kind that adds some spice.",
+      "bodyB": "Every now and then we'll send something you shouldn't miss about your relationship - the kind that adds some spice.",
       "consent": "I agree to receive tips and marketing content by email and WhatsApp.",
       "cta": "Yes, send me",
       "later": "Maybe another time"
@@ -1755,7 +1755,7 @@
         "body": "Intimacy and emotional connection. No judgment, no right answers. Two or three blocks left."
       },
       "step3": {
-        "title": "Friendship — the base of everything",
+        "title": "Friendship - the base of everything",
         "body": "Done with that. Next we touch the everyday, then your priorities."
       },
       "step4": {
@@ -1776,7 +1776,7 @@
       "topGap": "Focus for the first month",
       "recs": "Your personalized program",
       "offerLabel": "What's next",
-      "offerHero": "Dedicated guidance from a relationship expert, inside a private room — just the two of you and them.",
+      "offerHero": "Dedicated guidance from a relationship expert, inside a private room - just the two of you and them.",
       "offerSub": "In 30 days you'll feel a real change.",
       "feat1Title": "A private, closed room with your expert",
       "feat1Body": "Send questions whenever you need to, get a real reply - no bot, no queue.",
@@ -1787,8 +1787,8 @@
       "price": "$19 / week",
       "priceNote": "Cancel anytime",
       "anchorPrice": "$38",
-      "valueAnchor": "A single couples-counseling session usually costs ₪400–600 — at least ₪2,000 for a full month. Here you get ongoing guidance and tools throughout the whole month.",
-      "ongoingProcess": "This isn't one-off advice — it's guided couples work. A dedicated expert stays with you along the way, and every 8 weeks you check together how far you've come and fine-tune the next steps.",
+      "valueAnchor": "A single couples-counseling session usually costs ₪400-600 - at least ₪2,000 for a full month. Here you get ongoing guidance and tools throughout the whole month.",
+      "ongoingProcess": "This isn't one-off advice - it's guided couples work. A dedicated expert stays with you along the way, and every 8 weeks you check together how far you've come and fine-tune the next steps.",
       "cta": "Join now",
       "ctaLoading": "Preparing checkout…",
       "activeTitle": "You're already on the journey",
@@ -1802,7 +1802,7 @@
       "whoFor4": "Couples who want a safe place to ask questions and consult with experts",
       "gainsLabel": "What you'll gain on the journey",
       "gainsTitle": "Change you'll feel within the first month",
-      "gain1": "Improving intimate closeness — more sex, more variety",
+      "gain1": "Improving intimate closeness - more sex, more variety",
       "gain2": "Bringing the desire back to your relationship",
       "gain3": "Professional tools for improving the relationship and handling hard moments",
       "gain4": "A place to ask and consult with relationship experts",
@@ -1823,7 +1823,7 @@
       "topic5Desc": "Kids, in-laws, work, money, outside pressures.",
       "expertLabel": "Personal guidance",
       "expertTitle": "A real couples expert, waiting for you in a private chat",
-      "expertBody": "Not a bot. Not a queue. Not a 9am appointment. A real person who knows your story — what you answered, what your partner answered, and what's been working for you these last few weeks.",
+      "expertBody": "Not a bot. Not a queue. Not a 9am appointment. A real person who knows your story - what you answered, what your partner answered, and what's been working for you these last few weeks.",
       "expertBullet1": "Available five days a week",
       "expertBullet2": "Learns you, and improves your relationship",
       "expertBullet3": "Content and exercises that update with you, week after week",
@@ -1942,7 +1942,7 @@
       "dontThisLabel": "Not this week",
       "progressLabel": "Sign it's working",
       "sourcePrefix": "Based on the work of ",
-      "sourceSuffix": " — Mioshy interpretation"
+      "sourceSuffix": " - Mioshy interpretation"
     },
     "celebration": {
       "kicker": "One more step · real change",
@@ -1974,7 +1974,7 @@
       "timeDaysAgo": "{n}d ago"
     },
     "feedback": {
-      "saveFailed": "Save failed — try again",
+      "saveFailed": "Save failed - try again",
       "saveSuccess": "Saved. What comes next adjusts to what you said.",
       "postSubmitNote": "You marked it \"{label}\". What's next takes that in.",
       "change": "Change",
@@ -2040,7 +2040,7 @@
       "title": "Here's how it works",
       "step1": "Spin the wheel",
       "step2": "Reveal a Truth or Dare",
-      "step3": "Answer or do it — then spin again",
+      "step3": "Answer or do it - then spin again",
       "cta": "Got it, let's start",
       "dismiss": "Close",
       "reopen": "Instructions"
@@ -2053,28 +2053,28 @@
       "description": "The questions couples ask us before they buy. Still haven't found an answer?",
       "contactCta": "Talk to us",
       "item1Q": "Why is this good? How is it different from tips I'd find online?",
-      "item1A": "Our games are written by leading sexologists and couples therapists, and designed as a complete experience — not a tip list. Each game is a staged journey with rising tension and a peak you'll remember. That's what an internet article can't give you: not ideas, but a framework that walks you through the evening.",
+      "item1A": "Our games are written by leading sexologists and couples therapists, and designed as a complete experience - not a tip list. Each game is a staged journey with rising tension and a peak you'll remember. That's what an internet article can't give you: not ideas, but a framework that walks you through the evening.",
       "item2Q": "What do we get when we finish purchasing?",
-      "item2A": "Immediate access to the game you bought, for life, for both partners. A private space opens up in 'My Mioshy' with all your games — replay as many times as you want, no limits. No downloads, no installs. Open it on any device through your browser.",
+      "item2A": "Immediate access to the game you bought, for life, for both partners. A private space opens up in 'My Mioshy' with all your games - replay as many times as you want, no limits. No downloads, no installs. Open it on any device through your browser.",
       "item3Q": "When is it recommended to play? Do we need to prepare?",
-      "item3A": "The best time is when you're relaxed, free, and in the mood. A weekend evening, a short getaway, any time you set aside for yourselves with no distractions. No prep needed — open the game and it leads you. Each game lists what's needed (if anything) before you start.",
+      "item3A": "The best time is when you're relaxed, free, and in the mood. A weekend evening, a short getaway, any time you set aside for yourselves with no distractions. No prep needed - open the game and it leads you. Each game lists what's needed (if anything) before you start.",
       "item4Q": "Does my partner get access to what I purchased?",
-      "item4A": "Yes, automatically. When you purchase, a 'couple space' opens for both of you — a shared area. Anything one of you buys is immediately accessible to the other. One purchase = both of you in. No need to buy twice.",
+      "item4A": "Yes, automatically. When you purchase, a 'couple space' opens for both of you - a shared area. Anything one of you buys is immediately accessible to the other. One purchase = both of you in. No need to buy twice.",
       "item5Q": "Can we get a refund if it's not a fit?",
-      "item5A": "Yes. Up to 14 days from purchase, if you haven't started playing, we'll refund in full — email us at support@mioshy.com and we'll handle it. Once you've started, the content has been revealed so the purchase becomes non-refundable.",
+      "item5A": "Yes. Up to 14 days from purchase, if you haven't started playing, we'll refund in full - email us at support@mioshy.com and we'll handle it. Once you've started, the content has been revealed so the purchase becomes non-refundable.",
       "item6Q": "Do I need to buy sex toys?",
-      "item6A": "Depends on the game. Some games incorporate toys — clearly listed on each game's page. Others require no equipment at all. You choose upfront.",
+      "item6A": "Depends on the game. Some games incorporate toys - clearly listed on each game's page. Others require no equipment at all. You choose upfront.",
       "item7Q": "Is this discreet?",
-      "item7A": "Completely. Billing shows only as Mioshy — no game titles, no other words. All data is encrypted, we don't sell information, and there are no ads.",
+      "item7A": "Completely. Billing shows only as Mioshy - no game titles, no other words. All data is encrypted, we don't sell information, and there are no ads.",
       "item8Q": "What if one of us isn't ready?",
-      "item8A": "Then start at level one — talk and questions, no pressure. Most couples who start there find the other opens up naturally."
+      "item8A": "Then start at level one - talk and questions, no pressure. Most couples who start there find the other opens up naturally."
     },
     "comingSoonTitle": "Coming soon",
     "cardDetailsCta": "Details & Purchase",
     "comingSoonBody": "We're preparing something special for couples. Check back soon.",
     "backHome": "Back home",
     "privateChamber": "The private chamber",
-    "defaultSectionName": "Mioshy for Adults · One Night Different — Remembered Long After",
+    "defaultSectionName": "Mioshy for Adults · One Night Different - Remembered Long After",
     "defaultAuthedTagline": "All our exclusive games, in one place.",
     "defaultHeroTagline": "Mioshy's flagship. Adult games for partners that build the mood, surprise, and reignite the spark. Discreet, tasteful, browser-based.",
     "heroBreadcrumbHome": "Home",
@@ -2117,21 +2117,21 @@
     "faqHeadlinePrefix": "Questions couples ask",
     "faqHeadlineEmphasis": "before they buy.",
     "faqQ1": "Why is this good? How is it different from tips I'd find online?",
-    "faqA1": "Our games are written by leading sexologists and couples therapists, and designed as a complete experience — not a tip list. Each game is a staged journey with rising tension and a peak you'll remember. That's what an internet article can't give you: not ideas, but a framework that walks you through the evening.",
+    "faqA1": "Our games are written by leading sexologists and couples therapists, and designed as a complete experience - not a tip list. Each game is a staged journey with rising tension and a peak you'll remember. That's what an internet article can't give you: not ideas, but a framework that walks you through the evening.",
     "faqQ2": "What do we get when we finish purchasing?",
-    "faqA2": "Immediate access to the game you bought, for life, for both partners. A private space opens up in 'My Mioshy' with all your games — replay as many times as you want, no limits. No downloads, no installs. Open it on any device through your browser.",
+    "faqA2": "Immediate access to the game you bought, for life, for both partners. A private space opens up in 'My Mioshy' with all your games - replay as many times as you want, no limits. No downloads, no installs. Open it on any device through your browser.",
     "faqQ3": "When is it recommended to play? Do we need to prepare?",
-    "faqA3": "The best time is when you're relaxed, free, and in the mood. A weekend evening, a short getaway, any time you set aside for yourselves with no distractions. No prep needed — open the game and it leads you. Each game lists what's needed (if anything) before you start.",
+    "faqA3": "The best time is when you're relaxed, free, and in the mood. A weekend evening, a short getaway, any time you set aside for yourselves with no distractions. No prep needed - open the game and it leads you. Each game lists what's needed (if anything) before you start.",
     "faqQ4": "Does my partner get access to what I purchased?",
-    "faqA4": "Yes, automatically. When you purchase, a 'couple space' opens for both of you — a shared area. Anything one of you buys is immediately accessible to the other. One purchase = both of you in. No need to buy twice.",
+    "faqA4": "Yes, automatically. When you purchase, a 'couple space' opens for both of you - a shared area. Anything one of you buys is immediately accessible to the other. One purchase = both of you in. No need to buy twice.",
     "faqQ5": "Can we get a refund if it's not a fit?",
-    "faqA5": "Yes. Up to 14 days from purchase, if you haven't started playing, we'll refund in full — email us at support@mioshy.com and we'll handle it. Once you've started, the content has been revealed so the purchase becomes non-refundable.",
+    "faqA5": "Yes. Up to 14 days from purchase, if you haven't started playing, we'll refund in full - email us at support@mioshy.com and we'll handle it. Once you've started, the content has been revealed so the purchase becomes non-refundable.",
     "faqQ6": "Do I need to buy sex toys?",
-    "faqA6": "Depends on the game. Some games incorporate toys — clearly listed on each game's page. Others require no equipment at all. You choose upfront.",
+    "faqA6": "Depends on the game. Some games incorporate toys - clearly listed on each game's page. Others require no equipment at all. You choose upfront.",
     "faqQ7": "Is this discreet?",
-    "faqA7": "Completely. Billing shows only as Mioshy — no game titles, no other words. All data is encrypted, we don't sell information, and there are no ads.",
+    "faqA7": "Completely. Billing shows only as Mioshy - no game titles, no other words. All data is encrypted, we don't sell information, and there are no ads.",
     "faqQ8": "What if one of us isn't ready?",
-    "faqA8": "Then start at level one — talk and questions, no pressure. Most couples who start there find the other opens up naturally.",
+    "faqA8": "Then start at level one - talk and questions, no pressure. Most couples who start there find the other opens up naturally.",
     "closingKicker": "Ready?",
     "closingHeadlinePrefix": "One night.",
     "closingHeadlineEmphasis": "That's all it takes to know.",
@@ -2196,8 +2196,8 @@
     "entitlementAdults": "Adults only",
     "upgradePlan": "Upgrade plan",
     "upgradeJourneyBadge": "Upgrade",
-    "upgradeJourneyTitle": "Upgrade to Mioshy Journey — 57 ₪ / week",
-    "upgradeJourneyBody": "A dedicated coach, a weekly plan, and unrestricted access to every Mioshy's Sex game. Your current games plan stops auto-renewing the moment the upgrade goes through — no refund for the current week, no double-billing.",
+    "upgradeJourneyTitle": "Upgrade to Mioshy Journey - 57 ₪ / week",
+    "upgradeJourneyBody": "A dedicated coach, a weekly plan, and unrestricted access to every Mioshy's Sex game. Your current games plan stops auto-renewing the moment the upgrade goes through - no refund for the current week, no double-billing.",
     "upgradeJourneyCta": "Upgrade now",
     "invitePartner": "Invite your partner",
     "completeProfile": "Complete your profile",
@@ -2205,17 +2205,17 @@
     "gotCode": "Got a code from your partner?",
     "notificationCount": "{n} new",
     "metaDescription": "The three worlds of Mioshy in one place - games, journey, adults only.",
-    "heroLede": "Three services, each standing on its own. Pick your vibe tonight — a funny evening with a game, expert-written intimacy, or weekly coaching that aligns your relationship.",
+    "heroLede": "Three services, each standing on its own. Pick your vibe tonight - a funny evening with a game, expert-written intimacy, or weekly coaching that aligns your relationship.",
     "statusFreeTitle": "Your account is active. No subscription yet.",
     "statusFreeBody": "Start small with a weekly game, add expert-written intimacy, or go all-in on coaching.",
     "statusAllAccessSubFull": "Your plan covers all of Mioshy - games, journey, and adults only.",
     "activeMemberPillarsTemplate": "You have access to {count} of our 3 services.",
     "activeMemberDetailsTemplate": "Active: {owned}. Add: {missing}.",
     "cardGamesLede": "Truth or dare, wheel, snakes & ladders.",
-    "cardGamesBuyLede": "A full evening of connection — questions that lead to real talks, challenges that bring back desire, and the laughter you didn't realise your relationship was missing. Weekly subscription, refreshing every Sunday.",
+    "cardGamesBuyLede": "A full evening of connection - questions that lead to real talks, challenges that bring back desire, and the laughter you didn't realise your relationship was missing. Weekly subscription, refreshing every Sunday.",
     "cardJourneyOwnerLede": "Your tuned clinic - content ordered by what matters to you, each partner with their own order.",
-    "cardJourneyBuyLede": "An expert from Mioshy who studies you deeply, builds a personal program, and is available in chat. Both partners wrap the relationship in real work — all included in one weekly subscription.",
-    "cardAdultsBuyLede": "Games written by the top experts in sexology and couples therapy. A complete experience for your bedroom — not tips, not lists. One purchase per game, open to you and your partner forever.",
+    "cardJourneyBuyLede": "An expert from Mioshy who studies you deeply, builds a personal program, and is available in chat. Both partners wrap the relationship in real work - all included in one weekly subscription.",
+    "cardAdultsBuyLede": "Games written by the top experts in sexology and couples therapy. A complete experience for your bedroom - not tips, not lists. One purchase per game, open to you and your partner forever.",
     "invitePartnerLede": "Send an email invitation. Once they join, this section will disappear from your dashboard.",
     "gameSessionCodeLabel": "Game session code (second device)",
     "pairProfilePrereq": "To pair a partner or redeem a code, you need a full name, mobile and password.",
@@ -2232,51 +2232,51 @@
     "notificationAria": "{n} new",
     "share": {
       "title": "Share with your partner",
-      "lede": "This code lets your partner unlock everything you have — at no extra cost — as long as your subscription stays active.",
+      "lede": "This code lets your partner unlock everything you have - at no extra cost - as long as your subscription stays active.",
       "copyBtn": "Copy invite link",
       "copied": "Copied",
       "whatsappBtn": "WhatsApp",
       "smsBtn": "SMS",
       "qrBtn": "Show QR",
       "howItWorks": "How does this work?",
-      "message": "Hey, join me on Mioshy — my whole subscription opens up for you too, at no extra cost. Our code is {code}. One-click signup: {url}",
-      "qrCaption": "Scan with the camera to jump straight to signup — the code fills itself in.",
+      "message": "Hey, join me on Mioshy - my whole subscription opens up for you too, at no extra cost. Our code is {code}. One-click signup: {url}",
+      "qrCaption": "Scan with the camera to jump straight to signup - the code fills itself in.",
       "downloadQr": "Download QR as image",
       "close": "Close"
     },
     "onboarding": {
       "title": "One last step before we begin",
-      "subtitle": "Just the assessment left — and your whole journey opens.",
+      "subtitle": "Just the assessment left - and your whole journey opens.",
       "progress": "{done} of 2 done",
-      "footer": "Feel free to go anywhere anytime — this page stays with you until the assessment is done.",
+      "footer": "Feel free to go anywhere anytime - this page stays with you until the assessment is done.",
       "item1": {
         "title": "Connect your partner",
-        "desc": "Share the code — once they join, you get the full couple picture.",
+        "desc": "Share the code - once they join, you get the full couple picture.",
         "doneLabel": "Done ✓",
-        "doneDesc": "Your partner is connected — great!",
+        "doneDesc": "Your partner is connected - great!",
         "entryQ": "Got a code from your partner?",
         "entryBody": "Enter it to connect and unlock your shared access.",
         "entryCta": "Enter code",
         "optionalTag": "Optional",
         "optionalDesc": "You can add your partner and discover more about your relationship together.",
-        "disabledDesc": "Available once you join the program — then you can add your partner for a shared picture."
+        "disabledDesc": "Available once you join the program - then you can add your partner for a shared picture."
       },
       "item2": {
         "title": "Complete your full assessment",
-        "desc": "About 2 more minutes — for a sharper picture and steps tailored to you.",
+        "desc": "About 2 more minutes - for a sharper picture and steps tailored to you.",
         "doneLabel": "Done ✓",
-        "doneDesc": "Full assessment complete — excellent!",
+        "doneDesc": "Full assessment complete - excellent!",
         "cta": "Continue to assessment"
       }
     }
   },
   "shareGuide": {
     "metaTitle": "How to share your subscription with your partner · Mioshy",
-    "metaDescription": "Four simple steps to connect your partner to your subscription — no extra charge, no complicated forms.",
+    "metaDescription": "Four simple steps to connect your partner to your subscription - no extra charge, no complicated forms.",
     "backToHub": "Back to My Mioshy",
     "eyebrow": "Quick guide",
     "heading": "How to share with your partner",
-    "lede": "Your subscription is shared — both of you get access to the exact same content. In four steps we'll connect your accounts, both partners get everything you've purchased, with no double-billing.",
+    "lede": "Your subscription is shared - both of you get access to the exact same content. In four steps we'll connect your accounts, both partners get everything you've purchased, with no double-billing.",
     "steps": {
       "getCode": {
         "title": "1. Get your code",
@@ -2284,29 +2284,29 @@
       },
       "send": {
         "title": "2. Send it to your partner",
-        "body": "Tap 'WhatsApp' or 'SMS' to open a ready-made message with the code and a direct signup link. You can also copy the code or have them scan a QR — whichever is easier."
+        "body": "Tap 'WhatsApp' or 'SMS' to open a ready-made message with the code and a direct signup link. You can also copy the code or have them scan a QR - whichever is easier."
       },
       "signup": {
         "title": "3. Your partner signs up",
-        "body": "The link opens a signup page with the code already filled in. Name, email, mobile and password — and in less than a minute the accounts are linked."
+        "body": "The link opens a signup page with the code already filled in. Name, email, mobile and password - and in less than a minute the accounts are linked."
       },
       "confirm": {
         "title": "4. Everything unlocks for both of you",
-        "body": "The moment signup finishes, both partners see the exact same content. The code disappears from the screen automatically — nothing more to do."
+        "body": "The moment signup finishes, both partners see the exact same content. The code disappears from the screen automatically - nothing more to do."
       }
     },
     "faq": {
       "q1": "Does my partner pay separately?",
-      "a1": "No. Your subscription unlocks access for both partners — no double-billing, no joining fee, no extra charges of any kind.",
+      "a1": "No. Your subscription unlocks access for both partners - no double-billing, no joining fee, no extra charges of any kind.",
       "q2": "What happens when my subscription ends?",
-      "a2": "Both of your access levels update together. As long as your subscription is active — you both get everything. If it ends — both of you lose access.",
+      "a2": "Both of your access levels update together. As long as your subscription is active - you both get everything. If it ends - both of you lose access.",
       "q3": "Can I connect more than one person?",
-      "a3": "The subscription supports one couple — two people. Once your partner joins, the code stops working for additional users.",
+      "a3": "The subscription supports one couple - two people. Once your partner joins, the code stops working for additional users.",
       "q4": "What if my partner loses the code?",
-      "a4": "You can always head back to 'My Mioshy' and send the code again — via WhatsApp, SMS, or as a QR image."
+      "a4": "You can always head back to 'My Mioshy' and send the code again - via WhatsApp, SMS, or as a QR image."
     },
     "ctaTitle": "Ready to share?",
-    "ctaBody": "Head back to 'My Mioshy' — your code is waiting at the top of the page with all the share options.",
+    "ctaBody": "Head back to 'My Mioshy' - your code is waiting at the top of the page with all the share options.",
     "ctaButton": "Back to My Mioshy"
   },
   "myGames": {
@@ -2332,9 +2332,9 @@
     "youLabel": "You",
     "itemsHint": "items",
     "metaTitle": "Together",
-    "headerBlurb": "Everything here, you both see. This isn't private reflections — it's your conversation as a couple. Your personal reflections stay yours.",
-    "asymmetryYouLead": "{partnerLabel} hasn't caught up yet. If it feels right, a gentle nudge — no pressure.",
-    "asymmetryPartnerLead": "{partnerLabel} is a bit ahead of you. Not a race — just so you know.",
+    "headerBlurb": "Everything here, you both see. This isn't private reflections - it's your conversation as a couple. Your personal reflections stay yours.",
+    "asymmetryYouLead": "{partnerLabel} hasn't caught up yet. If it feels right, a gentle nudge - no pressure.",
+    "asymmetryPartnerLead": "{partnerLabel} is a bit ahead of you. Not a race - just so you know.",
     "coachHint": "{coachName} sees this thread and can reply.",
     "footerNote": "This surface is shared. Your reflections on individual items stay private."
   },
@@ -2359,7 +2359,7 @@
     "monthlyConsumedTemplate": "",
     "monthlyNextSoon": "",
     "journeyBundleTitle": "Every Mioshy's Sex game is included in your plan",
-    "journeyBundleBody": "Your Mioshy Journey plan unlocks every Adults game in the catalogue — no monthly limit, no pick-one-and-wait.",
+    "journeyBundleBody": "Your Mioshy Journey plan unlocks every Adults game in the catalogue - no monthly limit, no pick-one-and-wait.",
     "moreGamesLede": "Cards to expand your gallery. Tap any to open its page and unlock.",
     "emptyGalleryLede": "Pick your first experience and unlock a world built just for the two of you. Everything you own appears here - automatically for your partner too."
   },

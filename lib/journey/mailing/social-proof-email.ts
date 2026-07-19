@@ -63,7 +63,7 @@ export function renderSocialProofEmail(p: SocialProofPersonalization): {
 
   const html = `<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body dir="rtl" style="margin:0;padding:0;background:#ffffff;font-family:Arial,sans-serif">
-<span style="display:none;max-height:0;overflow:hidden;opacity:0">${esc("שיפור נמדד, לא רק מורגש — עם ליווי של מומחה צמוד")}</span>
+<span style="display:none;max-height:0;overflow:hidden;opacity:0">${esc("שיפור נמדד, לא רק מורגש - עם ליווי של מומחה צמוד")}</span>
 <table dir="rtl" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#ffffff">
   <tr>
     <td dir="rtl" align="right" style="padding:20px 18px">
