@@ -12,7 +12,7 @@
 import { sendEmailOtp, verifyEmailOtp, finalizeOtpSession, hasMobileOnFile, type SendOtpResult } from "@/lib/auth/otp-core";
 import { finalizeJourneySignup } from "@/lib/journey/finalize-journey-signup";
 
-export type JourneyOtpResult = { success: true; journey: unknown; phoneOnFile?: boolean } | { success: false; error: string };
+export type JourneyOtpResult = { success: true; journey: unknown; phoneOnFile?: boolean; isFirst?: boolean } | { success: false; error: string };
 
 function validDevice(deviceId: string): boolean {
   return !!deviceId && deviceId.length >= 8;
@@ -44,7 +44,10 @@ export async function verifyJourneySignupOtp(args: {
       phone: null, marketingConsent: args.marketingConsent, whatsappOptIn: args.marketingConsent,
       termsAccepted: true, language: args.language === "en" ? "en" : "he", isSignup: true, isNewUser: v.isNewUser,
     });
-    return { success: true, journey, phoneOnFile: await hasMobileOnFile(v.userId) };
+    // `isFirst` = this OTP verification created a brand-new account (v.isNewUser
+    // from verifyEmailOtp) — surfaced so the inline assessment can fire the GTM
+    // `generate_lead` conversion for a genuinely NEW lead only.
+    return { success: true, journey, phoneOnFile: await hasMobileOnFile(v.userId), isFirst: v.isNewUser };
   } catch (err) {
     console.error("[otp journey] finalize failed", err);
     return { success: false, error: err instanceof Error ? `שגיאה: ${err.message}` : "שגיאה בהרשמה." };

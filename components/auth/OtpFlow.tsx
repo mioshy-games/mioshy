@@ -84,6 +84,7 @@ export function OtpFlow({
   theme = "light",
   onBeforeSendSignup,
   onAuthenticated,
+  onNewSignup,
 }: {
   initialMode: "signup" | "login";
   locale: string;
@@ -103,6 +104,12 @@ export function OtpFlow({
   /** When set, called after successful auth (incl. after the phone step/skip)
    *  instead of routing — for embedded survey/assessment/journey use. */
   onAuthenticated?: (ctx: { isNewUser: boolean }) => void;
+  /** Fired exactly once, right after the email OTP confirms a GENUINELY NEW
+   *  account (server `isFirst`) — before the phone step. Lets a surface emit its
+   *  own new-account conversion: the journey/couples-assessment surface pushes
+   *  GTM `generate_lead` here. When omitted (standalone /auth), OtpFlow falls
+   *  back to pushing GTM `sign_up`. Either way it fires for a new account only. */
+  onNewSignup?: () => void;
 }) {
   const [mode, setMode] = useState<"signup" | "login">(initialMode);
   const [step, setStep] = useState<Step>("form");
@@ -177,12 +184,14 @@ export function OtpFlow({
       const r = await api.verifySignup({ email, token, fullName, marketingConsent: marketing, termsAccepted: terms, preferredLanguage: locale });
       setBusy(false);
       if (!r.success) { setError(r.error); return; }
-      // GTM `sign_up` conversion — genuine NEW account only. The server sets
-      // `isFirst` (only the /auth AUTH_API returns it; inline surfaces omit it,
-      // so this stays scoped to standalone signup and doesn't double-count a
-      // journey lead). Fired once here, at account creation.
+      // New-account conversion — genuine NEW account only (server `isFirst`).
+      // A surface can claim this moment via `onNewSignup` (the journey/couples-
+      // assessment surface pushes GTM `generate_lead`); standalone /auth has no
+      // override, so it falls back to GTM `sign_up`. Fired once, at account
+      // creation, so the two conversions never double-count the same event.
       if ((r as { isFirst?: boolean }).isFirst === true) {
-        pushToDataLayer({ event: "sign_up", method: "email" });
+        if (onNewSignup) onNewSignup();
+        else pushToDataLayer({ event: "sign_up", method: "email" });
       }
       // Skip the phone step (screen 3) entirely when the account already has a
       // mobile on file — never re-ask for a number we already have. Only a NEW

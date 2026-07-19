@@ -800,15 +800,8 @@ export function JourneyClient({
 
   // Called after successful inline registration / login.
   const onAuthenticated = () => {
-    // GTM primary lead conversion — the couples/journey short-assessment inline
-    // signup completed (email/phone submitted successfully). Pushed BEFORE the
-    // reload so GTM (already loaded — the user has been clicking through the
-    // assessment) drains it first. Fires once per completed inline auth.
-    pushToDataLayer({
-      event: "generate_lead",
-      lead_source: "couples_assessment",
-      currency: "ILS",
-    });
+    // (GTM `generate_lead` fires upstream in InlineAuthStep's onNewSignup — only
+    // for a genuinely NEW lead, at account creation. See InlineAuthStep.)
     // Soft reload: server re-fetches auth state and subscription status.
     window.setTimeout(() => window.location.reload(), 200);
   };

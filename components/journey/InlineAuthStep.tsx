@@ -12,6 +12,7 @@ import {
   verifyJourneyLoginOtp,
 } from "@/app/actions/otp-journey";
 import { saveSignupPhone } from "@/app/actions/otp-auth";
+import { pushToDataLayer } from "@/lib/analytics/gtm";
 
 const SANS = "var(--font-assistant), sans-serif";
 const SERIF = "var(--font-frank-ruhl), serif";
@@ -82,6 +83,17 @@ export function InlineAuthStep({ locale, deviceId, consent, onAuthenticated }: I
             savePhone: saveSignupPhone,
           }}
           onAuthenticated={onAuthenticated}
+          onNewSignup={() =>
+            // GTM primary lead conversion — fires once, only for a GENUINELY NEW
+            // lead from the couples-assessment inline signup (OtpFlow gates on
+            // the server `isFirst`). A returning user logging in here does NOT
+            // fire it, so the Ads bidding optimises for real new leads.
+            pushToDataLayer({
+              event: "generate_lead",
+              lead_source: "couples_assessment",
+              currency: "ILS",
+            })
+          }
         />
       </div>
     </motion.div>
