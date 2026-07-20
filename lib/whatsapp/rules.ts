@@ -10,12 +10,21 @@
  *   4. At most ONE outbound WhatsApp per user per 7 days.
  */
 
-const DAY_MS = 24 * 60 * 60 * 1000;
+const MIN_MS = 60 * 1000;
+// The intro window is now 60 min (offer_expires_at = completion + 60min). We
+// remind once, when 15–20 min remain (= 40–45 min after completion). The strip
+// is exactly 5 min wide and half-open, matching the every-5-min cron: a user's
+// "remaining" decreases by 5 min between consecutive ticks, so exactly one tick
+// lands in [15, 20)min — each user passes through the strip once. (The campaign
+// idempotency/throttle layer is the backstop against any double-send.)
+const REMINDER_MIN_REMAINING_MS = 15 * MIN_MS;
+const REMINDER_MAX_REMAINING_MS = 20 * MIN_MS;
 
-/** The reminder fires only inside the last 24h before the intro window expires:
- *  now < offer_expires_at <= now + 24h. (offer_expires_at = completion + 48h.) */
+/** Fires only while 15–20 min remain before the intro window closes:
+ *  now + 15min <= offer_expires_at < now + 20min. */
 export function isInIntroReminderWindow(offerExpiresAtMs: number, nowMs: number): boolean {
-  return offerExpiresAtMs > nowMs && offerExpiresAtMs <= nowMs + DAY_MS;
+  const remainingMs = offerExpiresAtMs - nowMs;
+  return remainingMs >= REMINDER_MIN_REMAINING_MS && remainingMs < REMINDER_MAX_REMAINING_MS;
 }
 
 /** Rules 1 + 3: reminder-eligible only for a non-purchaser inside the window. */

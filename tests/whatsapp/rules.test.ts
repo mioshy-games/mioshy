@@ -10,18 +10,24 @@ import {
 } from "@/lib/whatsapp/rules";
 import { modeAllows, getWhatsAppMode, getAllowlist } from "@/lib/whatsapp/campaign";
 
-const HOUR = 3600 * 1000;
+const MIN = 60 * 1000;
 const now = 1_800_000_000_000; // fixed "now"
 
-describe("intro reminder window (offer_expires_at - 24h .. offer_expires_at)", () => {
-  it("expiry 12h ahead → in window", () => {
-    expect(isInIntroReminderWindow(now + 12 * HOUR, now)).toBe(true);
+describe("intro reminder window (15–20 min remaining, half-open [15,20))", () => {
+  it("17 min left → in window", () => {
+    expect(isInIntroReminderWindow(now + 17 * MIN, now)).toBe(true);
   });
-  it("expiry exactly 24h ahead → in window (inclusive upper bound)", () => {
-    expect(isInIntroReminderWindow(now + 24 * HOUR, now)).toBe(true);
+  it("exactly 15 min left → in window (inclusive lower bound)", () => {
+    expect(isInIntroReminderWindow(now + 15 * MIN, now)).toBe(true);
   });
-  it("expiry 25h ahead → NOT yet (before the last-24h band)", () => {
-    expect(isInIntroReminderWindow(now + 25 * HOUR, now)).toBe(false);
+  it("exactly 20 min left → NOT (exclusive upper bound)", () => {
+    expect(isInIntroReminderWindow(now + 20 * MIN, now)).toBe(false);
+  });
+  it("14 min left → NOT (below the strip)", () => {
+    expect(isInIntroReminderWindow(now + 14 * MIN, now)).toBe(false);
+  });
+  it("25 min left → NOT (above the strip)", () => {
+    expect(isInIntroReminderWindow(now + 25 * MIN, now)).toBe(false);
   });
   it("expiry already passed → NOT (window closed)", () => {
     expect(isInIntroReminderWindow(now - 1, now)).toBe(false);
@@ -29,7 +35,7 @@ describe("intro reminder window (offer_expires_at - 24h .. offer_expires_at)", (
 });
 
 describe("Rule 1 + 3 — a purchaser NEVER gets the reminder (checked at send time)", () => {
-  const base = { offerExpiresAtMs: now + 12 * HOUR, nowMs: now };
+  const base = { offerExpiresAtMs: now + 17 * MIN, nowMs: now };
   it("non-purchaser in window → eligible", () => {
     expect(isReminderEligible({ ...base, hasActiveJourney: false, hasAnySubscription: false })).toBe(true);
   });
@@ -41,7 +47,7 @@ describe("Rule 1 + 3 — a purchaser NEVER gets the reminder (checked at send ti
   });
   it("out of window → excluded even for a non-purchaser", () => {
     expect(
-      isReminderEligible({ offerExpiresAtMs: now + 40 * HOUR, nowMs: now, hasActiveJourney: false, hasAnySubscription: false }),
+      isReminderEligible({ offerExpiresAtMs: now + 30 * MIN, nowMs: now, hasActiveJourney: false, hasAnySubscription: false }),
     ).toBe(false);
   });
 });

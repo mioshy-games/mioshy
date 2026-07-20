@@ -104,27 +104,29 @@ export function coachWelcomeTemplate(args: {
 
 /**
  * intro_price_expiry_reminder (MARKETING)
- * Sent 24h after assessment completion, ONLY to users who have not purchased
- * (checked at send time). Its URL button is STATIC in the approved template, so
- * no button parameter is sent — only the two body params.
+ * Sent while the intro window is still open, ONLY to users who have not
+ * purchased (checked at send time). Its URL button is STATIC in the approved
+ * template, so no button parameter is sent — only the two body params.
  *   {{1}} first name
- *   {{2}} expiry day + time — a full phrase, e.g. "מחר בשעה 21:00". Build it
- *         from the promo close time with expiryLabelFromCloseTime() so BOTH the
- *         day word and the hour stay dynamic.
+ *   {{2}} minutes remaining — JUST THE NUMBER (the word "דקות" is fixed text in
+ *         the approved template). Computed at send time as
+ *         Math.floor((offer_expires_at - now)/60000) — rounded DOWN, so we never
+ *         overstate how long the offer lasts.
  *
  * NOTE (2026-07-07): cherry-picked verbatim from feat/whatsapp-campaigns
- * (PR #6) — see coachWelcomeTemplate above.
+ * (PR #6) — see coachWelcomeTemplate above. 2026-07-20: {{2}} switched from a
+ * day+time phrase to a minutes-remaining number (60-min window).
  */
 export function introPriceExpiryReminderTemplate(args: {
   name: string;
-  expiryLabel: string;
+  minutesLeft: string;
   languageCode?: "he" | "en";
 }): TemplateSend {
   return {
     templateName: "intro_price_expiry_reminder",
     languageCode: args.languageCode ?? "he",
     category: "marketing",
-    components: [bodyText(args.name, args.expiryLabel)],
+    components: [bodyText(args.name, args.minutesLeft)],
   };
 }
 

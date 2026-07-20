@@ -8,13 +8,14 @@
  * access token already in Vercel, the approved template builders
  * (lib/whatsapp/templates.ts), and phone normalization (lib/whatsapp/phone.ts).
  *
- * Body (JSON): { to, template, name?, expertName?, category?, expiryLabel? }
+ * Body (JSON): { to, template, name?, expertName?, category?, minutesLeft? }
  *   to           — destination number (any local/international format; normalized)
  *   template     — "coach_welcome" | "intro_price_expiry_reminder"
  *   name         — body {{1}}; default "איציק"
  *   expertName   — coach_welcome body {{2}}; default handled by the builder
  *   category     — coach_welcome body {{3}} (selected area); default "זוגיות"
- *   expiryLabel  — intro_price_expiry_reminder body {{2}}; default "מחר בשעה 21:00"
+ *   minutesLeft  — intro_price_expiry_reminder body {{2}}; minutes-left NUMBER
+ *                  ("דקות" is fixed in the template); default "18"
  *
  * intro_price_expiry_reminder has a STATIC URL button in the approved template,
  * so only the body params are sent (no button component) — the builder is right.
@@ -63,7 +64,7 @@ export async function POST(req: Request) {
     name?: unknown;
     expertName?: unknown;
     category?: unknown;
-    expiryLabel?: unknown;
+    minutesLeft?: unknown;
   };
 
   const toRaw = typeof body.to === "string" ? body.to : "";
@@ -77,10 +78,12 @@ export async function POST(req: Request) {
     typeof body.category === "string" && body.category.trim()
       ? body.category.trim()
       : "זוגיות";
-  const expiryLabel =
-    typeof body.expiryLabel === "string" && body.expiryLabel.trim()
-      ? body.expiryLabel.trim()
-      : "מחר בשעה 21:00";
+  const minutesLeft =
+    typeof body.minutesLeft === "string" && body.minutesLeft.trim()
+      ? body.minutesLeft.trim()
+      : typeof body.minutesLeft === "number"
+        ? String(body.minutesLeft)
+        : "18";
 
   if (!TEMPLATES.includes(template)) {
     return NextResponse.json(
@@ -101,7 +104,7 @@ export async function POST(req: Request) {
   const tpl =
     template === "coach_welcome"
       ? coachWelcomeTemplate({ name, expertName, category })
-      : introPriceExpiryReminderTemplate({ name, expiryLabel });
+      : introPriceExpiryReminderTemplate({ name, minutesLeft });
 
   // 5) Send.
   const result = await sendTemplate({

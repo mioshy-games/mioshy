@@ -55,7 +55,7 @@
     },
     {
       "path": "/api/whatsapp/intro-reminder",
-      "schedule": "0 * * * *"
+      "schedule": "*/5 * * * *"
     },
     {
       "path": "/api/whatsapp/coach-welcome",

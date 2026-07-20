@@ -1,18 +1,19 @@
 /**
- * POST/GET /api/whatsapp/intro-reminder  (hourly cron)
+ * POST/GET /api/whatsapp/intro-reminder  (every-5-min cron)
  *
  * intro_price_expiry_reminder — the personal intro-price window is
- * journeys.offer_expires_at (stamped = SHORT-assessment completion + 48h). The
- * reminder must fire 24h after completion, i.e. once we're inside the LAST 24h
- * before expiry. Eligibility (Itzik 2026-07-06):
+ * journeys.offer_expires_at (stamped = SHORT-assessment completion + 60min). The
+ * reminder fires ONCE, while 15–20 min remain (= 40–45 min after completion).
+ * Eligibility (Itzik 2026-07-20):
  *
- *   now >= offer_expires_at - 24h   AND   now < offer_expires_at
+ *   now + 15min <= offer_expires_at < now + 20min   (a 5-min band that matches
+ *   the every-5-min cron, so each user is caught exactly once)
  *   AND the user has NOT purchased (checked live, at send time).
  *
- * Using offer_expires_at as the single anchor also guarantees {{2}} (the expiry
- * label) is always available from the same row. All sending goes through the
- * campaign layer (WHATSAPP_MODE / opt-in / idempotency / 1-per-week throttle),
- * so a real customer is only messaged in `live` mode or when allowlisted.
+ * offer_expires_at is the single anchor: {{2}} (minutes left) is computed from
+ * the same row as Math.floor((offer_expires_at - now)/60000). All sending goes
+ * through the campaign layer (WHATSAPP_MODE / opt-in / idempotency / 1-per-week
+ * throttle), so a real customer is only messaged in `live` mode or allowlisted.
  *
  * `?userId=<id>` restricts the run to one user (used for the gate test after a
  * time-shift), so a test never touches anyone else.
@@ -28,10 +29,7 @@ import { NextResponse } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
 import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
 import { sendCampaignMessage } from "@/lib/whatsapp/campaign";
-import {
-  introPriceExpiryReminderTemplate,
-  expiryLabelFromCloseTime,
-} from "@/lib/whatsapp/templates";
+import { introPriceExpiryReminderTemplate } from "@/lib/whatsapp/templates";
 import { isReminderEligible } from "@/lib/whatsapp/rules";
 
 function authOk(req: Request): boolean {
@@ -67,17 +65,19 @@ async function run(req: Request) {
   const onlyUserId = url.searchParams.get("userId");
 
   const now = new Date();
-  const nowIso = now.toISOString();
-  const in24hIso = new Date(now.getTime() + 24 * 3600 * 1000).toISOString();
+  const in15minIso = new Date(now.getTime() + 15 * 60 * 1000).toISOString();
+  const in20minIso = new Date(now.getTime() + 20 * 60 * 1000).toISOString();
 
-  // Journeys whose intro window expires within the next 24h (i.e. we're now in
-  // the last-24h band): now < offer_expires_at <= now + 24h.
+  // Journeys with 15–20 min left in the intro window (= 40–45 min after
+  // completion, for the 60-min window): now + 15min <= offer_expires_at <
+  // now + 20min. This 5-min band matches the every-5-min cron so each user is
+  // caught exactly once; isReminderEligible re-checks the same window.
   let q = admin
     .from("journeys")
     .select("user_id, offer_expires_at")
     .not("offer_expires_at", "is", null)
-    .gt("offer_expires_at", nowIso)
-    .lte("offer_expires_at", in24hIso);
+    .gte("offer_expires_at", in15minIso)
+    .lt("offer_expires_at", in20minIso);
   if (onlyUserId) q = q.eq("user_id", onlyUserId);
 
   const { data: rows, error } = await q;
@@ -132,16 +132,14 @@ async function run(req: Request) {
       continue;
     }
 
+    // {{2}} — whole minutes left in the intro window, rounded DOWN so we never
+    // overstate the time remaining. "דקות" is fixed text in the template.
+    const minutesLeft = String(
+      Math.floor((new Date(expiresAt).getTime() - now.getTime()) / 60000),
+    );
     const outcome = await sendCampaignMessage({
       userId,
-      template: introPriceExpiryReminderTemplate({
-        name: firstName,
-        // {{2}} — computed from the REAL promo close time (offer_expires_at),
-        // DST-aware (Asia/Jerusalem). Both the day word and the hour are
-        // derived from the instant, never hand-written. `now` defaults to the
-        // send instant inside the helper.
-        expiryLabel: expiryLabelFromCloseTime(new Date(expiresAt)),
-      }),
+      template: introPriceExpiryReminderTemplate({ name: firstName, minutesLeft }),
     });
     results.push({ user_id: userId, outcome: outcome.status, reason: outcome.reason });
   }
