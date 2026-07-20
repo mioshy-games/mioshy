@@ -55,14 +55,21 @@ async function run(req: Request) {
   if (!authOk(req)) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
-  if (!INTRO_REMINDER_ENABLED) {
+
+  const url = new URL(req.url);
+  const onlyUserId = url.searchParams.get("userId");
+
+  // INTRO_REMINDER_ENABLED gates the GLOBAL broadcast (the cron / Stage B). A
+  // TARGETED single-user run (?userId=…) bypasses it, so we can validate the
+  // real flow for exactly ONE user (Itzik's Stage-A test) without enabling the
+  // reminder for everyone — the campaign layer still enforces WHATSAPP_MODE /
+  // allowlist / opt-in / throttle on that one send. The cron (no ?userId) stays
+  // inert while the flag is false, so nothing broadcasts.
+  if (!INTRO_REMINDER_ENABLED && !onlyUserId) {
     return NextResponse.json({ ok: true, disabled: true, scanned: 0, processed: 0, results: [] });
   }
   const admin = createServiceRoleClient();
   if (!admin) return NextResponse.json({ ok: false, error: "no-admin-client" }, { status: 500 });
-
-  const url = new URL(req.url);
-  const onlyUserId = url.searchParams.get("userId");
 
   const now = new Date();
   const in15minIso = new Date(now.getTime() + 15 * 60 * 1000).toISOString();
