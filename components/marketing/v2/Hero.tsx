@@ -9,11 +9,12 @@ import { useCmsText } from "@/hooks/useCmsText";
 import { CmsText } from "@/components/cms/CmsText";
 
 /**
- * Available experts shown in the hero stat. Currently 1 (יצחק ברלב) — Itzik
- * 2026-07-04. When an admin field is added, replace this with the DB value; the
- * `|| 1` at the call site keeps the display at 1 whenever it's unset or 0.
+ * Available experts shown in the hero stat. Currently 3 — Itzik 2026-07-26
+ * (was 1). When an admin field is added, replace this with the DB value; the
+ * `Math.max(1, … || 1)` guard at the call site floors the display at 1 whenever
+ * it's unset or 0.
  */
-const AVAILABLE_EXPERTS = 1;
+const AVAILABLE_EXPERTS = 3;
 
 /**
  * Hero - first section of HomepageV2.
