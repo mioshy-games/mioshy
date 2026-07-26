@@ -97,7 +97,7 @@ INSERT INTO public.articles (
 ## הצעד הראשון לוקח שלוש דקות
 
 במקום לנחש מה לא עובד, בואו לדעת. [התחילו את האבחון הזוגי החינמי](/he/couples-assessment) עכשיו, ותוך כמה דקות תחזיקו מפה במקום תחושה.$art$,                         -- content_he (markdown)
-  $art$יצחק ברלב$art$,
+  $art$Itzik Berlav$art$,          -- localiseAuthor() renders "יצחק ברלב" on the he surface
   true, now(),
   ARRAY['relationship-tips','communication']::text[], 3, $art$🧭$art$,
   $art$אבחון זוגי חינם: מה בודקים, איך זה עובד ומה עושים עם התוצאה | מיאושי$art$,                     -- meta_title_he (title tag)
@@ -186,7 +186,7 @@ INSERT INTO public.articles (
 ## הצעד של היום
 
 בחרו הרגל אחד מהרשימה ועשו אותו היום, לא מחר. ואם אתם רוצים לדעת איפה ההשקעה שלכם תשפיע הכי הרבה, [התחילו באבחון הזוגי החינמי](/he/couples-assessment). שלוש דקות, ויש לכם כיוון.$art$,                         -- content_he (markdown)
-  $art$יצחק ברלב$art$,
+  $art$Itzik Berlav$art$,          -- localiseAuthor() renders "יצחק ברלב" on the he surface
   true, now(),
   ARRAY['relationship-tips','communication']::text[], 4, $art$🌱$art$,
   $art$איך לשפר את הזוגיות: 7 הרגלים קטנים שעושים עבודה גדולה | מיאושי$art$,                     -- meta_title_he (title tag)
@@ -274,7 +274,7 @@ INSERT INTO public.articles (
 ## הערב שלכם מתחיל בלחיצה
 
 בחרו משחק מהטבלה, שימו את הטלפונים על שקט (חוץ מאחד), ותנו לערב לקרות. [כל המשחקים לזוגות נמצאים כאן](/he/games), ומתחילים בחינם.$art$,                         -- content_he (markdown)
-  $art$יצחק ברלב$art$,
+  $art$Itzik Berlav$art$,          -- localiseAuthor() renders "יצחק ברלב" on the he surface
   true, now(),
   ARRAY['couples-games','relationship-tips']::text[], 3, $art$🎲$art$,
   $art$משחקים לזוגות אונליין: איך בוחרים את המשחק הנכון לערב שלכם | מיאושי$art$,                     -- meta_title_he (title tag)
@@ -357,7 +357,7 @@ INSERT INTO public.articles (
 ## הניצוץ לא מת, הוא מחכה
 
 בחרו מנוע אחד והתחילו בו השבוע. ואם אתם רוצים לדעת איפה המערכת שלכם צריכה תדלוק, [שלוש דקות של אבחון](/he/couples-assessment) ייתנו לכם את התשובה.$art$,                         -- content_he (markdown)
-  $art$יצחק ברלב$art$,
+  $art$Itzik Berlav$art$,          -- localiseAuthor() renders "יצחק ברלב" on the he surface
   true, now(),
   ARRAY['desire','intimacy']::text[], 3, $art$🔥$art$,
   $art$איך להחזיר את התשוקה בזוגיות: 5 המנועים שמדליקים אותה מחדש | מיאושי$art$,                     -- meta_title_he (title tag)
@@ -442,7 +442,7 @@ INSERT INTO public.articles (
 ## הצעד הראשון לא עולה כלום
 
 אתם לא צריכים להחליט היום על תהליך שלם. תתחילו ב[אבחון הזוגי החינמי](/he/couples-assessment), תראו את התמונה, ותחליטו משם. שלוש דקות בין "אולי כדאי" לבין לדעת.$art$,                         -- content_he (markdown)
-  $art$יצחק ברלב$art$,
+  $art$Itzik Berlav$art$,          -- localiseAuthor() renders "יצחק ברלב" on the he surface
   true, now(),
   ARRAY['relationship-tips','communication']::text[], 3, $art$💬$art$,
   $art$טיפול זוגי אונליין: איך זה עובד, כמה עולה ולמי זה מתאים | מיאושי$art$,                     -- meta_title_he (title tag)
