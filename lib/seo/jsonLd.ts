@@ -115,3 +115,71 @@ export function faqPageJsonLd(items: FaqJsonLdItem[]): FaqPageJsonLd {
     })),
   };
 }
+
+// ── Product / AggregateOffer (Journey subscription) ──────────────────────────
+// Emits a Product node with an AggregateOffer whose lowPrice/highPrice span the
+// ACTUAL displayed prices across enabled Journey cadences (promo first-charge
+// where a promo applies, else the regular price) — never a hardcoded number.
+// The caller passes an already-translated name + description so this helper
+// authors no copy of its own. Returns null when no enabled cadence has a price
+// (nothing to advertise) so the caller can omit the node entirely.
+//
+// `import type` keeps this module free of the `server-only` runtime that
+// journey-subscribe-pricing pulls in — the type is fully erased at build.
+type JourneyPricingLike = {
+  journeyCadences: Array<{ cadence: string; price_ils: number; enabled: boolean }>;
+  activePromo: {
+    withoutCoaching: {
+      firstChargeByCadence?: Record<string, { ils: number; usd: number }>;
+    } | null;
+  } | null;
+};
+
+type ProductJsonLd = {
+  "@type": "Product";
+  "@id": string;
+  name: string;
+  description?: string;
+  brand: { "@type": "Brand"; name: string };
+  offers: {
+    "@type": "AggregateOffer";
+    priceCurrency: "ILS";
+    lowPrice: number;
+    highPrice: number;
+    offerCount: number;
+    availability: "https://schema.org/InStock";
+    url: string;
+  };
+};
+
+export function journeyProductJsonLd(
+  pricing: JourneyPricingLike,
+  opts: { url: string; name: string; description?: string },
+): ProductJsonLd | null {
+  const promoByCadence = pricing.activePromo?.withoutCoaching?.firstChargeByCadence;
+  const effective: number[] = [];
+  for (const c of pricing.journeyCadences) {
+    if (!c.enabled) continue;
+    const promoIls = promoByCadence?.[c.cadence]?.ils;
+    const price = typeof promoIls === "number" ? promoIls : c.price_ils;
+    if (typeof price === "number" && price > 0) effective.push(price);
+  }
+  if (effective.length === 0) return null;
+
+  return {
+    "@type": "Product",
+    "@id": `${opts.url}#product`,
+    name: opts.name,
+    description: opts.description || undefined,
+    brand: { "@type": "Brand", name: "Mioshy" },
+    offers: {
+      "@type": "AggregateOffer",
+      priceCurrency: "ILS",
+      lowPrice: Math.min(...effective),
+      highPrice: Math.max(...effective),
+      offerCount: effective.length,
+      availability: "https://schema.org/InStock",
+      url: opts.url,
+    },
+  };
+}

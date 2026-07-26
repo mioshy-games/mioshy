@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getJourneySubscribePricing } from "@/lib/billing/journey-subscribe-pricing";
 import { AnalysisSummary } from "@/components/journey/AnalysisSummary";
+import { journeyProductJsonLd, safeJsonLd } from "@/lib/seo/jsonLd";
 import type { Locale } from "@/lib/journey/types";
 
 function siteUrl() {
@@ -111,8 +112,29 @@ export default async function PricingPage({
   const initialCoaching = sp.coaching === "1";
   const autoCheckout = sp.pay === "1";
 
+  // Product/AggregateOffer schema — price range comes straight from the same
+  // `pricing` the selector renders (display == charge), never a hardcoded
+  // number. `t` is the pricing namespace; subtitle is already-approved copy.
+  const t = await getTranslations({ locale, namespace: "pricing" });
+  const productJsonLd = journeyProductJsonLd(pricing, {
+    url: `${siteUrl()}/${locale}/pricing`,
+    name: isHe ? "מיאושי — מסע הזוגיות" : "Mioshy — Couples Journey",
+    description: t("subtitle"),
+  });
+
   return (
     <>
+      {productJsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: safeJsonLd({
+              "@context": "https://schema.org",
+              ...productJsonLd,
+            }),
+          }}
+        />
+      )}
       {/* a11y + SEO: the page's h1 (sr-only — the selector renders its own
           subscribe-mode heading, not an h1). */}
       <h1 className="sr-only">{isHe ? "התמחור של מיאושי" : "Mioshy pricing"}</h1>

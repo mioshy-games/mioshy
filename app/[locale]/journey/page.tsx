@@ -38,7 +38,8 @@ import { WeeklyProgramSection } from "@/components/journey/WeeklyProgramSection"
 import { MetaViewContent } from "@/components/analytics/MetaViewContent";
 import Image from "next/image";
 import { notFound, redirect } from "next/navigation";
-import { safeJsonLd } from "@/lib/seo/jsonLd";
+import { safeJsonLd, journeyProductJsonLd } from "@/lib/seo/jsonLd";
+import { getJourneySubscribePricing } from "@/lib/billing/journey-subscribe-pricing";
 import { unstable_noStore as noStore } from "next/cache";
 import {
   ArrowLeft,
@@ -348,9 +349,22 @@ export default async function JourneyMarketingPage({
     q: t(`faq.items.${i}.q`),
     a: t(`faq.items.${i}.a`),
   }));
+
+  // Product/AggregateOffer from anonymous (regular/campaign) pricing — public
+  // schema must not leak a signed-in visitor's personal promo window. Prices
+  // come from the same resolver the checkout uses; never hardcoded. Best-effort
+  // (the resolver never throws) — null when there's nothing priced to advertise.
+  const journeyPricing = await getJourneySubscribePricing(null);
+  const productNode = journeyProductJsonLd(journeyPricing, {
+    url: `${base}/${locale}/journey`,
+    name: t("metaTitle"),
+    description: t("metaDescription"),
+  });
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
+      ...(productNode ? [productNode] : []),
       {
         "@type": "BreadcrumbList",
         itemListElement: [
