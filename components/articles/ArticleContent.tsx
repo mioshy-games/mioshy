@@ -6,6 +6,7 @@
 // Does NOT require @tailwindcss/typography - all styles are explicit Tailwind classes.
 
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import type { Components } from "react-markdown";
 
 const components: Components = {
@@ -168,7 +169,12 @@ export function ArticleContent({ content, isRtl = false }: ArticleContentProps) 
       dir={isRtl ? "rtl" : "ltr"}
       className="text-gray-700"
     >
-      <ReactMarkdown components={components}>{content}</ReactMarkdown>
+      {/* remark-gfm enables GFM tables (the styled `table`/`th`/`td` renderers
+          above depend on it), strikethrough and autolinks. Without it,
+          `| col | col |` markdown renders as literal pipe text. */}
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+        {content}
+      </ReactMarkdown>
     </div>
   );
 }
