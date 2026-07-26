@@ -3,6 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { copyAuthCookiesToResponse, updateSession } from "@/lib/supabase/middleware";
 import { routing } from "./i18n/routing";
 import { SESSION_COOKIE, validateSession } from "@/lib/auth/session-enforcement";
+import { resolveLegacyRedirect } from "@/lib/seo/legacy-redirects";
 
 const intlMiddleware = createIntlMiddleware(routing);
 
@@ -76,6 +77,19 @@ function isSessionProtected(pathname: string) {
 }
 
 export async function middleware(request: NextRequest) {
+  // ── Legacy-URL 301s ──────────────────────────────────────────────────────
+  // Runs first: dead pre-relaunch URLs get a real permanent redirect to the
+  // closest live page before we do any session/i18n work. See
+  // resolveLegacyRedirect above for the mapping rationale.
+  const legacyTarget = resolveLegacyRedirect(request.nextUrl.pathname);
+  if (legacyTarget) {
+    const target = new URL(legacyTarget, request.url);
+    // Preserve any query string (utm_*, ref, etc.) so campaign attribution on
+    // old inbound links survives the hop.
+    target.search = request.nextUrl.search;
+    return NextResponse.redirect(target, 301);
+  }
+
   // Stamp the resolved locale on the request so the root layout can read it
   // via `headers()` and emit `<html lang dir>` server-side.
   request.headers.set("x-mioshy-locale", resolveLocale(request));

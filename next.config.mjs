@@ -110,9 +110,11 @@ const nextConfig = {
         destination: "https://mioshy.com/:path*",
         permanent: true,
       },
-      // TODO(old-urls): Add 301 mappings from the legacy site once exported
-      // from GSC/Ahrefs/ScreamingFrog. Map high-value URLs to the closest
-      // new equivalent; otherwise redirect to "/".
+      // Legacy pre-relaunch URL 301s live in middleware.ts
+      // (resolveLegacyRedirect) rather than here: middleware runs before
+      // next-intl's locale rewrite, gives us trailing-slash-agnostic matching
+      // and a blanket "any unprefixed dead path → /he" catch-all that would be
+      // fragile to express as path-to-regexp `source` patterns.
     ];
   },
   async headers() {
