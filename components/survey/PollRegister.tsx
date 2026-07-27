@@ -18,7 +18,19 @@ import { track } from "@/lib/analytics";
  * content_name "relationship_survey"). Fires the browser-Pixel Lead on "send code"
  * (deduped with the CAPI Lead via the shared event_id). Lands on the dashboard.
  */
-export function PollRegister({ consent, locale = "he" }: { consent: OtpConsentCopy; locale?: string }) {
+export function PollRegister({
+  consent,
+  locale = "he",
+  signupHeading,
+  signupSubheading,
+}: {
+  consent: OtpConsentCopy;
+  locale?: string;
+  /** Surface-specific title/subtitle for the form (the survey end screen passes
+   *  its own); omitted → the shared OtpFlow copy. */
+  signupHeading?: string;
+  signupSubheading?: string;
+}) {
   const fireBrowserLead = (email: string) => {
     if (typeof window === "undefined") return;
     // Generic click event for the "שלחו לי קוד" (send-code) button → CTA-clicks
@@ -33,6 +45,8 @@ export function PollRegister({ consent, locale = "he" }: { consent: OtpConsentCo
       initialMode="signup"
       locale={locale}
       consent={consent}
+      signupHeading={signupHeading}
+      signupSubheading={signupSubheading}
       api={{
         sendSignup: sendSurveySignupOtp,
         verifySignup: verifySurveySignupOtp,

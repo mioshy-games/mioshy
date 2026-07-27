@@ -27,8 +27,6 @@ interface PollQuestionRow {
   option_b: string;
   order_index: number;
   insight_line: string | null;
-  prior_a: number;
-  prior_b: number;
 }
 
 function toQuestion(r: PollQuestionRow): PollQuestion {
@@ -52,7 +50,7 @@ function toQuestion(r: PollQuestionRow): PollQuestion {
 export async function getCurrentQuestion(
   anonId: string | null,
   userId?: string | null,
-): Promise<{ question: PollQuestion; priorA: number; priorB: number } | null> {
+): Promise<{ question: PollQuestion } | null> {
   const admin = await createAdminClient();
 
   // Signed-in → identity by user_id (survives cookie clear / another device);
@@ -70,7 +68,7 @@ export async function getCurrentQuestion(
 
   let q = admin
     .from("poll_questions")
-    .select("id, text, option_a, option_b, order_index, insight_line, prior_a, prior_b")
+    .select("id, text, option_a, option_b, order_index, insight_line")
     .eq("is_active", true)
     .order("order_index", { ascending: true })
     .limit(1);
@@ -78,7 +76,7 @@ export async function getCurrentQuestion(
 
   const { data } = await q.maybeSingle<PollQuestionRow>();
   if (!data) return null;
-  return { question: toQuestion(data), priorA: data.prior_a, priorB: data.prior_b };
+  return { question: toQuestion(data) };
 }
 
 /** The anon's answered history (§7): each answered question + their choice. */
@@ -170,72 +168,18 @@ export async function getHistoryWithTally(anonId: string | null, userId?: string
   });
 }
 
-/** Calendar day (YYYY-MM-DD) in Israel time — the "one question per day" boundary. */
-function israelDay(d: Date): string {
-  return d.toLocaleDateString("en-CA", { timeZone: "Asia/Jerusalem" });
-}
-
 /**
- * "One question per day" (§10): if the anon answered a question TODAY (Israel
- * calendar day), return that question's reveal (choice marked + live tally) so a
- * return visit shows their answer — a new question only opens the next day.
- * Returns null if they have not answered today.
+ * Recompute the live tally for a question from its REAL votes. No priors — the
+ * percentage and the respondent count are computed from the same numbers, so
+ * they can never disagree. A question with no votes returns hasVotes: false.
  */
-export async function getTodaysAnswerReveal(
-  anonId: string | null,
-  userId?: string | null,
-): Promise<({ question: PollQuestion; option: "a" | "b" } & PollPercent) | null> {
-  const admin = await createAdminClient();
-  const idCol = userId ? "user_id" : "anon_id";
-  const idVal = userId ?? anonId;
-  if (!idVal) return null;
-  const { data } = await admin
-    .from("poll_votes")
-    .select("question_id, option, created_at, poll_questions(id, text, option_a, option_b, order_index, insight_line)")
-    .eq(idCol, idVal)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  type Joined = {
-    question_id: string;
-    option: "a" | "b";
-    created_at: string;
-    poll_questions:
-      | { id: string; text: string; option_a: string; option_b: string; order_index: number; insight_line: string | null }
-      | { id: string; text: string; option_a: string; option_b: string; order_index: number; insight_line: string | null }[]
-      | null;
-  };
-  const row = (data as unknown as Joined | null) ?? null;
-  if (!row) return null;
-  // Only when the most recent answer is from TODAY — otherwise a new question opens.
-  if (israelDay(new Date(row.created_at)) !== israelDay(new Date())) return null;
-  const q = Array.isArray(row.poll_questions) ? row.poll_questions[0] : row.poll_questions;
-  if (!q) return null;
-  const tally = await getQuestionTally(row.question_id);
-  return {
-    question: {
-      id: q.id, text: q.text, optionA: q.option_a, optionB: q.option_b,
-      orderIndex: q.order_index, insightLine: q.insight_line,
-    },
-    option: row.option,
-    ...tally,
-  };
-}
-
-/** Recompute the live tally for a question from real votes + its priors (§8). */
 export async function getQuestionTally(questionId: string): Promise<PollPercent> {
   const admin = await createAdminClient();
-  const [{ data: q }, { count: countA }, { count: countB }] = await Promise.all([
-    admin.from("poll_questions").select("prior_a, prior_b").eq("id", questionId).maybeSingle<{ prior_a: number; prior_b: number }>(),
+  const [{ count: countA }, { count: countB }] = await Promise.all([
     admin.from("poll_votes").select("id", { count: "exact", head: true }).eq("question_id", questionId).eq("option", "a"),
     admin.from("poll_votes").select("id", { count: "exact", head: true }).eq("question_id", questionId).eq("option", "b"),
   ]);
-  return computePollPercent({
-    priorA: q?.prior_a ?? 0,
-    priorB: q?.prior_b ?? 0,
-    countA: countA ?? 0,
-    countB: countB ?? 0,
-  });
+  return computePollPercent({ countA: countA ?? 0, countB: countB ?? 0 });
 }
 
 /** Which option this anon already chose on this question, or null. */
@@ -251,8 +195,28 @@ export async function getExistingVote(questionId: string, anonId: string): Promi
 }
 
 /**
- * Record an anonymous vote. Idempotent per (anon_id, question) — a repeat vote
- * keeps the FIRST choice (no repeat, §7). Returns the option that now stands.
+ * Which option this ACCOUNT already chose on this question, or null. The DB
+ * uniqueness key is (anon_id, question_id) only, so the same account arriving
+ * with a different anon id (second device, cleared cookie) would otherwise
+ * insert a second row and inflate the counter — this guard prevents that.
+ * Tolerates the pre-existing duplicates in the table (takes the first vote).
+ */
+async function getExistingVoteByUser(questionId: string, userId: string): Promise<"a" | "b" | null> {
+  const admin = await createAdminClient();
+  const { data } = await admin
+    .from("poll_votes")
+    .select("option")
+    .eq("question_id", questionId)
+    .eq("user_id", userId)
+    .order("created_at", { ascending: true })
+    .limit(1);
+  return ((data ?? [])[0]?.option as "a" | "b" | undefined) ?? null;
+}
+
+/**
+ * Record an anonymous vote. Idempotent per (anon_id, question) AND per
+ * (user_id, question) — a repeat vote keeps the FIRST choice (no repeat, §7).
+ * Returns the option that now stands.
  */
 export async function recordVote(args: {
   questionId: string;
@@ -261,6 +225,13 @@ export async function recordVote(args: {
   userId?: string | null;
 }): Promise<"a" | "b"> {
   const admin = await createAdminClient();
+
+  // Same account, different device/cookie → keep the first vote, insert nothing.
+  if (args.userId) {
+    const byUser = await getExistingVoteByUser(args.questionId, args.userId);
+    if (byUser) return byUser;
+  }
+
   // onConflict (anon_id, question_id) → ignoreDuplicates keeps the first vote.
   await admin
     .from("poll_votes")

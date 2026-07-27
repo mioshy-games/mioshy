@@ -82,6 +82,8 @@ export function OtpFlow({
   consent,
   api = AUTH_API,
   theme = "light",
+  signupHeading,
+  signupSubheading,
   onBeforeSendSignup,
   onAuthenticated,
   onNewSignup,
@@ -98,6 +100,11 @@ export function OtpFlow({
   /** Visual theme — "dark" for the standalone /auth pages + the dark assessment
    *  context; "light" (cream card) for the survey/journey light surfaces. */
   theme?: "light" | "dark";
+  /** Surface-specific title/subtitle for the SIGNUP form step. Omitted → the
+   *  shared "נעים להכיר" copy (unchanged for every existing surface). Only the
+   *  heading changes; the fields and the consent block stay identical. */
+  signupHeading?: string;
+  signupSubheading?: string;
   /** Fired once, client-side, just before the signup "send code" call — used by
    *  the survey to mirror its browser-Pixel Lead (deduped with the CAPI Lead). */
   onBeforeSendSignup?: (email: string) => void;
@@ -258,8 +265,8 @@ export function OtpFlow({
       {/* ── screen 1: form ── */}
       {step === "form" && (
         <>
-          <h2 style={S.h2}>{mode === "signup" ? "נעים להכיר" : "התחברות"}</h2>
-          <p style={S.lead}>{mode === "signup" ? "כמה פרטים קטנים ואנחנו יוצאים לדרך יחד." : "הזינו את כתובת המייל ונשלח לכם קוד כניסה. בלי סיסמה."}</p>
+          <h2 style={S.h2}>{mode === "signup" ? (signupHeading ?? "נעים להכיר") : "התחברות"}</h2>
+          <p style={S.lead}>{mode === "signup" ? (signupSubheading ?? "כמה פרטים קטנים ואנחנו יוצאים לדרך יחד.") : "הזינו את כתובת המייל ונשלח לכם קוד כניסה. בלי סיסמה."}</p>
 
           {mode === "signup" && (
             <label style={{ display: "block", marginBottom: 14 }}>

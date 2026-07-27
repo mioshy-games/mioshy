@@ -4,8 +4,9 @@
  * CSV import for poll questions (§9 admin). RFC4180-safe parser (quoted fields,
  * embedded commas, "" escapes) + a service-role importer that inserts questions
  * and their zero-count aggregate rows. Dedup by text → safe to re-import.
- * Columns: text, option_a, option_b, order_index, domain, prior_a, prior_b,
- * prior_weight, insight_line.
+ * Columns: text, option_a, option_b, order_index, domain, insight_line.
+ * Legacy prior_a/prior_b/prior_weight columns are accepted and IGNORED — the
+ * poll shows real percentages only (priors removed 2026-07-27).
  */
 
 import "server-only";
@@ -74,9 +75,6 @@ export async function importQuestionsFromCsv(csv: string): Promise<ImportResult>
         option_b: optionB,
         order_index: num(r[idx("order_index")]),
         domain: idx("domain") >= 0 ? str(r[idx("domain")]) : null,
-        prior_a: idx("prior_a") >= 0 ? num(r[idx("prior_a")]) : 0,
-        prior_b: idx("prior_b") >= 0 ? num(r[idx("prior_b")]) : 0,
-        prior_weight: idx("prior_weight") >= 0 ? num(r[idx("prior_weight")]) : 0,
         insight_line: idx("insight_line") >= 0 ? str(r[idx("insight_line")]) : null,
         is_active: true,
       })

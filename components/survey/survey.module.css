@@ -178,6 +178,31 @@
   font: inherit; font-weight: 600; font-size: 18px; cursor: pointer; text-decoration: underline;
 }
 
+/* End screen (questions exhausted) — dignified close + the join opt-in. */
+.doneHead {
+  text-align: center; font-size: 24px; font-weight: 700; line-height: 1.45;
+  color: var(--ink); max-width: 480px; margin: 30px auto 0;
+}
+.doneLead {
+  text-align: center; color: var(--ink2); font-size: 16px; line-height: 1.65;
+  margin: 12px auto 26px; max-width: 440px;
+}
+
+/* "You're the first to answer this one" — replaces the percentages when the
+   question has no other votes yet (no priors, so nothing to pad it with). */
+.firstLine {
+  text-align: center; font-size: 19px; font-weight: 700; line-height: 1.5;
+  color: var(--ink); margin: 26px auto 6px; max-width: 420px;
+}
+
+/* Permanent assessment + share block — present under EVERY survey screen
+   (question, reveal, end), not only after answering. */
+.stickyBlock {
+  max-width: 520px; margin: 40px auto 0; padding-top: 22px;
+  border-top: 1px solid var(--line2);
+}
+.stickyBlock .diagLink { margin-top: 0; }
+
 /* Share row — WhatsApp + copy-link (with "הועתק" feedback). */
 .shareRow { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 22px; }
 .shareBtn {
