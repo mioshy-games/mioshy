@@ -9,10 +9,12 @@
  *   - any future segmentation sync that reads profiles.marketing_consent
  *     respects the unsubscribe immediately.
  *
- * Configuration in the Brevo dashboard:
+ * Configuration in the Brevo dashboard (LIVE since 2026-07-27 as webhook
+ * "mioshy_hard_bounce_unsubscribe" — before that date NO webhook existed at all,
+ * so neither unsubscribes nor hard bounces ever reached us):
  *   Brevo → Transactional → Settings → Webhooks → Add Webhook
- *   Event: "Unsubscribed"
- *   URL:   https://mioshy.com/api/brevo/unsubscribe-webhook
+ *   Events: "Unsubscribed" + "Hard Bounced"
+ *   URL:    https://mioshy.com/api/brevo/unsubscribe-webhook
  *
  * Authentication:
  *   Brevo does not sign outbound webhooks with HMAC. We support an
@@ -111,6 +113,45 @@ function isHardBounceEvent(body: BrevoUnsubscribeEvent): boolean {
   return ev === "hard_bounce" || ev === "hardbounce" || ev === "hard bounce";
 }
 
+/**
+ * Find the auth user for an email.
+ *
+ * ⚠️ `listUsers()` with no arguments returns only the FIRST PAGE (50 users).
+ * The original code scanned that single page, so an unsubscribe from anyone
+ * outside it silently found no match, acked 200 and left marketing_consent
+ * untouched — i.e. we would have kept mailing someone who unsubscribed. At the
+ * time this was found there were 192 auth users, so 142 of them (74%) were
+ * unreachable. It had never surfaced because no Brevo webhook existed at all
+ * until 2026-07-27, so this path had never run in production.
+ *
+ * Pages explicitly until the address is found or the list is exhausted.
+ * Returns the user, null when genuinely absent, or "lookup_failed" on an API
+ * error (so the caller can 500 and let Brevo retry, rather than mistaking an
+ * outage for "not our user").
+ */
+async function findUserByEmail(
+  admin: ReturnType<typeof createAdminSupabaseClient>,
+  email: string,
+): Promise<{ id: string } | null | "lookup_failed"> {
+  const PER_PAGE = 1000;
+  const MAX_PAGES = 50; // 50k users — far beyond any realistic list here
+  for (let page = 1; page <= MAX_PAGES; page++) {
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage: PER_PAGE });
+    if (error) {
+      console.error("[brevo-unsubscribe] listUsers failed", { page, error });
+      return "lookup_failed";
+    }
+    const users = data?.users ?? [];
+    const hit = users.find(
+      (u) => typeof u.email === "string" && u.email.toLowerCase() === email,
+    );
+    if (hit) return { id: hit.id };
+    if (users.length < PER_PAGE) return null; // last page, no match
+  }
+  console.warn("[brevo-unsubscribe] user list exceeded MAX_PAGES without a match", { email });
+  return null;
+}
+
 // ----------------------------------------------------------------
 // Handler
 // ----------------------------------------------------------------
@@ -165,15 +206,10 @@ export async function POST(req: Request) {
   // store email directly — it lives on auth.users.email).
   const admin = createAdminSupabaseClient();
 
-  const { data: usersData, error: usersErr } = await admin.auth.admin.listUsers();
-  if (usersErr) {
-    console.error("[brevo-unsubscribe] listUsers failed", usersErr);
+  const match = await findUserByEmail(admin, email);
+  if (match === "lookup_failed") {
     return NextResponse.json({ error: "lookup_failed" }, { status: 500 });
   }
-
-  const match = usersData.users.find(
-    (u) => typeof u.email === "string" && u.email.toLowerCase() === email,
-  );
 
   if (!match) {
     // Idempotent: the email may have been a lead-only contact or a
