@@ -1,42 +1,35 @@
 /**
  * GET /api/poll/current
  *
- * Returns the next unanswered active question for this anon (§7 — serial, no
- * skip, no repeat). Ensures the anon cookie (poll_anon_id). When every active
- * question is answered, returns { question: null, done: true }. No registration
- * required (§6).
+ * Returns the next unanswered active question for this device (§7 — serial, no
+ * skip, no repeat). Identity = the poll anon cookie, recovered from the client's
+ * `x-poll-anon` mirror when the cookie is gone, and re-set on the response.
+ * When every active question is answered, returns { question: null, done: true }.
+ * No registration required (§6), and no daily gate — the flow is continuous:
+ * a returning visitor simply resumes at the first question they have not seen.
  */
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import { getOrCreatePollAnonId, getPollUserId } from "@/lib/poll/anon";
-import { getCurrentQuestion, getTodaysAnswerReveal } from "@/lib/poll/queries";
+import {
+  getPollUserId,
+  readPollAnonHeader,
+  resolvePollAnonId,
+  setPollAnonCookie,
+} from "@/lib/poll/anon";
+import { getCurrentQuestion } from "@/lib/poll/queries";
 
-export async function GET() {
-  const anonId = await getOrCreatePollAnonId();
+export async function GET(req: Request) {
+  const { id: anonId, fresh } = await resolvePollAnonId(readPollAnonHeader(req));
   const userId = await getPollUserId(); // signed-in → key by user_id (cross-device)
 
-  // §10 "one question per day": answered today → show that reveal (choice marked);
-  // a new question only opens the next calendar day. Applies to anon + logged-in.
-  const today = await getTodaysAnswerReveal(anonId, userId);
-  if (today) {
-    return NextResponse.json({
-      question: today.question,
-      done: false,
-      answered: true,
-      yourOption: today.option,
-      pctA: today.pctA,
-      pctB: today.pctB,
-      totalVotes: today.totalVotes,
-    });
-  }
-
-  // Not answered today → serve the next question in line.
   const current = await getCurrentQuestion(anonId, userId);
-  if (current) {
-    return NextResponse.json({ question: current.question, done: false, answered: false });
-  }
-  return NextResponse.json({ question: null, done: true });
+  const res = current
+    ? NextResponse.json({ question: current.question, done: false })
+    : NextResponse.json({ question: null, done: true });
+
+  if (fresh) setPollAnonCookie(res, anonId);
+  return res;
 }

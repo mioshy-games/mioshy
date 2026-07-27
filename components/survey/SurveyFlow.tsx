@@ -1,32 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "@/navigation";
 import { track } from "@/lib/analytics";
 import styles from "./survey.module.css";
 import { PollRegister } from "./PollRegister";
-import { PersonalOfferTimer } from "@/components/journey/PersonalOfferTimer";
+import { pollAnonHeaders } from "@/lib/poll/anon-client";
 import type { OtpConsentCopy } from "@/lib/auth/otp-consent";
-
-/**
- * The ISO instant of the NEXT Israel calendar-day start (00:00 Asia/Jerusalem) —
- * the moment the "one question per day" model serves a new question. Measures
- * the live Asia/Jerusalem UTC offset so it's DST-correct year-round.
- */
-function nextIsraelMidnightIso(): string {
-  const now = new Date();
-  const dtf = new Intl.DateTimeFormat("en-US", {
-    timeZone: "Asia/Jerusalem",
-    hourCycle: "h23",
-    year: "numeric", month: "2-digit", day: "2-digit",
-    hour: "2-digit", minute: "2-digit", second: "2-digit",
-  });
-  const p = dtf.formatToParts(now).reduce<Record<string, string>>((a, x) => { a[x.type] = x.value; return a; }, {});
-  const asUTC = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute, +p.second);
-  const offsetMin = (asUTC - now.getTime()) / 60000; // Israel offset (+120 / +180)
-  const tomorrowWallUTC = Date.UTC(+p.year, +p.month - 1, +p.day + 1, 0, 0, 0);
-  return new Date(tomorrowWallUTC - offsetMin * 60000).toISOString();
-}
 
 interface Question {
   id: string;
@@ -52,8 +32,8 @@ export interface SurveyFlowProps {
    *  host (e.g. the dashboard). Default false = standalone /he/survey page. */
   embedded?: boolean;
   /** Logged-in context: the survey is open to every account (no paywall), so a
-   *  signed-in user is already "in" — hide the join CTA + the internal history
-   *  toggle (the dashboard owns history). */
+   *  signed-in user is already "in" — hide the internal history toggle (the
+   *  dashboard owns history) and the end-screen join form. */
   authed?: boolean;
   /** Floating "back" control shown while a question/reveal is on screen.
    *  onClick keeps you in-app (dashboard); href navigates (anon → marketing). */
@@ -61,9 +41,9 @@ export interface SurveyFlowProps {
   /** Logged-in user's display name — personalises the invite text
    *  ("{name} מזמין/ה אותך…"). Omitted for anon → generic invite. */
   userName?: string | null;
-  /** Unified OTP consent copy (server-resolved) — required for the anon join
-   *  form (the passwordless register). Omitted for the authed dashboard where
-   *  the register form never shows. */
+  /** Unified OTP consent copy (server-resolved) — required for the END-SCREEN
+   *  join form (the passwordless register), the only place registration appears.
+   *  Omitted for the authed dashboard where that form never shows. */
   consent?: OtpConsentCopy;
   /** Locale for the register flow's links/redirects. */
   locale?: string;
@@ -71,12 +51,16 @@ export interface SurveyFlowProps {
 
 /**
  * Israel Relationship Survey — the question flow (§6): serial question (§7) →
- * anonymous vote → live Bayesian reveal (§8, numbers only) → WhatsApp share.
- * Answering always reveals inline (no navigation). The join CTA is anon-only.
+ * anonymous vote → live reveal (§8, numbers only) → "next question" → the next
+ * unanswered question, with no registration gate and no clock anywhere in
+ * between. Identity is the anon cookie mirrored in localStorage
+ * (lib/poll/anon-client), so a returning visitor resumes at the first question
+ * they have not seen. Registration appears ONLY on the end screen, once the
+ * questions run out, as an opt-in to be told when new ones are added.
  */
 export function SurveyFlow({ embedded = false, authed: authedProp = false, back, userName, consent, locale = "he" }: SurveyFlowProps = {}) {
   // Snapshot auth at mount. The OTP verify action sets the session cookie, which
-  // triggers a Next soft route-refresh that flips this server prop true MID-FLOW
+  // triggers a Next soft route-refresh that would flip this server prop MID-FLOW
   // — that would unmount PollRegister (killing OtpFlow's phone step) before the
   // user finishes. We only leave the register view on a real reload/redirect
   // (PollRegister.onAuthenticated), so a mid-flow refresh is intentionally ignored.
@@ -87,7 +71,6 @@ export function SurveyFlow({ embedded = false, authed: authedProp = false, back,
   const [tally, setTally] = useState<Tally | null>(null);
   const [busy, setBusy] = useState(false);
   const [history, setHistory] = useState<HistoryRow[] | null>(null);
-  const [showRegister, setShowRegister] = useState(false);
   const [copied, setCopied] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -100,19 +83,11 @@ export function SurveyFlow({ embedded = false, authed: authedProp = false, back,
   const loadCurrent = useCallback(() => {
     setTally(null);
     setYourOption(null);
-    return fetch("/api/poll/current")
+    setStatus("loading");
+    return fetch("/api/poll/current", { headers: pollAnonHeaders() })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
-        if (!d) { setStatus("done"); return; }
-        // §10 — already answered: jump straight to the reveal (choice marked).
-        if (d.answered && d.question && (d.yourOption === "a" || d.yourOption === "b")) {
-          setQuestion(d.question);
-          setYourOption(d.yourOption);
-          setTally({ pctA: d.pctA, pctB: d.pctB, totalVotes: d.totalVotes });
-          setStatus("reveal");
-          return;
-        }
-        if (d.done || !d.question) { setStatus("done"); return; }
+        if (!d || d.done || !d.question) { setStatus("done"); return; }
         setQuestion(d.question);
         setStatus("question");
       })
@@ -121,7 +96,10 @@ export function SurveyFlow({ embedded = false, authed: authedProp = false, back,
 
   useEffect(() => { void loadCurrent(); }, [loadCurrent]);
 
-  // Live refresh of the real tally while on the reveal (§8 polling).
+  // Live refresh of the real tally while on the reveal (§8 polling). The number
+  // is the true cumulative vote count for THE QUESTION ON SCREEN — it changes
+  // between questions because each question has its own count, and it is
+  // recomputed from the votes table on every read (never cached, never padded).
   useEffect(() => {
     if (status !== "reveal" || !question) return;
     pollRef.current = setInterval(() => {
@@ -139,7 +117,7 @@ export function SurveyFlow({ embedded = false, authed: authedProp = false, back,
     try {
       const res = await fetch("/api/poll/vote", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: pollAnonHeaders({ "content-type": "application/json" }),
         body: JSON.stringify({ questionId: question.id, option }),
       });
       const d = await res.json();
@@ -151,6 +129,14 @@ export function SurveyFlow({ embedded = false, authed: authedProp = false, back,
       setStatus("reveal");
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch { /* stay on question */ } finally { setBusy(false); }
+  };
+
+  // Continuous flow (no clock): the reveal's button pulls the next unanswered
+  // question immediately.
+  const nextQuestion = () => {
+    track("click", { target: "survey_next_question", label: "לשאלה הבאה" });
+    void loadCurrent();
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const surveyUrl = () =>
@@ -178,24 +164,48 @@ export function SurveyFlow({ embedded = false, authed: authedProp = false, back,
     setHistory(d.history ?? []);
   };
 
-  // Single floating "back" control (§7), pinned to the bottom (§3). On the
-  // register screen it returns to the reveal; otherwise it follows `back`
-  // (dashboard → onClick, anon → href to the marketing page).
+  // Single floating "back" control (§7), pinned to the bottom (§3): dashboard →
+  // onClick, anon → href to the marketing page.
   const goBack = () => {
-    if (showRegister) { setShowRegister(false); return; }
     if (back?.onClick) { back.onClick(); return; }
     if (back?.href && typeof window !== "undefined") { window.location.href = back.href; }
   };
-  // Countdown target — next Israel calendar-day start. Computed once (stable for
-  // the reveal's lifetime); the timer itself renders nothing until it mounts.
-  const nextQuestionAt = useMemo(() => nextIsraelMidnightIso(), []);
 
-  const showBack = showRegister || ((status === "question" || status === "reveal") && !!back);
+  const showBack = (status === "question" || status === "reveal") && !!back;
   const backBtn = showBack ? (
     <button type="button" className={styles.backBtn} onClick={goBack} aria-label="חזרה">
       <span aria-hidden>→</span>
     </button>
   ) : null;
+
+  // Assessment + share block — permanent, shown under every survey screen
+  // (question, reveal, end) rather than only after answering.
+  const stickyBlock = status === "loading" ? null : (
+    <div className={styles.stickyBlock}>
+      {!authed && (
+        <Link
+          href="/journey/assessment"
+          className={styles.diagLink}
+          onClick={() =>
+            track("click", {
+              target: "survey_assessment_link",
+              label: "גלו איפה הזוגיות שלכם עומדת, באבחון קצר ←",
+            })
+          }
+        >
+          גלו איפה הזוגיות שלכם עומדת, באבחון קצר ←
+        </Link>
+      )}
+      <div className={styles.shareRow}>
+        <button type="button" className={styles.shareBtn} onClick={share}>
+          <span aria-hidden>💬</span> שתפו בוואטסאפ
+        </button>
+        <button type="button" className={styles.shareBtn} onClick={copyLink}>
+          <span aria-hidden>{copied ? "✓" : "🔗"}</span> {copied ? "הועתק" : "העתק לינק הזמנה"}
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <div className={embedded ? styles.embed : styles.page} dir="rtl">
@@ -204,28 +214,30 @@ export function SurveyFlow({ embedded = false, authed: authedProp = false, back,
         {/* §11 — small confidentiality trust line at the top of the survey. */}
         <div className={styles.trust}>🔒 סודיות מובטחת · התשובות שלך אנונימיות ופרטיות</div>
 
-        {/* Countdown to the next daily question — shown once answered (reveal),
-            reusing the results-page clock (PersonalOfferTimer tiles). */}
-        {!showRegister && status === "reveal" && (
-          <PersonalOfferTimer endsAt={nextQuestionAt} isHe label="הסקר הבא בעוד" />
-        )}
+        {status === "loading" && <p className={styles.center}>טוען…</p>}
 
-        {!authed && showRegister && consent && <PollRegister consent={consent} locale={locale} />}
-
-        {!showRegister && status === "loading" && <p className={styles.center}>טוען…</p>}
-
-        {!showRegister && status === "done" && (
+        {/* End screen — the questions ran out. The ONLY place registration is
+            offered: opt in to hear about new questions. */}
+        {status === "done" && (
           <section className={styles.fade}>
-            <p className={styles.center}>ענית על כל השאלות שיש כרגע 💜 חזרו מחר לשאלה חדשה.</p>
-            {!authed && (
-              <button type="button" className={styles.linkbtn} onClick={toggleHistory}>
-                {history ? "סגירת ההיסטוריה" : "ההיסטוריה שלי"}
-              </button>
+            <div className={styles.doneHead}>עניתם על כל השאלות שלנו 💜</div>
+            {authed ? (
+              <p className={styles.center}>נעדכן אתכם ברגע שנוסיף שאלות חדשות.</p>
+            ) : (
+              <>
+                <p className={styles.doneLead}>
+                  אנחנו מוסיפים שאלות חדשות כל הזמן. השאירו אימייל ונעדכן אתכם ברגע שיהיו חדשות.
+                </p>
+                {consent && <PollRegister consent={consent} locale={locale} />}
+                <button type="button" className={styles.linkbtn} onClick={toggleHistory}>
+                  {history ? "סגירת ההיסטוריה" : "ההיסטוריה שלי"}
+                </button>
+              </>
             )}
           </section>
         )}
 
-        {!showRegister && status === "question" && question && (
+        {status === "question" && question && (
           <section className={styles.fade}>
             <div className={styles.q}>{question.text}</div>
             <div className={styles.opts}>
@@ -239,7 +251,7 @@ export function SurveyFlow({ embedded = false, authed: authedProp = false, back,
           </section>
         )}
 
-        {!showRegister && status === "reveal" && question && tally && yourOption && (() => {
+        {status === "reveal" && question && tally && yourOption && (() => {
           const chosenLabel = yourOption === "a" ? question.optionA : question.optionB;
           const otherLabel = yourOption === "a" ? question.optionB : question.optionA;
           const chosenPct = yourOption === "a" ? tally.pctA : tally.pctB;
@@ -258,8 +270,7 @@ export function SurveyFlow({ embedded = false, authed: authedProp = false, back,
 
             {/* Centered big result (§8, mockup screen 2) — the chosen answer's
                 percentage as one large gradient number, "כמוך" tag above it,
-                "ענו כמוך" below, a divider, then the small "לעומת" comparison.
-                Numbers only — no graph/bar. */}
+                a divider, then the small "לעומת" comparison. Numbers only. */}
             <div className={styles.revHero}>
               <span className={styles.youtag}>כמוך</span>
               <div className={styles.revBig}>{chosenPct}%</div>
@@ -268,52 +279,21 @@ export function SurveyFlow({ embedded = false, authed: authedProp = false, back,
 
             {question.insightLine && <p className={styles.insight}>{question.insightLine}</p>}
 
-            {/* Join CTA (§6) — anon only; a signed-in user is already in. A lead
-                line above clarifies the sign-up is to be notified of the next survey. */}
-            {!authed && (
-              <>
-                <div className={styles.ctaLead}>קבלו הודעה על הסקר הבא</div>
-                <button
-                  type="button"
-                  className={`${styles.cta} ${styles.amber}`}
-                  style={{ fontSize: 20, marginTop: 10 }}
-                  onClick={() => {
-                    track("click", { target: "survey_daily_cta", label: "רוצים שאלה כזו כל יום?" });
-                    setShowRegister(true);
-                  }}
-                >
-                  רוצים שאלה כזו כל יום?
-                </button>
-                {/* Text link (not a button) → the full paid assessment. Locale
-                    auto-prefixed by next-intl <Link> (/he → /he/journey/...). */}
-                <Link
-                  href="/journey/assessment"
-                  className={styles.diagLink}
-                  onClick={() =>
-                    track("click", {
-                      target: "survey_assessment_link",
-                      label: "גלו איפה הזוגיות שלכם עומדת, באבחון קצר ←",
-                    })
-                  }
-                >
-                  גלו איפה הזוגיות שלכם עומדת, באבחון קצר ←
-                </Link>
-              </>
-            )}
-            {/* Share (§ invite) — WhatsApp + copy-link with "הועתק" feedback. */}
-            <div className={styles.shareRow}>
-              <button type="button" className={styles.shareBtn} onClick={share}>
-                <span aria-hidden>💬</span> שתפו בוואטסאפ
-              </button>
-              <button type="button" className={styles.shareBtn} onClick={copyLink}>
-                <span aria-hidden>{copied ? "✓" : "🔗"}</span> {copied ? "הועתק" : "העתק לינק הזמנה"}
-              </button>
-            </div>
+            {/* Continuous flow (§ no clock): straight on to the next question. */}
+            <button
+              type="button"
+              className={`${styles.cta} ${styles.amber}`}
+              onClick={nextQuestion}
+            >
+              לשאלה הבאה ←
+            </button>
           </section>
           );
         })()}
 
-        {!authed && !showRegister && history && (
+        {stickyBlock}
+
+        {!authed && history && (
           <div className={styles.history}>
             <div className={styles.qmeta}>ההיסטוריה שלי</div>
             {history.length === 0 ? (
