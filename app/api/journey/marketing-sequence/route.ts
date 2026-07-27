@@ -207,8 +207,25 @@ async function handle(req: Request): Promise<NextResponse<Summary>> {
       .maybeSingle<{ offer_expires_at: string }>();
     if (j?.offer_expires_at) byUser.set(onlyUserId, new Date(j.offer_expires_at));
   } else {
-    // Bound the scan: t0 within the last ~9 days (day-7 email fires at t0+7d).
-    const lowerOffer = new Date(now.getTime() - 9 * DAY).toISOString();
+    // Bound the scan by offer_expires_at (≈ t0 + 48h), which is the only indexed
+    // date we can filter on here — the real t0 (journey_analysis.computed_at) is
+    // resolved per user further down.
+    //
+    // ⚠️ THE WINDOW MUST COVER THE LAST EMAIL IN THE SEQUENCE. This bound was
+    // originally 9 days, sized when the final email was day 7. It was never
+    // widened when day 9 (social_proof) and day 14 (expert_call) were added, so
+    // those users fell out of the scan before their email came due:
+    // expert_call needs t0 ≤ now−14d but the scan only ever fetched t0 ≥ now−11d
+    // — an empty set, so it NEVER sent to anyone (0 of 19 due, found 2026-07-27),
+    // and social_proof was left with a ~2-day sliver that dropped 13 of 45.
+    // 20 days = day-14 + a generous margin (measured: covers 48/48 of the live
+    // cohort, vs 9/48 under the old bound).
+    //
+    // ADDING A LATER EMAIL TO THE SEQUENCE? Check this bound covers it:
+    // it must satisfy  lowerOffer ≤ t0(oldest due) + 48h, i.e. widen this window
+    // whenever the largest day-offset in `due` below grows. A day-N email needs
+    // at least N days here, and the margin absorbs Shabbat shifts and late t0s.
+    const lowerOffer = new Date(now.getTime() - 20 * DAY).toISOString();
     const upperOffer = new Date(now.getTime() + 2 * DAY).toISOString();
     const { data: journeys, error } = await admin
       .from("journeys")
