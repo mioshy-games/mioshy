@@ -22,10 +22,6 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getProfileGate } from "@/lib/auth/profile-gate";
 import { getCurrentCoupleContext } from "@/lib/between-us/couples";
 import {
-  listInvitationsForCouple,
-  type CoupleInvitationRow,
-} from "@/lib/between-us/invitations";
-import {
   cancelSubscription,
   freezeSubscription,
   resumeSubscription,
@@ -99,14 +95,10 @@ export default async function AccountPage({
   // Profile completeness - drives the "complete profile" nudge on this page
   const profileGate = await getProfileGate();
 
-  // Couple context + invitation history (for the "couple space" section)
+  // Couple context for the "couple space" section. The email-invite history
+  // that used to render here is gone with the flow (Itzik 2026-07-27) — pairing
+  // is pair-code via couple_members, which has no per-invitation history.
   const coupleCtx = await getCurrentCoupleContext();
-  const allInvitations: CoupleInvitationRow[] = coupleCtx?.couple_id
-    ? await listInvitationsForCouple(coupleCtx.couple_id).catch(() => [])
-    : [];
-  const pastInvitations = allInvitations.filter(
-    (i) => i.status !== "pending",
-  );
 
   // Latest subscription (any status) - we still want to show cancelled/frozen
   const { data: subRaw } = await supabase
@@ -382,42 +374,6 @@ export default async function AccountPage({
               </div>
             ) : null}
 
-            {pastInvitations.length > 0 ? (
-              <details className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-xs text-white/70">
-                <summary className="cursor-pointer select-none font-semibold text-white/85">
-                  {isHe
-                    ? `הזמנות קודמות (${pastInvitations.length})`
-                    : `Past invitations (${pastInvitations.length})`}
-                </summary>
-                <ul className="mt-3 divide-y divide-white/10">
-                  {pastInvitations.map((inv) => (
-                    <li
-                      key={inv.id}
-                      className="flex flex-wrap items-center justify-between gap-2 py-2"
-                    >
-                      <span className="truncate font-mono text-xs" dir="ltr">
-                        {inv.invitee_email}
-                      </span>
-                      <span
-                        className={
-                          inv.status === "accepted"
-                            ? "rounded-full bg-emerald-500/15 px-2 py-0.5 font-semibold text-emerald-300"
-                            : inv.status === "revoked"
-                              ? "rounded-full bg-rose-500/15 px-2 py-0.5 font-semibold text-rose-300"
-                              : "rounded-full bg-white/10 px-2 py-0.5 font-semibold text-white/70"
-                        }
-                      >
-                        {inv.status === "accepted"
-                          ? isHe ? "התקבלה" : "Accepted"
-                          : inv.status === "revoked"
-                            ? isHe ? "בוטלה" : "Revoked"
-                            : isHe ? "פגה" : "Expired"}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </details>
-            ) : null}
           </section>
 
           {/* Account details — narrower side card */}

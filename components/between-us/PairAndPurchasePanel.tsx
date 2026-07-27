@@ -4,7 +4,6 @@ import { useState, useTransition } from "react";
 import { useRouter, Link } from "@/navigation";
 import { stubPurchaseGame } from "@/app/actions/between-us-couple";
 import { Heart, Lock, Play } from "lucide-react";
-import type { InvitationSummary } from "@/components/between-us/InvitePartnerByEmail";
 
 type Ctx = {
   user_id: string;
@@ -31,7 +30,6 @@ export function PairAndPurchasePanel({
   ctx: Ctx | null;
   loggedIn: boolean;
   loginHref: string;
-  pendingInvitation: InvitationSummary | null;
 }) {
   const isHe = locale === "he";
   const router = useRouter();

@@ -28,7 +28,6 @@ import { getFreshClinicianReplies } from "@/lib/journey-content/fresh-replies";
 import { getProfileGate } from "@/lib/auth/profile-gate";
 import { RedeemCodeButton } from "@/components/between-us/RedeemCodeButton";
 import { MyInvitePopup } from "@/components/my/MyInvitePopup";
-import { hasActionablePendingInvitationForEmail } from "@/lib/between-us/invitations";
 import type { PillarKey } from "@/lib/entitlements/getUserEntitlements";
 import {
   derivePillarState,
@@ -251,13 +250,10 @@ export default async function MyHubPage({
   // invite link (?code=) or a real pending invitation exists for them. The
   // standing "enter code" card on the page below stays available for anyone who
   // genuinely has a code and wants to open it themselves. Owner popup unchanged.
+  // The email-invite flow was removed (Itzik 2026-07-27) — pairing is pair-code
+  // via couple_members — so the ONLY signal left is arriving on an invite link.
   const arrivedViaInviteLink = !!searchParams?.code?.trim();
-  const hasPendingInvite =
-    !hasCouple && !arrivedViaInviteLink
-      ? await hasActionablePendingInvitationForEmail(entitlements.email)
-      : false;
-  const showRedeemerPopup =
-    !hasCouple && (arrivedViaInviteLink || hasPendingInvite);
+  const showRedeemerPopup = !hasCouple && arrivedViaInviteLink;
 
   // ─── Pillar state derivation ─────────────────────────────────────────
   // One pure helper computes badge + CTA per pillar. UI just renders.
