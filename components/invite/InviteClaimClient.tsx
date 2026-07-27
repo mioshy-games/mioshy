@@ -5,6 +5,8 @@ import { useRouter } from "@/navigation";
 import { Check, KeyRound, Loader2, UserPlus } from "lucide-react";
 import { sendInviteClaimOtp, verifyInviteClaimOtp, claimInviteAsExistingUser } from "@/app/actions/invite-claim";
 import { OtpCodeInput } from "@/components/auth/OtpCodeInput";
+import { Link } from "@/navigation";
+import type { OtpConsentCopy } from "@/lib/auth/otp-consent";
 
 export function InviteClaimClient({
   isHe,
@@ -13,6 +15,7 @@ export function InviteClaimClient({
   currentUserEmail,
   currentUserAlreadyInCouple,
   locale,
+  consent,
 }: {
   isHe: boolean;
   token: string;
@@ -20,6 +23,10 @@ export function InviteClaimClient({
   currentUserEmail: string | null;
   currentUserAlreadyInCouple: boolean;
   locale: string;
+  /** The ONE approved consent wording (server-resolved), identical to the
+   *  signup screen — this flow creates a real account, so it carries the same
+   *  mandatory terms + optional marketing block. */
+  consent: OtpConsentCopy;
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -115,6 +122,7 @@ export function InviteClaimClient({
       token={token}
       invitedEmail={invitedEmail}
       locale={locale}
+      consent={consent}
     />
   );
 }
@@ -124,15 +132,20 @@ function SignupOrSigninForm({
   token,
   invitedEmail,
   locale,
+  consent,
 }: {
   isHe: boolean;
   token: string;
   invitedEmail: string;
   locale: string;
+  consent: OtpConsentCopy;
 }) {
   const router = useRouter();
   const [fullName, setFullName] = useState("");
   const [mobile, setMobile] = useState("");
+  // Site rule: terms mandatory, marketing optional and never pre-checked.
+  const [terms, setTerms] = useState(false);
+  const [marketing, setMarketing] = useState(false);
   const [codeSent, setCodeSent] = useState(false);
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -143,6 +156,7 @@ function SignupOrSigninForm({
     setError(null);
     if (fullName.trim().length < 2) { setError(isHe ? "נא למלא שם מלא" : "Full name is required"); return; }
     if (mobile.trim().length < 7) { setError(isHe ? "נא למלא מספר נייד" : "Mobile is required"); return; }
+    if (!terms) { setError(isHe ? "לא ניתן להמשיך עד אישור התנאים ומדיניות הפרטיות." : "You must accept the terms and privacy policy to continue."); return; }
     start(async () => {
       const res = await sendInviteClaimOtp({ token, email: invitedEmail });
       if (!res.ok) { setError(translateError(res.error, isHe)); return; }
@@ -155,7 +169,10 @@ function SignupOrSigninForm({
     if (c.length !== 6) { setError(isHe ? "יש להזין קוד בן 6 ספרות" : "Enter the 6-digit code"); return; }
     setError(null);
     start(async () => {
-      const res = await verifyInviteClaimOtp({ token, email: invitedEmail, code: c, fullName, mobile });
+      const res = await verifyInviteClaimOtp({
+        token, email: invitedEmail, code: c, fullName, mobile,
+        termsAccepted: terms, marketingConsent: marketing,
+      });
       if (!res.ok) { setError(translateError(res.error, isHe)); return; }
       setSuccess(true);
       setTimeout(() => router.push(`/${locale}/my`), 700);
@@ -201,12 +218,47 @@ function SignupOrSigninForm({
               <label className="text-xs font-medium text-white/70">{isHe ? "טלפון נייד" : "Mobile"}</label>
               <input value={mobile} onChange={(e) => setMobile(e.target.value)} disabled={pending} dir="ltr" inputMode="tel" autoComplete="tel" className="mt-1 w-full rounded-2xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm text-white placeholder-white/40 focus:border-fuchsia-300 focus:outline-none" placeholder="+972 50 000 0000" />
             </div>
+
+            {/* Consent — this flow CREATES an account, so it carries the same
+                block as the signup screen: terms mandatory (gates the CTA),
+                marketing optional and not pre-checked. */}
+            <label className="flex items-start gap-2.5 text-[12.5px] leading-snug text-white/75">
+              <input
+                type="checkbox"
+                checked={terms}
+                onChange={(e) => setTerms(e.target.checked)}
+                disabled={pending}
+                className="mt-0.5 h-4 w-4 shrink-0 accent-fuchsia-500"
+              />
+              <span>
+                {consent.termsPrefix}
+                <Link href="/terms" className="font-medium text-fuchsia-200 underline underline-offset-4 hover:text-white">{consent.termsLink}</Link>
+                {consent.termsAnd}
+                <Link href="/privacy" className="font-medium text-fuchsia-200 underline underline-offset-4 hover:text-white">{consent.privacyLink}</Link>
+                {consent.termsSuffix}
+              </span>
+            </label>
+            <label className="flex items-start gap-2.5 text-[12.5px] leading-snug text-white/75">
+              <input
+                type="checkbox"
+                checked={marketing}
+                onChange={(e) => setMarketing(e.target.checked)}
+                disabled={pending}
+                className="mt-0.5 h-4 w-4 shrink-0 accent-fuchsia-500"
+              />
+              <span>{consent.marketingConsent}</span>
+            </label>
             {errP}
-            <button type="button" onClick={sendCode} disabled={pending} className="w-full rounded-full bg-white px-5 py-3 text-sm font-semibold text-fuchsia-700 shadow hover:bg-fuchsia-100 disabled:cursor-not-allowed disabled:opacity-60">
+            <button type="button" onClick={sendCode} disabled={pending || !terms} className="w-full rounded-full bg-white px-5 py-3 text-sm font-semibold text-fuchsia-700 shadow hover:bg-fuchsia-100 disabled:cursor-not-allowed disabled:opacity-60">
               {pending
                 ? <span className="inline-flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" />{isHe ? "רגע…" : "One moment…"}</span>
                 : <span className="inline-flex items-center gap-2"><UserPlus className="h-4 w-4" />{isHe ? "שלחו לי קוד" : "Send me a code"}</span>}
             </button>
+            {!terms && (
+              <p className="text-center text-[11.5px] text-white/50">
+                {isHe ? "לא ניתן להמשיך עד אישור התנאים ומדיניות הפרטיות." : "You must accept the terms and privacy policy to continue."}
+              </p>
+            )}
           </>
         ) : (
           <>
