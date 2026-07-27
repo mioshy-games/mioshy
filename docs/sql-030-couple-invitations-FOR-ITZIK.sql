@@ -1,8 +1,25 @@
 -- ============================================================
--- couple_invitations — RESTORE SQL (NOT RUN — for Itzik to review first)
--- Prepared 2026-07-27.
+-- couple_invitations — RESTORE SQL · ⛔ NOT RUN, AND NOT TO BE RUN ⛔
+-- Prepared 2026-07-27. Kept for the record only.
 --
--- ⚠️ READ THIS BEFORE RUNNING ⚠️
+-- ┌──────────────────────────────────────────────────────────┐
+-- │ DECISION (Itzik, 2026-07-27): DO NOT RUN THIS.           │
+-- │ We chose option B — the email-invite flow was REMOVED    │
+-- │ from the codebase instead of revived. Pairing is         │
+-- │ pair-code via couple_members, and that is the only       │
+-- │ pairing path now. Deleted in the same change:            │
+-- │   app/[locale]/invite/[token]/page.tsx                   │
+-- │   components/invite/InviteClaimClient.tsx                │
+-- │   components/between-us/InvitePartnerByEmail.tsx         │
+-- │   app/actions/invite-claim.ts                            │
+-- │   app/actions/couple-invitations.ts                      │
+-- │   lib/between-us/invitations.ts                          │
+-- │ This file is retained ONLY so the schema is on record if │
+-- │ the decision is ever revisited. Reviving it needs the    │
+-- │ code back too — the SQL alone does nothing.              │
+-- └──────────────────────────────────────────────────────────┘
+--
+-- ⚠️ ORIGINAL REVIEW NOTES (kept as written) ⚠️
 -- Migration 030 was NOT skipped by accident. There is an explicit written
 -- instruction not to run it:
 --     docs/assessment-funnel-analytics-FINAL-CHECKLIST.md:69

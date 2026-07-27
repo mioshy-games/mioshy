@@ -30,7 +30,6 @@ import {
 import { stubPurchaseGame } from "@/app/actions/between-us-couple";
 import { subscribeAdultsTier } from "@/app/actions/adults-subscribe";
 import type { AdultsPricing } from "@/lib/adults/pricing";
-import type { InvitationSummary } from "@/components/between-us/InvitePartnerByEmail";
 
 type Ctx = {
   user_id: string;
@@ -63,7 +62,6 @@ export function AdultsPricingPanel({
   ctx: Ctx | null;
   loggedIn: boolean;
   loginHref: string;
-  pendingInvitation: InvitationSummary | null;
 }) {
   const isHe = locale === "he";
   const router = useRouter();
