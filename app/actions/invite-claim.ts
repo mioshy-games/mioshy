@@ -30,7 +30,7 @@ import {
   normaliseEmail,
 } from "@/lib/between-us/invitations";
 import { migrateSoloJourneyToCouple } from "@/lib/journey-content/migrate-solo-to-couple";
-import { sendEmailOtp, verifyEmailOtp, isFirstRegistration } from "@/lib/auth/otp-core";
+import { sendEmailOtp, verifyEmailOtp, isFirstRegistration, syncConsentedContactToBrevo } from "@/lib/auth/otp-core";
 
 type Ok = { ok: true; couple_id: string };
 type Err = { ok: false; error: string };
@@ -228,6 +228,11 @@ export async function verifyInviteClaimOtp(params: {
   code: string;
   fullName: string;
   mobile: string;
+  /** Site rule: accepting the terms is MANDATORY on every account-creation
+   *  point. Refused server-side too, not just in the UI. */
+  termsAccepted: boolean;
+  /** Optional, never pre-checked. Recorded as chosen. */
+  marketingConsent: boolean;
 }): Promise<Result> {
   const token = (params.token ?? "").trim();
   const email = normaliseEmail(params.email ?? "");
@@ -235,6 +240,7 @@ export async function verifyInviteClaimOtp(params: {
   const mobile = normaliseMobile(params.mobile ?? "");
   if (fullName.length < 2) return { ok: false, error: "invalid_full_name" };
   if (!mobile) return { ok: false, error: "invalid_mobile" };
+  if (!params.termsAccepted) return { ok: false, error: "terms_required" };
 
   const pre = await verifyInvitationPreflight(token, email);
   if (!pre.ok) return pre;
@@ -248,12 +254,40 @@ export async function verifyInviteClaimOtp(params: {
   // who used the "new account" tab is logged into their account — don't overwrite
   // their full_name/mobile; the invitation is still accepted below. Uses the
   // deterministic profile-has-no-name check (not the fragile created_at heuristic).
+  const nowIso = new Date().toISOString();
   if (await isFirstRegistration(userId)) {
+    // Consents are written with the identity, exactly like the OTP signup path
+    // (app/actions/otp-auth.ts): terms always true (refused above otherwise),
+    // marketing as chosen.
     const { error: profileErr } = await admin.from("profiles").upsert(
-      { id: userId, full_name: fullName, mobile, phone: mobile },
+      {
+        id: userId,
+        full_name: fullName,
+        mobile,
+        phone: mobile,
+        terms_accepted: true,
+        terms_accepted_at: nowIso,
+        marketing_consent: params.marketingConsent,
+        marketing_consent_at: params.marketingConsent ? nowIso : null,
+        marketing_consent_source: params.marketingConsent ? "invite_claim" : null,
+      },
       { onConflict: "id" },
     );
     if (profileErr) console.error("[invite-claim/otp] profile upsert failed", profileErr);
+  } else if (params.marketingConsent) {
+    // Returning account ticking the box: consent only ever flips false→true
+    // (never overwritten back to false here) — same rule as the OTP path.
+    await admin.from("profiles").update(
+      { marketing_consent: true, marketing_consent_at: nowIso, marketing_consent_source: "invite_claim" },
+    ).eq("id", userId);
+  }
+  // Consent must reach Brevo (the sending platform) or it is meaningless.
+  if (params.marketingConsent) {
+    try {
+      await syncConsentedContactToBrevo(admin, userId, email, "he");
+    } catch (err) {
+      console.error("[invite-claim/otp] Brevo consent sync failed", err);
+    }
   }
 
   // verifyEmailOtp already established the Supabase session (server client), so

@@ -12,6 +12,7 @@ import { setRequestLocale } from "next-intl/server";
 import { loadCmsTextsForPage } from "@/lib/cms/server";
 import { CmsTextProvider } from "@/components/cms/CmsTextProvider";
 import { MarathonForm } from "@/components/marathon/MarathonForm";
+import { getOtpConsentCopy } from "@/lib/auth/otp-consent";
 import { buildAlternates } from "@/lib/seo/alternates";
 
 export const dynamic = "force-dynamic";
@@ -43,6 +44,9 @@ export default async function MarathonPage({
   const { locale } = params;
   setRequestLocale(locale);
   const cmsRows = await loadCmsTextsForPage("marathon");
+  // ONE approved consent wording for every lead-capture point on the site
+  // (same source as the signup screen) — see MarathonForm's header.
+  const consent = await getOtpConsentCopy(locale === "en" ? "en" : "he");
 
   return (
     <CmsTextProvider rows={cmsRows}>
@@ -55,7 +59,7 @@ export default async function MarathonPage({
         }}
       >
         <div className="mx-auto w-full max-w-[560px]">
-          <MarathonForm />
+          <MarathonForm consent={consent} />
         </div>
       </main>
     </CmsTextProvider>

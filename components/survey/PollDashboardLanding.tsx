@@ -101,8 +101,16 @@ export function PollDashboardLanding({
                 <div className="mt-2 text-[14px] text-[#4a3f4a]">
                   בחרת: <b className="text-[#2a2130]">{h.chosenLabel}</b>
                 </div>
+                {/* Priors were removed, so a question only you answered would
+                    read "100% ענו כמוך" — say what is actually true instead. */}
                 <div className="mt-1 text-[14px] text-[#6b5f6a]">
-                  <b className="text-pink-600">{h.chosenPct}%</b> ענו כמוך · {h.otherPct}% בחרו {h.otherLabel}
+                  {h.totalVotes <= 1 ? (
+                    "אתם הראשונים שעונים על השאלה הזו."
+                  ) : (
+                    <>
+                      <b className="text-pink-600">{h.chosenPct}%</b> ענו כמוך · {h.otherPct}% בחרו {h.otherLabel}
+                    </>
+                  )}
                 </div>
               </div>
             ))}

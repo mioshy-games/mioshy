@@ -4,6 +4,7 @@ import { Heart, Mail, Sparkles } from "lucide-react";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getInvitationDisplay } from "@/lib/between-us/invitations";
 import { InviteClaimClient } from "@/components/invite/InviteClaimClient";
+import { getOtpConsentCopy } from "@/lib/auth/otp-consent";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +38,9 @@ export default async function InviteClaimPage({
   });
 
   const display = await getInvitationDisplay(token);
+  // ONE approved consent wording for every account-creation point (same source
+  // as the signup screen).
+  const consent = await getOtpConsentCopy(locale === "en" ? "en" : "he");
 
   // ── Token invalid / missing ─────────────────────────────────────
   if (!display) {
@@ -152,6 +156,7 @@ export default async function InviteClaimPage({
               currentUserEmail={currentUserEmail}
               currentUserAlreadyInCouple={currentUserAlreadyInCouple}
               locale={locale}
+              consent={consent}
             />
           </div>
         </section>
