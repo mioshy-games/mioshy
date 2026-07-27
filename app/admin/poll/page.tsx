@@ -13,7 +13,7 @@ export default async function PollAdminPage() {
   const [{ data: qs }, { data: aggs }] = await Promise.all([
     admin
       .from("poll_questions")
-      .select("id, text, option_a, option_b, order_index, domain, prior_a, prior_b, prior_weight, is_active")
+      .select("id, text, option_a, option_b, order_index, domain, is_active")
       .order("order_index", { ascending: true }),
     admin.from("poll_vote_aggregates").select("question_id, count_a, count_b"),
   ]);
@@ -22,7 +22,7 @@ export default async function PollAdminPage() {
 
   const questions: AdminQuestion[] = (qs ?? []).map((q) => {
     const a = aggMap.get(q.id as string) ?? { count_a: 0, count_b: 0 };
-    const pct = computePollPercent({ priorA: q.prior_a, priorB: q.prior_b, countA: a.count_a, countB: a.count_b });
+    const pct = computePollPercent({ countA: a.count_a, countB: a.count_b });
     return {
       id: q.id,
       text: q.text,
@@ -30,8 +30,6 @@ export default async function PollAdminPage() {
       optionB: q.option_b,
       orderIndex: q.order_index,
       domain: q.domain,
-      priorA: q.prior_a,
-      priorB: q.prior_b,
       isActive: q.is_active,
       countA: a.count_a,
       countB: a.count_b,

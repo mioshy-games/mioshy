@@ -1,8 +1,8 @@
 /**
  * GET /api/admin/poll/export
  * Admin-only. Downloads ALL poll questions as CSV in the exact import format
- * (columns: text,option_a,option_b,order_index,domain,prior_a,prior_b,
- * prior_weight,insight_line) so an admin can download → edit → re-import.
+ * (columns: text,option_a,option_b,order_index,domain,insight_line) so an
+ * admin can download → edit → re-import.
  */
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,9 +17,6 @@ const COLUMNS = [
   "option_b",
   "order_index",
   "domain",
-  "prior_a",
-  "prior_b",
-  "prior_weight",
   "insight_line",
 ] as const;
 

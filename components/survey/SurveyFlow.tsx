@@ -217,18 +217,25 @@ export function SurveyFlow({ embedded = false, authed: authedProp = false, back,
         {status === "loading" && <p className={styles.center}>טוען…</p>}
 
         {/* End screen — the questions ran out. The ONLY place registration is
-            offered: opt in to hear about new questions. */}
+            offered: the site's existing OTP signup (PollRegister → OtpFlow),
+            carrying its standard consent block, under a survey-specific title. */}
         {status === "done" && (
           <section className={styles.fade}>
-            <div className={styles.doneHead}>עניתם על כל השאלות שלנו 💜</div>
             {authed ? (
-              <p className={styles.center}>נעדכן אתכם ברגע שנוסיף שאלות חדשות.</p>
+              <>
+                <div className={styles.doneHead}>עניתם על כל השאלות שיש לנו כרגע.</div>
+                <p className={styles.doneLead}>נעדכן אתכם ברגע שנוסיף שאלות חדשות.</p>
+              </>
             ) : (
               <>
-                <p className={styles.doneLead}>
-                  אנחנו מוסיפים שאלות חדשות כל הזמן. השאירו אימייל ונעדכן אתכם ברגע שיהיו חדשות.
-                </p>
-                {consent && <PollRegister consent={consent} locale={locale} />}
+                {consent && (
+                  <PollRegister
+                    consent={consent}
+                    locale={locale}
+                    signupHeading="עניתם על כל השאלות שיש לנו כרגע."
+                    signupSubheading="אנחנו מוסיפים שאלות חדשות כל הזמן. השאירו אימייל ונעדכן אתכם כשיהיו חדשות."
+                  />
+                )}
                 <button type="button" className={styles.linkbtn} onClick={toggleHistory}>
                   {history ? "סגירת ההיסטוריה" : "ההיסטוריה שלי"}
                 </button>
@@ -263,19 +270,29 @@ export function SurveyFlow({ embedded = false, authed: authedProp = false, back,
             <div className={styles.revYour}>
               בחרת: <span>{chosenLabel}</span>
             </div>
-            <div className={styles.revLive}>
-              <span className={styles.pulse} />
-              <span>{tally.totalVotes.toLocaleString("he-IL")}</span> זוגות ענו על זה · מתעדכן עכשיו
-            </div>
 
-            {/* Centered big result (§8, mockup screen 2) — the chosen answer's
-                percentage as one large gradient number, "כמוך" tag above it,
-                a divider, then the small "לעומת" comparison. Numbers only. */}
-            <div className={styles.revHero}>
-              <span className={styles.youtag}>כמוך</span>
-              <div className={styles.revBig}>{chosenPct}%</div>
-              <div className={styles.revVs}>לעומת <b>{otherPct}%</b> שבחרו <b>{otherLabel}</b></div>
-            </div>
+            {/* Nobody else has answered this question yet — percentages would be
+                a meaningless 100%/0%, so say what is actually true. Priors were
+                removed, so the numbers are never padded. */}
+            {tally.totalVotes <= 1 ? (
+              <p className={styles.firstLine}>אתם הראשונים שעונים על השאלה הזו.</p>
+            ) : (
+              <>
+                <div className={styles.revLive}>
+                  <span className={styles.pulse} />
+                  <span>{tally.totalVotes.toLocaleString("he-IL")}</span> זוגות ענו על זה · מתעדכן עכשיו
+                </div>
+
+                {/* Centered big result (§8, mockup screen 2) — the chosen answer's
+                    percentage as one large gradient number, "כמוך" tag above it,
+                    a divider, then the small "לעומת" comparison. Numbers only. */}
+                <div className={styles.revHero}>
+                  <span className={styles.youtag}>כמוך</span>
+                  <div className={styles.revBig}>{chosenPct}%</div>
+                  <div className={styles.revVs}>לעומת <b>{otherPct}%</b> שבחרו <b>{otherLabel}</b></div>
+                </div>
+              </>
+            )}
 
             {question.insightLine && <p className={styles.insight}>{question.insightLine}</p>}
 

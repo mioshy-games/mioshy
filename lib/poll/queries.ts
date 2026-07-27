@@ -27,8 +27,6 @@ interface PollQuestionRow {
   option_b: string;
   order_index: number;
   insight_line: string | null;
-  prior_a: number;
-  prior_b: number;
 }
 
 function toQuestion(r: PollQuestionRow): PollQuestion {
@@ -52,7 +50,7 @@ function toQuestion(r: PollQuestionRow): PollQuestion {
 export async function getCurrentQuestion(
   anonId: string | null,
   userId?: string | null,
-): Promise<{ question: PollQuestion; priorA: number; priorB: number } | null> {
+): Promise<{ question: PollQuestion } | null> {
   const admin = await createAdminClient();
 
   // Signed-in → identity by user_id (survives cookie clear / another device);
@@ -70,7 +68,7 @@ export async function getCurrentQuestion(
 
   let q = admin
     .from("poll_questions")
-    .select("id, text, option_a, option_b, order_index, insight_line, prior_a, prior_b")
+    .select("id, text, option_a, option_b, order_index, insight_line")
     .eq("is_active", true)
     .order("order_index", { ascending: true })
     .limit(1);
@@ -78,7 +76,7 @@ export async function getCurrentQuestion(
 
   const { data } = await q.maybeSingle<PollQuestionRow>();
   if (!data) return null;
-  return { question: toQuestion(data), priorA: data.prior_a, priorB: data.prior_b };
+  return { question: toQuestion(data) };
 }
 
 /** The anon's answered history (§7): each answered question + their choice. */
@@ -170,20 +168,18 @@ export async function getHistoryWithTally(anonId: string | null, userId?: string
   });
 }
 
-/** Recompute the live tally for a question from real votes + its priors (§8). */
+/**
+ * Recompute the live tally for a question from its REAL votes. No priors — the
+ * percentage and the respondent count are computed from the same numbers, so
+ * they can never disagree. A question with no votes returns hasVotes: false.
+ */
 export async function getQuestionTally(questionId: string): Promise<PollPercent> {
   const admin = await createAdminClient();
-  const [{ data: q }, { count: countA }, { count: countB }] = await Promise.all([
-    admin.from("poll_questions").select("prior_a, prior_b").eq("id", questionId).maybeSingle<{ prior_a: number; prior_b: number }>(),
+  const [{ count: countA }, { count: countB }] = await Promise.all([
     admin.from("poll_votes").select("id", { count: "exact", head: true }).eq("question_id", questionId).eq("option", "a"),
     admin.from("poll_votes").select("id", { count: "exact", head: true }).eq("question_id", questionId).eq("option", "b"),
   ]);
-  return computePollPercent({
-    priorA: q?.prior_a ?? 0,
-    priorB: q?.prior_b ?? 0,
-    countA: countA ?? 0,
-    countB: countB ?? 0,
-  });
+  return computePollPercent({ countA: countA ?? 0, countB: countB ?? 0 });
 }
 
 /** Which option this anon already chose on this question, or null. */

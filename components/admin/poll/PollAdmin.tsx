@@ -10,8 +10,6 @@ export interface AdminQuestion {
   optionB: string;
   orderIndex: number;
   domain: string | null;
-  priorA: number;
-  priorB: number;
   isActive: boolean;
   countA: number;
   countB: number;
@@ -81,8 +79,8 @@ export function PollAdmin({ questions }: { questions: AdminQuestion[] }) {
   // "ייצוא CSV" → edit → re-import). Built client-side, no server needed.
   const downloadTemplate = () => {
     const tpl =
-      "text,option_a,option_b,order_index,domain,prior_a,prior_b,prior_weight,insight_line\r\n" +
-      '"מי בדרך כלל אומר ""לילה טוב"" אחרון אצלכם?","אני, כמעט תמיד","בן או בת הזוג",1,"תקשורת",61,39,100,""\r\n';
+      "text,option_a,option_b,order_index,domain,insight_line\r\n" +
+      '"מי בדרך כלל אומר ""לילה טוב"" אחרון אצלכם?","אני, כמעט תמיד","בן או בת הזוג",1,"תקשורת",""\r\n';
     const blob = new Blob(["﻿" + tpl], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -104,7 +102,7 @@ export function PollAdmin({ questions }: { questions: AdminQuestion[] }) {
         <section className="rounded-2xl border border-white/10 bg-white/5 p-5 mb-6">
           <div className="text-sm font-bold mb-2">ייבוא שאלות מ-CSV</div>
           <p className="text-white/50 text-xs mb-3">
-            עמודות: text, option_a, option_b, order_index, domain, prior_a, prior_b, prior_weight, insight_line · דילוג אוטומטי על שאלה שכבר קיימת (לפי הטקסט).
+            עמודות: text, option_a, option_b, order_index, domain, insight_line · דילוג אוטומטי על שאלה שכבר קיימת (לפי הטקסט).
           </p>
           {/* Download → edit → re-import round-trip. "ייצוא CSV" pulls all
               existing questions in the exact import format; the template is a
@@ -176,7 +174,7 @@ export function PollAdmin({ questions }: { questions: AdminQuestion[] }) {
                       </div>
                     </div>
                     <div className="text-white/40 text-[11px] mt-1.5">
-                      prior {q.priorA}/{q.priorB} · {q.totalVotes.toLocaleString("he-IL")} הצבעות אמיתיות
+                      {q.totalVotes.toLocaleString("he-IL")} הצבעות אמיתיות
                     </div>
                   </div>
                   <button onClick={() => toggle(q)} disabled={busy} className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-bold ${q.isActive ? "bg-white/10" : "bg-emerald-500/80"}`}>
