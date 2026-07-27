@@ -449,7 +449,20 @@ async function handle(req: Request): Promise<NextResponse<Summary>> {
             }
           : undefined,
       });
-      if (r.ok) {
+      if (r.ok && r.skipped) {
+        // Suppressed by the hard-bounce guard (a dead address) — nothing left
+        // the building, so it must NOT count as sent, and the idempotency claim
+        // has to be released or the address could never be mailed again if it is
+        // ever un-suppressed. Recorded as an error line so the run is auditable.
+        if (!force) {
+          await admin
+            .from("marketing_email_log")
+            .delete()
+            .eq("user_id", userId)
+            .eq("email_kind", kind);
+        }
+        errors.push(`${userId.slice(0, 8)}:${kind}:suppressed_hard_bounce`);
+      } else if (r.ok) {
         sent++;
         if (!force && r.messageId) {
           await admin
