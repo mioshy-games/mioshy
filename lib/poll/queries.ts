@@ -8,8 +8,33 @@
  */
 
 import "server-only";
-import { createAdminClient } from "@/lib/supabase-admin";
+import { createClient } from "@supabase/supabase-js";
 import { computePollPercent, type PollPercent } from "@/lib/poll/percent";
+
+/**
+ * Service-role client for the poll, with the Next.js Data Cache explicitly
+ * turned OFF (`cache: "no-store"` on every request).
+ *
+ * WHY: supabase-js issues plain `fetch` calls, and Next patches global fetch —
+ * GET/HEAD responses land in the Data Cache, which PERSISTS ACROSS DEPLOYMENTS.
+ * The live counter is a `count: exact, head: true` HEAD request, so on Vercel it
+ * was served from a cache entry frozen on 2026-07-14 (the ~45 minutes when
+ * question #1 had exactly one vote) — prod kept reporting "1 answered" while the
+ * table held 19. Local dev never reproduced it: its cache starts empty.
+ * Every poll read is live data, so nothing here may be cached.
+ */
+function pollAdmin() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) throw new Error("Missing Supabase service role credentials");
+  return createClient(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: {
+      fetch: (input: RequestInfo | URL, init?: RequestInit) =>
+        fetch(input, { ...init, cache: "no-store" }),
+    },
+  });
+}
 
 export interface PollQuestion {
   id: string;
@@ -51,7 +76,7 @@ export async function getCurrentQuestion(
   anonId: string | null,
   userId?: string | null,
 ): Promise<{ question: PollQuestion } | null> {
-  const admin = await createAdminClient();
+  const admin = pollAdmin();
 
   // Signed-in → identity by user_id (survives cookie clear / another device);
   // anonymous → the anon cookie.
@@ -83,7 +108,7 @@ export async function getCurrentQuestion(
 export async function getHistory(anonId: string | null, userId?: string | null): Promise<
   Array<{ questionId: string; text: string; chosen: string; option: "a" | "b"; answeredAt: string }>
 > {
-  const admin = await createAdminClient();
+  const admin = pollAdmin();
   const idCol = userId ? "user_id" : "anon_id";
   const idVal = userId ?? anonId;
   if (!idVal) return [];
@@ -131,7 +156,7 @@ export async function getHistoryWithTally(anonId: string | null, userId?: string
     answeredAt: string;
   }>
 > {
-  const admin = await createAdminClient();
+  const admin = pollAdmin();
   const idCol = userId ? "user_id" : "anon_id";
   const idVal = userId ?? anonId;
   if (!idVal) return [];
@@ -174,7 +199,7 @@ export async function getHistoryWithTally(anonId: string | null, userId?: string
  * they can never disagree. A question with no votes returns hasVotes: false.
  */
 export async function getQuestionTally(questionId: string): Promise<PollPercent> {
-  const admin = await createAdminClient();
+  const admin = pollAdmin();
   const [{ count: countA }, { count: countB }] = await Promise.all([
     admin.from("poll_votes").select("id", { count: "exact", head: true }).eq("question_id", questionId).eq("option", "a"),
     admin.from("poll_votes").select("id", { count: "exact", head: true }).eq("question_id", questionId).eq("option", "b"),
@@ -184,7 +209,7 @@ export async function getQuestionTally(questionId: string): Promise<PollPercent>
 
 /** Which option this anon already chose on this question, or null. */
 export async function getExistingVote(questionId: string, anonId: string): Promise<"a" | "b" | null> {
-  const admin = await createAdminClient();
+  const admin = pollAdmin();
   const { data } = await admin
     .from("poll_votes")
     .select("option")
@@ -202,7 +227,7 @@ export async function getExistingVote(questionId: string, anonId: string): Promi
  * Tolerates the pre-existing duplicates in the table (takes the first vote).
  */
 async function getExistingVoteByUser(questionId: string, userId: string): Promise<"a" | "b" | null> {
-  const admin = await createAdminClient();
+  const admin = pollAdmin();
   const { data } = await admin
     .from("poll_votes")
     .select("option")
@@ -224,7 +249,7 @@ export async function recordVote(args: {
   anonId: string;
   userId?: string | null;
 }): Promise<"a" | "b"> {
-  const admin = await createAdminClient();
+  const admin = pollAdmin();
 
   // Same account, different device/cookie → keep the first vote, insert nothing.
   if (args.userId) {
