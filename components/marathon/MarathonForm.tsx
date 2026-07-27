@@ -5,13 +5,20 @@
  *
  * Lead-capture form for the free 7-day couples marathon (/[locale]/marathon).
  * Posts to the EXISTING /api/leads/upsert (extended for phone + source) with
- * source='marathon-7day', marketing_consent + terms_accepted true. Reuses the
- * shared lead infra (RLS, rate-limit, dedupe by email+device_id).
+ * source='marathon-7day'. Reuses the shared lead infra (RLS, rate-limit,
+ * dedupe by email+device_id).
  *
- * Copy is CMS-keyed under marathon.* (he+en) via useCmsText; legal links point
- * at the real /terms + /privacy routes (same as SignupForm). Submit is disabled
- * until phone + email + BOTH required checkboxes are valid. On success the form
- * swaps to a confirmation panel.
+ * CONSENT (site rule, Itzik 2026-07-27): terms are MANDATORY, marketing consent
+ * is OPTIONAL and never pre-checked, and the real choice is what gets sent —
+ * both in the ONE approved wording, resolved server-side by getOtpConsentCopy()
+ * and passed in as `consent` (identical text to the signup screen; edit it once
+ * at /admin/content, page "journey", keys journeyAssessment.inlineAuth.*).
+ * The marathon content itself is the service the visitor asked for, so it is
+ * not gated on the marketing box.
+ *
+ * Other copy is CMS-keyed under marathon.* (he+en) via useCmsText; legal links
+ * point at the real /terms + /privacy routes. Submit is disabled until phone +
+ * email + terms are valid. On success the form swaps to a confirmation panel.
  */
 
 import { useMemo, useState } from "react";
@@ -20,6 +27,7 @@ import { Link } from "@/navigation";
 import { Check } from "lucide-react";
 import { useCmsText } from "@/hooks/useCmsText";
 import { getOrCreateDeviceId } from "@/lib/device-id";
+import type { OtpConsentCopy } from "@/lib/auth/otp-consent";
 
 const GRAD_SUBMIT = "linear-gradient(90deg,#f0abfc,#d946ef 55%,#a21caf)";
 const GRAD_FREE = "linear-gradient(135deg,#34d399,#10b981)";
@@ -30,7 +38,7 @@ function cmsOr(text: string, fallback: string) {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export function MarathonForm() {
+export function MarathonForm({ consent: consentCopy }: { consent: OtpConsentCopy }) {
   const locale = useLocale() as "he" | "en";
   const isHe = locale === "he";
 
@@ -48,11 +56,6 @@ export function MarathonForm() {
     phonePlaceholder: cmsOr(useCmsText("marathon.phonePlaceholder").text, "05X-XXXXXXX"),
     emailLabel: cmsOr(useCmsText("marathon.emailLabel").text, isHe ? "אימייל" : "Email"),
     emailPlaceholder: cmsOr(useCmsText("marathon.emailPlaceholder").text, "you@example.com"),
-    consent: cmsOr(useCmsText("marathon.consent").text, isHe ? "אני מאשר/ת קבלת תכני המרתון ועדכונים מ-Mioshy בוואטסאפ ובאימייל." : "I agree to receive the marathon content and updates from Mioshy via WhatsApp and email."),
-    termsPrefix: cmsOr(useCmsText("marathon.termsPrefix").text, isHe ? "קראתי ואני מסכים/ה ל" : "I've read and agree to the "),
-    termsLink: cmsOr(useCmsText("marathon.termsLink").text, isHe ? "תנאי השימוש" : "Terms of Service"),
-    termsAnd: cmsOr(useCmsText("marathon.termsAnd").text, isHe ? " ול" : " and "),
-    privacyLink: cmsOr(useCmsText("marathon.privacyLink").text, isHe ? "מדיניות הפרטיות" : "Privacy Policy"),
     submit: cmsOr(useCmsText("marathon.submit").text, isHe ? "הצטרפות למרתון" : "Join the marathon"),
     submitting: cmsOr(useCmsText("marathon.submitting").text, isHe ? "רושמים אתכם…" : "Signing you up…"),
     reassure: cmsOr(useCmsText("marathon.reassure").text, isHe ? "חינם לגמרי · בלי התחייבות · אפשר לבטל בכל רגע" : "Completely free · no commitment · cancel anytime"),
@@ -65,15 +68,16 @@ export function MarathonForm() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
-  const [consent, setConsent] = useState(false);
+  // Marketing consent: optional, never pre-checked. Terms: mandatory.
+  const [marketing, setMarketing] = useState(false);
   const [terms, setTerms] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
   const valid = useMemo(
-    () => phone.trim().length >= 6 && EMAIL_RE.test(email.trim()) && consent && terms,
-    [phone, email, consent, terms],
+    () => phone.trim().length >= 6 && EMAIL_RE.test(email.trim()) && terms,
+    [phone, email, terms],
   );
 
   async function handleSubmit(e: React.FormEvent) {
@@ -93,7 +97,7 @@ export function MarathonForm() {
           source: "marathon-7day",
           language: locale,
           device_id: getOrCreateDeviceId(),
-          marketing_consent: true,
+          marketing_consent: marketing,
           terms_accepted: true,
           terms_accepted_at: new Date().toISOString(),
         }),
@@ -210,21 +214,7 @@ export function MarathonForm() {
           />
         </div>
 
-        {/* Marketing consent* */}
-        <label className="flex items-start gap-3 rounded-[14px] border border-white/10 bg-white/[0.04] p-3.5 text-[17px] leading-snug text-white/75">
-          <input
-            type="checkbox"
-            required
-            checked={consent}
-            onChange={(e) => setConsent(e.target.checked)}
-            className="mt-1 h-5 w-5 shrink-0 accent-fuchsia-500"
-          />
-          <span>
-            {c.consent} <span className="text-rose-300">*</span>
-          </span>
-        </label>
-
-        {/* Terms* — real /terms + /privacy links */}
+        {/* Terms* — mandatory, approved wording, real /terms + /privacy links */}
         <label className="flex items-start gap-3 rounded-[14px] border border-white/10 bg-white/[0.04] p-3.5 text-[17px] leading-snug text-white/75">
           <input
             type="checkbox"
@@ -234,16 +224,27 @@ export function MarathonForm() {
             className="mt-1 h-5 w-5 shrink-0 accent-fuchsia-500"
           />
           <span>
-            {c.termsPrefix}
+            {consentCopy.termsPrefix}
             <Link href="/terms" className="font-medium text-fuchsia-200 underline underline-offset-4 hover:text-white">
-              {c.termsLink}
+              {consentCopy.termsLink}
             </Link>
-            {c.termsAnd}
+            {consentCopy.termsAnd}
             <Link href="/privacy" className="font-medium text-fuchsia-200 underline underline-offset-4 hover:text-white">
-              {c.privacyLink}
+              {consentCopy.privacyLink}
             </Link>
-            . <span className="text-rose-300">*</span>
+            {consentCopy.termsSuffix} <span className="text-rose-300">*</span>
           </span>
+        </label>
+
+        {/* Marketing consent — OPTIONAL, not pre-checked, approved wording */}
+        <label className="flex items-start gap-3 rounded-[14px] border border-white/10 bg-white/[0.04] p-3.5 text-[17px] leading-snug text-white/75">
+          <input
+            type="checkbox"
+            checked={marketing}
+            onChange={(e) => setMarketing(e.target.checked)}
+            className="mt-1 h-5 w-5 shrink-0 accent-fuchsia-500"
+          />
+          <span>{consentCopy.marketingConsent}</span>
         </label>
 
         {error ? (
