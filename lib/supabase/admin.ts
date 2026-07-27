@@ -21,5 +21,9 @@ export function createAdminSupabaseClient() {
       autoRefreshToken: false,
       persistSession: false,
     },
+    // Never let Next's Data Cache serve a service-role read — it caches
+    // GET/HEAD forever inside GET-only route handlers and survives deployments.
+    // Full explanation in lib/supabase-admin.ts.
+    global: { fetch: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, { ...init, cache: "no-store" }) },
   });
 }
