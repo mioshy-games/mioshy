@@ -188,6 +188,54 @@ export function isAdultsPath(pathname: string): boolean {
   return ADULTS_OFFER_BLOCKED_PATHS.some((p) => pathname.includes(p));
 }
 
+/**
+ * Surfaces where the user is MID-ACTION and an ambient offer must never
+ * interrupt (Itzik 2026-07-30).
+ *
+ * Why this list grew: the offer popped over question 1 of the relationship
+ * survey and its CTA navigated the user into /journey/assessment. From the
+ * user's seat the survey had silently turned into a different questionnaire
+ * that asked for their details — reported as "the old signup gate is back",
+ * when the survey itself was fine. Anything the user is part-way through gets
+ * the same protection: questionnaires, an active game, and the money flow.
+ */
+export const MID_ACTION_BLOCKED_PATHS = [
+  // Questionnaires — the survey and every assessment variant.
+  "/survey",
+  "/my/survey",
+  "/journey/assessment",
+  "/couples-assessment",
+  "/assessments",
+  // Active play surfaces. NOTE: "/game" must not swallow "/games" (the
+  // marketing catalogue) — that is why matching is segment-aware below.
+  "/game",
+  "/sex-game",
+  "/between-us",
+  "/marathon",
+  // Money + account flows.
+  "/billing",
+  "/pricing",
+  "/paywall",
+  "/auth",
+  "/dashboard",
+  "/admin",
+] as const;
+
+/** Drop a leading /he or /en so the path can be matched by route, not locale. */
+export function stripLocalePrefix(pathname: string): string {
+  return pathname.replace(/^\/(he|en)(?=\/|$)/, "") || "/";
+}
+
+/**
+ * Segment-aware prefix match. `includes()` is not safe here: "/games" contains
+ * "/game", and blocking the catalogue would silently delete a legitimate
+ * placement.
+ */
+export function isMidActionPath(pathname: string): boolean {
+  const path = stripLocalePrefix(pathname);
+  return MID_ACTION_BLOCKED_PATHS.some((p) => path === p || path.startsWith(`${p}/`));
+}
+
 // ── Priority when more than one trigger is eligible at the same moment ───────
 // (the shared once-per-session flag means first-to-claim wins; this documents +
 // orders the simultaneous case). Highest first.

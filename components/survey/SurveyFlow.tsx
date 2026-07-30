@@ -65,7 +65,7 @@ export function SurveyFlow({ embedded = false, authed: authedProp = false, back,
   // user finishes. We only leave the register view on a real reload/redirect
   // (PollRegister.onAuthenticated), so a mid-flow refresh is intentionally ignored.
   const [authed] = useState(authedProp);
-  const [status, setStatus] = useState<"loading" | "question" | "reveal" | "done">("loading");
+  const [status, setStatus] = useState<"loading" | "question" | "reveal" | "done" | "error">("loading");
   const [question, setQuestion] = useState<Question | null>(null);
   const [yourOption, setYourOption] = useState<"a" | "b" | null>(null);
   const [tally, setTally] = useState<Tally | null>(null);
@@ -80,18 +80,36 @@ export function SurveyFlow({ embedded = false, authed: authedProp = false, back,
     ? `${userName} מזמין/ה אותך להצטרף לסקר הזוגיות של ישראל`
     : "הוזמנת להצטרף לסקר הזוגיות של ישראל";
 
+  // "Ran out of questions" and "the request failed" are DIFFERENT outcomes and
+  // must never share a screen (Itzik 2026-07-30). They used to both land on
+  // status "done", whose only content is the signup form — so a dropped mobile
+  // connection or a 500 told the user "you answered everything, now register".
+  // A failure now shows a retry instead.
+  //
+  // Promise.resolve() wraps the call so a SYNCHRONOUS throw is caught too:
+  // pollAnonHeaders() touches document.cookie / localStorage, which can throw
+  // outright in locked-down iOS Safari.
   const loadCurrent = useCallback(() => {
     setTally(null);
     setYourOption(null);
     setStatus("loading");
-    return fetch("/api/poll/current", { headers: pollAnonHeaders() })
-      .then((r) => (r.ok ? r.json() : null))
+    return Promise.resolve()
+      .then(() => fetch("/api/poll/current", { headers: pollAnonHeaders() }))
+      .then((r) => {
+        if (!r.ok) throw new Error(`poll_current_http_${r.status}`);
+        return r.json();
+      })
       .then((d) => {
-        if (!d || d.done || !d.question) { setStatus("done"); return; }
+        if (!d) throw new Error("poll_current_empty_body");
+        // Only an explicit server "done" ends the survey.
+        if (d.done || !d.question) { setStatus("done"); return; }
         setQuestion(d.question);
         setStatus("question");
       })
-      .catch(() => setStatus("done"));
+      .catch((err) => {
+        console.error("[SurveyFlow] could not load the next question", err);
+        setStatus("error");
+      });
   }, []);
 
   useEffect(() => { void loadCurrent(); }, [loadCurrent]);
@@ -215,6 +233,24 @@ export function SurveyFlow({ embedded = false, authed: authedProp = false, back,
         <div className={styles.trust}>🔒 סודיות מובטחת · התשובות שלך אנונימיות ופרטיות</div>
 
         {status === "loading" && <p className={styles.center}>טוען…</p>}
+
+        {/* Failure — explicitly NOT the end screen. No signup form here: the
+            user has not finished anything, the request just failed. */}
+        {status === "error" && (
+          <section className={styles.fade}>
+            <div className={styles.doneHead}>לא הצלחנו לטעון את השאלה</div>
+            <p className={styles.doneLead}>
+              נראה שהחיבור נפל לרגע. התשובות שכבר עניתם נשמרו.
+            </p>
+            <button
+              type="button"
+              className={`${styles.cta} ${styles.amber}`}
+              onClick={() => void loadCurrent()}
+            >
+              נסו שוב
+            </button>
+          </section>
+        )}
 
         {/* End screen — the questions ran out. The ONLY place registration is
             offered: the site's existing OTP signup (PollRegister → OtpFlow),
