@@ -14,8 +14,8 @@
       "schedule": "15 * * * *"
     },
     {
-      "path": "/api/journey/cadence/advance",
-      "schedule": "*/15 * * * *"
+      "path": "/api/journey/cycles/advance",
+      "schedule": "0 * * * *"
     },
     {
       "path": "/api/journey/grace-watcher",
