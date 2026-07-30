@@ -189,6 +189,18 @@ export default async function JourneyDashboardPage() {
       {/* Governance shortcuts — Layer-1 surfaces */}
       <div className="grid gap-3 sm:grid-cols-3">
         <Link
+          href="/dashboard/journey/cycles"
+          className="hover:bg-accent flex items-center gap-3 rounded-lg border p-4 transition"
+        >
+          <Layers className="text-muted-foreground size-5" />
+          <div className="min-w-0 flex-1">
+            <div className="font-semibold">מחזורי תוכן</div>
+            <div className="text-muted-foreground text-xs">
+              מאגר לפי קטגוריה, מצב המשתמשים וכלי התערבות
+            </div>
+          </div>
+        </Link>
+        <Link
           href="/dashboard/journey/match-rules"
           className="hover:bg-accent flex items-center gap-3 rounded-lg border p-4 transition"
         >
