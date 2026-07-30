@@ -43,6 +43,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { ensureCadenceAssignment } from "./cadence-engine";
+import { ensureJourneyPriorities } from "./ensure-priorities";
 import { resolveAnchorDate } from "./schedule";
 import type { JourneyProductSlug } from "./types";
 
@@ -145,6 +146,30 @@ export async function assignJourneyOnPurchase(
         ok: false,
         reason: "ensureCadenceAssignment returned null (no admin client?)",
       };
+    }
+
+    // 3b. Spec §2א(א) — the opening gate (Itzik 2026-07-31).
+    //     Every delivery path rejects a user with no journey_user_priorities
+    //     row, and that row used to be written only when the assessment
+    //     finished. Both paying journey subscribers therefore received ZERO
+    //     items from the day they bought. Purchase alone must be enough now:
+    //     if there is no ranking we seed the canonical order (source='default')
+    //     and the UI invites the user to refine it by finishing the assessment.
+    //     Finishing it later overwrites the default (upsert on user_id).
+    //     Best-effort: a failure here must not fail the purchase assignment.
+    try {
+      const priorities = await ensureJourneyPriorities(args.userId);
+      if (priorities.status === "failed") {
+        console.error("[assignJourneyOnPurchase] ensureJourneyPriorities failed", {
+          user_id8: args.userId.slice(0, 8),
+          error: priorities.error,
+        });
+      }
+    } catch (err) {
+      console.error(
+        "[assignJourneyOnPurchase] ensureJourneyPriorities threw (non-fatal)",
+        err,
+      );
     }
 
     // 4. Layer-5 — stamp the couple's started_journey_at on first

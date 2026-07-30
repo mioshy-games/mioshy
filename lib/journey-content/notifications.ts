@@ -36,7 +36,9 @@ export type NotificationKind =
   | "stuck_users_digest"
   // A3 - 7-day trial
   | "trial_ending_soon"
-  | "trial_first_charge_failed";
+  | "trial_first_charge_failed"
+  // 2026-07-31 — a paying subscriber received no content at all
+  | "subscriber_without_content";
 
 interface BasePayload {
   /** Stable URL to deep-link from email back into the app. */

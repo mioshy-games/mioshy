@@ -117,6 +117,13 @@ const DESCRIPTORS: Record<NotificationKind, NotificationDescriptor> = {
     headlineHe: "החיוב הראשון של הניסיון נכשל",
     headlineEn: "Trial first charge failed",
   },
+  // Admin-pool only: a paying subscriber has received no content at all.
+  subscriber_without_content: {
+    tone: "danger",
+    icon: AlertTriangle,
+    headlineHe: "מנוי משלם לא קיבל תוכן",
+    headlineEn: "Paying subscriber has no content",
+  },
 };
 
 const FALLBACK: NotificationDescriptor = {

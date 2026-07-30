@@ -84,6 +84,7 @@ interface CandidateItem {
 }
 
 export type MaterializeReason =
+  | "migrated_to_cycles"
   | "no_priorities"
   | "no_candidates"
   | "no_assignment"
@@ -400,6 +401,27 @@ export async function materializeNextItemForUser(
 ): Promise<MaterializeResult> {
   const admin = createServiceRoleClient();
   if (!admin) return { ok: false, reason: "db_error", error: "no admin client" };
+
+  // ── Cut-over guard (Itzik 2026-07-31) ─────────────────────────────────────
+  // The five-track cycle model and this weekly engine both hand out content and
+  // both write journey_user_delivered_items. Two mechanisms writing the same
+  // table is precisely the bug family that cost us 2026-07-30, so the moment a
+  // user has an OPEN cycle this engine stops delivering to them. It is a guard,
+  // not the cut-over: switching the weekly engine off globally stays a separate,
+  // explicit, verified step (see docs/journey-five-track-model-spec.md §7א).
+  const { data: openCycle } = await admin
+    .from("journey_cycles")
+    .select("id")
+    .eq("user_id", userId)
+    .is("closed_at", null)
+    .limit(1)
+    .maybeSingle();
+  if (openCycle) {
+    console.log("[cadence-engine] skipping — user is on the cycle model", {
+      user_id8: userId.slice(0, 8),
+    });
+    return { ok: false, reason: "migrated_to_cycles" };
+  }
 
   const settings = await getJourneySettings();
   const defaultSource: CadenceSource = opts.source ?? "cadence";

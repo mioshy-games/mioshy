@@ -97,6 +97,7 @@ import {
   getGeneralChannelThread,
 } from "@/lib/journey-content/messages";
 import { JourneyDashboardViewTracker } from "@/components/my/JourneyDashboardViewTracker";
+import { DefaultRankingNotice } from "@/components/journey/DefaultRankingNotice";
 import { getTimelineForOwner } from "@/lib/journey-content/queries";
 import { ensureCadenceAssignment } from "@/lib/journey-content/cadence-engine";
 import { resolvePrioritiesForUser } from "@/lib/journey-content/resolve-priorities";
@@ -934,6 +935,26 @@ export default async function PrivateJourneyPage({
         label: isHe ? CATEGORY_LABELS[k].he : CATEGORY_LABELS[k].en,
       }));
 
+  // Spec §2א(א): the user bought before finishing the assessment, so their five
+  // categories are in the DEFAULT order. They still get content (that is the
+  // whole point of the opening gate) — we just invite them to make the order
+  // theirs. Best-effort: a failed read simply hides the invitation.
+  let hasDefaultRanking = false;
+  try {
+    const rankingAdmin = createServiceRoleClient();
+    if (rankingAdmin) {
+      const { data: prioritiesRow } = await rankingAdmin
+        .from("journey_user_priorities")
+        .select("source")
+        .eq("user_id", effectiveUserId)
+        .maybeSingle();
+      hasDefaultRanking =
+        (prioritiesRow as { source?: string } | null)?.source === "default";
+    }
+  } catch {
+    hasDefaultRanking = false;
+  }
+
   // Decide whether to show the "experts are reviewing" banner - only
   // for users who finished the assessment but don't yet have any
   // assigned content. It would be misleading otherwise.
@@ -1009,6 +1030,8 @@ export default async function PrivateJourneyPage({
           <Arrow className="h-3 w-3 rotate-180" />
           <CmsText cmsKey="myJourney.backToMyMioshy" />
         </Link>
+
+        {hasDefaultRanking && <DefaultRankingNotice locale={locale} />}
 
         {/* ─────── Header ───────
             Same visual register as the rest of the redesigned surface:
