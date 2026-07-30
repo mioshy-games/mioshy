@@ -29,6 +29,7 @@ import {
   fetchEligibility,
   fetchOfferTexts,
   isAdultsPath,
+  isMidActionPath,
   isReturnAfter24h,
   markOfferShown,
   shouldSuppress,
@@ -50,7 +51,11 @@ import {
 // popup fired OVER the confirmation screen, then its client-side push to
 // /journey/assessment produced the re-auth. Blocking the whole billing flow
 // keeps the post-payment continuation on the session-preserving hard redirect.
-const BLOCKED = ["/journey/assessment", "/billing", "/auth", "/dashboard", "/admin"];
+// The list itself now lives in lib/marketing/assessment-offer.ts as
+// MID_ACTION_BLOCKED_PATHS, matched segment-aware via isMidActionPath (Itzik
+// 2026-07-30). It covers everything the old local array did, plus the survey,
+// the other assessment routes, active play surfaces and the rest of the money
+// flow — see the comment on that constant for the incident behind it.
 const BROWSE_DELAY_MS = 2 * 60 * 1000; // 2 minutes
 
 export function GlobalAssessmentOffer({ locale }: { locale: "he" | "en" }) {
@@ -65,8 +70,6 @@ export function GlobalAssessmentOffer({ locale }: { locale: "he" | "en" }) {
     // Record the return-24h signal BEFORE stamping this visit.
     const returning = isReturnAfter24h();
     touchLastVisit();
-
-    const onBlocked = (path: string) => BLOCKED.some((p) => path.includes(p));
 
     const show = async (which: OfferTrigger) => {
       if (cancelled || wasOfferShownThisSession()) return;
@@ -88,7 +91,7 @@ export function GlobalAssessmentOffer({ locale }: { locale: "he" | "en" }) {
         // Immediate pass (return-24h). Skipped on blocked paths. The "login"
         // trigger was removed — it stacked on top of the /my/survey popup after
         // a survey login; return-24h + browse2min don't stack and stay active.
-        if (!onBlocked(window.location.pathname)) {
+        if (!isMidActionPath(window.location.pathname)) {
           if (returning) return void (await show("return24h"));
         }
 
@@ -97,7 +100,7 @@ export function GlobalAssessmentOffer({ locale }: { locale: "he" | "en" }) {
         timer = setTimeout(() => {
           if (cancelled || wasOfferShownThisSession()) return;
           const path = window.location.pathname;
-          if (onBlocked(path) || isAdultsPath(path)) return;
+          if (isMidActionPath(path) || isAdultsPath(path)) return;
           void show("browse2min");
         }, BROWSE_DELAY_MS);
       })();
