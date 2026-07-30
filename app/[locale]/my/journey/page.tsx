@@ -98,6 +98,8 @@ import {
 } from "@/lib/journey-content/messages";
 import { JourneyDashboardViewTracker } from "@/components/my/JourneyDashboardViewTracker";
 import { DefaultRankingNotice } from "@/components/journey/DefaultRankingNotice";
+import { JourneyCycleBoard } from "@/components/my/JourneyCycleBoard";
+import { getOpenCycleForUser } from "@/lib/journey-content/cycle-user";
 import { getTimelineForOwner } from "@/lib/journey-content/queries";
 import { ensureCadenceAssignment } from "@/lib/journey-content/cadence-engine";
 import { resolvePrioritiesForUser } from "@/lib/journey-content/resolve-priorities";
@@ -955,6 +957,11 @@ export default async function PrivateJourneyPage({
     hasDefaultRanking = false;
   }
 
+  // Spec §3 — the five open chapters of the current cycle. Null while the user
+  // has no open cycle (paused, between cycles, or not yet on the model), in
+  // which case the board simply does not render.
+  const openCycle = await getOpenCycleForUser(effectiveUserId);
+
   // Decide whether to show the "experts are reviewing" banner - only
   // for users who finished the assessment but don't yet have any
   // assigned content. It would be misleading otherwise.
@@ -1032,6 +1039,7 @@ export default async function PrivateJourneyPage({
         </Link>
 
         {hasDefaultRanking && <DefaultRankingNotice locale={locale} />}
+        {openCycle && <JourneyCycleBoard cycle={openCycle} />}
 
         {/* ─────── Header ───────
             Same visual register as the rest of the redesigned surface:

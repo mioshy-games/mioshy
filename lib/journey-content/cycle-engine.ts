@@ -387,6 +387,95 @@ export async function resetCycleItemCompletion(
 // ------------------------------------------------------------
 
 /**
+ * Deliver queued expert pushes (§9.3 — the expert stays weekly, independent of
+ * the monthly cycle).
+ *
+ * This moved here as part of the §7א shutdown. Pushes are queued by the admin
+ * into journey_pending_pushes and were drained only inside
+ * materializeNextItemForUser, which only ever ran from the weekly cadence cron.
+ * Switching that cron off without moving this would have silently killed the
+ * expert channel — the spec's own warning: separate the expert lane BEFORE the
+ * shutdown, not after.
+ *
+ * materializeNextItemForUser takes its push branch whenever an unconsumed push
+ * exists, so the cycle-model guard (which only blocks the regular cadence pick)
+ * does not apply here.
+ */
+export async function drainExpertPushes(
+  limit = 200,
+): Promise<{ users: number; delivered: number }> {
+  const admin = createServiceRoleClient();
+  if (!admin) return { users: 0, delivered: 0 };
+
+  const { data } = await admin
+    .from("journey_pending_pushes")
+    .select("recipient_user_id")
+    .is("consumed_at", null)
+    .limit(limit);
+
+  const userIds = Array.from(
+    new Set(((data ?? []) as Array<{ recipient_user_id: string }>).map((r) => r.recipient_user_id)),
+  );
+  if (!userIds.length) return { users: 0, delivered: 0 };
+
+  const { materializeNextItemForUser } = await import("./cadence-engine");
+  let delivered = 0;
+  for (const userId of userIds) {
+    const r = await materializeNextItemForUser(userId, { source: "expert_push" });
+    if (r.ok) delivered++;
+  }
+  console.log("[cycle-engine] expert pushes drained", { users: userIds.length, delivered });
+  return { users: userIds.length, delivered };
+}
+
+/**
+ * Open a first (or next) cycle for every entitled subscriber who has none.
+ *
+ * This is what makes the promise "your content is waiting for you" real: a
+ * paused customer is skipped every tick while the pause runs, and the tick
+ * after they come back opens their cycle with a fresh month. Without this
+ * sweep a paused user would simply never receive anything again.
+ */
+export async function openCyclesForEligibleUsers(
+  limit = 200,
+): Promise<{ scanned: number; opened: number; skipped: Array<{ userId: string; reason: string }> }> {
+  const admin = createServiceRoleClient();
+  if (!admin) return { scanned: 0, opened: 0, skipped: [] };
+
+  const { data: subs } = await admin
+    .from("subscriptions")
+    .select("user_id")
+    .eq("product", "journey")
+    .in("status", ["active", "trialing"])
+    .limit(limit);
+
+  const userIds = Array.from(
+    new Set(((subs ?? []) as Array<{ user_id: string }>).map((s) => s.user_id)),
+  );
+  if (!userIds.length) return { scanned: 0, opened: 0, skipped: [] };
+
+  const { data: openRows } = await admin
+    .from("journey_cycles")
+    .select("user_id")
+    .in("user_id", userIds)
+    .is("closed_at", null);
+  const hasOpen = new Set(
+    ((openRows ?? []) as Array<{ user_id: string }>).map((r) => r.user_id),
+  );
+
+  const skipped: Array<{ userId: string; reason: string }> = [];
+  let opened = 0;
+  for (const userId of userIds) {
+    if (hasOpen.has(userId)) continue;
+    const result = await openCycleForUser(userId);
+    if (result.ok) opened++;
+    else skipped.push({ userId, reason: result.reason ?? "unknown" });
+  }
+
+  return { scanned: userIds.length, opened, skipped };
+}
+
+/**
  * Roll over every cycle whose month has elapsed. Unfinished items are NOT
  * revoked — the cycle simply closes and the next opens alongside it (§3:
  * "nothing gets closed off").
