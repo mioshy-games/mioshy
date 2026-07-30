@@ -96,52 +96,13 @@ export function getCardcomLanguage(locale: string, isIsraeli: boolean): string {
 }
 
 /**
- * Calculate the next billing period end from a given start date, by
- * cadence. weekly = +7 days; monthly/quarterly/yearly advance by
- * calendar months (1 / 3 / 12).
+ * Calculate the next billing period end from a given start date, by cadence.
  *
- * Month arithmetic clamps the day-of-month to the target month's last
- * day so a charge anchored on the 31st (or Jan-29/30/31) NEVER skips a
- * month — the bug in the pre-092 code, which used naive
- * Date.setMonth(+1)/setFullYear(+1) and rolled e.g. Jan-31 → Mar-3.
- * All math is in UTC to match how next_billing_date is stored (ISO/UTC).
+ * The implementation moved to lib/billing/period-math.ts (2026-07-30) so the
+ * renewal date math can be unit-tested without dragging in pricing-queries'
+ * React `cache()`. Re-exported here so every existing call site is unchanged.
  */
-export function addPlanPeriod(from: Date, plan: Plan = "weekly"): Date {
-  if (plan === "weekly") return addDaysUTC(from, 7)
-  const months = plan === "monthly" ? 1 : plan === "quarterly" ? 3 : 12
-  return addMonthsUTC(from, months)
-}
-
-/** Add whole days in UTC. */
-function addDaysUTC(from: Date, days: number): Date {
-  const d = new Date(from.getTime())
-  d.setUTCDate(d.getUTCDate() + days)
-  return d
-}
-
-/**
- * Add whole calendar months in UTC, clamping the day to the target
- * month's last valid day (so the 31st never overflows into the next
- * month). Preserves the time-of-day.
- */
-function addMonthsUTC(from: Date, months: number): Date {
-  const year  = from.getUTCFullYear()
-  const month = from.getUTCMonth() + months
-  const targetYear  = year + Math.floor(month / 12)
-  const targetMonth = ((month % 12) + 12) % 12
-  // Day 0 of (month+1) = last day of the target month.
-  const lastDay = new Date(Date.UTC(targetYear, targetMonth + 1, 0)).getUTCDate()
-  const day = Math.min(from.getUTCDate(), lastDay)
-  return new Date(Date.UTC(
-    targetYear,
-    targetMonth,
-    day,
-    from.getUTCHours(),
-    from.getUTCMinutes(),
-    from.getUTCSeconds(),
-    from.getUTCMilliseconds(),
-  ))
-}
+export { addPlanPeriod } from "@/lib/billing/period-math"
 
 /**
  * Generate a unique Cardcom asmachta (idempotency key) for a renewal charge.
