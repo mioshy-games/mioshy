@@ -3,12 +3,18 @@
  *
  * v3 slice 5 cron - two-pass sweep over journey subscriptions:
  *
- *   PASS 1: Active journey subs whose `current_period_end` has passed
- *           without a successful renewal flip to status='grace' and
- *           get journey_grace_until = now + 14 days. The cadence
+ *   PASS 1: Journey subs whose renewal was ATTEMPTED and FAILED
+ *           (status='past_due') and whose `current_period_end` has
+ *           passed flip to status='grace' and get
+ *           journey_grace_until = now + 14 days. The cadence
  *           engine then pauses materialization for them; past
  *           scheduled_items stay readable; the banner appears on
  *           every journey surface.
+ *
+ *           A period simply ending is NOT enough — see the comment on
+ *           the pass-1 query. Flipping on 'active' took subscriptions
+ *           out of the renewal cron's scan before they were ever
+ *           charged (revenue incident 2026-07-30).
  *
  *   PASS 2: Subs that are already in grace AND past their
  *           journey_grace_until AND haven't been stamped yet get
@@ -122,12 +128,20 @@ async function handle(req: Request): Promise<Response> {
     Date.now() + GRACE_WINDOW_DAYS * 86_400_000,
   ).toISOString();
 
-  // ── Pass 1: active journey subs whose period ended → flip to grace ──
+  // ── Pass 1: journey subs whose renewal was ATTEMPTED and FAILED → grace ──
+  // Itzik 2026-07-30, revenue incident: this used to read status='active',
+  // i.e. "the period ended" was enough to flip a subscription to grace. The
+  // renewal cron only scans active/past_due/trialing/grace, and this watcher
+  // runs hourly while renewals ran daily — so a sub whose period ended after
+  // the renewal run was flipped to grace before a single charge was ever
+  // attempted, and the customer silently stopped being billed.
+  // 'past_due' is the marker that a charge really was attempted and failed
+  // (renewals sets it on a Cardcom decline and on an unexpected error).
   const { data: pass1Rows, error: p1ReadErr } = await admin
     .from("subscriptions")
     .select("id, user_id, current_period_end")
     .eq("product", "journey")
-    .eq("status", "active")
+    .eq("status", "past_due")
     .lt("current_period_end", nowIso);
   if (p1ReadErr) {
     summary.ok = false;

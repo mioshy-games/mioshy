@@ -5,18 +5,38 @@
  * Protected by CARDCOM_BILLING_CRON_SECRET bearer token.
  *
  * Vercel cron: add to vercel.json:
- *   { "crons": [{ "path": "/api/billing/renewals/run", "schedule": "0 6 * * *" }] }
- * (runs daily at 06:00 UTC)
+ *   { "crons": [{ "path": "/api/billing/renewals/run", "schedule": "0 * * * *" }] }
+ * (runs hourly — daily at 06:00 UTC until 2026-07-30, when a subscription
+ *  whose next_billing_date fell after the run silently went a full day
+ *  unbilled and was parked in 'grace' by the hourly grace-watcher first)
  */
 
 export const runtime  = "nodejs"
 export const dynamic  = "force-dynamic"
 export const maxDuration = 300   // 5 min Vercel function limit
 
+/**
+ * Hours to wait before retrying a charge that Cardcom declined. The cron
+ * itself runs hourly; this keeps the *retry* cadence at one per day.
+ */
+const RETRY_COOLDOWN_HOURS = 24
+
+/**
+ * A subscription may never be charged twice inside this window. The shortest
+ * plan we sell is weekly, so a second successful charge within a day is always
+ * a bug, never a legitimate renewal.
+ */
+const SAME_DAY_GUARD_HOURS = 24
+
 import { NextResponse }            from "next/server"
 import { chargeToken }             from "@/lib/cardcom"
 import { decryptToken }            from "@/lib/tokenCrypto"
-import { addPlanPeriod, makeAsmachta, GRACE_PERIOD_DAYS } from "@/lib/billing"
+import { makeAsmachta, GRACE_PERIOD_DAYS } from "@/lib/billing"
+import {
+  computeRenewalPeriod,
+  isPauseActive,
+  type PauseRow,
+} from "@/lib/billing/renewal-period"
 import { createBillingDocumentWithRetry } from "@/lib/uxellent-api"
 import {
   productNameForSubscription,
@@ -44,10 +64,16 @@ export async function POST(req: Request) {
   // trial_ends_at, so the same next_billing_date <= now filter makes it "due"
   // for its FIRST real charge on day 7. On success the shared branch below
   // transitions it trialing → active.
+  //
+  // 'grace' is included as a safety net (Itzik 2026-07-30): the journey
+  // grace-watcher parks subs there, and until this run they were excluded
+  // from every future scan — a permanent, silent revenue loss. A successful
+  // charge below returns them to 'active' and clears the journey grace
+  // columns, so a sub can always climb back out.
   const { data: dueSubs } = await admin
     .from("subscriptions")
     .select("*, customer_payment_methods(id, token_enc, expiry_mmyy, status, card_brand)")
-    .in("status", ["active", "past_due", "trialing"])
+    .in("status", ["active", "past_due", "trialing", "grace"])
     .lte("next_billing_date", now.toISOString())
     .order("next_billing_date", { ascending: true })
     .limit(20)
@@ -73,7 +99,7 @@ export async function POST(req: Request) {
       .filter((r) => r.is_test_user)
       .map((r) => r.id),
   )
-  const filteredSubs = dueSubs.filter((s) => {
+  const testFiltered = dueSubs.filter((s) => {
     const isTest = testUserIdSet.has(s.user_id as string)
     if (isTest) {
       console.log("[renewals:SKIP_TEST_USER]", {
@@ -83,13 +109,69 @@ export async function POST(req: Request) {
     }
     return !isTest
   })
+
+  // ── Filter out users with an ACTIVE pause (Itzik 2026-07-30) ────────────────
+  // `subscription_pauses` is the user-initiated "I'm taking a break" state
+  // (app/actions/subscription-pause.ts). It records the pause but never
+  // touches subscriptions.status or next_billing_date, and this cron never
+  // read it — so a paused customer stayed a charge candidate and would have
+  // been billed mid-pause. A pause is active while resumed_at IS NULL and
+  // paused_until is still in the future; an expired pause is implicitly over
+  // (the read helper treats it that way), so it must not block billing.
+  //
+  // We fetch EVERY pause for the due users, not just the running ones: an
+  // expired pause still matters, because it tells us when the customer came
+  // back and therefore when their new paid period starts (see
+  // lib/billing/renewal-period.ts).
+  const pauseUserIds = Array.from(new Set(testFiltered.map((s) => s.user_id as string)))
+  const latestPauseByUser = new Map<string, PauseRow>()
+  if (pauseUserIds.length) {
+    const { data: pauses, error: pauseErr } = await admin
+      .from("subscription_pauses")
+      .select("user_id, paused_at, paused_until, resumed_at")
+      .in("user_id", pauseUserIds)
+      .order("paused_at", { ascending: false })
+    if (pauseErr) {
+      // Money path: if we cannot prove a user is NOT paused, do not charge.
+      console.error("[renewals:PAUSE_LOOKUP_FAILED]", { error: pauseErr.message })
+      return NextResponse.json(
+        { processed: 0, error: "pause_lookup_failed", detail: pauseErr.message },
+        { status: 500 },
+      )
+    }
+    // Ordered newest-first, so the first row seen per user is the latest pause.
+    for (const p of (pauses ?? []) as Array<PauseRow & { user_id: string }>) {
+      if (!latestPauseByUser.has(p.user_id)) latestPauseByUser.set(p.user_id, p)
+    }
+  }
+
+  const filteredSubs = testFiltered.filter((s) => {
+    const pause = latestPauseByUser.get(s.user_id as string)
+    const paused = pause ? isPauseActive(pause, now) : false
+    if (paused) {
+      console.log("[renewals:SKIP_PAUSED]", {
+        sub_id: s.id,
+        user_id8: (s.user_id as string).slice(0, 8),
+        next_billing_date: s.next_billing_date,
+        paused_until: pause?.paused_until,
+      })
+    }
+    return !paused
+  })
+
   if (filteredSubs.length === 0) {
     console.log("[renewals:END]", {
       processed: 0,
-      skipped_test_users: dueSubs.length,
-      reason: "all_due_are_test_users",
+      skipped_test_users: dueSubs.length - testFiltered.length,
+      skipped_paused: testFiltered.length - filteredSubs.length,
+      reason: "all_due_skipped",
     })
-    return NextResponse.json({ processed: 0, skipped_test_users: dueSubs.length, results })
+    return NextResponse.json({
+      processed: 0,
+      skipped_test_users: dueSubs.length - testFiltered.length,
+      skipped_paused: testFiltered.length - filteredSubs.length,
+      results,
+    })
   }
 
   for (const sub of filteredSubs) {
@@ -122,8 +204,26 @@ export async function POST(req: Request) {
       const rawToken = decryptToken(pm.token_enc)
 
       // ── Compute next period ─────────────────────────────────────────────────
-      const periodStart = new Date(sub.current_period_end ?? now)
-      const periodEnd   = addPlanPeriod(periodStart, sub.plan)
+      // Normally anchored to current_period_end so a late charge costs the
+      // customer nothing. After a pause the anchor is stale — the period
+      // restarts when the customer actually came back, so they never pay for
+      // the paused weeks and next_billing_date lands a full period ahead of
+      // the return (never in the past, which is what produced two charges
+      // hours apart). See lib/billing/renewal-period.ts.
+      const { periodStart, periodEnd, shiftedByPause } = computeRenewalPeriod({
+        currentPeriodEnd: sub.current_period_end,
+        plan: sub.plan,
+        pause: latestPauseByUser.get(userId as string) ?? null,
+        now,
+      })
+      if (shiftedByPause) {
+        console.log("[renewals:PERIOD_SHIFTED_BY_PAUSE]", {
+          sub_id: subId,
+          anchor_was: sub.current_period_end,
+          period_start: periodStart.toISOString(),
+          period_end: periodEnd.toISOString(),
+        })
+      }
 
       // ── First-month promo (marketing-discounts-spec §6.3) ───────────────────
       // Charge the discounted intro amount for the first N renewals, then the
@@ -139,12 +239,58 @@ export async function POST(req: Request) {
       // Skip if already charged for this period
       const { data: existCharge } = await admin
         .from("subscription_charges")
-        .select("id, status")
+        .select("id, status, updated_at")
         .eq("uniq_asmachta", asmachta)
         .maybeSingle()
 
       if (existCharge?.status === "succeeded") {
         results.push({ sub_id: subId, status: "already_charged" })
+        continue
+      }
+
+      // ── Retry cool-down (Itzik 2026-07-30) ──────────────────────────────────
+      // This cron moved from daily to hourly so a renewal is never missed by
+      // more than an hour. Without a cool-down that also turns one declined
+      // card into 24 Cardcom declines a day, which the card schemes penalise.
+      // A failed attempt therefore keeps the previous daily retry cadence.
+      if (existCharge?.status === "failed" && existCharge.updated_at) {
+        const lastAttempt = new Date(existCharge.updated_at as string).getTime()
+        const hoursSince = (now.getTime() - lastAttempt) / 3_600_000
+        if (hoursSince < RETRY_COOLDOWN_HOURS) {
+          console.log("[renewals:SKIP_RETRY_COOLDOWN]", {
+            sub_id: subId,
+            asmachta,
+            hours_since_last_attempt: Number(hoursSince.toFixed(2)),
+          })
+          results.push({ sub_id: subId, status: "retry_cooldown" })
+          continue
+        }
+      }
+
+      // ── Same-day double-charge guard (Itzik 2026-07-30) ─────────────────────
+      // The asmachta above is keyed on periodStart, so it only stops a repeat
+      // of the SAME period. It cannot stop two charges for two different
+      // periods landing hours apart — which is exactly what a stale period
+      // anchor used to cause. No plan we sell (weekly at the shortest) can
+      // legitimately bill the same subscription twice within a day, so a
+      // recent successful charge is always a bug, and never charging is the
+      // safe side of that bet.
+      const sinceIso = new Date(now.getTime() - SAME_DAY_GUARD_HOURS * 3_600_000).toISOString()
+      const { data: recentSuccess } = await admin
+        .from("subscription_charges")
+        .select("id, created_at, uniq_asmachta")
+        .eq("subscription_id", subId)
+        .eq("status", "succeeded")
+        .gte("created_at", sinceIso)
+        .limit(1)
+      if (recentSuccess?.length) {
+        console.warn("[renewals:SKIP_RECENT_CHARGE]", {
+          sub_id: subId,
+          asmachta,
+          existing_charge_id: recentSuccess[0].id,
+          existing_charged_at: recentSuccess[0].created_at,
+        })
+        results.push({ sub_id: subId, status: "recent_charge_guard" })
         continue
       }
 
