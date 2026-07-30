@@ -344,6 +344,44 @@ export async function completeCycleItem(
   return { ok: true, cycleClosed: true, nextCycleOpened: next.ok };
 }
 
+/**
+ * Admin intervention (§5): undo a completion mark.
+ *
+ * Only meaningful while the cycle is still open — once it closed, the next
+ * cycle already opened and un-marking an item would leave the user with two
+ * open cycles, which the partial unique index forbids anyway. We therefore
+ * refuse rather than half-apply.
+ */
+export async function resetCycleItemCompletion(
+  cycleItemId: string,
+): Promise<{ ok: boolean; reason?: string }> {
+  const admin = createServiceRoleClient();
+  if (!admin) return { ok: false, reason: "no_admin_client" };
+
+  const { data: row } = await admin
+    .from("journey_cycle_items")
+    .select("id, completed_at, journey_cycles!inner(closed_at)")
+    .eq("id", cycleItemId)
+    .maybeSingle();
+  if (!row) return { ok: false, reason: "not_found" };
+
+  const typed = row as unknown as {
+    completed_at: string | null;
+    journey_cycles: { closed_at: string | null };
+  };
+  if (typed.journey_cycles.closed_at) return { ok: false, reason: "cycle_already_closed" };
+  if (!typed.completed_at) return { ok: true }; // already un-marked
+
+  const { error } = await admin
+    .from("journey_cycle_items")
+    .update({ completed_at: null, completed_by: null })
+    .eq("id", cycleItemId);
+  if (error) return { ok: false, reason: error.message };
+
+  console.log("[cycle-engine] completion reset by admin", { cycle_item_id: cycleItemId });
+  return { ok: true };
+}
+
 // ------------------------------------------------------------
 // Cron
 // ------------------------------------------------------------
