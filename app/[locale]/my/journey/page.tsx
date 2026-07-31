@@ -99,6 +99,8 @@ import {
 import { JourneyDashboardViewTracker } from "@/components/my/JourneyDashboardViewTracker";
 import { DefaultRankingNotice } from "@/components/journey/DefaultRankingNotice";
 import { JourneyCycleBoard } from "@/components/my/JourneyCycleBoard";
+import { ReactivateBanner } from "@/components/my/ReactivateBanner";
+import { getReactivationOffer } from "@/app/actions/subscription-reactivate";
 import { getOpenCycleForUser, getNextCyclePeek } from "@/lib/journey-content/cycle-user";
 import { getTimelineForOwner } from "@/lib/journey-content/queries";
 import { ensureCadenceAssignment } from "@/lib/journey-content/cadence-engine";
@@ -390,6 +392,7 @@ export default async function PrivateJourneyPage({
   // this user already has chapters waiting (see the comment on that gate).
   const openCycle = await getOpenCycleForUser(effectiveUserId);
   const nextPeek = openCycle ? await getNextCyclePeek(effectiveUserId) : [];
+  const reactivationOffer = await getReactivationOffer();
 
   // ── Layer-1 first-session branch ─────────────────────────────────────────
   // A brand-new paying user who has not yet opened their day-1 item sees
@@ -1050,6 +1053,7 @@ export default async function PrivateJourneyPage({
         </Link>
 
         {hasDefaultRanking && <DefaultRankingNotice locale={locale} />}
+{reactivationOffer ? <ReactivateBanner offer={reactivationOffer} /> : null}
         {openCycle && (
           <JourneyCycleBoard
             cycle={openCycle}

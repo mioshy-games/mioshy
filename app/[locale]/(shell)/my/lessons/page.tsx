@@ -39,6 +39,8 @@ import { AssessmentRow } from "@/components/shell/lessons/AssessmentRow";
 import { getShellData } from "@/lib/shell/getShellData";
 import { getLessonsData } from "@/lib/shell/lessons/getLessonsData";
 import { JourneyCycleBoard } from "@/components/my/JourneyCycleBoard";
+import { ReactivateBanner } from "@/components/my/ReactivateBanner";
+import { getReactivationOffer } from "@/app/actions/subscription-reactivate";
 import { getOpenCycleForUser, getNextCyclePeek } from "@/lib/journey-content/cycle-user";
 import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
 import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
@@ -153,6 +155,7 @@ export default async function LessonsPage({
   const cycleForBoard = await getOpenCycleForUser(shell.userId);
   const cyclePeek = cycleForBoard ? await getNextCyclePeek(shell.userId) : [];
   const ents = await getUserEntitlements();
+  const reactivationOffer = await getReactivationOffer();
 
   const data = await getLessonsData({
     userId: shell.userId,
@@ -299,6 +302,7 @@ export default async function LessonsPage({
                 and the user counted four (Itzik 2026-07-31). A marked chapter
                 stays in place with a quiet "סימנתם" rather than disappearing
                 into history. */}
+{reactivationOffer ? <ReactivateBanner offer={reactivationOffer} /> : null}
             {cycleForBoard ? (
               <JourneyCycleBoard
                 cycle={cycleForBoard}

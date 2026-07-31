@@ -387,6 +387,45 @@ export async function resetCycleItemCompletion(
 // ------------------------------------------------------------
 
 /**
+ * Retire subscriptions whose period has ended and which will not renew.
+ *
+ * Without this a non-renewing customer sits at status='active' with an expired
+ * current_period_end: entitlements correctly deny access, but every admin
+ * screen reads "active". Itzik 2026-07-31: "a subscription that looks active in
+ * the admin while the customer has no access is exactly the gap that cost us
+ * this week" — an operator trusting that screen would draw the wrong conclusion
+ * on a money path.
+ *
+ * Only touches auto_renew=false rows. A renewing subscription with a passed
+ * period is a billing matter and belongs to the renewals cron, not here.
+ */
+export async function expireEndedSubscriptions(): Promise<{ expired: number }> {
+  const admin = createServiceRoleClient();
+  if (!admin) return { expired: 0 };
+
+  const { data, error } = await admin
+    .from("subscriptions")
+    .update({ status: "expired" })
+    .eq("status", "active")
+    .eq("auto_renew", false)
+    .lt("current_period_end", new Date().toISOString())
+    .select("id, email");
+
+  if (error) {
+    console.error("[cycle-engine] expire sweep failed", { error: error.message });
+    return { expired: 0 };
+  }
+  const rows = (data ?? []) as Array<{ id: string; email: string | null }>;
+  if (rows.length) {
+    console.log("[cycle-engine] subscriptions expired at period end", {
+      count: rows.length,
+      emails: rows.map((r) => r.email),
+    });
+  }
+  return { expired: rows.length };
+}
+
+/**
  * Deliver queued expert pushes (§9.3 — the expert stays weekly, independent of
  * the monthly cycle).
  *

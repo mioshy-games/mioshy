@@ -25,6 +25,7 @@ import { NextResponse } from "next/server";
 import {
   advanceDueCycles,
   drainExpertPushes,
+  expireEndedSubscriptions,
   openCyclesForEligibleUsers,
 } from "@/lib/journey-content/cycle-engine";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
@@ -58,6 +59,10 @@ async function handle(req: Request): Promise<Response> {
     return NextResponse.json({ ok: true, dry: true, due_now: due ?? [] });
   }
 
+  // Retire ended non-renewing subscriptions FIRST, so the sweeps below never
+  // treat someone whose period just lapsed as an entitled subscriber.
+  const expired = await expireEndedSubscriptions();
+
   const rolled = await advanceDueCycles();
   const opened = await openCyclesForEligibleUsers();
   // §9.3 — the expert lane, moved here from the retired weekly cron.
@@ -68,6 +73,7 @@ async function handle(req: Request): Promise<Response> {
     reopened: rolled.opened,
     newly_opened: opened.opened,
     expert_pushes_delivered: pushes.delivered,
+    expired: expired.expired,
     skipped: [...rolled.skipped, ...opened.skipped],
   });
 
@@ -77,6 +83,7 @@ async function handle(req: Request): Promise<Response> {
     reopened_after_rollover: rolled.opened,
     newly_opened: opened.opened,
     expert_pushes_delivered: pushes.delivered,
+    expired: expired.expired,
     scanned_subscribers: opened.scanned,
     skipped: [...rolled.skipped, ...opened.skipped],
   });

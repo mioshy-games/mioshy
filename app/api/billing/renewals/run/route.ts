@@ -74,6 +74,10 @@ export async function POST(req: Request) {
     .from("subscriptions")
     .select("*, customer_payment_methods(id, token_enc, expiry_mmyy, status, card_brand)")
     .in("status", ["active", "past_due", "trialing", "grace"])
+    // auto_renew=false means the customer must renew by an explicit action of
+    // their own. Two independent reasons then block a charge: this clause, and
+    // a NULL next_billing_date (which never satisfies the filter below).
+    .eq("auto_renew", true)
     .lte("next_billing_date", now.toISOString())
     .order("next_billing_date", { ascending: true })
     .limit(20)
