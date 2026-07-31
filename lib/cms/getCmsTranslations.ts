@@ -73,8 +73,19 @@ export async function getCmsTranslations(opts: {
     const row = map.get(fullKey);
     const cmsValue = opts.locale === "he" ? row?.he : row?.en;
     if (cmsValue && cmsValue.trim().length > 0) return cmsValue;
-    // next-intl returns the key itself for missing translations in
-    // production; we preserve that contract by delegating to t().
-    return t(key);
+    // Belt to i18n/request.ts's braces. That config makes next-intl fall back
+    // instead of throwing; this catch means even a future misconfiguration of
+    // it cannot turn one absent string into a dead page. A missing string is
+    // always a logged warning and a rendered fallback, never an exception.
+    try {
+      return t(key);
+    } catch (err) {
+      console.warn("[cms] translation lookup failed — falling back", {
+        namespace: opts.namespace,
+        key,
+        error: err instanceof Error ? err.message : String(err),
+      });
+      return key.split(".").pop() ?? key;
+    }
   };
 }

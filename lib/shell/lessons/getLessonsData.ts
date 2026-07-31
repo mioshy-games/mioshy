@@ -14,12 +14,7 @@
 
 import "server-only";
 
-import { getCurrentCoupleContext } from "@/lib/between-us/couples";
-import {
-  getShellTimelineEntries,
-  type ShellTimelineEntry,
-} from "@/lib/shell/shell-timeline";
-import { journeyOwnerForUser, preferCoupleOwner } from "@/lib/journey-content/owner";
+import { getUserChapters } from "@/lib/journey-content/cycle-user";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
 import { getViewerPriorityOrder } from "@/lib/dashboard/priority-routing";
 import { getPriorityLabels } from "@/lib/journey-content/priority-categories";
@@ -28,117 +23,6 @@ import type { CurrentLessonHeroData } from "@/components/shell/today/CurrentLess
 import type { HistoryItem } from "@/components/shell/today/HistoryList";
 import type { UpcomingItem } from "@/components/shell/lessons/UpcomingList";
 import type { AssessmentRowData } from "@/components/shell/lessons/AssessmentRow";
-
-/**
- * Pull up to 5 items from the canonical journey curriculum to show as
- * disabled "previews" in the בקרוב section. Used only when the user's
- * actual timeline has no scheduled future items — gives them a sense
- * of "what's next" without claiming a delivery date.
- *
- * Selection logic:
- *   1. Resolve the canonical journey program (product_slug='journey').
- *   2. Fetch active items joined with their category names, ordered
- *      by sort_order ascending.
- *   3. Exclude items that already appear in the timeline (by id),
- *      so previews never duplicate something the user has already
- *      seen / completed.
- *
- * Returns empty array on any failure — caller treats this as "no
- * preview to show" and falls back to the static empty state.
- */
-async function getUpcomingPreviewItems(args: {
-  excludeItemIds: Set<string>;
-  locale: "he" | "en";
-  isHe: boolean;
-}): Promise<UpcomingItem[]> {
-  try {
-    const admin = createServiceRoleClient();
-    if (!admin) return [];
-
-    const { data: program } = await admin
-      .from("journey_programs")
-      .select("id")
-      .eq("product_slug", "journey")
-      .eq("is_active", true)
-      .maybeSingle();
-    const programId = (program as { id: string } | null)?.id;
-    if (!programId) return [];
-
-    // We over-fetch (5 + exclude buffer) so post-filtering by
-    // already-seen item ids still leaves 5. 20 is a generous ceiling
-    // — the early/middle catalogue rarely has more than a few stale
-    // entries per user.
-    const { data: items } = await admin
-      .from("journey_items")
-      .select("id, title_he, title_en, category_id, sort_order")
-      .eq("is_active", true)
-      .in(
-        "category_id",
-        // Subquery substitute: fetch all category ids for the program
-        // in one shot, then `.in()` filter. Two queries vs a join, but
-        // mirrors the pattern used elsewhere in lib/journey-content.
-        (
-          await admin
-            .from("journey_categories")
-            .select("id")
-            .eq("program_id", programId)
-            .eq("is_active", true)
-        ).data?.map((c) => (c as { id: string }).id) ?? [],
-      )
-      .order("sort_order", { ascending: true })
-      .limit(20);
-    const rows = (items ?? []) as Array<{
-      id: string;
-      title_he: string;
-      title_en: string | null;
-      category_id: string;
-      sort_order: number;
-    }>;
-
-    const filtered = rows.filter((r) => !args.excludeItemIds.has(r.id));
-    if (filtered.length === 0) return [];
-    const head = filtered.slice(0, 5);
-
-    // Resolve category names for the items we picked.
-    const catIds = Array.from(new Set(head.map((r) => r.category_id)));
-    const { data: catsData } = await admin
-      .from("journey_categories")
-      .select("id, name_he, name_en")
-      .in("id", catIds);
-    const catMap = new Map<string, { name_he: string; name_en: string | null }>();
-    for (const c of (catsData ?? []) as Array<{
-      id: string;
-      name_he: string;
-      name_en: string | null;
-    }>) {
-      catMap.set(c.id, { name_he: c.name_he, name_en: c.name_en });
-    }
-
-    return head.map((r) => {
-      const cat = catMap.get(r.category_id);
-      const title = args.isHe ? r.title_he : r.title_en || r.title_he;
-      const categoryName = cat
-        ? args.isHe
-          ? cat.name_he
-          : cat.name_en || cat.name_he
-        : null;
-      return {
-        // Prefix preview ids so they never collide with scheduled-item
-        // ids. UpcomingList renders these as non-interactive static
-        // rows (cursor:not-allowed, no link).
-        id: `preview:${r.id}`,
-        title,
-        categoryName,
-        whenLabel: args.isHe ? "בקרוב במסע" : "Coming soon",
-        href: "/journey",
-        disabled: true,
-      };
-    });
-  } catch (err) {
-    console.warn("[lessons.getUpcomingPreviewItems] failed", err);
-    return [];
-  }
-}
 
 interface Args {
   userId: string;
@@ -154,13 +38,19 @@ export interface LessonsPageData {
   /** Assessment rows (newest first). Always non-empty for users who
    *  finished the funnel — empty means we redirect upstream. */
   assessments: AssessmentRowData[];
+  /** True once the assessment is finished — the page then drops the card to
+   *  the bottom, because the chapters are what the user came for. */
+  assessmentDone: boolean;
   /** Current open lesson — same shape as /my/today's hero. */
   current: CurrentLessonHeroData | null;
   /** All completed lessons, newest first. */
   completed: HistoryItem[];
   completedTotal: number;
-  /** Locked / upcoming lessons, oldest first (closest to unlock). */
+  /** Always empty: the cycle model has no locked/upcoming state. Kept so the
+   *  page contract does not change while the section is retired. */
   upcoming: UpcomingItem[];
+  /** Open chapters beyond the hero — all immediately readable. */
+  openRest: UpcomingItem[];
   /** C.3 — when the next (8-week) assessment is due: the assessment/join
    *  date + 8 weeks, ISO. Null when we have no base date to compute from.
    *  Rendered as a notice in the "האבחונים שלכם" section. */
@@ -223,6 +113,7 @@ export async function getLessonsData(args: Args): Promise<LessonsPageData> {
   // state (one assessment per user). The row's subtitle bakes in the
   // completion date when we have one.
   let assessments: AssessmentRowData[] = [];
+  let assessmentDone = false;
   // C.3 — base date for the "next assessment in 8 weeks" notice.
   let nextAssessmentAt: string | null = null;
   try {
@@ -245,6 +136,7 @@ export async function getLessonsData(args: Args): Promise<LessonsPageData> {
         | null;
       if (j) {
         const done = j.status === "complete" || j.status === "completed";
+        assessmentDone = done;
         const stamp =
           j.completed_at ?? j.last_activity_at ?? new Date().toISOString();
         const datePart = new Date(stamp).toLocaleDateString(
@@ -292,161 +184,63 @@ export async function getLessonsData(args: Args): Promise<LessonsPageData> {
   }
 
   // ── Timeline ───────────────────────────────────────────────────────
-  const couple = await getCurrentCoupleContext();
-  const legacyOwner = preferCoupleOwner(userId, couple?.couple_id ?? null);
-  const cadenceOwner = await journeyOwnerForUser(userId);
-  const viewerRole =
-    couple?.role === "owner" || couple?.role === "partner"
-      ? couple.role
-      : null;
 
-  // 2026-05-31 — replaced `getTimelineForOwner` (×2 axes × 6 reads each)
-  // with `getShellTimelineEntries` (×2 axes × 1 embedded select). Same
-  // visibility rules; we no longer load responses/rules/status because
-  // /my/lessons doesn't render them.
-  let timeline: ShellTimelineEntry[] = [];
-  try {
-    const [legacy, cadence] = await Promise.all([
-      getShellTimelineEntries({
-        owner: legacyOwner,
-        viewerCoupleRole: viewerRole,
-        sourceKinds: ["program", "category", "item"],
-        viewerUserId: userId,
-      }),
-      getShellTimelineEntries({
-        owner: cadenceOwner,
-        viewerCoupleRole: null,
-        sourceKinds: ["cadence"],
-        viewerUserId: userId,
-      }),
-    ]);
-    timeline = [...legacy, ...cadence];
-  } catch (err) {
-    console.error("[lessons.getLessonsData] timeline fetch failed", err);
-  }
+  // The journey_scheduled_items timeline that used to feed this page is GONE,
+  // not disabled (Itzik 2026-07-31): "if we leave a second path reading the old
+  // model, we are back here in a week". journey_cycle_items is the only source.
 
-  const nowMs = Date.now();
-  const openItems = timeline
-    .filter(
-      (e) =>
-        new Date(e.scheduled.unlock_at).getTime() <= nowMs &&
-        !e.completion?.completed_at,
-    )
-    .sort(
-      (a, b) =>
-        new Date(b.scheduled.unlock_at).getTime() -
-        new Date(a.scheduled.unlock_at).getTime(),
-    );
+  // ── Chapters — single source of truth (Itzik 2026-07-31) ──────────
+  // journey_cycle_items IS the answer to "what content does this user have".
+  // The old journey_scheduled_items path is gone, not kept as a fallback: a
+  // second read path is exactly how the invented "5 waiting" cards hid a
+  // paying customer receiving nothing for a month.
+  //
+  // There is no "upcoming/locked" concept in the cycle model — every chapter
+  // in a cycle is open the moment it opens. `upcoming` stays empty by design.
+  const chapters = await getUserChapters(userId);
 
-  const completedItems = timeline
-    .filter((e) => !!e.completion?.completed_at)
-    .sort((a, b) => {
-      const aTs = a.completion?.completed_at ?? a.scheduled.unlock_at;
-      const bTs = b.completion?.completed_at ?? b.scheduled.unlock_at;
-      return new Date(bTs).getTime() - new Date(aTs).getTime();
-    });
-
-  const upcomingItems = timeline
-    .filter((e) => new Date(e.scheduled.unlock_at).getTime() > nowMs)
-    .sort(
-      (a, b) =>
-        new Date(a.scheduled.unlock_at).getTime() -
-        new Date(b.scheduled.unlock_at).getTime(),
-    );
-
-  // ── Current lesson (hero) ──────────────────────────────────────────
   let current: CurrentLessonHeroData | null = null;
-  const top = openItems[0];
+  const top = chapters.open[0];
   if (top) {
-    const title = isHe ? top.item.title_he : top.item.title_en || top.item.title_he;
-    const categoryName = isHe
-      ? top.category.name_he
-      : top.category.name_en || top.category.name_he;
-    const insight = isHe
-      ? top.item.expert_insight_he
-      : top.item.expert_insight_en || top.item.expert_insight_he;
-    const body = isHe ? top.item.body_he : top.item.body_en || top.item.body_he;
-    const rawDesc = insight?.trim() || body?.trim() || "";
-    const description =
-      rawDesc.length <= 200
-        ? rawDesc
-        : (() => {
-            const cut = rawDesc.slice(0, 200);
-            const lastDot = Math.max(
-              cut.lastIndexOf("."),
-              cut.lastIndexOf("·"),
-            );
-            return (lastDot > 100 ? cut.slice(0, lastDot + 1) : cut.trim()) + "…";
-          })();
-    const unlockAge = nowMs - new Date(top.scheduled.unlock_at).getTime();
     current = {
-      title,
-      description,
-      categoryName,
-      estMinutes: top.item.est_minutes ?? null,
-      href: `/journey/timeline/${top.scheduled.id}`,
-      isFresh: unlockAge < 24 * 60 * 60 * 1000,
+      title: top.title,
+      description: "",
+      categoryName: top.categoryName,
+      estMinutes: null,
+      href: `/journey/chapter/${top.cycleItemId}`,
+      isFresh: false,
     };
   }
 
-  // ── Completed list ─────────────────────────────────────────────────
   const doneLabel = isHe ? "הושלם" : "Completed";
-  const completed: HistoryItem[] = completedItems.map((entry) => ({
-    id: entry.scheduled.id,
-    title: isHe
-      ? entry.item.title_he
-      : entry.item.title_en || entry.item.title_he,
-    categoryName: isHe
-      ? entry.category.name_he
-      : entry.category.name_en || entry.category.name_he,
-    whenLabel: relativeStamp(
-      entry.completion?.completed_at ?? entry.scheduled.unlock_at,
-      isHe,
-    ),
-    href: `/journey/timeline/${entry.scheduled.id}`,
+  const completed: HistoryItem[] = chapters.completed.map((c) => ({
+    id: c.cycleItemId,
+    title: c.title,
+    categoryName: c.categoryName,
+    whenLabel: relativeStamp(c.completedAt as string, isHe),
+    href: `/journey/chapter/${c.cycleItemId}`,
     doneLabel,
   }));
 
-  // ── Upcoming list ──────────────────────────────────────────────────
-  const upcoming: UpcomingItem[] = upcomingItems.map((entry) => ({
-    id: entry.scheduled.id,
-    title: isHe
-      ? entry.item.title_he
-      : entry.item.title_en || entry.item.title_he,
-    categoryName: isHe
-      ? entry.category.name_he
-      : entry.category.name_en || entry.category.name_he,
-    whenLabel: relativeStamp(entry.scheduled.unlock_at, isHe),
-    href: `/journey/timeline/${entry.scheduled.id}`,
+  // Everything open, beyond the hero — all reachable, none locked.
+  const openRest: UpcomingItem[] = chapters.open.slice(1).map((c) => ({
+    id: c.cycleItemId,
+    title: c.title,
+    categoryName: c.categoryName,
+    whenLabel: isHe ? "פתוח עכשיו" : "Open now",
+    href: `/journey/chapter/${c.cycleItemId}`,
   }));
 
-  // ── Preview "what's coming" when no real upcoming items exist ─────
-  // The shell promised users a 5-item preview of upcoming curriculum.
-  // We only run this fallback when the timeline has no scheduled future
-  // items — otherwise we'd duplicate what the user already sees above.
-  // Items already present anywhere in the timeline (completed, open,
-  // upcoming) are excluded so we don't preview something the user has
-  // already encountered.
-  if (upcoming.length === 0) {
-    const excludeItemIds = new Set<string>();
-    for (const entry of timeline) {
-      const itemId = (entry.item as { id?: string }).id;
-      if (itemId) excludeItemIds.add(itemId);
-    }
-    const previews = await getUpcomingPreviewItems({
-      excludeItemIds,
-      locale,
-      isHe,
-    });
-    upcoming.push(...previews);
-  }
+  const upcoming: UpcomingItem[] = [];
 
   return {
     focusLabel,
+    assessmentDone,
+    openRest,
     assessments,
     current,
     completed,
-    completedTotal: completedItems.length,
+    completedTotal: chapters.completed.length,
     upcoming,
     nextAssessmentAt,
   };
