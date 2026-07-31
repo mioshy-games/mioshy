@@ -99,7 +99,7 @@ import {
 import { JourneyDashboardViewTracker } from "@/components/my/JourneyDashboardViewTracker";
 import { DefaultRankingNotice } from "@/components/journey/DefaultRankingNotice";
 import { JourneyCycleBoard } from "@/components/my/JourneyCycleBoard";
-import { getOpenCycleForUser } from "@/lib/journey-content/cycle-user";
+import { getOpenCycleForUser, getNextCyclePeek } from "@/lib/journey-content/cycle-user";
 import { getTimelineForOwner } from "@/lib/journey-content/queries";
 import { ensureCadenceAssignment } from "@/lib/journey-content/cadence-engine";
 import { resolvePrioritiesForUser } from "@/lib/journey-content/resolve-priorities";
@@ -389,6 +389,7 @@ export default async function PrivateJourneyPage({
   // Resolved BEFORE the first-session gate below, which needs to know whether
   // this user already has chapters waiting (see the comment on that gate).
   const openCycle = await getOpenCycleForUser(effectiveUserId);
+  const nextPeek = openCycle ? await getNextCyclePeek(effectiveUserId) : [];
 
   // ── Layer-1 first-session branch ─────────────────────────────────────────
   // A brand-new paying user who has not yet opened their day-1 item sees
@@ -1049,7 +1050,17 @@ export default async function PrivateJourneyPage({
         </Link>
 
         {hasDefaultRanking && <DefaultRankingNotice locale={locale} />}
-        {openCycle && <JourneyCycleBoard cycle={openCycle} />}
+        {openCycle && (
+          <JourneyCycleBoard
+            cycle={openCycle}
+            nextPeek={nextPeek}
+            coaching={{
+              hasCoaching: entitlements.journeyCoaching,
+              chatHref: "/my/expert",
+              upgradeHref: "/pricing?coaching=1",
+            }}
+          />
+        )}
 
         {/* ─────── Header ───────
             Same visual register as the rest of the redesigned surface:

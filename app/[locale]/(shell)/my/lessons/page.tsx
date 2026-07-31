@@ -30,16 +30,17 @@ import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { MarkSurfaceSeen } from "@/components/shell/MarkSurfaceSeen";
 import { FocusPill } from "@/components/shell/today/FocusPill";
-import { CurrentLessonHero } from "@/components/shell/today/CurrentLessonHero";
 import { ChatRowPreview } from "@/components/shell/today/ChatRowPreview";
 import { ExpertSoonCard } from "@/components/shell/today/ExpertSoonCard";
 import { HistoryList } from "@/components/shell/today/HistoryList";
 import { NoJourneyUpsell } from "@/components/shell/today/NoJourneyUpsell";
 import { AssessmentRow } from "@/components/shell/lessons/AssessmentRow";
-import { UpcomingList } from "@/components/shell/lessons/UpcomingList";
 
 import { getShellData } from "@/lib/shell/getShellData";
 import { getLessonsData } from "@/lib/shell/lessons/getLessonsData";
+import { JourneyCycleBoard } from "@/components/my/JourneyCycleBoard";
+import { getOpenCycleForUser, getNextCyclePeek } from "@/lib/journey-content/cycle-user";
+import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
 import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
 import { resolvePrioritiesForUser } from "@/lib/journey-content/resolve-priorities";
@@ -149,6 +150,10 @@ export default async function LessonsPage({
   // takeover above uses) so the no-journey upsell never drifts from it.
   const upsell = await getNoJourneyUpsellCopy(tLoc);
 
+  const cycleForBoard = await getOpenCycleForUser(shell.userId);
+  const cyclePeek = cycleForBoard ? await getNextCyclePeek(shell.userId) : [];
+  const ents = await getUserEntitlements();
+
   const data = await getLessonsData({
     userId: shell.userId,
     locale: isHe ? "he" : "en",
@@ -156,7 +161,6 @@ export default async function LessonsPage({
 
   // CTA copy: the user is on the archive page → "המשיכו" reads better
   // than "פתחו" for a lesson they've already started but not finished.
-  const continueCta = tL("continueCta");
 
   // ── Today section's chat row preview ───────────────────────────────
   // Built from shell.expert (already fetched once by the layout). We
@@ -290,13 +294,20 @@ export default async function LessonsPage({
             {/* Current lesson hero — the one item the user should open
                 right now. When null (no active lesson) we still render
                 the chat preview below so the section never collapses. */}
-            {data.current ? (
-              <CurrentLessonHero
-                lesson={data.current}
-                currentChip={tL("activeChip")}
-                ctaLabel={continueCta}
-                freshTag={tToday("freshTag")}
-                minutesSuffix={tToday("minutesSuffix")}
+            {/* All five chapters, one list. The old CurrentLessonHero pulled
+                chapter #1 out into its own block, so the list below showed four
+                and the user counted four (Itzik 2026-07-31). A marked chapter
+                stays in place with a quiet "סימנתם" rather than disappearing
+                into history. */}
+            {cycleForBoard ? (
+              <JourneyCycleBoard
+                cycle={cycleForBoard}
+                nextPeek={cyclePeek}
+                coaching={{
+                  hasCoaching: Boolean(ents?.journeyCoaching),
+                  chatHref: "/my/expert",
+                  upgradeHref: "/pricing?coaching=1",
+                }}
               />
             ) : null}
 
@@ -347,15 +358,6 @@ export default async function LessonsPage({
             state in the cycle model — every chapter is open the moment its
             cycle opens — so the section now lists what is genuinely open, and
             says so plainly when there is nothing. (Itzik 2026-07-31) */}
-        {shell.hasJourney && data.openRest.length > 0 ? (
-          <UpcomingList
-            title={isHe ? "פתוחים עכשיו" : "Open now"}
-            waitingSuffix={isHe ? "פתוחים" : "open"}
-            items={data.openRest}
-            emptyTitle=""
-            emptyBody=""
-          />
-        ) : null}
 
         {shell.hasJourney && !data.current && data.openRest.length === 0 ? (
           <section className="rounded-2xl border border-white/[0.08] bg-slate-950/40 px-4 py-6 text-center">
