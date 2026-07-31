@@ -15,6 +15,10 @@ export interface UserCycleCard {
   cycleItemId: string;
   itemId: string;
   categoryName: string;
+  /** journey_categories.slug — picks the line icon. */
+  categorySlug: string;
+  /** First time the user opened it. Drives the middle visual state. */
+  openedAt: string | null;
   title: string;
   /** The slot was filled from a neighbouring area because this one ran dry.
    *  Surfaced to the user only as a gentle visual cue — never as jargon. */
@@ -106,6 +110,71 @@ function strip(c: ChapterRow & { rank: number; openedAt: string }): ChapterRow {
   return rest;
 }
 
+export interface NextCyclePeek {
+  categoryName: string;
+  categorySlug: string;
+  title: string;
+}
+
+/**
+ * The chapters that will open in the NEXT cycle, for the teaser (§ retention).
+ *
+ * This is not a mock-up: it runs the real selector over the real remaining
+ * library, so what the teaser promises is what the next cycle actually opens.
+ * Returns [] when the library is spent — the caller hides the section rather
+ * than filling the space, which is the whole lesson of the invented cards.
+ */
+export async function getNextCyclePeek(userId: string): Promise<NextCyclePeek[]> {
+  const admin = createServiceRoleClient();
+  if (!admin) return [];
+
+  const { data: prioritiesRow } = await admin
+    .from("journey_user_priorities")
+    .select("ranking")
+    .eq("user_id", userId)
+    .maybeSingle();
+  const ranking = (prioritiesRow as { ranking?: string[] } | null)?.ranking;
+  if (!Array.isArray(ranking) || !ranking.length) return [];
+
+  const { loadUnseenCandidates } = await import("./cycle-engine");
+  const { selectCycleItems } = await import("./cycle-selection");
+
+  // Everything in the open cycle is already in the delivered ledger, so the
+  // candidate pool here is genuinely "what comes after this cycle".
+  const candidates = await loadUnseenCandidates(userId);
+  if (!candidates.length) return [];
+
+  const { slots } = selectCycleItems(ranking, candidates);
+  if (!slots.length) return [];
+
+  const [items, cats] = await Promise.all([
+    admin.from("journey_items").select("id, title_he").in("id", slots.map((s) => s.itemId)),
+    admin
+      .from("journey_categories")
+      .select("id, name_he, slug")
+      .in("id", Array.from(new Set(slots.map((s) => s.categoryId)))),
+  ]);
+
+  const titleById = new Map(
+    ((items.data ?? []) as Array<{ id: string; title_he: string | null }>).map((i) => [
+      i.id,
+      i.title_he ?? "",
+    ]),
+  );
+  const catById = new Map(
+    ((cats.data ?? []) as Array<{ id: string; name_he: string; slug: string }>).map((c) => [
+      c.id,
+      c,
+    ]),
+  );
+
+  return slots.map((s) => ({
+    categoryName: catById.get(s.categoryId)?.name_he ?? "",
+    categorySlug: catById.get(s.categoryId)?.slug ?? "",
+    title: titleById.get(s.itemId) ?? "",
+  }));
+}
+
 /** The user's currently open cycle, in their own ranking order. */
 export async function getOpenCycleForUser(userId: string): Promise<OpenCycle | null> {
   const admin = createServiceRoleClient();
@@ -129,7 +198,7 @@ export async function getOpenCycleForUser(userId: string): Promise<OpenCycle | n
   const { data: rows } = await admin
     .from("journey_cycle_items")
     .select(
-      "id, item_id, rank_position, is_substitute, completed_at, journey_items(title_he), journey_categories!journey_cycle_items_category_id_fkey(name_he)",
+      "id, item_id, rank_position, is_substitute, opened_at, completed_at, journey_items(title_he), journey_categories!journey_cycle_items_category_id_fkey(name_he, slug)",
     )
     .eq("cycle_id", c.id)
     .order("rank_position", { ascending: true });
@@ -138,15 +207,18 @@ export async function getOpenCycleForUser(userId: string): Promise<OpenCycle | n
     id: string;
     item_id: string;
     is_substitute: boolean;
+    opened_at: string | null;
     completed_at: string | null;
     journey_items: { title_he: string | null } | null;
-    journey_categories: { name_he: string } | null;
+    journey_categories: { name_he: string; slug: string } | null;
   }>;
 
   const cards: UserCycleCard[] = typed.map((r) => ({
     cycleItemId: r.id,
     itemId: r.item_id,
     categoryName: r.journey_categories?.name_he ?? "",
+    categorySlug: r.journey_categories?.slug ?? "",
+    openedAt: r.opened_at,
     title: r.journey_items?.title_he ?? "",
     isSubstitute: r.is_substitute,
     completedAt: r.completed_at,

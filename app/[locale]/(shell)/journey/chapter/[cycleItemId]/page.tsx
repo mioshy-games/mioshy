@@ -58,6 +58,19 @@ export default async function ChapterPage({
   // A chapter belongs to exactly one person's cycle.
   if (typed.journey_cycles.user_id !== auth.user.id) notFound();
 
+  // Stamp the first read. `.is("opened_at", null)` keeps it a first-open
+  // record rather than a last-visited one, and makes repeat visits a no-op.
+  // Best-effort: never let a stat write block someone reading their chapter.
+  try {
+    await admin
+      .from("journey_cycle_items")
+      .update({ opened_at: new Date().toISOString() })
+      .eq("id", typed.id)
+      .is("opened_at", null);
+  } catch (err) {
+    console.warn("[chapter] opened_at stamp failed (non-fatal)", err);
+  }
+
   const { data: itemRow } = await admin
     .from("journey_items")
     .select("*")
