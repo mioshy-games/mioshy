@@ -6,8 +6,11 @@
  * per-page gate: it renders nothing and immediately redirects, so it only ever
  * runs at the login-landing moment, never during normal navigation.
  *
- *   · assessment still pending → /my/setup   (the non-blocking landing card)
- *   · otherwise               → /my/lessons  ("הפרקים שלי", the normal hub)
+ * Itzik 2026-07-31 — the full assessment is NO LONGER a gate. It used to send
+ * a paying subscriber to /my/setup while their assessment was pending, which is
+ * how content ended up sitting behind it. The assessment is an invitation to
+ * sharpen the order, never a door: everyone lands on their chapters, and
+ * /my/setup stays reachable on its own.
  *
  * Both targets enforce auth themselves (shell layout → /auth when logged out),
  * so an unauthenticated hit flows through to /my/lessons → /auth.
@@ -15,8 +18,6 @@
 
 import { redirect } from "next/navigation";
 import { setRequestLocale } from "next-intl/server";
-
-import { getSetupLandingState } from "@/lib/journey/setup-landing";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +29,5 @@ export default async function MyStartPage({
   const { locale } = params;
   setRequestLocale(locale);
 
-  const { pending } = await getSetupLandingState();
-  redirect(pending ? `/${locale}/my/setup` : `/${locale}/my/lessons`);
+  redirect(`/${locale}/my/lessons`);
 }

@@ -131,10 +131,10 @@ export default async function LessonsPage({
     const gateAdmin = createServiceRoleClient();
     if (gateAdmin) {
       try {
-        const result = await resolvePrioritiesForUser(gateAdmin, shell.userId);
-        if (result.kind === "needs_assessment") {
-          redirect(`/${locale}/journey/assessment`);
-        }
+        // Self-heals a missing ranking. It must NOT redirect: content is never
+        // gated on an assessment any more (Itzik 2026-07-31). A user with no
+        // ranking sees the empty state and the invitation, not a door.
+        await resolvePrioritiesForUser(gateAdmin, shell.userId);
       } catch {
         /* assessment gate is best-effort; render normally on errors */
       }
@@ -180,6 +180,57 @@ export default async function LessonsPage({
       ? `המוקד · ${data.focusLabel}`
       : `Focus · ${data.focusLabel}`
     : null;
+
+  // Itzik 2026-07-31 — once the assessment is done the card drops to the
+  // bottom. The top of the page belongs to the chapters; that is what the
+  // user came for. While it is still pending it stays up top as an invite.
+  const assessmentsSection = (
+          <section className="flex flex-col gap-2.5">
+              <div className="flex items-baseline justify-between pt-1">
+                <h3
+                  className="m-0 text-[18px] font-extrabold tracking-tight"
+                  style={{ color: "var(--shell-text-1)" }}
+                  aria-label={`${tL("assessmentsTitle")} — ${tL("assessmentsCount").replace("{count}", String(data.assessments.length))}`}
+                >
+                  {tL("assessmentsTitle")}
+                </h3>
+                <span
+                  className="text-[14px]"
+                  style={{ color: "var(--shell-text-3)" }}
+                >
+                  {tL("assessmentsCount").replace("{count}", String(data.assessments.length))}
+                </span>
+              </div>
+              <AssessmentRow
+                rows={data.assessments}
+                openLabel={tL("assessmentOpen")}
+                isHe={isHe}
+              />
+              {/* C.3 — next-assessment notice. Date is computed per-user
+                  (assessment/join date + 8 weeks) in getLessonsData; copy is
+                  CMS-driven with a {date} placeholder. Only shown while the date
+                  is still ahead, so "in 8 weeks, on X" never reads a past date. */}
+              {data.nextAssessmentAt &&
+              new Date(data.nextAssessmentAt).getTime() > Date.now() ? (
+                <p
+                  className="rounded-2xl border px-4 py-3 text-[15px] leading-relaxed"
+                  style={{
+                    background: "var(--shell-wine-soft)",
+                    borderColor: "var(--shell-wine-edge)",
+                    color: "var(--shell-text-2)",
+                  }}
+                >
+                  {tL("nextAssessmentNotice").replace(
+                    "{date}",
+                    new Date(data.nextAssessmentAt).toLocaleDateString(
+                      isHe ? "he-IL" : "en-GB",
+                      { day: "numeric", month: "long", year: "numeric" },
+                    ),
+                  )}
+                </p>
+              ) : null}
+            </section>
+  );
 
   return (
     <>
@@ -272,53 +323,9 @@ export default async function LessonsPage({
             The "Active now" section header was removed: the current
             lesson is already inside the Today block above. */}
 
-        {shell.hasJourney && data.assessments.length > 0 ? (
-          <section className="flex flex-col gap-2.5">
-            <div className="flex items-baseline justify-between pt-1">
-              <h3
-                className="m-0 text-[18px] font-extrabold tracking-tight"
-                style={{ color: "var(--shell-text-1)" }}
-                aria-label={`${tL("assessmentsTitle")} — ${tL("assessmentsCount").replace("{count}", String(data.assessments.length))}`}
-              >
-                {tL("assessmentsTitle")}
-              </h3>
-              <span
-                className="text-[14px]"
-                style={{ color: "var(--shell-text-3)" }}
-              >
-                {tL("assessmentsCount").replace("{count}", String(data.assessments.length))}
-              </span>
-            </div>
-            <AssessmentRow
-              rows={data.assessments}
-              openLabel={tL("assessmentOpen")}
-              isHe={isHe}
-            />
-            {/* C.3 — next-assessment notice. Date is computed per-user
-                (assessment/join date + 8 weeks) in getLessonsData; copy is
-                CMS-driven with a {date} placeholder. Only shown while the date
-                is still ahead, so "in 8 weeks, on X" never reads a past date. */}
-            {data.nextAssessmentAt &&
-            new Date(data.nextAssessmentAt).getTime() > Date.now() ? (
-              <p
-                className="rounded-2xl border px-4 py-3 text-[15px] leading-relaxed"
-                style={{
-                  background: "var(--shell-wine-soft)",
-                  borderColor: "var(--shell-wine-edge)",
-                  color: "var(--shell-text-2)",
-                }}
-              >
-                {tL("nextAssessmentNotice").replace(
-                  "{date}",
-                  new Date(data.nextAssessmentAt).toLocaleDateString(
-                    isHe ? "he-IL" : "en-GB",
-                    { day: "numeric", month: "long", year: "numeric" },
-                  ),
-                )}
-              </p>
-            ) : null}
-          </section>
-        ) : null}
+        {shell.hasJourney && data.assessments.length > 0 && !data.assessmentDone
+          ? assessmentsSection
+          : null}
 
         {shell.hasJourney ? (
           <HistoryList
@@ -333,15 +340,38 @@ export default async function LessonsPage({
           />
         ) : null}
 
-        {shell.hasJourney ? (
+        {/* The retired weekly model had a "coming soon / locked" list, and when
+            it was empty the page INVENTED five locked cards from the catalogue.
+            That showed a paying customer content they had never been given and
+            is what hid a month of zero delivery from us. There is no locked
+            state in the cycle model — every chapter is open the moment its
+            cycle opens — so the section now lists what is genuinely open, and
+            says so plainly when there is nothing. (Itzik 2026-07-31) */}
+        {shell.hasJourney && data.openRest.length > 0 ? (
           <UpcomingList
-            title={tL("upcomingTitle")}
-            waitingSuffix={tL("waitingSuffix")}
-            items={data.upcoming}
-            emptyTitle={tL("upcomingEmptyTitle")}
-            emptyBody={tL("upcomingEmptyBody")}
+            title={isHe ? "פתוחים עכשיו" : "Open now"}
+            waitingSuffix={isHe ? "פתוחים" : "open"}
+            items={data.openRest}
+            emptyTitle=""
+            emptyBody=""
           />
         ) : null}
+
+        {shell.hasJourney && !data.current && data.openRest.length === 0 ? (
+          <section className="rounded-2xl border border-white/[0.08] bg-slate-950/40 px-4 py-6 text-center">
+            <p className="text-[14px] font-semibold text-[#FAF6F7]">
+              {isHe ? "אין כרגע פרקים פתוחים." : "No chapters are open right now."}
+            </p>
+            <p className="mt-1 text-[13px] text-[#FAF6F7]/60">
+              {isHe
+                ? "המחזור הבא ייפתח בקרוב, ונעדכן אתכם."
+                : "Your next cycle opens soon — we'll let you know."}
+            </p>
+          </section>
+        ) : null}
+        {shell.hasJourney && data.assessments.length > 0 && data.assessmentDone
+          ? assessmentsSection
+          : null}
       </div>
     </>
   );

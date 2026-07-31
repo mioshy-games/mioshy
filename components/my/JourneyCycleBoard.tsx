@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { Link } from "@/navigation";
 import { Check, Sparkles } from "lucide-react";
 import { markCycleItemDone } from "@/app/actions/journey-cycle";
 import type { OpenCycle } from "@/lib/journey-content/cycle-user";
@@ -103,9 +104,12 @@ export function JourneyCycleBoard({ cycle }: { cycle: OpenCycle }) {
                 </span>
               </div>
 
-              <h3 className="mt-1.5 text-[15px] font-bold leading-snug text-[#FAF6F7]">
+              <Link
+                href={`/journey/chapter/${card.cycleItemId}`}
+                className="mt-1.5 block text-[15px] font-bold leading-snug text-[#FAF6F7] underline-offset-4 hover:underline"
+              >
                 {card.title}
-              </h3>
+              </Link>
 
               <button
                 type="button"

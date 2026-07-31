@@ -386,6 +386,10 @@ export default async function PrivateJourneyPage({
     }
   }
 
+  // Resolved BEFORE the first-session gate below, which needs to know whether
+  // this user already has chapters waiting (see the comment on that gate).
+  const openCycle = await getOpenCycleForUser(effectiveUserId);
+
   // ── Layer-1 first-session branch ─────────────────────────────────────────
   // A brand-new paying user who has not yet opened their day-1 item sees
   // a single-purpose screen with one goal: tap into that first item.
@@ -400,7 +404,14 @@ export default async function PrivateJourneyPage({
     !!(profileRow as { journey_first_session_completed_at: string | null } | null)
       ?.journey_first_session_completed_at;
 
-  if (!firstSessionDone) {
+  // Itzik 2026-07-31 — this branch used to swallow every user whose
+  // journey_first_session_completed_at was still NULL, and it looks for that
+  // first item in journey_scheduled_items (the retired weekly model). With the
+  // weekly engine switched off, nothing can ever create such a row, nothing
+  // flips the flag, and the user sat on "התוכנית שלכם בבנייה" forever while
+  // five real chapters waited in journey_cycle_items. A user who HAS content
+  // must never see the waiting screen.
+  if (!firstSessionDone && !openCycle) {
     // Fetch the day-1 unlocked item (if any) for the assigned program.
     // We do a lightweight lookup: find the user's active assignment,
     // then the earliest scheduled item that's already unlocked.
@@ -960,7 +971,6 @@ export default async function PrivateJourneyPage({
   // Spec §3 — the five open chapters of the current cycle. Null while the user
   // has no open cycle (paused, between cycles, or not yet on the model), in
   // which case the board simply does not render.
-  const openCycle = await getOpenCycleForUser(effectiveUserId);
 
   // Decide whether to show the "experts are reviewing" banner - only
   // for users who finished the assessment but don't yet have any

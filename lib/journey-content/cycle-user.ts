@@ -32,6 +32,80 @@ export interface OpenCycle {
   totalCount: number;
 }
 
+export interface ChapterRow {
+  cycleItemId: string;
+  itemId: string;
+  cycleNumber: number;
+  categoryName: string;
+  title: string;
+  isSubstitute: boolean;
+  completedAt: string | null;
+}
+
+/**
+ * Every chapter this user has ever been given, from journey_cycle_items — the
+ * single source of truth for "what content does this user have".
+ *
+ * `open` deliberately spans ALL cycles, not just the current one: §3 says a
+ * chapter left unmarked when the month rolls over "stays open and reachable —
+ * nothing gets closed off". Anything else would quietly take content away from
+ * a paying customer.
+ */
+export async function getUserChapters(
+  userId: string,
+): Promise<{ open: ChapterRow[]; completed: ChapterRow[] }> {
+  const admin = createServiceRoleClient();
+  if (!admin) return { open: [], completed: [] };
+
+  const { data } = await admin
+    .from("journey_cycle_items")
+    .select(
+      "id, item_id, rank_position, is_substitute, completed_at, journey_cycles!inner(user_id, cycle_number, opened_at), journey_items(title_he), journey_categories!journey_cycle_items_category_id_fkey(name_he)",
+    )
+    .eq("journey_cycles.user_id", userId);
+
+  const rows = (data ?? []) as unknown as Array<{
+    id: string;
+    item_id: string;
+    rank_position: number;
+    is_substitute: boolean;
+    completed_at: string | null;
+    journey_cycles: { cycle_number: number; opened_at: string };
+    journey_items: { title_he: string | null } | null;
+    journey_categories: { name_he: string } | null;
+  }>;
+
+  const mapped: Array<ChapterRow & { rank: number; openedAt: string }> = rows.map((r) => ({
+    cycleItemId: r.id,
+    itemId: r.item_id,
+    cycleNumber: r.journey_cycles.cycle_number,
+    categoryName: r.journey_categories?.name_he ?? "",
+    title: r.journey_items?.title_he ?? "",
+    isSubstitute: r.is_substitute,
+    completedAt: r.completed_at,
+    rank: r.rank_position,
+    openedAt: r.journey_cycles.opened_at,
+  }));
+
+  const open = mapped
+    .filter((c) => !c.completedAt)
+    // Newest cycle first, then the user's own ranking order inside it.
+    .sort((a, b) => b.cycleNumber - a.cycleNumber || a.rank - b.rank)
+    .map(strip);
+
+  const completed = mapped
+    .filter((c) => c.completedAt)
+    .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())
+    .map(strip);
+
+  return { open, completed };
+}
+
+function strip(c: ChapterRow & { rank: number; openedAt: string }): ChapterRow {
+  const { rank: _rank, openedAt: _openedAt, ...rest } = c;
+  return rest;
+}
+
 /** The user's currently open cycle, in their own ranking order. */
 export async function getOpenCycleForUser(userId: string): Promise<OpenCycle | null> {
   const admin = createServiceRoleClient();
