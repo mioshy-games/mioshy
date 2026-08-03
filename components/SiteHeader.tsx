@@ -8,6 +8,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 // cumulative React-component-overhead win is broad.
 import { ClipboardList, Gamepad2, Heart, Home, Library, LogOut, Menu, Sparkles, Target, X } from "@/components/icons/Icons";
 import { JourneyNotificationsBell } from "@/components/notifications/JourneyNotificationsBell";
+import { SurveyNavLink } from "@/components/analytics/SurveyLink";
 import { CmsText } from "@/components/cms/CmsText";
 import { logoutAction } from "@/app/actions/auth-actions";
 
@@ -393,18 +394,15 @@ export function SiteHeader({
         <nav aria-label={isHe ? "ניווט ראשי" : "Main navigation"} className="hidden items-center gap-1 lg:flex">
           {visiblePillars.map((p) => {
             const isActive = pathname.startsWith(p.href);
-            return (
-              <Link
-                key={p.href}
-                href={p.href}
-                className={`group relative inline-flex items-center rounded-full px-4 py-2 text-base font-medium transition ${linkBase} ${
-                  isActive
-                    ? mode === "light"
-                      ? "bg-slate-100"
-                      : "bg-white/10"
-                    : ""
-                }`}
-              >
+            const className = `group relative inline-flex items-center rounded-full px-4 py-2 text-base font-medium transition ${linkBase} ${
+              isActive
+                ? mode === "light"
+                  ? "bg-slate-100"
+                  : "bg-white/10"
+                : ""
+            }`;
+            const inner = (
+              <>
                 {/* Desktop pillar links are text-only (Itzik 2026-07-14) — the
                     icon is kept in the mobile drawer below. */}
                 <span>{t(p.labelKey ?? p.tKey)}</span>
@@ -414,6 +412,18 @@ export function SiteHeader({
                     isActive ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
                   }`}
                 />
+              </>
+            );
+            // The survey pillar reports its click (Meta + PostHog); every other
+            // pillar stays a plain Link. Markup is shared above so the two
+            // branches can't drift visually.
+            return p.tKey === "survey" ? (
+              <SurveyNavLink key={p.href} href={p.href} className={className}>
+                {inner}
+              </SurveyNavLink>
+            ) : (
+              <Link key={p.href} href={p.href} className={className}>
+                {inner}
               </Link>
             );
           })}
@@ -620,21 +630,17 @@ export function SiteHeader({
             ) : null}
             {visiblePillars.map((p) => {
               const isActive = pathname.startsWith(p.href);
-              return (
-                <Link
-                  key={p.href}
-                  href={p.href}
-                  onClick={() => setOpen(false)}
-                  className={`group relative flex items-center gap-3 rounded-xl px-3 py-3 text-base font-medium transition ${
-                    isActive
-                      ? theme === "light"
-                        ? "bg-slate-100 font-semibold"
-                        : "bg-white/10 font-semibold"
-                      : theme === "light"
-                        ? "hover:bg-slate-100"
-                        : "hover:bg-white/5"
-                  }`}
-                >
+              const className = `group relative flex items-center gap-3 rounded-xl px-3 py-3 text-base font-medium transition ${
+                isActive
+                  ? theme === "light"
+                    ? "bg-slate-100 font-semibold"
+                    : "bg-white/10 font-semibold"
+                  : theme === "light"
+                    ? "hover:bg-slate-100"
+                    : "hover:bg-white/5"
+              }`;
+              const inner = (
+                <>
                   <span
                     className={`grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br ${p.accent} shadow-lg shadow-black/40 ${isActive ? "ring-2 ring-white/30" : ""}`}
                   >
@@ -647,6 +653,26 @@ export function SiteHeader({
                       className={`ms-auto h-2 w-2 rounded-full bg-gradient-to-br ${p.accent}`}
                     />
                   )}
+                </>
+              );
+              // See the desktop nav above — same swap, same shared markup.
+              return p.tKey === "survey" ? (
+                <SurveyNavLink
+                  key={p.href}
+                  href={p.href}
+                  onClick={() => setOpen(false)}
+                  className={className}
+                >
+                  {inner}
+                </SurveyNavLink>
+              ) : (
+                <Link
+                  key={p.href}
+                  href={p.href}
+                  onClick={() => setOpen(false)}
+                  className={className}
+                >
+                  {inner}
                 </Link>
               );
             })}

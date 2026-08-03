@@ -44,7 +44,12 @@ function rawFbq(): Fbq | null {
 
 type QueuedCall =
   | { kind: "track"; name: string; params: Record<string, unknown>; eventId?: string }
-  | { kind: "trackCustom"; name: string; params: Record<string, unknown> };
+  | {
+      kind: "trackCustom";
+      name: string;
+      params: Record<string, unknown>;
+      eventId?: string;
+    };
 
 // ── Race fix (2026-06-22) ────────────────────────────────────────────────────
 // MetaPixelProvider loads the pixel at browser idle (deferred), so events fired
@@ -71,7 +76,12 @@ function emit(call: QueuedCall): boolean {
         call.eventId ? { eventID: call.eventId } : undefined,
       );
     } else {
-      fbq("trackCustom", call.name, call.params);
+      fbq(
+        "trackCustom",
+        call.name,
+        call.params,
+        call.eventId ? { eventID: call.eventId } : undefined,
+      );
     }
   } catch {
     /* analytics must never break UI */
@@ -112,10 +122,23 @@ export function metaTrack(
   dispatch({ kind: "track", name: eventName, params: params ?? {}, eventId });
 }
 
-/** Fire a CUSTOM Meta event (FreeGameSpin, FreeGameCTAClick, CompleteAssessment). */
+/**
+ * Fire a CUSTOM Meta event (FreeGameSpin, FreeGameCTAClick, CompleteAssessment,
+ * SurveyLinkClick).
+ *
+ * `eventId` is optional and only matters for events we may ALSO send from the
+ * server one day — passing the same id on both sides is what lets Meta
+ * deduplicate them. Custom events without a server twin can omit it.
+ */
 export function metaTrackCustom(
   eventName: string,
   params?: Record<string, unknown>,
+  eventId?: string,
 ): void {
-  dispatch({ kind: "trackCustom", name: eventName, params: params ?? {} });
+  dispatch({
+    kind: "trackCustom",
+    name: eventName,
+    params: params ?? {},
+    eventId,
+  });
 }

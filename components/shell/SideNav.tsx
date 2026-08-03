@@ -38,7 +38,8 @@ import {
 import { CoupleCard } from "./CoupleCard";
 import { ExpertMini } from "./ExpertMini";
 import { LogoutLink } from "./LogoutLink";
-import { isNavActive } from "./NavConfig";
+import { isNavActive, NAV_HREF } from "./NavConfig";
+import { SurveyNavLink } from "@/components/analytics/SurveyLink";
 import type {
   CoupleCardData,
   ExpertMiniData,
@@ -159,8 +160,11 @@ export function SideNav({ items, couple, expert, chrome }: Props) {
 
 function NavRow({ item, active }: { item: NavItem; active: boolean }) {
   const Icon = NAV_ICONS[item.key];
+  // The survey row reports its click (Meta + PostHog); every other row stays a
+  // plain Link. Both render the identical props/children below.
+  const Anchor = item.href === NAV_HREF.survey ? SurveyNavLink : Link;
   return (
-    <Link
+    <Anchor
       href={item.href}
       className="relative flex min-h-[40px] items-center gap-2.5 rounded-[10px] px-2.5 py-2.5 text-[15px] font-semibold transition hover:bg-[var(--shell-side-hover)]"
       style={{
@@ -206,6 +210,6 @@ function NavRow({ item, active }: { item: NavItem; active: boolean }) {
           aria-label="חדש"
         />
       ) : null}
-    </Link>
+    </Anchor>
   );
 }

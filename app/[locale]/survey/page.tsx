@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { SurveyFlow } from "@/components/survey/SurveyFlow";
+import { SurveyPageViewPixel } from "@/components/analytics/SurveyPageViewPixel";
 import { getPollUserId } from "@/lib/poll/anon";
 import { getOtpConsentCopy } from "@/lib/auth/otp-consent";
 
@@ -29,5 +30,10 @@ export default async function SurveyPage({ params }: { params: { locale: string 
 
   // Anon marketing flow: header stays, footer hidden (see Chrome), floating
   // back → the marketing homepage. Join form = passwordless OTP.
-  return <SurveyFlow back={{ href: `/${locale}` }} consent={consent} locale={locale} />;
+  return (
+    <>
+      <SurveyPageViewPixel locale={locale} />
+      <SurveyFlow back={{ href: `/${locale}` }} consent={consent} locale={locale} />
+    </>
+  );
 }

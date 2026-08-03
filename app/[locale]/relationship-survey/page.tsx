@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { SurveyLinkRaw } from "@/components/analytics/SurveyLink";
 import styles from "./marketing.module.css";
 
 export const dynamic = "force-dynamic";
@@ -20,7 +20,7 @@ export default function RelationshipSurveyMarketing() {
     <div className={styles.page} dir="rtl">
       <header className={styles.header}>
         <div className={styles.logo}>Mioshy</div>
-        <Link href="/he/survey" className={styles.headerCta}>לשאלה של היום</Link>
+        <SurveyLinkRaw location="nav" href="/he/survey" className={styles.headerCta}>לשאלה של היום</SurveyLinkRaw>
       </header>
 
       <main className={styles.main}>
@@ -32,7 +32,7 @@ export default function RelationshipSurveyMarketing() {
           כל יום שאלה אחת על הזוגיות שלכם. בוחרים תשובה — ורואים מיד באחוזים חיים כמה זוגות בישראל ענו כמוכם, וכמה הפוך.
           זה מכניס פלפל לזוגיות ופותח שיחות שלא העזתם. הכי כיף לענות יחד.
         </p>
-        <Link href="/he/survey" className={styles.cta}>מתחילים עכשיו ←</Link>
+        <SurveyLinkRaw location="hero" href="/he/survey" className={styles.cta}>מתחילים עכשיו ←</SurveyLinkRaw>
         <p className={styles.sub}>אפשר לענות ולראות תוצאות בלי הרשמה. רוצים שאלה חדשה כל יום? מצטרפים בחינם.</p>
 
         <div className={styles.cards}>
@@ -44,7 +44,7 @@ export default function RelationshipSurveyMarketing() {
 
       {/* sticky mobile CTA */}
       <div className={styles.sticky}>
-        <Link href="/he/survey" className={styles.stickyCta}>לשאלה של היום ←</Link>
+        <SurveyLinkRaw location="banner" href="/he/survey" className={styles.stickyCta}>לשאלה של היום ←</SurveyLinkRaw>
       </div>
     </div>
   );
