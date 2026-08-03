@@ -3,6 +3,7 @@
 import { useTranslations, useLocale } from "next-intl";
 import { Link, usePathname } from "@/navigation";
 import { Sparkles, Mail, Globe } from "@/components/icons/Icons";
+import { SurveyLink } from "@/components/analytics/SurveyLink";
 
 /**
  * Persist the user's explicit language choice as `NEXT_LOCALE` so the
@@ -104,7 +105,7 @@ export function SiteFooter() {
                 <li><Link href="/games"   className="text-[#D8CFE6] transition-colors hover:text-white">{tNav("games")}</Link></li>
                 <li><Link href="/journey" className="text-[#D8CFE6] transition-colors hover:text-white">{tNav("journey")}</Link></li>
                 <li><Link href="/mioshy-sex"  className="text-[#D8CFE6] transition-colors hover:text-white">{tNav("adults")}</Link></li>
-                <li><Link href="/survey"  className="text-[#D8CFE6] transition-colors hover:text-white">{tNav("surveyShort")}</Link></li>
+                <li><SurveyLink location="footer" href="/survey"  className="text-[#D8CFE6] transition-colors hover:text-white">{tNav("surveyShort")}</SurveyLink></li>
               </ul>
             </div>
 

@@ -35,7 +35,8 @@ import {
   Users,
 } from "lucide-react";
 
-import { MOBILE_PRIMARY_KEYS, isNavActive } from "./NavConfig";
+import { MOBILE_PRIMARY_KEYS, isNavActive, NAV_HREF } from "./NavConfig";
+import { SurveyNavLink } from "@/components/analytics/SurveyLink";
 import type { NavItem, NavKey } from "./types";
 
 /**
@@ -129,8 +130,11 @@ interface TabProps {
 }
 
 function Tab({ label, href, active, badge, dot, children }: TabProps) {
+  // The survey tab reports its click (Meta + PostHog); every other tab stays a
+  // plain Link. Both render the identical props/children below.
+  const Anchor = href === NAV_HREF.survey ? SurveyNavLink : Link;
   return (
-    <Link
+    <Anchor
       href={href}
       // 2026-05-31 — label sizing pass after mobile screenshot review:
       //   • text-[11px] → text-[12.5px] for legibility on small viewports
@@ -174,6 +178,6 @@ function Tab({ label, href, active, badge, dot, children }: TabProps) {
       >
         {label}
       </span>
-    </Link>
+    </Anchor>
   );
 }

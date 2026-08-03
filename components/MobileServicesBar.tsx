@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/navigation";
 import { Gamepad2, Sparkles, Heart, Target } from "@/components/icons/Icons";
 import { ClipboardList } from "lucide-react";
+import { SurveyNavLink } from "@/components/analytics/SurveyLink";
 
 /**
  * MobileServicesBar
@@ -350,35 +351,53 @@ export function MobileServicesBar() {
         <ul className="mx-auto flex max-w-md items-stretch gap-2 px-2 py-2">
           {PILLARS.map(({ href, tKey, Icon }) => {
             const isActive = pathname === href || pathname.startsWith(href + "/");
+            // No card frame (Itzik 2026-07-13) — icon plate + label sit
+            // directly on the strip. Spacing + tap area (px/py + full
+            // height) preserved; active state cued by full opacity.
+            const className = `group flex h-full flex-col items-center justify-center gap-1.5 rounded-2xl px-2 py-2.5 text-center text-white transition active:scale-[0.97] ${
+              isActive ? "opacity-100" : "opacity-90 hover:opacity-100"
+            }`;
+            const inner = (
+              <>
+                {/* Icon only — no coloured disc (Itzik 2026-07-14). The
+                    transparent h-10/w-10 box preserves the row height and
+                    tap area; the white glyph reads directly on the strip. */}
+                <span className="grid h-10 w-10 place-items-center">
+                  <Icon
+                    className="h-7 w-7 text-white"
+                    strokeWidth={2}
+                    aria-hidden
+                  />
+                </span>
+                <span
+                  className="max-w-[110px] text-[13px] font-bold leading-[1.15]"
+                  style={{ letterSpacing: "0.005em" }}
+                >
+                  {t(tKey)}
+                </span>
+              </>
+            );
             return (
               <li key={href} className="flex-1">
-                <Link
-                  href={href}
-                  aria-current={isActive ? "page" : undefined}
-                  // No card frame (Itzik 2026-07-13) — icon plate + label sit
-                  // directly on the strip. Spacing + tap area (px/py + full
-                  // height) preserved; active state cued by full opacity.
-                  className={`group flex h-full flex-col items-center justify-center gap-1.5 rounded-2xl px-2 py-2.5 text-center text-white transition active:scale-[0.97] ${
-                    isActive ? "opacity-100" : "opacity-90 hover:opacity-100"
-                  }`}
-                >
-                  {/* Icon only — no coloured disc (Itzik 2026-07-14). The
-                      transparent h-10/w-10 box preserves the row height and
-                      tap area; the white glyph reads directly on the strip. */}
-                  <span className="grid h-10 w-10 place-items-center">
-                    <Icon
-                      className="h-7 w-7 text-white"
-                      strokeWidth={2}
-                      aria-hidden
-                    />
-                  </span>
-                  <span
-                    className="max-w-[110px] text-[13px] font-bold leading-[1.15]"
-                    style={{ letterSpacing: "0.005em" }}
+                {/* Survey tile reports its click (Meta + PostHog); the other
+                    pillars stay plain Links. Markup is shared above. */}
+                {href === "/survey" ? (
+                  <SurveyNavLink
+                    href={href}
+                    aria-current={isActive ? "page" : undefined}
+                    className={className}
                   >
-                    {t(tKey)}
-                  </span>
-                </Link>
+                    {inner}
+                  </SurveyNavLink>
+                ) : (
+                  <Link
+                    href={href}
+                    aria-current={isActive ? "page" : undefined}
+                    className={className}
+                  >
+                    {inner}
+                  </Link>
+                )}
               </li>
             );
           })}
