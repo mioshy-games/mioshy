@@ -22,41 +22,38 @@ interface HistItem {
  * Dashboard home for "סקר הזוגיות של ישראל" (§5/§6). Signed-in space, so all
  * text is light on the dark shell. Three views, no navigation to the marketing
  * flow:
- *   • landing  — join confirmation (§ copy) + daily-question toggle + entry points
- *   • question — the daily question answered IN the dashboard (stays here, §5),
- *                no join CTA (§ already in), floating back → landing
+ *   • question — THE DEFAULT. A signed-in user lands straight on the first
+ *                question they have not answered yet, with no interstitial.
+ *                Answering reveals inline and stays here (§5).
+ *   • landing  — join confirmation + entry points. No longer the entry point;
+ *                reachable by pressing back from the question.
  *   • history  — read-only look back: answered questions + choice + § percentages
+ *
+ * ── Why "question" is the default (2026-08-03) ──────────────────────────────
+ * The landing used to open first, one click away from the actual survey. That
+ * click bought nothing: the survey has never had a per-day limit (the flow is
+ * continuous for signed-in users exactly as it is for guests — see
+ * lib/poll/queries.ts:getCurrentQuestion, which derives "next" purely from what
+ * you have already answered). The interstitial only delayed the thing the user
+ * came for.
  */
 export function PollDashboardLanding({
-  initialSubscribed,
   userName,
   locale = "he",
   hasShortAssessment = false,
 }: {
-  initialSubscribed: boolean;
   userName?: string | null;
   locale?: string;
   /** Server-resolved: user already completed the short assessment → suppress the
    *  post-signup assessment-invite popup. */
   hasShortAssessment?: boolean;
 }) {
-  const [view, setView] = useState<View>("landing");
-  const [subscribed, setSubscribed] = useState(initialSubscribed);
-  const [busy, setBusy] = useState(false);
+  const [view, setView] = useState<View>("question");
   const [history, setHistory] = useState<HistItem[] | null>(null);
   const [histLoading, setHistLoading] = useState(false);
-
-  const toggle = async () => {
-    setBusy(true);
-    const next = !subscribed;
-    const r = await fetch("/api/poll/subscribe", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ subscribed: next }),
-    }).then((x) => x.json()).catch(() => null);
-    if (r && typeof r.subscribed === "boolean") setSubscribed(r.subscribed);
-    setBusy(false);
-  };
+  // Has the user answered something this session? Gates the assessment invite —
+  // see the comment where it is rendered.
+  const [revealed, setRevealed] = useState(false);
 
   const openHistory = useCallback(async () => {
     setView("history");
@@ -69,10 +66,35 @@ export function PollDashboardLanding({
     setHistLoading(false);
   }, [history]);
 
-  // ── Question view: the daily question, in the dashboard. Answering reveals
-  //    inline and stays here (§5); back returns to the landing (§4).
+  // ── Question view (DEFAULT): the survey, in the dashboard. Answering reveals
+  //    inline and stays here (§5); back goes to the landing (§4).
+  //
+  // The assessment invite is a FULL-SCREEN modal, so where it fires decides
+  // whether this page feels open or blocked. It used to sit in the landing
+  // markup, which meant two things once "question" became the default: it would
+  // have stopped rendering altogether, and putting it back naively would have
+  // dropped a modal on top of the question — re-adding exactly the friction
+  // between arriving and answering that this flow removed.
+  //
+  // So it waits for the reveal (Itzik 2026-08-03): the user has answered
+  // something and seen how the country answered, which is also a far better
+  // moment to offer the assessment. Frequency is unchanged — the popup is still
+  // once per user, gated on its own localStorage key.
   if (view === "question") {
-    return <SurveyFlow embedded authed userName={userName} back={{ onClick: () => setView("landing") }} />;
+    return (
+      <>
+        {revealed ? (
+          <AssessmentInvitePopup locale={locale} hasShortAssessment={hasShortAssessment} />
+        ) : null}
+        <SurveyFlow
+          embedded
+          authed
+          userName={userName}
+          back={{ onClick: () => setView("landing") }}
+          onReveal={() => setRevealed(true)}
+        />
+      </>
+    );
   }
 
   // ── History view (§6): read-only look back with the live percentages.
@@ -92,7 +114,7 @@ export function PollDashboardLanding({
         {histLoading ? (
           <p className="text-center text-[#6b5f6a]">טוען…</p>
         ) : !history || history.length === 0 ? (
-          <p className="text-center text-[#6b5f6a] mt-6">עוד לא ענית על שאלות. חזרו ללשאלה של היום.</p>
+          <p className="text-center text-[#6b5f6a] mt-6">עוד לא ענית על שאלות. חזרו לסקר.</p>
         ) : (
           <div className="space-y-3">
             {history.map((h) => (
@@ -120,22 +142,21 @@ export function PollDashboardLanding({
     );
   }
 
-  // ── Landing (default). Dark ink on the light survey canvas (page.tsx).
+  // ── Landing. No longer the entry point — reached by pressing back from the
+  //    question. Dark ink on the light survey canvas (page.tsx).
   return (
     <div dir="rtl" className="mx-auto max-w-lg px-5 py-10 text-center text-[#2a2130]" style={{ fontFamily: "var(--font-assistant), sans-serif" }}>
-      {/* Post-signup invite to the short assessment — shows once, only for users
-          who haven't done it yet. A layer above the landing. */}
-      <AssessmentInvitePopup locale={locale} hasShortAssessment={hasShortAssessment} />
       <div
         className="mx-auto mb-6 grid h-[76px] w-[76px] place-items-center rounded-full text-4xl font-extrabold text-white"
         style={{ background: "linear-gradient(95deg, #6C5CE7 0%, #D6409F 52%, #F79154 100%)", boxShadow: "0 16px 30px -14px rgba(214,64,159,.6)" }}
       >
         ✓
       </div>
-      <h1 className="text-[22px] font-extrabold mb-3 text-[#2a2130]">הצטרפתם! אתם בפנים.</h1>
-      <p className="text-[18px] leading-relaxed text-[#4a3f4a] max-w-md mx-auto">
-        מעכשיו כל יום תקבלו שאלה אחת על הזוגיות. עונים בכמה שניות, ומיד רואים מה זוגות אחרים בישראל ענו.
-      </p>
+      {/* No cadence promise in the copy: there is no daily send, and the survey
+          has no per-day limit. */}
+      <h1 className="text-[22px] font-extrabold mb-3 text-[#2a2130]">
+        ענו על שאלות הסקר, וראו מיד מה זוגות אחרים בישראל ענו
+      </h1>
 
       <div className="mt-7 flex flex-col items-center gap-3">
         <button
@@ -144,7 +165,7 @@ export function PollDashboardLanding({
           className="inline-block rounded-2xl px-6 py-3.5 font-extrabold text-white text-[16px]"
           style={{ background: "linear-gradient(95deg, #6C5CE7 0%, #D6409F 52%, #F79154 100%)", boxShadow: "0 14px 28px -14px rgba(214,64,159,.5)" }}
         >
-          לשאלה של היום ←
+          מתחילים ←
         </button>
         <button
           type="button"
@@ -155,19 +176,11 @@ export function PollDashboardLanding({
         </button>
       </div>
 
-      <div className="mt-8 flex items-center justify-center gap-3 text-[15px]">
-        <span className="text-[#6b5f6a]">קבלת שאלה יומית</span>
-        <button
-          type="button"
-          onClick={toggle}
-          disabled={busy}
-          className={`relative h-7 w-12 rounded-full transition ${subscribed ? "bg-pink-500" : "bg-black/15"}`}
-          aria-pressed={subscribed}
-        >
-          <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-all ${subscribed ? "right-1" : "right-6"}`} />
-        </button>
-        <span className="font-bold text-[#2a2130]">{subscribed ? "פעיל" : "כבוי"}</span>
-      </div>
+      {/* The "קבלת שאלה יומית" toggle was removed (2026-08-03): poll_subscriptions
+          is written on signup and read by the page, but nothing sends a daily
+          question — no cron, no Brevo sequence. The switch promised a mail that
+          does not exist. Table, migration 187 and the /api/poll/subscribe GET are
+          all untouched, so restoring the control is UI-only work. */}
     </div>
   );
 }

@@ -47,6 +47,11 @@ export interface SurveyFlowProps {
   consent?: OtpConsentCopy;
   /** Locale for the register flow's links/redirects. */
   locale?: string;
+  /** Fired the moment a vote lands and the reveal goes on screen. The dashboard
+   *  uses it to time the assessment invite: it should appear AFTER the user has
+   *  answered something and seen how others answered, never before the question
+   *  (a full-screen modal there just re-adds the friction this flow removed). */
+  onReveal?: () => void;
 }
 
 /**
@@ -58,7 +63,7 @@ export interface SurveyFlowProps {
  * they have not seen. Registration appears ONLY on the end screen, once the
  * questions run out, as an opt-in to be told when new ones are added.
  */
-export function SurveyFlow({ embedded = false, authed: authedProp = false, back, userName, consent, locale = "he" }: SurveyFlowProps = {}) {
+export function SurveyFlow({ embedded = false, authed: authedProp = false, back, userName, consent, locale = "he", onReveal }: SurveyFlowProps = {}) {
   // Snapshot auth at mount. The OTP verify action sets the session cookie, which
   // triggers a Next soft route-refresh that would flip this server prop MID-FLOW
   // — that would unmount PollRegister (killing OtpFlow's phone step) before the
@@ -145,6 +150,7 @@ export function SurveyFlow({ embedded = false, authed: authedProp = false, back,
       setYourOption(d.yourOption);
       setTally({ pctA: d.pctA, pctB: d.pctB, totalVotes: d.totalVotes });
       setStatus("reveal");
+      onReveal?.();
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch { /* stay on question */ } finally { setBusy(false); }
   };
@@ -258,10 +264,9 @@ export function SurveyFlow({ embedded = false, authed: authedProp = false, back,
         {status === "done" && (
           <section className={styles.fade}>
             {authed ? (
-              <>
-                <div className={styles.doneHead}>עניתם על כל השאלות שיש לנו כרגע.</div>
-                <p className={styles.doneLead}>נעדכן אתכם ברגע שנוסיף שאלות חדשות.</p>
-              </>
+              // No "we'll let you know when there are new ones" — there is no
+              // daily/new-question mailer, so that was a promise nothing keeps.
+              <div className={styles.doneHead}>זהו, ענית על כל השאלות שיש לנו כרגע. תודה!</div>
             ) : (
               <>
                 {consent && (
