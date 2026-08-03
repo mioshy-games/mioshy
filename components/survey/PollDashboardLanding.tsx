@@ -51,6 +51,9 @@ export function PollDashboardLanding({
   const [view, setView] = useState<View>("question");
   const [history, setHistory] = useState<HistItem[] | null>(null);
   const [histLoading, setHistLoading] = useState(false);
+  // Has the user answered something this session? Gates the assessment invite —
+  // see the comment where it is rendered.
+  const [revealed, setRevealed] = useState(false);
 
   const openHistory = useCallback(async () => {
     setView("history");
@@ -63,20 +66,33 @@ export function PollDashboardLanding({
     setHistLoading(false);
   }, [history]);
 
-  // The post-signup assessment invite used to live inside the landing markup —
-  // which stopped rendering the moment "question" became the default view. It
-  // is hoisted here so it still shows once on arrival, exactly as before.
-  const invitePopup = (
-    <AssessmentInvitePopup locale={locale} hasShortAssessment={hasShortAssessment} />
-  );
-
   // ── Question view (DEFAULT): the survey, in the dashboard. Answering reveals
   //    inline and stays here (§5); back goes to the landing (§4).
+  //
+  // The assessment invite is a FULL-SCREEN modal, so where it fires decides
+  // whether this page feels open or blocked. It used to sit in the landing
+  // markup, which meant two things once "question" became the default: it would
+  // have stopped rendering altogether, and putting it back naively would have
+  // dropped a modal on top of the question — re-adding exactly the friction
+  // between arriving and answering that this flow removed.
+  //
+  // So it waits for the reveal (Itzik 2026-08-03): the user has answered
+  // something and seen how the country answered, which is also a far better
+  // moment to offer the assessment. Frequency is unchanged — the popup is still
+  // once per user, gated on its own localStorage key.
   if (view === "question") {
     return (
       <>
-        {invitePopup}
-        <SurveyFlow embedded authed userName={userName} back={{ onClick: () => setView("landing") }} />
+        {revealed ? (
+          <AssessmentInvitePopup locale={locale} hasShortAssessment={hasShortAssessment} />
+        ) : null}
+        <SurveyFlow
+          embedded
+          authed
+          userName={userName}
+          back={{ onClick: () => setView("landing") }}
+          onReveal={() => setRevealed(true)}
+        />
       </>
     );
   }
@@ -85,7 +101,6 @@ export function PollDashboardLanding({
   if (view === "history") {
     return (
       <div dir="rtl" className="mx-auto max-w-lg px-5 py-10 text-[#2a2130]" style={{ fontFamily: "var(--font-assistant), sans-serif" }}>
-        {invitePopup}
         <button
           type="button"
           onClick={() => setView("landing")}
@@ -131,7 +146,6 @@ export function PollDashboardLanding({
   //    question. Dark ink on the light survey canvas (page.tsx).
   return (
     <div dir="rtl" className="mx-auto max-w-lg px-5 py-10 text-center text-[#2a2130]" style={{ fontFamily: "var(--font-assistant), sans-serif" }}>
-      {invitePopup}
       <div
         className="mx-auto mb-6 grid h-[76px] w-[76px] place-items-center rounded-full text-4xl font-extrabold text-white"
         style={{ background: "linear-gradient(95deg, #6C5CE7 0%, #D6409F 52%, #F79154 100%)", boxShadow: "0 16px 30px -14px rgba(214,64,159,.6)" }}
