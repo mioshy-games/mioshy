@@ -258,10 +258,9 @@ export function SurveyFlow({ embedded = false, authed: authedProp = false, back,
         {status === "done" && (
           <section className={styles.fade}>
             {authed ? (
-              <>
-                <div className={styles.doneHead}>עניתם על כל השאלות שיש לנו כרגע.</div>
-                <p className={styles.doneLead}>נעדכן אתכם ברגע שנוסיף שאלות חדשות.</p>
-              </>
+              // No "we'll let you know when there are new ones" — there is no
+              // daily/new-question mailer, so that was a promise nothing keeps.
+              <div className={styles.doneHead}>זהו, ענית על כל השאלות שיש לנו כרגע. תודה!</div>
             ) : (
               <>
                 {consent && (

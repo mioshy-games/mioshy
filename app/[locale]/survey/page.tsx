@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "סקר הזוגיות של ישראל · מיאושי",
-  description: "כל יום שאלה אחת על הזוגיות, ורואים מיד מה זוגות אחרים בישראל ענו.",
+  description: "ענו על שאלות הסקר וראו מיד מה זוגות אחרים בישראל ענו. חינם ואנונימי, בקצב שלכם.",
 };
 
 export default async function SurveyPage({ params }: { params: { locale: string } }) {

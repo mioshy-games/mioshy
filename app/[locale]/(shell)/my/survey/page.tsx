@@ -28,8 +28,13 @@ export default async function MySurveyPage({ params }: { params: { locale: strin
   const shell = await getShellData({ locale: isHe ? "he" : "en" });
 
   const admin = await createAdminClient();
-  const [{ data: sub }, { data: profile }, { data: journeyRows }] = await Promise.all([
-    admin.from("poll_subscriptions").select("subscribed").eq("user_id", auth.user.id).maybeSingle(),
+  // NOTE: the poll_subscriptions read that used to live here was dropped
+  // (2026-08-03) along with the "קבלת שאלה יומית" toggle — nothing sends a daily
+  // question, so the switch promised a mail that does not exist. The table,
+  // migration 187 and GET /api/poll/subscribe are all intact: restoring the
+  // control means re-adding this read plus the toggle markup in
+  // PollDashboardLanding (see the comment where it was removed).
+  const [{ data: profile }, { data: journeyRows }] = await Promise.all([
     admin.from("profiles").select("full_name").eq("id", auth.user.id).maybeSingle(),
     // Has the user already done the short assessment? Any journey past the
     // assessment (paywall / complete / completed) suppresses the invite popup.
@@ -40,7 +45,6 @@ export default async function MySurveyPage({ params }: { params: { locale: strin
       .in("status", ["paywall", "complete", "completed"])
       .limit(1),
   ]);
-  const subscribed = sub?.subscribed ?? false;
   // First name only for a friendlier invite ("דנה מזמינה אותך…").
   const userName = (profile?.full_name ?? "").trim().split(/\s+/)[0] || null;
   const hasShortAssessment = (journeyRows?.length ?? 0) > 0;
@@ -63,7 +67,6 @@ export default async function MySurveyPage({ params }: { params: { locale: strin
         }}
       >
         <PollDashboardLanding
-          initialSubscribed={subscribed}
           userName={userName}
           locale={locale}
           hasShortAssessment={hasShortAssessment}
