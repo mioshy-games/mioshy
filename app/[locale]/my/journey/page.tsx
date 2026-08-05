@@ -32,34 +32,17 @@ import type { Metadata } from "next";
 import { redirect, notFound } from "next/navigation";
 import { setRequestLocale } from "next-intl/server";
 import { Link } from "@/navigation";
-import {
-  ArrowLeft,
-  ArrowRight,
-  Sparkles,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { routing } from "@/i18n/routing";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
 import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
 import { getCurrentCoupleContext } from "@/lib/between-us/couples";
 import { getOwnerJourneyStatus } from "@/lib/journey-content/owner-status";
-import { CATEGORY_DISPLAY_ORDER, CATEGORY_LABELS } from "@/lib/journey/categories";
-import {
-  buildDynamicRail,
-  buildDbBackedEmptyRail,
-  type RailEntry,
-} from "@/lib/dashboard/journey-rail";
-import {
-  getViewerPriorityOrder,
-  sortRailByPriorities,
-} from "@/lib/dashboard/priority-routing";
-import type { AssessmentStage } from "@/lib/dashboard/pillar-state";
-import { JourneyDesk } from "@/components/my/JourneyDesk";
 import { ClinicianReplyBanner } from "@/components/my/ClinicianReplyBanner";
 import { getFreshClinicianReplies } from "@/lib/journey-content/fresh-replies";
 import { SubscriptionStatusBanner } from "@/components/my/SubscriptionStatusBanner";
 import { JourneyGraceBanner } from "@/components/my/JourneyGraceBanner";
-import { WelcomeProcessingBanner } from "@/components/my/WelcomeProcessingBanner";
 // JourneyKickoffCards import removed 2026-05-28 — section was
 // removed from the render below per Itzik. Component file remains
 // on disk for possible later use.
@@ -82,16 +65,6 @@ import { MilestoneRevealModal } from "@/components/my/MilestoneRevealModal";
 import { generateCoupleStoryNarrative } from "@/lib/journey/story-narrative";
 import { getScoreHistoryForUser } from "@/lib/journey/score-history";
 import { ScoreEvolutionChart } from "@/components/my/ScoreEvolutionChart";
-import {
-  JourneyActivityHistory,
-  type JourneyActivityEntry,
-} from "@/components/my/JourneyActivityHistory";
-import {
-  JourneyPriorityRanking,
-  type PriorityItem,
-} from "@/components/my/JourneyPriorityRanking";
-import { GeneralChannelThread } from "@/components/my/GeneralChannelThread";
-import { CoachingLockedChat } from "@/components/journey/CoachingLockedChat";
 import {
   ensureUserChannel,
   getGeneralChannelThread,
@@ -566,11 +539,6 @@ export default async function PrivateJourneyPage({
       ? priorityLabels.labelsHe[topPriority]
       : priorityLabels.labelsEn[topPriority]
     : t("focusFallback");
-  const focusDesc = topPriority
-    ? isHe
-      ? priorityLabels.descsHe[topPriority]
-      : priorityLabels.descsEn[topPriority]
-    : "";
 
   // ── Load admin-prescribed content ─────────────────────────────────────────
   // Anything the admin assigned via /dashboard/my-clients (the
@@ -648,6 +616,22 @@ export default async function PrivateJourneyPage({
     effectiveUserId,
   );
 
+  // The inline channel was removed from this page on 2026-08-01 (the board is
+  // the page). The thread itself lives on at /my/expert — so the ONE thing that
+  // must survive here is the signal that a reply is waiting, otherwise removing
+  // the section buries it. Newest expert-authored message; the board resolves
+  // "unread" against localStorage, as journey_messages has no read_at column.
+  const latestExpertMessageAt =
+    channelMessages
+      .filter((m) => m.author_kind === "expert")
+      .reduce<string | null>(
+        (latest, m) =>
+          !latest || Date.parse(m.created_at) > Date.parse(latest)
+            ? m.created_at
+            : latest,
+        null,
+      ) ?? null;
+
   const now = Date.now();
   const openItems = timeline.filter((entry) => {
     const unlockAt = new Date(entry.scheduled.unlock_at).getTime();
@@ -670,137 +654,11 @@ export default async function PrivateJourneyPage({
     userId: effectiveUserId,
     coupleId: couple?.couple_id ?? null,
   });
-  const assessmentStage: AssessmentStage = journeyStatus.hasCompletedAssessment
-    ? "completed"
-    : journeyStatus.hasInProgressAssessment
-      ? "in_progress"
-      : "not_started";
-  // Empty timeline → pull the program's actual categories from the DB
-  // (Phase 2 step C). The page is never empty: even before any item is
-  // scheduled the user sees the program's real categories instead of
-  // the hardcoded six-topic fallback. buildDbBackedEmptyRail itself
-  // falls back to the hardcoded list if the DB query fails.
-  const railEntriesRaw: RailEntry[] =
-    timeline.length > 0
-      ? buildDynamicRail({
-          isHe,
-          timeline,
-          assessmentCompleted: journeyStatus.hasCompletedAssessment,
-          viewerUserId: effectiveUserId,
-          // itemSeenAt: not yet wired - until we have a seen-state
-          // table, every clinician reply is considered "unread"
-          // until the user clicks into the item.
-        })
-      : await buildDbBackedEmptyRail({
-          isHe,
-          assessmentStage,
-        });
-
-  // Phase 5 - adaptive ordering. The RAIL order follows the cadence
-  // OWNER's ranking so a PARTNER sees the SAME chapter order as the
-  // subscription owner (shared-content spec step 2, Gate C). For
-  // owner/solo the cadence owner IS the viewer, so this is unchanged.
-  // The partner's OWN ranking still drives their personal priority
-  // widget below (seededPriorities). Categories whose slug isn't in the
-  // priority taxonomy keep their natural position after the priority block.
-  const railPriorityOwnerId =
-    cadenceOwner.kind === "user" ? cadenceOwner.userId : effectiveUserId;
-  const viewerPriorities = await getViewerPriorityOrder(railPriorityOwnerId);
-  // Build the rail-key → category-slug lookup from the live timeline.
-  // For dynamic categories the slug comes from journey_categories;
-  // for the empty/static rails we pull slugs from the bucket data.
-  // (Declared early so the missing-categories pad block below can
-  // extend the Map for newly-added pending entries.)
-  const categorySlugByKey = new Map<string, string | null>();
-  for (const entry of timeline) {
-    categorySlugByKey.set(`dyn:${entry.category.id}`, entry.category.slug ?? null);
-  }
-
-  // ── Pad with pending categories (2026-05-24) ─────────────────────────
-  // Restore the original "show all steps, lock the future ones" UX.
-  // buildDynamicRail only emits entries for categories that have items
-  // in the timeline. We now ALSO pull the program's active categories
-  // and inject pending entries for any that are missing, so the rail
-  // always shows the full set with locks on what hasn't started yet.
-  //
-  // Only runs when timeline.length > 0 (the dynamic path). For an empty
-  // timeline, buildDbBackedEmptyRail above already includes every
-  // active category.
-  let railEntriesPadded: RailEntry[] = railEntriesRaw;
-  if (timeline.length > 0) {
-    const padAdmin = createServiceRoleClient();
-    if (padAdmin) {
-      try {
-        const { data: program } = await padAdmin
-          .from("journey_programs")
-          .select("id")
-          .eq("product_slug", "journey")
-          .eq("is_active", true)
-          .maybeSingle();
-        const programId = (program as { id: string } | null)?.id ?? null;
-        if (programId) {
-          const { data: allCats } = await padAdmin
-            .from("journey_categories")
-            .select("id, name_he, name_en, slug, sort_order")
-            .eq("program_id", programId)
-            .eq("is_active", true)
-            .order("sort_order", { ascending: true });
-          const cats =
-            (allCats as Array<{
-              id: string;
-              name_he: string;
-              name_en: string | null;
-              slug: string | null;
-              sort_order: number;
-            }> | null) ?? [];
-          if (cats.length > 0) {
-            // Identify which category UUIDs are already represented in
-            // railEntriesRaw via the "dyn:<uuid>" key shape (set by
-            // buildDynamicRail line 372).
-            const existingCategoryIds = new Set<string>();
-            for (const entry of railEntriesRaw) {
-              if (entry.key.startsWith("dyn:")) {
-                existingCategoryIds.add(entry.key.slice(4));
-              }
-            }
-            const missingEntries: RailEntry[] = [];
-            for (const cat of cats) {
-              if (existingCategoryIds.has(cat.id)) continue;
-              missingEntries.push({
-                key: `dyn:${cat.id}`,
-                label: isHe ? cat.name_he : (cat.name_en || cat.name_he),
-                status: "pending",
-                // Matches hintFor("pending", isHe, false) in
-                // journey-rail.ts:585-591 — that helper is private to
-                // its module, so we duplicate the exact string here.
-                hint: isHe ? "ייפתח בהמשך" : "Coming up",
-                href: null,
-                items: [],
-              });
-              // Extend the slug Map so sortRailByPriorities can route
-              // this pending entry by the user's ranking too (Option X).
-              categorySlugByKey.set(`dyn:${cat.id}`, cat.slug ?? null);
-            }
-            if (missingEntries.length > 0) {
-              railEntriesPadded = [...railEntriesRaw, ...missingEntries];
-            }
-          }
-        }
-      } catch (err) {
-        console.warn(
-          "[/my/journey] missing-categories pad failed (non-fatal)",
-          err,
-        );
-        // Fall through with railEntriesRaw unchanged.
-      }
-    }
-  }
-
-  const railEntries: RailEntry[] = sortRailByPriorities(
-    railEntriesPadded,
-    viewerPriorities,
-    categorySlugByKey,
-  );
+  // 2026-08-01 — the rail machinery that used to live here (assessmentStage,
+  // buildDynamicRail / buildDbBackedEmptyRail, the missing-categories pad, and
+  // sortRailByPriorities) was removed together with JourneyDesk. It ran four
+  // extra DB round-trips per page load to build a rail nobody renders.
+  // journeyStatus itself stays: the analytics tracker below still reports it.
   const railIsDynamic = timeline.length > 0;
 
   // Phase 2F - surface a calm banner when the clinician has replied
@@ -867,90 +725,11 @@ export default async function PrivateJourneyPage({
       coachPersonaForBanner.displayNameHe
     : null;
 
-  // ── Phase 4 - dashboard data ────────────────────────────────────────
-  // Activity history: derived from data we already have on the page.
-  // In a follow-up phase we'll add a dedicated event-log table; for
-  // now we synthesise a believable timeline from the assessment +
-  // timeline + clinician replies the user has actually accumulated.
-  const activityEntries: JourneyActivityEntry[] = [];
-  if (hasAnyResponses) {
-    activityEntries.push({
-      id: "assessment_completed",
-      kind: "assessment_completed",
-      title: t("assessmentCompleted"),
-      detail:
-        focusLabel && topPriority
-          ? t("activityAssessmentDetail").replace("{focusLabel}", focusLabel)
-          : null,
-      whenIso: new Date().toISOString(),
-    });
-  }
-  for (const entry of completedItems.slice(0, 5)) {
-    const title =
-      (isHe
-        ? entry.item.title_he
-        : entry.item.title_en || entry.item.title_he) ?? "";
-    const cat =
-      (isHe
-        ? entry.category.name_he
-        : entry.category.name_en || entry.category.name_he) ?? null;
-    activityEntries.push({
-      id: `done-${entry.scheduled.id}`,
-      kind: "item_completed",
-      title: t("activityCompleted").replace("{title}", title),
-      detail: cat,
-      whenIso:
-        entry.completion?.completed_at ?? entry.scheduled.unlock_at,
-    });
-  }
-  // Recent unlocks for the "item_unlocked" timeline lane
-  for (const entry of openItems.slice(0, 3)) {
-    const title =
-      (isHe
-        ? entry.item.title_he
-        : entry.item.title_en || entry.item.title_he) ?? "";
-    activityEntries.push({
-      id: `unlock-${entry.scheduled.id}`,
-      kind: "item_unlocked",
-      title: t("activityJustOpened").replace("{title}", title),
-      detail: null,
-      whenIso: entry.scheduled.unlock_at,
-    });
-  }
-  if (freshReplies.latestReplyAt) {
-    activityEntries.push({
-      id: `reply-${freshReplies.latestReplyAt}`,
-      kind: "clinician_replied",
-      title: t("activityClinicianReplied"),
-      detail: null,
-      whenIso: freshReplies.latestReplyAt,
-    });
-  }
-
-  // Priority ranking - seeds from the user's assessment ranking when
-  // available, otherwise from the canonical six topics. Server passes
-  // the seed; the client component owns the reorder/add UI.
-  const seededPriorities: PriorityItem[] = topPriority
-    ? // Top priority first (label from the DB seed), then the rest of the
-      // canonical five in canonical order, labelled from the single source of
-      // truth (lib/journey/categories.ts). Using canonical keys here also fixes
-      // the dedup: `emotional_connection` now filters out correctly (the old
-      // `love` slug never matched topPriority, so it duplicated that category).
-      [
-        {
-          id: `priority-${topPriority}`,
-          label: focusLabel,
-          note: focusDesc || null,
-        },
-        ...CATEGORY_DISPLAY_ORDER.filter((k) => k !== topPriority).map((k) => ({
-          id: `priority-${k}`,
-          label: isHe ? CATEGORY_LABELS[k].he : CATEGORY_LABELS[k].en,
-        })),
-      ]
-    : CATEGORY_DISPLAY_ORDER.map((k) => ({
-        id: `priority-${k}`,
-        label: isHe ? CATEGORY_LABELS[k].he : CATEGORY_LABELS[k].en,
-      }));
+  // 2026-08-01 — activityEntries and seededPriorities were built here for
+  // JourneyActivityHistory and JourneyPriorityRanking, both retired below.
+  // activityEntries synthesised its rows from `timeline`, which the retired
+  // weekly engine no longer fills; seededPriorities fed a reorder widget that
+  // never persisted anything.
 
   // Spec §2א(א): the user bought before finishing the assessment, so their five
   // categories are in the DEFAULT order. They still get content (that is the
@@ -976,13 +755,6 @@ export default async function PrivateJourneyPage({
   // has no open cycle (paused, between cycles, or not yet on the model), in
   // which case the board simply does not render.
 
-  // Decide whether to show the "experts are reviewing" banner - only
-  // for users who finished the assessment but don't yet have any
-  // assigned content. It would be misleading otherwise.
-  const showWelcomeProcessingBanner =
-    !assessmentMissing &&
-    journeyStatus.hasCompletedAssessment &&
-    !journeyStatus.hasActiveAssignments;
 
   console.log("[/my/journey] rendered for", {
     user_id: user.id,
@@ -1053,7 +825,7 @@ export default async function PrivateJourneyPage({
         </Link>
 
         {hasDefaultRanking && <DefaultRankingNotice locale={locale} />}
-{reactivationOffer ? <ReactivateBanner offer={reactivationOffer} /> : null}
+        {reactivationOffer ? <ReactivateBanner offer={reactivationOffer} /> : null}
         {openCycle && (
           <JourneyCycleBoard
             cycle={openCycle}
@@ -1062,29 +834,20 @@ export default async function PrivateJourneyPage({
               hasCoaching: entitlements.journeyCoaching,
               chatHref: "/my/expert",
               upgradeHref: "/pricing?coaching=1",
+              latestExpertMessageAt,
             }}
+            // Paired viewers only — the shared space absorbed the retired
+            // "המקום המשותף שלכם" section (2026-08-01).
+            partnerSpaceHref={isPaired ? "/my/journey/together" : null}
           />
         )}
 
-        {/* ─────── Header ───────
-            Same visual register as the rest of the redesigned surface:
-            slate-toned glass, calm typography, no marketing voice. */}
-        <header className="mt-6">
-          <div className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-slate-950/40 px-3 py-1 text-xs backdrop-blur">
-            <Sparkles className="h-3.5 w-3.5 text-white/70" />
-            <span className="font-semibold text-white/85">
-              <CmsText cmsKey="myJourney.coachingEyebrow" />
-            </span>
-          </div>
-          <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
-            <CmsText cmsKey="myJourney.pageHeading" />
-          </h1>
-          <CmsText
-            cmsKey="myJourney.headerLede"
-            as="p"
-            className="mt-2 max-w-xl text-white/65"
-          />
-        </header>
+        {/* ─────── Header removed 2026-08-01 (Itzik, eyes-on production) ───────
+            "הקליניקה המכווננת שלכם" + eyebrow + lede sat BELOW the cycle board
+            and re-opened the page a second time, so the screen read as two
+            competing pages stacked. The board is the page now, not an addition
+            at its head. CMS keys (myJourney.pageHeading / coachingEyebrow /
+            headerLede) are untouched and still power the tab title. */}
 
         {/* ─────── v3 slice 5 - grace / blocked banner ───────
             Renders nothing when the user is in 'active' state. During
@@ -1102,15 +865,20 @@ export default async function PrivateJourneyPage({
           </section>
         ) : (
           /* ─────── Subscription status - explicit confirmation ───────
-              A calm "your subscription is active" line when entitled,
-              or a recovery banner when the assessment didn't get
-              attached to this account (we don't loop back to it; the
-              user controls when they restart). */
+              A calm "your subscription is active" line when entitled.
+
+              2026-08-01 — the "assessment_missing" variant is no longer
+              selected here. Its amber AlertTriangle card ("האבחון לא קושר
+              לחשבון שלכם") fired for exactly the same users as
+              DefaultRankingNotice at the top of the page, pointed at the same
+              /journey/assessment, and framed the assessment as a fault to
+              repair. Spec §2א(א) settled the opposite: purchase alone earns
+              content and the assessment is an invitation. One gentle banner,
+              at the top, is the whole treatment. The variant remains
+              implemented in SubscriptionStatusBanner for any caller that
+              genuinely needs a recovery state. */
           <section className="mt-6">
-            <SubscriptionStatusBanner
-              isHe={isHe}
-              variant={assessmentMissing ? "assessment_missing" : "active"}
-            />
+            <SubscriptionStatusBanner isHe={isHe} variant="active" />
           </section>
         )}
 
@@ -1159,59 +927,22 @@ export default async function PrivateJourneyPage({
           />
         ) : null}
 
-        {/* Layer-5 — paired users get a soft link to the shared "we"
-            surface. Solo users never see this. */}
-        {isPaired ? (
-          <Link
-            href="/my/journey/together"
-            className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-[#B83C4D]/30 bg-[#B83C4D]/[0.06] px-4 py-3 transition hover:bg-[#B83C4D]/[0.10]"
-          >
-            <div className="min-w-0">
-              <div className="text-[12px] font-bold uppercase tracking-wider text-[#FAF6F7]/75">
-                <CmsText cmsKey="myJourney.sharedSpace" />
-              </div>
-              <CmsText
-                cmsKey="myJourney.sharedSpaceBody"
-                as="p"
-                className="mt-1 text-[14px] leading-snug text-white/75"
-              />
-            </div>
-            <Arrow className="h-4 w-4 shrink-0 text-white/55" />
-          </Link>
-        ) : null}
+        {/* ─────── Retired 2026-08-01 · three sections, one reason ───────
+            All three were built for the weekly model and now contradict the
+            board rather than add to it. Their component files stay on disk so
+            any of them can be restored in a minute (Itzik's condition:
+            code deletion waits two weeks of nothing being missed).
 
-        {/* ─────── "Experts are reviewing" banner ───────
-            Shown for users who completed the assessment but don't yet
-            have assigned content. Stays above the desk so it doesn't
-            compete with the rail/content layout below. */}
-        {showWelcomeProcessingBanner ? (
-          <section className="mt-6">
-            {/* v2 (Itzik 2026-05-07): the banner now shows the user's
-                actual top focus from their assessment ranking + an
-                optional "start with the opening exercise" link when
-                the day-1 override has unlocked one. firstItemHref is
-                left null here because the rail+desk below already
-                renders unlocked items prominently — keeping it null
-                avoids duplicating a CTA. */}
-            <WelcomeProcessingBanner
-              isHe={isHe}
-              focusLabel={topPriority ? focusLabel : null}
-              firstItemHref={null}
-            />
-          </section>
-        ) : null}
-
-        {/* ─────── Personal-priority hint ───────
-            Tells the viewer (each partner sees their OWN order) why
-            the steps below are arranged the way they are. We surface
-            this only when the user has actually ranked priorities. */}
-        {viewerPriorities && viewerPriorities.length > 0 && topPriority ? (
-          <section className="mt-6">
-            <p className="rounded-xl border border-emerald-400/20 bg-emerald-500/[0.06] px-4 py-2.5 text-[13px] text-emerald-100">
-              {t("priorityHintTemplate").replace("{focusLabel}", focusLabel)}
-            </p>
-          </section>
-        ) : null}
+            · "המקום המשותף שלכם" — the ONE thing here that was still live, so
+              it was not dropped: it moved INTO the board as a single line
+              (partnerSpaceHref above), still paired-only, same destination
+              /my/journey/together.
+            · WelcomeProcessingBanner — "your experts are preparing your plan",
+              gated on hasActiveAssignments from the dead weekly engine. It now
+              says "being prepared" to a user staring at five open chapters.
+            · Personal-priority hint — "we arranged this around X", a green line
+              explaining an order that the board already shows by ordering the
+              five cards. */}
 
         {/* #66 Kickoff cards (AssessmentRecapCard + StartHereCard)
             removed 2026-05-28 per Itzik — both cards duplicated content
@@ -1239,42 +970,26 @@ export default async function PrivateJourneyPage({
           focusLabel={topPriority ? focusLabel : null}
         />
 
-        {/* ─────── The desk - vertical rail + content panel ───────
-            The rail (right in RTL, top on mobile) acts as the menu;
-            clicking a step swaps the panel content on the left. The
-            rail order has been re-sorted per the viewer's ranking
-            (Phase 5 - sortRailByPriorities). */}
-        <section className="mt-8">
-          <JourneyDesk isHe={isHe} entries={railEntries} />
-        </section>
-
-        {/* ─────── Secondary dashboard ───────
-            The desk above answers "what am I working on now". This
-            grid answers "what's the bigger picture" - history,
-            priorities, and the message channel to the clinician. */}
-        <section className="mt-10 grid gap-6 lg:grid-cols-12">
-          <div className="lg:col-span-7">
-            <JourneyActivityHistory
-              isHe={isHe}
-              entries={activityEntries}
-            />
-          </div>
-          <div className="flex flex-col gap-6 lg:col-span-5">
-            <JourneyPriorityRanking
-              isHe={isHe}
-              initialItems={seededPriorities}
-            />
-            {entitlements.journeyCoaching ? (
-              <GeneralChannelThread
-                initialMessages={channelMessages}
-                viewerUserId={effectiveUserId}
-                isHe={isHe}
-              />
-            ) : (
-              <CoachingLockedChat isHe={isHe} />
-            )}
-          </div>
-        </section>
+        {/* ─────── Retired 2026-08-01 · the desk and the secondary grid ───────
+            · JourneyDesk ("מסלול הליווי שלכם") read journey_scheduled_items,
+              the weekly engine's table. That engine is off, so the query is
+              permanently empty and the desk fell back to
+              buildDbBackedEmptyRail — painting all five categories as LOCKED
+              "ייפתח בהמשך" directly beneath a board showing those same five
+              categories OPEN. That single contradiction is most of what made
+              the page read as two pages.
+            · JourneyActivityHistory derived its entries from the same empty
+              timeline; all that survived was one synthetic "you completed the
+              assessment" row.
+            · JourneyPriorityRanking looked like control over the content order
+              but its own header says "UI scaffolding only — state lives in
+              component state". Reordering fired an analytics event and was lost
+              on refresh; the real order comes from the cycle's
+              ranking_snapshot. A control that does nothing is worse than none.
+            · GeneralChannelThread / CoachingLockedChat duplicated /my/expert,
+              which renders the same thread. The board's expert block links
+              there and now carries the unread signal (latestExpertMessageAt),
+              so a waiting reply announces itself instead of being buried. */}
 
         {/* ─────── Score cards (v2 2026-05-22) ───────
             Moved here from above WeeklyRecap — at the bottom of the

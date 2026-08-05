@@ -36,6 +36,48 @@ import {
 /** A cycle runs for one month unless all five items are marked done first. */
 const CYCLE_LENGTH_DAYS = 30;
 
+/**
+ * Above this many thrown iterations in a single sweep, the sweep itself is
+ * suspect (a broken table, a revoked key) rather than a handful of odd users —
+ * so the summary is raised from warn to error and becomes alertable.
+ */
+const LOOP_FAILURE_ALERT_THRESHOLD = 3;
+
+function describeError(e: unknown): string {
+  if (e instanceof Error) return e.message;
+  if (typeof e === "string") return e;
+  try {
+    return JSON.stringify(e);
+  } catch {
+    return String(e);
+  }
+}
+
+/**
+ * Every cron sweep here iterates over users, and one user must never take the
+ * rest of the batch down with them: a single throw inside the loop used to abort
+ * the whole sweep, so everybody after the failing row silently got nothing. Each
+ * iteration is isolated; this reports what the isolation caught.
+ */
+function reportLoopFailures(
+  loop: string,
+  scanned: number,
+  failures: Array<{ userId: string; error: string }>,
+): void {
+  if (!failures.length) return;
+  const payload = {
+    loop,
+    failed: failures.length,
+    scanned,
+    failures: failures.map((f) => ({ user_id8: f.userId.slice(0, 8), error: f.error })),
+  };
+  if (failures.length >= LOOP_FAILURE_ALERT_THRESHOLD) {
+    console.error(`[cycle-engine] ${loop}: ${failures.length}/${scanned} iterations threw`, payload);
+  } else {
+    console.warn(`[cycle-engine] ${loop}: ${failures.length}/${scanned} iterations threw`, payload);
+  }
+}
+
 export interface CyclePreview {
   ok: boolean;
   reason?: string;
@@ -442,9 +484,9 @@ export async function expireEndedSubscriptions(): Promise<{ expired: number }> {
  */
 export async function drainExpertPushes(
   limit = 200,
-): Promise<{ users: number; delivered: number }> {
+): Promise<{ users: number; delivered: number; skipped: Array<{ userId: string; reason: string }> }> {
   const admin = createServiceRoleClient();
-  if (!admin) return { users: 0, delivered: 0 };
+  if (!admin) return { users: 0, delivered: 0, skipped: [] };
 
   const { data } = await admin
     .from("journey_pending_pushes")
@@ -455,16 +497,33 @@ export async function drainExpertPushes(
   const userIds = Array.from(
     new Set(((data ?? []) as Array<{ recipient_user_id: string }>).map((r) => r.recipient_user_id)),
   );
-  if (!userIds.length) return { users: 0, delivered: 0 };
+  if (!userIds.length) return { users: 0, delivered: 0, skipped: [] };
 
   const { materializeNextItemForUser } = await import("./cadence-engine");
+  const skipped: Array<{ userId: string; reason: string }> = [];
+  const failures: Array<{ userId: string; error: string }> = [];
   let delivered = 0;
   for (const userId of userIds) {
-    const r = await materializeNextItemForUser(userId, { source: "expert_push" });
-    if (r.ok) delivered++;
+    // One recipient whose materialisation throws must not swallow every push
+    // queued behind them — the expert lane is the only channel running between
+    // monthly cycles, so a silent whole-batch abort here is invisible for weeks.
+    try {
+      const r = await materializeNextItemForUser(userId, { source: "expert_push" });
+      if (r.ok) delivered++;
+      else skipped.push({ userId, reason: r.reason ?? "unknown" });
+    } catch (e) {
+      const error = describeError(e);
+      failures.push({ userId, error });
+      skipped.push({ userId, reason: `error: ${error}` });
+    }
   }
-  console.log("[cycle-engine] expert pushes drained", { users: userIds.length, delivered });
-  return { users: userIds.length, delivered };
+  reportLoopFailures("drainExpertPushes", userIds.length, failures);
+  console.log("[cycle-engine] expert pushes drained", {
+    users: userIds.length,
+    delivered,
+    skipped: skipped.length,
+  });
+  return { users: userIds.length, delivered, skipped };
 }
 
 /**
@@ -503,13 +562,23 @@ export async function openCyclesForEligibleUsers(
   );
 
   const skipped: Array<{ userId: string; reason: string }> = [];
+  const failures: Array<{ userId: string; error: string }> = [];
   let opened = 0;
   for (const userId of userIds) {
     if (hasOpen.has(userId)) continue;
-    const result = await openCycleForUser(userId);
-    if (result.ok) opened++;
-    else skipped.push({ userId, reason: result.reason ?? "unknown" });
+    // Isolated per user: one subscriber whose open throws must not cost every
+    // subscriber after them their cycle.
+    try {
+      const result = await openCycleForUser(userId);
+      if (result.ok) opened++;
+      else skipped.push({ userId, reason: result.reason ?? "unknown" });
+    } catch (e) {
+      const error = describeError(e);
+      failures.push({ userId, error });
+      skipped.push({ userId, reason: `error: ${error}` });
+    }
   }
+  reportLoopFailures("openCyclesForEligibleUsers", userIds.length, failures);
 
   return { scanned: userIds.length, opened, skipped };
 }
@@ -535,21 +604,32 @@ export async function advanceDueCycles(
 
   const rows = (due ?? []) as Array<{ id: string; user_id: string }>;
   const skipped: Array<{ userId: string; reason: string }> = [];
+  const failures: Array<{ userId: string; error: string }> = [];
   let rolled = 0;
   let opened = 0;
 
   for (const c of rows) {
-    await admin
-      .from("journey_cycles")
-      .update({ closed_at: new Date().toISOString(), close_reason: "month_elapsed", updated_at: new Date().toISOString() })
-      .eq("id", c.id)
-      .is("closed_at", null);
-    rolled++;
+    // Isolated per cycle. `rolled` is only incremented once the close actually
+    // landed, so a throw on the close leaves the cycle open and it comes back
+    // on the next tick rather than being reported as rolled.
+    try {
+      await admin
+        .from("journey_cycles")
+        .update({ closed_at: new Date().toISOString(), close_reason: "month_elapsed", updated_at: new Date().toISOString() })
+        .eq("id", c.id)
+        .is("closed_at", null);
+      rolled++;
 
-    const next = await openCycleForUser(c.user_id);
-    if (next.ok) opened++;
-    else skipped.push({ userId: c.user_id, reason: next.reason ?? "unknown" });
+      const next = await openCycleForUser(c.user_id);
+      if (next.ok) opened++;
+      else skipped.push({ userId: c.user_id, reason: next.reason ?? "unknown" });
+    } catch (e) {
+      const error = describeError(e);
+      failures.push({ userId: c.user_id, error });
+      skipped.push({ userId: c.user_id, reason: `error: ${error}` });
+    }
   }
+  reportLoopFailures("advanceDueCycles", rows.length, failures);
 
   return { scanned: rows.length, rolled, opened, skipped };
 }

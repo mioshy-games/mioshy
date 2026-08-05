@@ -53,17 +53,34 @@ export async function getCurrentQuestion(
 ): Promise<{ question: PollQuestion } | null> {
   const admin = await createAdminClient();
 
-  // Signed-in → identity by user_id (survives cookie clear / another device);
-  // anonymous → the anon cookie.
-  const idCol = userId ? "user_id" : "anon_id";
-  const idVal = userId ?? anonId;
+  // ── Identity (fixed 2026-08-04) ────────────────────────────────────────────
+  // This used to key on user_id ALONE once signed in. That silently dropped
+  // every vote the same person cast on this device BEFORE they signed in —
+  // those rows carry user_id = null — so those questions were served again, and
+  // re-answering them wrote nothing (the uniqueness key is (anon_id,
+  // question_id), so the insert was ignored). The survey looped.
+  //
+  // Match on EITHER key. A signed-in user is still identified across devices by
+  // user_id; the anon id only ever ADDS answers, it can never hide one.
   let answeredIds: string[] = [];
-  if (idVal) {
-    const { data: answered } = await admin
-      .from("poll_votes")
-      .select("question_id")
-      .eq(idCol, idVal);
-    answeredIds = (answered ?? []).map((r) => r.question_id as string);
+  if (userId || anonId) {
+    let sel = admin.from("poll_votes").select("question_id");
+    if (userId && anonId) sel = sel.or(`user_id.eq.${userId},anon_id.eq.${anonId}`);
+    else if (userId) sel = sel.eq("user_id", userId);
+    else sel = sel.eq("anon_id", anonId as string);
+
+    const { data: answered, error } = await sel;
+    // A FAILED READ IS NOT "ANSWERED NOTHING". Swallowing this error dropped the
+    // filter below, which served question 1 again — and because that question is
+    // already answered, recordVote returned its first choice without writing, so
+    // "next question" served it again forever while the table stayed still.
+    // That is precisely the shape of the 2026-08-03 incident: a reveal on
+    // screen, "next" clicked, and zero rows written. Fail loudly instead — the
+    // route 500s and SurveyFlow shows its retry screen, which is honest.
+    if (error) {
+      throw new Error(`poll_answered_read_failed: ${error.message}`);
+    }
+    answeredIds = [...new Set((answered ?? []).map((r) => r.question_id as string))];
   }
 
   let q = admin
@@ -239,6 +256,20 @@ export async function recordVote(args: {
       { question_id: args.questionId, option: args.option, anon_id: args.anonId, user_id: args.userId ?? null },
       { onConflict: "anon_id,question_id", ignoreDuplicates: true },
     );
+
+  // The upsert above is IGNORED when this device already answered this question,
+  // so a vote cast before signing in keeps user_id = null forever — invisible to
+  // any user_id lookup. linkAnonVotes only runs at auth time and cannot catch a
+  // row created after it. Attribute it here, every time, so the data converges
+  // rather than depending on when the person happened to sign in.
+  if (args.userId) {
+    await admin
+      .from("poll_votes")
+      .update({ user_id: args.userId })
+      .eq("anon_id", args.anonId)
+      .eq("question_id", args.questionId)
+      .is("user_id", null);
+  }
 
   const existing = await getExistingVote(args.questionId, args.anonId);
   const finalOption = existing ?? args.option;

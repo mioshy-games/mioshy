@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Link } from "@/navigation";
-import { Check, Sparkles, MessageCircle } from "lucide-react";
+import { Check, Sparkles, MessageCircle, HeartHandshake, ArrowLeft } from "lucide-react";
 import { markCycleItemDone } from "@/app/actions/journey-cycle";
 import { CategoryIcon } from "@/components/icons/CategoryIcons";
 import type { OpenCycle, NextCyclePeek } from "@/lib/journey-content/cycle-user";
@@ -33,24 +33,73 @@ export interface CoachingBlock {
   hasCoaching: boolean;
   chatHref: string;
   upgradeHref: string;
+  /**
+   * ISO timestamp of the newest message the expert wrote in this user's
+   * channel, or null when the expert has never written.
+   *
+   * Itzik 2026-08-01: the inline channel was removed from /my/journey, and
+   * removing it without this would bury a waiting reply — the user would have
+   * to navigate to /my/expert on a hunch. journey_messages has no read_at
+   * column, so "unread" is resolved client-side against localStorage, the same
+   * technique ClinicianReplyBanner already uses.
+   */
+  latestExpertMessageAt?: string | null;
 }
+
+/** Mirrors ClinicianReplyBanner's LS_KEY convention. */
+const EXPERT_SEEN_KEY = "mioshy:journey:lastSeenExpertMessageAt";
 
 export function JourneyCycleBoard({
   cycle,
   nextPeek = [],
   coaching,
+  partnerSpaceHref = null,
 }: {
   cycle: OpenCycle;
   nextPeek?: NextCyclePeek[];
   coaching: CoachingBlock;
+  /**
+   * Link to the couple's shared surface. NULL for solo users — the caller
+   * passes it only when the viewer is actually paired, so an unpaired user can
+   * never see a door to a room that does not exist for them.
+   */
+  partnerSpaceHref?: string | null;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [celebrating, setCelebrating] = useState(false);
   const [error, setError] = useState(false);
+  const [expertUnread, setExpertUnread] = useState(false);
 
   const done = cycle.cards.filter((c) => c.completedAt).length;
+
+  const latestExpertAt = coaching.latestExpertMessageAt ?? null;
+  useEffect(() => {
+    if (!latestExpertAt) {
+      setExpertUnread(false);
+      return;
+    }
+    try {
+      const seen = localStorage.getItem(EXPERT_SEEN_KEY);
+      const seenMs = seen ? Date.parse(seen) : 0;
+      const msgMs = Date.parse(latestExpertAt);
+      setExpertUnread(Number.isFinite(msgMs) && msgMs > seenMs);
+    } catch {
+      // localStorage unavailable (private mode) — better to surface the reply
+      // than to hide it.
+      setExpertUnread(true);
+    }
+  }, [latestExpertAt]);
+
+  const markExpertSeen = () => {
+    try {
+      localStorage.setItem(EXPERT_SEEN_KEY, new Date().toISOString());
+    } catch {
+      // ignore
+    }
+    setExpertUnread(false);
+  };
 
   const mark = (cycleItemId: string) => {
     setBusyId(cycleItemId);
@@ -153,12 +202,20 @@ export function JourneyCycleBoard({
               </Link>
 
               {!isDone && (
+                /* Itzik 2026-08-01: this used to be bg-white/[0.09] — a grey
+                   wash that read as a disabled field, not an action. It now
+                   carries the brand pink with a lift shadow and a check glyph.
+                   Deliberately NOT the full gradient of the expert CTA below:
+                   five gradient buttons in a grid would out-shout both the
+                   chapter titles (the card's own tap target) and the single
+                   primary action on the page. */
                 <button
                   type="button"
                   onClick={() => mark(card.cycleItemId)}
                   disabled={isBusy}
-                  className="mt-3.5 inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-white/[0.09] px-4 py-2.5 text-[14px] font-bold text-[#FAF6F7] transition hover:bg-white/[0.16] active:scale-[0.99] disabled:opacity-60"
+                  className="mt-3.5 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#D6409F]/45 bg-[#D6409F]/[0.14] px-4 py-2.5 text-[14px] font-bold text-[#FAF6F7] shadow-[0_8px_22px_-14px_rgba(214,64,159,0.9)] transition hover:border-[#D6409F]/75 hover:bg-[#D6409F]/[0.26] hover:shadow-[0_10px_26px_-14px_rgba(214,64,159,1)] active:scale-[0.99] disabled:opacity-60"
                 >
+                  {!isBusy && <Check className="h-4 w-4 shrink-0" aria-hidden />}
                   {isBusy ? "רגע…" : "עשינו את זה"}
                 </button>
               )}
@@ -204,18 +261,62 @@ export function JourneyCycleBoard({
         </div>
       )}
 
+      {/* Partner's shared space. Renders only for a paired viewer — the caller
+          decides, so a solo user never sees it. Carried over from the old
+          dashboard section that was retired on 2026-08-01; the destination page
+          (/my/journey/together) is unchanged. Copy approved by Itzik. */}
+      {partnerSpaceHref && (
+        <Link
+          href={partnerSpaceHref}
+          className="mt-5 flex items-center justify-between gap-3 rounded-2xl border border-[#B83C4D]/30 bg-[#B83C4D]/[0.06] px-4 py-3.5 transition hover:border-[#B83C4D]/50 hover:bg-[#B83C4D]/[0.11]"
+        >
+          <div className="flex min-w-0 items-start gap-2.5">
+            <HeartHandshake className="mt-0.5 h-4 w-4 shrink-0 text-[#F0A6D0]" aria-hidden />
+            <div className="min-w-0">
+              <div className="text-[14px] font-bold text-[#FAF6F7]">
+                המרחב המשותף שלכם
+              </div>
+              <p className="mt-0.5 text-[13px] leading-snug text-[#FAF6F7]/70">
+                מה שעשיתם יחד, השיחה ביניכם וההודעות מהמומחה
+              </p>
+            </div>
+          </div>
+          <ArrowLeft className="h-4 w-4 shrink-0 text-[#FAF6F7]/55" aria-hidden />
+        </Link>
+      )}
+
       {/* Expert block — always present, two variants. */}
       <div className="mt-5 rounded-2xl border border-white/[0.08] bg-slate-950/40 px-4 py-4">
         <div className="flex items-start gap-2.5">
-          <MessageCircle className="mt-0.5 h-4 w-4 shrink-0 text-[#F0A6D0]" aria-hidden />
+          <span className="relative mt-0.5 shrink-0">
+            <MessageCircle className="h-4 w-4 text-[#F0A6D0]" aria-hidden />
+            {expertUnread && (
+              <span
+                aria-hidden
+                className="absolute -end-0.5 -top-0.5 h-2 w-2 rounded-full bg-emerald-300 ring-2 ring-slate-950"
+              />
+            )}
+          </span>
           <p className="text-[14px] font-semibold leading-relaxed text-[#FAF6F7]">
             {coaching.hasCoaching
               ? "המומחים שלנו כאן בשבילכם, בכל שאלה שעולה מהתכנים"
               : "רוצים מומחה אישי שילווה אתכם לאורך הדרך?"}
           </p>
         </div>
+
+        {/* The whole point of removing the inline channel: a waiting reply must
+            still announce itself here, or it is buried behind a navigation the
+            user has no reason to make. */}
+        {expertUnread && (
+          <p className="mt-2.5 flex items-center gap-1.5 text-[13.5px] font-bold text-emerald-200">
+            <Check className="h-4 w-4 shrink-0" aria-hidden />
+            יש לכם תשובה מהמומחה
+          </p>
+        )}
+
         <Link
           href={coaching.hasCoaching ? coaching.chatHref : coaching.upgradeHref}
+          onClick={markExpertSeen}
           className="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-[linear-gradient(95deg,#6C5CE7_0%,#D6409F_52%,#F79154_100%)] px-4 py-2.5 text-[14px] font-bold text-white transition hover:brightness-110 active:scale-[0.99] sm:w-auto sm:px-6"
         >
           {coaching.hasCoaching ? "לשיחה עם מומחה" : "להוספת ליווי אישי"}
