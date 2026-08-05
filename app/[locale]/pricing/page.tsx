@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getJourneySubscribePricing } from "@/lib/billing/journey-subscribe-pricing";
 import { AnalysisSummary } from "@/components/journey/AnalysisSummary";
-import { journeyProductJsonLd, safeJsonLd } from "@/lib/seo/jsonLd";
+import { breadcrumbJsonLd, journeyProductJsonLd, safeJsonLd } from "@/lib/seo/jsonLd";
 import type { Locale } from "@/lib/journey/types";
 
 function siteUrl() {
@@ -135,8 +135,23 @@ export default async function PricingPage({
           }}
         />
       )}
-      {/* a11y + SEO: the page's h1 (sr-only — the selector renders its own
-          subscribe-mode heading, not an h1). */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: safeJsonLd({
+            "@context": "https://schema.org",
+            ...breadcrumbJsonLd(isHe ? "he" : "en", [
+              { name: isHe ? "מחירים" : "Pricing", path: "/pricing" },
+            ]),
+          }),
+        }}
+      />
+      {/* a11y + SEO: the page's h1. It stays sr-only and stays the ONLY h1 —
+          AnalysisSummary's hero heading used to be an <h1> too, which gave this
+          page two. It is now an <h2> in subscribe mode (same class, no visual
+          change); the assessment-results mode keeps its own h1. This one wins
+          because "התמחור של מיאושי" is what the page is ABOUT, while the hero
+          line is a call to action. */}
       <h1 className="sr-only">{isHe ? "התמחור של מיאושי" : "Mioshy pricing"}</h1>
       <AnalysisSummary
         mode="subscribe"

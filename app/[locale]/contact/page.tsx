@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Mail, MessageCircle, Clock } from "lucide-react";
 import { buildAlternates, buildOgLocale } from "@/lib/seo/alternates";
+import { breadcrumbJsonLd, safeJsonLd } from "@/lib/seo/jsonLd";
 import { SUPPORT_WHATSAPP_INTL } from "@/lib/constants/contact";
 
 export async function generateMetadata({
@@ -63,6 +64,17 @@ export default function ContactPage({
       dir={isHe ? "rtl" : "ltr"}
       className="min-h-[70dvh] bg-[#FBF5F2] px-4 py-20 text-[#170E14]"
     >
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: safeJsonLd({
+            "@context": "https://schema.org",
+            ...breadcrumbJsonLd(isHe ? "he" : "en", [
+              { name: isHe ? "יצירת קשר" : "Contact", path: "/contact" },
+            ]),
+          }),
+        }}
+      />
       <div className="mx-auto max-w-2xl">
         {/* Eyebrow + headline */}
         <span className="inline-flex items-center gap-2.5 text-[12px] font-semibold uppercase tracking-[0.22em] text-[#8B2638]">

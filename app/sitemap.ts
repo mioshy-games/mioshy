@@ -63,6 +63,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // /couples-assessment is the free-entry funnel top - previously missing
     // from the sitemap and not indexed at all.
     { path: "/couples-assessment", priority: 0.95, changeFrequency: "weekly" },
+    // /relationship-survey is the survey's marketing landing page and the
+    // target of the whole survey campaign. It was in none of Google's three
+    // discovery mechanisms — absent here, no canonical, and zero inbound
+    // internal links (measured 2026-08-05 across all 36 /he pages) — so it was
+    // effectively invisible. The survey APP at /survey stays out on purpose:
+    // it is an interactive flow, not a document, and it already collects the
+    // site-wide header/footer links.
+    { path: "/relationship-survey", priority: 0.9, changeFrequency: "weekly" },
     { path: "/journey", priority: 0.85, changeFrequency: "weekly" },
     { path: "/pricing", priority: 0.7, changeFrequency: "monthly" },
     { path: "/articles", priority: 0.8, changeFrequency: "weekly" },

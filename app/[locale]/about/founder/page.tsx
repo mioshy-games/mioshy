@@ -7,7 +7,7 @@ import { loadCmsTextsForPage } from "@/lib/cms/server";
 import { CmsTextProvider } from "@/components/cms/CmsTextProvider";
 import { CmsText } from "@/components/cms/CmsText";
 import { buildAlternates, buildOgLocale } from "@/lib/seo/alternates";
-import { safeJsonLd, siteUrl } from "@/lib/seo/jsonLd";
+import { breadcrumbJsonLd, safeJsonLd, siteUrl } from "@/lib/seo/jsonLd";
 
 // 2026-05-23 — Itzik flagged a build-time warning:
 //   "[cms] loadCmsTextsForPage threw: Dynamic server usage: Route
@@ -125,10 +125,16 @@ export default async function FounderStoryPage({
   // Person entity for the founder — builds brand/E-E-A-T (the page is
   // og:type=article but shipped no Person/Article schema).
   const base = siteUrl();
+  // One name for both structured-data nodes so the breadcrumb below and the
+  // Person node can never drift. NOTE: the page's own visible <h1> renders
+  // "יצחק ברלב" while this spells it "איציק" — a pre-existing mismatch, left
+  // exactly as-is here because which spelling is correct is Itzik's call, not
+  // a refactor's.
+  const founderName = isHe ? "איציק ברלב" : "Itzik Berlev";
   const personJsonLd = {
     "@context": "https://schema.org",
     "@type": "Person",
-    name: isHe ? "איציק ברלב" : "Itzik Berlev",
+    name: founderName,
     url: `${base}/${params.locale}/about/founder`,
     jobTitle: isHe ? "מייסד מיאושי" : "Founder of Mioshy",
     worksFor: { "@type": "Organization", name: "Mioshy", url: base },
@@ -139,6 +145,20 @@ export default async function FounderStoryPage({
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: safeJsonLd(personJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: safeJsonLd({
+            "@context": "https://schema.org",
+            // No "/about" crumb between home and here: that URL 404s (there is
+            // no about index, only this page), and a breadcrumb that links to a
+            // 404 is worse than a shorter trail.
+            ...breadcrumbJsonLd(isHe ? "he" : "en", [
+              { name: founderName, path: "/about/founder" },
+            ]),
+          }),
+        }}
       />
       <article
         dir={isHe ? "rtl" : "ltr"}

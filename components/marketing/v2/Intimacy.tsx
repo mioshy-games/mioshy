@@ -98,6 +98,25 @@ export function Intimacy() {
             >
               <CmsText cmsKey="homeV2.intimacy.assessmentLink" />
             </TrackedLink>
+            {" · "}
+            {/* Same job, same row, for the survey's landing page: it had zero
+                inbound internal links site-wide, so the homepage never passed
+                it any authority. TrackedLink (not SurveyLink) — this goes to
+                /relationship-survey, and SurveyLinkClick belongs to the
+                /survey funnel from PR #46/#47. */}
+            <TrackedLink
+              href="/relationship-survey"
+              ctaId="intimacy_relationship_survey"
+              section="intimacy"
+              style={{
+                color: "inherit",
+                textDecoration: "underline",
+                textUnderlineOffset: 3,
+                opacity: 0.8,
+              }}
+            >
+              <CmsText cmsKey="homeV2.intimacy.surveyLink" />
+            </TrackedLink>
           </p>
         </div>
 

@@ -160,6 +160,22 @@ export default async function ArticlesListPage({
               {t("subtitle")}
             </p>
           </Reveal>
+          {/* Inbound link to the survey's landing page, which had none at all
+              site-wide. This is the natural place for it: /articles is the
+              editorial hub and the survey is editorial content, not another
+              product tile. Plain <Link> on purpose — see the note in
+              SiteFooter.tsx about keeping SurveyLinkClick to /survey only. */}
+          <Reveal delay={0.1}>
+            <p className="mt-6 text-base text-[#4A3A45]">
+              {t("surveyPromoLead")}{" "}
+              <Link
+                href="/relationship-survey"
+                className="font-semibold text-[#B83C4D] underline underline-offset-4 transition-colors hover:text-[#8B2638]"
+              >
+                {t("surveyPromoCta")}
+              </Link>
+            </p>
+          </Reveal>
         </div>
       </section>
 

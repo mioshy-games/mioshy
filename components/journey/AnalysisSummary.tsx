@@ -709,11 +709,21 @@ export function AnalysisSummary({
               ? rc(cmsSubEyebrow, "הייעוץ הזוגי של מיאושי", "Mioshy couples coaching")
               : rc(cmsEyebrowShort, "תוצאות האבחון הקצר", "Short assessment results")}
           </div>
-          <h1 className="ar-h1 font-heading">
-            {isSubscribe
-              ? rc(cmsSubH1, "מתחילים היום לפלפל את הזוגיות!", "Start spicing up your relationship today!")
-              : rc(cmsH1Ready, "תוצאות האבחון שלך מוכנות", "Your assessment results are ready")}
-          </h1>
+          {/* Subscribe mode renders on /pricing, which supplies its own sr-only
+              <h1> ("התמחור של מיאושי") — two h1s on one page. This hero line is
+              the call to action, not the page's subject, so it yields and
+              becomes an h2 there. Results mode is unchanged: this stays that
+              page's only h1. Same `.ar-h1` class either way (a class selector,
+              not tag-scoped), so nothing moves visually. */}
+          {isSubscribe ? (
+            <h2 className="ar-h1 font-heading">
+              {rc(cmsSubH1, "מתחילים היום לפלפל את הזוגיות!", "Start spicing up your relationship today!")}
+            </h2>
+          ) : (
+            <h1 className="ar-h1 font-heading">
+              {rc(cmsH1Ready, "תוצאות האבחון שלך מוכנות", "Your assessment results are ready")}
+            </h1>
+          )}
           {/* Results page: the "you completed the assessment…" subline was removed
               (Stage 1 design). The subscribe page keeps its own framing line. */}
           {isSubscribe ? (

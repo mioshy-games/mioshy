@@ -17,6 +17,7 @@ import { MetaViewContent } from "@/components/analytics/MetaViewContent";
 import { CassessContent } from "@/components/marketing/couples-assessment/CassessContent";
 import { getShortQuestionCount } from "@/lib/journey/questions-db";
 import { buildAlternates, buildOgLocale } from "@/lib/seo/alternates";
+import { breadcrumbJsonLd, safeJsonLd } from "@/lib/seo/jsonLd";
 import type { Locale } from "@/lib/journey/types";
 
 export async function generateMetadata({
@@ -87,8 +88,24 @@ export default async function CouplesAssessmentPage({
     </div>
   );
 
+  const isHe = locale !== "en";
+
   return (
     <CmsTextProvider rows={cmsRows}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: safeJsonLd({
+            "@context": "https://schema.org",
+            ...breadcrumbJsonLd(isHe ? "he" : "en", [
+              {
+                name: isHe ? "אבחון זוגיות" : "Couples assessment",
+                path: "/couples-assessment",
+              },
+            ]),
+          }),
+        }}
+      />
       <MetaViewContent
         contentIds={["couples-assessment"]}
         contentName="couples-assessment"
