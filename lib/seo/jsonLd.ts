@@ -116,6 +116,53 @@ export function faqPageJsonLd(items: FaqJsonLdItem[]): FaqPageJsonLd {
   };
 }
 
+// ── BreadcrumbList ───────────────────────────────────────────────────────────
+// The article, game, catalogue and mioshy-sex routes each hand-rolled their own
+// breadcrumb node, which is why the pages that were never part of one of those
+// templates (the homepage, /couples-assessment, /pricing, /about/founder,
+// /contact and both survey pages) had none at all. This is the one builder they
+// can all share.
+//
+// Callers pass the trail WITHOUT the home crumb — it is always position 1 and
+// always the locale root, so no caller should have to remember it. `item` is
+// omitted on the final crumb: Google treats a self-referencing last item as
+// redundant, and leaving it off is the documented shape for "you are here".
+
+export type BreadcrumbCrumb = { name: string; path: string };
+
+type BreadcrumbListJsonLd = {
+  "@type": "BreadcrumbList";
+  itemListElement: Array<{
+    "@type": "ListItem";
+    position: number;
+    name: string;
+    item?: string;
+  }>;
+};
+
+export function breadcrumbJsonLd(
+  locale: "he" | "en",
+  trail: BreadcrumbCrumb[],
+): BreadcrumbListJsonLd {
+  const base = siteUrl();
+  const home = {
+    name: locale === "he" ? "דף הבית" : "Home",
+    path: "",
+  };
+  const all = [home, ...trail];
+  return {
+    "@type": "BreadcrumbList",
+    itemListElement: all.map((crumb, i) => ({
+      "@type": "ListItem" as const,
+      position: i + 1,
+      name: crumb.name,
+      ...(i === all.length - 1
+        ? {}
+        : { item: `${base}/${locale}${crumb.path}` }),
+    })),
+  };
+}
+
 // ── Product / AggregateOffer (Journey subscription) ──────────────────────────
 // Emits a Product node with an AggregateOffer whose lowPrice/highPrice span the
 // ACTUAL displayed prices across enabled Journey cadences (promo first-charge

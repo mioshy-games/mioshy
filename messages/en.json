@@ -826,7 +826,9 @@
     "subtitle": "Real talk on intimacy, communication, and ideas for tonight.",
     "readMore": "Read more",
     "empty": "No articles yet - check back soon.",
-    "untitled": "Untitled"
+    "untitled": "Untitled",
+    "surveyPromoLead": "Curious what other couples in Israel think?",
+    "surveyPromoCta": "Go to Israel's Relationship Survey"
   },
   "articlePage": {
     "back": "All articles",
@@ -1288,7 +1290,8 @@
       "pillar3Body": "Games, questions, small moments that shift the tone. No couch, no notepad, no feeling examined.",
       "ctaPrimary": "I want to stop feeling alone",
       "assessmentLink": "Quick assessment",
-      "ctaSecondary": "How Mioshy works"
+      "ctaSecondary": "How Mioshy works",
+      "surveyLink": "Israel's Relationship Survey"
     },
     "authority": {
       "eyebrow": "The spark returns with a decision!",

@@ -71,10 +71,18 @@ export async function generateMetadata({
       : game?.thumbnail_url_en ?? game?.thumbnail_url_he;
   const ogImage = game?.og_image_url || localeThumb || null;
   const canonical = `${base}/${locale}/games/${slug}`;
+  // Brand placement. The old rule was `startsWith("mioshy") ? … : "Mioshy - " + …`,
+  // which forced the brand to the FRONT of every title that didn't already open
+  // with it — so the three flagship games shipped as "Mioshy - אמת או חובה":
+  // 20 characters, with the one word nobody searches for in the highest-weighted
+  // position. It also made a brand SUFFIX impossible to author, because an
+  // admin-set "… | מיאושי" still got a second brand bolted onto the front.
+  // Now the brand is appended only when the title doesn't already carry it in
+  // either language, so a title that ends in "| מיאושי" is left exactly as
+  // written and an untouched game still gets its brand.
+  const hasBrand = /mioshy|מיאושי/i.test(metaTitle);
   return {
-    title: metaTitle.toLowerCase().startsWith("mioshy")
-      ? metaTitle
-      : `Mioshy - ${metaTitle}`,
+    title: hasBrand ? metaTitle : `${metaTitle} | Mioshy`,
     description: metaDescription,
     keywords:
       Array.isArray(game?.keywords) && game.keywords.length > 0

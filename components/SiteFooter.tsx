@@ -106,6 +106,15 @@ export function SiteFooter() {
                 <li><Link href="/journey" className="text-[#D8CFE6] transition-colors hover:text-white">{tNav("journey")}</Link></li>
                 <li><Link href="/mioshy-sex"  className="text-[#D8CFE6] transition-colors hover:text-white">{tNav("adults")}</Link></li>
                 <li><SurveyLink location="footer" href="/survey"  className="text-[#D8CFE6] transition-colors hover:text-white">{tNav("surveyShort")}</SurveyLink></li>
+                {/* The survey's LANDING page, which had zero inbound internal
+                    links site-wide. Deliberately a plain <Link>, not a
+                    <SurveyLink>: SurveyLinkClick is the first half of the
+                    "click → SurveyPageView" funnel from PR #46/#47, and firing
+                    it for a click that lands somewhere other than /survey would
+                    quietly inflate the numerator against an unchanged
+                    denominator. Label is nav.survey (the full name) so it reads
+                    distinctly from the nav.surveyShort row above it. */}
+                <li><Link href="/relationship-survey" className="text-[#D8CFE6] transition-colors hover:text-white">{tNav("survey")}</Link></li>
               </ul>
             </div>
 
