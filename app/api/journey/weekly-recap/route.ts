@@ -18,6 +18,9 @@ export const maxDuration = 180;
 import { NextResponse } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
 import { isCronAuthorized } from "@/lib/auth/cron-auth";
+import { makeLogger } from "@/lib/observability/log";
+
+const cronLog = makeLogger("cron.weekly-recap");
 import {
   computeWeeklyRecap,
   startOfWeekSundayUTC,
@@ -35,6 +38,7 @@ function authOk(req: Request): boolean {
 }
 
 async function handle(req: Request): Promise<NextResponse<Summary>> {
+  const startedAt = Date.now();
   if (!authOk(req)) {
     return NextResponse.json(
       { ok: false, considered: 0, written: 0, errors: ["unauthorized"] },
@@ -99,6 +103,11 @@ async function handle(req: Request): Promise<NextResponse<Summary>> {
     }
   }
 
+  // Audit follow-up (6.8.2026): a single structured success line per run.
+  // These four jobs previously wrote NOTHING on success, so the only
+  // evidence a run happened was Vercel's cron history. Goes through
+  // makeLogger → emit(), which applies the H5 redactor; no PII here.
+  cronLog.info("run.ok", { processed: written, considered: coupleIds.length, errors: errors.length, dur_ms: Date.now() - startedAt });
   return NextResponse.json({
     ok: errors.length === 0,
     considered: coupleIds.length,

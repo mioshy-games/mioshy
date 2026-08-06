@@ -21,6 +21,9 @@ import { createServiceRoleClient } from "@/lib/supabase-admin";
 import { getDriftForCouples } from "@/lib/journey/drift";
 import { checkCoupleAnniversaries } from "@/lib/journey/anniversary";
 import { isCronAuthorized } from "@/lib/auth/cron-auth";
+import { makeLogger } from "@/lib/observability/log";
+
+const cronLog = makeLogger("cron.drift-sweep");
 
 interface Summary {
   ok:         boolean;
@@ -35,6 +38,7 @@ function authOk(req: Request): boolean {
 }
 
 async function handle(req: Request): Promise<NextResponse<Summary>> {
+  const startedAt = Date.now();
   if (!authOk(req)) {
     return NextResponse.json(
       { ok: false, considered: 0, drifting: 0, silent: 0, errors: ["unauthorized"] },
@@ -106,6 +110,11 @@ async function handle(req: Request): Promise<NextResponse<Summary>> {
     }
   }
 
+  // Audit follow-up (6.8.2026): a single structured success line per run.
+  // These four jobs previously wrote NOTHING on success, so the only
+  // evidence a run happened was Vercel's cron history. Goes through
+  // makeLogger → emit(), which applies the H5 redactor; no PII here.
+  cronLog.info("run.ok", { processed: drifting + silent, considered: coupleIds.length, errors: errors.length, dur_ms: Date.now() - startedAt });
   return NextResponse.json({
     ok: errors.length === 0,
     considered: coupleIds.length,
