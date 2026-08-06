@@ -21,6 +21,7 @@
 
 import { requireExpert } from "@/lib/auth/expert";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
+import { csvEscape } from "@/lib/csv-escape";
 
 export const dynamic = "force-dynamic";
 
@@ -36,12 +37,6 @@ const COLS = [
   "is_completed",
 ] as const;
 
-function csvEscape(v: unknown): string {
-  if (v === null || v === undefined) return "";
-  const s = String(v);
-  if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
-  return s;
-}
 
 export async function GET(
   _req: Request,
