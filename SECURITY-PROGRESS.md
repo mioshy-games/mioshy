@@ -55,8 +55,13 @@
 - **קבצים שהשתנו:** `supabase/migrations/199_security_rls_hardening.sql`
 - **מה נעשה:** המדיניות `user_sessions_service_all` נוצרה ב-020 בלי `TO`, ולכן
   חלה על `PUBLIC` כולל `anon`. המיגרציה מצמצמת אותה ל-`TO service_role`, מבצעת
-  `REVOKE ALL ... FROM anon, authenticated`, מחזירה `GRANT SELECT` ל-`authenticated`
-  (כדי ש-`user_sessions_select_own` תמשיך לעבוד) ומפעילה `FORCE ROW LEVEL SECURITY`.
+  `REVOKE ALL ... FROM anon, authenticated` ומפעילה `FORCE ROW LEVEL SECURITY`.
+
+  **עדכון 6.8:** ה-`GRANT SELECT ... TO authenticated` שהיה בטיוטת האודיט **הוסר**
+  (בביקורת שלך). הוא לא שירת אף מסך — אין קורא לטבלה מחוץ ל-`session-enforcement`,
+  שכולו service-role — ובזמן שהיה קיים, כל משתמש מחובר יכול היה לקרוא את השורה
+  שלו כולל `session_token` דרך PostgREST. המדיניות `user_sessions_select_own`
+  נשארה בכוונה, כך שהחזרת ה-GRANT בעתיד תהיה החלטה מודעת ולא תאונה.
 - **איך אימתתי:**
   - שה-`REVOKE` לא ישבור התחברות — `grep -rn "user_sessions"` על כל `app/`, `lib/`,
     `components/`, `middleware.ts` מחזיר **רק** את `lib/auth/session-enforcement.ts`,
@@ -323,11 +328,19 @@ WHERE p.role IN ('expert','admin');
     (11/6 נכשלים), פלוס 13 טסטים עוברים חדשים.
 - **מה שברתי / שינוי התנהגות:** הרשמה עם שם שמכיל `<`, `>`, `"`, `&` או ספרות
   תידחה עם הודעה בעברית. שמות עבריים/לועזיים רגילים עוברים (מכוסה בטסטים).
-- **שאלות פתוחות:** `fullNameSchema` הוחל בארבעת הקבצים שהמסמך נקב בהם.
-  `app/actions/otp-assessment.ts:63` ו-`app/actions/otp-survey.ts:75` גם כותבים
-  `full_name` בשלב ה-verify ואינם ברשימת המסמך — לא נגעתי בהם.
-  שניהם מכוסים בשלב השליחה דרך `sendEmailOtp`, וה-XSS עצמו מת בשכבות 1-2, אז זו
-  הקשחה בלבד. שורה אחת בכל קובץ — `FOLLOWUPS.md` F4.
+- **עדכון 6.8 — שלושה מסלולי כתיבה נוספים נסגרו** (commit `30662e9`):
+  - `app/[locale]/account/profile/actions.ts:41` — `saveProfileDetails`. זה היה
+    הפער המשמעותי: עדכון `profiles.full_name` מאחורי בדיקת `length >= 2` בלבד,
+    **בלי OTP בכלל**. הרשמה עם שם תקין ואז עריכה בעמוד הפרופיל הייתה מגיעה לאותו
+    דשבורד אדמין. בדיקת האורך והודעת השגיאה המקוריות נשמרו, `fullNameSchema` נוסף מעליהן.
+  - `app/actions/otp-assessment.ts:63`
+  - `app/actions/otp-survey.ts:75`
+
+  שלושתם כותבים כעת את הפלט המנוקה של הסכמה (`nameCheck.data`) ולא `.trim()` משלהם.
+- **שאלות פתוחות:** נותר **מסלול כתיבה אחד** לא מאומת —
+  `lib/journey/finalize-journey-signup.ts:72` (ההרשמה המוטמעת של journey).
+  לא היה ברשימה שביקשת, ולכן לא נגעתי. שלב השליחה שלו מכוסה ב-`sendEmailOtp`.
+  אותה שורה בדיוק כמו בשניים האחרים — `FOLLOWUPS.md` F9.
 
 ### ביקורת כל שימושי `dangerouslySetInnerHTML` (הנדרשת ב-C5)
 
@@ -361,6 +374,11 @@ WHERE p.role IN ('expert','admin');
 | C3 Cardcom | ✅ | **4 טסטים, נופלים על הקוד הישן** | שאילתת חקירה + רכישת sandbox |
 | C4 expert scope | ✅ | מיפוי קוראים + מבנה SQL | הרצת מיגרציה 200 + בדיקת 2 מאמנים |
 | C5 XSS | ✅ | **9 טסטים, נופלים על הקוד הישן** | cron + מסך health (אופציונלי) |
+
+**עדכון 6.8 (אחרי הביקורת):** שלושה commits נוספים —
+`30662e9` ולידציית שם בשלושה מסלולי כתיבה, `b90ce07` הסרת ה-GRANT מ-199,
+`d0ca2cb` תיעוד F10/F11. lint/tsc/build ירוקים, ורשימת הטסטים הנכשלים עדיין
+זהה ל-baseline (`diff` ריק).
 
 **לא ביצעתי merge. לא פרסתי. לא הרצתי SQL על פרודקשן.**
 שתי המיגרציות (199, 200) כתובות ומקומיטות אך **לא הורצו**.
