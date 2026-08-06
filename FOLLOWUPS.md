@@ -37,17 +37,9 @@
 **כדאי לבדוק אם ה-cron הזה בכלל עובד היום** — אם RLS חוסם את
 `engagement_schedules` ל-anon, הוא no-op שקט.
 
-### F4 — ולידציית שם בשני מסלולי הרשמה שלא היו ברשימה (המשך C5)
-`fullNameSchema` הוחל בארבעת הקבצים שהמסמך נקב בהם. שני מסלולים נוספים כותבים
-`full_name` ל-`profiles` בשלב ה-verify ולא נגעתי בהם:
-
-- `app/actions/otp-assessment.ts:63`
-- `app/actions/otp-survey.ts:75`
-
-שניהם עוברים דרך `sendEmailOtp` בשלב השליחה, ששם הוולידציה **כן** חלה — אז שם
-עם markup ייחסם בכניסה. מה שלא מכוסה: קריאה ישירה ל-action של ה-verify עם
-`fullName` אחר. ה-XSS עצמו כבר מת בשכבות 1 ו-2, אז זו הקשחה בלבד.
-שורה אחת בכל קובץ.
+### F4 — ✅ נסגר (2026-08-06)
+`otp-assessment.ts`, `otp-survey.ts` ו-`account/profile/actions.ts` קיבלו
+`fullNameSchema`. נשאר מסלול אחד — ראה F9.
 
 ### F5 — `describeError`/loop-guard בסוויפ של `reminders`
 לא קשור לאבטחה, אבל בזמן העבודה על C5 ראיתי ש-`app/api/journey/reminders/route.ts`
@@ -73,3 +65,67 @@
 `main` תקוע ב-19.5.2026 ו-`origin/HEAD` מצביע על `game`. מי שיקרא את הוראת
 העבודה כפשוטה ("פתח מ-main") יפתח ענף מבסיס בן חודשיים וחצי. שווה למחוק את
 `main` או ליישר אותו, כדי שהמלכודת לא תחזור.
+
+### F9 — מסלול כתיבה חמישי ל-`profiles.full_name` שעדיין לא מאומת
+`lib/journey/finalize-journey-signup.ts:72` כותב
+`full_name: args.fullName.trim()` ב-upsert ל-`profiles`, בלי ולידציה.
+זה מסלול ההרשמה המוטמע של ה-journey (`otp-journey.ts` → `finalizeJourneySignup`).
+
+מכוסה חלקית: שלב השליחה עובר ב-`sendEmailOtp`, שם `fullNameSchema` כן חלה, אז
+שם עם markup נחסם בכניסה הרגילה. מה שלא מכוסה — קריאה ישירה ל-action של
+ה-verify עם `fullName` אחר.
+
+**לא נגעתי** כי הוא לא היה ברשימה של שלושת המסלולים שביקשת. שורה אחת, אותו
+דפוס בדיוק כמו בשני האחרים. אמור מילה ואוסיף.
+
+`app/api/leads/upsert/route.ts:159` גם כותב `full_name`, אבל לטבלת `leads` —
+לא ל-`profiles`. שרשרת ה-XSS של C5 קוראת מ-`profiles` (דרך `getStuckUsers`),
+אז הוא מחוץ להיקף. שווה בכל זאת מבט בשלב 2, כי הוא נכתב מנתיב ציבורי.
+
+### F10 — `is_expert()` הפכה לפונקציה מתה אחרי מיגרציה 200
+אחרי 200, `public.is_expert()` (043:45) כבר לא בשימוש באף מדיניות. היא נשארת
+בסכמה כפיתיון: היא נראית כמו בדיקת הרשאה תקינה, ומי שיכתוב מדיניות חדשה בעוד
+חצי שנה עלול לתפוס אותה שוב ולשחזר בדיוק את CRITICAL #4.
+
+**בשלב 2:** לוודא ב-`pg_policies` ובקוד שאין יותר קוראים, ואז
+`DROP FUNCTION public.is_expert();`. אם עדיין רוצים לשמור אותה, לפחות
+`COMMENT ON FUNCTION` שאומר "לא לשימוש ב-RLS — השתמש ב-is_expert_for_couple/user".
+
+לבדיקה לפני DROP:
+```sql
+SELECT schemaname, tablename, policyname
+FROM pg_policies
+WHERE qual::text LIKE '%is_expert()%' OR with_check::text LIKE '%is_expert()%';
+```
+
+### F11 — `checkout_sessions.low_profile_code` אינו ייחודי, וה-C3 החדש רגיש לזה
+`016:30` מגדיר אינדקס **חלקי אך לא ייחודי**:
+```sql
+CREATE INDEX checkout_sessions_low_profile_idx ON checkout_sessions(low_profile_code)
+  WHERE low_profile_code IS NOT NULL;
+```
+התיקון של C3 מריץ עכשיו
+`.eq("low_profile_code", lowProfileCode).maybeSingle()` על **כל** קולבק, בעוד
+שקודם החיפוש הזה רץ רק כש-`ReturnValue` היה ריק. אם אי פעם יישמרו שתי שורות עם
+אותו קוד, `maybeSingle()` יחזיר שגיאה (PGRST116) ולא שורה — ה-handler ייפול
+לענף "session not found", יסמן `processed: true`, ויחזיר 200 ל-Cardcom.
+כלומר **תשלום שהתקבל אצל Cardcom לא יזוכה אצלנו**, בשקט.
+
+זה לא רגרסיה שהכנסתי (הקוד הישן היה קורס באותו אופן במסלול ה-fallback), אבל
+התיקון הרחיב את החשיפה מ"רק כשאין ReturnValue" ל"תמיד".
+
+**מה לעשות בשלב 2, לפי הסדר:**
+1. לבדוק אם יש כפילויות בפועל:
+   ```sql
+   SELECT low_profile_code, count(*), array_agg(id ORDER BY created_at)
+   FROM checkout_sessions
+   WHERE low_profile_code IS NOT NULL
+   GROUP BY low_profile_code HAVING count(*) > 1;
+   ```
+2. אם ריק — להוסיף `CREATE UNIQUE INDEX CONCURRENTLY` על אותה הגדרה חלקית,
+   וזה סוגר את הבעיה מהשורש.
+3. אם לא ריק — לנקות קודם, ובינתיים להחליף את `maybeSingle()` ב-
+   `.order("created_at", { ascending: false }).limit(1).maybeSingle()`
+   כדי שהקולבק ייקח את הסשן העדכני במקום ליפול.
+
+**זה נוגע במסלול תשלום — לתאם לפני שינוי.**
