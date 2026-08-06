@@ -45,7 +45,82 @@ COMMENT ON COLUMN public.couples.pair_code_used_at IS
   'Set when a partner joins. A non-null value invalidates the code PERMANENTLY — a member leaving does not revive it; the remaining member must call rotate_pair_code. Audit H8(c).';
 
 
--- ── 2. Backfill: expiry for existing couples, and kill already-used codes ────
+-- ── 2. Codes are reserved FOREVER, not just while live ──────────────────────
+-- THE HOLE THIS CLOSES (found during review, 2026-08-06):
+--
+--   couples_pair_code_key (029:40) is a PARTIAL unique index:
+--       CREATE UNIQUE INDEX ... ON couples (pair_code) WHERE is_active = true
+--   and generate_pair_code() only checked
+--       SELECT 1 FROM couples WHERE pair_code = code AND is_active = true
+--
+--   So uniqueness held only among ACTIVE couples. A code belonging to a
+--   deactivated couple was already reissuable. Rotation makes that far worse:
+--   every rotation OVERWRITES couples.pair_code, so the old value disappears
+--   from the table entirely and becomes freely reissuable to a DIFFERENT
+--   couple. Someone who screenshotted a code a year ago could then use it to
+--   join a stranger's couple — worse than anything else H8 addresses.
+--
+--   The generator was also racy: SELECT EXISTS then use, with no lock.
+--
+-- Chosen fix: reserve every code ever issued in a table whose PRIMARY KEY does
+-- the enforcing, and have the generator claim its code by INSERT. That is
+-- atomic (no race), covers history (no reissue), and needs no change to the
+-- existing partial index, which stays as a second layer for live rows.
+CREATE TABLE IF NOT EXISTS public.pair_codes_issued (
+  code      text PRIMARY KEY,
+  issued_at timestamptz NOT NULL DEFAULT now()
+);
+
+COMMENT ON TABLE public.pair_codes_issued IS
+  'Every pair code ever issued. A code is never reused, even after the couple is deactivated or the code is rotated away. Audit H8(c).';
+
+-- Reserve every code currently in use so the generator cannot hand one out again.
+INSERT INTO public.pair_codes_issued (code)
+SELECT DISTINCT pair_code FROM public.couples WHERE pair_code IS NOT NULL
+ON CONFLICT (code) DO NOTHING;
+
+-- Generator: claim-by-INSERT. Returns only a code it has successfully reserved.
+CREATE OR REPLACE FUNCTION public.generate_pair_code()
+RETURNS text
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  -- 32 symbols, deliberately excluding I, O, 0 and 1 so a code cannot be
+  -- misread. This is what makes a 5-attempt limit fair to a real user.
+  chars   text := 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  code    text;
+  tries   integer := 0;
+  claimed integer;
+BEGIN
+  LOOP
+    code := '';
+    FOR i IN 1..6 LOOP
+      code := code || substr(chars, 1 + floor(random() * length(chars))::int, 1);
+    END LOOP;
+
+    -- Atomic claim. ON CONFLICT means a concurrent generator racing us simply
+    -- loses and loops again, instead of both walking away with the same code.
+    INSERT INTO public.pair_codes_issued (code)
+    VALUES (code)
+    ON CONFLICT (code) DO NOTHING;
+    GET DIAGNOSTICS claimed = ROW_COUNT;
+
+    EXIT WHEN claimed = 1;
+
+    tries := tries + 1;
+    IF tries > 50 THEN
+      RAISE EXCEPTION 'could not generate unique pair_code after 50 attempts';
+    END IF;
+  END LOOP;
+
+  RETURN code;
+END;
+$$;
+
+
+-- ── 3. Backfill: expiry, and retire codes of couples that are already full ──
 -- No existing code is invalidated retroactively by expiry: everyone gets a full
 -- 14 days from the moment this migration runs, even if their couple is old.
 UPDATE public.couples
@@ -61,7 +136,7 @@ UPDATE public.couples c
    AND (SELECT count(*) FROM public.couple_members m WHERE m.couple_id = c.id) >= 2;
 
 
--- ── 3. Attempt log — keyed by CALLER, not by code ────────────────────────────
+-- ── 3b. Attempt log — keyed by CALLER, not by code ──────────────────────────
 CREATE TABLE IF NOT EXISTS public.couple_join_attempts (
   id           uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id      uuid        NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -69,14 +144,12 @@ CREATE TABLE IF NOT EXISTS public.couple_join_attempts (
   succeeded    boolean     NOT NULL DEFAULT false
 );
 
--- The lookup the limiter does: recent failures for one caller.
 CREATE INDEX IF NOT EXISTS couple_join_attempts_user_recent_idx
   ON public.couple_join_attempts (user_id, attempted_at DESC);
 
 ALTER TABLE public.couple_join_attempts ENABLE ROW LEVEL SECURITY;
 -- No policy: readable only via service role. The function is SECURITY DEFINER
 -- and writes on the caller's behalf.
-
 
 -- Rotation log. A counter column on `couples` cannot express "5 per hour"
 -- (there is only ever one row per couple, so counting it yields 0 or 1); the
@@ -119,40 +192,46 @@ BEGIN
     RAISE EXCEPTION 'not authenticated';
   END IF;
 
-  -- The caller's own state — safe to report distinctly, and checked BEFORE the
-  -- attempt is logged so a legitimate "you are already paired" is not counted
-  -- as a guess. RAISE here is fine: nothing has been written yet.
-  SELECT count(*) INTO v_existing_count
-    FROM public.couple_members
-   WHERE user_id = v_user_id;
-  IF v_existing_count > 0 THEN
-    RAISE EXCEPTION 'user already belongs to a couple';
-  END IF;
+  -- The attempt is recorded as the FIRST statement, before any validation.
+  --
+  -- Ordering matters because a RAISE anywhere in a plpgsql function aborts the
+  -- transaction and takes every earlier write with it. Logging first, and then
+  -- never raising, is what makes the counter actually accumulate — an earlier
+  -- draft of this migration raised on each failure and the limiter would have
+  -- been completely inert.
+  --
+  -- ⚠️ INVARIANT: NOTHING BELOW THIS INSERT MAY RAISE. Every failure returns
+  -- NULL, including "already in a couple". If you add a check here, return
+  -- NULL — do not RAISE, and do not add a statement that can violate a
+  -- constraint.
+  INSERT INTO public.couple_join_attempts (user_id, succeeded)
+  VALUES (v_user_id, false);
 
-  -- Rate limit: 5 failed attempts per 15 minutes per CALLER. Per-code counting
-  -- would never trip — a guesser rotates codes, so no single code accumulates.
+  -- Rate limit: 5 failures per 15 minutes per CALLER. Per-code counting would
+  -- never trip — a guesser rotates codes, so no single code accumulates.
+  -- The row just inserted is included, so a blocked caller who keeps hammering
+  -- keeps their own window topped up; it clears 15 minutes after they stop.
   SELECT count(*) INTO v_recent_fails
     FROM public.couple_join_attempts
    WHERE user_id = v_user_id
      AND succeeded = false
      AND attempted_at > now() - INTERVAL '15 minutes';
 
-  IF v_recent_fails >= 5 THEN
+  IF v_recent_fails > 5 THEN
     RETURN NULL;
   END IF;
 
-  -- Log the attempt as failed; flipped to succeeded only if we get to the end.
-  --
-  -- ⚠️ Every failure below RETURNS NULL rather than raising. RAISE would abort
-  -- the transaction and roll this INSERT back with it, so the counter would
-  -- never accumulate and the rate limit would be inert. The caller already
-  -- treats a NULL result as failure (app/actions/between-us-couple.ts:86,
-  -- `if (error || !coupleId)`), and one undifferentiated NULL is exactly the
-  -- uniform response the oracle fix requires.
-  INSERT INTO public.couple_join_attempts (user_id, succeeded)
-  VALUES (v_user_id, false);
-
   IF p_pair_code IS NULL OR length(p_pair_code) <> 6 THEN
+    RETURN NULL;
+  END IF;
+
+  -- Caller already paired. Returns NULL like everything else so the invariant
+  -- above holds; the app gives this case its own message by checking the
+  -- caller's OWN membership before calling, which leaks nothing.
+  SELECT count(*) INTO v_existing_count
+    FROM public.couple_members
+   WHERE user_id = v_user_id;
+  IF v_existing_count > 0 THEN
     RETURN NULL;
   END IF;
 
@@ -200,9 +279,9 @@ $$;
 -- Members only. Rate limited to 5 rotations per hour per couple, which is far
 -- above any real use (a couple rotates once, maybe twice) and low enough that
 -- it cannot be used to enumerate the code space from the inside.
--- generate_pair_code() already loops until the value is unused and
--- couples_pair_code_key enforces uniqueness, so the new code never collides
--- with a live one. Rotation clears used_at and restarts the 14-day window,
+-- generate_pair_code() now claims its code by INSERT into pair_codes_issued,
+-- so the new value has never been issued to anyone, ever — not merely absent
+-- from live rows. Rotation clears used_at and restarts the 14-day window,
 -- which is what makes a code recoverable after a member leaves.
 CREATE OR REPLACE FUNCTION public.rotate_pair_code(p_couple_id uuid)
 RETURNS text
