@@ -26,16 +26,11 @@
 ההגדרה לא מוסיפה הגנה. אם בכל זאת רוצים אותה, השאילתה לבדיקה מוקדמת נמצאת
 ב-`SECURITY-PROGRESS.md` תחת C2.
 
-### F3 — `/api/engagement/tick` עדיין רץ כ-anon
-הנתיב מוגן ב-`ENGAGEMENT_CRON_SECRET` אבל משתמש ב-`createServerSupabaseClient()`
-בלי סשן — כלומר תפקיד `anon` — לכל הקריאות שלו (`engagement_schedules`,
-`subscriptions`, `journey_analysis`, `message_templates`, `sent_messages`,
-`activity_logs`). בשלב 1 הועברה **רק** קריאת ה-view לשירות, כי זו הייתה
-הקריאה שה-`REVOKE` היה שובר.
-בקוד עצמו יושבת הערה שאומרת בדיוק את זה: "In production, swap to
-`createSupabaseAdminClient` with the service role key".
-**כדאי לבדוק אם ה-cron הזה בכלל עובד היום** — אם RLS חוסם את
-`engagement_schedules` ל-anon, הוא no-op שקט.
+### F3 — ✅ נענה (2026-08-06): אין cron בכלל
+`/api/engagement/tick` **אינו מופיע ב-`vercel.json`**. הוא לא "רץ כ-anon" — הוא
+לא רץ כלל, אף אחד לא קורא לו. נתיב נטוש, לא בעיית הרשאות.
+מחוץ לתחום H2 (לא תחת שלוש התיקיות שהמסמך מונה) ולכן לא נגעתי בו.
+**להחלטה בשלב 3/4: למחוק את הנתיב, או לתזמן אותו ולהעביר ל-service-role.**
 
 ### F4 — ✅ נסגר (2026-08-06)
 `otp-assessment.ts`, `otp-survey.ts` ו-`account/profile/actions.ts` קיבלו
@@ -71,57 +66,49 @@
 משטח הכתיבה ל-`profiles.full_name` סגור — המפה המלאה של ששת המסלולים, ושל מה
 שנבדק ונמצא מחוץ להיקף, נמצאת ב-`SECURITY-PROGRESS.md` תחת C5.
 
-### F10 — `is_expert()` הפכה לפונקציה מתה אחרי מיגרציה 200
-אחרי 200, `public.is_expert()` (043:45) כבר לא בשימוש באף מדיניות. היא נשארת
-בסכמה כפיתיון: היא נראית כמו בדיקת הרשאה תקינה, ומי שיכתוב מדיניות חדשה בעוד
-חצי שנה עלול לתפוס אותה שוב ולשחזר בדיוק את CRITICAL #4.
+### F10 — ✅ נסגר (2026-08-06)
+`DROP FUNCTION public.is_expert()` נכנס למיגרציה 201, בלי `CASCADE` כדי שתלות
+שנותרה תפיל את ההצהרה במקום למחוק מדיניות בשקט. הוכחת אפס מפנים בקוד ובמיגרציות
+מתועדת ב-`SECURITY-PROGRESS.md`.
 
-**בשלב 2:** לוודא ב-`pg_policies` ובקוד שאין יותר קוראים, ואז
-`DROP FUNCTION public.is_expert();`. אם עדיין רוצים לשמור אותה, לפחות
-`COMMENT ON FUNCTION` שאומר "לא לשימוש ב-RLS — השתמש ב-is_expert_for_couple/user".
+### F11 — ✅ נסגר (2026-08-06)
+האינדקס הייחודי החלקי על `checkout_sessions.low_profile_code` נכנס למיגרציה 201,
+אחרון בקובץ בכוונה: אם קיימות כפילויות ההצהרה נכשלת וכל השאר כבר הוחל.
+שאילתת בדיקת הכפילויות נמצאת בקובץ המיגרציה.
 
-לבדיקה לפני DROP:
-```sql
-SELECT schemaname, tablename, policyname
-FROM pg_policies
-WHERE qual::text LIKE '%is_expert()%' OR with_check::text LIKE '%is_expert()%';
-```
+---
 
-### F11 — `checkout_sessions.low_profile_code` ללא אינדקס ייחודי (הקשחה, לא דחוף)
-`016:30` מגדיר אינדקס **חלקי אך לא ייחודי**:
-```sql
-CREATE INDEX checkout_sessions_low_profile_idx ON checkout_sessions(low_profile_code)
-  WHERE low_profile_code IS NOT NULL;
-```
+## נובע משלב 2
 
-**תוקן 6.8 — ההערכה הראשונית שלי הייתה מחמירה מדי.** מה שקורה בפועל אם יש כפילות:
+### F12 — חמישה מקומות שעדיין רושמים מייל ללוג
+ה-redactor של H5 יושב ב-`emit()` ומכסה רק את מי שעובר דרך `makeLogger`/`timed`.
+המקומות הבאים קוראים ל-`console` ישירות ולכן עוקפים אותו:
 
-1. `maybeSingle()` מחזיר `error` (PGRST116) ו-`data = null`. הקוד מפרק רק
-   `{ data: byLp }` ומתעלם מה-error → `byLp` הוא `null`.
-2. `session` נשאר null → נכנס ה-fallback לפי `ReturnValue`.
-3. השורה הכפולה נושאת **אותו** `low_profile_code`, ולכן
-   `byId.low_profile_code === lowProfileCode` מתקיים → הסשן הנכון נפתר.
+- `app/[locale]/my/page.tsx:292`
+- `app/[locale]/my/journey/page.tsx:232` ו-`:526`
+- `app/actions/between-us-couple.ts:183`
+- `lib/journey-content/content-health.ts:168`
 
-כלומר אין אובדן. אובדן שקט דורש כפילות **וגם** `ReturnValue` ריק —
-ו-`ReturnValue` נשלח ל-Cardcom תמיד, משני נתיבי היצירה:
-`lib/cardcom.ts:57` (LowProfile.aspx) ו-`lib/cardcom.ts:296` (v11 CreateTokenOnly),
-בשניהם כשדה חובה לא-אופציונלי (`returnValue: string`), ושני ה-callers
-(`checkout/create:540`, `checkout/create-trial:375`) מעבירים `sessionId`.
-ה-indicator קורא אותו חזרה case-insensitive (`getParamCI`).
+אף אחד מהם אינו ברשימת הקבצים של H5 ולכן לא נגעתי. התיקון זהה בכולם: להסיר את
+שדה ה-`email` ולהשאיר `user_id`. חלופה רחבה יותר לשלב 4: כלל ESLint שאוסר
+`console.*` בקוד שרת ומחייב `makeLogger`.
 
-בנוסף, כפילות בכלל דורשת ש-Cardcom יחזיר את אותו `LowProfileCode` לשתי עסקאות
-שונות — הקוד שלנו חותם אותו ב-`.update().eq("id", sessionId)` אחרי קריאה נפרדת.
+### F13 — `-` ב-CSV מייצא מספרים שליליים כטקסט
+`lib/csv-escape.ts` מוסיף גרש מוביל לכל ערך שמתחיל ב-`-`, ולכן `-5` יוצא כ-`'-5`
+ונקרא כטקסט בגיליון. זו בחירה מודעת: `-2+3+cmd|' /C calc'!A0` גם מתחיל ב-`-`,
+כך ש"דלג אם זה נראה מספר" היה עקיפה ולא שיפור.
+אם זה מפריע בפועל בייצוא כלשהו — הפתרון הנכון הוא לייצא מספרים כעמודה
+מפורשת/מנוסחת ולא להחליש את הבדיקה.
 
-**מסקנה:** האינדקס הייחודי הוא **הגנת עומק, לא מצב חירום.** לא נוגע בשלב 1.
-בשלב 2, לפי הסדר:
-1. לבדוק כפילויות בפועל:
-   ```sql
-   SELECT low_profile_code, count(*), array_agg(id ORDER BY created_at)
-   FROM checkout_sessions
-   WHERE low_profile_code IS NOT NULL
-   GROUP BY low_profile_code HAVING count(*) > 1;
-   ```
-2. אם ריק — `CREATE UNIQUE INDEX CONCURRENTLY` על אותה הגדרה חלקית.
-3. אם לא ריק — לנקות קודם.
+### F14 — משתני הסביבה הישנים של ה-cron
+אחרי שהסודות החדשים מוגדרים ואומתו, אפשר להסיר מ-Vercel:
+`JOURNEY_REMINDERS_CRON_SECRET`, `JOURNEY_CADENCE_CRON_SECRET`,
+`JOURNEY_UNLOCK_CRON_SECRET`, `JOURNEY_GRACE_CRON_SECRET`,
+`JOURNEY_SCORES_CRON_SECRET`, `MAILING_TEST_SECRET`,
+`CARDCOM_BILLING_CRON_SECRET`, `CARDCOM_CRON_SECRET`.
+**לא לפני.** אף אחד מהם כבר לא נקרא בקוד.
 
-**זה נוגע במסלול תשלום — לתאם לפני שינוי.**
+### F15 — `BREVO_API_KEY` כפול ו-`NEXT_PUBLIC_BILLING_TEST_PRICE`
+מנספח א', לא נגעתי (לא לגעת ב-`.env.local`): `BREVO_API_KEY` מוגדר פעמיים
+והשני דורס את הראשון; ו-`NEXT_PUBLIC_BILLING_TEST_PRICE` — לוודא שאינו מוגדר
+בפרודקשן, כי הוא דורס כל מחיר.
