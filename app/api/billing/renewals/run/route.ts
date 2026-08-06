@@ -2,7 +2,8 @@
  * POST /api/billing/renewals/run
  *
  * Cron endpoint - charge subscriptions whose next_billing_date is due.
- * Protected by CARDCOM_BILLING_CRON_SECRET bearer token.
+ * Auth: Bearer — CRON_SECRET (what Vercel Cron sends) or BILLING_CRON_SECRET.
+ *       Billing routes never accept the journey secret. See lib/auth/cron-auth.ts.
  *
  * Vercel cron: add to vercel.json:
  *   { "crons": [{ "path": "/api/billing/renewals/run", "schedule": "0 * * * *" }] }
@@ -45,11 +46,10 @@ import {
 import { createAdminClient }       from "@/lib/supabase-admin"
 import { notifyAdminPool }         from "@/lib/journey-content/notifications"
 
+import { isCronAuthorized } from "@/lib/auth/cron-auth"
 export async function POST(req: Request) {
   // ── Auth ───────────────────────────────────────────────────────────────────
-  const secret = process.env.CARDCOM_BILLING_CRON_SECRET
-  const bearer = req.headers.get("authorization")?.replace("Bearer ", "").trim()
-  if (!secret || bearer !== secret) {
+  if (!isCronAuthorized(req, "billing")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 

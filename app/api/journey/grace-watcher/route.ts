@@ -35,14 +35,14 @@
  * 'active' state on the next entitlement read.
  *
  * Auth: Bearer token. Resolution order matches the other journey
- * crons: JOURNEY_GRACE_CRON_SECRET → JOURNEY_CADENCE_CRON_SECRET →
- * JOURNEY_UNLOCK_CRON_SECRET → CARDCOM_BILLING_CRON_SECRET.
+ * Auth: Bearer — CRON_SECRET (what Vercel Cron sends) or JOURNEY_CRON_SECRET.
+ *       See lib/auth/cron-auth.ts. Audit 2026-08-05, H2.
  *
  * Schedule: vercel.json runs hourly at :00 (`0 * * * *`).
  *
  * Manual test:
  *   curl -X POST $SITE_URL/api/journey/grace-watcher \
- *        -H "authorization: Bearer $JOURNEY_GRACE_CRON_SECRET"
+ *        -H "authorization: Bearer $JOURNEY_CRON_SECRET"
  *
  * Optional `?dry=1` returns the rows that WOULD be updated without
  * writing - useful to inspect from a test account.
@@ -55,6 +55,7 @@ export const maxDuration = 300;
 import { NextResponse } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
 import { runWithCronLog } from "@/lib/journey-content/cron-log";
+import { isCronAuthorized } from "@/lib/auth/cron-auth";
 import {
   notifyOnBlocked,
   notifyOnGraceStarted,
@@ -90,16 +91,7 @@ export async function GET(req: Request) {
 }
 
 async function handle(req: Request): Promise<Response> {
-  const secret =
-    process.env.JOURNEY_GRACE_CRON_SECRET ||
-    process.env.JOURNEY_CADENCE_CRON_SECRET ||
-    process.env.JOURNEY_UNLOCK_CRON_SECRET ||
-    process.env.CARDCOM_BILLING_CRON_SECRET;
-  const bearer = req.headers
-    .get("authorization")
-    ?.replace(/^Bearer\s+/i, "")
-    .trim();
-  if (!secret || bearer !== secret) {
+  if (!isCronAuthorized(req, "journey")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

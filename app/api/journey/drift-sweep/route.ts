@@ -20,6 +20,7 @@ import { NextResponse } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
 import { getDriftForCouples } from "@/lib/journey/drift";
 import { checkCoupleAnniversaries } from "@/lib/journey/anniversary";
+import { isCronAuthorized } from "@/lib/auth/cron-auth";
 
 interface Summary {
   ok:         boolean;
@@ -30,13 +31,7 @@ interface Summary {
 }
 
 function authOk(req: Request): boolean {
-  const expected =
-    process.env.JOURNEY_REMINDERS_CRON_SECRET ||
-    process.env.JOURNEY_CADENCE_CRON_SECRET ||
-    process.env.JOURNEY_UNLOCK_CRON_SECRET ||
-    process.env.CARDCOM_CRON_SECRET;
-  if (!expected) return process.env.VERCEL_ENV !== "production";
-  return req.headers.get("authorization") === `Bearer ${expected}`;
+  return isCronAuthorized(req, "journey");
 }
 
 async function handle(req: Request): Promise<NextResponse<Summary>> {

@@ -36,16 +36,12 @@ import { createServiceRoleClient } from "@/lib/supabase-admin";
 import { sendCampaignMessage } from "@/lib/whatsapp/campaign";
 import { coachWelcomeTemplate } from "@/lib/whatsapp/templates";
 import { israelHour, coachWelcomeWindow } from "@/lib/whatsapp/coach-welcome-schedule";
+import { isCronAuthorized } from "@/lib/auth/cron-auth";
 
 const COACH_WELCOME_FALLBACK_TOPIC = "זוגיות";
 
 function authOk(req: Request): boolean {
-  const expected =
-    process.env.CARDCOM_BILLING_CRON_SECRET ||
-    process.env.JOURNEY_REMINDERS_CRON_SECRET ||
-    process.env.MAILING_TEST_SECRET;
-  if (!expected) return process.env.VERCEL_ENV !== "production";
-  return (req.headers.get("authorization") ?? "") === `Bearer ${expected}`;
+  return isCronAuthorized(req, "journey");
 }
 
 async function run(req: Request) {

@@ -18,7 +18,8 @@
  *
  * Skips users in grace or blocked (eligibility gate handles).
  *
- * Auth: Bearer. Resolution: JOURNEY_REMINDERS_CRON_SECRET → cadence
+ * Auth: Bearer — CRON_SECRET (what Vercel Cron sends) or JOURNEY_CRON_SECRET.
+ *       See lib/auth/cron-auth.ts. Audit 2026-08-05, H2.
  * → unlock → cardcom.
  *
  * Schedule: vercel.json runs daily at 08:00 UTC (`0 8 * * *`).
@@ -39,6 +40,7 @@ import {
 } from "@/lib/journey-content/notifications";
 import { getStuckUsers } from "@/lib/journey-content/observability";
 import { runWithCronLog } from "@/lib/journey-content/cron-log";
+import { isCronAuthorized } from "@/lib/auth/cron-auth";
 
 const INACTIVITY_DAYS = 5;
 const UNFOLLOWED_HOURS = 24;
@@ -71,16 +73,7 @@ export async function GET(req: Request) {
 }
 
 async function handle(req: Request): Promise<Response> {
-  const secret =
-    process.env.JOURNEY_REMINDERS_CRON_SECRET ||
-    process.env.JOURNEY_CADENCE_CRON_SECRET ||
-    process.env.JOURNEY_UNLOCK_CRON_SECRET ||
-    process.env.CARDCOM_BILLING_CRON_SECRET;
-  const bearer = req.headers
-    .get("authorization")
-    ?.replace(/^Bearer\s+/i, "")
-    .trim();
-  if (!secret || bearer !== secret) {
+  if (!isCronAuthorized(req, "journey")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

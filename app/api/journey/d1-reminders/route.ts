@@ -31,6 +31,7 @@ import { NextResponse } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
 import { resolveUserLocale } from "@/lib/notifications/recipient-locale";
 import { notifyUser } from "@/lib/journey-content/notifications";
+import { isCronAuthorized } from "@/lib/auth/cron-auth";
 
 interface Summary {
   ok:                boolean;
@@ -43,15 +44,7 @@ interface Summary {
 const HOURS = (n: number) => n * 60 * 60 * 1000;
 
 function authOk(req: Request): boolean {
-  const expected =
-    process.env.JOURNEY_REMINDERS_CRON_SECRET ||
-    process.env.JOURNEY_CADENCE_CRON_SECRET ||
-    process.env.JOURNEY_UNLOCK_CRON_SECRET ||
-    process.env.CARDCOM_CRON_SECRET;
-  // No secret configured → allow only on localhost / preview.
-  if (!expected) return process.env.VERCEL_ENV !== "production";
-  const header = req.headers.get("authorization") ?? "";
-  return header === `Bearer ${expected}`;
+  return isCronAuthorized(req, "journey");
 }
 
 async function handle(req: Request): Promise<NextResponse<Summary>> {

@@ -25,6 +25,7 @@ import { createServiceRoleClient } from "@/lib/supabase-admin";
 import { sendBrevoEmail } from "@/lib/email/brevo";
 import { buildTrialDay5Email } from "@/lib/journey/mailing/sequence-emails";
 import { emailSeriesTags } from "@/lib/journey/mailing/email-series";
+import { isCronAuthorized } from "@/lib/auth/cron-auth";
 
 function baseUrl(): string {
   return (
@@ -38,12 +39,7 @@ const HOURS = (n: number) => n * 60 * 60 * 1000;
 const EMAIL_CAP_PER_RUN = 200;
 
 function authOk(req: Request): boolean {
-  const expected =
-    process.env.CARDCOM_BILLING_CRON_SECRET ||
-    process.env.JOURNEY_REMINDERS_CRON_SECRET ||
-    process.env.JOURNEY_CADENCE_CRON_SECRET;
-  if (!expected) return process.env.VERCEL_ENV !== "production";
-  return (req.headers.get("authorization") ?? "") === `Bearer ${expected}`;
+  return isCronAuthorized(req, "journey");
 }
 
 function formatAmount(amount: number, currency: string): string {

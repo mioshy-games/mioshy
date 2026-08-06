@@ -17,6 +17,7 @@ export const maxDuration = 120;
 
 import { NextResponse } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
+import { isCronAuthorized } from "@/lib/auth/cron-auth";
 
 interface Summary {
   ok:         boolean;
@@ -28,13 +29,7 @@ interface Summary {
 const ONE_WEEK_MS = 7 * 86_400_000;
 
 function authOk(req: Request): boolean {
-  const expected =
-    process.env.JOURNEY_REMINDERS_CRON_SECRET ||
-    process.env.JOURNEY_CADENCE_CRON_SECRET ||
-    process.env.JOURNEY_UNLOCK_CRON_SECRET ||
-    process.env.CARDCOM_CRON_SECRET;
-  if (!expected) return process.env.VERCEL_ENV !== "production";
-  return req.headers.get("authorization") === `Bearer ${expected}`;
+  return isCronAuthorized(req, "journey");
 }
 
 async function handle(req: Request): Promise<NextResponse<Summary>> {

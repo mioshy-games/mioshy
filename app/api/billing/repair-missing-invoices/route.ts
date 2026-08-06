@@ -5,7 +5,8 @@
  * an invoice URL from the issuer.
  *
  * Auth: Bearer token in Authorization header, must equal
- *       CARDCOM_BILLING_CRON_SECRET (same secret used by /renewals/run).
+ * Auth: Bearer — CRON_SECRET (what Vercel Cron sends) or BILLING_CRON_SECRET.
+ *       Billing routes never accept the journey secret. See lib/auth/cron-auth.ts.
  *
  * Selection (matches the user spec):
  *     status     = 'succeeded'
@@ -43,6 +44,7 @@ import {
 } from "@/lib/uxellent-billing-helpers"
 import { logMioshyBillingFailure } from "@/lib/billing-failures"
 
+import { isCronAuthorized } from "@/lib/auth/cron-auth"
 type RepairRow = {
   charge_id:       string
   subscription_id: string | null
@@ -59,9 +61,7 @@ type RepairRow = {
 // this pattern (see grace-watcher/route.ts).
 export async function POST(req: Request) {
   // ── Auth ────────────────────────────────────────────────────────────────
-  const secret = process.env.CARDCOM_BILLING_CRON_SECRET
-  const bearer = req.headers.get("authorization")?.replace("Bearer ", "").trim()
-  if (!secret || bearer !== secret) {
+  if (!isCronAuthorized(req, "billing")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 

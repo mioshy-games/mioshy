@@ -10,8 +10,8 @@
  * admin session. Both wrap the same recomputeAllUserScores() worker.
  *
  * Auth: Bearer token. Resolution order matches the other journey
- * crons: JOURNEY_SCORES_CRON_SECRET → JOURNEY_CADENCE_CRON_SECRET →
- * JOURNEY_UNLOCK_CRON_SECRET → CARDCOM_BILLING_CRON_SECRET.
+ * Auth: Bearer — CRON_SECRET (what Vercel Cron sends) or JOURNEY_CRON_SECRET.
+ *       See lib/auth/cron-auth.ts. Audit 2026-08-05, H2.
  *
  * Schedule: vercel.json runs daily at 04:00 UTC (`0 4 * * *`).
  */
@@ -23,6 +23,7 @@ export const maxDuration = 300;
 import { NextResponse } from "next/server";
 import { recomputeAllUserScores } from "@/lib/dashboard/user-scoring";
 import { runWithCronLog } from "@/lib/journey-content/cron-log";
+import { isCronAuthorized } from "@/lib/auth/cron-auth";
 
 export async function POST(req: Request) {
   return handle(req);
@@ -32,16 +33,7 @@ export async function GET(req: Request) {
 }
 
 async function handle(req: Request): Promise<Response> {
-  const secret =
-    process.env.JOURNEY_SCORES_CRON_SECRET ||
-    process.env.JOURNEY_CADENCE_CRON_SECRET ||
-    process.env.JOURNEY_UNLOCK_CRON_SECRET ||
-    process.env.CARDCOM_BILLING_CRON_SECRET;
-  const bearer = req.headers
-    .get("authorization")
-    ?.replace(/^Bearer\s+/i, "")
-    .trim();
-  if (!secret || bearer !== secret) {
+  if (!isCronAuthorized(req, "journey")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
