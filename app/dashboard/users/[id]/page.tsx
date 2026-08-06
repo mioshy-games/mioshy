@@ -29,7 +29,7 @@ import {
   type AssessmentPhase,
 } from "@/lib/dashboard/assessment-answers";
 // Phase 3 (admin-analytics-spec §7.2) — per-user behavior 360°.
-import { createServiceRoleClient } from "@/lib/supabase-admin";
+import { createAdminClient, createServiceRoleClient } from "@/lib/supabase-admin";
 import { getAdminLocale, isRtl } from "@/lib/admin/locale";
 import { loadUserBehavior } from "@/lib/dashboard/user-behavior";
 import { UserBehaviorTabs } from "@/components/dashboard/UserBehaviorTabs";
@@ -48,6 +48,12 @@ function phaseLabel(p: AssessmentPhase): string {
 
 export default async function UserDetailPage({ params }: { params: { id: string } }) {
   const { supabase } = await requireAdmin();
+  // admin_users_overview is service-role-only as of migration 199 (it joins
+  // auth.users and bypasses RLS). Only that read uses the service-role client;
+  // every other query below keeps its existing RLS-scoped client. Throws rather
+  // than degrading, because this page cannot render without the identity row.
+  // Audit 2026-08-05, CRITICAL #2.
+  const overviewDb = await createAdminClient();
   const userId = params.id;
 
   const [
@@ -59,7 +65,7 @@ export default async function UserDetailPage({ params }: { params: { id: string 
     { data: messages },
     { data: templates },
   ] = await Promise.all([
-    supabase.from("admin_users_overview").select("*").eq("user_id", userId).maybeSingle(),
+    overviewDb.from("admin_users_overview").select("*").eq("user_id", userId).maybeSingle(),
     supabase
       .from("journeys")
       .select("id, status, current_step, language, started_at, last_activity_at, completed_at")

@@ -16,6 +16,7 @@
 
 import { NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/auth/admin";
+import { createAdminClient } from "@/lib/supabase-admin";
 import {
   renderTemplate,
   sendViaProvider,
@@ -44,8 +45,12 @@ export async function POST(req: Request) {
   }
 
   // Load recipient + analysis for variable rendering.
+  // admin_users_overview is service-role-only as of migration 199 (it joins
+  // auth.users and bypasses RLS); getAdminSession() above is the auth gate.
+  // Audit 2026-08-05, CRITICAL #2.
+  const overviewDb = await createAdminClient();
   const [{ data: overview }, { data: analysis }] = await Promise.all([
-    supabase.from("admin_users_overview").select("email, primary_love_language").eq("user_id", body.user_id).maybeSingle(),
+    overviewDb.from("admin_users_overview").select("email, primary_love_language").eq("user_id", body.user_id).maybeSingle(),
     supabase
       .from("journey_analysis")
       .select("*")

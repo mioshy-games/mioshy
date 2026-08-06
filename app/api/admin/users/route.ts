@@ -8,6 +8,7 @@
 
 import { NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/auth/admin";
+import { createAdminClient } from "@/lib/supabase-admin";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +16,11 @@ export async function GET(req: Request) {
   const session = await getAdminSession();
   if (!session) return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
-  const { supabase } = session;
+  // admin_users_overview is service-role-only as of migration 199 — it joins
+  // auth.users and bypasses RLS, so it must never be readable by the
+  // `authenticated` role. getAdminSession() above is the authorisation gate.
+  // Audit 2026-08-05, CRITICAL #2.
+  const supabase = await createAdminClient();
   const url = new URL(req.url);
   const q = url.searchParams.get("q");
   const plan = url.searchParams.get("plan");

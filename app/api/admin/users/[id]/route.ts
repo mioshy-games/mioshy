@@ -8,6 +8,7 @@
 
 import { NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/auth/admin";
+import { createAdminClient } from "@/lib/supabase-admin";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +16,11 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   const session = await getAdminSession();
   if (!session) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   const { supabase } = session;
+  // admin_users_overview is service-role-only as of migration 199 (it joins
+  // auth.users and bypasses RLS). Only that read moves to the service-role
+  // client; every other query below keeps its existing RLS-scoped client.
+  // Audit 2026-08-05, CRITICAL #2.
+  const admin = await createAdminClient();
   const userId = params.id;
 
   // Fire these in parallel - none depend on each other.
@@ -26,7 +32,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     notesRes,
     messagesRes,
   ] = await Promise.all([
-    supabase.from("admin_users_overview").select("*").eq("user_id", userId).maybeSingle(),
+    admin.from("admin_users_overview").select("*").eq("user_id", userId).maybeSingle(),
     supabase
       .from("journeys")
       .select("id, status, current_step, language, started_at, last_activity_at, completed_at")

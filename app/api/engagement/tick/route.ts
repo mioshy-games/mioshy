@@ -11,6 +11,7 @@
 
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase-admin";
 import {
   renderTemplate,
   sendViaProvider,
@@ -34,6 +35,7 @@ export async function GET(req: Request) {
   // admin policies - the endpoint is protected by shared secret. In
   // production, swap to `createSupabaseAdminClient` with the service role key.
   const supabase = await createServerSupabaseClient();
+  const overviewDb = await createAdminClient();
 
   const nowIso = new Date().toISOString();
   const { data: due, error: fetchErr } = await supabase
@@ -68,7 +70,12 @@ export async function GET(req: Request) {
           .select("channel, subject_he, subject_en, body_he, body_en")
           .eq("id", row.template_id)
           .maybeSingle(),
-        supabase
+        // admin_users_overview is service-role-only as of migration 199 (it
+        // joins auth.users and bypasses RLS). This route is gated by
+        // ENGAGEMENT_CRON_SECRET and runs without a user session, so it must
+        // read the view with the service-role client.
+        // Audit 2026-08-05, CRITICAL #2.
+        overviewDb
           .from("admin_users_overview")
           .select("email, primary_love_language")
           .eq("user_id", row.user_id)
