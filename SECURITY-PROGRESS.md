@@ -932,3 +932,39 @@ UPDATE public.message_templates
 3. **פסילת הקוד בהגעה ל-2 חברים** ← חדש, נובע משאלתך
 4. **איחוד הודעות השגיאה** לסגירת האורקל ← חדש, נובע משאלתך
 5. **`rotate_pair_code` RPC** ← חדש, תנאי הכרחי ל-1 ול-3
+
+---
+
+## טריאז' ה-baseline — 10 הקבצים הכושלים
+
+לא תוקן, רק מופה. **אף אחד אינו ממצא אבטחה, ואף אחד לא נשבר בשלב 1 או 2.**
+
+### חמשת כשלי ה-assertion
+
+| טסט | מתי נשבר | למה, בשורה |
+|---|---|---|
+| `email/brevo-segments-sync > addProductToContact > merges…` | עם שדרוג Node ל-22 (הריפו רץ v22.21.1) — **לא שינוי מוצר** | ה-mock בונה `new Response("", { status: 204 })` (שורות 122,125); Node 22 אוסר גוף ב-204 וזורק, ה-fetch המדומה נכשל, `getContactAttributes` מחזיר null, והערך הקיים `adults` אובד מהמיזוג. **הוכחה:** `node -e "new Response('x',{status:204})"` → `REJECTED: Invalid response status code 204`. תיקון: `new Response(null, …)`. |
+| `journey/questionnaire > has exactly 32 questions` | **8.5.2026**, `e78fbf4` "update corrctio on flow heb" | הבנק ירד 32 → 29. הטסט נכתב 5.5.2026 (`219d710`) ומעולם לא עודכן. |
+| `journey/questionnaire > auth gate after q27 / idx 30` | אותו commit | נגזר מאותו שינוי גודל בנק (29 פריטים, לא 30). |
+| `journey/questionnaire > locked domain distribution 7-3-3-5-7` | אותו commit | ההתפלגות השתנתה יחד עם הבנק. |
+| `journey/questionnaire > priority ranking is last` | אותו commit | הסדר השתנה יחד עם הבנק. |
+
+**הבנק זז חמש פעמים מאז:** 32 (6.5) → 29 (8.5) → 26 (21.5) → 29/30 (1.6) →
+28 (2.6) → 29 (24.6, נוכחי). ארבעת הטסטים נועלים מפרט שהמוצר נטש **לפני
+שלושה חודשים**. הם נקראים "locked domain distribution" ו-"post love-language
+removal" — כלומר נכתבו במפורש כשומר. **השומר אדום שלושה חודשים ולכן אינו שומר
+על דבר.** ההכרעה הנדרשת אינה טכנית: או שהמפרט עדיין תקף והמוצר סטה, או
+שהמפרט השתנה והטסט צריך להתעדכן. **זו שאלה למוצר, לא לי.**
+
+### חמשת כשלי האיסוף (הקובץ לא נטען, `0 test`)
+
+| קבצים | שורש | הסבר |
+|---|---|---|
+| `journey/journey-questions-cms`, `journey/phase-flow`, `journey/render-from-db-parity`, `journey/scoring-source-parity`, `journey/short-coverage` | `TypeError: cache is not a function` | `lib/journey/questions-db.ts:244` קורא ל-`cache()` של React. תחת סביבת `node` של vitest הייצוא הזה אינו פונקציה. בעיית סביבת בדיקה, לא באג מוצר. |
+| `cms/sanitize`, `journey/hero-fallback` | `This module cannot be imported from a Client Component module` | שרשרת ייבוא מגיעה למודול עם `import "server-only"`. אותה משפחה — vitest טוען קוד שרת מחוץ להקשר שלו. |
+| `auth/signup-with-consent` | `Cannot access 'tagAsRegisteredMock' before initialization` | `vi.mock` מורם לראש הקובץ, וה-factory מפנה למשתנה top-level שטרם אותחל. תיקון: `vi.hoisted()` או factory בלי משתנים חיצוניים. |
+
+**הערה שנוגעת אליי:** כשל `server-only` הוא הסיבה שבשלב 1 וב-2 הוצאתי לוגיקה
+לקבצים נפרדים כדי שתהיה בת-בדיקה — `lib/observability/redact.ts` (כי `log.ts`
+מייבא `server-only`) ו-`lib/auth/cron-auth.ts`. זה עקף את המגבלה במקום לתקן
+אותה.
