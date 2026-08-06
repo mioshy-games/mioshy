@@ -5,6 +5,7 @@ import { ArrowLeft, ShieldCheck, UserRoundCog } from "lucide-react";
 import { getProfileGate } from "@/lib/auth/profile-gate";
 import { ProfileDetailsForm } from "@/components/account/ProfileDetailsForm";
 import { SetPasswordForm } from "@/components/account/SetPasswordForm";
+import { safeNext } from "@/lib/auth/safe-next";
 
 export const dynamic = "force-dynamic";
 
@@ -48,12 +49,11 @@ export default async function ProfileDetailsPage({
   function stripLocalePrefix(path: string): string {
     return path.replace(/^\/(?:he|en)(?=\/|$)/, "") || "/";
   }
+  // Audit 2026-08-05, H4 — the inlined check here missed `/\`. The shared
+  // guard returns the fallback for anything that is not a same-origin path.
   const next = (() => {
-    const raw = searchParams?.next;
-    if (typeof raw === "string" && raw.startsWith("/") && !raw.startsWith("//")) {
-      return stripLocalePrefix(raw);
-    }
-    return "/my";
+    const validated = safeNext(searchParams?.next, "/my");
+    return validated === "/my" ? "/my" : stripLocalePrefix(validated);
   })();
 
   const gate = await getProfileGate();
