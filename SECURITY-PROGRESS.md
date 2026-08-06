@@ -337,10 +337,29 @@ WHERE p.role IN ('expert','admin');
   - `app/actions/otp-survey.ts:75`
 
   שלושתם כותבים כעת את הפלט המנוקה של הסכמה (`nameCheck.data`) ולא `.trim()` משלהם.
-- **שאלות פתוחות:** נותר **מסלול כתיבה אחד** לא מאומת —
-  `lib/journey/finalize-journey-signup.ts:72` (ההרשמה המוטמעת של journey).
-  לא היה ברשימה שביקשת, ולכן לא נגעתי. שלב השליחה שלו מכוסה ב-`sendEmailOtp`.
-  אותה שורה בדיוק כמו בשניים האחרים — `FOLLOWUPS.md` F9.
+- **שאלות פתוחות:** אין. משטח הכתיבה ל-`profiles.full_name` **סגור** — ראה המפה למטה.
+
+### מפת כל מסלולי הכתיבה ל-`profiles.full_name` — סגורה (אימות משותף, 6.8.2026)
+
+נסרקה על ידך ואומתה מולי. **אין צורך לחפש שוב.**
+
+| # | מסלול | קובץ | סטטוס |
+|---|---|---|---|
+| 1 | הרשמה בסיסמה | `app/actions/auth-actions.ts:68` (`signupAction`) | ✅ `fullNameSchema` לפני `createUser` — מכסה גם את `user_metadata` וגם את ה-upsert |
+| 2 | הרשמת OTP ראשית | `app/actions/otp-auth.ts:80` (`verifyAuthSignupOtp`) | ✅ מאומת בכתיבה |
+| 3 | הרשמת אבחון | `app/actions/otp-assessment.ts:61` | ✅ מאומת בכתיבה |
+| 4 | הרשמת סקר | `app/actions/otp-survey.ts:72` | ✅ מאומת בכתיבה |
+| 5 | עריכת פרופיל | `app/[locale]/account/profile/actions.ts:41` (`saveProfileDetails`) | ✅ **המסלול היחיד בלי OTP** — בדיקת אורך קיימת + סכמה |
+| 6 | journey inline | `lib/journey/finalize-journey-signup.ts:70` | ✅ מאומת; שם פסול מושמט מה-upsert + `console.error` (לפונקציה אין ערוץ שגיאה) |
+
+**נבדקו ונמצאו מחוץ להיקף:**
+
+- `lib/auth/otp-core.ts:84` — כותב `full_name` ל-`user_metadata`, אבל מכוסה
+  ע"י בדיקת `fullNameSchema` שמעליו באותה פונקציה תחת `mode === "signup"`.
+- `app/api/leads/upsert/route.ts:159` — כותב לטבלת **`leads`**, לא `profiles`.
+  שרשרת ה-XSS של C5 קוראת מ-`profiles` דרך `getStuckUsers`, ולכן מחוץ לשרשרת.
+- `components/SubscriptionModal.tsx` ו-`components/marathon/MarathonForm.tsx` —
+  שולחים ל-`/api/leads/upsert`. **אין כתיבת `profiles` מהלקוח.**
 
 ### ביקורת כל שימושי `dangerouslySetInnerHTML` (הנדרשת ב-C5)
 

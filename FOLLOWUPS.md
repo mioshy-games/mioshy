@@ -66,21 +66,10 @@
 העבודה כפשוטה ("פתח מ-main") יפתח ענף מבסיס בן חודשיים וחצי. שווה למחוק את
 `main` או ליישר אותו, כדי שהמלכודת לא תחזור.
 
-### F9 — מסלול כתיבה חמישי ל-`profiles.full_name` שעדיין לא מאומת
-`lib/journey/finalize-journey-signup.ts:72` כותב
-`full_name: args.fullName.trim()` ב-upsert ל-`profiles`, בלי ולידציה.
-זה מסלול ההרשמה המוטמע של ה-journey (`otp-journey.ts` → `finalizeJourneySignup`).
-
-מכוסה חלקית: שלב השליחה עובר ב-`sendEmailOtp`, שם `fullNameSchema` כן חלה, אז
-שם עם markup נחסם בכניסה הרגילה. מה שלא מכוסה — קריאה ישירה ל-action של
-ה-verify עם `fullName` אחר.
-
-**לא נגעתי** כי הוא לא היה ברשימה של שלושת המסלולים שביקשת. שורה אחת, אותו
-דפוס בדיוק כמו בשני האחרים. אמור מילה ואוסיף.
-
-`app/api/leads/upsert/route.ts:159` גם כותב `full_name`, אבל לטבלת `leads` —
-לא ל-`profiles`. שרשרת ה-XSS של C5 קוראת מ-`profiles` (דרך `getStuckUsers`),
-אז הוא מחוץ להיקף. שווה בכל זאת מבט בשלב 2, כי הוא נכתב מנתיב ציבורי.
+### F9 — ✅ נסגר (2026-08-06)
+`lib/journey/finalize-journey-signup.ts` קיבל `fullNameSchema` (commit `37c1ad8`).
+משטח הכתיבה ל-`profiles.full_name` סגור — המפה המלאה של ששת המסלולים, ושל מה
+שנבדק ונמצא מחוץ להיקף, נמצאת ב-`SECURITY-PROGRESS.md` תחת C5.
 
 ### F10 — `is_expert()` הפכה לפונקציה מתה אחרי מיגרציה 200
 אחרי 200, `public.is_expert()` (043:45) כבר לא בשימוש באף מדיניות. היא נשארת
@@ -98,34 +87,41 @@ FROM pg_policies
 WHERE qual::text LIKE '%is_expert()%' OR with_check::text LIKE '%is_expert()%';
 ```
 
-### F11 — `checkout_sessions.low_profile_code` אינו ייחודי, וה-C3 החדש רגיש לזה
+### F11 — `checkout_sessions.low_profile_code` ללא אינדקס ייחודי (הקשחה, לא דחוף)
 `016:30` מגדיר אינדקס **חלקי אך לא ייחודי**:
 ```sql
 CREATE INDEX checkout_sessions_low_profile_idx ON checkout_sessions(low_profile_code)
   WHERE low_profile_code IS NOT NULL;
 ```
-התיקון של C3 מריץ עכשיו
-`.eq("low_profile_code", lowProfileCode).maybeSingle()` על **כל** קולבק, בעוד
-שקודם החיפוש הזה רץ רק כש-`ReturnValue` היה ריק. אם אי פעם יישמרו שתי שורות עם
-אותו קוד, `maybeSingle()` יחזיר שגיאה (PGRST116) ולא שורה — ה-handler ייפול
-לענף "session not found", יסמן `processed: true`, ויחזיר 200 ל-Cardcom.
-כלומר **תשלום שהתקבל אצל Cardcom לא יזוכה אצלנו**, בשקט.
 
-זה לא רגרסיה שהכנסתי (הקוד הישן היה קורס באותו אופן במסלול ה-fallback), אבל
-התיקון הרחיב את החשיפה מ"רק כשאין ReturnValue" ל"תמיד".
+**תוקן 6.8 — ההערכה הראשונית שלי הייתה מחמירה מדי.** מה שקורה בפועל אם יש כפילות:
 
-**מה לעשות בשלב 2, לפי הסדר:**
-1. לבדוק אם יש כפילויות בפועל:
+1. `maybeSingle()` מחזיר `error` (PGRST116) ו-`data = null`. הקוד מפרק רק
+   `{ data: byLp }` ומתעלם מה-error → `byLp` הוא `null`.
+2. `session` נשאר null → נכנס ה-fallback לפי `ReturnValue`.
+3. השורה הכפולה נושאת **אותו** `low_profile_code`, ולכן
+   `byId.low_profile_code === lowProfileCode` מתקיים → הסשן הנכון נפתר.
+
+כלומר אין אובדן. אובדן שקט דורש כפילות **וגם** `ReturnValue` ריק —
+ו-`ReturnValue` נשלח ל-Cardcom תמיד, משני נתיבי היצירה:
+`lib/cardcom.ts:57` (LowProfile.aspx) ו-`lib/cardcom.ts:296` (v11 CreateTokenOnly),
+בשניהם כשדה חובה לא-אופציונלי (`returnValue: string`), ושני ה-callers
+(`checkout/create:540`, `checkout/create-trial:375`) מעבירים `sessionId`.
+ה-indicator קורא אותו חזרה case-insensitive (`getParamCI`).
+
+בנוסף, כפילות בכלל דורשת ש-Cardcom יחזיר את אותו `LowProfileCode` לשתי עסקאות
+שונות — הקוד שלנו חותם אותו ב-`.update().eq("id", sessionId)` אחרי קריאה נפרדת.
+
+**מסקנה:** האינדקס הייחודי הוא **הגנת עומק, לא מצב חירום.** לא נוגע בשלב 1.
+בשלב 2, לפי הסדר:
+1. לבדוק כפילויות בפועל:
    ```sql
    SELECT low_profile_code, count(*), array_agg(id ORDER BY created_at)
    FROM checkout_sessions
    WHERE low_profile_code IS NOT NULL
    GROUP BY low_profile_code HAVING count(*) > 1;
    ```
-2. אם ריק — להוסיף `CREATE UNIQUE INDEX CONCURRENTLY` על אותה הגדרה חלקית,
-   וזה סוגר את הבעיה מהשורש.
-3. אם לא ריק — לנקות קודם, ובינתיים להחליף את `maybeSingle()` ב-
-   `.order("created_at", { ascending: false }).limit(1).maybeSingle()`
-   כדי שהקולבק ייקח את הסשן העדכני במקום ליפול.
+2. אם ריק — `CREATE UNIQUE INDEX CONCURRENTLY` על אותה הגדרה חלקית.
+3. אם לא ריק — לנקות קודם.
 
 **זה נוגע במסלול תשלום — לתאם לפני שינוי.**
