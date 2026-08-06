@@ -26,9 +26,10 @@
 -- this table), anyone could read every user's session_token, delete sessions,
 -- and insert forged ones.
 --
--- Safe to revoke: user_sessions is touched ONLY by lib/auth/session-enforcement,
--- which uses createAdminSupabaseClient() (service role). Verified 2026-08-06 —
--- no other file in the repo references the table.
+-- Safe to revoke outright: user_sessions is touched ONLY by
+-- lib/auth/session-enforcement, which uses createAdminSupabaseClient()
+-- (service role). Verified 2026-08-06 — no other file in the repo references
+-- the table, so neither anon nor authenticated needs any privilege on it.
 DROP POLICY IF EXISTS "user_sessions_service_all" ON public.user_sessions;
 
 CREATE POLICY "user_sessions_service_all"
@@ -38,8 +39,16 @@ CREATE POLICY "user_sessions_service_all"
   WITH CHECK (true);
 
 REVOKE ALL ON public.user_sessions FROM anon, authenticated;
-GRANT SELECT ON public.user_sessions TO authenticated;  -- keeps user_sessions_select_own working
 
+-- No GRANT back to `authenticated`. The audit's draft restored SELECT to keep
+-- policy user_sessions_select_own reachable, but that policy serves no screen:
+-- nothing outside lib/auth/session-enforcement touches this table, and that
+-- module is service-role throughout. While the GRANT existed, any signed-in
+-- user could read their own row — including session_token — straight off
+-- PostgREST, which is the credential the single-device layer is built on.
+-- The policy is deliberately left in place: if a future surface needs a user
+-- to see their own session metadata, the GRANT is a one-line, considered
+-- decision rather than an accident.
 ALTER TABLE public.user_sessions FORCE ROW LEVEL SECURITY;
 
 
