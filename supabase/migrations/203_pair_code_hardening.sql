@@ -72,7 +72,19 @@ CREATE TABLE IF NOT EXISTS public.pair_codes_issued (
 );
 
 COMMENT ON TABLE public.pair_codes_issued IS
-  'Every pair code ever issued. A code is never reused, even after the couple is deactivated or the code is rotated away. Audit H8(c).';
+  'Every pair code ever issued. A code is never reused, even after the couple is deactivated or the code is rotated away. Audit H8(c). NEVER expose to anon/authenticated — reading this table is equivalent to being handed every couple in the product.';
+
+-- ⚠️ THIS IS THE MOST SENSITIVE TABLE IN THE SCHEMA.
+-- It is the complete list of every pair code that has ever existed. If anon or
+-- authenticated can SELECT it, the whole of H8(c) inverts: instead of guessing
+-- codes against a rate limiter, an attacker READS them and joins every couple
+-- that still has a free seat. That is strictly worse than the bug being fixed.
+-- Locked the same way user_sessions was in migration 199 (audit C1): RLS on,
+-- FORCED so it applies to the owner too, ZERO policies, and no table grant at
+-- all. The only access path is the SECURITY DEFINER functions below.
+ALTER TABLE public.pair_codes_issued ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.pair_codes_issued FORCE  ROW LEVEL SECURITY;
+REVOKE ALL ON public.pair_codes_issued FROM anon, authenticated;
 
 -- Reserve every code currently in use so the generator cannot hand one out again.
 INSERT INTO public.pair_codes_issued (code)
@@ -152,9 +164,12 @@ CREATE TABLE IF NOT EXISTS public.couple_join_attempts (
 CREATE INDEX IF NOT EXISTS couple_join_attempts_user_recent_idx
   ON public.couple_join_attempts (user_id, attempted_at DESC);
 
+-- Same lockdown. This one maps who has been probing and when — an attacker
+-- reading it learns exactly how close they are to the limit.
 ALTER TABLE public.couple_join_attempts ENABLE ROW LEVEL SECURITY;
--- No policy: readable only via service role. The function is SECURITY DEFINER
--- and writes on the caller's behalf.
+ALTER TABLE public.couple_join_attempts FORCE  ROW LEVEL SECURITY;
+REVOKE ALL ON public.couple_join_attempts FROM anon, authenticated;
+-- No policy, deliberately. The only writer is the SECURITY DEFINER function.
 
 -- Rotation log. A counter column on `couples` cannot express "5 per hour"
 -- (there is only ever one row per couple, so counting it yields 0 or 1); the
@@ -169,7 +184,11 @@ CREATE TABLE IF NOT EXISTS public.couple_pair_code_rotations (
 CREATE INDEX IF NOT EXISTS couple_pair_code_rotations_recent_idx
   ON public.couple_pair_code_rotations (couple_id, rotated_at DESC);
 
+-- Same lockdown. Rotation timings would let a reader infer when a couple's
+-- code changed, and pace guesses around it.
 ALTER TABLE public.couple_pair_code_rotations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.couple_pair_code_rotations FORCE  ROW LEVEL SECURITY;
+REVOKE ALL ON public.couple_pair_code_rotations FROM anon, authenticated;
 
 
 -- ── 4. join_couple_by_pair_code — uniform failure, rate limited, single use ──

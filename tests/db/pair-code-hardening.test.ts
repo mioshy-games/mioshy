@@ -2,7 +2,7 @@
  * tests/db/pair-code-hardening.test.ts
  *
  * Executes migration 203 against a real Postgres (PGlite, in-process) and
- * asserts the five invariants the fix depends on.
+ * asserts the six invariants the fix depends on.
  *
  * ─────────────────────────────────────────────────────────────────────────────
  * WHAT THIS TEST COVERS — and, more importantly, WHAT IT DOES NOT
@@ -22,9 +22,12 @@
  * DOES NOT COVER — these need the real Supabase project:
  *   · RLS. Policies are created but PGlite has no Supabase role system, so
  *     nothing here proves a policy admits or denies the right caller.
- *   · GRANT/REVOKE semantics. `authenticated` and `service_role` are created
- *     below as bare roles purely so the GRANT statements parse; their Supabase
- *     privileges are not modelled.
+ *   · Supabase's ROLE BEHAVIOUR. anon/authenticated/service_role are created
+ *     below as bare roles. Invariant ו does verify the catalog state — that no
+ *     grant exists, RLS is enabled AND forced, and no policy is defined — which
+ *     is a real check and the one blocking this migration. What it cannot show
+ *     is that a PostgREST request actually assumes those roles, because Supabase
+ *     default privileges and the JWT→role mapping do not exist here.
  *   · The real auth.uid(). It is shimmed to read a session setting instead of
  *     a JWT claim, so this proves the FUNCTION LOGIC keyed on a caller id, not
  *     that PostgREST supplies that id correctly.
@@ -89,6 +92,7 @@ beforeAll(async () => {
 
   // ── Shims. Everything here is scaffolding, NOT the thing under test. ──────
   await db.exec(`
+    CREATE ROLE anon;
     CREATE ROLE authenticated;
     CREATE ROLE service_role;
     CREATE SCHEMA IF NOT EXISTS auth;
@@ -306,5 +310,55 @@ describe("ה. every failure path is indistinguishable", () => {
     const results = [wrong, expired, used, full, blocked];
     expect(results).toEqual([null, null, null, null, null]);
     expect(new Set(results).size).toBe(1);
+  });
+});
+
+describe("ו. the three new tables are unreachable from anon and authenticated", () => {
+  // The blocking condition on this migration. pair_codes_issued is the complete
+  // list of every code that has ever existed: if anon or authenticated can read
+  // it, the fix inverts — an attacker stops guessing and starts reading, then
+  // joins every couple with a free seat. Same proof shape as C1 on user_sessions.
+  const TABLES = [
+    "pair_codes_issued",
+    "couple_join_attempts",
+    "couple_pair_code_rotations",
+  ];
+
+  it("grants no table privilege of any kind to anon or authenticated", async () => {
+    const res = await db.query<{ grantee: string; table_name: string; privilege_type: string }>(
+      `SELECT grantee, table_name, privilege_type
+         FROM information_schema.role_table_grants
+        WHERE table_schema = 'public'
+          AND table_name = ANY($1)
+          AND grantee = ANY(ARRAY['anon','authenticated'])
+        ORDER BY table_name, grantee, privilege_type`,
+      [TABLES],
+    );
+    // Must be empty. Any row here is a hole.
+    expect(res.rows).toEqual([]);
+  });
+
+  it("has RLS both enabled and FORCED on all three", async () => {
+    const res = await db.query<{ relname: string; relrowsecurity: boolean; relforcerowsecurity: boolean }>(
+      `SELECT relname, relrowsecurity, relforcerowsecurity
+         FROM pg_class
+        WHERE relname = ANY($1) AND relnamespace = 'public'::regnamespace
+        ORDER BY relname`,
+      [TABLES],
+    );
+    expect(res.rows).toHaveLength(3);
+    for (const r of res.rows) {
+      expect(r.relrowsecurity, `${r.relname} RLS enabled`).toBe(true);
+      expect(r.relforcerowsecurity, `${r.relname} RLS forced`).toBe(true);
+    }
+  });
+
+  it("defines zero policies on them — the SECURITY DEFINER functions are the only path", async () => {
+    const res = await db.query<{ tablename: string; policyname: string }>(
+      `SELECT tablename, policyname FROM pg_policies
+        WHERE schemaname = 'public' AND tablename = ANY($1)`,
+      [TABLES],
+    );
+    expect(res.rows).toEqual([]);
   });
 });
