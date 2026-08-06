@@ -167,3 +167,36 @@ pnpm test:run && pnpm build` על כל PR ו**חוסם merge** בכישלון. �
 בשלב 1 או 2.** חמישה כשלי איסוף נובעים משתי בעיות סביבה (React `cache()`
 ו-`server-only` תחת vitest), אחד מ-hoisting של `vi.mock`, אחד משדרוג Node
 (‏204 עם גוף), וארבעה מטסט שנועל מפרט שהמוצר נטש במאי.
+
+### F20 — מיגרציה 194 רצה בפרודקשן ואינה בגיט (הריפו לא משקף את ה-DB)
+`supabase/migrations/194_subscriptions_auto_renew.sql` יושב בעץ העבודה
+**לא-מקומיט**, ולא מופיע באף commit באף ענף (`git log --all` ריק עבורו).
+
+**היא רצה. הראיה:**
+- הקובץ מוסיף `subscriptions.auto_renew boolean NOT NULL DEFAULT true`.
+- הפיצ'ר שצורך אותו מוזג ל-`game` ב-**31.7.2026** (`296339d`,
+  "feat(billing): auto_renew=false — the customer renews, or nothing happens").
+- `app/api/billing/renewals/run/route.ts:80` — **קרון החיובים השעתי** —
+  מסנן `.eq("auto_renew", true)`, וכך גם `subscription-reactivate.ts`
+  ו-`cycle-engine.ts` (10 אזכורים בסך הכל, כולם בקוד שנמצא על `game`).
+- אילו העמודה לא הייתה קיימת, PostgREST היה מחזיר שגיאת עמודה לא מוכרת
+  והקרון היה נכשל **בכל שעה מאז 31.7**. חידושי מנוי היו שבורים לגמרי.
+
+**המסקנה:** האפשרות הראשונה שהעלית — רצה, ואינה בגיט.
+
+**הסיכון:** המספר 194 "תפוס" בלי שגיט יודע. מי שיפתח מיגרציה חדשה ויראה
+193 כאחרון המקומיט עלול להשתמש שוב ב-194 ולקבל התנגשות שקטה. (196, 197,
+198 ו-202 פנויים באמת; 195 מקומיט.)
+
+**מה לא עשיתי:** לא קומיטתי אותה ולא הרצתי אותה, לפי ההוראה.
+
+**אימות בשורה אחת, אם תרצה ודאות סופית:**
+```sql
+SELECT column_name, data_type, is_nullable, column_default
+  FROM information_schema.columns
+ WHERE table_schema='public' AND table_name='subscriptions' AND column_name='auto_renew';
+```
+שורה אחת = רצה. ריק = הקרון שבור מאז 31.7 וזה ממצא דחוף בפני עצמו.
+
+**להחלטה:** לקומיט את הקובץ כפי שהוא (הוא idempotent — `add column if not
+exists`), כדי שהריפו ישקף את ה-DB. זו החלטה שלך.
