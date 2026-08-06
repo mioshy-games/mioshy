@@ -3,6 +3,7 @@ import "server-only";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { fireCompleteRegistrationCapi } from "@/lib/analytics/meta-capi";
 import { isFirstRegistration, syncConsentedContactToBrevo } from "@/lib/auth/otp-core";
+import { fullNameSchema } from "@/lib/validations";
 
 type JourneyRow = { id: string; current_step: number | null; status: string; last_activity_at: string | null };
 
@@ -67,9 +68,23 @@ export async function finalizeJourneySignup(args: {
   // Never overwrite an existing profile's full_name when an existing user runs
   // the signup flow — only write identity for a genuinely new account.
   if (args.isSignup && isFirst) {
+    // SECURITY: the fifth and last write path to profiles.full_name. sendEmailOtp
+    // validates at the send step, but this runs from the verify action, which
+    // receives fullName from the client again. This function has no error
+    // channel (callers destructure { journey }) and treats every failure as a
+    // non-fatal warn, so an invalid name is dropped from the write rather than
+    // aborting a signup whose OTP already succeeded — the account completes, the
+    // markup never lands. Audit 2026-08-05, CRITICAL #5.
+    const nameCheck = fullNameSchema.safeParse(args.fullName);
+    if (!nameCheck.success) {
+      console.error("[finalizeJourneySignup] rejected full_name — not written", {
+        user_id: userId,
+        reason: nameCheck.error.issues[0]?.message ?? "invalid",
+      });
+    }
     const { error: profileErr } = await admin.from("profiles").upsert({
       id: userId,
-      full_name: args.fullName.trim(),
+      ...(nameCheck.success ? { full_name: nameCheck.data } : {}),
       phone: args.phone || null,
       marketing_consent: args.marketingConsent,
       marketing_consent_at: args.marketingConsent ? nowIso : null,
