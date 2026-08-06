@@ -186,7 +186,7 @@ export async function signupAction(formData: FormData): Promise<SignupResult> {
           })
           .eq("email", (invite as { email: string }).email);
         console.log("[signup] test-user invitation claimed", {
-          email,
+          // email omitted — user_id identifies the row. Audit 2026-08-05, H5.
           user_id: userId,
         });
       }
@@ -279,7 +279,6 @@ export async function loginAction(formData: FormData): Promise<LoginResult> {
   try {
     const supabase = await createServerSupabaseClient();
 
-    console.log("[loginAction] attempting sign-in", { email });
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -290,7 +289,9 @@ export async function loginAction(formData: FormData): Promise<LoginResult> {
       // translate. The raw message is preserved in `error` for logs +
       // dev-time debugging, but the UI shouldn't surface it directly.
       console.error("[loginAction] sign-in failed", {
-        email,
+        // email omitted — this fires on EVERY failed sign-in, so it was
+        // recording the address of every credential-stuffing attempt as well
+        // as every typo by a real user. Audit 2026-08-05, H5.
         name: error.name,
         status: (error as { status?: number }).status,
         code: (error as { code?: string }).code,

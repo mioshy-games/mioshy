@@ -82,16 +82,20 @@ export async function GET(req: Request) {
     return new Response("ok", { status: 200, headers: { "Retry-After": String(retryAfterSec) } })
   }
 
+  // Audit 2026-08-05, H5 — never log url.search wholesale. Cardcom appends
+  // cardholder fields (name, phone, email) to this callback, so the raw query
+  // string put customer PII in the log on every payment. Only the two
+  // parameters this handler actually uses are recorded.
   console.log("[indicator:START] callback received from Cardcom", {
     has_low_profile: !!lowProfileCode,
     return_value: returnValue || "(empty)",
-    full_url_query: url.search,
+    param_names: [...url.searchParams.keys()].join(","),
   })
 
   // Always respond 200 to Cardcom immediately
   if (!lowProfileCode) {
     console.warn("[indicator:NO_CODE] missing LowProfileCode - exiting", {
-      query: url.search,
+      param_names: [...url.searchParams.keys()].join(","),
     })
     return new Response("ok", { status: 200 })
   }

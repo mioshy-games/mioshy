@@ -188,7 +188,7 @@ export async function POST(req: Request) {
     console.log("[renewals:SUB_START]", {
       sub_id: subId,
       user_id: userId,
-      email: sub.email,
+      // email intentionally omitted — user_id identifies the row. Audit H5.
       product: sub.product,
       plan: sub.plan,
       amount: sub.plan_amount,
