@@ -1287,3 +1287,87 @@ CODE_INVALID  — תמיד, מהניסיון הראשון:
 ב-`couple_join_attempts`. תוקף מתעלם ממנו ולא מרוויח דבר.
 
 **עדיין לא בוצע** — הקובץ לא נגע. ממתין לאישור סופי של הנוסח.
+
+---
+
+# שאילתות להרצה — 7.8.2026
+
+## תיקון: איך בדקתי ש-196–198 "פנויים"
+
+**רק מול גיט.** הרצתי בדיוק את זה:
+```
+ls supabase/migrations/ | grep -oE "^[0-9]{3}" | sort -u
+```
+כלומר **הסתמכתי בדיוק על המקור שהתגלה כלא-אמין.** צדקת. הניסוח "פנויים
+באמת" לא היה מבוסס ואני מושך אותו.
+
+**ומה שגרוע יותר: אי אפשר להוכיח שמספר פנוי.** אין רישום מיגרציות בשום מקום —
+לא טבלה, לא כלי, לא קובץ. הרצה ידנית בעורך ה-SQL אינה מותירה עקבות, ולכן
+השאלה "האם 197 רצה" **אינה ניתנת לתשובה** בסכמה הנוכחית. מה שכן ניתן לבדוק
+הוא **סחף ברמת אובייקטים** — אובייקטים שקיימים ב-DB ואינם נוצרים באף מיגרציה
+מקומיטת. זו משימת ההתאמה שהעלית לשלב 4.
+
+**מסקנה מעשית לעכשיו:** להמשיך מ-204 ומעלה, ולא להניח דבר על 196–198.
+
+## שאילתה 1 — האם 194 באמת רצה (הראיה, לא ההיסק)
+
+```sql
+SELECT column_name, data_type, is_nullable, column_default
+  FROM information_schema.columns
+ WHERE table_schema = 'public'
+   AND table_name  = 'subscriptions'
+   AND column_name = 'auto_renew';
+```
+שורה אחת (`boolean`, `NO`, `true`) = רצה, והריפו אינו משקף את ה-DB.
+ריק = קרון החיובים שבור מאז 31.7 — ממצא דחוף בפני עצמו.
+
+## שאילתה 2 — כפילויות בקודי הזיווג
+
+```sql
+SELECT pair_code,
+       count(*)                          AS couples_sharing_it,
+       count(*) FILTER (WHERE is_active) AS of_them_active,
+       array_agg(id ORDER BY created_at) AS couple_ids,
+       min(created_at) AS first_seen,
+       max(created_at) AS last_seen
+  FROM public.couples
+ WHERE pair_code IS NOT NULL
+ GROUP BY pair_code
+HAVING count(*) > 1
+ ORDER BY count(*) DESC, last_seen DESC;
+```
+**`of_them_active >= 2` הוא ממצא חי, לא שאלת מיגרציה:** `join` עושה `LIMIT 1`,
+כלומר אדם שמזין קוד כפול מצטרף לזוג **שרירותי** — כלומר לזרים.
+
+## שאילתה 3 — ההגדרות בפועל שעליהן 203 מסתמכת (חמש שורות, לפני ההרצה)
+
+```sql
+-- 1. העמודה עצמה
+SELECT column_name, data_type, is_nullable FROM information_schema.columns
+ WHERE table_schema='public' AND table_name='couples' AND column_name LIKE 'pair_code%';
+
+-- 2. האינדקס, בשמו המדויק ובהגדרתו המדויקת (203 מניחה שהוא חלקי ולא נוגעת בו)
+SELECT indexname, indexdef FROM pg_indexes
+ WHERE schemaname='public' AND tablename='couples' AND indexdef ILIKE '%pair_code%';
+
+-- 3. גוף הפונקציה שאני מחליף — האם הוא באמת מה שכתוב ב-029?
+SELECT pg_get_functiondef('public.join_couple_by_pair_code(text)'::regprocedure);
+
+-- 4. וגם המחולל, כי 203 דורס אותו
+SELECT pg_get_functiondef('public.generate_pair_code()'::regprocedure);
+
+-- 5. האם משהו מ-203 כבר קיים (הרצה חלקית קודמת)?
+SELECT tablename FROM pg_tables WHERE schemaname='public'
+   AND tablename IN ('pair_codes_issued','couple_join_attempts','couple_pair_code_rotations');
+```
+
+**למה זה חוסם:** 203 עושה `CREATE OR REPLACE` על שתי פונקציות. אם ההגדרה
+בפועל שונה ממה שבגיט — למשל תוקנה ידנית בעורך ה-SQL, בדיוק כמו 194 —
+אני **דורס תיקון חי** בלי לדעת. תוצאה 3 ו-4 חייבות להתאים ל-029 מילה במילה.
+שורות בתוצאה 5 = הרצה חלקית קודמת, ואז **לא להריץ** ולחזור אליי.
+
+## מה לא לעשות עם 194
+
+**לא לקומיט עדיין.** קומיט של הקובץ בלי לאמת שתוכנו זהה למה שרץ בפועל
+מקבע בגיט גרסה שאולי שגויה — ואז הריפו נראה אמין בלי להיות. הסדר:
+שאילתה 1 → השוואת ההגדרה שחזרה מול הקובץ → ורק אז קומיט.
