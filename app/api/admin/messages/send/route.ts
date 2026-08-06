@@ -10,7 +10,8 @@
  *   channel: "email"|"sms"|"whatsapp",
  *   subject?: string,
  *   body?: string,     // overrides template
- *   to_address?: string // overrides user's default contact
+ *   to_address?: string // must equal the address on file (H6); the server
+ *                       always sends to the stored address regardless
  * }
  */
 
@@ -91,8 +92,25 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "empty_body" }, { status: 400 });
   }
 
-  const toAddress = body.to_address ?? overview.email;
+  // SECURITY (audit 2026-08-05, H6): the destination is the address on file,
+  // never one supplied in the request body. `to_address` used to override it,
+  // so anyone who could reach this admin route could use our sending
+  // reputation to deliver arbitrary content to an arbitrary address, logged
+  // against an unrelated user_id. A mismatched value is rejected loudly rather
+  // than silently ignored, so nothing is ever delivered somewhere the caller
+  // did not expect.
+  const toAddress = overview.email;
   if (!toAddress) return NextResponse.json({ error: "no_to_address" }, { status: 400 });
+  if (
+    body.to_address &&
+    body.to_address.trim().toLowerCase() !== toAddress.trim().toLowerCase()
+  ) {
+    console.warn("[admin/messages/send] to_address override refused", {
+      user_id: body.user_id,
+      admin_id: admin.id,
+    });
+    return NextResponse.json({ error: "to_address_mismatch" }, { status: 400 });
+  }
 
   const sendRes = await sendViaProvider({
     to: toAddress,
