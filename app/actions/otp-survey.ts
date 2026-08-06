@@ -12,6 +12,7 @@ import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { readPollAnonId } from "@/lib/poll/anon";
 import { fireCompleteRegistrationCapi, firePollLeadCapi, metaEventId } from "@/lib/analytics/meta-capi";
 import { sendEmailOtp, verifyEmailOtp, finalizeOtpSession, isFirstRegistration, hasMobileOnFile, syncConsentedContactToBrevo, type SendOtpResult } from "@/lib/auth/otp-core";
+import { fullNameSchema } from "@/lib/validations";
 
 type Result = { success: true; phoneOnFile?: boolean } | { success: false; error: string };
 
@@ -69,10 +70,17 @@ export async function verifySurveySignupOtp(args: {
     // Identity (name) + consent seed + CompleteRegistration — NEW account only;
     // never overwrite an existing profile's full_name.
     if (isFirst) {
+      // SECURITY: sendEmailOtp validated the name at the send step, but this
+      // action receives fullName from the client again and is what persists it.
+      // Audit 2026-08-05, CRITICAL #5.
+      const nameCheck = fullNameSchema.safeParse(args.fullName);
+      if (!nameCheck.success) {
+        return { success: false, error: nameCheck.error.issues[0]?.message ?? "השם מכיל תווים לא חוקיים" };
+      }
       await admin.from("profiles").upsert(
         {
           id: v.userId,
-          full_name: args.fullName.trim(),
+          full_name: nameCheck.data,
           marketing_consent: args.marketingConsent,
           marketing_consent_at: args.marketingConsent ? nowIso : null,
           marketing_consent_source: args.marketingConsent ? "poll_signup" : null,
