@@ -81,29 +81,47 @@ export async function processTrialLowProfile(args: {
     .upsert({ idempotency_key: idempotencyKey, processed: false }, { onConflict: "idempotency_key" })
 
   // ── Resolve checkout session ──────────────────────────────────────────────
-  let sessionId = returnValue.trim()
-  if (!sessionId) {
-    const { data: byLp } = await admin
+  // SECURITY: low_profile_code is the authoritative binding. ReturnValue is a
+  // client-visible URL parameter and must never select the session on its own.
+  // Same flaw as the indicator callback — see app/api/billing/cardcom/indicator.
+  // Audit 2026-08-05, CRITICAL #3.
+  const { data: byLp } = await admin
+    .from("checkout_sessions")
+    .select("*")
+    .eq("low_profile_code", lowProfileId)
+    .maybeSingle()
+
+  let session = byLp
+
+  if (!session && returnValue.trim()) {
+    // Legacy fallback: sessions created before low_profile_code was stamped.
+    // Accepted ONLY when the stored code is absent — never when it mismatches.
+    const { data: byId } = await admin
       .from("checkout_sessions")
-      .select("id")
-      .eq("low_profile_code", lowProfileId)
+      .select("*")
+      .eq("id", returnValue.trim())
       .maybeSingle()
-    sessionId = byLp?.id ?? ""
+
+    if (byId && (byId.low_profile_code === null || byId.low_profile_code === lowProfileId)) {
+      session = byId
+    } else if (byId) {
+      console.error("[trial-process:LP_MISMATCH] ReturnValue points at a session bound to a different LowProfileCode", {
+        session_id:  byId.id,
+        session_lp:  byId.low_profile_code,
+        callback_lp: lowProfileId,
+      })
+    }
   }
-  if (!sessionId) {
-    await admin.from("billing_events").update({ error: "session not found", processed: true }).eq("idempotency_key", idempotencyKey)
+
+  if (!session) {
+    await admin
+      .from("billing_events")
+      .update({ error: "session not found or lp mismatch", processed: true })
+      .eq("idempotency_key", idempotencyKey)
     return { status: "no_session", ok: false }
   }
 
-  const { data: session } = await admin
-    .from("checkout_sessions")
-    .select("*")
-    .eq("id", sessionId)
-    .maybeSingle()
-  if (!session) {
-    await admin.from("billing_events").update({ error: `session ${sessionId} missing`, processed: true }).eq("idempotency_key", idempotencyKey)
-    return { status: "no_session", ok: false }
-  }
+  const sessionId: string = session.id
   if (!session.is_trial) {
     console.error("[trial-process:NOT_A_TRIAL] session is not a trial — refusing", { session_id: sessionId })
     await admin.from("billing_events").update({ error: "not a trial session", processed: true }).eq("idempotency_key", idempotencyKey)
