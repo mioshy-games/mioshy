@@ -79,29 +79,34 @@ export async function joinCoupleByPairCode(
     return { ok: false, error: "Pair code must be 6 characters" };
   }
 
-  const { data: coupleId, error } = await supabase.rpc(
-    "join_couple_by_pair_code",
-    { p_pair_code: normalized },
-  );
-  if (error || !coupleId) {
-    const msg = error?.message ?? "";
-    // SQL contract (migrations/029_between_us_section.sql §1.7):
-    //   • 'pair_code not found'     - code typo / inactive couple
-    //   • 'user already belongs'    - caller is already paired with someone
-    //   • 'couple is full'          - couple already has 2 members; a third
-    //                                  redeem is rejected at the DB level
-    //                                  so a single subscription always
-    //                                  stays a two-seat couple.
-    const friendly = msg.includes("pair_code not found")
-      ? "Pair code not found"
-      : msg.includes("already belongs")
-        ? "You're already in a couple"
-        : msg.includes("already a member")
-          ? "You're already a member of this couple"
-          : msg.includes("couple is full")
-            ? "This couple already has two members - a subscription covers two people only"
-            : msg || "Could not join couple";
-    return { ok: false, error: friendly };
+  // ── The caller's OWN membership, checked BEFORE the RPC ───────────────────
+  // Their own row, so "you are already paired" leaks nothing — and it is the
+  // only case that keeps a distinct message. Everything concerning the CODE
+  // collapses into one answer below. Audit 2026-08-05, H8(c).
+  const { data: mine } = await supabase
+    .from("couple_members")
+    .select("couple_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (mine) {
+    return { ok: false, error: "already_paired" };
+  }
+
+  const { data: coupleId } = await supabase.rpc("join_couple_by_pair_code", {
+    p_pair_code: normalized,
+  });
+
+  // ── One answer for every code-related failure ─────────────────────────────
+  // Migration 203 returns NULL for wrong / expired / already-used /
+  // couple-full / rate-limited alike. Distinguishing them told an attacker
+  // which codes were real, which is what made the code space mappable, so the
+  // old message-string mapping is gone with them.
+  //
+  // Anything further the user sees is decided by the CLIENT from its own
+  // attempt count — never from this response. Conditioning help on the
+  // server's answer would rebuild the oracle out of the help text.
+  if (!coupleId) {
+    return { ok: false, error: "code_invalid" };
   }
 
   revalidatePath("/[locale]/between-us", "page");
