@@ -734,3 +734,201 @@ UNION ALL SELECT 'weekly-recap',  count(*), max(created_at) FROM journey_weekly_
 - **עלות:** 0 ₪ בטווח החינם; ~$10/חודש אם נחרוג.
 - **בלי זה:** תיקון ה-IP (חלק 1) כבר סגר את העקיפה המוחלטת. מה שנשאר הוא
   מגבלה **רופפת**, לא מגבלה **עקיפה**. זה הבדל משמעותי — לכן חלק 2 לא דחוף.
+
+---
+
+# תיקונים ותשובות — 6.8.2026 (סבב ביקורת שני)
+
+## (א) הטסט שנכשל ב-baseline ועובר עכשיו — התשובה המדויקת
+
+**הטסט:** `tests/api/brevo-unsubscribe-webhook.test.ts`
+→ `non-unsubscribe event > returns 200 + ignored marker without flipping consent`
+
+**למה הוא נכשל, לפי ההיסטוריה ולא לפי השערה:**
+
+```
+$ git log --oneline -S "non_actionable_event" -- app/api/brevo/unsubscribe-webhook/route.ts
+acf04d5 security(H1): ...            ← ההסרה שלי
+165351d feat(email): hard-bounce suppression guard (mailing diagnostics step 3.2)
+
+$ git show 165351d -- app/api/brevo/unsubscribe-webhook/route.ts
+-    return NextResponse.json({ ok: true, ignored: "non_unsubscribe_event" });
++    return NextResponse.json({ ok: true, ignored: "non_actionable_event" });
+
+$ git show --stat 165351d | grep test
+(אין — קובץ הטסט לא נגע באותו commit)
+```
+
+ב-**6.7.2026**, commit `165351d` (הוספת תמיכה ב-hard bounce) שינה את שם הסמן
+מ-`non_unsubscribe_event` ל-`non_actionable_event` — **שינוי נכון**, כי הענף
+הזה כיסה מאותו רגע גם hard bounces ו"non-unsubscribe" הפך לא מדויק.
+קובץ הטסט לא עודכן באותו commit. מאותו יום הטסט טען על מחרוזת שהקוד לא ייצר,
+ונכשל ברציפות **חודש** לפני שהענף הזה נוצר.
+
+**למה הוא עובר עכשיו:** H1 הסיר את שדה `ignored` לגמרי (גוף אחיד `{ ok: true }`),
+ואני שכתבתי את הטענה ל-`expect(await res.json()).toEqual({ ok: true })`.
+
+**הנקודה שחשובה לביקורת:** הטענה החדשה **מחמירה** יותר מהישנה — היא בודקת את
+הגוף **כולו** ב-`toEqual` במקום שדה בודד. הטסט לא "רוכך כדי לעבור"; הוא היה
+טסט מת שבדק מחרוזת שהוסרה מהקוד לפני חודש, וההתנהגות שהוא אמור היה להגן עליה
+(אין שינוי הסכמה באירוע לא-רלוונטי) עדיין נבדקת, בשורה שאחריה.
+
+---
+
+## (ב) הכפילות ב-Meta — ממצא עסקי, לא רק באג
+
+**מה קרה.** מזהה האירוע של Lead נגזר משני צדדים בנרמול שונה:
+
+| צד | קוד | מה נשלח עבור `Itzik@Uxellent.com ` |
+|---|---|---|
+| דפדפן (Pixel) | `PollRegister.tsx` — `metaEventId.lead(email)` **כפי שהוקלד** | `lead.Itzik@Uxellent.com ` |
+| שרת (CAPI) | `otp-survey.ts` — `metaEventId.lead(email.trim().toLowerCase())` | `lead.itzik@uxellent.com` |
+
+מזהים שונים → **Meta לא ביצעה dedup** → כל ליד כזה נספר **פעמיים**.
+
+**ההשלכה העסקית:**
+- מספרי הלידים המדווחים ב-Meta **מנופחים**, בשיעור שתלוי בכמה משתמשים הקלידו
+  אות גדולה או רווח — לא ניתן לשחזר רטרואקטיבית מהצד שלנו.
+- **עלות-לליד (CPL) שדווחה נמוכה מדי** באותו יחס. כל החלטת תקציב שהתבססה
+  עליה התבססה על נתון שגוי.
+- **אלגוריתם האופטימיזציה של Meta עבר אימון על אירועים מנופחים** — הוא מיטב
+  לכיוון קהלים שייצרו כפילויות, לא בהכרח לקוחות.
+
+**⚠️ ציפייה לאחר הפריסה — לא תקלה בקמפיין.**
+מרגע שהתיקון עולה, מספר הלידים המדווח **יירד**. הירידה היא **תיקון מדידה**,
+לא ירידה בביצועים. אין להסיק ממנה שהקמפיין נשבר, ואין להגיב עליה בשינוי תקציב
+או יצירתיות.
+
+- **התיקון:** commit `f3cb7f3` — `security(H7): hash the Meta Lead event id`.
+- **תאריך פריסה לפרודקשן:** ______ ← **למלא ביום המיזוג.**
+- **המלצה:** לסמן annotation בתאריך הזה ב-Meta Ads Manager וב-GA4, ולהשוות
+  CPL רק בין חלונות שנמצאים כולם לפני או כולם אחרי התאריך.
+- **תקופת ההשפעה:** מאז שנוצר מסלול ה-Lead של הסקר ועד תאריך הפריסה.
+
+---
+
+## (ג) ארבע העבודות — תיקון שיטת המדידה
+
+**צדקת, והשאילתה הראשונה שלי הייתה פסולה.** `journey_couple_pacts.updated_at`
+מתעדכן גם מ-`app/actions/journey-pact.ts` (פעולת משתמש), כך שספירה לא-אפסית
+לא מוכיחה דבר על ה-cron. זו בדיוק מלכודת המדידה של C3 מחדש — מספר סביר
+שאינו מודד את מה שחשבתי.
+
+**בדקתי מי כותב לכל טבלה, ויש ראיה ברמת עמודה שמשתמש אינו יכול לזייף:**
+
+| Job | ראיה קבילה | למה |
+|---|---|---|
+| `d1-reminders` | כל שורה ב-`journey_reminder_log` | **הכותב היחיד** בכל הריפו הוא `d1-reminders/route.ts` |
+| `weekly-recap` | כל שורה ב-`journey_weekly_recaps` | **הכותב היחיד** הוא `weekly-recap/route.ts` |
+| `pact-honoured` | `journey_couple_pacts.honoured_through_week > 0` | העמודה נכתבת **רק** ע"י ה-RPC `pact_record_honoured_week`, שנקראת רק מה-cron. `updated_at` — לא קביל. |
+| `drift-sweep` | שורות ב-`journey_drift_alerts` עם `coach_checked_in_at IS NULL` | פעולת האדמין (`drift-check-in.ts`) **תמיד** מציבה `coach_checked_in_at`; ה-cron לעולם לא |
+
+```sql
+SELECT 'd1-reminders'  AS job, count(*) AS rows, max(created_at) AS newest
+  FROM journey_reminder_log
+UNION ALL
+SELECT 'weekly-recap', count(*), max(created_at)
+  FROM journey_weekly_recaps
+UNION ALL
+SELECT 'pact-honoured', count(*), max(updated_at)
+  FROM journey_couple_pacts WHERE coalesce(honoured_through_week, 0) > 0
+UNION ALL
+SELECT 'drift-sweep', count(*), max(updated_at)
+  FROM journey_drift_alerts WHERE coach_checked_in_at IS NULL;
+```
+
+**אבל הראיה הראשית נשארת Vercel.** בדקתי — אף אחת מארבע העבודות לא כותבת
+שורת לוג ייחודית בהרצה מוצלחת (`pact-honoured` ו-`weekly-recap` לא כותבות
+לוג בכלל; לשתיים האחרות יש רק לוגי שגיאה). לכן:
+**Vercel → Project → Cron Jobs → last run + status** הוא המקור הסמכותי,
+והשאילתה למעלה היא אישוש שני. אם השניים סותרים — Vercel קובע.
+
+---
+
+## H6 — שלב 1: רשימת התבניות לסיווג ידני
+
+לפי החלטתך: **אין** ברירת מחדל `'transactional'`. הרץ והחזר לי את הפלט; אני
+לא כותב את המיגרציה לפני שהסיווג חוזר.
+
+```sql
+SELECT
+  t.key,
+  t.channel,
+  coalesce(t.subject_he, t.subject_en, '(no subject)') AS subject,
+  t.is_active,
+  count(m.id)      AS times_sent,
+  max(m.created_at) AS last_sent_at
+FROM public.message_templates t
+LEFT JOIN public.sent_messages m ON m.template_id = t.id
+GROUP BY t.id, t.key, t.channel, t.subject_he, t.subject_en, t.is_active
+ORDER BY last_sent_at DESC NULLS LAST, t.key;
+```
+
+**מה שאני צריך בחזרה:** רשימת ה-`key` שהם **`transactional`** בלבד.
+כל השאר יסווגו `marketing` — כולל תבניות שלא נשלחו מעולם וכולל כל תבנית
+שתיווצר בעתיד.
+
+**המיגרציה שאכתוב אחר כך (202), לפי מה שקבעת:**
+```sql
+ALTER TABLE public.message_templates
+  ADD COLUMN category text NOT NULL DEFAULT 'marketing';
+ALTER TABLE public.message_templates
+  ADD CONSTRAINT message_templates_category_check
+  CHECK (category IN ('transactional', 'marketing'));
+UPDATE public.message_templates
+   SET category = 'transactional'
+ WHERE key IN ( … הרשימה שתחזיר, מפורשת בשמות … );
+```
+וב-gate: `category !== 'transactional'` → נדרשת הסכמה. `NULL` בלתי אפשרי
+(`NOT NULL`), וערך לא מוכר נחסם ע"י ה-`CHECK` — כלומר **נכשל-סגור** בשתי
+שכבות, ותבנית חדשה היא שיווקית עד שמישהו יסווג אותה אחרת.
+
+---
+
+## H8(ג) — שלושת הדברים שקובעים אם התיקון עובד
+
+בדקתי את שלושתם מול הקוד. **שניים מהם חמורים יותר מהתפוגה.**
+
+### 1. מונה הניסיונות — לפי קורא, לא לפי קוד ✅
+צדקת, וכך תוכנן מלכתחילה: `couple_join_attempts(user_id, attempted_at, succeeded)`,
+5 כישלונות ל-15 דקות **לכל `auth.uid()`**. מונה לכל קוד לא היה עוצר enumeration —
+תוקף מנחש קודים אקראיים, כל ניסיון נופל על קוד אחר, ואף מונה לא מתקרב לסף.
+מכיוון ש-`join_couple_by_pair_code` דורשת `auth.uid()` (זורקת `not authenticated`),
+יש תמיד קורא מזוהה ואין צורך ב-fallback ל-IP.
+
+### 2. האם הקוד נפסל אחרי שימוש — **לא. וזה גרוע יותר מהיעדר תפוגה.** ❌
+
+`join_couple_by_pair_code` (029:182) מוסיפה שורה ל-`couple_members` ומחזירה.
+**`couples.pair_code` לא מתאפס, לא מסובב, ולא מסומן כמנוצל — לעולם.**
+
+יש חסם עקיף בלבד: `couple is full` כשיש 2 חברים. אבל הוא לא תחליף לפסילה:
+
+- **הודעות השגיאה עצמן הן אורקל.** `pair_code not found` מול `couple is full`
+  מבדילות בין "קוד לא קיים" ל"קוד אמיתי של זוג מלא". עם ניסיונות בלתי מוגבלים,
+  זה ממפה את מרחב הזוגות הקיימים — גם בלי אף הצטרפות מוצלחת.
+- **אם חבר עוזב**, הזוג חוזר ל-1 חבר והקוד שנאסף פעם הופך שמיש שוב.
+- **הקוד מוצג ב-UI ומשותף בוואטסאפ/צילומי מסך** ואינו פג לעולם.
+
+**מה שאני מציע להוסיף ל-H8(ג):** לפסול את הקוד ברגע שהזוג מגיע ל-2 חברים
+(`pair_code = NULL` או `pair_code_used_at`), **ולאחד את הודעות השגיאה** —
+`pair_code not found` אחת לכל מקרה כושל, בלי להבדיל בין "לא קיים" ל"מלא".
+זה סוגר את האורקל, וזה בעיניי התיקון החשוב מבין השלושה.
+
+### 3. דרך לייצר קוד חדש — **לא קיימת.** ❌
+
+`grep` על כל המיגרציות והקוד: **אין שום `UPDATE` על `couples.pair_code`.**
+הוא נקבע פעם אחת ב-`ensure_couple_for_user`/`generate_pair_code` ומוצג לקריאה
+בלבד ב-UI.
+
+**המסקנה מעשית:** תפוגה בלי יצירה מחדש = כל זוג שלא התחבר תוך 14 יום נתקע
+לצמיתות ופונה לתמיכה. וגם הפסילה-אחרי-שימוש (סעיף 2) דורשת את זה, אחרת זוג
+שנפרד לא יוכל להתחבר מחדש.
+**לכן: `rotate_pair_code(couple_id)` — RPC לבעל הזוג בלבד, שמייצר קוד חדש
+ומאפס את מונה הניסיונות — חייב להישלח באותה מיגרציה, לא אחריה.**
+
+**סיכום ההיקף המעודכן של H8(ג), לאישורך לפני שאני כותב את 203:**
+1. תפוגה 14 יום (`GREATEST(created_at + 14d, now() + 14d)` — אף קוד קיים לא נפסל רטרואקטיבית) ✅ אושר
+2. מונה 5/15 דקות לפי `auth.uid()` ✅ אושר
+3. **פסילת הקוד בהגעה ל-2 חברים** ← חדש, נובע משאלתך
+4. **איחוד הודעות השגיאה** לסגירת האורקל ← חדש, נובע משאלתך
+5. **`rotate_pair_code` RPC** ← חדש, תנאי הכרחי ל-1 ול-3
