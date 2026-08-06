@@ -1103,3 +1103,162 @@ ABCDEFGHJKLMNPQRSTUVWXYZ23456789
 `couple_pair_code_rotations`, ומשנה את `couples`, `generate_pair_code`,
 `join_couple_by_pair_code`. **202 (H6) נוגעת רק ב-`message_templates`** — אין
 שום אובייקט משותף, ואפשר להריץ אותן בכל סדר.
+
+---
+
+# מודל הייחודיות — לאישור לפני שממזגים את PR ב'
+
+## 1. איפה נשמרים קודים שפרשו
+
+**בחרתי בדיוק במה שתיארת: טבלת היסטוריה נפרדת, ייחודיות מלאה עליה, המחולל
+נשאל אותה.** אין עמודה על `couples` — צדקת שהיא לא מספיקה, וזו בדיוק הסיבה:
+סיבוב **דורס** את `couples.pair_code` והערך הישן נמחק מהטבלה.
+
+```sql
+CREATE TABLE public.pair_codes_issued (
+  code      text PRIMARY KEY,        -- ← האכיפה. PK הוא אינדקס ייחודי מלא.
+  issued_at timestamptz NOT NULL DEFAULT now()
+);
+```
+
+שלוש הבחנות שחשוב שיהיו מפורשות:
+
+- **הייחודיות מלאה, לא חלקית.** `PRIMARY KEY` על `code` — בלי `WHERE`. זה
+  ההבדל מ-`couples_pair_code_key` שהיה `WHERE is_active = true`.
+- **המחולל תופס, לא בודק.** הוא לא עושה `SELECT EXISTS` ואז משתמש — הוא
+  מבצע `INSERT … ON CONFLICT DO NOTHING` ובודק `ROW_COUNT`. זה גם סוגר את
+  המרוץ שהיה קיים מ-029 (שני מחוללים במקביל יכלו לצאת עם אותו קוד).
+- **הכיסוי ההיסטורי שלם.** ה-backfill מזין את כל `pair_code` הקיימים,
+  כולל של זוגות מושבתים. קודים שאבדו לסיבובים קודמים אינם קיימים, כי סיבוב
+  לא היה קיים עד עכשיו — כלומר אין פער היסטורי.
+
+האינדקס החלקי הקיים **נשאר** כשכבה שנייה לשורות חיות. לא נגעתי בו בכוונה —
+ראה סעיף 3.
+
+## 2. שאילתת הכפילויות — להרצה אצלך
+
+**כולל זוגות מושבתים**, שהם בדיוק המקרה שהאינדקס החלקי לא כיסה:
+
+```sql
+-- כמה קודים מופיעים ביותר מזוג אחד, בכל מצב
+SELECT pair_code,
+       count(*)                                        AS couples_sharing_it,
+       count(*) FILTER (WHERE is_active)               AS of_them_active,
+       array_agg(id ORDER BY created_at)               AS couple_ids,
+       min(created_at)                                 AS first_seen,
+       max(created_at)                                 AS last_seen
+FROM public.couples
+WHERE pair_code IS NOT NULL
+GROUP BY pair_code
+HAVING count(*) > 1
+ORDER BY count(*) DESC, last_seen DESC;
+
+-- וסיכום בשורה אחת
+SELECT count(*) AS distinct_codes,
+       sum(n)   AS rows_involved
+FROM (
+  SELECT pair_code, count(*) AS n
+  FROM public.couples
+  WHERE pair_code IS NOT NULL
+  GROUP BY pair_code HAVING count(*) > 1
+) d;
+```
+
+**ריק = אין כפילויות.** שורות = ראה סעיף 3.
+
+## 3. אם יימצאו כפילויות — התוכנית
+
+**קודם, הבשורה: המיגרציה לא תיפול.** בניתי אותה כך בכוונה. ה-backfill הוא
+```sql
+INSERT INTO public.pair_codes_issued (code)
+SELECT DISTINCT pair_code FROM public.couples WHERE pair_code IS NOT NULL
+ON CONFLICT (code) DO NOTHING;
+```
+`DISTINCT` + `ON CONFLICT DO NOTHING` — כפילויות קיימות מתמזגות לשורת הזמנה
+אחת ולא מפילות דבר. **אני לא מוסיף `UNIQUE` על `couples.pair_code`**, ולכן
+אין הצהרה שיכולה להיכשל על נתונים היסטוריים. זו הסיבה שבחרתי בטבלה נפרדת
+ולא בהרחבת האינדקס הקיים.
+
+**אבל כפילות קיימת היא עדיין בעיה חיה**, כי `join_couple_by_pair_code` עושה
+`LIMIT 1` — כלומר משתמש שמזין קוד כפול מצטרף לזוג **שרירותי** מבין השניים.
+
+התוכנית, לפי מה שהשאילתה תחזיר:
+
+| מצב | פעולה |
+|---|---|
+| **0 כפילויות** | מריצים 203 כמו שהיא. אין צעד נוסף. |
+| **כפילויות שכולן בין זוגות לא-פעילים** | לא נדרשת פעולה מיידית — אף אחד מהם לא ניתן להצטרפות (`is_active = true` בתנאי החיפוש). מנקים בהזדמנות. |
+| **כפילות שבה ≥2 זוגות פעילים** | **זה המקרה שדורש טיפול לפני 203.** הכלל: הזוג ה**ותיק** (`min(created_at)`) שומר על הקוד; לכל האחרים מסובבים קוד חדש. |
+
+לצעד השלישי, ואחרי ש-203 רצה (כי היא מספקת את `rotate_pair_code`):
+```sql
+-- הרץ פעם אחת, אחרי 203, רק אם השאילתה למעלה החזירה כפילויות פעילות.
+-- מסובב את כל הזוגות הפעילים החולקים קוד, פרט לוותיק שבהם.
+WITH dup AS (
+  SELECT id,
+         row_number() OVER (PARTITION BY pair_code ORDER BY created_at) AS rn
+  FROM public.couples
+  WHERE pair_code IS NOT NULL AND is_active
+)
+UPDATE public.couples c
+   SET pair_code            = public.generate_pair_code(),
+       pair_code_expires_at = now() + INTERVAL '14 days',
+       pair_code_rotated_at = now()
+  FROM dup
+ WHERE dup.id = c.id AND dup.rn > 1;
+```
+**לא אריץ את זה ולא אכתוב אותו כמיגרציה עד שאראה את הפלט** — אם יש כפילויות
+פעילות, זה אומר שזוגות חיים מקבלים קוד חדש והם צריכים לדעת על כך, וזו החלטה
+שלך ולא שלי.
+
+---
+
+# הצעת נוסח ל-`between-us-couple.ts` — לא בוצע
+
+הקוד היום ממפה ארבע הודעות לפי מחרוזות שגיאה. אחרי 203 כל הכשלים חוזרים
+`NULL` והמיפוי מת.
+
+**מבנה מוצע — שתי הודעות, והבדיקה הראשונה בשרת לפני ה-RPC:**
+
+```ts
+// לפני קריאת ה-RPC: חברות המשתמש בעצמו. מידע שכבר שלו — לא מדליף דבר.
+const { data: mine } = await supabase
+  .from("couple_members").select("couple_id").eq("user_id", user.id).maybeSingle();
+if (mine) {
+  return { ok: false, error: ALREADY_PAIRED };
+}
+
+const { data: coupleId } = await supabase.rpc("join_couple_by_pair_code", { p_pair_code: normalized });
+if (!coupleId) {
+  return { ok: false, error: CODE_INVALID, supportHref: "/he/contact" };
+}
+```
+
+**הנוסח:**
+
+```
+ALREADY_PAIRED
+  "את/ה כבר מחובר/ת לבן/בת זוג.
+   כדי להתחבר לזוג אחר צריך קודם לנתק את החיבור הקיים."
+
+CODE_INVALID   ← ההודעה היחידה לכל כישלון שנוגע לקוד
+  "הקוד לא תקף.
+   ייתכן שהוא שגוי, שכבר נעשה בו שימוש, או שפג תוקפו.
+   בקש/י מבן/בת הזוג לייצר קוד חדש מהמסך שלהם."
+   [כפתור משני: "לא מצליחים? דברו איתנו" → /contact]
+```
+
+**המשתמש שנחסם — החולשה שהצבעת עליה, ומה שאני מציע:**
+
+הוא מקבל `CODE_INVALID` בלי לדעת שהוא חסום. שלוש אפשרויות, בסדר העדפה:
+
+1. **מסלול המשך במקום הסבר** — הכפתור המשני לתמיכה. עובד זהה למי שטעה
+   בהקלדה ולמי שנחסם, ולא מחזיר שום מידע. **זו ההמלצה.**
+2. **השהיה בצד הלקוח בלבד** — אחרי 3 כשלים באותו סשן דפדפן, ה-UI משהה
+   את הכפתור ל-60 שניות עם "נסו שוב בעוד דקה". מיידע משתמש לגיטימי בלי
+   שהשרת יאמר דבר. תוקף מתעלם מה-UI — וזה בסדר, כי האכיפה בשרת ממילא.
+   נקודה חשובה: המונה בצד הלקוח **אינו** המגבלה, רק תצוגה.
+3. **מה לא לעשות:** 429, "חסום עד HH:MM", או הודעה נפרדת לחסימה. כל אחד
+   מהם מאשר לתוקף שהניחושים הגיעו לנקודת אמת — האורקל שסגרנו, בדלת האחורית.
+
+**צריך את אישורך על הנוסח ועל אפשרות 1 מול 1+2 לפני שאני נוגע בקובץ.**
