@@ -90,20 +90,25 @@ DECLARE
   -- 32 symbols, deliberately excluding I, O, 0 and 1 so a code cannot be
   -- misread. This is what makes a 5-attempt limit fair to a real user.
   chars   text := 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  code    text;
+  -- NOTE: named v_code, not `code`. The reservation table's column is also
+  -- called `code`, and plpgsql resolves an unqualified `code` in
+  -- VALUES (…) / ON CONFLICT (…) ambiguously — Postgres raises
+  -- "column reference \"code\" is ambiguous" and the function never runs.
+  -- Caught by tests/db/pair-code-hardening.test.ts.
+  v_code  text;
   tries   integer := 0;
   claimed integer;
 BEGIN
   LOOP
-    code := '';
+    v_code := '';
     FOR i IN 1..6 LOOP
-      code := code || substr(chars, 1 + floor(random() * length(chars))::int, 1);
+      v_code := v_code || substr(chars, 1 + floor(random() * length(chars))::int, 1);
     END LOOP;
 
     -- Atomic claim. ON CONFLICT means a concurrent generator racing us simply
     -- loses and loops again, instead of both walking away with the same code.
     INSERT INTO public.pair_codes_issued (code)
-    VALUES (code)
+    VALUES (v_code)
     ON CONFLICT (code) DO NOTHING;
     GET DIAGNOSTICS claimed = ROW_COUNT;
 
@@ -115,7 +120,7 @@ BEGIN
     END IF;
   END LOOP;
 
-  RETURN code;
+  RETURN v_code;
 END;
 $$;
 
