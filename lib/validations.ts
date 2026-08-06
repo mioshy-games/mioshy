@@ -1,5 +1,24 @@
 import { z } from "zod";
 
+/**
+ * A person's name, as typed at signup.
+ *
+ * SECURITY (audit 2026-08-05, CRITICAL #5): `full_name` was stored unvalidated
+ * and later concatenated into HTML by the daily reminders cron, then rendered
+ * into an admin dashboard. A name containing markup became stored XSS in an
+ * admin session. Names are letters, marks (Hebrew niqqud, combining accents),
+ * spaces, apostrophes, hyphens and periods — never angle brackets.
+ *
+ * Deliberately permissive about scripts: "יצחק בר-לב", "O'Brien" and
+ * "Jean-Luc Picard" must all pass.
+ */
+export const fullNameSchema = z
+  .string()
+  .trim()
+  .min(1, "שם נדרש")
+  .max(80, "שם ארוך מדי")
+  .regex(/^[\p{L}\p{M}\s'\-.]+$/u, "השם מכיל תווים לא חוקיים");
+
 export const questionTypeSchema = z.string().min(1);
 export const questionLevelSchema = z.enum(["light", "flirty", "deep"]);
 

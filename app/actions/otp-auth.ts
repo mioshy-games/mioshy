@@ -16,6 +16,7 @@ import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { fireCompleteRegistrationCapi } from "@/lib/analytics/meta-capi";
 import { sendEmailOtp, verifyEmailOtp, finalizeOtpSession, isFirstRegistration, hasMobileOnFile, syncConsentedContactToBrevo, type SendOtpResult } from "@/lib/auth/otp-core";
+import { fullNameSchema } from "@/lib/validations";
 
 type ActionResult<T = unknown> = ({ success: true } & T) | { success: false; error: string };
 
@@ -77,7 +78,17 @@ export async function verifyAuthSignupOtp(args: {
     // typed their email in the signup form is just logged in; we must NOT
     // overwrite their profiles.full_name or re-fire CompleteRegistration.
     if (isFirst) {
-      const fullName = args.fullName.trim();
+      // SECURITY: re-validate at the write. sendAuthSignupOtp already checked
+      // the name, but this action receives fullName from the client again and
+      // is what actually persists it. Audit 2026-08-05, CRITICAL #5.
+      const nameCheck = fullNameSchema.safeParse(args.fullName);
+      if (!nameCheck.success) {
+        return {
+          success: false,
+          error: nameCheck.error.issues[0]?.message ?? "השם מכיל תווים לא חוקיים",
+        };
+      }
+      const fullName = nameCheck.data;
 
       // Profile: name + consent seed + language. Phone is added later (screen 3).
       await admin.from("profiles").upsert(

@@ -76,11 +76,19 @@ export function AdminAlertsBanner({ alerts }: Props) {
                 <div className="min-w-0 flex-1">
                   <div className="font-semibold">{desc.headlineEn}</div>
                   {ctx ? <div className="text-rose-100/85">{ctx}</div> : null}
+                  {/* SECURITY: `preview` is assembled server-side from
+                      user-supplied profile names (see the stuck-users digest in
+                      app/api/journey/reminders). It must never be injected as
+                      HTML — a name like `<img src=x onerror=…>` would execute
+                      in an admin's session. The only markup the digest emits is
+                      a <br> line separator, so we split on it and render each
+                      line as text. Audit 2026-08-05, CRITICAL #5. */}
                   {preview ? (
-                    <div
-                      className="mt-1 text-rose-100/70"
-                      dangerouslySetInnerHTML={{ __html: preview }}
-                    />
+                    <div className="mt-1 text-rose-100/70">
+                      {preview.split(/<br\s*\/?>/i).map((line, i) => (
+                        <div key={i}>{line}</div>
+                      ))}
+                    </div>
                   ) : null}
                   <time className="mt-1 block text-[10px] text-rose-100/60">
                     {new Date(a.created_at).toLocaleString()}
