@@ -7,6 +7,7 @@ import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { SESSION_COOKIE, SESSION_MAX_AGE, createSession } from "@/lib/auth/session-enforcement";
 import { isTestUser } from "@/lib/auth/is-test-user";
 import { tagAsRegistered, unblacklistContact } from "@/lib/email/brevo-segments-sync";
+import { fullNameSchema } from "@/lib/validations";
 
 /**
  * Shared Email-OTP core for the passwordless auth flow.
@@ -60,6 +61,19 @@ export async function sendEmailOtp(args: {
   const email = args.email.trim().toLowerCase();
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
     return { ok: false, error: "כתובת מייל לא תקינה.", code: "invalid_email" };
+  }
+  // SECURITY: on signup the name is written to user_metadata and later to
+  // profiles.full_name, which the admin dashboard renders. Reject markup here —
+  // this is the shared entry point for every OTP flow (auth, journey,
+  // assessment, survey). Audit 2026-08-05, CRITICAL #5.
+  if (args.mode === "signup" && args.fullName?.trim()) {
+    const nameCheck = fullNameSchema.safeParse(args.fullName);
+    if (!nameCheck.success) {
+      return {
+        ok: false,
+        error: nameCheck.error.issues[0]?.message ?? "השם מכיל תווים לא חוקיים",
+      };
+    }
   }
   const supabase = await createServerSupabaseClient();
   const { error } = await supabase.auth.signInWithOtp({

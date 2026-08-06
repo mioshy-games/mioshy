@@ -12,6 +12,7 @@ import {
 } from "@/lib/auth/session-enforcement";
 import { tagAsRegistered } from "@/lib/email/brevo-segments-sync";
 import { fireCompleteRegistrationCapi } from "@/lib/analytics/meta-capi";
+import { fullNameSchema } from "@/lib/validations";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -87,6 +88,12 @@ export async function signupAction(formData: FormData): Promise<SignupResult> {
   // Both real callers (RegistrationModal, SignupForm) already send it.
   if (!fullName || !email || !phone || !password) {
     return { success: false, error: "Please fill in all required fields." };
+  }
+  // SECURITY: the name is stored and later rendered in the admin dashboard.
+  // Reject markup at the door. Audit 2026-08-05, CRITICAL #5.
+  const nameCheck = fullNameSchema.safeParse(fullName);
+  if (!nameCheck.success) {
+    return { success: false, error: nameCheck.error.issues[0]?.message ?? "שם לא תקין" };
   }
   if (password.length < 8) {
     return { success: false, error: "Password must be at least 8 characters." };

@@ -43,6 +43,17 @@ import { runWithCronLog } from "@/lib/journey-content/cron-log";
 const INACTIVITY_DAYS = 5;
 const UNFOLLOWED_HOURS = 24;
 
+/**
+ * Escape user-supplied text before it is concatenated into markup.
+ * Audit 2026-08-05, CRITICAL #5 — profile names reach the admin digest.
+ */
+const escapeHtml = (s: string): string =>
+  s.replace(
+    /[&<>"']/g,
+    (c) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!,
+  );
+
 interface ReminderSummary {
   ok: boolean;
   inactivity_sent: number;
@@ -299,11 +310,16 @@ async function handle(req: Request): Promise<Response> {
   summary.stuck_users = stuck.length;
   if (stuck.length > 0 && !dryRun) {
     try {
+      // SECURITY: full_name / email come from user input and this string is
+      // consumed as markup downstream (the digest preview, and the admin
+      // notification email). Escape every user-controlled value so a name like
+      // `<img src=x onerror=…>` is shown, not executed.
+      // Audit 2026-08-05, CRITICAL #5.
       const lines = stuck
         .slice(0, 50)
         .map(
           (u) =>
-            `• ${u.full_name || u.email || u.user_id.slice(0, 8)} - ${u.days_since_delivery >= 999 ? "never" : `${u.days_since_delivery} days idle`}`,
+            `• ${escapeHtml(u.full_name || u.email || u.user_id.slice(0, 8))} - ${u.days_since_delivery >= 999 ? "never" : `${u.days_since_delivery} days idle`}`,
         )
         .join("<br>");
       await notifyAdminPool({

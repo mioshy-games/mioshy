@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { fullNameSchema } from "@/lib/validations";
 
 type Ok<T> = { ok: true } & T;
 type Err = { ok: false; error: string };
@@ -31,6 +32,14 @@ export async function saveProfileDetails(input: {
   if (name.length < 2) {
     return { ok: false, error: "Full name is required" };
   }
+  // SECURITY: this is the third write path to profiles.full_name, and the most
+  // convenient one — no OTP, just an authenticated edit. The name is rendered
+  // in the admin dashboard, so markup must be rejected here too.
+  // Audit 2026-08-05, CRITICAL #5.
+  const nameCheck = fullNameSchema.safeParse(name);
+  if (!nameCheck.success) {
+    return { ok: false, error: nameCheck.error.issues[0]?.message ?? "שם לא תקין" };
+  }
   const mobile = normaliseMobile(input.mobile);
   if (!mobile) {
     return { ok: false, error: "Mobile must be 8–15 digits" };
@@ -38,7 +47,7 @@ export async function saveProfileDetails(input: {
 
   const { error } = await supabase
     .from("profiles")
-    .update({ full_name: name, mobile })
+    .update({ full_name: nameCheck.data, mobile })
     .eq("id", user.id);
 
   if (error) return { ok: false, error: error.message };

@@ -154,32 +154,50 @@ export async function GET(req: Request) {
   }
 
   // ── Find checkout session ───────────────────────────────────────────────────
-  // Prefer ReturnValue (session id), fall back to LowProfileCode lookup
-  let sessionId = returnValue.trim()
-  if (!sessionId) {
-    const { data: byLp } = await admin
-      .from("checkout_sessions")
-      .select("id")
-      .eq("low_profile_code", lowProfileCode)
-      .maybeSingle()
-    sessionId = byLp?.id ?? ""
-  }
-
-  if (!sessionId) {
-    await admin.from("billing_events").update({ error: "checkout session not found", processed: true }).eq("idempotency_key", idempotencyKey)
-    return new Response("ok", { status: 200 })
-  }
-
-  const { data: session } = await admin
+  // SECURITY: low_profile_code is the authoritative binding. ReturnValue is a
+  // client-visible URL parameter and must never select the session on its own.
+  // The idempotency key is derived from LowProfileCode, so letting ReturnValue
+  // pick the session let an attacker open two checkouts (cheap + expensive),
+  // pay only the cheap one, then replay the callback with the cheap
+  // LowProfileCode and the expensive session's ReturnValue.
+  // Audit 2026-08-05, CRITICAL #3.
+  const { data: byLp } = await admin
     .from("checkout_sessions")
     .select("*")
-    .eq("id", sessionId)
+    .eq("low_profile_code", lowProfileCode)
     .maybeSingle()
 
+  let session = byLp
+
+  if (!session && returnValue.trim()) {
+    // Legacy fallback: sessions created before low_profile_code was stamped.
+    // Accepted ONLY when the stored code is absent — never when it mismatches.
+    const { data: byId } = await admin
+      .from("checkout_sessions")
+      .select("*")
+      .eq("id", returnValue.trim())
+      .maybeSingle()
+
+    if (byId && (byId.low_profile_code === null || byId.low_profile_code === lowProfileCode)) {
+      session = byId
+    } else if (byId) {
+      console.error("[indicator:LP_MISMATCH] ReturnValue points at a session bound to a different LowProfileCode", {
+        session_id:  byId.id,
+        session_lp:  byId.low_profile_code,
+        callback_lp: lowProfileCode,
+      })
+    }
+  }
+
   if (!session) {
-    await admin.from("billing_events").update({ error: `session ${sessionId} missing`, processed: true }).eq("idempotency_key", idempotencyKey)
+    await admin
+      .from("billing_events")
+      .update({ error: "checkout session not found or lp mismatch", processed: true })
+      .eq("idempotency_key", idempotencyKey)
     return new Response("ok", { status: 200 })
   }
+
+  const sessionId: string = session.id
 
   // ── Payment failed ──────────────────────────────────────────────────────────
   if (!indicator.paid) {
