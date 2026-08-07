@@ -54,44 +54,9 @@ const USER_C = "00000000-0000-0000-0000-00000000000c";
 
 let db: PGlite;
 
-/** Run as a given user — the shim for auth.uid(). */
-async function actAs(userId: string | null) {
-  await db.query(`SELECT set_config('test.uid', $1, false)`, [userId ?? ""]);
-}
-
-async function join(code: string): Promise<string | null> {
-  const res = await db.query<{ join_couple_by_pair_code: string | null }>(
-    `SELECT public.join_couple_by_pair_code($1) AS join_couple_by_pair_code`,
-    [code],
-  );
-  return res.rows[0]?.join_couple_by_pair_code ?? null;
-}
-
-async function scalar<T = unknown>(sql: string, params: unknown[] = []): Promise<T> {
-  const res = await db.query<Record<string, T>>(sql, params);
-  return Object.values(res.rows[0] ?? {})[0] as T;
-}
-
-/** A fresh couple with a known code, one owner, and no partner yet. */
-async function makeCouple(code: string, owner: string): Promise<string> {
-  const id = await scalar<string>(
-    `INSERT INTO public.couples (pair_code, created_by, is_active)
-     VALUES ($1, $2, true) RETURNING id`,
-    [code, owner],
-  );
-  await db.query(
-    `INSERT INTO public.couple_members (couple_id, user_id, role) VALUES ($1, $2, 'owner')`,
-    [id, owner],
-  );
-  await db.query(`INSERT INTO public.pair_codes_issued (code) VALUES ($1) ON CONFLICT DO NOTHING`, [code]);
-  return id;
-}
-
-beforeAll(async () => {
-  db = new PGlite();
-
-  // ── Shims. Everything here is scaffolding, NOT the thing under test. ──────
-  await db.exec(`
+/** Scaffolding only — see the header. Shared so the re-run check can build a
+ *  second, throwaway database from the same starting point. */
+const SHIM_SQL = `
     CREATE ROLE anon;
     CREATE ROLE authenticated;
     CREATE ROLE service_role;
@@ -133,7 +98,46 @@ beforeAll(async () => {
       joined_at timestamptz NOT NULL DEFAULT now(),
       UNIQUE (couple_id, user_id)
     );
-  `);
+`;
+
+/** Run as a given user — the shim for auth.uid(). */
+async function actAs(userId: string | null) {
+  await db.query(`SELECT set_config('test.uid', $1, false)`, [userId ?? ""]);
+}
+
+async function join(code: string): Promise<string | null> {
+  const res = await db.query<{ join_couple_by_pair_code: string | null }>(
+    `SELECT public.join_couple_by_pair_code($1) AS join_couple_by_pair_code`,
+    [code],
+  );
+  return res.rows[0]?.join_couple_by_pair_code ?? null;
+}
+
+async function scalar<T = unknown>(sql: string, params: unknown[] = []): Promise<T> {
+  const res = await db.query<Record<string, T>>(sql, params);
+  return Object.values(res.rows[0] ?? {})[0] as T;
+}
+
+/** A fresh couple with a known code, one owner, and no partner yet. */
+async function makeCouple(code: string, owner: string): Promise<string> {
+  const id = await scalar<string>(
+    `INSERT INTO public.couples (pair_code, created_by, is_active)
+     VALUES ($1, $2, true) RETURNING id`,
+    [code, owner],
+  );
+  await db.query(
+    `INSERT INTO public.couple_members (couple_id, user_id, role) VALUES ($1, $2, 'owner')`,
+    [id, owner],
+  );
+  await db.query(`INSERT INTO public.pair_codes_issued (code) VALUES ($1) ON CONFLICT DO NOTHING`, [code]);
+  return id;
+}
+
+beforeAll(async () => {
+  db = new PGlite();
+
+  // ── Shims. Everything here is scaffolding, NOT the thing under test. ──────
+  await db.exec(SHIM_SQL);
 
   await db.query(
     `INSERT INTO auth.users (id, email) VALUES ($1,'a@x.test'),($2,'b@x.test'),($3,'c@x.test')`,
@@ -360,5 +364,106 @@ describe("ו. the three new tables are unreachable from anon and authenticated",
       [TABLES],
     );
     expect(res.rows).toEqual([]);
+  });
+});
+
+describe("ז. the migration is safe to run twice", () => {
+  // There is no migration ledger in this project (FOLLOWUPS F21), so nothing
+  // prevents a migration being applied twice — or being believed applied when
+  // it was not. The standing rule from 202 onward is that a second run must be
+  // a no-op: not an error, and not a duplicate. Proven, not asserted.
+  async function freshDb() {
+    const fresh = new PGlite();
+    await fresh.exec(SHIM_SQL);
+    await fresh.query(`INSERT INTO auth.users (id, email) VALUES ($1,'a@x.test')`, [USER_A]);
+    return fresh;
+  }
+
+  const SQL = () => readFileSync(MIGRATION, "utf8");
+
+  it("is a strict no-op when applied twice back to back", async () => {
+    const fresh = await freshDb();
+    await fresh.exec(SQL());
+
+    const snap = async () =>
+      JSON.stringify({
+        codes: (await fresh.query<{ n: number }>(`SELECT count(*)::int AS n FROM public.pair_codes_issued`)).rows[0],
+        couples: (await fresh.query<{ n: number }>(`SELECT count(*)::int AS n FROM public.couples`)).rows[0],
+        attempts: (await fresh.query<{ n: number }>(`SELECT count(*)::int AS n FROM public.couple_join_attempts`)).rows[0],
+      });
+
+    const before = await snap();
+    await expect(fresh.exec(SQL())).resolves.toBeDefined();
+    expect(await snap()).toBe(before);
+    await fresh.close();
+  });
+
+  it("stays a no-op with a couple created through the production path", async () => {
+    const fresh = await freshDb();
+    await fresh.exec(SQL());
+
+    // The real path: the code comes from generate_pair_code(), which reserves
+    // it in pair_codes_issued as it hands it out. A couple can only exist with
+    // an unreserved code if someone bypassed the generator with raw SQL.
+    const code = (
+      await fresh.query<{ generate_pair_code: string }>(`SELECT public.generate_pair_code()`)
+    ).rows[0]!.generate_pair_code;
+    const coupleId = (
+      await fresh.query<{ id: string }>(
+        `INSERT INTO public.couples (pair_code, created_by, is_active) VALUES ($1,$2,true) RETURNING id`,
+        [code, USER_A],
+      )
+    ).rows[0]!.id;
+    await fresh.query(`INSERT INTO public.couple_members (couple_id,user_id,role) VALUES ($1,$2,'owner')`, [coupleId, USER_A]);
+
+    const snap = async () =>
+      JSON.stringify({
+        codes: (await fresh.query<{ n: number }>(`SELECT count(*)::int AS n FROM public.pair_codes_issued`)).rows[0],
+        row: (
+          await fresh.query<{ e: string | null; u: string | null }>(
+            `SELECT pair_code_expires_at::text AS e, pair_code_used_at::text AS u FROM public.couples WHERE id = $1`,
+            [coupleId],
+          )
+        ).rows[0],
+      });
+
+    const before = await snap();
+    await expect(fresh.exec(SQL())).resolves.toBeDefined();
+    expect(await snap()).toBe(before);
+
+    const dupes = await fresh.query<{ n: number }>(
+      `SELECT count(*)::int AS n FROM (
+         SELECT code FROM public.pair_codes_issued GROUP BY code HAVING count(*) > 1
+       ) d`,
+    );
+    expect(dupes.rows[0]!.n).toBe(0);
+    await fresh.close();
+  });
+
+  it("HEALS a code that bypassed the generator — documented, not accidental", async () => {
+    // Raw INSERT, i.e. someone hand-created a couple in the SQL editor. The
+    // backfill picks the code up on the next run and reserves it. This is the
+    // one case where a re-run is not a strict no-op, and it is the desirable
+    // direction: an unreserved live code could otherwise be handed to a second
+    // couple by generate_pair_code.
+    const fresh = await freshDb();
+    await fresh.exec(SQL());
+    await fresh.query(
+      `INSERT INTO public.couples (pair_code, created_by, is_active) VALUES ('QQQQQQ',$1,true)`,
+      [USER_A],
+    );
+
+    const before = Number(
+      (await fresh.query<{ n: number }>(`SELECT count(*)::int AS n FROM public.pair_codes_issued WHERE code='QQQQQQ'`)).rows[0]!.n,
+    );
+    expect(before).toBe(0);
+
+    await fresh.exec(SQL());
+
+    const after = Number(
+      (await fresh.query<{ n: number }>(`SELECT count(*)::int AS n FROM public.pair_codes_issued WHERE code='QQQQQQ'`)).rows[0]!.n,
+    );
+    expect(after).toBe(1);
+    await fresh.close();
   });
 });

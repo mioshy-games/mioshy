@@ -41,6 +41,19 @@ ALTER TABLE public.couples
   ADD COLUMN IF NOT EXISTS pair_code_used_at    timestamptz,
   ADD COLUMN IF NOT EXISTS pair_code_rotated_at timestamptz;
 
+-- ⚠️ The column needs a DEFAULT, not just a backfill.
+-- Without one, every couple created AFTER this migration gets
+-- pair_code_expires_at = NULL, and join_couple_by_pair_code treats NULL as
+-- "never expires" — so the 14-day window would have applied ONLY to the rows
+-- backfilled below and to nothing created afterwards. The expiry would have
+-- been dead on arrival for every future couple.
+-- Caught by tests/db/pair-code-hardening.test.ts, invariant ז.
+ALTER TABLE public.couples
+  ALTER COLUMN pair_code_expires_at SET DEFAULT (now() + INTERVAL '14 days');
+
+COMMENT ON COLUMN public.couples.pair_code_expires_at IS
+  'When the pair code stops being redeemable. Defaulted on insert and reset by rotate_pair_code; NULL is tolerated as non-expiring only for legacy rows predating migration 203.';
+
 COMMENT ON COLUMN public.couples.pair_code_used_at IS
   'Set when a partner joins. A non-null value invalidates the code PERMANENTLY — a member leaving does not revive it; the remaining member must call rotate_pair_code. Audit H8(c).';
 

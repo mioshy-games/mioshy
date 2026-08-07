@@ -1371,3 +1371,90 @@ SELECT tablename FROM pg_tables WHERE schemaname='public'
 **לא לקומיט עדיין.** קומיט של הקובץ בלי לאמת שתוכנו זהה למה שרץ בפועל
 מקבע בגיט גרסה שאולי שגויה — ואז הריפו נראה אמין בלי להיות. הסדר:
 שאילתה 1 → השוואת ההגדרה שחזרה מול הקובץ → ורק אז קומיט.
+
+---
+
+# כלל מחייב — כל מיגרציה חייבת להיות ניתנת להרצה חוזרת בבטחה
+
+**תקף מ-202 והלאה** (Itzik, 7.8.2026). נרשם כאן ולא ב-`SECURITY-FIX-PLAN.md`,
+שאותו לא נוגעים.
+
+> בלי רישום מיגרציות, שום דבר לא מונע ממיגרציה לרוץ פעמיים או לא לרוץ בכלל,
+> ואיש לא ידע. המספר הוא **תיעוד בלבד** — אין מנגנון שאוכף אותו.
+
+**הדרישה:** הרצה שנייה של אותה מיגרציה היא **no-op** — לא שגיאה ולא כפילות.
+
+| דפוס | חובה |
+|---|---|
+| `CREATE TABLE` / `CREATE INDEX` | `IF NOT EXISTS` |
+| `CREATE FUNCTION` | `CREATE OR REPLACE` |
+| `CREATE POLICY` / `CREATE TRIGGER` | `DROP … IF EXISTS` מיד לפני |
+| `ALTER TABLE … ADD COLUMN` | `IF NOT EXISTS` |
+| `INSERT` | `ON CONFLICT … DO NOTHING`/`DO UPDATE` — **אף INSERT בלי** |
+| `UPDATE` לצורך backfill | predicate שמתאפס אחרי הריצה הראשונה (`WHERE col IS NULL`) |
+| `DROP` | `IF EXISTS` |
+
+## ביקורת המיגרציות שכתבתי, מול הכלל
+
+| מיגרציה | מצב |
+|---|---|
+| 199 | ✅ `CREATE POLICY` מוקדם ב-`DROP POLICY IF EXISTS`; `REVOKE`/`GRANT`/`ALTER … SET` אידמפוטנטיים מטבעם |
+| 200 | ✅ שלוש המדיניות מוקדמות ב-`DROP … IF EXISTS`; `CREATE OR REPLACE FUNCTION` |
+| 201 | ✅ `CREATE OR REPLACE` ×2, `DROP TRIGGER IF EXISTS` לפני `CREATE TRIGGER`, `DROP FUNCTION IF EXISTS`, `CREATE UNIQUE INDEX IF NOT EXISTS` |
+| 203 | ✅ **אחרי שתי תקלות שהטסט תפס** — ראה למטה |
+
+## ‏203 — הטסט תפס שתי בעיות שהסריקה הסטטית לא תפסה
+
+הוספתי אינווריאנט **ז'**: מריץ את **קובץ המיגרציה פעמיים** מול Postgres אמיתי
+ומשווה snapshot. שתי תוצאות:
+
+**1. באג פונקציונלי אמיתי — `pair_code_expires_at` בלי `DEFAULT`.**
+המיגרציה הוסיפה את העמודה ועשתה backfill, אבל **לא הגדירה ברירת מחדל**.
+לכן כל זוג שנוצר **אחרי** המיגרציה היה מקבל `NULL`, ו-`join_couple_by_pair_code`
+מתייחס ל-`NULL` כ"לא פג לעולם":
+```sql
+AND (pair_code_expires_at IS NULL OR pair_code_expires_at > now())
+```
+כלומר **תפוגת 14 הימים הייתה חלה רק על השורות שעברו backfill ועל שום זוג
+עתידי.** הפיצ'ר היה מת מרגע הפריסה. תוקן ב-
+`ALTER COLUMN … SET DEFAULT (now() + INTERVAL '14 days')`.
+
+**2. מקרה שבו הרצה חוזרת אינה no-op — ומתועד ככזה.**
+זוג שנוצר ב-`INSERT` ידני (עוקף את `generate_pair_code`) נושא קוד שאינו שמור
+ב-`pair_codes_issued`. ההרצה הבאה **קולטת אותו** בזכות ה-backfill. זהו החריג
+היחיד, והוא בכיוון הרצוי: קוד חי לא-שמור עלול אחרת להינתן לזוג שני. שלושה
+טסטים נפרדים מכסים בדיוק את שלושת המצבים — no-op צמוד, no-op במסלול
+הייצור, וריפוי במסלול הידני.
+
+```
+✓ ז ... is a strict no-op when applied twice back to back
+✓ ז ... stays a no-op with a couple created through the production path
+✓ ז ... HEALS a code that bypassed the generator — documented, not accidental
+Tests  16 passed (16)
+```
+
+---
+
+# פרוטוקול לפני הרצת 203 — שמירת ההגדרות החיות
+
+לפי ההנחיה (7.8.2026), לפני ההרצה:
+
+1. הרץ את שאילתות 3 ו-4 (`pg_get_functiondef`) מהסעיף "שאילתות להרצה".
+2. **הדבק את הפלט המלא, מילה במילה, לתוך הסעיף שלמטה.** זה ארטיפקט שחזור
+   בחינם: אם יתברר שההגדרה החיה הכילה תיקון ידני, הוא יישמר.
+3. **אם הגדרה חיה שונה ממה שבגיט — לעצור. לא להריץ ולא למזג.** הפרש כזה
+   הוא ממצא בפני עצמו, לא פרט טכני, ועובר להכרעה לפני כל צעד נוסף.
+
+### הגדרה חיה — `join_couple_by_pair_code(text)`
+```sql
+-- ⬜ להדביק כאן את פלט pg_get_functiondef לפני ההרצה
+```
+
+### הגדרה חיה — `generate_pair_code()`
+```sql
+-- ⬜ להדביק כאן את פלט pg_get_functiondef לפני ההרצה
+```
+
+**למה שתיהן:** 203 עושה `CREATE OR REPLACE` על **שתיהן**. `generate_pair_code`
+מסוכנת אף יותר, כי היא נקראת גם מ-`ensure_couple_for_user` (042) — כלומר
+דריסה שגויה שלה נוגעת גם במסלול יצירת הזוג ברכישה.
