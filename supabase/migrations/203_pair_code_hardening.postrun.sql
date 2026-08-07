@@ -1,3 +1,28 @@
+-- ═══════════════════════════════════════════════════════════════════════════
+-- HOW TO RUN THIS FILE            (Supabase SQL editor, manually)
+-- ═══════════════════════════════════════════════════════════════════════════
+-- WHEN     Immediately after 203_pair_code_hardening.sql applies.
+--
+-- PLACEHOLDERS TO FILL — two, both auth.users ids NOT currently in a couple.
+--          Get both at once:
+--              SELECT u.id, u.email
+--                FROM auth.users u
+--               WHERE NOT EXISTS (
+--                 SELECT 1 FROM public.couple_members m WHERE m.user_id = u.id)
+--               LIMIT 2;
+--          Put the first in <FRESH_USER_A>, the second in <FRESH_USER_B>.
+--          Their data is untouched — both probes are rolled back.
+--          <OLD_CODE> is optional and only for the commented-out last query in
+--          check 4; it is the old_code value that check prints.
+--
+-- SAFETY   Checks 1 and 5 are catalog reads. Checks 2-4 create their own probe
+--          couples inside BEGIN … ROLLBACK and keep nothing. NEVER point any
+--          check at a real couple.
+--
+-- CORRECT OUTPUT   Each check carries its own EXPECT line. All five must match.
+--                  Any mismatch = stop and report; do not "fix" it in place.
+-- ═══════════════════════════════════════════════════════════════════════════
+
 -- POST-RUN verification for migration 203. Run immediately AFTER applying it.
 --
 -- "The migration ran successfully" only means there was no syntax error. Two of

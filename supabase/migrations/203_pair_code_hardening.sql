@@ -1,3 +1,27 @@
+-- ═══════════════════════════════════════════════════════════════════════════
+-- HOW TO RUN THIS FILE            (Supabase SQL editor, manually)
+-- ═══════════════════════════════════════════════════════════════════════════
+-- ORDER    1. Run the five pre-flight queries in SECURITY-PROGRESS.md and paste
+--             the two pg_get_functiondef outputs back into that file.
+--             If a LIVE definition differs from git — STOP. Do not run this.
+--          2. Run THIS file.
+--          3. Run 203_pair_code_hardening.postrun.sql immediately after.
+--          4. Optionally 203_pair_code_hardening.verify.sql (rate limiter) and
+--             .smoke.sql (end-to-end as a real user).
+--
+-- PLACEHOLDERS   None. Run it as-is.
+--
+-- SAFETY   Re-runnable: a second run is a no-op, proven in
+--          tests/db/pair-code-hardening.test.ts (invariant ז). The one
+--          exception is documented there — a couple hand-inserted past
+--          generate_pair_code has its code picked up by the backfill.
+--
+-- CORRECT OUTPUT   No errors. Postgres reports the statement results only;
+--                  "success" here means no syntax error and nothing more,
+--                  which is exactly why postrun.sql exists.
+--                  Two of the four bugs in this file survived a clean apply.
+-- ═══════════════════════════════════════════════════════════════════════════
+
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 203  Pair-code hardening
 --      Audit 2026-08-05, H8(c) — scope extended after review, 2026-08-06
