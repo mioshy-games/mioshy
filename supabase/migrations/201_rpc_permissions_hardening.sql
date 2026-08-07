@@ -1,3 +1,28 @@
+-- ═══════════════════════════════════════════════════════════════════════════
+-- HOW TO RUN THIS FILE            (Supabase SQL editor, manually)
+-- ═══════════════════════════════════════════════════════════════════════════
+-- WHEN     AFTER the phase-2 code is deployed, not before. Nothing here depends
+--          on the new code, but keeping the order consistent avoids surprises.
+--          199 and 200 already ran in phase 1.
+--
+-- PLACEHOLDERS   None. Run it as-is.
+--
+-- SAFETY   Re-runnable: CREATE OR REPLACE on both functions, DROP … IF EXISTS
+--          before the trigger, DROP FUNCTION IF EXISTS, and
+--          CREATE UNIQUE INDEX IF NOT EXISTS.
+--
+-- CORRECT OUTPUT
+--   · No errors on any statement.
+--   · The LAST statement — the unique index on checkout_sessions.low_profile_code
+--     — is the one that can legitimately fail, and it fails only if duplicates
+--     already exist. It is deliberately last so everything above it has applied.
+--     If it errors, STOP and run the duplicate query inside this file; bring me
+--     the result before cleaning anything up.
+--   · DROP FUNCTION public.is_expert() is deliberately NOT CASCADE. If it
+--     errors, a policy still depends on it — STOP and report rather than
+--     forcing it.
+-- ═══════════════════════════════════════════════════════════════════════════
+
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 201  RPC permission hardening + phase-1 follow-ups
 --      Audit 2026-08-05 — H8 (a), (b), (d) · FOLLOWUPS F10, F11
