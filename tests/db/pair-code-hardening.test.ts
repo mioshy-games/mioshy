@@ -278,6 +278,40 @@ describe("ד. rotation invalidates the previous code and is rate limited", () =>
     );
   });
 
+  it("sets a FRESH expiry on rotation — a DEFAULT would not apply to an UPDATE", async () => {
+    // A column DEFAULT fires on INSERT only. rotate_pair_code updates an
+    // existing row, so if it leaned on the default the new code would inherit
+    // the OLD expiry — and for a couple older than 14 days it would be born
+    // already expired. This is the same bug as the missing DEFAULT, one level
+    // up, and this test exists so nobody "simplifies" the explicit assignment
+    // away later.
+    const coupleId = await makeCouple("MMMMMM", USER_A);
+    await db.query(
+      `UPDATE public.couples
+          SET created_at = now() - INTERVAL '20 days',
+              pair_code_expires_at = now() - INTERVAL '6 days'
+        WHERE id = $1`,
+      [coupleId],
+    );
+
+    await actAs(USER_A);
+    const newCode = await scalar<string>(`SELECT public.rotate_pair_code($1)`, [coupleId]);
+
+    const daysLeft = Number(
+      await scalar(
+        `SELECT round(EXTRACT(EPOCH FROM (pair_code_expires_at - now())) / 86400)::int
+           FROM public.couples WHERE id = $1`,
+        [coupleId],
+      ),
+    );
+    expect(daysLeft).toBe(14);
+
+    // And the freshly rotated code is actually redeemable, which it would not
+    // be if it had inherited the expired window.
+    await actAs(USER_B);
+    expect(await join(newCode)).toBe(coupleId);
+  });
+
   it("refuses a caller who is not a member", async () => {
     const coupleId = await makeCouple("HHHHHH", USER_A);
     await actAs(USER_C);
