@@ -67,9 +67,32 @@ const SHIM_SQL = `
       email text
     );
 
-    -- Stands in for Supabase's JWT-backed auth.uid().
+    -- Mirrors Supabase's auth.uid(): reads the 'sub' claim out of
+    -- request.jwt.claims. Faithful to the real definition so the post-run
+    -- checklist, which sets that same setting, can be executed verbatim.
     CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $fn$
-      SELECT NULLIF(current_setting('test.uid', true), '')::uuid;
+      SELECT NULLIF(
+        (NULLIF(current_setting('request.jwt.claims', true), '')::jsonb ->> 'sub'),
+        ''
+      )::uuid;
+    $fn$;
+
+    -- From migration 042 — needed because the post-run checklist creates its
+    -- probe couples through it, exactly as the Cardcom callback does.
+    CREATE FUNCTION public.ensure_couple_for_user(p_user_id uuid)
+    RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $fn$
+    DECLARE v_couple_id uuid; v_pair_code text;
+    BEGIN
+      SELECT couple_id INTO v_couple_id FROM public.couple_members
+       WHERE user_id = p_user_id LIMIT 1;
+      IF v_couple_id IS NOT NULL THEN RETURN v_couple_id; END IF;
+      v_pair_code := public.generate_pair_code();
+      INSERT INTO public.couples (pair_code, created_by, display_name)
+      VALUES (v_pair_code, p_user_id, NULL) RETURNING id INTO v_couple_id;
+      INSERT INTO public.couple_members (couple_id, user_id, role)
+      VALUES (v_couple_id, p_user_id, 'owner');
+      RETURN v_couple_id;
+    END;
     $fn$;
 
     -- Nobody is an admin in these tests.
@@ -102,7 +125,9 @@ const SHIM_SQL = `
 
 /** Run as a given user — the shim for auth.uid(). */
 async function actAs(userId: string | null) {
-  await db.query(`SELECT set_config('test.uid', $1, false)`, [userId ?? ""]);
+  await db.query(`SELECT set_config('request.jwt.claims', $1, false)`, [
+    userId ? JSON.stringify({ sub: userId, role: "authenticated" }) : "",
+  ]);
 }
 
 async function join(code: string): Promise<string | null> {
@@ -498,6 +523,88 @@ describe("ז. the migration is safe to run twice", () => {
       (await fresh.query<{ n: number }>(`SELECT count(*)::int AS n FROM public.pair_codes_issued WHERE code='QQQQQQ'`)).rows[0]!.n,
     );
     expect(after).toBe(1);
+    await fresh.close();
+  });
+});
+
+describe("ח. the post-run checklist is itself valid and passes", () => {
+  // The checklist is what will be run against production after 203 applies. A
+  // typo, a psql meta-command, or a check that cannot work under a NULL
+  // auth.uid() would look like a FAILED MIGRATION when the migration is fine.
+  // So it gets executed here too, verbatim, with the placeholders filled.
+  const CHECKLIST = resolve(
+    process.cwd(),
+    "supabase/migrations/203_pair_code_hardening.postrun.sql",
+  );
+
+  it("runs end to end and leaves no probe data behind", async () => {
+    const fresh = new PGlite();
+    await fresh.exec(SHIM_SQL);
+    await fresh.query(
+      `INSERT INTO auth.users (id, email) VALUES ($1,'pa@x.test'),($2,'pb@x.test')`,
+      [USER_B, USER_C],
+    );
+    await fresh.exec(readFileSync(MIGRATION, "utf8"));
+
+    const couplesBefore = Number(
+      (await fresh.query<{ n: number }>(`SELECT count(*)::int AS n FROM public.couples`)).rows[0]!.n,
+    );
+
+    const sql = readFileSync(CHECKLIST, "utf8")
+      .replaceAll("<FRESH_USER_A>", USER_B)
+      .replaceAll("<FRESH_USER_B>", USER_C);
+
+    // Must not throw: no syntax errors, no psql meta-commands, and no check
+    // that depends on an auth.uid() the SQL editor cannot supply.
+    await expect(fresh.exec(sql)).resolves.toBeDefined();
+
+    // Every mutating check is wrapped in BEGIN … ROLLBACK, so production data
+    // is untouched — the probe couples must be gone.
+    const couplesAfter = Number(
+      (await fresh.query<{ n: number }>(`SELECT count(*)::int AS n FROM public.couples`)).rows[0]!.n,
+    );
+    expect(couplesAfter).toBe(couplesBefore);
+
+    const members = Number(
+      (await fresh.query<{ n: number }>(`SELECT count(*)::int AS n FROM public.couple_members`)).rows[0]!.n,
+    );
+    expect(members).toBe(0);
+
+    await fresh.close();
+  });
+
+  it("check 4 really exercises rotation — a 20-day-old probe lands on 14 days", async () => {
+    // Guards the substance of check 4: if rotate_pair_code ever stopped setting
+    // the expiry explicitly, days_left would come back NEGATIVE here.
+    const fresh = new PGlite();
+    await fresh.exec(SHIM_SQL);
+    await fresh.query(`INSERT INTO auth.users (id, email) VALUES ($1,'pc@x.test')`, [USER_C]);
+    await fresh.exec(readFileSync(MIGRATION, "utf8"));
+
+    await fresh.query(`SELECT set_config('request.jwt.claims',$1,false)`, [
+      JSON.stringify({ sub: USER_C, role: "authenticated" }),
+    ]);
+    await fresh.query(`SELECT public.ensure_couple_for_user($1)`, [USER_C]);
+    await fresh.query(
+      `UPDATE public.couples SET created_at = now() - INTERVAL '20 days',
+                                 pair_code_expires_at = now() - INTERVAL '6 days'
+        WHERE created_by = $1`,
+      [USER_C],
+    );
+    await fresh.query(
+      `SELECT public.rotate_pair_code((SELECT id FROM public.couples WHERE created_by = $1))`,
+      [USER_C],
+    );
+    const days = Number(
+      (
+        await fresh.query<{ d: number }>(
+          `SELECT round(EXTRACT(EPOCH FROM (pair_code_expires_at - now()))/86400)::int AS d
+             FROM public.couples WHERE created_by = $1`,
+          [USER_C],
+        )
+      ).rows[0]!.d,
+    );
+    expect(days).toBe(14);
     await fresh.close();
   });
 });
