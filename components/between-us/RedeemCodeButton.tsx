@@ -93,6 +93,12 @@ export function RedeemDialog({
   const router = useRouter();
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
+  // Attempt count for THIS component instance only. It never reaches the
+  // server and never gates anything — the real limit lives in
+  // couple_join_attempts. It exists so a struggling user can be offered a way
+  // forward without the SERVER's answer varying, which would rebuild the
+  // enumeration oracle out of the help text. Audit 2026-08-05, H8(c).
+  const [localFails, setLocalFails] = useState(0);
   const [success, setSuccess] = useState(false);
   const [pending, start] = useTransition();
 
@@ -121,7 +127,17 @@ export function RedeemDialog({
           router.push(`/auth?next=${encodeURIComponent(authNext)}`);
           return;
         }
-        setError(res.error);
+        // Every code-related failure arrives as the same "code_invalid".
+        setLocalFails((n) => n + 1);
+        setError(
+          res.error === "already_paired"
+            ? isHe
+              ? "את/ה כבר מחובר/ת לבן/בת זוג. כדי להתחבר לזוג אחר צריך קודם לנתק את החיבור הקיים."
+              : "You're already connected to a partner. Disconnect first to join a different couple."
+            : isHe
+              ? "הקוד לא תקף. ייתכן שהוא שגוי, שכבר נעשה בו שימוש, או שפג תוקפו. בקש/י מבן/בת הזוג לייצר קוד חדש מהמסך שלהם."
+              : "That code isn't valid. It may be wrong, already used, or expired. Ask your partner to generate a new one.",
+        );
         return;
       }
       setSuccess(true);
@@ -182,6 +198,20 @@ export function RedeemDialog({
           {error ? (
             <p className="rounded-xl border border-rose-400/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-100">
               {error}
+            </p>
+          ) : null}
+          {/* Driven purely by this component's own attempt count — never by
+              what the server returned. No countdown and no numbers: a visible
+              clock would tell an attacker when the window resets, and would
+              separate "blocked" from "wrong code". Audit H8(c). */}
+          {localFails >= 3 ? (
+            <p className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs text-white/70">
+              {isHe
+                ? "נראה שיש קושי. אפשר לנסות שוב מאוחר יותר, או לפנות אלינו."
+                : "Looks like this isn't working. You can try again later, or contact us."}{" "}
+              <a href={isHe ? "/he/contact" : "/en/contact"} className="underline">
+                {isHe ? "דברו איתנו" : "Contact us"}
+              </a>
             </p>
           ) : null}
           {success ? (

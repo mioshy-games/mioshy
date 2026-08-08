@@ -29,18 +29,10 @@ import {
   openCyclesForEligibleUsers,
 } from "@/lib/journey-content/cycle-engine";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
+import { isCronAuthorized } from "@/lib/auth/cron-auth";
 
 async function handle(req: Request): Promise<Response> {
-  const secret =
-    process.env.JOURNEY_CADENCE_CRON_SECRET ||
-    process.env.JOURNEY_UNLOCK_CRON_SECRET ||
-    process.env.JOURNEY_GRACE_CRON_SECRET ||
-    process.env.CARDCOM_BILLING_CRON_SECRET;
-  const bearer = req.headers
-    .get("authorization")
-    ?.replace(/^Bearer\s+/i, "")
-    .trim();
-  if (!secret || bearer !== secret) {
+  if (!isCronAuthorized(req, "journey")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

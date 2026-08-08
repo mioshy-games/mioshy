@@ -7,15 +7,15 @@
  * chapters. Items that were already completed or belong to an inactive
  * assignment are silently skipped.
  *
- * Auth: Bearer token. Prefers JOURNEY_UNLOCK_CRON_SECRET; falls back to
- * CARDCOM_BILLING_CRON_SECRET so a single cron secret can power both
+ * Auth: Bearer — CRON_SECRET (what Vercel Cron sends) or JOURNEY_CRON_SECRET.
+ *       See lib/auth/cron-auth.ts. Audit 2026-08-05, H2.
  * schedulers until operators set up the dedicated one.
  *
  * Vercel cron: see vercel.json - runs hourly.
  *
  * Manual test:
  *   curl -X POST $SITE_URL/api/journey/notify-unlocks \
- *        -H "authorization: Bearer $JOURNEY_UNLOCK_CRON_SECRET"
+ *        -H "authorization: Bearer $JOURNEY_CRON_SECRET"
  */
 
 export const runtime = "nodejs";
@@ -25,6 +25,7 @@ export const maxDuration = 300; // 5 min
 import { NextResponse } from "next/server";
 import { runJourneyUnlockNotifier } from "@/lib/journey-content/notify-unlocks";
 import { runWithCronLog } from "@/lib/journey-content/cron-log";
+import { isCronAuthorized } from "@/lib/auth/cron-auth";
 
 export async function POST(req: Request) {
   return handle(req);
@@ -40,15 +41,7 @@ export async function GET(req: Request) {
 }
 
 async function handle(req: Request): Promise<Response> {
-  const secret =
-    process.env.JOURNEY_UNLOCK_CRON_SECRET ||
-    process.env.CARDCOM_BILLING_CRON_SECRET;
-  const bearer = req.headers
-    .get("authorization")
-    ?.replace(/^Bearer\s+/i, "")
-    .trim();
-
-  if (!secret || bearer !== secret) {
+  if (!isCronAuthorized(req, "journey")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

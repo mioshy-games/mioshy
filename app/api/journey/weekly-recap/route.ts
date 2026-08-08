@@ -17,6 +17,10 @@ export const maxDuration = 180;
 
 import { NextResponse } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
+import { isCronAuthorized } from "@/lib/auth/cron-auth";
+import { makeLogger } from "@/lib/observability/log";
+
+const cronLog = makeLogger("cron.weekly-recap");
 import {
   computeWeeklyRecap,
   startOfWeekSundayUTC,
@@ -30,16 +34,11 @@ interface Summary {
 }
 
 function authOk(req: Request): boolean {
-  const expected =
-    process.env.JOURNEY_REMINDERS_CRON_SECRET ||
-    process.env.JOURNEY_CADENCE_CRON_SECRET ||
-    process.env.JOURNEY_UNLOCK_CRON_SECRET ||
-    process.env.CARDCOM_CRON_SECRET;
-  if (!expected) return process.env.VERCEL_ENV !== "production";
-  return req.headers.get("authorization") === `Bearer ${expected}`;
+  return isCronAuthorized(req, "journey");
 }
 
 async function handle(req: Request): Promise<NextResponse<Summary>> {
+  const startedAt = Date.now();
   if (!authOk(req)) {
     return NextResponse.json(
       { ok: false, considered: 0, written: 0, errors: ["unauthorized"] },
@@ -104,6 +103,11 @@ async function handle(req: Request): Promise<NextResponse<Summary>> {
     }
   }
 
+  // Audit follow-up (6.8.2026): a single structured success line per run.
+  // These four jobs previously wrote NOTHING on success, so the only
+  // evidence a run happened was Vercel's cron history. Goes through
+  // makeLogger → emit(), which applies the H5 redactor; no PII here.
+  cronLog.info("run.ok", { processed: written, considered: coupleIds.length, errors: errors.length, dur_ms: Date.now() - startedAt });
   return NextResponse.json({
     ok: errors.length === 0,
     considered: coupleIds.length,

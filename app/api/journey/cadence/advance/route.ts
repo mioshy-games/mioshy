@@ -13,8 +13,8 @@
  *   - Weekly cap reads recent rows and short-circuits before the
  *     materializer fires.
  *
- * Auth: Bearer token. Prefers JOURNEY_CADENCE_CRON_SECRET; falls back
- * to JOURNEY_UNLOCK_CRON_SECRET, then CARDCOM_BILLING_CRON_SECRET. This
+ * Auth: Bearer — CRON_SECRET (what Vercel Cron sends) or JOURNEY_CRON_SECRET.
+ *       See lib/auth/cron-auth.ts. Audit 2026-08-05, H2.
  * keeps deploy-time setup minimal - operators can run all three crons
  * with one shared secret until they're ready to split them out.
  *
@@ -22,7 +22,7 @@
  *
  * Manual test:
  *   curl -X POST $SITE_URL/api/journey/cadence/advance \
- *        -H "authorization: Bearer $JOURNEY_CADENCE_CRON_SECRET"
+ *        -H "authorization: Bearer $JOURNEY_CRON_SECRET"
  *
  * Optional `?dry=1` returns the eligibility decision per user without
  * inserting any rows - useful for inspecting the engine on a test
@@ -46,6 +46,7 @@ import {
 } from "@/lib/journey-content/cadence-engine";
 import { getJourneySettings } from "@/lib/journey-content/journey-settings";
 import { runWithCronLog } from "@/lib/journey-content/cron-log";
+import { isCronAuthorized } from "@/lib/auth/cron-auth";
 
 interface RunSummary {
   ok: boolean;
@@ -80,15 +81,7 @@ export async function GET(req: Request) {
 }
 
 async function handle(req: Request): Promise<Response> {
-  const secret =
-    process.env.JOURNEY_CADENCE_CRON_SECRET ||
-    process.env.JOURNEY_UNLOCK_CRON_SECRET ||
-    process.env.CARDCOM_BILLING_CRON_SECRET;
-  const bearer = req.headers
-    .get("authorization")
-    ?.replace(/^Bearer\s+/i, "")
-    .trim();
-  if (!secret || bearer !== secret) {
+  if (!isCronAuthorized(req, "journey")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

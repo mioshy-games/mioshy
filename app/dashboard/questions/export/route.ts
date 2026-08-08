@@ -1,11 +1,6 @@
 import { requireAdmin } from "@/lib/auth/admin";
+import { csvEscape } from "@/lib/csv-escape";
 
-function csvEscape(value: unknown) {
-  const s = String(value ?? "");
-  // Escape double-quotes, wrap in quotes if needed
-  if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
-  return s;
-}
 
 export async function GET() {
   const { supabase } = await requireAdmin();

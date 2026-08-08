@@ -10,6 +10,7 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/auth/admin";
 import { createAdminClient } from "@/lib/supabase-admin";
+import { csvEscape as csvField } from "@/lib/csv-escape";
 
 const COLUMNS = [
   "text",
@@ -20,11 +21,6 @@ const COLUMNS = [
   "insight_line",
 ] as const;
 
-/** RFC4180 field: quote when it contains a comma/quote/newline; double inner quotes. */
-function csvField(v: unknown): string {
-  const s = v == null ? "" : String(v);
-  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-}
 
 export async function GET() {
   if (!(await getAdminSession())) {

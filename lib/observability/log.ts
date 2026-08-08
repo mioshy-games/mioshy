@@ -26,6 +26,8 @@
 
 import "server-only";
 
+import { redactField } from "./redact";
+
 type Level = "error" | "warn" | "info" | "debug";
 
 interface Fields {
@@ -41,7 +43,12 @@ function emit(level: Level, scope: string, event: string, fields: Fields) {
   // special chars get JSON-quoted; primitives stay bare. This is the
   // shape Vercel's text search handles best (`event=chat.send.failed`).
   const parts: string[] = [`level=${level}`, `scope=${scope}`, `event=${event}`];
-  for (const [key, val] of Object.entries(fields)) {
+  for (const [key, rawVal] of Object.entries(fields)) {
+    if (rawVal === undefined || rawVal === null) continue;
+    // Audit 2026-08-05, H5 — the single choke point for PII in logs. Keys that
+    // are inherently identifying are dropped; everything else is scrubbed for
+    // email/phone patterns so PII embedded in free text is caught too.
+    const val = redactField(key, rawVal);
     if (val === undefined || val === null) continue;
     const v = typeof val === "string" ? safeQuote(val) : String(val);
     parts.push(`${key}=${v}`);

@@ -31,14 +31,10 @@ import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
 import { sendCampaignMessage } from "@/lib/whatsapp/campaign";
 import { introPriceExpiryReminderTemplate } from "@/lib/whatsapp/templates";
 import { isReminderEligible } from "@/lib/whatsapp/rules";
+import { isCronAuthorized } from "@/lib/auth/cron-auth";
 
 function authOk(req: Request): boolean {
-  const expected =
-    process.env.CARDCOM_BILLING_CRON_SECRET ||
-    process.env.JOURNEY_REMINDERS_CRON_SECRET ||
-    process.env.MAILING_TEST_SECRET;
-  if (!expected) return process.env.VERCEL_ENV !== "production";
-  return (req.headers.get("authorization") ?? "") === `Bearer ${expected}`;
+  return isCronAuthorized(req, "journey");
 }
 
 /**
