@@ -36,19 +36,29 @@ export function renderJourneyUnlockEmail(
 ): JourneyUnlockEmail {
   const isHe = input.locale === "he";
   const dir = isHe ? "rtl" : "ltr";
-  /** Only controls whether the "open my timeline" button is shown — the
-   *  singular COPY variant was removed (2026-08-09): five chapters now open
-   *  together each month, so the one-chapter wording described a cadence the
-   *  product no longer has. */
+  /**
+   * Singular vs plural is NOT decoration — keep both branches.
+   *
+   * The plural copy interpolates the count ("${items.length} פרקים חדשים"),
+   * so collapsing to plural-only renders "1 פרקים חדשים" whenever a single
+   * chapter unlocks. Five chapters normally open together each month, but a
+   * late or backfilled unlock still arrives alone, and broken agreement in a
+   * subject line reads as an unmaintained product.
+   * (Removed on 2026-08-09 and restored the same day for exactly this reason.)
+   */
   const multi = input.items.length > 1;
   // Subject uses the raw name (mail clients render the subject as plain
   // text); HTML body uses the escaped version.
   const rawGreetingName = input.recipientName?.trim() || (isHe ? "היי" : "Hi");
   const greetingName = escapeHtml(rawGreetingName);
 
-  const subject = isHe
-    ? `${rawGreetingName}, ${input.items.length} פרקים חדשים מחכים לכם ✨`
-    : `${rawGreetingName}, ${input.items.length} new chapters are waiting ✨`;
+  const subject = multi
+    ? isHe
+      ? `${rawGreetingName}, ${input.items.length} פרקים חדשים מחכים לכם ✨`
+      : `${rawGreetingName}, ${input.items.length} new chapters are waiting ✨`
+    : isHe
+      ? `${rawGreetingName}, הרגע הזה שלכם ✨`
+      : `${rawGreetingName}, this moment is yours ✨`;
 
   // A personal opener at the very top ("Hi {name},"), followed by a
   // quiet credibility micro-line so the email lands as a note from a
@@ -61,11 +71,17 @@ export function renderJourneyUnlockEmail(
     ? `<p style="margin:0 0 16px;font-size:12px;color:#64748b;line-height:1.5;letter-spacing:0.02em;">איציק ברלב · מלווה זוגות מאז 2001 · שיטה שנבחנה עם מאות זוגות</p>`
     : `<p style="margin:0 0 16px;font-size:12px;color:#64748b;line-height:1.5;letter-spacing:0.02em;">Itzik Berlav · Coaching couples since 2001 · A method tested with hundreds of couples</p>`;
 
-  const intro = isHe
-    ? `${greetingLine}${trustLine}
+  const intro = multi
+    ? isHe
+      ? `${greetingLine}${trustLine}
          <p style="margin:0 0 18px;font-size:16px;color:#334155;line-height:1.6;">כמה פרקים חדשים נפתחו במסע שלכם. אני יודע שהחיים עמוסים - לכן הם לא ילחצו עליכם. הם פשוט מחכים לרגע השקט ביניכם, לשיחה הקצרה שתעשו ביחד. כל פרק נבנה בזהירות על סמך עבודה עם זוגות אמיתיים.</p>`
-    : `${greetingLine}${trustLine}
-         <p style="margin:0 0 18px;font-size:16px;color:#334155;line-height:1.6;">A few new chapters just opened on your journey. I know life is full - that's why they won't rush you. They're simply waiting for a quiet moment between you, a short conversation you'll have together. Each chapter was carefully built from real work with real couples.</p>`;
+      : `${greetingLine}${trustLine}
+         <p style="margin:0 0 18px;font-size:16px;color:#334155;line-height:1.6;">A few new chapters just opened on your journey. I know life is full - that's why they won't rush you. They're simply waiting for a quiet moment between you, a short conversation you'll have together. Each chapter was carefully built from real work with real couples.</p>`
+    : isHe
+      ? `${greetingLine}${trustLine}
+         <p style="margin:0 0 18px;font-size:16px;color:#334155;line-height:1.6;">פרק חדש במסע שלכם מחכה לכם עכשיו. הוא נבנה כדי לקחת רק כמה דקות - אבל עם הרגע הנכון והשיחה הנכונה, הוא יכול לשנות את היום שלכם כזוג. זה הצעד הקטן שבונה את הקשר הגדול.</p>`
+      : `${greetingLine}${trustLine}
+         <p style="margin:0 0 18px;font-size:16px;color:#334155;line-height:1.6;">A new chapter is waiting for you on your journey. It's built to take just a few minutes - but with the right moment and the right conversation, it can quietly change your day as a couple. Small steps like this are what build the relationship that lasts.</p>`;
 
   const itemsHtml = input.items
     .map((it) => {
@@ -141,7 +157,15 @@ export function renderJourneyUnlockEmail(
                   ${isHe ? "מיאושי · המסע" : "Mioshy · Journey"}
                 </p>
                 <h1 style="margin:10px 0 0;font-size:24px;color:#ffffff;line-height:1.2;">
-                  ${isHe ? "פרקים חדשים מחכים לכם" : "New chapters are waiting"}
+                  ${
+                    multi
+                      ? isHe
+                        ? "פרקים חדשים מחכים לכם"
+                        : "New chapters are waiting"
+                      : isHe
+                        ? "פרק חדש מחכה לכם"
+                        : "A new chapter is waiting"
+                  }
                 </h1>
               </td>
             </tr>
@@ -174,9 +198,13 @@ export function renderJourneyUnlockEmail(
 
   const textLines: string[] = [];
   textLines.push(
-    isHe
-      ? `${input.items.length} פרקים חדשים נפתחו במסע שלכם:`
-      : `${input.items.length} new chapters are open on your journey:`,
+    multi
+      ? isHe
+        ? `${input.items.length} פרקים חדשים נפתחו במסע שלכם:`
+        : `${input.items.length} new chapters are open on your journey:`
+      : isHe
+        ? `פרק חדש נפתח במסע שלכם:`
+        : `A new chapter is open on your journey:`,
   );
   textLines.push("");
   for (const it of input.items) {
