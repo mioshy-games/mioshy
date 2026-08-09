@@ -173,6 +173,30 @@ async function findUserByEmail(
 // Handler
 // ----------------------------------------------------------------
 
+/**
+ * Rejections are logged at ERROR level on purpose.
+ *
+ * The worst failure mode of this endpoint is silent: a wrong secret returns the
+ * same 200 as everything else (deliberately — see the docblock), so Brevo sees
+ * success, we record nothing, and unsubscribes are lost with no error anywhere.
+ * "Nobody noticed zero unsubscribes on a mailing day" is not an alert.
+ *
+ * console.error puts these lines into Vercel's error-rate metric, so the
+ * silence becomes visible without anyone remembering to look. No secret and no
+ * address is logged — only a stable event name and a reason label.
+ *
+ * NOT makeLogger: lib/observability/log.ts imports "server-only", which cannot
+ * be loaded from a unit test, and this route HAS one
+ * (tests/api/brevo-unsubscribe-webhook.test.ts). Importing it here breaks that
+ * file's collection — the same failure already affecting eight test files, see
+ * the triage in SECURITY-PROGRESS.md. The shape below matches the logger's
+ * key=value output so it greps identically. There is no PII in these fields, so
+ * the redactor has nothing to do here anyway.
+ */
+const logRejected = (reason: string, impact: string) =>
+  // eslint-disable-next-line no-console
+  console.error(`level=error scope=brevo.webhook event=rejected reason=${reason} impact=${impact}`);
+
 /** The single body every authenticated outcome returns. See the docblock. */
 const ACK = { ok: true } as const;
 
@@ -181,16 +205,13 @@ export async function POST(req: Request) {
   const auth = authorizeRequest(req);
   if (!auth.ok) {
     if (auth.reason === "not_configured") {
-      console.error(
-        "[brevo-unsubscribe] BREVO_WEBHOOK_SECRET is not set — refusing every request. " +
-          "Unsubscribes and hard bounces are NOT being recorded until it is configured.",
-      );
+      logRejected("not_configured", "unsubscribes_and_bounces_not_recorded");
       return NextResponse.json({ error: "webhook_not_configured" }, { status: 503 });
     }
     // Wrong secret: answer exactly as we would for an address with no account,
     // so the endpoint cannot be used to test whether an email is registered.
     // The only record of the rejection is this log line.
-    console.warn("[brevo-unsubscribe] rejected: invalid secret");
+    logRejected("invalid_secret", "unsubscribe_or_bounce_discarded");
     return NextResponse.json(ACK);
   }
 
