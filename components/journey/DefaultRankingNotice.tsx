@@ -23,14 +23,14 @@ export function DefaultRankingNotice({ locale }: { locale: string }) {
         <div className="min-w-0">
           <p className="text-[13.5px] leading-relaxed text-white/85">
             {isHe
-              ? "הסדר כאן הוא ברירת מחדל. השלימו את האבחון הקצר, ונסדר את חמשת התכנים לפי מה שהכי חשוב לכם עכשיו."
+              ? "סיימתם את האבחון הקצר, וזה הסדר שיצא ממנו. עוד כמה שאלות והוא יהיה מדויק הרבה יותר, וגם המומחה שלנו יידע מאיפה להתחיל איתכם."
               : "This order is our default. Take the short assessment and we'll arrange the five topics around what matters most to you right now."}
           </p>
           <Link
             href="/journey/assessment"
             className="mt-2 inline-flex items-center gap-1 text-[13px] font-bold text-amber-200 underline underline-offset-4 transition hover:text-amber-100"
           >
-            {isHe ? "לאבחון הקצר" : "Take the assessment"}
+            {isHe ? "להשלמת האבחון" : "Complete the assessment"}
           </Link>
         </div>
       </div>
