@@ -1222,6 +1222,36 @@ SELECT cs.low_profile_code,
 
 המדריך המלא: `docs/brevo-webhook-secret-runbook.md`.
 
+## אימות מקדים: הקוד הפרוס גוזר נכון את הטוקן מהכותרת
+
+שאלה חוסמת שנשאלה לפני ההרצה — ובצדק: Brevo שולחת
+`Authorization: Bearer <token>`. אם הקוד היה משווה את **הערך המלא של הכותרת**
+מול הסוד, שום דבר לא היה מתאים וכל ההסרות היו נפסקות בשקט אחרי המיזוג.
+
+מתוך `game` (הקוד החי), שורות 70-81:
+
+```ts
+const auth = req.headers.get("authorization") ?? "";
+const bearer = auth.toLowerCase().startsWith("bearer ")
+  ? auth.slice(7).trim()
+  : null;
+
+const url = new URL(req.url);
+const queryParam = url.searchParams.get("secret");
+
+if (bearer === expected || queryParam === expected) {
+  return { ok: true };
+}
+return { ok: false, reason: "invalid_secret" };
+```
+
+**המסקנה: תקין.** `slice(7)` מסיר בדיוק את `"Bearer "` (7 תווים — אומת:
+`"Bearer abc123".slice(7) === "abc123"`), וההשוואה היא מול **הטוקן בלבד**.
+בנוסף: הקידומת מזוהה ב-`toLowerCase()` ולכן `bearer` באות קטנה גם יעבוד,
+ו-`.trim()` סופג רווח נגרר.
+
+אותה גזירה קיימת גם בקוד החדש ב-#52, שם עם `timingSafeEqual`.
+
 ## ‏ארטיפקט שחזור — הגדרת ה-webhook לפני השינוי
 
 > **⚠️ לפני הדבקה:** Brevo מחזירה את `auth.token` **במלואו, בלי מיסוך**.
