@@ -18,12 +18,8 @@
 
 import { requireAdmin } from "@/lib/auth/admin";
 import { loadLeads } from "@/lib/dashboard/leads";
+import { csvEscape } from "@/lib/csv-escape";
 
-function csvEscape(value: unknown) {
-  const s = String(value ?? "");
-  if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
-  return s;
-}
 
 export async function GET(req: Request) {
   await requireAdmin();

@@ -67,6 +67,7 @@ import type { ResultsReadyScoreRow } from "@/lib/journey/mailing/results-ready-e
 import { emailSeriesTags } from "@/lib/journey/mailing/email-series";
 import { ACTIVE_SEQUENCE_EMAIL_KEYS } from "@/lib/journey/mailing/sequence-flows";
 import { tenAmIlDaysAfter } from "@/lib/journey/mailing/schedule";
+import { isCronAuthorized } from "@/lib/auth/cron-auth";
 
 const DAY = 24 * 60 * 60 * 1000;
 const EMAIL_CAP_PER_RUN = 150;
@@ -81,24 +82,7 @@ const EMAIL_CAP_PER_RUN = 150;
 const ACTIVE_SEQUENCE_KINDS = ACTIVE_SEQUENCE_EMAIL_KEYS;
 
 function authOk(req: Request): boolean {
-  // Accept a Bearer matching ANY configured cron secret — including CRON_SECRET,
-  // the token Vercel attaches to cron invocations (the Vercel-standard). This is
-  // a robustness/defensive improvement, NOT the fix for the go-live miss: the
-  // cron auth was already working (CRON_SECRET matched the journey secret — the
-  // 18:00Z run authenticated and sent results_ready using the pre-change code).
-  // The reason results_ready didn't send on the 15:00–17:00 runs was that
-  // MAILING_SEQUENCE_ENABLED / _ACTIVATION_TS weren't effective on those deploys;
-  // that was fixed by re-binding the env vars + redeploying. Accepting the full
-  // set future-proofs the auth and lets admin runs use any known secret.
-  const provided = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
-  const secrets = [
-    process.env.CRON_SECRET,
-    process.env.JOURNEY_REMINDERS_CRON_SECRET,
-    process.env.MAILING_TEST_SECRET,
-    process.env.CARDCOM_BILLING_CRON_SECRET,
-  ].filter((s): s is string => !!s);
-  if (secrets.length === 0) return process.env.VERCEL_ENV !== "production";
-  return provided !== "" && secrets.includes(provided);
+  return isCronAuthorized(req, "journey");
 }
 
 function baseUrl(): string {

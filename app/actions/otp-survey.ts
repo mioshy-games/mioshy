@@ -10,7 +10,8 @@
 
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { readPollAnonId } from "@/lib/poll/anon";
-import { fireCompleteRegistrationCapi, firePollLeadCapi, metaEventId } from "@/lib/analytics/meta-capi";
+import { fireCompleteRegistrationCapi, firePollLeadCapi } from "@/lib/analytics/meta-capi";
+import { metaLeadEventId } from "@/lib/analytics/meta-event-id";
 import { sendEmailOtp, verifyEmailOtp, finalizeOtpSession, isFirstRegistration, hasMobileOnFile, syncConsentedContactToBrevo, type SendOtpResult } from "@/lib/auth/otp-core";
 import { fullNameSchema } from "@/lib/validations";
 
@@ -34,7 +35,12 @@ export async function sendSurveySignupOtp(args: {
   // §6 — "submit form" Lead (CAPI), deduped with the browser Pixel Lead via the
   // shared event_id (keyed by email). Never blocks the send.
   try {
-    await firePollLeadCapi({ email: args.email.trim().toLowerCase(), eventId: metaEventId.lead(args.email.trim().toLowerCase()) });
+    await firePollLeadCapi({
+      email: args.email.trim().toLowerCase(),
+      // H7 — shared derivation; must stay identical to the browser Pixel call
+      // in components/survey/PollRegister.tsx or Meta stops deduplicating.
+      eventId: await metaLeadEventId(args.email),
+    });
   } catch { /* never blocks */ }
   return sendEmailOtp({ email: args.email, mode: "signup", fullName: args.fullName });
 }

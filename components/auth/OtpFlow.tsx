@@ -13,6 +13,7 @@ import {
 } from "@/app/actions/otp-auth";
 import { joinCoupleByPairCode } from "@/app/actions/between-us-couple";
 import { pushToDataLayer } from "@/lib/analytics/gtm";
+import { safeNext } from "@/lib/auth/safe-next";
 
 type VerifyResult = { success: true; [k: string]: unknown } | { success: false; error: string };
 
@@ -62,10 +63,11 @@ function clearPhonePending() {
   if (typeof document !== "undefined") document.cookie = `${PHONE_PENDING_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`;
 }
 
-/** Only allow a same-origin relative path as the post-auth destination. */
+/** Only allow a same-origin relative path as the post-auth destination.
+ *  Delegates to the shared guard — the inlined version here missed `/\`.
+ *  Audit 2026-08-05, H4. */
 function safePath(next: string | undefined, fallback: string): string {
-  if (next && next.startsWith("/") && !next.startsWith("//")) return next;
-  return fallback;
+  return safeNext(next, fallback);
 }
 
 /**

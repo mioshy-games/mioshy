@@ -2,7 +2,7 @@
 
 import { OtpFlow } from "@/components/auth/OtpFlow";
 import type { OtpConsentCopy } from "@/lib/auth/otp-consent";
-import { metaEventId } from "@/lib/analytics/meta-event-id";
+import { metaLeadEventId } from "@/lib/analytics/meta-event-id";
 import {
   sendSurveySignupOtp,
   verifySurveySignupOtp,
@@ -31,13 +31,14 @@ export function PollRegister({
   signupHeading?: string;
   signupSubheading?: string;
 }) {
-  const fireBrowserLead = (email: string) => {
+  const fireBrowserLead = async (email: string) => {
     if (typeof window === "undefined") return;
     // Generic click event for the "שלחו לי קוד" (send-code) button → CTA-clicks
     // dashboard. Fires on the signup send-code action (onBeforeSendSignup).
     track("click", { target: "survey_send_code", label: "שלחו לי קוד" });
     const fbq = (window as unknown as { fbq?: (...a: unknown[]) => void }).fbq;
-    if (fbq) fbq("track", "Lead", { content_name: "survey_join_form" }, { eventID: metaEventId.lead(email) });
+    // H7: hashed id, same derivation as the server so Meta still dedupes.
+    if (fbq) fbq("track", "Lead", { content_name: "survey_join_form" }, { eventID: await metaLeadEventId(email) });
   };
 
   return (
@@ -54,7 +55,7 @@ export function PollRegister({
         verifyLogin: verifySurveyLoginOtp,
         savePhone: saveSignupPhone,
       }}
-      onBeforeSendSignup={fireBrowserLead}
+      onBeforeSendSignup={(email: string) => void fireBrowserLead(email)}
       onAuthenticated={() => { window.location.href = `/${locale}/my/survey`; }}
     />
   );

@@ -16,22 +16,27 @@
  *   Events: "Unsubscribed" + "Hard Bounced"
  *   URL:    https://mioshy.com/api/brevo/unsubscribe-webhook
  *
- * Authentication:
- *   Brevo does not sign outbound webhooks with HMAC. We support an
- *   optional shared-secret check: if BREVO_WEBHOOK_SECRET is set in the
- *   environment, the request must include the same value in either an
- *   `Authorization: Bearer <secret>` header or `?secret=<secret>` query
- *   param. If the env var is unset, the endpoint is open (defended by
- *   URL obscurity) — fine for early Brevo setup, but set the secret in
- *   prod and add it as a custom header in the Brevo webhook config:
+ * Authentication (audit 2026-08-05, H1):
+ *   Brevo does not sign outbound webhooks, so we use a shared secret —
+ *   BREVO_WEBHOOK_SECRET — supplied as `Authorization: Bearer <secret>` or
+ *   `?secret=<secret>`. Configure it in the Brevo webhook's custom headers:
  *     Brevo → Webhook → Custom headers → "Authorization: Bearer <secret>"
  *
+ *   This check used to FAIL OPEN: with the variable unset the endpoint served
+ *   anyone, and the variable was never set. It now fails CLOSED with 503.
+ *   Comparison is constant-time.
+ *
  * Response semantics:
- *   - Returns 200 on success AND on "email not found" (idempotent — Brevo
- *     retries on non-2xx, and we don't want to keep retrying for a
- *     deleted profile).
- *   - Returns 400 on malformed JSON or missing email field.
- *   - Returns 401 only if a wrong secret was supplied.
+ *   - 503 when no secret is configured. The endpoint is inert until deployed
+ *     with one, which is louder than silently accepting the world.
+ *   - Every request that gets past the secret returns the SAME body,
+ *     `{ ok: true }`, whether the address matched a profile or not. The old
+ *     `matched: true|false` told an unauthenticated caller whether any given
+ *     email had an account here — an account-enumeration oracle over our
+ *     entire user base. A wrong secret returns that identical body too, so
+ *     probing yields no signal at all; the rejection is recorded server-side.
+ *   - 400 on malformed JSON or a missing email. These say nothing about any
+ *     account and keep genuine Brevo misconfiguration debuggable.
  *
  * Brevo payload shape (observed; v3 event docs):
  *   {
@@ -53,32 +58,44 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
+import { timingSafeEqual } from "node:crypto";
 
 // ----------------------------------------------------------------
 // Auth: optional shared-secret guard
 // ----------------------------------------------------------------
 
-function authorizeRequest(req: Request): { ok: true } | { ok: false; reason: string } {
+/** Constant-time compare; a length mismatch costs the same as a value one. */
+function secretMatches(provided: string, expected: string): boolean {
+  const a = Buffer.from(provided, "utf8");
+  const b = Buffer.from(expected, "utf8");
+  if (a.length !== b.length) {
+    timingSafeEqual(a, a);
+    return false;
+  }
+  return timingSafeEqual(a, b);
+}
+
+type AuthResult = { ok: true } | { ok: false; reason: "not_configured" | "invalid_secret" };
+
+function authorizeRequest(req: Request): AuthResult {
   const expected = process.env.BREVO_WEBHOOK_SECRET;
   if (!expected || expected.trim().length === 0) {
-    // No secret configured — endpoint is open. This is intentional for
-    // early-launch convenience but should be set before any sensitive
-    // marketing campaign goes live.
-    return { ok: true };
+    // FAIL CLOSED. Previously this returned ok:true, leaving the endpoint open
+    // to anyone who knew the URL — and the variable was never set in any
+    // environment, so that was the live state. Audit 2026-08-05, H1.
+    return { ok: false, reason: "not_configured" };
   }
 
   const auth = req.headers.get("authorization") ?? "";
-  const bearer = auth.toLowerCase().startsWith("bearer ")
-    ? auth.slice(7).trim()
-    : null;
+  const bearer = auth.toLowerCase().startsWith("bearer ") ? auth.slice(7).trim() : null;
+  const queryParam = new URL(req.url).searchParams.get("secret");
 
-  const url = new URL(req.url);
-  const queryParam = url.searchParams.get("secret");
+  // Both candidates are always evaluated — no early exit on the first match.
+  let ok = false;
+  if (bearer !== null && secretMatches(bearer, expected)) ok = true;
+  if (queryParam !== null && secretMatches(queryParam, expected)) ok = true;
 
-  if (bearer === expected || queryParam === expected) {
-    return { ok: true };
-  }
-  return { ok: false, reason: "invalid_secret" };
+  return ok ? { ok: true } : { ok: false, reason: "invalid_secret" };
 }
 
 // ----------------------------------------------------------------
@@ -156,11 +173,52 @@ async function findUserByEmail(
 // Handler
 // ----------------------------------------------------------------
 
+/**
+ * Rejections are logged at ERROR level on purpose.
+ *
+ * The worst failure mode of this endpoint is silent: a wrong secret returns the
+ * same 200 as everything else (deliberately — see the docblock), so Brevo sees
+ * success, we record nothing, and unsubscribes are lost with no error anywhere.
+ * "Nobody noticed zero unsubscribes on a mailing day" is not an alert.
+ *
+ * console.error puts these lines into Vercel's error-rate metric, so the
+ * silence becomes visible without anyone remembering to look. No secret and no
+ * address is logged — only a stable event name and a reason label.
+ *
+ * NOT makeLogger: lib/observability/log.ts imports "server-only", which cannot
+ * be loaded from a unit test, and this route HAS one
+ * (tests/api/brevo-unsubscribe-webhook.test.ts). Importing it here breaks that
+ * file's collection — the same failure already affecting eight test files, see
+ * the triage in SECURITY-PROGRESS.md. The shape below matches the logger's
+ * key=value output so it greps identically. There is no PII in these fields, so
+ * the redactor has nothing to do here anyway.
+ */
+const logRejected = (reason: string, impact: string) =>
+  // ⚠️ NO REDACTOR ON THIS LINE. It writes straight to console, bypassing the
+  // emit() redactor added in H5. The two arguments are fixed labels chosen at
+  // the call sites below — never request data. If you add a field here, it goes
+  // to the log UNMASKED: no address, no token, no header, no body. If you need
+  // one of those, you need makeLogger, and see the note above about why it is
+  // not used here.
+  // eslint-disable-next-line no-console
+  console.error(`level=error scope=brevo.webhook event=rejected reason=${reason} impact=${impact}`);
+
+/** The single body every authenticated outcome returns. See the docblock. */
+const ACK = { ok: true } as const;
+
 export async function POST(req: Request) {
-  // 1. Auth (optional)
+  // 1. Auth — fails closed, and never tells the caller which way it failed.
   const auth = authorizeRequest(req);
   if (!auth.ok) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    if (auth.reason === "not_configured") {
+      logRejected("not_configured", "unsubscribes_and_bounces_not_recorded");
+      return NextResponse.json({ error: "webhook_not_configured" }, { status: 503 });
+    }
+    // Wrong secret: answer exactly as we would for an address with no account,
+    // so the endpoint cannot be used to test whether an email is registered.
+    // The only record of the rejection is this log line.
+    logRejected("invalid_secret", "unsubscribe_or_bounce_discarded");
+    return NextResponse.json(ACK);
   }
 
   // 2. Parse body
@@ -193,13 +251,13 @@ export async function POST(req: Request) {
         () => undefined,
         () => undefined,
       );
-    return NextResponse.json({ ok: true, hardBounce: true });
+    return NextResponse.json(ACK);
   }
 
   if (!isUnsubscribeEvent(body)) {
     // Not an unsubscribe or hard-bounce event — ack 200 so Brevo doesn't
     // retry, but don't touch anything.
-    return NextResponse.json({ ok: true, ignored: "non_actionable_event" });
+    return NextResponse.json(ACK);
   }
 
   // 3. Find profile by email (via auth.users since profiles doesn't
@@ -218,7 +276,7 @@ export async function POST(req: Request) {
       "[brevo-unsubscribe] no matching profile for email; acking anyway",
       { email },
     );
-    return NextResponse.json({ ok: true, matched: false });
+    return NextResponse.json(ACK);
   }
 
   // 4. Flip marketing_consent off. We stamp the timestamp so any audit
@@ -242,5 +300,5 @@ export async function POST(req: Request) {
     user_id: match.id,
   });
 
-  return NextResponse.json({ ok: true, matched: true });
+  return NextResponse.json(ACK);
 }

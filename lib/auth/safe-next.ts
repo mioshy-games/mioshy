@@ -5,15 +5,22 @@
  * ────────────────
  * Auth pages route users to whatever path the caller passed in `?next=`.
  * Without validation, an attacker could craft a phishing link like
- * `/auth?next=https://evil.example.com/steal` - the user signs in on
+ * `/auth?next=https://evil.example.com/steal` — the user signs in on
  * mioshy.com, gets redirected away to a hostile origin, and sees a
  * trusted-looking page that captures further input.
  *
- * Same-origin guard: only accept paths that start with a single `/`
- * AND don't start with `//` or `/\` (which browsers parse as
- * protocol-relative URLs that escape the origin).
+ * Same-origin guard: accept only a path beginning with a single `/`, where the
+ * next character cannot begin a new origin.
  *
- * Returns the validated path, or the `fallback` if the input fails.
+ * Audit 2026-08-05, H4. This helper was correct but had NO CALLERS — both auth
+ * surfaces had inlined their own check that blocked `//` and missed `/\`.
+ * Browsers normalise a backslash to a forward slash when parsing an authority,
+ * so `/\evil.com` and `/\/evil.com` are protocol-relative URLs that leave the
+ * origin. Control characters are rejected too: a raw CR or LF in a redirect
+ * target is a response-splitting / header-injection primitive, and no
+ * legitimate internal path contains one.
+ *
+ * Returns the validated path, or `fallback` if the input fails.
  */
 export function safeNext(
   next: string | string[] | null | undefined,
@@ -21,11 +28,17 @@ export function safeNext(
 ): string {
   if (!next || Array.isArray(next)) return fallback;
   const trimmed = next.trim();
-  // Must start with single slash, and the second char must not start a new
-  // origin (so reject "//evil.com" and "/\\evil.com" - both browser-parsed
-  // as protocol-relative URLs).
-  if (!trimmed.startsWith("/") || trimmed.startsWith("//") || trimmed.startsWith("/\\")) {
-    return fallback;
-  }
+
+  // Control characters (incl. CR, LF, NUL, TAB) — never valid in a path here.
+  // eslint-disable-next-line no-control-regex
+  if (/[\u0000-\u001F\u007F]/.test(trimmed)) return fallback;
+
+  // A backslash anywhere is rejected: browsers treat it as a path separator
+  // when resolving an authority, so it is only ever an escape attempt.
+  if (trimmed.includes("\\")) return fallback;
+
+  // Must be a single-slash-rooted path. `//host` is protocol-relative.
+  if (!trimmed.startsWith("/") || trimmed.startsWith("//")) return fallback;
+
   return trimmed;
 }

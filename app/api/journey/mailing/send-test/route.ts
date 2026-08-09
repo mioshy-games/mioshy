@@ -17,6 +17,7 @@ export const maxDuration = 60;
 import { NextResponse } from "next/server";
 import { sendBrevoEmail } from "@/lib/email/brevo";
 import { emailSeriesTags } from "@/lib/journey/mailing/email-series";
+import { isCronAuthorized } from "@/lib/auth/cron-auth";
 import {
   buildSequenceEmail,
   buildTrialDay5Email,
@@ -26,12 +27,7 @@ import {
 const DEFAULT_TO = "itzik@uxellent.com";
 
 function authOk(req: Request): boolean {
-  const expected =
-    process.env.MAILING_TEST_SECRET ||
-    process.env.JOURNEY_REMINDERS_CRON_SECRET ||
-    process.env.CARDCOM_BILLING_CRON_SECRET;
-  if (!expected) return process.env.VERCEL_ENV !== "production";
-  return (req.headers.get("authorization") ?? "") === `Bearer ${expected}`;
+  return isCronAuthorized(req, "journey");
 }
 
 function baseUrl(): string {

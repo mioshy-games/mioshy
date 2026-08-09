@@ -31,6 +31,10 @@ import { NextResponse } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase-admin";
 import { resolveUserLocale } from "@/lib/notifications/recipient-locale";
 import { notifyUser } from "@/lib/journey-content/notifications";
+import { isCronAuthorized } from "@/lib/auth/cron-auth";
+import { makeLogger } from "@/lib/observability/log";
+
+const cronLog = makeLogger("cron.d1-reminders");
 
 interface Summary {
   ok:                boolean;
@@ -43,18 +47,11 @@ interface Summary {
 const HOURS = (n: number) => n * 60 * 60 * 1000;
 
 function authOk(req: Request): boolean {
-  const expected =
-    process.env.JOURNEY_REMINDERS_CRON_SECRET ||
-    process.env.JOURNEY_CADENCE_CRON_SECRET ||
-    process.env.JOURNEY_UNLOCK_CRON_SECRET ||
-    process.env.CARDCOM_CRON_SECRET;
-  // No secret configured → allow only on localhost / preview.
-  if (!expected) return process.env.VERCEL_ENV !== "production";
-  const header = req.headers.get("authorization") ?? "";
-  return header === `Bearer ${expected}`;
+  return isCronAuthorized(req, "journey");
 }
 
 async function handle(req: Request): Promise<NextResponse<Summary>> {
+  const startedAt = Date.now();
   if (!authOk(req)) {
     return NextResponse.json(
       { ok: false, d1_sent: 0, d2_sent: 0, considered: 0, errors: ["unauthorized"] },
@@ -257,6 +254,11 @@ async function handle(req: Request): Promise<NextResponse<Summary>> {
     }
   }
 
+  // Audit follow-up (6.8.2026): a single structured success line per run.
+  // These four jobs previously wrote NOTHING on success, so the only
+  // evidence a run happened was Vercel's cron history. Goes through
+  // makeLogger → emit(), which applies the H5 redactor; no PII here.
+  cronLog.info("run.ok", { processed: d1Sent + d2Sent, considered, errors: errors.length, dur_ms: Date.now() - startedAt });
   return NextResponse.json({
     ok: errors.length === 0,
     d1_sent: d1Sent,
