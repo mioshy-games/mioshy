@@ -442,7 +442,7 @@ WHERE p.role IN ('expert','admin');
 
 | משתנה | ערך מצופה | סביבות | מי תלוי בו |
 |---|---|---|---|
-| `BREVO_WEBHOOK_SECRET` | מחרוזת אקראית ≥32 תווים | Production (+ Preview לנוחות) | `/api/brevo/unsubscribe-webhook`. **בלעדיו הנתיב מחזיר 503 והסרות/הקפצות לא נרשמות.** יש להוסיף אותו גם ב-Brevo: Webhook → Custom headers → `Authorization: Bearer <secret>` |
+| `BREVO_WEBHOOK_SECRET` | מחרוזת אקראית 40 תווים, **אותיות וספרות בלבד** (סימנים מיוחדים נשברים בתוך URL) | Production (+ Preview) | `/api/brevo/unsubscribe-webhook`. **בלעדיו הנתיב מחזיר 503 והסרות/הקפצות לא נרשמות.** יש להגדיר אותו **גם ב-Brevo וגם בוורסל, ובסדר הנכון** — ראה `docs/brevo-webhook-secret-runbook.md`. הדרך המומלצת אינה כותרת HTTP אלא **פרמטר בכתובת ה-webhook** (`?secret=…`), כי היא אינה תלויה בשום יכולת מיוחדת של Brevo. |
 | `JOURNEY_CRON_SECRET` | מחרוזת אקראית ≥32 תווים | Production, Preview | 16 נתיבי ה-cron/תפעול תחת `app/api/journey/*` ו-`app/api/whatsapp/*` |
 | `BILLING_CRON_SECRET` | מחרוזת אקראית ≥32 תווים, **שונה** מהקודם | Production, Preview | `billing/renewals/run`, `billing/repair-missing-invoices` בלבד |
 | `CRON_SECRET` | **כבר קיים** — לא לגעת | Production | Vercel Cron מצרף אותו אוטומטית לכל הרצה מתוזמנת. זה מה שמאמת בפועל את 17 העבודות. |
