@@ -224,37 +224,104 @@ curl -s -X GET 'https://api.brevo.com/v3/webhooks/<WEBHOOK_ID>' \
 
 ---
 
-## שלב 4 — הבדיקה האמיתית
+## שלב 4 — הבדיקה, בלי לגעת ברשימת התפוצה
 
-זו הבדיקה שסופרת. עכשיו הקוד דורש את הסוד, ו-Brevo אמורה לספק אותו.
+במקום להסיר כתובת אמיתית, מדמים את הבקשה ש-Brevo שולחת. **הבדיקה מתחלקת
+לשתיים, והראשונה לא נוגעת בבסיס הנתונים בכלל.**
 
-**הפעולה:**
+### 4א — הוכחת הכותרת. **לא משנה שום דבר.**
 
-1. קח כתובת מייל שיש לה חשבון אצלנו ושאתה שולט בה (למשל כתובת בדיקה שלך).
-2. שלח אליה מייל כלשהו מ-Brevo — הכי פשוט: קמפיין בדיקה, או מייל שיווקי קיים.
-3. פתח את המייל ולחץ על **קישור ההסרה** שבתחתיתו.
-4. המתן דקה.
+השתמש בכתובת מייל ש**אין לה חשבון** אצלנו — למשל `probe-<משהו>@example.invalid`.
+הנתיב יאמת את הסוד, יחפש את הכתובת, לא ימצא אותה, **ולא יכתוב כלום.**
 
-**השאילתה שמראה שזה נרשם** (Supabase → SQL Editor):
-
-### שאילתה א' — האם ההסרה נרשמה
-
-```sql
-SELECT u.email,
-       p.marketing_consent,
-       p.marketing_consent_at,
-       p.marketing_consent_source
-  FROM public.profiles p
-  JOIN auth.users u ON u.id = p.id
- WHERE p.marketing_consent_source = 'brevo_unsubscribe'
- ORDER BY p.marketing_consent_at DESC
- LIMIT 10;
+```bash
+curl -s -i -X POST 'https://mioshy.com/api/brevo/unsubscribe-webhook' \
+  -H 'content-type: application/json' \
+  -H 'authorization: Bearer <הסוד>' \
+  -d '{"event":"unsubscribed","email":"<EMAIL>"}'
 ```
 
-**מה אמור להופיע:** השורה העליונה היא כתובת הבדיקה שלך, עם
-`marketing_consent = false`, ו-`marketing_consent_at` מלפני כמה דקות.
+**מה אמור לחזור (הקוד שפרוס כרגע, לפני מיזוג #52):**
 
-**אם השורה שלך לא שם** — משהו לא עובד. עבור לשלב 6.
+| תשובה | מה זה אומר | מה לעשות |
+|---|---|---|
+| `200` + `{"ok":true,"matched":false}` | **הצלחה.** הסוד התקבל, הכתובת לא קיימת ולכן לא נכתב כלום | המשך ל-4ב |
+| `401` + `{"error":"unauthorized"}` | הסוד ב-Brevo/בפקודה שונה מזה שבוורסל | השווה את שניהם. **אל תמשיך** |
+| `400` + `{"error":"missing_email"}` | ה-JSON שבור או חסר `email` | בדוק את המרכאות בפקודה |
+| `500` | תקלה אצלנו | עצור וקרא לי |
+
+> **למה `matched:false` היא הצלחה:** היא מוכיחה שהבקשה **עברה את בדיקת הסוד**
+> והגיעה ללוגיקה. `401` הוא הכישלון, לא `matched:false`.
+
+### 4ב — הוכחת הכתיבה. **משנה שורה אחת, עם ביטול מלא.**
+
+רק אם 4א החזירה `200`. כאן משתמשים בכתובת של **חשבון בדיקה אמיתי** — לא שלך,
+ולא של לקוח.
+
+**קודם — צילום המצב הנוכחי, כדי שנוכל להחזיר:**
+
+```sql
+SELECT u.email, p.marketing_consent, p.marketing_consent_at, p.marketing_consent_source
+  FROM public.profiles p JOIN auth.users u ON u.id = p.id
+ WHERE u.email = '<EMAIL>';
+```
+
+**שמור את שלושת הערכים.** זה מה שתחזיר בסוף.
+
+עכשיו אותה פקודה מ-4א, עם כתובת חשבון הבדיקה. **התשובה הצפויה:**
+`200` + `{"ok":true,"matched":true}` ← `matched:true` הוא ההוכחה שהשורה עודכנה.
+
+**מה השתנה בבסיס הנתונים — שורה אחת בטבלת `profiles`, שלוש עמודות:**
+
+| עמודה | הערך החדש |
+|---|---|
+| `marketing_consent` | `false` |
+| `marketing_consent_at` | הזמן הנוכחי |
+| `marketing_consent_source` | `'brevo_unsubscribe'` |
+
+**שום דבר אחר לא נוגע.** לא נמחקות שורות, לא נשלחים מיילים, ו-Brevo עצמה
+לא יודעת שהבדיקה קרתה — היא לא מעורבת.
+
+### 4ג — האימות (התשובה עצמה לא מוכיחה שהרישום נכנס)
+
+```sql
+SELECT u.email, p.marketing_consent, p.marketing_consent_at, p.marketing_consent_source
+  FROM public.profiles p JOIN auth.users u ON u.id = p.id
+ WHERE p.marketing_consent_source = 'brevo_unsubscribe'
+ ORDER BY p.marketing_consent_at DESC
+ LIMIT 5;
+```
+
+השורה העליונה צריכה להיות כתובת הבדיקה, `marketing_consent = false`,
+וזמן מלפני רגע.
+
+### 4ד — להחזיר את המצב לקדמותו
+
+הצב את שלושת הערכים מהצילום ב-4ב:
+
+```sql
+UPDATE public.profiles p
+   SET marketing_consent        = <הערך המקורי>,
+       marketing_consent_at     = <הערך המקורי או NULL>,
+       marketing_consent_source = <הערך המקורי או NULL>
+  FROM auth.users u
+ WHERE u.id = p.id AND u.email = '<EMAIL>';
+```
+
+ואז הרץ שוב את שאילתת הצילום מ-4ב וּודא שהערכים חזרו.
+
+> **אם בטעות שלחת `"event":"hardBounce"`** — זה מוסיף שורה לטבלה אחרת.
+> הביטול:
+> ```sql
+> DELETE FROM public.email_hard_bounces WHERE email = '<EMAIL>';
+> ```
+> **חשוב:** כל עוד השורה שם, כל שליחה עתידית לכתובת הזו תדולג.
+
+> ### ⏱️ הערה על התזמון
+> הטבלה למעלה מתארת את **הקוד שפרוס כרגע**. אחרי מיזוג #52 התשובות הופכות
+> אחידות — `{"ok":true}` לכל מקרה, **וגם סוד שגוי יחזיר `200`**. כלומר
+> **הבדיקה הזו הכי אינפורמטיבית עכשיו**, לפני המיזוג. אחרי המיזוג ההוכחה
+> היחידה היא שאילתת 4ג.
 
 ---
 
