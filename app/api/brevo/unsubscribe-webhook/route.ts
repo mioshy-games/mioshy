@@ -194,6 +194,12 @@ async function findUserByEmail(
  * the redactor has nothing to do here anyway.
  */
 const logRejected = (reason: string, impact: string) =>
+  // ⚠️ NO REDACTOR ON THIS LINE. It writes straight to console, bypassing the
+  // emit() redactor added in H5. The two arguments are fixed labels chosen at
+  // the call sites below — never request data. If you add a field here, it goes
+  // to the log UNMASKED: no address, no token, no header, no body. If you need
+  // one of those, you need makeLogger, and see the note above about why it is
+  // not used here.
   // eslint-disable-next-line no-console
   console.error(`level=error scope=brevo.webhook event=rejected reason=${reason} impact=${impact}`);
 
