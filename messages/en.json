@@ -1023,30 +1023,33 @@
     },
     "weekly": {
       "eyebrow": "Your weekly guidance",
-      "title": "Every week, a new chapter in your relationship.",
-      "titleAccent": "And an expert by your side.",
+      "title": "One hour a week that's just yours.",
+      "titleAccent": "And an expert beside you.",
       "cta": "Take the assessment, get instant results",
-      "lede": "Each week we strengthen a different area of your relationship, with small questions and tasks along the way. You share your experiences and whatever comes up in the chat with our experts, and they are there for you, giving practical tools and walking with you hand in hand at every step toward a stronger relationship.",
+      "lede": "Every month, five new chapters open up, and you choose where to start and when.",
+      "lede2": "The idea is simple. One day a week that belongs only to the two of you, thirty minutes to an hour, and you do one of the chapters. Feel like doing two in one evening? That works too. Your pace.",
+      "lede3": "Your expert is with you the whole way. Sending you questions, answering yours in chat, and available for a call whenever you feel like talking.",
+      "lede4": "And all of it for one thing. So the desire becomes part of your everyday again, and the butterflies come back with it.",
       "cats": {
         "0": {
-          "h": "Intimacy and sexuality",
-          "p": "Build physical closeness that feels safe and natural for you both."
+          "h": "Intimacy and sex",
+          "p": "What you enjoy, what you don't, and how to talk about it without the awkwardness."
         },
         "1": {
-          "h": "Couple communication",
-          "p": "Talk and listen in a way that leaves you feeling truly heard."
+          "h": "Communication",
+          "p": "Talking about the hard things too, and feeling actually heard."
         },
         "2": {
           "h": "Friendship and partnership",
-          "p": "Bring back the joy in the small things you do together."
+          "p": "The laughter, the inside jokes, and the small things you used to do that quietly disappeared."
         },
         "3": {
           "h": "Family and routine",
-          "p": "Face the pressures of everyday life and home together."
+          "p": "How you keep space for each other when the house and the kids take everything."
         },
         "4": {
           "h": "Emotional connection",
-          "p": "Strengthen the closeness and trust between you, every day."
+          "p": "The closeness between you, and the attraction that doesn't have to fade."
         }
       }
     },

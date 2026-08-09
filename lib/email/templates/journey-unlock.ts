@@ -36,6 +36,16 @@ export function renderJourneyUnlockEmail(
 ): JourneyUnlockEmail {
   const isHe = input.locale === "he";
   const dir = isHe ? "rtl" : "ltr";
+  /**
+   * Singular vs plural is NOT decoration — keep both branches.
+   *
+   * The plural copy interpolates the count ("${items.length} פרקים חדשים"),
+   * so collapsing to plural-only renders "1 פרקים חדשים" whenever a single
+   * chapter unlocks. Five chapters normally open together each month, but a
+   * late or backfilled unlock still arrives alone, and broken agreement in a
+   * subject line reads as an unmaintained product.
+   * (Removed on 2026-08-09 and restored the same day for exactly this reason.)
+   */
   const multi = input.items.length > 1;
   // Subject uses the raw name (mail clients render the subject as plain
   // text); HTML body uses the escaped version.

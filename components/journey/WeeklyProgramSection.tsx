@@ -41,11 +41,19 @@ export function WeeklyProgramSection({
           />
         </h2>
 
-        <CmsText
-          cmsKey="journeyHub.weekly.lede"
-          as="p"
-          className="mt-5 text-[19px] leading-[1.6] text-[#170E14]"
-        />
+        {/* Four paragraphs, not one. The approved copy is written as four
+            distinct beats (what opens monthly / how a week looks / the expert /
+            the why), and collapsing them into a single <p> would run them
+            together into a wall of text. Each is its own CMS key so the copy
+            stays editable per paragraph. */}
+        {(["lede", "lede2", "lede3", "lede4"] as const).map((k, i) => (
+          <CmsText
+            key={k}
+            cmsKey={`journeyHub.weekly.${k}`}
+            as="p"
+            className={`${i === 0 ? "mt-5" : "mt-4"} text-[19px] leading-[1.6] text-[#170E14]`}
+          />
+        ))}
 
         <div className="mt-8 flex flex-col">
           {[0, 1, 2, 3, 4].map((i) => (
