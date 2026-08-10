@@ -37,7 +37,7 @@
       "upsellChip": "Relationship Journey",
       "upsellTitle": "Start your relationship journey",
       "upsellBody": "Everything you need to build a stronger relationship is in one place. You start with a short 3-minute assessment, and every 8 weeks we check together how far you've come. You can stop anytime.",
-      "upsellBullet1": "A new chapter every week",
+      "upsellBullet1": "Five new chapters every month",
       "upsellBullet2": "A new couple activity every week",
       "upsellBullet3": "A private relationship expert in chat",
       "upsellBullet4": "Free access to all of Mioshy's sex games",
@@ -1063,7 +1063,7 @@
         },
         "1": {
           "h": "Human pace",
-          "p": "No content dumps. A new chapter opens each week - a practice, a challenge, or a shared conversation. Enough room to feel it, try it, come back to it."
+          "p": "Five new chapters open every month, and you choose where to start and when."
         },
         "2": {
           "h": "Written by experts",
@@ -1104,8 +1104,8 @@
           "tag": "The analysis"
         },
         "2": {
-          "title": "An expert + weekly practice",
-          "body": "Your Mioshy expert learns your relationship, builds a custom plan, and follows you in private chat. Short practices that add up to about an hour a week - at your pace.",
+          "title": "An expert with you, in chat and by phone",
+          "body": "Your Mioshy expert learns your relationship, builds a custom plan, and stays with you in chat, and on a call if you feel like it. Short practices that add up to about an hour a week - at your pace.",
           "tag": "The path"
         }
       }
@@ -1538,7 +1538,7 @@
       "stage3Hook": "I want an expert to guide us",
       "stage3Desc": "From the moment you join, a dedicated expert builds a process tailored to the path you chose, walks with you through every question, and helps you find the connection again.",
       "stage3GetTitle": "What you get",
-      "stage3Get": "Personal expert · Weekly plan · Direct chat · Access to every game",
+      "stage3Get": "Personal expert · Weekly plan · Direct chat · Phone · Access to all games",
       "stage3GetIncludes": "Included: Online couples games + Mioshy's Sex",
       "stage3WhenTitle": "When this is the right thing",
       "stage3When": "When years together - routine and kids - pushed your relationship aside, and you want to restore the intimacy and love.",
