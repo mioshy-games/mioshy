@@ -226,10 +226,10 @@ export function CookieConsentBar({ locale = "he" }: { locale?: "he" | "en" }) {
 
         <p
           style={{
-            fontSize: 13.2,
+            fontSize: 18,
             fontWeight: 400,
-            lineHeight: 1.65,
-            color: "#B7A3CD",
+            lineHeight: 1.4,
+            color: "#FFFFFF",
             marginBottom: 20,
           }}
         >
