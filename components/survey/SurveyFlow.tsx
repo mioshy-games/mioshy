@@ -3,6 +3,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "@/navigation";
 import { track } from "@/lib/analytics";
+import {
+  trackSurveyAnswer,
+  trackSurveyCompleted,
+  type SurveyLocale,
+} from "@/lib/analytics/survey-link";
 import styles from "./survey.module.css";
 import { PollRegister } from "./PollRegister";
 import { pollAnonHeaders } from "@/lib/poll/anon-client";
@@ -78,6 +83,12 @@ export function SurveyFlow({ embedded = false, authed: authedProp = false, back,
   const [history, setHistory] = useState<HistoryRow[] | null>(null);
   const [copied, setCopied] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Server-reported count of the questions THIS person has answered, carried
+  // from the last successful vote. Never a client tally — see the brief §2.3.
+  // Null when this session has not voted yet (e.g. a direct landing straight
+  // onto the end screen), in which case the completed handler asks the server.
+  const totalAnsweredRef = useRef<number | null>(null);
+  const surveyLocale: SurveyLocale = locale === "en" ? "en" : "he";
 
   // Personalised invite (§ share): "{name} מזמין/ה אותך…" for a signed-in user,
   // generic otherwise.
@@ -134,6 +145,32 @@ export function SurveyFlow({ embedded = false, authed: authedProp = false, back,
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [status, question]);
 
+  // Survey completed — the questions ran out (brief §2.3). This is the only
+  // stable terminal in a flow with no fixed length, and it fired nothing before.
+  // `trackSurveyCompleted` dedupes per session on its own; the ref just stops us
+  // re-fetching the count if this effect re-runs.
+  const completedFiredRef = useRef(false);
+  useEffect(() => {
+    if (status !== "done" || completedFiredRef.current) return;
+    completedFiredRef.current = true;
+
+    const fire = (count: number) =>
+      trackSurveyCompleted({ locale: surveyLocale, questionsAnswered: count });
+
+    const known = totalAnsweredRef.current;
+    if (known !== null) { fire(known); return; }
+
+    // Landed straight on the end screen without voting this session, so there is
+    // no server count in hand. Ask the server rather than guessing — the history
+    // route already returns exactly this person's answered questions.
+    fetch("/api/poll/history")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => fire(Array.isArray(d?.history) ? d.history.length : 0))
+      .catch(() => { /* count unavailable — report 0 rather than lose the event */
+        fire(0);
+      });
+  }, [status, surveyLocale]);
+
   const vote = async (option: "a" | "b") => {
     if (!question || busy) return;
     setBusy(true);
@@ -145,6 +182,21 @@ export function SurveyFlow({ embedded = false, authed: authedProp = false, back,
       });
       const d = await res.json();
       if (!res.ok) throw new Error(d?.error ?? "vote_failed");
+
+      // The write is confirmed by the server (`ok` is read back from the table,
+      // not inferred from this 200 — brief §0/§3), so the answer events can
+      // safely fire here. `isFirstAnswer` is the server's call too, which is
+      // what keeps SurveyFirstAnswer to exactly one per person.
+      if (d.ok) {
+        if (typeof d.totalAnswers === "number") totalAnsweredRef.current = d.totalAnswers;
+        trackSurveyAnswer({
+          locale: surveyLocale,
+          questionId: question.id,
+          isFirstAnswer: d.isFirstAnswer === true,
+          totalAnswers: typeof d.totalAnswers === "number" ? d.totalAnswers : 0,
+        });
+      }
+
       // Always reveal inline — never navigate away (§ stay put; the dashboard
       // keeps signed-in users on the dashboard).
       setYourOption(d.yourOption);

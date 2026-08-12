@@ -3,12 +3,17 @@
 import { useEffect, Suspense } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { metaTrack, flushMetaPixelQueue } from "@/lib/analytics/meta-pixel";
+import { hasAnalyticsConsent, onConsentDecided } from "@/lib/analytics/consent";
 
 /**
  * Meta (Facebook) browser Pixel loader — deliberately a near-clone of
  * PostHogProvider so it shares the same battle-tested posture:
  *
  *   • Prod-only (NODE_ENV === "production") — zero pixel requests in dev.
+ *   • GATED ON CONSENT — nothing loads until the visitor explicitly accepts.
+ *     `dismissed` is a refusal and no cookie at all is not an answer; both mean
+ *     fbevents.js is never fetched and no PageView is sent. See
+ *     lib/analytics/consent.ts and P6 in SECURITY-FIX-PLAN.md.
  *   • Idle-deferred (requestIdleCallback) — never on the first-paint path.
  *   • Respects Do-Not-Track — DNT users get no pixel at all.
  *   • No-op when NEXT_PUBLIC_FB_PIXEL_ID is absent — missing env never breaks a
@@ -89,19 +94,33 @@ export function MetaPixelProvider() {
     if (process.env.NODE_ENV !== "production") return;
     if (!PIXEL_ID) return;
 
-    // Defer to idle so the pixel never blocks first paint. requestIdleCallback
-    // where supported, else a short timeout (Safari < 16, etc.).
     type IdleWindow = Window & {
       requestIdleCallback?: (cb: () => void) => number;
       cancelIdleCallback?: (handle: number) => void;
     };
     const w = window as IdleWindow;
-    const ric =
-      w.requestIdleCallback ??
-      ((cb: () => void) => setTimeout(cb, 2000) as unknown as number);
-    const handle = ric(() => initMetaPixel());
+    let handle: number | undefined;
+
+    // The gate — same shape as PostHogProvider. Re-checked when a decision
+    // lands so accepting starts the pixel in this page view; refusing (or not
+    // answering) means initMetaPixel is never reached, fbevents.js is never
+    // fetched, and no PageView is sent.
+    const startIfConsented = () => {
+      if (handle !== undefined) return; // already scheduled
+      if (!hasAnalyticsConsent()) return;
+      // Defer to idle so the pixel never blocks first paint. requestIdleCallback
+      // where supported, else a short timeout (Safari < 16, etc.).
+      const ric =
+        w.requestIdleCallback ??
+        ((cb: () => void) => setTimeout(cb, 2000) as unknown as number);
+      handle = ric(() => initMetaPixel());
+    };
+
+    startIfConsented();
+    const off = onConsentDecided(startIfConsented);
 
     return () => {
+      off();
       const cancel = w.cancelIdleCallback;
       if (cancel && typeof handle === "number") cancel(handle);
     };

@@ -33,7 +33,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { track } from "@/lib/analytics";
-import { CONSENT_DECIDED_EVENT } from "@/components/analytics/CookieConsentBar";
+import { CONSENT_DECIDED_EVENT } from "@/lib/analytics/consent";
 
 const DISMISS_KEY = "mioshy_assessment_bar_dismissed";
 const DISMISS_MS = 7 * 24 * 60 * 60 * 1000; // 7 days

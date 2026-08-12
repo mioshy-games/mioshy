@@ -44,7 +44,15 @@ const CONTENT_NAME = "israel_couples_survey";
 // non-standard name sent through `track` raises warnings in Events Manager.
 const META_CLICK_EVENT = "SurveyLinkClick";
 const META_PAGEVIEW_EVENT = "SurveyPageView";
+const META_FIRST_ANSWER_EVENT = "SurveyFirstAnswer";
 const PH_CLICK_EVENT = "survey_link_clicked";
+const PH_FIRST_ANSWER_EVENT = "survey_first_answer";
+const PH_ANSWERED_EVENT = "survey_answered";
+const PH_COMPLETED_EVENT = "survey_completed";
+
+/** sessionStorage keys — see the dedup notes on each tracker below. */
+const SS_COMPLETED = "_mioshy_survey_completed";
+const SS_STARTED_AT = "_mioshy_survey_started_at";
 
 /**
  * Dedup id shared between the Pixel event (`eventID`) and the PostHog event
@@ -120,5 +128,105 @@ export function trackSurveyPageView(locale: SurveyLocale): void {
   metaTrackCustom(META_PAGEVIEW_EVENT, {
     content_name: CONTENT_NAME,
     locale,
+  });
+}
+
+// ─── Answering ───────────────────────────────────────────────────────────────
+// Everything below is called from the handler for a SUCCESSFUL vote response —
+// never from the button's onClick. The server decides what happened
+// (`recordVote` → `{ ok, isFirstAnswer, totalAnswers }`, brief §3); this file
+// only reports it. Firing on the click, or on a bare 200, would attribute
+// campaign conversions to writes that never landed.
+
+/** Stamp the start of this session's survey, once, so `survey_completed` can
+ *  report a duration. Safe to call on every answer. */
+function markSurveyStarted(): void {
+  try {
+    if (!window.sessionStorage.getItem(SS_STARTED_AT)) {
+      window.sessionStorage.setItem(SS_STARTED_AT, String(Date.now()));
+    }
+  } catch {
+    /* storage blocked — duration is simply reported as null */
+  }
+}
+
+/**
+ * A successful, verified answer.
+ *
+ * Fires `survey_answered` every time, and `SurveyFirstAnswer` +
+ * `survey_first_answer` only when the SERVER says this was the person's first
+ * ever — the Pixel event is the campaign conversion, so it must never fire
+ * twice for the same person. Both halves of the first-answer pair share one
+ * `event_id`/`eventID` so a server-side CAPI twin can dedupe later without a
+ * client change.
+ *
+ * `answerIndex` is the server's `totalAnswers` — the person's own running count
+ * — not a client tally, for the same reason "first" is decided server-side.
+ */
+export function trackSurveyAnswer(args: {
+  locale: SurveyLocale;
+  questionId: string;
+  isFirstAnswer: boolean;
+  totalAnswers: number;
+}): void {
+  if (typeof window === "undefined") return;
+  markSurveyStarted();
+
+  capture(PH_ANSWERED_EVENT, {
+    locale: args.locale,
+    question_id: args.questionId,
+    answer_index: args.totalAnswers,
+  });
+
+  if (!args.isFirstAnswer) return;
+
+  const eventId = newEventId();
+  metaTrackCustom(
+    META_FIRST_ANSWER_EVENT,
+    { content_name: CONTENT_NAME, locale: args.locale },
+    eventId,
+  );
+  capture(PH_FIRST_ANSWER_EVENT, {
+    locale: args.locale,
+    question_id: args.questionId,
+    event_id: eventId,
+  });
+}
+
+/**
+ * The survey ran out of questions — `SurveyFlow` reached `status === "done"`.
+ * See docs/survey-answer-event-brief.md §2.3 for why that is the terminal, and
+ * why there is no count-based threshold.
+ *
+ * Once per SESSION, not once per lifetime: someone who returns after new
+ * questions land and exhausts them again is a real completion. The guard is in
+ * sessionStorage, so re-rendering or refreshing the end screen cannot re-fire.
+ *
+ * PostHog only — this describes exhausting the question stock, not purchase
+ * intent, so it has no business in campaign optimisation.
+ */
+export function trackSurveyCompleted(args: {
+  locale: SurveyLocale;
+  questionsAnswered: number;
+}): void {
+  if (typeof window === "undefined") return;
+
+  let durationMs: number | null = null;
+  try {
+    if (window.sessionStorage.getItem(SS_COMPLETED)) return; // already fired
+    window.sessionStorage.setItem(SS_COMPLETED, "1");
+    const startedAt = Number(window.sessionStorage.getItem(SS_STARTED_AT));
+    if (Number.isFinite(startedAt) && startedAt > 0) durationMs = Date.now() - startedAt;
+  } catch {
+    // Storage blocked: we cannot dedupe, and a survey end screen that re-mounts
+    // would fire twice. Staying silent is the safer failure — a missing event
+    // is recoverable, an inflated completion count quietly is not.
+    return;
+  }
+
+  capture(PH_COMPLETED_EVENT, {
+    locale: args.locale,
+    questions_answered: args.questionsAnswered,
+    session_duration_ms: durationMs,
   });
 }

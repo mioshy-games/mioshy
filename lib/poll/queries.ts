@@ -231,22 +231,82 @@ async function getExistingVoteByUser(questionId: string, userId: string): Promis
 }
 
 /**
+ * How many DISTINCT questions this person has answered, matching on EITHER
+ * identity — `user_id` for a signed-in person, `anon_id` for this device.
+ *
+ * Both, not one: a vote cast before signing in carries `user_id = null`, and a
+ * vote from a second device carries a different `anon_id`. Matching on one key
+ * alone under-counts, and an under-count at zero is exactly what would make a
+ * returning person look "first" all over again. This is the same either-key
+ * rule `getCurrentQuestion` uses, for the same reason.
+ *
+ * DISTINCT question_id, not row count: the uniqueness key is
+ * (anon_id, question_id), so one question can legitimately hold two rows for
+ * the same human — one per device — and counting rows would double it.
+ */
+async function countAnsweredQuestions(
+  admin: Awaited<ReturnType<typeof createAdminClient>>,
+  args: { anonId: string; userId?: string | null },
+): Promise<number> {
+  let sel = admin.from("poll_votes").select("question_id");
+  sel = args.userId
+    ? sel.or(`user_id.eq.${args.userId},anon_id.eq.${args.anonId}`)
+    : sel.eq("anon_id", args.anonId);
+
+  const { data, error } = await sel;
+  // A failed read is NOT "answered nothing" — same trap PR #49 closed in
+  // getCurrentQuestion. Swallowing it here would report every answer as the
+  // person's first and fire a paid-campaign conversion on each one.
+  if (error) throw new Error(`poll_answer_count_failed: ${error.message}`);
+  return new Set((data ?? []).map((r) => r.question_id as string)).size;
+}
+
+export interface RecordVoteResult {
+  /** A row for this person + question is confirmed present after the call.
+   *  Read back from the table — never inferred from "the insert didn't throw". */
+  ok: boolean;
+  /** The option that now stands (the FIRST one chosen, on a repeat). */
+  option: "a" | "b";
+  /** This call recorded the person's very first answer, ever, on any device.
+   *  False for every repeat and for every subsequent question. */
+  isFirstAnswer: boolean;
+  /** Distinct questions this person has now answered, including this one. */
+  totalAnswers: number;
+}
+
+/**
  * Record an anonymous vote. Idempotent per (anon_id, question) AND per
  * (user_id, question) — a repeat vote keeps the FIRST choice (no repeat, §7).
- * Returns the option that now stands.
+ *
+ * Returns a verified result rather than a bare option, per
+ * docs/survey-answer-event-brief.md §3: the analytics events downstream must
+ * bind to a write that actually happened, not to a 200. `isFirstAnswer` is
+ * decided by counting before and after, so an ignored duplicate can never
+ * present itself as a first answer.
  */
 export async function recordVote(args: {
   questionId: string;
   option: "a" | "b";
   anonId: string;
   userId?: string | null;
-}): Promise<"a" | "b"> {
+}): Promise<RecordVoteResult> {
   const admin = await createAdminClient();
+
+  // Count BEFORE touching anything. The difference across the write is what
+  // makes "first" trustworthy: a duplicate leaves the count unmoved.
+  const answeredBefore = await countAnsweredQuestions(admin, args);
 
   // Same account, different device/cookie → keep the first vote, insert nothing.
   if (args.userId) {
     const byUser = await getExistingVoteByUser(args.questionId, args.userId);
-    if (byUser) return byUser;
+    if (byUser) {
+      return {
+        ok: true, // the row exists — we just read it
+        option: byUser,
+        isFirstAnswer: false, // nothing was written; this is a repeat
+        totalAnswers: answeredBefore,
+      };
+    }
   }
 
   // onConflict (anon_id, question_id) → ignoreDuplicates keeps the first vote.
@@ -271,8 +331,11 @@ export async function recordVote(args: {
       .is("user_id", null);
   }
 
+  // Read back rather than trusting the upsert. This is the "verified write" the
+  // brief requires: if the row is not here, nothing downstream should fire.
   const existing = await getExistingVote(args.questionId, args.anonId);
   const finalOption = existing ?? args.option;
+  const answeredAfter = await countAnsweredQuestions(admin, args);
 
   // Best-effort aggregate refresh (recomputed, so races can't corrupt it).
   const [{ count: countA }, { count: countB }] = await Promise.all([
@@ -286,5 +349,14 @@ export async function recordVote(args: {
       { onConflict: "question_id" },
     );
 
-  return finalOption;
+  return {
+    ok: existing !== null,
+    option: finalOption,
+    // Went from nothing to exactly one. A duplicate leaves before === after, so
+    // it can never report itself as first; and someone who answered anonymously
+    // and then signed in already has answeredBefore > 0 via the OR match, so the
+    // linked history is not re-counted as a new person's first answer.
+    isFirstAnswer: answeredBefore === 0 && answeredAfter === 1,
+    totalAnswers: answeredAfter,
+  };
 }
