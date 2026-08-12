@@ -718,15 +718,36 @@ small, .text-small {
   :root {
     --whatsapp-bottom-offset: 92px;
   }
+}
 
-  /* While the cookie-consent strip is pinned at the bottom (mobile only), lift
-     the WhatsApp button by the strip's measured height so it sits clearly above
-     it. `html.cookie-bar-open` + `--cookie-bar-h` are set by CookieConsentBar
-     while it's shown and removed on dismiss, so the button returns to 92px
-     automatically. Higher specificity than the :root rule above, so it wins. */
-  html.cookie-bar-open {
-    --whatsapp-bottom-offset: calc(92px + var(--cookie-bar-h, 56px));
-  }
+/* While the assessment banner is pinned at the bottom, lift the WhatsApp button
+   clear of everything stacked down there. Bottom-up the order is
+   MobileTabs → AssessmentBar → this button, so the offset is the sum of the two
+   measured heights plus a 12px gap:
+
+     MobileTabs     bottom: 0                        (--mobile-tabs-h)
+     AssessmentBar  bottom: var(--mobile-tabs-h)     (--assessment-bar-h)
+     WhatsApp FAB   bottom: tabs + banner + 12px
+
+   On /he/survey there are no tabs, so `--mobile-tabs-h` is unset, the var falls
+   back to 0px and the formula collapses to banner + 12px on its own. Both
+   variables are published (and removed) by the components that own them, so the
+   button returns to its baseline automatically on dismiss.
+
+   Deliberately OUTSIDE the mobile media query above, unlike the cookie-strip
+   rule it replaces: the banner spans the bottom edge at every width, and on
+   desktop the un-lifted button landed squarely on top of the banner's ✕ and
+   made it unclickable. `html.assessment-bar-open` (0,1,1) outranks the `:root`
+   baseline (0,1,0), so it still wins on mobile.
+
+   2026-08-12 — this rule previously keyed off `html.cookie-bar-open` +
+   `--cookie-bar-h`. CookieConsentBar became a centred modal and no longer
+   occupies the bottom edge, so the lift moved to the surfaces that still do.
+   The mechanism is unchanged. */
+html.assessment-bar-open {
+  --whatsapp-bottom-offset: calc(
+    var(--mobile-tabs-h, 0px) + var(--assessment-bar-h, 0px) + 12px
+  );
 }
 
 /* a11y (M13) — global keyboard focus indicator. `:where()` keeps specificity

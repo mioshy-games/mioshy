@@ -12,7 +12,6 @@ import { PostHogProvider } from "@/components/analytics/PostHogProvider";
 import { FirstPartyPageView } from "@/components/analytics/FirstPartyPageView";
 import { GtmSpaPageView } from "@/components/analytics/GtmSpaPageView";
 import { CookieConsentBar } from "@/components/analytics/CookieConsentBar";
-import { getRequestUser } from "@/lib/auth/getRequestUser";
 import { GlobalAssessmentOffer } from "@/components/marketing/GlobalAssessmentOffer";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -177,13 +176,6 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const locale = headers().get("x-mioshy-locale") === "en" ? "en" : "he";
   const dir = locale === "he" ? "rtl" : "ltr";
 
-  // Signed-in users never get the cookie banner (see CookieConsentBar).
-  // getRequestUser is React-cached and shared with the [locale] layout, so this
-  // adds no extra auth round-trip; it never throws (returns { user: null }).
-  const isAuthed = await getRequestUser()
-    .then(({ user }) => !!user)
-    .catch(() => false);
-
   return (
     <html
       lang={locale}
@@ -256,9 +248,10 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
             GA4 / Ads triggers see each SPA navigation (gtm.js only reports the
             initial load). */}
         <GtmSpaPageView />
-        {/* Google Consent Mode v2 grantor — the one-time bottom bar that flips
-            ad/analytics consent from the denied default. Global overlay. */}
-        <CookieConsentBar locale={locale} isAuthed={isAuthed} />
+        {/* Google Consent Mode v2 grantor — the one-time blocking modal that
+            flips ad/analytics consent from the denied default. Shown to every
+            visitor without a stored decision, signed in or not. */}
+        <CookieConsentBar locale={locale} />
         {/* Quick-assessment offer — "after login" + "return after 24h" touch
             points (the in-game touch point lives in TruthOrDareClient). CRM
             copy, suppressed for assessment-done / journey-owners, once/session. */}
