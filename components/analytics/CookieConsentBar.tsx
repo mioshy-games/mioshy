@@ -4,39 +4,53 @@
  * CookieConsentBar — the missing piece of Google Consent Mode v2.
  *
  * GoogleTagManager.tsx sets consent `default` = denied for ad/analytics
- * storage, so GA/Ads stay blocked until something grants consent. This thin,
- * one-time bottom bar is that grantor.
+ * storage, so GA/Ads stay blocked until something grants consent. This
+ * one-time, centred modal is that grantor.
  *
- * Behaviour (per Itzik):
- *  • No cookie yet            → show the bar.
- *  • "Accept"                 → gtag('consent','update', all 4 → granted) +
- *                               cookie = 'granted' (~12 months) + hide.
- *  • Close (X)                → cookie = 'dismissed' + hide; consent stays denied.
+ * Behaviour:
+ *  • No cookie yet            → show the modal (EVERY visitor, signed in or not).
+ *  • "מאשרים"                 → gtag('consent','update', all 4 → granted) +
+ *                               cookie = 'granted' (12 months) + hide.
+ *  • "מסרבים"                 → cookie = 'dismissed' (30 days) + hide;
+ *                               consent stays denied.
  *  • Cookie === 'granted'     → re-apply the consent update on every load (so a
- *                               returning consenter keeps full analytics) — bar
- *                               stays hidden.
- *  • Any cookie present       → never show the bar again (appears once).
+ *                               returning consenter keeps full analytics) — the
+ *                               modal stays hidden.
+ *  • Any cookie present       → never show the modal again until it expires.
  *
- * gtag/dataLayer come from GoogleTagManager.tsx. GTM loads on first interaction
- * (prod only), so window.gtag may not exist yet at click time — we fall back to
- * pushing the consent command onto window.dataLayer, which GTM drains on load.
- * In dev (no GTM) these calls are harmless no-ops on a local dataLayer.
+ * ── Why two different lifetimes (Itzik 2026-08-12) ──────────────────────────
+ * `granted` lasts a year: someone who said yes should not be asked again.
+ * `dismissed` lasts 30 days: the choice is respected for a month and then the
+ * question may be asked once more. Re-asking sooner than that reads as a dark
+ * pattern under the GDPR guidance; 30 days is the accepted middle ground. No
+ * extra bookkeeping is needed — the cookie simply expires and the modal returns.
  *
- * Global overlay: a fixed full-width strip pinned to the bottom of the screen
- * (sticky through scroll until the visitor decides). z-50 keeps it above the
- * mobile MobileServicesBar (z-40); honours safe-area-inset-bottom.
+ * ── Blocking by design ──────────────────────────────────────────────────────
+ * There is no ✕, Escape does nothing, and clicking the scrim does nothing. The
+ * visitor must pick one of the two buttons. Both choices are presented
+ * symmetrically in weight (Israeli Privacy Authority, Feb 2026: symmetry is what
+ * makes the consent valid) — the accept button is the primary pill and the
+ * decline is a plainly-legible underlined control, not a faded dismissal.
  *
- * Mobile coordination while the strip is shown (all reverted on dismiss):
- *  • lift the floating WhatsApp button above the strip — globals.css reads
- *    `--cookie-bar-h` under the `html.cookie-bar-open` class (mobile media
- *    query only), so desktop is untouched.
- *  • render a same-height spacer so the fixed strip never covers page content.
+ * gtag/dataLayer come from GoogleTagManager.tsx. GTM may not have loaded at
+ * click time, so we fall back to pushing the consent command onto
+ * window.dataLayer, which GTM drains on load. In dev (no GTM) these calls are
+ * harmless no-ops on a local dataLayer.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const COOKIE = "mioshy_cookie_consent";
-const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365; // ~12 months
+/** "Yes" is remembered for a year; "no" is revisited after a month. */
+const MAX_AGE_SECONDS: Record<ConsentValue, number> = {
+  granted: 60 * 60 * 24 * 365,
+  dismissed: 60 * 60 * 24 * 30,
+};
+
+/** Fired on the window the moment a decision is stored, so surfaces that must
+ *  wait for the modal to close (e.g. AssessmentBar) can appear without a
+ *  reload. Nothing else depends on it. */
+export const CONSENT_DECIDED_EVENT = "mioshy:consent-decided";
 
 type ConsentValue = "granted" | "dismissed";
 
@@ -48,7 +62,7 @@ function readConsentCookie(): ConsentValue | null {
 }
 
 function writeConsentCookie(value: ConsentValue): void {
-  document.cookie = `${COOKIE}=${value}; path=/; max-age=${ONE_YEAR_SECONDS}; SameSite=Lax; Secure`;
+  document.cookie = `${COOKIE}=${value}; path=/; max-age=${MAX_AGE_SECONDS[value]}; SameSite=Lax; Secure`;
 }
 
 /** Push a Consent Mode v2 "granted" update via gtag (or queue on dataLayer). */
@@ -73,123 +87,198 @@ function applyGrantedConsent(): void {
   }
 }
 
-export function CookieConsentBar({
-  locale = "he",
-  isAuthed = false,
-}: {
-  locale?: "he" | "en";
-  isAuthed?: boolean;
-}) {
+export function CookieConsentBar({ locale = "he" }: { locale?: "he" | "en" }) {
   const isHe = locale !== "en";
   const [visible, setVisible] = useState(false);
-  const barRef = useRef<HTMLDivElement>(null);
-  const [barHeight, setBarHeight] = useState(0);
+  // Drives the enter transition: the card mounts at scale(.96)/opacity 0 and is
+  // flipped on the next frame, so the browser has a "from" state to animate.
+  const [entered, setEntered] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const acceptRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const existing = readConsentCookie();
     if (existing === "granted") {
       // Returning consenter — re-apply so analytics works this session too.
-      // (Still runs for authed users: it's invisible consent plumbing, not the
-      // banner.)
       applyGrantedConsent();
       return;
     }
     if (existing === "dismissed") return; // chose not to consent — respect it
-    // Signed-in users never see the banner — they've already onboarded, so we
-    // don't interrupt them with the consent prompt.
-    if (isAuthed) return;
-    setVisible(true); // anonymous first visit, no decision yet
-  }, [isAuthed]);
+    setVisible(true); // no decision on record yet
+  }, []);
 
-  // While the strip is shown, publish its measured height (so the spacer and
-  // the mobile WhatsApp lift match it exactly) and flag the document. The
-  // consuming CSS lives in a mobile-only media query, so this is a no-op on
-  // desktop. Everything is reverted the moment the strip is dismissed.
+  // Lock background scrolling while the modal is up, and restore exactly what
+  // was there before (not a hardcoded "" ) when it closes.
   useEffect(() => {
     if (!visible) return;
-    const measure = () => {
-      const h = barRef.current?.offsetHeight ?? 0;
-      setBarHeight(h);
-      document.documentElement.style.setProperty("--cookie-bar-h", `${h}px`);
-    };
-    measure();
-    document.documentElement.classList.add("cookie-bar-open");
-    window.addEventListener("resize", measure);
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     return () => {
-      window.removeEventListener("resize", measure);
-      document.documentElement.classList.remove("cookie-bar-open");
-      document.documentElement.style.removeProperty("--cookie-bar-h");
+      document.body.style.overflow = previous;
     };
   }, [visible]);
+
+  // Start the enter transition on the frame after mount, and put the initial
+  // focus on "accept".
+  useEffect(() => {
+    if (!visible) return;
+    const raf = requestAnimationFrame(() => setEntered(true));
+    acceptRef.current?.focus();
+    return () => cancelAnimationFrame(raf);
+  }, [visible]);
+
+  // Focus trap. Tab cycles inside the card and Escape is swallowed — the modal
+  // is not dismissible, so letting either escape it would be a lie.
+  const onKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    if (e.key !== "Tab") return;
+    const focusable = cardRef.current?.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled])',
+    );
+    if (!focusable || focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    const active = document.activeElement;
+    if (e.shiftKey && active === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && active === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }, []);
 
   if (!visible) return null;
 
   const t = {
-    msg: isHe
-      ? "אנחנו משתמשים בעוגיות כדי לשפר את החוויה שלכם ולמדוד שימוש."
-      : "We use cookies to improve your experience and measure usage.",
+    title: isHe ? "אנחנו משתמשים בעוגיות" : "We use cookies",
+    body: isHe
+      ? "כדי לזכור איפה עצרתם, ולהבין איך לשפר את האתר. אין כאן שום דבר שמזהה אתכם אישית."
+      : "To remember where you left off and understand how to improve the site. Nothing here identifies you personally.",
     privacy: isHe ? "מדיניות הפרטיות" : "Privacy Policy",
     accept: isHe ? "מאשרים" : "Accept",
     refuse: isHe ? "מסרבים" : "Decline",
   };
 
-  const onAccept = () => {
-    applyGrantedConsent();
-    writeConsentCookie("granted");
+  const decide = (value: ConsentValue) => {
+    if (value === "granted") applyGrantedConsent();
+    writeConsentCookie(value);
     setVisible(false);
-  };
-  const onDismiss = () => {
-    writeConsentCookie("dismissed");
-    setVisible(false);
+    window.dispatchEvent(new Event(CONSENT_DECIDED_EVENT));
   };
 
   return (
-    <>
     <div
-      role="region"
-      aria-label={isHe ? "הודעת עוגיות" : "Cookie notice"}
-      dir={isHe ? "rtl" : "ltr"}
-      // Full-width strip flush to the very bottom edge (bottom:0) so its
-      // background fills under the iPhone home-indicator — no transparent gap.
-      // The safe-area inset is applied as inner padding-bottom below instead, so
-      // the buttons stay above the indicator while the background reaches the
-      // edge. Sticky through scroll. z-50 sits above MobileServicesBar (z-40).
-      className="fixed inset-x-0 bottom-0 z-50"
+      // The scrim. No onClick — the modal is blocking, so clicking through or
+      // clicking to dismiss are both deliberately absent.
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 90,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 18,
+        background: "rgba(10,4,18,.72)",
+        backdropFilter: "blur(3px)",
+        WebkitBackdropFilter: "blur(3px)",
+        opacity: entered ? 1 : 0,
+        transition: "opacity 180ms ease-out",
+      }}
     >
-      <div ref={barRef} className="mx-auto flex max-w-5xl items-center gap-3 border-t border-white/10 bg-[#1a0a2e]/95 px-4 pt-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom,0px))] text-white shadow-[0_-8px_24px_-12px_rgba(0,0,0,0.6)] backdrop-blur-md sm:gap-4">
-        <p className="min-w-0 flex-1 text-[13px] leading-snug text-white/85">
-          {t.msg}{" "}
+      <div
+        ref={cardRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="cookie-consent-title"
+        dir={isHe ? "rtl" : "ltr"}
+        onKeyDown={onKeyDown}
+        style={{
+          position: "relative",
+          zIndex: 91,
+          width: "100%",
+          maxWidth: 390,
+          padding: "26px 26px 24px",
+          textAlign: "center",
+          background: "#1B0F2B",
+          border: "1px solid rgba(255,255,255,.13)",
+          borderRadius: 20,
+          boxShadow: "0 30px 80px rgba(0,0,0,.65)",
+          opacity: entered ? 1 : 0,
+          transform: entered ? "scale(1)" : "scale(.96)",
+          transition: "opacity 220ms ease-out, transform 220ms ease-out",
+        }}
+      >
+        <div aria-hidden style={{ fontSize: 30, marginBottom: 10, lineHeight: 1 }}>
+          🍪
+        </div>
+
+        <h2
+          id="cookie-consent-title"
+          style={{ fontSize: 18, fontWeight: 800, color: "#FFFFFF", marginBottom: 9 }}
+        >
+          {t.title}
+        </h2>
+
+        <p
+          style={{
+            fontSize: 13.2,
+            fontWeight: 400,
+            lineHeight: 1.65,
+            color: "#B7A3CD",
+            marginBottom: 20,
+          }}
+        >
+          {t.body}{" "}
           <a
             href={`/${isHe ? "he" : "en"}/privacy`}
-            className="whitespace-nowrap font-semibold text-white underline underline-offset-2 hover:text-white"
+            style={{ color: "#DCCBEF", textDecoration: "underline" }}
           >
             {t.privacy}
           </a>
         </p>
-        {/* Task 22 — SYMMETRIC choices (Israeli Privacy Authority, Feb 2026:
-            symmetry = valid consent). Accept + Decline are the same size + the
-            same color weight (two solid pills), no faded "X". Both remember the
-            choice for ~12 months (accept→granted, decline→dismissed). */}
+
         <button
+          ref={acceptRef}
           type="button"
-          onClick={onAccept}
-          className="min-h-[40px] shrink-0 rounded-full bg-amber-400 px-5 text-[13px] font-bold text-stone-900 transition hover:brightness-105"
+          onClick={() => decide("granted")}
+          style={{
+            display: "block",
+            width: "100%",
+            padding: 14,
+            fontSize: 15.5,
+            fontWeight: 800,
+            color: "#2B1A06",
+            background: "linear-gradient(180deg,#F0B840,#E0A32B)",
+            borderRadius: 12,
+            boxShadow: "0 8px 26px rgba(240,184,64,.30)",
+          }}
         >
           {t.accept}
         </button>
+
         <button
           type="button"
-          onClick={onDismiss}
-          className="min-h-[40px] shrink-0 rounded-full bg-white px-5 text-[13px] font-bold text-stone-900 transition hover:brightness-105"
+          onClick={() => decide("dismissed")}
+          style={{
+            display: "inline-block",
+            marginTop: 16,
+            // 8px/4px padding lifts the hit area to the 44px minimum.
+            padding: "8px 4px",
+            fontSize: 13.5,
+            color: "#A08FB8",
+            textDecoration: "underline",
+            textUnderlineOffset: 4,
+            textDecorationThickness: 1,
+          }}
         >
           {t.refuse}
         </button>
       </div>
     </div>
-    {/* Mobile-only spacer the same height as the strip, so the fixed strip
-        never covers the bottom of the page content. Hidden on desktop (lg+),
-        where the layout already accounts for the bottom strip. */}
-    <div aria-hidden className="lg:hidden" style={{ height: barHeight }} />
-    </>
   );
 }

@@ -5,6 +5,7 @@ import { getShellData } from "@/lib/shell/getShellData";
 import { getCmsTranslations } from "@/lib/cms/getCmsTranslations";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { PollDashboardLanding } from "@/components/survey/PollDashboardLanding";
+import { AssessmentBar } from "@/components/marketing/AssessmentBar";
 
 export const dynamic = "force-dynamic";
 
@@ -72,6 +73,9 @@ export default async function MySurveyPage({ params }: { params: { locale: strin
           hasShortAssessment={hasShortAssessment}
         />
       </div>
+      {/* Bottom banner → the couples assessment. Sits ABOVE the shell's
+          MobileTabs (via --mobile-tabs-h), so the mobile nav stays reachable. */}
+      <AssessmentBar locale={isHe ? "he" : "en"} />
     </>
   );
 }

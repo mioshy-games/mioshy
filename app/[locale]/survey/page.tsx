@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { SurveyFlow } from "@/components/survey/SurveyFlow";
 import { SurveyPageViewPixel } from "@/components/analytics/SurveyPageViewPixel";
+import { AssessmentBar } from "@/components/marketing/AssessmentBar";
 import { getPollUserId } from "@/lib/poll/anon";
 import { getOtpConsentCopy } from "@/lib/auth/otp-consent";
 import { buildAlternates } from "@/lib/seo/alternates";
@@ -80,6 +81,10 @@ export default async function SurveyPage({ params }: { params: { locale: string 
         </p>
       </div>
       <SurveyFlow back={{ href: `/${locale}` }} consent={consent} locale={locale} />
+      {/* Bottom banner → the couples assessment. Mounted here (and on
+          /my/survey) rather than in a layout, so it lives on the survey and
+          nowhere else. */}
+      <AssessmentBar locale={locale} />
     </>
   );
 }
