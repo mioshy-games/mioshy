@@ -24,6 +24,7 @@
  */
 
 import { Link, usePathname } from "@/navigation";
+import { useEffect, useRef } from "react";
 import type { ComponentType, SVGProps } from "react";
 import {
   BookOpen,
@@ -64,6 +65,27 @@ interface Props {
 
 export function MobileTabs({ items }: Props) {
   const pathname = usePathname();
+  const navRef = useRef<HTMLElement>(null);
+
+  // Publish the bar's measured height as `--mobile-tabs-h` so anything else
+  // pinned to the bottom edge can stack ON TOP of it instead of covering it
+  // (AssessmentBar does exactly this on /my/survey). Measurement only — this
+  // adds no styling to the bar and cannot change how it looks.
+  //
+  // AppShell wraps this component in `lg:hidden`, so on desktop the ancestor is
+  // display:none and offsetHeight is 0 — which is the right answer there.
+  useEffect(() => {
+    const measure = () => {
+      const h = navRef.current?.offsetHeight ?? 0;
+      document.documentElement.style.setProperty("--mobile-tabs-h", `${h}px`);
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => {
+      window.removeEventListener("resize", measure);
+      document.documentElement.style.removeProperty("--mobile-tabs-h");
+    };
+  }, []);
 
   // Lookup table so we can pull the 5 primary items in display order.
   const itemByKey: Partial<Record<NavKey, NavItem>> = {};
@@ -78,6 +100,7 @@ export function MobileTabs({ items }: Props) {
 
   return (
     <nav
+      ref={navRef}
       className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 gap-0.5 px-1.5 pt-1.5"
       style={{
         background:

@@ -65,8 +65,14 @@
 .backBtn {
   position: fixed;
   /* Bottom-LEFT corner of the screen (per Itzik). On the public page this shares
-     the corner with the WhatsApp float; on the dashboard the corner is clear. */
-  bottom: 20px;
+     the corner with the WhatsApp float; on the dashboard the corner is clear.
+     2026-08-12 — AssessmentBar is pinned to the same edge and paints above this
+     (z-60 vs z-40), so on mobile it buried this control completely. Lift by the
+     banner, and clear of the WhatsApp float it shares the corner with. The
+     offset is composed in globals.css and is only defined while
+     `html.assessment-bar-open` is set, so with no banner on screen this
+     resolves to a plain `20px` — unchanged from before. */
+  bottom: var(--survey-back-bottom-offset, 20px);
   left: 20px;
   z-index: 40;
   width: 44px;
