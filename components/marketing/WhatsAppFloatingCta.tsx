@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { SUPPORT_WHATSAPP_INTL } from "@/lib/constants/contact";
 
@@ -48,11 +49,36 @@ function isHidden(pathname: string): boolean {
 
 export function WhatsAppFloatingCta({ locale }: { locale: string }) {
   const pathname = usePathname();
-  if (locale !== "he") return null;
-  if (isHidden(pathname)) return null;
+  const ref = useRef<HTMLAnchorElement>(null);
+  // This button is NOT always on screen — it hides itself on /my/*, /dashboard/*
+  // and inside the assessment funnel (see isHidden). Anything else pinned to the
+  // same bottom-left corner needs to know whether it actually occupies its slot,
+  // so publish presence + measured size while it is rendered and take both away
+  // when it isn't. Measurement only; nothing here styles the button.
+  const visible = locale === "he" && !isHidden(pathname);
+
+  useEffect(() => {
+    if (!visible) return;
+    const root = document.documentElement;
+    const measure = () => {
+      const h = ref.current?.offsetHeight ?? 0;
+      root.style.setProperty("--whatsapp-fab-h", `${h}px`);
+    };
+    measure();
+    root.classList.add("whatsapp-fab-present");
+    window.addEventListener("resize", measure);
+    return () => {
+      window.removeEventListener("resize", measure);
+      root.classList.remove("whatsapp-fab-present");
+      root.style.removeProperty("--whatsapp-fab-h");
+    };
+  }, [visible]);
+
+  if (!visible) return null;
 
   return (
     <a
+      ref={ref}
       href={whatsappHref()}
       target="_blank"
       rel="noopener noreferrer"
