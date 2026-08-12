@@ -745,9 +745,19 @@ small, .text-small {
    occupies the bottom edge, so the lift moved to the surfaces that still do.
    The mechanism is unchanged. */
 html.assessment-bar-open {
-  --whatsapp-bottom-offset: calc(
-    var(--mobile-tabs-h, 0px) + var(--assessment-bar-h, 0px) + 12px
+  /* Distance from the bottom edge of the viewport to the TOP of the banner —
+     i.e. how far up anything else pinned to that corner has to move to clear
+     it. Composed here rather than in JS so it can never race the two effects
+     that publish its parts. */
+  --assessment-bar-top-offset: calc(
+    var(--mobile-tabs-h, 0px) + var(--assessment-bar-h, 0px)
   );
+  --whatsapp-bottom-offset: calc(var(--assessment-bar-top-offset) + 12px);
+  /* SurveyFlow's floating "back" control shares this exact corner with the
+     WhatsApp float (see the note on .backBtn in survey.module.css). Once both
+     are lifted off the banner they would land on each other, so park it one
+     WhatsApp-diameter (56px) plus the same 12px gap higher. */
+  --survey-back-bottom-offset: calc(var(--whatsapp-bottom-offset) + 56px + 12px);
 }
 
 /* a11y (M13) — global keyboard focus indicator. `:where()` keeps specificity
