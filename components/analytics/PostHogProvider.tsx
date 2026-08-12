@@ -6,6 +6,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import posthog from "posthog-js";
 import { PostHogProvider as PHProvider } from "posthog-js/react";
 import { sanitizeUrl } from "@/lib/analytics/redact-url";
+import { hasAnalyticsConsent, onConsentDecided } from "@/lib/analytics/consent";
 
 /**
  * PostHog loader for Mioshy — product analytics + heatmaps + session replay.
@@ -35,10 +36,19 @@ import { sanitizeUrl } from "@/lib/analytics/redact-url";
  *
  * ── Load strategy ────────────────────────────────────────────────────────────
  *   Prod-only (mirrors GoogleTagManager — keeps dev console quiet and Fast
- *   Refresh fast). Init is deferred to the browser idle window so it never sits
- *   on the first-paint critical path; unlike GTM it does NOT wait for an
- *   interaction, because session replay should capture the session from as
- *   early as possible.
+ *   Refresh fast), and GATED ON CONSENT: nothing here loads until the visitor
+ *   has explicitly accepted. Init is deferred to the browser idle window on top
+ *   of that, so it never sits on the first-paint critical path.
+ *
+ *   Session replay therefore starts at the moment of acceptance, NOT at page
+ *   load — by design, and it is the reason replay never covers the pre-consent
+ *   part of a session. This comment used to say replay should capture "from as
+ *   early as possible"; that intent was retired with the consent gate (P6 in
+ *   SECURITY-FIX-PLAN.md). Anyone tempted to move the init earlier to recover
+ *   those first seconds would be reintroducing the gap, so: don't.
+ *
+ *   `dismissed` is a refusal, not an absence — see lib/analytics/consent.ts.
+ *   No cookie at all is also not consent. Both mean nothing loads.
  *
  * NOTE: needs NEXT_PUBLIC_POSTHOG_KEY in the environment. If it's absent we
  * no-op silently, so missing-key never breaks a build or a page.
@@ -157,8 +167,6 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
     if (process.env.NODE_ENV !== "production") return;
     if (!PH_KEY) return;
 
-    // Defer to idle so init never blocks first paint. requestIdleCallback
-    // where supported, otherwise a short timeout.
     // requestIdleCallback isn't in the standard lib.dom types, so we
     // narrow window to a shape that optionally exposes it. Fallback to
     // setTimeout when the browser doesn't have it (Safari < 16, etc.).
@@ -167,12 +175,27 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
       cancelIdleCallback?: (handle: number) => void;
     };
     const w = window as IdleWindow;
-    const ric =
-      w.requestIdleCallback ??
-      ((cb: () => void) => setTimeout(cb, 2000) as unknown as number);
-    const handle = ric(() => initPostHog());
+    let handle: number | undefined;
+
+    // The gate. Called on mount and again when a decision lands, so accepting
+    // starts PostHog in the same page view instead of the next one. Refusing —
+    // or never answering — leaves this a no-op forever: `initPostHog` is never
+    // reached, so posthog.init() never runs and not a single request is made.
+    const startIfConsented = () => {
+      if (handle !== undefined) return; // already scheduled
+      if (!hasAnalyticsConsent()) return;
+      // Defer to idle so init never blocks first paint.
+      const ric =
+        w.requestIdleCallback ??
+        ((cb: () => void) => setTimeout(cb, 2000) as unknown as number);
+      handle = ric(() => initPostHog());
+    };
+
+    startIfConsented();
+    const off = onConsentDecided(startIfConsented);
 
     return () => {
+      off();
       const cancel = w.cancelIdleCallback;
       if (cancel && typeof handle === "number") cancel(handle);
     };

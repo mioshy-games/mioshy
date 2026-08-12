@@ -39,27 +39,25 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  CONSENT_COOKIE,
+  CONSENT_DECIDED_EVENT,
+  readConsent,
+  type ConsentValue,
+} from "@/lib/analytics/consent";
 
-const COOKIE = "mioshy_cookie_consent";
+const COOKIE = CONSENT_COOKIE;
 /** "Yes" is remembered for a year; "no" is revisited after a month. */
 const MAX_AGE_SECONDS: Record<ConsentValue, number> = {
   granted: 60 * 60 * 24 * 365,
   dismissed: 60 * 60 * 24 * 30,
 };
 
-/** Fired on the window the moment a decision is stored, so surfaces that must
- *  wait for the modal to close (e.g. AssessmentBar) can appear without a
- *  reload. Nothing else depends on it. */
-export const CONSENT_DECIDED_EVENT = "mioshy:consent-decided";
-
-type ConsentValue = "granted" | "dismissed";
-
-function readConsentCookie(): ConsentValue | null {
-  if (typeof document === "undefined") return null;
-  const m = document.cookie.match(/(?:^|; )mioshy_cookie_consent=([^;]*)/);
-  const v = m ? decodeURIComponent(m[1]) : null;
-  return v === "granted" || v === "dismissed" ? v : null;
-}
+// The cookie name, the decision type, the reader and the decided-event name now
+// live in lib/analytics/consent.ts — PostHog and the Meta Pixel gate on the same
+// values, and a second definition of "what counts as consent" is exactly the
+// drift that would leave one tracker running for someone who refused. This
+// component still OWNS the write: the two lifetimes below are its business.
 
 function writeConsentCookie(value: ConsentValue): void {
   document.cookie = `${COOKIE}=${value}; path=/; max-age=${MAX_AGE_SECONDS[value]}; SameSite=Lax; Secure`;
@@ -97,7 +95,7 @@ export function CookieConsentBar({ locale = "he" }: { locale?: "he" | "en" }) {
   const acceptRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    const existing = readConsentCookie();
+    const existing = readConsent();
     if (existing === "granted") {
       // Returning consenter — re-apply so analytics works this session too.
       applyGrantedConsent();
