@@ -147,7 +147,7 @@ export function AssessmentBar({ locale = "he" }: { locale?: "he" | "en" }) {
       <div
         ref={barRef}
         dir={isHe ? "rtl" : "ltr"}
-        className="fixed inset-x-0 z-[60] flex flex-col items-center gap-[14px] sm:flex-row"
+        className="fixed inset-x-0 z-[60] flex flex-col gap-[8px] sm:flex-row sm:items-center sm:gap-[14px]"
         style={{
           // Stack above the dashboard's mobile tab bar where one exists; on the
           // anonymous survey page the variable is unset → flush to the edge.
@@ -159,41 +159,52 @@ export function AssessmentBar({ locale = "he" }: { locale?: "he" | "en" }) {
           paddingBottom: "calc(13px + env(safe-area-inset-bottom, 0px))",
         }}
       >
-        <Image
-          src="/images/itzik-barlev_new.webp"
-          alt="יצחק ברלב"
-          width={54}
-          height={54}
-          className="h-[48px] w-[48px] shrink-0 rounded-full object-cover sm:h-[54px] sm:w-[54px]"
-          style={{
-            border: "2px solid rgba(232,99,158,.35)",
-            boxShadow: "0 3px 12px rgba(27,16,39,.14)",
-          }}
-        />
+        {/* Mobile row 1: photo + title side by side. `sm:contents` dissolves
+            this wrapper on desktop, so the photo and the text column go back to
+            being direct flex children of the bar and the desktop row is
+            unchanged. The left padding reserves the ✕'s 44px corner, which is
+            absolutely positioned over this row on mobile only. */}
+        <div className="flex w-full items-center gap-[12px] pl-[42px] sm:contents">
+          <Image
+            src="/images/itzik-barlev_new.webp"
+            alt="יצחק ברלב"
+            width={54}
+            height={54}
+            className="h-[48px] w-[48px] shrink-0 rounded-full object-cover sm:h-[54px] sm:w-[54px]"
+            style={{
+              border: "2px solid rgba(232,99,158,.35)",
+              boxShadow: "0 3px 12px rgba(27,16,39,.14)",
+            }}
+          />
 
-        <div className="min-w-0 flex-1 text-center sm:text-start">
-          <div
-            className="text-[19.5px] sm:text-[21px]"
-            style={{ fontWeight: 800, color: "#1B1027", lineHeight: 1.24 }}
-          >
-            <span className="sm:hidden">{t.titleMobile}</span>
-            <span className="hidden sm:inline">{t.titleDesktop}</span>
-          </div>
-          <div
-            className="text-[16px] sm:text-[17px]"
-            style={{ fontWeight: 400, color: "#6A5B7A", lineHeight: 1.35 }}
-          >
-            <span className="sm:hidden">
-              {t.subMobileBefore}
-              <span style={em}>{t.subMobileEm}</span>
-              {t.subMobileAfter}
-            </span>
-            <span className="hidden sm:inline">
+          <div className="min-w-0 flex-1 text-start">
+            <div
+              className="text-[19.5px] sm:text-[21px]"
+              style={{ fontWeight: 800, color: "#1B1027", lineHeight: 1.24 }}
+            >
+              <span className="sm:hidden">{t.titleMobile}</span>
+              <span className="hidden sm:inline">{t.titleDesktop}</span>
+            </div>
+            {/* On desktop the sub stays in the text column, under the title. */}
+            <div
+              className="hidden sm:block sm:text-[17px]"
+              style={{ fontWeight: 400, color: "#6A5B7A", lineHeight: 1.35 }}
+            >
               {t.subDesktopBefore}
               <span style={em}>{t.subDesktopEm}</span>
               {t.subDesktopAfter}
-            </span>
+            </div>
           </div>
+        </div>
+
+        {/* Mobile row 2: the sub on its own full-width line. */}
+        <div
+          className="w-full text-start text-[16px] sm:hidden"
+          style={{ fontWeight: 400, color: "#6A5B7A", lineHeight: 1.35 }}
+        >
+          {t.subMobileBefore}
+          <span style={em}>{t.subMobileEm}</span>
+          {t.subMobileAfter}
         </div>
 
         <Link
@@ -201,7 +212,11 @@ export function AssessmentBar({ locale = "he" }: { locale?: "he" | "en" }) {
           onClick={() =>
             track("click", { target: "assessment_bar_cta", label: t.cta })
           }
-          className="flex w-full shrink-0 items-center justify-center sm:w-auto"
+          // `leading-[1.2]` only on mobile: the inherited body line-height made
+          // this pill 53.7px tall instead of the 48px it is specified at, which
+          // was pure height the stacked layout could not afford. `sm:leading-
+          // [unset]` puts inheritance back, so the desktop row is untouched.
+          className="flex w-full shrink-0 items-center justify-center leading-[1.2] sm:w-auto sm:leading-[unset]"
           style={{
             minHeight: 48,
             padding: "12px 24px",
