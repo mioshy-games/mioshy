@@ -32,16 +32,31 @@ export async function POST(req: Request) {
   const { id: anonId, fresh } = await resolvePollAnonId(readPollAnonHeader(req));
   const userId = await getPollUserId(); // signed-in → attribute the vote to the user too
 
-  let yourOption: "a" | "b";
+  let result: Awaited<ReturnType<typeof recordVote>>;
   try {
-    yourOption = await recordVote({ questionId, option, anonId, userId });
+    result = await recordVote({ questionId, option, anonId, userId });
   } catch (err) {
     console.error("[poll/vote] failed", err);
     return NextResponse.json({ error: "vote_failed" }, { status: 500 });
   }
 
+  // A 200 with ok:false would be the exact trap the brief warns about — the
+  // client would fire a conversion for a write that never landed. Fail loudly.
+  if (!result.ok) {
+    console.error("[poll/vote] no row after write", { questionId, anonId });
+    return NextResponse.json({ error: "vote_not_recorded" }, { status: 500 });
+  }
+
   const tally = await getQuestionTally(questionId);
-  const res = NextResponse.json({ yourOption, ...tally });
+  // ok / isFirstAnswer / totalAnswers travel to the client so the survey events
+  // can bind to a verified write rather than to this response's status code.
+  const res = NextResponse.json({
+    yourOption: result.option,
+    ok: result.ok,
+    isFirstAnswer: result.isFirstAnswer,
+    totalAnswers: result.totalAnswers,
+    ...tally,
+  });
   if (fresh) setPollAnonCookie(res, anonId);
   return res;
 }
