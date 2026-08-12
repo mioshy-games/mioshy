@@ -754,21 +754,11 @@ html.assessment-bar-open {
   );
   --whatsapp-bottom-offset: calc(var(--assessment-bar-top-offset) + 12px);
   /* SurveyFlow's floating "back" control shares this exact corner (see the note
-     on .backBtn in survey.module.css). Default: nothing between it and the
-     banner, so it rests directly on the banner's top edge. */
+     on .backBtn in survey.module.css) and rests directly on the banner's top
+     edge. It used to reserve a WhatsApp-float's worth of space above itself;
+     that is gone, because the float now hides itself on the survey screen — the
+     only screen where this variable is ever read. */
   --survey-back-bottom-offset: calc(var(--assessment-bar-top-offset) + 12px);
-}
-
-/* …but when the WhatsApp float is actually on screen it owns the slot directly
-   above the banner, so the back control has to clear it too. The float hides
-   itself on /my/*, /dashboard/* and in the assessment funnel, and publishes
-   `whatsapp-fab-present` + `--whatsapp-fab-h` only while it is rendered — so on
-   the surfaces without it this rule simply never applies and the back control
-   keeps leaning on the banner alone. */
-html.assessment-bar-open.whatsapp-fab-present {
-  --survey-back-bottom-offset: calc(
-    var(--whatsapp-bottom-offset) + var(--whatsapp-fab-h, 56px) + 12px
-  );
 }
 
 /* a11y (M13) — global keyboard focus indicator. `:where()` keeps specificity

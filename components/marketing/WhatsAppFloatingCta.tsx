@@ -41,6 +41,13 @@ function whatsappHref() {
 function isHidden(pathname: string): boolean {
   // Inside the assessment funnel — don't compete with the focused flow.
   if (/\/journey\/assessment(\/|$|\?)/.test(pathname)) return true;
+  // The survey screen — same reasoning, and the corner is genuinely full: the
+  // assessment banner owns the bottom edge, SurveyFlow's back control sits
+  // above it, and the in-flow assessment link reaches far enough down the page
+  // that on a short viewport there is no height left where this button clears
+  // both. Covers /<locale>/survey and /<locale>/my/survey. `relationship-survey`
+  // does not match — the segment boundary is a "/", not a "-".
+  if (/\/survey(\/|$|\?)/.test(pathname)) return true;
   // /my/* and /dashboard/* — authed surfaces, customer service goes
   // through other channels for paying members.
   if (/\/(my|dashboard|admin)(\/|$)/.test(pathname)) return true;
