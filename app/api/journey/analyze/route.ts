@@ -10,8 +10,9 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { analyze } from "@/lib/journey/analysis";
 import {
-  buildQuestionResolver,
+  buildVersionedQuestionResolver,
   loadJourneyQuestions,
+  loadJourneyQuestionVersions,
 } from "@/lib/journey/questions-db";
 import { analyzeAssessment } from "@/lib/ai/analyze-assessment";
 import { buildFallbackHero } from "@/lib/journey/hero-fallback";
@@ -193,7 +194,7 @@ export async function POST() {
 
   const { data: rows, error: rowsErr } = await admin
     .from("journey_responses")
-    .select("question_id, answer, locale")
+    .select("question_id, answer, locale, created_at")
     .eq("journey_id", journey.id);
 
   if (rowsErr) {
@@ -212,6 +213,9 @@ export async function POST() {
     question_id: r.question_id,
     answer: r.answer as AnswerValue,
     locale: r.locale as Locale,
+    // Carries the answer's own timestamp into scoring so the resolver can pick
+    // the question version that was live when it was given.
+    created_at: r.created_at as string | undefined,
   }));
   const priorityLabels = await getPriorityLabels();
 
@@ -220,7 +224,12 @@ export async function POST() {
   // empty or the read fails. This only changes the SOURCE of the defs; the
   // scoring math is unchanged. Loaded via the admin client (service-role).
   const journeyQuestions = await loadJourneyQuestions(admin);
-  const resolveQuestion = buildQuestionResolver(journeyQuestions);
+  // Date-resolved scoring: each answer is scored against the axis that was
+  // correct when it was given (journey_question_versions). Seven questions were
+  // rewritten in July 2026 without their axes following, so resolving by slug
+  // alone mis-scores one cohort or the other — see migrations 195-197.
+  const questionVersions = await loadJourneyQuestionVersions(admin);
+  const resolveQuestion = buildVersionedQuestionResolver(journeyQuestions, questionVersions);
   const analysis = analyze(responses, priorityLabels, resolveQuestion);
 
   // ── Flow phase (short vs full) — decides the narrative source ──

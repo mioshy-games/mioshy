@@ -37,8 +37,9 @@ import {
 } from "@/lib/journey/questions";
 import { analyze } from "@/lib/journey/analysis";
 import {
-  buildQuestionResolver,
+  buildVersionedQuestionResolver,
   loadJourneyQuestions,
+  loadJourneyQuestionVersions,
 } from "@/lib/journey/questions-db";
 import { getPersonalWindowConfig } from "@/lib/billing/promo-mode";
 import { resolveJourneyFlow } from "@/lib/journey/phase";
@@ -98,7 +99,12 @@ export async function POST(req: Request) {
   // table is empty or the read fails. Built once here (service-role client) and
   // reused for the completion analyze() call below.
   const admin = await createAdminClient();
-  const resolveQuestion = buildQuestionResolver(await loadJourneyQuestions(admin));
+  // Date-resolved scoring — see the note in app/api/journey/analyze/route.ts
+  // and migrations 195-197.
+  const resolveQuestion = buildVersionedQuestionResolver(
+    await loadJourneyQuestions(admin),
+    await loadJourneyQuestionVersions(admin),
+  );
   const q = resolveQuestion(question_id);
   if (!q) return NextResponse.json({ error: "unknown_question" }, { status: 400 });
   if (!isValidAnswer(q.type, answer))
@@ -367,12 +373,13 @@ export async function POST(req: Request) {
   // answer-driven active set + completion.
   const { data: allResponses } = await admin
     .from("journey_responses")
-    .select("question_id, answer, locale")
+    .select("question_id, answer, locale, created_at")
     .eq("journey_id", journeyId);
   const parsed: Response[] = (allResponses ?? []).map((r) => ({
     question_id: r.question_id,
     answer:      r.answer as AnswerValue,
     locale:      r.locale as Locale,
+    created_at:  r.created_at as string | undefined,
   }));
   const answeredSlugs = new Set(parsed.map((r) => r.question_id));
 

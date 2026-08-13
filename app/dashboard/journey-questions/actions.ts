@@ -9,11 +9,29 @@
  * the service-role client (journey_questions has NO write RLS policy — public
  * SELECT only — so writes MUST use the service-role client, which bypasses RLS).
  *
- * SCORING LOCK: the standard editor may NOT change scoring config. `axes`,
- * `reverse`, and per-option `scores` are NEVER written by upsert — only label
- * text / phase / domain / type / position / is_active / meta.placeholder.
- * The ONLY path that may change scoring config is CSV import (clearly the
- * deliberate, owner-confirmed route).
+ * ── CONFIRM-ON-EDIT (2026-08-13, replaces the old SCORING LOCK) ────────────
+ * This editor used to freeze `axes` while leaving the text freely editable. It
+ * read as protecting scoring integrity; it did the opposite. Text and axis could
+ * only ever diverge, never re-converge, and in July 2026 seven questions were
+ * rewritten while their axes kept pointing at the old meaning — q11 ended up
+ * asking in Hebrew how often you EXPRESS APPRECIATION while scoring onto
+ * four_horsemen_contempt, so the warmer someone reported being, the worse their
+ * result looked. Freezing the axis is what allowed that.
+ *
+ * The replacement makes the axis a REQUIRED PART of a text edit instead of an
+ * untouchable one:
+ *
+ *   1. Changing he_text / en_text / an option label REQUIRES `axisConfirmed`.
+ *      The save is rejected without it. The UI shows old text, new text and the
+ *      current axis side by side and asks whether the axis still describes it.
+ *   2. A confirmed text change CLOSES the current journey_question_versions row
+ *      and OPENS a new one, so scoring can resolve every past answer against the
+ *      text that was actually on screen when it was given.
+ *   3. `updated_by` is recorded. It was never written before, which is why the
+ *      July edits could not be attributed to anyone.
+ *
+ * Scoring config still cannot be changed here — that stays with CSV import — but
+ * text can no longer drift away from it silently.
  *
  * Does NOT touch assessment_questions / intimacy / friendship / games.
  */
@@ -70,6 +88,12 @@ export interface JourneyQuestionInput {
   placeholder_en?: string;
   /** Choice option LABELS only — { id, he, en }. Scores are preserved server-side. */
   optionLabels?: Array<{ id: string; he: string; en: string }>;
+  /**
+   * Set by the UI when the admin has re-confirmed that the question's axis still
+   * describes the NEW wording. Required whenever displayed text changes; the
+   * save is refused without it. This is the guard that replaces the old lock.
+   */
+  axisConfirmed?: boolean;
 }
 
 const CSV_COLUMNS = [
@@ -100,7 +124,7 @@ const VALID_PHASES: Phase[] = ["short", "full"];
 export async function upsertJourneyQuestion(
   input: JourneyQuestionInput,
 ): Promise<ActionResult> {
-  await requireAdmin();
+  const { user } = await requireAdmin();
   const slug = input.slug.trim();
   if (!slug) return { ok: false, error: "slug is required" };
   if (!VALID_PHASES.includes(input.phase))
@@ -110,12 +134,38 @@ export async function upsertJourneyQuestion(
 
   // Read existing row so we PRESERVE locked scoring config (meta keys other
   // than placeholder, and option scores) — the editor must not be able to
-  // clobber them.
+  // clobber them. he_text/en_text come along so we can tell whether the
+  // DISPLAYED text is changing, which is what triggers confirm-on-edit.
   const { data: existing } = await admin
     .from("journey_questions")
-    .select("meta, options")
+    .select("meta, options, he_text, en_text, axes, reverse, type")
     .eq("slug", slug)
     .maybeSingle();
+
+  // ── Confirm-on-edit gate ─────────────────────────────────────────────────
+  const labelsChanged =
+    !!input.optionLabels &&
+    Array.isArray(existing?.options) &&
+    (existing.options as QuestionOption[]).some((o) => {
+      const next = input.optionLabels?.find((l) => l.id === o.id);
+      return !!next && (next.he !== o.he || next.en !== o.en);
+    });
+  const textChanged =
+    !!existing &&
+    (existing.he_text !== input.he_text ||
+      existing.en_text !== input.en_text ||
+      labelsChanged);
+
+  if (textChanged && !input.axisConfirmed) {
+    // Refusing the save is the whole point. A question whose wording changed
+    // without anyone re-reading its axis is exactly how the July 2026 drift
+    // happened, and it was invisible for six weeks.
+    return {
+      ok: false,
+      error:
+        "The displayed text changed. Re-confirm that the scoring axis still describes the new wording before saving.",
+    };
+  }
 
   // Merge meta: keep everything, override only placeholder_* when provided.
   const meta: JourneyQuestionMeta = {
@@ -135,6 +185,7 @@ export async function upsertJourneyQuestion(
     });
   }
 
+  const now = new Date().toISOString();
   const { error } = await admin.from("journey_questions").upsert(
     {
       slug,
@@ -148,11 +199,63 @@ export async function upsertJourneyQuestion(
       meta,
       ...(options !== null ? { options } : {}),
       // axes / reverse intentionally omitted: preserved on UPDATE, default on INSERT.
-      updated_at: new Date().toISOString(),
+      updated_at: now,
+      // Recorded from the authenticated admin. This was never written before,
+      // which is why the July 2026 edits could not be attributed to anyone.
+      updated_by: user.id,
     },
     { onConflict: "slug" },
   );
   if (error) return { ok: false, error: error.message };
+
+  // ── Version the change ───────────────────────────────────────────────────
+  // A confirmed text edit closes the open version and opens a new one, so every
+  // past answer keeps resolving to the text that was on screen when it was
+  // given. Best-effort: the question save has already succeeded and must not be
+  // rolled back over a history write, but a failure here is loud, because
+  // silently skipping it is how scoring drifts again.
+  if (textChanged) {
+    try {
+      const { data: openRow } = await admin
+        .from("journey_question_versions")
+        .select("id, version")
+        .eq("slug", slug)
+        .is("valid_to", null)
+        .maybeSingle();
+
+      if (openRow) {
+        await admin
+          .from("journey_question_versions")
+          .update({ valid_to: now })
+          .eq("id", openRow.id);
+      }
+
+      await admin.from("journey_question_versions").insert({
+        slug,
+        version: (openRow?.version ?? 0) + 1,
+        valid_from: now,
+        valid_to: null,
+        he_text: input.he_text,
+        en_text: input.en_text,
+        // Scoring config is carried forward verbatim — this editor still cannot
+        // change it. What changed is that the admin has now explicitly confirmed
+        // it still applies.
+        axes: (existing?.axes as AxisWeight[] | null) ?? [],
+        reverse: existing?.reverse ?? false,
+        options,
+        type: input.type,
+        created_by: user.id,
+        note: "text edited via admin editor; axis re-confirmed by the editor",
+      });
+    } catch (e) {
+      console.error(
+        "[journey-questions] VERSION WRITE FAILED — scoring history is now incomplete for",
+        slug,
+        e,
+      );
+    }
+  }
+
   revalidate();
   return { ok: true };
 }
