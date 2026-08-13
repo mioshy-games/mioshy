@@ -180,7 +180,9 @@ export default function ResearchPage({
   const locale = params.locale === "en" ? "en" : "he";
 
   return (
-    <div className={styles.page} dir="rtl" lang="he">
+    // `data-research-root` is where ResearchToc writes the measured
+    // `--research-stack`, so the anchor offset stays inside this subtree.
+    <div className={styles.page} dir="rtl" lang="he" data-research-root>
       {/* ============ HERO ============ */}
       <div className={styles.hero}>
         <div className={styles.wrap}>

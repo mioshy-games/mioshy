@@ -18,6 +18,12 @@
  *    behind the header + chip bar. The desktop rail is `position: fixed` and
  *    consumes no vertical space, so from 1180px only the header has to be
  *    cleared.
+ *
+ * The offset is MEASURED, not declared: `--research-stack` is written by
+ * ResearchToc from the header's and chip bar's real heights. A first attempt
+ * hardcoded 64/72px for the header and every anchor landed 12px short, because
+ * SiteHeader reflows with its contents (69px at 390px wide, 73px at 320px). The
+ * values below are only the pre-hydration fallback.
  */
 
 .page {
@@ -35,9 +41,11 @@
   --bg: #fdfcfe;
   --card: #ffffff;
 
-  /* Sticky-offset budget. Header height, then header + chip bar. */
+  /* Sticky-offset budget. `--hdr-h` positions the chip bar; `--stack-h` is the
+     pre-hydration fallback for the anchor offset, replaced by the measured
+     `--research-stack` as soon as ResearchToc mounts. */
   --hdr-h: 64px;
-  --stack-h: 109px;
+  --stack-h: 130px;
 
   background: var(--bg);
   color: var(--ink);
@@ -56,14 +64,14 @@
 @media (min-width: 640px) {
   .page {
     --hdr-h: 72px;
-    --stack-h: 117px;
+    --stack-h: 138px;
   }
 }
 
 /* From the desktop-rail breakpoint the chip bar stops taking vertical space. */
 @media (min-width: 1180px) {
   .page {
-    --stack-h: 96px;
+    --stack-h: 90px;
   }
 }
 
@@ -71,7 +79,7 @@
 .share,
 .cta,
 .method {
-  scroll-margin-top: var(--stack-h);
+  scroll-margin-top: var(--research-stack, var(--stack-h));
 }
 
 .wrap {

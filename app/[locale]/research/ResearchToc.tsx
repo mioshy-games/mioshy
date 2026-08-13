@@ -43,15 +43,52 @@ const CHAPTERS: Chapter[] = [
   { id: "method", label: "איך נעשה המחקר" },
 ];
 
-/**
- * Viewport line that decides which chapter counts as current, matching the
- * mockup's `scrollY + 150`. It sits below the tallest sticky stack (117px) so a
- * heading is active once it has cleared the header and the chip bar.
- */
-const ACTIVE_LINE_PX = 150;
-
 /** Distance from the document bottom at which the last chapter always wins. */
 const BOTTOM_SNAP_PX = 40;
+
+/** Breathing room between the sticky stack and the heading that lands under it. */
+const CLEARANCE_PX = 12;
+
+/** How far below the sticky stack a heading must be to count as current. */
+const ACTIVE_LINE_SLACK_PX = 40;
+
+/**
+ * Fallback used before the first measurement and if the header cannot be found.
+ * Matches the `--research-stack` default in research.module.css.
+ */
+const FALLBACK_STACK_PX = 130;
+
+/**
+ * Height of everything pinned to the top of the viewport, measured rather than
+ * hardcoded.
+ *
+ * The first build assumed SiteHeader was exactly 64px below `sm` and 72px above
+ * it. On the preview it measured 69px at 390px wide and 73px at 320px, because
+ * the header's contents wrap. Every anchor then landed 12px short and the
+ * heading sat under the chip bar. Constants cannot track a header that reflows,
+ * so this reads the real thing.
+ *
+ * `offsetHeight` rather than `getBoundingClientRect().bottom`: SiteHeader hides
+ * itself on scroll by translating away, and the offset has to stay correct for
+ * the case where it is showing.
+ */
+function measureStack(nav: HTMLElement | null): number {
+  if (typeof document === "undefined") return FALLBACK_STACK_PX;
+
+  const header = Array.from(document.querySelectorAll("header")).find((el) => {
+    const pos = getComputedStyle(el).position;
+    return pos === "sticky" || pos === "fixed";
+  });
+  const headerH = header ? header.offsetHeight : 0;
+
+  // From 1180px the rail is `fixed` and floats beside the column, so it takes
+  // no vertical space and must not be counted.
+  const navH =
+    nav && getComputedStyle(nav).position === "sticky" ? nav.offsetHeight : 0;
+
+  const stack = headerH + navH;
+  return stack > 0 ? stack : FALLBACK_STACK_PX;
+}
 
 function prefersReducedMotion(): boolean {
   return (
@@ -64,6 +101,41 @@ export function ResearchToc() {
   const [activeIndex, setActiveIndex] = useState(-1);
   const navRef = useRef<HTMLElement | null>(null);
   const linkRefs = useRef<Array<HTMLAnchorElement | null>>([]);
+  const stackRef = useRef(FALLBACK_STACK_PX);
+
+  // ── Publish the measured sticky stack for scroll-margin-top ──────────────
+  // Written onto the page root, not :root, so the variable cannot be read by
+  // anything outside this article.
+  useEffect(() => {
+    const nav = navRef.current;
+    const root = nav?.closest<HTMLElement>("[data-research-root]") ?? null;
+
+    const sync = () => {
+      const stack = measureStack(nav);
+      stackRef.current = stack;
+      root?.style.setProperty("--research-stack", `${stack + CLEARANCE_PX}px`);
+    };
+
+    sync();
+    window.addEventListener("resize", sync);
+
+    // The header reflows on font load and on hydration of its own contents, so
+    // one measurement at mount is not enough.
+    const ro =
+      typeof ResizeObserver !== "undefined" ? new ResizeObserver(sync) : null;
+    const header = Array.from(document.querySelectorAll("header")).find((el) => {
+      const pos = getComputedStyle(el).position;
+      return pos === "sticky" || pos === "fixed";
+    });
+    if (ro && header) ro.observe(header);
+    if (ro && nav) ro.observe(nav);
+
+    return () => {
+      window.removeEventListener("resize", sync);
+      ro?.disconnect();
+      root?.style.removeProperty("--research-stack");
+    };
+  }, []);
 
   // ── Scrollspy ────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -72,10 +144,11 @@ export function ResearchToc() {
     const update = () => {
       ticking = false;
 
+      const line = stackRef.current + ACTIVE_LINE_SLACK_PX;
       let next = -1;
       for (let i = 0; i < CHAPTERS.length; i++) {
         const el = document.getElementById(CHAPTERS[i].id);
-        if (el && el.getBoundingClientRect().top <= ACTIVE_LINE_PX) next = i;
+        if (el && el.getBoundingClientRect().top <= line) next = i;
       }
 
       // At the very bottom the last chapter can be too short to ever cross the
