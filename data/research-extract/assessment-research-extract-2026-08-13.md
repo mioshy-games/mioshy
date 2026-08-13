@@ -866,6 +866,19 @@ Split — signed in vs anonymous, and by month (count, share of that row)
 | 2026-07 | 425 | 259 (60.9%) | 61 (14.4%) | 15 (3.5%) | 26 (6.1%) | 64 (15.1%) |
 | 2026-08 | 17 | 9 (52.9%) | <5 | <5 | <5 | 5 (29.4%) |
 
+### `q_priorities` — the full ranking, not just the top choice
+
+N = 455. Each respondent ordered all five categories; the table above counts only the category they
+put first. Here is every rank position, and the mean rank (1 = most important, 5 = least).
+
+| category | #1 | #2 | #3 | #4 | #5 | mean rank |
+|---|---:|---:|---:|---:|---:|---:|
+| communication | 274 | 104 | 54 | 21 | 2 | **1.62** |
+| emotional_connection | 62 | 94 | 237 | 48 | 14 | **2.69** |
+| family | 18 | 8 | 22 | 33 | 374 | **4.62** |
+| friendship | 27 | 37 | 59 | 295 | 37 | **3.61** |
+| intimacy | 74 | 212 | 83 | 58 | 28 | **2.46** |
+
 ## 3. Cross-tabs, banded
 
 Likert collapsed to **1–2 / 3 / 4–5 before pairing**. A pair is published only when **every cell is ≥ 5** —
@@ -1608,8 +1621,10 @@ counts for every non-versioned rewrite are in the JSON companion under `appendix
   every full-phase question sits at N ≈ 20–23 while the short set sits at N ≈ 600–780. The short/full
   boundary was itself re-cut on 2026-08-13; phase is resolved per answer from the history, but the
   reference points are not stable across the whole period.
-- **`q_priorities` is a ranking, rendered here as the distribution of the category ranked first.** The
-  full submitted orderings are in the JSON; only the top choice is tabulated.
+- **`q_priorities` is a ranking.** The per-question table shows the distribution of the category ranked
+  *first*; the full rank-position matrix and mean rank for all five categories are in §2 under
+  "the full ranking, not just the top choice" and in the JSON under `ranking`. Individual submitted
+  orderings are not published.
 - **Free-text questions are excluded entirely** — `q20c_what_hurts` and `q22a_success_signal` are counted
   nowhere in this file. No answer content was read.
 - **92 answers belong to 14 retired questions** that no longer exist in `journey_questions`

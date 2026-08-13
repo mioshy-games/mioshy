@@ -12542,5 +12542,59 @@
     }
    ]
   }
- ]
+ ],
+ "ranking": {
+  "n": 455,
+  "categories": [
+   "communication",
+   "emotional_connection",
+   "family",
+   "friendship",
+   "intimacy"
+  ],
+  "rank_position_counts": {
+   "communication": [
+    274,
+    104,
+    54,
+    21,
+    2
+   ],
+   "emotional_connection": [
+    62,
+    94,
+    237,
+    48,
+    14
+   ],
+   "family": [
+    18,
+    8,
+    22,
+    33,
+    374
+   ],
+   "friendship": [
+    27,
+    37,
+    59,
+    295,
+    37
+   ],
+   "intimacy": [
+    74,
+    212,
+    83,
+    58,
+    28
+   ]
+  },
+  "mean_rank": {
+   "communication": 1.62,
+   "emotional_connection": 2.69,
+   "family": 4.62,
+   "friendship": 3.61,
+   "intimacy": 2.46
+  }
+ }
 }
