@@ -262,7 +262,16 @@ export const getShortQuestionCount = cache(async (): Promise<number> => {
  */
 export function buildQuestionResolver(
   questions: Question[],
-): (slug: string) => Question | undefined {
+): (slug: string, answeredAt?: string) => Question | undefined {
   const byId = new Map(questions.map((q) => [q.id, q]));
   return (slug) => byId.get(slug);
 }
+
+// Date-resolved scoring lives in ./question-versions (pure — no react/cache in
+// its import graph, so tests can exercise it directly). Re-exported here so
+// existing import sites keep working.
+export {
+  loadJourneyQuestionVersions,
+  buildVersionedQuestionResolver,
+  type JourneyQuestionVersionRow,
+} from "./question-versions";

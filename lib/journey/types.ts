@@ -25,7 +25,23 @@ export type Axis =
   | "passion_autonomy"
   | "passion_anticipation"
   | "passion_play"
-  | "passion_context";
+  | "passion_context"
+  // ── Added 2026-08-13 with the axis-versioning correction ─────────────────
+  // Three of the rewritten questions ask about things the original axis set
+  // simply did not cover. Forcing them onto the nearest existing axis is what
+  // produced the bug being fixed, so they get their own.
+  /** Sexual presence/embodiment — staying with bodily sensation rather than
+   *  being pulled into thought. Source: q01_knowledge_world (v2 onward). */
+  | "intimacy_presence"
+  /** Felt safety in revealing fears and inner thoughts without judgement.
+   *  Source: q19_rituals (v2 onward). */
+  | "emotional_safety"
+  /** Outside pressure (work, money, extended family) entering the couple.
+   *  REVERSE-scored: higher = worse. Source: q33_external_pressure. */
+  | "external_pressure"
+  /** Perceived fairness of the household and childcare load.
+   *  Source: q34_load_fairness. */
+  | "load_fairness";
 
 /**
  * Product-level domain a question belongs to. Used by the assessment UI
@@ -191,6 +207,17 @@ export interface Response {
   question_id: string;
   answer: AnswerValue;
   locale: Locale;
+  /**
+   * When the answer was given. Scoring resolves the question's axis AS OF this
+   * instant (journey_question_versions), so an answer is never scored against
+   * a version of the question the respondent never saw.
+   *
+   * Optional because older call sites and fixtures omit it. When absent the
+   * resolver falls back to the CURRENT version — correct for a live answer
+   * being scored immediately, which is the only path that legitimately lacks a
+   * timestamp.
+   */
+  created_at?: string;
 }
 
 // --- Analysis output --------------------------------------------------------

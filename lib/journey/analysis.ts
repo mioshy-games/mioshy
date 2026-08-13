@@ -32,7 +32,20 @@ import { isPriorityKey, type PriorityKey } from "./priorities";
  * defs — the scoring math is identical either way (see F1 identical-result
  * test in tests/journey/scoring-source-parity.test.ts).
  */
-export type QuestionResolver = (slug: string) => Question | undefined;
+/**
+ * Resolve a question definition for scoring.
+ *
+ * `answeredAt` is the second argument for a reason: a question's axis is only
+ * meaningful together with the text that was on screen when it was answered.
+ * Seven questions were rewritten in July 2026 without their axes following, so
+ * a resolver that ignores the date scores an answer against a question the
+ * respondent never saw. Implementations back onto journey_question_versions;
+ * omitting the date resolves to the CURRENT version.
+ */
+export type QuestionResolver = (
+  slug: string,
+  answeredAt?: string,
+) => Question | undefined;
 import type { PriorityLabelsBundle } from "@/lib/journey-content/priority-categories";
 
 // Axis labels (bilingual) for narrative rendering ----------------------------
@@ -58,6 +71,10 @@ const AXIS_LABEL_HE: Record<Axis, string> = {
   passion_anticipation: "ציפייה ורעננות",
   passion_play: "שובבות ומשחק",
   passion_context: "זמן חופשי מלו\"ז",
+  intimacy_presence: "נוכחות במגע ובאינטימיות",
+  emotional_safety: "ביטחון רגשי",
+  external_pressure: "לחצים מבחוץ",
+  load_fairness: "חלוקת עומס הוגנת",
 };
 
 const AXIS_LABEL_EN: Record<Axis, string> = {
@@ -81,6 +98,10 @@ const AXIS_LABEL_EN: Record<Axis, string> = {
   passion_anticipation: "Anticipation",
   passion_play: "Playfulness",
   passion_context: "Time free of logistics",
+  intimacy_presence: "Presence in intimacy",
+  emotional_safety: "Emotional safety",
+  external_pressure: "Outside pressure",
+  load_fairness: "Fair share of the load",
 };
 
 const LOVE_LANGUAGE_AXES: LoveLanguage[] = [
@@ -130,10 +151,15 @@ const COMMUNICATION_AXES: Axis[] = [
   "four_horsemen_stonewall",
 ];
 
+// 2026-08-13 — the four new axes are added to the category they belong to. A
+// new axis absent from every list scores into nothing: the question would be
+// asked, stored, and silently dropped from the report. That is how q01 and q19
+// would have vanished from their categories after the correction.
 const INTIMACY_AXES: Axis[] = [
   "passion_anticipation",
   "passion_play",
   "love_language_touch",
+  "intimacy_presence",
 ];
 
 const EMOTIONAL_CONNECTION_AXES: Axis[] = [
@@ -141,6 +167,7 @@ const EMOTIONAL_CONNECTION_AXES: Axis[] = [
   "love_map",
   "turn_toward",
   "pso",
+  "emotional_safety",
 ];
 
 const FRIENDSHIP_CATEGORY_AXES: Axis[] = [
@@ -152,6 +179,8 @@ const FRIENDSHIP_CATEGORY_AXES: Axis[] = [
 const FAMILY_AXES: Axis[] = [
   "shared_meaning",
   "passion_context",
+  "external_pressure",
+  "load_fairness",
 ];
 
 /** Inverted axes - higher raw score = unhealthier. We flip to 1-x for scoring. */
@@ -160,6 +189,9 @@ const INVERT_FOR_HEALTH: Axis[] = [
   "four_horsemen_contempt",
   "four_horsemen_defensive",
   "four_horsemen_stonewall",
+  // More outside pressure entering the relationship is worse, so the raw score
+  // is flipped for the category the same way the horsemen are.
+  "external_pressure",
 ];
 
 // --- Core scoring -----------------------------------------------------------
@@ -181,7 +213,8 @@ export function scoreResponses(
   const counts: Partial<Record<Axis, number>> = {};
 
   for (const r of responses) {
-    const q = resolve(r.question_id);
+    // Date-resolved: the axis that was correct WHEN THIS ANSWER WAS GIVEN.
+    const q = resolve(r.question_id, r.created_at);
     if (!q) continue;
 
     // LIKERT → one value applied to every axis listed on the question,
