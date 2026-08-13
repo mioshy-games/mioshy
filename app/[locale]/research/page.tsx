@@ -186,7 +186,10 @@ export default function ResearchPage({
       {/* ============ HERO ============ */}
       <div className={styles.hero}>
         <div className={styles.wrap}>
-          <div className={styles.brand}>Mioshy</div>
+          {/* The mockup opened with a "Mioshy" wordmark. Inside the app
+              SiteHeader sits directly above the hero with the logo in it, so
+              the in-hero brand line was a duplicate. Removed on review
+              (2026-08-13), same reasoning as the colophon wordmark. */}
           <div className={styles.kicker}>
             מחקר מקורי · מבוסס על נתוני האבחון הזוגי של מיאושי
           </div>

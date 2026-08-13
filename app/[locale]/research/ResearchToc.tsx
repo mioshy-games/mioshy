@@ -3,29 +3,25 @@
 /**
  * Chapter navigation for /he/research.
  *
- * One component, two shapes, chosen by CSS at 1180px:
+ * One component drives both modes the mockup specifies, because they are the
+ * same element at different breakpoints: a horizontally scrolling chip bar that
+ * sticks under the header on narrow screens, and a fixed rail floating to the
+ * right of the column from 1180px. The CSS decides which; this file only owns
+ * the active state.
  *
- *   rail (desktop) — the whole index is always visible beside the article,
- *                    sticky within it.
- *   index (mobile) — a collapsed sticky row naming the current chapter, which
- *                    expands into the same vertical index as an OVERLAY.
+ * Ported from the inline script in docs/research-page-mockup.html, with three
+ * changes:
  *
- * The mobile shape was a horizontally scrolling chip carousel until 2026-08-13.
- * It is now a page index, so the two shapes show the same thing at the same
- * size and only their packaging differs. The horizontal auto-centering that the
- * carousel needed is gone: nothing scrolls sideways any more.
- *
- * Scrolling behaviour, unchanged from the carousel:
- *
- * - Position comes from `getBoundingClientRect()` rather than `offsetTop`. The
- *   mockup's sections were direct children of the document, so the two agreed;
- *   inside the app the article sits in several positioned wrappers and
- *   `offsetTop` would be measured against the nearest of them.
- * - Anchor activation is intercepted so the jump can be smooth without setting
+ * - Scroll position comes from `getBoundingClientRect()` rather than
+ *   `offsetTop`. The mockup's sections were direct children of the document, so
+ *   the two agreed; inside the app the article sits in several positioned
+ *   wrappers and `offsetTop` would be measured against the nearest of them.
+ * - Anchor clicks are intercepted so the jump can be smooth without setting
  *   `scroll-behavior: smooth` on `html`, which the mockup could do and a scoped
- *   page cannot. `scrollIntoView` honours `scroll-margin-top`, so the sticky
- *   stack is cleared exactly as the CSS declares it.
- * - `prefers-reduced-motion` disables the smooth jump.
+ *   page cannot. `scrollIntoView` honours the section's `scroll-margin-top`, so
+ *   the sticky stack is cleared exactly as the CSS declares it.
+ * - `prefers-reduced-motion` disables both the smooth jump and the chip-bar
+ *   auto-centering.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -47,8 +43,6 @@ const CHAPTERS: Chapter[] = [
   { id: "method", label: "איך נעשה המחקר" },
 ];
 
-const PANEL_ID = "research-toc-panel";
-
 /** Distance from the document bottom at which the last chapter always wins. */
 const BOTTOM_SNAP_PX = 40;
 
@@ -64,6 +58,20 @@ const ACTIVE_LINE_SLACK_PX = 40;
  */
 const FALLBACK_STACK_PX = 130;
 
+/**
+ * Height of everything pinned to the top of the viewport, measured rather than
+ * hardcoded.
+ *
+ * The first build assumed SiteHeader was exactly 64px below `sm` and 72px above
+ * it. On the preview it measured 69px at 390px wide and 73px at 320px, because
+ * the header's contents wrap. Every anchor then landed 12px short and the
+ * heading sat under the chip bar. Constants cannot track a header that reflows,
+ * so this reads the real thing.
+ *
+ * `offsetHeight` rather than `getBoundingClientRect().bottom`: SiteHeader hides
+ * itself on scroll by translating away, and the offset has to stay correct for
+ * the case where it is showing.
+ */
 /** The app's own sticky header, or null if this page renders without chrome. */
 function findStickyHeader(): HTMLElement | null {
   if (typeof document === "undefined") return null;
@@ -80,13 +88,29 @@ function findStickyHeader(): HTMLElement | null {
  *
  * Read from the `--toc-mode` custom property rather than a `matchMedia` call so
  * the 1180px breakpoint is declared exactly once, in the stylesheet. Both modes
- * are `position: sticky`, so position alone cannot tell them apart.
+ * are `position: sticky` now, so position alone can no longer tell them apart.
  */
-function tocMode(nav: HTMLElement | null): "index" | "rail" {
-  if (!nav) return "index";
+function tocMode(nav: HTMLElement | null): "bar" | "rail" {
+  if (!nav) return "bar";
   return getComputedStyle(nav).getPropertyValue("--toc-mode").trim() === "rail"
     ? "rail"
-    : "index";
+    : "bar";
+}
+
+function measureStack(nav: HTMLElement | null): number {
+  if (typeof document === "undefined") return FALLBACK_STACK_PX;
+
+  const header = findStickyHeader();
+  const headerH = header ? header.offsetHeight : 0;
+
+  // In rail mode the nav sits BESIDE the column, so it occupies no vertical
+  // space and must not be added to the anchor offset. Before the rail became
+  // sticky this was a position check; it is now a mode check, because sticky
+  // no longer distinguishes the two.
+  const navH = nav && tocMode(nav) === "bar" ? nav.offsetHeight : 0;
+
+  const stack = headerH + navH;
+  return stack > 0 ? stack : FALLBACK_STACK_PX;
 }
 
 function prefersReducedMotion(): boolean {
@@ -96,62 +120,10 @@ function prefersReducedMotion(): boolean {
   );
 }
 
-/**
- * Height of everything pinned to the top of the viewport, measured rather than
- * hardcoded.
- *
- * An earlier build assumed SiteHeader was exactly 64px below `sm` and 72px
- * above it. On the preview it measured 69px at 390px wide and 73px at 320px,
- * because the header's contents wrap. Every anchor then landed short and the
- * heading sat under the bar. Constants cannot track a header that reflows, so
- * this reads the real thing.
- *
- * `offsetHeight` rather than `getBoundingClientRect().bottom`: SiteHeader hides
- * itself on scroll by translating away, and the offset has to stay correct for
- * the case where it is showing.
- *
- * In index mode this measures the COLLAPSED ROW only. The expanded panel is
- * absolutely positioned, so it never contributes height and the anchor offset
- * does not change when the index opens.
- */
-function measureStack(nav: HTMLElement | null, row: HTMLElement | null): number {
-  if (typeof document === "undefined") return FALLBACK_STACK_PX;
-
-  const header = findStickyHeader();
-  const headerH = header ? header.offsetHeight : 0;
-
-  // In rail mode the nav sits BESIDE the column, so it occupies no vertical
-  // space and must not be added to the anchor offset.
-  const rowH = nav && tocMode(nav) === "index" && row ? row.offsetHeight : 0;
-
-  const stack = headerH + rowH;
-  return stack > 0 ? stack : FALLBACK_STACK_PX;
-}
-
-function Chevron({ open }: { open: boolean }) {
-  return (
-    <svg
-      className={`${styles.chev} ${open ? styles.chevOpen : ""}`}
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <polyline points="6 9 12 15 18 9" />
-    </svg>
-  );
-}
-
 export function ResearchToc() {
   const [activeIndex, setActiveIndex] = useState(-1);
-  const [open, setOpen] = useState(false);
   const navRef = useRef<HTMLElement | null>(null);
-  const rowRef = useRef<HTMLButtonElement | null>(null);
+  const linkRefs = useRef<Array<HTMLAnchorElement | null>>([]);
   const stackRef = useRef(FALLBACK_STACK_PX);
 
   // ── Publish the measured sticky stack for scroll-margin-top ──────────────
@@ -162,7 +134,7 @@ export function ResearchToc() {
     const root = nav?.closest<HTMLElement>("[data-research-root]") ?? null;
 
     const sync = () => {
-      const stack = measureStack(nav, rowRef.current);
+      const stack = measureStack(nav);
       stackRef.current = stack;
       root?.style.setProperty("--research-stack", `${stack + CLEARANCE_PX}px`);
 
@@ -180,34 +152,37 @@ export function ResearchToc() {
     // one measurement at mount is not enough.
     const ro =
       typeof ResizeObserver !== "undefined" ? new ResizeObserver(sync) : null;
-    const header = findStickyHeader();
+    const header = Array.from(document.querySelectorAll("header")).find((el) => {
+      const pos = getComputedStyle(el).position;
+      return pos === "sticky" || pos === "fixed";
+    });
     if (ro && header) ro.observe(header);
-    if (ro && rowRef.current) ro.observe(rowRef.current);
+    if (ro && nav) ro.observe(nav);
 
     return () => {
       window.removeEventListener("resize", sync);
       ro?.disconnect();
       root?.style.removeProperty("--research-stack");
-      root?.style.removeProperty("--research-header-h");
     };
   }, []);
 
   // ── Follow the header's visible edge ─────────────────────────────────────
   /*
    * SiteHeader hides itself on scroll by translating up, but it keeps its box
-   * in the layout. Pinning the collapsed row to that layout height therefore
-   * left a transparent strip between the top of the screen and the row, with
-   * article text scrolling through it.
+   * in the layout. Pinning the chip bar to that layout height therefore left a
+   * transparent strip between the top of the screen and the bar, with article
+   * text scrolling through it.
    *
    * The fix is to track where the header actually IS: its rect bottom, clamped
-   * at zero. While it is showing the row sits flush beneath it, and once it has
-   * translated away the row sits at the top of the screen.
+   * at zero. While it is showing the bar sits flush beneath it, and once it has
+   * translated away the bar sits at the top of the screen.
    *
    * The header animates over ~300ms, and scroll events stop firing the moment
-   * the finger lifts, so sampling on scroll alone would freeze the row
+   * the finger lifts, so sampling on scroll alone would freeze the bar
    * mid-animation and reopen the gap. After every scroll burst the sampler
-   * therefore keeps running until the value settles, which is what makes the
-   * row travel WITH the header rather than jump after it.
+   * therefore keeps running until the value settles (or a short cap elapses),
+   * which is what makes the bar travel WITH the header rather than jump after
+   * it.
    */
   useEffect(() => {
     const nav = navRef.current;
@@ -228,6 +203,7 @@ export function ResearchToc() {
       if (visible !== last) {
         last = visible;
         root.style.setProperty("--research-header-visible", `${visible}px`);
+        // Value is still moving — keep watching past the end of the scroll.
         settleUntil = performance.now() + 400;
       }
 
@@ -291,37 +267,26 @@ export function ResearchToc() {
     };
   }, []);
 
-  // ── Close the index: outside pointer, Escape ─────────────────────────────
+  // ── Keep the active chip in view on the horizontal bar ───────────────────
   useEffect(() => {
-    if (!open) return;
+    const nav = navRef.current;
+    const link = linkRefs.current[activeIndex];
+    if (!nav || !link) return;
+    // Only the bar scrolls horizontally; the rail lays out vertically.
+    if (tocMode(nav) !== "bar") return;
+    if (nav.scrollWidth <= nav.clientWidth + 4) return;
 
-    const onPointerDown = (e: PointerEvent) => {
-      const nav = navRef.current;
-      if (nav && e.target instanceof Node && !nav.contains(e.target)) {
-        setOpen(false);
-      }
-    };
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setOpen(false);
-        rowRef.current?.focus();
-      }
-    };
+    nav.scrollTo({
+      left: link.offsetLeft - (nav.clientWidth - link.offsetWidth) / 2,
+      behavior: prefersReducedMotion() ? "auto" : "smooth",
+    });
+  }, [activeIndex]);
 
-    document.addEventListener("pointerdown", onPointerDown, true);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown, true);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [open]);
-
-  const goTo = useCallback(
+  const handleClick = useCallback(
     (event: React.MouseEvent<HTMLAnchorElement>, id: string) => {
       const target = document.getElementById(id);
       if (!target) return; // let the browser handle it
       event.preventDefault();
-      setOpen(false);
       target.scrollIntoView({
         behavior: prefersReducedMotion() ? "auto" : "smooth",
         block: "start",
@@ -332,57 +297,27 @@ export function ResearchToc() {
     [],
   );
 
-  // Above the first chapter there is no current section yet; the row names the
-  // one the reader is about to reach rather than sitting empty.
-  const currentLabel =
-    CHAPTERS[activeIndex >= 0 ? activeIndex : 0]?.label ?? CHAPTERS[0].label;
-
   return (
     <nav
       ref={navRef}
       className={styles.toc}
       aria-label="ניווט בפרקי המחקר"
-      data-open={open ? "true" : "false"}
     >
-      {/* Collapsed row — index mode only; CSS hides it in rail mode. */}
-      <button
-        ref={rowRef}
-        type="button"
-        className={styles.tocToggle}
-        aria-expanded={open}
-        aria-controls={PANEL_ID}
-        onClick={() => setOpen((v) => !v)}
-      >
-        <span className={styles.tocLabel}>בתוך המחקר</span>
-        <span className={styles.tocCurrent}>{currentLabel}</span>
-        <Chevron open={open} />
-      </button>
-
-      {/* The index itself. In rail mode this is the whole component and is
-          always visible; in index mode it overlays the article when open, so
-          expanding never shifts the page. */}
-      {/* Closed in index mode the panel is `display: none` in CSS, which takes
-          its links out of the tab order for free. Driving `tabIndex` from
-          `open` would have been wrong: the rail is never "open", so it would
-          have made the entire desktop index unfocusable. */}
-      <div
-        id={PANEL_ID}
-        className={styles.tocPanel}
-        data-open={open ? "true" : "false"}
-      >
-        <div className={styles.tocTitle}>בתוך המחקר</div>
-        {CHAPTERS.map((chapter, i) => (
-          <a
-            key={chapter.id}
-            href={`#${chapter.id}`}
-            className={i === activeIndex ? styles.active : undefined}
-            aria-current={i === activeIndex ? "true" : undefined}
-            onClick={(e) => goTo(e, chapter.id)}
-          >
-            {chapter.label}
-          </a>
-        ))}
-      </div>
+      <div className={styles.tocTitle}>בתוך המחקר</div>
+      {CHAPTERS.map((chapter, i) => (
+        <a
+          key={chapter.id}
+          ref={(el) => {
+            linkRefs.current[i] = el;
+          }}
+          href={`#${chapter.id}`}
+          className={i === activeIndex ? styles.active : undefined}
+          aria-current={i === activeIndex ? "true" : undefined}
+          onClick={(e) => handleClick(e, chapter.id)}
+        >
+          {chapter.label}
+        </a>
+      ))}
     </nav>
   );
 }
