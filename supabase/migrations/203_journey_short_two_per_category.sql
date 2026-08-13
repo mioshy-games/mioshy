@@ -1,5 +1,8 @@
 -- ───────────────────────────────────────────────────────────────────────────
--- 199_journey_short_two_per_category.sql
+-- 203_journey_short_two_per_category.sql
+--
+-- RUN AFTER 202_journey_questions_axes_sync.sql. 199 makes journey_questions.axes
+-- agree with the live scoring config; this migration reads as if it already does.
 --
 -- Rebuild the SHORT assessment as exactly two scored questions per category —
 -- ten scored questions, ten distinct axes, no redundancy.
@@ -58,7 +61,7 @@
 BEGIN;
 
 -- Snapshot current phases so the rollback is exact rather than reconstructed.
-CREATE TABLE IF NOT EXISTS public.journey_questions_phase_backup_199 AS
+CREATE TABLE IF NOT EXISTS public.journey_questions_phase_backup_203 AS
 SELECT slug, phase FROM public.journey_questions;
 
 -- ── into SHORT ─────────────────────────────────────────────────────────────
@@ -111,5 +114,5 @@ COMMIT;
 
 -- ── ROLLBACK ───────────────────────────────────────────────────────────────
 -- UPDATE public.journey_questions q SET phase = b.phase, updated_at = now()
---   FROM public.journey_questions_phase_backup_199 b WHERE q.slug = b.slug;
--- DROP TABLE public.journey_questions_phase_backup_199;
+--   FROM public.journey_questions_phase_backup_203 b WHERE q.slug = b.slug;
+-- DROP TABLE public.journey_questions_phase_backup_203;
