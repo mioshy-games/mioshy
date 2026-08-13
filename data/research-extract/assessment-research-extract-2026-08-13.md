@@ -1,7 +1,7 @@
 # Mioshy assessment — research extraction, era-corrected
 
 Generated 2026-08-13T10:34:01.935Z · read-only · aggregates only · no PII · no free text.
-Machine-readable companion: `research-extract-assessment-2026-08-13.json`.
+Machine-readable companion: `assessment-research-extract-2026-08-13.json`.
 
 Scope is the **assessment (journey)** only. The survey/poll is not in this file.
 
@@ -88,7 +88,7 @@ A further **92** belong to 14 retired questions (§4). 10330 − 992 − 92 = **
 | Continued from short into full | **25** |
 
 Phase is resolved per answer from `journey_questions_history`, so a question counts as short or full
-according to where it sat **when it was answered**. Read the caveat in §5 before quoting these four numbers.
+according to where it sat **when it was answered**. Read the caveat in §4 before quoting these four numbers.
 
 ### Who answered
 
