@@ -30,12 +30,24 @@
 --   q34_load_fairness      Same category; perceived fairness of the household
 --                          and childcare load.
 --
--- PHASE = 'short' for all five. The results page is what the acceptance bar
--- talks about, and for the overwhelming majority of people that page is built
--- from the SHORT set (median questions answered = 12; the short set is 13).
--- Placed in 'full' they would not appear in almost anyone's report and the
--- five-category bar would still fail. This lengthens the short assessment from
--- 13 scored questions to 18 — a real funnel change, called out in the PR.
+-- PHASE — the MINIMUM set, not the package.
+--
+-- The short assessment TODAY gives all five categories >=2 contributing axes,
+-- which is the engine's own bar for a trustworthy score (below it a category is
+-- listed in insufficient_keys and rendered as a caveat instead of a number).
+-- Migration 197 removes love_map, passion_play and four_horsemen_contempt from
+-- the short set at once, which drops תקשורת to 1 axis and חברות to 0.
+--
+-- Restoring exactly that coverage needs three questions, not five:
+--   q30_contempt_v2   short  → four_horsemen_contempt  (תקשורת back to 2)
+--   q32_love_map_v2   short  → love_map                (אהבה, and 1st חברות axis)
+--   q16_play          PROMOTED from full → passion_play (2nd חברות axis)
+-- and the remaining two go to 'full': intimacy and family already clear >=2
+-- without them.
+--
+-- Short goes 13 → 16 questions (9 → 12 scored). Adding all five would still
+-- have left חברות on love_map alone, because none of the five supply
+-- turn_toward or passion_play — the package was both bigger AND insufficient.
 --
 -- Hebrew is exactly as supplied. Not reworded, not "improved".
 -- Idempotent: upsert on slug.
@@ -54,7 +66,7 @@ VALUES
     $x${"purpose":"Four Horsemen - Contempt. Restores the signal vacated when q11's Hebrew was rewritten into an appreciation question (migration 197).","insight":"High contempt is the strongest single predictor of separation in Gottman's data."}$x$::jsonb,
     true ),
 
-  ( 'q31_touch_nonsexual', 35, 'short', 'likert5', 'intimacy',
+  ( 'q31_touch_nonsexual', 35, 'full', 'likert5', 'intimacy',
     $x$[{"axis":"love_language_touch","weight":1.0}]$x$::jsonb, false,
     $x$בשבוע רגיל, כמה מגע לא מיני יש ביניכם, כמו חיבוק, יד על הכתף או ליטוף?$x$,
     $x$In a typical week, how much non-sexual touch is there between you - a hug, a hand on the shoulder, a caress?$x$,
@@ -70,7 +82,7 @@ VALUES
     $x${"purpose":"Restores love_map, vacated when q01 moved to intimacy_presence (migration 197). Feeds BOTH the emotional-connection and friendship categories."}$x$::jsonb,
     true ),
 
-  ( 'q33_external_pressure', 37, 'short', 'likert5', 'family',
+  ( 'q33_external_pressure', 37, 'full', 'likert5', 'family',
     $x$[{"axis":"external_pressure","weight":-1.0}]$x$::jsonb, false,
     $x$באיזו מידה לחצים מבחוץ, כמו עבודה, כסף או משפחה מורחבת, נכנסים אליכם לתוך הזוגיות?$x$,
     $x$How much do outside pressures - work, money, extended family - make their way into your relationship?$x$,
@@ -78,7 +90,7 @@ VALUES
     $x${"purpose":"First real measure of the external-pressure half of the family category, which was named for it but never measured it.","insight":"REVERSE: a higher answer means more pressure entering the relationship, i.e. worse."}$x$::jsonb,
     true ),
 
-  ( 'q34_load_fairness', 38, 'short', 'likert5', 'family',
+  ( 'q34_load_fairness', 38, 'full', 'likert5', 'family',
     $x$[{"axis":"load_fairness","weight":1.0}]$x$::jsonb, false,
     $x$בניהול הבית והילדים, עד כמה חלוקת העומס מרגישה הוגנת לשניכם?$x$,
     $x$In running the home and the kids, how fair does the division of the load feel to both of you?$x$,
@@ -111,12 +123,22 @@ WHERE q.slug IN ('q30_contempt_v2','q31_touch_nonsexual','q32_love_map_v2',
                  'q33_external_pressure','q34_load_fairness')
 ON CONFLICT (slug, version) DO NOTHING;
 
+-- Promote the existing play question into the short set. A plain UPDATE of one
+-- field on the EXISTING row — no new row, no duplicate, exactly the pattern
+-- migration 144 used for its two phase promotions. Its Hebrew and its axis were
+-- verified to agree in the audit, which is why it is the one promoted rather
+-- than q03 or q26 (both flagged directionally off).
+UPDATE public.journey_questions
+SET phase = 'short', updated_at = now()
+WHERE slug = 'q16_play' AND phase <> 'short';
+
 COMMIT;
 
 -- ── VERIFY ─────────────────────────────────────────────────────────────────
 --   SELECT slug, phase, axes FROM journey_questions
---   WHERE slug LIKE 'q3%_%' ORDER BY position;
---   SELECT count(*) FROM journey_questions WHERE phase='short' AND is_active; -- 18
+--   WHERE slug IN ('q30_contempt_v2','q31_touch_nonsexual','q32_love_map_v2',
+--                  'q33_external_pressure','q34_load_fairness','q16_play');
+--   SELECT count(*) FROM journey_questions WHERE phase='short' AND is_active; -- 16
 
 -- ── ROLLBACK ───────────────────────────────────────────────────────────────
 -- DELETE FROM public.journey_question_versions
@@ -125,6 +147,7 @@ COMMIT;
 -- DELETE FROM public.journey_questions
 --   WHERE slug IN ('q30_contempt_v2','q31_touch_nonsexual','q32_love_map_v2',
 --                  'q33_external_pressure','q34_load_fairness');
+-- UPDATE public.journey_questions SET phase = 'full' WHERE slug = 'q16_play';
 -- NOTE: if any journey_responses rows already reference these slugs, delete the
 -- questions but KEEP the responses — nothing is ever deleted from responses.
 -- An orphaned response simply fails to resolve and is skipped by scoring.
