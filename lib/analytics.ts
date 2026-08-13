@@ -56,6 +56,12 @@ export type AnalyticsEvent =
 
   | "partner_invite_shared"    // owner shared the pair code/link: { channel }
 
+  // Research page (/he/research) — a static article whose whole job is reach,
+  // so the two things worth measuring are how often it gets passed on and how
+  // often it sends someone into the assessment.
+  | "research_share_click"     // share control used: { channel: whatsapp | mail | facebook | linkedin | copy }
+  | "research_cta_click"       // the article's CTA into /{locale}/survey
+
   // Journey post-purchase (private space + therapeutic dashboard)
   | "journey_dashboard_viewed"      // user landed on /my/journey
   | "journey_rail_pill_clicked"     // user clicked a clickable rail pill

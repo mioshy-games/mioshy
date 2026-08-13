@@ -71,6 +71,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // it is an interactive flow, not a document, and it already collects the
     // site-wide header/footer links.
     { path: "/relationship-survey", priority: 0.9, changeFrequency: "weekly" },
+    // /research is the original-data article. Its entire purpose is discovery
+    // and inbound links, so it is the last page that can afford to repeat the
+    // /relationship-survey mistake above. Canonical and hreflang ship from its
+    // generateMetadata via buildAlternates; this is the third leg.
+    // changeFrequency is "monthly" rather than "weekly" because the page is a
+    // static snapshot that only moves when a new edition is published.
+    { path: "/research", priority: 0.9, changeFrequency: "monthly" },
     { path: "/journey", priority: 0.85, changeFrequency: "weekly" },
     { path: "/pricing", priority: 0.7, changeFrequency: "monthly" },
     { path: "/articles", priority: 0.8, changeFrequency: "weekly" },
