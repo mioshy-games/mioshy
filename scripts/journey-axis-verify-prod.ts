@@ -74,9 +74,17 @@ const CUTOFF = Date.parse("2026-07-01T00:00:00Z");
 // ── 1. invariance, against the REAL version rows ────────────────────────────
 // "Before" for a pre-cutoff journey is the axis set that was live then, which is
 // exactly what v1 holds — so this compares v1-scoring to versioned-scoring.
+// Overlay BOTH axes and options from v1. Overlaying only axes was a bug: after
+// migration 202 synced journey_questions.options to the OPEN version, a
+// baseline that inherited the row's options was silently using v2's corrected
+// q20_biggest_gap scores while claiming to be v1 — which made the gate report a
+// drift that was in the measurement, not in the scoring.
 const v1ById = new Map(questions.map((q) => {
   const v1 = vRows.filter((v) => v.slug === q.id).sort((a, b) => a.version - b.version)[0];
-  return [q.id, v1 ? ({ ...q, axes: (v1.axes ?? []) as AxisWeight[] } as Question) : q];
+  if (!v1) return [q.id, q];
+  const base = { ...q, axes: (v1.axes ?? []) as AxisWeight[] } as Question;
+  if ("options" in base && v1.options) (base as { options: unknown }).options = v1.options;
+  return [q.id, base];
 }));
 let checked = 0, drifted = 0;
 for (const [, responses] of journeys) {
