@@ -96,12 +96,36 @@ function humanLabel(delta: number, isHe: boolean): string {
   return isHe ? "צריך תשומת לב"  : "Needs attention";
 }
 
+/**
+ * When the assessment itself changed, not the relationship.
+ *
+ * On 2026-08-13 the scoring instrument was corrected: seven questions had been
+ * rewritten in July without their scoring axes following, and the short set was
+ * rebuilt around ten questions across ten axes, five of them new. A score from
+ * before this instant and one from after are not measurements of the same
+ * thing.
+ *
+ * This matters here specifically because these cards lead with a DELTA — an
+ * arrow, a colour and a sentence like "קפיצה ממש יפה". Across this boundary that
+ * delta describes a change of instrument while reading as a change in the
+ * couple. A footnote would not fix it: the arrow is the thing that misleads. So
+ * when the two compared measurements straddle the boundary the delta is
+ * withheld and replaced with a plain statement of why.
+ */
+const INSTRUMENT_CHANGED_AT = Date.parse("2026-08-13T09:18:53Z");
+
 export function ScoreEvolutionChart({ isHe, points, title }: Props) {
   if (points.length === 0) return null;
 
   const latest   = points[points.length - 1];
   const previous = points.length > 1 ? points[points.length - 2] : null;
   const isFirst  = previous === null;
+
+  // True when the pair being compared sits either side of the change.
+  const straddlesInstrumentChange =
+    previous !== null &&
+    Date.parse(previous.computedAt) < INSTRUMENT_CHANGED_AT &&
+    Date.parse(latest.computedAt) >= INSTRUMENT_CHANGED_AT;
 
   return (
     <section
@@ -118,9 +142,13 @@ export function ScoreEvolutionChart({ isHe, points, title }: Props) {
               ? (isHe
                   ? "המדידה הראשונה שלכם. המדידה הבאה תראה לאן הלכתם."
                   : "Your baseline. The next check-in will show where you've moved.")
-              : (isHe
-                  ? "ההשוואה היא מול המדידה הקודמת שלכם."
-                  : "Compared to your previous measurement.")}
+              : straddlesInstrumentChange
+                ? (isHe
+                    ? "המדידה הזו נעשתה עם שאלון מעודכן, ולכן היא לא ניתנת להשוואה ישירה למדידה הקודמת שלכם."
+                    : "This check-in used an updated questionnaire, so it isn't directly comparable to your previous one.")
+                : (isHe
+                    ? "ההשוואה היא מול המדידה הקודמת שלכם."
+                    : "Compared to your previous measurement.")}
           </p>
         </div>
         <span className="shrink-0 rounded-full bg-white/[0.04] px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-white/55">
@@ -132,7 +160,12 @@ export function ScoreEvolutionChart({ isHe, points, title }: Props) {
         {PILLARS.map((p) => {
           const current = displayed(latest[p.key], p.invert);
           const prev    = previous ? displayed(previous[p.key], p.invert) : null;
-          const delta   = current !== null && prev !== null ? current - prev : null;
+          // Across an instrument change the arrow would describe a different
+          // questionnaire, not a different relationship. Withheld rather than
+          // annotated — the arrow is what misleads.
+          const delta   = straddlesInstrumentChange || current === null || prev === null
+            ? null
+            : current - prev;
 
           const positive = delta !== null && delta > 0;
           const negative = delta !== null && delta < 0;
