@@ -91,6 +91,12 @@ export function SiteFooter() {
                 <li><Link href="/"          className="text-[#D8CFE6] transition-colors hover:text-white">{t("home")}</Link></li>
                 <li><Link href="/pricing"   className="text-[#D8CFE6] transition-colors hover:text-white">{tMarketing("footer.links.pricing" as never)}</Link></li>
                 <li><Link href="/articles"  className="text-[#D8CFE6] transition-colors hover:text-white">{tMarketing("footer.links.articles" as never)}</Link></li>
+                {/* /research is original-data content, so it belongs beside the
+                    articles rather than in the Services column: it is something
+                    to read, not something we sell. It is also the site-wide
+                    inbound link the page needs — the sitemap and canonical get
+                    it into the index, this gets it crawled from within. */}
+                <li><Link href="/research"  className="text-[#D8CFE6] transition-colors hover:text-white">{tMarketing("footer.links.research" as never)}</Link></li>
                 <li><Link href="/account"   className="text-[#D8CFE6] transition-colors hover:text-white">{tMarketing("footer.links.account" as never)}</Link></li>
               </ul>
             </div>
@@ -106,15 +112,12 @@ export function SiteFooter() {
                 <li><Link href="/journey" className="text-[#D8CFE6] transition-colors hover:text-white">{tNav("journey")}</Link></li>
                 <li><Link href="/mioshy-sex"  className="text-[#D8CFE6] transition-colors hover:text-white">{tNav("adults")}</Link></li>
                 <li><SurveyLink location="footer" href="/survey"  className="text-[#D8CFE6] transition-colors hover:text-white">{tNav("surveyShort")}</SurveyLink></li>
-                {/* The survey's LANDING page, which had zero inbound internal
-                    links site-wide. Deliberately a plain <Link>, not a
-                    <SurveyLink>: SurveyLinkClick is the first half of the
-                    "click → SurveyPageView" funnel from PR #46/#47, and firing
-                    it for a click that lands somewhere other than /survey would
-                    quietly inflate the numerator against an unchanged
-                    denominator. Label is nav.survey (the full name) so it reads
-                    distinctly from the nav.surveyShort row above it. */}
-                <li><Link href="/relationship-survey" className="text-[#D8CFE6] transition-colors hover:text-white">{tNav("survey")}</Link></li>
+                {/* The /relationship-survey row that used to sit here was
+                    removed on review (2026-08-13). The page itself is untouched
+                    and still live; only this footer entry is gone. Note that
+                    this was its one site-wide inbound internal link, so the
+                    page is now back to relying on the sitemap and its canonical
+                    alone — the same position that made it invisible before. */}
               </ul>
             </div>
 

@@ -213,9 +213,13 @@ export default function ResearchPage({
       </div>
 
       {/* ============ ניווט אנקורים ============ */}
-      <ResearchToc />
+      {/* Nav and article share a shell so the desktop rail can be sticky WITHIN
+          the article instead of fixed to the viewport. That is what stops it
+          painting over the colophon and SiteFooter at the end of the page. */}
+      <div className={styles.shell}>
+        <ResearchToc />
 
-      <div className={styles.wrap}>
+        <div className={styles.wrap}>
         {/* ============ פרק 1 ============ */}
         <section id="finding-passion">
           <span className={`${styles.chip} ${styles.chipPink}`}>הממצא המרכזי</span>
@@ -589,10 +593,14 @@ export default function ResearchPage({
             מראות מה הולך יחד עם מה, לא מה גורם למה.
           </p>
         </div>
+        </div>
       </div>
 
+      {/* The mockup's "Mioshy" wordmark sat here, but inside the app SiteFooter
+          renders directly beneath and already carries the brand, so the two read
+          as a duplication rather than a sign-off. Colophon reduced to the
+          rights-and-citation line on review (2026-08-13). */}
       <footer className={styles.pageFooter}>
-        <div className={styles.logo}>Mioshy</div>
         מחקר הזוגיות הישראלי 2026 · כל הזכויות שמורות למיאושי
       </footer>
     </div>

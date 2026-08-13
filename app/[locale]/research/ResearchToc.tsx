@@ -72,19 +72,42 @@ const FALLBACK_STACK_PX = 130;
  * itself on scroll by translating away, and the offset has to stay correct for
  * the case where it is showing.
  */
+/** The app's own sticky header, or null if this page renders without chrome. */
+function findStickyHeader(): HTMLElement | null {
+  if (typeof document === "undefined") return null;
+  return (
+    Array.from(document.querySelectorAll("header")).find((el) => {
+      const pos = getComputedStyle(el).position;
+      return pos === "sticky" || pos === "fixed";
+    }) ?? null
+  );
+}
+
+/**
+ * Which shape the nav is currently in.
+ *
+ * Read from the `--toc-mode` custom property rather than a `matchMedia` call so
+ * the 1180px breakpoint is declared exactly once, in the stylesheet. Both modes
+ * are `position: sticky` now, so position alone can no longer tell them apart.
+ */
+function tocMode(nav: HTMLElement | null): "bar" | "rail" {
+  if (!nav) return "bar";
+  return getComputedStyle(nav).getPropertyValue("--toc-mode").trim() === "rail"
+    ? "rail"
+    : "bar";
+}
+
 function measureStack(nav: HTMLElement | null): number {
   if (typeof document === "undefined") return FALLBACK_STACK_PX;
 
-  const header = Array.from(document.querySelectorAll("header")).find((el) => {
-    const pos = getComputedStyle(el).position;
-    return pos === "sticky" || pos === "fixed";
-  });
+  const header = findStickyHeader();
   const headerH = header ? header.offsetHeight : 0;
 
-  // From 1180px the rail is `fixed` and floats beside the column, so it takes
-  // no vertical space and must not be counted.
-  const navH =
-    nav && getComputedStyle(nav).position === "sticky" ? nav.offsetHeight : 0;
+  // In rail mode the nav sits BESIDE the column, so it occupies no vertical
+  // space and must not be added to the anchor offset. Before the rail became
+  // sticky this was a position check; it is now a mode check, because sticky
+  // no longer distinguishes the two.
+  const navH = nav && tocMode(nav) === "bar" ? nav.offsetHeight : 0;
 
   const stack = headerH + navH;
   return stack > 0 ? stack : FALLBACK_STACK_PX;
@@ -114,6 +137,12 @@ export function ResearchToc() {
       const stack = measureStack(nav);
       stackRef.current = stack;
       root?.style.setProperty("--research-stack", `${stack + CLEARANCE_PX}px`);
+
+      const header = findStickyHeader();
+      root?.style.setProperty(
+        "--research-header-h",
+        `${header ? header.offsetHeight : 0}px`,
+      );
     };
 
     sync();
@@ -134,6 +163,67 @@ export function ResearchToc() {
       window.removeEventListener("resize", sync);
       ro?.disconnect();
       root?.style.removeProperty("--research-stack");
+    };
+  }, []);
+
+  // ── Follow the header's visible edge ─────────────────────────────────────
+  /*
+   * SiteHeader hides itself on scroll by translating up, but it keeps its box
+   * in the layout. Pinning the chip bar to that layout height therefore left a
+   * transparent strip between the top of the screen and the bar, with article
+   * text scrolling through it.
+   *
+   * The fix is to track where the header actually IS: its rect bottom, clamped
+   * at zero. While it is showing the bar sits flush beneath it, and once it has
+   * translated away the bar sits at the top of the screen.
+   *
+   * The header animates over ~300ms, and scroll events stop firing the moment
+   * the finger lifts, so sampling on scroll alone would freeze the bar
+   * mid-animation and reopen the gap. After every scroll burst the sampler
+   * therefore keeps running until the value settles (or a short cap elapses),
+   * which is what makes the bar travel WITH the header rather than jump after
+   * it.
+   */
+  useEffect(() => {
+    const nav = navRef.current;
+    const root = nav?.closest<HTMLElement>("[data-research-root]") ?? null;
+    if (!root) return;
+
+    let raf = 0;
+    let settleUntil = 0;
+    let last = -1;
+
+    const sample = () => {
+      raf = 0;
+      const header = findStickyHeader();
+      const visible = header
+        ? Math.max(0, Math.round(header.getBoundingClientRect().bottom))
+        : 0;
+
+      if (visible !== last) {
+        last = visible;
+        root.style.setProperty("--research-header-visible", `${visible}px`);
+        // Value is still moving — keep watching past the end of the scroll.
+        settleUntil = performance.now() + 400;
+      }
+
+      if (performance.now() < settleUntil) raf = requestAnimationFrame(sample);
+    };
+
+    const kick = () => {
+      settleUntil = performance.now() + 400;
+      if (!raf) raf = requestAnimationFrame(sample);
+    };
+
+    sample();
+    window.addEventListener("scroll", kick, { passive: true });
+    window.addEventListener("resize", kick);
+
+    return () => {
+      window.removeEventListener("scroll", kick);
+      window.removeEventListener("resize", kick);
+      if (raf) cancelAnimationFrame(raf);
+      root.style.removeProperty("--research-header-visible");
     };
   }, []);
 
@@ -182,7 +272,8 @@ export function ResearchToc() {
     const nav = navRef.current;
     const link = linkRefs.current[activeIndex];
     if (!nav || !link) return;
-    // Only the mobile bar overflows; the desktop rail lays out vertically.
+    // Only the bar scrolls horizontally; the rail lays out vertically.
+    if (tocMode(nav) !== "bar") return;
     if (nav.scrollWidth <= nav.clientWidth + 4) return;
 
     nav.scrollTo({
