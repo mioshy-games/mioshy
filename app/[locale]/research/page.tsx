@@ -3,6 +3,7 @@ import { buildAlternates, buildOgLocale } from "@/lib/seo/alternates";
 import { ResearchToc } from "./ResearchToc";
 import { ShareRow } from "./ShareRow";
 import { ResearchCta } from "./ResearchCta";
+import { ResearchFaq } from "./ResearchFaq";
 import styles from "./research.module.css";
 
 /**
@@ -598,6 +599,12 @@ export default function ResearchPage({
         </div>
         </div>
       </div>
+
+      {/* ============ FAQ ============ */}
+      {/* Outside .wrap on purpose: the homepage FAQ is a full-width two-column
+          section, and confining it to the article's 760px column would have
+          been a different design from the one that was approved. */}
+      <ResearchFaq />
 
       {/* The mockup's "Mioshy" wordmark sat here, but inside the app SiteFooter
           renders directly beneath and already carries the brand, so the two read

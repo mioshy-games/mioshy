@@ -75,10 +75,19 @@
   }
 }
 
-.page section,
+/*
+ * `.wrap > section` rather than `.page section`. The FAQ block embeds
+ * `.home-v2`, whose own stylesheet carries a `section { padding: 5px 0 80px }`
+ * rule at identical specificity to `.page section` — which of the two won would
+ * have come down to stylesheet order. Restricting this to the article's own
+ * direct-child chapters removes the collision instead of trying to out-specify
+ * it, and leaves the FAQ looking exactly like the homepage's.
+ */
+.wrap > section,
 .share,
 .cta,
-.method {
+.method,
+.faqScope {
   scroll-margin-top: var(--research-stack, var(--stack-h));
 }
 
@@ -148,8 +157,18 @@
 }
 
 /* ===== SECTIONS ===== */
-.page section {
+.wrap > section {
   padding: 46px 0 8px;
+}
+
+/*
+ * FAQ scope. The block is deliberately full-bleed rather than confined to the
+ * article's 760px column, because that is the homepage FAQ's own layout: a
+ * two-column grid inside the wide v2 `.container`. Its surface is painted white
+ * by `.home-v2 .faq`, which sits on the article's near-white background.
+ */
+.faqScope {
+  display: block;
 }
 .chip {
   display: inline-block;

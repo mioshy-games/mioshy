@@ -41,6 +41,7 @@ const CHAPTERS: Chapter[] = [
   { id: "who", label: "מי השתתף" },
   { id: "share", label: "שיתוף וציטוט" },
   { id: "method", label: "איך נעשה המחקר" },
+  { id: "faq", label: "שאלות ותשובות" },
 ];
 
 /** Distance from the document bottom at which the last chapter always wins. */
